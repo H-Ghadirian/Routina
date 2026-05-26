@@ -97,6 +97,7 @@ struct TaskDetailOptionalActionsSectionView: View {
     let showsTimeAction: Bool
     let showsStateAction: Bool
     let showsPressureAction: Bool
+    let showsChecklistAction: Bool
     let showsDetailsAction: Bool
     let background: Color
     let stroke: Color
@@ -105,6 +106,7 @@ struct TaskDetailOptionalActionsSectionView: View {
     let onAddTime: () -> Void
     let onAddState: () -> Void
     let onAddPressure: () -> Void
+    let onAddChecklist: () -> Void
     let onEditDetails: () -> Void
 
     var body: some View {
@@ -165,6 +167,14 @@ struct TaskDetailOptionalActionsSectionView: View {
                 title: "Pressure",
                 systemImage: "gauge.with.dots.needle.50percent",
                 action: onAddPressure
+            )
+        }
+
+        if showsChecklistAction {
+            actionButton(
+                title: "Checklist",
+                systemImage: "checklist",
+                action: onAddChecklist
             )
         }
 

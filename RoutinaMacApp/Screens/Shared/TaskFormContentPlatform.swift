@@ -144,6 +144,7 @@ struct TaskFormContent: View {
         case .linkURL:            linkURLCard
         case .notes:              notesCard
         case .steps:              stepsCard
+        case .checklist:          checklistCard
         case .image:              imageCard
         case .voiceNote:          voiceNoteCard
         case .attachment:         attachmentCard
@@ -187,11 +188,7 @@ struct TaskFormContent: View {
             model: model,
             presentation: presentation,
             persianDeadlineText: persianDeadlineText
-        ) {
-            TaskFormMacChecklistComposer(model: model)
-        } checklistItemsContent: {
-            TaskFormMacChecklistItemsContent(model: model)
-        }
+        )
         .id(FormSection.behavior)
     }
 
@@ -316,6 +313,21 @@ struct TaskFormContent: View {
             TaskFormMacStepsContent(model: model)
         }
         .id(FormSection.steps)
+    }
+
+    // MARK: Checklist
+
+    private var checklistCard: some View {
+        macSectionCard(
+            title: "Checklist",
+            subtitle: presentation.checklistSectionDescription(includesDerivedChecklistDueDetail: true)
+        ) {
+            VStack(alignment: .leading, spacing: 12) {
+                TaskFormMacChecklistComposer(model: model)
+                TaskFormMacChecklistItemsContent(model: model)
+            }
+        }
+        .id(FormSection.checklist)
     }
 
     // MARK: Image

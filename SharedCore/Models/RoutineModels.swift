@@ -210,10 +210,7 @@ final class RoutineTask {
         get { RoutineScheduleMode(rawValue: scheduleModeRawValue) ?? .fixedInterval }
         set {
             scheduleModeRawValue = newValue.rawValue
-            if newValue == .oneOff {
-                checklistItemsStorage = ""
-                completedChecklistItemIDsStorage = ""
-            } else {
+            if newValue != .oneOff {
                 deadline = nil
             }
             sanitizeChecklistProgress()
@@ -280,7 +277,7 @@ final class RoutineTask {
         comments: [RoutineTaskComment] = []
     ) {
         let resolvedScheduleMode = scheduleMode ?? (checklistItems.isEmpty ? .fixedInterval : .derivedFromChecklist)
-        let resolvedChecklistItems = resolvedScheduleMode == .oneOff ? [] : checklistItems
+        let resolvedChecklistItems = checklistItems
         let resolvedRecurrenceRule = resolvedScheduleMode == .oneOff
             ? RoutineRecurrenceRule.interval(days: 1)
             : recurrenceRule ?? RoutineRecurrenceRule.interval(days: max(Int(interval), 1))

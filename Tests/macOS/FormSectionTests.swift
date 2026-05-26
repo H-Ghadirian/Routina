@@ -12,7 +12,8 @@ struct FormSectionTests {
 
         #expect(sections.first == .identity)
         #expect(sections.contains(.steps))
-        #expect(Array(sections.suffix(4)) == [.image, .voiceNote, .attachment, .dangerZone])
+        #expect(sections.contains(.checklist))
+        #expect(Array(sections.suffix(5)) == [.checklist, .image, .voiceNote, .attachment, .dangerZone])
     }
 
     @Test
@@ -25,7 +26,8 @@ struct FormSectionTests {
 
         #expect(!sections.contains(.identity))
         #expect(!sections.contains(.steps))
-        #expect(Array(sections.suffix(3)) == [.image, .voiceNote, .attachment])
+        #expect(sections.contains(.checklist))
+        #expect(Array(sections.suffix(4)) == [.checklist, .image, .voiceNote, .attachment])
     }
 
     @Test
@@ -49,7 +51,7 @@ struct FormSectionTests {
             populatedSections: [.notes, .tags]
         )
 
-        #expect(collapsed == [.identity, .behavior, .tags, .notes])
+        #expect(collapsed == [.identity, .behavior, .tags, .notes, .checklist])
         #expect(expanded == sections)
     }
 }

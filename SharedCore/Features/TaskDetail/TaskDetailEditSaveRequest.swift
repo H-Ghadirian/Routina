@@ -95,9 +95,7 @@ struct TaskDetailEditSaveRequestBuilder {
             steps: (scheduleMode.isStandardRoutineMode || scheduleMode == .oneOff)
                 ? state.editRoutineSteps
                 : [],
-            checklistItems: (scheduleMode.isStandardRoutineMode || scheduleMode == .oneOff)
-                ? []
-                : state.editRoutineChecklistItems,
+            checklistItems: RoutineChecklistItem.sanitized(state.editRoutineChecklistItems),
             scheduleMode: scheduleMode,
             recurrenceRule: recurrenceRule,
             color: state.editColor,

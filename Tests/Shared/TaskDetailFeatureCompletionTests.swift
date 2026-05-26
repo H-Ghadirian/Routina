@@ -113,6 +113,51 @@ struct TaskDetailFeatureCompletionTests {
     }
 
     @Test
+    func toggleChecklistItemCompletion_forOptionalChecklistPersistsProgress() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-04-25T10:00:00Z")
+        let itemID = UUID()
+        let task = RoutineTask(
+            name: "Plan workshop",
+            checklistItems: [RoutineChecklistItem(id: itemID, title: "Book room", intervalDays: 1)],
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 7),
+            scheduleAnchor: now
+        )
+        context.insert(task)
+        try context.save()
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(task: task)
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.toggleChecklistItemCompletion(itemID)) {
+            $0.task.completedChecklistItemIDs = [itemID]
+        }
+        await store.receive(.logsLoaded([]))
+
+        let taskID = task.id
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { task in
+                        task.id == taskID
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.isChecklistItemCompleted(itemID))
+        #expect(persistedTask.lastDone == nil)
+    }
+
+    @Test
     func markAsDone_advancesCustomReminderAndSchedulesUpdatedReminder() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-04-25T10:00:00Z")

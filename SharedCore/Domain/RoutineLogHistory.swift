@@ -494,6 +494,43 @@ enum RoutineLogHistory {
         return task
     }
 
+    @discardableResult
+    @MainActor
+    static func markOptionalChecklistItemCompleted(
+        taskID: UUID,
+        itemID: UUID,
+        completedAt: Date,
+        context: ModelContext,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
+    ) throws -> RoutineTask? {
+        let descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == taskID
+            }
+        )
+
+        guard let task = try context.fetch(descriptor).first else {
+            return nil
+        }
+
+        guard task.markOptionalChecklistItemCompleted(itemID) else {
+            return task
+        }
+
+        DeviceActivityRecorder.recordAction(
+            .updated,
+            entity: .task,
+            entityID: taskID,
+            entityTitle: taskTitle(task),
+            details: "Checked checklist item",
+            sourceDevice: sourceDevice,
+            at: completedAt,
+            in: context
+        )
+        try context.save()
+        return task
+    }
+
     @MainActor
     static func markDueChecklistItemsPurchased(
         taskID: UUID,

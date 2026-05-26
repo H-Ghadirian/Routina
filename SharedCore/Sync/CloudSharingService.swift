@@ -334,7 +334,7 @@ extension CloudSharingService.SharedTaskPayload {
         task.goalIDs = goalIDs ?? []
         task.replaceRelationships(relationships)
         task.replaceSteps(steps)
-        task.replaceChecklistItems(scheduleMode == .oneOff ? [] : checklistItems)
+        task.replaceChecklistItems(checklistItems)
         task.scheduleMode = scheduleMode
         task.recurrenceRule = recurrenceRule ?? .interval(days: max(Int(interval), 1))
         task.interval = Int16(clamping: max(Int(interval), 1))
@@ -384,7 +384,7 @@ private extension RoutineTask {
             goalIDs: payload.goalIDs ?? [],
             relationships: payload.relationships,
             steps: payload.steps,
-            checklistItems: payload.scheduleMode == .oneOff ? [] : payload.checklistItems,
+            checklistItems: payload.checklistItems,
             scheduleMode: payload.scheduleMode,
             interval: payload.interval,
             recurrenceRule: payload.recurrenceRule,

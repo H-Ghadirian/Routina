@@ -148,12 +148,12 @@ struct TaskFormContent: View {
             if model.scheduleMode.wrappedValue.taskType == .routine {
                 scheduleTypeSection
             }
-        case .stepsOrChecklist:
+        case .steps:
             if presentation.isStepBasedMode {
                 stepsSection
-            } else {
-                checklistSection
             }
+        case .checklist:
+            checklistSection
         case .place:
             placeSection
         case .repeatPattern:

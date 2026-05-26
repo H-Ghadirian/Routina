@@ -323,6 +323,7 @@ detailBody
                 showsTimeAction: shouldShowTimeAddAction,
                 showsStateAction: shouldShowTodoStateAddAction,
                 showsPressureAction: shouldShowPressureAddAction,
+                showsChecklistAction: !store.task.hasChecklistItems,
                 showsDetailsAction: !hasTaskExtras,
                 background: routineLogsBackground,
                 stroke: TaskDetailPlatformStyle.sectionCardStroke,
@@ -347,6 +348,7 @@ detailBody
                         isPressureControlRevealed = true
                     }
                 },
+                onAddChecklist: { store.send(.setEditSheet(true)) },
                 onEditDetails: { store.send(.setEditSheet(true)) }
             )
         }
@@ -358,6 +360,7 @@ detailBody
             || shouldShowTimeAddAction
             || shouldShowTodoStateAddAction
             || shouldShowPressureAddAction
+            || !store.task.hasChecklistItems
             || !hasTaskExtras
     }
 

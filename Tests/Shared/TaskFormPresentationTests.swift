@@ -26,6 +26,7 @@ struct TaskFormPresentationTests {
         #expect(oneOff.showsRepeatControls == false)
         #expect(oneOff.taskTypeDescription == "Happens once. Use a deadline instead of repeat settings.")
         #expect(oneOff.notesHelpText == "Capture extra context, links, or reminders for this todo.")
+        #expect(oneOff.checklistSectionDescription(includesDerivedChecklistDueDetail: false) == "Use checklist items for parts you want to tick off before finishing the todo.")
     }
 
     @Test
@@ -88,10 +89,13 @@ struct TaskFormPresentationTests {
         let voiceNoteIndex = try #require(order.firstIndex(of: .voiceNote))
         let deadlineIndex = try #require(order.firstIndex(of: .deadline))
         let imageIndex = try #require(order.firstIndex(of: .image))
+        let stepsIndex = try #require(order.firstIndex(of: .steps))
+        let checklistIndex = try #require(order.firstIndex(of: .checklist))
 
         #expect(voiceNoteIndex == order.index(after: notesIndex))
         #expect(voiceNoteIndex < deadlineIndex)
         #expect(voiceNoteIndex < imageIndex)
+        #expect(checklistIndex == order.index(after: stepsIndex))
     }
 
     @Test

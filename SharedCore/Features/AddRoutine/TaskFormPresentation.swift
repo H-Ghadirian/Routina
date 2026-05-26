@@ -43,7 +43,8 @@ enum TaskFormCompactSection: Hashable, Sendable {
     case goals
     case relationships
     case scheduleType
-    case stepsOrChecklist
+    case steps
+    case checklist
     case place
     case repeatPattern
     case delete
@@ -67,7 +68,8 @@ enum TaskFormCompactSection: Hashable, Sendable {
         .goals,
         .relationships,
         .scheduleType,
-        .stepsOrChecklist,
+        .steps,
+        .checklist,
         .place,
         .repeatPattern,
         .delete
@@ -199,8 +201,10 @@ struct TaskFormPresentation {
             return includesDerivedChecklistDueDetail
                 ? "Each item gets its own due date. The routine becomes due when the earliest item is due."
                 : "The routine becomes due when the earliest checklist item is due."
-        case .fixedInterval, .softInterval, .oneOff:
-            return ""
+        case .fixedInterval, .softInterval:
+            return "Use checklist items for parts you want to tick off before finishing the routine."
+        case .oneOff:
+            return "Use checklist items for parts you want to tick off before finishing the todo."
         }
     }
 

@@ -114,6 +114,76 @@ struct AddRoutineFeatureSaveTests {
     }
 
     @Test
+    func saveTapped_standardTaskSendsChecklistItems() async {
+        let capturedChecklistTitles = LockIsolated<[String]>([])
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(routineName: "Plan workshop"),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(scheduleMode: .fixedInterval),
+                checklist: AddRoutineChecklistState(
+                    routineChecklistItems: [RoutineChecklistItem(title: "Book room", intervalDays: 1)],
+                    checklistItemDraftTitle: "Send invite"
+                )
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { request in
+                    #expect(request.scheduleMode == .fixedInterval)
+                    capturedChecklistTitles.withValue { $0 = request.checklistItems.map(\.title) }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        _ = await store.withExhaustivity(.off) {
+            await store.send(.saveTapped) {
+                $0.checklist.checklistItemDraftTitle = ""
+            }
+        }
+
+        #expect(capturedChecklistTitles.value == ["Book room", "Send invite"])
+    }
+
+    @Test
+    func saveTapped_todoSendsChecklistItems() async {
+        let capturedChecklistTitles = LockIsolated<[String]>([])
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(routineName: "Buy ingredients"),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(scheduleMode: .oneOff),
+                checklist: AddRoutineChecklistState(
+                    routineChecklistItems: [RoutineChecklistItem(title: "Flour", intervalDays: 1)],
+                    checklistItemDraftTitle: "Yeast"
+                )
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { request in
+                    #expect(request.scheduleMode == .oneOff)
+                    capturedChecklistTitles.withValue { $0 = request.checklistItems.map(\.title) }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        _ = await store.withExhaustivity(.off) {
+            await store.send(.saveTapped) {
+                $0.checklist.checklistItemDraftTitle = ""
+            }
+        }
+
+        #expect(capturedChecklistTitles.value == ["Flour", "Yeast"])
+    }
+
+    @Test
     func saveTapped_inChecklistMode_sendsChecklistItemsAndMode() async {
         let now = makeDate("2026-03-20T10:00:00Z")
         let capturedChecklistTitles = LockIsolated<[String]>([])

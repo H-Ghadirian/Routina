@@ -7,7 +7,7 @@ enum TaskDetailChecklistPresentation {
         referenceDate: Date = Date(),
         calendar: Calendar = .current
     ) -> [RoutineChecklistItem] {
-        if task.isChecklistCompletionRoutine {
+        if !task.isChecklistDriven {
             return task.checklistItems
         }
         return task.checklistItems.sorted {
@@ -23,7 +23,7 @@ enum TaskDetailChecklistPresentation {
         referenceDate: Date = Date(),
         calendar: Calendar = .current
     ) -> String {
-        if task.isChecklistCompletionRoutine {
+        if !task.isChecklistDriven {
             return isMarkedDone ? "Done" : "Pending"
         }
         let dueDate = RoutineDateMath.dueDate(for: item, referenceDate: referenceDate, calendar: calendar)
@@ -52,10 +52,15 @@ enum TaskDetailChecklistPresentation {
         isDoneToday: Bool,
         calendar: Calendar = .current
     ) -> Bool {
-        guard task.isChecklistCompletionRoutine,
-              !task.isArchived(),
+        guard !task.isArchived(),
               calendar.isDateInToday(selectedDate) else {
             return false
+        }
+
+        guard task.isChecklistCompletionRoutine else {
+            return task.supportsOptionalChecklistProgress
+                && !task.isCompletedOneOff
+                && !task.isCanceledOneOff
         }
 
         if isDoneToday && !task.isChecklistInProgress {
@@ -76,7 +81,7 @@ enum TaskDetailChecklistPresentation {
         referenceDate: Date = Date(),
         calendar: Calendar = .current
     ) -> Color {
-        if task.isChecklistCompletionRoutine {
+        if !task.isChecklistDriven {
             return isMarkedDone ? .green : .secondary
         }
         let dueDate = RoutineDateMath.dueDate(for: item, referenceDate: referenceDate, calendar: calendar)

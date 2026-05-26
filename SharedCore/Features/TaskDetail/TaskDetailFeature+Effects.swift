@@ -887,6 +887,50 @@ extension TaskDetailFeature {
         }
     }
 
+    func handleOptionalChecklistItemCompleted(
+        taskID: UUID,
+        itemID: UUID,
+        completedAt: Date
+    ) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = ModelContext(modelContext().container)
+                _ = try RoutineLogHistory.markOptionalChecklistItemCompleted(
+                    taskID: taskID,
+                    itemID: itemID,
+                    completedAt: completedAt,
+                    context: context
+                )
+                let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+                send(.logsLoaded(updatedLogs))
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error updating checklist progress: \(error)")
+            }
+        }
+    }
+
+    func handleOptionalChecklistItemUnmarked(
+        taskID: UUID,
+        itemID: UUID
+    ) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = ModelContext(modelContext().container)
+                _ = try RoutineLogHistory.unmarkChecklistItem(
+                    taskID: taskID,
+                    itemID: itemID,
+                    context: context
+                )
+                let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+                send(.logsLoaded(updatedLogs))
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error removing checklist progress: \(error)")
+            }
+        }
+    }
+
     func handleTodoStateChanged(
         taskID: UUID,
         rawValue: String?,

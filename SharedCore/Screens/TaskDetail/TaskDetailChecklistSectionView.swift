@@ -39,10 +39,10 @@ struct TaskDetailChecklistSectionView: View {
 
     @ViewBuilder
     private func checklistRow(for item: RoutineChecklistItem) -> some View {
-        if task.isChecklistCompletionRoutine {
-            completionChecklistRow(for: item)
-        } else {
+        if task.isChecklistDriven {
             dueChecklistRow(for: item)
+        } else {
+            completionChecklistRow(for: item)
         }
     }
 

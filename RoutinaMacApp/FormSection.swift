@@ -22,6 +22,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
     case linkURL            = "Link URL"
     case notes              = "Notes"
     case steps              = "Steps"
+    case checklist          = "Checklist"
     case image              = "Image"
     case voiceNote          = "Voice Note"
     case attachment         = "Attachment"
@@ -44,6 +45,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
         case .linkURL:           return "globe"
         case .notes:             return "note.text"
         case .steps:             return "list.number"
+        case .checklist:         return "checklist"
         case .image:             return "photo.fill"
         case .voiceNote:         return "mic.fill"
         case .attachment:        return "paperclip"
@@ -68,6 +70,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
         if scheduleMode.isTaskFormStepBased {
             sections.append(.steps)
         }
+        sections.append(.checklist)
         sections.append(.image)
         sections.append(.voiceNote)
         sections.append(.attachment)
@@ -87,7 +90,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
             return sections
         }
 
-        let primarySections: Set<FormSection> = [.identity, .behavior]
+        let primarySections: Set<FormSection> = [.identity, .behavior, .checklist]
         return sections.filter {
             primarySections.contains($0) || populatedSections.contains($0)
         }
@@ -137,12 +140,13 @@ extension TaskFormModel {
         if hasText(notes.wrappedValue) {
             sections.insert(.notes)
         }
-        if !routineSteps.isEmpty
-            || hasText(stepDraft.wrappedValue)
-            || !routineChecklistItems.isEmpty
+        if !routineSteps.isEmpty || hasText(stepDraft.wrappedValue) {
+            sections.insert(.steps)
+        }
+        if !routineChecklistItems.isEmpty
             || hasText(checklistItemDraftTitle.wrappedValue)
             || scheduleMode.wrappedValue.isRoutineModeRequiringChecklistItems {
-            sections.insert(.steps)
+            sections.insert(.checklist)
         }
         if imageData != nil {
             sections.insert(.image)
@@ -196,12 +200,13 @@ extension AddRoutineFeature.State {
         if hasText(basics.routineNotes) {
             sections.insert(.notes)
         }
-        if !checklist.routineSteps.isEmpty
-            || hasText(checklist.stepDraft)
-            || !checklist.routineChecklistItems.isEmpty
+        if !checklist.routineSteps.isEmpty || hasText(checklist.stepDraft) {
+            sections.insert(.steps)
+        }
+        if !checklist.routineChecklistItems.isEmpty
             || hasText(checklist.checklistItemDraftTitle)
             || schedule.scheduleMode.isRoutineModeRequiringChecklistItems {
-            sections.insert(.steps)
+            sections.insert(.checklist)
         }
         if basics.imageData != nil {
             sections.insert(.image)
@@ -258,12 +263,13 @@ extension TaskDetailFeature.State {
         if hasText(editRoutineNotes) {
             sections.insert(.notes)
         }
-        if !editRoutineSteps.isEmpty
-            || hasText(editStepDraft)
-            || !editRoutineChecklistItems.isEmpty
+        if !editRoutineSteps.isEmpty || hasText(editStepDraft) {
+            sections.insert(.steps)
+        }
+        if !editRoutineChecklistItems.isEmpty
             || hasText(editChecklistItemDraftTitle)
             || editScheduleMode.isRoutineModeRequiringChecklistItems {
-            sections.insert(.steps)
+            sections.insert(.checklist)
         }
         if editImageData != nil {
             sections.insert(.image)

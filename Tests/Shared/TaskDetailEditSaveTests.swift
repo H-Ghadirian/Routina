@@ -261,6 +261,118 @@ struct TaskDetailEditSaveTests {
     }
 
     @Test
+    func editSaveTapped_persistsChecklistItemsForStandardRoutine() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Plan workshop",
+            interval: 7,
+            lastDone: nil,
+            emoji: "✨",
+            scheduleMode: .fixedInterval
+        )
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Plan workshop",
+                editRoutineEmoji: "✨",
+                editScheduleMode: .fixedInterval,
+                editRoutineChecklistItems: [RoutineChecklistItem(title: "Book room", intervalDays: 1)],
+                editFrequency: .week,
+                editFrequencyValue: 1
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+        await store.receive(.onAppear) {
+            $0.selectedDate = calendar.startOfDay(for: now)
+        }
+
+        let taskID = task.id
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { task in
+                        task.id == taskID
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.scheduleMode == .fixedInterval)
+        #expect(persistedTask.checklistItems.map(\.title) == ["Book room"])
+    }
+
+    @Test
+    func editSaveTapped_persistsChecklistItemsForTodo() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Buy ingredients",
+            interval: 1,
+            lastDone: nil,
+            emoji: "✨",
+            scheduleMode: .oneOff
+        )
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Buy ingredients",
+                editRoutineEmoji: "✨",
+                editScheduleMode: .oneOff,
+                editRoutineChecklistItems: [RoutineChecklistItem(title: "Flour", intervalDays: 1)],
+                editFrequency: .day,
+                editFrequencyValue: 1
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+        await store.receive(.onAppear) {
+            $0.selectedDate = calendar.startOfDay(for: now)
+        }
+
+        let taskID = task.id
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { task in
+                        task.id == taskID
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.scheduleMode == .oneOff)
+        #expect(persistedTask.checklistItems.map(\.title) == ["Flour"])
+    }
+
+    @Test
     func editSaveTapped_persistsDailyTimeRangeRecurrence() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()

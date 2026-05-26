@@ -213,7 +213,8 @@ extension TaskFormModel {
             .name,
             .taskType,
             .deadline,
-            .reminder
+            .reminder,
+            .checklist
         ]
 
         if scheduleMode.wrappedValue.taskType == .routine {
@@ -222,10 +223,6 @@ extension TaskFormModel {
 
         if scheduleMode.wrappedValue.showsRoutineRepeatControls {
             sections.insert(.repeatPattern)
-        }
-
-        if scheduleMode.wrappedValue.isRoutineModeRequiringChecklistItems {
-            sections.insert(.stepsOrChecklist)
         }
 
         return sections
@@ -273,11 +270,13 @@ extension TaskFormModel {
         if !relationships.isEmpty {
             sections.insert(.relationships)
         }
-        if !routineSteps.isEmpty
-            || hasText(stepDraft.wrappedValue)
-            || !routineChecklistItems.isEmpty
-            || hasText(checklistItemDraftTitle.wrappedValue) {
-            sections.insert(.stepsOrChecklist)
+        if !routineSteps.isEmpty || hasText(stepDraft.wrappedValue) {
+            sections.insert(.steps)
+        }
+        if !routineChecklistItems.isEmpty
+            || hasText(checklistItemDraftTitle.wrappedValue)
+            || scheduleMode.wrappedValue.isRoutineModeRequiringChecklistItems {
+            sections.insert(.checklist)
         }
         if selectedPlaceID.wrappedValue != nil {
             sections.insert(.place)

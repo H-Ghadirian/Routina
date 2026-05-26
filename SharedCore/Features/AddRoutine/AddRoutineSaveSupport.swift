@@ -192,9 +192,7 @@ struct AddRoutineSaveRequest: Equatable {
             ? RoutineStep.sanitized(checklist.routineSteps)
             : []
         self.scheduleMode = schedule.scheduleMode
-        self.checklistItems = (schedule.scheduleMode.isStandardRoutineMode || schedule.scheduleMode == .oneOff)
-            ? []
-            : RoutineChecklistItem.sanitized(checklist.routineChecklistItems)
+        self.checklistItems = RoutineChecklistItem.sanitized(checklist.routineChecklistItems)
         self.attachments = basics.attachments
         self.color = basics.routineColor
         self.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(basics.estimatedDurationMinutes)

@@ -324,7 +324,7 @@ extension TaskDetailFeature.State {
     }
 
     var checklistProgressText: String {
-        if isDoneToday && !task.isChecklistInProgress {
+        if task.isChecklistCompletionRoutine && isDoneToday && !task.isChecklistInProgress {
             return "All items completed today"
         }
         let completed = task.completedChecklistItemCount
@@ -509,8 +509,7 @@ extension TaskDetailFeature.State {
     }
 
     func isChecklistItemMarkedDone(_ item: RoutineChecklistItem) -> Bool {
-        guard task.isChecklistCompletionRoutine else { return false }
-        if isDoneToday && !task.isChecklistInProgress {
+        if task.isChecklistCompletionRoutine && isDoneToday && !task.isChecklistInProgress {
             return true
         }
         return task.isChecklistItemCompleted(item.id)

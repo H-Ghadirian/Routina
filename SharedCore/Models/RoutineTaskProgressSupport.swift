@@ -17,6 +17,12 @@ extension RoutineTask {
         scheduleMode.isChecklistCompletionMode && hasChecklistItems
     }
 
+    var supportsOptionalChecklistProgress: Bool {
+        hasChecklistItems
+            && !scheduleMode.isChecklistDrivenMode
+            && !scheduleMode.isChecklistCompletionMode
+    }
+
     var isSoftIntervalRoutine: Bool {
         scheduleMode.isSoftIntervalRoutine
     }
@@ -208,8 +214,23 @@ extension RoutineTask {
     }
 
     @discardableResult
+    func markOptionalChecklistItemCompleted(_ itemID: UUID) -> Bool {
+        guard !isArchived(),
+              supportsOptionalChecklistProgress,
+              checklistItems.contains(where: { $0.id == itemID }) else {
+            return false
+        }
+
+        var updatedIDs = completedChecklistItemIDs
+        let insertResult = updatedIDs.insert(itemID)
+        guard insertResult.inserted else { return false }
+        completedChecklistItemIDs = updatedIDs
+        return true
+    }
+
+    @discardableResult
     func unmarkChecklistItemCompleted(_ itemID: UUID) -> Bool {
-        guard isChecklistCompletionRoutine else { return false }
+        guard isChecklistCompletionRoutine || supportsOptionalChecklistProgress else { return false }
 
         var updatedIDs = completedChecklistItemIDs
         guard updatedIDs.remove(itemID) != nil else { return false }
@@ -226,6 +247,7 @@ extension RoutineTask {
                 return .ignoredAlreadyCompletedToday
             }
             recordCompletion(at: completedAt, calendar: calendar)
+            resetOptionalRoutineChecklistProgressIfNeeded()
             return .completedRoutine
         }
 
@@ -247,6 +269,7 @@ extension RoutineTask {
 
         recordCompletion(at: completedAt, calendar: calendar)
         resetStepProgress()
+        resetOptionalRoutineChecklistProgressIfNeeded()
         return .completedRoutine
     }
 
@@ -289,7 +312,7 @@ extension RoutineTask {
     }
 
     func sanitizeChecklistProgress() {
-        guard isChecklistCompletionRoutine else {
+        guard isChecklistCompletionRoutine || supportsOptionalChecklistProgress else {
             completedChecklistItemIDsStorage = ""
             return
         }
@@ -297,6 +320,11 @@ extension RoutineTask {
         let validIDs = Set(checklistItems.map(\.id))
         let sanitizedIDs = completedChecklistItemIDs.intersection(validIDs)
         completedChecklistItemIDsStorage = RoutineChecklistProgressStorage.serialize(sanitizedIDs)
+    }
+
+    private func resetOptionalRoutineChecklistProgressIfNeeded() {
+        guard supportsOptionalChecklistProgress, !isOneOffTask else { return }
+        resetChecklistProgress()
     }
 
     private func shouldUpdateLastDone(with candidate: Date) -> Bool {

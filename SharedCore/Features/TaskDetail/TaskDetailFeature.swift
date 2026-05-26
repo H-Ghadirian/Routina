@@ -604,6 +604,27 @@ struct TaskDetailFeature: Reducer {
             guard calendar.isDate(state.selectedDate ?? now, inSameDayAs: now) else {
                 return .none
             }
+            if state.task.supportsOptionalChecklistProgress {
+                let referenceDate = now
+                if state.task.isChecklistItemCompleted(itemID) {
+                    guard state.task.unmarkChecklistItemCompleted(itemID) else { return .none }
+                    refreshTaskView(&state)
+                    updateDerivedState(&state)
+                    return handleOptionalChecklistItemUnmarked(
+                        taskID: state.task.id,
+                        itemID: itemID
+                    )
+                }
+
+                guard state.task.markOptionalChecklistItemCompleted(itemID) else { return .none }
+                refreshTaskView(&state)
+                updateDerivedState(&state)
+                return handleOptionalChecklistItemCompleted(
+                    taskID: state.task.id,
+                    itemID: itemID,
+                    completedAt: referenceDate
+                )
+            }
             guard RoutineDateMath.canMarkDone(
                 for: state.task,
                 referenceDate: now,
@@ -663,6 +684,16 @@ struct TaskDetailFeature: Reducer {
                 return .none
             }
             let completionDate = now
+            if state.task.supportsOptionalChecklistProgress {
+                guard state.task.markOptionalChecklistItemCompleted(itemID) else { return .none }
+                refreshTaskView(&state)
+                updateDerivedState(&state)
+                return handleOptionalChecklistItemCompleted(
+                    taskID: state.task.id,
+                    itemID: itemID,
+                    completedAt: completionDate
+                )
+            }
             guard RoutineDateMath.canMarkDone(
                 for: state.task,
                 referenceDate: completionDate,

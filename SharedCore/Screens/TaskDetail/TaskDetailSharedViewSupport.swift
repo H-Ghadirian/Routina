@@ -400,8 +400,7 @@ enum TaskDetailStatusMetadataPresentation {
             || state.task.hasImage
             || state.task.hasVoiceNote
             || !state.taskAttachments.isEmpty
-            || state.task.isChecklistDriven
-            || state.task.isChecklistCompletionRoutine
+            || state.task.hasChecklistItems
             || state.task.hasSequentialSteps
     }
 
@@ -489,7 +488,7 @@ enum TaskDetailStatusMetadataPresentation {
             if let nextDueChecklistItemTitle = state.task.nextDueChecklistItem(referenceDate: referenceDate)?.title {
                 items.append(.init(id: "nextDueChecklistItem", label: "Next Due", value: nextDueChecklistItemTitle))
             }
-        } else if state.task.isChecklistCompletionRoutine {
+        } else if state.task.isChecklistCompletionRoutine || state.task.supportsOptionalChecklistProgress {
             items.append(
                 .init(
                     id: "checklist",
@@ -498,7 +497,8 @@ enum TaskDetailStatusMetadataPresentation {
                 )
             )
             items.append(.init(id: "checklistProgress", label: "Progress", value: state.checklistProgressText))
-            if let nextPendingChecklistItemTitle = state.task.nextPendingChecklistItemTitle {
+            if state.task.isChecklistCompletionRoutine,
+               let nextPendingChecklistItemTitle = state.task.nextPendingChecklistItemTitle {
                 items.append(.init(id: "nextChecklistItem", label: "Next Item", value: nextPendingChecklistItemTitle))
             }
         } else if state.task.hasSequentialSteps {

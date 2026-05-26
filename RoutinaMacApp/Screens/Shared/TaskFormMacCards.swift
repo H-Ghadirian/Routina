@@ -200,12 +200,10 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
     }
 }
 
-struct TaskFormMacBehaviorCard<ChecklistComposer: View, ChecklistItemsContent: View>: View {
+struct TaskFormMacBehaviorCard: View {
     let model: TaskFormModel
     let presentation: TaskFormPresentation
     let persianDeadlineText: String?
-    @ViewBuilder let checklistItemComposer: ChecklistComposer
-    @ViewBuilder let checklistItemsContent: ChecklistItemsContent
 
     var body: some View {
         TaskFormMacSectionCard(title: "Scheduling") {
@@ -268,15 +266,6 @@ struct TaskFormMacBehaviorCard<ChecklistComposer: View, ChecklistItemsContent: V
                     .pickerStyle(.segmented)
                     .fixedSize()
                     Spacer(minLength: 0)
-                }
-            }
-
-            if !presentation.isStepBasedMode {
-                TaskFormMacControlBlock(title: "Checklist") {
-                    VStack(alignment: .leading, spacing: 12) {
-                        checklistItemComposer
-                        checklistItemsContent
-                    }
                 }
             }
         }

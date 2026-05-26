@@ -157,7 +157,7 @@ struct SwiftDataModelTests {
     }
 
     @Test
-    func routineTask_oneOffStripsChecklistAndForcesSingleDayInterval() {
+    func routineTask_oneOffKeepsChecklistAndForcesSingleDayInterval() {
         let completedAt = makeDate("2026-03-18T12:00:00Z")
         let task = RoutineTask(
             steps: [RoutineStep(title: "Buy milk")],
@@ -171,8 +171,23 @@ struct SwiftDataModelTests {
         #expect(task.isOneOffTask)
         #expect(task.interval == 1)
         #expect(task.steps.map(\.title) == ["Buy milk"])
-        #expect(task.checklistItems.isEmpty)
+        #expect(task.checklistItems.map(\.title) == ["Milk"])
         #expect(task.scheduleAnchor == completedAt)
+    }
+
+    @Test
+    func routineTask_optionalChecklistProgressCanBeToggled() {
+        let itemID = UUID()
+        let task = RoutineTask(
+            checklistItems: [RoutineChecklistItem(id: itemID, title: "Book room", intervalDays: 1)],
+            scheduleMode: .fixedInterval
+        )
+
+        #expect(task.supportsOptionalChecklistProgress)
+        #expect(task.markOptionalChecklistItemCompleted(itemID))
+        #expect(task.isChecklistItemCompleted(itemID))
+        #expect(task.unmarkChecklistItemCompleted(itemID))
+        #expect(!task.isChecklistItemCompleted(itemID))
     }
 
     @Test
