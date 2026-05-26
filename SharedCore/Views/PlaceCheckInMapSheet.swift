@@ -2011,6 +2011,7 @@ struct PlaceCheckInSessionDetailView: View {
 
                 PlaceCheckInDetailCard(title: "Location", systemImage: "mappin.and.ellipse") {
                     if let coordinate = session.coordinate {
+                        PlaceCheckInSessionLocationMap(session: session, coordinate: coordinate)
                         detailRow(title: "Coordinate", value: coordinate.formattedForPlaceSelection)
                     }
                     if let accuracy = session.horizontalAccuracyMeters {
@@ -2113,6 +2114,51 @@ struct PlaceCheckInSessionDetailView: View {
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+}
+
+private struct PlaceCheckInSessionLocationMap: View {
+    let session: PlaceCheckInSession
+    let coordinate: LocationCoordinate
+    @State private var mapPosition: MapCameraPosition
+
+    init(session: PlaceCheckInSession, coordinate: LocationCoordinate) {
+        self.session = session
+        self.coordinate = coordinate
+        _mapPosition = State(
+            initialValue: PlaceCheckInMapCamera.position(
+                region: PlaceCheckInMapCamera.region(focusingOn: coordinate)
+            )
+        )
+    }
+
+    var body: some View {
+        Map(position: $mapPosition) {
+            if let radius = session.placeRadiusMeters {
+                MapCircle(center: coordinate.mapCoordinate, radius: radius)
+                    .foregroundStyle(Color.teal.opacity(0.16))
+            }
+
+            Annotation(session.displayPlaceName, coordinate: coordinate.mapCoordinate) {
+                ZStack {
+                    Circle()
+                        .fill(Color.teal)
+                    Image(systemName: "mappin.and.ellipse")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.white)
+                }
+                .frame(width: 30, height: 30)
+                .shadow(color: Color.black.opacity(0.16), radius: 4, y: 2)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 240)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+        )
+        .accessibilityLabel("Map showing check-in location")
     }
 }
 
