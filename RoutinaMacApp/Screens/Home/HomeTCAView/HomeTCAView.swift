@@ -132,9 +132,6 @@ homeContent
                 .sheet(isPresented: isFilterSheetPresentedBinding) {
                     homeFiltersSheet
                 }
-                .sheet(isPresented: $isEmotionLogEditorPresented) {
-                    EmotionLogEditorView()
-                }
                 .task {
                     syncFileAttachmentTaskIDs()
                 }

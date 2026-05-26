@@ -23,9 +23,14 @@ struct EmotionLogEditorView: View {
     @State private var linkedPlaceID: UUID?
     @State private var linkedSleepSessionID: UUID?
 
+    let onCancel: (() -> Void)?
     let onSaved: ((UUID) -> Void)?
 
-    init(onSaved: ((UUID) -> Void)? = nil) {
+    init(
+        onCancel: (() -> Void)? = nil,
+        onSaved: ((UUID) -> Void)? = nil
+    ) {
+        self.onCancel = onCancel
         self.onSaved = onSaved
     }
 
@@ -35,11 +40,10 @@ struct EmotionLogEditorView: View {
                 .navigationTitle("Emotion Log")
                 #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
-                #endif
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Cancel") {
-                            dismiss()
+                            cancel()
                         }
                     }
 
@@ -50,6 +54,7 @@ struct EmotionLogEditorView: View {
                         .keyboardShortcut(.defaultAction)
                     }
                 }
+                #endif
         }
         #if os(macOS)
         .frame(minWidth: 540, minHeight: 680)
@@ -95,6 +100,22 @@ struct EmotionLogEditorView: View {
             }
 
             Spacer(minLength: 0)
+
+            #if os(macOS)
+            Button("Cancel") {
+                cancel()
+            }
+            .buttonStyle(.bordered)
+            .keyboardShortcut(.cancelAction)
+
+            Button {
+                save()
+            } label: {
+                Label("Save", systemImage: "checkmark")
+            }
+            .buttonStyle(.borderedProminent)
+            .keyboardShortcut(.defaultAction)
+            #endif
         }
     }
 
@@ -260,6 +281,14 @@ struct EmotionLogEditorView: View {
             selectedBodyAreas.remove(area)
         } else {
             selectedBodyAreas.insert(area)
+        }
+    }
+
+    private func cancel() {
+        if let onCancel {
+            onCancel()
+        } else {
+            dismiss()
         }
     }
 

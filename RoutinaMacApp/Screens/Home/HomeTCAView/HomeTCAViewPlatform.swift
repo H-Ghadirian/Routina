@@ -43,6 +43,8 @@ extension HomeTCAView {
             && !isMacSettingsMode
             && !isMacGoalsMode
             && !isMacAddTaskMode
+            && !isEmotionLogEditorPresented
+            && !isNoteEditorPresented
             && store.addRoutineState == nil
     }
 
@@ -75,7 +77,12 @@ extension HomeTCAView {
         } goalsDetailContent: {
             MacGoalsDetailView(store: goalsStore)
         } mainDetailContent: {
-            if isNoteEditorPresented {
+            if isEmotionLogEditorPresented {
+                EmotionLogEditorView(
+                    onCancel: closeAddEmotion,
+                    onSaved: openSavedEmotion
+                )
+            } else if isNoteEditorPresented {
                 RoutineNoteEditorView(
                     onCancel: closeAddNote,
                     onSaved: openSavedNote
@@ -235,6 +242,7 @@ extension HomeTCAView {
         }
         .onChange(of: store.selectedTaskID) { _, taskID in
             if taskID != nil {
+                isEmotionLogEditorPresented = false
                 isNoteEditorPresented = false
             }
         }
@@ -311,6 +319,7 @@ extension HomeTCAView {
     }
 
     func openAddTask() {
+        isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         store.send(.macSidebarModeChanged(.addTask))
         store.send(.setAddRoutineSheet(true))

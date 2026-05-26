@@ -116,11 +116,15 @@ extension HomeTCAView {
     }
 
     private func openTimelineEntry(_ entry: TimelineEntry) {
+        isEmotionLogEditorPresented = false
+        isNoteEditorPresented = false
+        selectedNoteID = entry.isNote ? entry.id : nil
         store.send(.macSidebarSelectionChanged(.timelineEntry(entry.id)))
         store.send(.setSelectedTask(entry.taskID))
     }
 
     func openTimelineInSidebar() {
+        isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         store.send(.macSidebarModeChanged(.timeline))
         validateSelectedTimelineTag()
