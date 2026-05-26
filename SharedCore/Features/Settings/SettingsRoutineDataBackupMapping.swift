@@ -130,6 +130,26 @@ enum SettingsRoutineDataBackupMapping {
         )
     }
 
+    static func emotion(_ emotion: EmotionLog) -> Backup.Emotion {
+        Backup.Emotion(
+            id: emotion.id,
+            family: emotion.family,
+            label: emotion.displayLabel,
+            valence: emotion.valence,
+            arousal: emotion.arousal,
+            intensity: emotion.clampedIntensity,
+            bodyAreas: emotion.bodyAreas,
+            reflection: emotion.reflection,
+            linkedNoteID: emotion.linkedNoteID,
+            linkedGoalID: emotion.linkedGoalID,
+            linkedTaskID: emotion.linkedTaskID,
+            linkedPlaceID: emotion.linkedPlaceID,
+            linkedSleepSessionID: emotion.linkedSleepSessionID,
+            createdAt: emotion.createdAt,
+            updatedAt: emotion.updatedAt
+        )
+    }
+
     static func note(
         _ note: RoutineNote,
         imageData: Data?,

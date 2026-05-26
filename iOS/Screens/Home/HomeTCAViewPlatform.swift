@@ -44,6 +44,10 @@ extension HomeTCAView {
                 collapseExpandedToolbarActions()
                 store.send(.isFilterSheetPresentedChanged(true))
             },
+            onAddEmotion: {
+                collapseExpandedToolbarActions()
+                isEmotionLogEditorPresented = true
+            },
             onAddNote: {
                 collapseExpandedToolbarActions()
                 isNoteEditorPresented = true

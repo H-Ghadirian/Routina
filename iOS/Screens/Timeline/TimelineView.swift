@@ -11,6 +11,7 @@ struct TimelineView: View {
     @Query(sort: \RoutineLog.timestamp, order: .reverse) private var logs: [RoutineLog]
     @Query private var tasks: [RoutineTask]
     @Query private var fileAttachments: [RoutineAttachment]
+    @Query(sort: \EmotionLog.createdAt, order: .reverse) private var emotionLogs: [EmotionLog]
     @Query(sort: \RoutineNote.createdAt, order: .reverse) private var notes: [RoutineNote]
     @Query private var noteAttachments: [RoutineNoteAttachment]
     @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
@@ -53,6 +54,9 @@ timelineRoot
     syncTimelineData()
 }
 .onChange(of: fileAttachmentChangeToken) { _, _ in
+    syncTimelineData()
+}
+.onChange(of: emotionLogChangeToken) { _, _ in
     syncTimelineData()
 }
 .onChange(of: noteChangeToken) { _, _ in
@@ -127,6 +131,21 @@ timelineRoot
         Set(noteAttachments.map(\.noteID))
     }
 
+    private var emotionLogChangeToken: [String] {
+        emotionLogs.map { emotion in
+            [
+                emotion.id.uuidString,
+                emotion.familyRawValue,
+                emotion.label,
+                emotion.intensity.description,
+                emotion.bodyAreasStorage,
+                emotion.reflection ?? "",
+                emotion.createdAt?.timeIntervalSinceReferenceDate.description ?? "",
+                emotion.updatedAt?.timeIntervalSinceReferenceDate.description ?? "",
+            ].joined(separator: ":")
+        }
+    }
+
     private var noteChangeToken: [String] {
         notes.map { note in
             [
@@ -150,6 +169,7 @@ timelineRoot
         store.send(.setData(
             tasks: tasks,
             logs: logs,
+            emotionLogs: emotionLogs,
             notes: notes,
             sleepSessions: sleepSessions,
             placeCheckInSessions: placeCheckInSessions,
@@ -260,6 +280,7 @@ timelineRoot
         let baseEntries = TimelineLogic.filteredEntries(
             logs: store.logs,
             tasks: store.tasks,
+            emotionLogs: store.emotionLogs,
             notes: store.notes,
             sleepSessions: store.sleepSessions,
             placeCheckInSessions: store.placeCheckInSessions,
@@ -505,6 +526,8 @@ timelineRoot
     private var timelineSidebarDetail: some View {
         if let taskID = selectedTimelineEntry?.taskID {
             timelineDetailDestination(taskID: taskID)
+        } else if let selectedTimelineEntry, selectedTimelineEntry.isEmotion, let emotion = emotionLog(for: selectedTimelineEntry) {
+            EmotionLogDetailView(emotion: emotion)
         } else if let selectedTimelineEntry, selectedTimelineEntry.isNote, let note = note(for: selectedTimelineEntry) {
             RoutineNoteDetailView(note: note, attachments: noteAttachments(for: note))
         } else if let selectedTimelineEntry,
@@ -645,6 +668,12 @@ timelineRoot
             NavigationLink(value: taskID) {
                 timelineRowContent(entry)
             }
+        } else if entry.isEmotion, let emotion = emotionLog(for: entry) {
+            NavigationLink {
+                EmotionLogDetailView(emotion: emotion)
+            } label: {
+                timelineRowContent(entry)
+            }
         } else if entry.isNote, let note = note(for: entry) {
             NavigationLink {
                 RoutineNoteDetailView(note: note, attachments: noteAttachments(for: note))
@@ -695,6 +724,9 @@ timelineRoot
         if entry.isSleep {
             return "Sleep"
         }
+        if entry.isEmotion {
+            return "Emotion"
+        }
         if entry.isNote {
             return "Note"
         }
@@ -715,6 +747,9 @@ timelineRoot
     private func timelineKindColor(for entry: TimelineEntry) -> Color {
         if entry.isSleep {
             return .indigo
+        }
+        if entry.isEmotion {
+            return .pink
         }
         if entry.isNote {
             return .blue
@@ -756,6 +791,13 @@ timelineRoot
             return [range, duration, entry.activityTitle].compactMap(\.self).joined(separator: " · ")
         }
 
+        if entry.isEmotion {
+            return [
+                entry.timestamp.formatted(date: .omitted, time: .shortened),
+                entry.activityTitle,
+            ].compactMap(\.self).joined(separator: " · ")
+        }
+
         if entry.isNote {
             let mediaSummary = RoutineNoteMediaSummary.text(
                 hasImage: entry.hasImage,
@@ -773,6 +815,10 @@ timelineRoot
 
     private func note(for entry: TimelineEntry) -> RoutineNote? {
         notes.first { $0.id == entry.id }
+    }
+
+    private func emotionLog(for entry: TimelineEntry) -> EmotionLog? {
+        emotionLogs.first { $0.id == entry.id }
     }
 
     private func placeCheckInSession(for entry: TimelineEntry) -> PlaceCheckInSession? {

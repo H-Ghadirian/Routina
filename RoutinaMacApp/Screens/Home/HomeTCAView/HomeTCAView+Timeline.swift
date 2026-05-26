@@ -27,6 +27,7 @@ extension HomeTCAView {
         TimelineLogic.filteredEntries(
             logs: store.timelineLogs,
             tasks: store.routineTasks,
+            emotionLogs: emotionLogs,
             notes: notes,
             sleepSessions: sleepSessions,
             placeCheckInSessions: placeCheckInSessions,
@@ -91,6 +92,13 @@ extension HomeTCAView {
 
         guard case let .timelineEntry(noteID) = store.macSidebarSelection else { return nil }
         return notes.first { $0.id == noteID }
+    }
+
+    var selectedMacTimelineEmotion: EmotionLog? {
+        guard let selectedMacTimelineEntry, selectedMacTimelineEntry.isEmotion else {
+            return nil
+        }
+        return emotionLogs.first { $0.id == selectedMacTimelineEntry.id }
     }
 
     var selectedMacTimelineNoteAttachments: [RoutineNoteAttachment] {
@@ -319,7 +327,7 @@ extension HomeTCAView {
 
     var macTimelineSidebarView: some View {
         HomeMacTimelineSidebarView(
-            timelineEntryCount: store.timelineLogs.count + notes.count + sleepSessions.count + placeCheckInSessions.count,
+            timelineEntryCount: store.timelineLogs.count + emotionLogs.count + notes.count + sleepSessions.count + placeCheckInSessions.count,
             groupedEntries: groupedTimelineEntries,
             selection: macSidebarSelectionBinding,
             sectionTitle: { date in
@@ -333,6 +341,9 @@ extension HomeTCAView {
     private func timelineKindLabel(for entry: TimelineEntry) -> String {
         if entry.isSleep {
             return "Sleep"
+        }
+        if entry.isEmotion {
+            return "Emotion"
         }
         if entry.isNote {
             return "Note"
@@ -354,6 +365,9 @@ extension HomeTCAView {
     private func timelineKindColor(for entry: TimelineEntry) -> Color {
         if entry.isSleep {
             return .indigo
+        }
+        if entry.isEmotion {
+            return .pink
         }
         if entry.isNote {
             return .blue
@@ -393,6 +407,13 @@ extension HomeTCAView {
             }
             let duration = entry.durationSeconds.map { PlaceCheckInFormatting.durationText(seconds: $0) }
             return [range, duration, entry.activityTitle].compactMap(\.self).joined(separator: " · ")
+        }
+
+        if entry.isEmotion {
+            return [
+                entry.timestamp.formatted(date: .omitted, time: .shortened),
+                entry.activityTitle,
+            ].compactMap(\.self).joined(separator: " · ")
         }
 
         if entry.isNote {

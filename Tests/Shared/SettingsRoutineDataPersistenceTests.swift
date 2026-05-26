@@ -187,4 +187,69 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(restoredAttachment.fileName == "permit.pdf")
         #expect(restoredAttachment.data == fileData)
     }
+
+    @Test
+    func backupPackageAndRestore_preservesEmotionLogsAndLinks() async throws {
+        let context = makeInMemoryContext()
+        let task = RoutineTask(name: "Appointment")
+        let goal = RoutineGoal(title: "Health")
+        let place = RoutinePlace(name: "Clinic", latitude: 52.52, longitude: 13.405)
+        let sleep = SleepSession(
+            startedAt: Date(timeIntervalSince1970: 500),
+            endedAt: Date(timeIntervalSince1970: 800)
+        )
+        let note = RoutineNote(title: "Doctor questions")
+        context.insert(task)
+        context.insert(goal)
+        context.insert(place)
+        context.insert(sleep)
+        context.insert(note)
+
+        let emotion = EmotionLog(
+            family: .fear,
+            label: "worried",
+            valence: -0.65,
+            arousal: 0.72,
+            intensity: 4,
+            bodyAreas: [.chest, .stomach],
+            reflection: "Waiting for results",
+            linkedNoteID: note.id,
+            linkedGoalID: goal.id,
+            linkedTaskID: task.id,
+            linkedPlaceID: place.id,
+            linkedSleepSessionID: sleep.id,
+            createdAt: Date(timeIntervalSince1970: 900),
+            updatedAt: Date(timeIntervalSince1970: 960)
+        )
+        context.insert(emotion)
+        try context.save()
+
+        let packageURL = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension(SettingsRoutineDataPersistence.backupPackageExtension)
+        defer { try? FileManager.default.removeItem(at: packageURL) }
+
+        try SettingsRoutineDataPersistence.writeBackupPackage(to: packageURL, from: context)
+
+        let restoreContext = makeInMemoryContext()
+        let summary = try SettingsRoutineDataPersistence.replaceAllRoutineData(
+            withBackupPackageAt: packageURL,
+            in: restoreContext
+        )
+
+        #expect(summary.emotionLogs == 1)
+        let restoredEmotion = try #require(restoreContext.fetch(FetchDescriptor<EmotionLog>()).first)
+        #expect(restoredEmotion.family == .fear)
+        #expect(restoredEmotion.label == "worried")
+        #expect(restoredEmotion.valence == -0.65)
+        #expect(restoredEmotion.arousal == 0.72)
+        #expect(restoredEmotion.intensity == 4)
+        #expect(restoredEmotion.bodyAreas == [.chest, .stomach])
+        #expect(restoredEmotion.reflection == "Waiting for results")
+        #expect(restoredEmotion.linkedNoteID == note.id)
+        #expect(restoredEmotion.linkedGoalID == goal.id)
+        #expect(restoredEmotion.linkedTaskID == task.id)
+        #expect(restoredEmotion.linkedPlaceID == place.id)
+        #expect(restoredEmotion.linkedSleepSessionID == sleep.id)
+    }
 }

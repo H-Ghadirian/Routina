@@ -34,7 +34,7 @@ enum SettingsRoutineDataImportEntityInserter {
             importedTaskIDs: tasks.ids,
             in: context
         )
-        let sleepSessionCount = insertSleepSessions(from: backup, in: context)
+        let sleepSessions = insertSleepSessions(from: backup, in: context)
         let placeCheckInCount = try insertPlaceCheckInSessions(
             from: backup,
             attachmentData: attachmentData,
@@ -46,6 +46,15 @@ enum SettingsRoutineDataImportEntityInserter {
             attachmentData: attachmentData,
             in: context,
             importDate: importDate
+        )
+        let emotionLogCount = insertEmotionLogs(
+            from: backup,
+            importedNoteIDs: notes.ids,
+            importedGoalIDs: goals.ids,
+            importedTaskIDs: tasks.ids,
+            importedPlaceIDs: places.ids,
+            importedSleepSessionIDs: sleepSessions.ids,
+            in: context
         )
         let noteAttachmentCount = try insertNoteFileAttachments(
             from: backup,
@@ -60,8 +69,9 @@ enum SettingsRoutineDataImportEntityInserter {
             goals: goals.count,
             tasks: tasks.count,
             logs: logCount,
-            sleepSessions: sleepSessionCount,
+            sleepSessions: sleepSessions.count,
             placeCheckInSessions: placeCheckInCount,
+            emotionLogs: emotionLogCount,
             notes: notes.count,
             attachments: taskAttachmentCount + noteAttachmentCount
         )
@@ -315,7 +325,7 @@ enum SettingsRoutineDataImportEntityInserter {
     private static func insertSleepSessions(
         from backup: Backup,
         in context: ModelContext
-    ) -> Int {
+    ) -> (ids: Set<UUID>, count: Int) {
         var importedIDs = Set<UUID>()
         var importedCount = 0
         for sleepSession in backup.sleepSessions ?? [] {
@@ -332,7 +342,7 @@ enum SettingsRoutineDataImportEntityInserter {
             context.insert(importedSession)
             importedCount += 1
         }
-        return importedCount
+        return (importedIDs, importedCount)
     }
 
     @MainActor
@@ -401,6 +411,46 @@ enum SettingsRoutineDataImportEntityInserter {
             return session.imageData
         }
         return data
+    }
+
+    @MainActor
+    private static func insertEmotionLogs(
+        from backup: Backup,
+        importedNoteIDs: Set<UUID>,
+        importedGoalIDs: Set<UUID>,
+        importedTaskIDs: Set<UUID>,
+        importedPlaceIDs: Set<UUID>,
+        importedSleepSessionIDs: Set<UUID>,
+        in context: ModelContext
+    ) -> Int {
+        var importedIDs = Set<UUID>()
+        var importedCount = 0
+
+        for emotion in backup.emotionLogs ?? [] {
+            guard importedIDs.insert(emotion.id).inserted else { continue }
+
+            let importedEmotion = EmotionLog(
+                id: emotion.id,
+                family: emotion.family,
+                label: emotion.label,
+                valence: emotion.valence,
+                arousal: emotion.arousal,
+                intensity: emotion.intensity,
+                bodyAreas: emotion.bodyAreas ?? [],
+                reflection: emotion.reflection,
+                linkedNoteID: emotion.linkedNoteID.flatMap { importedNoteIDs.contains($0) ? $0 : nil },
+                linkedGoalID: emotion.linkedGoalID.flatMap { importedGoalIDs.contains($0) ? $0 : nil },
+                linkedTaskID: emotion.linkedTaskID.flatMap { importedTaskIDs.contains($0) ? $0 : nil },
+                linkedPlaceID: emotion.linkedPlaceID.flatMap { importedPlaceIDs.contains($0) ? $0 : nil },
+                linkedSleepSessionID: emotion.linkedSleepSessionID.flatMap { importedSleepSessionIDs.contains($0) ? $0 : nil },
+                createdAt: emotion.createdAt,
+                updatedAt: emotion.updatedAt
+            )
+            context.insert(importedEmotion)
+            importedCount += 1
+        }
+
+        return importedCount
     }
 
     @MainActor

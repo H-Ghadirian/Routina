@@ -40,6 +40,11 @@ enum CloudDataResetService {
             context.delete(session)
         }
 
+        let emotionLogs = try context.fetch(FetchDescriptor<EmotionLog>())
+        for emotion in emotionLogs {
+            context.delete(emotion)
+        }
+
         let notes = try context.fetch(FetchDescriptor<RoutineNote>())
         for note in notes {
             context.delete(note)

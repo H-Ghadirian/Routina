@@ -6,6 +6,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
     var logCount: Int
     var placeCount: Int
     var goalCount: Int
+    var emotionLogCount: Int
     var noteCount: Int
     var imageCount: Int
     var voiceNoteCount: Int
@@ -13,6 +14,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
     var logPayloadBytes: Int64
     var placePayloadBytes: Int64
     var goalPayloadBytes: Int64
+    var emotionLogPayloadBytes: Int64
     var notePayloadBytes: Int64
     var imagePayloadBytes: Int64
     var voiceNotePayloadBytes: Int64
@@ -22,6 +24,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         logCount: 0,
         placeCount: 0,
         goalCount: 0,
+        emotionLogCount: 0,
         noteCount: 0,
         imageCount: 0,
         voiceNoteCount: 0,
@@ -29,17 +32,18 @@ struct CloudUsageEstimate: Equatable, Sendable {
         logPayloadBytes: 0,
         placePayloadBytes: 0,
         goalPayloadBytes: 0,
+        emotionLogPayloadBytes: 0,
         notePayloadBytes: 0,
         imagePayloadBytes: 0,
         voiceNotePayloadBytes: 0
     )
 
     var totalPayloadBytes: Int64 {
-        taskPayloadBytes + logPayloadBytes + placePayloadBytes + goalPayloadBytes + notePayloadBytes + imagePayloadBytes + voiceNotePayloadBytes
+        taskPayloadBytes + logPayloadBytes + placePayloadBytes + goalPayloadBytes + emotionLogPayloadBytes + notePayloadBytes + imagePayloadBytes + voiceNotePayloadBytes
     }
 
     var totalRecordCount: Int {
-        taskCount + logCount + placeCount + goalCount + noteCount
+        taskCount + logCount + placeCount + goalCount + emotionLogCount + noteCount
     }
 
     @MainActor
@@ -48,6 +52,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
         let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
+        let emotionLogs = try context.fetch(FetchDescriptor<EmotionLog>())
         let notes = try context.fetch(FetchDescriptor<RoutineNote>())
         let placeCheckInSessions = try context.fetch(FetchDescriptor<PlaceCheckInSession>())
         let encoder = JSONEncoder()
@@ -63,6 +68,9 @@ struct CloudUsageEstimate: Equatable, Sendable {
         }
         let goalPayloadBytes = goals.reduce(into: Int64.zero) { total, goal in
             total += encodedByteCount(GoalPayload(goal: goal), encoder: encoder)
+        }
+        let emotionLogPayloadBytes = emotionLogs.reduce(into: Int64.zero) { total, emotion in
+            total += encodedByteCount(EmotionPayload(emotion: emotion), encoder: encoder)
         }
         let notePayloadBytes = notes.reduce(into: Int64.zero) { total, note in
             total += encodedByteCount(NotePayload(note: note), encoder: encoder)
@@ -88,6 +96,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             logCount: logs.count,
             placeCount: places.count,
             goalCount: goals.count,
+            emotionLogCount: emotionLogs.count,
             noteCount: notes.count,
             imageCount: tasks.reduce(into: 0) { count, task in
                 if task.imageData?.isEmpty == false {
@@ -115,6 +124,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             logPayloadBytes: logPayloadBytes,
             placePayloadBytes: placePayloadBytes,
             goalPayloadBytes: goalPayloadBytes,
+            emotionLogPayloadBytes: emotionLogPayloadBytes,
             notePayloadBytes: notePayloadBytes,
             imagePayloadBytes: imagePayloadBytes,
             voiceNotePayloadBytes: voiceNotePayloadBytes
@@ -246,6 +256,42 @@ struct CloudUsageEstimate: Equatable, Sendable {
             hasVoiceNote = note.hasVoiceNote
             createdAt = note.createdAt
             updatedAt = note.updatedAt
+        }
+    }
+
+    private struct EmotionPayload: Encodable {
+        var id: UUID
+        var familyRawValue: String
+        var label: String
+        var valence: Double
+        var arousal: Double
+        var intensity: Int
+        var bodyAreasStorage: String
+        var reflection: String?
+        var linkedNoteID: UUID?
+        var linkedGoalID: UUID?
+        var linkedTaskID: UUID?
+        var linkedPlaceID: UUID?
+        var linkedSleepSessionID: UUID?
+        var createdAt: Date?
+        var updatedAt: Date?
+
+        init(emotion: EmotionLog) {
+            id = emotion.id
+            familyRawValue = emotion.familyRawValue
+            label = emotion.label
+            valence = emotion.valence
+            arousal = emotion.arousal
+            intensity = emotion.intensity
+            bodyAreasStorage = emotion.bodyAreasStorage
+            reflection = emotion.reflection
+            linkedNoteID = emotion.linkedNoteID
+            linkedGoalID = emotion.linkedGoalID
+            linkedTaskID = emotion.linkedTaskID
+            linkedPlaceID = emotion.linkedPlaceID
+            linkedSleepSessionID = emotion.linkedSleepSessionID
+            createdAt = emotion.createdAt
+            updatedAt = emotion.updatedAt
         }
     }
 

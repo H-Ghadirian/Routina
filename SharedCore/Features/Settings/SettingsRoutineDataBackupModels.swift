@@ -10,6 +10,7 @@ extension SettingsRoutineDataPersistence {
         var logs: [Log]
         var sleepSessions: [Sleep]?
         var placeCheckInSessions: [PlaceCheckIn]?
+        var emotionLogs: [Emotion]?
         var notes: [Note]?
         var attachments: [Attachment]?
 
@@ -117,6 +118,24 @@ extension SettingsRoutineDataPersistence {
             var confirmedAt: Date?
         }
 
+        struct Emotion: Codable {
+            var id: UUID
+            var family: EmotionFamily
+            var label: String
+            var valence: Double
+            var arousal: Double
+            var intensity: Int
+            var bodyAreas: [EmotionBodyArea]?
+            var reflection: String?
+            var linkedNoteID: UUID?
+            var linkedGoalID: UUID?
+            var linkedTaskID: UUID?
+            var linkedPlaceID: UUID?
+            var linkedSleepSessionID: UUID?
+            var createdAt: Date?
+            var updatedAt: Date?
+        }
+
         struct Note: Codable {
             var id: UUID
             var title: String?
@@ -161,6 +180,7 @@ extension SettingsRoutineDataPersistence {
         var logs: Int
         var sleepSessions: Int = 0
         var placeCheckInSessions: Int = 0
+        var emotionLogs: Int = 0
         var notes: Int = 0
         var attachments: Int
     }

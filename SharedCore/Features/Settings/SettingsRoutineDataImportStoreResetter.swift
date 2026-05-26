@@ -19,6 +19,11 @@ enum SettingsRoutineDataImportStoreResetter {
             context.delete(session)
         }
 
+        let existingEmotionLogs = try context.fetch(FetchDescriptor<EmotionLog>())
+        for emotion in existingEmotionLogs {
+            context.delete(emotion)
+        }
+
         let existingNotes = try context.fetch(FetchDescriptor<RoutineNote>())
         for note in existingNotes {
             context.delete(note)

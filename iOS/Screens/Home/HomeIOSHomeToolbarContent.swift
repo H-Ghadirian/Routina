@@ -9,6 +9,7 @@ struct HomeIOSHomeToolbarContent: ToolbarContent {
     let onSelectTaskListMode: (HomeFeature.TaskListMode) -> Void
     let onToggleTaskListModeActions: () -> Void
     let onShowFilters: () -> Void
+    let onAddEmotion: () -> Void
     let onAddNote: () -> Void
     let onCheckIn: () -> Void
     let onStartSleep: () -> Void
@@ -40,6 +41,14 @@ struct HomeIOSHomeToolbarContent: ToolbarContent {
                     tint: hasActiveOptionalFilters ? .accentColor : .secondary,
                     isHighlighted: hasActiveOptionalFilters,
                     action: onShowFilters
+                )
+
+                topActionButton(
+                    title: "Log Emotion",
+                    systemImage: "face.smiling",
+                    tint: .pink,
+                    isHighlighted: false,
+                    action: onAddEmotion
                 )
 
                 topActionButton(

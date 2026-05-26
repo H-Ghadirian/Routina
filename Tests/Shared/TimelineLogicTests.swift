@@ -532,6 +532,75 @@ struct TimelineLogicTests {
     }
 
     @Test
+    func filteredEntries_includesEmotionLogsAndSupportsEmotionFilter() {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let task = makeRoutineTask(name: "Read")
+        let log = makeLog(taskID: task.id, timestamp: makeDate("2026-03-20T08:00:00Z"))
+        let emotion = EmotionLog(
+            family: .fear,
+            label: "anxious",
+            valence: -0.7,
+            arousal: 0.8,
+            intensity: 4,
+            bodyAreas: [.chest, .stomach],
+            reflection: "Before the appointment",
+            createdAt: makeDate("2026-03-20T09:45:00Z"),
+            updatedAt: makeDate("2026-03-20T09:45:00Z")
+        )
+
+        let allEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            emotionLogs: [emotion],
+            range: .all,
+            filterType: .all,
+            now: now,
+            calendar: calendar
+        )
+        let emotionEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            emotionLogs: [emotion],
+            range: .all,
+            filterType: .emotions,
+            now: now,
+            calendar: calendar
+        )
+        let doneEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            emotionLogs: [emotion],
+            range: .all,
+            filterType: .done,
+            now: now,
+            calendar: calendar
+        )
+        let imageEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            emotionLogs: [emotion],
+            range: .all,
+            filterType: .all,
+            mediaFilter: .withImage,
+            now: now,
+            calendar: calendar
+        )
+
+        let emotionEntry = allEntries.first { $0.id == emotion.id }
+        #expect(allEntries.count == 2)
+        #expect(emotionEntry?.isEmotion == true)
+        #expect(emotionEntry?.taskID == nil)
+        #expect(emotionEntry?.taskName == "Anxious")
+        #expect(emotionEntry?.timestamp == makeDate("2026-03-20T09:45:00Z"))
+        #expect(emotionEntry?.activityTitle == "Fear · 4/5")
+        #expect(emotionEntry?.searchableText.localizedCaseInsensitiveContains("appointment") == true)
+        #expect(emotionEntries.map(\.id) == [emotion.id])
+        #expect(doneEntries.map(\.id) == [log.id])
+        #expect(imageEntries.isEmpty)
+    }
+
+    @Test
     func filteredEntries_mediaFilterMatchesDoneEntriesWithImagesOrFiles() {
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-20T10:00:00Z")

@@ -256,6 +256,7 @@ extension HomeTCAView {
     }
 
     func openAddNote() {
+        isEmotionLogEditorPresented = false
         selectedNoteID = nil
         macHomeDetailMode = .details
         store.send(.setSelectedTask(nil))
@@ -269,6 +270,7 @@ extension HomeTCAView {
     }
 
     func openSavedNote(_ noteID: UUID) {
+        isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         selectedNoteID = noteID
         macHomeDetailMode = .details
@@ -277,6 +279,7 @@ extension HomeTCAView {
     }
 
     func openAddGoal() {
+        isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         store.send(.macSidebarModeChanged(.goals))
         goalsStore.send(.addGoalTapped)
@@ -516,6 +519,7 @@ extension HomeTCAView {
         VStack(alignment: .leading, spacing: 12) {
             HomeMacSidebarModeStripView(
                 selectedMode: macSidebarModeBinding,
+                onAddEmotion: openAddEmotion,
                 onAddNote: openAddNote,
                 onAddGoal: openAddGoal,
                 onAddTask: openAddTask,
@@ -582,6 +586,7 @@ extension HomeTCAView {
             onSelectTaskListMode: { mode in
                 store.send(.taskListModeChanged(mode))
             },
+            onAddEmotion: openAddEmotion,
             onAddNote: openAddNote,
             onAddGoal: openAddGoal,
             onAddTask: openAddTask,
@@ -596,7 +601,15 @@ extension HomeTCAView {
         }
     }
 
+    func openAddEmotion() {
+        isNoteEditorPresented = false
+        store.send(.setSelectedTask(nil))
+        store.send(.setAddRoutineSheet(false))
+        isEmotionLogEditorPresented = true
+    }
+
     func openCheckInFromAddMenu() {
+        isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         store.send(.setSelectedTask(nil))
         store.send(.setAddRoutineSheet(false))
@@ -604,6 +617,7 @@ extension HomeTCAView {
     }
 
     func startSleepFromAddMenu() {
+        isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         store.send(.setSelectedTask(nil))
         store.send(.setAddRoutineSheet(false))

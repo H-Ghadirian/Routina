@@ -47,6 +47,7 @@ enum SettingsRoutineDataBackupPackageBuilder {
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
         let sleepSessions = try context.fetch(FetchDescriptor<SleepSession>())
         let placeCheckInSessions = try context.fetch(FetchDescriptor<PlaceCheckInSession>())
+        let emotionLogs = try context.fetch(FetchDescriptor<EmotionLog>())
         let notes = try context.fetch(FetchDescriptor<RoutineNote>())
         let storedAttachments = try context.fetch(FetchDescriptor<RoutineAttachment>())
         let storedNoteAttachments = try context.fetch(FetchDescriptor<RoutineNoteAttachment>())
@@ -218,6 +219,7 @@ enum SettingsRoutineDataBackupPackageBuilder {
                     imageAttachmentID: placeCheckInImageAttachmentIDs[$0.id]
                 )
             },
+            emotionLogs: emotionLogs.map(SettingsRoutineDataBackupMapping.emotion),
             notes: notes.map {
                 SettingsRoutineDataBackupMapping.note(
                     $0,

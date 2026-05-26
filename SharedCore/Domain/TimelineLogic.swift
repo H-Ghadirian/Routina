@@ -12,6 +12,7 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
     case all = "All"
     case routines = "Routines"
     case todos = "Todos"
+    case emotions = "Emotions"
     case notes = "Notes"
     case places = "Places"
     case sleep = "Sleep"
@@ -23,6 +24,7 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
 
 enum TimelineEntryType: Equatable {
     case task
+    case emotion
     case note
     case sleep
     case placeCheckIn
@@ -110,6 +112,10 @@ struct TimelineEntry: Identifiable, Equatable {
         entryType == .sleep
     }
 
+    var isEmotion: Bool {
+        entryType == .emotion
+    }
+
     var isNote: Bool {
         entryType == .note
     }
@@ -123,6 +129,7 @@ enum TimelineLogic {
     static func filteredEntries(
         logs: [RoutineLog],
         tasks: [RoutineTask],
+        emotionLogs: [EmotionLog] = [],
         notes: [RoutineNote] = [],
         sleepSessions: [SleepSession] = [],
         placeCheckInSessions: [PlaceCheckInSession] = [],
@@ -167,6 +174,7 @@ enum TimelineLogic {
             case .all: break
             case .routines: if isOneOff { return nil }
             case .todos: if !isOneOff { return nil }
+            case .emotions: return nil
             case .notes: return nil
             case .places: return nil
             case .sleep: return nil
@@ -189,6 +197,31 @@ enum TimelineLogic {
                 urgency: task?.urgency ?? .level2,
                 isOneOff: isOneOff,
                 kind: log.kind
+            )
+        }
+
+        let emotionEntries = emotionLogs.compactMap { emotion -> TimelineEntry? in
+            guard filterType == .all || filterType == .emotions,
+                  mediaFilter == .all
+            else {
+                return nil
+            }
+
+            let timestamp = emotion.createdAt ?? emotion.updatedAt ?? Date.distantPast
+            if let cutoff, timestamp < cutoff { return nil }
+
+            return TimelineEntry(
+                id: emotion.id,
+                taskID: nil,
+                timestamp: timestamp,
+                taskName: emotion.displayLabel.capitalized,
+                taskEmoji: "◎",
+                tags: [],
+                isOneOff: false,
+                kind: .completed,
+                entryType: .emotion,
+                activityTitle: "\(emotion.family.title) · \(emotion.clampedIntensity)/5",
+                searchableText: searchableText(for: emotion)
             )
         }
 
@@ -288,7 +321,7 @@ enum TimelineLogic {
             )
         }
 
-        return logEntries + noteEntries + sleepEntries + placeEntries
+        return logEntries + emotionEntries + noteEntries + sleepEntries + placeEntries
     }
 
     static func availableTags(from entries: [TimelineEntry]) -> [String] {
@@ -328,6 +361,17 @@ enum TimelineLogic {
             note.body,
         ]
         .compactMap(RoutineNote.cleanedText)
+        .joined(separator: "\n")
+    }
+
+    private static func searchableText(for emotion: EmotionLog) -> String {
+        [
+            emotion.displayLabel,
+            emotion.family.title,
+            emotion.reflection,
+            emotion.bodyAreas.map(\.title).joined(separator: " "),
+        ]
+        .compactMap(EmotionLog.cleanedText)
         .joined(separator: "\n")
     }
 

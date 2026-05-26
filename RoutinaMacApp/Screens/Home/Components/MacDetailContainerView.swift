@@ -22,6 +22,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     @Binding var placeCheckInSelectedHistoryMarkerID: PlaceCheckInHistoryMapMarker.ID?
     let selectedTaskID: UUID?
     let selectedTimelineEntry: TimelineEntry?
+    let selectedTimelineEmotion: EmotionLog?
     let selectedTimelineNote: RoutineNote?
     let selectedTimelineNoteAttachments: [RoutineNoteAttachment]
     let selectedTimelinePlaceCheckInSession: PlaceCheckInSession?
@@ -158,6 +159,8 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
                 store: detailStore,
                 showsPrincipalToolbarTitle: false
             )
+        } else if let selectedTimelineEmotion {
+            EmotionLogDetailView(emotion: selectedTimelineEmotion)
         } else if let selectedTimelineNote {
             RoutineNoteDetailView(
                 note: selectedTimelineNote,

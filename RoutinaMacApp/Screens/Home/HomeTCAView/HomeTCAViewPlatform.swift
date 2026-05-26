@@ -98,6 +98,7 @@ extension HomeTCAView {
                     placeCheckInSelectedHistoryMarkerID: $placeCheckInSelectedHistoryMarkerID,
                     selectedTaskID: store.selectedTaskID,
                     selectedTimelineEntry: selectedMacTimelineEntry,
+                    selectedTimelineEmotion: selectedMacTimelineEmotion,
                     selectedTimelineNote: selectedMacTimelineNote,
                     selectedTimelineNoteAttachments: selectedMacTimelineNoteAttachments,
                     selectedTimelinePlaceCheckInSession: selectedMacTimelinePlaceCheckInSession,

@@ -29,6 +29,7 @@ struct HomeTCAView: View {
     @State var isCompactHeaderHidden = false
     @State var areTaskListModeActionsExpanded = false
     @State var areTopActionsExpanded = false
+    @State var isEmotionLogEditorPresented = false
     @State var isNoteEditorPresented = false
     @State var isPlaceCheckInMapPresented = false
     @State var isRefreshScheduled = false
@@ -74,6 +75,9 @@ homeContent
                 }
                 .sheet(isPresented: $isNoteEditorPresented) {
                     RoutineNoteEditorView()
+                }
+                .sheet(isPresented: $isEmotionLogEditorPresented) {
+                    EmotionLogEditorView()
                 }
                 .sheet(isPresented: $isPlaceCheckInMapPresented) {
                     PlaceCheckInMapSheet(selectedActivity: nil)
