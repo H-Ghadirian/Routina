@@ -110,6 +110,17 @@ enum TaskDetailPriorityPresentation {
     }
 }
 
+enum TaskDetailOptionalControlVisibility {
+    static func showsTodoState(for task: RoutineTask) -> Bool {
+        guard task.isOneOffTask else { return false }
+        return task.todoStateRawValue != nil || task.isPaused
+    }
+
+    static func showsPressure(for task: RoutineTask) -> Bool {
+        task.pressure != .none
+    }
+}
+
 enum TaskDetailPressureTintStyle {
     case compactPill
     case segmentedControl

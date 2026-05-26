@@ -388,24 +388,44 @@ detailBody
             priorityDisclosureBox
             todoTimeSpentHeaderBox
 
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .top, spacing: 8) {
-                    if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
-                        TaskDetailTodoStateSegmentedPicker(store: store)
-                            .frame(minWidth: 380)
+            if shouldShowTodoHeaderStatusControls {
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .top, spacing: 8) {
+                        if shouldShowTodoStateControl {
+                            TaskDetailTodoStateSegmentedPicker(store: store)
+                                .frame(minWidth: 380)
+                        }
+                        if shouldShowPressureControl {
+                            TaskDetailPressureSegmentedPicker(store: store)
+                                .frame(minWidth: 300)
+                        }
                     }
-                    TaskDetailPressureSegmentedPicker(store: store)
-                        .frame(minWidth: 300)
-                }
 
-                VStack(alignment: .leading, spacing: 8) {
-                    if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
-                        TaskDetailTodoStateSegmentedPicker(store: store)
+                    VStack(alignment: .leading, spacing: 8) {
+                        if shouldShowTodoStateControl {
+                            TaskDetailTodoStateSegmentedPicker(store: store)
+                        }
+                        if shouldShowPressureControl {
+                            TaskDetailPressureSegmentedPicker(store: store)
+                        }
                     }
-                    TaskDetailPressureSegmentedPicker(store: store)
                 }
             }
         }
+    }
+
+    private var shouldShowTodoHeaderStatusControls: Bool {
+        shouldShowTodoStateControl || shouldShowPressureControl
+    }
+
+    private var shouldShowTodoStateControl: Bool {
+        !store.task.isCompletedOneOff
+            && !store.task.isCanceledOneOff
+            && TaskDetailOptionalControlVisibility.showsTodoState(for: store.task)
+    }
+
+    private var shouldShowPressureControl: Bool {
+        TaskDetailOptionalControlVisibility.showsPressure(for: store.task)
     }
 
     private var todoTimeSpentHeaderBox: some View {
@@ -427,7 +447,9 @@ detailBody
     private var routineHeaderControls: some View {
         VStack(alignment: .leading, spacing: 8) {
             priorityDisclosureBox
-            TaskDetailPressureSegmentedPicker(store: store)
+            if shouldShowPressureControl {
+                TaskDetailPressureSegmentedPicker(store: store)
+            }
         }
     }
 

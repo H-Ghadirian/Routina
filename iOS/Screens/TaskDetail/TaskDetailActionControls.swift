@@ -6,19 +6,25 @@ struct TaskDetailTodoPrimaryActionSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if !store.task.isCompletedOneOff && !store.task.isCanceledOneOff {
+            if shouldShowStatusControls {
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: 8) {
-                        TaskDetailTodoStatePickerPill(store: store)
-                        TaskDetailPressurePickerPill(store: store)
+                        if shouldShowTodoStateControl {
+                            TaskDetailTodoStatePickerPill(store: store)
+                        }
+                        if shouldShowPressureControl {
+                            TaskDetailPressurePickerPill(store: store)
+                        }
                     }
                     VStack(alignment: .leading, spacing: 8) {
-                        TaskDetailTodoStatePickerPill(store: store)
-                        TaskDetailPressurePickerPill(store: store)
+                        if shouldShowTodoStateControl {
+                            TaskDetailTodoStatePickerPill(store: store)
+                        }
+                        if shouldShowPressureControl {
+                            TaskDetailPressurePickerPill(store: store)
+                        }
                     }
                 }
-            } else {
-                TaskDetailPressurePickerPill(store: store)
             }
 
             TaskDetailPrimaryActionButton(store: store)
@@ -34,6 +40,20 @@ struct TaskDetailTodoPrimaryActionSection: View {
         .padding(16)
         .detailCardStyle()
     }
+
+    private var shouldShowStatusControls: Bool {
+        shouldShowTodoStateControl || shouldShowPressureControl
+    }
+
+    private var shouldShowTodoStateControl: Bool {
+        !store.task.isCompletedOneOff
+            && !store.task.isCanceledOneOff
+            && TaskDetailOptionalControlVisibility.showsTodoState(for: store.task)
+    }
+
+    private var shouldShowPressureControl: Bool {
+        TaskDetailOptionalControlVisibility.showsPressure(for: store.task)
+    }
 }
 
 struct TaskDetailRoutinePrimaryActionSection: View {
@@ -42,7 +62,9 @@ struct TaskDetailRoutinePrimaryActionSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            TaskDetailPressurePickerPill(store: store)
+            if TaskDetailOptionalControlVisibility.showsPressure(for: store.task) {
+                TaskDetailPressurePickerPill(store: store)
+            }
             TaskDetailPrimaryActionButton(store: store)
 
             if store.shouldShowBulkConfirmAssumedDays {
