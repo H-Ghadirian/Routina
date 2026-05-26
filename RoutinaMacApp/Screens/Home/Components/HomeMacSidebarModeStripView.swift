@@ -5,6 +5,7 @@ struct HomeMacSidebarModeStripView: View {
     let onAddNote: () -> Void
     let onAddGoal: () -> Void
     let onAddTask: () -> Void
+    let onCheckIn: () -> Void
 
     var body: some View {
         HStack(spacing: 0) {
@@ -59,6 +60,14 @@ struct HomeMacSidebarModeStripView: View {
             } label: {
                 Label("Task", systemImage: "checklist")
             }
+
+            Divider()
+
+            Button {
+                onCheckIn()
+            } label: {
+                Label("Check In", systemImage: "mappin.and.ellipse")
+            }
         } label: {
             sidebarModeLabel(for: .addTask)
         }
@@ -66,7 +75,7 @@ struct HomeMacSidebarModeStripView: View {
         .buttonStyle(.plain)
         .frame(maxWidth: .infinity)
         .accessibilityLabel("Add")
-        .help("Add note, goal, or task")
+        .help("Add note, goal, task, or check in")
     }
 
     private func sidebarModeLabel(for mode: HomeFeature.MacSidebarMode) -> some View {

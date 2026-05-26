@@ -510,7 +510,8 @@ extension HomeTCAView {
                 selectedMode: macSidebarModeBinding,
                 onAddNote: openAddNote,
                 onAddGoal: openAddGoal,
-                onAddTask: openAddTask
+                onAddTask: openAddTask,
+                onCheckIn: openCheckInFromAddMenu
             )
         }
         .padding(.horizontal, 14)
@@ -574,7 +575,8 @@ extension HomeTCAView {
             },
             onAddNote: openAddNote,
             onAddGoal: openAddGoal,
-            onAddTask: openAddTask
+            onAddTask: openAddTask,
+            onCheckIn: openCheckInFromAddMenu
         ) {
             if isMacGoalsMode {
                 platformSearchField(searchText: goalsSearchTextBinding)
@@ -582,6 +584,13 @@ extension HomeTCAView {
                 macSearchPanel
             }
         }
+    }
+
+    func openCheckInFromAddMenu() {
+        isNoteEditorPresented = false
+        store.send(.setSelectedTask(nil))
+        store.send(.setAddRoutineSheet(false))
+        openMacPlacesWorkspace(activity: nil)
     }
 
     var emptyTaskListTitle: String {

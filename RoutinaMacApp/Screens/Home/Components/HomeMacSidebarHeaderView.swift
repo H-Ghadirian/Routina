@@ -11,6 +11,7 @@ struct HomeMacSidebarHeaderView<SearchPanel: View>: View {
     let onAddNote: () -> Void
     let onAddGoal: () -> Void
     let onAddTask: () -> Void
+    let onCheckIn: () -> Void
     @ViewBuilder let searchPanel: () -> SearchPanel
 
     var body: some View {
@@ -19,7 +20,8 @@ struct HomeMacSidebarHeaderView<SearchPanel: View>: View {
                 selectedMode: $selectedSidebarMode,
                 onAddNote: onAddNote,
                 onAddGoal: onAddGoal,
-                onAddTask: onAddTask
+                onAddTask: onAddTask,
+                onCheckIn: onCheckIn
             )
 
             if isRoutinesMode {
