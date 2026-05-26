@@ -50,7 +50,7 @@ extension HomeTCAView {
             for: task,
             includeMarkDone: includeMarkDone,
             moveContext: moveContext,
-            allowsPinning: false
+            allowsPinning: true
         )
 
         Button {
