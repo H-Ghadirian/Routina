@@ -18,6 +18,19 @@ struct RoutinaQuickAddDraft: Equatable, Sendable {
         scheduleSummary
     }
 
+    var hasDetectedMetadata: Bool {
+        hasDetectedSchedule
+            || !tags.isEmpty
+            || placeName != nil
+            || importance != .level2
+            || urgency != .level2
+            || estimatedDurationMinutes != nil
+    }
+
+    var hasDetectedSchedule: Bool {
+        scheduleMode != .oneOff || deadline != nil || reminderAt != nil
+    }
+
     var summaryText: String {
         var parts: [String] = []
         parts.append(scheduleSummary)

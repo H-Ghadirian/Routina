@@ -13,6 +13,7 @@ struct AddRoutineTaskFormModelFactory {
         TaskFormModel(
             name: binding(get: { store.basics.routineName }, send: AddRoutineFeature.Action.routineNameChanged),
             nameValidationMessage: store.organization.nameValidationMessage,
+            onApplySmartName: { store.send(.applyQuickAddDraftFromName) },
             taskType: binding(get: { store.taskType }, send: AddRoutineFeature.Action.taskTypeChanged),
             emoji: binding(get: { store.basics.routineEmoji }, send: AddRoutineFeature.Action.routineEmojiChanged),
             emojiOptions: emojiOptions,

@@ -329,6 +329,88 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func applyQuickAddDraftFromName_populatesFormFields() async {
+        let placeID = UUID()
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(routineName: "Water plants every Saturday at 9 #home @Balcony !high 25m"),
+                organization: AddRoutineOrganizationState(
+                    availablePlaces: [
+                        RoutinePlaceSummary(
+                            id: placeID,
+                            name: "Balcony",
+                            radiusMeters: 80,
+                            linkedRoutineCount: 0
+                        )
+                    ]
+                )
+            )
+        ) {
+            makeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: makeDate("2026-04-23T10:00:00Z"))
+        }
+
+        await store.send(.applyQuickAddDraftFromName) {
+            $0.basics.routineName = "Water plants"
+            $0.basics.priority = .high
+            $0.basics.importance = .level3
+            $0.basics.urgency = .level3
+            $0.basics.selectedPlaceID = placeID
+            $0.basics.estimatedDurationMinutes = 25
+            $0.basics.focusModeEnabled = true
+            $0.organization.routineTags = ["home"]
+            $0.schedule.scheduleMode = .fixedInterval
+            $0.schedule.frequency = .week
+            $0.schedule.frequencyValue = 1
+            $0.schedule.recurrenceKind = .weekly
+            $0.schedule.recurrenceHasExplicitTime = true
+            $0.schedule.recurrenceWeekday = 7
+            $0.schedule.recurrenceTimeOfDay = RoutineTimeOfDay(hour: 9, minute: 0)
+        }
+    }
+
+    @Test
+    func saveTapped_appliesQuickAddDraftFromNameBeforeDelegating() async {
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(routineName: "Pay rent tomorrow at 8pm #finance")
+            )
+        ) {
+            makeDelegateEchoFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: makeDate("2026-04-23T10:00:00Z"))
+        }
+
+        let calendar = makeTestCalendar()
+        let expectedDeadline = calendar.date(from: DateComponents(
+            timeZone: calendar.timeZone,
+            year: 2026,
+            month: 4,
+            day: 24,
+            hour: 20,
+            minute: 0
+        ))
+
+        await store.send(.saveTapped) {
+            $0.basics.routineName = "Pay rent"
+            $0.basics.deadline = expectedDeadline
+            $0.basics.reminderAt = expectedDeadline
+            $0.organization.routineTags = ["finance"]
+        }
+        await store.receive(.delegate(.didSave(makeSaveRequest(
+            name: "Pay rent",
+            frequencyInDays: 1,
+            recurrenceRule: .interval(days: 1),
+            emoji: "✨",
+            deadline: expectedDeadline,
+            reminderAt: expectedDeadline,
+            tags: ["finance"],
+            scheduleMode: .oneOff
+        ))))
+    }
+
+    @Test
     func existingRoutineNamesChanged_clearsValidationWhenDuplicateDisappears() async {
         let store = TestStore(
             initialState: makeState(

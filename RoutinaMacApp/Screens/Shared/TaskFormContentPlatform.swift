@@ -20,6 +20,7 @@ struct TaskFormContent: View {
     @State private var placeManagerStore = Store(initialState: SettingsFeature.State()) {
         SettingsFeature()
     }
+    @Environment(\.calendar) private var calendar
     @Environment(\.addEditFormCoordinator) private var formCoordinator
     @AppStorage(
         UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
@@ -158,11 +159,22 @@ struct TaskFormContent: View {
         TaskFormMacIdentityCard(
             model: model,
             previewScheduleModeTitle: previewScheduleModeTitle,
-            previewPlaceSummary: previewPlaceSummary
+            previewPlaceSummary: previewPlaceSummary,
+            smartNameDraft: smartNameDraft,
+            smartNameCalendar: calendar,
+            onApplySmartName: model.onApplySmartName
         ) {
             taskNameField
         }
         .id(FormSection.identity)
+    }
+
+    private var smartNameDraft: RoutinaQuickAddDraft? {
+        guard let draft = RoutinaQuickAddParser.parse(model.name.wrappedValue, calendar: calendar),
+              draft.hasDetectedMetadata else {
+            return nil
+        }
+        return draft
     }
 
     private var taskNameField: some View {

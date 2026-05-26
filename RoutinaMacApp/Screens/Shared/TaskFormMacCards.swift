@@ -114,6 +114,9 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
     let model: TaskFormModel
     let previewScheduleModeTitle: String?
     let previewPlaceSummary: String?
+    let smartNameDraft: RoutinaQuickAddDraft?
+    let smartNameCalendar: Calendar
+    let onApplySmartName: (() -> Void)?
     @ViewBuilder let nameField: NameField
 
     var body: some View {
@@ -129,6 +132,7 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
                         VStack(alignment: .leading, spacing: 10) {
                             nameField
                             validationMessage
+                            smartNamePreview
                             previewPills
                         }
 
@@ -138,6 +142,7 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
                     VStack(alignment: .leading, spacing: 6) {
                         nameField
                         validationMessage
+                        smartNamePreview
                     }
                 }
 
@@ -170,6 +175,118 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
         }
     }
 
+    @ViewBuilder
+    private var smartNamePreview: some View {
+        if let smartNameDraft {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Label("Detected from title", systemImage: "sparkles")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    Spacer(minLength: 8)
+
+                    if let onApplySmartName {
+                        Button {
+                            onApplySmartName()
+                        } label: {
+                            Label("Apply", systemImage: "checkmark")
+                        }
+                        .controlSize(.small)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(smartNameRows(for: smartNameDraft)) { row in
+                        smartNameRow(row)
+                    }
+                }
+            }
+            .padding(10)
+            .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(Color.accentColor.opacity(0.16), lineWidth: 1)
+            )
+        }
+    }
+
+    private func smartNameRows(for draft: RoutinaQuickAddDraft) -> [SmartNameRow] {
+        var rows = [
+            SmartNameRow(title: "Task", value: draft.name, systemImage: "textformat")
+        ]
+
+        if draft.scheduleMode != .oneOff {
+            rows.append(SmartNameRow(
+                title: draft.scheduleMode.isSoftIntervalRoutine ? "Gentle routine" : "Repeats",
+                value: draft.recurrenceRule.displayText(calendar: smartNameCalendar),
+                systemImage: "calendar"
+            ))
+        } else if let deadline = draft.deadline {
+            rows.append(SmartNameRow(
+                title: "Due",
+                value: deadline.formatted(date: .abbreviated, time: .shortened),
+                systemImage: "calendar"
+            ))
+        }
+
+        if !draft.tags.isEmpty {
+            rows.append(SmartNameRow(
+                title: "Tags",
+                value: draft.tags.map { "#\($0)" }.joined(separator: " "),
+                systemImage: "tag"
+            ))
+        }
+
+        if let placeName = draft.placeName {
+            rows.append(SmartNameRow(
+                title: "Place",
+                value: "@\(placeName)",
+                systemImage: "mappin.and.ellipse"
+            ))
+        }
+
+        if draft.importance != .level2 || draft.urgency != .level2 {
+            rows.append(SmartNameRow(
+                title: "Priority",
+                value: "\(draft.importance.title) / \(draft.urgency.title)",
+                systemImage: "exclamationmark.triangle"
+            ))
+        }
+
+        if let estimatedDurationMinutes = draft.estimatedDurationMinutes {
+            rows.append(SmartNameRow(
+                title: "Focus",
+                value: "\(estimatedDurationMinutes)m",
+                systemImage: "timer"
+            ))
+        }
+
+        return rows
+    }
+
+    private func smartNameRow(_ row: SmartNameRow) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Image(systemName: row.systemImage)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 16)
+
+            Text(row.title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 86, alignment: .leading)
+
+            Text(row.value)
+                .font(.caption)
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+
+            Spacer(minLength: 0)
+        }
+    }
+
     private var emojiPickerRow: some View {
         VStack(alignment: .leading, spacing: 10) {
             ScrollView(.horizontal, showsIndicators: false) {
@@ -197,6 +314,14 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
                 }
             }
         }
+    }
+
+    private struct SmartNameRow: Identifiable {
+        let title: String
+        let value: String
+        let systemImage: String
+
+        var id: String { "\(title):\(value)" }
     }
 }
 

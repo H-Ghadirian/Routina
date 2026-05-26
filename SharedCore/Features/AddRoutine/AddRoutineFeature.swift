@@ -70,6 +70,7 @@ struct AddRoutineFeature: Reducer {
         case estimatedDurationChanged(Int?)
         case storyPointsChanged(Int?)
         case focusModeEnabledChanged(Bool)
+        case applyQuickAddDraftFromName
         case saveTapped
         case cancelTapped
         case delegate(Delegate)
@@ -81,6 +82,7 @@ struct AddRoutineFeature: Reducer {
     }
 
     @Dependency(\.date.now) var now
+    @Dependency(\.calendar) var calendar
 
     var onSave: (AddRoutineSaveRequest) -> Effect<Action>
     var onCancel: () -> Effect<Action>
@@ -440,7 +442,12 @@ struct AddRoutineFeature: Reducer {
             )
             return .none
 
+        case .applyQuickAddDraftFromName:
+            applyQuickAddDraftFromName(state: &state)
+            return .none
+
         case .saveTapped:
+            applyQuickAddDraftFromName(state: &state)
             AddRoutineDraftFinalizer(now: now).apply(to: &state)
             AddRoutineValidationEditor.refreshNameValidation(state: &state)
             guard let request = AddRoutineSaveRequest(state: state) else { return .none }
@@ -451,5 +458,133 @@ struct AddRoutineFeature: Reducer {
         case .delegate(_):
             return .none
         }
+    }
+
+    private func applyQuickAddDraftFromName(state: inout State) {
+        guard let draft = RoutinaQuickAddParser.parse(
+            state.basics.routineName,
+            referenceDate: now,
+            calendar: calendar
+        ), draft.hasDetectedMetadata else {
+            return
+        }
+
+        AddRoutineValidationEditor.setRoutineName(draft.name, state: &state)
+
+        if draft.hasDetectedSchedule {
+            applyQuickAddSchedule(from: draft, state: &state)
+        }
+
+        for tag in draft.tags where !state.organization.routineTags.contains(tag) {
+            state.organization.routineTags.append(tag)
+        }
+
+        if let placeID = matchingPlaceID(named: draft.placeName, in: state.organization.availablePlaces) {
+            state.basics.selectedPlaceID = placeID
+        }
+
+        if draft.importance != .level2 || draft.urgency != .level2 {
+            state.basics.importance = draft.importance
+            state.basics.urgency = draft.urgency
+            state.basics.priority = AddRoutinePriorityMatrix.priority(
+                importance: draft.importance,
+                urgency: draft.urgency
+            )
+        }
+
+        if let estimatedDurationMinutes = draft.estimatedDurationMinutes {
+            AddRoutineBasicsEditor.setEstimatedDurationMinutes(
+                estimatedDurationMinutes,
+                basics: &state.basics
+            )
+            state.basics.focusModeEnabled = draft.focusModeEnabled
+        }
+    }
+
+    private func applyQuickAddSchedule(
+        from draft: RoutinaQuickAddDraft,
+        state: inout State
+    ) {
+        scheduleMutationHandler().setScheduleMode(draft.scheduleMode, state: &state)
+        applyFrequency(days: draft.frequencyInDays, state: &state)
+
+        if draft.scheduleMode == .oneOff {
+            state.basics.deadline = draft.deadline
+            state.basics.reminderAt = draft.reminderAt
+            return
+        }
+
+        state.basics.deadline = nil
+        state.basics.reminderAt = nil
+
+        guard !draft.scheduleMode.isSoftIntervalRoutine else { return }
+
+        let recurrenceRule = draft.recurrenceRule
+        scheduleMutationHandler().setRecurrenceKind(recurrenceRule.kind, state: &state)
+
+        switch recurrenceRule.kind {
+        case .intervalDays:
+            break
+        case .dailyTime:
+            applyTimeConstraint(from: recurrenceRule, state: &state)
+        case .weekly:
+            scheduleMutationHandler().setRecurrenceWeekday(
+                recurrenceRule.weekday ?? calendar.firstWeekday,
+                state: &state
+            )
+            applyTimeConstraint(from: recurrenceRule, state: &state)
+        case .monthlyDay:
+            scheduleMutationHandler().setRecurrenceDayOfMonth(
+                recurrenceRule.dayOfMonth ?? 1,
+                state: &state
+            )
+            applyTimeConstraint(from: recurrenceRule, state: &state)
+        }
+    }
+
+    private func applyFrequency(days: Int, state: inout State) {
+        let safeDays = max(days, 1)
+        if safeDays.isMultiple(of: 30) {
+            scheduleMutationHandler().setFrequency(.month, state: &state)
+            scheduleMutationHandler().setFrequencyValue(max(safeDays / 30, 1), state: &state)
+        } else if safeDays.isMultiple(of: 7) {
+            scheduleMutationHandler().setFrequency(.week, state: &state)
+            scheduleMutationHandler().setFrequencyValue(max(safeDays / 7, 1), state: &state)
+        } else {
+            scheduleMutationHandler().setFrequency(.day, state: &state)
+            scheduleMutationHandler().setFrequencyValue(safeDays, state: &state)
+        }
+    }
+
+    private func applyTimeConstraint(
+        from recurrenceRule: RoutineRecurrenceRule,
+        state: inout State
+    ) {
+        if let timeRange = recurrenceRule.timeRange {
+            scheduleMutationHandler().setRecurrenceHasTimeRange(true, state: &state)
+            scheduleMutationHandler().setRecurrenceTimeRangeStart(timeRange.start, state: &state)
+            scheduleMutationHandler().setRecurrenceTimeRangeEnd(timeRange.end, state: &state)
+        } else if let timeOfDay = recurrenceRule.timeOfDay {
+            scheduleMutationHandler().setRecurrenceHasExplicitTime(true, state: &state)
+            scheduleMutationHandler().setRecurrenceTimeOfDay(timeOfDay, state: &state)
+        } else {
+            scheduleMutationHandler().setRecurrenceHasExplicitTime(false, state: &state)
+            scheduleMutationHandler().setRecurrenceHasTimeRange(false, state: &state)
+        }
+    }
+
+    private func matchingPlaceID(
+        named placeName: String?,
+        in places: [RoutinePlaceSummary]
+    ) -> UUID? {
+        guard let placeName,
+              let normalizedName = RoutinePlace.normalizedName(placeName)
+        else {
+            return nil
+        }
+
+        return places.first { place in
+            RoutinePlace.normalizedName(place.name) == normalizedName
+        }?.id
     }
 }

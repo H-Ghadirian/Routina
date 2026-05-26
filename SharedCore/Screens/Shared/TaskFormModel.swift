@@ -14,6 +14,7 @@ struct TaskFormModel {
     // MARK: Name
     var name: Binding<String>
     var nameValidationMessage: String?
+    var onApplySmartName: (() -> Void)? = nil
 
     // MARK: Task Type
     var taskType: Binding<RoutineTaskType>
