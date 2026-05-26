@@ -581,7 +581,7 @@ detailBody
                 showsStateAction: shouldShowTodoStateAddAction,
                 showsPressureAction: shouldShowPressureAddAction,
                 showsChecklistAction: !store.task.hasChecklistItems,
-                showsDetailsAction: !hasTaskExtras,
+                showsDetailsAction: false,
                 background: routineLogsBackground,
                 stroke: TaskDetailPlatformStyle.sectionCardStroke,
                 onAddComment: {
@@ -619,7 +619,6 @@ detailBody
             || shouldShowTodoStateAddAction
             || shouldShowPressureAddAction
             || !store.task.hasChecklistItems
-            || !hasTaskExtras
     }
 
     private var shouldShowCommentsSection: Bool {
@@ -638,7 +637,6 @@ detailBody
             || store.task.hasImage
             || store.task.hasVoiceNote
             || !store.taskAttachments.isEmpty
-            || store.task.resolvedLinkURL != nil
     }
 
     private func resetRevealedOptionalControls() {
