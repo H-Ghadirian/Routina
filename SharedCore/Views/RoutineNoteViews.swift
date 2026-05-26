@@ -12,9 +12,14 @@ import AppKit
 struct RoutineNoteEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Query private var tasks: [RoutineTask]
+    @Query private var goals: [RoutineGoal]
+    @Query(sort: \RoutineNote.createdAt, order: .reverse) private var existingNotes: [RoutineNote]
 
     @State private var title = ""
     @State private var bodyText = ""
+    @State private var tags: [String] = []
+    @State private var tagDraft = ""
     @State private var imageData: Data?
     @State private var voiceNote: RoutineVoiceNote?
     @State private var attachments: [AttachmentItem] = []
@@ -41,6 +46,10 @@ struct RoutineNoteEditorView: View {
                     TextField("Title", text: $title)
                     TextField("Write a note", text: $bodyText, axis: .vertical)
                         .lineLimit(5, reservesSpace: true)
+                }
+
+                Section("Tags") {
+                    tagsSection
                 }
 
                 Section("Image") {
@@ -114,11 +123,140 @@ struct RoutineNoteEditorView: View {
             || !attachments.isEmpty
     }
 
+    private var availableTags: [String] {
+        RoutineTag.allTags(
+            from: tasks.map(\.tags) + goals.map(\.tags) + existingNotes.map(\.tags)
+        )
+    }
+
+    private var availableUnselectedTags: [String] {
+        availableTags.filter { !RoutineTag.contains($0, in: tags) }
+    }
+
+    private var tagAutocompleteSuggestion: String? {
+        RoutineTag.autocompleteSuggestion(
+            for: tagDraft,
+            availableTags: availableTags,
+            selectedTags: tags
+        )
+    }
+
     private func cancel() {
         if let onCancel {
             onCancel()
         } else {
             dismiss()
+        }
+    }
+
+    private var tagsSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                ZStack(alignment: .trailing) {
+                    TextField("health, focus, morning", text: $tagDraft)
+                        .onSubmit(addTagDraft)
+                        .padding(.trailing, tagAutocompleteSuggestion == nil ? 0 : 88)
+
+                    if let suggestion = tagAutocompleteSuggestion {
+                        Button {
+                            acceptTagAutocompleteSuggestion()
+                        } label: {
+                            Text("#\(suggestion)")
+                                .font(.caption.weight(.medium))
+                                .lineLimit(1)
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .routinaGlassPill(tint: .secondary, tintOpacity: 0.12, interactive: true)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Complete tag \(suggestion)")
+                    }
+                }
+
+                Button {
+                    addTagDraft()
+                } label: {
+                    Label("Add", systemImage: "plus")
+                }
+                .disabled(RoutineTag.parseDraft(tagDraft).isEmpty)
+            }
+
+            selectedTagsContent
+
+            if !availableUnselectedTags.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Existing tags")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+
+                    HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
+                        ForEach(availableUnselectedTags, id: \.self) { tag in
+                            Button {
+                                tags = RoutineTag.appending(tag, to: tags)
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "plus.circle")
+                                        .font(.caption)
+                                    Text("#\(tag)")
+                                        .lineLimit(1)
+                                        .fixedSize(horizontal: true, vertical: false)
+                                }
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .routinaGlassPill(tint: .secondary, tintOpacity: 0.10, interactive: true)
+                                .overlay {
+                                    Capsule()
+                                        .stroke(Color.secondary.opacity(0.24), lineWidth: 1)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .fixedSize()
+                            .accessibilityLabel("Add tag \(tag)")
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    @ViewBuilder
+    private var selectedTagsContent: some View {
+        if tags.isEmpty {
+            Text("No tags selected")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        } else {
+            HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
+                ForEach(tags, id: \.self) { tag in
+                    Button {
+                        tags = RoutineTag.removing(tag, from: tags)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text("#\(tag)")
+                                .lineLimit(1)
+                                .fixedSize(horizontal: true, vertical: false)
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.caption)
+                        }
+                        .foregroundStyle(Color.accentColor)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .routinaGlassPill(tint: .accentColor, tintOpacity: 0.14, interactive: true)
+                        .overlay {
+                            Capsule()
+                                .stroke(Color.accentColor.opacity(0.28), lineWidth: 1)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .fixedSize()
+                    .accessibilityLabel("Remove tag \(tag)")
+                }
+            }
+            .padding(.vertical, 4)
         }
     }
 
@@ -218,6 +356,7 @@ struct RoutineNoteEditorView: View {
         let note = RoutineNote(
             title: title,
             body: bodyText,
+            tags: tags,
             imageData: imageData,
             voiceNoteData: voiceNote?.data,
             voiceNoteDurationSeconds: voiceNote?.durationSeconds,
@@ -245,6 +384,18 @@ struct RoutineNoteEditorView: View {
         } catch {
             errorText = "Could not save the note."
         }
+    }
+
+    private func addTagDraft() {
+        guard !RoutineTag.parseDraft(tagDraft).isEmpty else { return }
+        tags = RoutineTag.appending(tagDraft, to: tags)
+        tagDraft = ""
+    }
+
+    private func acceptTagAutocompleteSuggestion() {
+        guard let suggestion = tagAutocompleteSuggestion else { return }
+        tagDraft = RoutineTag.acceptingAutocompleteSuggestion(suggestion, in: tagDraft)
+        addTagDraft()
     }
 
     private func loadPickedImage(from item: PhotosPickerItem) {
@@ -285,6 +436,32 @@ struct RoutineNoteDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 header
+
+                if !note.tags.isEmpty {
+                    HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
+                        ForEach(note.tags, id: \.self) { tag in
+                            HStack(spacing: 4) {
+                                Image(systemName: "tag.fill")
+                                    .font(.caption.weight(.semibold))
+                                Text(tag)
+                                    .font(.footnote.weight(.semibold))
+                                    .lineLimit(1)
+                            }
+                            .foregroundStyle(Color.secondary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(
+                                Capsule(style: .continuous)
+                                    .fill(Color.secondary.opacity(0.16))
+                            )
+                            .overlay(
+                                Capsule(style: .continuous)
+                                    .stroke(Color.secondary.opacity(0.35), lineWidth: 0.5)
+                            )
+                            .fixedSize()
+                        }
+                    }
+                }
 
                 if let body = RoutineNote.cleanedText(note.body) {
                     Text(body)

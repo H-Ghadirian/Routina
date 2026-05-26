@@ -138,6 +138,7 @@ struct SettingsRoutineDataPersistenceTests {
         let note = RoutineNote(
             title: "Visa paperwork",
             body: "Attach scanned permit forms",
+            tags: ["Admin", "Visa"],
             imageData: imageData,
             voiceNoteData: voiceData,
             voiceNoteDurationSeconds: 4.25,
@@ -174,6 +175,7 @@ struct SettingsRoutineDataPersistenceTests {
         let restoredNote = try #require(restoreContext.fetch(FetchDescriptor<RoutineNote>()).first)
         #expect(restoredNote.title == "Visa paperwork")
         #expect(restoredNote.body == "Attach scanned permit forms")
+        #expect(restoredNote.tags == ["Admin", "Visa"])
         #expect(restoredNote.imageData == imageData)
         #expect(restoredNote.voiceNoteData == voiceData)
         #expect(restoredNote.voiceNoteDurationSeconds == 4.25)

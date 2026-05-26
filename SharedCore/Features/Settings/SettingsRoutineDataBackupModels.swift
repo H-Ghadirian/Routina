@@ -121,6 +121,7 @@ extension SettingsRoutineDataPersistence {
             var id: UUID
             var title: String?
             var body: String?
+            var tags: [String]?
             var imageData: Data?
             var imageAttachmentID: UUID?
             var voiceNoteData: Data?

@@ -1,3 +1,4 @@
+import Foundation
 import SwiftData
 
 struct SettingsTagPersistenceResult {
@@ -5,6 +6,7 @@ struct SettingsTagPersistenceResult {
     var cloudUsageEstimate: CloudUsageEstimate
     var updatedRoutineCount: Int
     var updatedGoalCount: Int
+    var updatedNoteCount: Int
 }
 
 enum SettingsTagPersistence {
@@ -15,8 +17,10 @@ enum SettingsTagPersistence {
     ) throws -> SettingsTagPersistenceResult {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
+        let notes = try context.fetch(FetchDescriptor<RoutineNote>())
         var updatedRoutineCount = 0
         var updatedGoalCount = 0
+        var updatedNoteCount = 0
 
         for task in tasks where RoutineTag.contains(request.originalTagName, in: task.tags) {
             let updatedTags = RoutineTag.replacing(
@@ -42,6 +46,19 @@ enum SettingsTagPersistence {
             }
         }
 
+        for note in notes where RoutineTag.contains(request.originalTagName, in: note.tags) {
+            let updatedTags = RoutineTag.replacing(
+                request.originalTagName,
+                with: request.cleanedName,
+                in: note.tags
+            )
+            if updatedTags != note.tags {
+                note.tags = updatedTags
+                note.updatedAt = Date()
+                updatedNoteCount += 1
+            }
+        }
+
         DeviceActivityRecorder.recordAction(
             .updated,
             entity: .tag,
@@ -55,7 +72,8 @@ enum SettingsTagPersistence {
             tagSummaries: try SettingsDataQueries.fetchTagSummaries(in: context),
             cloudUsageEstimate: SettingsDataQueries.loadCloudUsageEstimate(in: context),
             updatedRoutineCount: updatedRoutineCount,
-            updatedGoalCount: updatedGoalCount
+            updatedGoalCount: updatedGoalCount,
+            updatedNoteCount: updatedNoteCount
         )
     }
 
@@ -66,8 +84,10 @@ enum SettingsTagPersistence {
     ) throws -> SettingsTagPersistenceResult {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
+        let notes = try context.fetch(FetchDescriptor<RoutineNote>())
         var updatedRoutineCount = 0
         var updatedGoalCount = 0
+        var updatedNoteCount = 0
 
         for task in tasks where RoutineTag.contains(request.tagName, in: task.tags) {
             let updatedTags = RoutineTag.removing(request.tagName, from: task.tags)
@@ -85,6 +105,15 @@ enum SettingsTagPersistence {
             }
         }
 
+        for note in notes where RoutineTag.contains(request.tagName, in: note.tags) {
+            let updatedTags = RoutineTag.removing(request.tagName, from: note.tags)
+            if updatedTags != note.tags {
+                note.tags = updatedTags
+                note.updatedAt = Date()
+                updatedNoteCount += 1
+            }
+        }
+
         DeviceActivityRecorder.recordAction(
             .deleted,
             entity: .tag,
@@ -97,7 +126,8 @@ enum SettingsTagPersistence {
             tagSummaries: try SettingsDataQueries.fetchTagSummaries(in: context),
             cloudUsageEstimate: SettingsDataQueries.loadCloudUsageEstimate(in: context),
             updatedRoutineCount: updatedRoutineCount,
-            updatedGoalCount: updatedGoalCount
+            updatedGoalCount: updatedGoalCount,
+            updatedNoteCount: updatedNoteCount
         )
     }
 }

@@ -498,7 +498,7 @@ extension SettingsTagsState {
 
         switch savedTags.count {
         case 0:
-            return "Review and manage tags across tasks and goals\(fastFilterSuffix)"
+            return "Review and manage tags across tasks, goals, and notes\(fastFilterSuffix)"
         case 1:
             return "1 saved tag\(fastFilterSuffix)"
         default:
@@ -508,7 +508,7 @@ extension SettingsTagsState {
 
     var deleteConfirmationMessage: String {
         guard let tag = tagPendingDeletion else {
-            return "This will remove the tag from every task or goal that uses it."
+            return "This will remove the tag from every task, goal, or note that uses it."
         }
 
         let affectedParts = tag.settingsAffectedDeletionParts
@@ -545,6 +545,9 @@ extension RoutineTagSummary {
         if linkedGoalCount > 0 {
             parts.append(linkedGoalCount == 1 ? "1 goal" : "\(linkedGoalCount) goals")
         }
+        if linkedNoteCount > 0 {
+            parts.append(linkedNoteCount == 1 ? "1 note" : "\(linkedNoteCount) notes")
+        }
         if doneCount > 0 {
             parts.append(doneCount == 1 ? "1 done" : "\(doneCount) done")
         }
@@ -563,6 +566,9 @@ extension RoutineTagSummary {
         }
         if linkedGoalCount > 0 {
             parts.append(linkedGoalCount == 1 ? "1 goal" : "\(linkedGoalCount) goals")
+        }
+        if linkedNoteCount > 0 {
+            parts.append(linkedNoteCount == 1 ? "1 note" : "\(linkedNoteCount) notes")
         }
         return parts
     }

@@ -196,7 +196,7 @@ enum TimelineLogic {
                 timestamp: timestamp,
                 taskName: note.displayTitle,
                 taskEmoji: "📝",
-                tags: [],
+                tags: note.tags,
                 hasImage: note.hasImage,
                 hasFileAttachment: hasFileAttachment,
                 hasVoiceNote: note.hasVoiceNote,

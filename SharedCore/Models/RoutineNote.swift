@@ -6,6 +6,7 @@ final class RoutineNote {
     var id: UUID = UUID()
     var title: String?
     var body: String?
+    var tagsStorage: String = ""
     @Attribute(.externalStorage) var imageData: Data?
     @Attribute(.externalStorage) var voiceNoteData: Data?
     var voiceNoteDurationSeconds: Double?
@@ -29,6 +30,11 @@ final class RoutineNote {
 
     var hasImage: Bool {
         imageData?.isEmpty == false
+    }
+
+    var tags: [String] {
+        get { RoutineTag.deserialize(tagsStorage) }
+        set { tagsStorage = RoutineTag.serialize(newValue) }
     }
 
     var hasVoiceNote: Bool {
@@ -62,6 +68,7 @@ final class RoutineNote {
         id: UUID = UUID(),
         title: String? = nil,
         body: String? = nil,
+        tags: [String] = [],
         imageData: Data? = nil,
         voiceNoteData: Data? = nil,
         voiceNoteDurationSeconds: Double? = nil,
@@ -72,6 +79,7 @@ final class RoutineNote {
         self.id = id
         self.title = Self.cleanedText(title)
         self.body = Self.cleanedText(body)
+        self.tagsStorage = RoutineTag.serialize(tags)
         self.imageData = imageData?.isEmpty == false ? imageData : nil
         let sanitizedVoiceNote = RoutineVoiceNote(
             data: voiceNoteData,
@@ -90,6 +98,7 @@ final class RoutineNote {
             id: id,
             title: title,
             body: body,
+            tags: tags,
             imageData: imageData,
             voiceNoteData: voiceNoteData,
             voiceNoteDurationSeconds: voiceNoteDurationSeconds,

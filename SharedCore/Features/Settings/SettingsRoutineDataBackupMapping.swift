@@ -141,6 +141,7 @@ enum SettingsRoutineDataBackupMapping {
             id: note.id,
             title: note.title,
             body: note.body,
+            tags: note.tags,
             imageData: imageData,
             imageAttachmentID: imageAttachmentID,
             voiceNoteData: voiceNoteData,

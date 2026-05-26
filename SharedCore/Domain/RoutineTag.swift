@@ -6,6 +6,7 @@ struct RoutineTagSummary: Equatable, Identifiable, Sendable {
     var doneCount: Int = 0
     var linkedTodoCount: Int = 0
     var linkedGoalCount: Int = 0
+    var linkedNoteCount: Int = 0
     var colorHex: String?
 
     var id: String {
@@ -227,10 +228,18 @@ enum RoutineTag {
     }
 
     static func summaries(from tasks: [RoutineTask]) -> [RoutineTagSummary] {
-        summaries(from: tasks, goals: [])
+        summaries(from: tasks, goals: [], notes: [])
     }
 
     static func summaries(from tasks: [RoutineTask], goals: [RoutineGoal]) -> [RoutineTagSummary] {
+        summaries(from: tasks, goals: goals, notes: [])
+    }
+
+    static func summaries(
+        from tasks: [RoutineTask],
+        goals: [RoutineGoal],
+        notes: [RoutineNote]
+    ) -> [RoutineTagSummary] {
         let tagCounts = tasks.reduce(into: [String: Int]()) { partialResult, task in
             for tag in task.tags {
                 guard let normalizedTag = normalized(tag) else { continue }
@@ -253,13 +262,21 @@ enum RoutineTag {
             }
         }
 
-        return allTags(from: tasks.map(\.tags) + goals.map(\.tags)).map { tag in
+        let noteTagCounts = notes.reduce(into: [String: Int]()) { partialResult, note in
+            for tag in note.tags {
+                guard let normalizedTag = normalized(tag) else { continue }
+                partialResult[normalizedTag, default: 0] += 1
+            }
+        }
+
+        return allTags(from: tasks.map(\.tags) + goals.map(\.tags) + notes.map(\.tags)).map { tag in
             let key = normalized(tag) ?? tag
             return RoutineTagSummary(
                 name: tag,
                 linkedRoutineCount: tagCounts[key, default: 0],
                 linkedTodoCount: todoTagCounts[key, default: 0],
-                linkedGoalCount: goalTagCounts[key, default: 0]
+                linkedGoalCount: goalTagCounts[key, default: 0],
+                linkedNoteCount: noteTagCounts[key, default: 0]
             )
         }
     }

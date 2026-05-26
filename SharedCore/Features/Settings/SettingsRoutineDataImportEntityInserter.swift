@@ -437,6 +437,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 id: note.id,
                 title: note.title,
                 body: note.body,
+                tags: note.tags ?? [],
                 imageData: imageData,
                 voiceNoteData: voiceNoteData,
                 voiceNoteDurationSeconds: note.voiceNoteDurationSeconds,

@@ -21,11 +21,13 @@ enum SettingsFeedbackSupport {
     static func renameTagSuccessMessage(
         updatedTagName: String,
         updatedRoutineCount: Int,
-        updatedGoalCount: Int = 0
+        updatedGoalCount: Int = 0,
+        updatedNoteCount: Int = 0
     ) -> String {
         let updatedParts = tagUpdateParts(
             routineCount: updatedRoutineCount,
-            goalCount: updatedGoalCount
+            goalCount: updatedGoalCount,
+            noteCount: updatedNoteCount
         )
         guard !updatedParts.isEmpty else {
             return "Updated tag to \(updatedTagName)."
@@ -36,11 +38,13 @@ enum SettingsFeedbackSupport {
     static func deleteTagSuccessMessage(
         deletedTagName: String,
         updatedRoutineCount: Int,
-        updatedGoalCount: Int = 0
+        updatedGoalCount: Int = 0,
+        updatedNoteCount: Int = 0
     ) -> String {
         let updatedParts = tagUpdateParts(
             routineCount: updatedRoutineCount,
-            goalCount: updatedGoalCount
+            goalCount: updatedGoalCount,
+            noteCount: updatedNoteCount
         )
         guard !updatedParts.isEmpty else {
             return "Deleted \(deletedTagName)."
@@ -48,13 +52,20 @@ enum SettingsFeedbackSupport {
         return "Deleted \(deletedTagName) from \(updatedParts.joined(separator: " and "))."
     }
 
-    private static func tagUpdateParts(routineCount: Int, goalCount: Int) -> [String] {
+    private static func tagUpdateParts(
+        routineCount: Int,
+        goalCount: Int,
+        noteCount: Int
+    ) -> [String] {
         var parts: [String] = []
         if routineCount > 0 {
             parts.append(routineCount == 1 ? "1 routine" : "\(routineCount) routines")
         }
         if goalCount > 0 {
             parts.append(goalCount == 1 ? "1 goal" : "\(goalCount) goals")
+        }
+        if noteCount > 0 {
+            parts.append(noteCount == 1 ? "1 note" : "\(noteCount) notes")
         }
         return parts
     }

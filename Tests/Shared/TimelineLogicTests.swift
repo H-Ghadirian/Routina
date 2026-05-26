@@ -464,6 +464,7 @@ struct TimelineLogicTests {
         let note = RoutineNote(
             title: "Job permit",
             body: "Collect supporting documents",
+            tags: ["Admin", "Visa"],
             imageData: Data([0x01]),
             voiceNoteData: Data([0x02]),
             voiceNoteDurationSeconds: 2,
@@ -523,6 +524,7 @@ struct TimelineLogicTests {
         #expect(noteEntry?.hasImage == true)
         #expect(noteEntry?.hasFileAttachment == true)
         #expect(noteEntry?.hasVoiceNote == true)
+        #expect(noteEntry?.tags == ["Admin", "Visa"])
         #expect(noteEntries.map(\.id) == [note.id])
         #expect(doneEntries.map(\.id) == [log.id])
         #expect(fileEntries.map(\.id) == [note.id])

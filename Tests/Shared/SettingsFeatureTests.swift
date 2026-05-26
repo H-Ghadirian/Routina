@@ -40,6 +40,16 @@ struct SettingsFeatureTests {
         let goal = RoutineGoal(title: "Portfolio")
         context.insert(goal)
         task.goalIDs = [goal.id]
+        let note = RoutineNote(
+            title: "Reading note",
+            body: "Remember the source.",
+            tags: ["Focus"],
+            imageData: Data(repeating: 0xAC, count: 128),
+            voiceNoteData: Data(repeating: 0xBC, count: 64),
+            voiceNoteDurationSeconds: 1,
+            createdAt: makeDate("2026-03-21T09:30:00Z")
+        )
+        context.insert(note)
         _ = makeLog(in: context, task: task, timestamp: makeDate("2026-03-21T08:30:00Z"))
         try context.save()
 
@@ -49,15 +59,17 @@ struct SettingsFeatureTests {
         #expect(estimate.logCount == 1)
         #expect(estimate.placeCount == 1)
         #expect(estimate.goalCount == 1)
-        #expect(estimate.imageCount == 2)
-        #expect(estimate.imagePayloadBytes == 1_536)
-        #expect(estimate.voiceNoteCount == 1)
-        #expect(estimate.voiceNotePayloadBytes == 256)
+        #expect(estimate.noteCount == 1)
+        #expect(estimate.imageCount == 3)
+        #expect(estimate.imagePayloadBytes == 1_664)
+        #expect(estimate.voiceNoteCount == 2)
+        #expect(estimate.voiceNotePayloadBytes == 320)
         #expect(estimate.taskPayloadBytes > 0)
         #expect(estimate.logPayloadBytes > 0)
         #expect(estimate.placePayloadBytes > 0)
         #expect(estimate.goalPayloadBytes > 0)
-        #expect(estimate.totalPayloadBytes >= 1_792)
+        #expect(estimate.notePayloadBytes > 0)
+        #expect(estimate.totalPayloadBytes >= 1_984)
     }
 
     @Test
@@ -733,9 +745,11 @@ struct SettingsFeatureTests {
         _ = makeTask(in: context, name: "Read", interval: 3, lastDone: nil, emoji: "📚", tags: ["Morning"])
         let goal = RoutineGoal(title: "Get stronger", tags: ["Fitness"])
         context.insert(goal)
+        let note = RoutineNote(title: "Trainer notes", body: "Ask about recovery.", tags: ["Fitness"])
+        context.insert(note)
         try context.save()
 
-        let fitnessSummary = RoutineTagSummary(name: "Fitness", linkedRoutineCount: 2, linkedGoalCount: 1)
+        let fitnessSummary = RoutineTagSummary(name: "Fitness", linkedRoutineCount: 2, linkedGoalCount: 1, linkedNoteCount: 1)
         let morningSummary = RoutineTagSummary(name: "Morning", linkedRoutineCount: 2)
 
         let store = TestStore(
@@ -772,6 +786,7 @@ struct SettingsFeatureTests {
             #expect(tags.map(\.name) == ["Health", "Morning"])
             #expect(tags.map(\.linkedRoutineCount) == [2, 2])
             #expect(tags.map(\.linkedGoalCount) == [1, 0])
+            #expect(tags.map(\.linkedNoteCount) == [1, 0])
             return true
         } assert: {
             $0.tags.savedTags = loadedTags
@@ -784,22 +799,25 @@ struct SettingsFeatureTests {
             guard case let .cloudUsageEstimateLoaded(estimate) = action else { return false }
             cloudEstimate = estimate
             #expect(estimate.taskCount == 3)
+            #expect(estimate.noteCount == 1)
             return true
         } assert: {
             $0.cloud.cloudUsageEstimate = cloudEstimate
         }
-        await store.receive(.tagOperationFinished(success: true, message: "Updated tag to Health in 2 routines and 1 goal.")) {
+        await store.receive(.tagOperationFinished(success: true, message: "Updated tag to Health in 2 routines and 1 goal and 1 note.")) {
             $0.tags.isTagOperationInProgress = false
-            $0.tags.tagStatusMessage = "Updated tag to Health in 2 routines and 1 goal."
+            $0.tags.tagStatusMessage = "Updated tag to Health in 2 routines and 1 goal and 1 note."
         }
 
         let persistedTasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let persistedFitness = try #require(persistedTasks.first(where: { $0.id == fitness.id }))
         let persistedStretch = try #require(persistedTasks.first(where: { $0.id == stretch.id }))
         let persistedGoal = try #require(try context.fetch(FetchDescriptor<RoutineGoal>()).first { $0.id == goal.id })
+        let persistedNote = try #require(try context.fetch(FetchDescriptor<RoutineNote>()).first { $0.id == note.id })
         #expect(persistedFitness.tags == ["Health", "Morning"])
         #expect(persistedStretch.tags == ["Health"])
         #expect(persistedGoal.tags == ["Health"])
+        #expect(persistedNote.tags == ["Health"])
     }
 
     @Test
@@ -834,9 +852,11 @@ struct SettingsFeatureTests {
         let plan = makeTask(in: context, name: "Plan", interval: 4, lastDone: nil, emoji: "📝", tags: ["Evening", "Morning"])
         let goal = RoutineGoal(title: "Wake earlier", tags: ["Morning"])
         context.insert(goal)
+        let note = RoutineNote(title: "Morning pages", body: "Keep ideas here.", tags: ["Morning"])
+        context.insert(note)
         try context.save()
 
-        let morningSummary = RoutineTagSummary(name: "Morning", linkedRoutineCount: 3, linkedGoalCount: 1)
+        let morningSummary = RoutineTagSummary(name: "Morning", linkedRoutineCount: 3, linkedGoalCount: 1, linkedNoteCount: 1)
         let healthSummary = RoutineTagSummary(name: "Health", linkedRoutineCount: 1)
         let eveningSummary = RoutineTagSummary(name: "Evening", linkedRoutineCount: 1)
 
@@ -873,6 +893,7 @@ struct SettingsFeatureTests {
             #expect(tags.map(\.name) == ["Evening", "Health"])
             #expect(tags.map(\.linkedRoutineCount) == [1, 1])
             #expect(tags.map(\.linkedGoalCount) == [0, 0])
+            #expect(tags.map(\.linkedNoteCount) == [0, 0])
             return true
         } assert: {
             $0.tags.savedTags = loadedTags
@@ -885,13 +906,14 @@ struct SettingsFeatureTests {
             guard case let .cloudUsageEstimateLoaded(estimate) = action else { return false }
             cloudEstimate = estimate
             #expect(estimate.taskCount == 3)
+            #expect(estimate.noteCount == 1)
             return true
         } assert: {
             $0.cloud.cloudUsageEstimate = cloudEstimate
         }
-        await store.receive(.tagOperationFinished(success: true, message: "Deleted Morning from 3 routines and 1 goal.")) {
+        await store.receive(.tagOperationFinished(success: true, message: "Deleted Morning from 3 routines and 1 goal and 1 note.")) {
             $0.tags.isTagOperationInProgress = false
-            $0.tags.tagStatusMessage = "Deleted Morning from 3 routines and 1 goal."
+            $0.tags.tagStatusMessage = "Deleted Morning from 3 routines and 1 goal and 1 note."
         }
 
         let persistedTasks = try context.fetch(FetchDescriptor<RoutineTask>())
@@ -901,6 +923,7 @@ struct SettingsFeatureTests {
         #expect(persistedPlan.tags == ["Evening"])
         #expect(persistedTasks.allSatisfy { !RoutineTag.contains("Morning", in: $0.tags) })
         #expect(try context.fetch(FetchDescriptor<RoutineGoal>()).first { $0.id == goal.id }?.tags.isEmpty == true)
+        #expect(try context.fetch(FetchDescriptor<RoutineNote>()).first { $0.id == note.id }?.tags.isEmpty == true)
     }
 
     @Test

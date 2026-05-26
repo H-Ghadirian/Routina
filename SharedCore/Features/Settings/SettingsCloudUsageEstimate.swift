@@ -231,6 +231,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var id: UUID
         var title: String?
         var body: String?
+        var tagsStorage: String
         var hasImage: Bool
         var hasVoiceNote: Bool
         var createdAt: Date?
@@ -240,6 +241,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             id = note.id
             title = note.title
             body = note.body
+            tagsStorage = note.tagsStorage
             hasImage = note.hasImage
             hasVoiceNote = note.hasVoiceNote
             createdAt = note.createdAt

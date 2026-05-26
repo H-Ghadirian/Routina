@@ -7,13 +7,13 @@ struct SettingsTagsDetailView: View {
     var body: some View {
 List {
     Section("Info") {
-        Text("Rename or delete tags across every task or goal that uses them.")
+        Text("Rename or delete tags across every task, goal, or note that uses them.")
             .foregroundStyle(.secondary)
     }
 
     Section("Saved Tags") {
         if store.tags.savedTags.isEmpty {
-            Text("No tags yet. Tags you add to tasks or goals will appear here.")
+            Text("No tags yet. Tags you add to tasks, goals, or notes will appear here.")
                 .foregroundStyle(.secondary)
         } else {
             ForEach(store.tags.savedTags) { tag in

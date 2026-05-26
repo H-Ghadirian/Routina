@@ -24,7 +24,8 @@ enum SettingsTagExecution {
                         message: SettingsFeedbackSupport.renameTagSuccessMessage(
                             updatedTagName: request.cleanedName,
                             updatedRoutineCount: result.updatedRoutineCount,
-                            updatedGoalCount: result.updatedGoalCount
+                            updatedGoalCount: result.updatedGoalCount,
+                            updatedNoteCount: result.updatedNoteCount
                         )
                     )
                 )
@@ -57,7 +58,8 @@ enum SettingsTagExecution {
                         message: SettingsFeedbackSupport.deleteTagSuccessMessage(
                             deletedTagName: request.tagName,
                             updatedRoutineCount: result.updatedRoutineCount,
-                            updatedGoalCount: result.updatedGoalCount
+                            updatedGoalCount: result.updatedGoalCount,
+                            updatedNoteCount: result.updatedNoteCount
                         )
                     )
                 )

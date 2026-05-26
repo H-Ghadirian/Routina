@@ -133,6 +133,7 @@ timelineRoot
                 note.id.uuidString,
                 note.title ?? "",
                 note.body ?? "",
+                note.tagsStorage,
                 note.createdAt?.timeIntervalSinceReferenceDate.description ?? "",
                 note.updatedAt?.timeIntervalSinceReferenceDate.description ?? "",
                 note.imageData?.count.description ?? "",
