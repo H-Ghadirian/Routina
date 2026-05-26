@@ -83,6 +83,7 @@ extension HomeTCAView {
     }
 
     func openTimelineInSidebar() {
+        isNoteEditorPresented = false
         store.send(.macSidebarModeChanged(.timeline))
         validateSelectedTimelineTag()
     }

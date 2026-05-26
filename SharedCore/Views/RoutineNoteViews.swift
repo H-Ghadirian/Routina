@@ -23,9 +23,14 @@ struct RoutineNoteEditorView: View {
     @State private var isFileImporterPresented = false
     @State private var errorText: String?
 
+    let onCancel: (() -> Void)?
     let onSaved: (() -> Void)?
 
-    init(onSaved: (() -> Void)? = nil) {
+    init(
+        onCancel: (() -> Void)? = nil,
+        onSaved: (() -> Void)? = nil
+    ) {
+        self.onCancel = onCancel
         self.onSaved = onSaved
     }
 
@@ -65,7 +70,7 @@ struct RoutineNoteEditorView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
-                        dismiss()
+                        cancel()
                     }
                 }
 
@@ -107,6 +112,14 @@ struct RoutineNoteEditorView: View {
             || imageData?.isEmpty == false
             || voiceNote != nil
             || !attachments.isEmpty
+    }
+
+    private func cancel() {
+        if let onCancel {
+            onCancel()
+        } else {
+            dismiss()
+        }
     }
 
     private var imageSection: some View {

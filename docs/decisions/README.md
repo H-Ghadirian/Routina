@@ -53,6 +53,7 @@ When decision records overlap, follow explicit supersession first and then prefe
 - **Standalone notes:** Standalone notes are SwiftData `RoutineNote` records with optional title, body, image, and voice data, plus linked `RoutineNoteAttachment` file records. Home add controls can create notes, and Timeline shows notes as first-class entries under a Notes filter. Backup/import, reset, duplicate cleanup, and iCloud usage estimates include note data and note media.
 - **Routina deep links:** Routina uses stable app-owned URLs for shareable entity links: `routina://task/<uuid>`, `routina://goal/<uuid>`, `routina://note/<uuid>`, and `routina://sprint/<uuid>`. Opening one selects the appropriate tab and shows that entity when it exists locally.
 - **Mac Home add menu:** The Mac Home sidebar `+` opens a menu with Note, Goal, and Task actions. Note opens the standalone note editor; Goal switches to Goals and opens the inline goal editor; Task opens the existing add-task form. Goals mode does not add a separate toolbar `+`.
+- **Mac note creation:** Mac Home presents Add Note in the main detail area instead of a sheet, matching the main-surface creation model used by Add Goal and Add Task.
 
 ## Open Questions
 
@@ -125,3 +126,4 @@ When decision records overlap, follow explicit supersession first and then prefe
 | [0059](0059-use-mac-home-sidebar-add-menu.md) | Use a Mac Home Sidebar Add Menu | Superseded | 2026-05-26 |
 | [0060](0060-support-standalone-notes.md) | Support Standalone Notes | Accepted | 2026-05-26 |
 | [0061](0061-share-stable-routina-deep-links.md) | Share Stable Routina Deep Links | Accepted | 2026-05-26 |
+| [0062](0062-present-mac-note-creation-inline.md) | Present Mac Note Creation Inline | Accepted | 2026-05-26 |

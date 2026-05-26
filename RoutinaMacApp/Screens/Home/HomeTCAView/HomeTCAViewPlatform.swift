@@ -75,39 +75,46 @@ extension HomeTCAView {
         } goalsDetailContent: {
             MacGoalsDetailView(store: goalsStore)
         } mainDetailContent: {
-            MacDetailContainerView(
-                store: store,
-                isBoardPresented: isMacBoardMode,
-                isTimelinePresented: isMacTimelineMode,
-                isStatsPresented: isMacStatsMode,
-                isSettingsPresented: isMacSettingsMode,
-                placeCheckInMapActivity: placeCheckInMapActivity,
-                settingsStore: settingsStore,
-                statsStore: statsStore,
-                selectedSettingsSection: currentSelectedSettingsSection,
-                dayPlanPlanner: dayPlanPlanner,
-                mainDetailMode: mainDetailModeBinding,
-                isBoardInspectorPresented: macBoardInspectorPresentedBinding,
-                placeCheckInSelectedPlaceID: $placeCheckInSelectedPlaceID,
-                placeCheckInSelectedHistoryMarkerID: $placeCheckInSelectedHistoryMarkerID,
-                selectedTaskID: store.selectedTaskID,
-                onSelectDayPlanUnplannedCompletedDate: { date in
-                    focusMacSidebarOnDayPlanUnplannedCompletedTasks(on: date)
-                },
-                onOpenDayPlanTaskDetails: { taskID in
-                    openDayPlanTaskDetails(taskID)
-                },
-                onToggleBoardInspector: toggleMacBoardTicketInspector,
-                addRoutineStore: self.store.scope(
-                    state: \.addRoutineState,
-                    action: \.addRoutineSheet
+            if isNoteEditorPresented {
+                RoutineNoteEditorView(
+                    onCancel: closeAddNote,
+                    onSaved: closeAddNote
                 )
-            ) {
-                macActiveFiltersDetailView
-            } boardView: {
-                macTodoBoardDetailView
-            } boardInspectorView: {
-                macBoardTaskInspector
+            } else {
+                MacDetailContainerView(
+                    store: store,
+                    isBoardPresented: isMacBoardMode,
+                    isTimelinePresented: isMacTimelineMode,
+                    isStatsPresented: isMacStatsMode,
+                    isSettingsPresented: isMacSettingsMode,
+                    placeCheckInMapActivity: placeCheckInMapActivity,
+                    settingsStore: settingsStore,
+                    statsStore: statsStore,
+                    selectedSettingsSection: currentSelectedSettingsSection,
+                    dayPlanPlanner: dayPlanPlanner,
+                    mainDetailMode: mainDetailModeBinding,
+                    isBoardInspectorPresented: macBoardInspectorPresentedBinding,
+                    placeCheckInSelectedPlaceID: $placeCheckInSelectedPlaceID,
+                    placeCheckInSelectedHistoryMarkerID: $placeCheckInSelectedHistoryMarkerID,
+                    selectedTaskID: store.selectedTaskID,
+                    onSelectDayPlanUnplannedCompletedDate: { date in
+                        focusMacSidebarOnDayPlanUnplannedCompletedTasks(on: date)
+                    },
+                    onOpenDayPlanTaskDetails: { taskID in
+                        openDayPlanTaskDetails(taskID)
+                    },
+                    onToggleBoardInspector: toggleMacBoardTicketInspector,
+                    addRoutineStore: self.store.scope(
+                        state: \.addRoutineState,
+                        action: \.addRoutineSheet
+                    )
+                ) {
+                    macActiveFiltersDetailView
+                } boardView: {
+                    macTodoBoardDetailView
+                } boardInspectorView: {
+                    macBoardTaskInspector
+                }
             }
         } homeToolbarContent: {
             homeToolbarContent
@@ -281,6 +288,7 @@ extension HomeTCAView {
     }
 
     func openAddTask() {
+        isNoteEditorPresented = false
         store.send(.macSidebarModeChanged(.addTask))
         store.send(.setAddRoutineSheet(true))
         scheduleAddTaskNameFocus()

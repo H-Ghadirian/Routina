@@ -221,6 +221,7 @@ extension HomeTCAView {
         Binding(
             get: { store.macSidebarSelection },
             set: { selection in
+                isNoteEditorPresented = false
                 switch selection {
                 case let .task(taskID):
                     selectedNoteID = nil
@@ -240,36 +241,52 @@ extension HomeTCAView {
     }
 
     func showRoutinesInSidebar() {
+        isNoteEditorPresented = false
         store.send(.macSidebarModeChanged(.routines))
     }
 
     func openBoardInSidebar() {
+        isNoteEditorPresented = false
         store.send(.macSidebarModeChanged(.board))
     }
 
     func openGoalsInSidebar() {
+        isNoteEditorPresented = false
         store.send(.macSidebarModeChanged(.goals))
     }
 
     func openAddNote() {
+        selectedNoteID = nil
+        macHomeDetailMode = .details
+        store.send(.setSelectedTask(nil))
+        store.send(.setAddRoutineSheet(false))
+        store.send(.macSidebarModeChanged(.routines))
         isNoteEditorPresented = true
     }
 
+    func closeAddNote() {
+        isNoteEditorPresented = false
+    }
+
     func openAddGoal() {
+        isNoteEditorPresented = false
         store.send(.macSidebarModeChanged(.goals))
         goalsStore.send(.addGoalTapped)
     }
 
     func openStatsInSidebar() {
+        isNoteEditorPresented = false
         store.send(.macSidebarModeChanged(.stats))
     }
 
     func openSettingsInSidebar() {
+        isNoteEditorPresented = false
         store.send(.macSidebarModeChanged(.settings))
         settingsStore.send(.onAppear)
     }
 
     func openSettingsPlacesInSidebar() {
+        isNoteEditorPresented = false
         store.send(.selectedSettingsSectionChanged(.places))
         store.send(.macSidebarModeChanged(.settings))
         settingsStore.send(.onAppear)
@@ -296,6 +313,7 @@ extension HomeTCAView {
     }
 
     private func openMacTaskDetails(_ taskID: UUID) {
+        isNoteEditorPresented = false
         if shouldShowTaskInRegularSidebar(taskID) {
             clearDayPlanUnplannedCompletedFilter()
         }

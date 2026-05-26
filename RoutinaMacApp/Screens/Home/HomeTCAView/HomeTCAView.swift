@@ -126,9 +126,6 @@ homeContent
                 .sheet(isPresented: isFilterSheetPresentedBinding) {
                     homeFiltersSheet
                 }
-                .sheet(isPresented: $isNoteEditorPresented) {
-                    RoutineNoteEditorView()
-                }
                 .task {
                     syncFileAttachmentTaskIDs()
                 }
