@@ -77,6 +77,34 @@ extension HomeTCAView {
         TimelineLogic.groupedByDay(entries: timelineEntries, calendar: calendar)
     }
 
+    var selectedMacTimelineEntry: TimelineEntry? {
+        guard case let .timelineEntry(entryID) = store.macSidebarSelection else {
+            return nil
+        }
+        return timelineEntries.first { $0.id == entryID }
+    }
+
+    var selectedMacTimelineNote: RoutineNote? {
+        guard let selectedMacTimelineEntry, selectedMacTimelineEntry.isNote else {
+            return nil
+        }
+        return notes.first { $0.id == selectedMacTimelineEntry.id }
+    }
+
+    var selectedMacTimelineNoteAttachments: [RoutineNoteAttachment] {
+        guard let selectedMacTimelineNote else { return [] }
+        return noteAttachments
+            .filter { $0.noteID == selectedMacTimelineNote.id }
+            .sorted { $0.createdAt < $1.createdAt }
+    }
+
+    var selectedMacTimelinePlaceCheckInSession: PlaceCheckInSession? {
+        guard let selectedMacTimelineEntry, selectedMacTimelineEntry.isPlaceCheckIn else {
+            return nil
+        }
+        return placeCheckInSessions.first { $0.id == selectedMacTimelineEntry.id }
+    }
+
     private func openTimelineEntry(_ entry: TimelineEntry) {
         store.send(.macSidebarSelectionChanged(.timelineEntry(entry.id)))
         store.send(.setSelectedTask(entry.taskID))

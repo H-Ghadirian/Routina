@@ -507,6 +507,10 @@ timelineRoot
             timelineDetailDestination(taskID: taskID)
         } else if let selectedTimelineEntry, selectedTimelineEntry.isNote, let note = note(for: selectedTimelineEntry) {
             RoutineNoteDetailView(note: note, attachments: noteAttachments(for: note))
+        } else if let selectedTimelineEntry,
+                  selectedTimelineEntry.isPlaceCheckIn,
+                  let session = placeCheckInSession(for: selectedTimelineEntry) {
+            PlaceCheckInSessionDetailView(session: session)
         } else if let selectedTimelineEntry, selectedTimelineEntry.isSleep {
             ContentUnavailableView(
                 "Sleep record",
@@ -516,9 +520,9 @@ timelineRoot
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let selectedTimelineEntry, selectedTimelineEntry.isPlaceCheckIn {
             ContentUnavailableView(
-                "Place check-in",
+                "Place check-in not found",
                 systemImage: "mappin.and.ellipse",
-                description: Text(timelineSubtitle(for: selectedTimelineEntry))
+                description: Text("The selected place check-in is no longer available.")
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
@@ -647,6 +651,12 @@ timelineRoot
             } label: {
                 timelineRowContent(entry)
             }
+        } else if entry.isPlaceCheckIn, let session = placeCheckInSession(for: entry) {
+            NavigationLink {
+                PlaceCheckInSessionDetailView(session: session)
+            } label: {
+                timelineRowContent(entry)
+            }
         } else {
             timelineRowContent(entry)
         }
@@ -763,6 +773,10 @@ timelineRoot
 
     private func note(for entry: TimelineEntry) -> RoutineNote? {
         notes.first { $0.id == entry.id }
+    }
+
+    private func placeCheckInSession(for entry: TimelineEntry) -> PlaceCheckInSession? {
+        placeCheckInSessions.first { $0.id == entry.id }
     }
 
     private func noteAttachments(for note: RoutineNote) -> [RoutineNoteAttachment] {

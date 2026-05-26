@@ -1967,6 +1967,187 @@ private struct PlaceCheckInSessionEditor: View {
     }
 }
 
+struct PlaceCheckInSessionDetailView: View {
+    let session: PlaceCheckInSession
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                header
+
+                if let imageData = session.imageData, !imageData.isEmpty {
+                    PlaceCheckInImagePreview(data: imageData, contentMode: .fit)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 280)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+                        )
+                }
+
+                PlaceCheckInDetailCard(title: "Time", systemImage: "clock") {
+                    detailRow(title: "Range", value: timeRangeText)
+                    detailRow(title: "Duration", value: durationText)
+                    if session.isActive {
+                        detailRow(title: "Status", value: "Active")
+                    }
+                }
+
+                if let activity = session.activity {
+                    PlaceCheckInDetailCard(title: "Activity", systemImage: activity.systemImage) {
+                        Label(activity.title, systemImage: activity.systemImage)
+                            .font(.body.weight(.medium))
+                    }
+                }
+
+                if let note = PlaceCheckInSession.cleanedNote(session.note) {
+                    PlaceCheckInDetailCard(title: "Note", systemImage: "text.alignleft") {
+                        Text(note)
+                            .font(.body)
+                            .textSelection(.enabled)
+                    }
+                }
+
+                PlaceCheckInDetailCard(title: "Location", systemImage: "mappin.and.ellipse") {
+                    if let coordinate = session.coordinate {
+                        detailRow(title: "Coordinate", value: coordinate.formattedForPlaceSelection)
+                    }
+                    if let accuracy = session.horizontalAccuracyMeters {
+                        detailRow(title: "Accuracy", value: "\(Int(accuracy.rounded())) m")
+                    }
+                    if let radius = session.placeRadiusMeters {
+                        detailRow(title: "Place radius", value: "\(Int(radius.rounded())) m")
+                    }
+                    if session.coordinate == nil,
+                       session.horizontalAccuracyMeters == nil,
+                       session.placeRadiusMeters == nil {
+                        Text("No saved coordinate for this check-in.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .frame(maxWidth: 760, alignment: .leading)
+            .padding(24)
+        }
+        .navigationTitle(session.displayPlaceName)
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ZStack {
+                Circle()
+                    .fill(Color.teal.opacity(0.16))
+                Image(systemName: "mappin.and.ellipse")
+                    .font(.title.weight(.semibold))
+                    .foregroundStyle(.teal)
+            }
+            .frame(width: 58, height: 58)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(session.displayPlaceName)
+                    .font(.largeTitle.weight(.semibold))
+                    .lineLimit(3)
+
+                Text(timeRangeText)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 8) {
+                    if session.isActive {
+                        statusPill("Now", tint: .teal)
+                    }
+
+                    if session.isAutomatic {
+                        statusPill(session.requiresConfirmation ? "Auto pending" : "Auto", tint: session.requiresConfirmation ? .orange : .secondary)
+                    }
+
+                    if let activity = session.activity {
+                        Label(activity.title, systemImage: activity.systemImage)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 4)
+                            .routinaGlassPill(tint: .secondary, tintOpacity: 0.10)
+                    }
+                }
+            }
+        }
+    }
+
+    private func statusPill(_ title: String, tint: Color) -> some View {
+        Text(title)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(tint)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 4)
+            .routinaGlassPill(tint: tint, tintOpacity: 0.12)
+    }
+
+    private var timeRangeText: String {
+        guard let startedAt = session.startedAt ?? session.createdAt else {
+            return "Time unavailable"
+        }
+
+        if let endedAt = session.endedAt {
+            return "\(startedAt.formatted(date: .abbreviated, time: .shortened)) - \(endedAt.formatted(date: .abbreviated, time: .shortened))"
+        }
+
+        return "Since \(startedAt.formatted(date: .abbreviated, time: .shortened))"
+    }
+
+    private var durationText: String {
+        PlaceCheckInFormatting.durationText(seconds: session.durationSeconds(referenceDate: Date()))
+    }
+
+    private func detailRow(title: String, value: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(title)
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.secondary)
+                .frame(width: 110, alignment: .leading)
+
+            Text(value)
+                .font(.body)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+}
+
+private struct PlaceCheckInDetailCard<Content: View>: View {
+    let title: String
+    let systemImage: String
+    let content: Content
+
+    init(
+        title: String,
+        systemImage: String,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        self.systemImage = systemImage
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label(title, systemImage: systemImage)
+                .font(.headline.weight(.semibold))
+
+            content
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .routinaGlassPanel(cornerRadius: 12, tint: .secondary, tintOpacity: 0.06)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+        )
+    }
+}
+
 private struct PlaceCheckInImagePreview: View {
     let data: Data
     let contentMode: ContentMode

@@ -21,6 +21,10 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     @Binding var placeCheckInSelectedPlaceID: UUID?
     @Binding var placeCheckInSelectedHistoryMarkerID: PlaceCheckInHistoryMapMarker.ID?
     let selectedTaskID: UUID?
+    let selectedTimelineEntry: TimelineEntry?
+    let selectedTimelineNote: RoutineNote?
+    let selectedTimelineNoteAttachments: [RoutineNoteAttachment]
+    let selectedTimelinePlaceCheckInSession: PlaceCheckInSession?
     let onSelectDayPlanUnplannedCompletedDate: (Date) -> Void
     let onOpenDayPlanTaskDetails: (UUID) -> Void
     let onToggleBoardInspector: () -> Void
@@ -154,11 +158,25 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
                 store: detailStore,
                 showsPrincipalToolbarTitle: false
             )
+        } else if let selectedTimelineNote {
+            RoutineNoteDetailView(
+                note: selectedTimelineNote,
+                attachments: selectedTimelineNoteAttachments
+            )
+        } else if let selectedTimelinePlaceCheckInSession {
+            PlaceCheckInSessionDetailView(session: selectedTimelinePlaceCheckInSession)
+        } else if let selectedTimelineEntry, selectedTimelineEntry.isSleep {
+            ContentUnavailableView(
+                "Sleep record",
+                systemImage: "bed.double.fill",
+                description: Text("Sleep detail is not available yet.")
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             ContentUnavailableView(
-                "Select a done item or filters",
+                "Select a timeline entry or filters",
                 systemImage: "clock.arrow.circlepath",
-                description: Text("Choose a completed routine or todo from the sidebar, or open filters beside search to refine the done history.")
+                description: Text("Choose a task, note, or place check-in from the sidebar, or open filters beside search to refine the timeline.")
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }

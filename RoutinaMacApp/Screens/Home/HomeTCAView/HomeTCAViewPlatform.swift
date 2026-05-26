@@ -97,6 +97,10 @@ extension HomeTCAView {
                     placeCheckInSelectedPlaceID: $placeCheckInSelectedPlaceID,
                     placeCheckInSelectedHistoryMarkerID: $placeCheckInSelectedHistoryMarkerID,
                     selectedTaskID: store.selectedTaskID,
+                    selectedTimelineEntry: selectedMacTimelineEntry,
+                    selectedTimelineNote: selectedMacTimelineNote,
+                    selectedTimelineNoteAttachments: selectedMacTimelineNoteAttachments,
+                    selectedTimelinePlaceCheckInSession: selectedMacTimelinePlaceCheckInSession,
                     onSelectDayPlanUnplannedCompletedDate: { date in
                         focusMacSidebarOnDayPlanUnplannedCompletedTasks(on: date)
                     },

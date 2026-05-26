@@ -55,6 +55,7 @@ When decision records overlap, follow explicit supersession first and then prefe
 - **Mac Home add menu:** The Mac Home sidebar `+` opens a menu with Note, Goal, and Task actions. Note opens the standalone note editor; Goal switches to Goals and opens the inline goal editor; Task opens the existing add-task form. Goals mode does not add a separate toolbar `+`.
 - **Mac note creation:** Mac Home presents Add Note in the main detail area instead of a sheet, matching the main-surface creation model used by Add Goal and Add Task.
 - **Home tag grouping:** Home list grouping includes a Tags mode alongside Status and Deadline Date. Tags mode groups active unpinned routines and todos by their first normalized tag, puts untagged rows in `No Tags`, keeps Pinned and Archived as special sections, and persists each tag group's collapsed state locally.
+- **Timeline row details:** Timeline note rows open note detail, and place check-in rows open a dedicated place check-in detail view across standalone Timeline screens and the macOS Home embedded Timeline. Place detail is read-oriented; correction/editing remains in the existing Places/check-in history surfaces.
 
 ## Open Questions
 
@@ -130,3 +131,4 @@ When decision records overlap, follow explicit supersession first and then prefe
 | [0062](0062-present-mac-note-creation-inline.md) | Present Mac Note Creation Inline | Accepted | 2026-05-26 |
 | [0063](0063-tag-standalone-notes.md) | Tag Standalone Notes | Accepted | 2026-05-26 |
 | [0064](0064-group-home-task-list-by-tags.md) | Group Home Task List by Tags | Accepted | 2026-05-26 |
+| [0065](0065-open-timeline-notes-and-places-from-rows.md) | Open Timeline Notes and Places From Rows | Accepted | 2026-05-26 |

@@ -486,6 +486,12 @@ NavigationStack {
             } label: {
                 timelineRowContent(entry)
             }
+        } else if entry.isPlaceCheckIn, let session = placeCheckInSession(for: entry) {
+            NavigationLink {
+                PlaceCheckInSessionDetailView(session: session)
+            } label: {
+                timelineRowContent(entry)
+            }
         } else {
             timelineRowContent(entry)
         }
@@ -602,6 +608,10 @@ NavigationStack {
 
     private func note(for entry: TimelineEntry) -> RoutineNote? {
         notes.first { $0.id == entry.id }
+    }
+
+    private func placeCheckInSession(for entry: TimelineEntry) -> PlaceCheckInSession? {
+        placeCheckInSessions.first { $0.id == entry.id }
     }
 
     private func noteAttachments(for note: RoutineNote) -> [RoutineNoteAttachment] {
