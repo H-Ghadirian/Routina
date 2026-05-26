@@ -145,6 +145,8 @@ struct EmotionLogEditorView: View {
     private var detailCard: some View {
         EmotionLogCard(title: "Feeling", systemImage: selectedFamily.systemImage) {
             VStack(alignment: .leading, spacing: 16) {
+                emotionSectionTitle("Emotion family")
+
                 chipFlow {
                     ForEach(suggestedFamilies) { family in
                         EmotionChip(
@@ -160,6 +162,8 @@ struct EmotionLogEditorView: View {
                 }
 
                 Divider()
+
+                emotionSectionTitle("Specific feeling")
 
                 chipFlow {
                     ForEach(selectedFamily.labels, id: \.self) { label in
@@ -188,6 +192,13 @@ struct EmotionLogEditorView: View {
                 }
             }
         }
+    }
+
+    private func emotionSectionTitle(_ title: String) -> some View {
+        Text(title)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .textCase(.uppercase)
     }
 
     private var bodyCard: some View {
