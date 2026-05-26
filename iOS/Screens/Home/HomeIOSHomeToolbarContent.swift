@@ -4,8 +4,14 @@ struct HomeIOSHomeToolbarContent: ToolbarContent {
     let taskListMode: HomeFeature.TaskListMode
     let areTaskListModeActionsExpanded: Bool
     let areTopActionsExpanded: Bool
+    let hasActiveOptionalFilters: Bool
+    let showsSleepAction: Bool
     let onSelectTaskListMode: (HomeFeature.TaskListMode) -> Void
     let onToggleTaskListModeActions: () -> Void
+    let onShowFilters: () -> Void
+    let onAddNote: () -> Void
+    let onCheckIn: () -> Void
+    let onStartSleep: () -> Void
     let onToggleTopActions: () -> Void
 
     var body: some ToolbarContent {
@@ -25,10 +31,48 @@ struct HomeIOSHomeToolbarContent: ToolbarContent {
         }
 
         ToolbarItemGroup(placement: .primaryAction) {
+            if areTopActionsExpanded {
+                topActionButton(
+                    title: "Filters",
+                    systemImage: hasActiveOptionalFilters
+                        ? "line.3.horizontal.decrease.circle.fill"
+                        : "line.3.horizontal.decrease.circle",
+                    tint: hasActiveOptionalFilters ? .accentColor : .secondary,
+                    isHighlighted: hasActiveOptionalFilters,
+                    action: onShowFilters
+                )
+
+                topActionButton(
+                    title: "Add Note",
+                    systemImage: "note.text",
+                    tint: .blue,
+                    isHighlighted: false,
+                    action: onAddNote
+                )
+
+                topActionButton(
+                    title: "Check In",
+                    systemImage: "mappin.and.ellipse",
+                    tint: .teal,
+                    isHighlighted: false,
+                    action: onCheckIn
+                )
+
+                if showsSleepAction {
+                    topActionButton(
+                        title: "Going to sleep",
+                        systemImage: "bed.double.fill",
+                        tint: .indigo,
+                        isHighlighted: false,
+                        action: onStartSleep
+                    )
+                }
+            }
+
             Button(action: onToggleTopActions) {
                 Label(
                     areTopActionsExpanded ? "Collapse Actions" : "Expand Actions",
-                    systemImage: areTopActionsExpanded ? "chevron.up.circle" : "ellipsis.circle"
+                    systemImage: areTopActionsExpanded ? "chevron.right.circle" : "ellipsis.circle"
                 )
             }
         }
@@ -50,5 +94,26 @@ struct HomeIOSHomeToolbarContent: ToolbarContent {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(mode.accessibilityLabel)
+    }
+
+    private func topActionButton(
+        title: String,
+        systemImage: String,
+        tint: Color,
+        isHighlighted: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(tint)
+                .frame(width: 30, height: 30)
+                .contentShape(Circle())
+                .routinaIf(isHighlighted) { view in
+                    view.routinaGlassPill(tint: .accentColor, tintOpacity: 0.16, interactive: true)
+                }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
     }
 }

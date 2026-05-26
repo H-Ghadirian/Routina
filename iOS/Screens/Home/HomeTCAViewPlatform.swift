@@ -26,6 +26,8 @@ extension HomeTCAView {
             taskListMode: store.taskListMode,
             areTaskListModeActionsExpanded: areTaskListModeActionsExpanded,
             areTopActionsExpanded: areTopActionsExpanded,
+            hasActiveOptionalFilters: hasActiveOptionalFilters,
+            showsSleepAction: shouldShowHomeSleepAction,
             onSelectTaskListMode: { mode in
                 store.send(.taskListModeChanged(mode))
                 collapseExpandedToolbarActions()
@@ -37,6 +39,21 @@ extension HomeTCAView {
                         areTopActionsExpanded = false
                     }
                 }
+            },
+            onShowFilters: {
+                collapseExpandedToolbarActions()
+                store.send(.isFilterSheetPresentedChanged(true))
+            },
+            onAddNote: {
+                collapseExpandedToolbarActions()
+                isNoteEditorPresented = true
+            },
+            onCheckIn: {
+                collapseExpandedToolbarActions()
+                isPlaceCheckInMapPresented = true
+            },
+            onStartSleep: {
+                requestStartSleepFromHomeAction()
             },
             onToggleTopActions: {
                 withAnimation(.snappy(duration: 0.2)) {
@@ -55,32 +72,6 @@ iosSidebarContent
         } detail: {
 detailContent
         }
-    }
-
-    private var topActionRail: some View {
-        HomeIOSTopActionRail(
-            hasActiveOptionalFilters: hasActiveOptionalFilters,
-            showsSleepAction: shouldShowHomeSleepAction,
-            onQuickAdd: {
-                collapseExpandedToolbarActions()
-                openAddTask()
-            },
-            onShowFilters: {
-                collapseExpandedToolbarActions()
-                store.send(.isFilterSheetPresentedChanged(true))
-            },
-            onAddNote: {
-                collapseExpandedToolbarActions()
-                isNoteEditorPresented = true
-            },
-            onCheckIn: {
-                collapseExpandedToolbarActions()
-                isPlaceCheckInMapPresented = true
-            },
-            onStartSleep: {
-                requestStartSleepFromHomeAction()
-            }
-        )
     }
 
     func applyPlatformDeleteConfirmation<Content: View>(to view: Content) -> some View {
@@ -412,15 +403,6 @@ detailContent
         } toolbarItems: {
             homeToolbarContent
         }
-        .overlay(alignment: .topTrailing) {
-            if areTopActionsExpanded {
-                topActionRail
-                    .padding(.top, 8)
-                    .padding(.trailing, 18)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .zIndex(10)
-            }
-        }
         .safeAreaInset(edge: .top, spacing: 0) {
             HomePinnedFocusTimerBanner { deepLink in
                 switch deepLink {
@@ -431,84 +413,6 @@ detailContent
                 }
             }
         }
-    }
-}
-
-private struct HomeIOSTopActionRail: View {
-    let hasActiveOptionalFilters: Bool
-    let showsSleepAction: Bool
-    let onQuickAdd: () -> Void
-    let onShowFilters: () -> Void
-    let onAddNote: () -> Void
-    let onCheckIn: () -> Void
-    let onStartSleep: () -> Void
-
-    var body: some View {
-        VStack(spacing: 8) {
-            actionButton(
-                title: "Quick Add",
-                systemImage: "text.badge.plus",
-                tint: .accentColor,
-                action: onQuickAdd
-            )
-
-            actionButton(
-                title: "Filters",
-                systemImage: hasActiveOptionalFilters
-                    ? "line.3.horizontal.decrease.circle.fill"
-                    : "line.3.horizontal.decrease.circle",
-                tint: hasActiveOptionalFilters ? .accentColor : .secondary,
-                action: onShowFilters
-            )
-
-            actionButton(
-                title: "Add Note",
-                systemImage: "note.text",
-                tint: .blue,
-                action: onAddNote
-            )
-
-            actionButton(
-                title: "Check In",
-                systemImage: "mappin.and.ellipse",
-                tint: .teal,
-                action: onCheckIn
-            )
-
-            if showsSleepAction {
-                actionButton(
-                    title: "Going to sleep",
-                    systemImage: "bed.double.fill",
-                    tint: .indigo,
-                    action: onStartSleep
-                )
-            }
-        }
-        .padding(7)
-        .routinaGlassPanel(cornerRadius: 28, tint: .secondary, tintOpacity: 0.08, interactive: true)
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.16), radius: 16, y: 8)
-    }
-
-    private func actionButton(
-        title: String,
-        systemImage: String,
-        tint: Color,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(tint)
-                .frame(width: 42, height: 42)
-                .contentShape(Circle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(title)
-        .help(title)
     }
 }
 
