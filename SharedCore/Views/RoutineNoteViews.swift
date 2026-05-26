@@ -45,7 +45,6 @@ struct RoutineNoteEditorView: View {
             .navigationTitle("New Note")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
-            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -61,6 +60,7 @@ struct RoutineNoteEditorView: View {
                     .keyboardShortcut(.defaultAction)
                 }
             }
+            #endif
         }
         .onChange(of: selectedPhotoItem) { _, newItem in
             guard let newItem else { return }
@@ -191,6 +191,7 @@ struct RoutineNoteEditorView: View {
                 cancel()
             }
             .buttonStyle(.bordered)
+            .keyboardShortcut(.cancelAction)
 
             Button {
                 save()
@@ -199,6 +200,7 @@ struct RoutineNoteEditorView: View {
             }
             .buttonStyle(.borderedProminent)
             .disabled(!hasContent)
+            .keyboardShortcut(.defaultAction)
         }
     }
 
