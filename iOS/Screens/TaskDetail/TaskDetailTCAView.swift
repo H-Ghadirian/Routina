@@ -14,6 +14,8 @@ struct TaskDetailTCAView: View {
     @State private var isRoutineLogsExpanded = true
     @State private var isTaskChangesExpanded = true
     @State private var isCommentComposerVisible = false
+    @State private var isTodoStateControlRevealed = false
+    @State private var isPressureControlRevealed = false
     @State private var timeEditing = TaskDetailTimeEditingState()
     @State var isEditEmojiPickerPresented = false
     @State var syncedMacOverviewHeight: CGFloat = 0
@@ -139,6 +141,7 @@ detailBody
     referenceDate = Date()
     activeBlockingTask = nil
     isCommentComposerVisible = false
+    resetRevealedOptionalControls()
     Task {
         await refreshFocusBlockingContext()
     }
@@ -150,6 +153,16 @@ detailBody
 }
 .onChange(of: store.resolvedSelectedDate) { _, newValue in
     displayedMonthStart = Calendar.current.startOfMonth(for: newValue)
+}
+.onChange(of: store.task.pressure) { oldValue, newValue in
+    if oldValue != newValue {
+        isPressureControlRevealed = false
+    }
+}
+.onChange(of: store.task.todoStateRawValue) { _, newValue in
+    if newValue != nil {
+        isTodoStateControlRevealed = false
+    }
 }
 .routinaCloudSharingSheet(
     isPresented: $isCloudSharingPresented,
@@ -197,7 +210,11 @@ detailBody
                 todoHeaderSection
                 notificationDisabledWarningSection
                 calendarSection
-                TaskDetailTodoPrimaryActionSection(store: store)
+                TaskDetailTodoPrimaryActionSection(
+                    store: store,
+                    showsTodoStateControl: shouldShowTodoStateControl,
+                    showsPressureControl: shouldShowPressureControl
+                )
                 todoStateTimingSection
                 if store.task.focusModeEnabled {
                     focusSessionSection
@@ -236,7 +253,8 @@ detailBody
                 notificationDisabledWarningSection
                 TaskDetailRoutinePrimaryActionSection(
                     store: store,
-                    pauseArchivePresentation: pauseArchivePresentation
+                    pauseArchivePresentation: pauseArchivePresentation,
+                    showsPressureControl: shouldShowPressureControl
                 )
                 calendarSection
                 if store.task.focusModeEnabled {
@@ -298,6 +316,8 @@ detailBody
             TaskDetailOptionalActionsSectionView(
                 showsCommentAction: !shouldShowCommentsSection,
                 showsLinkedTaskAction: !shouldShowRelationshipsSection,
+                showsStateAction: shouldShowTodoStateAddAction,
+                showsPressureAction: shouldShowPressureAddAction,
                 showsDetailsAction: !hasTaskExtras,
                 background: routineLogsBackground,
                 stroke: TaskDetailPlatformStyle.sectionCardStroke,
@@ -307,13 +327,27 @@ detailBody
                     }
                 },
                 onAddLinkedTask: { store.send(.openAddLinkedTask) },
+                onAddState: {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        isTodoStateControlRevealed = true
+                    }
+                },
+                onAddPressure: {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        isPressureControlRevealed = true
+                    }
+                },
                 onEditDetails: { store.send(.setEditSheet(true)) }
             )
         }
     }
 
     private var shouldShowOptionalActionsSection: Bool {
-        !shouldShowCommentsSection || !shouldShowRelationshipsSection || !hasTaskExtras
+        !shouldShowCommentsSection
+            || !shouldShowRelationshipsSection
+            || shouldShowTodoStateAddAction
+            || shouldShowPressureAddAction
+            || !hasTaskExtras
     }
 
     private var shouldShowCommentsSection: Bool {
@@ -327,12 +361,40 @@ detailBody
         !store.groupedResolvedRelationships.isEmpty
     }
 
+    private var shouldShowTodoStateControl: Bool {
+        canShowTodoStateControl
+            && (isTodoStateControlRevealed || TaskDetailOptionalControlVisibility.showsTodoState(for: store.task))
+    }
+
+    private var shouldShowPressureControl: Bool {
+        isPressureControlRevealed || TaskDetailOptionalControlVisibility.showsPressure(for: store.task)
+    }
+
+    private var shouldShowTodoStateAddAction: Bool {
+        canShowTodoStateControl && !shouldShowTodoStateControl
+    }
+
+    private var shouldShowPressureAddAction: Bool {
+        !shouldShowPressureControl
+    }
+
+    private var canShowTodoStateControl: Bool {
+        store.task.isOneOffTask
+            && !store.task.isCompletedOneOff
+            && !store.task.isCanceledOneOff
+    }
+
     private var hasTaskExtras: Bool {
         store.task.hasNotes
             || store.task.hasImage
             || store.task.hasVoiceNote
             || !store.taskAttachments.isEmpty
             || store.task.resolvedLinkURL != nil
+    }
+
+    private func resetRevealedOptionalControls() {
+        isTodoStateControlRevealed = false
+        isPressureControlRevealed = false
     }
 
     private var blockingFocusTitle: String? {

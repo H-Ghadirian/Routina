@@ -3,24 +3,26 @@ import ComposableArchitecture
 
 struct TaskDetailTodoPrimaryActionSection: View {
     let store: StoreOf<TaskDetailFeature>
+    let showsTodoStateControl: Bool
+    let showsPressureControl: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             if shouldShowStatusControls {
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: 8) {
-                        if shouldShowTodoStateControl {
+                        if showsTodoStateControl {
                             TaskDetailTodoStatePickerPill(store: store)
                         }
-                        if shouldShowPressureControl {
+                        if showsPressureControl {
                             TaskDetailPressurePickerPill(store: store)
                         }
                     }
                     VStack(alignment: .leading, spacing: 8) {
-                        if shouldShowTodoStateControl {
+                        if showsTodoStateControl {
                             TaskDetailTodoStatePickerPill(store: store)
                         }
-                        if shouldShowPressureControl {
+                        if showsPressureControl {
                             TaskDetailPressurePickerPill(store: store)
                         }
                     }
@@ -42,27 +44,18 @@ struct TaskDetailTodoPrimaryActionSection: View {
     }
 
     private var shouldShowStatusControls: Bool {
-        shouldShowTodoStateControl || shouldShowPressureControl
-    }
-
-    private var shouldShowTodoStateControl: Bool {
-        !store.task.isCompletedOneOff
-            && !store.task.isCanceledOneOff
-            && TaskDetailOptionalControlVisibility.showsTodoState(for: store.task)
-    }
-
-    private var shouldShowPressureControl: Bool {
-        TaskDetailOptionalControlVisibility.showsPressure(for: store.task)
+        showsTodoStateControl || showsPressureControl
     }
 }
 
 struct TaskDetailRoutinePrimaryActionSection: View {
     let store: StoreOf<TaskDetailFeature>
     let pauseArchivePresentation: RoutinePauseArchivePresentation
+    let showsPressureControl: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if TaskDetailOptionalControlVisibility.showsPressure(for: store.task) {
+            if showsPressureControl {
                 TaskDetailPressurePickerPill(store: store)
             }
             TaskDetailPrimaryActionButton(store: store)

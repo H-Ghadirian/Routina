@@ -94,11 +94,15 @@ struct TaskDetailExtrasSectionView: View {
 struct TaskDetailOptionalActionsSectionView: View {
     let showsCommentAction: Bool
     let showsLinkedTaskAction: Bool
+    let showsStateAction: Bool
+    let showsPressureAction: Bool
     let showsDetailsAction: Bool
     let background: Color
     let stroke: Color
     let onAddComment: () -> Void
     let onAddLinkedTask: () -> Void
+    let onAddState: () -> Void
+    let onAddPressure: () -> Void
     let onEditDetails: () -> Void
 
     var body: some View {
@@ -135,6 +139,22 @@ struct TaskDetailOptionalActionsSectionView: View {
                 title: "Linked Task",
                 systemImage: "link.badge.plus",
                 action: onAddLinkedTask
+            )
+        }
+
+        if showsStateAction {
+            actionButton(
+                title: "State",
+                systemImage: "circle.grid.2x1",
+                action: onAddState
+            )
+        }
+
+        if showsPressureAction {
+            actionButton(
+                title: "Pressure",
+                systemImage: "gauge.with.dots.needle.50percent",
+                action: onAddPressure
             )
         }
 
