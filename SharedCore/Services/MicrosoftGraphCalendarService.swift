@@ -29,8 +29,8 @@ struct MicrosoftGraphSignInResult: Equatable {
 
 @MainActor
 final class MicrosoftGraphCalendarService: NSObject, ASWebAuthenticationPresentationContextProviding {
-    private let callbackScheme = "routina"
-    private let redirectURI = "routina://auth/microsoft"
+    private let callbackScheme = AppEnvironment.deepLinkURLScheme
+    private let redirectURI = "\(AppEnvironment.deepLinkURLScheme)://auth/microsoft"
     private var authSession: ASWebAuthenticationSession?
 
     func signIn() async throws -> MicrosoftGraphSignInResult {

@@ -46,7 +46,7 @@ struct RoutinaFocusTimerLiveActivity: Widget {
         _ kind: FocusTimerActivityAttributes.FocusKind,
         targetID: UUID
     ) -> URL {
-        URL(string: "routina://\(kind.deepLinkPath)/\(targetID.uuidString)")!
+        RoutinaWidgetDeepLink.url(path: kind.deepLinkPath, targetID: targetID)
     }
 
     private func deepLinkURL(_ context: ActivityViewContext<FocusTimerActivityAttributes>) -> URL? {
@@ -148,7 +148,28 @@ private struct FocusTimerLiveActivityLockScreenView: View {
     private var deepLinkURL: URL? {
         let targetID = context.attributes.targetID ?? context.attributes.taskID
         guard let targetID else { return nil }
-        return URL(string: "routina://\(focusKind.deepLinkPath)/\(targetID.uuidString)")
+        return RoutinaWidgetDeepLink.url(path: focusKind.deepLinkPath, targetID: targetID)
+    }
+}
+
+private enum RoutinaWidgetDeepLink {
+    private static let productionScheme = "routina"
+    private static let sandboxScheme = "routina-dev"
+
+    static func url(path: String, targetID: UUID) -> URL {
+        URL(string: "\(scheme)://\(path)/\(targetID.uuidString)")!
+    }
+
+    private static var scheme: String {
+        if let configuredScheme = Bundle.main.infoDictionary?["RoutinaDeepLinkURLScheme"] as? String {
+            let cleanedScheme = configuredScheme.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if !cleanedScheme.isEmpty {
+                return cleanedScheme
+            }
+        }
+
+        let bundleID = Bundle.main.bundleIdentifier?.lowercased()
+        return bundleID?.contains(".dev") == true ? sandboxScheme : productionScheme
     }
 }
 

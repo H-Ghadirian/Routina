@@ -1,8 +1,32 @@
 import Foundation
 
 enum AppEnvironment {
+    static let productionDeepLinkURLScheme = "routina"
+    static let sandboxDeepLinkURLScheme = "routina-dev"
+    static let supportedDeepLinkURLSchemes: Set<String> = [
+        productionDeepLinkURLScheme,
+        sandboxDeepLinkURLScheme
+    ]
+
     private static let processEnvironment = ProcessInfo.processInfo.environment
     private static let bundleIdentifier = Bundle.main.bundleIdentifier?.lowercased()
+
+    static let deepLinkURLScheme: String = {
+        if let override = resolvedString(
+            infoKey: "RoutinaDeepLinkURLScheme",
+            envKey: "ROUTINA_DEEP_LINK_URL_SCHEME"
+        ).map(AppEnvironment.cleanedURLScheme),
+           supportedDeepLinkURLSchemes.contains(override) {
+            return override
+        }
+
+        if bundleIdentifier?.contains(".dev") == true {
+            return sandboxDeepLinkURLScheme
+        }
+
+        return productionDeepLinkURLScheme
+    }()
+
     static let isUITestMode: Bool = {
         if let value = boolValue(from: processEnvironment["ROUTINA_UI_TEST_MODE"]) {
             return value
@@ -134,6 +158,10 @@ enum AppEnvironment {
 
         return isCloudSyncEnabled ? "Production (iCloud)" : "Production (local only)"
     }()
+
+    static func cleanedURLScheme(_ rawValue: String) -> String {
+        rawValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
 }
 
 private extension AppEnvironment {

@@ -164,7 +164,7 @@ struct CalendarTaskImportSheet: View {
             ContentUnavailableView(
                 "Outlook sign in is not configured",
                 systemImage: "person.crop.circle.badge.exclamationmark",
-                description: Text("Add a Microsoft Graph app client ID to RoutinaMicrosoftGraphClientID, then register routina://auth/microsoft as the redirect URI.")
+                description: Text("Add a Microsoft Graph app client ID to RoutinaMicrosoftGraphClientID, then register \(AppEnvironment.deepLinkURLScheme)://auth/microsoft as the redirect URI.")
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if !viewModel.canRefreshOutlook {

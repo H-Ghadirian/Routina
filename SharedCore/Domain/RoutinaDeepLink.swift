@@ -7,7 +7,12 @@ enum RoutinaDeepLink: Equatable, Sendable {
     case sprint(UUID)
 
     init?(url: URL) {
-        guard url.scheme?.lowercased() == "routina" else { return nil }
+        guard
+            let scheme = url.scheme.map(AppEnvironment.cleanedURLScheme),
+            AppEnvironment.supportedDeepLinkURLSchemes.contains(scheme)
+        else {
+            return nil
+        }
 
         let components = url.pathComponents.filter { $0 != "/" }
         if let taskID = Self.targetID(for: "task", url: url, components: components) {
@@ -53,17 +58,26 @@ enum RoutinaDeepLink: Equatable, Sendable {
         return nil
     }
 
-    var url: URL {
+    private var path: String {
         switch self {
         case let .task(taskID):
-            return URL(string: "routina://task/\(taskID.uuidString)")!
+            return "task/\(taskID.uuidString)"
         case let .goal(goalID):
-            return URL(string: "routina://goal/\(goalID.uuidString)")!
+            return "goal/\(goalID.uuidString)"
         case let .note(noteID):
-            return URL(string: "routina://note/\(noteID.uuidString)")!
+            return "note/\(noteID.uuidString)"
         case let .sprint(sprintID):
-            return URL(string: "routina://sprint/\(sprintID.uuidString)")!
+            return "sprint/\(sprintID.uuidString)"
         }
+    }
+
+    var url: URL {
+        url(scheme: AppEnvironment.deepLinkURLScheme)
+    }
+
+    func url(scheme: String) -> URL {
+        let scheme = AppEnvironment.cleanedURLScheme(scheme)
+        return URL(string: "\(scheme)://\(path)")!
     }
 }
 

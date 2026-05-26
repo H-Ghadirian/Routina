@@ -244,6 +244,27 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         }
     }
 
+    private enum WatchRoutineDeepLinkURL {
+        private static let productionScheme = "routina"
+        private static let sandboxScheme = "routina-dev"
+
+        static func url(path: String, targetID: UUID) -> URL {
+            URL(string: "\(scheme)://\(path)/\(targetID.uuidString)")!
+        }
+
+        private static var scheme: String {
+            if let configuredScheme = Bundle.main.infoDictionary?["RoutinaDeepLinkURLScheme"] as? String {
+                let cleanedScheme = configuredScheme.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                if !cleanedScheme.isEmpty {
+                    return cleanedScheme
+                }
+            }
+
+            let bundleID = Bundle.main.bundleIdentifier?.lowercased()
+            return bundleID?.contains(".dev") == true ? sandboxScheme : productionScheme
+        }
+    }
+
     struct WatchFocusSession: Identifiable, Equatable, Sendable, Codable {
         let id: UUID
         let focusKind: WatchFocusKind?
@@ -264,7 +285,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
 
         var deepLinkURL: URL? {
             guard let deepLinkTargetID else { return nil }
-            return URL(string: "routina://\(resolvedFocusKind.deepLinkPath)/\(deepLinkTargetID.uuidString)")
+            return WatchRoutineDeepLinkURL.url(path: resolvedFocusKind.deepLinkPath, targetID: deepLinkTargetID)
         }
 
         var isCountUp: Bool {

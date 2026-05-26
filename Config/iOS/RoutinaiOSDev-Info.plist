@@ -22,10 +22,10 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>Routina Microsoft Sign In</string>
+			<string>Routina App Links</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>routina</string>
+				<string>routina-dev</string>
 			</array>
 		</dict>
 	</array>
@@ -52,6 +52,8 @@
 	<string>Routina reads selected calendars only when you review events to add as tasks.</string>
 	<key>RoutinaMicrosoftGraphClientID</key>
 	<string></string>
+	<key>RoutinaDeepLinkURLScheme</key>
+	<string>routina-dev</string>
 	<key>RoutinaCloudKitContainerIdentifier</key>
 	<string>iCloud.ir.hamedgh.Routinam.dev</string>
 	<key>RoutinaSandboxDataMode</key>
