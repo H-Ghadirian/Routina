@@ -475,9 +475,11 @@ struct AddRoutineFeature: Reducer {
             applyQuickAddSchedule(from: draft, state: &state)
         }
 
-        for tag in draft.tags where !state.organization.routineTags.contains(tag) {
-            state.organization.routineTags.append(tag)
-        }
+        state.organization.routineTags = RoutineTag.merging(
+            draft.tags,
+            into: state.organization.routineTags,
+            availableTags: state.organization.availableTags
+        )
 
         if let placeID = matchingPlaceID(named: draft.placeName, in: state.organization.availablePlaces) {
             state.basics.selectedPlaceID = placeID

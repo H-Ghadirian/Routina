@@ -116,6 +116,8 @@ struct RoutinaQuickAddParserTests {
     func createTaskUsesSharedSavePath() async throws {
         let context = makeInMemoryContext()
         let place = makePlace(in: context, name: "Balcony")
+        _ = makeTask(in: context, name: "Existing home tag", interval: 1, lastDone: nil, emoji: "🏠", tags: ["Home"])
+
         let result = try await RoutinaQuickAddService.createTask(
             from: "Water plants every Saturday at 9am #home @Balcony !high 25m",
             context: context,
@@ -128,7 +130,7 @@ struct RoutinaQuickAddParserTests {
 
         #expect(task.name == "Water plants")
         #expect(task.placeID == place.id)
-        #expect(task.tags == ["home"])
+        #expect(task.tags == ["Home"])
         #expect(task.scheduleMode == .fixedInterval)
         #expect(task.recurrenceRule.kind == .weekly)
         #expect(task.recurrenceRule.weekday == 7)

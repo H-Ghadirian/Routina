@@ -371,6 +371,28 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func applyQuickAddDraftFromName_deduplicatesTagsIgnoringCase() async {
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(routineName: "Water plants #home"),
+                organization: AddRoutineOrganizationState(
+                    routineTags: ["Home"],
+                    availableTags: ["Home"]
+                )
+            )
+        ) {
+            makeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: makeDate("2026-04-23T10:00:00Z"))
+        }
+
+        await store.send(.applyQuickAddDraftFromName) {
+            $0.basics.routineName = "Water plants"
+            $0.organization.routineTags = ["Home"]
+        }
+    }
+
+    @Test
     func saveTapped_appliesQuickAddDraftFromNameBeforeDelegating() async {
         let store = TestStore(
             initialState: makeState(
@@ -664,6 +686,25 @@ struct AddRoutineFeatureTests {
 
         await store.send(.toggleTagSelection("focus")) {
             $0.organization.routineTags = ["Morning"]
+        }
+    }
+
+    @Test
+    func addTagTapped_prefersAvailableTagCase() async {
+        let store = TestStore(
+            initialState: makeState(
+                organization: AddRoutineOrganizationState(
+                    availableTags: ["Home"],
+                    tagDraft: "home"
+                )
+            )
+        ) {
+            makeFeature()
+        }
+
+        await store.send(.addTagTapped) {
+            $0.organization.routineTags = ["Home"]
+            $0.organization.tagDraft = ""
         }
     }
 

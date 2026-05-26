@@ -138,7 +138,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.imageData = imageData
         self.voiceNote = voiceNote
         self.selectedPlaceID = selectedPlaceID
-        self.tags = tags
+        self.tags = RoutineTag.deduplicated(tags)
         self.goals = RoutineGoalSummary.sanitized(goals)
         self.relationships = relationships
         self.steps = steps
@@ -185,7 +185,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.imageData = basics.imageData
         self.voiceNote = basics.voiceNote
         self.selectedPlaceID = basics.selectedPlaceID
-        self.tags = organization.routineTags
+        self.tags = RoutineTag.deduplicated(organization.routineTags)
         self.goals = organization.routineGoals
         self.relationships = organization.relationships
         self.steps = (schedule.scheduleMode.isStandardRoutineMode || schedule.scheduleMode == .oneOff)

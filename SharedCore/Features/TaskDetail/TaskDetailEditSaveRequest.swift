@@ -36,7 +36,11 @@ struct TaskDetailEditSaveRequestBuilder {
     let matrixPriority: (RoutineTaskImportance, RoutineTaskUrgency) -> RoutineTaskPriority
 
     func build(state: inout TaskDetailFeature.State) -> TaskDetailEditSaveRequest? {
-        state.editRoutineTags = RoutineTag.appending(state.editTagDraft, to: state.editRoutineTags)
+        state.editRoutineTags = RoutineTag.appending(
+            state.editTagDraft,
+            to: state.editRoutineTags,
+            availableTags: state.availableTags
+        )
         state.editTagDraft = ""
         state.editRoutineGoals = RoutineGoalSummary.appending(
             state.editGoalDraft,
@@ -89,7 +93,7 @@ struct TaskDetailEditSaveRequestBuilder {
             voiceNote: state.editVoiceNote,
             attachments: state.editAttachments,
             placeID: state.editSelectedPlaceID,
-            tags: state.editRoutineTags,
+            tags: RoutineTag.deduplicated(state.editRoutineTags),
             goals: state.editRoutineGoals,
             relationships: state.editRelationships,
             steps: (scheduleMode.isStandardRoutineMode || scheduleMode == .oneOff)

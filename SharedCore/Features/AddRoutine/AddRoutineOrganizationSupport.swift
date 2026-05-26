@@ -6,6 +6,10 @@ enum AddRoutineOrganizationEditor {
         organization: inout AddRoutineOrganizationState
     ) {
         organization.availableTags = RoutineTag.allTags(from: [tags])
+        organization.routineTags = RoutineTag.deduplicated(
+            organization.routineTags,
+            preferredTags: organization.availableTags
+        )
         organization.availableTagSummaries = organization.availableTags.map {
             RoutineTagSummary(name: $0, linkedRoutineCount: 0)
         }
@@ -17,6 +21,10 @@ enum AddRoutineOrganizationEditor {
     ) {
         organization.availableTagSummaries = sortedTagSummaries(summaries)
         organization.availableTags = organization.availableTagSummaries.map(\.name)
+        organization.routineTags = RoutineTag.deduplicated(
+            organization.routineTags,
+            preferredTags: organization.availableTags
+        )
     }
 
     static func setAvailableGoals(
@@ -58,7 +66,8 @@ enum AddRoutineOrganizationEditor {
     ) {
         organization.routineTags = RoutineTag.appending(
             organization.tagDraft,
-            to: organization.routineTags
+            to: organization.routineTags,
+            availableTags: organization.availableTags
         )
         organization.tagDraft = ""
     }
@@ -88,7 +97,11 @@ enum AddRoutineOrganizationEditor {
         if RoutineTag.contains(tag, in: organization.routineTags) {
             organization.routineTags = RoutineTag.removing(tag, from: organization.routineTags)
         } else {
-            organization.routineTags = RoutineTag.appending(tag, to: organization.routineTags)
+            organization.routineTags = RoutineTag.appending(
+                tag,
+                to: organization.routineTags,
+                availableTags: organization.availableTags
+            )
         }
     }
 

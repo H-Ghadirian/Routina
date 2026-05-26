@@ -16,6 +16,10 @@ struct TaskDetailEditContextActionHandler {
 
     func availableTagsLoaded(_ tags: [String], state: inout State) -> Effect<Action> {
         state.availableTags = RoutineTag.allTags(from: [tags])
+        state.editRoutineTags = RoutineTag.deduplicated(
+            state.editRoutineTags,
+            preferredTags: state.availableTags
+        )
         return .none
     }
 

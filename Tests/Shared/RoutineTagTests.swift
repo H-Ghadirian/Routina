@@ -28,6 +28,28 @@ struct RoutineTagTests {
     }
 
     @Test
+    func appending_prefersExistingTagCasingWhenDraftCaseDiffers() {
+        let tags = RoutineTag.appending(
+            "home, WORK, new",
+            to: ["Focus"],
+            availableTags: ["Home", "Work"]
+        )
+
+        #expect(tags == ["Focus", "Home", "Work", "new"])
+    }
+
+    @Test
+    func mergingTags_deduplicatesAgainstExistingTagsIgnoringCase() {
+        let tags = RoutineTag.merging(
+            ["home", "FOCUS"],
+            into: ["Focus"],
+            availableTags: ["Home", "Focus"]
+        )
+
+        #expect(tags == ["Focus", "Home"])
+    }
+
+    @Test
     func serializeDeserializeAndQuery_roundTripNormalizedTags() {
         let storage = RoutineTag.serialize([" Focus ", "focus", "Deep Work"])
         #expect(storage == "Focus\nDeep Work")

@@ -84,6 +84,7 @@ enum RoutinaQuickAddService {
             throw RoutinaQuickAddError.duplicateTaskName(trimmedName)
         }
 
+        draft.tags = try canonicalTags(for: draft.tags, context: context)
         let place = try matchedPlace(named: draft.placeName, context: context)
         let request = draft.saveRequest(placeID: place?.id)
         let goalIDs = try RoutineGoalPersistence.ensureGoals(request.goals, in: context)
@@ -311,6 +312,22 @@ enum RoutinaQuickAddService {
         return places.first { place in
             RoutinePlace.normalizedName(place.name) == normalizedName
         }
+    }
+
+    @MainActor
+    private static func canonicalTags(
+        for tags: [String],
+        context: ModelContext
+    ) throws -> [String] {
+        guard !tags.isEmpty else { return [] }
+
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
+        let notes = try context.fetch(FetchDescriptor<RoutineNote>())
+        let availableTags = RoutineTag.allTags(
+            from: tasks.map(\.tags) + goals.map(\.tags) + notes.map(\.tags)
+        )
+        return RoutineTag.deduplicated(tags, preferredTags: availableTags)
     }
 
     private static func bestTaskMatch(

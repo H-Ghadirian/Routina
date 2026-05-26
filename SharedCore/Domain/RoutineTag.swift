@@ -117,8 +117,9 @@ enum RoutineTag {
         return deduplicated(input.components(separatedBy: separators))
     }
 
-    static func deduplicated(_ tags: [String]) -> [String] {
+    static func deduplicated(_ tags: [String], preferredTags: [String] = []) -> [String] {
         var seen = Set<String>()
+        let preferredTagsByNormalized = preferredDisplayTagsByNormalized(preferredTags)
 
         return tags.compactMap { rawTag in
             guard
@@ -129,12 +130,31 @@ enum RoutineTag {
                 return nil
             }
 
-            return cleanedTag
+            return preferredTagsByNormalized[normalizedTag] ?? cleanedTag
         }
     }
 
     static func appending(_ draft: String, to existingTags: [String]) -> [String] {
         deduplicated(existingTags + parseDraft(draft))
+    }
+
+    static func appending(
+        _ draft: String,
+        to existingTags: [String],
+        availableTags: [String]
+    ) -> [String] {
+        deduplicated(
+            existingTags + parseDraft(draft),
+            preferredTags: availableTags + existingTags
+        )
+    }
+
+    static func merging(
+        _ tags: [String],
+        into existingTags: [String],
+        availableTags: [String]
+    ) -> [String] {
+        deduplicated(existingTags + tags, preferredTags: availableTags + existingTags)
     }
 
     static func autocompleteSuggestion(
@@ -328,6 +348,17 @@ enum RoutineTag {
     static func deserialize(_ storage: String?) -> [String] {
         guard let storage else { return [] }
         return deduplicated(storage.components(separatedBy: .newlines))
+    }
+
+    private static func preferredDisplayTagsByNormalized(_ tags: [String]) -> [String: String] {
+        tags.reduce(into: [String: String]()) { partialResult, tag in
+            guard let cleanedTag = cleaned(tag),
+                  let normalizedTag = normalized(cleanedTag),
+                  partialResult[normalizedTag] == nil else {
+                return
+            }
+            partialResult[normalizedTag] = cleanedTag
+        }
     }
 
     private static func currentDraftToken(in draft: String) -> String {

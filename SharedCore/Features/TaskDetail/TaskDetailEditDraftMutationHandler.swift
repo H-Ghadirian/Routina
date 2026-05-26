@@ -71,7 +71,11 @@ struct TaskDetailEditDraftMutationHandler {
     }
 
     func addTag(state: inout TaskDetailFeature.State) {
-        state.editRoutineTags = RoutineTag.appending(state.editTagDraft, to: state.editRoutineTags)
+        state.editRoutineTags = RoutineTag.appending(
+            state.editTagDraft,
+            to: state.editRoutineTags,
+            availableTags: state.availableTags
+        )
         state.editTagDraft = ""
     }
 
@@ -139,7 +143,11 @@ struct TaskDetailEditDraftMutationHandler {
         if RoutineTag.contains(tag, in: state.editRoutineTags) {
             state.editRoutineTags = RoutineTag.removing(tag, from: state.editRoutineTags)
         } else {
-            state.editRoutineTags = RoutineTag.appending(tag, to: state.editRoutineTags)
+            state.editRoutineTags = RoutineTag.appending(
+                tag,
+                to: state.editRoutineTags,
+                availableTags: state.availableTags
+            )
         }
     }
 

@@ -473,6 +473,10 @@ struct GoalsFeature {
                 state.goals = goals
                 state.availableTagSummaries = tagSummaries
                 state.availableTags = tagSummaries.map(\.name)
+                state.editorDraft.tags = RoutineTag.deduplicated(
+                    state.editorDraft.tags,
+                    preferredTags: state.availableTags
+                )
                 state.relatedTagRules = relatedTagRules
                 state.tagCounterDisplayMode = tagCounterDisplayMode
                 state.tagColors = tagColors
@@ -587,7 +591,8 @@ struct GoalsFeature {
             case .editorAddTagTapped:
                 let updatedTags = RoutineTag.appending(
                     state.editorDraft.tagDraft,
-                    to: state.editorDraft.tags
+                    to: state.editorDraft.tags,
+                    availableTags: state.availableTags
                 )
                 guard updatedTags != state.editorDraft.tags else { return .none }
                 state.editorDraft.tags = updatedTags
@@ -602,7 +607,11 @@ struct GoalsFeature {
                 if RoutineTag.contains(tag, in: state.editorDraft.tags) {
                     state.editorDraft.tags = RoutineTag.removing(tag, from: state.editorDraft.tags)
                 } else {
-                    state.editorDraft.tags = RoutineTag.appending(tag, to: state.editorDraft.tags)
+                    state.editorDraft.tags = RoutineTag.appending(
+                        tag,
+                        to: state.editorDraft.tags,
+                        availableTags: state.availableTags
+                    )
                 }
                 return .none
 

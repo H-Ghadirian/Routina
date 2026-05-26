@@ -459,7 +459,7 @@ struct RoutineNoteEditorView: View {
                 HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
                     ForEach(availableUnselectedTags, id: \.self) { tag in
                         Button {
-                            tags = RoutineTag.appending(tag, to: tags)
+                            tags = RoutineTag.appending(tag, to: tags, availableTags: availableTags)
                         } label: {
                             HStack(spacing: 6) {
                                 Image(systemName: "plus.circle")
@@ -615,7 +615,7 @@ struct RoutineNoteEditorView: View {
 
     private func addTagDraft() {
         guard !RoutineTag.parseDraft(tagDraft).isEmpty else { return }
-        tags = RoutineTag.appending(tagDraft, to: tags)
+        tags = RoutineTag.appending(tagDraft, to: tags, availableTags: availableTags)
         tagDraft = ""
     }
 
