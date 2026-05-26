@@ -633,6 +633,7 @@ struct GoalsFeature {
             case let .goalSaved(goalID):
                 state.isEditorPresented = false
                 state.validationMessage = nil
+                state.searchText = ""
                 state.selectedGoalID = goalID
                 return loadGoalsEffect()
 

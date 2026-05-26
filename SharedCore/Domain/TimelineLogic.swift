@@ -47,6 +47,7 @@ struct TimelineEntry: Identifiable, Equatable {
     let entryType: TimelineEntryType
     let durationSeconds: TimeInterval?
     let activityTitle: String?
+    let searchableText: String
 
     init(
         id: UUID,
@@ -66,7 +67,8 @@ struct TimelineEntry: Identifiable, Equatable {
         kind: RoutineLogKind,
         entryType: TimelineEntryType = .task,
         durationSeconds: TimeInterval? = nil,
-        activityTitle: String? = nil
+        activityTitle: String? = nil,
+        searchableText: String? = nil
     ) {
         self.id = id
         self.taskID = taskID
@@ -86,6 +88,22 @@ struct TimelineEntry: Identifiable, Equatable {
         self.entryType = entryType
         self.durationSeconds = durationSeconds
         self.activityTitle = activityTitle
+        self.searchableText = searchableText ?? Self.defaultSearchableText(
+            taskName: taskName,
+            taskEmoji: taskEmoji,
+            activityTitle: activityTitle
+        )
+    }
+
+    private static func defaultSearchableText(
+        taskName: String,
+        taskEmoji: String,
+        activityTitle: String?
+    ) -> String {
+        [taskName, taskEmoji, activityTitle]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n")
     }
 
     var isSleep: Bool {
@@ -202,7 +220,8 @@ enum TimelineLogic {
                 hasVoiceNote: note.hasVoiceNote,
                 isOneOff: false,
                 kind: .completed,
-                entryType: .note
+                entryType: .note,
+                searchableText: searchableText(for: note)
             )
         }
 
@@ -300,6 +319,16 @@ enum TimelineLogic {
                     }
                 )
             }
+    }
+
+    private static func searchableText(for note: RoutineNote) -> String {
+        [
+            note.displayTitle,
+            note.title,
+            note.body,
+        ]
+        .compactMap(RoutineNote.cleanedText)
+        .joined(separator: "\n")
     }
 
     static func daySectionTitle(

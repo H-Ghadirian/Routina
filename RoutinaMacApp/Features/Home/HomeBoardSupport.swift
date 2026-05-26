@@ -348,10 +348,36 @@ extension HomeFeature {
             backlogSaveEffect = .none
         }
 
-        return .merge(
-            backlogSaveEffect,
-            addRoutineActionHandler().finishSave(task, state: &state)
-        )
+        let saveEffect = addRoutineActionHandler().finishSave(task, state: &state)
+        state.macSidebarMode = .routines
+        state.presentation.isMacFilterDetailPresented = false
+        resetTaskVisibilityFiltersForSavedTask(state: &state)
+        state.macSidebarSelection = .task(task.id)
+        state.selectedTaskID = task.id
+        state.taskDetailState = makeTaskDetailState(for: task)
+        if state.taskListMode != .all {
+            state.taskListMode = task.isOneOffTask ? .todos : .routines
+        }
+
+        return .merge(backlogSaveEffect, saveEffect)
+    }
+
+    private func resetTaskVisibilityFiltersForSavedTask(state: inout State) {
+        state.selectedFilter = .all
+        state.advancedQuery = ""
+        state.selectedTags = []
+        state.includeTagMatchMode = .all
+        state.excludedTags = []
+        state.excludeTagMatchMode = .any
+        state.selectedManualPlaceFilterID = nil
+        state.selectedImportanceUrgencyFilter = nil
+        state.selectedTodoStateFilter = nil
+        state.selectedPressureFilter = nil
+        state.selectedGoalFilter = .all
+        state.selectedMediaFilter = .all
+        state.taskListViewMode = .all
+        state.createdDateFilter = .all
+        state.isFilterSheetPresented = false
     }
 
     func handleStartSprintFocus(

@@ -78,7 +78,7 @@ extension HomeTCAView {
             if isNoteEditorPresented {
                 RoutineNoteEditorView(
                     onCancel: closeAddNote,
-                    onSaved: closeAddNote
+                    onSaved: openSavedNote
                 )
             } else {
                 MacDetailContainerView(
@@ -241,6 +241,14 @@ extension HomeTCAView {
             if mode != .routines {
                 isNoteEditorPresented = false
             }
+        }
+        .onChange(of: store.isAddRoutineSheetPresented) { wasPresented, isPresented in
+            guard wasPresented,
+                  !isPresented,
+                  store.macSidebarMode == .routines,
+                  let taskID = store.selectedTaskID else { return }
+            searchTextBinding.wrappedValue = ""
+            macSidebarTaskScrollRequest = MacSidebarTaskScrollRequest(taskID: taskID)
         }
         .onReceive(NotificationCenter.default.publisher(for: .routinaMacNavigateBack)) { _ in
             goBackInMacNavigationHistory()

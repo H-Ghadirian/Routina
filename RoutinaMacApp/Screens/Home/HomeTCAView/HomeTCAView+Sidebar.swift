@@ -268,6 +268,14 @@ extension HomeTCAView {
         isNoteEditorPresented = false
     }
 
+    func openSavedNote(_ noteID: UUID) {
+        isNoteEditorPresented = false
+        selectedNoteID = noteID
+        macHomeDetailMode = .details
+        searchTextBinding.wrappedValue = ""
+        store.send(.openNoteDeepLink(noteID))
+    }
+
     func openAddGoal() {
         isNoteEditorPresented = false
         store.send(.macSidebarModeChanged(.goals))

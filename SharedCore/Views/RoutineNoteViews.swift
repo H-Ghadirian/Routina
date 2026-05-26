@@ -29,11 +29,11 @@ struct RoutineNoteEditorView: View {
     @State private var errorText: String?
 
     let onCancel: (() -> Void)?
-    let onSaved: (() -> Void)?
+    let onSaved: ((UUID) -> Void)?
 
     init(
         onCancel: (() -> Void)? = nil,
-        onSaved: (() -> Void)? = nil
+        onSaved: ((UUID) -> Void)? = nil
     ) {
         self.onCancel = onCancel
         self.onSaved = onSaved
@@ -606,7 +606,7 @@ struct RoutineNoteEditorView: View {
 
         do {
             try modelContext.save()
-            onSaved?()
+            onSaved?(note.id)
             dismiss()
         } catch {
             errorText = "Could not save the note."

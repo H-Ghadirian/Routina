@@ -2075,6 +2075,10 @@ struct HomeFeatureTests {
             $0.routineDisplays = [
                 makeDisplay(taskID: task.id, name: "Walk", emoji: "🚶", tags: ["Outdoors", "Health"], interval: 2, lastDone: nil, isDoneToday: false)
             ]
+            $0.taskListMode = .routines
+            $0.macSidebarSelection = .task(task.id)
+            $0.selectedTaskID = task.id
+            $0.taskDetailState = HomeTaskSupport.makeTaskDetailState(for: task, now: now, calendar: calendar)
         }
 
         #expect(store.state.routineTasks.count == 1)
@@ -2115,6 +2119,10 @@ struct HomeFeatureTests {
             $0.routineDisplays = [
                 makeDisplay(taskID: task.id, name: "Walk", emoji: "🚶", interval: 2, lastDone: nil, isDoneToday: false)
             ]
+            $0.taskListMode = .routines
+            $0.macSidebarSelection = .task(task.id)
+            $0.selectedTaskID = task.id
+            $0.taskDetailState = HomeTaskSupport.makeTaskDetailState(for: task, now: now, calendar: calendar)
             $0.isAddRoutineSheetPresented = false
             $0.addRoutineState = nil
         }

@@ -525,6 +525,7 @@ struct TimelineLogicTests {
         #expect(noteEntry?.hasFileAttachment == true)
         #expect(noteEntry?.hasVoiceNote == true)
         #expect(noteEntry?.tags == ["Admin", "Visa"])
+        #expect(noteEntry?.searchableText.localizedCaseInsensitiveContains("supporting documents") == true)
         #expect(noteEntries.map(\.id) == [note.id])
         #expect(doneEntries.map(\.id) == [log.id])
         #expect(fileEntries.map(\.id) == [note.id])

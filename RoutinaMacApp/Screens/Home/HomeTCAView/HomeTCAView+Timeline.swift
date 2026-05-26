@@ -85,10 +85,12 @@ extension HomeTCAView {
     }
 
     var selectedMacTimelineNote: RoutineNote? {
-        guard let selectedMacTimelineEntry, selectedMacTimelineEntry.isNote else {
-            return nil
+        if let selectedMacTimelineEntry, selectedMacTimelineEntry.isNote {
+            return notes.first { $0.id == selectedMacTimelineEntry.id }
         }
-        return notes.first { $0.id == selectedMacTimelineEntry.id }
+
+        guard case let .timelineEntry(noteID) = store.macSidebarSelection else { return nil }
+        return notes.first { $0.id == noteID }
     }
 
     var selectedMacTimelineNoteAttachments: [RoutineNoteAttachment] {
@@ -163,8 +165,7 @@ extension HomeTCAView {
     private func matchesTimelineSearch(_ entry: TimelineEntry) -> Bool {
         let trimmedSearch = searchTextBinding.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedSearch.isEmpty else { return true }
-        return entry.taskName.localizedCaseInsensitiveContains(trimmedSearch)
-            || entry.taskEmoji.localizedCaseInsensitiveContains(trimmedSearch)
+        return entry.searchableText.localizedCaseInsensitiveContains(trimmedSearch)
             || timelineKindLabel(for: entry).localizedCaseInsensitiveContains(trimmedSearch)
     }
 
