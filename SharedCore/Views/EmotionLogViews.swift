@@ -465,9 +465,9 @@ struct EmotionLogEditorView: View {
     @ViewBuilder
     private func chipFlow<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         LazyVGrid(
-            columns: [GridItem(.adaptive(minimum: 118), spacing: 8)],
+            columns: [GridItem(.adaptive(minimum: 132), spacing: 10)],
             alignment: .leading,
-            spacing: 8,
+            spacing: 10,
             content: content
         )
     }
@@ -854,16 +854,17 @@ private struct EmotionChip: View {
             HStack(spacing: 6) {
                 if let systemImage {
                     Image(systemName: systemImage)
-                        .font(.caption.weight(.semibold))
+                        .font(.subheadline.weight(.semibold))
                 }
                 Text(title)
-                    .font(.caption.weight(.semibold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.82)
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.86)
+                    .multilineTextAlignment(.center)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, minHeight: 24)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
             .routinaGlassPill(tint: isSelected ? tint : .secondary, tintOpacity: isSelected ? 0.22 : 0.08, interactive: true)
             .contentShape(Capsule(style: .continuous))
             .foregroundStyle(isSelected ? tint : .secondary)
