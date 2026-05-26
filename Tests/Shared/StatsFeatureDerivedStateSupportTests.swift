@@ -10,6 +10,30 @@ import Testing
 
 struct StatsFeatureDerivedStateSupportTests {
     @Test
+    func dailyBarXAxisDatesPreferActiveBarDates() {
+        let calendar = makeTestCalendar()
+        let startDate = makeDate("2026-01-01T00:00:00Z")
+        let points = (0..<60).compactMap { offset -> DoneChartPoint? in
+            guard let date = calendar.date(byAdding: .day, value: offset, to: startDate) else {
+                return nil
+            }
+
+            return DoneChartPoint(date: date, count: offset.isMultiple(of: 2) ? 1 : 0)
+        }
+        let activeDates = Set(points.filter { $0.count > 0 }.map(\.date))
+
+        let axisDates = StatsChartPresentation(
+            selectedRange: .year,
+            isCompact: false
+        ).dailyBarXAxisDates(from: points)
+
+        #expect(axisDates.count == 24)
+        #expect(axisDates.allSatisfy { activeDates.contains($0) })
+        #expect(axisDates.first == points.first?.date)
+        #expect(axisDates.last == points[58].date)
+    }
+
+    @Test
     func build_countsDoneCanceledAndMissedTimelineActivity() {
         let calendar = makeTestCalendar()
         let task = RoutineTask(

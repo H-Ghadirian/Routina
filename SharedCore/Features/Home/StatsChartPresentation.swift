@@ -147,6 +147,22 @@ struct StatsChartPresentation {
         }
     }
 
+    func dailyBarXAxisLabel(for date: Date) -> String {
+        switch selectedRange {
+        case .today:
+            return "Today"
+        case .week, .month, .year:
+            return date.formatted(.dateTime.day())
+        }
+    }
+
+    func dailyBarXAxisDates(from points: [DoneChartPoint]) -> [Date] {
+        let activePoints = points.filter { $0.count > 0 }
+        let labelPoints = activePoints.isEmpty ? points : activePoints
+
+        return sampledSparklinePoints(from: labelPoints).map(\.date)
+    }
+
     func focusBarXAxisDates(from points: [FocusDurationChartPoint]) -> [Date] {
         points
             .filter { $0.seconds > 0 }

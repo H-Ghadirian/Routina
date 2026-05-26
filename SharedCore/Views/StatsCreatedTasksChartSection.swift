@@ -14,6 +14,8 @@ struct StatsCreatedTasksChartSection: View {
     let onSelectTaskTypeFilter: (StatsTaskTypeFilter) -> Void
 
     var body: some View {
+        let createdXAxisDates = chartPresentation.dailyBarXAxisDates(from: metrics.createdChartPoints)
+
         VStack(alignment: .leading, spacing: 18) {
             StatsSectionHeader(
                 title: "Tasks created per day",
@@ -96,13 +98,15 @@ struct StatsCreatedTasksChartSection: View {
                     }
                 }
                 .chartXAxis {
-                    AxisMarks(values: metrics.xAxisDates) { value in
+                    AxisMarks(values: createdXAxisDates) { value in
                         AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [2, 6]))
                             .foregroundStyle(Color.secondary.opacity(0.12))
                         AxisTick()
                         AxisValueLabel {
                             if let date = value.as(Date.self) {
-                                Text(chartPresentation.xAxisLabel(for: date))
+                                Text(chartPresentation.dailyBarXAxisLabel(for: date))
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.secondary)
                             }
                         }
                     }

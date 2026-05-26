@@ -450,7 +450,7 @@ dashboardBody(snapshot: dashboardSnapshot)
             highlightedPoint: metrics.highlightedBusiestDay,
             averagePerDay: metrics.averagePerDay,
             chartUpperBound: metrics.chartUpperBound,
-            xAxisDates: metrics.xAxisDates,
+            xAxisDates: snapshot.chartPresentation.dailyBarXAxisDates(from: metrics.chartPoints),
             highlightSymbolSize: snapshot.selectedRange == .year ? 46 : 64,
             chartPresentation: snapshot.chartPresentation,
             baseBarFill: baseBarFill,

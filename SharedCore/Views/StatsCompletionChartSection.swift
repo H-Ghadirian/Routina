@@ -94,7 +94,9 @@ struct StatsCompletionChartSection: View {
                         AxisTick()
                         AxisValueLabel {
                             if let date = value.as(Date.self) {
-                                Text(chartPresentation.xAxisLabel(for: date))
+                                Text(chartPresentation.dailyBarXAxisLabel(for: date))
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.secondary)
                             }
                         }
                     }

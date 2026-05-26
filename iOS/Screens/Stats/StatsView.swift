@@ -615,7 +615,7 @@ statsRoot
             highlightedPoint: metrics.highlightedBusiestDay,
             averagePerDay: metrics.averagePerDay,
             chartUpperBound: metrics.chartUpperBound,
-            xAxisDates: metrics.xAxisDates,
+            xAxisDates: chartPresentation.dailyBarXAxisDates(from: metrics.chartPoints),
             highlightSymbolSize: selectedRange == .year ? 46 : 64,
             chartPresentation: chartPresentation,
             baseBarFill: baseBarFill,
