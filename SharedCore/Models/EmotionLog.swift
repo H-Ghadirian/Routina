@@ -67,13 +67,13 @@ enum EmotionFamily: String, CaseIterable, Codable, Equatable, Identifiable, Send
     static func suggestedFamilies(valence: Double, arousal: Double) -> [EmotionFamily] {
         switch (valence >= 0, arousal >= 0) {
         case (true, true):
-            return [.joy, .surpriseCuriosity, .calm]
+            return [.joy, .surpriseCuriosity]
         case (true, false):
-            return [.calm, .joy]
+            return [.calm]
         case (false, true):
-            return [.fear, .anger, .shameGuilt, .disgust, .surpriseCuriosity]
+            return [.fear, .anger, .disgust, .shameGuilt]
         case (false, false):
-            return [.sadness, .shameGuilt, .fear, .calm]
+            return [.sadness, .shameGuilt]
         }
     }
 }
