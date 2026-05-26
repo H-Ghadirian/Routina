@@ -678,19 +678,34 @@ struct EmotionLogDetailView: View {
                     EmotionLogCard(title: "Links", systemImage: "link") {
                         VStack(alignment: .leading, spacing: 10) {
                             if let note = linkedNote {
-                                linkRow("Note", value: note.displayTitle, systemImage: "note.text")
+                                linkedEntityRow(
+                                    "Note",
+                                    value: note.displayTitle,
+                                    systemImage: "note.text",
+                                    deepLink: .note(note.id)
+                                )
                             }
                             if let goal = linkedGoal {
-                                linkRow("Goal", value: goal.displayTitle, systemImage: "target")
+                                linkedEntityRow(
+                                    "Goal",
+                                    value: goal.displayTitle,
+                                    systemImage: "target",
+                                    deepLink: .goal(goal.id)
+                                )
                             }
                             if let task = linkedTask {
-                                linkRow("Task", value: taskTitle(task), systemImage: "checklist")
+                                linkedEntityRow(
+                                    "Task",
+                                    value: taskTitle(task),
+                                    systemImage: "checklist",
+                                    deepLink: .task(task.id)
+                                )
                             }
                             if let place = linkedPlace {
-                                linkRow("Place", value: place.displayName, systemImage: "mappin.and.ellipse")
+                                contextRow("Place", value: place.displayName, systemImage: "mappin.and.ellipse")
                             }
                             if let sleep = linkedSleepSession {
-                                linkRow("Sleep", value: sleepTitle(sleep), systemImage: "bed.double.fill")
+                                contextRow("Sleep", value: sleepTitle(sleep), systemImage: "bed.double.fill")
                             }
                         }
                     }
@@ -736,7 +751,27 @@ struct EmotionLogDetailView: View {
         )
     }
 
-    private func linkRow(_ title: String, value: String, systemImage: String) -> some View {
+    private func linkedEntityRow(
+        _ title: String,
+        value: String,
+        systemImage: String,
+        deepLink: RoutinaDeepLink
+    ) -> some View {
+        Button {
+            RoutinaDeepLinkDispatcher.open(deepLink)
+        } label: {
+            contextRow(title, value: value, systemImage: systemImage, showsChevron: true)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Open linked \(title.lowercased())")
+    }
+
+    private func contextRow(
+        _ title: String,
+        value: String,
+        systemImage: String,
+        showsChevron: Bool = false
+    ) -> some View {
         HStack(spacing: 10) {
             Image(systemName: systemImage)
                 .font(.body.weight(.semibold))
@@ -751,8 +786,17 @@ struct EmotionLogDetailView: View {
                     .font(.subheadline.weight(.medium))
                     .lineLimit(2)
             }
+
+            Spacer(minLength: 8)
+
+            if showsChevron {
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 
     private func taskTitle(_ task: RoutineTask) -> String {
