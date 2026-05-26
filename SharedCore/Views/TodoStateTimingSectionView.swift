@@ -12,15 +12,6 @@ struct TodoStateTimingSectionView: View {
                     .foregroundStyle(.primary)
 
                 Spacer(minLength: 8)
-
-                if let headlineChipText {
-                    Label(headlineChipText, systemImage: headlineSystemImage)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(headlineTint)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(headlineTint.opacity(0.12), in: Capsule())
-                }
             }
 
             if let completedAt = summary.completedAt,
@@ -64,25 +55,6 @@ struct TodoStateTimingSectionView: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(Color.primary.opacity(0.08), lineWidth: 1)
         )
-    }
-
-    private var headlineChipText: String? {
-        if let completedLeadDays = summary.completedLeadDays {
-            return compactDurationText(completedLeadDays)
-        }
-        guard let currentStateElapsedDays = summary.currentStateElapsedDays else { return nil }
-        return compactDurationText(currentStateElapsedDays)
-    }
-
-    private var headlineSystemImage: String {
-        summary.completedLeadDays == nil ? "timer" : "flag.checkered"
-    }
-
-    private var headlineTint: Color {
-        if summary.completedLeadDays != nil {
-            return .green
-        }
-        return summary.currentState.map(tint(for:)) ?? .secondary
     }
 
     private var visibleStateTotals: [TodoStateTimingStateTotal] {
