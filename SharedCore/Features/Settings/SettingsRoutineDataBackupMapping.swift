@@ -134,7 +134,9 @@ enum SettingsRoutineDataBackupMapping {
         Backup.Emotion(
             id: emotion.id,
             family: emotion.family,
-            label: emotion.displayLabel,
+            label: emotion.primaryDisplayLabel,
+            families: emotion.families,
+            labels: emotion.displayLabels,
             valence: emotion.valence,
             arousal: emotion.arousal,
             intensity: emotion.clampedIntensity,

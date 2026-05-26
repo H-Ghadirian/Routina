@@ -206,8 +206,8 @@ struct SettingsRoutineDataPersistenceTests {
         context.insert(note)
 
         let emotion = EmotionLog(
-            family: .fear,
-            label: "worried",
+            families: [.fear, .anger],
+            labels: ["worried", "frustrated"],
             valence: -0.65,
             arousal: 0.72,
             intensity: 4,
@@ -239,8 +239,11 @@ struct SettingsRoutineDataPersistenceTests {
 
         #expect(summary.emotionLogs == 1)
         let restoredEmotion = try #require(restoreContext.fetch(FetchDescriptor<EmotionLog>()).first)
+        #expect(restoredEmotion.families == [.fear, .anger])
+        #expect(restoredEmotion.labels == ["worried", "frustrated"])
         #expect(restoredEmotion.family == .fear)
         #expect(restoredEmotion.label == "worried")
+        #expect(restoredEmotion.displayLabel == "worried, frustrated")
         #expect(restoredEmotion.valence == -0.65)
         #expect(restoredEmotion.arousal == 0.72)
         #expect(restoredEmotion.intensity == 4)

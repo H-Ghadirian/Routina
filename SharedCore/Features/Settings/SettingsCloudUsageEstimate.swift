@@ -262,7 +262,9 @@ struct CloudUsageEstimate: Equatable, Sendable {
     private struct EmotionPayload: Encodable {
         var id: UUID
         var familyRawValue: String
+        var familyRawValuesStorage: String
         var label: String
+        var labelsStorage: String
         var valence: Double
         var arousal: Double
         var intensity: Int
@@ -279,7 +281,9 @@ struct CloudUsageEstimate: Equatable, Sendable {
         init(emotion: EmotionLog) {
             id = emotion.id
             familyRawValue = emotion.familyRawValue
+            familyRawValuesStorage = emotion.familyRawValuesStorage
             label = emotion.label
+            labelsStorage = emotion.labelsStorage
             valence = emotion.valence
             arousal = emotion.arousal
             intensity = emotion.intensity

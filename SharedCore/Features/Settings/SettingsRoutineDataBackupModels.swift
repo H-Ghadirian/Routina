@@ -122,6 +122,8 @@ extension SettingsRoutineDataPersistence {
             var id: UUID
             var family: EmotionFamily
             var label: String
+            var families: [EmotionFamily]?
+            var labels: [String]?
             var valence: Double
             var arousal: Double
             var intensity: Int

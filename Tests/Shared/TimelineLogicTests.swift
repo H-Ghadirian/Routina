@@ -538,8 +538,8 @@ struct TimelineLogicTests {
         let task = makeRoutineTask(name: "Read")
         let log = makeLog(taskID: task.id, timestamp: makeDate("2026-03-20T08:00:00Z"))
         let emotion = EmotionLog(
-            family: .fear,
-            label: "anxious",
+            families: [.fear, .anger],
+            labels: ["anxious", "frustrated"],
             valence: -0.7,
             arousal: 0.8,
             intensity: 4,
@@ -591,9 +591,9 @@ struct TimelineLogicTests {
         #expect(allEntries.count == 2)
         #expect(emotionEntry?.isEmotion == true)
         #expect(emotionEntry?.taskID == nil)
-        #expect(emotionEntry?.taskName == "Anxious")
+        #expect(emotionEntry?.taskName == "Anxious, Frustrated")
         #expect(emotionEntry?.timestamp == makeDate("2026-03-20T09:45:00Z"))
-        #expect(emotionEntry?.activityTitle == "Fear · 4/5")
+        #expect(emotionEntry?.activityTitle == "Fear, Anger · 4/5")
         #expect(emotionEntry?.searchableText.localizedCaseInsensitiveContains("appointment") == true)
         #expect(emotionEntries.map(\.id) == [emotion.id])
         #expect(doneEntries.map(\.id) == [log.id])

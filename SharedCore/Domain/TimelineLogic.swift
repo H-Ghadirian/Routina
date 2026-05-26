@@ -220,7 +220,7 @@ enum TimelineLogic {
                 isOneOff: false,
                 kind: .completed,
                 entryType: .emotion,
-                activityTitle: "\(emotion.family.title) · \(emotion.clampedIntensity)/5",
+                activityTitle: "\(emotion.familiesDisplayTitle) · \(emotion.clampedIntensity)/5",
                 searchableText: searchableText(for: emotion)
             )
         }
@@ -367,7 +367,7 @@ enum TimelineLogic {
     private static func searchableText(for emotion: EmotionLog) -> String {
         [
             emotion.displayLabel,
-            emotion.family.title,
+            emotion.familiesDisplayTitle,
             emotion.reflection,
             emotion.bodyAreas.map(\.title).joined(separator: " "),
         ]

@@ -54,8 +54,8 @@ struct EmotionLogEditorView: View {
 
     @State private var valence = 0.25
     @State private var arousal = -0.15
-    @State private var selectedFamily: EmotionFamily = .calm
-    @State private var selectedLabel = EmotionFamily.calm.defaultLabel
+    @State private var selectedFamilies: Set<EmotionFamily> = [.calm]
+    @State private var selectedLabels: Set<String> = [EmotionFamily.calm.defaultLabel]
     @State private var intensity = 3.0
     @State private var selectedBodyAreas: Set<EmotionBodyArea> = []
     @State private var reflection = ""
@@ -123,22 +123,22 @@ struct EmotionLogEditorView: View {
         HStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(selectedFamily.tintColor.opacity(0.16))
-                Image(systemName: selectedFamily.systemImage)
+                    .fill(primarySelectedFamily.tintColor.opacity(0.16))
+                Image(systemName: primarySelectedFamily.systemImage)
                     .font(.title2.weight(.semibold))
-                    .foregroundStyle(selectedFamily.tintColor)
+                    .foregroundStyle(primarySelectedFamily.tintColor)
             }
             .frame(width: 48, height: 48)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(selectedFamily.title)
+                Text(selectedFamilyTitle)
                     .font(.title2.weight(.semibold))
                     .lineLimit(1)
 
-                Text(selectedLabel.capitalized)
+                Text(selectedLabelTitle)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
 
             Spacer(minLength: 0)
@@ -203,9 +203,9 @@ struct EmotionLogEditorView: View {
     }
 
     private var detailCard: some View {
-        EmotionLogCard(title: "Feeling", systemImage: selectedFamily.systemImage) {
+        EmotionLogCard(title: "Feeling", systemImage: primarySelectedFamily.systemImage) {
             VStack(alignment: .leading, spacing: 16) {
-                emotionSectionTitle("Emotion family")
+                emotionSectionTitle("Emotion families")
 
                 chipFlow {
                     ForEach(suggestedFamilies) { family in
@@ -213,26 +213,33 @@ struct EmotionLogEditorView: View {
                             title: family.title,
                             systemImage: family.systemImage,
                             tint: family.tintColor,
-                            isSelected: family == selectedFamily
+                            isSelected: selectedFamilies.contains(family)
                         ) {
-                            selectedFamily = family
-                            selectedLabel = family.defaultLabel
+                            toggleFamily(family)
                         }
                     }
                 }
 
                 Divider()
 
-                emotionSectionTitle("Specific feeling")
+                emotionSectionTitle("Specific feelings")
 
-                chipFlow {
-                    ForEach(selectedFamily.labels, id: \.self) { label in
-                        EmotionChip(
-                            title: label.capitalized,
-                            tint: selectedFamily.tintColor,
-                            isSelected: label == selectedLabel
-                        ) {
-                            selectedLabel = label
+                ForEach(selectedFamiliesInDisplayOrder) { family in
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(family.title)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.secondary)
+
+                        chipFlow {
+                            ForEach(family.labels, id: \.self) { label in
+                                EmotionChip(
+                                    title: label.capitalized,
+                                    tint: family.tintColor,
+                                    isSelected: selectedLabels.contains(label)
+                                ) {
+                                    toggleSpecificFeeling(label)
+                                }
+                            }
                         }
                     }
                 }
@@ -244,11 +251,11 @@ struct EmotionLogEditorView: View {
                         Spacer()
                         Text("\(Int(intensity.rounded()))/5")
                             .font(.subheadline.monospacedDigit().weight(.semibold))
-                            .foregroundStyle(selectedFamily.tintColor)
+                            .foregroundStyle(primarySelectedFamily.tintColor)
                     }
 
                     Slider(value: $intensity, in: 1...5, step: 1)
-                        .tint(selectedFamily.tintColor)
+                        .tint(primarySelectedFamily.tintColor)
                 }
             }
         }
@@ -268,7 +275,7 @@ struct EmotionLogEditorView: View {
                     ForEach(EmotionBodyArea.allCases) { area in
                         EmotionChip(
                             title: area.title,
-                            tint: selectedFamily.tintColor,
+                            tint: primarySelectedFamily.tintColor,
                             isSelected: selectedBodyAreas.contains(area)
                         ) {
                             toggleBodyArea(area)
@@ -326,9 +333,49 @@ struct EmotionLogEditorView: View {
 
     private var suggestedFamilies: [EmotionFamily] {
         let suggestions = EmotionFamily.suggestedFamilies(valence: valence, arousal: arousal)
-        return suggestions.contains(selectedFamily)
-            ? suggestions
-            : [selectedFamily] + suggestions
+        let selectedOutsideSuggestions = EmotionFamily.allCases.filter {
+            selectedFamilies.contains($0) && !suggestions.contains($0)
+        }
+        return suggestions + selectedOutsideSuggestions
+    }
+
+    private var selectedFamiliesInDisplayOrder: [EmotionFamily] {
+        let orderedFamilies = suggestedFamilies + EmotionFamily.allCases
+        return orderedFamilies.reduce(into: [EmotionFamily]()) { result, family in
+            guard selectedFamilies.contains(family),
+                  !result.contains(family)
+            else { return }
+            result.append(family)
+        }
+    }
+
+    private var selectedLabelsInDisplayOrder: [String] {
+        let orderedLabels = selectedFamiliesInDisplayOrder.flatMap(\.labels)
+        let selectedKnownLabels = orderedLabels.reduce(into: [String]()) { result, label in
+            guard selectedLabels.contains(label),
+                  !result.contains(label)
+            else { return }
+            result.append(label)
+        }
+        let customLabels = selectedLabels
+            .filter { !orderedLabels.contains($0) }
+            .sorted()
+        return selectedKnownLabels + customLabels
+    }
+
+    private var primarySelectedFamily: EmotionFamily {
+        selectedFamiliesInDisplayOrder.first ?? .calm
+    }
+
+    private var selectedFamilyTitle: String {
+        let families = selectedFamiliesInDisplayOrder
+        guard families.count != 1 else { return families[0].title }
+        return "\(families.count) families"
+    }
+
+    private var selectedLabelTitle: String {
+        let labels = selectedLabelsInDisplayOrder.map { $0.capitalized }
+        return labels.isEmpty ? "Select feelings" : labels.joined(separator: ", ")
     }
 
     private var pleasantnessSelection: Binding<PleasantnessSegment> {
@@ -362,9 +409,41 @@ struct EmotionLogEditorView: View {
 
     private func updateSuggestedFamilyIfNeeded() {
         let suggestions = EmotionFamily.suggestedFamilies(valence: valence, arousal: arousal)
-        guard !suggestions.contains(selectedFamily), let first = suggestions.first else { return }
-        selectedFamily = first
-        selectedLabel = first.defaultLabel
+        let retainedFamilies = selectedFamilies.filter { suggestions.contains($0) }
+        if retainedFamilies.isEmpty, let first = suggestions.first {
+            selectedFamilies = [first]
+        } else {
+            selectedFamilies = retainedFamilies
+        }
+        reconcileSelectedLabels()
+    }
+
+    private func toggleFamily(_ family: EmotionFamily) {
+        if selectedFamilies.contains(family) {
+            guard selectedFamilies.count > 1 else { return }
+            selectedFamilies.remove(family)
+        } else {
+            selectedFamilies.insert(family)
+            selectedLabels.insert(family.defaultLabel)
+        }
+        reconcileSelectedLabels()
+    }
+
+    private func toggleSpecificFeeling(_ label: String) {
+        if selectedLabels.contains(label) {
+            guard selectedLabels.count > 1 else { return }
+            selectedLabels.remove(label)
+        } else {
+            selectedLabels.insert(label)
+        }
+    }
+
+    private func reconcileSelectedLabels() {
+        let availableLabels = Set(selectedFamilies.flatMap(\.labels))
+        selectedLabels = selectedLabels.filter { availableLabels.contains($0) }
+        if selectedLabels.isEmpty, let firstFamily = selectedFamiliesInDisplayOrder.first {
+            selectedLabels = [firstFamily.defaultLabel]
+        }
     }
 
     private func toggleBodyArea(_ area: EmotionBodyArea) {
@@ -422,8 +501,8 @@ struct EmotionLogEditorView: View {
 
     private func save() {
         let log = EmotionLog(
-            family: selectedFamily,
-            label: selectedLabel,
+            families: selectedFamiliesInDisplayOrder,
+            labels: selectedLabelsInDisplayOrder,
             valence: valence,
             arousal: arousal,
             intensity: Int(intensity.rounded()),
@@ -464,11 +543,12 @@ struct EmotionLogDetailView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(emotion.displayLabel.capitalized)
                             .font(.title2.weight(.semibold))
-                            .lineLimit(1)
+                            .lineLimit(2)
 
-                        Text(emotion.family.title)
+                        Text(emotion.familiesDisplayTitle)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
+                            .lineLimit(1)
                     }
 
                     Spacer(minLength: 0)

@@ -431,8 +431,8 @@ enum SettingsRoutineDataImportEntityInserter {
 
             let importedEmotion = EmotionLog(
                 id: emotion.id,
-                family: emotion.family,
-                label: emotion.label,
+                families: emotion.families ?? [emotion.family],
+                labels: emotion.labels ?? [emotion.label],
                 valence: emotion.valence,
                 arousal: emotion.arousal,
                 intensity: emotion.intensity,
