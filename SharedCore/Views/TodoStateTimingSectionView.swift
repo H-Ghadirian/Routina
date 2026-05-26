@@ -86,7 +86,14 @@ struct TodoStateTimingSectionView: View {
     }
 
     private var visibleStateTotals: [TodoStateTimingStateTotal] {
-        summary.stateTotals.filter { $0.days > 0 }
+        summary.stateTotals.filter { total in
+            guard total.days > 0 else { return false }
+            guard let currentState = summary.currentState,
+                  let currentStateElapsedDays = summary.currentStateElapsedDays else {
+                return true
+            }
+            return total.state != currentState || total.days != currentStateElapsedDays
+        }
     }
 
     private func timingHeroRow(
