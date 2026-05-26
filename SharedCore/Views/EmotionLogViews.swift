@@ -10,6 +10,48 @@ struct EmotionLogEditorView: View {
     @Query(sort: \RoutinePlace.name) private var places: [RoutinePlace]
     @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
 
+    private enum PleasantnessSegment: String, CaseIterable, Identifiable {
+        case unpleasant
+        case pleasant
+
+        var id: Self { self }
+
+        var title: String {
+            switch self {
+            case .unpleasant: return "Unpleasant"
+            case .pleasant: return "Pleasant"
+            }
+        }
+
+        var value: Double {
+            switch self {
+            case .unpleasant: return -0.65
+            case .pleasant: return 0.65
+            }
+        }
+    }
+
+    private enum EnergySegment: String, CaseIterable, Identifiable {
+        case low
+        case high
+
+        var id: Self { self }
+
+        var title: String {
+            switch self {
+            case .low: return "Low"
+            case .high: return "High"
+            }
+        }
+
+        var value: Double {
+            switch self {
+            case .low: return -0.65
+            case .high: return 0.65
+            }
+        }
+    }
+
     @State private var valence = 0.25
     @State private var arousal = -0.15
     @State private var selectedFamily: EmotionFamily = .calm
@@ -120,25 +162,43 @@ struct EmotionLogEditorView: View {
     }
 
     private var moodCard: some View {
-        EmotionLogCard(title: "Mood Map", systemImage: "circle.grid.cross") {
-            VStack(alignment: .leading, spacing: 14) {
-                EmotionMoodMapPicker(
-                    valence: $valence,
-                    arousal: $arousal,
-                    tint: selectedFamily.tintColor
-                )
-                .frame(height: 250)
-                .onChange(of: valence) { _, _ in
-                    updateSuggestedFamilyIfNeeded()
-                }
-                .onChange(of: arousal) { _, _ in
-                    updateSuggestedFamilyIfNeeded()
-                }
+        EmotionLogCard(title: "Mood", systemImage: "slider.horizontal.3") {
+            VStack(alignment: .leading, spacing: 16) {
+                pleasantnessPicker
+                energyPicker
 
                 Text(moodDescription)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+        }
+    }
+
+    private var pleasantnessPicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            emotionSectionTitle("Pleasantness")
+
+            Picker("Pleasantness", selection: pleasantnessSelection) {
+                ForEach(PleasantnessSegment.allCases) { segment in
+                    Text(segment.title).tag(segment)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+        }
+    }
+
+    private var energyPicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            emotionSectionTitle("Energy")
+
+            Picker("Energy", selection: energySelection) {
+                ForEach(EnergySegment.allCases) { segment in
+                    Text(segment.title).tag(segment)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
         }
     }
 
@@ -271,12 +331,32 @@ struct EmotionLogEditorView: View {
             : [selectedFamily] + suggestions
     }
 
+    private var pleasantnessSelection: Binding<PleasantnessSegment> {
+        Binding(
+            get: { valence >= 0 ? .pleasant : .unpleasant },
+            set: { segment in
+                valence = segment.value
+                updateSuggestedFamilyIfNeeded()
+            }
+        )
+    }
+
+    private var energySelection: Binding<EnergySegment> {
+        Binding(
+            get: { arousal >= 0 ? .high : .low },
+            set: { segment in
+                arousal = segment.value
+                updateSuggestedFamilyIfNeeded()
+            }
+        )
+    }
+
     private var moodDescription: String {
         switch (valence >= 0, arousal >= 0) {
-        case (true, true): return "Pleasant, higher energy"
-        case (true, false): return "Pleasant, lower energy"
-        case (false, true): return "Unpleasant, higher energy"
-        case (false, false): return "Unpleasant, lower energy"
+        case (true, true): return "Pleasant, high energy"
+        case (true, false): return "Pleasant, low energy"
+        case (false, true): return "Unpleasant, high energy"
+        case (false, false): return "Unpleasant, low energy"
         }
     }
 
@@ -541,24 +621,6 @@ struct EmotionLogSymbolView: View {
             Image(systemName: emotion.family.systemImage)
                 .font(.title2.weight(.semibold))
                 .foregroundStyle(emotion.family.tintColor)
-        }
-    }
-}
-
-private struct EmotionMoodMapPicker: View {
-    @Binding var valence: Double
-    @Binding var arousal: Double
-    let tint: Color
-
-    var body: some View {
-        EmotionMoodMapSurface(
-            valence: valence,
-            arousal: arousal,
-            tint: tint,
-            isInteractive: true
-        ) { point, size in
-            valence = EmotionLog.clampedAffectValue(Double(point.x / max(size.width, 1)) * 2 - 1)
-            arousal = EmotionLog.clampedAffectValue((1 - Double(point.y / max(size.height, 1))) * 2 - 1)
         }
     }
 }
