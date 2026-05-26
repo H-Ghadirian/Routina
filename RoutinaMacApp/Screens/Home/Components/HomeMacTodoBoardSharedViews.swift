@@ -81,6 +81,7 @@ struct HomeMacTodoBoardColumnDropSpacer: View {
                 )
                 .frame(maxWidth: .infinity, minHeight: column.tasks.isEmpty ? 160 : (isCompactLayout ? 56 : 72))
         }
+        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .animation(.spring(response: 0.2, dampingFraction: 0.86), value: isHighlighted)
     }
 }

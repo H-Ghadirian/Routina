@@ -50,11 +50,7 @@ struct HomeMacTodoBoardCardView: View {
         .onMacDoubleClick {
             onOpenTask(task.id)
         }
-        .onDrag {
-            draggedTaskID = task.id
-            onSelectTask(task.id)
-            return HomeMacTodoBoardDragPayload.itemProvider(for: task.id)
-        }
+        .onDrag(dragItemProvider)
         .contextMenu {
             taskMenuItems
         }
@@ -130,6 +126,8 @@ struct HomeMacTodoBoardCardView: View {
             Image(systemName: "line.3.horizontal")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.tertiary)
+                .help("Drag to move")
+                .onDrag(dragItemProvider)
 
             Button {
                 onMoveUp(task.id, columnState, orderedTaskIDs)
@@ -176,5 +174,11 @@ struct HomeMacTodoBoardCardView: View {
             tint: tint,
             isCompactLayout: isCompactLayout
         )
+    }
+
+    private func dragItemProvider() -> NSItemProvider {
+        draggedTaskID = task.id
+        onSelectTask(task.id)
+        return HomeMacTodoBoardDragPayload.itemProvider(for: task.id)
     }
 }

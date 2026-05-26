@@ -111,6 +111,16 @@ struct HomeMacTodoBoardView: View {
 
     @ViewBuilder
     private func boardColumn(_ column: Column) -> some View {
+        let columnDropDelegate = HomeMacTodoBoardColumnDropDelegate(
+            columnState: column.state,
+            orderedTaskIDs: column.orderedTaskIDs,
+            draggedTaskID: $draggedTaskID,
+            highlightedColumnState: $highlightedColumnState,
+            hoverTargetTaskID: $hoverTargetTaskID,
+            trailingDropColumnState: $trailingDropColumnState,
+            onDropTask: onDropTask
+        )
+
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Circle()
@@ -171,20 +181,16 @@ struct HomeMacTodoBoardView: View {
                         isHighlighted: trailingDropColumnState == column.state,
                         isCompactLayout: isCompactLayout
                     )
+                    .onDrop(
+                        of: HomeMacTodoBoardDragPayload.supportedContentTypes,
+                        delegate: columnDropDelegate
+                    )
                 }
                 .padding(.bottom, 4)
             }
             .onDrop(
                 of: HomeMacTodoBoardDragPayload.supportedContentTypes,
-                delegate: HomeMacTodoBoardColumnDropDelegate(
-                    columnState: column.state,
-                    orderedTaskIDs: column.orderedTaskIDs,
-                    draggedTaskID: $draggedTaskID,
-                    highlightedColumnState: $highlightedColumnState,
-                    hoverTargetTaskID: $hoverTargetTaskID,
-                    trailingDropColumnState: $trailingDropColumnState,
-                    onDropTask: onDropTask
-                )
+                delegate: columnDropDelegate
             )
         }
         .padding(14)
@@ -196,6 +202,11 @@ struct HomeMacTodoBoardView: View {
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .stroke(borderColor(for: column.state), lineWidth: highlightedColumnState == column.state ? 1.5 : 1)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .onDrop(
+            of: HomeMacTodoBoardDragPayload.supportedContentTypes,
+            delegate: columnDropDelegate
         )
         .animation(.easeInOut(duration: 0.12), value: highlightedColumnState)
         .animation(.spring(response: 0.22, dampingFraction: 0.86), value: hoverTargetTaskID)

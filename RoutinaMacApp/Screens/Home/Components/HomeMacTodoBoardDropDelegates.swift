@@ -5,8 +5,13 @@ import UniformTypeIdentifiers
 enum HomeMacTodoBoardDragPayload {
     private static let boardTaskType = UTType(exportedAs: "app.routina.todo-board-task")
 
+    private struct SendableItemProvider: @unchecked Sendable {
+        let provider: NSItemProvider
+    }
+
     static let supportedContentTypes: [UTType] = [
         boardTaskType,
+        .utf8PlainText,
         .plainText,
         .text,
     ]
@@ -29,24 +34,37 @@ enum HomeMacTodoBoardDragPayload {
 
     @discardableResult
     static func loadTaskID(from info: DropInfo, completion: @escaping @Sendable (UUID?) -> Void) -> Bool {
+        let textProvider = info.itemProviders(for: [.utf8PlainText, .plainText, .text])
+            .first
+            .map(SendableItemProvider.init(provider:))
+
         if let provider = info.itemProviders(for: [boardTaskType]).first {
             provider.loadDataRepresentation(forTypeIdentifier: boardTaskType.identifier) { data, _ in
-                guard
-                    let data,
-                    let text = String(data: data, encoding: .utf8)
-                else {
+                if let data,
+                   let text = String(data: data, encoding: .utf8),
+                   let taskID = taskID(from: text) {
+                    completion(taskID)
+                } else if let textProvider {
+                    loadTextTaskID(from: textProvider.provider, completion: completion)
+                } else {
                     completion(nil)
-                    return
                 }
-                completion(taskID(from: text))
             }
             return true
         }
 
-        guard let provider = info.itemProviders(for: [.plainText, .text]).first else {
+        guard let textProvider else {
             return false
         }
 
+        loadTextTaskID(from: textProvider.provider, completion: completion)
+        return true
+    }
+
+    private static func loadTextTaskID(
+        from provider: NSItemProvider,
+        completion: @escaping @Sendable (UUID?) -> Void
+    ) {
         provider.loadObject(ofClass: NSString.self) { object, _ in
             guard let text = object as? NSString else {
                 completion(nil)
@@ -54,7 +72,6 @@ enum HomeMacTodoBoardDragPayload {
             }
             completion(taskID(from: text as String))
         }
-        return true
     }
 
     private static func taskID(from text: String) -> UUID? {
