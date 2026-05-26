@@ -646,6 +646,7 @@ extension HomeTCAView {
                 selectedFilter: homeFilterBindings.selectedFilter,
                 advancedQuery: homeFilterBindings.advancedQuery,
                 taskListViewMode: homeFilterBindings.taskListViewMode,
+                routineListSectioningMode: homeFilterBindings.routineListSectioningMode,
                 taskListSortOrder: homeFilterBindings.taskListSortOrder,
                 createdDateFilter: homeFilterBindings.createdDateFilter,
                 showArchivedTasks: homeFilterBindings.showArchivedTasks,

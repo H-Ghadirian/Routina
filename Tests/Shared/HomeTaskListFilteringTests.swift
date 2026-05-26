@@ -216,6 +216,22 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func groupedRoutineSectionsCanGroupByPrimaryTag() {
+        let tasks = [
+            TestTaskDisplay(name: "Pay rent", tags: ["Admin"]),
+            TestTaskDisplay(name: "Buy milk", tags: ["Errand"]),
+            TestTaskDisplay(name: "File docs", tags: ["Admin", "Paperwork"]),
+            TestTaskDisplay(name: "Loose")
+        ]
+
+        let sections = makeFiltering(routineListSectioningMode: .tags)
+            .groupedRoutineSections(from: tasks)
+
+        #expect(sections.map(\.title) == ["#Admin", "#Errand", "No Tags"])
+        #expect(sections.map { $0.tasks.map(\.name) } == [["File docs", "Pay rent"], ["Buy milk"], ["Loose"]])
+    }
+
+    @Test
     func manualOrderSortsWithinTheResolvedSection() {
         let sectionKey = HomeTaskListFiltering<TestTaskDisplay>.pinnedManualOrderSectionKey
         let tasks = [
@@ -342,6 +358,27 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func iOSPresentationTagGroupingCombinesDailyAndRegularRows() {
+        let presentation = HomeTaskListPresentation.iOS(
+            filtering: makeFiltering(routineListSectioningMode: .tags),
+            routineDisplays: [
+                TestTaskDisplay(name: "Weekly Focus", tags: ["Focus"], recurrenceRule: .interval(days: 7), daysUntilDue: 4),
+                TestTaskDisplay(name: "Daily Focus", tags: ["Focus"], recurrenceRule: .interval(days: 1), daysUntilDue: 4),
+                TestTaskDisplay(name: "Todo Errand", tags: ["Errand"], daysUntilDue: 4, isOneOffTask: true)
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            hideUnavailableRoutines: false,
+            taskListKind: .all
+        )
+
+        #expect(presentation.sections.map(\.kind) == [.tag, .tag])
+        #expect(presentation.sections.map(\.title) == ["#Errand", "#Focus"])
+        #expect(presentation.sections.map { $0.tasks.map(\.name) } == [["Todo Errand"], ["Daily Focus", "Weekly Focus"]])
+        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 1])
+    }
+
+    @Test
     func iOSPresentationCanHideArchivedSection() {
         let presentation = HomeTaskListPresentation.iOS(
             filtering: makeFiltering(),
@@ -429,6 +466,31 @@ struct HomeTaskListFilteringTests {
         #expect(presentation.sections.map(\.rowNumberOffset) == [0, 1])
         #expect(presentation.sections.compactMap(\.moveContext?.sectionKey) == ["daily", "onTrack"])
         #expect(presentation.sections.compactMap(\.moveContext?.orderedTaskIDs.first) == [dailyID, regularID])
+    }
+
+    @Test
+    func sidebarPresentationTagGroupingBuildsTagMoveContexts() {
+        let adminID = UUID()
+        let focusID = UUID()
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(routineListSectioningMode: .tags),
+            routineDisplays: [
+                TestTaskDisplay(taskID: focusID, name: "Focus", tags: ["Focus"], recurrenceRule: .interval(days: 1), daysUntilDue: 4),
+                TestTaskDisplay(taskID: adminID, name: "Admin", tags: ["Admin"], daysUntilDue: 4)
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(presentation.sections.map(\.kind) == [.tag, .tag])
+        #expect(presentation.sections.map(\.title) == ["#Admin", "#Focus"])
+        #expect(presentation.sections.compactMap(\.moveContext?.sectionKey) == ["tag:admin", "tag:focus"])
+        #expect(presentation.sections.compactMap(\.moveContext?.orderedTaskIDs.first) == [adminID, focusID])
     }
 
     @Test

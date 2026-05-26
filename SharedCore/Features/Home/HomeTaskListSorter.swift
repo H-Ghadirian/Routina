@@ -138,6 +138,10 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
     }
 
     func regularManualOrderSectionKey(for task: Display) -> String {
+        if configuration.routineListSectioningMode == .tags {
+            return task.taskListTagManualOrderSectionKey
+        }
+
         if task.isDailyRoutine {
             return Self.dailyManualOrderSectionKey
         }
@@ -159,6 +163,8 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
                 return "onTrack"
             }
             return "onTrack:\(manualOrderDateKey(for: sectionDate))"
+        case .tags:
+            return task.taskListTagManualOrderSectionKey
         }
     }
 

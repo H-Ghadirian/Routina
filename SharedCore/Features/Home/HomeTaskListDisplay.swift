@@ -54,6 +54,42 @@ extension HomeTaskListDisplay {
     var isDailyRoutine: Bool {
         !isOneOffTask && recurrenceRule.isDaily
     }
+
+    var taskListPrimaryTag: String? {
+        HomeTaskListTagGrouping.primaryTag(for: self)
+    }
+
+    var taskListTagSectionTitle: String {
+        HomeTaskListTagGrouping.sectionTitle(for: taskListPrimaryTag)
+    }
+
+    var taskListTagManualOrderSectionKey: String {
+        HomeTaskListTagGrouping.sectionKey(for: taskListPrimaryTag)
+    }
+}
+
+enum HomeTaskListTagGrouping {
+    static let untaggedTitle = "No Tags"
+
+    static func primaryTag<Display: HomeTaskListDisplay>(for task: Display) -> String? {
+        RoutineTag.deduplicated(task.tags).first
+    }
+
+    static func sectionTitle(for tag: String?) -> String {
+        guard let tag else { return untaggedTitle }
+        return "#\(tag)"
+    }
+
+    static func sectionKey(for tag: String?) -> String {
+        guard let tag, let normalizedTag = RoutineTag.normalized(tag) else {
+            return "tag:untagged"
+        }
+        return "tag:\(normalizedTag)"
+    }
+
+    static func isUntaggedTitle(_ title: String) -> Bool {
+        title == untaggedTitle
+    }
 }
 
 struct HomeTaskListSection<Display: HomeTaskListDisplay> {

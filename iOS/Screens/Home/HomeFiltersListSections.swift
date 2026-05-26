@@ -47,6 +47,25 @@ struct HomeFiltersSortSection: View {
     }
 }
 
+struct HomeFiltersGroupingSection: View {
+    @Binding var routineListSectioningMode: RoutineListSectioningMode
+
+    var body: some View {
+        Section("Group") {
+            Picker("Group rows", selection: $routineListSectioningMode) {
+                ForEach(RoutineListSectioningMode.allCases) { mode in
+                    Label(mode.title, systemImage: mode.systemImage).tag(mode)
+                }
+            }
+            .pickerStyle(.inline)
+
+            Text(routineListSectioningMode.subtitle)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
 struct HomeFiltersCreatedSection: View {
     @Binding var createdDateFilter: HomeTaskCreatedDateFilter
 

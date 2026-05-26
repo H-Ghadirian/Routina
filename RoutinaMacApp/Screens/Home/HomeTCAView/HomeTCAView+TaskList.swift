@@ -301,6 +301,8 @@ extension HomeTCAView {
         switch section.kind {
         case .daily:
             return !isDailyRoutinesSectionCollapsed
+        case .tag, .untagged:
+            return !collapsedTagTaskListSectionIDs.contains(section.id)
         case .archived:
             return !isArchivedSectionCollapsed
         case .pinned, .regular, .away:
@@ -316,6 +318,8 @@ extension HomeTCAView {
             switch section.kind {
             case .daily:
                 isDailyRoutinesSectionCollapsed.toggle()
+            case .tag, .untagged:
+                setTagTaskListSection(section, collapsed: taskListSectionIsExpanded(section))
             case .archived:
                 isArchivedSectionCollapsed.toggle()
             case .pinned, .regular, .away:
@@ -339,6 +343,27 @@ extension HomeTCAView {
             }
         }
         return taskIndex + 1
+    }
+
+    private var collapsedTagTaskListSectionIDs: Set<String> {
+        Set(
+            collapsedTagTaskListSectionIDsStorage
+                .split(separator: "\n")
+                .map(String.init)
+        )
+    }
+
+    private func setTagTaskListSection(
+        _ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        collapsed: Bool
+    ) {
+        var ids = collapsedTagTaskListSectionIDs
+        if collapsed {
+            ids.insert(section.id)
+        } else {
+            ids.remove(section.id)
+        }
+        collapsedTagTaskListSectionIDsStorage = ids.sorted().joined(separator: "\n")
     }
 
     private func macDayPlanUnplannedCompletedTaskList(for date: Date) -> some View {

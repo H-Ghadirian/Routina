@@ -5,6 +5,7 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     @Binding var selectedFilter: RoutineListFilter
     @Binding var advancedQuery: String
     @Binding var taskListViewMode: HomeTaskListViewMode
+    @Binding var routineListSectioningMode: RoutineListSectioningMode
     @Binding var taskListSortOrder: HomeTaskListSortOrder
     @Binding var createdDateFilter: HomeTaskCreatedDateFilter
     @Binding var showArchivedTasks: Bool
@@ -27,6 +28,10 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
             HomeMacSidebarSectionCard {
                 viewModePicker
+            }
+
+            HomeMacSidebarSectionCard {
+                groupingPicker
             }
 
             HomeMacSidebarSectionCard {
@@ -149,6 +154,42 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                     .buttonStyle(.plain)
                 }
             }
+        }
+    }
+
+    private var groupingPicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Group")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 126), spacing: 8, alignment: .leading)],
+                alignment: .leading,
+                spacing: 8
+            ) {
+                ForEach(RoutineListSectioningMode.allCases) { mode in
+                    Button {
+                        routineListSectioningMode = mode
+                    } label: {
+                        Label(mode.title, systemImage: mode.systemImage)
+                            .font(.caption.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
+                            .foregroundStyle(routineListSectioningMode == mode ? Color.white : Color.primary)
+                            .background(
+                                Capsule()
+                                    .fill(routineListSectioningMode == mode ? Color.accentColor : Color.secondary.opacity(0.10))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            Text(routineListSectioningMode.subtitle)
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 

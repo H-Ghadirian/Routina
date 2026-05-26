@@ -19,6 +19,10 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
         UserDefaultBoolValueKey.appSettingArchivedRoutinesSectionCollapsed.rawValue,
         store: SharedDefaults.app
     ) private var isArchivedSectionCollapsed = false
+    @AppStorage(
+        UserDefaultStringValueKey.appSettingCollapsedTagTaskListSections.rawValue,
+        store: SharedDefaults.app
+    ) private var collapsedTagTaskListSectionIDsStorage = ""
 
     init(
         presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>,
@@ -128,6 +132,8 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
         switch section.kind {
         case .daily:
             return !isDailyRoutinesSectionCollapsed
+        case .tag, .untagged:
+            return !collapsedTagTaskListSectionIDs.contains(section.id)
         case .archived:
             return !isArchivedSectionCollapsed
         case .pinned, .regular, .away:
@@ -141,6 +147,8 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
             switch section.kind {
             case .daily:
                 isDailyRoutinesSectionCollapsed.toggle()
+            case .tag, .untagged:
+                setTagTaskListSection(section, collapsed: isSectionExpanded(section))
             case .archived:
                 isArchivedSectionCollapsed.toggle()
             case .pinned, .regular, .away:
@@ -163,5 +171,26 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
             }
         }
         return taskIndex + 1
+    }
+
+    private var collapsedTagTaskListSectionIDs: Set<String> {
+        Set(
+            collapsedTagTaskListSectionIDsStorage
+                .split(separator: "\n")
+                .map(String.init)
+        )
+    }
+
+    private func setTagTaskListSection(
+        _ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        collapsed: Bool
+    ) {
+        var ids = collapsedTagTaskListSectionIDs
+        if collapsed {
+            ids.insert(section.id)
+        } else {
+            ids.remove(section.id)
+        }
+        collapsedTagTaskListSectionIDsStorage = ids.sorted().joined(separator: "\n")
     }
 }

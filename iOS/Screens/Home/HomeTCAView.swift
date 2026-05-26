@@ -147,7 +147,12 @@ homeContent
     }
 
     var routineListSectioningMode: RoutineListSectioningMode {
-        RoutineListSectioningMode(rawValue: routineListSectioningModeRawValue) ?? .defaultValue
+        get {
+            RoutineListSectioningMode(rawValue: routineListSectioningModeRawValue) ?? .defaultValue
+        }
+        nonmutating set {
+            routineListSectioningModeRawValue = newValue.rawValue
+        }
     }
 
     var taskRowVisibility: HomeTaskRowVisibility {

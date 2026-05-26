@@ -66,6 +66,7 @@ public enum UserDefaultStringValueKey: String, Sendable {
     case selectedMacAppIcon
     case appSettingAppColorScheme
     case appSettingRoutineListSectioningMode
+    case appSettingCollapsedTagTaskListSections
     case appSettingTagCounterDisplayMode
     case appSettingHomeTaskRowHiddenFields
     case appSettingRelatedTagRules

@@ -17,6 +17,9 @@ struct HomeFiltersSheetView: View {
                     )
                 )
                 HomeFiltersViewModeSection(taskListViewMode: bindings.taskListViewMode)
+                HomeFiltersGroupingSection(
+                    routineListSectioningMode: bindings.routineListSectioningMode
+                )
                 HomeFiltersSortSection(taskListSortOrder: bindings.taskListSortOrder)
                 HomeFiltersCreatedSection(createdDateFilter: bindings.createdDateFilter)
                 HomeFiltersArchivedSection(showArchivedTasks: bindings.showArchivedTasks)

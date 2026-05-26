@@ -60,6 +60,10 @@ struct HomeTCAView: View {
         UserDefaultBoolValueKey.appSettingArchivedRoutinesSectionCollapsed.rawValue,
         store: SharedDefaults.app
     ) var isArchivedSectionCollapsed = false
+    @AppStorage(
+        UserDefaultStringValueKey.appSettingCollapsedTagTaskListSections.rawValue,
+        store: SharedDefaults.app
+    ) var collapsedTagTaskListSectionIDsStorage = ""
     @State private var localSearchText = ""
     @State var isCompactHeaderHidden = false
     @State var isQuickAddSheetPresented = false
@@ -192,7 +196,12 @@ homeContent
     }
 
     var routineListSectioningMode: RoutineListSectioningMode {
-        RoutineListSectioningMode(rawValue: routineListSectioningModeRawValue) ?? .defaultValue
+        get {
+            RoutineListSectioningMode(rawValue: routineListSectioningModeRawValue) ?? .defaultValue
+        }
+        nonmutating set {
+            routineListSectioningModeRawValue = newValue.rawValue
+        }
     }
 
     var taskRowVisibility: HomeTaskRowVisibility {

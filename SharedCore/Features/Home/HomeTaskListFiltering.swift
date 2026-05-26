@@ -114,6 +114,10 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
         sectionBuilder.groupedRoutineSections(from: filteredTasks(displays))
     }
 
+    var usesTagSectioning: Bool {
+        sectionBuilder.configuration.routineListSectioningMode == .tags
+    }
+
     func filteredDailyRoutineTasks(_ displays: [Display]) -> [Display] {
         filteredTasks(displays).filter(\.isDailyRoutine)
     }

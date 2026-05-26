@@ -37,6 +37,7 @@ enum RoutinaAppBootstrap {
         ])
         SharedDefaults.app.register(defaults: [
             UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue: RoutineListSectioningMode.defaultValue.rawValue,
+            UserDefaultStringValueKey.appSettingCollapsedTagTaskListSections.rawValue: "",
             UserDefaultStringValueKey.appSettingHomeTaskRowHiddenFields.rawValue: "",
             UserDefaultStringValueKey.macQuickAddShortcut.rawValue: "optionCommandN",
             BatteryRoutinePreferences.thresholdPercentDefaultsKey: BatteryRoutinePreferences.defaultThresholdPercent

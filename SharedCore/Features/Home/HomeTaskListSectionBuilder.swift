@@ -4,6 +4,10 @@ struct HomeTaskListSectionBuilder<Display: HomeTaskListDisplay> {
     var sorter: HomeTaskListSorter<Display>
 
     func groupedRoutineSections(from filteredTasks: [Display]) -> [HomeTaskListSection<Display>] {
+        if configuration.routineListSectioningMode == .tags {
+            return tagBasedSections(from: filteredTasks)
+        }
+
         let missed = filteredTasks.filter { metrics.hasMissedExactTimedOccurrence(for: $0) }
         let overdue = filteredTasks.filter {
             !metrics.hasMissedExactTimedOccurrence(for: $0)
@@ -30,6 +34,8 @@ struct HomeTaskListSectionBuilder<Display: HomeTaskListDisplay> {
             onTrackSections = [HomeTaskListSection(title: "On Track", tasks: onTrack)]
         case .deadlineDate:
             onTrackSections = deadlineBasedSections(from: onTrack)
+        case .tags:
+            onTrackSections = []
         }
 
         return (
@@ -67,5 +73,32 @@ struct HomeTaskListSectionBuilder<Display: HomeTaskListDisplay> {
         }
 
         return sections
+    }
+
+    func tagBasedSections(from tasks: [Display]) -> [HomeTaskListSection<Display>] {
+        guard !tasks.isEmpty else { return [] }
+
+        var groups: [String: (title: String, tasks: [Display], isUntagged: Bool)] = [:]
+        for task in tasks {
+            let primaryTag = task.taskListPrimaryTag
+            let key = HomeTaskListTagGrouping.sectionKey(for: primaryTag)
+            var group = groups[key] ?? (
+                title: HomeTaskListTagGrouping.sectionTitle(for: primaryTag),
+                tasks: [],
+                isUntagged: primaryTag == nil
+            )
+            group.tasks.append(task)
+            groups[key] = group
+        }
+
+        return groups.values.sorted { lhs, rhs in
+            if lhs.isUntagged != rhs.isUntagged {
+                return !lhs.isUntagged && rhs.isUntagged
+            }
+            return lhs.title.localizedCaseInsensitiveCompare(rhs.title) == .orderedAscending
+        }
+        .map { group in
+            HomeTaskListSection(title: group.title, tasks: group.tasks)
+        }
     }
 }
