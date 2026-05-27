@@ -13,7 +13,7 @@ struct AppView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @State private var searchText = ""
-    @State private var moreNavigationPath = NavigationPath()
+    @State private var moreDestination: AppMoreDestination?
     @State private var presentedSprintFocusDeepLink: SprintFocusDeepLinkPresentation?
     @State private var isHomeMenuSleepConfirmationPresented = false
     @State private var homeMenuSleepWarningMessage: String?
@@ -57,7 +57,7 @@ let tabView = TabView(
     if usesCompactMoreTab {
         SwiftUI.Tab(Tab.more.rawValue, systemImage: "ellipsis.circle", value: AppTabBarItem.more) {
             AppMoreNavigationView(
-                path: $moreNavigationPath,
+                destination: $moreDestination,
                 selectedTab: store.selectedTab,
                 goalsStore: store.scope(state: \.goals, action: \.goals),
                 statsStore: store.scope(state: \.stats, action: \.stats),
@@ -181,18 +181,18 @@ Group {
 
     private func selectTab(_ tab: AppTabBarItem) {
         if tab == .addTask {
-            moreNavigationPath = NavigationPath()
+            moreDestination = nil
             store.send(.tabSelected(.home))
             store.send(.home(.setAddRoutineSheet(true)))
             return
         }
 
         if usesCompactMoreTab, tab == .more, selectedTabForCurrentLayout == .more {
-            moreNavigationPath = NavigationPath()
+            moreDestination = nil
         }
 
         if tab != .more {
-            moreNavigationPath = NavigationPath()
+            moreDestination = nil
         }
 
         guard let appTab = tab.appTab else { return }
@@ -456,7 +456,7 @@ private enum AppMoreDestination: Hashable {
 }
 
 private struct AppMoreNavigationView: View {
-    @Binding var path: NavigationPath
+    @Binding var destination: AppMoreDestination?
     let selectedTab: Tab
     let goalsStore: StoreOf<GoalsFeature>
     let statsStore: StoreOf<StatsFeature>
@@ -464,67 +464,13 @@ private struct AppMoreNavigationView: View {
     let onSelectTab: (Tab) -> Void
 
     var body: some View {
-        NavigationStack(path: $path) {
-            List {
-                Section {
-                    NavigationLink(value: AppMoreDestination.goals) {
-                        SettingsNavigationRow(
-                            icon: "target",
-                            tint: .blue,
-                            title: Tab.goals.rawValue,
-                            subtitle: "Outcomes, sub-goals, and linked tasks"
-                        )
-                    }
-
-                    NavigationLink(value: AppMoreDestination.stats) {
-                        SettingsNavigationRow(
-                            icon: "chart.bar.xaxis",
-                            tint: .indigo,
-                            title: Tab.stats.rawValue,
-                            subtitle: "Completion, focus, tags, and trends"
-                        )
-                    }
-
-                    NavigationLink(value: AppMoreDestination.settings) {
-                        SettingsNavigationRow(
-                            icon: "gear",
-                            tint: .gray,
-                            title: Tab.settings.rawValue,
-                            subtitle: "Preferences, data, tags, places, and support"
-                        )
-                    }
+        NavigationStack {
+            Group {
+                if let destination {
+                    destinationView(for: destination)
+                } else {
+                    moreList
                 }
-            }
-            .listStyle(.insetGrouped)
-            .navigationTitle(Tab.more.rawValue)
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationDestination(for: AppMoreDestination.self) { destination in
-                switch destination {
-                case .goals:
-                    GoalsTCAView(store: goalsStore)
-                        .onAppear {
-                            onSelectTab(.goals)
-                        }
-                case .stats:
-                    StatsView(
-                        store: statsStore,
-                        ownsCompactNavigationStack: false
-                    )
-                    .onAppear {
-                        onSelectTab(.stats)
-                    }
-                case .settings:
-                    SettingsTCAView(
-                        store: settingsStore,
-                        ownsCompactNavigationStack: false
-                    )
-                    .onAppear {
-                        onSelectTab(.settings)
-                    }
-                }
-            }
-            .navigationDestination(for: SettingsIOSSection.self) { section in
-                SettingsIOSDetailView(section: section, store: settingsStore)
             }
         }
         .onAppear {
@@ -533,25 +479,142 @@ private struct AppMoreNavigationView: View {
         .onChange(of: selectedTab) { _, tab in
             restoreSelectedMoreDestinationIfNeeded(for: tab)
         }
-        .onChange(of: path.count) { _, count in
-            if count == 0, selectedTab == .goals || selectedTab == .stats || selectedTab == .settings {
+        .onChange(of: destination) { _, destination in
+            if destination == nil, selectedTab == .goals || selectedTab == .stats || selectedTab == .settings {
                 onSelectTab(.more)
             }
         }
     }
 
+    private var moreList: some View {
+        List {
+            Section {
+                moreButton(
+                    destination: .goals,
+                    icon: "target",
+                    tint: .blue,
+                    title: Tab.goals.rawValue,
+                    subtitle: "Outcomes, sub-goals, and linked tasks"
+                )
+
+                moreButton(
+                    destination: .stats,
+                    icon: "chart.bar.xaxis",
+                    tint: .indigo,
+                    title: Tab.stats.rawValue,
+                    subtitle: "Completion, focus, tags, and trends"
+                )
+
+                moreButton(
+                    destination: .settings,
+                    icon: "gear",
+                    tint: .gray,
+                    title: Tab.settings.rawValue,
+                    subtitle: "Preferences, data, tags, places, and support"
+                )
+            }
+        }
+        .listStyle(.insetGrouped)
+        .navigationTitle(Tab.more.rawValue)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func moreButton(
+        destination: AppMoreDestination,
+        icon: String,
+        tint: Color,
+        title: String,
+        subtitle: String
+    ) -> some View {
+        Button {
+            self.destination = destination
+        } label: {
+            HStack(spacing: 8) {
+                SettingsNavigationRow(
+                    icon: icon,
+                    tint: tint,
+                    title: title,
+                    subtitle: subtitle
+                )
+
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func destinationView(for destination: AppMoreDestination) -> some View {
+        switch destination {
+        case .goals:
+            GoalsTCAView(store: goalsStore)
+                .navigationBarBackButtonHidden()
+                .toolbar {
+                    moreBackButton
+                }
+                .onAppear {
+                    selectTabAfterNavigationGesture(.goals)
+                }
+        case .stats:
+            StatsView(
+                store: statsStore,
+                ownsCompactNavigationStack: false
+            )
+            .navigationBarBackButtonHidden()
+            .toolbar {
+                moreBackButton
+            }
+            .onAppear {
+                selectTabAfterNavigationGesture(.stats)
+            }
+        case .settings:
+            SettingsTCAView(
+                store: settingsStore,
+                ownsCompactNavigationStack: false
+            )
+            .navigationDestination(for: SettingsIOSSection.self) { section in
+                SettingsIOSDetailView(section: section, store: settingsStore)
+            }
+            .navigationBarBackButtonHidden()
+            .toolbar {
+                moreBackButton
+            }
+            .onAppear {
+                selectTabAfterNavigationGesture(.settings)
+            }
+        }
+    }
+
+    private var moreBackButton: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
+            Button {
+                destination = nil
+            } label: {
+                Label(Tab.more.rawValue, systemImage: "chevron.left")
+            }
+        }
+    }
+
     private func restoreSelectedMoreDestinationIfNeeded(for tab: Tab? = nil) {
-        guard path.isEmpty else { return }
+        guard destination == nil else { return }
 
         switch tab ?? selectedTab {
         case .goals:
-            path.append(AppMoreDestination.goals)
+            destination = .goals
         case .stats:
-            path.append(AppMoreDestination.stats)
+            destination = .stats
         case .settings:
-            path.append(AppMoreDestination.settings)
+            destination = .settings
         default:
             break
+        }
+    }
+
+    private func selectTabAfterNavigationGesture(_ tab: Tab) {
+        DispatchQueue.main.async {
+            onSelectTab(tab)
         }
     }
 }
@@ -576,20 +639,22 @@ private struct HomeTabContextMenuBridge: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: UIView, context: Context) {
-        context.coordinator.fastFilters = fastFilters
-        context.coordinator.selectedTags = selectedTags
-        context.coordinator.isSleepActionEnabled = isSleepActionEnabled
-        context.coordinator.onSelect = onSelect
-        context.coordinator.onClear = onClear
-        context.coordinator.onStartSleep = onStartSleep
+        let coordinator = context.coordinator
+        coordinator.fastFilters = fastFilters
+        coordinator.selectedTags = selectedTags
+        coordinator.isSleepActionEnabled = isSleepActionEnabled
+        coordinator.onSelect = onSelect
+        coordinator.onClear = onClear
+        coordinator.onStartSleep = onStartSleep
 
-        DispatchQueue.main.async {
-            context.coordinator.install(from: uiView)
+        DispatchQueue.main.async { [weak uiView] in
+            guard let uiView else { return }
+            coordinator.install(from: uiView)
         }
     }
 
     static func dismantleUIView(_ uiView: UIView, coordinator: Coordinator) {
-        coordinator.uninstall()
+        coordinator.deactivate()
     }
 
     final class Coordinator: NSObject, UIGestureRecognizerDelegate {
@@ -602,14 +667,23 @@ private struct HomeTabContextMenuBridge: UIViewRepresentable {
 
         private weak var installedTabBar: UITabBar?
         private weak var menuSourceButton: UIButton?
-        private lazy var longPressGesture: UILongPressGestureRecognizer = {
-            let gesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
-            gesture.cancelsTouchesInView = false
-            gesture.delegate = self
-            return gesture
-        }()
+        private var longPressGesture: UILongPressGestureRecognizer?
+        private var isActive = true
+
+        deinit {
+            MainActor.assumeIsolated {
+                uninstall()
+            }
+        }
+
+        func deactivate() {
+            isActive = false
+            uninstall()
+        }
 
         func install(from view: UIView, attempt: Int = 0) {
+            guard isActive else { return }
+
             guard let tabBar = findTabBarController(from: view)?.tabBar else {
                 guard attempt < 6 else { return }
 
@@ -620,18 +694,33 @@ private struct HomeTabContextMenuBridge: UIViewRepresentable {
                 return
             }
 
-            if installedTabBar !== tabBar {
+            if installedTabBar !== tabBar || longPressGesture == nil {
                 uninstall()
-                tabBar.addGestureRecognizer(longPressGesture)
+                let gesture = makeLongPressGesture()
+                tabBar.addGestureRecognizer(gesture)
+                longPressGesture = gesture
                 installedTabBar = tabBar
             }
         }
 
         func uninstall() {
-            installedTabBar?.removeGestureRecognizer(longPressGesture)
+            if let longPressGesture {
+                longPressGesture.delegate = nil
+                longPressGesture.removeTarget(self, action: #selector(handleLongPress(_:)))
+                installedTabBar?.removeGestureRecognizer(longPressGesture)
+            }
+
             menuSourceButton?.removeFromSuperview()
             menuSourceButton = nil
+            longPressGesture = nil
             installedTabBar = nil
+        }
+
+        private func makeLongPressGesture() -> UILongPressGestureRecognizer {
+            let gesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
+            gesture.cancelsTouchesInView = false
+            gesture.delegate = self
+            return gesture
         }
 
         func gestureRecognizer(
