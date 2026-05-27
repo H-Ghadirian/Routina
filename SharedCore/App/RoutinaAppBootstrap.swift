@@ -30,6 +30,7 @@ enum RoutinaAppBootstrap {
             .appSettingSleepHomeActionEnabled: true,
             .appSettingSleepHomeMenuEnabled: true,
             .appSettingShakeToStartSleepEnabled: true,
+            .appSettingFocusShieldEnabled: false,
             .appSettingAutomaticPlaceCheckInEnabled: true,
             .appSettingShowTimelineTasksInDayPlanner: true,
             .appSettingDailyRoutinesSectionCollapsed: false,

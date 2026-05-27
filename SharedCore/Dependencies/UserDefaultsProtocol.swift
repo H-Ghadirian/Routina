@@ -55,6 +55,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingSleepHomeActionEnabled = "appSettingSleepHomeDockEnabled"
     case appSettingSleepHomeMenuEnabled
     case appSettingShakeToStartSleepEnabled
+    case appSettingFocusShieldEnabled
     case appSettingAutomaticPlaceCheckInEnabled
     case appSettingShowTimelineTasksInDayPlanner = "appSettingShowDayPlanUnplannedDoneBadges"
     case appSettingDailyRoutinesSectionCollapsed
@@ -75,6 +76,7 @@ public enum UserDefaultStringValueKey: String, Sendable {
     case appSettingIOSStatsDashboardHiddenItemIDs
     case appSettingMacStatsDashboardHiddenItemIDs
     case appSettingTemporaryViewState
+    case appSettingFocusShieldSelection
     case macFormSectionOrder
     case macQuickAddShortcut
 }

@@ -1,5 +1,8 @@
 import SwiftData
 import SwiftUI
+#if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
+import FamilyControls
+#endif
 
 struct FocusSessionCard: View {
     @Environment(\.modelContext) private var modelContext
@@ -8,6 +11,16 @@ struct FocusSessionCard: View {
     @State private var editingSession: FocusSession?
     @State private var editStartedAt = Date()
     @State private var editDurationMinutes = 25
+    #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingFocusShieldEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isFocusShieldEnabled = false
+    @State private var focusShieldSelection = FocusShieldSupport.loadSelection()
+    @State private var isFocusShieldPickerPresented = false
+    @State private var isRequestingFocusShieldAuthorization = false
+    @State private var focusShieldStatusMessage: String?
+    #endif
 
     let task: RoutineTask
     let sessions: [FocusSession]
@@ -181,6 +194,27 @@ struct FocusSessionCard: View {
         .onChange(of: task.id) { _, _ in
             isExpanded = false
         }
+        .task {
+            syncFocusShieldForCurrentContext()
+        }
+        #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
+        .familyActivityPicker(
+            title: "Blocked During Focus",
+            headerText: "Choose the apps, categories, and websites Routina should block while a focus timer is running.",
+            footerText: "Routina only receives private tokens for your choices.",
+            isPresented: $isFocusShieldPickerPresented,
+            selection: $focusShieldSelection
+        )
+        .onChange(of: focusShieldSelection) { _, selection in
+            FocusShieldSupport.saveSelection(selection)
+            focusShieldStatusMessage = selection.routinaSummaryText
+            syncFocusShieldForCurrentContext()
+        }
+        .onChange(of: isFocusShieldEnabled) { _, _ in
+            focusShieldStatusMessage = focusShieldSelection.routinaSummaryText
+            syncFocusShieldForCurrentContext()
+        }
+        #endif
     }
 
     #if os(macOS)
@@ -291,11 +325,105 @@ struct FocusSessionCard: View {
                 .accessibilityLabel("More focus durations")
             }
 
+            #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
+            focusShieldControls
+            #endif
+
             Text(focusTrackingDescription)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
     }
+
+    #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
+    private var focusShieldControls: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Toggle(isOn: $isFocusShieldEnabled) {
+                Label("Block apps and websites", systemImage: "lock.shield")
+                    .font(.subheadline.weight(.semibold))
+            }
+            .toggleStyle(.switch)
+
+            if isFocusShieldEnabled {
+                HStack(spacing: 8) {
+                    Button {
+                        requestFocusShieldAuthorization()
+                    } label: {
+                        Label(focusShieldAuthorizationButtonTitle, systemImage: "person.badge.key")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(isRequestingFocusShieldAuthorization)
+
+                    Button {
+                        focusShieldSelection = FocusShieldSupport.loadSelection()
+                        isFocusShieldPickerPresented = true
+                    } label: {
+                        Label("Choose", systemImage: "slider.horizontal.3")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(focusShieldAuthorizationState != .approved)
+                }
+
+                Text(focusShieldDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(10)
+        .routinaGlassCard(cornerRadius: 10, tint: .teal, tintOpacity: 0.05)
+    }
+
+    private var focusShieldAuthorizationState: FocusShieldAuthorizationState {
+        FocusShieldSupport.authorizationState()
+    }
+
+    private var focusShieldAuthorizationButtonTitle: String {
+        switch focusShieldAuthorizationState {
+        case .approved:
+            return "Allowed"
+        case .denied:
+            return "Allow Access"
+        case .notDetermined:
+            return "Allow Access"
+        case .unavailable:
+            return "Unavailable"
+        }
+    }
+
+    private var focusShieldDescription: String {
+        if let focusShieldStatusMessage {
+            return focusShieldStatusMessage
+        }
+
+        switch focusShieldAuthorizationState {
+        case .approved:
+            return focusShieldSelection.routinaSummaryText
+        case .denied:
+            return "Screen Time access is off. Allow access to block selected apps and websites during focus."
+        case .notDetermined:
+            return "Allow Screen Time access, then choose what to block during focus."
+        case .unavailable:
+            return "App and website blocking is available on iPhone and iPad."
+        }
+    }
+
+    private func requestFocusShieldAuthorization() {
+        isRequestingFocusShieldAuthorization = true
+        Task { @MainActor in
+            do {
+                try await FocusShieldSupport.requestAuthorization()
+                focusShieldStatusMessage = FocusShieldSupport.authorizationState() == .approved
+                    ? focusShieldSelection.routinaSummaryText
+                    : "Screen Time access was not approved."
+                syncFocusShieldForCurrentContext()
+            } catch {
+                focusShieldStatusMessage = "Screen Time access failed: \(error.localizedDescription)"
+            }
+            isRequestingFocusShieldAuthorization = false
+        }
+    }
+    #endif
 
     private var focusTrackingDescription: String {
         if onCompletedDuration != nil {
@@ -322,49 +450,55 @@ struct FocusSessionCard: View {
     }
 
     private func activeSessionContent(_ session: FocusSession) -> some View {
-        SwiftUI.TimelineView(.periodic(from: .now, by: 1)) { context in
-            let isCountUp = session.plannedDurationSeconds <= 0
-            let progress = progress(for: session, now: context.date)
-            let displaySeconds = isCountUp
-                ? elapsedSeconds(for: session, now: context.date)
-                : remainingSeconds(for: session, now: context.date)
+        VStack(alignment: .leading, spacing: 12) {
+            SwiftUI.TimelineView(.periodic(from: .now, by: 1)) { context in
+                let isCountUp = session.plannedDurationSeconds <= 0
+                let progress = progress(for: session, now: context.date)
+                let displaySeconds = isCountUp
+                    ? elapsedSeconds(for: session, now: context.date)
+                    : remainingSeconds(for: session, now: context.date)
 
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .lastTextBaseline) {
-                    Text(FocusSessionFormatting.durationText(seconds: displaySeconds))
-                        .font(.system(.largeTitle, design: .rounded).weight(.bold))
-                        .monospacedDigit()
-                    Text(isCountUp ? "elapsed" : "remaining")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                    Spacer(minLength: 8)
-                }
-
-                if isCountUp {
-                    ProgressView()
-                        .tint(.teal)
-                } else {
-                    ProgressView(value: progress)
-                        .tint(.teal)
-                }
-
-                HStack(spacing: 10) {
-                    Button {
-                        finish(session)
-                    } label: {
-                        Label("Finish", systemImage: "checkmark.circle.fill")
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(alignment: .lastTextBaseline) {
+                        Text(FocusSessionFormatting.durationText(seconds: displaySeconds))
+                            .font(.system(.largeTitle, design: .rounded).weight(.bold))
+                            .monospacedDigit()
+                        Text(isCountUp ? "elapsed" : "remaining")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        Spacer(minLength: 8)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.teal)
 
-                    Button(role: .destructive) {
-                        abandon(session)
-                    } label: {
-                        Label("Abandon", systemImage: "xmark.circle")
+                    if isCountUp {
+                        ProgressView()
+                            .tint(.teal)
+                    } else {
+                        ProgressView(value: progress)
+                            .tint(.teal)
                     }
-                    .buttonStyle(.bordered)
+
+                    HStack(spacing: 10) {
+                        Button {
+                            finish(session)
+                        } label: {
+                            Label("Finish", systemImage: "checkmark.circle.fill")
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.teal)
+
+                        Button(role: .destructive) {
+                            abandon(session)
+                        } label: {
+                            Label("Abandon", systemImage: "xmark.circle")
+                        }
+                        .buttonStyle(.bordered)
+                    }
                 }
             }
+
+            #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
+            focusShieldControls
+            #endif
         }
     }
 
@@ -481,6 +615,7 @@ struct FocusSessionCard: View {
                 in: modelContext
             )
             saveContext()
+            syncFocusShieldForCurrentContext()
         } catch {
             NSLog("Failed to check sleep mode before starting focus: \(error.localizedDescription)")
         }
@@ -502,6 +637,7 @@ struct FocusSessionCard: View {
             in: modelContext
         )
         saveContext()
+        syncFocusShieldForCurrentContext()
     }
 
     private func abandon(_ session: FocusSession) {
@@ -515,6 +651,7 @@ struct FocusSessionCard: View {
             in: modelContext
         )
         saveContext()
+        syncFocusShieldForCurrentContext()
     }
 
     private func beginEditing(_ session: FocusSession) {
@@ -537,6 +674,7 @@ struct FocusSessionCard: View {
             in: modelContext
         )
         saveContext()
+        syncFocusShieldForCurrentContext()
     }
 
     private func delete(_ session: FocusSession) {
@@ -549,6 +687,7 @@ struct FocusSessionCard: View {
         )
         modelContext.delete(session)
         saveContext()
+        syncFocusShieldForCurrentContext()
     }
 
     private func progress(for session: FocusSession, now: Date) -> Double {
@@ -586,6 +725,12 @@ struct FocusSessionCard: View {
         Task { @MainActor in
             await FocusTimerLiveActivityService.sync(using: modelContext)
         }
+#endif
+    }
+
+    private func syncFocusShieldForCurrentContext() {
+#if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
+        FocusShieldSupport.syncFocusShield(using: modelContext)
 #endif
     }
 }

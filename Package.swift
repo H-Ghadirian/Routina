@@ -360,6 +360,7 @@ let package = Package(
                 "SharedCore/Services/MicrosoftGraphCalendarService.swift",
                 "SharedCore/Services/RoutinaQuickAddService.swift",
                 "SharedCore/Services/DeviceActivityRecorder.swift",
+                "SharedCore/Services/FocusShieldSupport.swift",
                 "SharedCore/Services/SleepSessionSupport.swift",
                 "SharedCore/Services/PlaceCheckInSupport.swift",
                 "SharedCore/Services/WidgetStatsService.swift",
