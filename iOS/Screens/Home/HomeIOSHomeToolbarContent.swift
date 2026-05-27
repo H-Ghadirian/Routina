@@ -43,13 +43,15 @@ struct HomeIOSHomeToolbarContent: ToolbarContent {
                     action: onShowFilters
                 )
 
-                topActionButton(
-                    title: "Log Emotion",
-                    systemImage: "face.smiling",
-                    tint: .pink,
-                    isHighlighted: false,
-                    action: onAddEmotion
-                )
+                if showsSleepAction {
+                    topActionButton(
+                        title: "Going to sleep",
+                        systemImage: "bed.double.fill",
+                        tint: .indigo,
+                        isHighlighted: false,
+                        action: onStartSleep
+                    )
+                }
 
                 topActionButton(
                     title: "Add Note",
@@ -67,15 +69,13 @@ struct HomeIOSHomeToolbarContent: ToolbarContent {
                     action: onCheckIn
                 )
 
-                if showsSleepAction {
-                    topActionButton(
-                        title: "Going to sleep",
-                        systemImage: "bed.double.fill",
-                        tint: .indigo,
-                        isHighlighted: false,
-                        action: onStartSleep
-                    )
-                }
+                topActionButton(
+                    title: "Log Emotion",
+                    systemImage: "face.smiling",
+                    tint: .pink,
+                    isHighlighted: false,
+                    action: onAddEmotion
+                )
             }
 
             Button(action: onToggleTopActions) {

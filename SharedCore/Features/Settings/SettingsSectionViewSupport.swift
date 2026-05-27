@@ -36,7 +36,8 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
                 .appearance,
                 .iCloud,
                 .git,
-                .quickAdd
+                .quickAdd,
+                .shortcuts
             ],
             [
                 .backup,
@@ -64,11 +65,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
             return false
         }
 
-        #if os(macOS)
         return true
-        #else
-        return section != .shortcuts
-        #endif
     }
 
     var title: String {

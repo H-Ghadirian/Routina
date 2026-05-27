@@ -42,6 +42,17 @@ struct SettingsSectionViewSupportTests {
     }
 
     @Test
+    func compactSectionsIncludeShortcuts() {
+        let compactSections = SettingsSectionID.compactSectionGroups(isGitFeaturesEnabled: false).flatMap { $0 }
+
+        #expect(compactSections.contains(.shortcuts))
+        #expect(SettingsSectionID.shortcuts.title == "Shortcuts")
+        #expect(SettingsSectionID.shortcuts.rowPresentation(in: SettingsFeatureState()) == SettingsSectionRowPresentation(
+            subtitle: "Keyboard, Siri, and Apple Shortcuts"
+        ))
+    }
+
+    @Test
     func rowPresentationBuildsNotificationSummary() {
         var state = SettingsFeatureState()
         state.notifications.notificationsEnabled = true
