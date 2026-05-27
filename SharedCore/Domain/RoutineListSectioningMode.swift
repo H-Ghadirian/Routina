@@ -1,6 +1,7 @@
 import Foundation
 
 enum RoutineListSectioningMode: String, CaseIterable, Equatable, Identifiable {
+    case none
     case status
     case deadlineDate
     case tags
@@ -11,6 +12,8 @@ enum RoutineListSectioningMode: String, CaseIterable, Equatable, Identifiable {
 
     var title: String {
         switch self {
+        case .none:
+            return "None"
         case .status:
             return "Status"
         case .deadlineDate:
@@ -22,6 +25,8 @@ enum RoutineListSectioningMode: String, CaseIterable, Equatable, Identifiable {
 
     var systemImage: String {
         switch self {
+        case .none:
+            return "list.bullet"
         case .status:
             return "list.bullet.rectangle"
         case .deadlineDate:
@@ -33,6 +38,8 @@ enum RoutineListSectioningMode: String, CaseIterable, Equatable, Identifiable {
 
     var subtitle: String {
         switch self {
+        case .none:
+            return "Shows matching tasks in one list."
         case .status:
             return "Shows Due Soon, On Track, and Done Today."
         case .deadlineDate:
@@ -44,6 +51,8 @@ enum RoutineListSectioningMode: String, CaseIterable, Equatable, Identifiable {
 
     var summaryText: String {
         switch self {
+        case .none:
+            return "None"
         case .status:
             return "Status"
         case .deadlineDate:

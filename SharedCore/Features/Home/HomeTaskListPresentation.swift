@@ -108,6 +108,20 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                 includeMarkDone: true,
                 moveContext: { _ in nil }
             )
+        } else if filtering.usesUngroupedSectioning {
+            for section in filtering.groupedRoutineSections(from: unpinnedRoutineDisplays) {
+                presentationSections.append(
+                    HomeTaskListPresentationSection(
+                        kind: .regular,
+                        title: section.title,
+                        tasks: section.tasks,
+                        rowNumberOffset: offset,
+                        includeMarkDone: true,
+                        moveContext: nil
+                    )
+                )
+                offset += section.tasks.count
+            }
         } else {
             let dailyTasks = filtering.filteredDailyRoutineTasks(unpinnedRoutineDisplays)
             let regularSections = filtering.groupedRoutineSections(
@@ -230,6 +244,23 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                     )
                 }
             )
+        } else if filtering.usesUngroupedSectioning {
+            for section in filtering.groupedRoutineSections(from: unpinnedActiveDisplays) {
+                presentationSections.append(
+                    HomeTaskListPresentationSection(
+                        kind: .regular,
+                        title: section.title,
+                        tasks: section.tasks,
+                        rowNumberOffset: offset,
+                        includeMarkDone: true,
+                        moveContext: HomeTaskListMoveContext(
+                            sectionKey: HomeTaskListFiltering<Display>.ungroupedManualOrderSectionKey,
+                            orderedTaskIDs: section.tasks.map(\.taskID)
+                        )
+                    )
+                )
+                offset += section.tasks.count
+            }
         } else {
             let dailyTasks = filtering.filteredDailyRoutineTasks(unpinnedActiveDisplays)
             let regularSections = filtering.groupedRoutineSections(

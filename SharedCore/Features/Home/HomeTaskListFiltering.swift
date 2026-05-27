@@ -5,6 +5,10 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
         HomeTaskListSorter<Display>.pinnedManualOrderSectionKey
     }
 
+    static var ungroupedManualOrderSectionKey: String {
+        HomeTaskListSorter<Display>.ungroupedManualOrderSectionKey
+    }
+
     static var dailyManualOrderSectionKey: String {
         HomeTaskListSorter<Display>.dailyManualOrderSectionKey
     }
@@ -116,6 +120,10 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
 
     var usesTagSectioning: Bool {
         sectionBuilder.configuration.routineListSectioningMode == .tags
+    }
+
+    var usesUngroupedSectioning: Bool {
+        sectionBuilder.configuration.routineListSectioningMode == .none
     }
 
     func filteredDailyRoutineTasks(_ displays: [Display]) -> [Display] {

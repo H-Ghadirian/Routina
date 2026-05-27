@@ -232,6 +232,21 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func groupedRoutineSectionsCanUseOneUngroupedSection() {
+        let tasks = [
+            TestTaskDisplay(name: "Weekly", recurrenceRule: .interval(days: 7), daysUntilDue: 4),
+            TestTaskDisplay(name: "Daily", recurrenceRule: .interval(days: 1), daysUntilDue: 4),
+            TestTaskDisplay(name: "Todo", daysUntilDue: 4, isOneOffTask: true)
+        ]
+
+        let sections = makeFiltering(routineListSectioningMode: .none)
+            .groupedRoutineSections(from: tasks)
+
+        #expect(sections.map(\.title) == ["Tasks"])
+        #expect(sections.map { $0.tasks.map(\.name) } == [["Daily", "Todo", "Weekly"]])
+    }
+
+    @Test
     func manualOrderSortsWithinTheResolvedSection() {
         let sectionKey = HomeTaskListFiltering<TestTaskDisplay>.pinnedManualOrderSectionKey
         let tasks = [
@@ -379,6 +394,26 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func iOSPresentationNoneGroupingCombinesDailyAndRegularRows() {
+        let presentation = HomeTaskListPresentation.iOS(
+            filtering: makeFiltering(routineListSectioningMode: .none),
+            routineDisplays: [
+                TestTaskDisplay(name: "Weekly", recurrenceRule: .interval(days: 7), daysUntilDue: 4),
+                TestTaskDisplay(name: "Daily", recurrenceRule: .interval(days: 1), daysUntilDue: 4),
+                TestTaskDisplay(name: "Todo", daysUntilDue: 4, isOneOffTask: true)
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            hideUnavailableRoutines: false,
+            taskListKind: .all
+        )
+
+        #expect(presentation.sections.map(\.kind) == [.regular])
+        #expect(presentation.sections.map(\.title) == ["Tasks"])
+        #expect(presentation.sections.map { $0.tasks.map(\.name) } == [["Daily", "Todo", "Weekly"]])
+    }
+
+    @Test
     func iOSPresentationCanHideArchivedSection() {
         let presentation = HomeTaskListPresentation.iOS(
             filtering: makeFiltering(),
@@ -491,6 +526,31 @@ struct HomeTaskListFilteringTests {
         #expect(presentation.sections.map(\.title) == ["#Admin", "#Focus"])
         #expect(presentation.sections.compactMap(\.moveContext?.sectionKey) == ["tag:admin", "tag:focus"])
         #expect(presentation.sections.compactMap(\.moveContext?.orderedTaskIDs.first) == [adminID, focusID])
+    }
+
+    @Test
+    func sidebarPresentationNoneGroupingBuildsFlatMoveContext() {
+        let dailyID = UUID()
+        let weeklyID = UUID()
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(routineListSectioningMode: .none),
+            routineDisplays: [
+                TestTaskDisplay(taskID: weeklyID, name: "Weekly", recurrenceRule: .interval(days: 7), daysUntilDue: 4),
+                TestTaskDisplay(taskID: dailyID, name: "Daily", recurrenceRule: .interval(days: 1), daysUntilDue: 4)
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(presentation.sections.map(\.kind) == [.regular])
+        #expect(presentation.sections.map(\.title) == ["Tasks"])
+        #expect(presentation.sections.compactMap(\.moveContext?.sectionKey) == ["tasks"])
+        #expect(presentation.sections.first?.moveContext?.orderedTaskIDs == [dailyID, weeklyID])
     }
 
     @Test

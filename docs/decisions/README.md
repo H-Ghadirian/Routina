@@ -65,7 +65,7 @@ When decision records overlap, follow explicit supersession first and then prefe
 - **Mac note creation:** Mac Home presents Add Note in the main detail area instead of a sheet, matching the main-surface creation model used by Add Goal and Add Task.
 - **Mac emotion creation:** Mac Home presents Add Emotion in the main detail area instead of a sheet, matching the main-surface creation model used by Add Task, Add Goal, and Add Note. Saving routes to the saved emotion entry in Timeline with the Emotions filter active.
 - **Home creation save routing:** After a task, goal, or standalone note is saved from Home, the app routes to that saved entity's detail and synchronizes the visible sidebar row. Creation save routing may clear sidebar search and visibility filters so the saved row is immediately visible.
-- **Home tag grouping:** Home list grouping includes a Tags mode alongside Status and Deadline Date. Tags mode groups active unpinned routines and todos by their first normalized tag, puts untagged rows in `No Tags`, keeps Pinned and Archived as special sections, and persists each tag group's collapsed state locally.
+- **Home list grouping:** Home list grouping includes None, Status, Deadline Date, and Tags modes. None shows active unpinned routines and todos in one `Tasks` section, while Pinned and Archived remain special lifecycle sections. Tags mode groups active unpinned routines and todos by their first normalized tag, puts untagged rows in `No Tags`, and persists each tag group's collapsed state locally.
 - **Timeline row details:** Timeline note rows open note detail, and place check-in rows open a dedicated place check-in detail view across standalone Timeline screens and the macOS Home embedded Timeline. Place detail is read-oriented; correction/editing remains in the existing Places/check-in history surfaces.
 
 ## Open Questions
@@ -165,3 +165,4 @@ When decision records overlap, follow explicit supersession first and then prefe
 | [0085](0085-shield-apps-and-websites-during-focus.md) | Shield Apps and Websites During Focus | Accepted | 2026-05-27 |
 | [0086](0086-show-all-day-calendar-events-in-planner.md) | Show All-Day Calendar Events in the Planner | Accepted | 2026-05-27 |
 | [0087](0087-hide-automatic-planner-suggestions.md) | Hide Automatic Planner Suggestions | Accepted | 2026-05-27 |
+| [0088](0088-support-ungrouped-home-task-list.md) | Support an Ungrouped Home Task List | Accepted | 2026-05-27 |

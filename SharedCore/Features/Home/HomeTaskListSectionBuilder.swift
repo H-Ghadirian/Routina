@@ -1,11 +1,20 @@
 struct HomeTaskListSectionBuilder<Display: HomeTaskListDisplay> {
+    static var ungroupedTitle: String { "Tasks" }
+
     var configuration: HomeTaskListFilteringConfiguration
     var metrics: HomeTaskListMetrics<Display>
     var sorter: HomeTaskListSorter<Display>
 
     func groupedRoutineSections(from filteredTasks: [Display]) -> [HomeTaskListSection<Display>] {
-        if configuration.routineListSectioningMode == .tags {
+        switch configuration.routineListSectioningMode {
+        case .none:
+            return filteredTasks.isEmpty
+                ? []
+                : [HomeTaskListSection(title: Self.ungroupedTitle, tasks: filteredTasks)]
+        case .tags:
             return tagBasedSections(from: filteredTasks)
+        case .status, .deadlineDate:
+            break
         }
 
         let missed = filteredTasks.filter { metrics.hasMissedExactTimedOccurrence(for: $0) }
@@ -30,6 +39,8 @@ struct HomeTaskListSectionBuilder<Display: HomeTaskListDisplay> {
 
         let onTrackSections: [HomeTaskListSection<Display>]
         switch configuration.routineListSectioningMode {
+        case .none:
+            onTrackSections = []
         case .status:
             onTrackSections = [HomeTaskListSection(title: "On Track", tasks: onTrack)]
         case .deadlineDate:

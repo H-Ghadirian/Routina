@@ -2,6 +2,7 @@ import Foundation
 
 struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
     static var pinnedManualOrderSectionKey: String { "pinned" }
+    static var ungroupedManualOrderSectionKey: String { "tasks" }
     static var dailyManualOrderSectionKey: String { "daily" }
     static var archivedManualOrderSectionKey: String { "archived" }
 
@@ -138,6 +139,10 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
     }
 
     func regularManualOrderSectionKey(for task: Display) -> String {
+        if configuration.routineListSectioningMode == .none {
+            return Self.ungroupedManualOrderSectionKey
+        }
+
         if configuration.routineListSectioningMode == .tags {
             return task.taskListTagManualOrderSectionKey
         }
@@ -156,6 +161,8 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
         }
 
         switch configuration.routineListSectioningMode {
+        case .none:
+            return Self.ungroupedManualOrderSectionKey
         case .status:
             return "onTrack"
         case .deadlineDate:
