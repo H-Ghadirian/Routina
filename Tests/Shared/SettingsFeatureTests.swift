@@ -1123,4 +1123,56 @@ struct SettingsFeatureTests {
             $0.dataTransfer.dataTransferStatusMessage = "Load canceled."
         }
     }
+
+    @Test
+    func importRoutineDataSourceSelected_loadsSelectedBackupPackage() async throws {
+        let exportContext = makeInMemoryContext()
+        let task = RoutineTask(name: "Restore me", tags: ["Safe"])
+        exportContext.insert(task)
+        try exportContext.save()
+
+        let packageURL = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension(SettingsRoutineDataPersistence.backupPackageExtension)
+        defer { try? FileManager.default.removeItem(at: packageURL) }
+
+        try SettingsRoutineDataPersistence.writeBackupPackage(
+            to: packageURL,
+            from: exportContext
+        )
+
+        let importContext = makeInMemoryContext()
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { importContext }
+            $0.notificationClient.cancelAll = {}
+            $0.notificationClient.systemNotificationsAuthorized = { false }
+        }
+
+        await store.send(.importRoutineDataSourceSelected(packageURL)) {
+            $0.dataTransfer.isDataTransferInProgress = true
+            $0.dataTransfer.dataTransferStatusMessage = "Loading routine data..."
+        }
+
+        var cloudEstimate = CloudUsageEstimate.zero
+        await store.receive { action in
+            guard case let .cloudUsageEstimateLoaded(estimate) = action else { return false }
+            cloudEstimate = estimate
+            #expect(estimate.taskCount == 1)
+            return true
+        } assert: {
+            $0.cloud.cloudUsageEstimate = cloudEstimate
+        }
+
+        let successMessage = "Loaded 1 routines, 0 goals, 0 places, 0 logs, 0 sleep sessions, 0 place check-ins, 0 emotions, 0 notes, and 0 attachments."
+        await store.receive(.routineDataTransferFinished(success: true, message: successMessage)) {
+            $0.dataTransfer.isDataTransferInProgress = false
+            $0.dataTransfer.dataTransferStatusMessage = successMessage
+        }
+
+        let restoredTask = try #require(importContext.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(restoredTask.id == task.id)
+        #expect(restoredTask.tags == ["Safe"])
+    }
 }

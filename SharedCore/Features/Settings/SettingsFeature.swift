@@ -81,6 +81,7 @@ struct SettingsFeature {
         case exportRoutineDataTapped
         case exportRoutineDataDestinationSelected(URL)
         case importRoutineDataTapped
+        case importRoutineDataSourceSelected(URL)
         case appIconSelected(AppIconOption)
         case resetTemporaryViewStateTapped
         case appIconChangeFinished(requestedOption: AppIconOption, errorMessage: String?)
@@ -635,6 +636,15 @@ struct SettingsFeature {
                 return SettingsRoutineDataTransferActionExecution.beginImport(
                     state: &state.dataTransfer,
                     routineDataTransferClient: self.routineDataTransferClient,
+                    modelContext: self.modelContext,
+                    appSettingsClient: { self.appSettingsClient },
+                    notificationClient: { self.notificationClient }
+                )
+
+            case let .importRoutineDataSourceSelected(sourceURL):
+                return SettingsRoutineDataTransferActionExecution.beginImport(
+                    from: sourceURL,
+                    state: &state.dataTransfer,
                     modelContext: self.modelContext,
                     appSettingsClient: { self.appSettingsClient },
                     notificationClient: { self.notificationClient }

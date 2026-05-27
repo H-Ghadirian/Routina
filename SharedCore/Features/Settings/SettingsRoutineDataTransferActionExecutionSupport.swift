@@ -49,6 +49,25 @@ enum SettingsRoutineDataTransferActionExecution {
         )
     }
 
+    static func beginImport(
+        from sourceURL: URL,
+        state: inout SettingsDataTransferState,
+        modelContext: @escaping @MainActor @Sendable () -> ModelContext,
+        appSettingsClient: @escaping @Sendable () -> AppSettingsClient,
+        notificationClient: @escaping @Sendable () -> NotificationClient
+    ) -> Effect<SettingsFeature.Action> {
+        guard SettingsRoutineDataTransferEditor.begin(.import, state: &state) else {
+            return .none
+        }
+
+        return importData(
+            from: sourceURL,
+            modelContext: modelContext,
+            appSettingsClient: appSettingsClient,
+            notificationClient: notificationClient
+        )
+    }
+
     static func exportData(
         routineDataTransferClient: RoutineDataTransferClient,
         modelContext: @escaping @MainActor @Sendable () -> ModelContext
@@ -135,6 +154,40 @@ enum SettingsRoutineDataTransferActionExecution {
                     )
                     return
                 }
+
+                send(.cloudUsageEstimateLoaded(result.cloudUsageEstimate))
+                NotificationCenter.default.postRoutineDidUpdate()
+                await send(
+                    .routineDataTransferFinished(
+                        success: true,
+                        message: "Loaded \(result.importedSummary.tasks) routines, \(result.importedSummary.goals) goals, \(result.importedSummary.places) places, \(result.importedSummary.logs) logs, \(result.importedSummary.sleepSessions) sleep sessions, \(result.importedSummary.placeCheckInSessions) place check-ins, \(result.importedSummary.emotionLogs) emotions, \(result.importedSummary.notes) notes, and \(result.importedSummary.attachments) attachments."
+                    )
+                )
+            } catch {
+                await send(
+                    .routineDataTransferFinished(
+                        success: false,
+                        message: "Load failed: \(error.localizedDescription)"
+                    )
+                )
+            }
+        }
+    }
+
+    static func importData(
+        from sourceURL: URL,
+        modelContext: @escaping @MainActor @Sendable () -> ModelContext,
+        appSettingsClient: @escaping @Sendable () -> AppSettingsClient,
+        notificationClient: @escaping @Sendable () -> NotificationClient
+    ) -> Effect<SettingsFeature.Action> {
+        .run { @MainActor send in
+            do {
+                let result = try await SettingsRoutineDataTransferExecution.importData(
+                    from: sourceURL,
+                    modelContext: modelContext,
+                    appSettingsClient: appSettingsClient,
+                    notificationClient: notificationClient
+                )
 
                 send(.cloudUsageEstimateLoaded(result.cloudUsageEstimate))
                 NotificationCenter.default.postRoutineDidUpdate()

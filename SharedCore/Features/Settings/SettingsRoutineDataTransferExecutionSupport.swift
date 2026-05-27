@@ -61,8 +61,41 @@ enum SettingsRoutineDataTransferExecution {
             return nil
         }
 
+        return try await importData(
+            from: sourceURL,
+            modelContext: modelContext,
+            appSettingsClient: appSettingsClient,
+            notificationClient: notificationClient
+        )
+    }
+
+    @MainActor
+    static func importData(
+        from sourceURL: URL,
+        modelContext: @escaping @MainActor @Sendable () -> ModelContext,
+        appSettingsClient: @escaping @MainActor @Sendable () -> AppSettingsClient,
+        notificationClient: @escaping @MainActor @Sendable () -> NotificationClient
+    ) async throws -> SettingsRoutineDataTransferImportResult {
         let context = modelContext()
-        let importedSummary = try SettingsExecutionSupport.withSecurityScopedAccess(to: sourceURL) {
+        let importedSummary = try importData(from: sourceURL, into: context)
+        try await SettingsExecutionSupport.rescheduleNotificationsAfterImport(
+            in: context,
+            appSettingsClient: appSettingsClient(),
+            notificationClient: notificationClient()
+        )
+
+        return SettingsRoutineDataTransferImportResult(
+            importedSummary: importedSummary,
+            cloudUsageEstimate: SettingsDataQueries.loadCloudUsageEstimate(in: context)
+        )
+    }
+
+    @MainActor
+    private static func importData(
+        from sourceURL: URL,
+        into context: ModelContext
+    ) throws -> SettingsRoutineDataPersistence.ImportSummary {
+        try SettingsExecutionSupport.withSecurityScopedAccess(to: sourceURL) {
             var isDirectory: ObjCBool = false
             if FileManager.default.fileExists(atPath: sourceURL.path, isDirectory: &isDirectory),
                isDirectory.boolValue {
@@ -78,15 +111,5 @@ enum SettingsRoutineDataTransferExecution {
                 in: context
             )
         }
-        try await SettingsExecutionSupport.rescheduleNotificationsAfterImport(
-            in: context,
-            appSettingsClient: appSettingsClient(),
-            notificationClient: notificationClient()
-        )
-
-        return SettingsRoutineDataTransferImportResult(
-            importedSummary: importedSummary,
-            cloudUsageEstimate: SettingsDataQueries.loadCloudUsageEstimate(in: context)
-        )
     }
 }
