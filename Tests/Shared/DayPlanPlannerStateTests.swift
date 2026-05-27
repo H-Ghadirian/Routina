@@ -217,6 +217,71 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func hiddenTimelineActivityBlocksAreExcludedFromAutomaticPlannerSuggestions() throws {
+        let calendar = gregorianCalendar
+        let activityDate = try #require(date("2026-05-07T12:00:00Z"))
+        let completedAt = try #require(date("2026-05-07T09:45:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Review inbox",
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 30
+        )
+        let logs = [
+            RoutineLog(
+                timestamp: completedAt,
+                taskID: taskID,
+                kind: .completed,
+                actualDurationMinutes: 30
+            ),
+        ]
+        let visibleBlocks = DayPlanTimelineTasks.activityBlocks(
+            on: activityDate,
+            from: [task],
+            logs: logs,
+            plannedBlocks: [],
+            calendar: calendar
+        )
+        let visibleBlock = try #require(visibleBlocks.first)
+        let hiddenStorage = DayPlanHiddenTimelineActivityStore.storageString(
+            afterHiding: visibleBlock,
+            in: nil
+        )
+        let hiddenIDs = DayPlanHiddenTimelineActivityStore.hiddenIDs(from: hiddenStorage)
+
+        let hiddenBlocks = DayPlanTimelineTasks.activityBlocks(
+            on: activityDate,
+            from: [task],
+            logs: logs,
+            plannedBlocks: [],
+            calendar: calendar,
+            hiddenActivityIDs: hiddenIDs
+        )
+        let hiddenTasks = DayPlanTimelineTasks.tasks(
+            on: activityDate,
+            from: [task],
+            logs: logs,
+            plannedBlocks: [],
+            calendar: calendar,
+            hiddenActivityIDs: hiddenIDs
+        )
+
+        #expect(hiddenBlocks.isEmpty)
+        #expect(hiddenTasks.isEmpty)
+        #expect(
+            DayPlanTimelineTasks.count(
+                on: activityDate,
+                tasks: [task],
+                logs: logs,
+                plannedBlocks: [],
+                calendar: calendar,
+                hiddenActivityIDs: hiddenIDs
+            ) == 0
+        )
+    }
+
+    @Test
     func allDayBlocksUseImportedCalendarMetadataAcrossVisibleDates() throws {
         let calendar = gregorianCalendar
         let startDate = try #require(date("2026-05-10T00:00:00Z"))

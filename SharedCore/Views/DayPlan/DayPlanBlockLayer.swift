@@ -16,6 +16,7 @@ struct DayPlanBlockLayer: View {
     var onOpenBlockDetails: (DayPlanBlock, Date) -> Void
     var onOpenTimelineTaskDetails: (UUID) -> Void = { _ in }
     var onConfirmTimelineActivity: (DayPlanTimelineActivityBlock, Date) -> Void = { _, _ in }
+    var onHideTimelineActivity: (DayPlanTimelineActivityBlock, Date) -> Void = { _, _ in }
     var onTimelineDragProvider: (DayPlanTimelineActivityBlock, Date) -> NSItemProvider = { _, _ in
         NSItemProvider(object: "" as NSString)
     }
@@ -78,6 +79,9 @@ struct DayPlanBlockLayer: View {
                         onDelete: {},
                         onConfirmAutomatic: {
                             onConfirmTimelineActivity(activity, date)
+                        },
+                        onHideAutomatic: {
+                            onHideTimelineActivity(activity, date)
                         },
                         onResizeStarted: {},
                         onResizeChanged: { _, _ in },

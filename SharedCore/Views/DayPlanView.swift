@@ -55,6 +55,10 @@ struct DayPlanSidebarView: View {
         UserDefaultBoolValueKey.appSettingShowTimelineTasksInDayPlanner.rawValue,
         store: SharedDefaults.app
     ) private var showsTimelineTasksInDayPlanner = true
+    @AppStorage(
+        UserDefaultStringValueKey.appSettingHiddenDayPlanTimelineActivityIDs.rawValue,
+        store: SharedDefaults.app
+    ) private var hiddenTimelineActivityStorage = ""
 
     var body: some View {
         taskPanel
@@ -218,7 +222,8 @@ struct DayPlanSidebarView: View {
                 from: tasks,
                 logs: logs,
                 plannedBlocks: planner.blocks(on: focusedDate, calendar: calendar, context: modelContext),
-                calendar: calendar
+                calendar: calendar,
+                hiddenActivityIDs: hiddenTimelineActivityIDs
             )
         }
 
@@ -231,6 +236,10 @@ struct DayPlanSidebarView: View {
 
     private var activeFocusedUnplannedCompletedDate: Date? {
         showsTimelineTasksInDayPlanner ? nil : planner.focusedUnplannedCompletedDate
+    }
+
+    private var hiddenTimelineActivityIDs: Set<String> {
+        DayPlanHiddenTimelineActivityStore.hiddenIDs(from: hiddenTimelineActivityStorage)
     }
 
     private var selectedTask: RoutineTask? {
@@ -389,17 +398,23 @@ private struct DayPlanTimelinePanelView: View {
         UserDefaultBoolValueKey.appSettingShowTimelineTasksInDayPlanner.rawValue,
         store: SharedDefaults.app
     ) private var showsTimelineTasksInDayPlanner = true
+    @AppStorage(
+        UserDefaultStringValueKey.appSettingHiddenDayPlanTimelineActivityIDs.rawValue,
+        store: SharedDefaults.app
+    ) private var hiddenTimelineActivityStorage = ""
 
     var body: some View {
         let referenceDate = Date()
         let weekDates = planner.weekDates(calendar: calendar)
         let plannedBlocksByDayKey = plannedBlocksByDayKey(for: weekDates)
+        let hiddenTimelineActivityIDs = DayPlanHiddenTimelineActivityStore.hiddenIDs(from: hiddenTimelineActivityStorage)
         let timelineBlocksByDayKey = DayPlanTimelineTasks.activityBlocksByDayKey(
             on: weekDates,
             from: tasks,
             logs: logs,
             plannedBlocksByDayKey: plannedBlocksByDayKey,
-            calendar: calendar
+            calendar: calendar,
+            hiddenActivityIDs: hiddenTimelineActivityIDs
         )
         let sleepBlocksByDayKey = DayPlanSleepBlocks.blocksByDayKey(
             on: weekDates,
@@ -523,6 +538,9 @@ private struct DayPlanTimelinePanelView: View {
                     }
                     planner.confirmTimelineActivity(activity, on: date, calendar: calendar, context: modelContext)
                 },
+                onHideTimelineActivity: { activity, _ in
+                    hideTimelineActivity(activity)
+                },
                 onMoveBlock: { blockID, date, minute in
                     let durationMinutes = plannedBlock(with: blockID)?.durationMinutes ?? planner.durationMinutes
                     guard !hasSleepConflict(
@@ -619,6 +637,18 @@ private struct DayPlanTimelinePanelView: View {
             logs: logs,
             context: modelContext,
             calendar: calendar
+        )
+    }
+
+    private func hideTimelineActivity(_ activity: DayPlanTimelineActivityBlock) {
+        let updatedStorage = DayPlanHiddenTimelineActivityStore.storageString(
+            afterHiding: activity,
+            in: hiddenTimelineActivityStorage
+        )
+        hiddenTimelineActivityStorage = updatedStorage
+        CloudSettingsKeyValueSync.setString(
+            updatedStorage.isEmpty ? nil : updatedStorage,
+            for: .appSettingHiddenDayPlanTimelineActivityIDs
         )
     }
 

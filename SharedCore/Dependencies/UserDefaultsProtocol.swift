@@ -75,6 +75,7 @@ public enum UserDefaultStringValueKey: String, Sendable {
     case appSettingFastFilterTags
     case appSettingIOSStatsDashboardHiddenItemIDs
     case appSettingMacStatsDashboardHiddenItemIDs
+    case appSettingHiddenDayPlanTimelineActivityIDs
     case appSettingTemporaryViewState
     case appSettingFocusShieldSelection
     case macFormSectionOrder
@@ -134,7 +135,8 @@ enum CloudSettingsKeyValueSync {
         .appSettingTagColors,
         .appSettingFastFilterTags,
         .appSettingIOSStatsDashboardHiddenItemIDs,
-        .appSettingMacStatsDashboardHiddenItemIDs
+        .appSettingMacStatsDashboardHiddenItemIDs,
+        .appSettingHiddenDayPlanTimelineActivityIDs
     ]
 
     static func startIfNeeded() {

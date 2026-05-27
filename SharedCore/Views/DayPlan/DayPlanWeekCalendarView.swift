@@ -31,6 +31,7 @@ struct DayPlanWeekCalendarView: View {
     var onOpenAllDayTaskDetails: (UUID) -> Void = { _ in }
     var onDeleteBlock: (DayPlanBlock) -> Void
     var onConfirmTimelineActivity: (DayPlanTimelineActivityBlock, Date) -> Void = { _, _ in }
+    var onHideTimelineActivity: (DayPlanTimelineActivityBlock, Date) -> Void = { _, _ in }
     var onMoveBlock: (DayPlanBlock.ID, Date, Int) -> Void
     var onMoveTimelineActivity: (DayPlanTimelineActivityBlock, Date, Int) -> Void = { _, _, _ in }
     var onResizeBlock: (DayPlanBlock.ID, Date, Int, Int) -> Void
@@ -110,6 +111,7 @@ struct DayPlanWeekCalendarView: View {
                                 onOpenBlockDetails: onOpenBlockDetails,
                                 onOpenTimelineTaskDetails: onOpenTimelineTaskDetails,
                                 onConfirmTimelineActivity: onConfirmTimelineActivity,
+                                onHideTimelineActivity: onHideTimelineActivity,
                                 onTimelineDragProvider: { activity, date in
                                     dragProvider(for: activity, on: date)
                                 },

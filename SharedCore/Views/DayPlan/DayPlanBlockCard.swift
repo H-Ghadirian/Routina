@@ -21,6 +21,7 @@ struct DayPlanBlockCard: View {
     var onOpenDetails: () -> Void
     var onDelete: () -> Void
     var onConfirmAutomatic: (() -> Void)? = nil
+    var onHideAutomatic: (() -> Void)? = nil
     var onResizeStarted: () -> Void
     var onResizeChanged: (DayPlanResizeEdge, CGFloat) -> Void
     var onResizeEnded: () -> Void
@@ -123,6 +124,13 @@ struct DayPlanBlockCard: View {
                         onConfirmAutomatic()
                     } label: {
                         Label("Confirm in Planner", systemImage: "checkmark.circle")
+                    }
+                }
+                if let onHideAutomatic {
+                    Button {
+                        onHideAutomatic()
+                    } label: {
+                        Label("Hide from Planner", systemImage: "eye.slash")
                     }
                 }
             }

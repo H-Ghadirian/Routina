@@ -58,12 +58,57 @@ struct DayPlanTimelineActivityBlock: Identifiable, Equatable {
             return "timeline-canceled-\(block.taskID.uuidString)"
         }
     }
+
+    var dismissalID: String {
+        switch source {
+        case let .log(logID):
+            return "timeline-log-\(logID.uuidString)"
+        case .taskLastDone:
+            return [
+                "timeline-last-done",
+                block.taskID.uuidString,
+                block.dayKey,
+                String(Int(block.updatedAt.timeIntervalSinceReferenceDate.rounded())),
+            ].joined(separator: "-")
+        case .taskCanceledAt:
+            return [
+                "timeline-canceled",
+                block.taskID.uuidString,
+                block.dayKey,
+                String(Int(block.updatedAt.timeIntervalSinceReferenceDate.rounded())),
+            ].joined(separator: "-")
+        }
+    }
 }
 
 enum DayPlanTimelineActivitySource: Equatable {
     case log(UUID)
     case taskLastDone
     case taskCanceledAt
+}
+
+enum DayPlanHiddenTimelineActivityStore {
+    static func hiddenIDs(from storage: String?) -> Set<String> {
+        Set(
+            (storage ?? "")
+                .components(separatedBy: .newlines)
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+        )
+    }
+
+    static func storageString(for hiddenIDs: Set<String>) -> String {
+        hiddenIDs
+            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .sorted()
+            .joined(separator: "\n")
+    }
+
+    static func storageString(afterHiding activity: DayPlanTimelineActivityBlock, in storage: String?) -> String {
+        var hiddenIDs = hiddenIDs(from: storage)
+        hiddenIDs.insert(activity.dismissalID)
+        return storageString(for: hiddenIDs)
+    }
 }
 
 struct DayPlanFocusSessionBlock: Identifiable, Equatable {
@@ -230,16 +275,16 @@ enum DayPlanTimelineTasks {
         tasks: [RoutineTask],
         logs: [RoutineLog],
         plannedBlocks: [DayPlanBlock],
-        calendar: Calendar
+        calendar: Calendar,
+        hiddenActivityIDs: Set<String> = []
     ) -> Int {
-        taskIDs(
+        activityBlocks(
             on: date,
-            taskIDs: tasks.map(\.id),
-            lastDoneForTaskID: Dictionary(uniqueKeysWithValues: tasks.map { ($0.id, $0.lastDone) }),
-            canceledAtForTaskID: Dictionary(uniqueKeysWithValues: tasks.map { ($0.id, $0.canceledAt) }),
+            from: tasks,
             logs: logs,
             plannedBlocks: plannedBlocks,
-            calendar: calendar
+            calendar: calendar,
+            hiddenActivityIDs: hiddenActivityIDs
         )
         .count
     }
@@ -249,17 +294,17 @@ enum DayPlanTimelineTasks {
         from tasks: [RoutineTask],
         logs: [RoutineLog],
         plannedBlocks: [DayPlanBlock],
-        calendar: Calendar
+        calendar: Calendar,
+        hiddenActivityIDs: Set<String> = []
     ) -> [RoutineTask] {
-        let matchingIDs = taskIDs(
+        let matchingIDs = Set(activityBlocks(
             on: date,
-            taskIDs: tasks.map(\.id),
-            lastDoneForTaskID: Dictionary(uniqueKeysWithValues: tasks.map { ($0.id, $0.lastDone) }),
-            canceledAtForTaskID: Dictionary(uniqueKeysWithValues: tasks.map { ($0.id, $0.canceledAt) }),
+            from: tasks,
             logs: logs,
             plannedBlocks: plannedBlocks,
-            calendar: calendar
-        )
+            calendar: calendar,
+            hiddenActivityIDs: hiddenActivityIDs
+        ).map(\.block.taskID))
 
         return tasks
             .filter { matchingIDs.contains($0.id) }
@@ -292,7 +337,8 @@ enum DayPlanTimelineTasks {
         from tasks: [RoutineTask],
         logs: [RoutineLog],
         plannedBlocks: [DayPlanBlock],
-        calendar: Calendar
+        calendar: Calendar,
+        hiddenActivityIDs: Set<String> = []
     ) -> [DayPlanTimelineActivityBlock] {
         let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
         return activityBlocksByDayKey(
@@ -300,7 +346,8 @@ enum DayPlanTimelineTasks {
             from: tasks,
             logs: logs,
             plannedBlocksByDayKey: [dayKey: plannedBlocks],
-            calendar: calendar
+            calendar: calendar,
+            hiddenActivityIDs: hiddenActivityIDs
         )[dayKey] ?? []
     }
 
@@ -309,7 +356,8 @@ enum DayPlanTimelineTasks {
         from tasks: [RoutineTask],
         logs: [RoutineLog],
         plannedBlocksByDayKey: [String: [DayPlanBlock]],
-        calendar: Calendar
+        calendar: Calendar,
+        hiddenActivityIDs: Set<String> = []
     ) -> [String: [DayPlanTimelineActivityBlock]] {
         let visibleDayKeys = Set(dates.map { DayPlanStorage.dayKey(for: $0, calendar: calendar) })
         guard !visibleDayKeys.isEmpty else { return [:] }
@@ -388,11 +436,13 @@ enum DayPlanTimelineTasks {
                 createdAt: activity.timestamp,
                 updatedAt: activity.timestamp
             )
-            return DayPlanTimelineActivityBlock(
+            let activityBlock = DayPlanTimelineActivityBlock(
                 block: block,
                 kind: activity.kind,
                 source: activity.source
             )
+            guard !hiddenActivityIDs.contains(activityBlock.dismissalID) else { return nil }
+            return activityBlock
         }
 
         let blocksByDayKey = Dictionary(grouping: blocks, by: \.block.dayKey)
