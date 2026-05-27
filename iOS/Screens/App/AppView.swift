@@ -465,13 +465,16 @@ private struct AppMoreNavigationView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if let destination {
-                    destinationView(for: destination)
-                } else {
-                    moreList
+            moreList
+                .navigationDestination(isPresented: isDestinationPresented(.goals)) {
+                    destinationView(for: .goals)
                 }
-            }
+                .navigationDestination(isPresented: isDestinationPresented(.stats)) {
+                    destinationView(for: .stats)
+                }
+                .navigationDestination(isPresented: isDestinationPresented(.settings)) {
+                    destinationView(for: .settings)
+                }
         }
         .onAppear {
             restoreSelectedMoreDestinationIfNeeded()
@@ -489,29 +492,32 @@ private struct AppMoreNavigationView: View {
     private var moreList: some View {
         List {
             Section {
-                moreButton(
-                    destination: .goals,
-                    icon: "target",
-                    tint: .blue,
-                    title: Tab.goals.rawValue,
-                    subtitle: "Outcomes, sub-goals, and linked tasks"
-                )
+                moreButton(destination: .goals) {
+                    SettingsNavigationRow(
+                        icon: "target",
+                        tint: .blue,
+                        title: Tab.goals.rawValue,
+                        subtitle: "Outcomes, sub-goals, and linked tasks"
+                    )
+                }
 
-                moreButton(
-                    destination: .stats,
-                    icon: "chart.bar.xaxis",
-                    tint: .indigo,
-                    title: Tab.stats.rawValue,
-                    subtitle: "Completion, focus, tags, and trends"
-                )
+                moreButton(destination: .stats) {
+                    SettingsNavigationRow(
+                        icon: "chart.bar.xaxis",
+                        tint: .indigo,
+                        title: Tab.stats.rawValue,
+                        subtitle: "Completion, focus, tags, and trends"
+                    )
+                }
 
-                moreButton(
-                    destination: .settings,
-                    icon: "gear",
-                    tint: .gray,
-                    title: Tab.settings.rawValue,
-                    subtitle: "Preferences, data, tags, places, and support"
-                )
+                moreButton(destination: .settings) {
+                    SettingsNavigationRow(
+                        icon: "gear",
+                        tint: .gray,
+                        title: Tab.settings.rawValue,
+                        subtitle: "Preferences, data, tags, places, and support"
+                    )
+                }
             }
         }
         .listStyle(.insetGrouped)
@@ -519,23 +525,15 @@ private struct AppMoreNavigationView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func moreButton(
+    private func moreButton<Label: View>(
         destination: AppMoreDestination,
-        icon: String,
-        tint: Color,
-        title: String,
-        subtitle: String
+        @ViewBuilder label: () -> Label
     ) -> some View {
         Button {
             self.destination = destination
         } label: {
             HStack(spacing: 8) {
-                SettingsNavigationRow(
-                    icon: icon,
-                    tint: tint,
-                    title: title,
-                    subtitle: subtitle
-                )
+                label()
 
                 Image(systemName: "chevron.right")
                     .font(.footnote.weight(.semibold))
@@ -550,10 +548,6 @@ private struct AppMoreNavigationView: View {
         switch destination {
         case .goals:
             GoalsTCAView(store: goalsStore)
-                .navigationBarBackButtonHidden()
-                .toolbar {
-                    moreBackButton
-                }
                 .onAppear {
                     selectTabAfterNavigationGesture(.goals)
                 }
@@ -562,10 +556,6 @@ private struct AppMoreNavigationView: View {
                 store: statsStore,
                 ownsCompactNavigationStack: false
             )
-            .navigationBarBackButtonHidden()
-            .toolbar {
-                moreBackButton
-            }
             .onAppear {
                 selectTabAfterNavigationGesture(.stats)
             }
@@ -577,22 +567,8 @@ private struct AppMoreNavigationView: View {
             .navigationDestination(for: SettingsIOSSection.self) { section in
                 SettingsIOSDetailView(section: section, store: settingsStore)
             }
-            .navigationBarBackButtonHidden()
-            .toolbar {
-                moreBackButton
-            }
             .onAppear {
                 selectTabAfterNavigationGesture(.settings)
-            }
-        }
-    }
-
-    private var moreBackButton: some ToolbarContent {
-        ToolbarItem(placement: .topBarLeading) {
-            Button {
-                destination = nil
-            } label: {
-                Label(Tab.more.rawValue, systemImage: "chevron.left")
             }
         }
     }
@@ -610,6 +586,21 @@ private struct AppMoreNavigationView: View {
         default:
             break
         }
+    }
+
+    private func isDestinationPresented(_ candidate: AppMoreDestination) -> Binding<Bool> {
+        Binding(
+            get: {
+                destination == candidate
+            },
+            set: { isPresented in
+                if isPresented {
+                    destination = candidate
+                } else if destination == candidate {
+                    destination = nil
+                }
+            }
+        )
     }
 
     private func selectTabAfterNavigationGesture(_ tab: Tab) {
