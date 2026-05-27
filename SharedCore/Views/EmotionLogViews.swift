@@ -128,7 +128,9 @@ struct EmotionLogEditorView: View {
                 moodCard
                 detailCard
                 bodyCard
-                contextCard
+                if shouldShowContextCard {
+                    contextCard
+                }
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 18)
@@ -357,6 +359,19 @@ struct EmotionLogEditorView: View {
         }
     }
 
+    private var shouldShowContextCard: Bool {
+        !notes.isEmpty
+            || !goals.isEmpty
+            || !tasks.isEmpty
+            || !places.isEmpty
+            || !sleepSessions.isEmpty
+            || linkedNoteID != nil
+            || linkedGoalID != nil
+            || linkedTaskID != nil
+            || linkedPlaceID != nil
+            || linkedSleepSessionID != nil
+    }
+
     private var suggestedFamilies: [EmotionFamily] {
         let suggestions = EmotionFamily.suggestedFamilies(valence: valence, arousal: arousal)
         let selectedOutsideSuggestions = EmotionFamily.allCases.filter {
@@ -504,13 +519,64 @@ struct EmotionLogEditorView: View {
         items: [Item],
         label: @escaping (Item) -> String
     ) -> some View where Item.ID == UUID {
-        Picker(title, selection: selection) {
-            Text("None").tag(Optional<UUID>.none)
-            ForEach(items) { item in
-                Text(label(item)).tag(Optional(item.id))
+        let selectedTitle = selectedContextTitle(
+            title: title,
+            selection: selection.wrappedValue,
+            items: items,
+            label: label
+        )
+
+        return Group {
+            if !items.isEmpty || selection.wrappedValue != nil {
+                Picker(selection: selection) {
+                    Text("No \(title.lowercased())").tag(Optional<UUID>.none)
+                    ForEach(items) { item in
+                        Text(label(item)).tag(Optional(item.id))
+                    }
+                } label: {
+                    contextPickerLabel(title: title, selectedTitle: selectedTitle)
+                }
+                .pickerStyle(.menu)
+                .tint(primarySelectedFamily.tintColor)
             }
         }
-        .pickerStyle(.menu)
+    }
+
+    private func selectedContextTitle<Item: Identifiable>(
+        title: String,
+        selection: UUID?,
+        items: [Item],
+        label: (Item) -> String
+    ) -> String where Item.ID == UUID {
+        guard let selection else {
+            return "No \(title.lowercased())"
+        }
+        guard let selectedItem = items.first(where: { $0.id == selection }) else {
+            return "Missing \(title.lowercased())"
+        }
+        return label(selectedItem)
+    }
+
+    private func contextPickerLabel(title: String, selectedTitle: String) -> some View {
+        HStack(spacing: 10) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+
+            Spacer(minLength: 8)
+
+            Text(selectedTitle)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+
+            Image(systemName: "chevron.up.chevron.down")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(primarySelectedFamily.tintColor)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 
     private func taskTitle(_ task: RoutineTask) -> String {
