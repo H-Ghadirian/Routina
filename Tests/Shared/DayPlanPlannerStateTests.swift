@@ -217,6 +217,77 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func allDayBlocksUseImportedCalendarMetadataAcrossVisibleDates() throws {
+        let calendar = gregorianCalendar
+        let startDate = try #require(date("2026-05-10T00:00:00Z"))
+        let endDate = try #require(date("2026-05-13T00:00:00Z"))
+        let taskID = UUID()
+        let suggestion = CalendarTaskSuggestion(
+            id: "outlook:travel",
+            eventIdentifier: "outlook:travel",
+            calendarIdentifier: "outlook",
+            calendarTitle: "Outlook",
+            eventTitle: "Travel",
+            eventStartDate: startDate,
+            eventEndDate: endDate,
+            isAllDay: true,
+            taskTitle: "Travel",
+            deadline: startDate,
+            reviewState: .pending
+        )
+        let task = RoutineTask(
+            id: taskID,
+            name: "Travel",
+            emoji: "✈️",
+            notes: CalendarTaskImportSupport.notes(for: suggestion, calendar: calendar),
+            deadline: startDate,
+            scheduleMode: .oneOff
+        )
+
+        let blocks = DayPlanAllDayTasks.blocks(
+            on: try plannerDates(),
+            from: [task],
+            calendar: calendar
+        )
+
+        #expect(blocks.map(\.taskID) == [taskID])
+        #expect(blocks.first?.title == "Travel")
+        #expect(blocks.first?.startDate == startDate)
+        #expect(blocks.first?.endDate == endDate)
+        #expect(blocks.first?.isLegacyDateOnlyCalendarTask == false)
+    }
+
+    @Test
+    func allDayBlocksTreatLegacyDateOnlyCalendarTasksAsSingleDayEvents() throws {
+        let calendar = gregorianCalendar
+        let deadline = try #require(date("2026-05-11T00:00:00Z"))
+        let expectedEnd = try #require(date("2026-05-12T00:00:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Sick day",
+            emoji: "🤒",
+            notes: """
+            Imported from Outlook.
+            Calendar event: outlook:sick-day
+            """,
+            deadline: deadline,
+            scheduleMode: .oneOff
+        )
+
+        let blocks = DayPlanAllDayTasks.blocks(
+            on: try plannerDates(),
+            from: [task],
+            calendar: calendar
+        )
+
+        #expect(blocks.map(\.taskID) == [taskID])
+        #expect(blocks.first?.startDate == deadline)
+        #expect(blocks.first?.endDate == expectedEnd)
+        #expect(blocks.first?.isLegacyDateOnlyCalendarTask == true)
+    }
+
+    @Test
     func completedTimelineActivityBlocksEndAtCompletionAndAvoidRapidCompletionOverlap() throws {
         let calendar = gregorianCalendar
         let activityDate = try #require(date("2026-05-07T12:00:00Z"))

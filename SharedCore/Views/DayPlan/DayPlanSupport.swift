@@ -104,6 +104,126 @@ struct DayPlanSleepBlock: Identifiable, Equatable {
     }
 }
 
+struct DayPlanAllDayBlock: Identifiable, Equatable {
+    var taskID: UUID
+    var title: String
+    var emoji: String?
+    var startDate: Date
+    var endDate: Date
+    var isLegacyDateOnlyCalendarTask: Bool
+
+    var id: UUID {
+        taskID
+    }
+}
+
+enum DayPlanAllDayTasks {
+    static func blocks(
+        on dates: [Date],
+        from tasks: [RoutineTask],
+        calendar: Calendar
+    ) -> [DayPlanAllDayBlock] {
+        guard let firstDate = dates.first,
+              let lastDate = dates.last,
+              let visibleEnd = calendar.date(
+                byAdding: .day,
+                value: 1,
+                to: calendar.startOfDay(for: lastDate)
+              )
+        else { return [] }
+
+        let visibleStart = calendar.startOfDay(for: firstDate)
+
+        return tasks.compactMap { task -> DayPlanAllDayBlock? in
+            guard !task.isCanceledOneOff,
+                  !task.isArchived(referenceDate: visibleStart, calendar: calendar),
+                  let span = allDaySpan(for: task, calendar: calendar),
+                  span.endDate > visibleStart,
+                  span.startDate < visibleEnd else {
+                return nil
+            }
+
+            return DayPlanAllDayBlock(
+                taskID: task.id,
+                title: DayPlanTaskSorting.title(for: task),
+                emoji: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
+                startDate: span.startDate,
+                endDate: span.endDate,
+                isLegacyDateOnlyCalendarTask: span.isLegacyDateOnlyCalendarTask
+            )
+        }
+        .sorted { lhs, rhs in
+            if lhs.startDate != rhs.startDate {
+                return lhs.startDate < rhs.startDate
+            }
+            if lhs.endDate != rhs.endDate {
+                return lhs.endDate > rhs.endDate
+            }
+            return lhs.title.localizedCaseInsensitiveCompare(rhs.title) == .orderedAscending
+        }
+    }
+
+    private static func allDaySpan(
+        for task: RoutineTask,
+        calendar: Calendar
+    ) -> (startDate: Date, endDate: Date, isLegacyDateOnlyCalendarTask: Bool)? {
+        if let metadata = CalendarTaskImportSupport.eventMetadata(in: task.notes),
+           metadata.isAllDay {
+            let startDate = calendar.startOfDay(for: metadata.startDate)
+            let endDate = normalizedEndDate(
+                startDate: metadata.startDate,
+                endDate: metadata.endDate,
+                calendar: calendar
+            )
+            guard endDate > startDate else { return nil }
+            return (startDate, endDate, false)
+        }
+
+        guard task.isOneOffTask,
+              let notes = task.notes,
+              CalendarTaskImportSupport.sourceMarker(in: notes) != nil,
+              let deadline = task.deadline,
+              !hasExplicitTime(deadline, calendar: calendar) else {
+            return nil
+        }
+
+        let startDate = calendar.startOfDay(for: deadline)
+        let endDate = calendar.date(byAdding: .day, value: 1, to: startDate) ?? startDate
+        guard endDate > startDate else { return nil }
+        return (startDate, endDate, true)
+    }
+
+    private static func normalizedEndDate(
+        startDate: Date,
+        endDate: Date,
+        calendar: Calendar
+    ) -> Date {
+        let startDay = calendar.startOfDay(for: startDate)
+        guard endDate > startDate else {
+            return calendar.date(byAdding: .day, value: 1, to: startDay) ?? startDay
+        }
+
+        let endDay = calendar.startOfDay(for: endDate)
+        if endDay <= startDay {
+            return calendar.date(byAdding: .day, value: 1, to: startDay) ?? startDay
+        }
+
+        if hasExplicitTime(endDate, calendar: calendar) {
+            return calendar.date(byAdding: .day, value: 1, to: endDay) ?? endDay
+        }
+
+        return endDay
+    }
+
+    private static func hasExplicitTime(_ date: Date, calendar: Calendar) -> Bool {
+        let components = calendar.dateComponents([.hour, .minute, .second, .nanosecond], from: date)
+        return (components.hour ?? 0) != 0
+            || (components.minute ?? 0) != 0
+            || (components.second ?? 0) != 0
+            || (components.nanosecond ?? 0) != 0
+    }
+}
+
 enum DayPlanTimelineTasks {
     static func count(
         on date: Date,

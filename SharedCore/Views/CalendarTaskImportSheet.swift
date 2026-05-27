@@ -278,7 +278,7 @@ struct CalendarTaskImportSheet: View {
         let task = RoutineTask(
             name: trimmedTitle,
             emoji: CalendarTaskImportSupport.defaultTaskEmoji,
-            notes: CalendarTaskImportSupport.notes(for: suggestion),
+            notes: CalendarTaskImportSupport.notes(for: suggestion, calendar: calendar),
             deadline: suggestion.deadline,
             priority: .none,
             importance: .level2,

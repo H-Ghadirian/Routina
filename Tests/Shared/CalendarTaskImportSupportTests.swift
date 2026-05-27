@@ -32,6 +32,64 @@ struct CalendarTaskImportSupportTests {
     }
 
     @Test
+    func notesStoresAllDayMetadataAndDisplayNotesHidesMarkers() throws {
+        let calendar = gregorianCalendar
+        let startDate = try #require(date("2026-05-25T00:00:00Z"))
+        let endDate = try #require(date("2026-05-28T00:00:00Z"))
+        let suggestion = CalendarTaskSuggestion(
+            id: "event",
+            eventIdentifier: "event",
+            calendarIdentifier: "outlook",
+            calendarTitle: "Outlook",
+            eventTitle: "Travel",
+            eventStartDate: startDate,
+            eventEndDate: endDate,
+            isAllDay: true,
+            taskTitle: "Travel",
+            deadline: startDate,
+            reviewState: .pending
+        )
+
+        let notes = CalendarTaskImportSupport.notes(for: suggestion, calendar: calendar)
+        let metadata = try #require(CalendarTaskImportSupport.eventMetadata(in: notes))
+
+        #expect(CalendarTaskImportSupport.displayNotes(from: notes) == "Imported from Outlook.")
+        #expect(metadata.isAllDay)
+        #expect(metadata.startDate == startDate)
+        #expect(metadata.endDate == endDate)
+    }
+
+    @Test
+    func notesPreservingCalendarMarkersKeepsHiddenMetadataAfterVisibleEdits() throws {
+        let calendar = gregorianCalendar
+        let startDate = try #require(date("2026-05-25T00:00:00Z"))
+        let endDate = try #require(date("2026-05-26T00:00:00Z"))
+        let suggestion = CalendarTaskSuggestion(
+            id: "event",
+            eventIdentifier: "event",
+            calendarIdentifier: "outlook",
+            calendarTitle: "Outlook",
+            eventTitle: "Sick day",
+            eventStartDate: startDate,
+            eventEndDate: endDate,
+            isAllDay: true,
+            taskTitle: "Sick day",
+            deadline: startDate,
+            reviewState: .pending
+        )
+        let existingNotes = CalendarTaskImportSupport.notes(for: suggestion, calendar: calendar)
+
+        let mergedNotes = CalendarTaskImportSupport.notesPreservingCalendarMarkers(
+            visibleNotes: "Doctor note submitted.",
+            existingNotes: existingNotes
+        )
+
+        #expect(CalendarTaskImportSupport.displayNotes(from: mergedNotes) == "Doctor note submitted.")
+        #expect(CalendarTaskImportSupport.sourceMarker(in: mergedNotes ?? "") == "Calendar event: event")
+        #expect(CalendarTaskImportSupport.eventMetadata(in: mergedNotes)?.startDate == startDate)
+    }
+
+    @Test
     func suggestionRowPresentationMapsReviewStates() {
         #expect(CalendarTaskSuggestionRowPresentation.status(for: .pending) == nil)
         #expect(
@@ -72,4 +130,14 @@ struct CalendarTaskImportSupportTests {
             reviewState: reviewState
         )
     }
+}
+
+private let gregorianCalendar: Calendar = {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
+    return calendar
+}()
+
+private func date(_ string: String) -> Date? {
+    ISO8601DateFormatter().date(from: string)
 }

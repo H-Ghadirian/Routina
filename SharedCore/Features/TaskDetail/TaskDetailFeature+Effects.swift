@@ -412,7 +412,10 @@ extension TaskDetailFeature {
                 let previousCreatedAt = task.createdAt
                 task.name = name
                 task.emoji = emoji
-                task.notes = notes
+                task.notes = CalendarTaskImportSupport.notesPreservingCalendarMarkers(
+                    visibleNotes: notes,
+                    existingNotes: task.notes
+                )
                 task.link = link
                 task.reminderAt = reminderAt
                 task.priority = priority

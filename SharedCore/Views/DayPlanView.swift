@@ -410,6 +410,11 @@ private struct DayPlanTimelinePanelView: View {
         let blockedIntervalsByDayKey = sleepBlocksByDayKey.mapValues { blocks in
             blocks.map(\.interval)
         }
+        let allDayBlocks = DayPlanAllDayTasks.blocks(
+            on: weekDates,
+            from: tasks,
+            calendar: calendar
+        )
         let selectedDayKey = DayPlanStorage.dayKey(for: planner.selectedDate, calendar: calendar)
         let selectedDayBlockedMinutes = blockedIntervalsByDayKey[selectedDayKey, default: []]
             .reduce(0) { $0 + $1.durationMinutes }
@@ -458,11 +463,15 @@ private struct DayPlanTimelinePanelView: View {
                         calendar: calendar
                     )
                 },
+                allDayBlocks: allDayBlocks,
                 unplannedCompletedCount: { date in
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
                     return timelineBlocksByDayKey[dayKey]?.count ?? 0
                 },
                 taskTint: { block in
+                    tintsByTaskID[block.taskID] ?? .accentColor
+                },
+                allDayTint: { block in
                     tintsByTaskID[block.taskID] ?? .accentColor
                 },
                 onSelectUnplannedCompletedDate: { date in
@@ -487,6 +496,13 @@ private struct DayPlanTimelinePanelView: View {
                     onOpenTaskDetails?(taskID)
                 },
                 onOpenFocusTaskDetails: { taskID in
+                    if let task = tasks.first(where: { $0.id == taskID }) {
+                        planner.selectedBlockID = nil
+                        planner.selectTask(task)
+                    }
+                    onOpenTaskDetails?(taskID)
+                },
+                onOpenAllDayTaskDetails: { taskID in
                     if let task = tasks.first(where: { $0.id == taskID }) {
                         planner.selectedBlockID = nil
                         planner.selectTask(task)
