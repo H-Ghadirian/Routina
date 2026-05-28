@@ -20,6 +20,7 @@ enum CloudSharingService {
         var notes: String?
         var link: String?
         var deadline: Date?
+        var isAllDay: Bool?
         var reminderAt: Date?
         var priority: RoutineTaskPriority
         var importance: RoutineTaskImportance
@@ -264,6 +265,7 @@ extension CloudSharingService.SharedTaskPayload {
         self.notes = task.notes
         self.link = task.link
         self.deadline = task.deadline
+        self.isAllDay = task.isAllDay
         self.reminderAt = task.reminderAt
         self.priority = task.priority
         self.importance = task.importance
@@ -319,6 +321,7 @@ extension CloudSharingService.SharedTaskPayload {
         task.notes = RoutineTask.sanitizedNotes(notes)
         task.link = RoutineTask.sanitizedLink(link)
         task.deadline = scheduleMode == .oneOff ? deadline : nil
+        task.isAllDay = scheduleMode == .oneOff && deadline != nil && (isAllDay ?? false)
         task.reminderAt = reminderAt
         task.priority = priority
         task.importance = importance
@@ -369,6 +372,7 @@ private extension RoutineTask {
             notes: payload.notes,
             link: payload.link,
             deadline: payload.deadline,
+            isAllDay: payload.isAllDay ?? false,
             reminderAt: payload.reminderAt,
             priority: payload.priority,
             importance: payload.importance,

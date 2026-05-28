@@ -6,7 +6,24 @@ enum AddRoutineFormEditor {
         now: Date,
         basics: inout AddRoutineBasicsState
     ) {
-        basics.deadline = isEnabled ? (basics.deadline ?? now) : nil
+        if isEnabled {
+            basics.deadline = basics.deadline ?? now
+        } else {
+            basics.deadline = nil
+            basics.isAllDay = false
+        }
+    }
+
+    static func setAllDay(
+        _ isAllDay: Bool,
+        now: Date,
+        calendar: Calendar,
+        basics: inout AddRoutineBasicsState
+    ) {
+        basics.isAllDay = isAllDay
+        if isAllDay {
+            basics.deadline = calendar.startOfDay(for: basics.deadline ?? now)
+        }
     }
 
     static func setReminderEnabled(
@@ -28,6 +45,7 @@ enum AddRoutineFormEditor {
                 schedule.scheduleMode = .fixedInterval
             }
             basics.deadline = nil
+            basics.isAllDay = false
         case .todo:
             schedule.scheduleMode = .oneOff
         }

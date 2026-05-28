@@ -190,6 +190,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 notes: task.notes,
                 link: task.link,
                 deadline: task.deadline,
+                isAllDay: task.isAllDay ?? false,
                 reminderAt: task.reminderAt,
                 pressure: task.pressure ?? .none,
                 pressureUpdatedAt: task.pressureUpdatedAt,

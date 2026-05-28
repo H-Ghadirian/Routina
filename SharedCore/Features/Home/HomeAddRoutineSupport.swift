@@ -50,6 +50,7 @@ enum HomeAddRoutineSupport {
             notes: request.notes,
             link: request.link,
             deadline: request.deadline,
+            isAllDay: request.isAllDay,
             reminderAt: request.reminderAt,
             priority: request.priority,
             importance: request.importance,

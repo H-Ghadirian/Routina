@@ -33,6 +33,9 @@ enum CloudKitDirectPullTaskPayloadApplier {
             task.scheduleMode = scheduleMode
         }
         task.deadline = task.scheduleMode == .oneOff ? payload.deadline : nil
+        if let isAllDay = payload.isAllDay {
+            task.isAllDay = task.scheduleMode == .oneOff && payload.deadline != nil && isAllDay
+        }
         task.reminderAt = payload.reminderAt
         if let recurrenceRule = payload.recurrenceRule {
             task.recurrenceRule = recurrenceRule
@@ -86,6 +89,7 @@ enum CloudKitDirectPullTaskPayloadApplier {
             notes: payload.notes,
             link: payload.link,
             deadline: payload.deadline,
+            isAllDay: payload.isAllDay ?? false,
             reminderAt: payload.reminderAt,
             pressure: payload.pressure ?? .none,
             pressureUpdatedAt: payload.pressureUpdatedAt,

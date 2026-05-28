@@ -353,6 +353,34 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func allDayBlocksUseManualAllDayTaskFlag() throws {
+        let calendar = gregorianCalendar
+        let deadline = try #require(date("2026-05-11T15:30:00Z"))
+        let expectedStart = try #require(date("2026-05-11T00:00:00Z"))
+        let expectedEnd = try #require(date("2026-05-12T00:00:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Conference",
+            emoji: "🎟️",
+            deadline: deadline,
+            isAllDay: true,
+            scheduleMode: .oneOff
+        )
+
+        let blocks = DayPlanAllDayTasks.blocks(
+            on: try plannerDates(),
+            from: [task],
+            calendar: calendar
+        )
+
+        #expect(blocks.map(\.taskID) == [taskID])
+        #expect(blocks.first?.startDate == expectedStart)
+        #expect(blocks.first?.endDate == expectedEnd)
+        #expect(blocks.first?.isLegacyDateOnlyCalendarTask == false)
+    }
+
+    @Test
     func completedTimelineActivityBlocksEndAtCompletionAndAvoidRapidCompletionOverlap() throws {
         let calendar = gregorianCalendar
         let activityDate = try #require(date("2026-05-07T12:00:00Z"))

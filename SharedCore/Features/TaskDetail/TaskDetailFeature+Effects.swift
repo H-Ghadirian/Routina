@@ -343,6 +343,7 @@ extension TaskDetailFeature {
             notes: request.notes,
             link: request.link,
             deadline: request.deadline,
+            isAllDay: request.isAllDay,
             reminderAt: request.reminderAt,
             priority: request.priority,
             importance: request.importance,
@@ -375,6 +376,7 @@ extension TaskDetailFeature {
         notes: String?,
         link: String?,
         deadline: Date?,
+        isAllDay: Bool,
         reminderAt: Date?,
         priority: RoutineTaskPriority,
         importance: RoutineTaskImportance,
@@ -443,6 +445,7 @@ extension TaskDetailFeature {
                 task.replaceSteps(steps)
                 task.scheduleMode = scheduleMode
                 task.deadline = scheduleMode == .oneOff ? deadline : nil
+                task.isAllDay = scheduleMode == .oneOff && deadline != nil && isAllDay
                 task.recurrenceRule = recurrenceRule
                 task.replaceChecklistItems(checklistItems)
                 if !scheduleMode.isSoftIntervalRoutine {

@@ -36,14 +36,18 @@ struct SettingsRoutineDataBackupMappingTests {
         let imageData = Data([1, 2, 3])
         let voiceData = Data([7, 8, 9])
         let voiceCreatedAt = Date(timeIntervalSince1970: 100)
+        let deadline = Date(timeIntervalSince1970: 200)
         let task = RoutineTask(
             id: taskID,
             name: "Archive receipt",
+            deadline: deadline,
+            isAllDay: true,
             pressure: .high,
             imageData: imageData,
             voiceNoteData: voiceData,
             voiceNoteDurationSeconds: 2.5,
             voiceNoteCreatedAt: voiceCreatedAt,
+            scheduleMode: .oneOff,
             interval: 0
         )
 
@@ -67,6 +71,8 @@ struct SettingsRoutineDataBackupMappingTests {
         #expect(inline.id == taskID)
         #expect(inline.imageData == imageData)
         #expect(inline.imageAttachmentID == nil)
+        #expect(inline.deadline == deadline)
+        #expect(inline.isAllDay == true)
         #expect(inline.voiceNoteData == voiceData)
         #expect(inline.voiceNoteAttachmentID == nil)
         #expect(inline.voiceNoteDurationSeconds == 2.5)

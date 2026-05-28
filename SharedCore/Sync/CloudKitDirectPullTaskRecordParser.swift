@@ -26,6 +26,7 @@ enum CloudKitDirectPullTaskRecordParser {
         )
         let linkValue = stringValue(in: record, keys: ["link", "LINK", "zlink", "ZLINK", "cd_link"])
         let deadlineValue = dateValue(in: record, keys: ["deadline", "DEADLINE", "zdeadline", "ZDEADLINE", "cd_deadline"])
+        let isAllDayValue = boolValue(in: record, keys: storageKeys("isAllDay"))
         let reminderAtValue = dateValue(in: record, keys: ["reminderAt", "REMINDERAT", "zreminderat", "ZREMINDERAT", "cd_reminderat"])
         let placeIDValue = uuidValue(in: record, keys: ["placeID", "placeId", "PLACEID", "zplaceid", "ZPLACEID", "cd_placeid"])
         let tagsStorageValue = stringValue(in: record, keys: ["tagsStorage", "tagsstorage", "TAGSSTORAGE", "ztagsstorage", "ZTAGSSTORAGE", "cd_tagsstorage"])
@@ -208,6 +209,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 || commentsStorageValue != nil
                 || linkValue != nil
                 || deadlineValue != nil
+                || isAllDayValue != nil
                 || placeIDValue != nil
                 || tagsStorageValue != nil
                 || goalIDsStorageValue != nil
@@ -262,6 +264,7 @@ enum CloudKitDirectPullTaskRecordParser {
             notes: notesValue,
             link: linkValue,
             deadline: deadlineValue,
+            isAllDay: isAllDayValue,
             reminderAt: reminderAtValue,
             placeID: placeIDValue,
             tags: tagsStorageValue.map(RoutineTag.deserialize),

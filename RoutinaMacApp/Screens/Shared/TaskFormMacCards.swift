@@ -652,7 +652,12 @@ struct TaskFormMacBehaviorCard: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Toggle("Set deadline", isOn: model.deadlineEnabled)
                     if model.deadlineEnabled.wrappedValue {
-                        DatePicker("Deadline", selection: model.deadline)
+                        Toggle("All Day", isOn: model.isAllDay)
+                        DatePicker(
+                            "Deadline",
+                            selection: model.deadline,
+                            displayedComponents: model.isAllDay.wrappedValue ? .date : [.date, .hourAndMinute]
+                        )
                             .labelsHidden()
                         if let persianDeadlineText {
                             Text(persianDeadlineText)

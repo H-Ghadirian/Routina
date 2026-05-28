@@ -36,6 +36,7 @@ struct SwiftDataModelTests {
         #expect(task.sequenceStartedAt == nil)
         #expect(task.activityState == .idle)
         #expect(task.ongoingSince == nil)
+        #expect(task.isAllDay == false)
         #expect(task.autoAssumeDailyDone == false)
         #expect(task.estimatedDurationMinutes == nil)
         #expect(task.storyPoints == nil)
@@ -63,6 +64,27 @@ struct SwiftDataModelTests {
         let copy = task.detachedCopy()
         #expect(copy.voiceNote == task.voiceNote)
         #expect(copy.hasVoiceNote)
+    }
+
+    @Test
+    func routineTask_storesAllDayFlagForOneOffTasksAndCopiesItDetached() {
+        let deadline = Date(timeIntervalSince1970: 1_780_000_000)
+        let todo = RoutineTask(
+            name: "Conference",
+            deadline: deadline,
+            isAllDay: true,
+            scheduleMode: .oneOff
+        )
+        let routine = RoutineTask(
+            name: "Daily practice",
+            deadline: deadline,
+            isAllDay: true,
+            scheduleMode: .fixedInterval
+        )
+
+        #expect(todo.isAllDay)
+        #expect(todo.detachedCopy().isAllDay)
+        #expect(routine.isAllDay == false)
     }
 
     @Test

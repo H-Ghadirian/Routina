@@ -13,6 +13,62 @@ import Testing
 @MainActor
 struct TaskDetailEditSaveTests {
     @Test
+    func editSaveTapped_persistsAllDayFlagForDatedTodos() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let deadline = makeDate("2026-03-14T18:45:00Z")
+        let task = RoutineTask(
+            name: "Conference",
+            deadline: deadline,
+            scheduleMode: .oneOff
+        )
+        context.insert(task)
+        try context.save()
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Conference",
+                editRoutineEmoji: "🎟️",
+                editDeadline: deadline,
+                editScheduleMode: .oneOff
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editAllDayChanged(true)) {
+            $0.editIsAllDay = true
+            $0.editDeadline = calendar.startOfDay(for: deadline)
+        }
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+        await store.receive(.onAppear)
+
+        let taskID = task.id
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { task in
+                        task.id == taskID
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.deadline == calendar.startOfDay(for: deadline))
+        #expect(persistedTask.isAllDay)
+    }
+
+    @Test
     func editSaveTapped_persistsVoiceNoteChange() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()

@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [0090](0090-support-manual-all-day-tasks.md)
 
 ## Date
 

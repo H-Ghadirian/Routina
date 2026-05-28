@@ -73,6 +73,67 @@ struct AddRoutineFeatureSaveTests {
     }
 
     @Test
+    func saveTapped_includesAllDayFlagForDatedTodos() async {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let deadline = makeDate("2026-03-22T16:45:00Z")
+        let capturedRequest = LockIsolated<AddRoutineSaveRequest?>(nil)
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(
+                    routineName: "Conference",
+                    deadline: deadline,
+                    isAllDay: true
+                ),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(scheduleMode: .oneOff)
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { request in
+                    capturedRequest.withValue { $0 = request }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+        }
+
+        await store.send(.deadlineDateChanged(deadline)) {
+            $0.basics.deadline = calendar.startOfDay(for: deadline)
+        }
+        await store.send(.saveTapped)
+
+        #expect(capturedRequest.value?.deadline == calendar.startOfDay(for: deadline))
+        #expect(capturedRequest.value?.isAllDay == true)
+    }
+
+    @Test
+    func makeRoutine_persistsAllDayFlagFromSaveRequest() {
+        let deadline = makeDate("2026-03-22T00:00:00Z")
+        let request = makeSaveRequest(
+            name: "Conference",
+            frequencyInDays: 1,
+            recurrenceRule: .interval(days: 1),
+            emoji: "🎟️",
+            deadline: deadline,
+            isAllDay: true,
+            scheduleMode: .oneOff
+        )
+
+        let task = HomeAddRoutineSupport.makeRoutine(
+            from: request,
+            name: request.name,
+            goalIDs: [],
+            scheduleAnchor: deadline
+        )
+
+        #expect(task.deadline == deadline)
+        #expect(task.isAllDay)
+    }
+
+    @Test
     func saveTapped_commitsPendingStepsBeforeDelegating() async {
         let washID = UUID()
         let capturedNames = LockIsolated<[String]>([])

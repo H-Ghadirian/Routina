@@ -46,6 +46,7 @@ enum SettingsRoutineDataBackupMapping {
             notes: task.notes,
             link: task.link,
             deadline: task.deadline,
+            isAllDay: task.isAllDay,
             reminderAt: task.reminderAt,
             imageData: imageData,
             imageAttachmentID: imageAttachmentID,

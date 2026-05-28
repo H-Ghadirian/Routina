@@ -13,6 +13,7 @@ struct AddRoutineFeature: Reducer {
         case routineLinkChanged(String)
         case deadlineEnabledChanged(Bool)
         case deadlineDateChanged(Date)
+        case allDayChanged(Bool)
         case reminderEnabledChanged(Bool)
         case reminderDateChanged(Date)
         case priorityChanged(RoutineTaskPriority)
@@ -136,6 +137,16 @@ struct AddRoutineFeature: Reducer {
         case let .deadlineDateChanged(deadline):
             AddRoutineBasicsEditor.setDeadlineDate(
                 deadline,
+                calendar: calendar,
+                basics: &state.basics
+            )
+            return .none
+
+        case let .allDayChanged(isAllDay):
+            AddRoutineFormEditor.setAllDay(
+                isAllDay,
+                now: now,
+                calendar: calendar,
                 basics: &state.basics
             )
             return .none

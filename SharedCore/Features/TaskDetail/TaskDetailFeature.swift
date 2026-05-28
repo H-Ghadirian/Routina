@@ -30,6 +30,7 @@ struct TaskDetailFeature: Reducer {
         var editingDetailCommentDraft: String = ""
         var editRoutineLink: String = ""
         var editDeadline: Date?
+        var editIsAllDay: Bool = false
         var editReminderAt: Date?
         var editPriority: RoutineTaskPriority = .none
         var editImportance: RoutineTaskImportance = .level2
@@ -200,6 +201,7 @@ struct TaskDetailFeature: Reducer {
         case editRoutineLinkChanged(String)
         case editDeadlineEnabledChanged(Bool)
         case editDeadlineDateChanged(Date)
+        case editAllDayChanged(Bool)
         case editReminderEnabledChanged(Bool)
         case editReminderDateChanged(Date)
         case editReminderLeadMinutesChanged(Int?)
@@ -854,6 +856,9 @@ struct TaskDetailFeature: Reducer {
 
         case let .editDeadlineDateChanged(deadline):
             return recurrenceEditActionHandler().editDeadlineDateChanged(deadline, state: &state)
+
+        case let .editAllDayChanged(isAllDay):
+            return recurrenceEditActionHandler().editAllDayChanged(isAllDay, state: &state)
 
         case let .editReminderEnabledChanged(isEnabled):
             return recurrenceEditActionHandler().editReminderEnabledChanged(isEnabled, state: &state)

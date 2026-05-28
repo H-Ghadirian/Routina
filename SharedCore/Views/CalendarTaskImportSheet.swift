@@ -280,6 +280,7 @@ struct CalendarTaskImportSheet: View {
             emoji: CalendarTaskImportSupport.defaultTaskEmoji,
             notes: CalendarTaskImportSupport.notes(for: suggestion, calendar: calendar),
             deadline: suggestion.deadline,
+            isAllDay: suggestion.isAllDay,
             priority: .none,
             importance: .level2,
             urgency: .level2,

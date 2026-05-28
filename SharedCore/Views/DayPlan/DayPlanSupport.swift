@@ -224,6 +224,15 @@ enum DayPlanAllDayTasks {
             return (startDate, endDate, false)
         }
 
+        if task.isOneOffTask,
+           task.isAllDay,
+           let deadline = task.deadline {
+            let startDate = calendar.startOfDay(for: deadline)
+            let endDate = calendar.date(byAdding: .day, value: 1, to: startDate) ?? startDate
+            guard endDate > startDate else { return nil }
+            return (startDate, endDate, false)
+        }
+
         guard task.isOneOffTask,
               let notes = task.notes,
               CalendarTaskImportSupport.sourceMarker(in: notes) != nil,

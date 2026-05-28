@@ -31,6 +31,7 @@ struct TaskFormModel {
     // MARK: Deadline (todo only)
     var deadlineEnabled: Binding<Bool>
     var deadline: Binding<Date>
+    var isAllDay: Binding<Bool> = .constant(false)
 
     // MARK: Reminder
     var reminderEnabled: Binding<Bool>

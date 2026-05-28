@@ -9,13 +9,31 @@ struct TaskDetailRecurrenceEditActionHandler {
     var calendar: Calendar
 
     func editDeadlineEnabledChanged(_ isEnabled: Bool, state: inout State) -> Effect<Action> {
-        state.editDeadline = isEnabled ? (state.editDeadline ?? now()) : nil
+        if isEnabled {
+            let deadline = state.editDeadline ?? now()
+            state.editDeadline = state.editIsAllDay ? calendar.startOfDay(for: deadline) : deadline
+        } else {
+            state.editDeadline = nil
+            state.editIsAllDay = false
+        }
         return .none
     }
 
     func editDeadlineDateChanged(_ deadline: Date, state: inout State) -> Effect<Action> {
         rebaseEditReminderIfUsingLeadTime(&state) { state in
-            state.editDeadline = deadline
+            state.editDeadline = state.editIsAllDay
+                ? calendar.startOfDay(for: deadline)
+                : deadline
+        }
+        return .none
+    }
+
+    func editAllDayChanged(_ isAllDay: Bool, state: inout State) -> Effect<Action> {
+        rebaseEditReminderIfUsingLeadTime(&state) { state in
+            state.editIsAllDay = isAllDay
+            if isAllDay {
+                state.editDeadline = calendar.startOfDay(for: state.editDeadline ?? now())
+            }
         }
         return .none
     }
@@ -52,6 +70,7 @@ struct TaskDetailRecurrenceEditActionHandler {
             state.editScheduleMode = mode
             if mode != .oneOff {
                 state.editDeadline = nil
+                state.editIsAllDay = false
             }
             if mode.isSoftIntervalRoutine {
                 state.editRecurrenceKind = .intervalDays

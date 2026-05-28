@@ -22,6 +22,7 @@ struct AddRoutineTaskFormModelFactory {
             link: binding(get: { store.basics.routineLink }, send: AddRoutineFeature.Action.routineLinkChanged),
             deadlineEnabled: binding(get: { store.hasDeadline }, send: AddRoutineFeature.Action.deadlineEnabledChanged),
             deadline: binding(get: { store.basics.deadline ?? Date() }, send: AddRoutineFeature.Action.deadlineDateChanged),
+            isAllDay: binding(get: { store.basics.isAllDay }, send: AddRoutineFeature.Action.allDayChanged),
             reminderEnabled: binding(
                 get: { store.basics.reminderAt != nil },
                 send: AddRoutineFeature.Action.reminderEnabledChanged

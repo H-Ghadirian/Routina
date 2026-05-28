@@ -24,9 +24,12 @@ enum AddRoutineBasicsEditor {
 
     static func setDeadlineDate(
         _ deadline: Date,
+        calendar: Calendar,
         basics: inout AddRoutineBasicsState
     ) {
-        basics.deadline = deadline
+        basics.deadline = basics.isAllDay
+            ? calendar.startOfDay(for: deadline)
+            : deadline
     }
 
     static func setPriority(

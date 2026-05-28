@@ -8,7 +8,12 @@ struct TaskFormIOSDeadlineSection: View {
         Section(header: Text("Deadline")) {
             Toggle("Set deadline", isOn: model.deadlineEnabled)
             if model.deadlineEnabled.wrappedValue {
-                DatePicker("Deadline", selection: model.deadline)
+                Toggle("All Day", isOn: model.isAllDay)
+                DatePicker(
+                    "Deadline",
+                    selection: model.deadline,
+                    displayedComponents: model.isAllDay.wrappedValue ? .date : [.date, .hourAndMinute]
+                )
                 if let persianDeadlineText {
                     Text(persianDeadlineText)
                         .font(.caption)

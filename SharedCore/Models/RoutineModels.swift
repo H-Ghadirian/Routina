@@ -9,6 +9,7 @@ final class RoutineTask {
     var notes: String?
     var link: String?
     var deadline: Date?
+    var isAllDay: Bool = false
     var reminderAt: Date?
     var priorityRawValue: String = RoutineTaskPriority.none.rawValue
     var importanceRawValue: String = RoutineTaskImportance.level2.rawValue
@@ -212,6 +213,7 @@ final class RoutineTask {
             scheduleModeRawValue = newValue.rawValue
             if newValue != .oneOff {
                 deadline = nil
+                isAllDay = false
             }
             sanitizeChecklistProgress()
         }
@@ -237,6 +239,7 @@ final class RoutineTask {
         notes: String? = nil,
         link: String? = nil,
         deadline: Date? = nil,
+        isAllDay: Bool = false,
         reminderAt: Date? = nil,
         priority: RoutineTaskPriority = .none,
         importance: RoutineTaskImportance = .level2,
@@ -287,6 +290,7 @@ final class RoutineTask {
         self.notes = Self.sanitizedNotes(notes)
         self.link = Self.sanitizedLink(link)
         self.deadline = resolvedScheduleMode == .oneOff ? deadline : nil
+        self.isAllDay = resolvedScheduleMode == .oneOff && deadline != nil && isAllDay
         self.reminderAt = reminderAt
         self.priorityRawValue = priority.rawValue
         self.importanceRawValue = importance.rawValue
@@ -479,6 +483,7 @@ final class RoutineTask {
             notes: notes,
             link: link,
             deadline: deadline,
+            isAllDay: isAllDay,
             reminderAt: reminderAt,
             priority: priority,
             importance: importance,

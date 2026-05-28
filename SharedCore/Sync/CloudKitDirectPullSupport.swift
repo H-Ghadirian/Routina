@@ -9,6 +9,7 @@ extension CloudKitDirectPullService {
         var notes: String?
         var link: String?
         var deadline: Date?
+        var isAllDay: Bool?
         var reminderAt: Date?
         var placeID: UUID?
         var tags: [String]?
