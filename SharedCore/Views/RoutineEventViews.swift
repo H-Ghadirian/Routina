@@ -42,40 +42,19 @@ struct RoutineEventEditorView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section("Event") {
-                    TextField("Title", text: $title)
-                    TextField("Emoji", text: $emoji)
-                    Toggle("All Day", isOn: $isAllDay)
-                }
-
-                Section("When") {
-                    if isAllDay {
-                        DatePicker("Starts", selection: allDayStartBinding, displayedComponents: [.date])
-                        DatePicker("Ends", selection: allDayEndBinding, displayedComponents: [.date])
-                    } else {
-                        DatePicker("Starts", selection: timedStartBinding)
-                        DatePicker("Ends", selection: timedEndBinding)
-                    }
-                }
-
-                Section("Notes") {
-                    TextField("Context", text: $notesText, axis: .vertical)
-                        .lineLimit(4...8)
-                }
-
-                Section("Tags") {
-                    tagsSection
-                }
-
-                if let errorText {
-                    Section {
-                        Label(errorText, systemImage: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.red)
-                    }
-                }
+        editorContent
+            .onChange(of: isAllDay) { _, _ in
+                normalizeDates()
             }
+    }
+
+    @ViewBuilder
+    private var editorContent: some View {
+        #if os(macOS)
+        macEditorContent
+        #else
+        NavigationStack {
+            formEditorContent
             .navigationTitle(event == nil ? "New Event" : "Edit Event")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -89,8 +68,42 @@ struct RoutineEventEditorView: View {
                         .disabled(!canSave)
                 }
             }
-            .onChange(of: isAllDay) { _, _ in
-                normalizeDates()
+        }
+        #endif
+    }
+
+    private var formEditorContent: some View {
+        Form {
+            Section("Event") {
+                TextField("Title", text: $title)
+                TextField("Emoji", text: $emoji)
+                Toggle("All Day", isOn: $isAllDay)
+            }
+
+            Section("When") {
+                if isAllDay {
+                    DatePicker("Starts", selection: allDayStartBinding, displayedComponents: [.date])
+                    DatePicker("Ends", selection: allDayEndBinding, displayedComponents: [.date])
+                } else {
+                    DatePicker("Starts", selection: timedStartBinding)
+                    DatePicker("Ends", selection: timedEndBinding)
+                }
+            }
+
+            Section("Notes") {
+                TextField("Context", text: $notesText, axis: .vertical)
+                    .lineLimit(4...8)
+            }
+
+            Section("Tags") {
+                tagsSection
+            }
+
+            if let errorText {
+                Section {
+                    Label(errorText, systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                }
             }
         }
     }
@@ -182,6 +195,294 @@ struct RoutineEventEditorView: View {
             selectedTags: tags
         )
     }
+
+    #if os(macOS)
+    private var macEditorContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                macHeader
+
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .top, spacing: 18) {
+                        VStack(alignment: .leading, spacing: 18) {
+                            macEventCard
+                            macNotesCard
+                        }
+                        .frame(minWidth: 520, maxWidth: .infinity, alignment: .topLeading)
+
+                        VStack(alignment: .leading, spacing: 18) {
+                            macScheduleCard
+                            macTagsCard
+                        }
+                        .frame(width: 340, alignment: .topLeading)
+                    }
+
+                    VStack(alignment: .leading, spacing: 18) {
+                        macEventCard
+                        macScheduleCard
+                        macNotesCard
+                        macTagsCard
+                    }
+                }
+
+                if let errorText {
+                    macErrorBanner(errorText)
+                }
+            }
+            .padding(.horizontal, 32)
+            .padding(.vertical, 28)
+            .frame(maxWidth: 980, alignment: .topLeading)
+            .frame(maxWidth: .infinity, alignment: .top)
+        }
+        .frame(minWidth: 520, minHeight: 560)
+    }
+
+    private var macHeader: some View {
+        HStack(alignment: .center, spacing: 14) {
+            Text(displayEmojiPreview)
+                .font(.system(size: 30))
+                .frame(width: 50, height: 50)
+                .routinaGlassCard(cornerRadius: 14, tint: .teal, tintOpacity: 0.14)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(event == nil ? "New Event" : "Edit Event")
+                    .font(.largeTitle.weight(.semibold))
+                    .lineLimit(1)
+
+                Text(datePreviewText)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 16)
+
+            Button("Cancel") {
+                cancel()
+            }
+            .buttonStyle(.bordered)
+            .keyboardShortcut(.cancelAction)
+
+            Button {
+                save()
+            } label: {
+                Label("Save", systemImage: "checkmark")
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(!canSave)
+            .keyboardShortcut(.defaultAction)
+        }
+    }
+
+    private var macEventCard: some View {
+        RoutineEventEditorCard(title: "Event", systemImage: "calendar.badge.plus") {
+            HStack(alignment: .top, spacing: 14) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Emoji")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    TextField("", text: $emoji, prompt: Text("🗓️"))
+                        .textFieldStyle(.plain)
+                        .font(.title2)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 10)
+                        .frame(width: 72)
+                        .background(macInputBackground)
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Title")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    TextField("", text: $title, prompt: Text("Conference day"))
+                        .textFieldStyle(.plain)
+                        .font(.title3.weight(.semibold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                        .background(macInputBackground)
+                }
+            }
+        }
+    }
+
+    private var macScheduleCard: some View {
+        RoutineEventEditorCard(title: "When", systemImage: isAllDay ? "sun.max" : "clock") {
+            VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Timing")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    Picker("Timing", selection: $isAllDay) {
+                        Text("All Day").tag(true)
+                        Text("Timed").tag(false)
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
+                    .fixedSize()
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    if isAllDay {
+                        macDatePicker(
+                            title: "Starts",
+                            selection: allDayStartBinding,
+                            displayedComponents: [.date]
+                        )
+                        macDatePicker(
+                            title: "Ends",
+                            selection: allDayEndBinding,
+                            displayedComponents: [.date]
+                        )
+                    } else {
+                        macDatePicker(
+                            title: "Starts",
+                            selection: timedStartBinding,
+                            displayedComponents: [.date, .hourAndMinute]
+                        )
+                        macDatePicker(
+                            title: "Ends",
+                            selection: timedEndBinding,
+                            displayedComponents: [.date, .hourAndMinute]
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private var macNotesCard: some View {
+        RoutineEventEditorCard(title: "Notes", systemImage: "text.alignleft") {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Context")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                ZStack(alignment: .topLeading) {
+                    TextEditor(text: $notesText)
+                        .font(.body)
+                        .scrollContentBackground(.hidden)
+                        .padding(8)
+                        .frame(minHeight: 170)
+
+                    if notesText.isEmpty {
+                        Text("Add context")
+                            .foregroundStyle(.tertiary)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 13)
+                            .allowsHitTesting(false)
+                    }
+                }
+                .background(macInputBackground)
+            }
+        }
+    }
+
+    private var macTagsCard: some View {
+        RoutineEventEditorCard(title: "Tags", systemImage: "tag") {
+            VStack(alignment: .leading, spacing: 12) {
+                macTagComposer
+                selectedTagsContent
+                existingTagsContent
+            }
+        }
+    }
+
+    private var macTagComposer: some View {
+        HStack(spacing: 10) {
+            ZStack(alignment: .trailing) {
+                TextField("", text: $tagDraft, prompt: Text("health, travel, work"))
+                    .textFieldStyle(.plain)
+                    .onSubmit(addTagDraft)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .padding(.trailing, tagAutocompleteSuggestion == nil ? 0 : 96)
+                    .background(macInputBackground)
+
+                if let suggestion = tagAutocompleteSuggestion {
+                    Button {
+                        acceptTagAutocompleteSuggestion()
+                    } label: {
+                        Text("#\(suggestion)")
+                            .font(.caption.weight(.medium))
+                            .lineLimit(1)
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .routinaGlassPill(tint: .secondary, tintOpacity: 0.12, interactive: true)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.trailing, 6)
+                    .accessibilityLabel("Complete tag \(suggestion)")
+                }
+            }
+
+            Button {
+                addTagDraft()
+            } label: {
+                Label("Add", systemImage: "plus")
+            }
+            .buttonStyle(.bordered)
+            .disabled(RoutineTag.parseDraft(tagDraft).isEmpty)
+        }
+    }
+
+    private func macDatePicker(
+        title: String,
+        selection: Binding<Date>,
+        displayedComponents: DatePickerComponents
+    ) -> some View {
+        HStack(spacing: 10) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 46, alignment: .leading)
+
+            DatePicker("", selection: selection, displayedComponents: displayedComponents)
+                .labelsHidden()
+                .fixedSize()
+
+            Spacer(minLength: 0)
+        }
+    }
+
+    private var macInputBackground: some View {
+        RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .fill(Color.secondary.opacity(0.08))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+            )
+    }
+
+    private var displayEmojiPreview: String {
+        RoutineEvent.cleanedText(emoji) ?? "🗓️"
+    }
+
+    private var datePreviewText: String {
+        RoutineEventDateFormatting.text(
+            startedAt: normalizedStartDate,
+            endedAt: normalizedEndDate,
+            isAllDay: isAllDay,
+            calendar: calendar
+        )
+    }
+
+    private func macErrorBanner(_ message: String) -> some View {
+        Label(message, systemImage: "exclamationmark.triangle.fill")
+            .font(.caption.weight(.medium))
+            .foregroundStyle(.red)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.red.opacity(0.10))
+            )
+    }
+    #endif
 
     private var tagsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -346,6 +647,38 @@ struct RoutineEventEditorView: View {
         guard let suggestion = tagAutocompleteSuggestion else { return }
         tags = RoutineTag.appending(suggestion, to: tags, availableTags: availableTags)
         tagDraft = ""
+    }
+}
+
+private struct RoutineEventEditorCard<Content: View>: View {
+    let title: String
+    let systemImage: String
+    let content: Content
+
+    init(
+        title: String,
+        systemImage: String,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        self.systemImage = systemImage
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Label(title, systemImage: systemImage)
+                .font(.headline.weight(.semibold))
+
+            content
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .routinaGlassPanel(cornerRadius: 14, tint: .secondary, tintOpacity: 0.06)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+        )
     }
 }
 
