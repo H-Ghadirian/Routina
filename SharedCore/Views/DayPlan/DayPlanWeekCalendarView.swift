@@ -36,8 +36,11 @@ struct DayPlanWeekCalendarView: View {
     var onHideTimelineActivity: (DayPlanTimelineActivityBlock, Date) -> Void = { _, _ in }
     var onMoveBlock: (DayPlanBlock.ID, Date, Int) -> Void
     var onMoveTimelineActivity: (DayPlanTimelineActivityBlock, Date, Int) -> Void = { _, _, _ in }
+    var onMoveBlockToAllDay: (DayPlanBlock.ID, Date) -> Void = { _, _ in }
+    var onMoveTimelineActivityToAllDay: (DayPlanTimelineActivityBlock, Date) -> Void = { _, _ in }
     var onResizeBlock: (DayPlanBlock.ID, Date, Int, Int) -> Void
     var onDropTask: (UUID, Date, Int) -> Void
+    var onDropTaskToAllDay: (UUID, Date) -> Void = { _, _ in }
 
     @State private var isDropTargeted = false
     @State private var isCompletingDrop = false
@@ -71,8 +74,13 @@ struct DayPlanWeekCalendarView: View {
                 timeColumnWidth: timeColumnWidth,
                 allDayBlocks: allDayBlocks,
                 allDayTint: allDayTint,
+                draggedBlockID: $draggedBlockID,
+                draggedTimelineActivity: $draggedTimelineActivity,
                 onOpenTaskDetails: onOpenAllDayTaskDetails,
-                onOpenEventDetails: onOpenEventDetails
+                onOpenEventDetails: onOpenEventDetails,
+                onMoveBlockToAllDay: onMoveBlockToAllDay,
+                onMoveTimelineActivityToAllDay: onMoveTimelineActivityToAllDay,
+                onDropTaskToAllDay: onDropTaskToAllDay
             )
 
             ScrollViewReader { scrollProxy in
@@ -322,8 +330,15 @@ private struct DayPlanAllDayLaneView: View {
     var timeColumnWidth: CGFloat
     var allDayBlocks: [DayPlanAllDayBlock]
     var allDayTint: (DayPlanAllDayBlock) -> Color
+    @Binding var draggedBlockID: DayPlanBlock.ID?
+    @Binding var draggedTimelineActivity: DayPlanTimelineActivityBlock?
     var onOpenTaskDetails: (UUID) -> Void
     var onOpenEventDetails: (UUID) -> Void
+    var onMoveBlockToAllDay: (DayPlanBlock.ID, Date) -> Void
+    var onMoveTimelineActivityToAllDay: (DayPlanTimelineActivityBlock, Date) -> Void
+    var onDropTaskToAllDay: (UUID, Date) -> Void
+
+    @State private var targetedDayIndex: Int?
 
     private let rowHeight: CGFloat = 28
     private let rowSpacing: CGFloat = 4
@@ -382,6 +397,20 @@ private struct DayPlanAllDayLaneView: View {
                     }
                 }
                 .frame(width: daysWidth, height: laneHeight, alignment: .topLeading)
+                .contentShape(Rectangle())
+                .onDrop(
+                    of: [.text],
+                    delegate: DayPlanAllDayDropDelegate(
+                        dates: dates,
+                        dayWidth: dayWidth,
+                        draggedBlockID: $draggedBlockID,
+                        draggedTimelineActivity: $draggedTimelineActivity,
+                        targetedDayIndex: $targetedDayIndex,
+                        onMoveBlockToAllDay: onMoveBlockToAllDay,
+                        onMoveTimelineActivityToAllDay: onMoveTimelineActivityToAllDay,
+                        onDropTaskToAllDay: onDropTaskToAllDay
+                    )
+                )
             }
         }
         .frame(height: laneHeight)
@@ -396,10 +425,21 @@ private struct DayPlanAllDayLaneView: View {
     private func allDayBackground(dayWidth: CGFloat, laneHeight: CGFloat) -> some View {
         ZStack(alignment: .topLeading) {
             ForEach(Array(dates.enumerated()), id: \.element) { index, date in
+                let isTargeted = targetedDayIndex == index
                 Rectangle()
-                    .fill(calendar.isDate(date, inSameDayAs: selectedDate) ? Color.accentColor.opacity(0.08) : Color.clear)
+                    .fill(allDayBackgroundFill(for: date, isTargeted: isTargeted))
                     .frame(width: dayWidth, height: laneHeight)
                     .offset(x: CGFloat(index) * dayWidth)
+
+                if isTargeted {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(
+                            Color.accentColor.opacity(0.75),
+                            style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])
+                        )
+                        .frame(width: max(dayWidth - 8, 1), height: max(laneHeight - 8, 1))
+                        .offset(x: CGFloat(index) * dayWidth + 4, y: 4)
+                }
 
                 Rectangle()
                     .fill(Color.secondary.opacity(0.18))
@@ -412,6 +452,16 @@ private struct DayPlanAllDayLaneView: View {
                 .frame(width: 1, height: laneHeight)
                 .offset(x: CGFloat(dates.count) * dayWidth - 1)
         }
+    }
+
+    private func allDayBackgroundFill(for date: Date, isTargeted: Bool) -> Color {
+        if isTargeted {
+            return Color.accentColor.opacity(0.16)
+        }
+        if calendar.isDate(date, inSameDayAs: selectedDate) {
+            return Color.accentColor.opacity(0.08)
+        }
+        return Color.clear
     }
 }
 

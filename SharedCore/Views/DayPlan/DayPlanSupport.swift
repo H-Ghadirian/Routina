@@ -171,9 +171,12 @@ struct DayPlanAllDayBlock: Identifiable, Equatable {
 }
 
 enum DayPlanAllDayTasks {
+    private typealias AllDaySpan = (startDate: Date, endDate: Date, isLegacyDateOnlyCalendarTask: Bool)
+
     static func blocks(
         on dates: [Date],
         from tasks: [RoutineTask],
+        logs: [RoutineLog] = [],
         events: [RoutineEvent] = [],
         calendar: Calendar
     ) -> [DayPlanAllDayBlock] {
@@ -187,6 +190,7 @@ enum DayPlanAllDayTasks {
         else { return [] }
 
         let visibleStart = calendar.startOfDay(for: firstDate)
+        let logsByTaskID = Dictionary(grouping: logs, by: \.taskID)
 
         let taskBlocks = tasks.flatMap { task -> [DayPlanAllDayBlock] in
             guard !task.isCanceledOneOff,
@@ -194,7 +198,12 @@ enum DayPlanAllDayTasks {
                 return []
             }
 
-            return allDaySpans(for: task, on: dates, calendar: calendar)
+            return allDaySpans(
+                for: task,
+                on: dates,
+                logs: logsByTaskID[task.id] ?? [],
+                calendar: calendar
+            )
                 .filter { span in
                     span.endDate > visibleStart && span.startDate < visibleEnd
                 }
@@ -255,8 +264,9 @@ enum DayPlanAllDayTasks {
     private static func allDaySpans(
         for task: RoutineTask,
         on dates: [Date],
+        logs: [RoutineLog],
         calendar: Calendar
-    ) -> [(startDate: Date, endDate: Date, isLegacyDateOnlyCalendarTask: Bool)] {
+    ) -> [AllDaySpan] {
         if let metadata = CalendarTaskImportSupport.eventMetadata(in: task.notes),
            metadata.isAllDay {
             let startDate = calendar.startOfDay(for: metadata.startDate)
@@ -270,16 +280,24 @@ enum DayPlanAllDayTasks {
         }
 
         if task.isAllDay {
+            var spans: [AllDaySpan] = []
             if task.isOneOffTask,
                let deadline = task.deadline,
                let span = oneDaySpan(on: deadline, calendar: calendar) {
-                return [span]
+                spans.append(span)
+            } else {
+                spans += routineAllDayOccurrenceStarts(for: task, on: dates, calendar: calendar)
+                    .compactMap { startDate in
+                        oneDaySpan(on: startDate, calendar: calendar)
+                    }
             }
 
-            return routineAllDayOccurrenceStarts(for: task, on: dates, calendar: calendar)
+            spans += completedActivityStarts(for: task, logs: logs, on: dates, calendar: calendar)
                 .compactMap { startDate in
                     oneDaySpan(on: startDate, calendar: calendar)
                 }
+
+            return deduplicatedOneDaySpans(spans, calendar: calendar)
         }
 
         guard task.isOneOffTask,
@@ -297,13 +315,50 @@ enum DayPlanAllDayTasks {
     private static func oneDaySpan(
         on date: Date,
         calendar: Calendar
-    ) -> (startDate: Date, endDate: Date, isLegacyDateOnlyCalendarTask: Bool)? {
+    ) -> AllDaySpan? {
         let startDate = calendar.startOfDay(for: date)
         guard let endDate = calendar.date(byAdding: .day, value: 1, to: startDate),
               endDate > startDate else {
             return nil
         }
         return (startDate, endDate, false)
+    }
+
+    private static func completedActivityStarts(
+        for task: RoutineTask,
+        logs: [RoutineLog],
+        on dates: [Date],
+        calendar: Calendar
+    ) -> [Date] {
+        let visibleDayKeys = Set(dates.map { DayPlanStorage.dayKey(for: $0, calendar: calendar) })
+        guard !visibleDayKeys.isEmpty else { return [] }
+
+        var startsByDayKey: [String: Date] = [:]
+        func record(_ timestamp: Date?) {
+            guard let timestamp else { return }
+            let startDate = calendar.startOfDay(for: timestamp)
+            let dayKey = DayPlanStorage.dayKey(for: startDate, calendar: calendar)
+            guard visibleDayKeys.contains(dayKey) else { return }
+            startsByDayKey[dayKey] = startDate
+        }
+
+        logs
+            .filter { $0.kind == .completed }
+            .forEach { record($0.timestamp) }
+        record(task.lastDone)
+
+        return startsByDayKey.values.sorted()
+    }
+
+    private static func deduplicatedOneDaySpans(
+        _ spans: [AllDaySpan],
+        calendar: Calendar
+    ) -> [AllDaySpan] {
+        var seenDayKeys = Set<String>()
+        return spans.filter { span in
+            let dayKey = DayPlanStorage.dayKey(for: span.startDate, calendar: calendar)
+            return seenDayKeys.insert(dayKey).inserted
+        }
     }
 
     private static func routineAllDayOccurrenceStarts(
@@ -583,6 +638,7 @@ enum DayPlanTimelineTasks {
             plannedBlocksByDayKey: plannedBlocksByDayKey,
             calendar: calendar,
             hiddenActivityIDs: hiddenActivityIDs,
+            excludesAllDayTasks: true,
             includedKinds: automaticSuggestionKinds
         )
     }
@@ -594,13 +650,13 @@ enum DayPlanTimelineTasks {
         plannedBlocksByDayKey: [String: [DayPlanBlock]],
         calendar: Calendar,
         hiddenActivityIDs: Set<String> = [],
+        excludesAllDayTasks: Bool = false,
         includedKinds: [RoutineLogKind]? = nil
     ) -> [String: [DayPlanTimelineActivityBlock]] {
         let visibleDayKeys = Set(dates.map { DayPlanStorage.dayKey(for: $0, calendar: calendar) })
         guard !visibleDayKeys.isEmpty else { return [:] }
 
         let tasksByID = Dictionary(grouping: tasks, by: \.id).compactMapValues(\.first)
-        let knownTaskIDs = Set(tasksByID.keys)
         let plannedTaskIDsByDayKey = plannedBlocksByDayKey.mapValues { Set($0.map(\.taskID)) }
         var latestActivityByKey: [DayPlanTimelineActivityKey: DayPlanTimelineActivity] = [:]
 
@@ -608,7 +664,8 @@ enum DayPlanTimelineTasks {
             if let includedKinds, !includedKinds.contains(activity.kind) {
                 return
             }
-            guard knownTaskIDs.contains(taskID) else { return }
+            guard let task = tasksByID[taskID] else { return }
+            guard !excludesAllDayTasks || !task.isAllDay else { return }
             let dayKey = DayPlanStorage.dayKey(for: activity.timestamp, calendar: calendar)
             guard visibleDayKeys.contains(dayKey) else { return }
             guard plannedTaskIDsByDayKey[dayKey]?.contains(taskID) != true else { return }

@@ -284,6 +284,39 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func automaticPlannerSuggestionsExcludeAllDayTasks() throws {
+        let calendar = gregorianCalendar
+        let activityDate = try #require(date("2026-05-07T12:00:00Z"))
+        let completedAt = try #require(date("2026-05-07T09:45:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Travel",
+            isAllDay: true,
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 30
+        )
+        let logs = [
+            RoutineLog(
+                timestamp: completedAt,
+                taskID: taskID,
+                kind: .completed,
+                actualDurationMinutes: 30
+            ),
+        ]
+
+        let suggestions = DayPlanTimelineTasks.automaticSuggestionBlocks(
+            on: activityDate,
+            from: [task],
+            logs: logs,
+            plannedBlocks: [],
+            calendar: calendar
+        )
+
+        #expect(suggestions.isEmpty)
+    }
+
+    @Test
     func hiddenTimelineActivityBlocksAreExcludedFromAutomaticPlannerSuggestions() throws {
         let calendar = gregorianCalendar
         let activityDate = try #require(date("2026-05-07T12:00:00Z"))
@@ -468,6 +501,41 @@ struct DayPlanPlannerStateTests {
         let blocks = DayPlanAllDayTasks.blocks(
             on: try plannerDates(),
             from: [task],
+            calendar: calendar
+        )
+
+        #expect(blocks.compactMap(\.taskID) == [taskID])
+        #expect(blocks.first?.startDate == expectedStart)
+        #expect(blocks.first?.endDate == expectedEnd)
+        #expect(blocks.first?.isLegacyDateOnlyCalendarTask == false)
+    }
+
+    @Test
+    func allDayBlocksUseCompletedActivityDatesForAllDayRoutines() throws {
+        let calendar = gregorianCalendar
+        let completedAt = try #require(date("2026-05-11T14:30:00Z"))
+        let expectedStart = try #require(date("2026-05-11T00:00:00Z"))
+        let expectedEnd = try #require(date("2026-05-12T00:00:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Travel",
+            isAllDay: true,
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .monthly(on: 30)
+        )
+        let logs = [
+            RoutineLog(
+                timestamp: completedAt,
+                taskID: taskID,
+                kind: .completed
+            ),
+        ]
+
+        let blocks = DayPlanAllDayTasks.blocks(
+            on: try plannerDates(),
+            from: [task],
+            logs: logs,
             calendar: calendar
         )
 

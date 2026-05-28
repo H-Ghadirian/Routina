@@ -444,6 +444,7 @@ private struct DayPlanTimelinePanelView: View {
         let allDayBlocks = DayPlanAllDayTasks.blocks(
             on: weekDates,
             from: tasks,
+            logs: logs,
             events: events,
             calendar: calendar
         )
@@ -594,6 +595,12 @@ private struct DayPlanTimelinePanelView: View {
                     }
                     moveTimelineActivity(activity, to: date, startMinute: minute)
                 },
+                onMoveBlockToAllDay: { blockID, date in
+                    moveBlockToAllDay(blockID, on: date)
+                },
+                onMoveTimelineActivityToAllDay: { activity, date in
+                    moveTimelineActivityToAllDay(activity, on: date)
+                },
                 onResizeBlock: { blockID, date, startMinute, durationMinutes in
                     guard !hasSleepConflict(
                         on: date,
@@ -619,6 +626,9 @@ private struct DayPlanTimelinePanelView: View {
                         startMinute: minute,
                         blockedIntervalsByDayKey: blockedIntervalsByDayKey
                     )
+                },
+                onDropTaskToAllDay: { taskID, date in
+                    dropTaskToAllDay(taskID, on: date)
                 }
             )
         }
@@ -670,6 +680,22 @@ private struct DayPlanTimelinePanelView: View {
         return result
     }
 
+    private func moveBlockToAllDay(_ blockID: DayPlanBlock.ID, on date: Date) {
+        guard let block = plannedBlock(with: blockID),
+              makeTaskAllDay(block.taskID, on: date) else {
+            return
+        }
+
+        planner.deleteBlock(blockID, calendar: calendar, context: modelContext)
+    }
+
+    private func moveTimelineActivityToAllDay(_ activity: DayPlanTimelineActivityBlock, on date: Date) {
+        if !calendar.isDate(activity.block.updatedAt, inSameDayAs: date) {
+            moveTimelineActivity(activity, to: date, startMinute: 0)
+        }
+        _ = makeTaskAllDay(activity.block.taskID, on: date)
+    }
+
     private func moveTimelineActivity(
         _ activity: DayPlanTimelineActivityBlock,
         to date: Date,
@@ -684,6 +710,38 @@ private struct DayPlanTimelinePanelView: View {
             context: modelContext,
             calendar: calendar
         )
+    }
+
+    private func dropTaskToAllDay(_ taskID: UUID, on date: Date) {
+        guard makeTaskAllDay(taskID, on: date) else { return }
+        if let task = tasks.first(where: { $0.id == taskID }) {
+            planner.selectedBlockID = nil
+            planner.selectTask(task)
+        }
+    }
+
+    @discardableResult
+    private func makeTaskAllDay(_ taskID: UUID, on date: Date) -> Bool {
+        let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext)
+        let descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate<RoutineTask> { task in
+                task.id == taskID
+            }
+        )
+
+        do {
+            guard let task = try context.fetch(descriptor).first else { return false }
+            task.isAllDay = true
+            if task.isOneOffTask {
+                task.deadline = calendar.startOfDay(for: date)
+            }
+            try context.save()
+            NotificationCenter.default.postRoutineDidUpdate()
+            return true
+        } catch {
+            NSLog("Failed to move task to all-day planner lane: \(error.localizedDescription)")
+            return false
+        }
     }
 
     private func hideTimelineActivity(_ activity: DayPlanTimelineActivityBlock) {
