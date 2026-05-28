@@ -1,4 +1,3 @@
-import Foundation
 import SwiftUI
 
 struct StatsTagUsageSection: View {
@@ -12,12 +11,14 @@ struct StatsTagUsageSection: View {
         max(points.map(\.bubbleValue).max() ?? 1, 1)
     }
 
-    private var columns: Int {
-        chartPresentation.tagUsageColumnCount(for: points.count)
-    }
-
-    private var rows: Int {
-        max(Int(ceil(Double(max(points.count, 1)) / Double(columns))), 1)
+    private var bubbleGridColumns: [GridItem] {
+        [
+            GridItem(
+                .adaptive(minimum: 124, maximum: 164),
+                spacing: 12,
+                alignment: .center
+            )
+        ]
     }
 
     var body: some View {
@@ -41,36 +42,18 @@ struct StatsTagUsageSection: View {
                     colorScheme: colorScheme
                 )
             } else {
-                VStack(spacing: 12) {
-                    ForEach(Array(pointRows.enumerated()), id: \.offset) { _, row in
-                        HStack(spacing: 12) {
-                            ForEach(row) { point in
-                                tagBubble(for: point)
-                            }
-
-                            if row.count < columns {
-                                ForEach(0..<(columns - row.count), id: \.self) { _ in
-                                    Color.clear
-                                        .frame(maxWidth: .infinity, minHeight: 124)
-                                }
-                            }
-                        }
+                LazyVGrid(columns: bubbleGridColumns, alignment: .center, spacing: 12) {
+                    ForEach(points) { point in
+                        tagBubble(for: point)
                     }
                 }
                 .padding(16)
-                .frame(minHeight: chartPresentation.tagUsageChartHeight(rows: rows))
+                .frame(maxWidth: .infinity)
                 .statsChartPlotBackground(colorScheme: colorScheme)
                 .accessibilityLabel("Tag usage bubble chart")
             }
         }
         .statsChartCard(surfaceGradient: surfaceGradient, colorScheme: colorScheme)
-    }
-
-    private var pointRows: [[TagUsageChartPoint]] {
-        stride(from: 0, to: points.count, by: columns).map { startIndex in
-            let endIndex = min(startIndex + columns, points.count)
-            return Array(points[startIndex..<endIndex])
-        }
     }
 
     private func tagBubble(for point: TagUsageChartPoint) -> some View {
