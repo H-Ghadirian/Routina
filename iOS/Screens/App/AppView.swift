@@ -191,10 +191,6 @@ Group {
             moreDestination = nil
         }
 
-        if tab != .more {
-            moreDestination = nil
-        }
-
         guard let appTab = tab.appTab else { return }
         store.send(.tabSelected(appTab))
     }
