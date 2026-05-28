@@ -419,6 +419,14 @@ private struct DayPlanTimelinePanelView: View {
             calendar: calendar,
             hiddenActivityIDs: hiddenTimelineActivityIDs
         )
+        let automaticSuggestionBlocksByDayKey = DayPlanTimelineTasks.automaticSuggestionBlocksByDayKey(
+            on: weekDates,
+            from: tasks,
+            logs: logs,
+            plannedBlocksByDayKey: plannedBlocksByDayKey,
+            calendar: calendar,
+            hiddenActivityIDs: hiddenTimelineActivityIDs
+        )
         let sleepBlocksByDayKey = DayPlanSleepBlocks.blocksByDayKey(
             on: weekDates,
             from: sleepSessions,
@@ -469,7 +477,7 @@ private struct DayPlanTimelinePanelView: View {
                 automaticTimelineBlocksForDate: { date in
                     guard showsTimelineTasksInDayPlanner else { return [] }
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-                    return timelineBlocksByDayKey[dayKey] ?? []
+                    return automaticSuggestionBlocksByDayKey[dayKey] ?? []
                 },
                 eventBlocksForDate: { date in
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)

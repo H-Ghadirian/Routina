@@ -217,6 +217,73 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func automaticPlannerSuggestionsExcludeMissedAndCanceledActivity() throws {
+        let calendar = gregorianCalendar
+        let activityDate = try #require(date("2026-05-07T12:00:00Z"))
+        let completedAt = try #require(date("2026-05-07T08:00:00Z"))
+        let missedAt = try #require(date("2026-05-07T09:00:00Z"))
+        let canceledAt = try #require(date("2026-05-07T10:00:00Z"))
+        let legacyCanceledAt = try #require(date("2026-05-07T11:00:00Z"))
+        let completedTaskID = UUID()
+        let missedTaskID = UUID()
+        let canceledTaskID = UUID()
+        let legacyCanceledTaskID = UUID()
+        let completedTask = RoutineTask(
+            id: completedTaskID,
+            name: "Completed task",
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 30
+        )
+        let missedTask = RoutineTask(
+            id: missedTaskID,
+            name: "Missed task",
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 30
+        )
+        let canceledTask = RoutineTask(
+            id: canceledTaskID,
+            name: "Canceled task",
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 30
+        )
+        let legacyCanceledTask = RoutineTask(
+            id: legacyCanceledTaskID,
+            name: "Legacy canceled task",
+            scheduleMode: .oneOff,
+            canceledAt: legacyCanceledAt,
+            estimatedDurationMinutes: 30
+        )
+        let logs = [
+            RoutineLog(
+                timestamp: completedAt,
+                taskID: completedTaskID,
+                kind: .completed
+            ),
+            RoutineLog(
+                timestamp: missedAt,
+                taskID: missedTaskID,
+                kind: .missed
+            ),
+            RoutineLog(
+                timestamp: canceledAt,
+                taskID: canceledTaskID,
+                kind: .canceled
+            ),
+        ]
+
+        let suggestions = DayPlanTimelineTasks.automaticSuggestionBlocks(
+            on: activityDate,
+            from: [completedTask, missedTask, canceledTask, legacyCanceledTask],
+            logs: logs,
+            plannedBlocks: [],
+            calendar: calendar
+        )
+
+        #expect(suggestions.map(\.block.taskID) == [completedTaskID])
+        #expect(suggestions.map(\.kind) == [.completed])
+    }
+
+    @Test
     func hiddenTimelineActivityBlocksAreExcludedFromAutomaticPlannerSuggestions() throws {
         let calendar = gregorianCalendar
         let activityDate = try #require(date("2026-05-07T12:00:00Z"))
@@ -236,7 +303,7 @@ struct DayPlanPlannerStateTests {
                 actualDurationMinutes: 30
             ),
         ]
-        let visibleBlocks = DayPlanTimelineTasks.activityBlocks(
+        let visibleBlocks = DayPlanTimelineTasks.automaticSuggestionBlocks(
             on: activityDate,
             from: [task],
             logs: logs,
@@ -250,7 +317,7 @@ struct DayPlanPlannerStateTests {
         )
         let hiddenIDs = DayPlanHiddenTimelineActivityStore.hiddenIDs(from: hiddenStorage)
 
-        let hiddenBlocks = DayPlanTimelineTasks.activityBlocks(
+        let hiddenBlocks = DayPlanTimelineTasks.automaticSuggestionBlocks(
             on: activityDate,
             from: [task],
             logs: logs,

@@ -466,6 +466,8 @@ enum DayPlanEventBlocks {
 }
 
 enum DayPlanTimelineTasks {
+    private static let automaticSuggestionKinds: [RoutineLogKind] = [.completed]
+
     static func count(
         on date: Date,
         tasks: [RoutineTask],
@@ -547,13 +549,52 @@ enum DayPlanTimelineTasks {
         )[dayKey] ?? []
     }
 
-    static func activityBlocksByDayKey(
+    static func automaticSuggestionBlocks(
+        on date: Date,
+        from tasks: [RoutineTask],
+        logs: [RoutineLog],
+        plannedBlocks: [DayPlanBlock],
+        calendar: Calendar,
+        hiddenActivityIDs: Set<String> = []
+    ) -> [DayPlanTimelineActivityBlock] {
+        let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+        return automaticSuggestionBlocksByDayKey(
+            on: [date],
+            from: tasks,
+            logs: logs,
+            plannedBlocksByDayKey: [dayKey: plannedBlocks],
+            calendar: calendar,
+            hiddenActivityIDs: hiddenActivityIDs
+        )[dayKey] ?? []
+    }
+
+    static func automaticSuggestionBlocksByDayKey(
         on dates: [Date],
         from tasks: [RoutineTask],
         logs: [RoutineLog],
         plannedBlocksByDayKey: [String: [DayPlanBlock]],
         calendar: Calendar,
         hiddenActivityIDs: Set<String> = []
+    ) -> [String: [DayPlanTimelineActivityBlock]] {
+        activityBlocksByDayKey(
+            on: dates,
+            from: tasks,
+            logs: logs,
+            plannedBlocksByDayKey: plannedBlocksByDayKey,
+            calendar: calendar,
+            hiddenActivityIDs: hiddenActivityIDs,
+            includedKinds: automaticSuggestionKinds
+        )
+    }
+
+    static func activityBlocksByDayKey(
+        on dates: [Date],
+        from tasks: [RoutineTask],
+        logs: [RoutineLog],
+        plannedBlocksByDayKey: [String: [DayPlanBlock]],
+        calendar: Calendar,
+        hiddenActivityIDs: Set<String> = [],
+        includedKinds: [RoutineLogKind]? = nil
     ) -> [String: [DayPlanTimelineActivityBlock]] {
         let visibleDayKeys = Set(dates.map { DayPlanStorage.dayKey(for: $0, calendar: calendar) })
         guard !visibleDayKeys.isEmpty else { return [:] }
@@ -564,6 +605,9 @@ enum DayPlanTimelineTasks {
         var latestActivityByKey: [DayPlanTimelineActivityKey: DayPlanTimelineActivity] = [:]
 
         func record(_ activity: DayPlanTimelineActivity, taskID: UUID) {
+            if let includedKinds, !includedKinds.contains(activity.kind) {
+                return
+            }
             guard knownTaskIDs.contains(taskID) else { return }
             let dayKey = DayPlanStorage.dayKey(for: activity.timestamp, calendar: calendar)
             guard visibleDayKeys.contains(dayKey) else { return }
