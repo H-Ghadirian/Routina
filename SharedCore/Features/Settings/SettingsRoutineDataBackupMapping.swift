@@ -175,4 +175,19 @@ enum SettingsRoutineDataBackupMapping {
             updatedAt: note.updatedAt
         )
     }
+
+    static func event(_ event: RoutineEvent) -> Backup.Event {
+        Backup.Event(
+            id: event.id,
+            title: event.title,
+            notes: event.notes,
+            emoji: event.emoji,
+            tags: event.tags,
+            isAllDay: event.isAllDay,
+            startedAt: event.startedAt,
+            endedAt: event.endedAt,
+            createdAt: event.createdAt,
+            updatedAt: event.updatedAt
+        )
+    }
 }

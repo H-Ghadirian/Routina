@@ -73,7 +73,7 @@ struct StatsFeatureDerivedStateSupportTests {
     }
 
     @Test
-    func build_countsEmotionNoteAndGoalStats() {
+    func build_countsEmotionNoteEventAndGoalStats() {
         let calendar = makeTestCalendar()
         let referenceDate = makeDate("2026-05-09T10:00:00Z")
         let recentEmotion = EmotionLog(
@@ -117,6 +117,24 @@ struct StatsFeatureDerivedStateSupportTests {
             body: "Old note",
             createdAt: makeDate("2026-04-01T09:00:00Z")
         )
+        let recentEvent = RoutineEvent(
+            title: "Sick day",
+            isAllDay: true,
+            startedAt: makeDate("2026-05-08T00:00:00Z"),
+            endedAt: makeDate("2026-05-09T00:00:00Z")
+        )
+        let secondRecentEvent = RoutineEvent(
+            title: "Appointment",
+            isAllDay: false,
+            startedAt: makeDate("2026-05-06T15:00:00Z"),
+            endedAt: makeDate("2026-05-06T16:00:00Z")
+        )
+        let oldEvent = RoutineEvent(
+            title: "Old travel",
+            isAllDay: true,
+            startedAt: makeDate("2026-04-01T00:00:00Z"),
+            endedAt: makeDate("2026-04-02T00:00:00Z")
+        )
         let activeGoal = RoutineGoal(
             title: "Launch",
             status: .active,
@@ -134,6 +152,7 @@ struct StatsFeatureDerivedStateSupportTests {
             focusSessions: [],
             emotionLogs: [recentEmotion, secondRecentEmotion, oldEmotion],
             notes: [noteWithMedia, textNote, fileNote, oldNote],
+            events: [recentEvent, secondRecentEvent, oldEvent],
             noteAttachmentNoteIDs: [fileNote.id],
             goals: [activeGoal, archivedGoal],
             selectedRange: .week,
@@ -154,6 +173,8 @@ struct StatsFeatureDerivedStateSupportTests {
         #expect(state.metrics.averageEmotionIntensity == 4)
         #expect(state.metrics.noteCount == 3)
         #expect(state.metrics.noteWithMediaCount == 2)
+        #expect(state.metrics.eventCount == 2)
+        #expect(state.metrics.eventActiveDayCount == 2)
         #expect(state.metrics.activeGoalCount == 1)
         #expect(state.metrics.archivedGoalCount == 1)
         #expect(state.metrics.goalsCreatedCount == 1)

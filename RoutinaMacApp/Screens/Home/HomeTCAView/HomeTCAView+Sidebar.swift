@@ -206,6 +206,7 @@ extension HomeTCAView {
     }
 
     func openMacPlacesWorkspace(activity: PlaceCheckInActivity?) {
+        isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         placeCheckInMapActivity = activity
@@ -223,6 +224,7 @@ extension HomeTCAView {
         Binding(
             get: { store.macSidebarSelection },
             set: { selection in
+                isEventEditorPresented = false
                 isEmotionLogEditorPresented = false
                 isNoteEditorPresented = false
                 switch selection {
@@ -244,24 +246,28 @@ extension HomeTCAView {
     }
 
     func showRoutinesInSidebar() {
+        isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         store.send(.macSidebarModeChanged(.routines))
     }
 
     func openBoardInSidebar() {
+        isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         store.send(.macSidebarModeChanged(.board))
     }
 
     func openGoalsInSidebar() {
+        isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         store.send(.macSidebarModeChanged(.goals))
     }
 
     func openAddNote() {
+        isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         selectedNoteID = nil
         macHomeDetailMode = .details
@@ -276,6 +282,7 @@ extension HomeTCAView {
     }
 
     func openSavedNote(_ noteID: UUID) {
+        isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         selectedNoteID = noteID
@@ -285,6 +292,7 @@ extension HomeTCAView {
     }
 
     func openAddGoal() {
+        isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         store.send(.macSidebarModeChanged(.goals))
@@ -292,12 +300,14 @@ extension HomeTCAView {
     }
 
     func openStatsInSidebar() {
+        isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         store.send(.macSidebarModeChanged(.stats))
     }
 
     func openSettingsInSidebar() {
+        isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         store.send(.macSidebarModeChanged(.settings))
@@ -305,6 +315,7 @@ extension HomeTCAView {
     }
 
     func openSettingsPlacesInSidebar() {
+        isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         store.send(.selectedSettingsSectionChanged(.places))
@@ -313,6 +324,9 @@ extension HomeTCAView {
     }
 
     func focusMacSidebarOnDayPlanUnplannedCompletedTasks(on date: Date) {
+        isEventEditorPresented = false
+        isEmotionLogEditorPresented = false
+        isNoteEditorPresented = false
         dayPlanUnplannedCompletedFilterDate = calendar.startOfDay(for: date)
         macHomeDetailMode = .planner
         store.send(.macSidebarModeChanged(.routines))
@@ -333,6 +347,7 @@ extension HomeTCAView {
     }
 
     private func openMacTaskDetails(_ taskID: UUID) {
+        isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         selectedNoteID = nil
@@ -530,6 +545,7 @@ extension HomeTCAView {
         VStack(alignment: .leading, spacing: 12) {
             HomeMacSidebarModeStripView(
                 selectedMode: macSidebarModeBinding,
+                onAddEvent: openAddEvent,
                 onAddEmotion: openAddEmotion,
                 onAddNote: openAddNote,
                 onAddGoal: openAddGoal,
@@ -597,6 +613,7 @@ extension HomeTCAView {
             onSelectTaskListMode: { mode in
                 store.send(.taskListModeChanged(mode))
             },
+            onAddEvent: openAddEvent,
             onAddEmotion: openAddEmotion,
             onAddNote: openAddNote,
             onAddGoal: openAddGoal,
@@ -613,6 +630,7 @@ extension HomeTCAView {
     }
 
     func openAddEmotion() {
+        isEventEditorPresented = false
         isNoteEditorPresented = false
         selectedNoteID = nil
         macHomeDetailMode = .details
@@ -626,7 +644,46 @@ extension HomeTCAView {
         isEmotionLogEditorPresented = false
     }
 
+    func openAddEvent() {
+        isEventEditorPresented = false
+        isEmotionLogEditorPresented = false
+        isNoteEditorPresented = false
+        selectedNoteID = nil
+        macHomeDetailMode = .details
+        store.send(.setSelectedTask(nil))
+        store.send(.setAddRoutineSheet(false))
+        store.send(.macSidebarModeChanged(.routines))
+        isEventEditorPresented = true
+    }
+
+    func closeAddEvent() {
+        isEventEditorPresented = false
+    }
+
+    func openSavedEvent(_ eventID: UUID) {
+        isEventEditorPresented = false
+        isEmotionLogEditorPresented = false
+        isNoteEditorPresented = false
+        selectedNoteID = nil
+        macHomeDetailMode = .details
+        searchTextBinding.wrappedValue = ""
+        store.send(.setAddRoutineSheet(false))
+        store.send(.setSelectedTask(nil))
+        store.send(.setMacFilterDetailPresented(false))
+        store.send(.macSidebarModeChanged(.timeline))
+        store.send(.selectedTimelineRangeChanged(.all))
+        store.send(.selectedTimelineFilterTypeChanged(.events))
+        store.send(.selectedTimelineTagsChanged([]))
+        store.send(.selectedTimelineIncludeTagMatchModeChanged(.all))
+        store.send(.selectedTimelineExcludedTagsChanged([]))
+        store.send(.selectedTimelineExcludeTagMatchModeChanged(.any))
+        store.send(.selectedTimelineImportanceUrgencyFilterChanged(nil))
+        store.send(.selectedTimelineMediaFilterChanged(.all))
+        store.send(.macSidebarSelectionChanged(.timelineEntry(eventID)))
+    }
+
     func openSavedEmotion(_ emotionID: UUID) {
+        isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         selectedNoteID = nil
@@ -648,6 +705,7 @@ extension HomeTCAView {
     }
 
     func openCheckInFromAddMenu() {
+        isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         store.send(.setSelectedTask(nil))
@@ -656,6 +714,7 @@ extension HomeTCAView {
     }
 
     func startSleepFromAddMenu() {
+        isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         store.send(.setSelectedTask(nil))

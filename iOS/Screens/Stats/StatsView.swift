@@ -23,6 +23,7 @@ struct StatsView: View {
     @Query private var focusSessions: [FocusSession]
     @Query private var emotionLogs: [EmotionLog]
     @Query private var notes: [RoutineNote]
+    @Query private var events: [RoutineEvent]
     @Query private var noteAttachments: [RoutineNoteAttachment]
     @Query private var goals: [RoutineGoal]
     @State private var relatedFilterTagSuggestionAnchor: String?
@@ -253,10 +254,11 @@ statsRoot
         focusSessions: focusSessions,
         emotionLogs: emotionLogs,
         notes: notes,
+        events: events,
         noteAttachmentNoteIDs: Set(noteAttachments.map(\.noteID)),
         goals: goals,
         onAppear: { store.send(.onAppear) },
-        onDataChanged: { tasks, logs, focusSessions, emotionLogs, notes, noteAttachmentNoteIDs, goals in
+        onDataChanged: { tasks, logs, focusSessions, emotionLogs, notes, events, noteAttachmentNoteIDs, goals in
             store.send(
                 .setData(
                     tasks: tasks,
@@ -264,6 +266,7 @@ statsRoot
                     focusSessions: focusSessions,
                     emotionLogs: emotionLogs,
                     notes: notes,
+                    events: events,
                     noteAttachmentNoteIDs: noteAttachmentNoteIDs,
                     goals: goals
                 )
@@ -782,6 +785,7 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
     case focusTime
     case emotions
     case notes
+    case events
     case goals
     case focusAverage
     case bestDay
@@ -809,6 +813,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             self = .emotions
         case "stats.summary.notes":
             self = .notes
+        case "stats.summary.events":
+            self = .events
         case "stats.summary.goals":
             self = .goals
         case "stats.summary.focusAverage":
@@ -846,6 +852,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "Emotions"
         case .notes:
             return "Notes"
+        case .events:
+            return "Events"
         case .goals:
             return "Goals"
         case .focusAverage:
@@ -881,7 +889,7 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
         switch self {
         case .hero:
             return "The large stats summary at the top of the screen."
-        case .dailyAverage, .focusTime, .emotions, .notes, .goals, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
+        case .dailyAverage, .focusTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
             return "A compact stats card in the summary grid."
         case .completionChart:
             return "A bar chart of done, missed, and canceled activity over time."
@@ -906,6 +914,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "heart.fill"
         case .notes:
             return "note.text"
+        case .events:
+            return "calendar"
         case .goals:
             return "target"
         case .focusAverage:

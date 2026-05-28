@@ -1165,7 +1165,7 @@ struct SettingsFeatureTests {
             $0.cloud.cloudUsageEstimate = cloudEstimate
         }
 
-        let successMessage = "Loaded 1 routines, 0 goals, 0 places, 0 logs, 0 sleep sessions, 0 place check-ins, 0 emotions, 0 notes, and 0 attachments."
+        let successMessage = "Loaded 1 routines, 0 goals, 0 places, 0 logs, 0 sleep sessions, 0 place check-ins, 0 emotions, 0 notes, 0 events, and 0 attachments."
         await store.receive(.routineDataTransferFinished(success: true, message: successMessage)) {
             $0.dataTransfer.isDataTransferInProgress = false
             $0.dataTransfer.dataTransferStatusMessage = successMessage

@@ -160,7 +160,7 @@ enum SettingsRoutineDataTransferActionExecution {
                 await send(
                     .routineDataTransferFinished(
                         success: true,
-                        message: "Loaded \(result.importedSummary.tasks) routines, \(result.importedSummary.goals) goals, \(result.importedSummary.places) places, \(result.importedSummary.logs) logs, \(result.importedSummary.sleepSessions) sleep sessions, \(result.importedSummary.placeCheckInSessions) place check-ins, \(result.importedSummary.emotionLogs) emotions, \(result.importedSummary.notes) notes, and \(result.importedSummary.attachments) attachments."
+                        message: importSuccessMessage(for: result.importedSummary)
                     )
                 )
             } catch {
@@ -194,7 +194,7 @@ enum SettingsRoutineDataTransferActionExecution {
                 await send(
                     .routineDataTransferFinished(
                         success: true,
-                        message: "Loaded \(result.importedSummary.tasks) routines, \(result.importedSummary.goals) goals, \(result.importedSummary.places) places, \(result.importedSummary.logs) logs, \(result.importedSummary.sleepSessions) sleep sessions, \(result.importedSummary.placeCheckInSessions) place check-ins, \(result.importedSummary.emotionLogs) emotions, \(result.importedSummary.notes) notes, and \(result.importedSummary.attachments) attachments."
+                        message: importSuccessMessage(for: result.importedSummary)
                     )
                 )
             } catch {
@@ -206,5 +206,9 @@ enum SettingsRoutineDataTransferActionExecution {
                 )
             }
         }
+    }
+
+    private static func importSuccessMessage(for summary: SettingsRoutineDataPersistence.ImportSummary) -> String {
+        "Loaded \(summary.tasks) routines, \(summary.goals) goals, \(summary.places) places, \(summary.logs) logs, \(summary.sleepSessions) sleep sessions, \(summary.placeCheckInSessions) place check-ins, \(summary.emotionLogs) emotions, \(summary.notes) notes, \(summary.events) events, and \(summary.attachments) attachments."
     }
 }

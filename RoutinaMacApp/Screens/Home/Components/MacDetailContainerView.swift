@@ -23,6 +23,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     let selectedTaskID: UUID?
     let selectedTimelineEntry: TimelineEntry?
     let selectedTimelineEmotion: EmotionLog?
+    let selectedTimelineEvent: RoutineEvent?
     let selectedTimelineNote: RoutineNote?
     let selectedTimelineNoteAttachments: [RoutineNoteAttachment]
     let selectedTimelinePlaceCheckInSession: PlaceCheckInSession?
@@ -161,6 +162,8 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
             )
         } else if let selectedTimelineEmotion {
             EmotionLogDetailView(emotion: selectedTimelineEmotion)
+        } else if let selectedTimelineEvent {
+            RoutineEventDetailView(event: selectedTimelineEvent)
         } else if let selectedTimelineNote {
             RoutineNoteDetailView(
                 note: selectedTimelineNote,

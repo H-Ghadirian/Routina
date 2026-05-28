@@ -101,6 +101,7 @@ struct AppFeature {
             case .settings(.resetTemporaryViewStateTapped):
                 let timelineTasks = state.timeline.tasks
                 let timelineLogs = state.timeline.logs
+                let timelineEvents = state.timeline.events
                 let timelineNotes = state.timeline.notes
                 let timelineFileAttachmentTaskIDs = state.timeline.fileAttachmentTaskIDs
                 let timelineNoteAttachmentNoteIDs = state.timeline.noteAttachmentNoteIDs
@@ -109,6 +110,7 @@ struct AppFeature {
                 let statsFocusSessions = state.stats.focusSessions
                 let statsEmotionLogs = state.stats.emotionLogs
                 let statsNotes = state.stats.notes
+                let statsEvents = state.stats.events
                 let statsNoteAttachmentNoteIDs = state.stats.noteAttachmentNoteIDs
                 let statsGoals = state.stats.goals
                 resetTemporaryViewState(&state)
@@ -117,6 +119,7 @@ struct AppFeature {
                     .send(.timeline(.setData(
                         tasks: timelineTasks,
                         logs: timelineLogs,
+                        events: timelineEvents,
                         notes: timelineNotes,
                         fileAttachmentTaskIDs: timelineFileAttachmentTaskIDs,
                         noteAttachmentNoteIDs: timelineNoteAttachmentNoteIDs
@@ -127,6 +130,7 @@ struct AppFeature {
                         focusSessions: statsFocusSessions,
                         emotionLogs: statsEmotionLogs,
                         notes: statsNotes,
+                        events: statsEvents,
                         noteAttachmentNoteIDs: statsNoteAttachmentNoteIDs,
                         goals: statsGoals
                     )))
@@ -252,6 +256,7 @@ struct StatsFeature {
         var focusSessions: [FocusSession] = []
         var emotionLogs: [EmotionLog] = []
         var notes: [RoutineNote] = []
+        var events: [RoutineEvent] = []
         var noteAttachmentNoteIDs: Set<UUID> = []
         var goals: [RoutineGoal] = []
         var selectedRange: DoneChartRange = .week
@@ -310,6 +315,7 @@ struct StatsFeature {
             focusSessions: [FocusSession],
             emotionLogs: [EmotionLog] = [],
             notes: [RoutineNote] = [],
+            events: [RoutineEvent] = [],
             noteAttachmentNoteIDs: Set<UUID> = [],
             goals: [RoutineGoal] = []
         )
@@ -339,12 +345,13 @@ struct StatsFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case let .setData(tasks, logs, focusSessions, emotionLogs, notes, noteAttachmentNoteIDs, goals):
+            case let .setData(tasks, logs, focusSessions, emotionLogs, notes, events, noteAttachmentNoteIDs, goals):
                 state.tasks = tasks
                 state.logs = logs
                 state.focusSessions = focusSessions
                 state.emotionLogs = emotionLogs
                 state.notes = notes
+                state.events = events
                 state.noteAttachmentNoteIDs = noteAttachmentNoteIDs
                 state.goals = goals
                 state.relatedTagRules = RoutineTagRelations.sanitized(
@@ -531,6 +538,7 @@ struct StatsFeature {
             focusSessions: state.focusSessions,
             emotionLogs: state.emotionLogs,
             notes: state.notes,
+            events: state.events,
             noteAttachmentNoteIDs: state.noteAttachmentNoteIDs,
             goals: state.goals,
             selectedRange: state.selectedRange,

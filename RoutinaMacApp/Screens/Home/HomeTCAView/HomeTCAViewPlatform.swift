@@ -82,6 +82,11 @@ extension HomeTCAView {
                     onCancel: closeAddEmotion,
                     onSaved: openSavedEmotion
                 )
+            } else if isEventEditorPresented {
+                RoutineEventEditorView(
+                    onCancel: closeAddEvent,
+                    onSaved: openSavedEvent
+                )
             } else if isNoteEditorPresented {
                 RoutineNoteEditorView(
                     onCancel: closeAddNote,
@@ -106,6 +111,7 @@ extension HomeTCAView {
                     selectedTaskID: store.selectedTaskID,
                     selectedTimelineEntry: selectedMacTimelineEntry,
                     selectedTimelineEmotion: selectedMacTimelineEmotion,
+                    selectedTimelineEvent: selectedMacTimelineEvent,
                     selectedTimelineNote: selectedMacTimelineNote,
                     selectedTimelineNoteAttachments: selectedMacTimelineNoteAttachments,
                     selectedTimelinePlaceCheckInSession: selectedMacTimelinePlaceCheckInSession,

@@ -33,7 +33,8 @@ enum SettingsDataQueries {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
         let notes = try context.fetch(FetchDescriptor<RoutineNote>())
-        return RoutineTag.summaries(from: tasks, goals: goals, notes: notes)
+        let events = try context.fetch(FetchDescriptor<RoutineEvent>())
+        return RoutineTag.summaries(from: tasks, goals: goals, notes: notes, events: events)
     }
 
     @MainActor
@@ -41,7 +42,8 @@ enum SettingsDataQueries {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
         let notes = try context.fetch(FetchDescriptor<RoutineNote>())
-        return tasks.map(\.tags) + goals.map(\.tags) + notes.map(\.tags)
+        let events = try context.fetch(FetchDescriptor<RoutineEvent>())
+        return tasks.map(\.tags) + goals.map(\.tags) + notes.map(\.tags) + events.map(\.tags)
     }
 
     static func hasDuplicatePlaceName(

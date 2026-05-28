@@ -315,7 +315,7 @@ struct DayPlanPlannerStateTests {
             calendar: calendar
         )
 
-        #expect(blocks.map(\.taskID) == [taskID])
+        #expect(blocks.compactMap(\.taskID) == [taskID])
         #expect(blocks.first?.title == "Travel")
         #expect(blocks.first?.startDate == startDate)
         #expect(blocks.first?.endDate == endDate)
@@ -346,7 +346,7 @@ struct DayPlanPlannerStateTests {
             calendar: calendar
         )
 
-        #expect(blocks.map(\.taskID) == [taskID])
+        #expect(blocks.compactMap(\.taskID) == [taskID])
         #expect(blocks.first?.startDate == deadline)
         #expect(blocks.first?.endDate == expectedEnd)
         #expect(blocks.first?.isLegacyDateOnlyCalendarTask == true)
@@ -374,10 +374,79 @@ struct DayPlanPlannerStateTests {
             calendar: calendar
         )
 
-        #expect(blocks.map(\.taskID) == [taskID])
+        #expect(blocks.compactMap(\.taskID) == [taskID])
         #expect(blocks.first?.startDate == expectedStart)
         #expect(blocks.first?.endDate == expectedEnd)
         #expect(blocks.first?.isLegacyDateOnlyCalendarTask == false)
+    }
+
+    @Test
+    func allDayBlocksIncludeStandaloneEventsWithoutTaskIDs() throws {
+        let calendar = gregorianCalendar
+        let startDate = try #require(date("2026-05-11T00:00:00Z"))
+        let endDate = try #require(date("2026-05-13T00:00:00Z"))
+        let eventID = UUID()
+        let event = RoutineEvent(
+            id: eventID,
+            title: "Sick days",
+            emoji: "🤒",
+            isAllDay: true,
+            startedAt: startDate,
+            endedAt: endDate
+        )
+
+        let blocks = DayPlanAllDayTasks.blocks(
+            on: try plannerDates(),
+            from: [],
+            events: [event],
+            calendar: calendar
+        )
+
+        let block = try #require(blocks.first)
+        #expect(blocks.count == 1)
+        #expect(block.id == eventID)
+        #expect(block.taskID == nil)
+        #expect(block.eventID == eventID)
+        #expect(block.title == "Sick days")
+        #expect(block.emoji == "🤒")
+        #expect(block.startDate == startDate)
+        #expect(block.endDate == endDate)
+        #expect(block.isEvent)
+    }
+
+    @Test
+    func eventBlocksSplitTimedStandaloneEventsAcrossVisibleDays() throws {
+        let calendar = gregorianCalendar
+        let startedAt = try #require(date("2026-05-10T23:30:00Z"))
+        let endedAt = try #require(date("2026-05-11T01:15:00Z"))
+        let event = RoutineEvent(
+            title: "Late travel",
+            emoji: "🚆",
+            tags: ["Travel"],
+            isAllDay: false,
+            startedAt: startedAt,
+            endedAt: endedAt
+        )
+
+        let blocksByDayKey = DayPlanEventBlocks.blocksByDayKey(
+            on: try plannerDates(),
+            from: [event],
+            calendar: calendar
+        )
+
+        let firstKey = DayPlanStorage.dayKey(for: startedAt, calendar: calendar)
+        let secondKey = DayPlanStorage.dayKey(for: endedAt, calendar: calendar)
+        let firstBlock = try #require(blocksByDayKey[firstKey]?.first)
+        let secondBlock = try #require(blocksByDayKey[secondKey]?.first)
+
+        #expect(firstBlock.eventID == event.id)
+        #expect(firstBlock.block.taskID == event.id)
+        #expect(firstBlock.block.startMinute == 23 * 60 + 30)
+        #expect(firstBlock.block.durationMinutes == 30)
+        #expect(firstBlock.block.titleSnapshot == "Late travel")
+        #expect(secondBlock.eventID == event.id)
+        #expect(secondBlock.block.startMinute == 0)
+        #expect(secondBlock.block.durationMinutes == 75)
     }
 
     @Test

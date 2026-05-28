@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HomeMacSidebarModeStripView: View {
     @Binding var selectedMode: HomeFeature.MacSidebarMode
+    let onAddEvent: () -> Void
     let onAddEmotion: () -> Void
     let onAddNote: () -> Void
     let onAddGoal: () -> Void
@@ -46,6 +47,12 @@ struct HomeMacSidebarModeStripView: View {
     private var addMenu: some View {
         Menu {
             Button {
+                onAddEvent()
+            } label: {
+                Label("Event", systemImage: "calendar.badge.plus")
+            }
+
+            Button {
                 onAddEmotion()
             } label: {
                 Label("Emotion", systemImage: "face.smiling")
@@ -89,7 +96,7 @@ struct HomeMacSidebarModeStripView: View {
         .buttonStyle(.plain)
         .frame(maxWidth: .infinity)
         .accessibilityLabel("Add")
-        .help("Add emotion, note, goal, task, check in, or sleep")
+        .help("Add event, emotion, note, goal, task, check in, or sleep")
     }
 
     private func sidebarModeLabel(for mode: HomeFeature.MacSidebarMode) -> some View {

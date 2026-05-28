@@ -88,6 +88,39 @@ struct SwiftDataModelTests {
     }
 
     @Test
+    func routineEvent_sanitizesTextTagsAndCopiesDetached() {
+        let startedAt = Date(timeIntervalSince1970: 1_780_000_000)
+        let endedAt = startedAt.addingTimeInterval(2 * 60 * 60)
+        let event = RoutineEvent(
+            title: "  Sick day  ",
+            notes: "  Fever and rest  ",
+            emoji: " 🤒 ",
+            tags: [" Health ", "health", "Recovery"],
+            isAllDay: false,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            createdAt: startedAt,
+            updatedAt: endedAt
+        )
+
+        #expect(event.title == "Sick day")
+        #expect(event.notes == "Fever and rest")
+        #expect(event.emoji == "🤒")
+        #expect(event.displayTitle == "Sick day")
+        #expect(event.displayEmoji == "🤒")
+        #expect(event.tags == ["Health", "Recovery"])
+        #expect(event.endedAt == endedAt)
+
+        let copy = event.detachedCopy()
+        #expect(copy.id == event.id)
+        #expect(copy.title == event.title)
+        #expect(copy.tags == event.tags)
+        #expect(copy.isAllDay == false)
+        #expect(copy.startedAt == startedAt)
+        #expect(copy.endedAt == endedAt)
+    }
+
+    @Test
     func routineScheduleMode_composesScheduleBehaviorAndFormat() {
         #expect(RoutineScheduleMode.routineMode(behavior: .fixed, format: .standard) == .fixedInterval)
         #expect(RoutineScheduleMode.routineMode(behavior: .soft, format: .standard) == .softInterval)

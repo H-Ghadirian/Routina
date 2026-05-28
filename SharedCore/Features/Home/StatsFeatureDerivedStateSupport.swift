@@ -16,6 +16,8 @@ struct StatsFeatureMetrics: Equatable {
     var averageEmotionIntensity: Double = 0
     var noteCount: Int = 0
     var noteWithMediaCount: Int = 0
+    var eventCount: Int = 0
+    var eventActiveDayCount: Int = 0
     var activeGoalCount: Int = 0
     var archivedGoalCount: Int = 0
     var goalsCreatedCount: Int = 0
@@ -58,6 +60,7 @@ enum StatsFeatureDerivedStateBuilder {
         focusSessions: [FocusSession],
         emotionLogs: [EmotionLog] = [],
         notes: [RoutineNote] = [],
+        events: [RoutineEvent] = [],
         noteAttachmentNoteIDs: Set<UUID> = [],
         goals: [RoutineGoal] = [],
         selectedRange: DoneChartRange,
@@ -194,6 +197,14 @@ enum StatsFeatureDerivedStateBuilder {
                 calendar: calendar
             )
         }
+        let eventsInRange = events.filter { event in
+            dateIsInRange(
+                event.startedAt ?? event.createdAt,
+                selectedRange: selectedRange,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+        }
         let goalsCreatedInRange = goals.filter { goal in
             dateIsInRange(
                 goal.createdAt,
@@ -262,6 +273,11 @@ enum StatsFeatureDerivedStateBuilder {
         let noteWithMediaCount = notesInRange.filter {
             $0.hasImage || $0.hasVoiceNote || noteAttachmentNoteIDs.contains($0.id)
         }.count
+        let eventActiveDayCount = Set(
+            eventsInRange
+                .compactMap { $0.startedAt ?? $0.createdAt }
+                .map { calendar.startOfDay(for: $0) }
+        ).count
         let activeGoalCount = goals.filter { $0.status == .active }.count
         let archivedGoalCount = goals.filter { $0.status == .archived }.count
         let routineCount = filteredTasks.filter { !$0.isOneOffTask }.count
@@ -305,6 +321,8 @@ enum StatsFeatureDerivedStateBuilder {
                 averageEmotionIntensity: averageEmotionIntensity,
                 noteCount: notesInRange.count,
                 noteWithMediaCount: noteWithMediaCount,
+                eventCount: eventsInRange.count,
+                eventActiveDayCount: eventActiveDayCount,
                 activeGoalCount: activeGoalCount,
                 archivedGoalCount: archivedGoalCount,
                 goalsCreatedCount: goalsCreatedInRange.count,

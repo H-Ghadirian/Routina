@@ -65,6 +65,17 @@ enum StatsSummaryCardItemBuilder {
 
         items.append(
             StatsSummaryCardItem(
+                icon: "calendar",
+                accent: .teal,
+                title: "Events",
+                value: metrics.eventCount.formatted(),
+                caption: eventCaption(metrics: metrics),
+                accessibilityIdentifier: "stats.summary.events"
+            )
+        )
+
+        items.append(
+            StatsSummaryCardItem(
                 icon: "target",
                 accent: .indigo,
                 title: "Goals",
@@ -194,6 +205,14 @@ enum StatsSummaryCardItemBuilder {
         }
 
         return "\(metrics.noteWithMediaCount) with media"
+    }
+
+    private static func eventCaption(metrics: StatsFeatureMetrics) -> String {
+        guard metrics.eventCount > 0 else {
+            return "No events in range"
+        }
+
+        return "\(metrics.eventActiveDayCount) calendar \(metrics.eventActiveDayCount == 1 ? "day" : "days")"
     }
 
     private static func goalCaption(metrics: StatsFeatureMetrics) -> String {

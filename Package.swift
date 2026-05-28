@@ -431,6 +431,7 @@ let package = Package(
                 "SharedCore/Views/PlaceCheckInMapSheet.swift",
                 "SharedCore/Views/EmotionLogViews.swift",
                 "SharedCore/Views/RoutineNoteViews.swift",
+                "SharedCore/Views/RoutineEventViews.swift",
                 "SharedCore/Views/TaskRelationshipsEditor.swift",
                 "SharedCore/Views/TaskVoiceNoteViews.swift",
                 "SharedCore/Views/CalendarTaskSuggestionRowPresentation.swift",

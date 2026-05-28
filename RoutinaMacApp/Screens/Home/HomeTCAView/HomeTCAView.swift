@@ -67,6 +67,7 @@ struct HomeTCAView: View {
     @State private var localSearchText = ""
     @State var isCompactHeaderHidden = false
     @State var isQuickAddSheetPresented = false
+    @State var isEventEditorPresented = false
     @State var isEmotionLogEditorPresented = false
     @State var isNoteEditorPresented = false
     @State var selectedNoteID: UUID?
@@ -93,6 +94,7 @@ struct HomeTCAView: View {
     @Query(sort: \SleepSession.startedAt, order: .reverse) var sleepSessions: [SleepSession]
     @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) var placeCheckInSessions: [PlaceCheckInSession]
     @Query private var fileAttachments: [RoutineAttachment]
+    @Query(sort: \RoutineEvent.startedAt, order: .reverse) var events: [RoutineEvent]
     @Query(sort: \EmotionLog.createdAt, order: .reverse) var emotionLogs: [EmotionLog]
     @Query(sort: \RoutineNote.createdAt, order: .reverse) var notes: [RoutineNote]
     @Query var noteAttachments: [RoutineNoteAttachment]

@@ -12,6 +12,7 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
     case all = "All"
     case routines = "Routines"
     case todos = "Todos"
+    case events = "Events"
     case emotions = "Emotions"
     case notes = "Notes"
     case places = "Places"
@@ -24,6 +25,7 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
 
 enum TimelineEntryType: Equatable {
     case task
+    case event
     case emotion
     case note
     case sleep
@@ -116,6 +118,10 @@ struct TimelineEntry: Identifiable, Equatable {
         entryType == .emotion
     }
 
+    var isEvent: Bool {
+        entryType == .event
+    }
+
     var isNote: Bool {
         entryType == .note
     }
@@ -129,6 +135,7 @@ enum TimelineLogic {
     static func filteredEntries(
         logs: [RoutineLog],
         tasks: [RoutineTask],
+        events: [RoutineEvent] = [],
         emotionLogs: [EmotionLog] = [],
         notes: [RoutineNote] = [],
         sleepSessions: [SleepSession] = [],
@@ -174,6 +181,7 @@ enum TimelineLogic {
             case .all: break
             case .routines: if isOneOff { return nil }
             case .todos: if !isOneOff { return nil }
+            case .events: return nil
             case .emotions: return nil
             case .notes: return nil
             case .places: return nil
@@ -197,6 +205,32 @@ enum TimelineLogic {
                 urgency: task?.urgency ?? .level2,
                 isOneOff: isOneOff,
                 kind: log.kind
+            )
+        }
+
+        let eventEntries = events.compactMap { event -> TimelineEntry? in
+            guard filterType == .all || filterType == .events,
+                  mediaFilter == .all
+            else {
+                return nil
+            }
+
+            let timestamp = event.startedAt ?? event.createdAt ?? event.updatedAt ?? Date.distantPast
+            if let cutoff, timestamp < cutoff { return nil }
+
+            return TimelineEntry(
+                id: event.id,
+                taskID: nil,
+                timestamp: timestamp,
+                startTimestamp: event.startedAt,
+                endTimestamp: event.endedAt,
+                taskName: event.displayTitle,
+                taskEmoji: event.displayEmoji,
+                tags: event.tags,
+                isOneOff: false,
+                kind: .completed,
+                entryType: .event,
+                searchableText: searchableText(for: event)
             )
         }
 
@@ -321,7 +355,7 @@ enum TimelineLogic {
             )
         }
 
-        return logEntries + emotionEntries + noteEntries + sleepEntries + placeEntries
+        return logEntries + eventEntries + emotionEntries + noteEntries + sleepEntries + placeEntries
     }
 
     static func availableTags(from entries: [TimelineEntry]) -> [String] {
@@ -361,6 +395,17 @@ enum TimelineLogic {
             note.body,
         ]
         .compactMap(RoutineNote.cleanedText)
+        .joined(separator: "\n")
+    }
+
+    private static func searchableText(for event: RoutineEvent) -> String {
+        [
+            event.displayTitle,
+            event.title,
+            event.notes,
+            event.tags.joined(separator: " "),
+        ]
+        .compactMap(RoutineEvent.cleanedText)
         .joined(separator: "\n")
     }
 

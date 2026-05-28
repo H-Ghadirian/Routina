@@ -27,6 +27,7 @@ extension HomeTCAView {
         TimelineLogic.filteredEntries(
             logs: store.timelineLogs,
             tasks: store.routineTasks,
+            events: events,
             emotionLogs: emotionLogs,
             notes: notes,
             sleepSessions: sleepSessions,
@@ -101,6 +102,13 @@ extension HomeTCAView {
         return emotionLogs.first { $0.id == selectedMacTimelineEntry.id }
     }
 
+    var selectedMacTimelineEvent: RoutineEvent? {
+        guard let selectedMacTimelineEntry, selectedMacTimelineEntry.isEvent else {
+            return nil
+        }
+        return events.first { $0.id == selectedMacTimelineEntry.id }
+    }
+
     var selectedMacTimelineNoteAttachments: [RoutineNoteAttachment] {
         guard let selectedMacTimelineNote else { return [] }
         return noteAttachments
@@ -116,6 +124,7 @@ extension HomeTCAView {
     }
 
     private func openTimelineEntry(_ entry: TimelineEntry) {
+        isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         selectedNoteID = entry.isNote ? entry.id : nil
@@ -124,6 +133,7 @@ extension HomeTCAView {
     }
 
     func openTimelineInSidebar() {
+        isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         store.send(.macSidebarModeChanged(.timeline))
@@ -282,7 +292,7 @@ extension HomeTCAView {
                     get: { store.selectedTimelineMediaFilter },
                     set: { store.send(.selectedTimelineMediaFilterChanged($0)) }
                 ),
-                showsTypeSection: store.routineTasks.contains(where: \.isOneOffTask) || !notes.isEmpty || !sleepSessions.isEmpty || !placeCheckInSessions.isEmpty,
+                showsTypeSection: store.routineTasks.contains(where: \.isOneOffTask) || !events.isEmpty || !notes.isEmpty || !sleepSessions.isEmpty || !placeCheckInSessions.isEmpty,
                 importanceUrgencySummary: timelineImportanceUrgencySummary,
                 allTagsCount: filteredTimelineEntriesForTagging.count,
                 availableTags: availableTimelineTags,
@@ -331,7 +341,7 @@ extension HomeTCAView {
 
     var macTimelineSidebarView: some View {
         HomeMacTimelineSidebarView(
-            timelineEntryCount: store.timelineLogs.count + emotionLogs.count + notes.count + sleepSessions.count + placeCheckInSessions.count,
+            timelineEntryCount: store.timelineLogs.count + events.count + emotionLogs.count + notes.count + sleepSessions.count + placeCheckInSessions.count,
             groupedEntries: groupedTimelineEntries,
             selection: macSidebarSelectionBinding,
             sectionTitle: { date in
@@ -348,6 +358,9 @@ extension HomeTCAView {
         }
         if entry.isEmotion {
             return "Emotion"
+        }
+        if entry.isEvent {
+            return "Event"
         }
         if entry.isNote {
             return "Note"
@@ -372,6 +385,9 @@ extension HomeTCAView {
         }
         if entry.isEmotion {
             return .pink
+        }
+        if entry.isEvent {
+            return .teal
         }
         if entry.isNote {
             return .blue
@@ -418,6 +434,22 @@ extension HomeTCAView {
                 entry.timestamp.formatted(date: .omitted, time: .shortened),
                 entry.activityTitle,
             ].compactMap(\.self).joined(separator: " · ")
+        }
+
+        if entry.isEvent {
+            let startedAt = entry.startTimestamp ?? entry.timestamp
+            guard let endedAt = entry.endTimestamp, endedAt > startedAt else {
+                return startedAt.formatted(date: .omitted, time: .shortened)
+            }
+            if calendar.isDate(startedAt, inSameDayAs: endedAt) {
+                return "\(startedAt.formatted(date: .omitted, time: .shortened)) - \(endedAt.formatted(date: .omitted, time: .shortened))"
+            }
+            return RoutineEventDateFormatting.text(
+                startedAt: startedAt,
+                endedAt: endedAt,
+                isAllDay: calendar.startOfDay(for: startedAt) == startedAt,
+                calendar: calendar
+            )
         }
 
         if entry.isNote {

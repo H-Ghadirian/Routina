@@ -25,7 +25,8 @@ enum SettingsTagExecution {
                             updatedTagName: request.cleanedName,
                             updatedRoutineCount: result.updatedRoutineCount,
                             updatedGoalCount: result.updatedGoalCount,
-                            updatedNoteCount: result.updatedNoteCount
+                            updatedNoteCount: result.updatedNoteCount,
+                            updatedEventCount: result.updatedEventCount
                         )
                     )
                 )
@@ -59,7 +60,8 @@ enum SettingsTagExecution {
                             deletedTagName: request.tagName,
                             updatedRoutineCount: result.updatedRoutineCount,
                             updatedGoalCount: result.updatedGoalCount,
-                            updatedNoteCount: result.updatedNoteCount
+                            updatedNoteCount: result.updatedNoteCount,
+                            updatedEventCount: result.updatedEventCount
                         )
                     )
                 )

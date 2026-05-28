@@ -532,6 +532,77 @@ struct TimelineLogicTests {
     }
 
     @Test
+    func filteredEntries_includesStandaloneEventsAndSupportsEventFilter() {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let task = makeRoutineTask(name: "Read")
+        let log = makeLog(taskID: task.id, timestamp: makeDate("2026-03-20T08:00:00Z"))
+        let event = RoutineEvent(
+            title: "Sick day",
+            notes: "Stayed home with fever",
+            emoji: "🤒",
+            tags: ["Health"],
+            isAllDay: true,
+            startedAt: makeDate("2026-03-20T00:00:00Z"),
+            endedAt: makeDate("2026-03-21T00:00:00Z"),
+            createdAt: makeDate("2026-03-20T09:30:00Z"),
+            updatedAt: makeDate("2026-03-20T09:30:00Z")
+        )
+
+        let allEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            events: [event],
+            range: .all,
+            filterType: .all,
+            now: now,
+            calendar: calendar
+        )
+        let eventEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            events: [event],
+            range: .all,
+            filterType: .events,
+            now: now,
+            calendar: calendar
+        )
+        let doneEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            events: [event],
+            range: .all,
+            filterType: .done,
+            now: now,
+            calendar: calendar
+        )
+        let imageEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            events: [event],
+            range: .all,
+            filterType: .all,
+            mediaFilter: .withImage,
+            now: now,
+            calendar: calendar
+        )
+
+        let eventEntry = allEntries.first { $0.id == event.id }
+        #expect(allEntries.count == 2)
+        #expect(eventEntry?.isEvent == true)
+        #expect(eventEntry?.taskID == nil)
+        #expect(eventEntry?.taskName == "Sick day")
+        #expect(eventEntry?.taskEmoji == "🤒")
+        #expect(eventEntry?.tags == ["Health"])
+        #expect(eventEntry?.startTimestamp == makeDate("2026-03-20T00:00:00Z"))
+        #expect(eventEntry?.endTimestamp == makeDate("2026-03-21T00:00:00Z"))
+        #expect(eventEntry?.searchableText.localizedCaseInsensitiveContains("fever") == true)
+        #expect(eventEntries.map(\.id) == [event.id])
+        #expect(doneEntries.map(\.id) == [log.id])
+        #expect(imageEntries.isEmpty)
+    }
+
+    @Test
     func filteredEntries_includesEmotionLogsAndSupportsEmotionFilter() {
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-20T10:00:00Z")

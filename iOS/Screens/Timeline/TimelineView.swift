@@ -11,6 +11,7 @@ struct TimelineView: View {
     @Query(sort: \RoutineLog.timestamp, order: .reverse) private var logs: [RoutineLog]
     @Query private var tasks: [RoutineTask]
     @Query private var fileAttachments: [RoutineAttachment]
+    @Query(sort: \RoutineEvent.startedAt, order: .reverse) private var events: [RoutineEvent]
     @Query(sort: \EmotionLog.createdAt, order: .reverse) private var emotionLogs: [EmotionLog]
     @Query(sort: \RoutineNote.createdAt, order: .reverse) private var notes: [RoutineNote]
     @Query private var noteAttachments: [RoutineNoteAttachment]
@@ -54,6 +55,9 @@ timelineRoot
     syncTimelineData()
 }
 .onChange(of: fileAttachmentChangeToken) { _, _ in
+    syncTimelineData()
+}
+.onChange(of: eventChangeToken) { _, _ in
     syncTimelineData()
 }
 .onChange(of: emotionLogChangeToken) { _, _ in
@@ -131,6 +135,22 @@ timelineRoot
         Set(noteAttachments.map(\.noteID))
     }
 
+    private var eventChangeToken: [String] {
+        events.map { event in
+            [
+                event.id.uuidString,
+                event.title ?? "",
+                event.notes ?? "",
+                event.emoji ?? "",
+                event.tagsStorage,
+                event.isAllDay.description,
+                event.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                event.endedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                event.updatedAt?.timeIntervalSinceReferenceDate.description ?? "",
+            ].joined(separator: ":")
+        }
+    }
+
     private var emotionLogChangeToken: [String] {
         emotionLogs.map { emotion in
             [
@@ -173,6 +193,7 @@ timelineRoot
         store.send(.setData(
             tasks: tasks,
             logs: logs,
+            events: events,
             emotionLogs: emotionLogs,
             notes: notes,
             sleepSessions: sleepSessions,
@@ -532,6 +553,8 @@ timelineRoot
             timelineDetailDestination(taskID: taskID)
         } else if let selectedTimelineEntry, selectedTimelineEntry.isEmotion, let emotion = emotionLog(for: selectedTimelineEntry) {
             EmotionLogDetailView(emotion: emotion)
+        } else if let selectedTimelineEntry, selectedTimelineEntry.isEvent, let event = event(for: selectedTimelineEntry) {
+            RoutineEventDetailView(event: event)
         } else if let selectedTimelineEntry, selectedTimelineEntry.isNote, let note = note(for: selectedTimelineEntry) {
             RoutineNoteDetailView(note: note, attachments: noteAttachments(for: note))
         } else if let selectedTimelineEntry,
@@ -589,7 +612,7 @@ timelineRoot
                     .pickerStyle(.inline)
                 }
 
-                if tasks.contains(where: { $0.isOneOffTask }) || !notes.isEmpty || !sleepSessions.isEmpty || !placeCheckInSessions.isEmpty {
+                if tasks.contains(where: { $0.isOneOffTask }) || !events.isEmpty || !notes.isEmpty || !sleepSessions.isEmpty || !placeCheckInSessions.isEmpty {
                     Section("Type") {
                         Picker("Type", selection: filterTypeBinding) {
                             ForEach(TimelineFilterType.allCases) { type in
@@ -678,6 +701,12 @@ timelineRoot
             } label: {
                 timelineRowContent(entry)
             }
+        } else if entry.isEvent, let event = event(for: entry) {
+            NavigationLink {
+                RoutineEventDetailView(event: event)
+            } label: {
+                timelineRowContent(entry)
+            }
         } else if entry.isNote, let note = note(for: entry) {
             NavigationLink {
                 RoutineNoteDetailView(note: note, attachments: noteAttachments(for: note))
@@ -731,6 +760,9 @@ timelineRoot
         if entry.isEmotion {
             return "Emotion"
         }
+        if entry.isEvent {
+            return "Event"
+        }
         if entry.isNote {
             return "Note"
         }
@@ -754,6 +786,9 @@ timelineRoot
         }
         if entry.isEmotion {
             return .pink
+        }
+        if entry.isEvent {
+            return .teal
         }
         if entry.isNote {
             return .blue
@@ -802,6 +837,22 @@ timelineRoot
             ].compactMap(\.self).joined(separator: " · ")
         }
 
+        if entry.isEvent {
+            let startedAt = entry.startTimestamp ?? entry.timestamp
+            guard let endedAt = entry.endTimestamp, endedAt > startedAt else {
+                return startedAt.formatted(date: .omitted, time: .shortened)
+            }
+            if calendar.isDate(startedAt, inSameDayAs: endedAt) {
+                return "\(startedAt.formatted(date: .omitted, time: .shortened)) - \(endedAt.formatted(date: .omitted, time: .shortened))"
+            }
+            return RoutineEventDateFormatting.text(
+                startedAt: startedAt,
+                endedAt: endedAt,
+                isAllDay: calendar.startOfDay(for: startedAt) == startedAt,
+                calendar: calendar
+            )
+        }
+
         if entry.isNote {
             let mediaSummary = RoutineNoteMediaSummary.text(
                 hasImage: entry.hasImage,
@@ -819,6 +870,10 @@ timelineRoot
 
     private func note(for entry: TimelineEntry) -> RoutineNote? {
         notes.first { $0.id == entry.id }
+    }
+
+    private func event(for entry: TimelineEntry) -> RoutineEvent? {
+        events.first { $0.id == entry.id }
     }
 
     private func emotionLog(for entry: TimelineEntry) -> EmotionLog? {

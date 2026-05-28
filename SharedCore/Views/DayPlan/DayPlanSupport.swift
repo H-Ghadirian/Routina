@@ -149,23 +149,32 @@ struct DayPlanSleepBlock: Identifiable, Equatable {
     }
 }
 
+struct DayPlanEventBlock: Identifiable, Equatable {
+    var eventID: UUID
+    var block: DayPlanBlock
+
+    var id: String {
+        "event-\(eventID.uuidString)-\(block.dayKey)"
+    }
+}
+
 struct DayPlanAllDayBlock: Identifiable, Equatable {
-    var taskID: UUID
+    var id: UUID
+    var taskID: UUID?
+    var eventID: UUID?
     var title: String
     var emoji: String?
     var startDate: Date
     var endDate: Date
     var isLegacyDateOnlyCalendarTask: Bool
-
-    var id: UUID {
-        taskID
-    }
+    var isEvent: Bool
 }
 
 enum DayPlanAllDayTasks {
     static func blocks(
         on dates: [Date],
         from tasks: [RoutineTask],
+        events: [RoutineEvent] = [],
         calendar: Calendar
     ) -> [DayPlanAllDayBlock] {
         guard let firstDate = dates.first,
@@ -179,7 +188,7 @@ enum DayPlanAllDayTasks {
 
         let visibleStart = calendar.startOfDay(for: firstDate)
 
-        return tasks.compactMap { task -> DayPlanAllDayBlock? in
+        let taskBlocks = tasks.compactMap { task -> DayPlanAllDayBlock? in
             guard !task.isCanceledOneOff,
                   !task.isArchived(referenceDate: visibleStart, calendar: calendar),
                   let span = allDaySpan(for: task, calendar: calendar),
@@ -189,14 +198,46 @@ enum DayPlanAllDayTasks {
             }
 
             return DayPlanAllDayBlock(
+                id: task.id,
                 taskID: task.id,
+                eventID: nil,
                 title: DayPlanTaskSorting.title(for: task),
                 emoji: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
                 startDate: span.startDate,
                 endDate: span.endDate,
-                isLegacyDateOnlyCalendarTask: span.isLegacyDateOnlyCalendarTask
+                isLegacyDateOnlyCalendarTask: span.isLegacyDateOnlyCalendarTask,
+                isEvent: false
             )
         }
+
+        let eventBlocks = events.compactMap { event -> DayPlanAllDayBlock? in
+            guard event.isAllDay,
+                  let startedAt = event.startedAt else {
+                return nil
+            }
+
+            let startDate = calendar.startOfDay(for: startedAt)
+            let endDate = normalizedEndDate(
+                startDate: startedAt,
+                endDate: event.endedAt ?? startedAt,
+                calendar: calendar
+            )
+            guard endDate > visibleStart, startDate < visibleEnd else { return nil }
+
+            return DayPlanAllDayBlock(
+                id: event.id,
+                taskID: nil,
+                eventID: event.id,
+                title: event.displayTitle,
+                emoji: event.displayEmoji,
+                startDate: startDate,
+                endDate: endDate,
+                isLegacyDateOnlyCalendarTask: false,
+                isEvent: true
+            )
+        }
+
+        return (taskBlocks + eventBlocks)
         .sorted { lhs, rhs in
             if lhs.startDate != rhs.startDate {
                 return lhs.startDate < rhs.startDate
@@ -275,6 +316,79 @@ enum DayPlanAllDayTasks {
             || (components.minute ?? 0) != 0
             || (components.second ?? 0) != 0
             || (components.nanosecond ?? 0) != 0
+    }
+}
+
+enum DayPlanEventBlocks {
+    static func blocksByDayKey(
+        on dates: [Date],
+        from events: [RoutineEvent],
+        calendar: Calendar
+    ) -> [String: [DayPlanEventBlock]] {
+        let visibleDates = dates.map { calendar.startOfDay(for: $0) }
+        guard !visibleDates.isEmpty else { return [:] }
+
+        let blocks = events.flatMap { event in
+            blocksForEvent(event, on: visibleDates, calendar: calendar)
+        }
+
+        return Dictionary(grouping: blocks, by: \.block.dayKey)
+            .mapValues {
+                $0.sorted { lhs, rhs in
+                    if lhs.block.startMinute != rhs.block.startMinute {
+                        return lhs.block.startMinute < rhs.block.startMinute
+                    }
+                    return lhs.block.titleSnapshot.localizedCaseInsensitiveCompare(rhs.block.titleSnapshot) == .orderedAscending
+                }
+            }
+    }
+
+    private static func blocksForEvent(
+        _ event: RoutineEvent,
+        on visibleDates: [Date],
+        calendar: Calendar
+    ) -> [DayPlanEventBlock] {
+        guard !event.isAllDay,
+              let startedAt = event.startedAt else {
+            return []
+        }
+
+        let endedAt = event.endedAt ?? startedAt.addingTimeInterval(60 * 60)
+        guard endedAt > startedAt else { return [] }
+
+        return visibleDates.compactMap { visibleDate -> DayPlanEventBlock? in
+            let dayStart = calendar.startOfDay(for: visibleDate)
+            guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else {
+                return nil
+            }
+
+            let intervalStart = max(startedAt, dayStart)
+            let intervalEnd = min(endedAt, dayEnd)
+            guard intervalEnd > intervalStart else { return nil }
+
+            let dayKey = DayPlanStorage.dayKey(for: dayStart, calendar: calendar)
+            let startMinute = Self.startMinute(for: intervalStart, calendar: calendar)
+            let rawDuration = max(1, Int(ceil(intervalEnd.timeIntervalSince(intervalStart) / 60)))
+            let durationMinutes = DayPlanBlock.clampedDuration(rawDuration, startMinute: startMinute)
+            let block = DayPlanBlock(
+                id: event.id,
+                taskID: event.id,
+                dayKey: dayKey,
+                startMinute: startMinute,
+                durationMinutes: durationMinutes,
+                titleSnapshot: event.displayTitle,
+                emojiSnapshot: event.displayEmoji,
+                createdAt: startedAt,
+                updatedAt: endedAt
+            )
+            return DayPlanEventBlock(eventID: event.id, block: block)
+        }
+    }
+
+    private static func startMinute(for timestamp: Date, calendar: Calendar) -> Int {
+        let components = calendar.dateComponents([.hour, .minute], from: timestamp)
+        let minute = ((components.hour ?? 0) * 60) + (components.minute ?? 0)
+        return DayPlanBlock.clampedStartMinute(minute)
     }
 }
 

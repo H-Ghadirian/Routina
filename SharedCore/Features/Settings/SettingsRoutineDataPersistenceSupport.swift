@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 enum SettingsRoutineDataPersistence {
-    static let currentSchemaVersion = 27
+    static let currentSchemaVersion = 28
     static let legacyJSONSchemaVersion = 14
     static let backupPackageExtension = "routinabackup"
     static let legacyJSONBackupExtension = "json"
@@ -46,6 +46,7 @@ enum SettingsRoutineDataPersistence {
             placeCheckInSessions: nil,
             emotionLogs: nil,
             notes: nil,
+            events: nil,
             attachments: nil
         )
 

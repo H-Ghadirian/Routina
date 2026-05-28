@@ -9,6 +9,7 @@ struct HomeIOSHomeToolbarContent: ToolbarContent {
     let onSelectTaskListMode: (HomeFeature.TaskListMode) -> Void
     let onToggleTaskListModeActions: () -> Void
     let onShowFilters: () -> Void
+    let onAddEvent: () -> Void
     let onAddEmotion: () -> Void
     let onAddNote: () -> Void
     let onCheckIn: () -> Void
@@ -52,6 +53,14 @@ struct HomeIOSHomeToolbarContent: ToolbarContent {
                         action: onStartSleep
                     )
                 }
+
+                topActionButton(
+                    title: "Add Event",
+                    systemImage: "calendar.badge.plus",
+                    tint: .teal,
+                    isHighlighted: false,
+                    action: onAddEvent
+                )
 
                 topActionButton(
                     title: "Add Note",

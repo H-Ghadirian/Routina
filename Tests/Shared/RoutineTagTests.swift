@@ -126,6 +126,23 @@ struct RoutineTagTests {
     }
 
     @Test
+    func summaries_includeEventUsageWhenProvided() {
+        let task = RoutineTask(name: "Read", tags: ["Focus"], scheduleMode: .fixedInterval)
+        let goal = RoutineGoal(title: "Publish", tags: ["Launch"])
+        let note = RoutineNote(title: "Idea", tags: ["Idea"])
+        let event = RoutineEvent(title: "Sick day", tags: ["Focus", "Health"])
+
+        let summaries = RoutineTag.summaries(from: [task], goals: [goal], notes: [note], events: [event])
+
+        #expect(summaries == [
+            RoutineTagSummary(name: "Focus", linkedRoutineCount: 1, linkedEventCount: 1),
+            RoutineTagSummary(name: "Health", linkedRoutineCount: 0, linkedEventCount: 1),
+            RoutineTagSummary(name: "Idea", linkedRoutineCount: 0, linkedNoteCount: 1),
+            RoutineTagSummary(name: "Launch", linkedRoutineCount: 0, linkedGoalCount: 1)
+        ])
+    }
+
+    @Test
     func relatedTags_prioritizesManualRulesAndSkipsSelectedTags() {
         let rules = [
             RoutineRelatedTagRule(tag: "Workout", relatedTags: ["Health", "Energy", "workout"]),

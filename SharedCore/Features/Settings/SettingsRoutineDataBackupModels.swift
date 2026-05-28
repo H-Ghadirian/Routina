@@ -12,6 +12,7 @@ extension SettingsRoutineDataPersistence {
         var placeCheckInSessions: [PlaceCheckIn]?
         var emotionLogs: [Emotion]?
         var notes: [Note]?
+        var events: [Event]?
         var attachments: [Attachment]?
 
         struct Place: Codable {
@@ -154,6 +155,19 @@ extension SettingsRoutineDataPersistence {
             var updatedAt: Date?
         }
 
+        struct Event: Codable {
+            var id: UUID
+            var title: String?
+            var notes: String?
+            var emoji: String?
+            var tags: [String]?
+            var isAllDay: Bool?
+            var startedAt: Date?
+            var endedAt: Date?
+            var createdAt: Date?
+            var updatedAt: Date?
+        }
+
         struct Attachment: Codable {
             enum Role: String, Codable {
                 case taskImage
@@ -185,6 +199,7 @@ extension SettingsRoutineDataPersistence {
         var placeCheckInSessions: Int = 0
         var emotionLogs: Int = 0
         var notes: Int = 0
+        var events: Int = 0
         var attachments: Int
     }
 

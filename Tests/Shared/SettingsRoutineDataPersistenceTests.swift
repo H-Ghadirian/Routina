@@ -189,6 +189,54 @@ struct SettingsRoutineDataPersistenceTests {
     }
 
     @Test
+    func backupPackageAndRestore_preservesStandaloneEvents() async throws {
+        let context = makeInMemoryContext()
+        let startedAt = Date(timeIntervalSince1970: 1_780_000_000)
+        let endedAt = Date(timeIntervalSince1970: 1_780_086_400)
+        let createdAt = Date(timeIntervalSince1970: 1_779_990_000)
+        let updatedAt = Date(timeIntervalSince1970: 1_779_995_000)
+        let event = RoutineEvent(
+            title: "Sick day",
+            notes: "Fever and rest",
+            emoji: "🤒",
+            tags: ["Health", "Recovery"],
+            isAllDay: true,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt
+        )
+        context.insert(event)
+        try context.save()
+
+        let packageURL = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension(SettingsRoutineDataPersistence.backupPackageExtension)
+        defer { try? FileManager.default.removeItem(at: packageURL) }
+
+        try SettingsRoutineDataPersistence.writeBackupPackage(to: packageURL, from: context)
+
+        let restoreContext = makeInMemoryContext()
+        let summary = try SettingsRoutineDataPersistence.replaceAllRoutineData(
+            withBackupPackageAt: packageURL,
+            in: restoreContext
+        )
+
+        #expect(summary.events == 1)
+        let restoredEvent = try #require(restoreContext.fetch(FetchDescriptor<RoutineEvent>()).first)
+        #expect(restoredEvent.id == event.id)
+        #expect(restoredEvent.title == "Sick day")
+        #expect(restoredEvent.notes == "Fever and rest")
+        #expect(restoredEvent.emoji == "🤒")
+        #expect(restoredEvent.tags == ["Health", "Recovery"])
+        #expect(restoredEvent.isAllDay)
+        #expect(restoredEvent.startedAt == startedAt)
+        #expect(restoredEvent.endedAt == endedAt)
+        #expect(restoredEvent.createdAt == createdAt)
+        #expect(restoredEvent.updatedAt == updatedAt)
+    }
+
+    @Test
     func backupPackageAndRestore_preservesEmotionLogsAndLinks() async throws {
         let context = makeInMemoryContext()
         let task = RoutineTask(name: "Appointment")

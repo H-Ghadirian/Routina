@@ -14,6 +14,7 @@ struct TimelineFeature {
     struct State: Equatable {
         var tasks: [RoutineTask] = []
         var logs: [RoutineLog] = []
+        var events: [RoutineEvent] = []
         var emotionLogs: [EmotionLog] = []
         var notes: [RoutineNote] = []
         var fileAttachmentTaskIDs: Set<UUID> = []
@@ -64,6 +65,7 @@ struct TimelineFeature {
         case setData(
             tasks: [RoutineTask],
             logs: [RoutineLog],
+            events: [RoutineEvent] = [],
             emotionLogs: [EmotionLog] = [],
             notes: [RoutineNote] = [],
             sleepSessions: [SleepSession] = [],
@@ -93,9 +95,10 @@ struct TimelineFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case let .setData(tasks, logs, emotionLogs, notes, sleepSessions, placeCheckInSessions, fileAttachmentTaskIDs, noteAttachmentNoteIDs):
+            case let .setData(tasks, logs, events, emotionLogs, notes, sleepSessions, placeCheckInSessions, fileAttachmentTaskIDs, noteAttachmentNoteIDs):
                 state.tasks = tasks
                 state.logs = logs
+                state.events = events
                 state.emotionLogs = emotionLogs
                 state.notes = notes
                 state.sleepSessions = sleepSessions
@@ -197,6 +200,7 @@ struct TimelineFeature {
         let baseEntries = TimelineLogic.filteredEntries(
             logs: state.logs,
             tasks: state.tasks,
+            events: state.events,
             emotionLogs: state.emotionLogs,
             notes: state.notes,
             sleepSessions: state.sleepSessions,

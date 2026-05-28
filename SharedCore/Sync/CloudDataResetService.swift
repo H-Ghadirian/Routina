@@ -50,6 +50,11 @@ enum CloudDataResetService {
             context.delete(note)
         }
 
+        let events = try context.fetch(FetchDescriptor<RoutineEvent>())
+        for event in events {
+            context.delete(event)
+        }
+
         let noteAttachments = try context.fetch(FetchDescriptor<RoutineNoteAttachment>())
         for attachment in noteAttachments {
             context.delete(attachment)

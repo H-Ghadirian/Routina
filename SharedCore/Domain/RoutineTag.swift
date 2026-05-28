@@ -7,6 +7,7 @@ struct RoutineTagSummary: Equatable, Identifiable, Sendable {
     var linkedTodoCount: Int = 0
     var linkedGoalCount: Int = 0
     var linkedNoteCount: Int = 0
+    var linkedEventCount: Int = 0
     var colorHex: String?
 
     var id: String {
@@ -248,17 +249,18 @@ enum RoutineTag {
     }
 
     static func summaries(from tasks: [RoutineTask]) -> [RoutineTagSummary] {
-        summaries(from: tasks, goals: [], notes: [])
+        summaries(from: tasks, goals: [], notes: [], events: [])
     }
 
     static func summaries(from tasks: [RoutineTask], goals: [RoutineGoal]) -> [RoutineTagSummary] {
-        summaries(from: tasks, goals: goals, notes: [])
+        summaries(from: tasks, goals: goals, notes: [], events: [])
     }
 
     static func summaries(
         from tasks: [RoutineTask],
         goals: [RoutineGoal],
-        notes: [RoutineNote]
+        notes: [RoutineNote],
+        events: [RoutineEvent] = []
     ) -> [RoutineTagSummary] {
         let tagCounts = tasks.reduce(into: [String: Int]()) { partialResult, task in
             for tag in task.tags {
@@ -289,14 +291,22 @@ enum RoutineTag {
             }
         }
 
-        return allTags(from: tasks.map(\.tags) + goals.map(\.tags) + notes.map(\.tags)).map { tag in
+        let eventTagCounts = events.reduce(into: [String: Int]()) { partialResult, event in
+            for tag in event.tags {
+                guard let normalizedTag = normalized(tag) else { continue }
+                partialResult[normalizedTag, default: 0] += 1
+            }
+        }
+
+        return allTags(from: tasks.map(\.tags) + goals.map(\.tags) + notes.map(\.tags) + events.map(\.tags)).map { tag in
             let key = normalized(tag) ?? tag
             return RoutineTagSummary(
                 name: tag,
                 linkedRoutineCount: tagCounts[key, default: 0],
                 linkedTodoCount: todoTagCounts[key, default: 0],
                 linkedGoalCount: goalTagCounts[key, default: 0],
-                linkedNoteCount: noteTagCounts[key, default: 0]
+                linkedNoteCount: noteTagCounts[key, default: 0],
+                linkedEventCount: eventTagCounts[key, default: 0]
             )
         }
     }

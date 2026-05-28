@@ -10,11 +10,13 @@ struct DayPlanBlockLayer: View {
     var blockAnimationNamespace: Namespace.ID
     var blocksForDate: (Date) -> [DayPlanBlock]
     var automaticTimelineBlocksForDate: (Date) -> [DayPlanTimelineActivityBlock] = { _ in [] }
+    var eventBlocksForDate: (Date) -> [DayPlanEventBlock] = { _ in [] }
     var sleepBlocksForDate: (Date) -> [DayPlanSleepBlock] = { _ in [] }
     var taskTint: (DayPlanBlock) -> Color
     var onSelectBlock: (DayPlanBlock, Date) -> Void
     var onOpenBlockDetails: (DayPlanBlock, Date) -> Void
     var onOpenTimelineTaskDetails: (UUID) -> Void = { _ in }
+    var onOpenEventDetails: (UUID) -> Void = { _ in }
     var onConfirmTimelineActivity: (DayPlanTimelineActivityBlock, Date) -> Void = { _, _ in }
     var onHideTimelineActivity: (DayPlanTimelineActivityBlock, Date) -> Void = { _, _ in }
     var onTimelineDragProvider: (DayPlanTimelineActivityBlock, Date) -> NSItemProvider = { _, _ in
@@ -99,6 +101,40 @@ struct DayPlanBlockLayer: View {
                         y: yOffset(for: block.startMinute)
                     )
                     .zIndex(0)
+                }
+
+                ForEach(eventBlocksForDate(date)) { eventBlock in
+                    let block = eventBlock.block
+                    let blockHeight = blockHeight(for: block)
+                    DayPlanBlockCard(
+                        block: block,
+                        tint: .teal,
+                        style: .event,
+                        isSelected: false,
+                        renderedHeight: blockHeight,
+                        selectedDate: date,
+                        calendar: calendar,
+                        onSelect: {},
+                        onOpenDetails: {
+                            onOpenEventDetails(eventBlock.eventID)
+                        },
+                        onDelete: {},
+                        onResizeStarted: {},
+                        onResizeChanged: { _, _ in },
+                        onResizeEnded: {},
+                        onDragProvider: {
+                            NSItemProvider(object: "" as NSString)
+                        }
+                    )
+                    .frame(
+                        width: max(dayWidth - 10, 90),
+                        height: blockHeight
+                    )
+                    .offset(
+                        x: timeColumnWidth + CGFloat(dayIndex) * dayWidth + 5,
+                        y: yOffset(for: block.startMinute)
+                    )
+                    .zIndex(0.75)
                 }
 
                 ForEach(blocksForDate(date)) { block in

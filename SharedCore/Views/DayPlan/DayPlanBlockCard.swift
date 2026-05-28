@@ -5,6 +5,7 @@ struct DayPlanBlockCard: View {
     enum Style: Equatable {
         case manual
         case automatic(RoutineLogKind)
+        case event
         case liveFocus
         case sleep
     }
@@ -32,6 +33,8 @@ struct DayPlanBlockCard: View {
             automaticCard
         } else if isLiveFocus {
             liveFocusCard
+        } else if isEvent {
+            eventCard
         } else if isSleep {
             sleepCard
         } else {
@@ -143,6 +146,14 @@ struct DayPlanBlockCard: View {
                 onOpenDetails()
             }
             .help("Focus timer in progress")
+    }
+
+    private var eventCard: some View {
+        baseCard
+            .onTapGesture {
+                onOpenDetails()
+            }
+            .help("Event")
     }
 
     private var sleepCard: some View {
@@ -259,6 +270,13 @@ struct DayPlanBlockCard: View {
         return false
     }
 
+    private var isEvent: Bool {
+        if case .event = style {
+            return true
+        }
+        return false
+    }
+
     private var isSleep: Bool {
         if case .sleep = style {
             return true
@@ -274,11 +292,11 @@ struct DayPlanBlockCard: View {
     }
 
     private var showsActivityStripe: Bool {
-        isAutomatic || isLiveFocus || isSleep
+        isAutomatic || isLiveFocus || isEvent || isSleep
     }
 
     private var showsStatusIcon: Bool {
-        renderedHeight >= 28 && (isAutomatic || isLiveFocus || isSleep)
+        renderedHeight >= 28 && (isAutomatic || isLiveFocus || isEvent || isSleep)
     }
 
     private var fillOpacity: Double {
@@ -287,6 +305,9 @@ struct DayPlanBlockCard: View {
         }
         if isLiveFocus {
             return 0.2
+        }
+        if isEvent {
+            return 0.12
         }
         if isSleep {
             return 0.16
@@ -301,6 +322,9 @@ struct DayPlanBlockCard: View {
         if isLiveFocus {
             return 0.85
         }
+        if isEvent {
+            return 0.78
+        }
         if isSleep {
             return 0.78
         }
@@ -313,6 +337,9 @@ struct DayPlanBlockCard: View {
         }
         if isLiveFocus {
             return 2
+        }
+        if isEvent {
+            return 1.5
         }
         if isSleep {
             return 1.5
@@ -327,6 +354,9 @@ struct DayPlanBlockCard: View {
     private var statusIconName: String? {
         if isLiveFocus {
             return "timer.circle.fill"
+        }
+        if isEvent {
+            return "calendar"
         }
         if isSleep {
             return "bed.double.fill"

@@ -47,6 +47,11 @@ enum SettingsRoutineDataImportEntityInserter {
             in: context,
             importDate: importDate
         )
+        let eventCount = insertEvents(
+            from: backup,
+            in: context,
+            importDate: importDate
+        )
         let emotionLogCount = insertEmotionLogs(
             from: backup,
             importedNoteIDs: notes.ids,
@@ -73,6 +78,7 @@ enum SettingsRoutineDataImportEntityInserter {
             placeCheckInSessions: placeCheckInCount,
             emotionLogs: emotionLogCount,
             notes: notes.count,
+            events: eventCount,
             attachments: taskAttachmentCount + noteAttachmentCount
         )
     }
@@ -541,6 +547,37 @@ enum SettingsRoutineDataImportEntityInserter {
             return note.voiceNoteData
         }
         return data
+    }
+
+    @MainActor
+    private static func insertEvents(
+        from backup: Backup,
+        in context: ModelContext,
+        importDate: Date
+    ) -> Int {
+        var importedIDs = Set<UUID>()
+        var importedCount = 0
+
+        for event in backup.events ?? [] {
+            guard importedIDs.insert(event.id).inserted else { continue }
+
+            let importedEvent = RoutineEvent(
+                id: event.id,
+                title: event.title,
+                notes: event.notes,
+                emoji: event.emoji,
+                tags: event.tags ?? [],
+                isAllDay: event.isAllDay ?? true,
+                startedAt: event.startedAt,
+                endedAt: event.endedAt,
+                createdAt: event.createdAt ?? importDate,
+                updatedAt: event.updatedAt ?? event.createdAt ?? importDate
+            )
+            context.insert(importedEvent)
+            importedCount += 1
+        }
+
+        return importedCount
     }
 
     @MainActor

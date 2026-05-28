@@ -43,6 +43,7 @@ struct DayPlanView: View {
 #endif
     }
 }
+
 struct DayPlanSidebarView: View {
     @Environment(\.calendar) private var calendar
     @Environment(\.modelContext) private var modelContext
@@ -387,6 +388,7 @@ private struct DayPlanTimelinePanelView: View {
     @Query private var tasks: [RoutineTask]
     @Query private var logs: [RoutineLog]
     @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
+    @Query(sort: \RoutineEvent.startedAt, order: .reverse) private var events: [RoutineEvent]
     @Query(
         filter: #Predicate<FocusSession> { session in
             session.completedAt == nil && session.abandonedAt == nil
@@ -394,6 +396,7 @@ private struct DayPlanTimelinePanelView: View {
         sort: \FocusSession.startedAt,
         order: .reverse
     ) private var activeFocusSessions: [FocusSession]
+    @State private var selectedEventID: UUID?
     @AppStorage(
         UserDefaultBoolValueKey.appSettingShowTimelineTasksInDayPlanner.rawValue,
         store: SharedDefaults.app
@@ -422,12 +425,18 @@ private struct DayPlanTimelinePanelView: View {
             referenceDate: referenceDate,
             calendar: calendar
         )
+        let eventBlocksByDayKey = DayPlanEventBlocks.blocksByDayKey(
+            on: weekDates,
+            from: events,
+            calendar: calendar
+        )
         let blockedIntervalsByDayKey = sleepBlocksByDayKey.mapValues { blocks in
             blocks.map(\.interval)
         }
         let allDayBlocks = DayPlanAllDayTasks.blocks(
             on: weekDates,
             from: tasks,
+            events: events,
             calendar: calendar
         )
         let selectedDayKey = DayPlanStorage.dayKey(for: planner.selectedDate, calendar: calendar)
@@ -462,6 +471,10 @@ private struct DayPlanTimelinePanelView: View {
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
                     return timelineBlocksByDayKey[dayKey] ?? []
                 },
+                eventBlocksForDate: { date in
+                    let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+                    return eventBlocksByDayKey[dayKey] ?? []
+                },
                 sleepBlocksForDate: { date in
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
                     return sleepBlocksByDayKey[dayKey] ?? []
@@ -487,7 +500,13 @@ private struct DayPlanTimelinePanelView: View {
                     tintsByTaskID[block.taskID] ?? .accentColor
                 },
                 allDayTint: { block in
-                    tintsByTaskID[block.taskID] ?? .accentColor
+                    if block.isEvent {
+                        return .teal
+                    }
+                    guard let taskID = block.taskID else {
+                        return .accentColor
+                    }
+                    return tintsByTaskID[taskID] ?? .accentColor
                 },
                 onSelectUnplannedCompletedDate: { date in
                     planner.focusUnplannedCompletedTasks(on: date, calendar: calendar)
@@ -509,6 +528,9 @@ private struct DayPlanTimelinePanelView: View {
                         planner.selectTask(task)
                     }
                     onOpenTaskDetails?(taskID)
+                },
+                onOpenEventDetails: { eventID in
+                    selectedEventID = eventID
                 },
                 onOpenFocusTaskDetails: { taskID in
                     if let task = tasks.first(where: { $0.id == taskID }) {
@@ -598,6 +620,22 @@ private struct DayPlanTimelinePanelView: View {
                 planner.clearFocusedUnplannedCompletedTasks()
             }
         }
+        .sheet(item: selectedEventPresentationBinding) { presentation in
+            NavigationStack {
+                DayPlanEventDetail(eventID: presentation.id)
+            }
+        }
+    }
+
+    private var selectedEventPresentationBinding: Binding<DayPlanEventPresentation?> {
+        Binding(
+            get: {
+                selectedEventID.map(DayPlanEventPresentation.init(id:))
+            },
+            set: { presentation in
+                selectedEventID = presentation?.id
+            }
+        )
     }
 
     private var activeFocusedUnplannedCompletedDate: Date? {
@@ -693,6 +731,27 @@ private struct DayPlanTimelinePanelView: View {
         }
         .first
             ?? planner.blocks.first { $0.id == id }
+    }
+}
+
+private struct DayPlanEventPresentation: Identifiable {
+    let id: UUID
+}
+
+private struct DayPlanEventDetail: View {
+    let eventID: UUID
+    @Query(sort: \RoutineEvent.startedAt, order: .reverse) private var events: [RoutineEvent]
+
+    var body: some View {
+        if let event = events.first(where: { $0.id == eventID }) {
+            RoutineEventDetailView(event: event)
+        } else {
+            ContentUnavailableView(
+                "Event not found",
+                systemImage: "calendar",
+                description: Text("The selected event is no longer available.")
+            )
+        }
     }
 }
 

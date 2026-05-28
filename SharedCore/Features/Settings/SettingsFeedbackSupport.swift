@@ -22,12 +22,14 @@ enum SettingsFeedbackSupport {
         updatedTagName: String,
         updatedRoutineCount: Int,
         updatedGoalCount: Int = 0,
-        updatedNoteCount: Int = 0
+        updatedNoteCount: Int = 0,
+        updatedEventCount: Int = 0
     ) -> String {
         let updatedParts = tagUpdateParts(
             routineCount: updatedRoutineCount,
             goalCount: updatedGoalCount,
-            noteCount: updatedNoteCount
+            noteCount: updatedNoteCount,
+            eventCount: updatedEventCount
         )
         guard !updatedParts.isEmpty else {
             return "Updated tag to \(updatedTagName)."
@@ -39,12 +41,14 @@ enum SettingsFeedbackSupport {
         deletedTagName: String,
         updatedRoutineCount: Int,
         updatedGoalCount: Int = 0,
-        updatedNoteCount: Int = 0
+        updatedNoteCount: Int = 0,
+        updatedEventCount: Int = 0
     ) -> String {
         let updatedParts = tagUpdateParts(
             routineCount: updatedRoutineCount,
             goalCount: updatedGoalCount,
-            noteCount: updatedNoteCount
+            noteCount: updatedNoteCount,
+            eventCount: updatedEventCount
         )
         guard !updatedParts.isEmpty else {
             return "Deleted \(deletedTagName)."
@@ -55,7 +59,8 @@ enum SettingsFeedbackSupport {
     private static func tagUpdateParts(
         routineCount: Int,
         goalCount: Int,
-        noteCount: Int
+        noteCount: Int,
+        eventCount: Int
     ) -> [String] {
         var parts: [String] = []
         if routineCount > 0 {
@@ -66,6 +71,9 @@ enum SettingsFeedbackSupport {
         }
         if noteCount > 0 {
             parts.append(noteCount == 1 ? "1 note" : "\(noteCount) notes")
+        }
+        if eventCount > 0 {
+            parts.append(eventCount == 1 ? "1 event" : "\(eventCount) events")
         }
         return parts
     }

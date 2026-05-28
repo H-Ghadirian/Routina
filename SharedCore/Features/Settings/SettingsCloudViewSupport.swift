@@ -21,6 +21,18 @@ extension SettingsCloudState {
         ByteCountFormatter.string(fromByteCount: cloudUsageEstimate.goalPayloadBytes, countStyle: .file)
     }
 
+    var usageEmotionPayloadText: String {
+        ByteCountFormatter.string(fromByteCount: cloudUsageEstimate.emotionLogPayloadBytes, countStyle: .file)
+    }
+
+    var usageNotePayloadText: String {
+        ByteCountFormatter.string(fromByteCount: cloudUsageEstimate.notePayloadBytes, countStyle: .file)
+    }
+
+    var usageEventPayloadText: String {
+        ByteCountFormatter.string(fromByteCount: cloudUsageEstimate.eventPayloadBytes, countStyle: .file)
+    }
+
     var usageImagePayloadText: String {
         ByteCountFormatter.string(fromByteCount: cloudUsageEstimate.imagePayloadBytes, countStyle: .file)
     }

@@ -15,6 +15,7 @@ struct DayPlanWeekCalendarView: View {
     var showsUnplannedCompletedBadges: Bool
     var blocksForDate: (Date) -> [DayPlanBlock]
     var automaticTimelineBlocksForDate: (Date) -> [DayPlanTimelineActivityBlock] = { _ in [] }
+    var eventBlocksForDate: (Date) -> [DayPlanEventBlock] = { _ in [] }
     var sleepBlocksForDate: (Date) -> [DayPlanSleepBlock] = { _ in [] }
     var blockedIntervalsForDate: (Date) -> [DayPlanBlockedInterval] = { _ in [] }
     var activeFocusSessionBlocks: (Date) -> [DayPlanFocusSessionBlock] = { _ in [] }
@@ -27,6 +28,7 @@ struct DayPlanWeekCalendarView: View {
     var onSelectBlock: (DayPlanBlock, Date) -> Void
     var onOpenBlockDetails: (DayPlanBlock, Date) -> Void
     var onOpenTimelineTaskDetails: (UUID) -> Void = { _ in }
+    var onOpenEventDetails: (UUID) -> Void = { _ in }
     var onOpenFocusTaskDetails: (UUID) -> Void = { _ in }
     var onOpenAllDayTaskDetails: (UUID) -> Void = { _ in }
     var onDeleteBlock: (DayPlanBlock) -> Void
@@ -69,7 +71,8 @@ struct DayPlanWeekCalendarView: View {
                 timeColumnWidth: timeColumnWidth,
                 allDayBlocks: allDayBlocks,
                 allDayTint: allDayTint,
-                onOpenTaskDetails: onOpenAllDayTaskDetails
+                onOpenTaskDetails: onOpenAllDayTaskDetails,
+                onOpenEventDetails: onOpenEventDetails
             )
 
             ScrollViewReader { scrollProxy in
@@ -105,11 +108,13 @@ struct DayPlanWeekCalendarView: View {
                                 blockAnimationNamespace: blockAnimationNamespace,
                                 blocksForDate: blocksForDate,
                                 automaticTimelineBlocksForDate: automaticTimelineBlocksForDate,
+                                eventBlocksForDate: eventBlocksForDate,
                                 sleepBlocksForDate: sleepBlocksForDate,
                                 taskTint: taskTint,
                                 onSelectBlock: onSelectBlock,
                                 onOpenBlockDetails: onOpenBlockDetails,
                                 onOpenTimelineTaskDetails: onOpenTimelineTaskDetails,
+                                onOpenEventDetails: onOpenEventDetails,
                                 onConfirmTimelineActivity: onConfirmTimelineActivity,
                                 onHideTimelineActivity: onHideTimelineActivity,
                                 onTimelineDragProvider: { activity, date in
@@ -318,6 +323,7 @@ private struct DayPlanAllDayLaneView: View {
     var allDayBlocks: [DayPlanAllDayBlock]
     var allDayTint: (DayPlanAllDayBlock) -> Color
     var onOpenTaskDetails: (UUID) -> Void
+    var onOpenEventDetails: (UUID) -> Void
 
     private let rowHeight: CGFloat = 28
     private let rowSpacing: CGFloat = 4
@@ -367,7 +373,11 @@ private struct DayPlanAllDayLaneView: View {
                             y: verticalPadding + CGFloat(positionedBlock.row) * (rowHeight + rowSpacing)
                         )
                         .onTapGesture {
-                            onOpenTaskDetails(positionedBlock.block.taskID)
+                            if let eventID = positionedBlock.block.eventID {
+                                onOpenEventDetails(eventID)
+                            } else if let taskID = positionedBlock.block.taskID {
+                                onOpenTaskDetails(taskID)
+                            }
                         }
                     }
                 }
@@ -430,7 +440,11 @@ private struct DayPlanAllDayPill: View {
 
             Spacer(minLength: 4)
 
-            if block.isLegacyDateOnlyCalendarTask {
+            if block.isEvent {
+                Image(systemName: "calendar")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            } else if block.isLegacyDateOnlyCalendarTask {
                 Image(systemName: "calendar")
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.secondary)
@@ -457,8 +471,8 @@ private struct DayPlanAllDayPill: View {
                 .stroke(tint.opacity(0.45), lineWidth: 1)
         }
         .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-        .help("All-day calendar event")
-        .accessibilityLabel("\(block.title), all-day calendar event")
+        .help(block.isEvent ? "All-day event" : "All-day calendar event")
+        .accessibilityLabel("\(block.title), \(block.isEvent ? "all-day event" : "all-day calendar event")")
     }
 }
 
@@ -475,7 +489,7 @@ private struct DayPlanPositionedAllDayBlock: Identifiable {
     }
 
     var id: String {
-        "\(block.taskID.uuidString)-\(startIndex)-\(endIndex)"
+        "\(block.id.uuidString)-\(startIndex)-\(endIndex)"
     }
 }
 

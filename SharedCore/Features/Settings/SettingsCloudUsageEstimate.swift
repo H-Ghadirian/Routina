@@ -8,6 +8,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
     var goalCount: Int
     var emotionLogCount: Int
     var noteCount: Int
+    var eventCount: Int
     var imageCount: Int
     var voiceNoteCount: Int
     var taskPayloadBytes: Int64
@@ -16,6 +17,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
     var goalPayloadBytes: Int64
     var emotionLogPayloadBytes: Int64
     var notePayloadBytes: Int64
+    var eventPayloadBytes: Int64
     var imagePayloadBytes: Int64
     var voiceNotePayloadBytes: Int64
 
@@ -26,6 +28,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         goalCount: 0,
         emotionLogCount: 0,
         noteCount: 0,
+        eventCount: 0,
         imageCount: 0,
         voiceNoteCount: 0,
         taskPayloadBytes: 0,
@@ -34,16 +37,17 @@ struct CloudUsageEstimate: Equatable, Sendable {
         goalPayloadBytes: 0,
         emotionLogPayloadBytes: 0,
         notePayloadBytes: 0,
+        eventPayloadBytes: 0,
         imagePayloadBytes: 0,
         voiceNotePayloadBytes: 0
     )
 
     var totalPayloadBytes: Int64 {
-        taskPayloadBytes + logPayloadBytes + placePayloadBytes + goalPayloadBytes + emotionLogPayloadBytes + notePayloadBytes + imagePayloadBytes + voiceNotePayloadBytes
+        taskPayloadBytes + logPayloadBytes + placePayloadBytes + goalPayloadBytes + emotionLogPayloadBytes + notePayloadBytes + eventPayloadBytes + imagePayloadBytes + voiceNotePayloadBytes
     }
 
     var totalRecordCount: Int {
-        taskCount + logCount + placeCount + goalCount + emotionLogCount + noteCount
+        taskCount + logCount + placeCount + goalCount + emotionLogCount + noteCount + eventCount
     }
 
     @MainActor
@@ -54,6 +58,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
         let emotionLogs = try context.fetch(FetchDescriptor<EmotionLog>())
         let notes = try context.fetch(FetchDescriptor<RoutineNote>())
+        let events = try context.fetch(FetchDescriptor<RoutineEvent>())
         let placeCheckInSessions = try context.fetch(FetchDescriptor<PlaceCheckInSession>())
         let encoder = JSONEncoder()
 
@@ -74,6 +79,9 @@ struct CloudUsageEstimate: Equatable, Sendable {
         }
         let notePayloadBytes = notes.reduce(into: Int64.zero) { total, note in
             total += encodedByteCount(NotePayload(note: note), encoder: encoder)
+        }
+        let eventPayloadBytes = events.reduce(into: Int64.zero) { total, event in
+            total += encodedByteCount(EventPayload(event: event), encoder: encoder)
         }
         var imagePayloadBytes = tasks.reduce(into: Int64.zero) { total, task in
             total += Int64(task.imageData?.count ?? 0)
@@ -98,6 +106,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             goalCount: goals.count,
             emotionLogCount: emotionLogs.count,
             noteCount: notes.count,
+            eventCount: events.count,
             imageCount: tasks.reduce(into: 0) { count, task in
                 if task.imageData?.isEmpty == false {
                     count += 1
@@ -126,6 +135,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             goalPayloadBytes: goalPayloadBytes,
             emotionLogPayloadBytes: emotionLogPayloadBytes,
             notePayloadBytes: notePayloadBytes,
+            eventPayloadBytes: eventPayloadBytes,
             imagePayloadBytes: imagePayloadBytes,
             voiceNotePayloadBytes: voiceNotePayloadBytes
         )
@@ -258,6 +268,32 @@ struct CloudUsageEstimate: Equatable, Sendable {
             hasVoiceNote = note.hasVoiceNote
             createdAt = note.createdAt
             updatedAt = note.updatedAt
+        }
+    }
+
+    private struct EventPayload: Encodable {
+        var id: UUID
+        var title: String?
+        var notes: String?
+        var emoji: String?
+        var tagsStorage: String
+        var isAllDay: Bool
+        var startedAt: Date?
+        var endedAt: Date?
+        var createdAt: Date?
+        var updatedAt: Date?
+
+        init(event: RoutineEvent) {
+            id = event.id
+            title = event.title
+            notes = event.notes
+            emoji = event.emoji
+            tagsStorage = event.tagsStorage
+            isAllDay = event.isAllDay
+            startedAt = event.startedAt
+            endedAt = event.endedAt
+            createdAt = event.createdAt
+            updatedAt = event.updatedAt
         }
     }
 

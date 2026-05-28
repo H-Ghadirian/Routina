@@ -29,6 +29,11 @@ enum SettingsRoutineDataImportStoreResetter {
             context.delete(note)
         }
 
+        let existingEvents = try context.fetch(FetchDescriptor<RoutineEvent>())
+        for event in existingEvents {
+            context.delete(event)
+        }
+
         let existingNoteAttachments = try context.fetch(FetchDescriptor<RoutineNoteAttachment>())
         for attachment in existingNoteAttachments {
             context.delete(attachment)
