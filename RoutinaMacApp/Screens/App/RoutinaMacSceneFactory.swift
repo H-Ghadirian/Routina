@@ -25,9 +25,11 @@ enum RoutinaMacSceneFactory {
                     )
                     .modelContainer(persistence.container)
                     .onAppear {
-                        DeviceActivityRecorder.recordCurrentDeviceSession(
-                            in: persistence.container.mainContext
-                        )
+                        RoutinaUndoSupport.performWithoutUndo {
+                            _ = DeviceActivityRecorder.recordCurrentDeviceSession(
+                                in: persistence.container.mainContext
+                            )
+                        }
                         NSApplication.shared.registerForRemoteNotifications()
                         PlatformSupport.applyAppIcon(.persistedSelection)
                         Task {
@@ -60,9 +62,11 @@ enum RoutinaMacSceneFactory {
                     )
                     .modelContainer(persistence.container)
                     .onAppear {
-                        DeviceActivityRecorder.recordCurrentDeviceSession(
-                            in: persistence.container.mainContext
-                        )
+                        RoutinaUndoSupport.performWithoutUndo {
+                            _ = DeviceActivityRecorder.recordCurrentDeviceSession(
+                                in: persistence.container.mainContext
+                            )
+                        }
                     }
                     .sleepModeGate()
                 }

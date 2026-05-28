@@ -90,7 +90,7 @@ extension TaskDetailFeature {
     ) -> Effect<Action> {
         .run { @MainActor send in
             do {
-                let context = ModelContext(modelContext().container)
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 guard let advancedTask = try RoutineLogHistory.advanceTask(
                     taskID: taskID,
                     completedAt: completedAt,
@@ -142,7 +142,7 @@ extension TaskDetailFeature {
     func handleCancelTodo(taskID: UUID, canceledAt: Date) -> Effect<Action> {
         .run { @MainActor send in
             do {
-                let context = ModelContext(modelContext().container)
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 guard let updatedTask = try RoutineLogHistory.cancelTask(
                     taskID: taskID,
                     canceledAt: canceledAt,
@@ -167,7 +167,7 @@ extension TaskDetailFeature {
     func handleUndoCompletion(taskID: UUID, completedDay: Date) -> Effect<Action> {
         .run { @MainActor send in
             do {
-                let context = ModelContext(modelContext().container)
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 guard let updatedTask = try RoutineLogHistory.removeCompletion(
                     taskID: taskID,
                     on: completedDay,
@@ -204,7 +204,7 @@ extension TaskDetailFeature {
     func handleRemoveLogEntry(taskID: UUID, timestamp: Date) -> Effect<Action> {
         .run { @MainActor send in
             do {
-                let context = ModelContext(modelContext().container)
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 guard let updatedTask = try RoutineLogHistory.removeLogEntry(
                     taskID: taskID,
                     timestamp: timestamp,
@@ -523,7 +523,7 @@ extension TaskDetailFeature {
     ) -> Effect<Action> {
         .run { @MainActor send in
             do {
-                let context = ModelContext(modelContext().container)
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 guard let updatedTask = try RoutineLogHistory.confirmTaskCompletions(
                     taskID: taskID,
                     on: days,
@@ -588,7 +588,7 @@ extension TaskDetailFeature {
     func handleFinishOngoing(taskID: UUID, finishedAt: Date) -> Effect<Action> {
         .run { @MainActor send in
             do {
-                let context = ModelContext(modelContext().container)
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
                 guard task.isOngoing else { return }
 
@@ -803,7 +803,7 @@ extension TaskDetailFeature {
     ) -> Effect<Action> {
         .run { @MainActor send in
             do {
-                let context = ModelContext(modelContext().container)
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 guard let updatedTask = try RoutineLogHistory.markChecklistItemsPurchased(
                     taskID: taskID,
                     itemIDs: itemIDs,
@@ -836,7 +836,7 @@ extension TaskDetailFeature {
     ) -> Effect<Action> {
         .run { @MainActor send in
             do {
-                let context = ModelContext(modelContext().container)
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 guard let updatedTask = try RoutineLogHistory.advanceChecklistItem(
                     taskID: taskID,
                     itemID: itemID,
@@ -869,7 +869,7 @@ extension TaskDetailFeature {
     ) -> Effect<Action> {
         .run { @MainActor send in
             do {
-                let context = ModelContext(modelContext().container)
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 guard let updatedTask = try RoutineLogHistory.unmarkChecklistItem(
                     taskID: taskID,
                     itemID: itemID,
@@ -900,7 +900,7 @@ extension TaskDetailFeature {
     ) -> Effect<Action> {
         .run { @MainActor send in
             do {
-                let context = ModelContext(modelContext().container)
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 _ = try RoutineLogHistory.markOptionalChecklistItemCompleted(
                     taskID: taskID,
                     itemID: itemID,
@@ -922,7 +922,7 @@ extension TaskDetailFeature {
     ) -> Effect<Action> {
         .run { @MainActor send in
             do {
-                let context = ModelContext(modelContext().container)
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 _ = try RoutineLogHistory.unmarkChecklistItem(
                     taskID: taskID,
                     itemID: itemID,

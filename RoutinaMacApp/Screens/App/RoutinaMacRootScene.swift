@@ -4,6 +4,7 @@ import SwiftData
 import WidgetKit
 
 struct RoutinaMacRootScene: Scene {
+    private let persistence: PersistenceController
     private let homeRoot: AnyView
     private let settingsRoot: AnyView
     private let focusTimerStatusStore: RoutinaMacFocusTimerStatusStore
@@ -14,6 +15,7 @@ struct RoutinaMacRootScene: Scene {
         let persistence = RoutinaAppSceneBootstrap.preparePersistence()
         let focusTimerStatusStore = RoutinaMacFocusTimerStatusStore(persistence: persistence)
         let homeRoot = RoutinaMacSceneFactory.makeHomeRoot(persistence: persistence)
+        self.persistence = persistence
         self.homeRoot = homeRoot
         self.settingsRoot = RoutinaMacSceneFactory.makeSettingsRoot(persistence: persistence)
         self.focusTimerStatusStore = focusTimerStatusStore
@@ -39,6 +41,7 @@ struct RoutinaMacRootScene: Scene {
                 .environment(\.routinaMacFocusTimerStatusStore, focusTimerStatusStore)
                 .background(RoutinaMacWindowRouterInstaller())
                 .background(RoutinaMacHomeWindowConfigurator())
+                .background(RoutinaMacUndoBridge(persistence: persistence))
                 .onAppear {
                     MacMenuCleanup.removeUnneededMenus()
                     DispatchQueue.main.async {
@@ -69,6 +72,7 @@ struct RoutinaMacRootScene: Scene {
         Settings {
             settingsRoot
                 .environment(\.routinaMacFocusTimerStatusStore, focusTimerStatusStore)
+                .background(RoutinaMacUndoBridge(persistence: persistence))
         }
     }
 

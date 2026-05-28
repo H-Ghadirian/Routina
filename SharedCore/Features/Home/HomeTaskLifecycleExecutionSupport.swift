@@ -11,7 +11,7 @@ enum HomeTaskLifecycleExecutionSupport {
     ) -> Effect<Action> {
         .run { @MainActor _ in
             do {
-                let context = ModelContext(modelContext().container)
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 guard let taskState = try RoutineLogHistory.markDueChecklistItemsPurchased(
                     taskID: update.taskID,
                     purchasedAt: update.completionDate,
@@ -50,7 +50,7 @@ enum HomeTaskLifecycleExecutionSupport {
     ) -> Effect<Action> {
         .run { @MainActor _ in
             do {
-                let context = ModelContext(modelContext().container)
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 guard let taskState = try RoutineLogHistory.advanceTask(
                     taskID: update.taskID,
                     completedAt: update.completionDate,
@@ -104,7 +104,7 @@ enum HomeTaskLifecycleExecutionSupport {
     ) -> Effect<Action> {
         .run { @MainActor _ in
             do {
-                let context = ModelContext(modelContext().container)
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 guard let task = try RoutineLogHistory.markExactTimedOccurrenceMissed(
                     taskID: update.taskID,
                     missedAt: update.missedDate,
@@ -145,7 +145,7 @@ enum HomeTaskLifecycleExecutionSupport {
     ) -> Effect<Action> {
         .run { @MainActor _ in
             do {
-                let context = ModelContext(modelContext().container)
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 guard let task = try RoutineLogHistory.markExactTimedOccurrenceCanceled(
                     taskID: update.taskID,
                     canceledAt: update.canceledDate,

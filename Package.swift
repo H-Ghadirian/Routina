@@ -324,6 +324,7 @@ let package = Package(
                 "SharedCore/Features/TaskDetail/TaskDetailStatusMutationHandler.swift",
                 "SharedCore/Features/TaskDetail/TaskDetailTagGoalRelationshipEditActionHandler.swift",
                 "SharedCore/Persistence/PersistenceController.swift",
+                "SharedCore/Persistence/RoutinaUndoSupport.swift",
                 "SharedCore/Screens/TaskDetail/Graph/RelationshipGraphEdge.swift",
                 "SharedCore/Screens/TaskDetail/Graph/TaskRelationshipGraphLayout.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailAttachmentPresentation.swift",
