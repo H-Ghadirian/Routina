@@ -179,4 +179,33 @@ struct StatsFeatureDerivedStateSupportTests {
         #expect(state.metrics.archivedGoalCount == 1)
         #expect(state.metrics.goalsCreatedCount == 1)
     }
+
+    @Test
+    func summaryItemsIncludeHealthCardsWhenHealthSummaryIsPresent() {
+        let items = StatsSummaryCardItemBuilder.items(
+            metrics: StatsFeatureMetrics(),
+            selectedRange: .week,
+            chartPresentation: StatsChartPresentation(selectedRange: .week, isCompact: false),
+            taskTypeFilter: .all,
+            filteredTaskCount: 0,
+            healthSummary: HealthStatsSummary(
+                steps: 12_345,
+                activeEnergyKilocalories: 456,
+                walkingRunningDistanceMeters: 3_210,
+                exerciseMinutes: 42,
+                fetchedAt: makeDate("2026-05-09T10:00:00Z")
+            )
+        )
+
+        let healthIdentifiers = items
+            .map(\.accessibilityIdentifier)
+            .filter { $0.hasPrefix("stats.summary.health.") }
+
+        #expect(healthIdentifiers == [
+            "stats.summary.health.steps",
+            "stats.summary.health.activeCalories",
+            "stats.summary.health.distance",
+            "stats.summary.health.exercise"
+        ])
+    }
 }

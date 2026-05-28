@@ -159,6 +159,7 @@ let package = Package(
                 "SharedCore/Domain/GitHubStatsModels.swift",
                 "SharedCore/Domain/GitHubWidgetData.swift",
                 "SharedCore/Domain/GitLabWidgetData.swift",
+                "SharedCore/Domain/HealthStatsSummary.swift",
                 "SharedCore/Domain/SprintBoardModels.swift",
                 "SharedCore/Domain/TagCounterDisplayMode.swift",
                 "SharedCore/Domain/TagCounterFormatting.swift",

@@ -7,6 +7,7 @@ enum StatsSummaryCardItemBuilder {
         chartPresentation: StatsChartPresentation,
         taskTypeFilter: StatsTaskTypeFilter,
         filteredTaskCount: Int,
+        healthSummary: HealthStatsSummary? = nil,
         showsActiveAccessory: Bool = false
     ) -> [StatsSummaryCardItem] {
         var items: [StatsSummaryCardItem] = []
@@ -28,6 +29,13 @@ enum StatsSummaryCardItemBuilder {
                     accessibilityIdentifier: "stats.summary.dailyAverage"
                 )
             )
+        }
+
+        if let healthSummary {
+            items.append(contentsOf: healthItems(
+                summary: healthSummary,
+                selectedRange: selectedRange
+            ))
         }
 
         items.append(
@@ -190,6 +198,46 @@ enum StatsSummaryCardItemBuilder {
         return items
     }
 
+    private static func healthItems(
+        summary: HealthStatsSummary,
+        selectedRange: DoneChartRange
+    ) -> [StatsSummaryCardItem] {
+        [
+            StatsSummaryCardItem(
+                icon: "figure.walk",
+                accent: .green,
+                title: "Steps",
+                value: wholeNumberText(summary.steps),
+                caption: healthCaption(for: selectedRange),
+                accessibilityIdentifier: "stats.summary.health.steps"
+            ),
+            StatsSummaryCardItem(
+                icon: "flame.fill",
+                accent: .orange,
+                title: "Active calories",
+                value: "\(wholeNumberText(summary.activeEnergyKilocalories)) kcal",
+                caption: "Burned in \(selectedRange.periodDescription.lowercased())",
+                accessibilityIdentifier: "stats.summary.health.activeCalories"
+            ),
+            StatsSummaryCardItem(
+                icon: "map.fill",
+                accent: .mint,
+                title: "Distance",
+                value: distanceText(summary.walkingRunningDistanceMeters),
+                caption: "Walking and running",
+                accessibilityIdentifier: "stats.summary.health.distance"
+            ),
+            StatsSummaryCardItem(
+                icon: "figure.run",
+                accent: .cyan,
+                title: "Exercise",
+                value: "\(wholeNumberText(summary.exerciseMinutes)) min",
+                caption: "Exercise minutes",
+                accessibilityIdentifier: "stats.summary.health.exercise"
+            )
+        ]
+    }
+
     private static func emotionCaption(metrics: StatsFeatureMetrics) -> String {
         guard metrics.emotionLogCount > 0 else {
             return "No emotion logs in range"
@@ -217,5 +265,21 @@ enum StatsSummaryCardItemBuilder {
 
     private static func goalCaption(metrics: StatsFeatureMetrics) -> String {
         "\(metrics.goalsCreatedCount) new, \(metrics.archivedGoalCount) archived"
+    }
+
+    private static func healthCaption(for selectedRange: DoneChartRange) -> String {
+        "From Apple Health, \(selectedRange.periodDescription.lowercased())"
+    }
+
+    private static func wholeNumberText(_ value: Double) -> String {
+        value.formatted(.number.precision(.fractionLength(0)))
+    }
+
+    private static func distanceText(_ meters: Double) -> String {
+        let formatter = MeasurementFormatter()
+        formatter.unitOptions = .naturalScale
+        formatter.unitStyle = .short
+        formatter.numberFormatter.maximumFractionDigits = meters >= 1000 ? 1 : 0
+        return formatter.string(from: Measurement(value: meters, unit: UnitLength.meters))
     }
 }
