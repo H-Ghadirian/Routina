@@ -188,26 +188,29 @@ enum DayPlanAllDayTasks {
 
         let visibleStart = calendar.startOfDay(for: firstDate)
 
-        let taskBlocks = tasks.compactMap { task -> DayPlanAllDayBlock? in
+        let taskBlocks = tasks.flatMap { task -> [DayPlanAllDayBlock] in
             guard !task.isCanceledOneOff,
-                  !task.isArchived(referenceDate: visibleStart, calendar: calendar),
-                  let span = allDaySpan(for: task, calendar: calendar),
-                  span.endDate > visibleStart,
-                  span.startDate < visibleEnd else {
-                return nil
+                  !task.isArchived(referenceDate: visibleStart, calendar: calendar) else {
+                return []
             }
 
-            return DayPlanAllDayBlock(
-                id: task.id,
-                taskID: task.id,
-                eventID: nil,
-                title: DayPlanTaskSorting.title(for: task),
-                emoji: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
-                startDate: span.startDate,
-                endDate: span.endDate,
-                isLegacyDateOnlyCalendarTask: span.isLegacyDateOnlyCalendarTask,
-                isEvent: false
-            )
+            return allDaySpans(for: task, on: dates, calendar: calendar)
+                .filter { span in
+                    span.endDate > visibleStart && span.startDate < visibleEnd
+                }
+                .map { span in
+                    DayPlanAllDayBlock(
+                        id: task.id,
+                        taskID: task.id,
+                        eventID: nil,
+                        title: DayPlanTaskSorting.title(for: task),
+                        emoji: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
+                        startDate: span.startDate,
+                        endDate: span.endDate,
+                        isLegacyDateOnlyCalendarTask: span.isLegacyDateOnlyCalendarTask,
+                        isEvent: false
+                    )
+                }
         }
 
         let eventBlocks = events.compactMap { event -> DayPlanAllDayBlock? in
@@ -249,10 +252,11 @@ enum DayPlanAllDayTasks {
         }
     }
 
-    private static func allDaySpan(
+    private static func allDaySpans(
         for task: RoutineTask,
+        on dates: [Date],
         calendar: Calendar
-    ) -> (startDate: Date, endDate: Date, isLegacyDateOnlyCalendarTask: Bool)? {
+    ) -> [(startDate: Date, endDate: Date, isLegacyDateOnlyCalendarTask: Bool)] {
         if let metadata = CalendarTaskImportSupport.eventMetadata(in: task.notes),
            metadata.isAllDay {
             let startDate = calendar.startOfDay(for: metadata.startDate)
@@ -261,17 +265,21 @@ enum DayPlanAllDayTasks {
                 endDate: metadata.endDate,
                 calendar: calendar
             )
-            guard endDate > startDate else { return nil }
-            return (startDate, endDate, false)
+            guard endDate > startDate else { return [] }
+            return [(startDate, endDate, false)]
         }
 
-        if task.isOneOffTask,
-           task.isAllDay,
-           let deadline = task.deadline {
-            let startDate = calendar.startOfDay(for: deadline)
-            let endDate = calendar.date(byAdding: .day, value: 1, to: startDate) ?? startDate
-            guard endDate > startDate else { return nil }
-            return (startDate, endDate, false)
+        if task.isAllDay {
+            if task.isOneOffTask,
+               let deadline = task.deadline,
+               let span = oneDaySpan(on: deadline, calendar: calendar) {
+                return [span]
+            }
+
+            return routineAllDayOccurrenceStarts(for: task, on: dates, calendar: calendar)
+                .compactMap { startDate in
+                    oneDaySpan(on: startDate, calendar: calendar)
+                }
         }
 
         guard task.isOneOffTask,
@@ -279,13 +287,78 @@ enum DayPlanAllDayTasks {
               CalendarTaskImportSupport.sourceMarker(in: notes) != nil,
               let deadline = task.deadline,
               !hasExplicitTime(deadline, calendar: calendar) else {
-            return nil
+            return []
         }
 
-        let startDate = calendar.startOfDay(for: deadline)
-        let endDate = calendar.date(byAdding: .day, value: 1, to: startDate) ?? startDate
-        guard endDate > startDate else { return nil }
-        return (startDate, endDate, true)
+        guard let span = oneDaySpan(on: deadline, calendar: calendar) else { return [] }
+        return [(span.startDate, span.endDate, true)]
+    }
+
+    private static func oneDaySpan(
+        on date: Date,
+        calendar: Calendar
+    ) -> (startDate: Date, endDate: Date, isLegacyDateOnlyCalendarTask: Bool)? {
+        let startDate = calendar.startOfDay(for: date)
+        guard let endDate = calendar.date(byAdding: .day, value: 1, to: startDate),
+              endDate > startDate else {
+            return nil
+        }
+        return (startDate, endDate, false)
+    }
+
+    private static func routineAllDayOccurrenceStarts(
+        for task: RoutineTask,
+        on dates: [Date],
+        calendar: Calendar
+    ) -> [Date] {
+        guard !task.isOneOffTask else { return [] }
+
+        return dates.compactMap { date in
+            let startOfDay = calendar.startOfDay(for: date)
+            return routineOccurs(task, on: startOfDay, calendar: calendar) ? startOfDay : nil
+        }
+    }
+
+    private static func routineOccurs(
+        _ task: RoutineTask,
+        on day: Date,
+        calendar: Calendar
+    ) -> Bool {
+        switch task.recurrenceRule.kind {
+        case .dailyTime:
+            return true
+
+        case .weekly:
+            let weekday = task.recurrenceRule.weekday ?? calendar.firstWeekday
+            return calendar.component(.weekday, from: day) == weekday
+
+        case .monthlyDay:
+            let dayOfMonth = clampedDayOfMonth(
+                task.recurrenceRule.dayOfMonth ?? 1,
+                monthContaining: day,
+                calendar: calendar
+            )
+            return calendar.component(.day, from: day) == dayOfMonth
+
+        case .intervalDays:
+            let dueDate = RoutineDateMath.upcomingDueDate(
+                for: task,
+                referenceDate: day,
+                calendar: calendar
+            )
+            return calendar.isDate(dueDate, inSameDayAs: day)
+        }
+    }
+
+    private static func clampedDayOfMonth(
+        _ dayOfMonth: Int,
+        monthContaining date: Date,
+        calendar: Calendar
+    ) -> Int {
+        guard let range = calendar.range(of: .day, in: .month, for: date) else {
+            return min(max(dayOfMonth, 1), 31)
+        }
+        return min(max(dayOfMonth, range.lowerBound), range.upperBound - 1)
     }
 
     private static func normalizedEndDate(

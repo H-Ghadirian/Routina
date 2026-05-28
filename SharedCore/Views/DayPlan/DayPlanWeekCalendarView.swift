@@ -471,8 +471,8 @@ private struct DayPlanAllDayPill: View {
                 .stroke(tint.opacity(0.45), lineWidth: 1)
         }
         .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-        .help(block.isEvent ? "All-day event" : "All-day calendar event")
-        .accessibilityLabel("\(block.title), \(block.isEvent ? "all-day event" : "all-day calendar event")")
+        .help(block.isEvent ? "All-day event" : "All-day task")
+        .accessibilityLabel("\(block.title), \(block.isEvent ? "all-day event" : "all-day task")")
     }
 }
 

@@ -325,6 +325,23 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func editChangeDetectorTracksAllDayChanges() {
+        let task = RoutineTask(name: "Studio day")
+        var state = TaskDetailFeature.State(task: task)
+        withDependencies {
+            $0.date.now = makeDate("2026-04-25T10:00:00Z")
+        } operation: {
+            TaskDetailFeature().syncEditFormFromTask(&state)
+        }
+
+        #expect(TaskDetailEditChangeDetector.canSave(TaskDetailEditChangeRequest(state: state)) == false)
+
+        state.editIsAllDay = true
+
+        #expect(TaskDetailEditChangeDetector.canSave(TaskDetailEditChangeRequest(state: state)))
+    }
+
+    @Test
     func editChangeDetectorAllowsRemovingExistingChecklist() {
         let task = RoutineTask(
             name: "Restock pantry",

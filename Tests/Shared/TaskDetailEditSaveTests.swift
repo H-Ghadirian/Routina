@@ -69,6 +69,62 @@ struct TaskDetailEditSaveTests {
     }
 
     @Test
+    func editSaveTapped_persistsAllDayFlagForRoutines() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let task = RoutineTask(
+            name: "Studio day",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 1)
+        )
+        context.insert(task)
+        try context.save()
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Studio day",
+                editRoutineEmoji: "🎨",
+                editScheduleMode: .fixedInterval,
+                editFrequency: .day,
+                editFrequencyValue: 1
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editAllDayChanged(true)) {
+            $0.editIsAllDay = true
+        }
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+        await store.receive(.onAppear)
+
+        let taskID = task.id
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { task in
+                        task.id == taskID
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.scheduleMode == .fixedInterval)
+        #expect(persistedTask.deadline == nil)
+        #expect(persistedTask.isAllDay)
+    }
+
+    @Test
     func editSaveTapped_persistsVoiceNoteChange() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()

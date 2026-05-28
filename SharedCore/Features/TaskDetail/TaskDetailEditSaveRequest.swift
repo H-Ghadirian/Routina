@@ -85,9 +85,7 @@ struct TaskDetailEditSaveRequestBuilder {
             notes: RoutineTask.sanitizedNotes(state.editRoutineNotes),
             link: RoutineTask.sanitizedLink(state.editRoutineLink),
             deadline: scheduleMode == .oneOff ? state.editDeadline : nil,
-            isAllDay: scheduleMode == .oneOff
-                && state.editDeadline != nil
-                && state.editIsAllDay,
+            isAllDay: state.editIsAllDay,
             reminderAt: state.editReminderAt,
             priority: matrixPriority(state.editImportance, state.editUrgency),
             importance: state.editImportance,

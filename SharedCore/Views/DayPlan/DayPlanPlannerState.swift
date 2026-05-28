@@ -498,6 +498,8 @@ final class DayPlanPlannerState: ObservableObject {
         on date: Date,
         calendar: Calendar
     ) -> Date? {
+        guard !task.isAllDay else { return nil }
+
         if task.isOneOffTask {
             guard let deadline = task.deadline,
                   calendar.isDate(deadline, inSameDayAs: date),

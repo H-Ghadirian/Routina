@@ -8,7 +8,6 @@ struct TaskFormIOSDeadlineSection: View {
         Section(header: Text("Deadline")) {
             Toggle("Set deadline", isOn: model.deadlineEnabled)
             if model.deadlineEnabled.wrappedValue {
-                Toggle("All Day", isOn: model.isAllDay)
                 DatePicker(
                     "Deadline",
                     selection: model.deadline,
