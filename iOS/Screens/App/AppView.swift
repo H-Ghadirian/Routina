@@ -564,9 +564,6 @@ private struct AppMoreNavigationView: View {
                 store: settingsStore,
                 ownsCompactNavigationStack: false
             )
-            .navigationDestination(for: SettingsIOSSection.self) { section in
-                SettingsIOSDetailView(section: section, store: settingsStore)
-            }
             .onAppear {
                 selectTabAfterNavigationGesture(.settings)
             }

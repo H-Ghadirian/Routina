@@ -25,13 +25,18 @@ struct StatsDashboardScrollContainer<Content: View>: View {
     }
 
     var body: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            content
-                .padding(.horizontal, horizontalPadding)
-                .padding(.top, topPadding)
-                .padding(.bottom, bottomPadding)
-                .frame(maxWidth: maxContentWidth, alignment: .leading)
-                .frame(maxWidth: .infinity, alignment: .top)
+        GeometryReader { proxy in
+            let availableContentWidth = max(0, proxy.size.width - (horizontalPadding * 2))
+            let contentWidth = min(maxContentWidth ?? availableContentWidth, availableContentWidth)
+
+            ScrollView(.vertical, showsIndicators: false) {
+                content
+                    .frame(width: contentWidth, alignment: .leading)
+                    .padding(.horizontal, horizontalPadding)
+                    .padding(.top, topPadding)
+                    .padding(.bottom, bottomPadding)
+                    .frame(maxWidth: .infinity, alignment: .top)
+            }
         }
         .background(pageBackground.ignoresSafeArea())
     }

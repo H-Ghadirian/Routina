@@ -14,9 +14,6 @@ struct SettingsPlatformRootView: View {
         } else if ownsCompactNavigationStack {
             NavigationStack {
                 SettingsIOSRootView(store: store)
-                    .navigationDestination(for: SettingsIOSSection.self) { section in
-                        SettingsIOSDetailView(section: section, store: store)
-                    }
             }
         } else {
             SettingsIOSRootView(store: store)
@@ -41,7 +38,9 @@ List {
     ) { sections in
         Section {
             ForEach(sections) { section in
-                NavigationLink(value: section) {
+                NavigationLink {
+                    SettingsIOSDetailView(section: section, store: store)
+                } label: {
                     SettingsIOSSectionRow(section: section, store: store)
                 }
             }

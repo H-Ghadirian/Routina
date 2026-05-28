@@ -3,10 +3,10 @@ import SwiftUI
 
 struct GoalsTCAView: View {
     let store: StoreOf<GoalsFeature>
-    @State private var navigationPath: [UUID] = []
+    @State private var deepLinkedGoalID: UUID?
 
     var body: some View {
-        NavigationStack(path: $navigationPath) {
+        NavigationStack {
             Group {
                 if store.isAddingGoal {
                     GoalsEditorForm(store: store)
@@ -29,8 +29,12 @@ struct GoalsTCAView: View {
                         }
                 }
             }
-            .navigationDestination(for: UUID.self) { goalID in
-                GoalDetailView(store: store, goalID: goalID)
+            .navigationDestination(isPresented: deepLinkedGoalPresentationBinding) {
+                if let deepLinkedGoalID {
+                    GoalDetailView(store: store, goalID: deepLinkedGoalID)
+                } else {
+                    ContentUnavailableView("Goal unavailable", systemImage: "target")
+                }
             }
         }
         .confirmationDialog(
@@ -80,7 +84,9 @@ struct GoalsTCAView: View {
                 if !store.activeGoals.isEmpty {
                     Section("Active") {
                         ForEach(store.activeGoals) { goal in
-                            NavigationLink(value: goal.id) {
+                            NavigationLink {
+                                GoalDetailView(store: store, goalID: goal.id)
+                            } label: {
                                 GoalListRow(goal: goal)
                             }
                         }
@@ -90,7 +96,9 @@ struct GoalsTCAView: View {
                 if !store.archivedGoals.isEmpty {
                     Section("Archived") {
                         ForEach(store.archivedGoals) { goal in
-                            NavigationLink(value: goal.id) {
+                            NavigationLink {
+                                GoalDetailView(store: store, goalID: goal.id)
+                            } label: {
                                 GoalListRow(goal: goal)
                             }
                         }
@@ -122,11 +130,20 @@ struct GoalsTCAView: View {
         )
     }
 
+    private var deepLinkedGoalPresentationBinding: Binding<Bool> {
+        Binding(
+            get: { deepLinkedGoalID != nil },
+            set: { isPresented in
+                if !isPresented {
+                    deepLinkedGoalID = nil
+                }
+            }
+        )
+    }
+
     private func routePendingDeepLinkedGoal() {
         guard let goalID = store.deepLinkedGoalNavigationID else { return }
-        if navigationPath.last != goalID {
-            navigationPath = [goalID]
-        }
+        deepLinkedGoalID = goalID
         store.send(.goalDeepLinkNavigationHandled(goalID))
     }
 }
@@ -261,13 +278,17 @@ private struct GoalDetailView: View {
                 if goal.parentGoal != nil || !goal.childGoals.isEmpty {
                     Section("Linked Goals") {
                         if let parentGoal = goal.parentGoal {
-                            NavigationLink(value: parentGoal.id) {
+                            NavigationLink {
+                                GoalDetailView(store: store, goalID: parentGoal.id)
+                            } label: {
                                 GoalLinkInlineRow(goal: parentGoal, relationship: "Parent goal")
                             }
                         }
 
                         ForEach(goal.childGoals) { childGoal in
-                            NavigationLink(value: childGoal.id) {
+                            NavigationLink {
+                                GoalDetailView(store: store, goalID: childGoal.id)
+                            } label: {
                                 GoalLinkInlineRow(goal: childGoal, relationship: "Sub-goal")
                             }
                         }
