@@ -381,6 +381,64 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func allDayBlocksUseManualAllDayRoutineFlagOnOccurrenceDates() throws {
+        let calendar = gregorianCalendar
+        let occurrence = try #require(date("2026-05-11T12:00:00Z"))
+        let expectedStart = try #require(date("2026-05-11T00:00:00Z"))
+        let expectedEnd = try #require(date("2026-05-12T00:00:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Studio day",
+            emoji: "🎨",
+            isAllDay: true,
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .weekly(
+                on: calendar.component(.weekday, from: occurrence)
+            )
+        )
+
+        let blocks = DayPlanAllDayTasks.blocks(
+            on: try plannerDates(),
+            from: [task],
+            calendar: calendar
+        )
+
+        #expect(blocks.map(\.taskID) == [taskID])
+        #expect(blocks.first?.startDate == expectedStart)
+        #expect(blocks.first?.endDate == expectedEnd)
+        #expect(blocks.first?.isLegacyDateOnlyCalendarTask == false)
+    }
+
+    @Test
+    func allDayRoutinesDoNotCreateTimedPlannerBlocks() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let occurrence = try #require(date("2026-05-11T12:00:00Z"))
+        let task = RoutineTask(
+            name: "Studio day",
+            isAllDay: true,
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .weekly(
+                on: calendar.component(.weekday, from: occurrence),
+                at: RoutineTimeOfDay(hour: 9, minute: 0)
+            )
+        )
+        context.insert(task)
+        try context.save()
+        let planner = DayPlanPlannerState(selectedDate: occurrence)
+
+        planner.showExactTimedTasks(
+            from: [task],
+            calendar: calendar,
+            context: context
+        )
+
+        let timedBlocks = planner.weekBlocksByDayKey.values.flatMap { $0 }
+        #expect(timedBlocks.isEmpty)
+    }
+
+    @Test
     func completedTimelineActivityBlocksEndAtCompletionAndAvoidRapidCompletionOverlap() throws {
         let calendar = gregorianCalendar
         let activityDate = try #require(date("2026-05-07T12:00:00Z"))

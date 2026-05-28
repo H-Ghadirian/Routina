@@ -28,7 +28,7 @@ struct TaskFormModel {
     var notes: Binding<String>
     var link: Binding<String>
 
-    // MARK: Deadline (todo only)
+    // MARK: All Day & Deadline
     var deadlineEnabled: Binding<Bool>
     var deadline: Binding<Date>
     var isAllDay: Binding<Bool> = .constant(false)

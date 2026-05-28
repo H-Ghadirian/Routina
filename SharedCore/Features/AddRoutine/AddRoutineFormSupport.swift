@@ -18,10 +18,11 @@ enum AddRoutineFormEditor {
         _ isAllDay: Bool,
         now: Date,
         calendar: Calendar,
+        scheduleMode: RoutineScheduleMode,
         basics: inout AddRoutineBasicsState
     ) {
         basics.isAllDay = isAllDay
-        if isAllDay {
+        if isAllDay, scheduleMode == .oneOff {
             basics.deadline = calendar.startOfDay(for: basics.deadline ?? now)
         }
     }
@@ -45,7 +46,6 @@ enum AddRoutineFormEditor {
                 schedule.scheduleMode = .fixedInterval
             }
             basics.deadline = nil
-            basics.isAllDay = false
         case .todo:
             schedule.scheduleMode = .oneOff
         }

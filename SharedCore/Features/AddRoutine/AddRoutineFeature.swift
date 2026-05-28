@@ -147,6 +147,7 @@ struct AddRoutineFeature: Reducer {
                 isAllDay,
                 now: now,
                 calendar: calendar,
+                scheduleMode: state.schedule.scheduleMode,
                 basics: &state.basics
             )
             return .none

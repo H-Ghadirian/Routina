@@ -67,7 +67,7 @@ struct SwiftDataModelTests {
     }
 
     @Test
-    func routineTask_storesAllDayFlagForOneOffTasksAndCopiesItDetached() {
+    func routineTask_storesAllDayFlagForTasksAndCopiesItDetached() {
         let deadline = Date(timeIntervalSince1970: 1_780_000_000)
         let todo = RoutineTask(
             name: "Conference",
@@ -84,7 +84,9 @@ struct SwiftDataModelTests {
 
         #expect(todo.isAllDay)
         #expect(todo.detachedCopy().isAllDay)
-        #expect(routine.isAllDay == false)
+        #expect(routine.deadline == nil)
+        #expect(routine.isAllDay)
+        #expect(routine.detachedCopy().isAllDay)
     }
 
     @Test

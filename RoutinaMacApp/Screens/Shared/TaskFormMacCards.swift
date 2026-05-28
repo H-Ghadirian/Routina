@@ -334,6 +334,7 @@ struct TaskFormMacBehaviorCard: View {
         TaskFormMacSectionCard(title: "Scheduling") {
             VStack(alignment: .leading, spacing: 18) {
                 taskTypeControl
+                allDayControl
                 routineScheduleControls
                 repeatControls
                 todoDeadlineControl
@@ -353,6 +354,12 @@ struct TaskFormMacBehaviorCard: View {
                 .pickerStyle(.segmented)
                 .fixedSize()
             }
+        }
+    }
+
+    private var allDayControl: some View {
+        TaskFormMacControlBlock(title: "All day") {
+            Toggle("All Day", isOn: model.isAllDay)
         }
     }
 
@@ -652,7 +659,6 @@ struct TaskFormMacBehaviorCard: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Toggle("Set deadline", isOn: model.deadlineEnabled)
                     if model.deadlineEnabled.wrappedValue {
-                        Toggle("All Day", isOn: model.isAllDay)
                         DatePicker(
                             "Deadline",
                             selection: model.deadline,

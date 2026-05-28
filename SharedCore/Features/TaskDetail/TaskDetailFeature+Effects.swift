@@ -445,7 +445,7 @@ extension TaskDetailFeature {
                 task.replaceSteps(steps)
                 task.scheduleMode = scheduleMode
                 task.deadline = scheduleMode == .oneOff ? deadline : nil
-                task.isAllDay = scheduleMode == .oneOff && deadline != nil && isAllDay
+                task.isAllDay = isAllDay
                 task.recurrenceRule = recurrenceRule
                 task.replaceChecklistItems(checklistItems)
                 if !scheduleMode.isSoftIntervalRoutine {

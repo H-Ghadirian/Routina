@@ -321,7 +321,7 @@ extension CloudSharingService.SharedTaskPayload {
         task.notes = RoutineTask.sanitizedNotes(notes)
         task.link = RoutineTask.sanitizedLink(link)
         task.deadline = scheduleMode == .oneOff ? deadline : nil
-        task.isAllDay = scheduleMode == .oneOff && deadline != nil && (isAllDay ?? false)
+        task.isAllDay = isAllDay ?? false
         task.reminderAt = reminderAt
         task.priority = priority
         task.importance = importance
