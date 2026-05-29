@@ -103,7 +103,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
             return sections
         }
 
-        let primarySections: Set<FormSection> = [.identity, .behavior, .checklist]
+        let primarySections: Set<FormSection> = [.identity, .behavior]
         return sections.filter {
             primarySections.contains($0)
                 || populatedSections.contains($0)

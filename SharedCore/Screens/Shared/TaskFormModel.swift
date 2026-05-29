@@ -215,8 +215,7 @@ extension TaskFormModel {
             .name,
             .taskType,
             .deadline,
-            .reminder,
-            .checklist
+            .reminder
         ]
 
         if scheduleMode.wrappedValue.taskType == .routine {
