@@ -3,6 +3,10 @@ import SwiftUI
 #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
 import FamilyControls
 #endif
+#if os(macOS)
+import AppKit
+import UniformTypeIdentifiers
+#endif
 
 struct FocusSessionCard: View {
     @Environment(\.modelContext) private var modelContext
@@ -20,6 +24,14 @@ struct FocusSessionCard: View {
     @State private var isFocusShieldPickerPresented = false
     @State private var isRequestingFocusShieldAuthorization = false
     @State private var focusShieldStatusMessage: String?
+    #endif
+    #if os(macOS)
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacFocusAppBlockingEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isMacFocusAppBlockingEnabled = false
+    @State private var macBlockedApps = FocusShieldSupport.loadMacBlockedApps()
+    @State private var macFocusShieldStatusMessage: String?
     #endif
 
     let task: RoutineTask
@@ -214,6 +226,11 @@ struct FocusSessionCard: View {
             focusShieldStatusMessage = focusShieldSelection.routinaSummaryText
             syncFocusShieldForCurrentContext()
         }
+        #elseif os(macOS)
+        .onChange(of: isMacFocusAppBlockingEnabled) { _, _ in
+            macFocusShieldStatusMessage = FocusShieldSupport.macBlockedAppsSummaryText(macBlockedApps)
+            syncFocusShieldForCurrentContext()
+        }
         #endif
     }
 
@@ -327,6 +344,8 @@ struct FocusSessionCard: View {
 
             #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
             focusShieldControls
+            #elseif os(macOS)
+            macFocusShieldControls
             #endif
 
             Text(focusTrackingDescription)
@@ -425,6 +444,112 @@ struct FocusSessionCard: View {
     }
     #endif
 
+    #if os(macOS)
+    private var macFocusShieldControls: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Toggle(isOn: $isMacFocusAppBlockingEnabled) {
+                Label("Block apps", systemImage: "lock.shield")
+                    .font(.subheadline.weight(.semibold))
+            }
+            .toggleStyle(.switch)
+
+            if isMacFocusAppBlockingEnabled {
+                HStack(spacing: 8) {
+                    Button {
+                        chooseMacBlockedApps()
+                    } label: {
+                        Label("Choose Apps", systemImage: "plus.app")
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button {
+                        macBlockedApps = []
+                        FocusShieldSupport.saveMacBlockedApps(macBlockedApps)
+                        macFocusShieldStatusMessage = FocusShieldSupport.macBlockedAppsSummaryText(macBlockedApps)
+                        syncFocusShieldForCurrentContext()
+                    } label: {
+                        Label("Clear", systemImage: "xmark.circle")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(macBlockedApps.isEmpty)
+                }
+
+                if !macBlockedApps.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(macBlockedApps) { app in
+                            HStack(spacing: 8) {
+                                Text(app.displayName)
+                                    .font(.caption.weight(.semibold))
+                                    .lineLimit(1)
+
+                                Spacer(minLength: 8)
+
+                                Button {
+                                    removeMacBlockedApp(app)
+                                } label: {
+                                    Label("Remove \(app.displayName)", systemImage: "minus.circle")
+                                }
+                                .labelStyle(.iconOnly)
+                                .buttonStyle(.plain)
+                                .foregroundStyle(.secondary)
+                                .help("Remove")
+                            }
+                        }
+                    }
+                }
+
+                Text(macFocusShieldDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(10)
+        .routinaGlassCard(cornerRadius: 10, tint: .teal, tintOpacity: 0.05)
+    }
+
+    private var macFocusShieldDescription: String {
+        if let macFocusShieldStatusMessage {
+            return "\(macFocusShieldStatusMessage). Website blocking is only available through iOS Screen Time."
+        }
+
+        let appSummary = FocusShieldSupport.macBlockedAppsSummaryText(macBlockedApps)
+        return "\(appSummary). Routina asks selected Mac apps to quit while a focus timer is running. Website blocking is only available through iOS Screen Time."
+    }
+
+    private func chooseMacBlockedApps() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.applicationBundle]
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.message = "Choose apps to block while a focus timer is running."
+        panel.prompt = "Choose"
+
+        guard panel.runModal() == .OK else { return }
+
+        let newApps = panel.urls.compactMap(FocusShieldSupport.macBlockedApp(from:))
+        guard !newApps.isEmpty else {
+            macFocusShieldStatusMessage = "No valid apps selected"
+            return
+        }
+
+        macBlockedApps.append(contentsOf: newApps)
+        FocusShieldSupport.saveMacBlockedApps(macBlockedApps)
+        macBlockedApps = FocusShieldSupport.loadMacBlockedApps()
+        macFocusShieldStatusMessage = FocusShieldSupport.macBlockedAppsSummaryText(macBlockedApps)
+        syncFocusShieldForCurrentContext()
+    }
+
+    private func removeMacBlockedApp(_ app: MacFocusBlockedApp) {
+        macBlockedApps.removeAll { $0.id == app.id }
+        FocusShieldSupport.saveMacBlockedApps(macBlockedApps)
+        macBlockedApps = FocusShieldSupport.loadMacBlockedApps()
+        macFocusShieldStatusMessage = FocusShieldSupport.macBlockedAppsSummaryText(macBlockedApps)
+        syncFocusShieldForCurrentContext()
+    }
+    #endif
+
     private var focusTrackingDescription: String {
         if onCompletedDuration != nil {
             return "Finished focus sessions are added to time spent."
@@ -498,6 +623,8 @@ struct FocusSessionCard: View {
 
             #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
             focusShieldControls
+            #elseif os(macOS)
+            macFocusShieldControls
             #endif
         }
     }
@@ -729,7 +856,7 @@ struct FocusSessionCard: View {
     }
 
     private func syncFocusShieldForCurrentContext() {
-#if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
+#if (os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)) || os(macOS)
         FocusShieldSupport.syncFocusShield(using: modelContext)
 #endif
     }

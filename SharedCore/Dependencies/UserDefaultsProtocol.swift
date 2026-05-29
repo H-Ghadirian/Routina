@@ -56,6 +56,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingSleepHomeMenuEnabled
     case appSettingShakeToStartSleepEnabled
     case appSettingFocusShieldEnabled
+    case appSettingMacFocusAppBlockingEnabled
     case appSettingAutomaticPlaceCheckInEnabled
     case appSettingShowTimelineTasksInDayPlanner = "appSettingShowDayPlanUnplannedDoneBadges"
     case appSettingDailyRoutinesSectionCollapsed
@@ -78,6 +79,7 @@ public enum UserDefaultStringValueKey: String, Sendable {
     case appSettingHiddenDayPlanTimelineActivityIDs
     case appSettingTemporaryViewState
     case appSettingFocusShieldSelection
+    case appSettingMacFocusBlockedApps
     case macFormSectionOrder
     case macQuickAddShortcut
 }

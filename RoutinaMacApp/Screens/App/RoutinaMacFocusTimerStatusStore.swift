@@ -19,14 +19,17 @@ final class RoutinaMacFocusTimerStatusStore: ObservableObject {
 
     func refresh() {
         do {
-            let refreshedStatus = try Self.activeStatus(in: persistence.container.mainContext)
+            let context = persistence.container.mainContext
+            let refreshedStatus = try Self.activeStatus(in: context)
             if refreshedStatus != status {
                 status = refreshedStatus
             }
+            FocusShieldSupport.syncFocusShield(using: context)
         } catch {
             if status != .inactive {
                 status = .inactive
             }
+            FocusShieldSupport.syncFocusShield(using: persistence.container.mainContext)
             NSLog("RoutinaMacFocusTimerStatusStore: failed to refresh focus timer status: \(error)")
         }
     }

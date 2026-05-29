@@ -5,6 +5,9 @@ import SwiftData
 import FamilyControls
 import ManagedSettings
 #endif
+#if os(macOS)
+import AppKit
+#endif
 
 enum FocusShieldAuthorizationState: Equatable {
     case unavailable
@@ -16,6 +19,8 @@ enum FocusShieldAuthorizationState: Equatable {
 enum FocusShieldSupport {
     static var isSupported: Bool {
         #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
+        true
+        #elseif os(macOS)
         true
         #else
         false
@@ -56,6 +61,13 @@ enum FocusShieldSupport {
         }
 
         _ = applyShieldForCurrentSelection()
+        #elseif os(macOS)
+        guard hasActiveFocusSession(in: context) else {
+            MacFocusAppBlocker.shared.stop()
+            return
+        }
+
+        MacFocusAppBlocker.shared.sync()
         #endif
     }
 
@@ -75,6 +87,191 @@ enum FocusShieldSupport {
         }
     }
 }
+
+#if os(macOS)
+struct MacFocusBlockedApp: Codable, Equatable, Hashable, Identifiable, Sendable {
+    var bundleIdentifier: String
+    var displayName: String
+    var bundlePath: String?
+
+    var id: String { bundleIdentifier }
+}
+
+extension FocusShieldSupport {
+    static func loadMacBlockedApps() -> [MacFocusBlockedApp] {
+        guard let rawValue = SharedDefaults.app[.appSettingMacFocusBlockedApps],
+              let data = rawValue.data(using: .utf8),
+              let apps = try? JSONDecoder().decode([MacFocusBlockedApp].self, from: data)
+        else {
+            return []
+        }
+
+        return deduplicatedMacBlockedApps(apps)
+    }
+
+    static func saveMacBlockedApps(_ apps: [MacFocusBlockedApp]) {
+        let deduplicatedApps = deduplicatedMacBlockedApps(apps)
+        guard let data = try? JSONEncoder().encode(deduplicatedApps),
+              let rawValue = String(data: data, encoding: .utf8) else {
+            return
+        }
+
+        SharedDefaults.app[.appSettingMacFocusBlockedApps] = rawValue
+    }
+
+    static func macBlockedApp(from url: URL) -> MacFocusBlockedApp? {
+        guard let bundle = Bundle(url: url),
+              let bundleIdentifier = bundle.bundleIdentifier?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !bundleIdentifier.isEmpty else {
+            return nil
+        }
+
+        let displayName = (
+            bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
+                ?? bundle.object(forInfoDictionaryKey: "CFBundleName") as? String
+                ?? url.deletingPathExtension().lastPathComponent
+        )
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return MacFocusBlockedApp(
+            bundleIdentifier: bundleIdentifier,
+            displayName: displayName.isEmpty ? bundleIdentifier : displayName,
+            bundlePath: url.path
+        )
+    }
+
+    static func macBlockedAppsSummaryText(_ apps: [MacFocusBlockedApp]) -> String {
+        switch apps.count {
+        case 0:
+            return "No apps selected"
+        case 1:
+            return "1 app selected"
+        default:
+            return "\(apps.count) apps selected"
+        }
+    }
+
+    private static func deduplicatedMacBlockedApps(_ apps: [MacFocusBlockedApp]) -> [MacFocusBlockedApp] {
+        var seenBundleIDs: Set<String> = []
+        var result: [MacFocusBlockedApp] = []
+
+        for app in apps {
+            let bundleIdentifier = app.bundleIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !bundleIdentifier.isEmpty,
+                  !seenBundleIDs.contains(bundleIdentifier) else {
+                continue
+            }
+
+            seenBundleIDs.insert(bundleIdentifier)
+            result.append(
+                MacFocusBlockedApp(
+                    bundleIdentifier: bundleIdentifier,
+                    displayName: app.displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        ? bundleIdentifier
+                        : app.displayName.trimmingCharacters(in: .whitespacesAndNewlines),
+                    bundlePath: app.bundlePath
+                )
+            )
+        }
+
+        return result.sorted {
+            $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending
+        }
+    }
+}
+
+@MainActor
+private final class MacFocusAppBlocker: NSObject {
+    static let shared = MacFocusAppBlocker()
+
+    private var blockedBundleIdentifiers: Set<String> = []
+    private var isObservingLaunches = false
+    private var enforcementTask: Task<Void, Never>?
+
+    private override init() {}
+
+    func sync() {
+        let apps = FocusShieldSupport.loadMacBlockedApps()
+        guard SharedDefaults.app[.appSettingMacFocusAppBlockingEnabled], !apps.isEmpty else {
+            stop()
+            return
+        }
+
+        blockedBundleIdentifiers = Set(apps.map(\.bundleIdentifier))
+        installLaunchObserverIfNeeded()
+        startEnforcementTaskIfNeeded()
+        enforceRunningApplications()
+    }
+
+    func stop() {
+        blockedBundleIdentifiers.removeAll()
+
+        if isObservingLaunches {
+            NSWorkspace.shared.notificationCenter.removeObserver(
+                self,
+                name: NSWorkspace.didLaunchApplicationNotification,
+                object: nil
+            )
+            isObservingLaunches = false
+        }
+
+        enforcementTask?.cancel()
+        enforcementTask = nil
+    }
+
+    private func installLaunchObserverIfNeeded() {
+        guard !isObservingLaunches else { return }
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self,
+            selector: #selector(applicationDidLaunch(_:)),
+            name: NSWorkspace.didLaunchApplicationNotification,
+            object: nil
+        )
+        isObservingLaunches = true
+    }
+
+    private func startEnforcementTaskIfNeeded() {
+        guard enforcementTask == nil else { return }
+        enforcementTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 5_000_000_000)
+                guard !Task.isCancelled else { return }
+                self?.enforceRunningApplications()
+            }
+        }
+    }
+
+    private func handleLaunch(_ notification: Notification) {
+        guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else {
+            return
+        }
+
+        enforce(app)
+    }
+
+    @objc private func applicationDidLaunch(_ notification: Notification) {
+        handleLaunch(notification)
+    }
+
+    private func enforceRunningApplications() {
+        for app in NSWorkspace.shared.runningApplications {
+            enforce(app)
+        }
+    }
+
+    private func enforce(_ app: NSRunningApplication) {
+        guard let bundleIdentifier = app.bundleIdentifier,
+              blockedBundleIdentifiers.contains(bundleIdentifier),
+              bundleIdentifier != Bundle.main.bundleIdentifier else {
+            return
+        }
+
+        if !app.terminate() {
+            NSLog("Focus app blocking could not ask \(bundleIdentifier) to quit.")
+        }
+    }
+}
+#endif
 
 #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
 extension FocusShieldSupport {
