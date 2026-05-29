@@ -514,7 +514,7 @@ struct FocusSessionCard: View {
         }
 
         let appSummary = FocusShieldSupport.macBlockedAppsSummaryText(macBlockedApps)
-        return "\(appSummary). Routina asks selected Mac apps to quit while a focus timer is running. Website blocking is only available through iOS Screen Time."
+        return "\(appSummary). Routina closes selected Mac apps while a focus timer is running. Website blocking is only available through iOS Screen Time."
     }
 
     private func chooseMacBlockedApps() {

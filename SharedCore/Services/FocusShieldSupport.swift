@@ -185,8 +185,9 @@ private final class MacFocusAppBlocker: NSObject {
     static let shared = MacFocusAppBlocker()
 
     private var blockedBundleIdentifiers: Set<String> = []
-    private var isObservingLaunches = false
+    private var isObservingWorkspace = false
     private var enforcementTask: Task<Void, Never>?
+    private var pendingForceTerminations: Set<pid_t> = []
 
     private override init() {}
 
@@ -198,43 +199,55 @@ private final class MacFocusAppBlocker: NSObject {
         }
 
         blockedBundleIdentifiers = Set(apps.map(\.bundleIdentifier))
-        installLaunchObserverIfNeeded()
+        installWorkspaceObserversIfNeeded()
         startEnforcementTaskIfNeeded()
         enforceRunningApplications()
     }
 
     func stop() {
         blockedBundleIdentifiers.removeAll()
+        pendingForceTerminations.removeAll()
 
-        if isObservingLaunches {
+        if isObservingWorkspace {
             NSWorkspace.shared.notificationCenter.removeObserver(
                 self,
                 name: NSWorkspace.didLaunchApplicationNotification,
                 object: nil
             )
-            isObservingLaunches = false
+            NSWorkspace.shared.notificationCenter.removeObserver(
+                self,
+                name: NSWorkspace.didActivateApplicationNotification,
+                object: nil
+            )
+            isObservingWorkspace = false
         }
 
         enforcementTask?.cancel()
         enforcementTask = nil
     }
 
-    private func installLaunchObserverIfNeeded() {
-        guard !isObservingLaunches else { return }
+    private func installWorkspaceObserversIfNeeded() {
+        guard !isObservingWorkspace else { return }
         NSWorkspace.shared.notificationCenter.addObserver(
             self,
-            selector: #selector(applicationDidLaunch(_:)),
+            selector: #selector(applicationShouldBeBlocked(_:)),
             name: NSWorkspace.didLaunchApplicationNotification,
             object: nil
         )
-        isObservingLaunches = true
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self,
+            selector: #selector(applicationShouldBeBlocked(_:)),
+            name: NSWorkspace.didActivateApplicationNotification,
+            object: nil
+        )
+        isObservingWorkspace = true
     }
 
     private func startEnforcementTaskIfNeeded() {
         guard enforcementTask == nil else { return }
         enforcementTask = Task { @MainActor [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 5_000_000_000)
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
                 guard !Task.isCancelled else { return }
                 self?.enforceRunningApplications()
             }
@@ -249,7 +262,7 @@ private final class MacFocusAppBlocker: NSObject {
         enforce(app)
     }
 
-    @objc private func applicationDidLaunch(_ notification: Notification) {
+    @objc private func applicationShouldBeBlocked(_ notification: Notification) {
         handleLaunch(notification)
     }
 
@@ -266,8 +279,38 @@ private final class MacFocusAppBlocker: NSObject {
             return
         }
 
-        if !app.terminate() {
-            NSLog("Focus app blocking could not ask \(bundleIdentifier) to quit.")
+        _ = app.hide()
+        guard app.terminate() else {
+            if !app.forceTerminate() {
+                NSLog("Focus app blocking could not force quit \(bundleIdentifier).")
+            }
+            return
+        }
+
+        scheduleForceTerminationIfNeeded(for: app, bundleIdentifier: bundleIdentifier)
+    }
+
+    private func scheduleForceTerminationIfNeeded(
+        for app: NSRunningApplication,
+        bundleIdentifier: String
+    ) {
+        let processIdentifier = app.processIdentifier
+        guard !pendingForceTerminations.contains(processIdentifier) else { return }
+        pendingForceTerminations.insert(processIdentifier)
+
+        Task { @MainActor [weak self, weak app] in
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            guard let self else { return }
+            self.pendingForceTerminations.remove(processIdentifier)
+            guard self.blockedBundleIdentifiers.contains(bundleIdentifier),
+                  let app,
+                  app.isTerminated == false else {
+                return
+            }
+
+            if !app.forceTerminate() {
+                NSLog("Focus app blocking could not force quit \(bundleIdentifier).")
+            }
         }
     }
 }

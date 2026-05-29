@@ -16,13 +16,13 @@ Native macOS can import those framework modules, but the relevant authorization,
 
 ## Decision
 
-The macOS focus controls expose a Mac-specific focus blocker that stores user-selected app bundle identifiers and display names. While any task `FocusSession` is active, Routina watches running and newly launched apps and asks matching selected apps to quit. When there is no active task focus session, or when the Mac blocker is disabled or empty, the app blocker stops enforcing.
+The macOS focus controls expose a Mac-specific focus blocker that stores user-selected app bundle identifiers and display names. While any task `FocusSession` is active, Routina watches running, newly launched, and newly activated apps. Matching selected apps are hidden, asked to quit, and force quit if they keep running after a short grace period. When there is no active task focus session, or when the Mac blocker is disabled or empty, the app blocker stops enforcing.
 
 Mac website blocking remains unavailable in the native app until Routina adopts a separate macOS-capable mechanism, such as an approved Network Extension content filter or browser-specific extension path. The iOS Screen Time shield remains the only implementation that can block websites with opaque Apple tokens.
 
 ## Consequences
 
 - Mac users can add local friction for selected distracting apps during task focus timers.
-- Mac app blocking is best-effort and depends on macOS allowing Routina to ask the selected app to quit.
+- Mac app blocking is best-effort and depends on macOS allowing Routina to terminate the selected app.
 - Mac app selections use separate defaults from iOS Screen Time selections because the stored data and privacy model are different.
 - Website blocking should not be presented as system-wide on macOS without a future decision and entitlement-backed implementation.
