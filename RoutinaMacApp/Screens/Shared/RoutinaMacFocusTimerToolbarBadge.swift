@@ -1,3 +1,4 @@
+import AppKit
 import SwiftData
 import SwiftUI
 
@@ -57,24 +58,10 @@ private struct RoutinaMacFocusTimerToolbarBadgeContent: View {
                 Button {
                     open(status)
                 } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: status.kind?.systemImage ?? "timer")
-                            .font(.caption.weight(.semibold))
-
-                        RoutinaMacFocusTimerToolbarTimeText(status: status)
-
-                        if showsTitle {
-                            Text(status.shortTitle)
-                                .font(.caption.weight(.semibold))
-                                .lineLimit(1)
-                                .truncationMode(.tail)
-                                .frame(maxWidth: maxTitleWidth, alignment: .leading)
-                        }
-                    }
-                    .foregroundStyle(status.tint)
-                    .padding(.horizontal, 2)
-                    .frame(height: 24)
-                    .contentShape(Rectangle())
+                    RoutinaMacFocusTimerToolbarLabel(
+                        status: status,
+                        title: showsTitle ? status.toolbarTitle(fitting: maxTitleWidth) : nil
+                    )
                 }
                 .buttonStyle(.plain)
                 .help(status.toolbarHelpTitle)
@@ -104,6 +91,37 @@ private struct RoutinaMacFocusTimerToolbarBadgeContent: View {
     }
 }
 
+private struct RoutinaMacFocusTimerToolbarLabel: View {
+    let status: RoutinaMacFocusTimerStatus
+    let title: String?
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: status.kind?.systemImage ?? "timer")
+                .font(.caption.weight(.semibold))
+
+            RoutinaMacFocusTimerToolbarTimeText(status: status)
+
+            if let title {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+        }
+        .foregroundStyle(status.tint)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 5)
+        .frame(height: 28)
+        .routinaGlassPill(tint: status.tint, tintOpacity: 0.12, interactive: true)
+        .overlay(
+            RoundedRectangle(cornerRadius: 999, style: .continuous)
+                .stroke(status.tint.opacity(0.22), lineWidth: 0.75)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 999, style: .continuous))
+    }
+}
+
 private struct RoutinaMacFocusTimerToolbarTimeText: View {
     let status: RoutinaMacFocusTimerStatus
 
@@ -111,13 +129,7 @@ private struct RoutinaMacFocusTimerToolbarTimeText: View {
         SwiftUI.TimelineView(.periodic(from: .now, by: 1)) { context in
             let timeText = status.menuBarTimeText(at: context.date)
 
-            ZStack(alignment: .trailing) {
-                Text("+00:00:00")
-                    .hidden()
-                    .accessibilityHidden(true)
-
-                Text(timeText)
-            }
+            Text(timeText)
             .font(.caption.monospacedDigit().weight(.semibold))
             .lineLimit(1)
             .fixedSize(horizontal: true, vertical: false)
@@ -142,6 +154,14 @@ private extension RoutinaMacFocusTimerStatus {
 
     var toolbarHelpTitle: String {
         let target = kind == .sprint ? "sprint" : "task"
-        return "Open active \(target): \(shortTitle)"
+        return "Open active \(target): \(title)"
+    }
+
+    func toolbarTitle(fitting maxWidth: CGFloat) -> String? {
+        guard maxWidth > 0 else { return nil }
+
+        let font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize, weight: .semibold)
+        let width = (title as NSString).size(withAttributes: [.font: font]).width
+        return width <= maxWidth ? title : nil
     }
 }
