@@ -105,6 +105,15 @@ struct TaskFormPresentationTests {
         #expect(TaskFormVisibilityMode.progressiveEdit.usesProgressiveDisclosure)
     }
 
+    @Test
+    func textFormattingCommandsInsertMarkdownSnippets() {
+        #expect(RoutinaTextFormattingCommand.bold.applying(to: "") == "**bold text**")
+        #expect(RoutinaTextFormattingCommand.italic.applying(to: "Start") == "Start _italic text_")
+        #expect(RoutinaTextFormattingCommand.bulletList.applying(to: "Start") == "Start\n\n- List item")
+        #expect(RoutinaTextFormattingCommand.checklist.applying(to: "Start\n") == "Start\n\n- [ ] Checklist item")
+        #expect(RoutinaTextFormattingCommand.link.applying(to: "Start ") == "Start [link text](https://example.com)")
+    }
+
     private func presentation(
         taskType: RoutineTaskType = .routine,
         scheduleMode: RoutineScheduleMode = .fixedInterval,

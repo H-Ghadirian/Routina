@@ -35,7 +35,7 @@ struct TaskDetailExtrasSectionView: View {
             }
 
             if let notes {
-                Text(notes)
+                RoutinaFormattedText(notes)
                     .font(.subheadline)
                     .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)

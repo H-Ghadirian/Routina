@@ -101,7 +101,7 @@ struct TaskDetailCommentsSectionView: View {
             }
         } else {
             VStack(alignment: .leading, spacing: 8) {
-                Text(comment.body)
+                RoutinaFormattedText(comment.body)
                     .font(.subheadline)
                     .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -142,29 +142,13 @@ struct TaskDetailCommentsSectionView: View {
         accessibilityIdentifier: String,
         onChanged: @escaping (String) -> Void
     ) -> some View {
-        ZStack(alignment: .topLeading) {
-            TextEditor(text: draftBinding(draft: draft, onChanged: onChanged))
-                .font(.subheadline)
-                .scrollContentBackground(.hidden)
-                .frame(minHeight: minHeight)
-                .padding(8)
-                .background(Color.secondary.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(Color.secondary.opacity(0.16), lineWidth: 1)
-                )
-                .accessibilityIdentifier(accessibilityIdentifier)
-
-            if draft.isEmpty {
-                Text(placeholder)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 16)
-                    .allowsHitTesting(false)
-            }
-        }
+        RoutinaFormattedTextEditor(
+            text: draftBinding(draft: draft, onChanged: onChanged),
+            placeholder: placeholder,
+            minHeight: minHeight,
+            font: .subheadline,
+            accessibilityIdentifier: accessibilityIdentifier
+        )
     }
 
     private func draftBinding(

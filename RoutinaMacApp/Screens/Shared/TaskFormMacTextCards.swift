@@ -17,27 +17,13 @@ struct TaskFormMacNotesCard: View {
 
     var body: some View {
         TaskFormMacSectionCard(title: "Notes") {
-            ZStack(alignment: .topLeading) {
-                TextEditor(text: model.notes)
-                    .frame(minHeight: 120)
-                    .padding(6)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(Color(nsColor: .textBackgroundColor))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .stroke(Color.gray.opacity(0.18), lineWidth: 1)
-                    )
-
-                if model.notes.wrappedValue.isEmpty {
-                    Text("Add notes, reminders, or context")
-                        .foregroundStyle(.tertiary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 14)
-                        .allowsHitTesting(false)
-                }
-            }
+            RoutinaFormattedTextEditor(
+                text: model.notes,
+                placeholder: "Add notes, reminders, or context",
+                minHeight: 120,
+                backgroundColor: Color(nsColor: .textBackgroundColor),
+                strokeColor: Color.gray.opacity(0.18)
+            )
         }
     }
 }

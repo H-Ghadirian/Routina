@@ -98,8 +98,11 @@ struct RoutineNoteEditorView: View {
         Form {
             Section("Note") {
                 TextField("Title", text: $title)
-                TextField("Write a note", text: $bodyText, axis: .vertical)
-                    .lineLimit(5, reservesSpace: true)
+                RoutinaFormattedTextEditor(
+                    text: $bodyText,
+                    placeholder: "Write a note",
+                    minHeight: 120
+                )
             }
 
             Section("Tags") {
@@ -225,22 +228,14 @@ struct RoutineNoteEditorView: View {
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
 
-                    ZStack(alignment: .topLeading) {
-                        TextEditor(text: $bodyText)
-                            .font(.body)
-                            .scrollContentBackground(.hidden)
-                            .padding(8)
-                            .frame(minHeight: 260)
-
-                        if bodyText.isEmpty {
-                            Text("Write a note")
-                                .foregroundStyle(.tertiary)
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 13)
-                                .allowsHitTesting(false)
-                        }
-                    }
-                    .background(macInputBackground)
+                    RoutinaFormattedTextEditor(
+                        text: $bodyText,
+                        placeholder: "Write a note",
+                        minHeight: 260,
+                        backgroundColor: .secondary.opacity(0.08),
+                        strokeColor: .secondary.opacity(0.18),
+                        cornerRadius: 8
+                    )
                 }
             }
         }
@@ -687,6 +682,176 @@ private struct RoutineNoteEditorCard<Content: View>: View {
     }
 }
 
+struct RoutinaFormattedTextEditor: View {
+    @Binding var text: String
+    let placeholder: String
+    var minHeight: CGFloat = 120
+    var font: Font = .body
+    var backgroundColor: Color = .secondary.opacity(0.08)
+    var strokeColor: Color = .secondary.opacity(0.16)
+    var cornerRadius: CGFloat = 10
+    var accessibilityIdentifier: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ZStack(alignment: .topLeading) {
+                TextEditor(text: $text)
+                    .font(font)
+                    .scrollContentBackground(.hidden)
+                    .frame(minHeight: minHeight)
+                    .padding(8)
+                    .background(background)
+                    .accessibilityIdentifier(accessibilityIdentifier ?? "")
+
+                if text.isEmpty {
+                    Text(placeholder)
+                        .font(font)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 16)
+                        .allowsHitTesting(false)
+                }
+            }
+
+            RoutinaTextFormattingToolbar(text: $text)
+        }
+    }
+
+    private var background: some View {
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .fill(backgroundColor)
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .stroke(strokeColor, lineWidth: 1)
+            )
+    }
+}
+
+struct RoutinaTextFormattingToolbar: View {
+    @Binding var text: String
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(RoutinaTextFormattingCommand.allCases) { command in
+                    Button {
+                        text = command.applying(to: text)
+                    } label: {
+                        Image(systemName: command.systemImage)
+                            .font(.caption.weight(.semibold))
+                            .frame(width: 24, height: 22)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .help(command.title)
+                    .accessibilityLabel(command.title)
+                }
+            }
+            .padding(.vertical, 2)
+        }
+    }
+}
+
+enum RoutinaTextFormattingCommand: String, CaseIterable, Identifiable {
+    case heading
+    case bold
+    case italic
+    case bulletList
+    case checklist
+    case quote
+    case code
+    case link
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .heading: return "Heading"
+        case .bold: return "Bold"
+        case .italic: return "Italic"
+        case .bulletList: return "Bullet List"
+        case .checklist: return "Checklist"
+        case .quote: return "Quote"
+        case .code: return "Code"
+        case .link: return "Link"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .heading: return "textformat.size"
+        case .bold: return "bold"
+        case .italic: return "italic"
+        case .bulletList: return "list.bullet"
+        case .checklist: return "checklist"
+        case .quote: return "quote.opening"
+        case .code: return "curlybraces"
+        case .link: return "link"
+        }
+    }
+
+    func applying(to text: String) -> String {
+        switch self {
+        case .heading:
+            return appendingBlock("## Heading", to: text)
+        case .bold:
+            return appendingInline("**bold text**", to: text)
+        case .italic:
+            return appendingInline("_italic text_", to: text)
+        case .bulletList:
+            return appendingBlock("- List item", to: text)
+        case .checklist:
+            return appendingBlock("- [ ] Checklist item", to: text)
+        case .quote:
+            return appendingBlock("> Quote", to: text)
+        case .code:
+            return appendingInline("`code`", to: text)
+        case .link:
+            return appendingInline("[link text](https://example.com)", to: text)
+        }
+    }
+
+    private func appendingInline(_ snippet: String, to text: String) -> String {
+        guard !text.isEmpty else { return snippet }
+        if text.last?.isWhitespace == true {
+            return text + snippet
+        }
+        return text + " " + snippet
+    }
+
+    private func appendingBlock(_ snippet: String, to text: String) -> String {
+        guard !text.isEmpty else { return snippet }
+        if text.hasSuffix("\n\n") {
+            return text + snippet
+        }
+        if text.hasSuffix("\n") {
+            return text + "\n" + snippet
+        }
+        return text + "\n\n" + snippet
+    }
+}
+
+struct RoutinaFormattedText: View {
+    let text: String
+
+    init(_ text: String) {
+        self.text = text
+    }
+
+    var body: some View {
+        Text(Self.attributedText(from: text))
+    }
+
+    static func attributedText(from text: String) -> AttributedString {
+        (
+            try? AttributedString(
+                markdown: text,
+                options: AttributedString.MarkdownParsingOptions(interpretedSyntax: .full)
+            )
+        ) ?? AttributedString(text)
+    }
+}
+
 struct RoutineNoteDetailView: View {
     let note: RoutineNote
     let attachments: [RoutineNoteAttachment]
@@ -723,7 +888,7 @@ struct RoutineNoteDetailView: View {
                 }
 
                 if let body = RoutineNote.cleanedText(note.body) {
-                    Text(body)
+                    RoutinaFormattedText(body)
                         .font(.body)
                         .textSelection(.enabled)
                 }

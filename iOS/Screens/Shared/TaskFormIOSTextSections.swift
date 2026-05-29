@@ -6,8 +6,11 @@ struct TaskFormIOSNotesSection: View {
 
     var body: some View {
         Section(header: Text("Notes")) {
-            TextField("Add notes", text: model.notes, axis: .vertical)
-                .lineLimit(4...8)
+            RoutinaFormattedTextEditor(
+                text: model.notes,
+                placeholder: "Add notes",
+                minHeight: 110
+            )
             Text(presentation.notesHelpText)
                 .font(.caption)
                 .foregroundStyle(.secondary)
