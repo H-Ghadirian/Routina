@@ -884,7 +884,17 @@ detailBody
             isDoneToday: store.isDoneToday,
             background: routineLogsBackground,
             stroke: TaskDetailPlatformStyle.sectionCardStroke,
+            newItemTitle: Binding(
+                get: { store.editChecklistItemDraftTitle },
+                set: { store.send(.editChecklistItemDraftTitleChanged($0)) }
+            ),
+            newItemIntervalDays: Binding(
+                get: { store.editChecklistItemDraftInterval },
+                set: { store.send(.editChecklistItemDraftIntervalChanged($0)) }
+            ),
+            isAddItemDisabled: RoutineChecklistItem.normalizedTitle(store.editChecklistItemDraftTitle) == nil,
             isMarkedDone: { store.state.isChecklistItemMarkedDone($0) },
+            onAddItem: { store.send(.detailAddChecklistItemTapped) },
             onToggleCompletion: { store.send(.toggleChecklistItemCompletion($0)) },
             onMarkPurchased: { store.send(.markChecklistItemPurchased($0)) }
         )

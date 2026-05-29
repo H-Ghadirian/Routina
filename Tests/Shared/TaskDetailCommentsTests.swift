@@ -111,4 +111,62 @@ struct TaskDetailCommentsTests {
         #expect(persistedTask.notes == nil)
         #expect(!store.state.isEditSheetPresented)
     }
+
+    @Test
+    func detailChecklist_canAddItemWithoutOpeningEditSheet() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-04-02T08:15:00Z")
+        let existingItem = RoutineChecklistItem(
+            title: "Milk",
+            intervalDays: 3,
+            createdAt: makeDate("2026-04-01T08:15:00Z")
+        )
+        let task = makeTask(
+            in: context,
+            name: "Groceries",
+            interval: 1,
+            lastDone: nil,
+            emoji: "G",
+            checklistItems: [existingItem]
+        )
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task.detachedCopy()
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            setTestDateDependencies(&$0, now: now)
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editChecklistItemDraftTitleChanged(" Bread ")) {
+            $0.editChecklistItemDraftTitle = " Bread "
+        }
+        await store.send(.editChecklistItemDraftIntervalChanged(7)) {
+            $0.editChecklistItemDraftInterval = 7
+        }
+        await store.send(.detailAddChecklistItemTapped)
+
+        #expect(store.state.editChecklistItemDraftTitle.isEmpty)
+        #expect(store.state.editChecklistItemDraftInterval == 3)
+        #expect(store.state.task.checklistItems.map(\.title) == ["Milk", "Bread"])
+        #expect(store.state.task.checklistItems.last?.intervalDays == 7)
+        #expect(store.state.task.checklistItems.last?.createdAt == now)
+        #expect(!store.state.isEditSheetPresented)
+
+        let taskID = task.id
+        let descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate<RoutineTask> { task in
+                task.id == taskID
+            }
+        )
+        let persistedTask = try #require(context.fetch(descriptor).first)
+        #expect(persistedTask.checklistItems.map(\.title) == ["Milk", "Bread"])
+        #expect(persistedTask.checklistItems.last?.intervalDays == 7)
+    }
 }

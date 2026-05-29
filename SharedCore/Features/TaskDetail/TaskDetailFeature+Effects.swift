@@ -333,6 +333,47 @@ extension TaskDetailFeature {
         }
     }
 
+    func handleDetailChecklistItemsChanged(
+        taskID: UUID,
+        checklistItems: [RoutineChecklistItem]
+    ) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = modelContext()
+                guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
+                task.replaceChecklistItems(checklistItems)
+                DeviceActivityRecorder.recordAction(
+                    .updated,
+                    entity: .task,
+                    entityID: taskID,
+                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                    details: "Updated checklist items",
+                    in: context
+                )
+                try context.save()
+                WidgetStatsService.refreshAndReload(using: context)
+                NotificationCenter.default.postRoutineDidUpdate()
+                if !NotificationCoordinator.shouldScheduleNotification(
+                    for: task,
+                    referenceDate: now,
+                    calendar: calendar
+                ) {
+                    await notificationClient.cancel(task.id.uuidString)
+                } else {
+                    await notificationClient.schedule(
+                        NotificationCoordinator.notificationPayload(
+                            for: task,
+                            referenceDate: now,
+                            calendar: calendar
+                        )
+                    )
+                }
+            } catch {
+                print("Error saving detail checklist items: \(error)")
+            }
+        }
+    }
+
     func handleEditSave(
         _ request: TaskDetailEditSaveRequest
     ) -> Effect<Action> {

@@ -175,6 +175,7 @@ struct TaskDetailFeature: Reducer {
         case markChecklistItemPurchased(UUID)
         case toggleChecklistItemCompletion(UUID)
         case markChecklistItemCompleted(UUID)
+        case detailAddChecklistItemTapped
         case requestUndoSelectedDateCompletion
         case undoSelectedDateCompletion
         case requestRemoveLogEntry(Date)
@@ -734,6 +735,27 @@ struct TaskDetailFeature: Reducer {
             case .advancedStep:
                 return .none
             }
+
+        case .detailAddChecklistItemTapped:
+            guard let title = RoutineChecklistItem.normalizedTitle(state.editChecklistItemDraftTitle) else {
+                return .none
+            }
+            let item = RoutineChecklistItem(
+                title: title,
+                intervalDays: state.editChecklistItemDraftInterval,
+                createdAt: now
+            )
+            let updatedItems = RoutineChecklistItem.sanitized(state.task.checklistItems + [item])
+            state.task.replaceChecklistItems(updatedItems)
+            state.editRoutineChecklistItems = updatedItems
+            state.editChecklistItemDraftTitle = ""
+            state.editChecklistItemDraftInterval = 3
+            refreshTaskView(&state)
+            updateDerivedState(&state)
+            return handleDetailChecklistItemsChanged(
+                taskID: state.task.id,
+                checklistItems: updatedItems
+            )
 
         case .undoSelectedDateCompletion:
             return completionLogActionHandler().undoSelectedDateCompletion(state: &state)

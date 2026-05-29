@@ -6,7 +6,11 @@ struct TaskDetailChecklistSectionView: View {
     let isDoneToday: Bool
     let background: Color
     let stroke: Color
+    @Binding var newItemTitle: String
+    @Binding var newItemIntervalDays: Int
+    let isAddItemDisabled: Bool
     let isMarkedDone: (RoutineChecklistItem) -> Bool
+    let onAddItem: () -> Void
     let onToggleCompletion: (UUID) -> Void
     let onMarkPurchased: (UUID) -> Void
 
@@ -19,6 +23,8 @@ struct TaskDetailChecklistSectionView: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Checklist Items")
                     .font(.headline)
+
+                checklistComposer
 
                 if task.checklistItems.isEmpty {
                     Text("No checklist items yet")
@@ -35,6 +41,48 @@ struct TaskDetailChecklistSectionView: View {
                 }
             }
         }
+    }
+
+    private var checklistComposer: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) {
+                    checklistTextField
+                    addItemButton
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    checklistTextField
+                    HStack {
+                        Spacer()
+                        addItemButton
+                    }
+                }
+            }
+
+            if task.isChecklistDriven {
+                Stepper(value: $newItemIntervalDays, in: 1...365) {
+                    Text(TaskFormPresentation.checklistIntervalLabel(for: newItemIntervalDays))
+                        .font(.caption)
+                }
+            }
+        }
+    }
+
+    private var checklistTextField: some View {
+        TextField("Add checklist item", text: $newItemTitle)
+            .textFieldStyle(.roundedBorder)
+            .onSubmit(onAddItem)
+    }
+
+    private var addItemButton: some View {
+        Button {
+            onAddItem()
+        } label: {
+            Label("Add Item", systemImage: "plus.circle.fill")
+        }
+        .buttonStyle(.borderedProminent)
+        .disabled(isAddItemDisabled)
     }
 
     @ViewBuilder
