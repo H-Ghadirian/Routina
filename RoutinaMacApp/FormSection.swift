@@ -30,6 +30,19 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
 
     var title: String { rawValue }
 
+    var addButtonTitle: String {
+        switch self {
+        case .importanceUrgency:
+            return "Priority"
+        case .linkURL:
+            return "Link"
+        case .attachment:
+            return "File"
+        default:
+            return title
+        }
+    }
+
     var icon: String {
         switch self {
         case .identity:          return "person.fill"
@@ -83,16 +96,18 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
     static func visibleTaskFormSections(
         from sections: [FormSection],
         mode: TaskFormVisibilityMode,
-        isShowingMoreDetails: Bool,
+        revealedSections: Set<FormSection>,
         populatedSections: Set<FormSection>
     ) -> [FormSection] {
-        guard mode.usesProgressiveDisclosure, !isShowingMoreDetails else {
+        guard mode.usesProgressiveDisclosure else {
             return sections
         }
 
         let primarySections: Set<FormSection> = [.identity, .behavior, .checklist]
         return sections.filter {
-            primarySections.contains($0) || populatedSections.contains($0)
+            primarySections.contains($0)
+                || populatedSections.contains($0)
+                || revealedSections.contains($0)
         }
     }
 }

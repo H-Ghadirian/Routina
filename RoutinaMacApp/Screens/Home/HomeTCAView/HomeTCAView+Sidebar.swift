@@ -582,7 +582,7 @@ extension HomeTCAView {
         return FormSection.visibleTaskFormSections(
             from: sections,
             mode: .progressiveCreate,
-            isShowingMoreDetails: addEditFormCoordinator.isTaskFormMoreDetailsExpanded,
+            revealedSections: addEditFormCoordinator.revealedTaskFormSections,
             populatedSections: addState?.populatedMacFormSections ?? []
         )
     }
@@ -597,7 +597,7 @@ extension HomeTCAView {
         return FormSection.visibleTaskFormSections(
             from: sections,
             mode: .progressiveEdit,
-            isShowingMoreDetails: addEditFormCoordinator.isTaskFormMoreDetailsExpanded,
+            revealedSections: addEditFormCoordinator.revealedTaskFormSections,
             populatedSections: detail.populatedMacFormSections
         )
     }

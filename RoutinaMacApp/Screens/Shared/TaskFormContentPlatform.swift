@@ -94,9 +94,16 @@ struct TaskFormContent: View {
         FormSection.visibleTaskFormSections(
             from: availableSections,
             mode: model.visibilityMode,
-            isShowingMoreDetails: formCoordinator.isTaskFormMoreDetailsExpanded,
+            revealedSections: formCoordinator.revealedTaskFormSections,
             populatedSections: model.populatedMacFormSections
         )
+    }
+
+    private var hiddenOptionalSections: [FormSection] {
+        let visibleSet = Set(visibleSections)
+        return formCoordinator.orderedSections(available: availableSections).filter {
+            $0 != .identity && !visibleSet.contains($0)
+        }
     }
 
     @ViewBuilder
@@ -107,25 +114,46 @@ struct TaskFormContent: View {
                 formSectionView(for: section)
             }
 
-            if model.visibilityMode.usesProgressiveDisclosure {
-                moreDetailsCard
+            if model.visibilityMode.usesProgressiveDisclosure && !hiddenOptionalSections.isEmpty {
+                addDetailsCard(sections: hiddenOptionalSections)
             }
         }
     }
 
-    private var moreDetailsCard: some View {
-        TaskFormMacSectionCard(title: "More Details") {
-            Button {
-                withAnimation(.easeInOut(duration: 0.18)) {
-                    formCoordinator.isTaskFormMoreDetailsExpanded.toggle()
+    private func addDetailsCard(sections: [FormSection]) -> some View {
+        TaskFormMacSectionCard(title: "Add Details") {
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 132), spacing: 8)],
+                alignment: .leading,
+                spacing: 8
+            ) {
+                ForEach(sections, id: \.self) { section in
+                    Button {
+                        revealOptionalSection(section)
+                    } label: {
+                        Label(section.addButtonTitle, systemImage: section.icon)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.regular)
+                    .help("Add \(section.title)")
                 }
-            } label: {
-                Label(
-                    formCoordinator.isTaskFormMoreDetailsExpanded ? "Hide More Details" : "Show More Details",
-                    systemImage: formCoordinator.isTaskFormMoreDetailsExpanded ? "chevron.up.circle" : "ellipsis.circle"
-                )
             }
-            .buttonStyle(.bordered)
+        }
+    }
+
+    private func revealOptionalSection(_ section: FormSection) {
+        withAnimation(.easeInOut(duration: 0.18)) {
+            formCoordinator.revealTaskFormSection(section)
+        }
+
+        Task { @MainActor in
+            await Task.yield()
+            withAnimation(.easeInOut(duration: 0.25)) {
+                formCoordinator.scrollTarget = section
+            }
         }
     }
 

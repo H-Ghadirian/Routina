@@ -327,6 +327,7 @@ extension HomeTCAView {
     func openAddTask() {
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
+        addEditFormCoordinator.resetRevealedTaskFormSections()
         store.send(.macSidebarModeChanged(.addTask))
         store.send(.setAddRoutineSheet(true))
         scheduleAddTaskNameFocus()

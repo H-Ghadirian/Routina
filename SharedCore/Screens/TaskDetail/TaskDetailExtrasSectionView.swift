@@ -92,22 +92,9 @@ struct TaskDetailExtrasSectionView: View {
 }
 
 struct TaskDetailOptionalActionsSectionView: View {
-    let showsCommentAction: Bool
-    let showsLinkedTaskAction: Bool
-    let showsTimeAction: Bool
-    let showsStateAction: Bool
-    let showsPressureAction: Bool
-    let showsChecklistAction: Bool
-    let showsDetailsAction: Bool
+    let actions: [TaskDetailOptionalAction]
     let background: Color
     let stroke: Color
-    let onAddComment: () -> Void
-    let onAddLinkedTask: () -> Void
-    let onAddTime: () -> Void
-    let onAddState: () -> Void
-    let onAddPressure: () -> Void
-    let onAddChecklist: () -> Void
-    let onEditDetails: () -> Void
 
     var body: some View {
         TaskDetailSectionCardView(background: background, stroke: stroke) {
@@ -115,14 +102,12 @@ struct TaskDetailOptionalActionsSectionView: View {
                 Text("Add More")
                     .font(.headline)
 
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 8) {
-                        actionButtons
-                    }
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        actionButtons
-                    }
+                LazyVGrid(
+                    columns: [GridItem(.adaptive(minimum: 124), spacing: 8)],
+                    alignment: .leading,
+                    spacing: 8
+                ) {
+                    actionButtons
                 }
             }
         }
@@ -130,73 +115,39 @@ struct TaskDetailOptionalActionsSectionView: View {
 
     @ViewBuilder
     private var actionButtons: some View {
-        if showsCommentAction {
-            actionButton(
-                title: "Comment",
-                systemImage: "text.bubble",
-                action: onAddComment
-            )
-        }
-
-        if showsLinkedTaskAction {
-            actionButton(
-                title: "Linked Task",
-                systemImage: "link.badge.plus",
-                action: onAddLinkedTask
-            )
-        }
-
-        if showsTimeAction {
-            actionButton(
-                title: "Time",
-                systemImage: "clock.badge",
-                action: onAddTime
-            )
-        }
-
-        if showsStateAction {
-            actionButton(
-                title: "State",
-                systemImage: "circle.grid.2x1",
-                action: onAddState
-            )
-        }
-
-        if showsPressureAction {
-            actionButton(
-                title: "Pressure",
-                systemImage: "gauge.with.dots.needle.50percent",
-                action: onAddPressure
-            )
-        }
-
-        if showsChecklistAction {
-            actionButton(
-                title: "Checklist",
-                systemImage: "checklist",
-                action: onAddChecklist
-            )
-        }
-
-        if showsDetailsAction {
-            actionButton(
-                title: "Details",
-                systemImage: "square.and.pencil",
-                action: onEditDetails
-            )
+        ForEach(actions) { action in
+            actionButton(action)
         }
     }
 
-    private func actionButton(
-        title: String,
-        systemImage: String,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Label(title, systemImage: systemImage)
+    private func actionButton(_ action: TaskDetailOptionalAction) -> some View {
+        Button(action: action.perform) {
+            Label(action.title, systemImage: action.systemImage)
                 .font(.subheadline)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .buttonStyle(.bordered)
+    }
+}
+
+struct TaskDetailOptionalAction: Identifiable {
+    let id: String
+    let title: String
+    let systemImage: String
+    let perform: () -> Void
+
+    init(
+        id: String? = nil,
+        title: String,
+        systemImage: String,
+        perform: @escaping () -> Void
+    ) {
+        self.id = id ?? title
+        self.title = title
+        self.systemImage = systemImage
+        self.perform = perform
     }
 }
 

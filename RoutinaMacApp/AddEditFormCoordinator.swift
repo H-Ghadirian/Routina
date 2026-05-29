@@ -5,7 +5,7 @@ import SwiftUI
 final class AddEditFormCoordinator {
     var scrollTarget: FormSection?
     var nameFocusRequestID: Int = 0
-    var isTaskFormMoreDetailsExpanded = false
+    var revealedTaskFormSections: Set<FormSection> = []
 
     /// User-customised ordering of movable sections (persisted via UserDefaults).
     /// Does NOT include `.identity` – that section is always first and not movable.
@@ -21,6 +21,14 @@ final class AddEditFormCoordinator {
 
     func requestNameFocus() {
         nameFocusRequestID += 1
+    }
+
+    func revealTaskFormSection(_ section: FormSection) {
+        revealedTaskFormSections.insert(section)
+    }
+
+    func resetRevealedTaskFormSections() {
+        revealedTaskFormSections = []
     }
 
     // MARK: - Reordering helpers

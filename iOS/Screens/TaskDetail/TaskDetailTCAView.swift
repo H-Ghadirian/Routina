@@ -318,50 +318,71 @@ detailBody
     private var optionalActionsSection: some View {
         if shouldShowOptionalActionsSection {
             TaskDetailOptionalActionsSectionView(
-                showsCommentAction: !shouldShowCommentsSection,
-                showsLinkedTaskAction: !shouldShowRelationshipsSection,
-                showsTimeAction: shouldShowTimeAddAction,
-                showsStateAction: shouldShowTodoStateAddAction,
-                showsPressureAction: shouldShowPressureAddAction,
-                showsChecklistAction: !store.task.hasChecklistItems,
-                showsDetailsAction: !hasTaskExtras,
+                actions: optionalDetailActions,
                 background: routineLogsBackground,
-                stroke: TaskDetailPlatformStyle.sectionCardStroke,
-                onAddComment: {
-                    withAnimation(.easeInOut(duration: 0.18)) {
-                        isCommentComposerVisible = true
-                    }
-                },
-                onAddLinkedTask: { store.send(.openAddLinkedTask) },
-                onAddTime: {
-                    withAnimation(.easeInOut(duration: 0.18)) {
-                        isTimeControlRevealed = true
-                    }
-                },
-                onAddState: {
-                    withAnimation(.easeInOut(duration: 0.18)) {
-                        isTodoStateControlRevealed = true
-                    }
-                },
-                onAddPressure: {
-                    withAnimation(.easeInOut(duration: 0.18)) {
-                        isPressureControlRevealed = true
-                    }
-                },
-                onAddChecklist: { store.send(.setEditSheet(true)) },
-                onEditDetails: { store.send(.setEditSheet(true)) }
+                stroke: TaskDetailPlatformStyle.sectionCardStroke
             )
         }
     }
 
     private var shouldShowOptionalActionsSection: Bool {
-        !shouldShowCommentsSection
-            || !shouldShowRelationshipsSection
-            || shouldShowTimeAddAction
-            || shouldShowTodoStateAddAction
-            || shouldShowPressureAddAction
-            || !store.task.hasChecklistItems
-            || !hasTaskExtras
+        !optionalDetailActions.isEmpty
+    }
+
+    private var optionalDetailActions: [TaskDetailOptionalAction] {
+        var actions: [TaskDetailOptionalAction] = []
+
+        if !shouldShowCommentsSection {
+            actions.append(TaskDetailOptionalAction(title: "Comment", systemImage: "text.bubble") {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    isCommentComposerVisible = true
+                }
+            })
+        }
+
+        if !shouldShowRelationshipsSection {
+            actions.append(TaskDetailOptionalAction(title: "Linked Task", systemImage: "link.badge.plus") {
+                store.send(.openAddLinkedTask)
+            })
+        }
+
+        if shouldShowTimeAddAction {
+            actions.append(TaskDetailOptionalAction(title: "Time", systemImage: "clock.badge") {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    isTimeControlRevealed = true
+                }
+            })
+        }
+
+        if shouldShowTodoStateAddAction {
+            actions.append(TaskDetailOptionalAction(title: "State", systemImage: "circle.grid.2x1") {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    isTodoStateControlRevealed = true
+                }
+            })
+        }
+
+        if shouldShowPressureAddAction {
+            actions.append(TaskDetailOptionalAction(title: "Pressure", systemImage: "gauge.with.dots.needle.50percent") {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    isPressureControlRevealed = true
+                }
+            })
+        }
+
+        if !store.task.hasChecklistItems {
+            actions.append(TaskDetailOptionalAction(title: "Checklist", systemImage: "checklist") {
+                store.send(.setEditSheet(true))
+            })
+        }
+
+        if !hasTaskExtras {
+            actions.append(TaskDetailOptionalAction(title: "Details", systemImage: "square.and.pencil") {
+                store.send(.setEditSheet(true))
+            })
+        }
+
+        return actions
     }
 
     private var shouldShowCommentsSection: Bool {

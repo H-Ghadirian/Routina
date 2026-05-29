@@ -9,6 +9,7 @@ struct TaskDetailTCAView: View {
     @Dependency(\.appSettingsClient) private var appSettingsClient
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.addEditFormCoordinator) private var formCoordinator
     @Query(sort: \FocusSession.startedAt, order: .reverse) private var focusSessions: [FocusSession]
     @State var displayedMonthStart = Calendar.current.startOfMonth(for: Date())
     @State var isShowingAllLogs = false
@@ -575,50 +576,131 @@ detailBody
     private var optionalActionsSection: some View {
         if shouldShowOptionalActionsSection {
             TaskDetailOptionalActionsSectionView(
-                showsCommentAction: !shouldShowCommentsSection,
-                showsLinkedTaskAction: !shouldShowRelationshipsSection,
-                showsTimeAction: shouldShowTimeAddAction,
-                showsStateAction: shouldShowTodoStateAddAction,
-                showsPressureAction: shouldShowPressureAddAction,
-                showsChecklistAction: !store.task.hasChecklistItems,
-                showsDetailsAction: false,
+                actions: optionalDetailActions,
                 background: routineLogsBackground,
-                stroke: TaskDetailPlatformStyle.sectionCardStroke,
-                onAddComment: {
-                    withAnimation(.easeInOut(duration: 0.18)) {
-                        isCommentComposerVisible = true
-                    }
-                },
-                onAddLinkedTask: { store.send(.openAddLinkedTask) },
-                onAddTime: {
-                    withAnimation(.easeInOut(duration: 0.18)) {
-                        isTimeControlRevealed = true
-                        isTimeSectionExpanded = true
-                    }
-                },
-                onAddState: {
-                    withAnimation(.easeInOut(duration: 0.18)) {
-                        isTodoStateControlRevealed = true
-                    }
-                },
-                onAddPressure: {
-                    withAnimation(.easeInOut(duration: 0.18)) {
-                        isPressureControlRevealed = true
-                    }
-                },
-                onAddChecklist: { store.send(.setEditSheet(true)) },
-                onEditDetails: { store.send(.setEditSheet(true)) }
+                stroke: TaskDetailPlatformStyle.sectionCardStroke
             )
         }
     }
 
     private var shouldShowOptionalActionsSection: Bool {
-        !shouldShowCommentsSection
-            || !shouldShowRelationshipsSection
-            || shouldShowTimeAddAction
-            || shouldShowTodoStateAddAction
-            || shouldShowPressureAddAction
-            || !store.task.hasChecklistItems
+        !optionalDetailActions.isEmpty
+    }
+
+    private var optionalDetailActions: [TaskDetailOptionalAction] {
+        var actions: [TaskDetailOptionalAction] = []
+
+        if !shouldShowCommentsSection {
+            actions.append(TaskDetailOptionalAction(title: "Comment", systemImage: "text.bubble") {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    isCommentComposerVisible = true
+                }
+            })
+        }
+
+        if shouldShowTimeAddAction {
+            actions.append(TaskDetailOptionalAction(title: "Time", systemImage: "clock.badge") {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    isTimeControlRevealed = true
+                    isTimeSectionExpanded = true
+                }
+            })
+        }
+
+        if shouldShowTodoStateAddAction {
+            actions.append(TaskDetailOptionalAction(title: "State", systemImage: "circle.grid.2x1") {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    isTodoStateControlRevealed = true
+                }
+            })
+        }
+
+        if shouldShowPressureAddAction {
+            actions.append(TaskDetailOptionalAction(title: "Pressure", systemImage: "gauge.with.dots.needle.50percent") {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    isPressureControlRevealed = true
+                }
+            })
+        }
+
+        if shouldShowEstimationAddAction {
+            actions.append(editSectionAction(title: "Estimate", section: .estimation))
+        }
+
+        if !store.task.hasChecklistItems {
+            actions.append(editSectionAction(title: "Checklist", section: .checklist))
+        }
+
+        if store.task.tags.isEmpty {
+            actions.append(editSectionAction(title: "Tags", section: .tags))
+        }
+
+        if store.taskGoalSummaries.isEmpty {
+            actions.append(editSectionAction(title: "Goals", section: .goals))
+        }
+
+        if !shouldShowRelationshipsSection {
+            actions.append(TaskDetailOptionalAction(title: "Linked Task", systemImage: "link.badge.plus") {
+                store.send(.openAddLinkedTask)
+            })
+        }
+
+        if store.task.placeID == nil {
+            actions.append(editSectionAction(title: "Place", section: .places))
+        }
+
+        if !store.task.hasNotes {
+            actions.append(editSectionAction(title: "Notes", section: .notes))
+        }
+
+        if store.task.resolvedLinkURL == nil {
+            actions.append(editSectionAction(title: "Link", section: .linkURL))
+        }
+
+        if store.task.color == .none {
+            actions.append(editSectionAction(title: "Color", section: .color))
+        }
+
+        if !store.task.hasImage {
+            actions.append(editSectionAction(title: "Image", section: .image))
+        }
+
+        if !store.task.hasVoiceNote {
+            actions.append(editSectionAction(title: "Voice Note", section: .voiceNote))
+        }
+
+        if store.taskAttachments.isEmpty {
+            actions.append(editSectionAction(title: "File", section: .attachment))
+        }
+
+        return actions
+    }
+
+    private var shouldShowEstimationAddAction: Bool {
+        store.task.estimatedDurationMinutes == nil
+            && store.task.storyPoints == nil
+            && !store.task.focusModeEnabled
+    }
+
+    private func editSectionAction(title: String, section: FormSection) -> TaskDetailOptionalAction {
+        TaskDetailOptionalAction(title: title, systemImage: section.icon) {
+            openEditSection(section)
+        }
+    }
+
+    private func openEditSection(_ section: FormSection) {
+        withAnimation(.easeInOut(duration: 0.18)) {
+            formCoordinator.revealTaskFormSection(section)
+        }
+        store.send(.setEditSheet(true))
+
+        Task { @MainActor in
+            await Task.yield()
+            await Task.yield()
+            withAnimation(.easeInOut(duration: 0.25)) {
+                formCoordinator.scrollTarget = section
+            }
+        }
     }
 
     private var shouldShowCommentsSection: Bool {
