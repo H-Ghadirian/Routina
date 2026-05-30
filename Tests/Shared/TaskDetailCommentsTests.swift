@@ -31,6 +31,22 @@ struct TaskDetailCommentsTests {
     }
 
     @Test
+    func commentStorageAndDisplayPreserveLineBreaks() {
+        let body = "First line\nSecond line\n\nFourth line"
+        let comments = [
+            RoutineTaskComment(body: body, createdAt: makeDate("2026-04-02T08:15:00Z"))
+        ]
+
+        let restoredComment = RoutineTaskCommentStorage.deserialize(
+            RoutineTaskCommentStorage.serialize(comments)
+        ).first
+        let displayedBody = String(RoutinaFormattedText.attributedText(from: body).characters)
+
+        #expect(restoredComment?.body == body)
+        #expect(displayedBody == body)
+    }
+
+    @Test
     func commentPresentationShowsNewestCreatedCommentFirst() {
         let olderDate = makeDate("2026-04-02T08:15:00Z")
         let newerDate = makeDate("2026-04-02T09:30:00Z")

@@ -843,6 +843,24 @@ struct RoutinaFormattedText: View {
     }
 
     static func attributedText(from text: String) -> AttributedString {
+        let normalizedText = text
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\r", with: "\n")
+        let lines = normalizedText.components(separatedBy: "\n")
+        guard lines.count > 1 else {
+            return markdownAttributedText(from: normalizedText)
+        }
+
+        return lines.enumerated().reduce(into: AttributedString()) { result, entry in
+            if entry.offset > 0 {
+                result += AttributedString("\n")
+            }
+            guard !entry.element.isEmpty else { return }
+            result += markdownAttributedText(from: entry.element)
+        }
+    }
+
+    private static func markdownAttributedText(from text: String) -> AttributedString {
         (
             try? AttributedString(
                 markdown: text,
