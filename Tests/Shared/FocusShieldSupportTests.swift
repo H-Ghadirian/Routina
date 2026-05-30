@@ -12,6 +12,28 @@ import Testing
 @Suite(.serialized)
 struct FocusShieldSupportTests {
     @Test
+    func macFocusAppBlockingDefaultsToEnabledButHonorsUserDisable() {
+        let key = UserDefaultBoolValueKey.appSettingMacFocusAppBlockingEnabled.rawValue
+        let previousValue = SharedDefaults.app.object(forKey: key)
+        defer {
+            if let previousValue {
+                SharedDefaults.app.set(previousValue, forKey: key)
+            } else {
+                SharedDefaults.app.removeObject(forKey: key)
+            }
+        }
+
+        SharedDefaults.app.removeObject(forKey: key)
+        #expect(FocusShieldSupport.isMacFocusAppBlockingEnabled)
+
+        SharedDefaults.app[.appSettingMacFocusAppBlockingEnabled] = false
+        #expect(!FocusShieldSupport.isMacFocusAppBlockingEnabled)
+
+        SharedDefaults.app[.appSettingMacFocusAppBlockingEnabled] = true
+        #expect(FocusShieldSupport.isMacFocusAppBlockingEnabled)
+    }
+
+    @Test
     func macBlockedAppsStorage_deduplicatesAndSummarizesSelections() {
         let previousApps = SharedDefaults.app[.appSettingMacFocusBlockedApps]
         defer {

@@ -30,7 +30,7 @@ struct FocusSessionCard: View {
     @AppStorage(
         UserDefaultBoolValueKey.appSettingMacFocusAppBlockingEnabled.rawValue,
         store: SharedDefaults.app
-    ) private var isMacFocusAppBlockingEnabled = false
+    ) private var isMacFocusAppBlockingEnabled = true
     @State private var macBlockedApps = FocusShieldSupport.loadMacBlockedApps()
     @State private var macFocusShieldStatusMessage: String?
     #endif

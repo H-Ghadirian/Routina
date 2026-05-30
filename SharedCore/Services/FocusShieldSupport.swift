@@ -98,6 +98,15 @@ struct MacFocusBlockedApp: Codable, Equatable, Hashable, Identifiable, Sendable 
 }
 
 extension FocusShieldSupport {
+    static var isMacFocusAppBlockingEnabled: Bool {
+        let defaultsKey = UserDefaultBoolValueKey.appSettingMacFocusAppBlockingEnabled.rawValue
+        guard SharedDefaults.app.object(forKey: defaultsKey) != nil else {
+            return true
+        }
+
+        return SharedDefaults.app[.appSettingMacFocusAppBlockingEnabled]
+    }
+
     static func loadMacBlockedApps() -> [MacFocusBlockedApp] {
         guard let rawValue = SharedDefaults.app[.appSettingMacFocusBlockedApps],
               let data = rawValue.data(using: .utf8),
@@ -193,7 +202,7 @@ private final class MacFocusAppBlocker: NSObject {
 
     func sync() {
         let apps = FocusShieldSupport.loadMacBlockedApps()
-        guard SharedDefaults.app[.appSettingMacFocusAppBlockingEnabled], !apps.isEmpty else {
+        guard FocusShieldSupport.isMacFocusAppBlockingEnabled, !apps.isEmpty else {
             stop()
             return
         }
