@@ -764,7 +764,9 @@ struct FocusSessionCard: View {
 
     private func finish(_ session: FocusSession) {
         guard session.completedAt == nil else { return }
-        session.completedAt = Date()
+        let endedAt = Date()
+        session.completedAt = endedAt
+        syncEndedCountUpPlannerBlock(for: session, endedAt: endedAt)
         onCompletedDuration?(session.actualDurationSeconds)
         DeviceActivityRecorder.recordAction(
             .completed,
@@ -778,7 +780,9 @@ struct FocusSessionCard: View {
     }
 
     private func abandon(_ session: FocusSession) {
-        session.abandonedAt = Date()
+        let endedAt = Date()
+        session.abandonedAt = endedAt
+        syncEndedCountUpPlannerBlock(for: session, endedAt: endedAt)
         DeviceActivityRecorder.recordAction(
             .ended,
             entity: .focusSession,
@@ -789,6 +793,16 @@ struct FocusSessionCard: View {
         )
         saveContext()
         syncFocusShieldForCurrentContext()
+    }
+
+    private func syncEndedCountUpPlannerBlock(for session: FocusSession, endedAt: Date) {
+        DayPlanFocusSessionPlannerSync.saveEndedCountUpFocusBlock(
+            for: task,
+            session: session,
+            endedAt: endedAt,
+            calendar: calendar,
+            context: modelContext
+        )
     }
 
     private func beginEditing(_ session: FocusSession) {

@@ -1,8 +1,9 @@
 # 0102 Create Planner Blocks When Task Focus Starts
 
-- Status: Accepted
+- Status: Superseded
 - Date: 2026-05-30
 - Supersedes: [0007](0007-show-active-focus-timers-in-planner.md)
+- Superseded by: [0103](0103-record-count-up-focus-blocks-at-elapsed-duration.md)
 
 ## Context
 

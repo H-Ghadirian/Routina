@@ -191,7 +191,7 @@ struct DayPlanBlockLayer: View {
     }
 
     private func blockHeight(for block: DayPlanBlock) -> CGFloat {
-        CGFloat(block.durationMinutes) / 60 * hourHeight
+        max(CGFloat(block.durationMinutes) / 60 * hourHeight, 18)
     }
 }
 

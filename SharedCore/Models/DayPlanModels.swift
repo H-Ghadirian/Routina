@@ -3,6 +3,7 @@ import SwiftData
 
 struct DayPlanBlock: Identifiable, Codable, Equatable, Sendable {
     static let minimumDurationMinutes = 15
+    static let minimumStoredDurationMinutes = 1
     static let minutesPerDay = 24 * 60
 
     var id: UUID
@@ -24,14 +25,22 @@ struct DayPlanBlock: Identifiable, Codable, Equatable, Sendable {
         titleSnapshot: String,
         emojiSnapshot: String? = nil,
         createdAt: Date = Date(),
-        updatedAt: Date = Date()
+        updatedAt: Date = Date(),
+        minimumDurationMinutes: Int = Self.minimumDurationMinutes
     ) {
-        let sanitizedStartMinute = Self.clampedStartMinute(startMinute)
+        let sanitizedStartMinute = Self.clampedStartMinute(
+            startMinute,
+            minimumDurationMinutes: minimumDurationMinutes
+        )
         self.id = id
         self.taskID = taskID
         self.dayKey = dayKey
         self.startMinute = sanitizedStartMinute
-        self.durationMinutes = Self.clampedDuration(durationMinutes, startMinute: sanitizedStartMinute)
+        self.durationMinutes = Self.clampedDuration(
+            durationMinutes,
+            startMinute: sanitizedStartMinute,
+            minimumDurationMinutes: minimumDurationMinutes
+        )
         self.titleSnapshot = titleSnapshot.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             ? "Untitled task"
             : titleSnapshot.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -44,12 +53,24 @@ struct DayPlanBlock: Identifiable, Codable, Equatable, Sendable {
         min(Self.minutesPerDay, startMinute + durationMinutes)
     }
 
-    static func clampedStartMinute(_ value: Int) -> Int {
-        min(max(value, 0), minutesPerDay - minimumDurationMinutes)
+    static func clampedStartMinute(
+        _ value: Int,
+        minimumDurationMinutes: Int = Self.minimumDurationMinutes
+    ) -> Int {
+        let minimumDurationMinutes = max(Self.minimumStoredDurationMinutes, minimumDurationMinutes)
+        return min(max(value, 0), minutesPerDay - minimumDurationMinutes)
     }
 
-    static func clampedDuration(_ value: Int, startMinute: Int) -> Int {
-        let sanitizedStartMinute = clampedStartMinute(startMinute)
+    static func clampedDuration(
+        _ value: Int,
+        startMinute: Int,
+        minimumDurationMinutes: Int = Self.minimumDurationMinutes
+    ) -> Int {
+        let minimumDurationMinutes = max(Self.minimumStoredDurationMinutes, minimumDurationMinutes)
+        let sanitizedStartMinute = clampedStartMinute(
+            startMinute,
+            minimumDurationMinutes: minimumDurationMinutes
+        )
         let remainingMinutes = max(minimumDurationMinutes, minutesPerDay - sanitizedStartMinute)
         return min(max(value, minimumDurationMinutes), remainingMinutes)
     }
@@ -88,7 +109,8 @@ final class DayPlanBlockRecord {
                 titleSnapshot: titleSnapshot,
                 emojiSnapshot: emojiSnapshot,
                 createdAt: createdAt,
-                updatedAt: updatedAt
+                updatedAt: updatedAt,
+                minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
             )
         )
     }
@@ -117,7 +139,8 @@ final class DayPlanBlockRecord {
             titleSnapshot: titleSnapshot,
             emojiSnapshot: emojiSnapshot,
             createdAt: createdAt,
-            updatedAt: updatedAt
+            updatedAt: updatedAt,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
         )
     }
 
@@ -295,7 +318,8 @@ enum DayPlanStorage {
                     titleSnapshot: block.titleSnapshot,
                     emojiSnapshot: block.emojiSnapshot,
                     createdAt: block.createdAt,
-                    updatedAt: block.updatedAt
+                    updatedAt: block.updatedAt,
+                    minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
                 )
             }
             .sorted {
