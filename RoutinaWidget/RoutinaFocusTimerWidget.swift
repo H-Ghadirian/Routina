@@ -39,6 +39,7 @@ struct RoutinaFocusTimerWidget: Widget {
         .description("Shows the current Routina focus session timer.")
 #if os(macOS)
         .supportedFamilies([.systemSmall, .systemMedium])
+        .contentMarginsDisabled()
 #else
         .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryRectangular])
 #endif
@@ -66,6 +67,21 @@ private struct FocusTimerWidgetView: View {
     }
 
     private var smallLayout: some View {
+#if os(macOS)
+        VStack(alignment: .leading, spacing: 7) {
+            header
+            Spacer(minLength: 0)
+            timerText
+                .font(.system(size: 30, weight: .bold, design: .rounded))
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.65)
+            taskTitle
+                .font(.headline.weight(.semibold))
+                .layoutPriority(1)
+        }
+        .padding(10)
+#else
         VStack(alignment: .leading, spacing: 8) {
             header
             Spacer(minLength: 0)
@@ -78,9 +94,35 @@ private struct FocusTimerWidgetView: View {
             stateLine
         }
         .padding(12)
+#endif
     }
 
     private var mediumLayout: some View {
+#if os(macOS)
+        HStack(spacing: 14) {
+            VStack(alignment: .leading, spacing: 8) {
+                header
+                taskTitle
+                    .font(.title3.weight(.semibold))
+                    .layoutPriority(1)
+                Spacer(minLength: 0)
+            }
+
+            Spacer(minLength: 0)
+
+            VStack(alignment: .trailing, spacing: 6) {
+                timerText
+                    .font(.system(size: 38, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.65)
+                progressView
+                    .frame(width: 118)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+#else
         HStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
                 header
@@ -103,6 +145,7 @@ private struct FocusTimerWidgetView: View {
             }
         }
         .padding(14)
+#endif
     }
 
     private var circularAccessory: some View {
@@ -171,6 +214,14 @@ private struct FocusTimerWidgetView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
         }
+    }
+
+    private var taskTitle: some View {
+        Text(entry.focus.isActive ? entry.focus.taskName : "No active session")
+            .lineLimit(2)
+            .minimumScaleFactor(0.68)
+            .multilineTextAlignment(.leading)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private var stateLine: some View {
