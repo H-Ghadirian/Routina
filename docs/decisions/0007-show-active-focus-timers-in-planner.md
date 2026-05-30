@@ -1,7 +1,8 @@
 # 0007 Show Active Focus Timers in the Planner
 
-- Status: Accepted
+- Status: Superseded
 - Date: 2026-05-09
+- Superseded by: [0102](0102-create-planner-blocks-when-task-focus-starts.md)
 
 ## Context
 

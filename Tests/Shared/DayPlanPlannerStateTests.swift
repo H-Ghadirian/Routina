@@ -890,6 +890,123 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func startedFocusSessionCreatesPersistedPlannerBlock() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let startedAt = try #require(date("2026-05-07T09:30:00Z"))
+        let taskID = UUID()
+        let sessionID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Write notes",
+            emoji: "📝",
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 45
+        )
+        let session = FocusSession(
+            id: sessionID,
+            taskID: taskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 25 * 60
+        )
+        context.insert(task)
+        context.insert(session)
+
+        let savedBlock = try #require(
+            DayPlanFocusSessionPlannerSync.saveStartedFocusBlock(
+                for: task,
+                session: session,
+                startedAt: startedAt,
+                durationSeconds: session.plannedDurationSeconds,
+                calendar: calendar,
+                context: context
+            )
+        )
+        let loadedBlocks = DayPlanStorage.loadBlocks(forDayKey: savedBlock.dayKey, context: context)
+
+        #expect(loadedBlocks.count == 1)
+        #expect(loadedBlocks.first?.id == sessionID)
+        #expect(loadedBlocks.first?.taskID == taskID)
+        #expect(loadedBlocks.first?.startMinute == 9 * 60 + 30)
+        #expect(loadedBlocks.first?.durationMinutes == 25)
+        #expect(loadedBlocks.first?.titleSnapshot == "Write notes")
+        #expect(loadedBlocks.first?.emojiSnapshot == "📝")
+    }
+
+    @Test
+    func countUpFocusSessionPlannerBlockUsesTaskEstimate() throws {
+        let calendar = gregorianCalendar
+        let startedAt = try #require(date("2026-05-07T09:30:00Z"))
+        let taskID = UUID()
+        let sessionID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Open ended focus",
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 45
+        )
+        let session = FocusSession(
+            id: sessionID,
+            taskID: taskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0
+        )
+
+        let block = DayPlanFocusSessionPlannerSync.plannerBlock(
+            for: task,
+            session: session,
+            startedAt: startedAt,
+            durationSeconds: session.plannedDurationSeconds,
+            calendar: calendar
+        )
+
+        #expect(block.id == sessionID)
+        #expect(block.durationMinutes == 45)
+    }
+
+    @Test
+    func activeFocusSessionBlocksExcludePersistedPlannerBlocks() throws {
+        let calendar = gregorianCalendar
+        let visibleDate = try #require(date("2026-05-07T12:00:00Z"))
+        let startedAt = try #require(date("2026-05-07T09:30:00Z"))
+        let now = try #require(date("2026-05-07T10:05:00Z"))
+        let taskID = UUID()
+        let sessionID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Write notes",
+            scheduleMode: .fixedInterval
+        )
+        let session = FocusSession(
+            id: sessionID,
+            taskID: taskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 25 * 60
+        )
+        let persistedBlock = DayPlanBlock(
+            id: sessionID,
+            taskID: taskID,
+            dayKey: DayPlanStorage.dayKey(for: visibleDate, calendar: calendar),
+            startMinute: 9 * 60 + 30,
+            durationMinutes: 25,
+            titleSnapshot: "Write notes",
+            createdAt: startedAt,
+            updatedAt: startedAt
+        )
+
+        let focusBlocksByDayKey = DayPlanFocusSessionBlocks.activeBlocksByDayKey(
+            on: [visibleDate],
+            from: [task],
+            sessions: [session],
+            now: now,
+            calendar: calendar,
+            excluding: [persistedBlock]
+        )
+
+        #expect(focusBlocksByDayKey.isEmpty)
+    }
+
+    @Test
     func activeFocusSessionBlocksClampFutureStartsToCurrentDay() throws {
         let calendar = gregorianCalendar
         let currentDate = try #require(date("2026-05-07T12:00:00Z"))

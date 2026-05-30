@@ -451,6 +451,7 @@ private struct DayPlanTimelinePanelView: View {
         let selectedDayKey = DayPlanStorage.dayKey(for: planner.selectedDate, calendar: calendar)
         let selectedDayBlockedMinutes = blockedIntervalsByDayKey[selectedDayKey, default: []]
             .reduce(0) { $0 + $1.durationMinutes }
+        let plannedBlocks = plannedBlocksByDayKey.values.flatMap { $0 }
         let tintsByTaskID = tintsByTaskID()
 
         VStack(alignment: .leading, spacing: 12) {
@@ -497,7 +498,8 @@ private struct DayPlanTimelinePanelView: View {
                         from: tasks,
                         sessions: activeFocusSessions,
                         now: now,
-                        calendar: calendar
+                        calendar: calendar,
+                        excluding: plannedBlocks
                     )
                 },
                 allDayBlocks: allDayBlocks,

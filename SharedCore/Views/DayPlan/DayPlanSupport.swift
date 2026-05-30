@@ -1132,7 +1132,8 @@ enum DayPlanFocusSessionBlocks {
         from tasks: [RoutineTask],
         sessions: [FocusSession],
         now: Date,
-        calendar: Calendar
+        calendar: Calendar,
+        excluding plannedBlocks: [DayPlanBlock] = []
     ) -> [String: [DayPlanFocusSessionBlock]] {
         let visibleDayKeys = Set(dates.map { DayPlanStorage.dayKey(for: $0, calendar: calendar) })
         guard !visibleDayKeys.isEmpty else { return [:] }
@@ -1141,7 +1142,8 @@ enum DayPlanFocusSessionBlocks {
             from: tasks,
             sessions: sessions,
             now: now,
-            calendar: calendar
+            calendar: calendar,
+            excluding: plannedBlocks
         )
         .filter { visibleDayKeys.contains($0.block.dayKey) }
 
@@ -1160,7 +1162,8 @@ enum DayPlanFocusSessionBlocks {
         from tasks: [RoutineTask],
         sessions: [FocusSession],
         now: Date,
-        calendar: Calendar
+        calendar: Calendar,
+        excluding plannedBlocks: [DayPlanBlock] = []
     ) -> [DayPlanFocusSessionBlock] {
         let tasksByID = Dictionary(grouping: tasks, by: \.id).compactMapValues(\.first)
         let blocks = sessions.compactMap { session -> DayPlanFocusSessionBlock? in
@@ -1191,6 +1194,9 @@ enum DayPlanFocusSessionBlocks {
                 createdAt: renderStart,
                 updatedAt: now
             )
+            guard !isRepresentedByPlannerBlock(block, plannedBlocks: plannedBlocks) else {
+                return nil
+            }
 
             return DayPlanFocusSessionBlock(
                 sessionID: session.id,
@@ -1223,6 +1229,115 @@ enum DayPlanFocusSessionBlocks {
         }
 
         return startedAt
+    }
+
+    private static func isRepresentedByPlannerBlock(
+        _ focusBlock: DayPlanBlock,
+        plannedBlocks: [DayPlanBlock]
+    ) -> Bool {
+        plannedBlocks.contains { plannedBlock in
+            if plannedBlock.id == focusBlock.id {
+                return true
+            }
+
+            guard plannedBlock.taskID == focusBlock.taskID,
+                  plannedBlock.dayKey == focusBlock.dayKey else {
+                return false
+            }
+
+            return plannedBlock.startMinute < focusBlock.endMinute
+                && focusBlock.startMinute < plannedBlock.endMinute
+        }
+    }
+}
+
+enum DayPlanFocusSessionPlannerSync {
+    @discardableResult
+    static func saveStartedFocusBlock(
+        for task: RoutineTask,
+        session: FocusSession,
+        startedAt: Date,
+        durationSeconds: TimeInterval,
+        calendar: Calendar,
+        context: ModelContext
+    ) -> DayPlanBlock? {
+        let block = plannerBlock(
+            for: task,
+            session: session,
+            startedAt: startedAt,
+            durationSeconds: durationSeconds,
+            calendar: calendar
+        )
+        var blocks = DayPlanStorage.loadBlocks(forDayKey: block.dayKey, context: context)
+
+        if let existingBlock = blocks.first(where: { representsFocusBlock($0, focusBlock: block) }) {
+            return existingBlock
+        }
+
+        blocks.append(block)
+        DayPlanStorage.saveBlocks(blocks, forDayKey: block.dayKey, context: context)
+        return block
+    }
+
+    static func plannerBlock(
+        for task: RoutineTask,
+        session: FocusSession,
+        startedAt: Date,
+        durationSeconds: TimeInterval,
+        calendar: Calendar
+    ) -> DayPlanBlock {
+        let startMinute = startMinute(for: startedAt, calendar: calendar)
+        return DayPlanBlock(
+            id: session.id,
+            taskID: task.id,
+            dayKey: DayPlanStorage.dayKey(for: startedAt, calendar: calendar),
+            startMinute: startMinute,
+            durationMinutes: durationMinutes(
+                for: task,
+                durationSeconds: durationSeconds,
+                startMinute: startMinute
+            ),
+            titleSnapshot: DayPlanTaskSorting.title(for: task),
+            emojiSnapshot: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
+            createdAt: startedAt,
+            updatedAt: startedAt
+        )
+    }
+
+    private static func startMinute(for timestamp: Date, calendar: Calendar) -> Int {
+        let components = calendar.dateComponents([.hour, .minute], from: timestamp)
+        return DayPlanBlock.clampedStartMinute(((components.hour ?? 0) * 60) + (components.minute ?? 0))
+    }
+
+    private static func durationMinutes(
+        for task: RoutineTask,
+        durationSeconds: TimeInterval,
+        startMinute: Int
+    ) -> Int {
+        let rawMinutes: Int
+        if durationSeconds > 0 {
+            rawMinutes = max(1, Int(ceil(durationSeconds / 60)))
+        } else {
+            rawMinutes = task.estimatedDurationMinutes ?? DayPlanBlock.minimumDurationMinutes
+        }
+        return DayPlanBlock.clampedDuration(rawMinutes, startMinute: startMinute)
+    }
+
+    private static func representsFocusBlock(
+        _ plannedBlock: DayPlanBlock,
+        focusBlock: DayPlanBlock
+    ) -> Bool {
+        if plannedBlock.id == focusBlock.id {
+            return true
+        }
+
+        guard plannedBlock.taskID == focusBlock.taskID,
+              plannedBlock.dayKey == focusBlock.dayKey else {
+            return false
+        }
+
+        return plannedBlock.startMinute < focusBlock.endMinute
+            && focusBlock.startMinute < plannedBlock.endMinute
     }
 }
 

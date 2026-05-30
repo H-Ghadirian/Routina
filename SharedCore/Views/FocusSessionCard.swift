@@ -10,6 +10,7 @@ import UniformTypeIdentifiers
 
 struct FocusSessionCard: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.calendar) private var calendar
     @Query private var activeSleepSessions: [SleepSession]
     @State private var isExpanded = false
     @State private var editingSession: FocusSession?
@@ -728,12 +729,21 @@ struct FocusSessionCard: View {
             guard try SleepSessionSupport.activeSession(in: modelContext) == nil else {
                 return
             }
+            let startedAt = Date()
             let session = FocusSession(
                 taskID: task.id,
-                startedAt: Date(),
+                startedAt: startedAt,
                 plannedDurationSeconds: duration
             )
             modelContext.insert(session)
+            DayPlanFocusSessionPlannerSync.saveStartedFocusBlock(
+                for: task,
+                session: session,
+                startedAt: startedAt,
+                durationSeconds: duration,
+                calendar: calendar,
+                context: modelContext
+            )
             DeviceActivityRecorder.recordAction(
                 .started,
                 entity: .focusSession,
