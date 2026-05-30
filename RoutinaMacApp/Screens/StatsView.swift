@@ -226,6 +226,8 @@ dashboardBody(snapshot: dashboardSnapshot)
 
                     summaryCards(snapshot: snapshot)
 
+                    UnassignedFocusSessionsCard(focusSessions: store.focusSessions)
+
                     if isDashboardItemVisible(.createdTasksChart) {
                         editableDashboardSection(.createdTasksChart) {
                             createdTasksChartSection(snapshot: snapshot)

@@ -75,6 +75,11 @@ struct CloudKitDirectPullDeletionTests {
         _ = makeLog(in: context, task: deletedTask, timestamp: makeDate("2026-03-14T08:00:00Z"))
         let keptLog = makeLog(in: context, task: keptTask, timestamp: makeDate("2026-03-15T08:00:00Z"))
         context.insert(FocusSession(taskID: deletedTask.id, startedAt: makeDate("2026-03-14T08:00:00Z")))
+        let unassignedFocus = FocusSession(
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: makeDate("2026-03-14T09:00:00Z")
+        )
+        context.insert(unassignedFocus)
         context.insert(RoutineAttachment(taskID: deletedTask.id, fileName: "old.txt", data: Data([1, 2, 3])))
         try context.save()
 
@@ -93,7 +98,7 @@ struct CloudKitDirectPullDeletionTests {
 
         #expect(tasks.map(\.id) == [keptTask.id])
         #expect(logs.map(\.id) == [keptLog.id])
-        #expect(focusSessions.isEmpty)
+        #expect(focusSessions.map(\.id) == [unassignedFocus.id])
         #expect(attachments.isEmpty)
     }
 

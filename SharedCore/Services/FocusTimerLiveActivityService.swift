@@ -135,7 +135,7 @@ enum FocusTimerLiveActivityService {
 
         return ActiveFocusTimerActivity(
             sessionID: sessionID,
-            kind: .task,
+            kind: focus.taskID == nil ? .unassigned : .task,
             targetID: focus.taskID,
             taskID: focus.taskID,
             title: focus.taskName,
@@ -199,6 +199,8 @@ private struct ActiveFocusTimerActivity {
             return .task(targetID)
         case .sprint:
             return .sprint(targetID)
+        case .unassigned:
+            return nil
         }
     }
 }

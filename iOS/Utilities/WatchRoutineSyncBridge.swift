@@ -13,6 +13,8 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
         case endPlaceCheckIn(Date, RoutinaDeviceActivitySource?)
         case startSleep(Date, RoutinaDeviceActivitySource?)
         case endSleep(Date, RoutinaDeviceActivitySource?)
+        case startUnassignedFocus(UUID, Date, RoutinaDeviceActivitySource?)
+        case finishFocus(UUID?, FocusSessionKind?, Date, RoutinaDeviceActivitySource?)
         case openDeepLink(RoutinaDeepLink, RoutinaDeviceActivitySource?)
         case batteryStatus(BatteryDeviceSnapshot, RoutinaDeviceActivitySource?)
         case ignore
@@ -25,6 +27,8 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
                  let .endPlaceCheckIn(_, source),
                  let .startSleep(_, source),
                  let .endSleep(_, source),
+                 let .startUnassignedFocus(_, _, source),
+                 let .finishFocus(_, _, _, source),
                  let .openDeepLink(_, source),
                  let .batteryStatus(_, source):
                 return source
@@ -232,6 +236,10 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
             startSleep(at: date, sourceDevice: source)
         case let .endSleep(date, source):
             endSleep(at: date, sourceDevice: source)
+        case let .startUnassignedFocus(sessionID, date, source):
+            startUnassignedFocus(sessionID: sessionID, at: date, sourceDevice: source)
+        case let .finishFocus(sessionID, kind, date, source):
+            finishFocus(sessionID: sessionID, kind: kind, at: date, sourceDevice: source)
         case let .openDeepLink(deepLink, _):
             openDeepLink(deepLink)
         case let .batteryStatus(snapshot, _):
@@ -366,6 +374,52 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
         }
     }
 
+    private func startUnassignedFocus(
+        sessionID: UUID,
+        at date: Date,
+        sourceDevice: RoutinaDeviceActivitySource?
+    ) {
+        guard let modelContextProvider else { return }
+        let context = modelContextProvider()
+
+        do {
+            _ = try FocusSessionSupport.startUnassignedFocus(
+                id: sessionID,
+                startedAt: date,
+                context: context,
+                sourceDevice: sourceDevice
+            )
+            pushLatestSnapshot()
+        } catch {
+            NSLog("Watch start unassigned focus sync failed: \(error.localizedDescription)")
+            pushLatestSnapshot()
+        }
+    }
+
+    private func finishFocus(
+        sessionID: UUID?,
+        kind: FocusSessionKind?,
+        at date: Date,
+        sourceDevice: RoutinaDeviceActivitySource?
+    ) {
+        guard let modelContextProvider else { return }
+        let context = modelContextProvider()
+
+        do {
+            _ = try FocusSessionSupport.finishFocus(
+                sessionID: sessionID,
+                kind: kind,
+                endedAt: date,
+                context: context,
+                sourceDevice: sourceDevice
+            )
+            pushLatestSnapshot()
+        } catch {
+            NSLog("Watch finish focus sync failed: \(error.localizedDescription)")
+            pushLatestSnapshot()
+        }
+    }
+
     private func openDeepLink(_ deepLink: RoutinaDeepLink) {
         NSLog("Watch open-on-iPhone request received: \(deepLink.url.absoluteString), appState: \(UIApplication.shared.applicationState.rawValue)")
         RoutinaDeepLinkDispatcher.open(deepLink)
@@ -451,6 +505,19 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
         if let action = payload["action"] as? String, action == "endSleep" {
             let timestamp = (payload["endedAt"] as? TimeInterval).map(Date.init(timeIntervalSince1970:)) ?? Date()
             return .endSleep(timestamp, sourceDevice)
+        }
+
+        if let action = payload["action"] as? String, action == "startUnassignedFocus" {
+            let sessionID = (payload["sessionID"] as? String).flatMap(UUID.init(uuidString:)) ?? UUID()
+            let timestamp = (payload["startedAt"] as? TimeInterval).map(Date.init(timeIntervalSince1970:)) ?? Date()
+            return .startUnassignedFocus(sessionID, timestamp, sourceDevice)
+        }
+
+        if let action = payload["action"] as? String, action == "finishFocus" {
+            let sessionID = (payload["sessionID"] as? String).flatMap(UUID.init(uuidString:))
+            let kind = (payload["focusKind"] as? String).flatMap(FocusSessionKind.init(rawValue:))
+            let timestamp = (payload["endedAt"] as? TimeInterval).map(Date.init(timeIntervalSince1970:)) ?? Date()
+            return .finishFocus(sessionID, kind, timestamp, sourceDevice)
         }
 
         if let action = payload["action"] as? String, action == "openDeepLink" {
@@ -632,21 +699,24 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
     }
 
     nonisolated private static func taskFocusPayload(from focus: FocusTimerWidgetData) -> [String: Any]? {
-        guard focus.isActive, let sessionID = focus.sessionID, let taskID = focus.taskID, let startedAt = focus.startedAt else {
+        guard focus.isActive, let sessionID = focus.sessionID, let startedAt = focus.startedAt else {
             return nil
         }
 
-        return [
+        var payload: [String: Any] = [
             "isActive": true,
             "sessionID": sessionID.uuidString,
-            "focusKind": "task",
-            "targetID": taskID.uuidString,
-            "taskID": taskID.uuidString,
+            "focusKind": focus.taskID == nil ? "unassigned" : "task",
             "taskName": focus.taskName,
             "taskEmoji": focus.taskEmoji,
             "startedAt": startedAt.timeIntervalSince1970,
             "plannedDurationSeconds": focus.plannedDurationSeconds
         ]
+        if let taskID = focus.taskID {
+            payload["targetID"] = taskID.uuidString
+            payload["taskID"] = taskID.uuidString
+        }
+        return payload
     }
 
     @MainActor

@@ -9,12 +9,18 @@ enum FocusSessionState: String, Codable, Equatable, Sendable {
 
 @Model
 final class FocusSession {
+    static let unassignedTaskID = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
+
     var id: UUID = UUID()
     var taskID: UUID = UUID()
     var startedAt: Date?
     var plannedDurationSeconds: TimeInterval = 25 * 60
     var completedAt: Date?
     var abandonedAt: Date?
+
+    var isUnassigned: Bool {
+        taskID == Self.unassignedTaskID
+    }
 
     var state: FocusSessionState {
         if completedAt != nil { return .completed }

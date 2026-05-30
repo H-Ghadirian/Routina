@@ -222,8 +222,16 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
     enum WatchFocusKind: String, Sendable, Codable {
         case task
         case sprint
+        case unassigned
 
-        var deepLinkPath: String { rawValue }
+        var deepLinkPath: String? {
+            switch self {
+            case .task, .sprint:
+                return rawValue
+            case .unassigned:
+                return nil
+            }
+        }
 
         var displayTitle: String {
             switch self {
@@ -231,6 +239,8 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
                 return "Focus"
             case .sprint:
                 return "Sprint Focus"
+            case .unassigned:
+                return "Focus"
             }
         }
 
@@ -240,6 +250,8 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
                 return "timer"
             case .sprint:
                 return "flag.checkered"
+            case .unassigned:
+                return "stopwatch"
             }
         }
     }
@@ -284,8 +296,11 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         }
 
         var deepLinkURL: URL? {
-            guard let deepLinkTargetID else { return nil }
-            return WatchRoutineDeepLinkURL.url(path: resolvedFocusKind.deepLinkPath, targetID: deepLinkTargetID)
+            guard let deepLinkPath = resolvedFocusKind.deepLinkPath,
+                  let deepLinkTargetID else {
+                return nil
+            }
+            return WatchRoutineDeepLinkURL.url(path: deepLinkPath, targetID: deepLinkTargetID)
         }
 
         var isCountUp: Bool {
@@ -475,6 +490,57 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
 
         let payload = actionPayload([
             "action": "endSleep",
+            "endedAt": endedAt.timeIntervalSince1970
+        ])
+
+        if session.isReachable {
+            session.sendMessage(payload, replyHandler: nil)
+        } else {
+            session.transferUserInfo(payload)
+        }
+    }
+
+    func startFocus() {
+        let startedAt = Date()
+        let sessionID = UUID()
+        activeFocusSession = WatchFocusSession(
+            id: sessionID,
+            focusKind: .unassigned,
+            targetID: nil,
+            taskID: nil,
+            taskName: "Unassigned focus",
+            taskEmoji: "🎯",
+            startedAt: startedAt,
+            plannedDurationSeconds: 0
+        )
+        saveCachedFocusSession()
+
+        guard let session else { return }
+
+        let payload = actionPayload([
+            "action": "startUnassignedFocus",
+            "sessionID": sessionID.uuidString,
+            "startedAt": startedAt.timeIntervalSince1970
+        ])
+
+        if session.isReachable {
+            session.sendMessage(payload, replyHandler: nil)
+        } else {
+            session.transferUserInfo(payload)
+        }
+    }
+
+    func finishFocus(_ focus: WatchFocusSession) {
+        let endedAt = Date()
+        activeFocusSession = nil
+        saveCachedFocusSession()
+
+        guard let session else { return }
+
+        let payload = actionPayload([
+            "action": "finishFocus",
+            "sessionID": focus.id.uuidString,
+            "focusKind": focus.resolvedFocusKind.rawValue,
             "endedAt": endedAt.timeIntervalSince1970
         ])
 
@@ -975,7 +1041,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             .flatMap(UUID.init(uuidString:))
             ?? taskID
 
-        guard targetID != nil else {
+        guard focusKind == .unassigned || targetID != nil else {
             return FocusPayloadUpdate(wasPresent: true, focus: nil)
         }
 

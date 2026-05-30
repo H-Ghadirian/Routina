@@ -16,6 +16,8 @@ struct WatchHomeView: View {
 
                 if let activeFocusSession = syncStore.activeFocusSession {
                     focusSessionRow(activeFocusSession)
+                } else if syncStore.isCompanionAppInstalled {
+                    focusStartRow
                 }
 
                 if syncStore.activePlaceCheckIn != nil || !syncStore.places.isEmpty {
@@ -112,6 +114,15 @@ struct WatchHomeView: View {
             requestStartSleep()
         } label: {
             Label("Going to sleep", systemImage: "bed.double.fill")
+                .font(.headline)
+        }
+    }
+
+    private var focusStartRow: some View {
+        Button {
+            syncStore.startFocus()
+        } label: {
+            Label("Start Focus", systemImage: "stopwatch")
                 .font(.headline)
         }
     }
@@ -242,13 +253,24 @@ struct WatchHomeView: View {
                 }
 
                 Button {
-                    syncStore.openOnPhone(session)
+                    syncStore.finishFocus(session)
                 } label: {
-                    Label("Open on iPhone", systemImage: "iphone")
+                    Label("Finish Focus", systemImage: "checkmark.circle.fill")
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.borderedProminent)
                 .controlSize(.small)
-                .disabled(!syncStore.isCompanionAppInstalled || session.deepLinkURL == nil)
+                .tint(.teal)
+
+                if session.deepLinkURL != nil {
+                    Button {
+                        syncStore.openOnPhone(session)
+                    } label: {
+                        Label("Open on iPhone", systemImage: "iphone")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .disabled(!syncStore.isCompanionAppInstalled)
+                }
             }
             .padding(.vertical, 4)
         }

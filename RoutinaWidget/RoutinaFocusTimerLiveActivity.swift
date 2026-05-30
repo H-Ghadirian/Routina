@@ -45,8 +45,9 @@ struct RoutinaFocusTimerLiveActivity: Widget {
     private func deepLinkURL(
         _ kind: FocusTimerActivityAttributes.FocusKind,
         targetID: UUID
-    ) -> URL {
-        RoutinaWidgetDeepLink.url(path: kind.deepLinkPath, targetID: targetID)
+    ) -> URL? {
+        guard let deepLinkPath = kind.deepLinkPath else { return nil }
+        return RoutinaWidgetDeepLink.url(path: deepLinkPath, targetID: targetID)
     }
 
     private func deepLinkURL(_ context: ActivityViewContext<FocusTimerActivityAttributes>) -> URL? {
@@ -147,8 +148,8 @@ private struct FocusTimerLiveActivityLockScreenView: View {
 
     private var deepLinkURL: URL? {
         let targetID = context.attributes.targetID ?? context.attributes.taskID
-        guard let targetID else { return nil }
-        return RoutinaWidgetDeepLink.url(path: focusKind.deepLinkPath, targetID: targetID)
+        guard let targetID, let deepLinkPath = focusKind.deepLinkPath else { return nil }
+        return RoutinaWidgetDeepLink.url(path: deepLinkPath, targetID: targetID)
     }
 }
 
@@ -214,12 +215,14 @@ private struct FocusTimerProgressBar: View {
 }
 
 private extension FocusTimerActivityAttributes.FocusKind {
-    var deepLinkPath: String {
+    var deepLinkPath: String? {
         switch self {
         case .task:
             return "task"
         case .sprint:
             return "sprint"
+        case .unassigned:
+            return nil
         }
     }
 
@@ -229,6 +232,8 @@ private extension FocusTimerActivityAttributes.FocusKind {
             return "timer"
         case .sprint:
             return "flag.checkered"
+        case .unassigned:
+            return "stopwatch"
         }
     }
 }

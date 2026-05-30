@@ -337,6 +337,8 @@ struct StatsView: View {
 
                 AnyView(summaryCards(metrics: currentMetrics))
 
+                AnyView(UnassignedFocusSessionsCard(focusSessions: focusSessions))
+
                 if selectedRange != .today, isDashboardItemVisible(.completionChart) {
                     AnyView(
                         editableDashboardSection(.completionChart) {

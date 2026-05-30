@@ -454,7 +454,9 @@ private struct HomePinnedFocusTimerBanner: View {
     var body: some View {
         if let status = activeStatus {
             Button {
-                onOpen(status.deepLink)
+                if let deepLink = status.deepLink {
+                    onOpen(deepLink)
+                }
             } label: {
                 SwiftUI.TimelineView(.periodic(from: .now, by: 1)) { context in
                     HStack(spacing: 10) {
@@ -488,7 +490,7 @@ private struct HomePinnedFocusTimerBanner: View {
             .padding(.top, 6)
             .padding(.bottom, 8)
             .routinaGlassPanel(cornerRadius: 0, tint: .teal, tintOpacity: 0.04)
-            .accessibilityLabel("Open running timer for \(status.title)")
+            .accessibilityLabel(status.deepLink == nil ? "Running timer for \(status.title)" : "Open running timer for \(status.title)")
             .transition(.move(edge: .top).combined(with: .opacity))
         }
     }
@@ -516,12 +518,12 @@ private struct HomePinnedFocusTimerBanner: View {
             return nil
         }
 
-        let taskTitle = tasks.first { $0.id == session.taskID }?.name
+        let taskTitle = session.isUnassigned ? nil : tasks.first { $0.id == session.taskID }?.name
         return HomePinnedFocusTimerStatus(
             id: session.id,
-            targetID: session.taskID,
-            kind: .task,
-            title: normalizedTitle(taskTitle, fallback: "Task focus"),
+            targetID: session.isUnassigned ? nil : session.taskID,
+            kind: session.isUnassigned ? .unassigned : .task,
+            title: normalizedTitle(taskTitle, fallback: session.isUnassigned ? "Unassigned focus" : "Task focus"),
             startedAt: startedAt,
             plannedDurationSeconds: session.plannedDurationSeconds
         )
@@ -553,10 +555,11 @@ private struct HomePinnedFocusTimerStatus: Equatable {
     enum Kind: Equatable {
         case task
         case sprint
+        case unassigned
     }
 
     let id: UUID
-    let targetID: UUID
+    let targetID: UUID?
     let kind: Kind
     let title: String
     let startedAt: Date
@@ -568,15 +571,20 @@ private struct HomePinnedFocusTimerStatus: Equatable {
             return "timer"
         case .sprint:
             return "flag.checkered"
+        case .unassigned:
+            return "stopwatch"
         }
     }
 
-    var deepLink: RoutinaDeepLink {
+    var deepLink: RoutinaDeepLink? {
+        guard let targetID else { return nil }
         switch kind {
         case .task:
             return .task(targetID)
         case .sprint:
             return .sprint(targetID)
+        case .unassigned:
+            return nil
         }
     }
 

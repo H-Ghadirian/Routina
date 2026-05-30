@@ -320,7 +320,7 @@ struct HomeMacBoardScopeInspectorView: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            Text("Stop that task focus timer before starting sprint focus.")
+            Text("Stop that focus timer before starting sprint focus.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -328,7 +328,8 @@ struct HomeMacBoardScopeInspectorView: View {
     }
 
     private func taskFocusTitle(for session: FocusSession) -> String {
-        taskFocusSessionTasks.first(where: { $0.id == session.taskID })?.name ?? "a task"
+        guard !session.isUnassigned else { return "unassigned focus" }
+        return taskFocusSessionTasks.first(where: { $0.id == session.taskID })?.name ?? "a task"
     }
 
     private func sprintFocusSessionHistory(

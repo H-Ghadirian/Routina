@@ -45,7 +45,7 @@ enum CloudKitDirectPullMergeHousekeeping {
             .filter { !taskIDs.contains($0.taskID) }
             .map(\.taskID)
         let orphanedFocusTaskIDs = try context.fetch(FetchDescriptor<FocusSession>())
-            .filter { !taskIDs.contains($0.taskID) }
+            .filter { !$0.isUnassigned && !taskIDs.contains($0.taskID) }
             .map(\.taskID)
         let orphanedAttachmentTaskIDs = try context.fetch(FetchDescriptor<RoutineAttachment>())
             .filter { !taskIDs.contains($0.taskID) }
@@ -158,7 +158,7 @@ enum CloudKitDirectPullMergeHousekeeping {
         }
 
         let focusSessions = try context.fetch(FetchDescriptor<FocusSession>())
-        for session in focusSessions where taskIDs.contains(session.taskID) {
+        for session in focusSessions where !session.isUnassigned && taskIDs.contains(session.taskID) {
             context.delete(session)
         }
 

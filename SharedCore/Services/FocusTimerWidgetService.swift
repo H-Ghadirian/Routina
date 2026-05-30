@@ -25,7 +25,9 @@ public enum FocusTimerWidgetService {
     public static func refresh(using context: ModelContext) {
         do {
             let session = try activeFocusSession(in: context)
-            let activeTask = try session.flatMap { try task(for: $0.taskID, in: context) }
+            let activeTask = try session.flatMap { session in
+                session.isUnassigned ? nil : try task(for: session.taskID, in: context)
+            }
             let data = FocusTimerWidgetDataComputer.compute(
                 tasks: activeTask.map { [$0] } ?? [],
                 sessions: session.map { [$0] } ?? []

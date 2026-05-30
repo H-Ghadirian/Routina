@@ -212,7 +212,9 @@ enum RoutinaQuickAddService {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let sessions = try context.fetch(FetchDescriptor<FocusSession>())
         if let activeSession = sessions.first(where: { $0.state == .active }) {
-            let activeTaskName = tasks.first { $0.id == activeSession.taskID }?.displayNameForQuickAdd
+            let activeTaskName = activeSession.isUnassigned
+                ? "Unassigned focus"
+                : tasks.first { $0.id == activeSession.taskID }?.displayNameForQuickAdd
             throw RoutinaQuickAddError.activeFocusSession(activeTaskName)
         }
         if let sprintBoardData = try? SprintBoardClient.loadLiveSnapshot(),
@@ -221,6 +223,20 @@ enum RoutinaQuickAddService {
                 .first(where: { $0.id == activeSprintFocusSession.sprintID })?
                 .title
             throw RoutinaQuickAddError.activeFocusSession(activeSprintTitle)
+        }
+
+        guard let taskName, !taskName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            let session = try FocusSessionSupport.startUnassignedFocus(
+                startedAt: referenceDate,
+                plannedDurationSeconds: TimeInterval(durationMinutes * 60),
+                context: context
+            )
+            return RoutinaQuickAddFocusResult(
+                sessionID: session.id,
+                taskID: session.taskID,
+                taskName: "Unassigned focus",
+                durationMinutes: durationMinutes
+            )
         }
 
         guard let task = focusTaskMatch(

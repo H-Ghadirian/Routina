@@ -631,14 +631,16 @@ struct FocusSessionCard: View {
     }
 
     private func otherTaskActiveContent(_ session: FocusSession) -> some View {
-        let taskName = allTasks.first { $0.id == session.taskID }?.name ?? "another task"
+        let taskName = session.isUnassigned
+            ? "unassigned focus"
+            : allTasks.first { $0.id == session.taskID }?.name ?? "another task"
 
         return VStack(alignment: .leading, spacing: 10) {
             Label("Focusing on \(taskName)", systemImage: "timer")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            Text("Finish or abandon that session before starting a new one.")
+            Text("Finish or abandon that session before starting a task focus session.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

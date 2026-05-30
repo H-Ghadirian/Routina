@@ -147,7 +147,9 @@ enum StatsFeatureDerivedStateBuilder {
         )
         let filteredTaskIDs = Set(filteredTasks.map(\.id))
         let filteredLogs = logs.filter { filteredTaskIDs.contains($0.taskID) }
-        let filteredFocusSessions = focusSessions.filter { filteredTaskIDs.contains($0.taskID) }
+        let filteredFocusSessions = focusSessions.filter {
+            $0.isUnassigned || filteredTaskIDs.contains($0.taskID)
+        }
         let createdChartFilteredTasks: [RoutineTask]
         if let createdChartTaskTypeFilter {
             let tasksMatchingCreatedQuery = queryMatchedTasks(

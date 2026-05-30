@@ -65,20 +65,25 @@ final class RoutinaMacFocusTimerStatusStore: ObservableObject {
             return nil
         }
 
-        let taskID = session.taskID
-        var taskDescriptor = FetchDescriptor<RoutineTask>(
-            predicate: #Predicate { task in
-                task.id == taskID
-            }
-        )
-        taskDescriptor.fetchLimit = 1
-        let task = try context.fetch(taskDescriptor).first
+        let task: RoutineTask?
+        if session.isUnassigned {
+            task = nil
+        } else {
+            let taskID = session.taskID
+            var taskDescriptor = FetchDescriptor<RoutineTask>(
+                predicate: #Predicate { task in
+                    task.id == taskID
+                }
+            )
+            taskDescriptor.fetchLimit = 1
+            task = try context.fetch(taskDescriptor).first
+        }
 
         return RoutinaMacFocusTimerStatus(
             id: session.id,
-            targetID: session.taskID,
-            kind: .task,
-            title: normalizedTitle(task?.name, fallback: "Task focus"),
+            targetID: session.isUnassigned ? nil : session.taskID,
+            kind: session.isUnassigned ? .unassigned : .task,
+            title: normalizedTitle(task?.name, fallback: session.isUnassigned ? "Unassigned focus" : "Task focus"),
             startedAt: startedAt,
             plannedDurationSeconds: session.plannedDurationSeconds
         )
@@ -126,6 +131,7 @@ struct RoutinaMacFocusTimerStatus: Equatable {
     enum Kind: Equatable {
         case task
         case sprint
+        case unassigned
 
         var systemImage: String {
             switch self {
@@ -133,6 +139,8 @@ struct RoutinaMacFocusTimerStatus: Equatable {
                 return "timer"
             case .sprint:
                 return "flag.checkered"
+            case .unassigned:
+                return "stopwatch"
             }
         }
 
@@ -142,6 +150,8 @@ struct RoutinaMacFocusTimerStatus: Equatable {
                 return "Task Focus"
             case .sprint:
                 return "Sprint Focus"
+            case .unassigned:
+                return "Focus"
             }
         }
     }
@@ -208,6 +218,8 @@ struct RoutinaMacFocusTimerStatus: Equatable {
             return .task(targetID)
         case .sprint:
             return .sprint(targetID)
+        case .unassigned:
+            return nil
         }
     }
 }

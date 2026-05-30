@@ -324,6 +324,8 @@ Group {
                     deepLink = .task(targetID)
                 case .sprint:
                     deepLink = .sprint(targetID)
+                case .unassigned:
+                    return nil
                 }
 
                 return ActiveFocusDeepLink(
@@ -345,6 +347,9 @@ Group {
             .sorted(by: { ($0.startedAt ?? .distantPast) > ($1.startedAt ?? .distantPast) })
             .first
         else {
+            return nil
+        }
+        guard !session.isUnassigned else {
             return nil
         }
 

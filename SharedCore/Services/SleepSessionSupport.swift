@@ -179,6 +179,9 @@ enum SleepSessionSupport {
         for session: FocusSession,
         in context: ModelContext
     ) throws -> String? {
+        guard !session.isUnassigned else {
+            return nil
+        }
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let title = RoutineTask.trimmedName(
             tasks.first { $0.id == session.taskID }?.name

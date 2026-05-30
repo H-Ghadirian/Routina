@@ -147,13 +147,25 @@ private extension RoutinaMacFocusTimerStatus {
             return .blue
         case .task:
             return .teal
+        case .unassigned:
+            return .orange
         case nil:
             return .secondary
         }
     }
 
     var toolbarHelpTitle: String {
-        let target = kind == .sprint ? "sprint" : "task"
+        let target: String
+        switch kind {
+        case .sprint:
+            target = "sprint"
+        case .task:
+            target = "task"
+        case .unassigned:
+            target = "focus"
+        case nil:
+            target = "timer"
+        }
         return "Open active \(target): \(title)"
     }
 

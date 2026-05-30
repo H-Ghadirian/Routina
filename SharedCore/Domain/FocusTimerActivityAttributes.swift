@@ -6,6 +6,7 @@ struct FocusTimerActivityAttributes: ActivityAttributes {
     enum FocusKind: String, Codable, Hashable {
         case task
         case sprint
+        case unassigned
     }
 
     struct ContentState: Codable, Hashable {
