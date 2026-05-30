@@ -782,7 +782,7 @@ struct FocusSessionCard: View {
     private func abandon(_ session: FocusSession) {
         let endedAt = Date()
         session.abandonedAt = endedAt
-        syncEndedCountUpPlannerBlock(for: session, endedAt: endedAt)
+        removeFocusPlannerBlock(for: session)
         DeviceActivityRecorder.recordAction(
             .ended,
             entity: .focusSession,
@@ -801,6 +801,13 @@ struct FocusSessionCard: View {
             session: session,
             endedAt: endedAt,
             calendar: calendar,
+            context: modelContext
+        )
+    }
+
+    private func removeFocusPlannerBlock(for session: FocusSession) {
+        DayPlanFocusSessionPlannerSync.removeFocusBlock(
+            for: session,
             context: modelContext
         )
     }

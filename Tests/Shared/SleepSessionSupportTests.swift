@@ -94,14 +94,29 @@ struct SleepSessionSupportTests {
         context.insert(finishedTaskFocus)
         context.insert(sprintFocus)
         context.insert(finishedSprintFocus)
+        let calendar = makeTestCalendar()
+        _ = DayPlanFocusSessionPlannerSync.saveStartedFocusBlock(
+            for: task,
+            session: taskFocus,
+            startedAt: taskFocus.startedAt ?? startedAt,
+            durationSeconds: taskFocus.plannedDurationSeconds,
+            calendar: calendar,
+            context: context
+        )
+        let taskFocusDayKey = DayPlanStorage.dayKey(
+            for: taskFocus.startedAt ?? startedAt,
+            calendar: calendar
+        )
         try context.save()
 
+        #expect(DayPlanStorage.loadBlocks(forDayKey: taskFocusDayKey, context: context).count == 1)
         let warningMessage = try #require(try SleepSessionSupport.activeFocusTimerWarningMessage(in: context))
         #expect(warningMessage == "2 focus timers are running. Starting sleep mode will stop them.")
 
         _ = try SleepSessionSupport.startSleep(in: context, at: startedAt)
 
         #expect(taskFocus.abandonedAt == startedAt)
+        #expect(DayPlanStorage.loadBlocks(forDayKey: taskFocusDayKey, context: context).isEmpty)
         #expect(finishedTaskFocus.completedAt == makeDate("2026-05-10T12:25:00Z"))
         #expect(finishedTaskFocus.abandonedAt == nil)
         #expect(sprintFocus.stoppedAt == startedAt)

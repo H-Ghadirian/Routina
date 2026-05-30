@@ -1023,6 +1023,52 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func abandonedFocusSessionRemovesPersistedPlannerBlock() throws {
+        let calendar = gregorianCalendar
+        let startedAt = try #require(date("2026-05-07T09:30:00Z"))
+
+        for plannedDurationSeconds in [TimeInterval(0), TimeInterval(25 * 60)] {
+            let context = makeInMemoryContext()
+            let taskID = UUID()
+            let sessionID = UUID()
+            let task = RoutineTask(
+                id: taskID,
+                name: "Focus target",
+                scheduleMode: .fixedInterval,
+                estimatedDurationMinutes: 45
+            )
+            let session = FocusSession(
+                id: sessionID,
+                taskID: taskID,
+                startedAt: startedAt,
+                plannedDurationSeconds: plannedDurationSeconds
+            )
+            context.insert(task)
+            context.insert(session)
+
+            let savedBlock = try #require(
+                DayPlanFocusSessionPlannerSync.saveStartedFocusBlock(
+                    for: task,
+                    session: session,
+                    startedAt: startedAt,
+                    durationSeconds: session.plannedDurationSeconds,
+                    calendar: calendar,
+                    context: context
+                )
+            )
+
+            #expect(DayPlanStorage.loadBlocks(forDayKey: savedBlock.dayKey, context: context).count == 1)
+            #expect(
+                DayPlanFocusSessionPlannerSync.removeFocusBlock(
+                    for: session,
+                    context: context
+                )
+            )
+            #expect(DayPlanStorage.loadBlocks(forDayKey: savedBlock.dayKey, context: context).isEmpty)
+        }
+    }
+
+    @Test
     func activeFocusSessionBlocksExcludePersistedPlannerBlocks() throws {
         let calendar = gregorianCalendar
         let visibleDate = try #require(date("2026-05-07T12:00:00Z"))

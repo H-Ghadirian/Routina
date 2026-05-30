@@ -1320,6 +1320,34 @@ enum DayPlanFocusSessionPlannerSync {
         return block
     }
 
+    @discardableResult
+    static func removeFocusBlock(
+        for session: FocusSession,
+        context: ModelContext
+    ) -> Bool {
+        do {
+            let sessionID = session.id
+            let descriptor = FetchDescriptor<DayPlanBlockRecord>(
+                predicate: #Predicate<DayPlanBlockRecord> { record in
+                    record.id == sessionID
+                }
+            )
+            let records = try context.fetch(descriptor)
+            guard !records.isEmpty else {
+                return false
+            }
+
+            for record in records {
+                context.delete(record)
+            }
+            try context.save()
+            return true
+        } catch {
+            NSLog("Failed to remove focus planner block for \(session.id): \(error.localizedDescription)")
+            return false
+        }
+    }
+
     static func plannerBlock(
         for task: RoutineTask,
         session: FocusSession,
