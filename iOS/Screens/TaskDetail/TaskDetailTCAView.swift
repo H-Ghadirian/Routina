@@ -312,6 +312,7 @@ detailBody
             onSaveEditComment: { store.send(.detailCommentEditSaveTapped($0)) },
             onDeleteComment: { store.send(.detailCommentDeleteTapped($0)) }
         )
+        .id(store.task.id)
     }
 
     @ViewBuilder

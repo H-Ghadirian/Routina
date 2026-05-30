@@ -17,61 +17,120 @@ struct TaskDetailCommentsSectionView: View {
     let onSaveEditComment: (UUID) -> Void
     let onDeleteComment: (UUID) -> Void
 
+    @State private var isExpanded = true
+    @State private var hiddenCommentIDs: Set<UUID> = []
+
     private var displayedComments: [RoutineTaskComment] {
         RoutineTaskCommentPresentation.newestFirst(comments)
+    }
+
+    private var currentCommentIDs: Set<UUID> {
+        Set(comments.map(\.id))
+    }
+
+    private var currentHiddenCommentIDs: Set<UUID> {
+        hiddenCommentIDs.intersection(currentCommentIDs)
+    }
+
+    private var hiddenCommentCount: Int {
+        currentHiddenCommentIDs.count
     }
 
     var body: some View {
         TaskDetailSectionCardView(background: background, stroke: stroke) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Comments")
-                    .font(.headline)
-
-                commentEditor(
-                    draft: newCommentDraft,
-                    placeholder: "Add a comment...",
-                    minHeight: 86,
-                    accessibilityIdentifier: "task-detail-new-comment-editor",
-                    onChanged: onNewCommentDraftChanged
+                TaskDetailCollapsibleSectionHeaderView(
+                    title: "Comments",
+                    count: comments.count,
+                    isExpanded: isExpanded,
+                    onToggle: { isExpanded.toggle() }
                 )
 
-                HStack {
-                    Spacer()
-
-                    Button {
-                        onAddComment()
-                    } label: {
-                        Label("Add", systemImage: "plus.circle.fill")
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(!canAddComment)
+                if isExpanded {
+                    expandedContent
                 }
+            }
+        }
+        .onChange(of: comments.map(\.id)) { _, commentIDs in
+            hiddenCommentIDs.formIntersection(Set(commentIDs))
+        }
+    }
 
-                if comments.isEmpty {
-                    Text("No comments yet")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, 4)
-                } else {
-                    VStack(alignment: .leading, spacing: 0) {
-                        ForEach(Array(displayedComments.enumerated()), id: \.element.id) { index, comment in
-                            commentRow(comment)
+    @ViewBuilder
+    private var expandedContent: some View {
+        commentEditor(
+            draft: newCommentDraft,
+            placeholder: "Add a comment...",
+            minHeight: 86,
+            accessibilityIdentifier: "task-detail-new-comment-editor",
+            onChanged: onNewCommentDraftChanged
+        )
 
-                            if index < displayedComments.count - 1 {
-                                Divider()
-                                    .padding(.vertical, 10)
-                            }
-                        }
+        HStack {
+            Spacer()
+
+            Button {
+                onAddComment()
+            } label: {
+                Label("Add", systemImage: "plus.circle.fill")
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(!canAddComment)
+        }
+
+        if hiddenCommentCount > 0 {
+            hiddenCommentsControl
+        }
+
+        if comments.isEmpty {
+            Text("No comments yet")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 4)
+        } else {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(displayedComments.enumerated()), id: \.element.id) { index, comment in
+                    commentRow(comment)
+
+                    if index < displayedComments.count - 1 {
+                        Divider()
+                            .padding(.vertical, 10)
                     }
                 }
             }
         }
     }
 
+    private var hiddenCommentsControl: some View {
+        HStack(spacing: 8) {
+            Label("\(hiddenCommentCount) hidden", systemImage: "eye.slash")
+                .foregroundStyle(.secondary)
+
+            Spacer(minLength: 8)
+
+            Button {
+                withAnimation(.easeInOut(duration: 0.16)) {
+                    hiddenCommentIDs.removeAll()
+                    isExpanded = true
+                }
+            } label: {
+                Label("Show All", systemImage: "eye")
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Color.accentColor)
+        }
+        .font(.caption.weight(.semibold))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .routinaGlassCard(cornerRadius: 8, tint: .secondary, tintOpacity: 0.07)
+    }
+
     @ViewBuilder
     private func commentRow(_ comment: RoutineTaskComment) -> some View {
-        if editingCommentID == comment.id {
+        if currentHiddenCommentIDs.contains(comment.id), editingCommentID != comment.id {
+            hiddenCommentRow(comment)
+        } else if editingCommentID == comment.id {
             VStack(alignment: .leading, spacing: 8) {
                 commentEditor(
                     draft: editingCommentDraft,
@@ -117,6 +176,13 @@ struct TaskDetailCommentsSectionView: View {
                         Spacer(minLength: 0)
 
                         Button {
+                            hideComment(comment.id)
+                        } label: {
+                            Label("Hide", systemImage: "eye.slash")
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
                             onEditComment(comment.id)
                         } label: {
                             Label("Edit", systemImage: "pencil")
@@ -132,6 +198,34 @@ struct TaskDetailCommentsSectionView: View {
                     }
                 }
             }
+        }
+    }
+
+    private func hiddenCommentRow(_ comment: RoutineTaskComment) -> some View {
+        HStack(alignment: .center, spacing: 10) {
+            Image(systemName: "eye.slash")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 22, height: 22)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Hidden comment")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                Text(metadataText(for: comment))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button {
+                showComment(comment.id)
+            } label: {
+                Label("Show", systemImage: "eye")
+            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -174,6 +268,18 @@ struct TaskDetailCommentsSectionView: View {
 
     private func formattedTimestamp(_ date: Date) -> String {
         date.formatted(date: .abbreviated, time: .shortened)
+    }
+
+    private func hideComment(_ id: UUID) {
+        withAnimation(.easeInOut(duration: 0.16)) {
+            _ = hiddenCommentIDs.insert(id)
+        }
+    }
+
+    private func showComment(_ id: UUID) {
+        withAnimation(.easeInOut(duration: 0.16)) {
+            _ = hiddenCommentIDs.remove(id)
+        }
     }
 }
 
