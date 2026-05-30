@@ -47,6 +47,8 @@ struct TaskDetailPressureSegmentedPicker: View {
 
 struct TaskDetailTodoStateSegmentedPicker: View {
     let store: StoreOf<TaskDetailFeature>
+    let timingSummary: TodoStateTimingSummary?
+    let showPersianDates: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -68,6 +70,16 @@ struct TaskDetailTodoStateSegmentedPicker: View {
                     }
                 }
             )
+
+            if let timingSummary {
+                Divider()
+                    .padding(.vertical, 6)
+
+                TodoStateTimingInlineView(
+                    summary: timingSummary,
+                    showPersianDates: showPersianDates
+                )
+            }
         }
         .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
         .detailHeaderBoxStyle()

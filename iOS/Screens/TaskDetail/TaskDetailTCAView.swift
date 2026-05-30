@@ -217,9 +217,10 @@ detailBody
                 TaskDetailTodoPrimaryActionSection(
                     store: store,
                     showsTodoStateControl: shouldShowTodoStateControl,
-                    showsPressureControl: shouldShowPressureControl
+                    showsPressureControl: shouldShowPressureControl,
+                    stateTimingSummary: todoStateTimingSummary,
+                    showPersianDates: showPersianDates
                 )
-                todoStateTimingSection
                 if store.task.focusModeEnabled {
                     focusSessionSection
                 }
@@ -598,18 +599,12 @@ detailBody
         }
     }
 
-    @ViewBuilder
-    private var todoStateTimingSection: some View {
-        if let summary = TodoStateTiming.summary(
+    private var todoStateTimingSummary: TodoStateTimingSummary? {
+        TodoStateTiming.summary(
             for: store.task,
             referenceDate: referenceDate,
             calendar: Calendar.current
-        ) {
-            TodoStateTimingSectionView(
-                summary: summary,
-                showPersianDates: showPersianDates
-            )
-        }
+        )
     }
 
     private var routineHeaderSection: some View {

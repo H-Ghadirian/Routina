@@ -5,13 +5,36 @@ struct TodoStateTimingSectionView: View {
     var showPersianDates: Bool = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("State Timing")
-                    .font(.headline)
-                    .foregroundStyle(.primary)
+        TodoStateTimingInlineView(
+            summary: summary,
+            showPersianDates: showPersianDates,
+            showsTitle: true
+        )
+        .padding(12)
+        .background(Color.secondary.opacity(0.07))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+    }
+}
 
-                Spacer(minLength: 8)
+struct TodoStateTimingInlineView: View {
+    let summary: TodoStateTimingSummary
+    var showPersianDates: Bool = false
+    var showsTitle: Bool = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if showsTitle {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("State Timing")
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+
+                    Spacer(minLength: 8)
+                }
             }
 
             if let completedAt = summary.completedAt,
@@ -48,13 +71,6 @@ struct TodoStateTimingSectionView: View {
                 }
             }
         }
-        .padding(12)
-        .background(Color.secondary.opacity(0.07))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
-        )
     }
 
     private var visibleStateTotals: [TodoStateTimingStateTotal] {

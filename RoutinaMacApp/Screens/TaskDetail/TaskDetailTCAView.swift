@@ -201,7 +201,6 @@ detailBody
             LazyVStack(alignment: .leading, spacing: 14) {
                 todoHeaderSection
                 notificationDisabledWarningSection
-                todoStateTimingSection
                 optionalActionsSection
                 if shouldShowCommentsSection {
                     commentsSection
@@ -223,18 +222,12 @@ detailBody
         }
     }
 
-    @ViewBuilder
-    private var todoStateTimingSection: some View {
-        if let summary = TodoStateTiming.summary(
+    private var todoStateTimingSummary: TodoStateTimingSummary? {
+        TodoStateTiming.summary(
             for: store.task,
             referenceDate: referenceDate,
             calendar: Calendar.current
-        ) {
-            TodoStateTimingSectionView(
-                summary: summary,
-                showPersianDates: showPersianDates
-            )
-        }
+        )
     }
 
     private var priorityDisclosureBox: some View {
@@ -412,7 +405,11 @@ detailBody
                 ViewThatFits(in: .horizontal) {
                     HStack(alignment: .top, spacing: 8) {
                         if shouldShowTodoStateControl {
-                            TaskDetailTodoStateSegmentedPicker(store: store)
+                            TaskDetailTodoStateSegmentedPicker(
+                                store: store,
+                                timingSummary: todoStateTimingSummary,
+                                showPersianDates: showPersianDates
+                            )
                                 .frame(minWidth: 380)
                         }
                         if shouldShowPressureControl {
@@ -423,7 +420,11 @@ detailBody
 
                     VStack(alignment: .leading, spacing: 8) {
                         if shouldShowTodoStateControl {
-                            TaskDetailTodoStateSegmentedPicker(store: store)
+                            TaskDetailTodoStateSegmentedPicker(
+                                store: store,
+                                timingSummary: todoStateTimingSummary,
+                                showPersianDates: showPersianDates
+                            )
                         }
                         if shouldShowPressureControl {
                             TaskDetailPressureSegmentedPicker(store: store)

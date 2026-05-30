@@ -5,6 +5,8 @@ struct TaskDetailTodoPrimaryActionSection: View {
     let store: StoreOf<TaskDetailFeature>
     let showsTodoStateControl: Bool
     let showsPressureControl: Bool
+    let stateTimingSummary: TodoStateTimingSummary?
+    let showPersianDates: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -27,6 +29,13 @@ struct TaskDetailTodoPrimaryActionSection: View {
                         }
                     }
                 }
+            }
+
+            if showsTodoStateControl, let stateTimingSummary {
+                TodoStateTimingInlineView(
+                    summary: stateTimingSummary,
+                    showPersianDates: showPersianDates
+                )
             }
 
             TaskDetailPrimaryActionButton(store: store)
