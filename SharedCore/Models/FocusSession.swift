@@ -90,6 +90,34 @@ enum FocusSessionFormatting {
     }
 }
 
+enum FocusBlockProgress {
+    static let blockDurationSeconds: TimeInterval = 5 * 60
+    static let defaultVisibleSessionBlocks = 12
+
+    static func filledBlockCount(for seconds: TimeInterval) -> Int {
+        guard seconds.isFinite else { return 0 }
+        return Int(max(0, seconds) / blockDurationSeconds)
+    }
+
+    static func visibleSessionBlockCount(for seconds: TimeInterval) -> Int {
+        max(defaultVisibleSessionBlocks, filledBlockCount(for: seconds) + 1)
+    }
+
+    static func secondsUntilNextBlock(for seconds: TimeInterval) -> TimeInterval {
+        guard seconds.isFinite else { return blockDurationSeconds }
+
+        let elapsedSeconds = max(0, seconds)
+        let remainder = elapsedSeconds.truncatingRemainder(dividingBy: blockDurationSeconds)
+        guard remainder > 0 else { return blockDurationSeconds }
+        return blockDurationSeconds - remainder
+    }
+
+    static func blockCountText(_ count: Int) -> String {
+        let safeCount = max(0, count)
+        return "\(safeCount.formatted()) \(safeCount == 1 ? "block" : "blocks")"
+    }
+}
+
 enum RoutineTimeSpentFormatting {
     static func compactMinutesText(_ minutes: Int) -> String {
         FocusSessionFormatting.compactDurationText(seconds: TimeInterval(max(minutes, 1) * 60))

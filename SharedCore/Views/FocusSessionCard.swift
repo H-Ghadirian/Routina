@@ -122,7 +122,7 @@ struct FocusSessionCard: View {
                 if isSleepModeActive {
                     sleepModeActiveContent
                 } else if let activeSessionForTask = snapshot.activeSessionForTask {
-                    activeSessionContent(activeSessionForTask)
+                    activeSessionContent(activeSessionForTask, snapshot: snapshot)
                 } else if let activeSessionForAnotherTask = snapshot.activeSessionForAnotherTask {
                     otherTaskActiveContent(activeSessionForAnotherTask)
                 } else if let blockingFocusTitle {
@@ -575,13 +575,14 @@ struct FocusSessionCard: View {
         }
     }
 
-    private func activeSessionContent(_ session: FocusSession) -> some View {
+    private func activeSessionContent(_ session: FocusSession, snapshot: FocusSessionCardSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             SwiftUI.TimelineView(.periodic(from: .now, by: 1)) { context in
                 let isCountUp = session.plannedDurationSeconds <= 0
+                let elapsedSeconds = elapsedSeconds(for: session, now: context.date)
                 let progress = progress(for: session, now: context.date)
                 let displaySeconds = isCountUp
-                    ? elapsedSeconds(for: session, now: context.date)
+                    ? elapsedSeconds
                     : remainingSeconds(for: session, now: context.date)
 
                 VStack(alignment: .leading, spacing: 12) {
@@ -596,8 +597,10 @@ struct FocusSessionCard: View {
                     }
 
                     if isCountUp {
-                        ProgressView()
-                            .tint(.teal)
+                        countUpFocusBlocks(
+                            elapsedSeconds: elapsedSeconds,
+                            completedBlockCount: snapshot.completedFocusBlockCount
+                        )
                     } else {
                         ProgressView(value: progress)
                             .tint(.teal)
@@ -627,6 +630,72 @@ struct FocusSessionCard: View {
             #elseif os(macOS)
             macFocusShieldControls
             #endif
+        }
+    }
+
+    private func countUpFocusBlocks(
+        elapsedSeconds: TimeInterval,
+        completedBlockCount: Int
+    ) -> some View {
+        let sessionBlockCount = FocusBlockProgress.filledBlockCount(for: elapsedSeconds)
+        let visibleSessionBlockCount = FocusBlockProgress.visibleSessionBlockCount(for: elapsedSeconds)
+        let accumulatedBlockCount = completedBlockCount + sessionBlockCount
+        let nextBlockSeconds = FocusBlockProgress.secondsUntilNextBlock(for: elapsedSeconds)
+
+        return VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 6) {
+                blockHeader(
+                    title: "Current session",
+                    value: FocusBlockProgress.blockCountText(sessionBlockCount),
+                    trailingValue: "Next in \(FocusSessionFormatting.durationText(seconds: nextBlockSeconds))"
+                )
+
+                FocusBlockGrid(
+                    filledCount: sessionBlockCount,
+                    totalCount: visibleSessionBlockCount,
+                    blockSize: 12,
+                    spacing: 5
+                )
+            }
+
+            if accumulatedBlockCount > 0 {
+                VStack(alignment: .leading, spacing: 6) {
+                    blockHeader(
+                        title: "All focus blocks",
+                        value: FocusBlockProgress.blockCountText(accumulatedBlockCount),
+                        trailingValue: FocusSessionFormatting.compactDurationText(
+                            seconds: TimeInterval(accumulatedBlockCount) * FocusBlockProgress.blockDurationSeconds
+                        )
+                    )
+
+                    FocusBlockGrid(
+                        filledCount: accumulatedBlockCount,
+                        totalCount: accumulatedBlockCount,
+                        blockSize: 8,
+                        spacing: 4
+                    )
+                }
+            }
+        }
+    }
+
+    private func blockHeader(title: String, value: String, trailingValue: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Text(value)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.teal)
+
+            Spacer(minLength: 8)
+
+            Text(trailingValue)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
     }
 
@@ -661,20 +730,41 @@ struct FocusSessionCard: View {
     }
 
     private func focusHistorySummary(snapshot: FocusSessionCardSnapshot) -> some View {
-        HStack(spacing: 12) {
-            metricTile(
-                title: "Total",
-                value: FocusSessionFormatting.compactDurationText(seconds: snapshot.totalCompletedSeconds)
-            )
-            metricTile(
-                title: "Sessions",
-                value: snapshot.completedSessionsForTask.count.formatted()
-            )
-            if let latest = snapshot.completedSessionsForTask.first?.completedAt {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 12) {
                 metricTile(
-                    title: "Latest",
-                    value: latest.formatted(date: .abbreviated, time: .shortened)
+                    title: "Total",
+                    value: FocusSessionFormatting.compactDurationText(seconds: snapshot.totalCompletedSeconds)
                 )
+                metricTile(
+                    title: "Sessions",
+                    value: snapshot.completedSessionsForTask.count.formatted()
+                )
+                if let latest = snapshot.completedSessionsForTask.first?.completedAt {
+                    metricTile(
+                        title: "Latest",
+                        value: latest.formatted(date: .abbreviated, time: .shortened)
+                    )
+                }
+            }
+
+            if snapshot.completedFocusBlockCount > 0 {
+                VStack(alignment: .leading, spacing: 6) {
+                    blockHeader(
+                        title: "Accumulated blocks",
+                        value: FocusBlockProgress.blockCountText(snapshot.completedFocusBlockCount),
+                        trailingValue: FocusSessionFormatting.compactDurationText(
+                            seconds: TimeInterval(snapshot.completedFocusBlockCount) * FocusBlockProgress.blockDurationSeconds
+                        )
+                    )
+
+                    FocusBlockGrid(
+                        filledCount: snapshot.completedFocusBlockCount,
+                        totalCount: snapshot.completedFocusBlockCount,
+                        blockSize: 8,
+                        spacing: 4
+                    )
+                }
             }
         }
     }
@@ -691,7 +781,7 @@ struct FocusSessionCard: View {
                         Text(session.completedAt?.formatted(date: .abbreviated, time: .shortened) ?? "Unknown date")
                             .font(.caption.weight(.semibold))
 
-                        Text(FocusSessionFormatting.compactDurationText(seconds: session.actualDurationSeconds))
+                        Text(recentSessionDurationText(session))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
@@ -724,6 +814,13 @@ struct FocusSessionCard: View {
                 .minimumScaleFactor(0.75)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func recentSessionDurationText(_ session: FocusSession) -> String {
+        let durationText = FocusSessionFormatting.compactDurationText(seconds: session.actualDurationSeconds)
+        let blockCount = FocusBlockProgress.filledBlockCount(for: session.actualDurationSeconds)
+        guard blockCount > 0 else { return durationText }
+        return "\(durationText), \(FocusBlockProgress.blockCountText(blockCount))"
     }
 
     private func startSession(duration: TimeInterval) {
@@ -900,16 +997,19 @@ private struct FocusSessionCardSnapshot {
     let activeSessionForAnotherTask: FocusSession?
     let completedSessionsForTask: [FocusSession]
     let totalCompletedSeconds: TimeInterval
+    let completedFocusBlockCount: Int
 
     init(taskID: UUID, sessions: [FocusSession]) {
         var activeSessionForTask: FocusSession?
         var activeSessionForAnotherTask: FocusSession?
         var completedSessionsForTask: [FocusSession] = []
+        var completedFocusBlockCount = 0
 
         for session in sessions {
             if session.taskID == taskID {
                 if session.completedAt != nil {
                     completedSessionsForTask.append(session)
+                    completedFocusBlockCount += FocusBlockProgress.filledBlockCount(for: session.actualDurationSeconds)
                 } else if session.abandonedAt == nil && activeSessionForTask == nil {
                     activeSessionForTask = session
                 }
@@ -930,5 +1030,53 @@ private struct FocusSessionCardSnapshot {
         self.totalCompletedSeconds = completedSessionsForTask.reduce(0) {
             $0 + $1.actualDurationSeconds
         }
+        self.completedFocusBlockCount = completedFocusBlockCount
+    }
+}
+
+private struct FocusBlockGrid: View {
+    let filledCount: Int
+    let totalCount: Int
+    var tint: Color = .teal
+    var blockSize: CGFloat
+    var spacing: CGFloat
+
+    private var safeTotalCount: Int {
+        max(0, totalCount)
+    }
+
+    private var safeFilledCount: Int {
+        min(max(0, filledCount), safeTotalCount)
+    }
+
+    private var columns: [GridItem] {
+        [
+            GridItem(
+                .adaptive(minimum: blockSize, maximum: blockSize),
+                spacing: spacing,
+                alignment: .leading
+            ),
+        ]
+    }
+
+    var body: some View {
+        LazyVGrid(columns: columns, alignment: .leading, spacing: spacing) {
+            ForEach(Array(0..<safeTotalCount), id: \.self) { index in
+                let isFilled = index < safeFilledCount
+
+                RoundedRectangle(cornerRadius: max(2, blockSize * 0.25), style: .continuous)
+                    .fill(isFilled ? tint.opacity(0.86) : Color.secondary.opacity(0.12))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: max(2, blockSize * 0.25), style: .continuous)
+                            .stroke(
+                                isFilled ? tint.opacity(0.25) : Color.secondary.opacity(0.18),
+                                lineWidth: 1
+                            )
+                    }
+                    .frame(width: blockSize, height: blockSize)
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(FocusBlockProgress.blockCountText(safeFilledCount)) filled")
     }
 }
