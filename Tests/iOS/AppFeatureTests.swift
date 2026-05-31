@@ -332,6 +332,12 @@ struct AppFeatureTests {
         await store.receive(.stats(.setData(tasks: [], logs: [], focusSessions: []))) {
             $0.stats.metrics = StatsFeature.Metrics(
                 chartPoints: expectedChartPoints,
+                outcomeMixChartPoints: RoutineCompletionStats.outcomePoints(
+                    for: .week,
+                    logs: [],
+                    referenceDate: now,
+                    calendar: calendar
+                ),
                 focusChartPoints: expectedFocusChartPoints,
                 totalDoneCount: 0,
                 totalCanceledCount: 0,

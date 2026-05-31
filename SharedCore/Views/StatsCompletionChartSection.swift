@@ -5,6 +5,7 @@ struct StatsCompletionChartSection: View {
     let subtitle: String
     let peakValue: String
     let chartPoints: [DoneChartPoint]
+    let outcomePoints: [OutcomeMixChartPoint]
     let highlightedPoint: DoneChartPoint?
     let averagePerDay: Double
     let chartUpperBound: Double
@@ -33,20 +34,15 @@ struct StatsCompletionChartSection: View {
 
             StatsHorizontalChartContainer(chartPresentation: chartPresentation, minHeight: 260) {
                 Chart {
-                    ForEach(chartPoints) { point in
-                        let isHighlighted = point.date == highlightedPoint?.date
-
+                    ForEach(outcomeSegments) { segment in
                         BarMark(
-                            x: .value("Date", point.date, unit: .day),
-                            y: .value("Activity", point.count)
+                            x: .value("Date", segment.date, unit: .day),
+                            y: .value("Activity", segment.count)
                         )
                         .cornerRadius(7)
-                        .foregroundStyle(
-                            isHighlighted
-                                ? AnyShapeStyle(highlightBarFill)
-                                : AnyShapeStyle(baseBarFill)
-                        )
-                        .opacity(point.count == 0 ? 0.35 : 1)
+                        .foregroundStyle(by: .value("Outcome", segment.title))
+                        .accessibilityLabel("\(segment.title) on \(chartPresentation.bestDayCaption(for: DoneChartPoint(date: segment.date, count: segment.count)))")
+                        .accessibilityValue(segment.count.formatted())
                     }
 
                     if averagePerDay > 0 {
@@ -76,6 +72,12 @@ struct StatsCompletionChartSection: View {
                     }
                 }
                 .chartYScale(domain: 0...chartUpperBound)
+                .chartForegroundStyleScale([
+                    "Done": StatsOutcomeChartPalette.done(colorScheme: colorScheme),
+                    "Missed": StatsOutcomeChartPalette.missed(colorScheme: colorScheme),
+                    "Canceled": StatsOutcomeChartPalette.canceled(colorScheme: colorScheme)
+                ])
+                .chartLegend(position: .bottom, alignment: .leading)
                 .chartYAxis {
                     AxisMarks(position: .leading) { value in
                         AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 6]))
@@ -112,5 +114,61 @@ struct StatsCompletionChartSection: View {
             )
         }
         .statsChartCard(surfaceGradient: surfaceGradient, colorScheme: colorScheme)
+    }
+
+    private var outcomeSegments: [StatsOutcomeChartSegment] {
+        let sourcePoints = outcomePoints.isEmpty
+            ? chartPoints.map {
+                OutcomeMixChartPoint(
+                    date: $0.date,
+                    doneCount: $0.count,
+                    missedCount: 0,
+                    canceledCount: 0
+                )
+            }
+            : outcomePoints
+
+        return sourcePoints.flatMap { point in
+            [
+                StatsOutcomeChartSegment(date: point.date, kind: .completed, count: point.doneCount),
+                StatsOutcomeChartSegment(date: point.date, kind: .missed, count: point.missedCount),
+                StatsOutcomeChartSegment(date: point.date, kind: .canceled, count: point.canceledCount)
+            ].filter { $0.count > 0 }
+        }
+    }
+}
+
+private struct StatsOutcomeChartSegment: Identifiable {
+    let date: Date
+    let kind: RoutineLogKind
+    let count: Int
+
+    var id: String {
+        "\(date.timeIntervalSinceReferenceDate)-\(kind.rawValue)"
+    }
+
+    var title: String {
+        switch kind {
+        case .completed:
+            return "Done"
+        case .missed:
+            return "Missed"
+        case .canceled:
+            return "Canceled"
+        }
+    }
+}
+
+private enum StatsOutcomeChartPalette {
+    static func done(colorScheme: ColorScheme) -> Color {
+        Color.green.opacity(colorScheme == .dark ? 0.82 : 0.68)
+    }
+
+    static func missed(colorScheme: ColorScheme) -> Color {
+        Color.orange.opacity(colorScheme == .dark ? 0.88 : 0.74)
+    }
+
+    static func canceled(colorScheme: ColorScheme) -> Color {
+        Color.secondary.opacity(colorScheme == .dark ? 0.74 : 0.58)
     }
 }

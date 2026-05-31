@@ -267,6 +267,12 @@ struct StatsFeatureTests {
                     referenceDate: now,
                     calendar: calendar
                 ),
+                outcomeMixChartPoints: RoutineCompletionStats.outcomePoints(
+                    for: .week,
+                    logs: [focusLog1, focusLog2, healthLog],
+                    referenceDate: now,
+                    calendar: calendar
+                ),
                 createdChartPoints: RoutineCompletionStats.points(
                     for: .week,
                     timestamps: [],
@@ -325,6 +331,12 @@ struct StatsFeatureTests {
                         makeDate("2026-03-19T08:00:00Z"),
                         makeDate("2026-03-20T08:00:00Z"),
                     ],
+                    referenceDate: now,
+                    calendar: calendar
+                ),
+                outcomeMixChartPoints: RoutineCompletionStats.outcomePoints(
+                    for: .week,
+                    logs: [focusLog1, focusLog2],
                     referenceDate: now,
                     calendar: calendar
                 ),
@@ -393,6 +405,12 @@ struct StatsFeatureTests {
                     timestamps: [
                         makeDate("2026-03-20T09:00:00Z"),
                     ],
+                    referenceDate: now,
+                    calendar: calendar
+                ),
+                outcomeMixChartPoints: RoutineCompletionStats.outcomePoints(
+                    for: .week,
+                    logs: [healthLog],
                     referenceDate: now,
                     calendar: calendar
                 ),
@@ -528,6 +546,12 @@ struct StatsFeatureTests {
             $0.filteredTaskCount = 3
             $0.metrics = StatsFeature.Metrics(
                 chartPoints: allChartPoints,
+                outcomeMixChartPoints: RoutineCompletionStats.outcomePoints(
+                    for: .week,
+                    logs: [focusLog, healthLog, hybridLog],
+                    referenceDate: now,
+                    calendar: calendar
+                ),
                 createdChartPoints: RoutineCompletionStats.points(
                     for: .week,
                     timestamps: [],
@@ -564,6 +588,12 @@ struct StatsFeatureTests {
             $0.filteredTaskCount = 1
             $0.metrics = StatsFeature.Metrics(
                 chartPoints: focusOnlyChartPoints,
+                outcomeMixChartPoints: RoutineCompletionStats.outcomePoints(
+                    for: .week,
+                    logs: [focusLog],
+                    referenceDate: now,
+                    calendar: calendar
+                ),
                 createdChartPoints: RoutineCompletionStats.points(
                     for: .week,
                     timestamps: [],
@@ -619,6 +649,12 @@ struct StatsFeatureTests {
             $0.filteredTaskCount = 1
             $0.metrics = StatsFeature.Metrics(
                 chartPoints: focusOnlyChartPoints,
+                outcomeMixChartPoints: RoutineCompletionStats.outcomePoints(
+                    for: .week,
+                    logs: [focusLog],
+                    referenceDate: now,
+                    calendar: calendar
+                ),
                 createdChartPoints: RoutineCompletionStats.points(
                     for: .week,
                     timestamps: [],

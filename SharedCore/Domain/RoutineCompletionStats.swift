@@ -42,6 +42,30 @@ struct DoneChartPoint: Equatable, Identifiable {
     var id: Date { date }
 }
 
+struct OutcomeMixChartPoint: Equatable, Identifiable {
+    let date: Date
+    let doneCount: Int
+    let missedCount: Int
+    let canceledCount: Int
+
+    var id: Date { date }
+
+    var totalCount: Int {
+        doneCount + missedCount + canceledCount
+    }
+
+    func count(for kind: RoutineLogKind) -> Int {
+        switch kind {
+        case .completed:
+            return doneCount
+        case .missed:
+            return missedCount
+        case .canceled:
+            return canceledCount
+        }
+    }
+}
+
 struct FocusDurationChartPoint: Equatable, Identifiable {
     let date: Date
     let seconds: TimeInterval
@@ -84,6 +108,49 @@ struct TagUsageChartPoint: Equatable, Identifiable {
 }
 
 enum RoutineCompletionStats {
+    static func outcomePoints(
+        for range: DoneChartRange,
+        logs: [RoutineLog],
+        earliestActivityDate: Date? = nil,
+        referenceDate: Date = .now,
+        calendar: Calendar = .current
+    ) -> [OutcomeMixChartPoint] {
+        let endDate = calendar.startOfDay(for: referenceDate)
+        guard let defaultStart = calendar.date(byAdding: .day, value: -(range.trailingDayCount - 1), to: endDate) else {
+            return []
+        }
+
+        let startDate: Date
+        if range == .year, let earliestActivityDate {
+            let earliestDay = calendar.startOfDay(for: earliestActivityDate)
+            startDate = min(max(earliestDay, defaultStart), endDate)
+        } else {
+            startDate = defaultStart
+        }
+
+        let dayCount = (calendar.dateComponents([.day], from: startDate, to: endDate).day ?? 0) + 1
+        let countsByDay = logs.reduce(into: [Date: [RoutineLogKind: Int]]()) { partialResult, log in
+            guard let timestamp = log.timestamp else { return }
+            let day = calendar.startOfDay(for: timestamp)
+            guard day >= startDate, day <= endDate else { return }
+            partialResult[day, default: [:]][log.kind, default: 0] += 1
+        }
+
+        return (0..<dayCount).compactMap { dayOffset in
+            guard let date = calendar.date(byAdding: .day, value: dayOffset, to: startDate) else {
+                return nil
+            }
+
+            let counts = countsByDay[date, default: [:]]
+            return OutcomeMixChartPoint(
+                date: date,
+                doneCount: counts[.completed, default: 0],
+                missedCount: counts[.missed, default: 0],
+                canceledCount: counts[.canceled, default: 0]
+            )
+        }
+    }
+
     static func points(
         for range: DoneChartRange,
         timestamps: [Date],

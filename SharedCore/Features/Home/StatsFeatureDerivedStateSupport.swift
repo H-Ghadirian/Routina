@@ -2,6 +2,7 @@ import Foundation
 
 struct StatsFeatureMetrics: Equatable {
     var chartPoints: [DoneChartPoint] = []
+    var outcomeMixChartPoints: [OutcomeMixChartPoint] = []
     var createdChartPoints: [DoneChartPoint] = []
     var focusChartPoints: [FocusDurationChartPoint] = []
     var focusWeekdayAveragePoints: [FocusWeekdayAverageChartPoint] = []
@@ -232,6 +233,13 @@ enum StatsFeatureDerivedStateBuilder {
             referenceDate: referenceDate,
             calendar: calendar
         )
+        let outcomeMixChartPoints = RoutineCompletionStats.outcomePoints(
+            for: selectedRange,
+            logs: filteredLogs,
+            earliestActivityDate: earliestActivityDate,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
         let createdChartPoints: [DoneChartPoint]
         if createdChartTaskTypeFilter == nil {
             createdChartPoints = []
@@ -320,6 +328,7 @@ enum StatsFeatureDerivedStateBuilder {
             filteredTaskCount: filteredTasks.count,
             metrics: StatsFeatureMetrics(
                 chartPoints: chartPoints,
+                outcomeMixChartPoints: outcomeMixChartPoints,
                 createdChartPoints: createdChartPoints,
                 focusChartPoints: focusChartPoints,
                 focusWeekdayAveragePoints: focusWeekdayAveragePoints,

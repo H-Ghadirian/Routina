@@ -144,6 +144,39 @@ struct RoutineCompletionStatsTests {
     }
 
     @Test
+    func outcomePoints_bucketDoneMissedAndCanceledByDay() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let taskID = UUID()
+        let referenceDate = makeDate("2026-03-14T10:00:00Z")
+        let logs = [
+            RoutineLog(timestamp: makeDate("2026-03-10T08:00:00Z"), taskID: taskID, kind: .completed),
+            RoutineLog(timestamp: makeDate("2026-03-10T18:00:00Z"), taskID: taskID, kind: .missed),
+            RoutineLog(timestamp: makeDate("2026-03-11T08:00:00Z"), taskID: taskID, kind: .canceled),
+            RoutineLog(timestamp: makeDate("2026-03-15T08:00:00Z"), taskID: taskID, kind: .completed)
+        ]
+
+        let points = RoutineCompletionStats.outcomePoints(
+            for: .week,
+            logs: logs,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(points.count == 7)
+        #expect(points[2].date == makeDate("2026-03-10T00:00:00Z"))
+        #expect(points[2].doneCount == 1)
+        #expect(points[2].missedCount == 1)
+        #expect(points[2].canceledCount == 0)
+        #expect(points[2].totalCount == 2)
+        #expect(points[3].doneCount == 0)
+        #expect(points[3].missedCount == 0)
+        #expect(points[3].canceledCount == 1)
+        #expect(points.last?.totalCount == 0)
+    }
+
+    @Test
     func points_bucketByProvidedCalendarTimeZone() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = try #require(TimeZone(identifier: "Europe/Berlin"))

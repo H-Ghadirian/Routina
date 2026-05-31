@@ -70,6 +70,10 @@ struct StatsFeatureDerivedStateSupportTests {
         #expect(state.metrics.totalMissedCount == 1)
         #expect(state.metrics.totalCount == 3)
         #expect(state.metrics.activeDayCount == 3)
+        #expect(state.metrics.outcomeMixChartPoints.count == 7)
+        #expect(state.metrics.outcomeMixChartPoints.first { calendar.isDate($0.date, inSameDayAs: makeDate("2026-05-07T00:00:00Z")) }?.doneCount == 1)
+        #expect(state.metrics.outcomeMixChartPoints.first { calendar.isDate($0.date, inSameDayAs: makeDate("2026-05-08T00:00:00Z")) }?.missedCount == 1)
+        #expect(state.metrics.outcomeMixChartPoints.first { calendar.isDate($0.date, inSameDayAs: makeDate("2026-05-09T00:00:00Z")) }?.canceledCount == 1)
     }
 
     @Test

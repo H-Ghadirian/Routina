@@ -657,6 +657,7 @@ struct StatsView: View {
             ),
             peakValue: metrics.highlightedBusiestDay.map { "\($0.count)" } ?? "0",
             chartPoints: metrics.chartPoints,
+            outcomePoints: metrics.outcomeMixChartPoints,
             highlightedPoint: metrics.highlightedBusiestDay,
             averagePerDay: metrics.averagePerDay,
             chartUpperBound: metrics.chartUpperBound,

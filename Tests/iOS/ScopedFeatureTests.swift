@@ -351,6 +351,12 @@ struct StatsFeatureTests {
                     referenceDate: now,
                     calendar: calendar
                 ),
+                outcomeMixChartPoints: RoutineCompletionStats.outcomePoints(
+                    for: .week,
+                    logs: [focusLog1, focusLog2, healthLog],
+                    referenceDate: now,
+                    calendar: calendar
+                ),
                 focusChartPoints: expectedFocusChartPoints,
                 tagUsagePoints: [
                     TagUsageChartPoint(name: "Focus", completionCount: 2, linkedRoutineCount: 1, linkedTodoCount: 0, colorHex: nil),
@@ -399,6 +405,12 @@ struct StatsFeatureTests {
                         makeDate("2026-03-19T08:00:00Z"),
                         makeDate("2026-03-20T08:00:00Z"),
                     ],
+                    referenceDate: now,
+                    calendar: calendar
+                ),
+                outcomeMixChartPoints: RoutineCompletionStats.outcomePoints(
+                    for: .week,
+                    logs: [focusLog1, focusLog2],
                     referenceDate: now,
                     calendar: calendar
                 ),
@@ -457,6 +469,12 @@ struct StatsFeatureTests {
                     timestamps: [
                         makeDate("2026-03-20T09:00:00Z"),
                     ],
+                    referenceDate: now,
+                    calendar: calendar
+                ),
+                outcomeMixChartPoints: RoutineCompletionStats.outcomePoints(
+                    for: .week,
+                    logs: [healthLog],
                     referenceDate: now,
                     calendar: calendar
                 ),
