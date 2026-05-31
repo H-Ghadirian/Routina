@@ -8,6 +8,7 @@ final class RoutineTask {
     var emoji: String?
     var notes: String?
     var link: String?
+    var linksStorage: String = ""
     var deadline: Date?
     var isAllDay: Bool = false
     var reminderAt: Date?
@@ -141,6 +142,21 @@ final class RoutineTask {
         set { tagsStorage = RoutineTag.serialize(newValue) }
     }
 
+    var links: [String] {
+        get {
+            let storedLinks = RoutineTaskLinkStorage.deserialize(linksStorage)
+            if !storedLinks.isEmpty {
+                return storedLinks
+            }
+            return Self.sanitizedLink(link).map { [$0] } ?? []
+        }
+        set {
+            let sanitizedLinks = Self.sanitizedLinks(newValue)
+            linksStorage = RoutineTaskLinkStorage.serialize(sanitizedLinks)
+            link = sanitizedLinks.first
+        }
+    }
+
     var steps: [RoutineStep] {
         get { RoutineStepStorage.deserialize(stepsStorage) }
         set {
@@ -237,6 +253,7 @@ final class RoutineTask {
         emoji: String? = nil,
         notes: String? = nil,
         link: String? = nil,
+        links: [String] = [],
         deadline: Date? = nil,
         isAllDay: Bool = false,
         reminderAt: Date? = nil,
@@ -287,7 +304,9 @@ final class RoutineTask {
         self.name = name
         self.emoji = emoji
         self.notes = Self.sanitizedNotes(notes)
-        self.link = Self.sanitizedLink(link)
+        let sanitizedLinks = Self.sanitizedLinks(links.isEmpty ? link.map { [$0] } ?? [] : links)
+        self.link = sanitizedLinks.first
+        self.linksStorage = RoutineTaskLinkStorage.serialize(sanitizedLinks)
         self.deadline = resolvedScheduleMode == .oneOff ? deadline : nil
         self.isAllDay = isAllDay
         self.reminderAt = reminderAt
@@ -452,8 +471,27 @@ final class RoutineTask {
         RoutineModelValueSanitizer.sanitizedLink(link)
     }
 
+    static func sanitizedLinks(_ links: [String]) -> [String] {
+        RoutineTaskLinkStorage.sanitized(links)
+    }
+
+    static func sanitizedLinks(fromEditorText text: String) -> [String] {
+        sanitizedLinks(text.components(separatedBy: .newlines))
+    }
+
+    static func linkEditorText(for links: [String]) -> String {
+        sanitizedLinks(links).joined(separator: "\n")
+    }
+
     var resolvedLinkURL: URL? {
-        Self.sanitizedLink(link).flatMap(URL.init(string:))
+        resolvedLinkURLs.first?.url
+    }
+
+    var resolvedLinkURLs: [RoutineTaskResolvedLink] {
+        links.compactMap { link in
+            guard let url = URL(string: link) else { return nil }
+            return RoutineTaskResolvedLink(text: link, url: url)
+        }
     }
 
     static func sanitizedEmoji(_ input: String, fallback: String) -> String {
@@ -481,6 +519,7 @@ final class RoutineTask {
             emoji: emoji,
             notes: notes,
             link: link,
+            links: links,
             deadline: deadline,
             isAllDay: isAllDay,
             reminderAt: reminderAt,

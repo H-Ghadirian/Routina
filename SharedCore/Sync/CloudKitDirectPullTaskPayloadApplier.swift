@@ -11,7 +11,7 @@ enum CloudKitDirectPullTaskPayloadApplier {
         }
         task.emoji = payload.emoji
         task.notes = RoutineTask.sanitizedNotes(payload.notes)
-        task.link = RoutineTask.sanitizedLink(payload.link)
+        task.links = payload.links ?? payload.link.map { [$0] } ?? []
         task.imageData = payload.imageData
         task.voiceNoteData = payload.voiceNoteData
         task.voiceNoteDurationSeconds = payload.voiceNoteDurationSeconds
@@ -88,6 +88,7 @@ enum CloudKitDirectPullTaskPayloadApplier {
             emoji: payload.emoji,
             notes: payload.notes,
             link: payload.link,
+            links: payload.links ?? payload.link.map { [$0] } ?? [],
             deadline: payload.deadline,
             isAllDay: payload.isAllDay ?? false,
             reminderAt: payload.reminderAt,

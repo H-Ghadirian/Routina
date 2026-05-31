@@ -6,6 +6,7 @@ struct TaskDetailEditSaveRequest: Equatable {
     var emoji: String
     var notes: String?
     var link: String?
+    var links: [String]
     var deadline: Date?
     var isAllDay: Bool
     var reminderAt: Date?
@@ -78,12 +79,15 @@ struct TaskDetailEditSaveRequestBuilder {
             fallbackInterval: frequencyInterval
         )
 
+        let sanitizedLinks = RoutineTask.sanitizedLinks(fromEditorText: state.editRoutineLink)
+
         return TaskDetailEditSaveRequest(
             taskID: state.task.id,
             name: trimmedName,
             emoji: state.editRoutineEmoji,
             notes: RoutineTask.sanitizedNotes(state.editRoutineNotes),
-            link: RoutineTask.sanitizedLink(state.editRoutineLink),
+            link: sanitizedLinks.first,
+            links: sanitizedLinks,
             deadline: scheduleMode == .oneOff ? state.editDeadline : nil,
             isAllDay: state.editIsAllDay,
             reminderAt: state.editReminderAt,

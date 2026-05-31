@@ -151,6 +151,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var emoji: String?
         var notes: String?
         var link: String?
+        var linksStorage: String
         var deadline: Date?
         var isAllDay: Bool
         var reminderAt: Date?
@@ -195,6 +196,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             emoji = task.emoji
             notes = task.notes
             link = task.link
+            linksStorage = task.linksStorage
             deadline = task.deadline
             isAllDay = task.isAllDay
             reminderAt = task.reminderAt

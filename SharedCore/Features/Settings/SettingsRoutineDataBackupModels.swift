@@ -45,6 +45,7 @@ extension SettingsRoutineDataPersistence {
             var emoji: String?
             var notes: String?
             var link: String?
+            var links: [String]?
             var deadline: Date?
             var isAllDay: Bool?
             var reminderAt: Date?

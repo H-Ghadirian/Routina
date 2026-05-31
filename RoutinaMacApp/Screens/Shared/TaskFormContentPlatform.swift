@@ -332,10 +332,10 @@ struct TaskFormContent: View {
         .id(FormSection.linkedTasks)
     }
 
-    // MARK: Link URL
+    // MARK: Links
 
     private var linkURLCard: some View {
-        TaskFormMacLinkCard(model: model)
+        TaskFormMacLinkCard(model: model, presentation: presentation)
         .id(FormSection.linkURL)
     }
 

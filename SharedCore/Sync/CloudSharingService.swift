@@ -19,6 +19,7 @@ enum CloudSharingService {
         var emoji: String?
         var notes: String?
         var link: String?
+        var links: [String]?
         var deadline: Date?
         var isAllDay: Bool?
         var reminderAt: Date?
@@ -264,6 +265,7 @@ extension CloudSharingService.SharedTaskPayload {
         self.emoji = task.emoji
         self.notes = task.notes
         self.link = task.link
+        self.links = task.links.isEmpty ? nil : task.links
         self.deadline = task.deadline
         self.isAllDay = task.isAllDay
         self.reminderAt = task.reminderAt
@@ -319,7 +321,7 @@ extension CloudSharingService.SharedTaskPayload {
         task.name = RoutineTask.trimmedName(name)
         task.emoji = emoji
         task.notes = RoutineTask.sanitizedNotes(notes)
-        task.link = RoutineTask.sanitizedLink(link)
+        task.links = links ?? link.map { [$0] } ?? []
         task.deadline = scheduleMode == .oneOff ? deadline : nil
         task.isAllDay = isAllDay ?? false
         task.reminderAt = reminderAt
@@ -371,6 +373,7 @@ private extension RoutineTask {
             emoji: payload.emoji,
             notes: payload.notes,
             link: payload.link,
+            links: payload.links ?? payload.link.map { [$0] } ?? [],
             deadline: payload.deadline,
             isAllDay: payload.isAllDay ?? false,
             reminderAt: payload.reminderAt,

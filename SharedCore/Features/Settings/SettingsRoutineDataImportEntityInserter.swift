@@ -195,6 +195,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 emoji: task.emoji,
                 notes: task.notes,
                 link: task.link,
+                links: task.links ?? task.link.map { [$0] } ?? [],
                 deadline: task.deadline,
                 isAllDay: task.isAllDay ?? false,
                 reminderAt: task.reminderAt,

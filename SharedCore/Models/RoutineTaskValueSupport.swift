@@ -52,6 +52,13 @@ struct RoutineModelValueSanitizer {
     }
 }
 
+struct RoutineTaskResolvedLink: Equatable, Identifiable, Sendable {
+    var text: String
+    var url: URL
+
+    var id: String { text }
+}
+
 struct RoutineTaskRelationshipResolution {
     private init() {}
 

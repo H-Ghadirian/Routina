@@ -2,12 +2,14 @@ import SwiftUI
 
 struct TaskFormMacLinkCard: View {
     let model: TaskFormModel
+    let presentation: TaskFormPresentation
 
     var body: some View {
-        TaskFormMacSectionCard(title: "Link URL") {
-            TextField("https://example.com", text: model.link)
-                .textFieldStyle(.roundedBorder)
-                .routinaAddRoutinePlatformLinkField()
+        TaskFormMacSectionCard(title: "Links") {
+            TaskFormLinksEditor(text: model.link)
+            Text(presentation.linkHelpText)
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 }

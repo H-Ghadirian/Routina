@@ -92,6 +92,39 @@ enum RoutineTaskRelationshipStorage {
     }
 }
 
+enum RoutineTaskLinkStorage {
+    static func sanitized(_ links: [String]) -> [String] {
+        var seenLinks: Set<String> = []
+        return links.compactMap { link in
+            guard let sanitizedLink = RoutineModelValueSanitizer.sanitizedLink(link) else { return nil }
+            let dedupeKey = sanitizedLink.lowercased()
+            guard seenLinks.insert(dedupeKey).inserted else { return nil }
+            return sanitizedLink
+        }
+    }
+
+    static func serialize(_ links: [String]) -> String {
+        let sanitizedLinks = sanitized(links)
+        guard !sanitizedLinks.isEmpty else { return "" }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        guard let data = try? encoder.encode(sanitizedLinks),
+              let string = String(data: data, encoding: .utf8) else {
+            return ""
+        }
+        return string
+    }
+
+    static func deserialize(_ storage: String) -> [String] {
+        guard !storage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              let data = storage.data(using: .utf8),
+              let decoded = try? JSONDecoder().decode([String].self, from: data) else {
+            return []
+        }
+        return sanitized(decoded)
+    }
+}
+
 enum RoutineGoalIDStorage {
     static func sanitized(_ goalIDs: [UUID]) -> [UUID] {
         var seenIDs: Set<UUID> = []

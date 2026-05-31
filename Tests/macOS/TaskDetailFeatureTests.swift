@@ -716,7 +716,7 @@ struct TaskDetailFeatureTests {
                 isEditSheetPresented: true,
                 editRoutineName: "Read",
                 editRoutineEmoji: "📚",
-                editRoutineLink: "example.com/article",
+                editRoutineLink: "example.com/article\nhttps://example.com/notes",
                 editFrequency: .week,
                 editFrequencyValue: 1
             )
@@ -757,6 +757,7 @@ struct TaskDetailFeatureTests {
             ).first
         )
         #expect(persistedTask.link == "https://example.com/article")
+        #expect(persistedTask.links == ["https://example.com/article", "https://example.com/notes"])
         #expect(persistedTask.resolvedLinkURL?.absoluteString == "https://example.com/article")
     }
 

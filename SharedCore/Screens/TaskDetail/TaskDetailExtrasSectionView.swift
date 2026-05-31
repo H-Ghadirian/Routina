@@ -5,8 +5,7 @@ struct TaskDetailExtrasSectionView: View {
     let voiceNote: RoutineVoiceNote?
     let attachments: [AttachmentItem]
     let notes: String?
-    let linkURL: URL?
-    let linkText: String?
+    let links: [RoutineTaskResolvedLink]
     let background: Color
     let stroke: Color
     var onOpenImage: ((Data) -> Void)? = nil
@@ -42,13 +41,12 @@ struct TaskDetailExtrasSectionView: View {
                     .taskDetailCopyableText(notes)
             }
 
-            if let linkURL {
-                let displayText = linkText ?? linkURL.absoluteString
-                Link(destination: linkURL) {
+            ForEach(links) { link in
+                Link(destination: link.url) {
                     HStack(spacing: 8) {
                         Image(systemName: "link")
                             .foregroundStyle(.blue)
-                        Text(displayText)
+                        Text(link.text)
                             .font(.subheadline)
                             .foregroundStyle(.blue)
                             .lineLimit(2)
@@ -56,7 +54,7 @@ struct TaskDetailExtrasSectionView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .taskDetailCopyableText(displayText)
+                .taskDetailCopyableText(link.text)
             }
         }
         .padding(12)

@@ -208,7 +208,7 @@ struct TaskFormContent: View {
     }
 
     private var linkSection: some View {
-        TaskFormIOSLinkSection(model: model)
+        TaskFormIOSLinkSection(model: model, presentation: presentation)
     }
 
     private var deadlineSection: some View {

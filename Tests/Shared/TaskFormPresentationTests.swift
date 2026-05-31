@@ -44,7 +44,7 @@ struct TaskFormPresentationTests {
         #expect(value.placeSelectionDescription == "Show this task when you are at Gym.")
         #expect(value.tagSectionHelpText == "Tap an existing tag below, open Manage Tags, or press return/Add to create a new one. Separate multiple tags with commas.")
         #expect(value.goalSectionHelpText == "Press return or Add. Separate multiple goals with commas.")
-        #expect(value.linkHelpText == "Add a website to open from the task detail screen. If you skip the scheme, https will be used.")
+        #expect(value.linkHelpText == "Add as many websites as you need. URLs without a scheme will use https.")
         #expect(value.importanceUrgencyDescription(includesDerivedPriority: true) == "Critical importance and high urgency map to high priority for sorting.")
         #expect(value.importanceUrgencyDescription(includesDerivedPriority: true, priority: .urgent) == "Critical importance and high urgency map to urgent priority for sorting.")
         #expect(value.importanceUrgencyDescription(includesDerivedPriority: false) == "Critical importance and high urgency.")

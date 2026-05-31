@@ -140,7 +140,7 @@ struct TaskFormPresentation {
     }
 
     var linkHelpText: String {
-        "Add a website to open from the task detail screen. If you skip the scheme, https will be used."
+        "Add as many websites as you need. URLs without a scheme will use https."
     }
 
     var tagSectionHelpText: String {

@@ -103,7 +103,7 @@ enum TaskDetailEditChangeDetector {
         let currentName = (task.name ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let currentEmoji = CalendarTaskImportSupport.displayEmoji(for: task.emoji) ?? "✨"
         let currentNotes = CalendarTaskImportSupport.displayNotes(from: task.notes) ?? ""
-        let currentLink = task.link ?? ""
+        let currentLink = RoutineTask.linkEditorText(for: task.links)
         let currentTags = RoutineTag.deduplicated(task.tags)
         let currentGoalIDs = task.goalIDs
         let currentRelationships = RoutineTaskRelationship.sanitized(task.relationships, ownerID: task.id)
@@ -141,7 +141,7 @@ enum TaskDetailEditChangeDetector {
         return trimmedName != currentName
             || request.emoji != currentEmoji
             || request.notes != currentNotes
-            || request.link != currentLink
+            || RoutineTask.linkEditorText(for: RoutineTask.sanitizedLinks(fromEditorText: request.link)) != currentLink
             || request.estimatedDurationMinutes != task.estimatedDurationMinutes
             || request.storyPoints != task.storyPoints
             || request.deadline != currentDeadline

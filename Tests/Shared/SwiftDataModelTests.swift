@@ -472,11 +472,27 @@ struct SwiftDataModelTests {
     func routineTask_sanitizesLinksAndBuildsResolvedURL() {
         let task = RoutineTask(link: " example.com/docs ")
         let invalid = RoutineTask(link: "not a valid url")
+        let multiLinkTask = RoutineTask(
+            links: [
+                "example.com/docs",
+                " https://example.com/pricing ",
+                "ftp://example.com",
+                "EXAMPLE.com/docs"
+            ]
+        )
 
         #expect(task.link == "https://example.com/docs")
+        #expect(task.links == ["https://example.com/docs"])
         #expect(task.resolvedLinkURL?.absoluteString == "https://example.com/docs")
         #expect(invalid.link == nil)
+        #expect(invalid.links.isEmpty)
         #expect(invalid.resolvedLinkURL == nil)
+        #expect(multiLinkTask.link == "https://example.com/docs")
+        #expect(multiLinkTask.links == ["https://example.com/docs", "https://example.com/pricing"])
+        #expect(multiLinkTask.resolvedLinkURLs.map(\.url.absoluteString) == [
+            "https://example.com/docs",
+            "https://example.com/pricing"
+        ])
     }
 
     @Test

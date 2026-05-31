@@ -72,6 +72,7 @@ struct AddRoutineSaveRequest: Equatable {
     let emoji: String
     let notes: String?
     let link: String?
+    let links: [String]
     let deadline: Date?
     let isAllDay: Bool
     let reminderAt: Date?
@@ -102,6 +103,7 @@ struct AddRoutineSaveRequest: Equatable {
         emoji: String,
         notes: String? = nil,
         link: String? = nil,
+        links: [String] = [],
         deadline: Date? = nil,
         isAllDay: Bool = false,
         reminderAt: Date? = nil,
@@ -130,7 +132,9 @@ struct AddRoutineSaveRequest: Equatable {
         self.recurrenceRule = recurrenceRule
         self.emoji = emoji
         self.notes = notes
-        self.link = link
+        let sanitizedLinks = RoutineTask.sanitizedLinks(links.isEmpty ? link.map { [$0] } ?? [] : links)
+        self.link = sanitizedLinks.first
+        self.links = sanitizedLinks
         self.deadline = deadline
         self.isAllDay = isAllDay
         self.reminderAt = reminderAt
@@ -175,7 +179,9 @@ struct AddRoutineSaveRequest: Equatable {
         )
         self.emoji = basics.routineEmoji
         self.notes = RoutineTask.sanitizedNotes(basics.routineNotes)
-        self.link = RoutineTask.sanitizedLink(basics.routineLink)
+        let sanitizedLinks = RoutineTask.sanitizedLinks(fromEditorText: basics.routineLink)
+        self.link = sanitizedLinks.first
+        self.links = sanitizedLinks
         self.deadline = schedule.scheduleMode.taskType == .todo ? basics.deadline : nil
         self.isAllDay = basics.isAllDay
         self.reminderAt = basics.reminderAt

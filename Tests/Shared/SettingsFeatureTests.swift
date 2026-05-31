@@ -1064,7 +1064,12 @@ struct SettingsFeatureTests {
     @Test
     func exportRoutineDataDestinationSelected_writesSelectedBackupPackage() async throws {
         let context = makeInMemoryContext()
-        let task = RoutineTask(name: "Backup me", tags: ["Safe"])
+        let task = RoutineTask(
+            name: "Backup me",
+            link: "example.com/primary",
+            links: ["example.com/primary", "https://example.com/second"],
+            tags: ["Safe"]
+        )
         context.insert(task)
         try context.save()
 
@@ -1101,6 +1106,8 @@ struct SettingsFeatureTests {
         let restoredTask = try #require(restoreContext.fetch(FetchDescriptor<RoutineTask>()).first)
         #expect(summary.tasks == 1)
         #expect(restoredTask.id == task.id)
+        #expect(restoredTask.link == "https://example.com/primary")
+        #expect(restoredTask.links == ["https://example.com/primary", "https://example.com/second"])
         #expect(restoredTask.tags == ["Safe"])
     }
 

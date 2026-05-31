@@ -383,6 +383,7 @@ extension TaskDetailFeature {
             emoji: request.emoji,
             notes: request.notes,
             link: request.link,
+            links: request.links,
             deadline: request.deadline,
             isAllDay: request.isAllDay,
             reminderAt: request.reminderAt,
@@ -416,6 +417,7 @@ extension TaskDetailFeature {
         emoji: String,
         notes: String?,
         link: String?,
+        links: [String],
         deadline: Date?,
         isAllDay: Bool,
         reminderAt: Date?,
@@ -459,7 +461,7 @@ extension TaskDetailFeature {
                     visibleNotes: notes,
                     existingNotes: task.notes
                 )
-                task.link = link
+                task.links = links.isEmpty ? link.map { [$0] } ?? [] : links
                 task.reminderAt = reminderAt
                 task.priority = priority
                 task.importance = importance

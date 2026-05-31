@@ -607,12 +607,13 @@ struct AddRoutineFeatureSaveTests {
     @Test
     func saveTapped_normalizesLinkBeforeDelegating() async {
         let capturedLink = LockIsolated<String?>(nil)
+        let capturedLinks = LockIsolated<[String]>([])
 
         let store = TestStore(
             initialState: makeState(
                 basics: AddRoutineBasicsState(
                     routineName: "Plan trip",
-                    routineLink: "example.com/berlin"
+                    routineLink: "example.com/berlin\nhttps://example.com/hotel"
                 ),
                 organization: AddRoutineOrganizationState(existingRoutineNames: [])
             )
@@ -620,6 +621,7 @@ struct AddRoutineFeatureSaveTests {
             AddRoutineFeature(
                 onSave: { request in
                     capturedLink.withValue { $0 = request.link }
+                    capturedLinks.withValue { $0 = request.links }
                     return .none
                 },
                 onCancel: { .none }
@@ -631,5 +633,6 @@ struct AddRoutineFeatureSaveTests {
         await store.send(.saveTapped)
 
         #expect(capturedLink.value == "https://example.com/berlin")
+        #expect(capturedLinks.value == ["https://example.com/berlin", "https://example.com/hotel"])
     }
 }

@@ -6,8 +6,8 @@ import Foundation
 /// (`icon`, `formSectionView`), forcing all call sites to be updated.
 ///
 /// Declaration order is the default movable order shown in the sidebar.
-/// `rawValue` doubles as the display title and the persistence key, so
-/// changing it would invalidate users' saved section order.
+/// `rawValue` is the persistence key, so changing it would invalidate users'
+/// saved section order. Use `title` for display copy.
 enum FormSection: String, CaseIterable, Hashable, Codable {
     case identity           = "Identity"
     case color              = "Color"
@@ -28,14 +28,21 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
     case attachment         = "Attachment"
     case dangerZone         = "Danger Zone"
 
-    var title: String { rawValue }
+    var title: String {
+        switch self {
+        case .linkURL:
+            return "Links"
+        default:
+            return rawValue
+        }
+    }
 
     var addButtonTitle: String {
         switch self {
         case .importanceUrgency:
             return "Priority"
         case .linkURL:
-            return "Link"
+            return "Links"
         case .attachment:
             return "File"
         default:

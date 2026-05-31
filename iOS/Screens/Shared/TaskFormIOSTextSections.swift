@@ -20,12 +20,12 @@ struct TaskFormIOSNotesSection: View {
 
 struct TaskFormIOSLinkSection: View {
     let model: TaskFormModel
+    let presentation: TaskFormPresentation
 
     var body: some View {
-        Section(header: Text("Link")) {
-            TextField("https://example.com", text: model.link)
-                .routinaAddRoutinePlatformLinkField()
-            Text("Add a website to open from the detail screen. If you skip the scheme, https will be used.")
+        Section(header: Text("Links")) {
+            TaskFormLinksEditor(text: model.link)
+            Text(presentation.linkHelpText)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

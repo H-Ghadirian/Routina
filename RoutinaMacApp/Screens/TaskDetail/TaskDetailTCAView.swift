@@ -301,26 +301,28 @@ detailBody
 
     @ViewBuilder
     private var headerLinkBox: some View {
-        if let linkURL = store.task.resolvedLinkURL {
-            let displayText = store.task.link ?? linkURL.absoluteString
+        if !store.task.resolvedLinkURLs.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
                 Text("DETAILS")
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.secondary)
-                Link(destination: linkURL) {
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Image(systemName: "link")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.blue)
-                        Text(displayText)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.blue)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.leading)
-                            .fixedSize(horizontal: false, vertical: true)
+
+                ForEach(store.task.resolvedLinkURLs) { link in
+                    Link(destination: link.url) {
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            Image(systemName: "link")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.blue)
+                            Text(link.text)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.blue)
+                                .lineLimit(2)
+                                .multilineTextAlignment(.leading)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
+                    .taskDetailCopyableText(link.text)
                 }
-                .taskDetailCopyableText(displayText)
             }
             .detailHeaderBoxStyle()
         }
@@ -655,8 +657,8 @@ detailBody
             actions.append(editSectionAction(title: "Notes", section: .notes))
         }
 
-        if store.task.resolvedLinkURL == nil {
-            actions.append(editSectionAction(title: "Link", section: .linkURL))
+        if store.task.resolvedLinkURLs.isEmpty {
+            actions.append(editSectionAction(title: "Links", section: .linkURL))
         }
 
         if store.task.color == .none {
@@ -988,8 +990,7 @@ detailBody
             voiceNote: store.task.voiceNote,
             attachments: store.taskAttachments,
             notes: CalendarTaskImportSupport.displayNotes(from: store.task.notes),
-            linkURL: nil,
-            linkText: nil,
+            links: [],
             background: routineLogsBackground,
             stroke: TaskDetailPlatformStyle.sectionCardStroke,
             onOpenImage: openTaskImage(data:),

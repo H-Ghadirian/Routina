@@ -53,6 +53,7 @@ public struct RoutinaAITaskSummary: Codable, Equatable, Identifiable, Sendable {
     public var createdAt: Date?
     public var notes: String?
     public var link: String?
+    public var links: [String]
     public var tags: [String]
     public var goals: [String]
     public var placeName: String?
@@ -199,6 +200,7 @@ private extension RoutinaAIQueryService {
             createdAt: task.createdAt,
             notes: task.notes,
             link: task.link,
+            links: task.links,
             tags: task.tags,
             goals: goalTitles,
             placeName: placeName,
@@ -313,6 +315,7 @@ private extension RoutinaAIQueryService {
             summary.name,
             summary.notes ?? "",
             summary.link ?? "",
+            summary.links.joined(separator: " "),
             summary.placeName ?? "",
             summary.tags.joined(separator: " "),
             summary.goals.joined(separator: " "),

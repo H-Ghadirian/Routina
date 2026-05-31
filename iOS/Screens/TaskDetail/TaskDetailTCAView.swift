@@ -442,7 +442,7 @@ detailBody
             || store.task.hasImage
             || store.task.hasVoiceNote
             || !store.taskAttachments.isEmpty
-            || store.task.resolvedLinkURL != nil
+            || !store.task.resolvedLinkURLs.isEmpty
     }
 
     private func resetRevealedOptionalControls() {
@@ -729,8 +729,7 @@ detailBody
             voiceNote: store.task.voiceNote,
             attachments: store.taskAttachments,
             notes: CalendarTaskImportSupport.displayNotes(from: store.task.notes),
-            linkURL: store.task.resolvedLinkURL,
-            linkText: store.task.link,
+            links: store.task.resolvedLinkURLs,
             background: routineLogsBackground,
             stroke: TaskDetailPlatformStyle.sectionCardStroke,
             onSaveAttachment: saveAttachment(item:),

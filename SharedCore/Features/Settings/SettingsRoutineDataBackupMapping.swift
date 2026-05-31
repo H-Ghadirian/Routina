@@ -45,6 +45,7 @@ enum SettingsRoutineDataBackupMapping {
             emoji: task.emoji,
             notes: task.notes,
             link: task.link,
+            links: task.links.isEmpty ? nil : task.links,
             deadline: task.deadline,
             isAllDay: task.isAllDay,
             reminderAt: task.reminderAt,

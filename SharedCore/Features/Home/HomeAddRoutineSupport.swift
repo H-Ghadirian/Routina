@@ -49,6 +49,7 @@ enum HomeAddRoutineSupport {
             emoji: request.emoji,
             notes: request.notes,
             link: request.link,
+            links: request.links,
             deadline: request.deadline,
             isAllDay: request.isAllDay,
             reminderAt: request.reminderAt,
