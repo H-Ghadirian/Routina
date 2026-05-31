@@ -33,6 +33,7 @@ struct StatsSummaryCardItem: Identifiable {
 struct StatsSummaryGrid<Accessory: View>: View {
     let items: [StatsSummaryCardItem]
     let minimumCardWidth: CGFloat
+    let displayMode: StatsSummaryDisplayMode
     let colorScheme: ColorScheme
     let surfaceGradient: LinearGradient
     let accessory: (StatsSummaryCardItem) -> Accessory
@@ -42,27 +43,44 @@ struct StatsSummaryGrid<Accessory: View>: View {
             columns: [
                 GridItem(
                     .adaptive(
-                        minimum: minimumCardWidth,
-                        maximum: 280
+                        minimum: displayMode == .compact ? max(240, minimumCardWidth) : minimumCardWidth,
+                        maximum: displayMode == .compact ? 420 : 280
                     ),
                     spacing: 14
                 )
             ],
-            spacing: 14
+            spacing: displayMode == .compact ? 10 : 14
         ) {
             ForEach(items) { item in
-                StatsSummaryCard(
-                    icon: item.icon,
-                    accent: item.accent,
-                    title: item.title,
-                    value: item.value,
-                    caption: item.caption,
-                    accessibilityIdentifier: item.accessibilityIdentifier,
-                    colorScheme: colorScheme,
-                    surfaceGradient: surfaceGradient,
-                    accessibilityChildren: item.showsAccessory ? .contain : .combine
-                ) {
-                    accessory(item)
+                switch displayMode {
+                case .cards:
+                    StatsSummaryCard(
+                        icon: item.icon,
+                        accent: item.accent,
+                        title: item.title,
+                        value: item.value,
+                        caption: item.caption,
+                        accessibilityIdentifier: item.accessibilityIdentifier,
+                        colorScheme: colorScheme,
+                        surfaceGradient: surfaceGradient,
+                        accessibilityChildren: item.showsAccessory ? .contain : .combine
+                    ) {
+                        accessory(item)
+                    }
+                case .compact:
+                    StatsCompactSummaryCard(
+                        icon: item.icon,
+                        accent: item.accent,
+                        title: item.title,
+                        value: item.value,
+                        caption: item.caption,
+                        accessibilityIdentifier: item.accessibilityIdentifier,
+                        colorScheme: colorScheme,
+                        surfaceGradient: surfaceGradient,
+                        accessibilityChildren: item.showsAccessory ? .contain : .combine
+                    ) {
+                        accessory(item)
+                    }
                 }
             }
         }
@@ -73,12 +91,14 @@ extension StatsSummaryGrid where Accessory == EmptyView {
     init(
         items: [StatsSummaryCardItem],
         minimumCardWidth: CGFloat,
+        displayMode: StatsSummaryDisplayMode = .cards,
         colorScheme: ColorScheme,
         surfaceGradient: LinearGradient
     ) {
         self.init(
             items: items,
             minimumCardWidth: minimumCardWidth,
+            displayMode: displayMode,
             colorScheme: colorScheme,
             surfaceGradient: surfaceGradient,
             accessory: { _ in EmptyView() }

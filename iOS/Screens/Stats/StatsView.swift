@@ -34,6 +34,8 @@ struct StatsView: View {
     private var hiddenDashboardItemIDsRaw = ""
     @AppStorage(UserDefaultStringValueKey.appSettingIOSStatsDashboardItemOrderIDs.rawValue, store: SharedDefaults.app)
     private var dashboardItemOrderIDsRaw = ""
+    @AppStorage(UserDefaultStringValueKey.appSettingIOSStatsSummaryDisplayMode.rawValue, store: SharedDefaults.app)
+    private var summaryDisplayModeRaw = StatsSummaryDisplayMode.cards.rawValue
 
     private typealias Metrics = StatsFeature.Metrics
 
@@ -254,6 +256,24 @@ struct StatsView: View {
         orderedAvailableDashboardItems.filter { hiddenDashboardItemIDs.contains($0.rawValue) }
     }
 
+    private var summaryDisplayMode: StatsSummaryDisplayMode {
+        StatsSummaryDisplayMode(rawValue: summaryDisplayModeRaw) ?? .cards
+    }
+
+    private var summaryDisplayModeBinding: Binding<StatsSummaryDisplayMode> {
+        Binding(
+            get: { summaryDisplayMode },
+            set: { mode in
+                withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
+                    CloudSettingsKeyValueSync.setString(
+                        mode.rawValue,
+                        for: .appSettingIOSStatsSummaryDisplayMode
+                    )
+                }
+            }
+        )
+    }
+
     private var hasUnassignedFocusSessions: Bool {
         !FocusSessionSupport.unassignedCompletedSessions(from: focusSessions).isEmpty
     }
@@ -354,6 +374,7 @@ struct StatsView: View {
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
+                summaryDisplayModeMenu
                 dashboardEditButton
                 filterSheetButton
             }
@@ -380,6 +401,7 @@ struct StatsView: View {
         )
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
+                summaryDisplayModeMenu
                 dashboardEditButton
                 filterSheetButton
             }
@@ -454,6 +476,21 @@ struct StatsView: View {
             hasActiveFilters: hasActiveFilters,
             onShowFilters: { store.send(.setFilterSheet(true)) }
         )
+    }
+
+    private var summaryDisplayModeMenu: some View {
+        Menu {
+            Picker("Summary view", selection: summaryDisplayModeBinding) {
+                ForEach(StatsSummaryDisplayMode.allCases) { mode in
+                    Label(mode.title, systemImage: mode.systemImage)
+                        .tag(mode)
+                }
+            }
+            .pickerStyle(.inline)
+        } label: {
+            Label("Summary view", systemImage: summaryDisplayMode.systemImage)
+        }
+        .accessibilityLabel("Summary card view")
     }
 
     private var dashboardEditButton: some View {
@@ -653,31 +690,75 @@ struct StatsView: View {
                 columns: [
                     GridItem(
                         .adaptive(
-                            minimum: horizontalSizeClass == .compact ? 160 : 220,
-                            maximum: 280
+                            minimum: summaryCardMinimumWidth,
+                            maximum: summaryCardMaximumWidth
                         ),
                         spacing: 14
                     )
                 ],
-                spacing: 14
+                spacing: summaryCardSpacing
             ) {
                 ForEach(items) { item in
                     editableDashboardSection(dashboardItem(for: item)) {
-                        StatsSummaryCard(
-                            icon: item.icon,
-                            accent: item.accent,
-                            title: item.title,
-                            value: item.value,
-                            caption: item.caption,
-                            accessibilityIdentifier: item.accessibilityIdentifier,
-                            colorScheme: colorScheme,
-                            surfaceGradient: surfaceGradient,
-                            accessibilityChildren: item.showsAccessory ? .contain : .combine
-                        ) {
-                            EmptyView()
-                        }
+                        summaryCardView(for: item)
                     }
                 }
+            }
+        }
+    }
+
+    private var summaryCardMinimumWidth: CGFloat {
+        switch summaryDisplayMode {
+        case .cards:
+            return horizontalSizeClass == .compact ? 160 : 220
+        case .compact:
+            return horizontalSizeClass == .compact ? 240 : 220
+        }
+    }
+
+    private var summaryCardMaximumWidth: CGFloat {
+        switch summaryDisplayMode {
+        case .cards:
+            return 280
+        case .compact:
+            return 360
+        }
+    }
+
+    private var summaryCardSpacing: CGFloat {
+        summaryDisplayMode == .compact ? 10 : 14
+    }
+
+    @ViewBuilder
+    private func summaryCardView(for item: StatsSummaryCardItem) -> some View {
+        switch summaryDisplayMode {
+        case .cards:
+            StatsSummaryCard(
+                icon: item.icon,
+                accent: item.accent,
+                title: item.title,
+                value: item.value,
+                caption: item.caption,
+                accessibilityIdentifier: item.accessibilityIdentifier,
+                colorScheme: colorScheme,
+                surfaceGradient: surfaceGradient,
+                accessibilityChildren: item.showsAccessory ? .contain : .combine
+            ) {
+                EmptyView()
+            }
+        case .compact:
+            StatsCompactSummaryCard(
+                icon: item.icon,
+                accent: item.accent,
+                title: item.title,
+                value: item.value,
+                caption: item.caption,
+                accessibilityIdentifier: item.accessibilityIdentifier,
+                colorScheme: colorScheme,
+                surfaceGradient: surfaceGradient,
+                accessibilityChildren: item.showsAccessory ? .contain : .combine
+            ) {
+                EmptyView()
             }
         }
     }

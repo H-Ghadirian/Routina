@@ -15,6 +15,8 @@ struct StatsCreatedTasksChartSection: View {
 
     var body: some View {
         let createdXAxisDates = chartPresentation.dailyBarXAxisDates(from: metrics.createdChartPoints)
+        let createdAxisUpperBound = StatsChartCountAxis.upperBound(for: metrics.createdChartUpperBound)
+        let createdYAxisPosition: AxisMarkPosition = chartPresentation.usesHorizontalChartScroll ? .trailing : .leading
 
         VStack(alignment: .leading, spacing: 18) {
             StatsSectionHeader(
@@ -85,14 +87,19 @@ struct StatsCreatedTasksChartSection: View {
                         .foregroundStyle(Color.white)
                     }
                 }
-                .chartYScale(domain: 0...metrics.createdChartUpperBound)
+                .chartYScale(domain: 0...createdAxisUpperBound)
                 .chartYAxis {
-                    AxisMarks(position: .leading) { value in
+                    AxisMarks(
+                        position: createdYAxisPosition,
+                        values: StatsChartCountAxis.values(upperBound: createdAxisUpperBound)
+                    ) { value in
                         AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 6]))
                             .foregroundStyle(Color.secondary.opacity(0.2))
                         AxisValueLabel {
-                            if let count = value.as(Int.self) {
-                                Text(count.formatted())
+                            if let count = value.as(Double.self) {
+                                Text(StatsChartCountAxis.label(for: count))
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.secondary)
                             }
                         }
                     }
@@ -114,6 +121,7 @@ struct StatsCreatedTasksChartSection: View {
                 .chartPlotStyle { plotArea in
                     plotArea.statsChartPlotBackground(colorScheme: colorScheme)
                 }
+                .chartYAxisLabel("Created tasks")
             }
 
             StatsChartInsightRow(

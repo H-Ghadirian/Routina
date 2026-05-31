@@ -32,6 +32,31 @@ struct StatsHeroStatPill: View {
     }
 }
 
+enum StatsSummaryDisplayMode: String, CaseIterable, Identifiable {
+    case cards
+    case compact
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .cards:
+            return "Cards"
+        case .compact:
+            return "Compact"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .cards:
+            return "square.grid.2x2"
+        case .compact:
+            return "rectangle.grid.1x2"
+        }
+    }
+}
+
 struct StatsSummaryCard<Accessory: View>: View {
     let icon: String
     let accent: Color
@@ -99,6 +124,90 @@ struct StatsSummaryCard<Accessory: View>: View {
         .routinaGlassPanel(cornerRadius: 24, tint: accent, tintOpacity: colorScheme == .dark ? 0.12 : 0.08)
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.4), lineWidth: 1)
+        )
+        .accessibilityElement(children: accessibilityChildren)
+        .accessibilityLabel(title)
+        .accessibilityValue("\(value). \(caption)")
+        .accessibilityIdentifier(accessibilityIdentifier)
+    }
+}
+
+struct StatsCompactSummaryCard<Accessory: View>: View {
+    let icon: String
+    let accent: Color
+    let title: String
+    let value: String
+    let caption: String
+    let accessibilityIdentifier: String
+    let colorScheme: ColorScheme
+    let surfaceGradient: LinearGradient
+    let accessibilityChildren: AccessibilityChildBehavior
+    let accessory: () -> Accessory
+
+    init(
+        icon: String,
+        accent: Color,
+        title: String,
+        value: String,
+        caption: String,
+        accessibilityIdentifier: String,
+        colorScheme: ColorScheme,
+        surfaceGradient: LinearGradient,
+        accessibilityChildren: AccessibilityChildBehavior = .combine,
+        @ViewBuilder accessory: @escaping () -> Accessory
+    ) {
+        self.icon = icon
+        self.accent = accent
+        self.title = title
+        self.value = value
+        self.caption = caption
+        self.accessibilityIdentifier = accessibilityIdentifier
+        self.colorScheme = colorScheme
+        self.surfaceGradient = surfaceGradient
+        self.accessibilityChildren = accessibilityChildren
+        self.accessory = accessory
+    }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            Image(systemName: icon)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(accent)
+                .frame(width: 34, height: 34)
+                .routinaGlassCard(cornerRadius: 12, tint: accent, tintOpacity: colorScheme == .dark ? 0.18 : 0.12)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+
+                Text(caption)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 8)
+
+            HStack(alignment: .center, spacing: 8) {
+                accessory()
+
+                Text(value)
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .routinaGlassPanel(cornerRadius: 18, tint: accent, tintOpacity: colorScheme == .dark ? 0.1 : 0.07)
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.4), lineWidth: 1)
         )
         .accessibilityElement(children: accessibilityChildren)
@@ -271,6 +380,25 @@ enum StatsChartFill {
             startPoint: .top,
             endPoint: .bottom
         )
+    }
+}
+
+enum StatsChartCountAxis {
+    static func upperBound(for rawUpperBound: Double) -> Double {
+        max(1, ceil(rawUpperBound))
+    }
+
+    static func values(upperBound: Double) -> [Double] {
+        let upperBound = max(1, ceil(upperBound))
+        if upperBound <= 2 {
+            return [0, upperBound]
+        }
+
+        return [0, floor(upperBound / 2), upperBound]
+    }
+
+    static func label(for count: Double) -> String {
+        Int(count.rounded()).formatted()
     }
 }
 

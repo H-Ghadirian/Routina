@@ -21,6 +21,8 @@ struct StatsFocusChartSection: View {
     var body: some View {
         let focusBarXAxisDates = chartPresentation.focusBarXAxisDates(from: focusChartPoints)
         let focusBarXAxisDateSet = Set(focusBarXAxisDates)
+        let focusAxisUpperBound = StatsFocusTimeAxis.upperBound(for: focusChartUpperBound)
+        let focusYAxisPosition: AxisMarkPosition = chartPresentation.usesHorizontalChartScroll ? .trailing : .leading
 
         VStack(alignment: .leading, spacing: 18) {
             StatsSectionHeader(
@@ -67,14 +69,19 @@ struct StatsFocusChartSection: View {
                             }
                     }
                 }
-                .chartYScale(domain: 0...focusChartUpperBound)
+                .chartYScale(domain: 0...focusAxisUpperBound)
                 .chartYAxis {
-                    AxisMarks(position: .leading) { value in
+                    AxisMarks(
+                        position: focusYAxisPosition,
+                        values: StatsFocusTimeAxis.values(upperBound: focusAxisUpperBound)
+                    ) { value in
                         AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 6]))
                             .foregroundStyle(Color.secondary.opacity(0.2))
                         AxisValueLabel {
                             if let minutes = value.as(Double.self) {
-                                Text("\(Int(minutes.rounded()))m")
+                                Text(StatsFocusTimeAxis.label(for: minutes, chartPresentation: chartPresentation))
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.secondary)
                             }
                         }
                     }
@@ -106,6 +113,7 @@ struct StatsFocusChartSection: View {
                 .chartPlotStyle { plotArea in
                     plotArea.statsChartPlotBackground(colorScheme: colorScheme)
                 }
+                .chartYAxisLabel("Focus time")
             }
 
             if chartPresentation.showsFocusWeekdayAverages {
@@ -139,6 +147,8 @@ private struct StatsFocusWeekdayAverageChart: View {
     let colorScheme: ColorScheme
 
     var body: some View {
+        let averageAxisUpperBound = StatsFocusTimeAxis.upperBound(for: upperBound)
+
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Text("Average by weekday")
@@ -177,14 +187,19 @@ private struct StatsFocusWeekdayAverageChart: View {
                 }
             }
             .frame(height: 170)
-            .chartYScale(domain: 0...upperBound)
+            .chartYScale(domain: 0...averageAxisUpperBound)
             .chartYAxis {
-                AxisMarks(position: .leading) { value in
+                AxisMarks(
+                    position: .leading,
+                    values: StatsFocusTimeAxis.values(upperBound: averageAxisUpperBound)
+                ) { value in
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 6]))
                         .foregroundStyle(Color.secondary.opacity(0.2))
                     AxisValueLabel {
                         if let minutes = value.as(Double.self) {
-                            Text("\(Int(minutes.rounded()))m")
+                            Text(StatsFocusTimeAxis.label(for: minutes, chartPresentation: chartPresentation))
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
@@ -204,7 +219,39 @@ private struct StatsFocusWeekdayAverageChart: View {
             .chartPlotStyle { plotArea in
                 plotArea.statsChartPlotBackground(colorScheme: colorScheme)
             }
+            .chartYAxisLabel("Avg focus")
         }
         .padding(.top, 2)
+    }
+}
+
+private enum StatsFocusTimeAxis {
+    static func upperBound(for rawUpperBound: Double) -> Double {
+        let rawUpperBound = max(rawUpperBound, 10)
+        let step: Double
+
+        switch rawUpperBound {
+        case ...30:
+            step = 10
+        case ...120:
+            step = 30
+        case ...360:
+            step = 60
+        case ...720:
+            step = 120
+        default:
+            step = 240
+        }
+
+        return ceil(rawUpperBound / step) * step
+    }
+
+    static func values(upperBound: Double) -> [Double] {
+        [0, upperBound / 2, upperBound]
+    }
+
+    static func label(for minutes: Double, chartPresentation: StatsChartPresentation) -> String {
+        guard minutes > 0 else { return "0m" }
+        return chartPresentation.focusDurationText(TimeInterval(minutes.rounded() * 60))
     }
 }

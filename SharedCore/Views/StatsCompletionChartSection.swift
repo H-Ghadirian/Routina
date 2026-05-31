@@ -19,6 +19,9 @@ struct StatsCompletionChartSection: View {
     let insights: [StatsChartInsight]
 
     var body: some View {
+        let activityAxisUpperBound = StatsChartCountAxis.upperBound(for: chartUpperBound)
+        let activityYAxisPosition: AxisMarkPosition = chartPresentation.usesHorizontalChartScroll ? .trailing : .leading
+
         VStack(alignment: .leading, spacing: 18) {
             StatsSectionHeader(
                 title: "Timeline activity per day",
@@ -71,7 +74,7 @@ struct StatsCompletionChartSection: View {
                         .foregroundStyle(Color.white)
                     }
                 }
-                .chartYScale(domain: 0...chartUpperBound)
+                .chartYScale(domain: 0...activityAxisUpperBound)
                 .chartForegroundStyleScale([
                     "Done": StatsOutcomeChartPalette.done(colorScheme: colorScheme),
                     "Missed": StatsOutcomeChartPalette.missed(colorScheme: colorScheme),
@@ -79,12 +82,17 @@ struct StatsCompletionChartSection: View {
                 ])
                 .chartLegend(position: .bottom, alignment: .leading)
                 .chartYAxis {
-                    AxisMarks(position: .leading) { value in
+                    AxisMarks(
+                        position: activityYAxisPosition,
+                        values: StatsChartCountAxis.values(upperBound: activityAxisUpperBound)
+                    ) { value in
                         AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 6]))
                             .foregroundStyle(Color.secondary.opacity(0.2))
                         AxisValueLabel {
-                            if let count = value.as(Int.self) {
-                                Text(count.formatted())
+                            if let count = value.as(Double.self) {
+                                Text(StatsChartCountAxis.label(for: count))
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.secondary)
                             }
                         }
                     }
@@ -106,6 +114,7 @@ struct StatsCompletionChartSection: View {
                 .chartPlotStyle { plotArea in
                     plotArea.statsChartPlotBackground(colorScheme: colorScheme)
                 }
+                .chartYAxisLabel("Activity")
             }
 
             StatsChartInsightRow(
