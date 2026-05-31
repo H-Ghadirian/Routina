@@ -29,8 +29,11 @@ struct StatsView: View {
     @State private var relatedFilterTagSuggestionAnchor: String?
     @State private var isEditingDashboard = false
     @State private var isAddDashboardItemSheetPresented = false
+    @State private var draggedDashboardItemID: String?
     @AppStorage(UserDefaultStringValueKey.appSettingIOSStatsDashboardHiddenItemIDs.rawValue, store: SharedDefaults.app)
     private var hiddenDashboardItemIDsRaw = ""
+    @AppStorage(UserDefaultStringValueKey.appSettingIOSStatsDashboardItemOrderIDs.rawValue, store: SharedDefaults.app)
+    private var dashboardItemOrderIDsRaw = ""
 
     private typealias Metrics = StatsFeature.Metrics
 
@@ -232,12 +235,27 @@ struct StatsView: View {
             item.isAvailable(
                 selectedRange: selectedRange,
                 isGitFeaturesEnabled: store.isGitFeaturesEnabled
-            )
+            ) && (item != .unassignedFocus || hasUnassignedFocusSessions)
         }
     }
 
+    private var orderedAvailableDashboardItems: [StatsDashboardItem] {
+        StatsDashboardOrderSupport.orderedItems(
+            availableDashboardItems,
+            storedRawValue: dashboardItemOrderIDsRaw
+        )
+    }
+
+    private var visibleOrderedDashboardItems: [StatsDashboardItem] {
+        orderedAvailableDashboardItems.filter(isDashboardItemVisible)
+    }
+
     private var hiddenAvailableDashboardItems: [StatsDashboardItem] {
-        availableDashboardItems.filter { hiddenDashboardItemIDs.contains($0.rawValue) }
+        orderedAvailableDashboardItems.filter { hiddenDashboardItemIDs.contains($0.rawValue) }
+    }
+
+    private var hasUnassignedFocusSessions: Bool {
+        !FocusSessionSupport.unassignedCompletedSessions(from: focusSessions).isEmpty
     }
 
     private var shouldShowHealthAccessCard: Bool {
@@ -327,80 +345,8 @@ struct StatsView: View {
                     AnyView(healthAccessCard)
                 }
 
-                if isDashboardItemVisible(.hero) {
-                    AnyView(
-                        editableDashboardSection(.hero) {
-                            heroSection(metrics: currentMetrics)
-                        }
-                    )
-                }
-
-                AnyView(summaryCards(metrics: currentMetrics))
-
-                AnyView(UnassignedFocusSessionsCard(focusSessions: focusSessions))
-
-                if selectedRange != .today, isDashboardItemVisible(.completionChart) {
-                    AnyView(
-                        editableDashboardSection(.completionChart) {
-                            chartSection(metrics: currentMetrics)
-                        }
-                    )
-                }
-
-                if isDashboardItemVisible(.tagUsage) {
-                    AnyView(
-                        editableDashboardSection(.tagUsage) {
-                            tagUsageSection(metrics: currentMetrics)
-                        }
-                    )
-                }
-
-                if selectedRange != .today, isDashboardItemVisible(.focusChart) {
-                    AnyView(
-                        editableDashboardSection(.focusChart) {
-                            focusChartSection(metrics: currentMetrics)
-                        }
-                    )
-                }
-
-                if selectedRange != .today, isDashboardItemVisible(.focusWorkChart) {
-                    AnyView(
-                        editableDashboardSection(.focusWorkChart) {
-                            focusWorkChartSection(metrics: currentMetrics)
-                        }
-                    )
-                }
-
-                if isDashboardItemVisible(.estimateActual) {
-                    AnyView(
-                        editableDashboardSection(.estimateActual) {
-                            estimateActualChartSection(metrics: currentMetrics)
-                        }
-                    )
-                }
-
-                if isDashboardItemVisible(.goalProgress) {
-                    AnyView(
-                        editableDashboardSection(.goalProgress) {
-                            goalProgressSection(metrics: currentMetrics)
-                        }
-                    )
-                }
-
-                if isDashboardItemVisible(.emotionTrend) {
-                    AnyView(
-                        editableDashboardSection(.emotionTrend) {
-                            emotionTrendSection(metrics: currentMetrics)
-                        }
-                    )
-                }
-
-                if store.isGitFeaturesEnabled, isDashboardItemVisible(.gitHub) {
-                    AnyView(
-                        editableDashboardSection(.gitHub) {
-                            gitHubSection
-                        }
-                    )
+                ForEach(dashboardBlocks(metrics: currentMetrics)) { block in
+                    dashboardBlockView(block, metrics: currentMetrics)
                 }
             }
         }
@@ -437,6 +383,46 @@ struct StatsView: View {
                 dashboardEditButton
                 filterSheetButton
             }
+        }
+    }
+
+    private func dashboardBlocks(metrics: Metrics) -> [StatsDashboardBlock] {
+        var blocks: [StatsDashboardBlock] = []
+        var pendingSummaryItems: [StatsDashboardItem] = []
+
+        func flushSummaryItems() {
+            guard !pendingSummaryItems.isEmpty else { return }
+            blocks.append(.summaryCards(pendingSummaryItems))
+            pendingSummaryItems.removeAll()
+        }
+
+        for item in visibleOrderedDashboardItems {
+            if item.isSummaryCard {
+                pendingSummaryItems.append(item)
+            } else {
+                flushSummaryItems()
+                blocks.append(.section(item))
+            }
+        }
+
+        flushSummaryItems()
+        return blocks.filter { block in
+            switch block {
+            case .section:
+                return true
+            case let .summaryCards(items):
+                return !summaryCardItems(metrics: metrics, orderedBy: items).isEmpty
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func dashboardBlockView(_ block: StatsDashboardBlock, metrics: Metrics) -> some View {
+        switch block {
+        case let .section(item):
+            dashboardSection(item, metrics: metrics)
+        case let .summaryCards(items):
+            summaryCards(metrics: metrics, dashboardItems: items)
         }
     }
 
@@ -499,7 +485,7 @@ struct StatsView: View {
                     .font(.subheadline.weight(.semibold))
             }
             .buttonStyle(.bordered)
-            .disabled(hiddenDashboardItemIDs.isEmpty)
+            .disabled(hiddenDashboardItemIDs.isEmpty && dashboardItemOrderIDsRaw.isEmpty)
             .accessibilityLabel("Reset stats dashboard")
         }
     }
@@ -592,6 +578,54 @@ struct StatsView: View {
         }
     }
 
+    @ViewBuilder
+    private func dashboardSection(_ item: StatsDashboardItem, metrics: Metrics) -> some View {
+        switch item {
+        case .hero:
+            editableDashboardSection(.hero) {
+                heroSection(metrics: metrics)
+            }
+        case .unassignedFocus:
+            editableDashboardSection(.unassignedFocus) {
+                UnassignedFocusSessionsCard(focusSessions: focusSessions)
+            }
+        case .completionChart:
+            editableDashboardSection(.completionChart) {
+                chartSection(metrics: metrics)
+            }
+        case .tagUsage:
+            editableDashboardSection(.tagUsage) {
+                tagUsageSection(metrics: metrics)
+            }
+        case .focusChart:
+            editableDashboardSection(.focusChart) {
+                focusChartSection(metrics: metrics)
+            }
+        case .focusWorkChart:
+            editableDashboardSection(.focusWorkChart) {
+                focusWorkChartSection(metrics: metrics)
+            }
+        case .estimateActual:
+            editableDashboardSection(.estimateActual) {
+                estimateActualChartSection(metrics: metrics)
+            }
+        case .goalProgress:
+            editableDashboardSection(.goalProgress) {
+                goalProgressSection(metrics: metrics)
+            }
+        case .emotionTrend:
+            editableDashboardSection(.emotionTrend) {
+                emotionTrendSection(metrics: metrics)
+            }
+        case .gitHub:
+            editableDashboardSection(.gitHub) {
+                gitHubSection
+            }
+        default:
+            EmptyView()
+        }
+    }
+
     private func heroSection(metrics: Metrics) -> some View {
         StatsHeroSectionView(
             selectedRange: selectedRange,
@@ -611,48 +645,60 @@ struct StatsView: View {
         )
     }
 
-    private func summaryCards(metrics: Metrics) -> some View {
-        let items = visibleSummaryCardItems(
-            StatsSummaryCardItemBuilder.items(
-                metrics: metrics,
-                selectedRange: selectedRange,
-                chartPresentation: chartPresentation,
-                taskTypeFilter: .routines,
-                filteredTaskCount: filteredTaskCount,
-                healthSummary: store.healthSummary
-            )
-        )
-
-        return LazyVGrid(
-            columns: [
-                GridItem(
-                    .adaptive(
-                        minimum: horizontalSizeClass == .compact ? 160 : 220,
-                        maximum: 280
-                    ),
-                    spacing: 14
-                )
-            ],
-            spacing: 14
-        ) {
-            ForEach(items) { item in
-                editableDashboardSection(dashboardItem(for: item)) {
-                    StatsSummaryCard(
-                        icon: item.icon,
-                        accent: item.accent,
-                        title: item.title,
-                        value: item.value,
-                        caption: item.caption,
-                        accessibilityIdentifier: item.accessibilityIdentifier,
-                        colorScheme: colorScheme,
-                        surfaceGradient: surfaceGradient,
-                        accessibilityChildren: item.showsAccessory ? .contain : .combine
-                    ) {
-                        EmptyView()
+    @ViewBuilder
+    private func summaryCards(metrics: Metrics, dashboardItems: [StatsDashboardItem]) -> some View {
+        let items = summaryCardItems(metrics: metrics, orderedBy: dashboardItems)
+        if !items.isEmpty {
+            LazyVGrid(
+                columns: [
+                    GridItem(
+                        .adaptive(
+                            minimum: horizontalSizeClass == .compact ? 160 : 220,
+                            maximum: 280
+                        ),
+                        spacing: 14
+                    )
+                ],
+                spacing: 14
+            ) {
+                ForEach(items) { item in
+                    editableDashboardSection(dashboardItem(for: item)) {
+                        StatsSummaryCard(
+                            icon: item.icon,
+                            accent: item.accent,
+                            title: item.title,
+                            value: item.value,
+                            caption: item.caption,
+                            accessibilityIdentifier: item.accessibilityIdentifier,
+                            colorScheme: colorScheme,
+                            surfaceGradient: surfaceGradient,
+                            accessibilityChildren: item.showsAccessory ? .contain : .combine
+                        ) {
+                            EmptyView()
+                        }
                     }
                 }
             }
         }
+    }
+
+    private func summaryCardItems(
+        metrics: Metrics,
+        orderedBy dashboardItems: [StatsDashboardItem]
+    ) -> [StatsSummaryCardItem] {
+        let items = StatsSummaryCardItemBuilder.items(
+            metrics: metrics,
+            selectedRange: selectedRange,
+            chartPresentation: chartPresentation,
+            taskTypeFilter: .routines,
+            filteredTaskCount: filteredTaskCount,
+            healthSummary: store.healthSummary
+        )
+        let itemsByDashboardItem = Dictionary(
+            uniqueKeysWithValues: items.map { (dashboardItem(for: $0), $0) }
+        )
+
+        return dashboardItems.compactMap { itemsByDashboardItem[$0] }
     }
 
     private var gitHubSection: some View {
@@ -809,12 +855,6 @@ struct StatsView: View {
         !hiddenDashboardItemIDs.contains(item.rawValue)
     }
 
-    private func visibleSummaryCardItems(_ items: [StatsSummaryCardItem]) -> [StatsSummaryCardItem] {
-        items.filter { item in
-            isDashboardItemVisible(dashboardItem(for: item))
-        }
-    }
-
     private func dashboardItem(for item: StatsSummaryCardItem) -> StatsDashboardItem {
         StatsDashboardItem(summaryAccessibilityIdentifier: item.accessibilityIdentifier)
     }
@@ -837,6 +877,7 @@ struct StatsView: View {
 
     private func showAllDashboardItems() {
         setHiddenDashboardItemIDs([])
+        setDashboardItemOrderIDs([])
     }
 
     private func setHiddenDashboardItemIDs(_ itemIDs: Set<String>) {
@@ -847,15 +888,42 @@ struct StatsView: View {
         )
     }
 
+    private func moveDashboardItem(_ draggedItemID: String, before targetItemID: String) {
+        let defaultItemIDs = StatsDashboardItem.allCases.map(\.rawValue)
+        let orderedItemIDs = StatsDashboardOrderSupport.normalizedItemIDs(
+            defaultItemIDs: defaultItemIDs,
+            storedRawValue: dashboardItemOrderIDsRaw
+        )
+        let movedItemIDs = StatsDashboardOrderSupport.movedItemIDs(
+            draggedItemID: draggedItemID,
+            before: targetItemID,
+            in: orderedItemIDs
+        )
+        setDashboardItemOrderIDs(movedItemIDs)
+    }
+
+    private func setDashboardItemOrderIDs(_ itemIDs: [String]) {
+        let defaultItemIDs = StatsDashboardItem.allCases.map(\.rawValue)
+        let rawValue = StatsDashboardOrderSupport.storedRawValue(
+            for: itemIDs,
+            defaultItemIDs: defaultItemIDs
+        )
+        CloudSettingsKeyValueSync.setString(
+            rawValue,
+            for: .appSettingIOSStatsDashboardItemOrderIDs
+        )
+    }
+
     private func editableDashboardSection<Content: View>(
         _ item: StatsDashboardItem,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        ZStack(alignment: .topLeading) {
-            content()
-                .opacity(isEditingDashboard ? 0.96 : 1)
-
+        Group {
             if isEditingDashboard {
+                ZStack(alignment: .topLeading) {
+                    content()
+                        .opacity(0.96)
+
                 Button {
                     removeDashboardItem(item)
                 } label: {
@@ -874,7 +942,53 @@ struct StatsView: View {
                 .offset(x: -7, y: -10)
                 .transition(.scale.combined(with: .opacity))
                 .accessibilityLabel("Remove \(item.title)")
+
+                    Image(systemName: "line.3.horizontal")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(.primary)
+                        .frame(width: 34, height: 34)
+                        .routinaGlassPill(interactive: true)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.primary.opacity(0.12), lineWidth: 1)
+                        )
+                        .shadow(color: .black.opacity(0.16), radius: 5, y: 3)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                        .offset(x: 7, y: -10)
+                        .accessibilityLabel("Move \(item.title)")
+                }
+                .contentShape(Rectangle())
+                .onDrag {
+                    draggedDashboardItemID = item.rawValue
+                    return NSItemProvider(object: item.rawValue as NSString)
+                }
+                .onDrop(
+                    of: StatsDashboardReorderDropDelegate.supportedContentTypes,
+                    delegate: StatsDashboardReorderDropDelegate(
+                        itemID: item.rawValue,
+                        draggedItemID: $draggedDashboardItemID,
+                        orderedItemIDs: visibleOrderedDashboardItems.map(\.rawValue),
+                        onMove: moveDashboardItem
+                    )
+                )
+                .zIndex(draggedDashboardItemID == item.rawValue ? 1 : 0)
+            } else {
+                content()
             }
+        }
+    }
+}
+
+private enum StatsDashboardBlock: Identifiable {
+    case section(StatsDashboardItem)
+    case summaryCards([StatsDashboardItem])
+
+    var id: String {
+        switch self {
+        case let .section(item):
+            return item.rawValue
+        case let .summaryCards(items):
+            return "summaryCards:" + items.map(\.rawValue).joined(separator: ",")
         }
     }
 }
@@ -900,6 +1014,7 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
     case todoCount
     case activeItems
     case archivedItems
+    case unassignedFocus
     case completionChart
     case tagUsage
     case focusChart
@@ -998,6 +1113,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "Active items"
         case .archivedItems:
             return "Archived items"
+        case .unassignedFocus:
+            return "Unassigned focus"
         case .completionChart:
             return "Activity chart"
         case .tagUsage:
@@ -1023,6 +1140,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "The large stats summary at the top of the screen."
         case .dailyAverage, .healthSteps, .healthActiveCalories, .healthDistance, .healthExercise, .focusTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
             return "A compact stats card in the summary grid."
+        case .unassignedFocus:
+            return "Focus sessions waiting to be assigned."
         case .completionChart:
             return "A bar chart of done, missed, and canceled activity over time."
         case .tagUsage:
@@ -1084,6 +1203,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "checklist.checked"
         case .archivedItems:
             return "archivebox.fill"
+        case .unassignedFocus:
+            return "tray.full"
         case .completionChart:
             return "chart.bar.xaxis"
         case .tagUsage:
@@ -1100,6 +1221,15 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "heart.text.square.fill"
         case .gitHub:
             return "chevron.left.forwardslash.chevron.right"
+        }
+    }
+
+    var isSummaryCard: Bool {
+        switch self {
+        case .dailyAverage, .healthSteps, .healthActiveCalories, .healthDistance, .healthExercise, .focusTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
+            return true
+        default:
+            return false
         }
     }
 

@@ -75,8 +75,11 @@ struct StatsView: View {
     @State private var isActiveItemsInfoPresented = false
     @State private var isEditingDashboard = false
     @State private var isAddDashboardItemSheetPresented = false
+    @State private var draggedDashboardItemID: String?
     @AppStorage(UserDefaultStringValueKey.appSettingMacStatsDashboardHiddenItemIDs.rawValue, store: SharedDefaults.app)
     private var hiddenDashboardItemIDsRaw = ""
+    @AppStorage(UserDefaultStringValueKey.appSettingMacStatsDashboardItemOrderIDs.rawValue, store: SharedDefaults.app)
+    private var dashboardItemOrderIDsRaw = ""
 
     private typealias Metrics = StatsFeature.Metrics
 
@@ -194,12 +197,27 @@ struct StatsView: View {
             item.isAvailable(
                 selectedRange: selectedRange,
                 isGitFeaturesEnabled: store.isGitFeaturesEnabled
-            )
+            ) && (item != .unassignedFocus || hasUnassignedFocusSessions)
         }
     }
 
+    private var orderedAvailableDashboardItems: [StatsMacDashboardItem] {
+        StatsDashboardOrderSupport.orderedItems(
+            availableDashboardItems,
+            storedRawValue: dashboardItemOrderIDsRaw
+        )
+    }
+
+    private var visibleOrderedDashboardItems: [StatsMacDashboardItem] {
+        orderedAvailableDashboardItems.filter(isDashboardItemVisible)
+    }
+
     private var hiddenAvailableDashboardItems: [StatsMacDashboardItem] {
-        availableDashboardItems.filter { hiddenDashboardItemIDs.contains($0.rawValue) }
+        orderedAvailableDashboardItems.filter { hiddenDashboardItemIDs.contains($0.rawValue) }
+    }
+
+    private var hasUnassignedFocusSessions: Bool {
+        !FocusSessionSupport.unassignedCompletedSessions(from: store.focusSessions).isEmpty
     }
 
     var body: some View {
@@ -218,68 +236,8 @@ dashboardBody(snapshot: dashboardSnapshot)
                         dashboardEditControls
                     }
 
-                    if isDashboardItemVisible(.hero) {
-                        editableDashboardSection(.hero) {
-                            heroSection(snapshot: snapshot)
-                        }
-                    }
-
-                    summaryCards(snapshot: snapshot)
-
-                    UnassignedFocusSessionsCard(focusSessions: store.focusSessions)
-
-                    if isDashboardItemVisible(.createdTasksChart) {
-                        editableDashboardSection(.createdTasksChart) {
-                            createdTasksChartSection(snapshot: snapshot)
-                        }
-                    }
-
-                    if snapshot.selectedRange != .today, isDashboardItemVisible(.completionChart) {
-                        editableDashboardSection(.completionChart) {
-                            chartSection(snapshot: snapshot)
-                        }
-                    }
-
-                    if isDashboardItemVisible(.tagUsage) {
-                        editableDashboardSection(.tagUsage) {
-                            tagUsageSection(snapshot: snapshot)
-                        }
-                    }
-
-                    if snapshot.selectedRange != .today, isDashboardItemVisible(.focusChart) {
-                        editableDashboardSection(.focusChart) {
-                            focusChartSection(snapshot: snapshot)
-                        }
-                    }
-
-                    if snapshot.selectedRange != .today, isDashboardItemVisible(.focusWorkChart) {
-                        editableDashboardSection(.focusWorkChart) {
-                            focusWorkChartSection(snapshot: snapshot)
-                        }
-                    }
-
-                    if isDashboardItemVisible(.estimateActual) {
-                        editableDashboardSection(.estimateActual) {
-                            estimateActualChartSection(snapshot: snapshot)
-                        }
-                    }
-
-                    if isDashboardItemVisible(.goalProgress) {
-                        editableDashboardSection(.goalProgress) {
-                            goalProgressSection(snapshot: snapshot)
-                        }
-                    }
-
-                    if isDashboardItemVisible(.emotionTrend) {
-                        editableDashboardSection(.emotionTrend) {
-                            emotionTrendSection(snapshot: snapshot)
-                        }
-                    }
-
-                    if snapshot.isGitFeaturesEnabled, isDashboardItemVisible(.gitHub) {
-                        editableDashboardSection(.gitHub) {
-                            gitHubSection(snapshot: snapshot)
-                        }
+                    ForEach(dashboardBlocks(snapshot: snapshot)) { block in
+                        dashboardBlockView(block, snapshot: snapshot)
                     }
                 }
             }
@@ -296,6 +254,98 @@ dashboardBody(snapshot: dashboardSnapshot)
         }
         .sheet(isPresented: $isAddDashboardItemSheetPresented) {
             addDashboardItemSheet
+        }
+    }
+
+    private func dashboardBlocks(snapshot: DashboardSnapshot) -> [StatsMacDashboardBlock] {
+        var blocks: [StatsMacDashboardBlock] = []
+        var pendingSummaryItems: [StatsMacDashboardItem] = []
+
+        func flushSummaryItems() {
+            guard !pendingSummaryItems.isEmpty else { return }
+            blocks.append(.summaryCards(pendingSummaryItems))
+            pendingSummaryItems.removeAll()
+        }
+
+        for item in visibleOrderedDashboardItems {
+            if item.isSummaryCard {
+                pendingSummaryItems.append(item)
+            } else {
+                flushSummaryItems()
+                blocks.append(.section(item))
+            }
+        }
+
+        flushSummaryItems()
+        return blocks.filter { block in
+            switch block {
+            case .section:
+                return true
+            case let .summaryCards(items):
+                return !summaryCardItems(snapshot: snapshot, orderedBy: items).isEmpty
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func dashboardBlockView(_ block: StatsMacDashboardBlock, snapshot: DashboardSnapshot) -> some View {
+        switch block {
+        case let .section(item):
+            dashboardSection(item, snapshot: snapshot)
+        case let .summaryCards(items):
+            summaryCards(snapshot: snapshot, dashboardItems: items)
+        }
+    }
+
+    @ViewBuilder
+    private func dashboardSection(_ item: StatsMacDashboardItem, snapshot: DashboardSnapshot) -> some View {
+        switch item {
+        case .hero:
+            editableDashboardSection(.hero) {
+                heroSection(snapshot: snapshot)
+            }
+        case .unassignedFocus:
+            editableDashboardSection(.unassignedFocus) {
+                UnassignedFocusSessionsCard(focusSessions: store.focusSessions)
+            }
+        case .createdTasksChart:
+            editableDashboardSection(.createdTasksChart) {
+                createdTasksChartSection(snapshot: snapshot)
+            }
+        case .completionChart:
+            editableDashboardSection(.completionChart) {
+                chartSection(snapshot: snapshot)
+            }
+        case .tagUsage:
+            editableDashboardSection(.tagUsage) {
+                tagUsageSection(snapshot: snapshot)
+            }
+        case .focusChart:
+            editableDashboardSection(.focusChart) {
+                focusChartSection(snapshot: snapshot)
+            }
+        case .focusWorkChart:
+            editableDashboardSection(.focusWorkChart) {
+                focusWorkChartSection(snapshot: snapshot)
+            }
+        case .estimateActual:
+            editableDashboardSection(.estimateActual) {
+                estimateActualChartSection(snapshot: snapshot)
+            }
+        case .goalProgress:
+            editableDashboardSection(.goalProgress) {
+                goalProgressSection(snapshot: snapshot)
+            }
+        case .emotionTrend:
+            editableDashboardSection(.emotionTrend) {
+                emotionTrendSection(snapshot: snapshot)
+            }
+        case .gitHub:
+            editableDashboardSection(.gitHub) {
+                gitHubSection(snapshot: snapshot)
+            }
+        default:
+            EmptyView()
         }
     }
 
@@ -320,52 +370,67 @@ dashboardBody(snapshot: dashboardSnapshot)
         )
     }
 
-    private func summaryCards(snapshot: DashboardSnapshot) -> some View {
-        let items = visibleSummaryCardItems(
-            StatsSummaryCardItemBuilder.items(
-                metrics: snapshot.metrics,
-                selectedRange: snapshot.selectedRange,
-                chartPresentation: snapshot.chartPresentation,
-                taskTypeFilter: snapshot.selectedTaskTypeFilter,
-                filteredTaskCount: snapshot.filteredTaskCount,
-                showsActiveAccessory: true
-            )
-        )
-
-        return LazyVGrid(
-            columns: [
-                GridItem(
-                    .adaptive(
-                        minimum: horizontalSizeClass == .compact ? 160 : 220,
-                        maximum: 280
-                    ),
-                    spacing: 14
-                )
-            ],
-            spacing: 14
-        ) {
-            ForEach(items) { item in
-                editableDashboardSection(dashboardItem(for: item)) {
-                    StatsSummaryCard(
-                        icon: item.icon,
-                        accent: item.accent,
-                        title: item.title,
-                        value: item.value,
-                        caption: item.caption,
-                        accessibilityIdentifier: item.accessibilityIdentifier,
-                        colorScheme: colorScheme,
-                        surfaceGradient: surfaceGradient,
-                        accessibilityChildren: item.showsAccessory ? .contain : .combine
-                    ) {
-                        Group {
-                            if item.showsAccessory {
-                                activeItemsInfoButton
+    @ViewBuilder
+    private func summaryCards(
+        snapshot: DashboardSnapshot,
+        dashboardItems: [StatsMacDashboardItem]
+    ) -> some View {
+        let items = summaryCardItems(snapshot: snapshot, orderedBy: dashboardItems)
+        if !items.isEmpty {
+            LazyVGrid(
+                columns: [
+                    GridItem(
+                        .adaptive(
+                            minimum: horizontalSizeClass == .compact ? 160 : 220,
+                            maximum: 280
+                        ),
+                        spacing: 14
+                    )
+                ],
+                spacing: 14
+            ) {
+                ForEach(items) { item in
+                    editableDashboardSection(dashboardItem(for: item)) {
+                        StatsSummaryCard(
+                            icon: item.icon,
+                            accent: item.accent,
+                            title: item.title,
+                            value: item.value,
+                            caption: item.caption,
+                            accessibilityIdentifier: item.accessibilityIdentifier,
+                            colorScheme: colorScheme,
+                            surfaceGradient: surfaceGradient,
+                            accessibilityChildren: item.showsAccessory ? .contain : .combine
+                        ) {
+                            Group {
+                                if item.showsAccessory {
+                                    activeItemsInfoButton
+                                }
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    private func summaryCardItems(
+        snapshot: DashboardSnapshot,
+        orderedBy dashboardItems: [StatsMacDashboardItem]
+    ) -> [StatsSummaryCardItem] {
+        let items = StatsSummaryCardItemBuilder.items(
+            metrics: snapshot.metrics,
+            selectedRange: snapshot.selectedRange,
+            chartPresentation: snapshot.chartPresentation,
+            taskTypeFilter: snapshot.selectedTaskTypeFilter,
+            filteredTaskCount: snapshot.filteredTaskCount,
+            showsActiveAccessory: true
+        )
+        let itemsByDashboardItem = Dictionary(
+            uniqueKeysWithValues: items.map { (dashboardItem(for: $0), $0) }
+        )
+
+        return dashboardItems.compactMap { itemsByDashboardItem[$0] }
     }
 
     private var dashboardEditButton: some View {
@@ -398,7 +463,7 @@ dashboardBody(snapshot: dashboardSnapshot)
                     .font(.subheadline.weight(.semibold))
             }
             .buttonStyle(.bordered)
-            .disabled(hiddenDashboardItemIDs.isEmpty)
+            .disabled(hiddenDashboardItemIDs.isEmpty && dashboardItemOrderIDsRaw.isEmpty)
             .accessibilityLabel("Reset stats dashboard")
         }
     }
@@ -635,12 +700,6 @@ dashboardBody(snapshot: dashboardSnapshot)
         !hiddenDashboardItemIDs.contains(item.rawValue)
     }
 
-    private func visibleSummaryCardItems(_ items: [StatsSummaryCardItem]) -> [StatsSummaryCardItem] {
-        items.filter { item in
-            isDashboardItemVisible(dashboardItem(for: item))
-        }
-    }
-
     private func dashboardItem(for item: StatsSummaryCardItem) -> StatsMacDashboardItem {
         StatsMacDashboardItem(summaryAccessibilityIdentifier: item.accessibilityIdentifier)
     }
@@ -663,6 +722,7 @@ dashboardBody(snapshot: dashboardSnapshot)
 
     private func showAllDashboardItems() {
         setHiddenDashboardItemIDs([])
+        setDashboardItemOrderIDs([])
     }
 
     private func setHiddenDashboardItemIDs(_ itemIDs: Set<String>) {
@@ -670,6 +730,32 @@ dashboardBody(snapshot: dashboardSnapshot)
         CloudSettingsKeyValueSync.setString(
             rawValue.isEmpty ? nil : rawValue,
             for: .appSettingMacStatsDashboardHiddenItemIDs
+        )
+    }
+
+    private func moveDashboardItem(_ draggedItemID: String, before targetItemID: String) {
+        let defaultItemIDs = StatsMacDashboardItem.allCases.map(\.rawValue)
+        let orderedItemIDs = StatsDashboardOrderSupport.normalizedItemIDs(
+            defaultItemIDs: defaultItemIDs,
+            storedRawValue: dashboardItemOrderIDsRaw
+        )
+        let movedItemIDs = StatsDashboardOrderSupport.movedItemIDs(
+            draggedItemID: draggedItemID,
+            before: targetItemID,
+            in: orderedItemIDs
+        )
+        setDashboardItemOrderIDs(movedItemIDs)
+    }
+
+    private func setDashboardItemOrderIDs(_ itemIDs: [String]) {
+        let defaultItemIDs = StatsMacDashboardItem.allCases.map(\.rawValue)
+        let rawValue = StatsDashboardOrderSupport.storedRawValue(
+            for: itemIDs,
+            defaultItemIDs: defaultItemIDs
+        )
+        CloudSettingsKeyValueSync.setString(
+            rawValue,
+            for: .appSettingMacStatsDashboardItemOrderIDs
         )
     }
 
@@ -701,10 +787,54 @@ dashboardBody(snapshot: dashboardSnapshot)
                 .offset(x: -7, y: -10)
                 .transition(.scale.combined(with: .opacity))
                 .accessibilityLabel("Remove \(item.title)")
+
+                    Image(systemName: "line.3.horizontal")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(.primary)
+                        .frame(width: 34, height: 34)
+                        .routinaGlassPill(interactive: true)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.primary.opacity(0.12), lineWidth: 1)
+                        )
+                        .shadow(color: .black.opacity(0.16), radius: 5, y: 3)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                        .offset(x: 7, y: -10)
+                        .help("Move \(item.title)")
+                        .accessibilityLabel("Move \(item.title)")
                 }
+                .contentShape(Rectangle())
+                .onDrag {
+                    draggedDashboardItemID = item.rawValue
+                    return NSItemProvider(object: item.rawValue as NSString)
+                }
+                .onDrop(
+                    of: StatsDashboardReorderDropDelegate.supportedContentTypes,
+                    delegate: StatsDashboardReorderDropDelegate(
+                        itemID: item.rawValue,
+                        draggedItemID: $draggedDashboardItemID,
+                        orderedItemIDs: visibleOrderedDashboardItems.map(\.rawValue),
+                        onMove: moveDashboardItem
+                    )
+                )
+                .zIndex(draggedDashboardItemID == item.rawValue ? 1 : 0)
             } else {
                 content()
             }
+        }
+    }
+}
+
+private enum StatsMacDashboardBlock: Identifiable {
+    case section(StatsMacDashboardItem)
+    case summaryCards([StatsMacDashboardItem])
+
+    var id: String {
+        switch self {
+        case let .section(item):
+            return item.rawValue
+        case let .summaryCards(items):
+            return "summaryCards:" + items.map(\.rawValue).joined(separator: ",")
         }
     }
 }
@@ -726,6 +856,7 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
     case todoCount
     case activeItems
     case archivedItems
+    case unassignedFocus
     case createdTasksChart
     case completionChart
     case tagUsage
@@ -809,6 +940,8 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return "Active items"
         case .archivedItems:
             return "Archived items"
+        case .unassignedFocus:
+            return "Unassigned focus"
         case .createdTasksChart:
             return "Tasks created chart"
         case .completionChart:
@@ -836,6 +969,8 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return "The large stats summary at the top of the screen."
         case .dailyAverage, .focusTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
             return "A compact stats card in the summary grid."
+        case .unassignedFocus:
+            return "Focus sessions waiting to be assigned."
         case .createdTasksChart:
             return "A bar chart of routines and todos created over time."
         case .completionChart:
@@ -891,6 +1026,8 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return "checklist"
         case .archivedItems:
             return "archivebox.fill"
+        case .unassignedFocus:
+            return "tray.full"
         case .createdTasksChart:
             return "plus.forwardslash.minus"
         case .completionChart:
@@ -909,6 +1046,15 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return "heart.text.square.fill"
         case .gitHub:
             return "chevron.left.forwardslash.chevron.right"
+        }
+    }
+
+    var isSummaryCard: Bool {
+        switch self {
+        case .dailyAverage, .focusTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
+            return true
+        default:
+            return false
         }
     }
 

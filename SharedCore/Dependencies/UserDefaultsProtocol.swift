@@ -75,7 +75,9 @@ public enum UserDefaultStringValueKey: String, Sendable {
     case appSettingTagColors
     case appSettingFastFilterTags
     case appSettingIOSStatsDashboardHiddenItemIDs
+    case appSettingIOSStatsDashboardItemOrderIDs
     case appSettingMacStatsDashboardHiddenItemIDs
+    case appSettingMacStatsDashboardItemOrderIDs
     case appSettingHiddenDayPlanTimelineActivityIDs
     case appSettingTemporaryViewState
     case appSettingFocusShieldSelection
@@ -137,7 +139,9 @@ enum CloudSettingsKeyValueSync {
         .appSettingTagColors,
         .appSettingFastFilterTags,
         .appSettingIOSStatsDashboardHiddenItemIDs,
+        .appSettingIOSStatsDashboardItemOrderIDs,
         .appSettingMacStatsDashboardHiddenItemIDs,
+        .appSettingMacStatsDashboardItemOrderIDs,
         .appSettingHiddenDayPlanTimelineActivityIDs
     ]
 
