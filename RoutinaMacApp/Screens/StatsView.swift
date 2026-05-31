@@ -337,6 +337,10 @@ struct StatsView: View {
             editableDashboardSection(.completionChart) {
                 chartSection(snapshot: snapshot)
             }
+        case .hourlyActivity:
+            editableDashboardSection(.hourlyActivity) {
+                hourlyActivitySection(snapshot: snapshot)
+            }
         case .tagUsage:
             editableDashboardSection(.tagUsage) {
                 tagUsageSection(snapshot: snapshot)
@@ -657,6 +661,16 @@ struct StatsView: View {
         )
     }
 
+    private func hourlyActivitySection(snapshot: DashboardSnapshot) -> some View {
+        StatsHourlyActivitySection(
+            points: snapshot.metrics.hourlyActivityChartPoints,
+            selectedRange: snapshot.selectedRange,
+            chartPresentation: snapshot.chartPresentation,
+            surfaceGradient: surfaceGradient,
+            colorScheme: colorScheme
+        )
+    }
+
     private func focusChartSection(snapshot: DashboardSnapshot) -> some View {
         let metrics = snapshot.metrics
 
@@ -943,6 +957,7 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
     case unassignedFocus
     case createdTasksChart
     case completionChart
+    case hourlyActivity
     case tagUsage
     case focusChart
     case focusWorkChart
@@ -1030,6 +1045,8 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return "Tasks created chart"
         case .completionChart:
             return "Activity chart"
+        case .hourlyActivity:
+            return "24-hour rhythm"
         case .tagUsage:
             return "Tag usage"
         case .focusChart:
@@ -1059,6 +1076,8 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return "A bar chart of routines and todos created over time."
         case .completionChart:
             return "A bar chart of done, missed, and canceled activity over time."
+        case .hourlyActivity:
+            return "A 24-hour chart of focus, done work, created tasks, and activity."
         case .tagUsage:
             return "A bubble chart of tag activity."
         case .focusChart:
@@ -1116,6 +1135,8 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return "plus.forwardslash.minus"
         case .completionChart:
             return "chart.bar.xaxis"
+        case .hourlyActivity:
+            return "clock"
         case .tagUsage:
             return "tag.fill"
         case .focusChart:

@@ -302,6 +302,57 @@ struct RoutineCompletionStatsTests {
     }
 
     @Test
+    func hourlyActivityPoints_bucketFocusLogsAndCreatedTasksByClockHour() {
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(
+            name: "Write",
+            createdAt: makeDate("2026-03-10T08:10:00Z")
+        )
+        let secondTask = RoutineTask(
+            name: "Review",
+            createdAt: makeDate("2026-03-10T09:20:00Z")
+        )
+        let logs = [
+            RoutineLog(
+                timestamp: makeDate("2026-03-10T09:45:00Z"),
+                taskID: task.id,
+                kind: .completed
+            ),
+            RoutineLog(
+                timestamp: makeDate("2026-03-10T10:15:00Z"),
+                taskID: task.id,
+                kind: .missed
+            )
+        ]
+        let sessions = [
+            FocusSession(
+                taskID: task.id,
+                startedAt: makeDate("2026-03-10T08:30:00Z"),
+                completedAt: makeDate("2026-03-10T10:15:00Z")
+            )
+        ]
+
+        let points = HourlyActivityStats.points(
+            tasks: [task, secondTask],
+            logs: logs,
+            focusSessions: sessions,
+            selectedRange: .week,
+            referenceDate: makeDate("2026-03-10T12:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(points.count == 24)
+        #expect(points[8].focusSeconds == TimeInterval(30 * 60))
+        #expect(points[9].focusSeconds == TimeInterval(60 * 60))
+        #expect(points[10].focusSeconds == TimeInterval(15 * 60))
+        #expect(points[8].createdCount == 1)
+        #expect(points[9].createdCount == 1)
+        #expect(points[9].doneCount == 1)
+        #expect(points[9].activityCount == 1)
+        #expect(points[10].activityCount == 1)
+    }
+
+    @Test
     func estimateActualPoints_compareCompletedWorkWithLoggedTime() {
         let calendar = makeTestCalendar()
         let firstDay = makeDate("2026-03-10T00:00:00Z")

@@ -97,6 +97,24 @@ struct FocusWorkChartPoint: Equatable, Identifiable {
     }
 }
 
+struct HourlyActivityChartPoint: Equatable, Identifiable {
+    let hour: Int
+    let focusSeconds: TimeInterval
+    let doneCount: Int
+    let createdCount: Int
+    let activityCount: Int
+
+    var id: Int { hour }
+
+    var focusMinutes: Double {
+        focusSeconds / 60
+    }
+
+    var hasActivity: Bool {
+        focusSeconds > 0 || doneCount > 0 || createdCount > 0 || activityCount > 0
+    }
+}
+
 struct EstimateActualChartPoint: Equatable, Identifiable {
     let date: Date
     let estimatedMinutes: Int
@@ -614,6 +632,125 @@ enum FocusWorkStats {
                 }
                 return lhs.doneCount < rhs.doneCount
             }
+    }
+}
+
+enum HourlyActivityStats {
+    static func points(
+        tasks: [RoutineTask],
+        logs: [RoutineLog],
+        focusSessions: [FocusSession],
+        selectedRange: DoneChartRange,
+        earliestActivityDate: Date? = nil,
+        referenceDate: Date = .now,
+        calendar: Calendar = .current
+    ) -> [HourlyActivityChartPoint] {
+        let range = dateRange(
+            selectedRange: selectedRange,
+            earliestActivityDate: earliestActivityDate,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        var focusSecondsByHour: [Int: TimeInterval] = [:]
+        for session in focusSessions where session.state == .completed {
+            allocateFocusSession(
+                session,
+                into: &focusSecondsByHour,
+                range: range,
+                calendar: calendar
+            )
+        }
+
+        let doneCountsByHour = logs.reduce(into: [Int: Int]()) { partialResult, log in
+            guard log.kind == .completed,
+                  let timestamp = log.timestamp,
+                  timestamp >= range.start,
+                  timestamp < range.end else {
+                return
+            }
+
+            partialResult[calendar.component(.hour, from: timestamp), default: 0] += 1
+        }
+
+        let activityCountsByHour = logs.reduce(into: [Int: Int]()) { partialResult, log in
+            guard let timestamp = log.timestamp,
+                  timestamp >= range.start,
+                  timestamp < range.end else {
+                return
+            }
+
+            partialResult[calendar.component(.hour, from: timestamp), default: 0] += 1
+        }
+
+        let createdCountsByHour = tasks.reduce(into: [Int: Int]()) { partialResult, task in
+            guard let createdAt = task.createdAt,
+                  createdAt >= range.start,
+                  createdAt < range.end else {
+                return
+            }
+
+            partialResult[calendar.component(.hour, from: createdAt), default: 0] += 1
+        }
+
+        return (0..<24).map { hour in
+            HourlyActivityChartPoint(
+                hour: hour,
+                focusSeconds: focusSecondsByHour[hour, default: 0],
+                doneCount: doneCountsByHour[hour, default: 0],
+                createdCount: createdCountsByHour[hour, default: 0],
+                activityCount: activityCountsByHour[hour, default: 0]
+            )
+        }
+    }
+
+    private static func dateRange(
+        selectedRange: DoneChartRange,
+        earliestActivityDate: Date?,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> (start: Date, end: Date) {
+        let endDay = calendar.startOfDay(for: referenceDate)
+        let end = calendar.date(byAdding: .day, value: 1, to: endDay) ?? referenceDate
+        let defaultStart = calendar.date(
+            byAdding: .day,
+            value: -(selectedRange.trailingDayCount - 1),
+            to: endDay
+        ) ?? endDay
+
+        if selectedRange == .year, let earliestActivityDate {
+            let earliestDay = calendar.startOfDay(for: earliestActivityDate)
+            return (min(max(earliestDay, defaultStart), endDay), end)
+        }
+
+        return (defaultStart, end)
+    }
+
+    private static func allocateFocusSession(
+        _ session: FocusSession,
+        into focusSecondsByHour: inout [Int: TimeInterval],
+        range: (start: Date, end: Date),
+        calendar: Calendar
+    ) {
+        guard let startedAt = session.startedAt,
+              let completedAt = session.completedAt,
+              completedAt > startedAt else {
+            return
+        }
+
+        var cursor = max(startedAt, range.start)
+        let clampedEnd = min(completedAt, range.end)
+        guard clampedEnd > cursor else { return }
+
+        while cursor < clampedEnd {
+            let hour = calendar.component(.hour, from: cursor)
+            let hourEnd = calendar.dateInterval(of: .hour, for: cursor)?.end ?? clampedEnd
+            let segmentEnd = min(hourEnd, clampedEnd)
+            guard segmentEnd > cursor else { break }
+
+            focusSecondsByHour[hour, default: 0] += segmentEnd.timeIntervalSince(cursor)
+            cursor = segmentEnd
+        }
     }
 }
 

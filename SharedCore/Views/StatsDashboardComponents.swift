@@ -402,6 +402,37 @@ enum StatsChartCountAxis {
     }
 }
 
+enum StatsChartTimeAxis {
+    static func upperBound(for rawUpperBound: Double) -> Double {
+        let rawUpperBound = max(rawUpperBound, 10)
+        let step: Double
+
+        switch rawUpperBound {
+        case ...30:
+            step = 10
+        case ...120:
+            step = 30
+        case ...360:
+            step = 60
+        case ...720:
+            step = 120
+        default:
+            step = 240
+        }
+
+        return ceil(rawUpperBound / step) * step
+    }
+
+    static func values(upperBound: Double) -> [Double] {
+        [0, upperBound / 2, upperBound]
+    }
+
+    static func label(for minutes: Double) -> String {
+        guard minutes > 0 else { return "0m" }
+        return FocusSessionFormatting.compactDurationText(seconds: TimeInterval(minutes.rounded() * 60))
+    }
+}
+
 struct StatsEmptyChartStateView: View {
     let systemImage: String
     let message: String

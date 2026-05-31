@@ -6,6 +6,7 @@ struct StatsFeatureMetrics: Equatable {
     var createdChartPoints: [DoneChartPoint] = []
     var focusChartPoints: [FocusDurationChartPoint] = []
     var focusWorkChartPoints: [FocusWorkChartPoint] = []
+    var hourlyActivityChartPoints: [HourlyActivityChartPoint] = []
     var estimateActualChartPoints: [EstimateActualChartPoint] = []
     var focusWeekdayAveragePoints: [FocusWeekdayAverageChartPoint] = []
     var goalProgressChartPoints: [GoalProgressChartPoint] = []
@@ -267,6 +268,15 @@ enum StatsFeatureDerivedStateBuilder {
             outcomePoints: outcomeMixChartPoints,
             focusPoints: focusChartPoints
         )
+        let hourlyActivityChartPoints = HourlyActivityStats.points(
+            tasks: filteredTasks,
+            logs: filteredLogs,
+            focusSessions: filteredFocusSessions,
+            selectedRange: selectedRange,
+            earliestActivityDate: earliestActivityDate,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
         let estimateActualChartPoints = EstimateActualStats.points(
             tasks: filteredTasks,
             logs: filteredLogs,
@@ -358,6 +368,7 @@ enum StatsFeatureDerivedStateBuilder {
                 createdChartPoints: createdChartPoints,
                 focusChartPoints: focusChartPoints,
                 focusWorkChartPoints: focusWorkChartPoints,
+                hourlyActivityChartPoints: hourlyActivityChartPoints,
                 estimateActualChartPoints: estimateActualChartPoints,
                 focusWeekdayAveragePoints: focusWeekdayAveragePoints,
                 goalProgressChartPoints: goalProgressChartPoints,
