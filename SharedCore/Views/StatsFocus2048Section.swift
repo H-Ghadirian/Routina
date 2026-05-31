@@ -26,7 +26,7 @@ struct StatsFocus2048Section: View {
             }
 
             VStack(alignment: .leading, spacing: 14) {
-                boardGrid
+                earnedTilesPanel
                 progressPanel
             }
 
@@ -40,20 +40,40 @@ struct StatsFocus2048Section: View {
         .accessibilityIdentifier("stats.focus2048.section")
     }
 
-    private var boardGrid: some View {
-        LazyVGrid(
-            columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 4),
-            spacing: 10
-        ) {
-            ForEach(0..<Focus2048Board.cellCount, id: \.self) { cellIndex in
-                let tile = tileByCellIndex[cellIndex]
+    private var earnedTilesPanel: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text("Earned tiles")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                Spacer(minLength: 8)
+
+                Text(earnedTileSummary)
+                    .font(.caption.monospacedDigit().weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+
+            LazyVGrid(columns: tileColumns, alignment: .leading, spacing: 10) {
+                ForEach(earnedTiles) { tile in
+                    StatsFocus2048Cell(
+                        tile: tile,
+                        isPreview: false,
+                        progress: 1,
+                        colorScheme: colorScheme
+                    )
+                    .aspectRatio(1, contentMode: .fit)
+                }
+
                 StatsFocus2048Cell(
-                    tile: tile,
+                    tile: nextPreviewTile,
+                    isPreview: true,
+                    progress: board.nextTileProgress,
                     colorScheme: colorScheme
                 )
                 .aspectRatio(1, contentMode: .fit)
-                .accessibilityHidden(tile == nil)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(12)
         .background(boardBackground, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
@@ -96,15 +116,23 @@ struct StatsFocus2048Section: View {
         )
     }
 
-    private var tileByCellIndex: [Int: Focus2048Tile] {
-        Dictionary(
-            uniqueKeysWithValues: board.tiles.prefix(Focus2048Board.cellCount).enumerated().map { tileIndex, tile in
-                let rowFromBottom = tileIndex / 4
-                let column = tileIndex % 4
-                let visualRow = 3 - rowFromBottom
-                return (visualRow * 4 + column, tile)
-            }
-        )
+    private var earnedTiles: [Focus2048Tile] {
+        Array(board.tiles.prefix(Focus2048Board.cellCount))
+    }
+
+    private var nextPreviewTile: Focus2048Tile {
+        Focus2048Tile(id: -1, value: 2)
+    }
+
+    private var tileColumns: [GridItem] {
+        [GridItem(.adaptive(minimum: 82, maximum: 126), spacing: 10)]
+    }
+
+    private var earnedTileSummary: String {
+        guard !earnedTiles.isEmpty else {
+            return "Building first 2h tile"
+        }
+        return "\(earnedTiles.count.formatted()) \(earnedTiles.count == 1 ? "tile" : "tiles")"
     }
 
     private var largestTileText: String {
@@ -168,36 +196,62 @@ struct StatsFocus2048Section: View {
 }
 
 private struct StatsFocus2048Cell: View {
-    let tile: Focus2048Tile?
+    let tile: Focus2048Tile
+    let isPreview: Bool
+    let progress: Double
     let colorScheme: ColorScheme
 
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(tile.map { AnyShapeStyle(tileFill(for: $0)) } ?? AnyShapeStyle(emptyFill))
+                .fill(isPreview ? AnyShapeStyle(previewFill) : AnyShapeStyle(tileFill(for: tile)))
 
-            if let tile {
-                VStack(spacing: 2) {
-                    Text("\(tile.value)")
-                        .font(.system(size: 34, weight: .heavy, design: .rounded))
-                        .foregroundStyle(tileTextColor(for: tile))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.42)
+            if isPreview, progress > 0 {
+                GeometryReader { proxy in
+                    VStack(spacing: 0) {
+                        Spacer(minLength: 0)
 
-                    Text("hours")
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(tileTextColor(for: tile).opacity(0.78))
-                        .lineLimit(1)
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(tileFill(for: tile))
+                            .opacity(colorScheme == .dark ? 0.34 : 0.28)
+                            .frame(height: proxy.size.height * min(max(progress, 0), 1))
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
-                .padding(6)
             }
+
+            VStack(spacing: 2) {
+                Text("\(tile.value)")
+                    .font(.system(size: 34, weight: .heavy, design: .rounded))
+                    .foregroundStyle(tileTextColor)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.42)
+
+                Text(isPreview ? "next" : "hours")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(tileTextColor.opacity(0.78))
+                    .lineLimit(1)
+            }
+            .padding(6)
         }
+        .overlay(tileBorder)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(tile.map { "\($0.value) focused hours tile" } ?? "Empty tile")
+        .accessibilityLabel(accessibilityLabel)
     }
 
-    private var emptyFill: Color {
-        Color.secondary.opacity(colorScheme == .dark ? 0.16 : 0.12)
+    private var previewFill: Color {
+        Color.secondary.opacity(colorScheme == .dark ? 0.18 : 0.1)
+    }
+
+    @ViewBuilder
+    private var tileBorder: some View {
+        if isPreview {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(
+                    Color.secondary.opacity(colorScheme == .dark ? 0.38 : 0.3),
+                    style: StrokeStyle(lineWidth: 1, dash: [4, 4])
+                )
+        }
     }
 
     private func tileFill(for tile: Focus2048Tile) -> LinearGradient {
@@ -236,7 +290,17 @@ private struct StatsFocus2048Cell: View {
         }
     }
 
-    private func tileTextColor(for tile: Focus2048Tile) -> Color {
-        tile.value >= 8 ? .white : .primary.opacity(0.82)
+    private var tileTextColor: Color {
+        if isPreview {
+            return .secondary
+        }
+        return tile.value >= 8 ? .white : .primary.opacity(0.82)
+    }
+
+    private var accessibilityLabel: String {
+        if isPreview {
+            return "Next 2 focused hours tile preview"
+        }
+        return "\(tile.value) focused hours tile"
     }
 }
