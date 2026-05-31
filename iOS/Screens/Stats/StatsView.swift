@@ -371,6 +371,14 @@ struct StatsView: View {
                     )
                 }
 
+                if isDashboardItemVisible(.goalProgress) {
+                    AnyView(
+                        editableDashboardSection(.goalProgress) {
+                            goalProgressSection(metrics: currentMetrics)
+                        }
+                    )
+                }
+
                 if store.isGitFeaturesEnabled, isDashboardItemVisible(.gitHub) {
                     AnyView(
                         editableDashboardSection(.gitHub) {
@@ -734,6 +742,16 @@ struct StatsView: View {
         )
     }
 
+    private func goalProgressSection(metrics: Metrics) -> some View {
+        StatsGoalProgressSection(
+            points: metrics.goalProgressChartPoints,
+            selectedRange: selectedRange,
+            chartPresentation: chartPresentation,
+            surfaceGradient: surfaceGradient,
+            colorScheme: colorScheme
+        )
+    }
+
     private func smallHighlightBadge(title: String, value: String) -> some View {
         StatsSmallHighlightBadge(
             title: title,
@@ -850,6 +868,7 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
     case tagUsage
     case focusChart
     case focusWorkChart
+    case goalProgress
     case gitHub
 
     var id: String { rawValue }
@@ -949,6 +968,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "Focus chart"
         case .focusWorkChart:
             return "Focus vs done"
+        case .goalProgress:
+            return "Goal momentum"
         case .gitHub:
             return "GitHub stats"
         }
@@ -968,6 +989,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "A bar chart of focus time over time."
         case .focusWorkChart:
             return "A scatter chart comparing focus time with completed work."
+        case .goalProgress:
+            return "Progress bars for active goals with linked work."
         case .gitHub:
             return "Contribution and repository activity."
         }
@@ -1023,6 +1046,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "chart.xyaxis.line"
         case .focusWorkChart:
             return "chart.dots.scatter"
+        case .goalProgress:
+            return "target"
         case .gitHub:
             return "chevron.left.forwardslash.chevron.right"
         }

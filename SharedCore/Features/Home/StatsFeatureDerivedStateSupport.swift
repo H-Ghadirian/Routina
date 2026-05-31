@@ -7,6 +7,7 @@ struct StatsFeatureMetrics: Equatable {
     var focusChartPoints: [FocusDurationChartPoint] = []
     var focusWorkChartPoints: [FocusWorkChartPoint] = []
     var focusWeekdayAveragePoints: [FocusWeekdayAverageChartPoint] = []
+    var goalProgressChartPoints: [GoalProgressChartPoint] = []
     var tagUsagePoints: [TagUsageChartPoint] = []
     var totalDoneCount: Int = 0
     var totalCanceledCount: Int = 0
@@ -271,6 +272,14 @@ enum StatsFeatureDerivedStateBuilder {
             tagColors: tagColors,
             calendar: calendar
         )
+        let goalProgressChartPoints = GoalProgressStats.points(
+            goals: goals,
+            tasks: filteredTasks,
+            logs: filteredLogs,
+            focusSessions: filteredFocusSessions,
+            outcomePoints: outcomeMixChartPoints,
+            calendar: calendar
+        )
         let totalCount = RoutineCompletionStats.totalCount(in: chartPoints)
         let averagePerDay = RoutineCompletionStats.averageCount(in: chartPoints)
         let busiestDay = RoutineCompletionStats.busiestDay(in: chartPoints)
@@ -338,6 +347,7 @@ enum StatsFeatureDerivedStateBuilder {
                 focusChartPoints: focusChartPoints,
                 focusWorkChartPoints: focusWorkChartPoints,
                 focusWeekdayAveragePoints: focusWeekdayAveragePoints,
+                goalProgressChartPoints: goalProgressChartPoints,
                 tagUsagePoints: tagUsagePoints,
                 totalDoneCount: completionDates.count,
                 totalCanceledCount: canceledDates.count,

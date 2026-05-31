@@ -258,6 +258,12 @@ dashboardBody(snapshot: dashboardSnapshot)
                         }
                     }
 
+                    if isDashboardItemVisible(.goalProgress) {
+                        editableDashboardSection(.goalProgress) {
+                            goalProgressSection(snapshot: snapshot)
+                        }
+                    }
+
                     if snapshot.isGitFeaturesEnabled, isDashboardItemVisible(.gitHub) {
                         editableDashboardSection(.gitHub) {
                             gitHubSection(snapshot: snapshot)
@@ -544,6 +550,16 @@ dashboardBody(snapshot: dashboardSnapshot)
         )
     }
 
+    private func goalProgressSection(snapshot: DashboardSnapshot) -> some View {
+        StatsGoalProgressSection(
+            points: snapshot.metrics.goalProgressChartPoints,
+            selectedRange: snapshot.selectedRange,
+            chartPresentation: snapshot.chartPresentation,
+            surfaceGradient: surfaceGradient,
+            colorScheme: colorScheme
+        )
+    }
+
     private var activeItemsInfoButton: some View {
         Button {
             isActiveItemsInfoPresented.toggle()
@@ -683,6 +699,7 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
     case tagUsage
     case focusChart
     case focusWorkChart
+    case goalProgress
     case gitHub
 
     var id: String { rawValue }
@@ -768,6 +785,8 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return "Focus chart"
         case .focusWorkChart:
             return "Focus vs done"
+        case .goalProgress:
+            return "Goal momentum"
         case .gitHub:
             return "GitHub stats"
         }
@@ -789,6 +808,8 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return "A bar chart of focus time over time."
         case .focusWorkChart:
             return "A scatter chart comparing focus time with completed work."
+        case .goalProgress:
+            return "Progress bars for active goals with linked work."
         case .gitHub:
             return "Contribution and repository activity."
         }
@@ -838,6 +859,8 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return "chart.xyaxis.line"
         case .focusWorkChart:
             return "chart.dots.scatter"
+        case .goalProgress:
+            return "target"
         case .gitHub:
             return "chevron.left.forwardslash.chevron.right"
         }

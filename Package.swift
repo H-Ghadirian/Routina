@@ -423,6 +423,7 @@ let package = Package(
                 "SharedCore/Views/StatsCreatedTasksChartSection.swift",
                 "SharedCore/Views/StatsFocusChartSection.swift",
                 "SharedCore/Views/StatsFocusWorkChartSection.swift",
+                "SharedCore/Views/StatsGoalProgressSection.swift",
                 "SharedCore/Views/StatsHeroSectionView.swift",
                 "SharedCore/Views/StatsTagUsageSection.swift",
                 "SharedCore/Views/StatsSummaryGrid.swift",

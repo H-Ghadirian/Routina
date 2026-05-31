@@ -127,6 +127,29 @@ struct TagUsageChartPoint: Equatable, Identifiable {
     }
 }
 
+struct GoalProgressChartPoint: Equatable, Identifiable {
+    let goalID: UUID
+    let title: String
+    let emoji: String
+    let color: RoutineTaskColor
+    let linkedTaskCount: Int
+    let completedTaskCount: Int
+    let completionCount: Int
+    let focusSeconds: TimeInterval
+    let targetDate: Date?
+
+    var id: UUID { goalID }
+
+    var completionRatio: Double {
+        guard linkedTaskCount > 0 else { return 0 }
+        return min(Double(completedTaskCount) / Double(linkedTaskCount), 1)
+    }
+
+    var focusMinutes: Double {
+        focusSeconds / 60
+    }
+}
+
 enum RoutineCompletionStats {
     static func outcomePoints(
         for range: DoneChartRange,
@@ -279,6 +302,94 @@ enum RoutineCompletionStats {
             }
             .prefix(limit)
             .map { $0 }
+    }
+}
+
+enum GoalProgressStats {
+    static func points(
+        goals: [RoutineGoal],
+        tasks: [RoutineTask],
+        logs: [RoutineLog],
+        focusSessions: [FocusSession],
+        outcomePoints: [OutcomeMixChartPoint],
+        limit: Int = 8,
+        calendar: Calendar = .current
+    ) -> [GoalProgressChartPoint] {
+        let chartDays = Set(outcomePoints.map { calendar.startOfDay(for: $0.date) })
+        guard !chartDays.isEmpty else { return [] }
+
+        let activeGoals = goals.filter { $0.status == .active }
+        let activeGoalIDs = Set(activeGoals.map(\.id))
+        guard !activeGoalIDs.isEmpty else { return [] }
+
+        var activeGoalIDsByTaskID: [UUID: [UUID]] = [:]
+        for task in tasks {
+            activeGoalIDsByTaskID[task.id] = task.goalIDs.filter { activeGoalIDs.contains($0) }
+        }
+        let linkedTaskIDsByGoalID = tasks.reduce(into: [UUID: Set<UUID>]()) { partialResult, task in
+            for goalID in activeGoalIDsByTaskID[task.id, default: []] {
+                partialResult[goalID, default: []].insert(task.id)
+            }
+        }
+
+        var completedTaskIDsByGoalID: [UUID: Set<UUID>] = [:]
+        var completionCountsByGoalID: [UUID: Int] = [:]
+        for log in logs {
+            guard log.kind == .completed,
+                  let timestamp = log.timestamp,
+                  chartDays.contains(calendar.startOfDay(for: timestamp)) else {
+                continue
+            }
+
+            for goalID in activeGoalIDsByTaskID[log.taskID, default: []] {
+                completedTaskIDsByGoalID[goalID, default: []].insert(log.taskID)
+                completionCountsByGoalID[goalID, default: 0] += 1
+            }
+        }
+
+        var focusSecondsByGoalID: [UUID: TimeInterval] = [:]
+        for session in focusSessions {
+            guard session.state == .completed,
+                  let daySource = session.completedAt ?? session.startedAt,
+                  chartDays.contains(calendar.startOfDay(for: daySource)) else {
+                continue
+            }
+
+            for goalID in activeGoalIDsByTaskID[session.taskID, default: []] {
+                focusSecondsByGoalID[goalID, default: 0] += session.actualDurationSeconds
+            }
+        }
+
+        return activeGoals.compactMap { goal in
+            let linkedTaskIDs = linkedTaskIDsByGoalID[goal.id, default: []]
+            guard !linkedTaskIDs.isEmpty else { return nil }
+
+            return GoalProgressChartPoint(
+                goalID: goal.id,
+                title: goal.displayTitle,
+                emoji: goal.emoji.flatMap(RoutineGoal.cleanedEmoji) ?? "\u{1F3AF}",
+                color: goal.color,
+                linkedTaskCount: linkedTaskIDs.count,
+                completedTaskCount: completedTaskIDsByGoalID[goal.id, default: []].count,
+                completionCount: completionCountsByGoalID[goal.id, default: 0],
+                focusSeconds: focusSecondsByGoalID[goal.id, default: 0],
+                targetDate: goal.targetDate
+            )
+        }
+        .sorted {
+            if $0.focusSeconds != $1.focusSeconds {
+                return $0.focusSeconds > $1.focusSeconds
+            }
+            if $0.completionCount != $1.completionCount {
+                return $0.completionCount > $1.completionCount
+            }
+            if $0.completionRatio != $1.completionRatio {
+                return $0.completionRatio > $1.completionRatio
+            }
+            return $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
+        }
+        .prefix(limit)
+        .map { $0 }
     }
 }
 

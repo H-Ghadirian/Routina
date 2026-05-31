@@ -300,4 +300,57 @@ struct RoutineCompletionStatsTests {
         #expect(!points[1].hasFocusAndDone)
         #expect(FocusWorkStats.strongestPairedDay(in: points)?.date == thirdDay)
     }
+
+    @Test
+    func goalProgressPoints_summarizeLinkedTaskCompletionsAndFocus() {
+        let calendar = makeTestCalendar()
+        let referenceDate = makeDate("2026-03-14T10:00:00Z")
+        let goal = RoutineGoal(title: "Launch", emoji: "🚀", status: .active)
+        let archivedGoal = RoutineGoal(title: "Old", status: .archived)
+        let task = RoutineTask(
+            name: "Ship",
+            goalIDs: [goal.id, archivedGoal.id],
+            createdAt: makeDate("2026-03-01T08:00:00Z")
+        )
+        let otherTask = RoutineTask(
+            name: "Write",
+            goalIDs: [goal.id],
+            createdAt: makeDate("2026-03-01T08:00:00Z")
+        )
+        let logs = [
+            RoutineLog(timestamp: makeDate("2026-03-10T09:00:00Z"), taskID: task.id, kind: .completed),
+            RoutineLog(timestamp: makeDate("2026-03-10T10:00:00Z"), taskID: task.id, kind: .completed),
+            RoutineLog(timestamp: makeDate("2026-03-11T10:00:00Z"), taskID: otherTask.id, kind: .missed)
+        ]
+        let focusSessions = [
+            FocusSession(
+                taskID: task.id,
+                startedAt: makeDate("2026-03-10T08:00:00Z"),
+                completedAt: makeDate("2026-03-10T08:45:00Z")
+            )
+        ]
+        let outcomePoints = RoutineCompletionStats.outcomePoints(
+            for: .week,
+            logs: logs,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        let points = GoalProgressStats.points(
+            goals: [goal, archivedGoal],
+            tasks: [task, otherTask],
+            logs: logs,
+            focusSessions: focusSessions,
+            outcomePoints: outcomePoints,
+            calendar: calendar
+        )
+
+        #expect(points.count == 1)
+        #expect(points.first?.goalID == goal.id)
+        #expect(points.first?.linkedTaskCount == 2)
+        #expect(points.first?.completedTaskCount == 1)
+        #expect(points.first?.completionCount == 2)
+        #expect(points.first?.focusSeconds == TimeInterval(45 * 60))
+        #expect(points.first?.completionRatio == 0.5)
+    }
 }

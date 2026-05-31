@@ -293,6 +293,62 @@ struct StatsFeatureDerivedStateSupportTests {
     }
 
     @Test
+    func build_summarizesGoalMomentumForFilteredTasks() {
+        let calendar = makeTestCalendar()
+        let goal = RoutineGoal(title: "Launch", emoji: "🚀", status: .active)
+        let hiddenGoal = RoutineGoal(title: "Hidden", status: .active)
+        let task = RoutineTask(
+            name: "Release notes",
+            tags: ["Launch"],
+            goalIDs: [goal.id],
+            createdAt: makeDate("2026-03-01T08:00:00Z")
+        )
+        let hiddenTask = RoutineTask(
+            name: "Draft",
+            tags: ["Hidden"],
+            goalIDs: [hiddenGoal.id],
+            createdAt: makeDate("2026-03-01T08:00:00Z")
+        )
+        let referenceDate = makeDate("2026-03-08T12:00:00Z")
+        let logs = [
+            RoutineLog(timestamp: makeDate("2026-03-04T10:00:00Z"), taskID: task.id, kind: .completed),
+            RoutineLog(timestamp: makeDate("2026-03-04T10:00:00Z"), taskID: hiddenTask.id, kind: .completed)
+        ]
+        let focusSessions = [
+            FocusSession(
+                taskID: task.id,
+                startedAt: makeDate("2026-03-04T09:00:00Z"),
+                completedAt: makeDate("2026-03-04T09:30:00Z")
+            )
+        ]
+
+        let state = StatsFeatureDerivedStateBuilder.build(
+            tasks: [task, hiddenTask],
+            logs: logs,
+            focusSessions: focusSessions,
+            goals: [goal, hiddenGoal],
+            selectedRange: .week,
+            taskTypeFilter: .all,
+            selectedImportanceUrgencyFilter: nil,
+            advancedQuery: "",
+            selectedTags: ["Launch"],
+            includeTagMatchMode: .all,
+            excludedTags: [],
+            excludeTagMatchMode: .any,
+            tagColors: [:],
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(state.metrics.goalProgressChartPoints.count == 1)
+        #expect(state.metrics.goalProgressChartPoints.first?.goalID == goal.id)
+        #expect(state.metrics.goalProgressChartPoints.first?.linkedTaskCount == 1)
+        #expect(state.metrics.goalProgressChartPoints.first?.completedTaskCount == 1)
+        #expect(state.metrics.goalProgressChartPoints.first?.completionCount == 1)
+        #expect(state.metrics.goalProgressChartPoints.first?.focusSeconds == TimeInterval(30 * 60))
+    }
+
+    @Test
     func summaryItemsIncludeHealthCardsWhenHealthSummaryIsPresent() {
         let items = StatsSummaryCardItemBuilder.items(
             metrics: StatsFeatureMetrics(),
