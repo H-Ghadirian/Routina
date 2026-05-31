@@ -69,11 +69,53 @@ struct OutcomeMixChartPoint: Equatable, Identifiable {
 struct FocusDurationChartPoint: Equatable, Identifiable {
     let date: Date
     let seconds: TimeInterval
+    let contributions: [FocusDurationContribution]
+
+    init(
+        date: Date,
+        seconds: TimeInterval,
+        contributions: [FocusDurationContribution] = []
+    ) {
+        self.date = date
+        self.seconds = seconds
+        self.contributions = contributions
+    }
 
     var id: Date { date }
 
     var minutes: Double {
         seconds / 60
+    }
+}
+
+struct FocusDurationContribution: Equatable, Identifiable {
+    let taskID: UUID?
+    let title: String
+    let seconds: TimeInterval
+    let sessionCount: Int
+
+    var id: String {
+        taskID?.uuidString ?? "unassigned-\(title)"
+    }
+
+    var minutes: Double {
+        seconds / 60
+    }
+}
+
+struct FocusCumulativeChartPoint: Equatable, Identifiable {
+    let date: Date
+    let dailySeconds: TimeInterval
+    let cumulativeSeconds: TimeInterval
+
+    var id: Date { date }
+
+    var dailyMinutes: Double {
+        dailySeconds / 60
+    }
+
+    var cumulativeMinutes: Double {
+        cumulativeSeconds / 60
     }
 }
 
@@ -483,6 +525,7 @@ enum FocusDurationStats {
     static func points(
         for range: DoneChartRange,
         sessions: [FocusSession],
+        tasks: [RoutineTask] = [],
         earliestActivityDate: Date? = nil,
         referenceDate: Date = .now,
         calendar: Calendar = .current
@@ -502,13 +545,39 @@ enum FocusDurationStats {
 
         let dayCount = (calendar.dateComponents([.day], from: startDate, to: endDate).day ?? 0) + 1
 
-        let secondsByDay = sessions.reduce(into: [Date: TimeInterval]()) { partialResult, session in
+        let taskTitlesByID = Dictionary(
+            uniqueKeysWithValues: tasks.map {
+                ($0.id, RoutineTask.trimmedName($0.name) ?? "Untitled task")
+            }
+        )
+        var secondsByDay: [Date: TimeInterval] = [:]
+        var contributionsByDay: [Date: [UUID: FocusContributionAccumulator]] = [:]
+
+        sessions.forEach { session in
             guard session.state == .completed else { return }
             let daySource = session.completedAt ?? session.startedAt
             guard let daySource else { return }
             let day = calendar.startOfDay(for: daySource)
             guard day >= startDate, day <= endDate else { return }
-            partialResult[day, default: 0] += session.actualDurationSeconds
+
+            let seconds = session.actualDurationSeconds
+            guard seconds > 0 else { return }
+
+            secondsByDay[day, default: 0] += seconds
+
+            let taskID = session.taskID
+            let title: String
+            if taskID == FocusSession.unassignedTaskID {
+                title = "Unassigned focus"
+            } else {
+                title = taskTitlesByID[taskID] ?? "Unknown task"
+            }
+
+            var accumulator = contributionsByDay[day, default: [:]][taskID]
+                ?? FocusContributionAccumulator(taskID: taskID, title: title)
+            accumulator.seconds += seconds
+            accumulator.sessionCount += 1
+            contributionsByDay[day, default: [:]][taskID] = accumulator
         }
 
         return (0..<dayCount).compactMap { dayOffset in
@@ -518,7 +587,52 @@ enum FocusDurationStats {
 
             return FocusDurationChartPoint(
                 date: date,
-                seconds: secondsByDay[date, default: 0]
+                seconds: secondsByDay[date, default: 0],
+                contributions: orderedContributions(
+                    from: Array(contributionsByDay[date, default: [:]].values)
+                )
+            )
+        }
+    }
+
+    static func groupedPoints(
+        from points: [FocusDurationChartPoint],
+        by component: Calendar.Component,
+        calendar: Calendar = .current
+    ) -> [FocusDurationChartPoint] {
+        guard component != .day else { return points }
+
+        var bucketOrder: [Date] = []
+        var secondsByBucket: [Date: TimeInterval] = [:]
+        var contributionsByBucket: [Date: [String: FocusContributionAccumulator]] = [:]
+
+        for point in points {
+            let bucketStart = bucketStartDate(for: point.date, component: component, calendar: calendar)
+            if secondsByBucket[bucketStart] == nil {
+                bucketOrder.append(bucketStart)
+            }
+            secondsByBucket[bucketStart, default: 0] += point.seconds
+
+            for contribution in point.contributions {
+                let key = contribution.taskID?.uuidString ?? "unassigned-\(contribution.title)"
+                var accumulator = contributionsByBucket[bucketStart, default: [:]][key]
+                    ?? FocusContributionAccumulator(
+                        taskID: contribution.taskID ?? FocusSession.unassignedTaskID,
+                        title: contribution.title
+                    )
+                accumulator.seconds += contribution.seconds
+                accumulator.sessionCount += contribution.sessionCount
+                contributionsByBucket[bucketStart, default: [:]][key] = accumulator
+            }
+        }
+
+        return bucketOrder.sorted().map { bucketStart in
+            FocusDurationChartPoint(
+                date: bucketStart,
+                seconds: secondsByBucket[bucketStart, default: 0],
+                contributions: orderedContributions(
+                    from: Array(contributionsByBucket[bucketStart, default: [:]].values)
+                )
             )
         }
     }
@@ -530,6 +644,21 @@ enum FocusDurationStats {
     static func averageSeconds(in points: [FocusDurationChartPoint]) -> TimeInterval {
         guard !points.isEmpty else { return 0 }
         return totalSeconds(in: points) / Double(points.count)
+    }
+
+    static func cumulativePoints(
+        from points: [FocusDurationChartPoint]
+    ) -> [FocusCumulativeChartPoint] {
+        var runningTotal: TimeInterval = 0
+
+        return points.map { point in
+            runningTotal += point.seconds
+            return FocusCumulativeChartPoint(
+                date: point.date,
+                dailySeconds: point.seconds,
+                cumulativeSeconds: runningTotal
+            )
+        }
     }
 
     static func weekdayAveragePoints(
@@ -601,6 +730,50 @@ enum FocusDurationStats {
         guard !symbols.isEmpty else { return "\(weekday)" }
         let index = min(max(weekday - 1, 0), symbols.count - 1)
         return symbols[index]
+    }
+
+    private static func bucketStartDate(
+        for date: Date,
+        component: Calendar.Component,
+        calendar: Calendar
+    ) -> Date {
+        switch component {
+        case .weekOfYear:
+            return calendar.dateInterval(of: .weekOfYear, for: date)?.start
+                ?? calendar.startOfDay(for: date)
+        case .month:
+            return calendar.dateInterval(of: .month, for: date)?.start
+                ?? calendar.startOfDay(for: date)
+        default:
+            return calendar.startOfDay(for: date)
+        }
+    }
+
+    private static func orderedContributions(
+        from accumulators: [FocusContributionAccumulator]
+    ) -> [FocusDurationContribution] {
+        accumulators
+            .map {
+                FocusDurationContribution(
+                    taskID: $0.taskID == FocusSession.unassignedTaskID ? nil : $0.taskID,
+                    title: $0.title,
+                    seconds: $0.seconds,
+                    sessionCount: $0.sessionCount
+                )
+            }
+            .sorted { lhs, rhs in
+                if lhs.seconds != rhs.seconds {
+                    return lhs.seconds > rhs.seconds
+                }
+                return lhs.title.localizedCaseInsensitiveCompare(rhs.title) == .orderedAscending
+            }
+    }
+
+    private struct FocusContributionAccumulator {
+        let taskID: UUID
+        let title: String
+        var seconds: TimeInterval = 0
+        var sessionCount: Int = 0
     }
 }
 

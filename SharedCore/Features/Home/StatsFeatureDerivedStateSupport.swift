@@ -260,6 +260,7 @@ enum StatsFeatureDerivedStateBuilder {
         let focusChartPoints: [FocusDurationChartPoint] = FocusDurationStats.points(
             for: selectedRange,
             sessions: filteredFocusSessions,
+            tasks: filteredTasks,
             earliestActivityDate: earliestActivityDate,
             referenceDate: referenceDate,
             calendar: calendar

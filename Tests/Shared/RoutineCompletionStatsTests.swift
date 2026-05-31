@@ -270,6 +270,136 @@ struct RoutineCompletionStatsTests {
     }
 
     @Test
+    func focusDurationPoints_includeTaskBreakdownForFocusedDay() {
+        let calendar = makeTestCalendar()
+        let referenceDate = makeDate("2026-03-14T10:00:00Z")
+        let writingTask = RoutineTask(name: "Write")
+        let reviewTask = RoutineTask(name: "Review")
+        let sessions = [
+            FocusSession(
+                taskID: writingTask.id,
+                startedAt: makeDate("2026-03-14T08:00:00Z"),
+                completedAt: makeDate("2026-03-14T08:45:00Z")
+            ),
+            FocusSession(
+                taskID: reviewTask.id,
+                startedAt: makeDate("2026-03-14T09:00:00Z"),
+                completedAt: makeDate("2026-03-14T09:15:00Z")
+            ),
+            FocusSession(
+                taskID: FocusSession.unassignedTaskID,
+                startedAt: makeDate("2026-03-14T10:00:00Z"),
+                completedAt: makeDate("2026-03-14T10:30:00Z")
+            )
+        ]
+
+        let points = FocusDurationStats.points(
+            for: .week,
+            sessions: sessions,
+            tasks: [writingTask, reviewTask],
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let focusedDay = points.first { $0.date == makeDate("2026-03-14T00:00:00Z") }
+
+        #expect(focusedDay?.seconds == TimeInterval(90 * 60))
+        #expect(focusedDay?.contributions.map(\.title) == ["Write", "Unassigned focus", "Review"])
+        #expect(focusedDay?.contributions.map(\.seconds) == [
+            TimeInterval(45 * 60),
+            TimeInterval(30 * 60),
+            TimeInterval(15 * 60)
+        ])
+    }
+
+    @Test
+    func groupedFocusDurationPoints_rollUpDailyTaskBreakdowns() {
+        var calendar = makeTestCalendar()
+        calendar.firstWeekday = 2
+        let monday = makeDate("2026-03-02T00:00:00Z")
+        let tuesday = makeDate("2026-03-03T00:00:00Z")
+        let nextMonday = makeDate("2026-03-09T00:00:00Z")
+        let taskID = UUID()
+        let dailyPoints = [
+            FocusDurationChartPoint(
+                date: monday,
+                seconds: 30 * 60,
+                contributions: [
+                    FocusDurationContribution(
+                        taskID: taskID,
+                        title: "Write",
+                        seconds: 30 * 60,
+                        sessionCount: 1
+                    )
+                ]
+            ),
+            FocusDurationChartPoint(
+                date: tuesday,
+                seconds: 45 * 60,
+                contributions: [
+                    FocusDurationContribution(
+                        taskID: taskID,
+                        title: "Write",
+                        seconds: 45 * 60,
+                        sessionCount: 2
+                    )
+                ]
+            ),
+            FocusDurationChartPoint(
+                date: nextMonday,
+                seconds: 20 * 60,
+                contributions: [
+                    FocusDurationContribution(
+                        taskID: nil,
+                        title: "Unassigned focus",
+                        seconds: 20 * 60,
+                        sessionCount: 1
+                    )
+                ]
+            )
+        ]
+
+        let weeklyPoints = FocusDurationStats.groupedPoints(
+            from: dailyPoints,
+            by: .weekOfYear,
+            calendar: calendar
+        )
+
+        #expect(weeklyPoints.count == 2)
+        #expect(weeklyPoints[0].seconds == TimeInterval(75 * 60))
+        #expect(weeklyPoints[0].contributions.first?.title == "Write")
+        #expect(weeklyPoints[0].contributions.first?.seconds == TimeInterval(75 * 60))
+        #expect(weeklyPoints[0].contributions.first?.sessionCount == 3)
+        #expect(weeklyPoints[1].seconds == TimeInterval(20 * 60))
+        #expect(weeklyPoints[1].contributions.first?.title == "Unassigned focus")
+    }
+
+    @Test
+    func cumulativeFocusDurationPoints_accumulateDailyFocus() {
+        let firstDay = makeDate("2026-03-10T00:00:00Z")
+        let secondDay = makeDate("2026-03-11T00:00:00Z")
+        let thirdDay = makeDate("2026-03-12T00:00:00Z")
+        let points = [
+            FocusDurationChartPoint(date: firstDay, seconds: 30 * 60),
+            FocusDurationChartPoint(date: secondDay, seconds: 0),
+            FocusDurationChartPoint(date: thirdDay, seconds: 45 * 60)
+        ]
+
+        let cumulativePoints = FocusDurationStats.cumulativePoints(from: points)
+
+        #expect(cumulativePoints.map(\.date) == [firstDay, secondDay, thirdDay])
+        #expect(cumulativePoints.map(\.dailySeconds) == [
+            TimeInterval(30 * 60),
+            0,
+            TimeInterval(45 * 60)
+        ])
+        #expect(cumulativePoints.map(\.cumulativeSeconds) == [
+            TimeInterval(30 * 60),
+            TimeInterval(30 * 60),
+            TimeInterval(75 * 60)
+        ])
+    }
+
+    @Test
     func focusWorkPoints_pairDoneCountsWithFocusDurations() {
         let firstDay = makeDate("2026-03-10T00:00:00Z")
         let secondDay = makeDate("2026-03-11T00:00:00Z")
