@@ -17,6 +17,8 @@ final class FocusSession {
     var plannedDurationSeconds: TimeInterval = 25 * 60
     var completedAt: Date?
     var abandonedAt: Date?
+    var pausedAt: Date?
+    var accumulatedPausedSeconds: TimeInterval = 0
 
     var isUnassigned: Bool {
         taskID == Self.unassignedTaskID
@@ -32,10 +34,53 @@ final class FocusSession {
         completedAt ?? abandonedAt
     }
 
+    var isPaused: Bool {
+        state == .active && pausedAt != nil
+    }
+
     var actualDurationSeconds: TimeInterval {
+        activeDurationSeconds()
+    }
+
+    func activeDurationSeconds(at date: Date = Date()) -> TimeInterval {
         guard let startedAt else { return 0 }
-        let endDate = finishedAt ?? Date()
-        return max(0, endDate.timeIntervalSince(startedAt))
+        let endDate = finishedAt ?? pausedAt ?? date
+        var pausedSeconds = max(0, accumulatedPausedSeconds)
+        if let pausedAt,
+           let finishedAt,
+           finishedAt > pausedAt {
+            pausedSeconds += finishedAt.timeIntervalSince(pausedAt)
+        }
+        return max(0, endDate.timeIntervalSince(startedAt) - pausedSeconds)
+    }
+
+    @discardableResult
+    func pause(at date: Date = Date()) -> Bool {
+        guard state == .active, pausedAt == nil else { return false }
+        if let startedAt {
+            pausedAt = max(date, startedAt)
+        } else {
+            pausedAt = date
+        }
+        return true
+    }
+
+    @discardableResult
+    func resume(at date: Date = Date()) -> Bool {
+        guard state == .active, let pausedAt else { return false }
+        let resumedAt = max(date, pausedAt)
+        accumulatedPausedSeconds = max(0, accumulatedPausedSeconds) + resumedAt.timeIntervalSince(pausedAt)
+        self.pausedAt = nil
+        return true
+    }
+
+    func closePauseIfNeeded(at date: Date = Date()) {
+        _ = resume(at: date)
+    }
+
+    func clearPauseTracking() {
+        pausedAt = nil
+        accumulatedPausedSeconds = 0
     }
 
     init(
@@ -44,7 +89,9 @@ final class FocusSession {
         startedAt: Date? = Date(),
         plannedDurationSeconds: TimeInterval = 25 * 60,
         completedAt: Date? = nil,
-        abandonedAt: Date? = nil
+        abandonedAt: Date? = nil,
+        pausedAt: Date? = nil,
+        accumulatedPausedSeconds: TimeInterval = 0
     ) {
         self.id = id
         self.taskID = taskID
@@ -52,6 +99,8 @@ final class FocusSession {
         self.plannedDurationSeconds = plannedDurationSeconds
         self.completedAt = completedAt
         self.abandonedAt = abandonedAt
+        self.pausedAt = pausedAt
+        self.accumulatedPausedSeconds = max(0, accumulatedPausedSeconds)
     }
 }
 

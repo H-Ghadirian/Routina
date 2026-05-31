@@ -286,6 +286,8 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         let taskEmoji: String
         let startedAt: Date
         let plannedDurationSeconds: TimeInterval
+        let pausedAt: Date?
+        let accumulatedPausedSeconds: TimeInterval
 
         var resolvedFocusKind: WatchFocusKind {
             focusKind ?? .task
@@ -307,18 +309,59 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             plannedDurationSeconds <= 0
         }
 
+        var isPaused: Bool {
+            pausedAt != nil
+        }
+
+        var canPause: Bool {
+            resolvedFocusKind != .sprint
+        }
+
         var endDate: Date? {
             guard plannedDurationSeconds > 0 else { return nil }
-            return startedAt.addingTimeInterval(plannedDurationSeconds)
+            return startedAt.addingTimeInterval(plannedDurationSeconds + max(0, accumulatedPausedSeconds))
         }
 
         func elapsedSeconds(at date: Date = .now) -> TimeInterval {
-            max(0, date.timeIntervalSince(startedAt))
+            let endDate = pausedAt ?? date
+            return max(0, endDate.timeIntervalSince(startedAt) - max(0, accumulatedPausedSeconds))
         }
 
         func remainingSeconds(at date: Date = .now) -> TimeInterval {
-            guard let endDate else { return 0 }
-            return max(0, endDate.timeIntervalSince(date))
+            max(0, plannedDurationSeconds - elapsedSeconds(at: date))
+        }
+
+        func pausing(at date: Date = .now) -> WatchFocusSession {
+            guard canPause, pausedAt == nil else { return self }
+            return WatchFocusSession(
+                id: id,
+                focusKind: focusKind,
+                targetID: targetID,
+                taskID: taskID,
+                taskName: taskName,
+                taskEmoji: taskEmoji,
+                startedAt: startedAt,
+                plannedDurationSeconds: plannedDurationSeconds,
+                pausedAt: max(date, startedAt),
+                accumulatedPausedSeconds: accumulatedPausedSeconds
+            )
+        }
+
+        func resuming(at date: Date = .now) -> WatchFocusSession {
+            guard let pausedAt else { return self }
+            let resumedAt = max(date, pausedAt)
+            return WatchFocusSession(
+                id: id,
+                focusKind: focusKind,
+                targetID: targetID,
+                taskID: taskID,
+                taskName: taskName,
+                taskEmoji: taskEmoji,
+                startedAt: startedAt,
+                plannedDurationSeconds: plannedDurationSeconds,
+                pausedAt: nil,
+                accumulatedPausedSeconds: max(0, accumulatedPausedSeconds) + resumedAt.timeIntervalSince(pausedAt)
+            )
         }
     }
 
@@ -511,7 +554,9 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             taskName: "Unassigned focus",
             taskEmoji: "🎯",
             startedAt: startedAt,
-            plannedDurationSeconds: 0
+            plannedDurationSeconds: 0,
+            pausedAt: nil,
+            accumulatedPausedSeconds: 0
         )
         saveCachedFocusSession()
 
@@ -521,6 +566,48 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             "action": "startUnassignedFocus",
             "sessionID": sessionID.uuidString,
             "startedAt": startedAt.timeIntervalSince1970
+        ])
+
+        if session.isReachable {
+            session.sendMessage(payload, replyHandler: nil)
+        } else {
+            session.transferUserInfo(payload)
+        }
+    }
+
+    func pauseFocus(_ focus: WatchFocusSession) {
+        let pausedAt = Date()
+        activeFocusSession = focus.pausing(at: pausedAt)
+        saveCachedFocusSession()
+
+        guard let session else { return }
+
+        let payload = actionPayload([
+            "action": "pauseFocus",
+            "sessionID": focus.id.uuidString,
+            "focusKind": focus.resolvedFocusKind.rawValue,
+            "pausedAt": pausedAt.timeIntervalSince1970
+        ])
+
+        if session.isReachable {
+            session.sendMessage(payload, replyHandler: nil)
+        } else {
+            session.transferUserInfo(payload)
+        }
+    }
+
+    func resumeFocus(_ focus: WatchFocusSession) {
+        let resumedAt = Date()
+        activeFocusSession = focus.resuming(at: resumedAt)
+        saveCachedFocusSession()
+
+        guard let session else { return }
+
+        let payload = actionPayload([
+            "action": "resumeFocus",
+            "sessionID": focus.id.uuidString,
+            "focusKind": focus.resolvedFocusKind.rawValue,
+            "resumedAt": resumedAt.timeIntervalSince1970
         ])
 
         if session.isReachable {
@@ -1061,7 +1148,9 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
                 taskName: taskName.isEmpty ? "Focus session" : taskName,
                 taskEmoji: taskEmoji,
                 startedAt: Date(timeIntervalSince1970: startedAtTimestamp),
-                plannedDurationSeconds: (rawFocus["plannedDurationSeconds"] as? TimeInterval) ?? 0
+                plannedDurationSeconds: (rawFocus["plannedDurationSeconds"] as? TimeInterval) ?? 0,
+                pausedAt: (rawFocus["pausedAt"] as? TimeInterval).map(Date.init(timeIntervalSince1970:)),
+                accumulatedPausedSeconds: max(0, (rawFocus["accumulatedPausedSeconds"] as? TimeInterval) ?? 0)
             )
         )
     }

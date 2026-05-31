@@ -584,13 +584,16 @@ struct FocusSessionCard: View {
                 let displaySeconds = isCountUp
                     ? elapsedSeconds
                     : remainingSeconds(for: session, now: context.date)
+                let timerStateLabel = session.isPaused
+                    ? "paused"
+                    : (isCountUp ? "elapsed" : "remaining")
 
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(alignment: .lastTextBaseline) {
                         Text(FocusSessionFormatting.durationText(seconds: displaySeconds))
                             .font(.system(.largeTitle, design: .rounded).weight(.bold))
                             .monospacedDigit()
-                        Text(isCountUp ? "elapsed" : "remaining")
+                        Text(timerStateLabel)
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.secondary)
                         Spacer(minLength: 8)
@@ -607,6 +610,21 @@ struct FocusSessionCard: View {
                     }
 
                     HStack(spacing: 10) {
+                        Button {
+                            if session.isPaused {
+                                resume(session)
+                            } else {
+                                pause(session)
+                            }
+                        } label: {
+                            Label(
+                                session.isPaused ? "Resume" : "Pause",
+                                systemImage: session.isPaused ? "play.circle.fill" : "pause.circle.fill"
+                            )
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(.teal)
+
                         Button {
                             finish(session)
                         } label: {
@@ -864,6 +882,7 @@ struct FocusSessionCard: View {
     private func finish(_ session: FocusSession) {
         guard session.completedAt == nil else { return }
         let endedAt = Date()
+        session.closePauseIfNeeded(at: endedAt)
         session.completedAt = endedAt
         syncEndedCountUpPlannerBlock(for: session, endedAt: endedAt)
         onCompletedDuration?(session.actualDurationSeconds)
@@ -880,6 +899,7 @@ struct FocusSessionCard: View {
 
     private func abandon(_ session: FocusSession) {
         let endedAt = Date()
+        session.closePauseIfNeeded(at: endedAt)
         session.abandonedAt = endedAt
         removeFocusPlannerBlock(for: session)
         DeviceActivityRecorder.recordAction(
@@ -888,6 +908,38 @@ struct FocusSessionCard: View {
             entityID: session.id,
             entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
             details: "Abandoned focus session",
+            in: modelContext
+        )
+        saveContext()
+        syncFocusShieldForCurrentContext()
+    }
+
+    private func pause(_ session: FocusSession) {
+        let pausedAt = Date()
+        guard session.pause(at: pausedAt) else { return }
+        DeviceActivityRecorder.recordAction(
+            .paused,
+            entity: .focusSession,
+            entityID: session.id,
+            entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+            details: "Paused focus session",
+            at: pausedAt,
+            in: modelContext
+        )
+        saveContext()
+        syncFocusShieldForCurrentContext()
+    }
+
+    private func resume(_ session: FocusSession) {
+        let resumedAt = Date()
+        guard session.resume(at: resumedAt) else { return }
+        DeviceActivityRecorder.recordAction(
+            .resumed,
+            entity: .focusSession,
+            entityID: session.id,
+            entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+            details: "Resumed focus session",
+            at: resumedAt,
             in: modelContext
         )
         saveContext()
@@ -923,6 +975,7 @@ struct FocusSessionCard: View {
         session.completedAt = editStartedAt.addingTimeInterval(durationSeconds)
         session.abandonedAt = nil
         session.plannedDurationSeconds = durationSeconds
+        session.clearPauseTracking()
         DeviceActivityRecorder.recordAction(
             .updated,
             entity: .focusSession,
@@ -948,22 +1001,17 @@ struct FocusSessionCard: View {
     }
 
     private func progress(for session: FocusSession, now: Date) -> Double {
-        guard let startedAt = session.startedAt else { return 0 }
-        let elapsed = max(0, now.timeIntervalSince(startedAt))
+        let elapsed = session.activeDurationSeconds(at: now)
         guard session.plannedDurationSeconds > 0 else { return 1 }
         return min(1, elapsed / session.plannedDurationSeconds)
     }
 
     private func elapsedSeconds(for session: FocusSession, now: Date) -> TimeInterval {
-        guard let startedAt = session.startedAt else { return 0 }
-        return max(0, now.timeIntervalSince(startedAt))
+        session.activeDurationSeconds(at: now)
     }
 
     private func remainingSeconds(for session: FocusSession, now: Date) -> TimeInterval {
-        guard let startedAt = session.startedAt else {
-            return session.plannedDurationSeconds
-        }
-        let elapsed = max(0, now.timeIntervalSince(startedAt))
+        let elapsed = session.activeDurationSeconds(at: now)
         return max(0, session.plannedDurationSeconds - elapsed)
     }
 

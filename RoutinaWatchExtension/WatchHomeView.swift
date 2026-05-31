@@ -244,12 +244,34 @@ struct WatchHomeView: View {
                     .font(.footnote.weight(.semibold))
                     .lineLimit(1)
 
-                if session.isCountUp {
+                if session.isPaused {
+                    Text("Paused")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                } else if session.isCountUp {
                     ProgressView()
                         .tint(.teal)
                 } else {
                     ProgressView(value: focusProgress(for: session, now: context.date))
                         .tint(.teal)
+                }
+
+                if session.canPause {
+                    Button {
+                        if session.isPaused {
+                            syncStore.resumeFocus(session)
+                        } else {
+                            syncStore.pauseFocus(session)
+                        }
+                    } label: {
+                        Label(
+                            session.isPaused ? "Resume Focus" : "Pause Focus",
+                            systemImage: session.isPaused ? "play.circle.fill" : "pause.circle.fill"
+                        )
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .tint(.teal)
                 }
 
                 Button {

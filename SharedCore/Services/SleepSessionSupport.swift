@@ -138,6 +138,7 @@ enum SleepSessionSupport {
     ) throws -> Bool {
         var didStopFocusTimer = false
         for session in try activeTaskFocusSessions(in: context) {
+            session.closePauseIfNeeded(at: stoppedAt)
             session.abandonedAt = stoppedAt
             DayPlanFocusSessionPlannerSync.removeFocusBlock(
                 for: session,

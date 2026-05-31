@@ -890,6 +890,44 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func activePausedFocusSessionBlocksUseFocusedDuration() throws {
+        let calendar = gregorianCalendar
+        let visibleDate = try #require(date("2026-05-07T12:00:00Z"))
+        let startedAt = try #require(date("2026-05-07T09:30:00Z"))
+        let pausedAt = try #require(date("2026-05-07T09:40:00Z"))
+        let now = try #require(date("2026-05-07T10:05:00Z"))
+        let taskID = UUID()
+        let sessionID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Write notes",
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 45
+        )
+        let session = FocusSession(
+            id: sessionID,
+            taskID: taskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            pausedAt: pausedAt
+        )
+
+        let focusBlocksByDayKey = DayPlanFocusSessionBlocks.activeBlocksByDayKey(
+            on: [visibleDate],
+            from: [task],
+            sessions: [session],
+            now: now,
+            calendar: calendar
+        )
+
+        let dayKey = DayPlanStorage.dayKey(for: visibleDate, calendar: calendar)
+        let focusBlock = try #require(focusBlocksByDayKey[dayKey]?.first)
+        #expect(focusBlock.sessionID == sessionID)
+        #expect(focusBlock.durationMinutes == 10)
+        #expect(focusBlock.block.durationMinutes == DayPlanBlock.minimumDurationMinutes)
+    }
+
+    @Test
     func startedFocusSessionCreatesPersistedPlannerBlock() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()
@@ -1020,6 +1058,58 @@ struct DayPlanPlannerStateTests {
             #expect(loadedBlocks.first?.id == sessionID)
             #expect(loadedBlocks.first?.durationMinutes == expectedMinutes)
         }
+    }
+
+    @Test
+    func endedPausedCountUpFocusSessionUpdatesPlannerBlockToFocusedMinutes() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let startedAt = try #require(date("2026-05-07T09:30:00Z"))
+        let pausedAt = try #require(date("2026-05-07T09:40:00Z"))
+        let endedAt = try #require(date("2026-05-07T10:05:00Z"))
+        let taskID = UUID()
+        let sessionID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Open ended focus",
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 45
+        )
+        let session = FocusSession(
+            id: sessionID,
+            taskID: taskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            pausedAt: pausedAt
+        )
+        context.insert(task)
+        context.insert(session)
+
+        _ = DayPlanFocusSessionPlannerSync.saveStartedFocusBlock(
+            for: task,
+            session: session,
+            startedAt: startedAt,
+            durationSeconds: session.plannedDurationSeconds,
+            calendar: calendar,
+            context: context
+        )
+        session.closePauseIfNeeded(at: endedAt)
+        session.completedAt = endedAt
+
+        let savedBlock = try #require(
+            DayPlanFocusSessionPlannerSync.saveEndedCountUpFocusBlock(
+                for: task,
+                session: session,
+                endedAt: endedAt,
+                calendar: calendar,
+                context: context
+            )
+        )
+        let loadedBlocks = DayPlanStorage.loadBlocks(forDayKey: savedBlock.dayKey, context: context)
+
+        #expect(loadedBlocks.count == 1)
+        #expect(loadedBlocks.first?.id == sessionID)
+        #expect(loadedBlocks.first?.durationMinutes == 10)
     }
 
     @Test

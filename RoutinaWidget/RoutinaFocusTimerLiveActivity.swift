@@ -73,8 +73,10 @@ struct RoutinaFocusTimerLiveActivity: Widget {
 
     @ViewBuilder
     private func liveTimer(_ context: ActivityViewContext<FocusTimerActivityAttributes>) -> some View {
-        if context.state.isCountUp {
-            Text(context.state.startedAt, style: .timer)
+        if context.state.isPaused {
+            Text(pausedTimerText(context.state))
+        } else if context.state.isCountUp, let adjustedStartedAt = context.state.adjustedStartedAt {
+            Text(adjustedStartedAt, style: .timer)
         } else if let endDate = context.state.endDate {
             Text(timerInterval: Date.now...endDate, countsDown: true)
         } else {
@@ -84,9 +86,18 @@ struct RoutinaFocusTimerLiveActivity: Widget {
 
     @ViewBuilder
     private func focusProgress(_ context: ActivityViewContext<FocusTimerActivityAttributes>) -> some View {
-        if !context.state.isCountUp, let endDate = context.state.endDate {
-            FocusTimerProgressBar(startedAt: context.state.startedAt, endDate: endDate)
+        if !context.state.isCountUp, context.state.isPaused {
+            FocusTimerStaticProgressBar(progress: context.state.progress(at: Date()))
+        } else if !context.state.isCountUp,
+                  let adjustedStartedAt = context.state.adjustedStartedAt,
+                  let endDate = context.state.endDate {
+            FocusTimerProgressBar(startedAt: adjustedStartedAt, endDate: endDate)
         }
+    }
+
+    private func pausedTimerText(_ state: FocusTimerActivityAttributes.ContentState) -> String {
+        let seconds = state.isCountUp ? state.elapsedSeconds(at: Date()) : state.remainingSeconds(at: Date())
+        return FocusTimerDurationText.format(seconds: seconds)
     }
 }
 
@@ -126,15 +137,20 @@ private struct FocusTimerLiveActivityLockScreenView: View {
 
     @ViewBuilder
     private var progressLine: some View {
-        if let endDate = context.state.endDate {
-            FocusTimerProgressBar(startedAt: context.state.startedAt, endDate: endDate)
+        if context.state.isPaused {
+            FocusTimerStaticProgressBar(progress: context.state.progress(at: Date()))
+        } else if let adjustedStartedAt = context.state.adjustedStartedAt,
+                  let endDate = context.state.endDate {
+            FocusTimerProgressBar(startedAt: adjustedStartedAt, endDate: endDate)
         }
     }
 
     @ViewBuilder
     private var liveTimer: some View {
-        if context.state.isCountUp {
-            Text(context.state.startedAt, style: .timer)
+        if context.state.isPaused {
+            Text(pausedTimerText)
+        } else if context.state.isCountUp, let adjustedStartedAt = context.state.adjustedStartedAt {
+            Text(adjustedStartedAt, style: .timer)
         } else if let endDate = context.state.endDate {
             Text(timerInterval: Date.now...endDate, countsDown: true)
         } else {
@@ -150,6 +166,13 @@ private struct FocusTimerLiveActivityLockScreenView: View {
         let targetID = context.attributes.targetID ?? context.attributes.taskID
         guard let targetID, let deepLinkPath = focusKind.deepLinkPath else { return nil }
         return RoutinaWidgetDeepLink.url(path: deepLinkPath, targetID: targetID)
+    }
+
+    private var pausedTimerText: String {
+        let seconds = context.state.isCountUp
+            ? context.state.elapsedSeconds(at: Date())
+            : context.state.remainingSeconds(at: Date())
+        return FocusTimerDurationText.format(seconds: seconds)
     }
 }
 
@@ -211,6 +234,51 @@ private struct FocusTimerProgressBar: View {
     private func progressAccessibilityValue(at date: Date) -> String {
         let percent = Int((progress(at: date) * 100).rounded())
         return "\(percent)%"
+    }
+}
+
+private struct FocusTimerStaticProgressBar: View {
+    let progress: Double
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(.white.opacity(0.13))
+
+                Capsule()
+                    .fill(.teal)
+                    .frame(width: filledWidth(in: proxy.size.width))
+            }
+        }
+        .frame(height: 4)
+        .accessibilityLabel("Focus progress")
+        .accessibilityValue(progressAccessibilityValue)
+    }
+
+    private func filledWidth(in width: CGFloat) -> CGFloat {
+        let safeProgress = min(1, max(0, progress))
+        guard safeProgress > 0 else { return 0 }
+        return max(4, width * safeProgress)
+    }
+
+    private var progressAccessibilityValue: String {
+        "\(Int((min(1, max(0, progress)) * 100).rounded()))%"
+    }
+}
+
+private enum FocusTimerDurationText {
+    static func format(seconds: TimeInterval) -> String {
+        let totalSeconds = max(0, Int(seconds.rounded()))
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let seconds = totalSeconds % 60
+
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
+        }
+
+        return String(format: "%02d:%02d", minutes, seconds)
     }
 }
 

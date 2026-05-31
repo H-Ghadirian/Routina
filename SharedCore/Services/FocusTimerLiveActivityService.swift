@@ -56,6 +56,8 @@ enum FocusTimerLiveActivityService {
         let state = FocusTimerActivityAttributes.ContentState(
             startedAt: focus.startedAt,
             plannedDurationSeconds: focus.plannedDurationSeconds,
+            pausedAt: focus.pausedAt,
+            accumulatedPausedSeconds: focus.accumulatedPausedSeconds,
             lastUpdated: focus.lastUpdated
         )
         let content = ActivityContent(state: state, staleDate: nil)
@@ -142,6 +144,8 @@ enum FocusTimerLiveActivityService {
             emoji: focus.taskEmoji,
             startedAt: startedAt,
             plannedDurationSeconds: focus.plannedDurationSeconds,
+            pausedAt: focus.pausedAt,
+            accumulatedPausedSeconds: focus.accumulatedPausedSeconds,
             lastUpdated: focus.lastUpdated
         )
     }
@@ -176,6 +180,8 @@ enum FocusTimerLiveActivityService {
             emoji: "🏁",
             startedAt: session.startedAt,
             plannedDurationSeconds: 0,
+            pausedAt: nil,
+            accumulatedPausedSeconds: 0,
             lastUpdated: referenceDate
         )
     }
@@ -190,6 +196,8 @@ private struct ActiveFocusTimerActivity {
     let emoji: String
     let startedAt: Date
     let plannedDurationSeconds: TimeInterval
+    let pausedAt: Date?
+    let accumulatedPausedSeconds: TimeInterval
     let lastUpdated: Date
 
     var deepLink: RoutinaDeepLink? {

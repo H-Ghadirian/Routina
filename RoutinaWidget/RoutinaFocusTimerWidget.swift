@@ -152,7 +152,7 @@ private struct FocusTimerWidgetView: View {
         ZStack {
             AccessoryWidgetBackground()
             VStack(spacing: 2) {
-                Image(systemName: entry.focus.isActive ? "timer" : "moon.zzz")
+                Image(systemName: focusSystemImage)
                     .font(.caption2.weight(.semibold))
                 if entry.focus.isActive {
                     timerText
@@ -170,7 +170,7 @@ private struct FocusTimerWidgetView: View {
 
     private var rectangularAccessory: some View {
         HStack(spacing: 6) {
-            Image(systemName: entry.focus.isActive ? "timer" : "moon.zzz")
+            Image(systemName: focusSystemImage)
             VStack(alignment: .leading, spacing: 1) {
                 Text(entry.focus.isActive ? entry.focus.taskName : "No focus")
                     .lineLimit(1)
@@ -183,7 +183,7 @@ private struct FocusTimerWidgetView: View {
 
     private var header: some View {
         HStack(spacing: 6) {
-            Image(systemName: entry.focus.isActive ? "timer" : "timer.square")
+            Image(systemName: focusSystemImage)
                 .foregroundStyle(.teal)
             Text("Focus")
                 .font(.caption.weight(.semibold))
@@ -194,9 +194,11 @@ private struct FocusTimerWidgetView: View {
 
     @ViewBuilder
     private var timerText: some View {
-        if entry.focus.isActive, let startedAt = entry.focus.startedAt {
-            if entry.focus.isCountUp {
-                Text(startedAt, style: .timer)
+        if entry.focus.isActive {
+            if entry.focus.isPaused {
+                Text(staticTimerText)
+            } else if entry.focus.isCountUp, let adjustedStartedAt = entry.focus.adjustedStartedAt {
+                Text(adjustedStartedAt, style: .timer)
             } else if let endDate = entry.focus.endDate {
                 Text(timerInterval: Date.now...endDate, countsDown: true)
             } else {
@@ -225,7 +227,7 @@ private struct FocusTimerWidgetView: View {
     }
 
     private var stateLine: some View {
-        Text(entry.focus.isActive ? (entry.focus.isCountUp ? "Counting up" : "In focus") : "Start focus from a task")
+        Text(entry.focus.isActive ? activeStateText : "Start focus from a task")
             .font(.caption2)
             .foregroundStyle(.secondary)
             .lineLimit(1)
@@ -233,16 +235,55 @@ private struct FocusTimerWidgetView: View {
 
     @ViewBuilder
     private var progressView: some View {
-        if let startedAt = entry.focus.startedAt, entry.focus.plannedDurationSeconds > 0 {
+        if entry.focus.isPaused, entry.focus.plannedDurationSeconds > 0 {
+            ProgressView(value: entry.focus.progress(at: entry.date))
+                .tint(.teal)
+        } else if let startedAt = entry.focus.adjustedStartedAt, entry.focus.plannedDurationSeconds > 0 {
             ProgressView(
                 timerInterval: startedAt...startedAt.addingTimeInterval(entry.focus.plannedDurationSeconds),
                 countsDown: false
             )
             .tint(.teal)
+        } else if entry.focus.isPaused {
+            EmptyView()
         } else if entry.focus.isActive {
             ProgressView()
                 .tint(.teal)
         }
+    }
+
+    private var focusSystemImage: String {
+        if entry.focus.isPaused {
+            return "pause.circle.fill"
+        }
+        return entry.focus.isActive ? "timer" : "timer.square"
+    }
+
+    private var activeStateText: String {
+        if entry.focus.isPaused {
+            return "Paused"
+        }
+        return entry.focus.isCountUp ? "Counting up" : "In focus"
+    }
+
+    private var staticTimerText: String {
+        let seconds = entry.focus.isCountUp
+            ? entry.focus.elapsedSeconds(at: entry.date)
+            : entry.focus.remainingSeconds(at: entry.date)
+        return Self.durationText(seconds: seconds)
+    }
+
+    private static func durationText(seconds: TimeInterval) -> String {
+        let totalSeconds = max(0, Int(seconds.rounded()))
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let seconds = totalSeconds % 60
+
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
+        }
+
+        return String(format: "%02d:%02d", minutes, seconds)
     }
 }
 

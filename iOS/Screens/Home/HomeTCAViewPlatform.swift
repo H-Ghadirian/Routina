@@ -525,7 +525,9 @@ private struct HomePinnedFocusTimerBanner: View {
             kind: session.isUnassigned ? .unassigned : .task,
             title: normalizedTitle(taskTitle, fallback: session.isUnassigned ? "Unassigned focus" : "Task focus"),
             startedAt: startedAt,
-            plannedDurationSeconds: session.plannedDurationSeconds
+            plannedDurationSeconds: session.plannedDurationSeconds,
+            pausedAt: session.pausedAt,
+            accumulatedPausedSeconds: session.accumulatedPausedSeconds
         )
     }
 
@@ -541,7 +543,9 @@ private struct HomePinnedFocusTimerBanner: View {
             kind: .sprint,
             title: normalizedTitle(sprintTitle, fallback: "Sprint focus"),
             startedAt: session.startedAt,
-            plannedDurationSeconds: 0
+            plannedDurationSeconds: 0,
+            pausedAt: nil,
+            accumulatedPausedSeconds: 0
         )
     }
 
@@ -564,8 +568,14 @@ private struct HomePinnedFocusTimerStatus: Equatable {
     let title: String
     let startedAt: Date
     let plannedDurationSeconds: TimeInterval
+    let pausedAt: Date?
+    let accumulatedPausedSeconds: TimeInterval
 
     var systemImage: String {
+        if isPaused {
+            return "pause.circle.fill"
+        }
+
         switch kind {
         case .task:
             return "timer"
@@ -592,6 +602,10 @@ private struct HomePinnedFocusTimerStatus: Equatable {
         plannedDurationSeconds <= 0
     }
 
+    private var isPaused: Bool {
+        pausedAt != nil
+    }
+
     func timeText(at date: Date) -> String {
         if overtimeSeconds(at: date) > 0 {
             return "+\(FocusSessionFormatting.durationText(seconds: overtimeSeconds(at: date)))"
@@ -600,14 +614,19 @@ private struct HomePinnedFocusTimerStatus: Equatable {
     }
 
     private func displaySeconds(at date: Date) -> TimeInterval {
-        let elapsed = max(0, date.timeIntervalSince(startedAt))
+        let elapsed = elapsedSeconds(at: date)
         guard !isCountUp else { return elapsed }
         return max(0, plannedDurationSeconds - elapsed)
     }
 
     private func overtimeSeconds(at date: Date) -> TimeInterval {
         guard !isCountUp else { return 0 }
-        let elapsed = max(0, date.timeIntervalSince(startedAt))
+        let elapsed = elapsedSeconds(at: date)
         return max(0, elapsed - plannedDurationSeconds)
+    }
+
+    private func elapsedSeconds(at date: Date) -> TimeInterval {
+        let endDate = pausedAt ?? date
+        return max(0, endDate.timeIntervalSince(startedAt) - max(0, accumulatedPausedSeconds))
     }
 }

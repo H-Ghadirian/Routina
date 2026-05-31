@@ -12,6 +12,29 @@ import Testing
 @MainActor
 struct FocusSessionSupportTests {
     @Test
+    func focusSessionDurationExcludesPausedIntervals() throws {
+        let startedAt = makeDate("2026-05-30T08:00:00Z")
+        let pausedAt = makeDate("2026-05-30T08:10:00Z")
+        let resumedAt = makeDate("2026-05-30T08:30:00Z")
+        let endedAt = makeDate("2026-05-30T08:45:00Z")
+        let session = FocusSession(
+            taskID: UUID(),
+            startedAt: startedAt,
+            plannedDurationSeconds: 0
+        )
+
+        #expect(session.activeDurationSeconds(at: pausedAt) == 10 * 60)
+        #expect(session.pause(at: pausedAt))
+        #expect(session.activeDurationSeconds(at: resumedAt) == 10 * 60)
+        #expect(session.resume(at: resumedAt))
+        #expect(session.accumulatedPausedSeconds == 20 * 60)
+        #expect(session.activeDurationSeconds(at: endedAt) == 25 * 60)
+
+        session.completedAt = endedAt
+        #expect(session.actualDurationSeconds == 25 * 60)
+    }
+
+    @Test
     func startUnassignedFocusCreatesCountUpSession() throws {
         let context = makeInMemoryContext()
         let sessionID = UUID()
@@ -79,6 +102,42 @@ struct FocusSessionSupportTests {
         #expect(session.completedAt == endedAt)
         #expect(session.actualDurationSeconds == 45 * 60)
         #expect(try context.fetch(FetchDescriptor<DayPlanBlockRecord>()).isEmpty)
+    }
+
+    @Test
+    func finishPausedUnassignedFocusCountsOnlyFocusedTime() throws {
+        let context = makeInMemoryContext()
+        let sessionID = UUID()
+        let startedAt = makeDate("2026-05-30T08:00:00Z")
+        let pausedAt = makeDate("2026-05-30T08:10:00Z")
+        let endedAt = makeDate("2026-05-30T08:30:00Z")
+
+        _ = try FocusSessionSupport.startUnassignedFocus(
+            id: sessionID,
+            startedAt: startedAt,
+            context: context
+        )
+        let paused = try FocusSessionSupport.pauseFocus(
+            sessionID: sessionID,
+            kind: .unassigned,
+            pausedAt: pausedAt,
+            context: context
+        )
+        let finished = try FocusSessionSupport.finishFocus(
+            sessionID: sessionID,
+            kind: .unassigned,
+            endedAt: endedAt,
+            context: context,
+            calendar: makeTestCalendar()
+        )
+
+        let session = try #require(try context.fetch(FetchDescriptor<FocusSession>()).first)
+        #expect(paused)
+        #expect(finished)
+        #expect(session.completedAt == endedAt)
+        #expect(session.pausedAt == nil)
+        #expect(session.accumulatedPausedSeconds == 20 * 60)
+        #expect(session.actualDurationSeconds == 10 * 60)
     }
 
     @Test

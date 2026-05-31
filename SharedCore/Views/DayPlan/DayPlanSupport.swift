@@ -1176,7 +1176,10 @@ enum DayPlanFocusSessionBlocks {
             let dayKey = DayPlanStorage.dayKey(for: now, calendar: calendar)
             let renderStart = renderStart(for: startedAt, now: now, calendar: calendar)
             let startMinute = startMinute(for: renderStart, calendar: calendar)
-            let elapsedSeconds = max(60, now.timeIntervalSince(renderStart))
+            let elapsedSeconds = max(
+                60,
+                elapsedFocusSeconds(for: session, startedAt: startedAt, renderStart: renderStart, now: now)
+            )
             let elapsedMinutes = max(1, Int(ceil(elapsedSeconds / 60)))
             let remainingMinutes = max(1, DayPlanBlock.minutesPerDay - startMinute)
             let durationMinutes = min(elapsedMinutes, remainingMinutes)
@@ -1231,6 +1234,19 @@ enum DayPlanFocusSessionBlocks {
         }
 
         return startedAt
+    }
+
+    private static func elapsedFocusSeconds(
+        for session: FocusSession,
+        startedAt: Date,
+        renderStart: Date,
+        now: Date
+    ) -> TimeInterval {
+        guard renderStart == startedAt else {
+            return max(0, now.timeIntervalSince(renderStart))
+        }
+
+        return session.activeDurationSeconds(at: now)
     }
 
     private static func isRepresentedByPlannerBlock(
@@ -1299,7 +1315,7 @@ enum DayPlanFocusSessionPlannerSync {
             return nil
         }
 
-        let elapsedSeconds = max(60, endedAt.timeIntervalSince(startedAt))
+        let elapsedSeconds = max(60, session.activeDurationSeconds(at: endedAt))
         let block = plannerBlock(
             for: task,
             session: session,

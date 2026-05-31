@@ -77,10 +77,10 @@ enum FocusShieldSupport {
             session.completedAt == nil && session.abandonedAt == nil
         }
         var descriptor = FetchDescriptor<FocusSession>(predicate: predicate)
-        descriptor.fetchLimit = 1
+        descriptor.fetchLimit = 8
 
         do {
-            return try context.fetch(descriptor).first != nil
+            return try context.fetch(descriptor).contains { $0.pausedAt == nil }
         } catch {
             NSLog("Focus shield active-session check failed: \(error.localizedDescription)")
             return false

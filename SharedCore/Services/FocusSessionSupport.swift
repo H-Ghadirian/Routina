@@ -77,6 +77,68 @@ enum FocusSessionSupport {
 
     @MainActor
     @discardableResult
+    static func pauseFocus(
+        sessionID: UUID?,
+        kind: FocusSessionKind?,
+        pausedAt: Date = Date(),
+        context: ModelContext,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
+    ) throws -> Bool {
+        guard kind != .sprint,
+              let session = try activeTaskFocus(sessionID: sessionID, kind: kind, in: context),
+              session.pause(at: pausedAt) else {
+            return false
+        }
+
+        let title = try taskTitle(for: session, in: context) ?? "Unassigned focus"
+        DeviceActivityRecorder.recordAction(
+            .paused,
+            entity: .focusSession,
+            entityID: session.id,
+            entityTitle: title,
+            details: "Paused focus session",
+            sourceDevice: sourceDevice,
+            at: pausedAt,
+            in: context
+        )
+        try context.save()
+        notifyFocusChanged(using: context)
+        return true
+    }
+
+    @MainActor
+    @discardableResult
+    static func resumeFocus(
+        sessionID: UUID?,
+        kind: FocusSessionKind?,
+        resumedAt: Date = Date(),
+        context: ModelContext,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
+    ) throws -> Bool {
+        guard kind != .sprint,
+              let session = try activeTaskFocus(sessionID: sessionID, kind: kind, in: context),
+              session.resume(at: resumedAt) else {
+            return false
+        }
+
+        let title = try taskTitle(for: session, in: context) ?? "Unassigned focus"
+        DeviceActivityRecorder.recordAction(
+            .resumed,
+            entity: .focusSession,
+            entityID: session.id,
+            entityTitle: title,
+            details: "Resumed focus session",
+            sourceDevice: sourceDevice,
+            at: resumedAt,
+            in: context
+        )
+        try context.save()
+        notifyFocusChanged(using: context)
+        return true
+    }
+
+    @MainActor
+    @discardableResult
     static func assignUnassignedFocus(
         sessionID: UUID,
         toTask taskID: UUID,
@@ -165,6 +227,7 @@ enum FocusSessionSupport {
             return false
         }
 
+        session.closePauseIfNeeded(at: endedAt)
         session.completedAt = endedAt
         if !session.isUnassigned,
            session.plannedDurationSeconds <= 0,
@@ -300,6 +363,9 @@ enum FocusSessionSupport {
 
     @MainActor
     private static func notifyFocusChanged(using context: ModelContext) {
+        #if (os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)) || os(macOS)
+        FocusShieldSupport.syncFocusShield(using: context)
+        #endif
         FocusTimerWidgetService.refreshAndReload(using: context)
         NotificationCenter.default.postRoutineDidUpdate()
         #if os(iOS) && canImport(ActivityKit)
