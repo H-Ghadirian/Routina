@@ -642,6 +642,10 @@ struct StatsView: View {
             editableDashboardSection(.focusChart) {
                 focusChartSection(metrics: metrics)
             }
+        case .focus2048:
+            editableDashboardSection(.focus2048) {
+                focus2048Section(metrics: metrics)
+            }
         case .focusWorkChart:
             editableDashboardSection(.focusWorkChart) {
                 focusWorkChartSection(metrics: metrics)
@@ -873,6 +877,16 @@ struct StatsView: View {
                 selectedRange: selectedRange,
                 chartPresentation: chartPresentation
             )
+        )
+    }
+
+    private func focus2048Section(metrics: Metrics) -> some View {
+        StatsFocus2048Section(
+            totalFocusSeconds: metrics.totalFocusSeconds,
+            selectedRange: selectedRange,
+            chartPresentation: chartPresentation,
+            surfaceGradient: surfaceGradient,
+            colorScheme: colorScheme
         )
     }
 
@@ -1114,6 +1128,7 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
     case hourlyActivity
     case tagUsage
     case focusChart
+    case focus2048
     case focusWorkChart
     case estimateActual
     case goalProgress
@@ -1219,6 +1234,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "Tag usage"
         case .focusChart:
             return "Focus chart"
+        case .focus2048:
+            return "Focus 2048"
         case .focusWorkChart:
             return "Focus vs done"
         case .estimateActual:
@@ -1248,6 +1265,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "A bubble chart of tag activity."
         case .focusChart:
             return "A bar chart of focus time over time."
+        case .focus2048:
+            return "A 2048-style board generated from focused hours."
         case .focusWorkChart:
             return "A scatter chart comparing focus time with completed work."
         case .estimateActual:
@@ -1313,6 +1332,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "tag.fill"
         case .focusChart:
             return "chart.xyaxis.line"
+        case .focus2048:
+            return "square.grid.3x3.fill"
         case .focusWorkChart:
             return "chart.dots.scatter"
         case .estimateActual:

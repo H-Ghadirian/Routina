@@ -349,6 +349,10 @@ struct StatsView: View {
             editableDashboardSection(.focusChart) {
                 focusChartSection(snapshot: snapshot)
             }
+        case .focus2048:
+            editableDashboardSection(.focus2048) {
+                focus2048Section(snapshot: snapshot)
+            }
         case .focusWorkChart:
             editableDashboardSection(.focusWorkChart) {
                 focusWorkChartSection(snapshot: snapshot)
@@ -700,6 +704,16 @@ struct StatsView: View {
         )
     }
 
+    private func focus2048Section(snapshot: DashboardSnapshot) -> some View {
+        StatsFocus2048Section(
+            totalFocusSeconds: snapshot.metrics.totalFocusSeconds,
+            selectedRange: snapshot.selectedRange,
+            chartPresentation: snapshot.chartPresentation,
+            surfaceGradient: surfaceGradient,
+            colorScheme: colorScheme
+        )
+    }
+
     private func tagUsageSection(snapshot: DashboardSnapshot) -> some View {
         let metrics = snapshot.metrics
 
@@ -960,6 +974,7 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
     case hourlyActivity
     case tagUsage
     case focusChart
+    case focus2048
     case focusWorkChart
     case estimateActual
     case goalProgress
@@ -1051,6 +1066,8 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return "Tag usage"
         case .focusChart:
             return "Focus chart"
+        case .focus2048:
+            return "Focus 2048"
         case .focusWorkChart:
             return "Focus vs done"
         case .estimateActual:
@@ -1082,6 +1099,8 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return "A bubble chart of tag activity."
         case .focusChart:
             return "A bar chart of focus time over time."
+        case .focus2048:
+            return "A 2048-style board generated from focused hours."
         case .focusWorkChart:
             return "A scatter chart comparing focus time with completed work."
         case .estimateActual:
@@ -1141,6 +1160,8 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return "tag.fill"
         case .focusChart:
             return "chart.xyaxis.line"
+        case .focus2048:
+            return "square.grid.3x3.fill"
         case .focusWorkChart:
             return "chart.dots.scatter"
         case .estimateActual:

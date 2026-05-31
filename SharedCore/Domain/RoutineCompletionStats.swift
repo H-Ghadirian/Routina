@@ -119,6 +119,42 @@ struct FocusCumulativeChartPoint: Equatable, Identifiable {
     }
 }
 
+struct Focus2048Tile: Equatable, Identifiable {
+    let id: Int
+    let value: Int
+
+    var representedSeconds: TimeInterval {
+        TimeInterval(value) * 60 * 60
+    }
+}
+
+struct Focus2048Board: Equatable {
+    static let cellCount = 16
+
+    let tiles: [Focus2048Tile]
+    let totalFocusSeconds: TimeInterval
+    let completedBaseTileCount: Int
+    let partialTileSeconds: TimeInterval
+    let baseTileSeconds: TimeInterval
+
+    var largestTileValue: Int {
+        tiles.map(\.value).max() ?? 0
+    }
+
+    var secondsUntilNextBaseTile: TimeInterval {
+        guard baseTileSeconds > 0 else { return 0 }
+        if partialTileSeconds <= 0 {
+            return baseTileSeconds
+        }
+        return max(0, baseTileSeconds - partialTileSeconds)
+    }
+
+    var nextTileProgress: Double {
+        guard baseTileSeconds > 0 else { return 0 }
+        return min(max(partialTileSeconds / baseTileSeconds, 0), 1)
+    }
+}
+
 struct FocusWorkChartPoint: Equatable, Identifiable {
     let date: Date
     let focusSeconds: TimeInterval
@@ -774,6 +810,51 @@ enum FocusDurationStats {
         let title: String
         var seconds: TimeInterval = 0
         var sessionCount: Int = 0
+    }
+}
+
+enum Focus2048Stats {
+    static let baseTileSeconds: TimeInterval = 2 * 60 * 60
+
+    static func board(totalFocusSeconds: TimeInterval) -> Focus2048Board {
+        let safeTotalSeconds = max(0, totalFocusSeconds)
+        let completedBaseTileCount = Int(safeTotalSeconds / baseTileSeconds)
+        let partialTileSeconds = safeTotalSeconds - TimeInterval(completedBaseTileCount) * baseTileSeconds
+        let tiles = tiles(for: completedBaseTileCount)
+
+        return Focus2048Board(
+            tiles: tiles,
+            totalFocusSeconds: safeTotalSeconds,
+            completedBaseTileCount: completedBaseTileCount,
+            partialTileSeconds: partialTileSeconds,
+            baseTileSeconds: baseTileSeconds
+        )
+    }
+
+    private static func tiles(for completedBaseTileCount: Int) -> [Focus2048Tile] {
+        guard completedBaseTileCount > 0 else { return [] }
+
+        var remaining = completedBaseTileCount
+        var bitIndex = 0
+        var tiles: [Focus2048Tile] = []
+
+        while remaining > 0 {
+            if remaining & 1 == 1 {
+                tiles.append(
+                    Focus2048Tile(
+                        id: bitIndex,
+                        value: 2 << bitIndex
+                    )
+                )
+            }
+
+            remaining >>= 1
+            bitIndex += 1
+        }
+
+        return tiles.sorted { lhs, rhs in
+            lhs.value > rhs.value
+        }
     }
 }
 

@@ -400,6 +400,29 @@ struct RoutineCompletionStatsTests {
     }
 
     @Test
+    func focus2048Board_mergesTwoHourChunksIntoPowerTiles() {
+        let board = Focus2048Stats.board(totalFocusSeconds: (20 * 60 * 60) + (30 * 60))
+
+        #expect(board.completedBaseTileCount == 10)
+        #expect(board.tiles.map(\.value) == [16, 4])
+        #expect(board.largestTileValue == 16)
+        #expect(board.partialTileSeconds == TimeInterval(30 * 60))
+        #expect(board.secondsUntilNextBaseTile == TimeInterval(90 * 60))
+        #expect(board.nextTileProgress == 0.25)
+    }
+
+    @Test
+    func focus2048Board_handlesLessThanTwoFocusedHours() {
+        let board = Focus2048Stats.board(totalFocusSeconds: 45 * 60)
+
+        #expect(board.completedBaseTileCount == 0)
+        #expect(board.tiles.isEmpty)
+        #expect(board.largestTileValue == 0)
+        #expect(board.partialTileSeconds == TimeInterval(45 * 60))
+        #expect(board.secondsUntilNextBaseTile == TimeInterval(75 * 60))
+    }
+
+    @Test
     func focusWorkPoints_pairDoneCountsWithFocusDurations() {
         let firstDay = makeDate("2026-03-10T00:00:00Z")
         let secondDay = makeDate("2026-03-11T00:00:00Z")
