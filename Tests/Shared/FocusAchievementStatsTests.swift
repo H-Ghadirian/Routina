@@ -1,0 +1,121 @@
+import Foundation
+import Testing
+#if SWIFT_PACKAGE
+@testable @preconcurrency import RoutinaAppSupport
+#elseif os(macOS)
+@testable @preconcurrency import RoutinaMacOSDev
+#else
+@testable @preconcurrency import Routina
+#endif
+
+struct FocusAchievementStatsTests {
+    @Test
+    func achievementsUnlockTotalBlocksAndSessionDepth() throws {
+        let calendar = makeTestCalendar()
+        let sessions = [
+            focusSession(
+                startedAt: makeDate("2026-05-01T08:00:00Z"),
+                durationSeconds: 2 * 60 * 60
+            ),
+            focusSession(
+                startedAt: makeDate("2026-05-02T08:00:00Z"),
+                durationSeconds: 8 * 60 * 60
+            ),
+        ]
+
+        let achievements = FocusAchievementStats.achievements(
+            sessions: sessions,
+            calendar: calendar
+        )
+
+        let firstFocus = try #require(achievement("focus.first", in: achievements))
+        let blockBuilder = try #require(achievement("focus.blocks.100", in: achievements))
+        let tenHours = try #require(achievement("focus.total.10h", in: achievements))
+        let oneHour = try #require(achievement("focus.session.1h", in: achievements))
+        let twoHours = try #require(achievement("focus.session.2h", in: achievements))
+        let fourHourDay = try #require(achievement("focus.day.4h", in: achievements))
+        let fiftyHours = try #require(achievement("focus.total.50h", in: achievements))
+
+        #expect(firstFocus.isEarned)
+        #expect(blockBuilder.isEarned)
+        #expect(tenHours.isEarned)
+        #expect(oneHour.isEarned)
+        #expect(twoHours.isEarned)
+        #expect(fourHourDay.isEarned)
+        #expect(!fiftyHours.isEarned)
+        #expect(FocusAchievementStats.earnedCount(in: achievements) == 7)
+    }
+
+    @Test
+    func achievementsCountFocusStreakAndRollingWeekDays() throws {
+        let calendar = makeTestCalendar()
+        let sessions = (0..<5).compactMap { dayOffset in
+            calendar.date(
+                byAdding: .day,
+                value: dayOffset,
+                to: makeDate("2026-05-01T08:00:00Z")
+            ).map {
+                focusSession(startedAt: $0, durationSeconds: 20 * 60)
+            }
+        }
+
+        let achievements = FocusAchievementStats.achievements(
+            sessions: sessions,
+            calendar: calendar
+        )
+
+        let fiveDayStreak = try #require(achievement("focus.streak.5d", in: achievements))
+        let twoWeekStreak = try #require(achievement("focus.streak.14d", in: achievements))
+        let steadyWeek = try #require(achievement("focus.week.5d", in: achievements))
+
+        #expect(fiveDayStreak.isEarned)
+        #expect(fiveDayStreak.progressText == "5 days / 5 days")
+        #expect(!twoWeekStreak.isEarned)
+        #expect(twoWeekStreak.progressText == "5 days / 14 days")
+        #expect(steadyWeek.isEarned)
+    }
+
+    @Test
+    func comebackFocusRequiresSevenQuietDaysBeforeReturn() throws {
+        let calendar = makeTestCalendar()
+        let sessions = [
+            focusSession(
+                startedAt: makeDate("2026-05-01T08:00:00Z"),
+                durationSeconds: 25 * 60
+            ),
+            focusSession(
+                startedAt: makeDate("2026-05-09T08:00:00Z"),
+                durationSeconds: 25 * 60
+            ),
+        ]
+
+        let achievements = FocusAchievementStats.achievements(
+            sessions: sessions,
+            calendar: calendar
+        )
+
+        let comeback = try #require(achievement("focus.comeback.7d", in: achievements))
+
+        #expect(comeback.isEarned)
+        #expect(comeback.progressText == "7 quiet days / 7 quiet days")
+    }
+
+    private func achievement(
+        _ id: String,
+        in achievements: [FocusAchievementProgress]
+    ) -> FocusAchievementProgress? {
+        achievements.first { $0.id == id }
+    }
+
+    private func focusSession(
+        startedAt: Date,
+        durationSeconds: TimeInterval
+    ) -> FocusSession {
+        FocusSession(
+            taskID: UUID(),
+            startedAt: startedAt,
+            plannedDurationSeconds: durationSeconds,
+            completedAt: startedAt.addingTimeInterval(durationSeconds)
+        )
+    }
+}

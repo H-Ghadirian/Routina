@@ -646,6 +646,10 @@ struct StatsView: View {
             editableDashboardSection(.focus2048) {
                 focus2048Section(metrics: metrics)
             }
+        case .focusAchievements:
+            editableDashboardSection(.focusAchievements) {
+                focusAchievementsSection()
+            }
         case .focusWorkChart:
             editableDashboardSection(.focusWorkChart) {
                 focusWorkChartSection(metrics: metrics)
@@ -890,6 +894,17 @@ struct StatsView: View {
         )
     }
 
+    private func focusAchievementsSection() -> some View {
+        StatsFocusAchievementsSection(
+            achievements: FocusAchievementStats.achievements(
+                sessions: focusSessions,
+                calendar: calendar
+            ),
+            surfaceGradient: surfaceGradient,
+            colorScheme: colorScheme
+        )
+    }
+
     private func tagUsageSection(metrics: Metrics) -> some View {
         StatsTagUsageSection(
             points: metrics.tagUsagePoints,
@@ -1129,6 +1144,7 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
     case tagUsage
     case focusChart
     case focus2048
+    case focusAchievements
     case focusWorkChart
     case estimateActual
     case goalProgress
@@ -1236,6 +1252,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "Focus chart"
         case .focus2048:
             return "Focus 2048"
+        case .focusAchievements:
+            return "Focus achievements"
         case .focusWorkChart:
             return "Focus vs done"
         case .estimateActual:
@@ -1267,6 +1285,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "A bar chart of focus time over time."
         case .focus2048:
             return "A 2048-style board generated from focused hours."
+        case .focusAchievements:
+            return "All-time focus badges and achievement progress."
         case .focusWorkChart:
             return "A scatter chart comparing focus time with completed work."
         case .estimateActual:
@@ -1334,6 +1354,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "chart.xyaxis.line"
         case .focus2048:
             return "square.grid.3x3.fill"
+        case .focusAchievements:
+            return "rosette"
         case .focusWorkChart:
             return "chart.dots.scatter"
         case .estimateActual:
