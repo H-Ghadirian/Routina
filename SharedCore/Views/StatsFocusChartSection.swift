@@ -112,15 +112,6 @@ struct StatsFocusChartSection: View {
                         )
                         .lineStyle(StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
                         .foregroundStyle(Color.white.opacity(0.48))
-                        .annotation(position: .top, alignment: .center, spacing: 8) {
-                            StatsFocusPointDetailPopover(
-                                point: selectedPoint,
-                                grouping: selectedGrouping,
-                                chartPresentation: chartPresentation,
-                                calendar: calendar,
-                                colorScheme: colorScheme
-                            )
-                        }
                     }
                 }
                 .chartYScale(domain: 0...focusAxisUpperBound)
@@ -203,6 +194,17 @@ struct StatsFocusChartSection: View {
                         #endif
                     }
                 }
+            }
+
+            if let detailPoint = selectedPoint ?? peakPoint,
+               detailPoint.seconds > 0 {
+                StatsFocusPointDetailPanel(
+                    title: selectedPoint == nil ? selectedGrouping.peakBadgeTitle : "Selected \(selectedGrouping.unitName)",
+                    point: detailPoint,
+                    grouping: selectedGrouping,
+                    calendar: calendar,
+                    colorScheme: colorScheme
+                )
             }
 
             StatsFocusCumulativeChart(
@@ -524,27 +526,33 @@ private struct StatsFocusChartContainer<Content: View>: View {
     }
 }
 
-private struct StatsFocusPointDetailPopover: View {
+private struct StatsFocusPointDetailPanel: View {
+    let title: String
     let point: FocusDurationChartPoint
     let grouping: StatsFocusChartGrouping
-    let chartPresentation: StatsChartPresentation
     let calendar: Calendar
     let colorScheme: ColorScheme
 
     private var visibleContributions: [FocusDurationContribution] {
-        Array(point.contributions.prefix(4))
+        Array(point.contributions.prefix(3))
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 9) {
+        VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(grouping.detailTitle(for: point.date, calendar: calendar))
+                Text(title)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
 
-                Text(FocusSessionFormatting.durationText(seconds: point.seconds))
-                    .font(.system(.headline, design: .rounded, weight: .bold))
-                    .foregroundStyle(.primary)
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text(FocusSessionFormatting.durationText(seconds: point.seconds))
+                        .font(.system(.headline, design: .rounded, weight: .bold))
+                        .foregroundStyle(.primary)
+
+                    Text(grouping.detailTitle(for: point.date, calendar: calendar))
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+                }
             }
 
             if visibleContributions.isEmpty {
@@ -577,7 +585,7 @@ private struct StatsFocusPointDetailPopover: View {
                 }
             }
         }
-        .frame(width: 230, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 118, alignment: .topLeading)
         .padding(12)
         .routinaGlassCard(cornerRadius: 16, tint: .accentColor, tintOpacity: colorScheme == .dark ? 0.18 : 0.12)
         .overlay(
@@ -683,12 +691,6 @@ private struct StatsFocusCumulativeChart: View {
                         RuleMark(x: .value("Selected day", selectedPoint.date, unit: .day))
                             .lineStyle(StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
                             .foregroundStyle(Color.white.opacity(0.48))
-                            .annotation(position: .top, alignment: .center, spacing: 8) {
-                                StatsFocusCumulativePointPopover(
-                                    point: selectedPoint,
-                                    colorScheme: colorScheme
-                                )
-                            }
 
                         PointMark(
                             x: .value("Selected day", selectedPoint.date, unit: .day),
@@ -765,6 +767,15 @@ private struct StatsFocusCumulativeChart: View {
                     }
                 }
             }
+
+            if let detailPoint = selectedPoint ?? points.last,
+               totalSeconds > 0 {
+                StatsFocusCumulativePointPanel(
+                    title: selectedPoint == nil ? "Total" : "Selected day",
+                    point: detailPoint,
+                    colorScheme: colorScheme
+                )
+            }
         }
         .padding(.top, 2)
     }
@@ -819,25 +830,32 @@ private struct StatsFocusCumulativeChart: View {
     }
 }
 
-private struct StatsFocusCumulativePointPopover: View {
+private struct StatsFocusCumulativePointPanel: View {
+    let title: String
     let point: FocusCumulativeChartPoint
     let colorScheme: ColorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text(point.date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
+            Text(title)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            Text(FocusSessionFormatting.durationText(seconds: point.cumulativeSeconds))
-                .font(.system(.headline, design: .rounded, weight: .bold))
-                .foregroundStyle(.primary)
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(FocusSessionFormatting.durationText(seconds: point.cumulativeSeconds))
+                    .font(.system(.headline, design: .rounded, weight: .bold))
+                    .foregroundStyle(.primary)
+
+                Text(point.date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
 
             Text("Day: \(FocusSessionFormatting.durationText(seconds: point.dailySeconds))")
                 .font(.caption.weight(.medium))
                 .foregroundStyle(.secondary)
         }
-        .frame(width: 170, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 86, alignment: .topLeading)
         .padding(12)
         .routinaGlassCard(cornerRadius: 16, tint: .teal, tintOpacity: colorScheme == .dark ? 0.18 : 0.12)
         .overlay(
