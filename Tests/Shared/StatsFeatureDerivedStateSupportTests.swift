@@ -236,6 +236,63 @@ struct StatsFeatureDerivedStateSupportTests {
     }
 
     @Test
+    func build_pairsFocusTimeWithCompletedWorkByDay() {
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(
+            name: "Deep work",
+            tags: ["Focus"],
+            createdAt: makeDate("2026-03-01T08:00:00Z")
+        )
+        let referenceDate = makeDate("2026-03-08T12:00:00Z")
+        let logs = [
+            RoutineLog(timestamp: makeDate("2026-03-03T10:00:00Z"), taskID: task.id, kind: .completed),
+            RoutineLog(timestamp: makeDate("2026-03-03T12:00:00Z"), taskID: task.id, kind: .completed),
+            RoutineLog(timestamp: makeDate("2026-03-04T10:00:00Z"), taskID: task.id, kind: .missed)
+        ]
+        let focusSessions = [
+            FocusSession(
+                taskID: task.id,
+                startedAt: makeDate("2026-03-03T09:00:00Z"),
+                completedAt: makeDate("2026-03-03T09:45:00Z")
+            ),
+            FocusSession(
+                taskID: task.id,
+                startedAt: makeDate("2026-03-05T14:00:00Z"),
+                completedAt: makeDate("2026-03-05T14:30:00Z")
+            )
+        ]
+
+        let state = StatsFeatureDerivedStateBuilder.build(
+            tasks: [task],
+            logs: logs,
+            focusSessions: focusSessions,
+            selectedRange: .week,
+            taskTypeFilter: .all,
+            selectedImportanceUrgencyFilter: nil,
+            advancedQuery: "",
+            selectedTags: [],
+            includeTagMatchMode: .all,
+            excludedTags: [],
+            excludeTagMatchMode: .any,
+            tagColors: [:],
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        let pointsByDay = Dictionary(
+            uniqueKeysWithValues: state.metrics.focusWorkChartPoints.map { ($0.date, $0) }
+        )
+        let completedFocusDay = pointsByDay[makeDate("2026-03-03T00:00:00Z")]
+        let focusOnlyDay = pointsByDay[makeDate("2026-03-05T00:00:00Z")]
+
+        #expect(completedFocusDay?.doneCount == 2)
+        #expect(completedFocusDay?.focusSeconds == TimeInterval(45 * 60))
+        #expect(completedFocusDay?.hasFocusAndDone == true)
+        #expect(focusOnlyDay?.doneCount == 0)
+        #expect(focusOnlyDay?.focusSeconds == TimeInterval(30 * 60))
+    }
+
+    @Test
     func summaryItemsIncludeHealthCardsWhenHealthSummaryIsPresent() {
         let items = StatsSummaryCardItemBuilder.items(
             metrics: StatsFeatureMetrics(),

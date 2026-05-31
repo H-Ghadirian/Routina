@@ -363,6 +363,14 @@ struct StatsView: View {
                     )
                 }
 
+                if selectedRange != .today, isDashboardItemVisible(.focusWorkChart) {
+                    AnyView(
+                        editableDashboardSection(.focusWorkChart) {
+                            focusWorkChartSection(metrics: currentMetrics)
+                        }
+                    )
+                }
+
                 if store.isGitFeaturesEnabled, isDashboardItemVisible(.gitHub) {
                     AnyView(
                         editableDashboardSection(.gitHub) {
@@ -716,6 +724,16 @@ struct StatsView: View {
         )
     }
 
+    private func focusWorkChartSection(metrics: Metrics) -> some View {
+        StatsFocusWorkChartSection(
+            points: metrics.focusWorkChartPoints,
+            selectedRange: selectedRange,
+            chartPresentation: chartPresentation,
+            surfaceGradient: surfaceGradient,
+            colorScheme: colorScheme
+        )
+    }
+
     private func smallHighlightBadge(title: String, value: String) -> some View {
         StatsSmallHighlightBadge(
             title: title,
@@ -831,6 +849,7 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
     case completionChart
     case tagUsage
     case focusChart
+    case focusWorkChart
     case gitHub
 
     var id: String { rawValue }
@@ -928,6 +947,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "Tag usage"
         case .focusChart:
             return "Focus chart"
+        case .focusWorkChart:
+            return "Focus vs done"
         case .gitHub:
             return "GitHub stats"
         }
@@ -945,6 +966,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "A bubble chart of tag activity."
         case .focusChart:
             return "A bar chart of focus time over time."
+        case .focusWorkChart:
+            return "A scatter chart comparing focus time with completed work."
         case .gitHub:
             return "Contribution and repository activity."
         }
@@ -998,6 +1021,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "tag.fill"
         case .focusChart:
             return "chart.xyaxis.line"
+        case .focusWorkChart:
+            return "chart.dots.scatter"
         case .gitHub:
             return "chevron.left.forwardslash.chevron.right"
         }
@@ -1008,7 +1033,7 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
         isGitFeaturesEnabled: Bool
     ) -> Bool {
         switch self {
-        case .dailyAverage, .focusAverage, .bestDay, .completionChart, .focusChart:
+        case .dailyAverage, .focusAverage, .bestDay, .completionChart, .focusChart, .focusWorkChart:
             return selectedRange != .today
         case .gitHub:
             return isGitFeaturesEnabled

@@ -358,6 +358,15 @@ struct StatsFeatureTests {
                     calendar: calendar
                 ),
                 focusChartPoints: expectedFocusChartPoints,
+                focusWorkChartPoints: FocusWorkStats.points(
+                    outcomePoints: RoutineCompletionStats.outcomePoints(
+                        for: .week,
+                        logs: [focusLog1, focusLog2, healthLog],
+                        referenceDate: now,
+                        calendar: calendar
+                    ),
+                    focusPoints: expectedFocusChartPoints
+                ),
                 tagUsagePoints: [
                     TagUsageChartPoint(name: "Focus", completionCount: 2, linkedRoutineCount: 1, linkedTodoCount: 0, colorHex: nil),
                     TagUsageChartPoint(name: "Health", completionCount: 1, linkedRoutineCount: 1, linkedTodoCount: 0, colorHex: nil),
@@ -415,6 +424,15 @@ struct StatsFeatureTests {
                     calendar: calendar
                 ),
                 focusChartPoints: expectedFocusChartPoints,
+                focusWorkChartPoints: FocusWorkStats.points(
+                    outcomePoints: RoutineCompletionStats.outcomePoints(
+                        for: .week,
+                        logs: [focusLog1, focusLog2],
+                        referenceDate: now,
+                        calendar: calendar
+                    ),
+                    focusPoints: expectedFocusChartPoints
+                ),
                 tagUsagePoints: [
                     TagUsageChartPoint(name: "Focus", completionCount: 2, linkedRoutineCount: 1, linkedTodoCount: 0, colorHex: nil),
                 ],
@@ -479,6 +497,15 @@ struct StatsFeatureTests {
                     calendar: calendar
                 ),
                 focusChartPoints: expectedFocusChartPoints,
+                focusWorkChartPoints: FocusWorkStats.points(
+                    outcomePoints: RoutineCompletionStats.outcomePoints(
+                        for: .week,
+                        logs: [healthLog],
+                        referenceDate: now,
+                        calendar: calendar
+                    ),
+                    focusPoints: expectedFocusChartPoints
+                ),
                 tagUsagePoints: [
                     TagUsageChartPoint(name: "Health", completionCount: 1, linkedRoutineCount: 1, linkedTodoCount: 0, colorHex: nil),
                 ],

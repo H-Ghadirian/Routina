@@ -268,4 +268,36 @@ struct RoutineCompletionStatsTests {
         #expect(weekdayPoints[2].seconds == 0)
         #expect(FocusDurationStats.strongestWeekdayAverage(in: weekdayPoints)?.weekday == 2)
     }
+
+    @Test
+    func focusWorkPoints_pairDoneCountsWithFocusDurations() {
+        let firstDay = makeDate("2026-03-10T00:00:00Z")
+        let secondDay = makeDate("2026-03-11T00:00:00Z")
+        let thirdDay = makeDate("2026-03-12T00:00:00Z")
+        let outcomePoints = [
+            OutcomeMixChartPoint(date: firstDay, doneCount: 2, missedCount: 1, canceledCount: 0),
+            OutcomeMixChartPoint(date: secondDay, doneCount: 0, missedCount: 0, canceledCount: 1),
+            OutcomeMixChartPoint(date: thirdDay, doneCount: 3, missedCount: 0, canceledCount: 0)
+        ]
+        let focusPoints = [
+            FocusDurationChartPoint(date: firstDay, seconds: 45 * 60),
+            FocusDurationChartPoint(date: secondDay, seconds: 30 * 60),
+            FocusDurationChartPoint(date: thirdDay, seconds: 90 * 60)
+        ]
+
+        let points = FocusWorkStats.points(
+            outcomePoints: outcomePoints,
+            focusPoints: focusPoints
+        )
+
+        #expect(points.map(\.doneCount) == [2, 0, 3])
+        #expect(points.map(\.focusSeconds) == [
+            TimeInterval(45 * 60),
+            TimeInterval(30 * 60),
+            TimeInterval(90 * 60)
+        ])
+        #expect(points[0].hasFocusAndDone)
+        #expect(!points[1].hasFocusAndDone)
+        #expect(FocusWorkStats.strongestPairedDay(in: points)?.date == thirdDay)
+    }
 }

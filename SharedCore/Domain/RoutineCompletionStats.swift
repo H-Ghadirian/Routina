@@ -77,6 +77,26 @@ struct FocusDurationChartPoint: Equatable, Identifiable {
     }
 }
 
+struct FocusWorkChartPoint: Equatable, Identifiable {
+    let date: Date
+    let focusSeconds: TimeInterval
+    let doneCount: Int
+
+    var id: Date { date }
+
+    var focusMinutes: Double {
+        focusSeconds / 60
+    }
+
+    var hasActivity: Bool {
+        focusSeconds > 0 || doneCount > 0
+    }
+
+    var hasFocusAndDone: Bool {
+        focusSeconds > 0 && doneCount > 0
+    }
+}
+
 struct FocusWeekdayAverageChartPoint: Equatable, Identifiable {
     let weekday: Int
     let symbol: String
@@ -384,5 +404,36 @@ enum FocusDurationStats {
         guard !symbols.isEmpty else { return "\(weekday)" }
         let index = min(max(weekday - 1, 0), symbols.count - 1)
         return symbols[index]
+    }
+}
+
+enum FocusWorkStats {
+    static func points(
+        outcomePoints: [OutcomeMixChartPoint],
+        focusPoints: [FocusDurationChartPoint]
+    ) -> [FocusWorkChartPoint] {
+        let focusByDate = Dictionary(uniqueKeysWithValues: focusPoints.map { ($0.date, $0.seconds) })
+
+        return outcomePoints.map { outcomePoint in
+            FocusWorkChartPoint(
+                date: outcomePoint.date,
+                focusSeconds: focusByDate[outcomePoint.date, default: 0],
+                doneCount: outcomePoint.doneCount
+            )
+        }
+    }
+
+    static func strongestPairedDay(in points: [FocusWorkChartPoint]) -> FocusWorkChartPoint? {
+        points
+            .filter(\.hasFocusAndDone)
+            .max { lhs, rhs in
+                if lhs.doneCount == rhs.doneCount {
+                    if lhs.focusSeconds == rhs.focusSeconds {
+                        return lhs.date > rhs.date
+                    }
+                    return lhs.focusSeconds < rhs.focusSeconds
+                }
+                return lhs.doneCount < rhs.doneCount
+            }
     }
 }

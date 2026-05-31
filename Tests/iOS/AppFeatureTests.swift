@@ -339,6 +339,15 @@ struct AppFeatureTests {
                     calendar: calendar
                 ),
                 focusChartPoints: expectedFocusChartPoints,
+                focusWorkChartPoints: FocusWorkStats.points(
+                    outcomePoints: RoutineCompletionStats.outcomePoints(
+                        for: .week,
+                        logs: [],
+                        referenceDate: now,
+                        calendar: calendar
+                    ),
+                    focusPoints: expectedFocusChartPoints
+                ),
                 totalDoneCount: 0,
                 totalCanceledCount: 0,
                 activeRoutineCount: 0,

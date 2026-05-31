@@ -5,6 +5,7 @@ struct StatsFeatureMetrics: Equatable {
     var outcomeMixChartPoints: [OutcomeMixChartPoint] = []
     var createdChartPoints: [DoneChartPoint] = []
     var focusChartPoints: [FocusDurationChartPoint] = []
+    var focusWorkChartPoints: [FocusWorkChartPoint] = []
     var focusWeekdayAveragePoints: [FocusWeekdayAverageChartPoint] = []
     var tagUsagePoints: [TagUsageChartPoint] = []
     var totalDoneCount: Int = 0
@@ -259,6 +260,10 @@ enum StatsFeatureDerivedStateBuilder {
             referenceDate: referenceDate,
             calendar: calendar
         )
+        let focusWorkChartPoints = FocusWorkStats.points(
+            outcomePoints: outcomeMixChartPoints,
+            focusPoints: focusChartPoints
+        )
         let tagUsagePoints = RoutineCompletionStats.tagUsagePoints(
             tasks: filteredTasks,
             logs: filteredLogs,
@@ -331,6 +336,7 @@ enum StatsFeatureDerivedStateBuilder {
                 outcomeMixChartPoints: outcomeMixChartPoints,
                 createdChartPoints: createdChartPoints,
                 focusChartPoints: focusChartPoints,
+                focusWorkChartPoints: focusWorkChartPoints,
                 focusWeekdayAveragePoints: focusWeekdayAveragePoints,
                 tagUsagePoints: tagUsagePoints,
                 totalDoneCount: completionDates.count,
