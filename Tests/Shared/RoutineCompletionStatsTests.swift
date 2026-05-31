@@ -199,4 +199,40 @@ struct RoutineCompletionStatsTests {
         #expect(RoutineCompletionStats.averageCount(in: points) == 0)
         #expect(RoutineCompletionStats.busiestDay(in: points) == nil)
     }
+
+    @Test
+    func focusWeekdayAveragePoints_averageDailyFocusByWeekdayInCalendarOrder() {
+        var calendar = makeTestCalendar()
+        calendar.firstWeekday = 2
+        calendar.locale = Locale(identifier: "en_US_POSIX")
+
+        let startDate = makeDate("2026-03-02T00:00:00Z")
+        let secondsByDayOffset: [Int: TimeInterval] = [
+            0: 60 * 60,
+            7: 120 * 60,
+            8: 30 * 60
+        ]
+        let points = (0..<14).compactMap { offset -> FocusDurationChartPoint? in
+            guard let date = calendar.date(byAdding: .day, value: offset, to: startDate) else {
+                return nil
+            }
+
+            return FocusDurationChartPoint(
+                date: date,
+                seconds: secondsByDayOffset[offset, default: 0]
+            )
+        }
+
+        let weekdayPoints = FocusDurationStats.weekdayAveragePoints(
+            from: points,
+            calendar: calendar
+        )
+
+        #expect(weekdayPoints.map(\.shortSymbol) == ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"])
+        #expect(weekdayPoints.map(\.contributingDayCount) == Array(repeating: 2, count: 7))
+        #expect(weekdayPoints[0].seconds == TimeInterval(90 * 60))
+        #expect(weekdayPoints[1].seconds == TimeInterval(15 * 60))
+        #expect(weekdayPoints[2].seconds == 0)
+        #expect(FocusDurationStats.strongestWeekdayAverage(in: weekdayPoints)?.weekday == 2)
+    }
 }

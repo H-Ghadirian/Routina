@@ -181,6 +181,57 @@ struct StatsFeatureDerivedStateSupportTests {
     }
 
     @Test
+    func build_derivesFocusWeekdayAveragesFromDailyFocusSeries() {
+        var calendar = makeTestCalendar()
+        calendar.firstWeekday = 2
+        calendar.locale = Locale(identifier: "en_US_POSIX")
+
+        let task = RoutineTask(
+            name: "Deep work",
+            tags: ["Focus"],
+            createdAt: makeDate("2026-03-01T08:00:00Z")
+        )
+        let referenceDate = makeDate("2026-03-08T12:00:00Z")
+        let focusSessions = [
+            FocusSession(
+                taskID: task.id,
+                startedAt: makeDate("2026-03-02T09:00:00Z"),
+                completedAt: makeDate("2026-03-02T10:00:00Z")
+            ),
+            FocusSession(
+                taskID: task.id,
+                startedAt: makeDate("2026-03-04T14:00:00Z"),
+                completedAt: makeDate("2026-03-04T14:30:00Z")
+            )
+        ]
+
+        let state = StatsFeatureDerivedStateBuilder.build(
+            tasks: [task],
+            logs: [],
+            focusSessions: focusSessions,
+            selectedRange: .week,
+            taskTypeFilter: .all,
+            selectedImportanceUrgencyFilter: nil,
+            advancedQuery: "",
+            selectedTags: [],
+            includeTagMatchMode: .all,
+            excludedTags: [],
+            excludeTagMatchMode: .any,
+            tagColors: [:],
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        let weekdayPoints = state.metrics.focusWeekdayAveragePoints
+        #expect(weekdayPoints.map(\.shortSymbol) == ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"])
+        #expect(weekdayPoints.map(\.contributingDayCount) == Array(repeating: 1, count: 7))
+        #expect(weekdayPoints[0].seconds == TimeInterval(60 * 60))
+        #expect(weekdayPoints[2].seconds == TimeInterval(30 * 60))
+        #expect(state.metrics.highlightedFocusWeekdayAverage?.weekday == 2)
+        #expect(state.metrics.focusWeekdayAverageUpperBound == 65)
+    }
+
+    @Test
     func summaryItemsIncludeHealthCardsWhenHealthSummaryIsPresent() {
         let items = StatsSummaryCardItemBuilder.items(
             metrics: StatsFeatureMetrics(),

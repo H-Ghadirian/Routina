@@ -5,12 +5,22 @@ enum StatsChartInsightBuilder {
         selectedRange: DoneChartRange,
         chartPoints: [DoneChartPoint]
     ) -> String {
-        if selectedRange == .year,
-           chartPoints.count < selectedRange.trailingDayCount,
-           let firstDate = chartPoints.first?.date {
-            return "Since \(firstDate.formatted(.dateTime.month(.abbreviated).day().year()))"
-        }
-        return selectedRange.periodDescription
+        periodDescription(
+            selectedRange: selectedRange,
+            pointCount: chartPoints.count,
+            firstDate: chartPoints.first?.date
+        )
+    }
+
+    static func focusActivityPeriodDescription(
+        selectedRange: DoneChartRange,
+        chartPoints: [FocusDurationChartPoint]
+    ) -> String {
+        periodDescription(
+            selectedRange: selectedRange,
+            pointCount: chartPoints.count,
+            firstDate: chartPoints.first?.date
+        )
     }
 
     static func completionInsights(
@@ -46,9 +56,9 @@ enum StatsChartInsightBuilder {
         [
             StatsChartInsight(
                 systemImage: "calendar",
-                text: userActivityPeriodDescription(
+                text: focusActivityPeriodDescription(
                     selectedRange: selectedRange,
-                    chartPoints: metrics.chartPoints
+                    chartPoints: metrics.focusChartPoints
                 )
             ),
             metrics.highlightedFocusDay.map {
@@ -83,5 +93,18 @@ enum StatsChartInsightBuilder {
                 text: createdTasksPresentation.waitingInsight
             )
         ]
+    }
+
+    private static func periodDescription(
+        selectedRange: DoneChartRange,
+        pointCount: Int,
+        firstDate: Date?
+    ) -> String {
+        if selectedRange == .year,
+           pointCount < selectedRange.trailingDayCount,
+           let firstDate {
+            return "Since \(firstDate.formatted(.dateTime.month(.abbreviated).day().year()))"
+        }
+        return selectedRange.periodDescription
     }
 }

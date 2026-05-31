@@ -4,6 +4,7 @@ struct StatsFeatureMetrics: Equatable {
     var chartPoints: [DoneChartPoint] = []
     var createdChartPoints: [DoneChartPoint] = []
     var focusChartPoints: [FocusDurationChartPoint] = []
+    var focusWeekdayAveragePoints: [FocusWeekdayAverageChartPoint] = []
     var tagUsagePoints: [TagUsageChartPoint] = []
     var totalDoneCount: Int = 0
     var totalCanceledCount: Int = 0
@@ -31,12 +32,14 @@ struct StatsFeatureMetrics: Equatable {
     var highlightedBusiestDay: DoneChartPoint?
     var highlightedCreatedDay: DoneChartPoint?
     var highlightedFocusDay: FocusDurationChartPoint?
+    var highlightedFocusWeekdayAverage: FocusWeekdayAverageChartPoint?
     var activeDayCount: Int = 0
     var createdActiveDayCount: Int = 0
     var focusActiveDayCount: Int = 0
     var chartUpperBound: Double = 1
     var createdChartUpperBound: Double = 1
     var focusChartUpperBound: Double = 1
+    var focusWeekdayAverageUpperBound: Double = 1
     var sparklinePoints: [DoneChartPoint] = []
     var sparklineMaxCount: Int = 1
     var xAxisDates: [Date] = []
@@ -264,6 +267,13 @@ enum StatsFeatureDerivedStateBuilder {
         let totalFocusSeconds = FocusDurationStats.totalSeconds(in: focusChartPoints)
         let averageFocusSecondsPerDay = FocusDurationStats.averageSeconds(in: focusChartPoints)
         let busiestFocusDay = FocusDurationStats.busiestDay(in: focusChartPoints)
+        let focusWeekdayAveragePoints = FocusDurationStats.weekdayAveragePoints(
+            from: focusChartPoints,
+            calendar: calendar
+        )
+        let strongestFocusWeekdayAverage = FocusDurationStats.strongestWeekdayAverage(
+            in: focusWeekdayAveragePoints
+        )
         let emotionActiveDayCount = Set(
             emotionLogsInRange
                 .compactMap(\.createdAt)
@@ -298,6 +308,7 @@ enum StatsFeatureDerivedStateBuilder {
         let maxCount = chartPoints.map(\.count).max() ?? 0
         let maxCreatedCount = createdChartPoints.map(\.count).max() ?? 0
         let maxFocusMinutes = focusChartPoints.map(\.minutes).max() ?? 0
+        let maxFocusWeekdayAverageMinutes = focusWeekdayAveragePoints.map(\.minutes).max() ?? 0
 
         return StatsFeatureDerivedState(
             availableTags: availableTags,
@@ -311,6 +322,7 @@ enum StatsFeatureDerivedStateBuilder {
                 chartPoints: chartPoints,
                 createdChartPoints: createdChartPoints,
                 focusChartPoints: focusChartPoints,
+                focusWeekdayAveragePoints: focusWeekdayAveragePoints,
                 tagUsagePoints: tagUsagePoints,
                 totalDoneCount: completionDates.count,
                 totalCanceledCount: canceledDates.count,
@@ -338,12 +350,16 @@ enum StatsFeatureDerivedStateBuilder {
                 highlightedBusiestDay: (busiestDay?.count ?? 0) > 0 ? busiestDay : nil,
                 highlightedCreatedDay: (busiestCreatedDay?.count ?? 0) > 0 ? busiestCreatedDay : nil,
                 highlightedFocusDay: (busiestFocusDay?.seconds ?? 0) > 0 ? busiestFocusDay : nil,
+                highlightedFocusWeekdayAverage: (strongestFocusWeekdayAverage?.seconds ?? 0) > 0
+                    ? strongestFocusWeekdayAverage
+                    : nil,
                 activeDayCount: chartPoints.filter { $0.count > 0 }.count,
                 createdActiveDayCount: createdChartPoints.filter { $0.count > 0 }.count,
                 focusActiveDayCount: focusChartPoints.filter { $0.seconds > 0 }.count,
                 chartUpperBound: Double(max(maxCount, Int(ceil(averagePerDay))) + 1),
                 createdChartUpperBound: Double(max(maxCreatedCount, Int(ceil(createdAveragePerDay))) + 1),
                 focusChartUpperBound: max(10, ceil(max(maxFocusMinutes, averageFocusSecondsPerDay / 60)) + 5),
+                focusWeekdayAverageUpperBound: max(10, ceil(maxFocusWeekdayAverageMinutes) + 5),
                 sparklinePoints: sparklinePoints,
                 sparklineMaxCount: max(sparklinePoints.map(\.count).max() ?? 0, 1),
                 xAxisDates: makeXAxisDates(from: chartPoints, for: selectedRange, calendar: calendar)

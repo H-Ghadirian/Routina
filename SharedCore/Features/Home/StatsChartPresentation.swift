@@ -75,6 +75,15 @@ struct StatsChartPresentation {
         }
     }
 
+    var showsFocusWeekdayAverages: Bool {
+        switch selectedRange {
+        case .week, .month:
+            return true
+        case .today, .year:
+            return false
+        }
+    }
+
     func averagePerDayText(for averagePerDay: Double) -> String {
         averagePerDay.formatted(.number.precision(.fractionLength(1)))
     }

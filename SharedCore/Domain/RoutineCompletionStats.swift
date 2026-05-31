@@ -53,6 +53,20 @@ struct FocusDurationChartPoint: Equatable, Identifiable {
     }
 }
 
+struct FocusWeekdayAverageChartPoint: Equatable, Identifiable {
+    let weekday: Int
+    let symbol: String
+    let shortSymbol: String
+    let seconds: TimeInterval
+    let contributingDayCount: Int
+
+    var id: Int { weekday }
+
+    var minutes: Double {
+        seconds / 60
+    }
+}
+
 struct TagUsageChartPoint: Equatable, Identifiable {
     let name: String
     let completionCount: Int
@@ -234,6 +248,31 @@ enum FocusDurationStats {
         return totalSeconds(in: points) / Double(points.count)
     }
 
+    static func weekdayAveragePoints(
+        from points: [FocusDurationChartPoint],
+        calendar: Calendar = .current
+    ) -> [FocusWeekdayAverageChartPoint] {
+        let pointsByWeekday = Dictionary(grouping: points) {
+            calendar.component(.weekday, from: $0.date)
+        }
+
+        return orderedWeekdays(calendar: calendar).map { weekday in
+            let weekdayPoints = pointsByWeekday[weekday] ?? []
+            let totalSeconds = weekdayPoints.reduce(0) { $0 + $1.seconds }
+            let averageSeconds = weekdayPoints.isEmpty
+                ? 0
+                : totalSeconds / Double(weekdayPoints.count)
+
+            return FocusWeekdayAverageChartPoint(
+                weekday: weekday,
+                symbol: weekdaySymbol(for: weekday, calendar: calendar, abbreviated: false),
+                shortSymbol: weekdaySymbol(for: weekday, calendar: calendar, abbreviated: true),
+                seconds: averageSeconds,
+                contributingDayCount: weekdayPoints.count
+            )
+        }
+    }
+
     static func busiestDay(in points: [FocusDurationChartPoint]) -> FocusDurationChartPoint? {
         points.max { lhs, rhs in
             if lhs.seconds == rhs.seconds {
@@ -241,5 +280,42 @@ enum FocusDurationStats {
             }
             return lhs.seconds < rhs.seconds
         }
+    }
+
+    static func strongestWeekdayAverage(
+        in points: [FocusWeekdayAverageChartPoint]
+    ) -> FocusWeekdayAverageChartPoint? {
+        var strongest: FocusWeekdayAverageChartPoint?
+
+        for point in points {
+            guard let currentStrongest = strongest else {
+                strongest = point
+                continue
+            }
+
+            if point.seconds > currentStrongest.seconds {
+                strongest = point
+            }
+        }
+
+        return strongest
+    }
+
+    private static func orderedWeekdays(calendar: Calendar) -> [Int] {
+        let firstWeekday = min(max(calendar.firstWeekday, 1), 7)
+        return (0..<7).map { offset in
+            ((firstWeekday - 1 + offset) % 7) + 1
+        }
+    }
+
+    private static func weekdaySymbol(
+        for weekday: Int,
+        calendar: Calendar,
+        abbreviated: Bool
+    ) -> String {
+        let symbols = abbreviated ? calendar.shortWeekdaySymbols : calendar.weekdaySymbols
+        guard !symbols.isEmpty else { return "\(weekday)" }
+        let index = min(max(weekday - 1, 0), symbols.count - 1)
+        return symbols[index]
     }
 }
