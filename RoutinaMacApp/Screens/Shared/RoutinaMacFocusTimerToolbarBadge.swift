@@ -97,7 +97,7 @@ private struct RoutinaMacFocusTimerToolbarLabel: View {
 
     var body: some View {
         HStack(spacing: 5) {
-            Image(systemName: status.kind?.systemImage ?? "timer")
+            Image(systemName: status.systemImage)
                 .font(.caption.weight(.semibold))
 
             RoutinaMacFocusTimerToolbarTimeText(status: status)

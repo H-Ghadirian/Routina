@@ -85,7 +85,9 @@ final class RoutinaMacFocusTimerStatusStore: ObservableObject {
             kind: session.isUnassigned ? .unassigned : .task,
             title: normalizedTitle(task?.name, fallback: session.isUnassigned ? "Unassigned focus" : "Task focus"),
             startedAt: startedAt,
-            plannedDurationSeconds: session.plannedDurationSeconds
+            plannedDurationSeconds: session.plannedDurationSeconds,
+            pausedAt: session.pausedAt,
+            accumulatedPausedSeconds: session.accumulatedPausedSeconds
         )
     }
 
@@ -117,7 +119,9 @@ final class RoutinaMacFocusTimerStatusStore: ObservableObject {
             kind: .sprint,
             title: normalizedTitle(sprint?.title, fallback: "Sprint focus"),
             startedAt: session.startedAt,
-            plannedDurationSeconds: 0
+            plannedDurationSeconds: 0,
+            pausedAt: nil,
+            accumulatedPausedSeconds: 0
         )
     }
 
@@ -162,13 +166,26 @@ struct RoutinaMacFocusTimerStatus: Equatable {
     var title: String
     var startedAt: Date
     var plannedDurationSeconds: TimeInterval
+    var pausedAt: Date?
+    var accumulatedPausedSeconds: TimeInterval
 
     var isActive: Bool {
         id != nil && kind != nil
     }
 
+    var isPaused: Bool {
+        isActive && pausedAt != nil
+    }
+
     var isCountUp: Bool {
         plannedDurationSeconds <= 0
+    }
+
+    var systemImage: String {
+        if isPaused {
+            return "pause.circle.fill"
+        }
+        return kind?.systemImage ?? "timer"
     }
 
     static let inactive = RoutinaMacFocusTimerStatus(
@@ -177,11 +194,13 @@ struct RoutinaMacFocusTimerStatus: Equatable {
         kind: nil,
         title: "No focus timer",
         startedAt: .distantPast,
-        plannedDurationSeconds: 0
+        plannedDurationSeconds: 0,
+        pausedAt: nil,
+        accumulatedPausedSeconds: 0
     )
 
     func displaySeconds(at date: Date) -> TimeInterval {
-        let elapsed = max(0, date.timeIntervalSince(startedAt))
+        let elapsed = elapsedSeconds(at: date)
         guard !isCountUp else { return elapsed }
         return max(0, plannedDurationSeconds - elapsed)
     }
@@ -194,6 +213,9 @@ struct RoutinaMacFocusTimerStatus: Equatable {
     }
 
     func menuBarModeText(at date: Date) -> String {
+        if isPaused {
+            return "paused"
+        }
         if overtimeSeconds(at: date) > 0 {
             return "overtime"
         }
@@ -202,8 +224,13 @@ struct RoutinaMacFocusTimerStatus: Equatable {
 
     private func overtimeSeconds(at date: Date) -> TimeInterval {
         guard !isCountUp else { return 0 }
-        let elapsed = max(0, date.timeIntervalSince(startedAt))
+        let elapsed = elapsedSeconds(at: date)
         return max(0, elapsed - plannedDurationSeconds)
+    }
+
+    private func elapsedSeconds(at date: Date) -> TimeInterval {
+        let endDate = pausedAt ?? date
+        return max(0, endDate.timeIntervalSince(startedAt) - max(0, accumulatedPausedSeconds))
     }
 
     var shortTitle: String {

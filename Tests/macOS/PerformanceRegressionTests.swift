@@ -87,6 +87,23 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testMacFocusTimerStatusFreezesPausedTaskTimer() {
+        let status = RoutinaMacFocusTimerStatus(
+            id: UUID(),
+            targetID: UUID(),
+            kind: .task,
+            title: "Deep work",
+            startedAt: Date(timeIntervalSince1970: 0),
+            plannedDurationSeconds: 0,
+            pausedAt: Date(timeIntervalSince1970: 10 * 60),
+            accumulatedPausedSeconds: 0
+        )
+
+        XCTAssertEqual(status.menuBarTimeText(at: Date(timeIntervalSince1970: 30 * 60)), "10:00")
+        XCTAssertEqual(status.menuBarModeText(at: Date(timeIntervalSince1970: 30 * 60)), "paused")
+        XCTAssertEqual(status.systemImage, "pause.circle.fill")
+    }
+
     func testStatsChartsOnlyUseNestedScrollingWhenChartNeedsOverflow() {
         XCTAssertFalse(
             StatsChartPresentation(selectedRange: .today, isCompact: false).usesHorizontalChartScroll
