@@ -264,6 +264,12 @@ dashboardBody(snapshot: dashboardSnapshot)
                         }
                     }
 
+                    if isDashboardItemVisible(.emotionTrend) {
+                        editableDashboardSection(.emotionTrend) {
+                            emotionTrendSection(snapshot: snapshot)
+                        }
+                    }
+
                     if snapshot.isGitFeaturesEnabled, isDashboardItemVisible(.gitHub) {
                         editableDashboardSection(.gitHub) {
                             gitHubSection(snapshot: snapshot)
@@ -560,6 +566,16 @@ dashboardBody(snapshot: dashboardSnapshot)
         )
     }
 
+    private func emotionTrendSection(snapshot: DashboardSnapshot) -> some View {
+        StatsEmotionTrendSection(
+            points: snapshot.metrics.emotionTrendChartPoints,
+            selectedRange: snapshot.selectedRange,
+            chartPresentation: snapshot.chartPresentation,
+            surfaceGradient: surfaceGradient,
+            colorScheme: colorScheme
+        )
+    }
+
     private var activeItemsInfoButton: some View {
         Button {
             isActiveItemsInfoPresented.toggle()
@@ -700,6 +716,7 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
     case focusChart
     case focusWorkChart
     case goalProgress
+    case emotionTrend
     case gitHub
 
     var id: String { rawValue }
@@ -787,6 +804,8 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return "Focus vs done"
         case .goalProgress:
             return "Goal momentum"
+        case .emotionTrend:
+            return "Emotion trends"
         case .gitHub:
             return "GitHub stats"
         }
@@ -810,6 +829,8 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return "A scatter chart comparing focus time with completed work."
         case .goalProgress:
             return "Progress bars for active goals with linked work."
+        case .emotionTrend:
+            return "A line chart of pleasantness and energy over time."
         case .gitHub:
             return "Contribution and repository activity."
         }
@@ -861,6 +882,8 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return "chart.dots.scatter"
         case .goalProgress:
             return "target"
+        case .emotionTrend:
+            return "heart.text.square.fill"
         case .gitHub:
             return "chevron.left.forwardslash.chevron.right"
         }

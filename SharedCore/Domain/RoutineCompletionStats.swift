@@ -150,6 +150,16 @@ struct GoalProgressChartPoint: Equatable, Identifiable {
     }
 }
 
+struct EmotionTrendChartPoint: Equatable, Identifiable {
+    let date: Date
+    let logCount: Int
+    let averageValence: Double
+    let averageArousal: Double
+    let averageIntensity: Double
+
+    var id: Date { date }
+}
+
 enum RoutineCompletionStats {
     static func outcomePoints(
         for range: DoneChartRange,
@@ -302,6 +312,43 @@ enum RoutineCompletionStats {
             }
             .prefix(limit)
             .map { $0 }
+    }
+}
+
+enum EmotionTrendStats {
+    static func points(
+        emotionLogs: [EmotionLog],
+        calendar: Calendar = .current
+    ) -> [EmotionTrendChartPoint] {
+        let logsByDay = Dictionary(grouping: emotionLogs) { emotion in
+            calendar.startOfDay(for: emotion.createdAt ?? .distantPast)
+        }
+
+        return logsByDay.keys.sorted().compactMap { day in
+            guard day != calendar.startOfDay(for: .distantPast),
+                  let logs = logsByDay[day],
+                  !logs.isEmpty else {
+                return nil
+            }
+
+            let count = Double(logs.count)
+            return EmotionTrendChartPoint(
+                date: day,
+                logCount: logs.count,
+                averageValence: logs.reduce(0) { $0 + $1.valence } / count,
+                averageArousal: logs.reduce(0) { $0 + $1.arousal } / count,
+                averageIntensity: logs.reduce(0) { $0 + Double($1.clampedIntensity) } / count
+            )
+        }
+    }
+
+    static func highestIntensityDay(in points: [EmotionTrendChartPoint]) -> EmotionTrendChartPoint? {
+        points.max { lhs, rhs in
+            if lhs.averageIntensity == rhs.averageIntensity {
+                return lhs.date > rhs.date
+            }
+            return lhs.averageIntensity < rhs.averageIntensity
+        }
     }
 }
 

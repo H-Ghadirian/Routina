@@ -353,4 +353,49 @@ struct RoutineCompletionStatsTests {
         #expect(points.first?.focusSeconds == TimeInterval(45 * 60))
         #expect(points.first?.completionRatio == 0.5)
     }
+
+    @Test
+    func emotionTrendPoints_averageAffectValuesByDay() {
+        let calendar = makeTestCalendar()
+        let logs = [
+            EmotionLog(
+                family: .joy,
+                label: "happy",
+                valence: 1,
+                arousal: 0.5,
+                intensity: 5,
+                createdAt: makeDate("2026-03-10T08:00:00Z")
+            ),
+            EmotionLog(
+                family: .calm,
+                label: "calm",
+                valence: 0.5,
+                arousal: -0.5,
+                intensity: 3,
+                createdAt: makeDate("2026-03-10T18:00:00Z")
+            ),
+            EmotionLog(
+                family: .sadness,
+                label: "sad",
+                valence: -1,
+                arousal: -0.25,
+                intensity: 4,
+                createdAt: makeDate("2026-03-11T08:00:00Z")
+            )
+        ]
+
+        let points = EmotionTrendStats.points(
+            emotionLogs: logs,
+            calendar: calendar
+        )
+
+        #expect(points.count == 2)
+        #expect(points[0].date == makeDate("2026-03-10T00:00:00Z"))
+        #expect(points[0].logCount == 2)
+        #expect(points[0].averageValence == 0.75)
+        #expect(points[0].averageArousal == 0)
+        #expect(points[0].averageIntensity == 4)
+        #expect(points[1].averageValence == -1)
+        #expect(EmotionTrendStats.highestIntensityDay(in: points)?.date == makeDate("2026-03-10T00:00:00Z"))
+    }
 }

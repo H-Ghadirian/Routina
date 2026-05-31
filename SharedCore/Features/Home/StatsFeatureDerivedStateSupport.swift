@@ -18,6 +18,7 @@ struct StatsFeatureMetrics: Equatable {
     var emotionLogCount: Int = 0
     var emotionActiveDayCount: Int = 0
     var averageEmotionIntensity: Double = 0
+    var emotionTrendChartPoints: [EmotionTrendChartPoint] = []
     var noteCount: Int = 0
     var noteWithMediaCount: Int = 0
     var eventCount: Int = 0
@@ -304,6 +305,10 @@ enum StatsFeatureDerivedStateBuilder {
         let averageEmotionIntensity = emotionLogsInRange.isEmpty
             ? 0
             : Double(emotionLogsInRange.reduce(0) { $0 + $1.clampedIntensity }) / Double(emotionLogsInRange.count)
+        let emotionTrendChartPoints = EmotionTrendStats.points(
+            emotionLogs: emotionLogsInRange,
+            calendar: calendar
+        )
         let noteWithMediaCount = notesInRange.filter {
             $0.hasImage || $0.hasVoiceNote || noteAttachmentNoteIDs.contains($0.id)
         }.count
@@ -358,6 +363,7 @@ enum StatsFeatureDerivedStateBuilder {
                 emotionLogCount: emotionLogsInRange.count,
                 emotionActiveDayCount: emotionActiveDayCount,
                 averageEmotionIntensity: averageEmotionIntensity,
+                emotionTrendChartPoints: emotionTrendChartPoints,
                 noteCount: notesInRange.count,
                 noteWithMediaCount: noteWithMediaCount,
                 eventCount: eventsInRange.count,
