@@ -11,12 +11,12 @@ struct StatsEmotionTrendSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             StatsSectionHeader(
-                title: "Emotion trends",
+                title: "Pleasantness & energy",
                 subtitle: subtitle
             ) {
                 StatsSmallHighlightBadge(
-                    title: "Peak intensity",
-                    value: peakIntensityText,
+                    title: "Scale",
+                    value: "-1 to +1",
                     colorScheme: colorScheme,
                     surfaceGradient: surfaceGradient
                 )
@@ -25,10 +25,12 @@ struct StatsEmotionTrendSection: View {
             if points.isEmpty {
                 StatsEmptyChartStateView(
                     systemImage: "heart.text.square.fill",
-                    message: "Emotion logs will chart pleasantness, energy, and intensity over time.",
+                    message: "Emotion logs will chart pleasantness and energy from -1 to +1.",
                     colorScheme: colorScheme
                 )
             } else {
+                metricLegend
+
                 StatsHorizontalChartContainer(chartPresentation: chartPresentation, minHeight: 250) {
                     Chart {
                         RuleMark(y: .value("Neutral", 0))
@@ -74,7 +76,7 @@ struct StatsEmotionTrendSection: View {
                         "Pleasantness": StatsEmotionTrendPalette.pleasantness(colorScheme: colorScheme),
                         "Energy": StatsEmotionTrendPalette.energy(colorScheme: colorScheme)
                     ])
-                    .chartLegend(position: .bottom, alignment: .leading)
+                    .chartLegend(.hidden)
                     .chartYAxis {
                         AxisMarks(position: .leading, values: [-1.0, 0.0, 1.0]) { value in
                             AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 6]))
@@ -82,6 +84,8 @@ struct StatsEmotionTrendSection: View {
                             AxisValueLabel {
                                 if let score = value.as(Double.self) {
                                     Text(axisLabel(for: score))
+                                        .font(.caption2.weight(.semibold))
+                                        .multilineTextAlignment(.trailing)
                                 }
                             }
                         }
@@ -100,6 +104,7 @@ struct StatsEmotionTrendSection: View {
                             }
                         }
                     }
+                    .chartYAxisLabel("Daily average")
                     .chartPlotStyle { plotArea in
                         plotArea.statsChartPlotBackground(colorScheme: colorScheme)
                     }
@@ -115,12 +120,31 @@ struct StatsEmotionTrendSection: View {
     }
 
     private var subtitle: String {
-        let logCount = points.reduce(0) { $0 + $1.logCount }
         if logCount == 0 {
             return "Pleasantness and energy trends will appear after emotion logs."
         }
         let dayWord = points.count == 1 ? "day" : "days"
-        return "\(logCount) emotion \(logCount == 1 ? "log" : "logs") across \(points.count) \(dayWord)."
+        return "\(logCount) emotion \(logCount == 1 ? "log" : "logs") across \(points.count) \(dayWord), averaged by day."
+    }
+
+    private var logCount: Int {
+        points.reduce(0) { $0 + $1.logCount }
+    }
+
+    private var metricLegend: some View {
+        HStack(alignment: .top, spacing: 10) {
+            StatsEmotionTrendLegendItem(
+                color: StatsEmotionTrendPalette.pleasantness(colorScheme: colorScheme),
+                title: "Pleasantness",
+                detail: "Unpleasant to pleasant"
+            )
+
+            StatsEmotionTrendLegendItem(
+                color: StatsEmotionTrendPalette.energy(colorScheme: colorScheme),
+                title: "Energy",
+                detail: "Low to high energy"
+            )
+        }
     }
 
     private var peakIntensityPoint: EmotionTrendChartPoint? {
@@ -142,10 +166,14 @@ struct StatsEmotionTrendSection: View {
                 systemImage: "calendar",
                 text: selectedRange.periodDescription
             ),
+            StatsChartInsight(
+                systemImage: "arrow.up.and.down",
+                text: "Higher lines mean more pleasant or more energized days"
+            ),
             peakIntensityPoint.map {
                 StatsChartInsight(
                     systemImage: "heart.fill",
-                    text: "Peak intensity: \(peakIntensityText) on \(chartPresentation.bestDayCaption(for: DoneChartPoint(date: $0.date, count: $0.logCount)))"
+                    text: "Strongest logged day: intensity \(peakIntensityText) on \(chartPresentation.bestDayCaption(for: DoneChartPoint(date: $0.date, count: $0.logCount)))"
                 )
             } ?? StatsChartInsight(
                 systemImage: "heart.text.square",
@@ -159,9 +187,9 @@ struct StatsEmotionTrendSection: View {
     }
 
     private func axisLabel(for score: Double) -> String {
-        if score < 0 { return "Low" }
-        if score > 0 { return "High" }
-        return "0"
+        if score < 0 { return "Low\nUnpleasant" }
+        if score > 0 { return "High\nPleasant" }
+        return "Neutral"
     }
 
     private func accessibilityValue(for point: EmotionTrendChartPoint) -> String {
@@ -169,6 +197,35 @@ struct StatsEmotionTrendSection: View {
         let energy = point.averageArousal.formatted(.number.precision(.fractionLength(2)))
         let intensity = point.averageIntensity.formatted(.number.precision(.fractionLength(1)))
         return "Pleasantness \(pleasantness), energy \(energy), intensity \(intensity)"
+    }
+}
+
+private struct StatsEmotionTrendLegendItem: View {
+    let color: Color
+    let title: String
+    let detail: String
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Circle()
+                .fill(color)
+                .frame(width: 9, height: 9)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.primary)
+
+                Text(detail)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .routinaGlassPill(tint: color, tintOpacity: 0.12)
     }
 }
 
