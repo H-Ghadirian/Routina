@@ -371,6 +371,14 @@ struct StatsView: View {
                     )
                 }
 
+                if isDashboardItemVisible(.estimateActual) {
+                    AnyView(
+                        editableDashboardSection(.estimateActual) {
+                            estimateActualChartSection(metrics: currentMetrics)
+                        }
+                    )
+                }
+
                 if isDashboardItemVisible(.goalProgress) {
                     AnyView(
                         editableDashboardSection(.goalProgress) {
@@ -750,6 +758,16 @@ struct StatsView: View {
         )
     }
 
+    private func estimateActualChartSection(metrics: Metrics) -> some View {
+        StatsEstimateActualChartSection(
+            points: metrics.estimateActualChartPoints,
+            selectedRange: selectedRange,
+            chartPresentation: chartPresentation,
+            surfaceGradient: surfaceGradient,
+            colorScheme: colorScheme
+        )
+    }
+
     private func goalProgressSection(metrics: Metrics) -> some View {
         StatsGoalProgressSection(
             points: metrics.goalProgressChartPoints,
@@ -886,6 +904,7 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
     case tagUsage
     case focusChart
     case focusWorkChart
+    case estimateActual
     case goalProgress
     case emotionTrend
     case gitHub
@@ -987,6 +1006,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "Focus chart"
         case .focusWorkChart:
             return "Focus vs done"
+        case .estimateActual:
+            return "Estimated vs actual"
         case .goalProgress:
             return "Goal momentum"
         case .emotionTrend:
@@ -1010,6 +1031,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "A bar chart of focus time over time."
         case .focusWorkChart:
             return "A scatter chart comparing focus time with completed work."
+        case .estimateActual:
+            return "A grouped bar chart comparing planned and logged time."
         case .goalProgress:
             return "Progress bars for active goals with linked work."
         case .emotionTrend:
@@ -1069,6 +1092,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "chart.xyaxis.line"
         case .focusWorkChart:
             return "chart.dots.scatter"
+        case .estimateActual:
+            return "timer"
         case .goalProgress:
             return "target"
         case .emotionTrend:

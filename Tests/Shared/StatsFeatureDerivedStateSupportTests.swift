@@ -297,6 +297,60 @@ struct StatsFeatureDerivedStateSupportTests {
     }
 
     @Test
+    func build_comparesEstimatedAndActualCompletedWorkByDay() {
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(
+            name: "Deep work",
+            tags: ["Focus"],
+            estimatedDurationMinutes: 40
+        )
+        let hiddenTask = RoutineTask(
+            name: "Hidden",
+            tags: ["Hidden"],
+            estimatedDurationMinutes: 20
+        )
+        let referenceDate = makeDate("2026-03-08T12:00:00Z")
+        let logs = [
+            RoutineLog(
+                timestamp: makeDate("2026-03-03T10:00:00Z"),
+                taskID: task.id,
+                kind: .completed,
+                actualDurationMinutes: 55
+            ),
+            RoutineLog(
+                timestamp: makeDate("2026-03-03T12:00:00Z"),
+                taskID: hiddenTask.id,
+                kind: .completed,
+                actualDurationMinutes: 30
+            )
+        ]
+
+        let state = StatsFeatureDerivedStateBuilder.build(
+            tasks: [task, hiddenTask],
+            logs: logs,
+            focusSessions: [],
+            selectedRange: .week,
+            taskTypeFilter: .all,
+            selectedImportanceUrgencyFilter: nil,
+            advancedQuery: "",
+            selectedTags: ["Focus"],
+            includeTagMatchMode: .all,
+            excludedTags: [],
+            excludeTagMatchMode: .any,
+            tagColors: [:],
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        let point = state.metrics.estimateActualChartPoints.first {
+            calendar.isDate($0.date, inSameDayAs: makeDate("2026-03-03T00:00:00Z"))
+        }
+        #expect(point?.estimatedMinutes == 40)
+        #expect(point?.actualMinutes == 55)
+        #expect(point?.trackedCompletionCount == 1)
+    }
+
+    @Test
     func build_summarizesGoalMomentumForFilteredTasks() {
         let calendar = makeTestCalendar()
         let goal = RoutineGoal(title: "Launch", emoji: "🚀", status: .active)

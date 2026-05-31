@@ -97,6 +97,27 @@ struct FocusWorkChartPoint: Equatable, Identifiable {
     }
 }
 
+struct EstimateActualChartPoint: Equatable, Identifiable {
+    let date: Date
+    let estimatedMinutes: Int
+    let actualMinutes: Int
+    let trackedCompletionCount: Int
+
+    var id: Date { date }
+
+    var deltaMinutes: Int {
+        actualMinutes - estimatedMinutes
+    }
+
+    var absoluteDeltaMinutes: Int {
+        abs(deltaMinutes)
+    }
+
+    var hasTrackedTime: Bool {
+        estimatedMinutes > 0 || actualMinutes > 0
+    }
+}
+
 struct FocusWeekdayAverageChartPoint: Equatable, Identifiable {
     let weekday: Int
     let symbol: String
@@ -593,5 +614,78 @@ enum FocusWorkStats {
                 }
                 return lhs.doneCount < rhs.doneCount
             }
+    }
+}
+
+enum EstimateActualStats {
+    static func points(
+        tasks: [RoutineTask],
+        logs: [RoutineLog],
+        outcomePoints: [OutcomeMixChartPoint],
+        calendar: Calendar = .current
+    ) -> [EstimateActualChartPoint] {
+        guard !tasks.isEmpty, !outcomePoints.isEmpty else { return [] }
+
+        let tasksByID = Dictionary(uniqueKeysWithValues: tasks.map { ($0.id, $0) })
+        let chartDays = Set(outcomePoints.map { calendar.startOfDay(for: $0.date) })
+        var totalsByDay: [Date: (estimatedMinutes: Int, actualMinutes: Int, count: Int)] = [:]
+
+        for log in logs {
+            guard log.kind == .completed,
+                  let timestamp = log.timestamp,
+                  let task = tasksByID[log.taskID],
+                  let estimatedMinutes = task.estimatedDurationMinutes else {
+                continue
+            }
+
+            let day = calendar.startOfDay(for: timestamp)
+            guard chartDays.contains(day),
+                  let actualMinutes = actualDurationMinutes(for: log, task: task) else {
+                continue
+            }
+
+            totalsByDay[day, default: (0, 0, 0)].estimatedMinutes += estimatedMinutes
+            totalsByDay[day, default: (0, 0, 0)].actualMinutes += actualMinutes
+            totalsByDay[day, default: (0, 0, 0)].count += 1
+        }
+
+        return outcomePoints.map { outcomePoint in
+            let day = calendar.startOfDay(for: outcomePoint.date)
+            let totals = totalsByDay[day, default: (0, 0, 0)]
+            return EstimateActualChartPoint(
+                date: outcomePoint.date,
+                estimatedMinutes: totals.estimatedMinutes,
+                actualMinutes: totals.actualMinutes,
+                trackedCompletionCount: totals.count
+            )
+        }
+    }
+
+    static func totalEstimatedMinutes(in points: [EstimateActualChartPoint]) -> Int {
+        points.reduce(0) { $0 + $1.estimatedMinutes }
+    }
+
+    static func totalActualMinutes(in points: [EstimateActualChartPoint]) -> Int {
+        points.reduce(0) { $0 + $1.actualMinutes }
+    }
+
+    static func largestVarianceDay(in points: [EstimateActualChartPoint]) -> EstimateActualChartPoint? {
+        points
+            .filter { $0.hasTrackedTime && $0.absoluteDeltaMinutes > 0 }
+            .max { lhs, rhs in
+                if lhs.absoluteDeltaMinutes == rhs.absoluteDeltaMinutes {
+                    return lhs.date > rhs.date
+                }
+                return lhs.absoluteDeltaMinutes < rhs.absoluteDeltaMinutes
+            }
+    }
+
+    private static func actualDurationMinutes(for log: RoutineLog, task: RoutineTask) -> Int? {
+        if let logActual = log.actualDurationMinutes {
+            return logActual
+        }
+
+        guard task.isOneOffTask else { return nil }
+        return task.actualDurationMinutes
     }
 }

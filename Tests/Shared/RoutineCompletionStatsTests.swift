@@ -302,6 +302,74 @@ struct RoutineCompletionStatsTests {
     }
 
     @Test
+    func estimateActualPoints_compareCompletedWorkWithLoggedTime() {
+        let calendar = makeTestCalendar()
+        let firstDay = makeDate("2026-03-10T00:00:00Z")
+        let secondDay = makeDate("2026-03-11T00:00:00Z")
+        let routineTask = RoutineTask(
+            name: "Practice",
+            estimatedDurationMinutes: 30
+        )
+        let todoTask = RoutineTask(
+            name: "Draft",
+            scheduleMode: .oneOff,
+            lastDone: makeDate("2026-03-10T12:00:00Z"),
+            estimatedDurationMinutes: 60,
+            actualDurationMinutes: 50
+        )
+        let missingActualTask = RoutineTask(
+            name: "Review",
+            estimatedDurationMinutes: 25
+        )
+        let logs = [
+            RoutineLog(
+                timestamp: makeDate("2026-03-10T09:00:00Z"),
+                taskID: routineTask.id,
+                kind: .completed,
+                actualDurationMinutes: 45
+            ),
+            RoutineLog(
+                timestamp: makeDate("2026-03-10T12:00:00Z"),
+                taskID: todoTask.id,
+                kind: .completed
+            ),
+            RoutineLog(
+                timestamp: makeDate("2026-03-11T09:00:00Z"),
+                taskID: missingActualTask.id,
+                kind: .completed
+            ),
+            RoutineLog(
+                timestamp: makeDate("2026-03-11T11:00:00Z"),
+                taskID: routineTask.id,
+                kind: .missed,
+                actualDurationMinutes: 10
+            )
+        ]
+        let outcomePoints = [
+            OutcomeMixChartPoint(date: firstDay, doneCount: 2, missedCount: 0, canceledCount: 0),
+            OutcomeMixChartPoint(date: secondDay, doneCount: 1, missedCount: 1, canceledCount: 0)
+        ]
+
+        let points = EstimateActualStats.points(
+            tasks: [routineTask, todoTask, missingActualTask],
+            logs: logs,
+            outcomePoints: outcomePoints,
+            calendar: calendar
+        )
+
+        #expect(points.count == 2)
+        #expect(points[0].estimatedMinutes == 90)
+        #expect(points[0].actualMinutes == 95)
+        #expect(points[0].trackedCompletionCount == 2)
+        #expect(points[0].deltaMinutes == 5)
+        #expect(points[1].estimatedMinutes == 0)
+        #expect(points[1].actualMinutes == 0)
+        #expect(EstimateActualStats.totalEstimatedMinutes(in: points) == 90)
+        #expect(EstimateActualStats.totalActualMinutes(in: points) == 95)
+        #expect(EstimateActualStats.largestVarianceDay(in: points)?.date == firstDay)
+    }
+
+    @Test
     func goalProgressPoints_summarizeLinkedTaskCompletionsAndFocus() {
         let calendar = makeTestCalendar()
         let referenceDate = makeDate("2026-03-14T10:00:00Z")
