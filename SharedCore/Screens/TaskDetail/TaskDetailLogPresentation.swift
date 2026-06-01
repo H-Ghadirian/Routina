@@ -91,6 +91,14 @@ enum TaskDetailLogPresentation {
         showingAll ? logs : Array(logs.prefix(collapsedLimit))
     }
 
+    static func displayedTaskChanges(
+        _ changes: [RoutineTaskChangeLogEntry],
+        showingAll: Bool,
+        collapsedLimit: Int = 12
+    ) -> [RoutineTaskChangeLogEntry] {
+        showingAll ? changes : Array(changes.prefix(collapsedLimit))
+    }
+
     private static func compactDurationText(for minutes: Int?) -> String {
         guard let minutes else { return "time" }
         return RoutineTimeSpentFormatting.compactMinutesText(minutes)

@@ -384,6 +384,15 @@ struct TaskDetailSharedViewSupportTests {
         #expect(TaskDetailLogPresentation.taskChangeTitle(for: change, relatedTaskName: "task") == "Added 25m time spent")
         #expect(TaskDetailLogPresentation.taskChangeSystemImage(for: change) == "clock")
         #expect(TaskDetailLogPresentation.displayedLogs([log, log, log, log], showingAll: false).count == 3)
+
+        let changes = (0..<13).map { offset in
+            RoutineTaskChangeLogEntry(
+                timestamp: timestamp.addingTimeInterval(TimeInterval(-offset)),
+                kind: .created
+            )
+        }
+        #expect(TaskDetailLogPresentation.displayedTaskChanges(changes, showingAll: false).count == 12)
+        #expect(TaskDetailLogPresentation.displayedTaskChanges(changes, showingAll: true).count == 13)
     }
 
     @Test
