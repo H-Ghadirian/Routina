@@ -22,14 +22,15 @@ struct TaskDetailPriorityDisclosureBox: View {
                     isExpanded.toggle()
                 }
             } label: {
-                HStack(alignment: .top, spacing: 8) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("PRIORITY")
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                        prioritySummaryRow
-                    }
+                HStack(alignment: .center, spacing: 8) {
+                    Text("PRIORITY")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    prioritySummaryRow
+
                     Spacer(minLength: 8)
+
                     Image(systemName: "chevron.down")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
@@ -47,8 +48,18 @@ struct TaskDetailPriorityDisclosureBox: View {
                 matrixPicker
             }
         }
-        .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
-        .detailHeaderBoxStyle()
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .padding(.horizontal, 10)
+        .padding(.vertical, isExpanded ? 10 : 6)
+        .frame(maxWidth: .infinity, minHeight: isExpanded ? 54 : nil, alignment: .topLeading)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.secondary.opacity(0.12))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(Color.secondary.opacity(0.24), lineWidth: 1)
+        )
     }
 
     @ViewBuilder
@@ -86,11 +97,11 @@ struct TaskDetailPriorityDisclosureBox: View {
 
     private var priorityFlagChip: some View {
         Label(priority.title, systemImage: "flag.fill")
-            .font(.subheadline.weight(.semibold))
+            .font(.caption.weight(.semibold))
             .lineLimit(1)
             .foregroundStyle(prioritySummaryColor)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
             .background(prioritySummaryColor.opacity(0.12), in: Capsule())
     }
 
@@ -120,8 +131,8 @@ struct TaskDetailPriorityDisclosureBox: View {
                 .foregroundStyle(tint)
         }
         .lineLimit(1)
-        .padding(.horizontal, 9)
-        .padding(.vertical, 5)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
         .background(tint.opacity(0.10), in: Capsule())
         .overlay(
             Capsule()
