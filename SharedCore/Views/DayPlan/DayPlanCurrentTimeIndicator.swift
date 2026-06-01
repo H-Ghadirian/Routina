@@ -8,6 +8,8 @@ struct DayPlanCurrentTimeIndicator: View {
     var hourHeight: CGFloat
     var timeColumnWidth: CGFloat
 
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         Group {
             if let todayIndex {
@@ -28,8 +30,18 @@ struct DayPlanCurrentTimeIndicator: View {
             .font(.caption2.weight(.semibold))
             .foregroundStyle(.red)
             .monospacedDigit()
+            .padding(.horizontal, 4)
+            .padding(.vertical, 1)
+            .background {
+                Capsule(style: .continuous)
+                    .fill(timeLabelBackground)
+            }
+            .overlay {
+                Capsule(style: .continuous)
+                    .stroke(Color.red.opacity(0.38), lineWidth: 0.75)
+            }
             .frame(width: timeColumnWidth - 8, alignment: .trailing)
-            .offset(y: max(yOffset - 8, 0))
+            .offset(y: timeLabelYOffset)
     }
 
     private func todayDot(todayIndex: Int) -> some View {
@@ -73,6 +85,49 @@ struct DayPlanCurrentTimeIndicator: View {
 
     private var yOffset: CGFloat {
         CGFloat(currentMinute) / 60 * hourHeight
+    }
+
+    private var timeLabelYOffset: CGFloat {
+        let defaultOffset = yOffset - (timeLabelEstimatedHeight / 2)
+        let nearestVisibleHour = min(max(Int((yOffset / hourHeight).rounded()), 0), 23)
+        let nearestHourY = CGFloat(nearestVisibleHour) * hourHeight
+        let isNearHourLabel = abs(yOffset - nearestHourY) < timeLabelCollisionDistance
+        let proposedOffset: CGFloat
+
+        if isNearHourLabel {
+            let nearestHourLabelTop = nearestHourY - hourLabelTopInset
+            let aboveOffset = nearestHourLabelTop - timeLabelEstimatedHeight - timeLabelCollisionGap
+            let belowOffset = nearestHourLabelTop + hourLabelEstimatedHeight + timeLabelCollisionGap
+            proposedOffset = yOffset < nearestHourY && aboveOffset >= 0 ? aboveOffset : belowOffset
+        } else {
+            proposedOffset = defaultOffset
+        }
+
+        return min(max(proposedOffset, 0), max(contentHeight - timeLabelEstimatedHeight, 0))
+    }
+
+    private var timeLabelBackground: Color {
+        colorScheme == .dark ? Color.black.opacity(0.82) : Color.white.opacity(0.94)
+    }
+
+    private var timeLabelEstimatedHeight: CGFloat {
+        18
+    }
+
+    private var timeLabelCollisionDistance: CGFloat {
+        timeLabelEstimatedHeight + timeLabelCollisionGap
+    }
+
+    private var timeLabelCollisionGap: CGFloat {
+        4
+    }
+
+    private var hourLabelTopInset: CGFloat {
+        8
+    }
+
+    private var hourLabelEstimatedHeight: CGFloat {
+        16
     }
 
     private var contentWidth: CGFloat {
