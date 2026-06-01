@@ -105,6 +105,8 @@ extension SprintBoardClient {
                     sprintID: record.sprintID,
                     startedAt: record.startedAt,
                     stoppedAt: record.stoppedAt,
+                    pausedAt: record.pausedAt,
+                    accumulatedPausedSeconds: record.accumulatedPausedSeconds,
                     allocations: allocations
                 )
             }
@@ -175,7 +177,9 @@ extension SprintBoardClient {
                     id: focusSession.id,
                     sprintID: focusSession.sprintID,
                     startedAt: focusSession.startedAt,
-                    stoppedAt: focusSession.stoppedAt
+                    stoppedAt: focusSession.stoppedAt,
+                    pausedAt: focusSession.pausedAt,
+                    accumulatedPausedSeconds: focusSession.accumulatedPausedSeconds
                 )
             )
 

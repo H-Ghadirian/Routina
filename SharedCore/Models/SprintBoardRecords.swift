@@ -90,23 +90,68 @@ final class SprintFocusSessionRecord {
     var sprintID: UUID = UUID()
     var startedAt: Date = Date()
     var stoppedAt: Date?
+    var pausedAt: Date?
+    var accumulatedPausedSeconds: TimeInterval = 0
 
     init(
         id: UUID = UUID(),
         sprintID: UUID,
         startedAt: Date = Date(),
-        stoppedAt: Date? = nil
+        stoppedAt: Date? = nil,
+        pausedAt: Date? = nil,
+        accumulatedPausedSeconds: TimeInterval = 0
     ) {
         self.id = id
         self.sprintID = sprintID
         self.startedAt = startedAt
         self.stoppedAt = stoppedAt
+        self.pausedAt = pausedAt
+        self.accumulatedPausedSeconds = max(0, accumulatedPausedSeconds)
     }
 }
 
 extension SprintFocusSessionRecord: Identifiable, Equatable {
     static func == (lhs: SprintFocusSessionRecord, rhs: SprintFocusSessionRecord) -> Bool {
         lhs.id == rhs.id
+    }
+
+    var isActive: Bool {
+        stoppedAt == nil
+    }
+
+    var isPaused: Bool {
+        isActive && pausedAt != nil
+    }
+
+    func activeDurationSeconds(at date: Date = Date()) -> TimeInterval {
+        let endDate = stoppedAt ?? pausedAt ?? date
+        var pausedSeconds = max(0, accumulatedPausedSeconds)
+        if let pausedAt,
+           let stoppedAt,
+           stoppedAt > pausedAt {
+            pausedSeconds += stoppedAt.timeIntervalSince(pausedAt)
+        }
+        return max(0, endDate.timeIntervalSince(startedAt) - pausedSeconds)
+    }
+
+    @discardableResult
+    func pause(at date: Date = Date()) -> Bool {
+        guard isActive, pausedAt == nil else { return false }
+        pausedAt = max(date, startedAt)
+        return true
+    }
+
+    @discardableResult
+    func resume(at date: Date = Date()) -> Bool {
+        guard isActive, let pausedAt else { return false }
+        let resumedAt = max(date, pausedAt)
+        accumulatedPausedSeconds = max(0, accumulatedPausedSeconds) + resumedAt.timeIntervalSince(pausedAt)
+        self.pausedAt = nil
+        return true
+    }
+
+    func closePauseIfNeeded(at date: Date = Date()) {
+        _ = resume(at: date)
     }
 }
 

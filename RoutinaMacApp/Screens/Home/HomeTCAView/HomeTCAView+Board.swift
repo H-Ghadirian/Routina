@@ -138,7 +138,10 @@ extension HomeTCAView {
                 allocationDrafts: store.sprintFocusAllocationDrafts,
                 onFinishSprint: { store.send(.finishSprintTapped($0)) },
                 onStartSprintFocus: { store.send(.startSprintFocusTapped($0)) },
+                onPauseSprintFocus: { store.send(.pauseSprintFocusTapped($0)) },
+                onResumeSprintFocus: { store.send(.resumeSprintFocusTapped($0)) },
                 onStopSprintFocus: { store.send(.stopSprintFocusTapped($0)) },
+                onAbandonSprintFocus: { store.send(.abandonSprintFocusTapped($0)) },
                 onReviewSprintFocusAllocation: { store.send(.reviewSprintFocusAllocationTapped($0)) },
                 onDeleteSprintFocusSession: { store.send(.deleteSprintFocusSessionTapped($0)) },
                 onAllocationMinutesChanged: { taskID, minutes in

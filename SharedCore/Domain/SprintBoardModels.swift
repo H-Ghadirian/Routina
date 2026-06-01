@@ -122,6 +122,8 @@ struct SprintFocusSession: Codable, Equatable, Sendable, Identifiable {
     var sprintID: UUID
     var startedAt: Date
     var stoppedAt: Date?
+    var pausedAt: Date?
+    var accumulatedPausedSeconds: TimeInterval
     var allocations: [SprintFocusAllocation]
 
     init(
@@ -129,12 +131,16 @@ struct SprintFocusSession: Codable, Equatable, Sendable, Identifiable {
         sprintID: UUID,
         startedAt: Date = Date(),
         stoppedAt: Date? = nil,
+        pausedAt: Date? = nil,
+        accumulatedPausedSeconds: TimeInterval = 0,
         allocations: [SprintFocusAllocation] = []
     ) {
         self.id = id
         self.sprintID = sprintID
         self.startedAt = startedAt
         self.stoppedAt = stoppedAt
+        self.pausedAt = pausedAt
+        self.accumulatedPausedSeconds = max(0, accumulatedPausedSeconds)
         self.allocations = allocations
     }
 
@@ -142,9 +148,12 @@ struct SprintFocusSession: Codable, Equatable, Sendable, Identifiable {
         stoppedAt == nil
     }
 
+    var isPaused: Bool {
+        isActive && pausedAt != nil
+    }
+
     var durationSeconds: TimeInterval {
-        let endDate = stoppedAt ?? Date()
-        return max(0, endDate.timeIntervalSince(startedAt))
+        activeDurationSeconds()
     }
 
     var roundedDurationMinutes: Int {
@@ -153,6 +162,61 @@ struct SprintFocusSession: Codable, Equatable, Sendable, Identifiable {
 
     var allocatedMinutes: Int {
         allocations.reduce(0) { $0 + max(0, $1.minutes) }
+    }
+
+    func activeDurationSeconds(at date: Date = Date()) -> TimeInterval {
+        let endDate = stoppedAt ?? pausedAt ?? date
+        var pausedSeconds = max(0, accumulatedPausedSeconds)
+        if let pausedAt,
+           let stoppedAt,
+           stoppedAt > pausedAt {
+            pausedSeconds += stoppedAt.timeIntervalSince(pausedAt)
+        }
+        return max(0, endDate.timeIntervalSince(startedAt) - pausedSeconds)
+    }
+
+    @discardableResult
+    mutating func pause(at date: Date = Date()) -> Bool {
+        guard isActive, pausedAt == nil else { return false }
+        pausedAt = max(date, startedAt)
+        return true
+    }
+
+    @discardableResult
+    mutating func resume(at date: Date = Date()) -> Bool {
+        guard isActive, let pausedAt else { return false }
+        let resumedAt = max(date, pausedAt)
+        accumulatedPausedSeconds = max(0, accumulatedPausedSeconds) + resumedAt.timeIntervalSince(pausedAt)
+        self.pausedAt = nil
+        return true
+    }
+
+    mutating func closePauseIfNeeded(at date: Date = Date()) {
+        _ = resume(at: date)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case sprintID
+        case startedAt
+        case stoppedAt
+        case pausedAt
+        case accumulatedPausedSeconds
+        case allocations
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        sprintID = try container.decode(UUID.self, forKey: .sprintID)
+        startedAt = try container.decode(Date.self, forKey: .startedAt)
+        stoppedAt = try container.decodeIfPresent(Date.self, forKey: .stoppedAt)
+        pausedAt = try container.decodeIfPresent(Date.self, forKey: .pausedAt)
+        accumulatedPausedSeconds = max(
+            0,
+            try container.decodeIfPresent(TimeInterval.self, forKey: .accumulatedPausedSeconds) ?? 0
+        )
+        allocations = try container.decodeIfPresent([SprintFocusAllocation].self, forKey: .allocations) ?? []
     }
 }
 

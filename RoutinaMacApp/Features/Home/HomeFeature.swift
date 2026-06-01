@@ -542,7 +542,10 @@ struct HomeFeature {
         case deleteSprintConfirmed(UUID)
         case deleteSprintCanceled
         case startSprintFocusTapped(UUID)
+        case pauseSprintFocusTapped(UUID)
+        case resumeSprintFocusTapped(UUID)
         case stopSprintFocusTapped(UUID)
+        case abandonSprintFocusTapped(UUID)
         case reviewSprintFocusAllocationTapped(UUID)
         case deleteSprintFocusSessionTapped(UUID)
         case sprintFocusAllocationMinutesChanged(taskID: UUID, minutes: Int)
@@ -1234,8 +1237,17 @@ struct HomeFeature {
             case let .startSprintFocusTapped(sprintID):
                 return handleStartSprintFocus(sprintID, state: &state)
 
+            case let .pauseSprintFocusTapped(sessionID):
+                return handlePauseSprintFocus(sessionID, state: &state)
+
+            case let .resumeSprintFocusTapped(sessionID):
+                return handleResumeSprintFocus(sessionID, state: &state)
+
             case let .stopSprintFocusTapped(sessionID):
                 return handleStopSprintFocus(sessionID, state: &state)
+
+            case let .abandonSprintFocusTapped(sessionID):
+                return handleAbandonSprintFocus(sessionID, state: &state)
 
             case let .reviewSprintFocusAllocationTapped(sessionID):
                 beginSprintFocusAllocationReview(sessionID: sessionID, state: &state)

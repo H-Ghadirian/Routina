@@ -192,7 +192,9 @@ enum FocusSessionSupport {
                 id: session.id,
                 sprintID: sprint.id,
                 startedAt: startedAt,
-                stoppedAt: endedAt
+                stoppedAt: endedAt,
+                pausedAt: session.pausedAt,
+                accumulatedPausedSeconds: session.accumulatedPausedSeconds
             )
         )
         DeviceActivityRecorder.recordAction(

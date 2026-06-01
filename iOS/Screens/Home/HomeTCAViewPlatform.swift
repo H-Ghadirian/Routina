@@ -544,8 +544,8 @@ private struct HomePinnedFocusTimerBanner: View {
             title: normalizedTitle(sprintTitle, fallback: "Sprint focus"),
             startedAt: session.startedAt,
             plannedDurationSeconds: 0,
-            pausedAt: nil,
-            accumulatedPausedSeconds: 0
+            pausedAt: session.pausedAt,
+            accumulatedPausedSeconds: session.accumulatedPausedSeconds
         )
     }
 

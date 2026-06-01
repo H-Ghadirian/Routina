@@ -395,7 +395,7 @@ enum TimelineLogic {
                 "Board focus"
             }
             let stoppedAt = session.stoppedAt
-            let duration = max(0, (stoppedAt ?? now).timeIntervalSince(startedAt))
+            let duration = session.activeDurationSeconds(at: now)
 
             return TimelineEntry(
                 id: session.id,

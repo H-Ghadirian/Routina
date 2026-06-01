@@ -393,6 +393,32 @@ extension HomeFeature {
         return saveSprintBoardEffect(state.sprintBoardData)
     }
 
+    func handlePauseSprintFocus(
+        _ sessionID: UUID,
+        state: inout State
+    ) -> Effect<Action> {
+        guard HomeBoardMutationSupport.pauseSprintFocusSession(
+            sessionID: sessionID,
+            now: now,
+            data: &state.sprintBoardData
+        ) else { return .none }
+
+        return saveSprintBoardEffect(state.sprintBoardData)
+    }
+
+    func handleResumeSprintFocus(
+        _ sessionID: UUID,
+        state: inout State
+    ) -> Effect<Action> {
+        guard HomeBoardMutationSupport.resumeSprintFocusSession(
+            sessionID: sessionID,
+            now: now,
+            data: &state.sprintBoardData
+        ) else { return .none }
+
+        return saveSprintBoardEffect(state.sprintBoardData)
+    }
+
     func handleStopSprintFocus(
         _ sessionID: UUID,
         state: inout State
@@ -403,7 +429,26 @@ extension HomeFeature {
             data: &state.sprintBoardData
         ) else { return .none }
 
-        beginSprintFocusAllocationReview(sessionID: sessionID, state: &state)
+        if state.sprintFocusAllocationSessionID == sessionID {
+            state.sprintFocusAllocationSessionID = nil
+            state.sprintFocusAllocationDrafts = []
+        }
+        return saveSprintBoardEffect(state.sprintBoardData)
+    }
+
+    func handleAbandonSprintFocus(
+        _ sessionID: UUID,
+        state: inout State
+    ) -> Effect<Action> {
+        guard HomeBoardMutationSupport.abandonSprintFocusSession(
+            sessionID: sessionID,
+            data: &state.sprintBoardData
+        ) else { return .none }
+
+        if state.sprintFocusAllocationSessionID == sessionID {
+            state.sprintFocusAllocationSessionID = nil
+            state.sprintFocusAllocationDrafts = []
+        }
         return saveSprintBoardEffect(state.sprintBoardData)
     }
 

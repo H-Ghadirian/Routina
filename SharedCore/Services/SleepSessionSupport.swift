@@ -148,6 +148,7 @@ enum SleepSessionSupport {
         }
 
         for session in try activeSprintFocusSessions(in: context) {
+            session.closePauseIfNeeded(at: stoppedAt)
             session.stoppedAt = stoppedAt
             didStopFocusTimer = true
         }

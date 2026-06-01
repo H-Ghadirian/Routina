@@ -197,6 +197,65 @@ struct HomeBoardMutationSupportTests {
     }
 
     @Test
+    func sprintFocusTimerPauseResumeFinishAndAbandonUseActiveTime() {
+        let sprintID = UUID()
+        var data = SprintBoardData(
+            sprints: [BoardSprint(id: sprintID, title: "April", status: .active)]
+        )
+        let startedAt = makeDate("2026-04-12T09:00:00Z")
+        let pausedAt = makeDate("2026-04-12T09:10:00Z")
+        let resumedAt = makeDate("2026-04-12T09:25:00Z")
+        let stoppedAt = makeDate("2026-04-12T09:40:00Z")
+
+        #expect(HomeBoardMutationSupport.startSprintFocusSession(
+            sprintID: sprintID,
+            now: startedAt,
+            data: &data
+        ))
+        let sessionID = data.focusSessions[0].id
+
+        #expect(HomeBoardMutationSupport.pauseSprintFocusSession(
+            sessionID: sessionID,
+            now: pausedAt,
+            data: &data
+        ))
+        #expect(data.focusSessions[0].isPaused)
+        #expect(data.focusSessions[0].activeDurationSeconds(at: resumedAt) == 10 * 60)
+
+        #expect(HomeBoardMutationSupport.resumeSprintFocusSession(
+            sessionID: sessionID,
+            now: resumedAt,
+            data: &data
+        ))
+        #expect(data.focusSessions[0].pausedAt == nil)
+        #expect(data.focusSessions[0].accumulatedPausedSeconds == 15 * 60)
+
+        #expect(HomeBoardMutationSupport.stopSprintFocusSession(
+            sessionID: sessionID,
+            now: stoppedAt,
+            data: &data
+        ))
+        #expect(data.focusSessions[0].stoppedAt == stoppedAt)
+        #expect(data.focusSessions[0].durationSeconds == 25 * 60)
+        #expect(data.focusSessions[0].roundedDurationMinutes == 25)
+
+        var abandonedData = SprintBoardData(
+            sprints: [BoardSprint(id: sprintID, title: "April", status: .active)]
+        )
+        #expect(HomeBoardMutationSupport.startSprintFocusSession(
+            sprintID: sprintID,
+            now: startedAt,
+            data: &abandonedData
+        ))
+        let abandonedSessionID = abandonedData.focusSessions[0].id
+        #expect(HomeBoardMutationSupport.abandonSprintFocusSession(
+            sessionID: abandonedSessionID,
+            data: &abandonedData
+        ))
+        #expect(abandonedData.focusSessions.isEmpty)
+    }
+
+    @Test
     func matchesScopeUsesSprintBacklogAndDoneRules() {
         let activeSprintID = UUID()
         let plannedSprintID = UUID()

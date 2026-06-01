@@ -809,7 +809,7 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let displayTitle = title.map { $0.isEmpty ? "Sprint focus" : $0 } ?? "Sprint focus"
 
-        return [
+        var payload: [String: Any] = [
             "isActive": true,
             "sessionID": session.id.uuidString,
             "focusKind": "sprint",
@@ -819,8 +819,11 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
             "taskEmoji": "🏁",
             "startedAt": session.startedAt.timeIntervalSince1970,
             "plannedDurationSeconds": 0,
+            "accumulatedPausedSeconds": session.accumulatedPausedSeconds,
             "lastUpdated": referenceDate.timeIntervalSince1970
         ]
+        payload["pausedAt"] = session.pausedAt?.timeIntervalSince1970
+        return payload
     }
 
     nonisolated private static func payloadStartedAt(_ payload: [String: Any]) -> TimeInterval {

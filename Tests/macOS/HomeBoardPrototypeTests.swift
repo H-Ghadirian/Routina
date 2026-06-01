@@ -822,6 +822,66 @@ struct HomeBoardPrototypeTests {
     }
 
     @Test
+    func sprintFocusTimerFinishDoesNotOpenAllocationAndAbandonRemovesActiveSession() async throws {
+        let sprint = BoardSprint(
+            id: UUID(uuidString: "11111111-2222-3333-4444-555555555557")!,
+            title: "No Allocation Popup",
+            status: .active,
+            createdAt: makeDate("2026-03-20T09:00:00Z"),
+            startedAt: makeDate("2026-03-20T09:00:00Z")
+        )
+        let activeSession = SprintFocusSession(
+            id: UUID(uuidString: "22222222-3333-4444-5555-666666666667")!,
+            sprintID: sprint.id,
+            startedAt: makeDate("2026-03-20T09:00:00Z")
+        )
+        let abandonedSession = SprintFocusSession(
+            id: UUID(uuidString: "33333333-4444-5555-6666-777777777778")!,
+            sprintID: sprint.id,
+            startedAt: makeDate("2026-03-20T10:00:00Z")
+        )
+
+        let store = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        } withDependencies: {
+            $0.sprintBoardClient = .noop
+            setTestDateDependencies(&$0, now: makeDate("2026-03-20T09:25:00Z"))
+        }
+        store.exhaustivity = .off
+
+        await store.send(
+            .sprintBoardLoaded(
+                SprintBoardData(
+                    sprints: [sprint],
+                    focusSessions: [activeSession]
+                )
+            )
+        )
+
+        await store.send(.stopSprintFocusTapped(activeSession.id))
+
+        let stoppedSession = try #require(store.state.sprintBoardData.focusSessions.first(where: { $0.id == activeSession.id }))
+        #expect(stoppedSession.stoppedAt == makeDate("2026-03-20T09:25:00Z"))
+        #expect(store.state.sprintFocusAllocationSessionID == nil)
+        #expect(store.state.sprintFocusAllocationDrafts.isEmpty)
+
+        await store.send(
+            .sprintBoardLoaded(
+                SprintBoardData(
+                    sprints: [sprint],
+                    focusSessions: [abandonedSession]
+                )
+            )
+        )
+
+        await store.send(.abandonSprintFocusTapped(abandonedSession.id))
+
+        #expect(store.state.sprintBoardData.focusSessions.isEmpty)
+        #expect(store.state.sprintFocusAllocationSessionID == nil)
+        #expect(store.state.sprintFocusAllocationDrafts.isEmpty)
+    }
+
+    @Test
     func sprintFocusTimer_allocationIsCappedAndAddsToExistingTaskDurations() async throws {
         let context = makeInMemoryContext()
         let first = makeTask(

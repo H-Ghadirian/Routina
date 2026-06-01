@@ -288,7 +288,48 @@ enum HomeBoardMutationSupport {
             return false
         }
 
+        data.focusSessions[index].closePauseIfNeeded(at: now)
         data.focusSessions[index].stoppedAt = now
+        return true
+    }
+
+    @discardableResult
+    static func pauseSprintFocusSession(
+        sessionID: UUID,
+        now: Date,
+        data: inout SprintBoardData
+    ) -> Bool {
+        guard let index = data.focusSessions.firstIndex(where: { $0.id == sessionID }) else {
+            return false
+        }
+
+        return data.focusSessions[index].pause(at: now)
+    }
+
+    @discardableResult
+    static func resumeSprintFocusSession(
+        sessionID: UUID,
+        now: Date,
+        data: inout SprintBoardData
+    ) -> Bool {
+        guard let index = data.focusSessions.firstIndex(where: { $0.id == sessionID }) else {
+            return false
+        }
+
+        return data.focusSessions[index].resume(at: now)
+    }
+
+    @discardableResult
+    static func abandonSprintFocusSession(
+        sessionID: UUID,
+        data: inout SprintBoardData
+    ) -> Bool {
+        guard let index = data.focusSessions.firstIndex(where: { $0.id == sessionID }),
+              data.focusSessions[index].isActive else {
+            return false
+        }
+
+        data.focusSessions.remove(at: index)
         return true
     }
 

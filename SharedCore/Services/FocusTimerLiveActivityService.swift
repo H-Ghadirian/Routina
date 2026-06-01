@@ -180,8 +180,8 @@ enum FocusTimerLiveActivityService {
             emoji: "🏁",
             startedAt: session.startedAt,
             plannedDurationSeconds: 0,
-            pausedAt: nil,
-            accumulatedPausedSeconds: 0,
+            pausedAt: session.pausedAt,
+            accumulatedPausedSeconds: session.accumulatedPausedSeconds,
             lastUpdated: referenceDate
         )
     }

@@ -120,8 +120,8 @@ final class RoutinaMacFocusTimerStatusStore: ObservableObject {
             title: normalizedTitle(sprint?.title, fallback: "Sprint focus"),
             startedAt: session.startedAt,
             plannedDurationSeconds: 0,
-            pausedAt: nil,
-            accumulatedPausedSeconds: 0
+            pausedAt: session.pausedAt,
+            accumulatedPausedSeconds: session.accumulatedPausedSeconds
         )
     }
 

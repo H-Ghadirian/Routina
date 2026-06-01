@@ -55,7 +55,10 @@ struct HomeMacBoardScopeInspectorView: View {
     let allocationDrafts: [SprintFocusAllocationDraft]
     let onFinishSprint: (UUID) -> Void
     let onStartSprintFocus: (UUID) -> Void
+    let onPauseSprintFocus: (UUID) -> Void
+    let onResumeSprintFocus: (UUID) -> Void
     let onStopSprintFocus: (UUID) -> Void
+    let onAbandonSprintFocus: (UUID) -> Void
     let onReviewSprintFocusAllocation: (UUID) -> Void
     let onDeleteSprintFocusSession: (UUID) -> Void
     let onAllocationMinutesChanged: (UUID, Int) -> Void
@@ -166,20 +169,13 @@ struct HomeMacBoardScopeInspectorView: View {
                                     Text(FocusSessionFormatting.durationText(seconds: elapsedSeconds(for: activeSession, now: context.date)))
                                         .font(.system(.title, design: .rounded).weight(.bold))
                                         .monospacedDigit()
-                                    Text("elapsed")
+                                    Text(activeSession.isPaused ? "paused" : "elapsed")
                                         .font(.caption.weight(.semibold))
                                         .foregroundStyle(.secondary)
                                     Spacer(minLength: 0)
                                 }
 
-                                Button {
-                                    onStopSprintFocus(activeSession.id)
-                                } label: {
-                                    Label("Stop and allocate", systemImage: "stop.circle.fill")
-                                        .frame(maxWidth: .infinity)
-                                }
-                                .buttonStyle(.borderedProminent)
-                                .tint(.teal)
+                                activeSprintFocusControls(activeSession)
                             }
                         }
                     } else if let activeTaskSession {
@@ -414,6 +410,41 @@ struct HomeMacBoardScopeInspectorView: View {
         .padding(.vertical, 2)
     }
 
+    private func activeSprintFocusControls(_ session: SprintFocusSession) -> some View {
+        HStack(spacing: 10) {
+            Button {
+                if session.isPaused {
+                    onResumeSprintFocus(session.id)
+                } else {
+                    onPauseSprintFocus(session.id)
+                }
+            } label: {
+                Label(
+                    session.isPaused ? "Resume" : "Pause",
+                    systemImage: session.isPaused ? "play.circle.fill" : "pause.circle.fill"
+                )
+            }
+            .buttonStyle(.bordered)
+            .tint(.teal)
+
+            Button {
+                onStopSprintFocus(session.id)
+            } label: {
+                Label("Finish", systemImage: "checkmark.circle.fill")
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.teal)
+
+            Button(role: .destructive) {
+                onAbandonSprintFocus(session.id)
+            } label: {
+                Label("Abandon", systemImage: "xmark.circle")
+            }
+            .buttonStyle(.bordered)
+        }
+        .controlSize(.regular)
+    }
+
     private func sprintFocusSessionSummary(_ session: SprintFocusSession) -> String {
         let recorded = allocationMinutesText(session.roundedDurationMinutes)
         let allocated = min(session.allocatedMinutes, session.roundedDurationMinutes)
@@ -599,6 +630,6 @@ struct HomeMacBoardScopeInspectorView: View {
     }
 
     private func elapsedSeconds(for session: SprintFocusSession, now: Date) -> TimeInterval {
-        max(0, now.timeIntervalSince(session.startedAt))
+        session.activeDurationSeconds(at: now)
     }
 }

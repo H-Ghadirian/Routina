@@ -118,14 +118,16 @@ struct SprintFocusDeepLinkView: View {
 
             if let activeFocusSession {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(activeFocusSession.startedAt, style: .timer)
-                        .font(.system(size: 42, weight: .bold, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundStyle(.teal)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
+                    SwiftUI.TimelineView(.periodic(from: .now, by: 1)) { context in
+                        Text(FocusSessionFormatting.durationText(seconds: activeFocusSession.activeDurationSeconds(at: context.date)))
+                            .font(.system(size: 42, weight: .bold, design: .rounded))
+                            .monospacedDigit()
+                            .foregroundStyle(.teal)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                    }
 
-                    Text("Running sprint focus")
+                    Text(activeFocusSession.isPaused ? "Paused sprint focus" : "Running sprint focus")
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
                 }

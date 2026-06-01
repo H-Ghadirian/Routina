@@ -156,6 +156,8 @@ timelineRoot
                 session.sprintID.uuidString,
                 session.startedAt.timeIntervalSinceReferenceDate.description,
                 session.stoppedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                session.pausedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                session.accumulatedPausedSeconds.description,
             ].joined(separator: ":")
         }
     }
