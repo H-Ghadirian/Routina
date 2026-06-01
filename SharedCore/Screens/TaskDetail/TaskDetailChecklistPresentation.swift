@@ -16,6 +16,15 @@ enum TaskDetailChecklistPresentation {
         }
     }
 
+    static func visibleItems(
+        _ items: [RoutineChecklistItem],
+        showDone: Bool,
+        isMarkedDone: (RoutineChecklistItem) -> Bool
+    ) -> [RoutineChecklistItem] {
+        guard !showDone else { return items }
+        return items.filter { !isMarkedDone($0) }
+    }
+
     static func statusText(
         for item: RoutineChecklistItem,
         task: RoutineTask,

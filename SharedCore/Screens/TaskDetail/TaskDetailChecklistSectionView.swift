@@ -14,8 +14,30 @@ struct TaskDetailChecklistSectionView: View {
     let onToggleCompletion: (UUID) -> Void
     let onMarkPurchased: (UUID) -> Void
 
+    @State private var isShowingDoneItems = false
+
     private var sortedItems: [RoutineChecklistItem] {
         TaskDetailChecklistPresentation.sortedItems(for: task)
+    }
+
+    private var visibleItems: [RoutineChecklistItem] {
+        TaskDetailChecklistPresentation.visibleItems(
+            sortedItems,
+            showDone: isShowingDoneItems,
+            isMarkedDone: isMarkedDone
+        )
+    }
+
+    private var doneItemCount: Int {
+        sortedItems.filter(isMarkedDone).count
+    }
+
+    private var hiddenDoneItemCount: Int {
+        max(0, sortedItems.count - visibleItems.count)
+    }
+
+    private var shouldShowDoneToggle: Bool {
+        doneItemCount > 0
     }
 
     var body: some View {
@@ -26,20 +48,31 @@ struct TaskDetailChecklistSectionView: View {
 
                 checklistComposer
 
+                if shouldShowDoneToggle {
+                    doneVisibilityControl
+                }
+
                 if task.checklistItems.isEmpty {
                     Text("No checklist items yet")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
+                } else if visibleItems.isEmpty {
+                    Text("All checklist items are done")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                 } else {
-                    ForEach(sortedItems, id: \.id) { item in
+                    ForEach(visibleItems, id: \.id) { item in
                         checklistRow(for: item)
 
-                        if item.id != sortedItems.last?.id {
+                        if item.id != visibleItems.last?.id {
                             Divider()
                         }
                     }
                 }
             }
+        }
+        .onChange(of: task.id) { _, _ in
+            isShowingDoneItems = false
         }
     }
 
@@ -83,6 +116,36 @@ struct TaskDetailChecklistSectionView: View {
         }
         .buttonStyle(.borderedProminent)
         .disabled(isAddItemDisabled)
+    }
+
+    private var doneVisibilityControl: some View {
+        HStack(spacing: 8) {
+            Label(doneSummaryText, systemImage: "checkmark.circle")
+                .foregroundStyle(.secondary)
+
+            Spacer(minLength: 8)
+
+            Button {
+                withAnimation(.easeInOut(duration: 0.16)) {
+                    isShowingDoneItems.toggle()
+                }
+            } label: {
+                Label(isShowingDoneItems ? "Hide done" : "Show done", systemImage: isShowingDoneItems ? "eye.slash" : "eye")
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Color.accentColor)
+        }
+        .font(.caption.weight(.semibold))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .routinaGlassCard(cornerRadius: 8, tint: .secondary, tintOpacity: 0.07)
+    }
+
+    private var doneSummaryText: String {
+        if isShowingDoneItems {
+            return "\(doneItemCount) done shown"
+        }
+        return "\(hiddenDoneItemCount) done hidden"
     }
 
     @ViewBuilder

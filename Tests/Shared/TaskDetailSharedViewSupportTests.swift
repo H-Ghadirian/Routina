@@ -588,6 +588,30 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func checklistPresentationHidesDoneItemsUntilRequested() {
+        let doneID = UUID()
+        let pendingID = UUID()
+        let doneItem = RoutineChecklistItem(id: doneID, title: "Done", intervalDays: 1)
+        let pendingItem = RoutineChecklistItem(id: pendingID, title: "Pending", intervalDays: 1)
+        let items = [doneItem, pendingItem]
+        let isMarkedDone: (RoutineChecklistItem) -> Bool = { $0.id == doneID }
+
+        let defaultItems = TaskDetailChecklistPresentation.visibleItems(
+            items,
+            showDone: false,
+            isMarkedDone: isMarkedDone
+        )
+        let expandedItems = TaskDetailChecklistPresentation.visibleItems(
+            items,
+            showDone: true,
+            isMarkedDone: isMarkedDone
+        )
+
+        #expect(defaultItems.map(\.id) == [pendingID])
+        #expect(expandedItems.map(\.id) == [doneID, pendingID])
+    }
+
+    @Test
     func attachmentPresentationSanitizesImageFileNamesAndDetectsTypes() {
         let task = RoutineTask(name: "Routine Image?!")
 
