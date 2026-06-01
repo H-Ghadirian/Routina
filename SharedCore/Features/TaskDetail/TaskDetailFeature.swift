@@ -527,6 +527,9 @@ struct TaskDetailFeature: Reducer {
             if state.task.isChecklistCompletionRoutine {
                 return .none
             }
+            guard !state.task.blocksManualCompletionForIncompleteChecklist else {
+                return .none
+            }
             guard let completionDate = resolvedMarkAsDoneDate(
                 for: state.selectedDate,
                 task: state.task

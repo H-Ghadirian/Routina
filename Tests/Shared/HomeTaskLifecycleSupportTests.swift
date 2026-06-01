@@ -10,6 +10,52 @@ import Testing
 
 struct HomeTaskLifecycleSupportTests {
     @Test
+    func markTaskDone_blocksOptionalChecklistUntilEveryItemIsChecked() {
+        let firstID = UUID()
+        let secondID = UUID()
+        let task = RoutineTask(
+            name: "Pack bag",
+            checklistItems: [
+                RoutineChecklistItem(id: firstID, title: "Laptop", intervalDays: 1),
+                RoutineChecklistItem(id: secondID, title: "Charger", intervalDays: 1)
+            ],
+            scheduleMode: .oneOff
+        )
+        #expect(task.markOptionalChecklistItemCompleted(firstID))
+        var tasks = [task]
+        var doneStats = HomeDoneStats()
+
+        let blockedUpdate = HomeTaskLifecycleSupport.markTaskDone(
+            taskID: task.id,
+            referenceDate: makeDate("2026-05-08T10:00:00Z"),
+            calendar: makeTestCalendar(),
+            tasks: &tasks,
+            doneStats: &doneStats
+        )
+
+        #expect(blockedUpdate == nil)
+        #expect(tasks[0].lastDone == nil)
+        #expect(doneStats.totalCount == 0)
+
+        #expect(tasks[0].markOptionalChecklistItemCompleted(secondID))
+        let allowedUpdate = HomeTaskLifecycleSupport.markTaskDone(
+            taskID: task.id,
+            referenceDate: makeDate("2026-05-08T10:00:00Z"),
+            calendar: makeTestCalendar(),
+            tasks: &tasks,
+            doneStats: &doneStats
+        )
+
+        #expect(allowedUpdate == .advance(HomeAdvanceTaskUpdate(
+            taskID: task.id,
+            completionDate: makeDate("2026-05-08T10:00:00Z"),
+            previousTodoStateTitle: TodoState.ready.displayTitle
+        )))
+        #expect(tasks[0].lastDone == makeDate("2026-05-08T10:00:00Z"))
+        #expect(doneStats.totalCount == 1)
+    }
+
+    @Test
     func markTaskDone_forMissedExactTimeRoutineCompletesMissedOccurrence() {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current

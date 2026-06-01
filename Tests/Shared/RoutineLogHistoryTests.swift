@@ -137,6 +137,52 @@ struct RoutineLogHistoryTests {
     }
 
     @Test
+    func advanceTask_blocksOptionalChecklistUntilEveryItemIsChecked() throws {
+        let context = makeInMemoryContext()
+        let firstID = UUID()
+        let secondID = UUID()
+        let task = makeTask(
+            in: context,
+            name: "Pack bag",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🎒",
+            checklistItems: [
+                RoutineChecklistItem(id: firstID, title: "Laptop", intervalDays: 1),
+                RoutineChecklistItem(id: secondID, title: "Charger", intervalDays: 1)
+            ],
+            scheduleMode: .fixedInterval
+        )
+        #expect(task.markOptionalChecklistItemCompleted(firstID))
+        try context.save()
+
+        let blockedResult = try RoutineLogHistory.advanceTask(
+            taskID: task.id,
+            completedAt: makeDate("2026-03-15T09:00:00Z"),
+            context: context
+        )
+        #expect(blockedResult == nil)
+        #expect(task.lastDone == nil)
+        #expect(try context.fetch(FetchDescriptor<RoutineLog>()).isEmpty)
+
+        #expect(task.markOptionalChecklistItemCompleted(secondID))
+        try context.save()
+        let allowedResult = try #require(
+            try RoutineLogHistory.advanceTask(
+                taskID: task.id,
+                completedAt: makeDate("2026-03-15T09:05:00Z"),
+                context: context
+            )
+        )
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(allowedResult.result == .completedRoutine)
+        #expect(allowedResult.task.lastDone == makeDate("2026-03-15T09:05:00Z"))
+        #expect(logs.count == 1)
+        #expect(logs.first?.taskID == task.id)
+    }
+
+    @Test
     func advanceTask_forBackfilledCompletionWithoutAnchorDoesNotStartCycleAtReferenceDate() throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()

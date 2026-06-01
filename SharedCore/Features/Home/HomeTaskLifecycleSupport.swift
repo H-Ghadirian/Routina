@@ -107,6 +107,9 @@ enum HomeTaskLifecycleSupport {
                 )
             )
         }
+        guard !tasks[index].blocksManualCompletionForIncompleteChecklist else {
+            return nil
+        }
 
         let completionDate: Date
         if let missedDate = RoutineDateMath.missedExactTimedOccurrenceDate(

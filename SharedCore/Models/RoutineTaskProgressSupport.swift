@@ -62,6 +62,15 @@ extension RoutineTask {
         checklistItems.count
     }
 
+    var incompleteOptionalChecklistItemCount: Int {
+        guard supportsOptionalChecklistProgress else { return 0 }
+        return max(0, totalChecklistItemCount - completedChecklistItemCount)
+    }
+
+    var blocksManualCompletionForIncompleteChecklist: Bool {
+        incompleteOptionalChecklistItemCount > 0
+    }
+
     var isChecklistInProgress: Bool {
         isChecklistCompletionRoutine
             && completedChecklistItemCount > 0

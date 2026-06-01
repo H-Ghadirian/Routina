@@ -38,6 +38,9 @@ struct TaskDetailCompletionButtonTitlePresentation {
             }
             return "Confirm for \(selectedDate.formatted(date: .abbreviated, time: .omitted))"
         }
+        if task.blocksManualCompletionForIncompleteChecklist {
+            return "Complete checklist items first"
+        }
         if task.isOneOffTask {
             if calendar.isDateInToday(selectedDate) {
                 return "Done"

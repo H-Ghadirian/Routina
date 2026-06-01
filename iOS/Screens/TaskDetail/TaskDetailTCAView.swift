@@ -12,7 +12,6 @@ struct TaskDetailTCAView: View {
     @State var displayedMonthStart = Calendar.current.startOfMonth(for: Date())
     @State var isShowingAllLogs = false
     @State private var isRoutineLogsExpanded = true
-    @State private var isTaskChangesExpanded = true
     @State private var isCommentComposerVisible = false
     @State private var isTimeControlRevealed = false
     @State private var isTodoStateControlRevealed = false
@@ -228,8 +227,7 @@ detailBody
                 if shouldShowCommentsSection {
                     commentsSection
                 }
-                routineLogsSection
-                taskChangesSection
+                historySection
                 if store.task.hasChecklistItems {
                     checklistItemsSection
                 }
@@ -269,8 +267,7 @@ detailBody
                 if shouldShowCommentsSection {
                     commentsSection
                 }
-                routineLogsSection
-                taskChangesSection
+                historySection
                 if store.task.hasChecklistItems {
                     checklistItemsSection
                 }
@@ -836,14 +833,17 @@ detailBody
         TaskDetailStatusMetadataPresentation.hasVisibleMetadata(for: store.state)
     }
 
-    private var routineLogsSection: some View {
-        TaskDetailRoutineLogsSectionView(
+    private var historySection: some View {
+        TaskDetailHistorySectionView(
             logs: store.logs,
+            changes: store.task.changeLogEntries,
             isExpanded: $isRoutineLogsExpanded,
             isShowingAllLogs: $isShowingAllLogs,
             createdAtBadgeValue: store.state.createdAtBadgeValue,
+            showPersianDates: showPersianDates,
             background: routineLogsBackground,
-            stroke: TaskDetailPlatformStyle.sectionCardStroke
+            stroke: TaskDetailPlatformStyle.sectionCardStroke,
+            relatedTaskName: relatedTaskName(for:)
         ) { _, log, _ in
             RoutineLogSwipeRow(
                 presentation: TaskDetailRoutineLogRowPresentation(log: log, showPersianDates: showPersianDates)
@@ -863,17 +863,6 @@ detailBody
 
     private func beginEditingTaskTime() {
         timeEditing.beginEditingTask(store.task)
-    }
-
-    private var taskChangesSection: some View {
-        TaskDetailTaskChangesSectionView(
-            changes: store.task.changeLogEntries,
-            isExpanded: $isTaskChangesExpanded,
-            showPersianDates: showPersianDates,
-            background: routineLogsBackground,
-            stroke: TaskDetailPlatformStyle.sectionCardStroke,
-            relatedTaskName: relatedTaskName(for:)
-        )
     }
 
     private func relatedTaskName(for change: RoutineTaskChangeLogEntry) -> String {

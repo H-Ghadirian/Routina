@@ -209,6 +209,9 @@ extension TaskDetailFeature.State {
         if task.isOneOffTask && hasActiveRelationshipBlocker {
             return true
         }
+        if task.blocksManualCompletionForIncompleteChecklist {
+            return true
+        }
         if task.isChecklistCompletionRoutine {
             return true
         }

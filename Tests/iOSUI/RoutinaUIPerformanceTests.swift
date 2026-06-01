@@ -212,7 +212,7 @@ final class RoutinaUIPerformanceTests: XCTestCase {
     }
 
     private func taskDetailLoaded(in app: XCUIApplication) -> Bool {
-        app.staticTexts["Routine Logs"].waitForExistence(timeout: 10)
+        app.staticTexts["History"].waitForExistence(timeout: 10)
             || app.buttons["Edit"].waitForExistence(timeout: 10)
     }
 

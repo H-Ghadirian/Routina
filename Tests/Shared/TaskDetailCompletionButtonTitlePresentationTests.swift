@@ -44,6 +44,22 @@ struct TaskDetailCompletionButtonTitlePresentationTests {
         #expect(title == "Done")
     }
 
+    @Test
+    func titleBlocksManualCompletionUntilOptionalChecklistIsComplete() {
+        let task = RoutineTask(
+            name: "Pack bag",
+            checklistItems: [
+                RoutineChecklistItem(title: "Laptop", intervalDays: 1),
+                RoutineChecklistItem(title: "Charger", intervalDays: 1)
+            ],
+            scheduleMode: .oneOff
+        )
+
+        let title = makePresentation(task: task).title
+
+        #expect(title == "Complete checklist items first")
+    }
+
     private func makePresentation(
         task: RoutineTask,
         selectedDate: Date = Date(),

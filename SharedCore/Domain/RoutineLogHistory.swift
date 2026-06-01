@@ -123,6 +123,9 @@ enum RoutineLogHistory {
         guard let task = try context.fetch(descriptor).first else {
             return nil
         }
+        guard !task.blocksManualCompletionForIncompleteChecklist else {
+            return nil
+        }
 
         let existingLogs = detailLogs(taskID: taskID, context: context)
         let hasMatchingLog = existingLogs.contains { log in

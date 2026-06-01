@@ -353,7 +353,6 @@ let package = Package(
                 "SharedCore/Screens/TaskDetail/TaskDetailSectionCardView.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailSharedViewSupport.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailPresentationRoutingSupport.swift",
-                "SharedCore/Screens/TaskDetail/TaskDetailTaskChangesSectionView.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailTimeEditingState.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailTimeSpentPresentation.swift",
                 "SharedCore/Screens/Shared/AddRoutineTaskFormModelFactory.swift",

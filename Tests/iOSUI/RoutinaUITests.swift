@@ -39,9 +39,9 @@ struct RoutinaUITests {
         #expect(row.waitForExistence(timeout: 10))
         row.tap()
 
-        let routineLogs = app.staticTexts["Routine Logs"]
+        let history = app.staticTexts["History"]
         let editButton = app.buttons["Edit"]
-        #expect(routineLogs.waitForExistence(timeout: 10) || editButton.waitForExistence(timeout: 10))
+        #expect(history.waitForExistence(timeout: 10) || editButton.waitForExistence(timeout: 10))
     }
 
     @MainActor

@@ -412,6 +412,25 @@ struct TodoStateFeatureTests {
     }
 
     @Test
+    func isCompletionButtonDisabled_trueWhenOptionalChecklistHasUncheckedItems() {
+        let firstID = UUID()
+        let secondID = UUID()
+        let task = RoutineTask(
+            name: "Pack bag",
+            checklistItems: [
+                RoutineChecklistItem(id: firstID, title: "Laptop", intervalDays: 1),
+                RoutineChecklistItem(id: secondID, title: "Charger", intervalDays: 1)
+            ],
+            scheduleMode: .oneOff
+        )
+        #expect(task.markOptionalChecklistItemCompleted(firstID))
+        let state = TaskDetailFeature.State(task: task)
+
+        #expect(state.isCompletionButtonDisabled)
+        #expect(state.completionButtonTitle == "Complete checklist items first")
+    }
+
+    @Test
     func isCompletionButtonDisabled_falseWhenBlockerIsDone() {
         let blockerID = UUID()
         let task = RoutineTask(
