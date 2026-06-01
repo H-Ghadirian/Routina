@@ -450,6 +450,43 @@ struct TimelineLogicTests {
     }
 
     @Test
+    func filteredEntries_excludesAbandonedTaskFocusSessions() {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let task = makeTodoTask(name: "Write brief", emoji: "✍️", tags: ["Focus"])
+        let log = makeLog(taskID: task.id, timestamp: makeDate("2026-03-20T08:00:00Z"))
+        let startedAt = makeDate("2026-03-20T09:00:00Z")
+        let abandonedAt = makeDate("2026-03-20T09:05:00Z")
+        let focusSession = FocusSession(
+            taskID: task.id,
+            startedAt: startedAt,
+            abandonedAt: abandonedAt
+        )
+
+        let allEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            focusSessions: [focusSession],
+            range: .all,
+            filterType: .all,
+            now: now,
+            calendar: calendar
+        )
+        let focusEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            focusSessions: [focusSession],
+            range: .all,
+            filterType: .focus,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(allEntries.map(\.id) == [log.id])
+        #expect(focusEntries.isEmpty)
+    }
+
+    @Test
     func filteredEntries_includesActiveBoardFocusSessions() {
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-20T10:00:00Z")

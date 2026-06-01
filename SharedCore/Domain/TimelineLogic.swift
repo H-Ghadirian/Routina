@@ -320,6 +320,7 @@ enum TimelineLogic {
         let focusEntries = focusSessions.compactMap { session -> TimelineEntry? in
             guard filterType == .all || filterType == .focus,
                   mediaFilter == .all,
+                  session.state != .abandoned,
                   let startedAt = session.startedAt
             else {
                 return nil
