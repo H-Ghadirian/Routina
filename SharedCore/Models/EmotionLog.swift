@@ -54,7 +54,7 @@ enum EmotionFamily: String, CaseIterable, Codable, Equatable, Identifiable, Send
         case .anger:
             return ["irritated", "frustrated", "angry", "resentful", "offended", "furious", "impatient"]
         case .fear:
-            return ["anxious", "worried", "overwhelmed", "unsafe", "panicked", "nervous", "uncertain"]
+            return ["anxious", "worried", "overwhelmed", "unsafe", "panicked", "nervous", "uncertain", "confused", "lost"]
         case .shameGuilt:
             return ["embarrassed", "ashamed", "guilty", "regretful", "exposed", "self-conscious"]
         case .disgust:

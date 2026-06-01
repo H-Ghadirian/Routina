@@ -113,6 +113,12 @@ struct EmotionFamilyTests {
     }
 
     @Test
+    func fearLabels_includeDisorientationFeelings() {
+        #expect(EmotionFamily.fear.labels.contains("confused"))
+        #expect(EmotionFamily.fear.labels.contains("lost"))
+    }
+
+    @Test
     func suggestedFamilies_matchUnpleasantLowEnergyMood() {
         let families = EmotionFamily.suggestedFamilies(valence: -0.65, arousal: -0.65)
 
