@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 extension Notification.Name {
@@ -11,6 +12,8 @@ extension Notification.Name {
 }
 
 struct RoutineCommands: Commands {
+    @StateObject private var textEditingMonitor = RoutinaMacTextEditingMonitor.shared
+
     #if !SWIFT_PACKAGE
     @AppStorage(
         UserDefaultStringValueKey.macQuickAddShortcut.rawValue,
@@ -38,11 +41,13 @@ struct RoutineCommands: Commands {
                 NotificationCenter.default.post(name: .routinaMacNavigateBack, object: nil)
             }
             .keyboardShortcut(.leftArrow, modifiers: [.command])
+            .disabled(textEditingMonitor.isEditingText)
 
             Button("Forward") {
                 NotificationCenter.default.post(name: .routinaMacNavigateForward, object: nil)
             }
             .keyboardShortcut(.rightArrow, modifiers: [.command])
+            .disabled(textEditingMonitor.isEditingText)
 
             Divider()
 
@@ -72,5 +77,59 @@ struct RoutineCommands: Commands {
             return (shortcut.keyEquivalent, shortcut.eventModifiers)
         }()
         #endif
+    }
+}
+
+@MainActor
+private final class RoutinaMacTextEditingMonitor: ObservableObject {
+    static let shared = RoutinaMacTextEditingMonitor()
+
+    @Published private(set) var isEditingText = false
+
+    private var observers: [NSObjectProtocol] = []
+
+    private init() {
+        refresh()
+
+        let notificationCenter = NotificationCenter.default
+        [
+            NSWindow.didBecomeKeyNotification,
+            NSWindow.didResignKeyNotification,
+            NSControl.textDidBeginEditingNotification,
+            NSControl.textDidEndEditingNotification,
+            NSText.didBeginEditingNotification,
+            NSText.didEndEditingNotification
+        ].forEach { name in
+            observers.append(
+                notificationCenter.addObserver(
+                    forName: name,
+                    object: nil,
+                    queue: .main
+                ) { [weak self] _ in
+                    Task { @MainActor [weak self] in
+                        self?.refresh()
+                    }
+                }
+            )
+        }
+    }
+
+    private func refresh() {
+        isEditingText = Self.isTextEditingInKeyWindow
+    }
+
+    private static var isTextEditingInKeyWindow: Bool {
+        guard let firstResponder = NSApp.keyWindow?.firstResponder else {
+            return false
+        }
+
+        if firstResponder is NSTextView
+            || firstResponder is NSTextField
+            || firstResponder is NSSearchField
+            || firstResponder is NSText {
+            return true
+        }
+
+        return false
     }
 }
