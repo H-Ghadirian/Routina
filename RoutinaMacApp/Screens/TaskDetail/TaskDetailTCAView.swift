@@ -275,11 +275,27 @@ detailBody
     }
 
     @ViewBuilder
-    private var headerTagsAndPointsRow: some View {
+    private var headerMetadataRow: some View {
         let hasTags = !store.task.tags.isEmpty
+        let hasLinks = !store.task.resolvedLinkURLs.isEmpty
         let hasPoints = store.task.storyPoints != nil
 
-        if hasTags && hasPoints {
+        if hasLinks && hasPoints {
+            ViewThatFits(in: .horizontal) {
+                TaskDetailEqualHeightPairRow(spacing: 8) { minHeight in
+                    headerDetailsBox(includesTags: hasTags, minHeight: minHeight)
+                } trailing: { minHeight in
+                    headerPointsBox(minHeight: minHeight)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    headerDetailsBox(includesTags: hasTags)
+                    headerPointsBox()
+                }
+            }
+        } else if hasLinks {
+            headerDetailsBox(includesTags: hasTags)
+        } else if hasTags && hasPoints {
             ViewThatFits(in: .horizontal) {
                 TaskDetailEqualHeightPairRow(spacing: 8) { minHeight in
                     headerTagsBox(minHeight: minHeight)
@@ -300,31 +316,51 @@ detailBody
     }
 
     @ViewBuilder
-    private var headerLinkBox: some View {
-        if !store.task.resolvedLinkURLs.isEmpty {
-            VStack(alignment: .leading, spacing: 4) {
+    private func headerDetailsBox(includesTags: Bool, minHeight: CGFloat? = nil) -> some View {
+        let links = store.task.resolvedLinkURLs
+        let tags = includesTags ? store.task.tags : []
+
+        if !links.isEmpty || !tags.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
                 Text("DETAILS")
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.secondary)
 
-                ForEach(store.task.resolvedLinkURLs) { link in
-                    Link(destination: link.url) {
-                        HStack(alignment: .firstTextBaseline, spacing: 6) {
-                            Image(systemName: "link")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.blue)
-                            Text(link.text)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.blue)
-                                .lineLimit(2)
-                                .multilineTextAlignment(.leading)
-                                .fixedSize(horizontal: false, vertical: true)
+                if !tags.isEmpty {
+                    HomeFilterFlowLayout(horizontalSpacing: 6, verticalSpacing: 6) {
+                        ForEach(tags, id: \.self) { tag in
+                            statusTagChip(tag)
                         }
                     }
-                    .taskDetailCopyableText(link.text)
+                }
+
+                if !tags.isEmpty && !links.isEmpty {
+                    Divider()
+                        .padding(.vertical, 2)
+                }
+
+                if !links.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(links) { link in
+                            Link(destination: link.url) {
+                                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                    Image(systemName: "link")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(.blue)
+                                    Text(link.text)
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(.blue)
+                                        .lineLimit(2)
+                                        .multilineTextAlignment(.leading)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                            .taskDetailCopyableText(link.text)
+                        }
+                    }
                 }
             }
-            .detailHeaderBoxStyle()
+            .detailHeaderBoxStyle(minHeight: minHeight)
         }
     }
 
@@ -882,9 +918,8 @@ detailBody
                 todoHeaderControls
 
                 headerCalendarDisclosure
-                headerTagsAndPointsRow
+                headerMetadataRow
                 headerGoalsBox
-                headerLinkBox
             }
         }
     }
@@ -903,9 +938,8 @@ detailBody
 
                 headerCalendarDisclosure
 
-                headerTagsAndPointsRow
+                headerMetadataRow
                 headerGoalsBox
-                headerLinkBox
             }
         }
     }
