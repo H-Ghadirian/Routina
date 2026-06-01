@@ -9,8 +9,11 @@ struct StatsHourlyActivitySection: View {
     let colorScheme: ColorScheme
 
     @State private var selectedMetric: StatsHourlyActivityMetric = .focus
+    @State private var selectedHour: Int?
 
     var body: some View {
+        let selectedPoint = selectedPoint(in: points)
+
         VStack(alignment: .leading, spacing: 18) {
             StatsSectionHeader(
                 title: "24-hour rhythm",
@@ -41,6 +44,7 @@ struct StatsHourlyActivitySection: View {
             } else {
                 Chart {
                     ForEach(points) { point in
+                        let isSelected = point.hour == selectedPoint?.hour
                         let isHighlighted = point.hour == peakPoint?.hour && selectedValue(for: point) > 0
 
                         BarMark(
@@ -49,13 +53,19 @@ struct StatsHourlyActivitySection: View {
                         )
                         .cornerRadius(6)
                         .foregroundStyle(
-                            isHighlighted
+                            isSelected || isHighlighted
                                 ? AnyShapeStyle(StatsDashboardPalette.highlightBarFill)
                                 : selectedMetric.fill(colorScheme: colorScheme)
                         )
                         .opacity(selectedValue(for: point) == 0 ? 0.28 : 1)
                         .accessibilityLabel(hourLabel(for: point.hour))
                         .accessibilityValue(accessibilityValue(for: point))
+                    }
+
+                    if let selectedPoint {
+                        RuleMark(x: .value("Selected hour", Double(selectedPoint.hour)))
+                            .lineStyle(StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
+                            .foregroundStyle(Color.white.opacity(0.48))
                     }
                 }
                 .frame(maxWidth: .infinity, minHeight: 250)
@@ -93,9 +103,51 @@ struct StatsHourlyActivitySection: View {
                     }
                 }
                 .chartYAxisLabel(selectedMetric.axisLabel)
+                .chartOverlay { proxy in
+                    GeometryReader { geometry in
+                        Rectangle()
+                            .fill(.clear)
+                            .contentShape(Rectangle())
+                            .gesture(
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { value in
+                                        updateSelectedHour(
+                                            at: value.location,
+                                            proxy: proxy,
+                                            geometry: geometry
+                                        )
+                                    }
+                            )
+                        #if os(macOS)
+                            .onContinuousHover { phase in
+                                switch phase {
+                                case .active(let location):
+                                    updateSelectedHour(
+                                        at: location,
+                                        proxy: proxy,
+                                        geometry: geometry
+                                    )
+                                case .ended:
+                                    selectedHour = nil
+                                }
+                            }
+                        #endif
+                    }
+                }
                 .chartPlotStyle { plotArea in
                     plotArea.statsChartPlotBackground(colorScheme: colorScheme)
                 }
+            }
+
+            if let detailPoint = selectedPoint ?? positivePeakPoint {
+                StatsHourlyActivityPointDetailPanel(
+                    title: selectedPoint == nil ? "Peak hour" : "Selected hour",
+                    point: detailPoint,
+                    metric: selectedMetric,
+                    selectedRange: selectedRange,
+                    chartPresentation: chartPresentation,
+                    colorScheme: colorScheme
+                )
             }
 
             StatsChartInsightRow(
@@ -104,6 +156,9 @@ struct StatsHourlyActivitySection: View {
             )
         }
         .statsChartCard(surfaceGradient: surfaceGradient, colorScheme: colorScheme)
+        .onChange(of: selectedMetric) { _, _ in
+            selectedHour = nil
+        }
     }
 
     private var peakPoint: HourlyActivityChartPoint? {
@@ -120,6 +175,11 @@ struct StatsHourlyActivitySection: View {
     private var peakHourText: String {
         guard let peakPoint, selectedValue(for: peakPoint) > 0 else { return "None" }
         return hourLabel(for: peakPoint.hour)
+    }
+
+    private var positivePeakPoint: HourlyActivityChartPoint? {
+        guard let peakPoint, selectedValue(for: peakPoint) > 0 else { return nil }
+        return peakPoint
     }
 
     private var totalValue: Double {
@@ -158,7 +218,7 @@ struct StatsHourlyActivitySection: View {
                 systemImage: selectedMetric.systemImage,
                 text: "\(selectedMetric.totalLabel): \(selectedMetric.formattedValue(totalValue, chartPresentation: chartPresentation))"
             ),
-            peakPoint.map {
+            positivePeakPoint.map {
                 StatsChartInsight(
                     systemImage: "sparkles",
                     text: "Strongest hour: \(hourLabel(for: $0.hour))"
@@ -168,6 +228,11 @@ struct StatsHourlyActivitySection: View {
                 text: "Waiting for hourly activity"
             )
         ]
+    }
+
+    private func selectedPoint(in points: [HourlyActivityChartPoint]) -> HourlyActivityChartPoint? {
+        guard let selectedHour else { return nil }
+        return points.first { $0.hour == selectedHour }
     }
 
     private func selectedValue(for point: HourlyActivityChartPoint) -> Double {
@@ -193,13 +258,99 @@ struct StatsHourlyActivitySection: View {
     }
 
     private func accessibilityValue(for point: HourlyActivityChartPoint) -> String {
-        selectedMetric.formattedValue(
+        let valueText = selectedMetric.formattedValue(
             selectedValue(for: point),
             chartPresentation: chartPresentation
         )
+        return "\(valueText), \(hourRangeLabel(for: point.hour)), \(selectedRange.periodDescription)"
     }
 
     private func hourLabel(for hour: Int) -> String {
+        StatsHourlyActivityHourFormatting.label(for: hour)
+    }
+
+    private func hourRangeLabel(for hour: Int) -> String {
+        StatsHourlyActivityHourFormatting.rangeLabel(for: hour)
+    }
+
+    private func updateSelectedHour(
+        at location: CGPoint,
+        proxy: ChartProxy,
+        geometry: GeometryProxy
+    ) {
+        guard let plotFrame = proxy.plotFrame else {
+            selectedHour = nil
+            return
+        }
+
+        let frame = geometry[plotFrame]
+        guard frame.contains(location) else {
+            selectedHour = nil
+            return
+        }
+
+        let xPosition = location.x - frame.origin.x
+        guard let hour: Double = proxy.value(atX: xPosition),
+              let nearestPoint = nearestPoint(to: hour, in: points) else {
+            selectedHour = nil
+            return
+        }
+
+        selectedHour = nearestPoint.hour
+    }
+
+    private func nearestPoint(
+        to hour: Double,
+        in points: [HourlyActivityChartPoint]
+    ) -> HourlyActivityChartPoint? {
+        points.min { lhs, rhs in
+            abs(Double(lhs.hour) - hour) < abs(Double(rhs.hour) - hour)
+        }
+    }
+}
+
+private struct StatsHourlyActivityPointDetailPanel: View {
+    let title: String
+    let point: HourlyActivityChartPoint
+    let metric: StatsHourlyActivityMetric
+    let selectedRange: DoneChartRange
+    let chartPresentation: StatsChartPresentation
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(metric.formattedValue(metric.value(in: point), chartPresentation: chartPresentation))
+                    .font(.system(.headline, design: .rounded, weight: .bold))
+                    .foregroundStyle(.primary)
+
+                Text(StatsHourlyActivityHourFormatting.rangeLabel(for: point.hour))
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
+
+            Text(metric.detailText(value: metric.value(in: point), selectedRange: selectedRange))
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, minHeight: 78, alignment: .topLeading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .routinaGlassCard(cornerRadius: 16, tint: metric.tint, tintOpacity: colorScheme == .dark ? 0.18 : 0.12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.white.opacity(colorScheme == .dark ? 0.12 : 0.35), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.28 : 0.12), radius: 12, y: 8)
+    }
+}
+
+private enum StatsHourlyActivityHourFormatting {
+    static func label(for hour: Int) -> String {
         let normalizedHour = ((hour % 24) + 24) % 24
         switch normalizedHour {
         case 0:
@@ -211,6 +362,10 @@ struct StatsHourlyActivitySection: View {
         default:
             return "\(normalizedHour - 12) PM"
         }
+    }
+
+    static func rangeLabel(for hour: Int) -> String {
+        "\(label(for: hour))-\(label(for: hour + 1))"
     }
 }
 
@@ -287,6 +442,32 @@ private enum StatsHourlyActivityMetric: String, CaseIterable, Identifiable {
         }
     }
 
+    var tint: Color {
+        switch self {
+        case .focus:
+            return .accentColor
+        case .done:
+            return .green
+        case .created:
+            return .teal
+        case .activity:
+            return .indigo
+        }
+    }
+
+    func value(in point: HourlyActivityChartPoint) -> Double {
+        switch self {
+        case .focus:
+            return point.focusMinutes
+        case .done:
+            return Double(point.doneCount)
+        case .created:
+            return Double(point.createdCount)
+        case .activity:
+            return Double(point.activityCount)
+        }
+    }
+
     func fill(colorScheme: ColorScheme) -> AnyShapeStyle {
         switch self {
         case .focus:
@@ -306,6 +487,44 @@ private enum StatsHourlyActivityMetric: String, CaseIterable, Identifiable {
             return chartPresentation.focusDurationText(TimeInterval(value.rounded() * 60))
         case .done, .created, .activity:
             return Int(value.rounded()).formatted()
+        }
+    }
+
+    func detailText(value: Double, selectedRange: DoneChartRange) -> String {
+        let rangeText = selectedRange.hourlyActivityRangePhrase
+
+        switch self {
+        case .focus:
+            if value <= 0 {
+                return "No focus landed in this hour bucket \(rangeText)."
+            }
+            return "Focus sessions are split by clock hour, then totaled \(rangeText)."
+        case .done:
+            if value <= 0 {
+                return "No completed work was timestamped in this hour \(rangeText)."
+            }
+            return "Completed work timestamped in this hour \(rangeText)."
+        case .created:
+            if value <= 0 {
+                return "No tasks were created in this hour \(rangeText)."
+            }
+            return "Tasks created in this hour \(rangeText)."
+        case .activity:
+            if value <= 0 {
+                return "No timeline entries were timestamped in this hour \(rangeText)."
+            }
+            return "Timeline entries timestamped in this hour \(rangeText)."
+        }
+    }
+}
+
+private extension DoneChartRange {
+    var hourlyActivityRangePhrase: String {
+        switch self {
+        case .today:
+            return "today"
+        case .week, .month, .year:
+            return "across the \(periodDescription.lowercased())"
         }
     }
 }
