@@ -1694,7 +1694,11 @@ enum DayPlanAwayBlocks {
             let dayKey = DayPlanStorage.dayKey(for: dayStart, calendar: calendar)
             let startMinute = Self.startMinute(for: intervalStart, calendar: calendar)
             let rawDuration = max(1, Int(ceil(intervalEnd.timeIntervalSince(intervalStart) / 60)))
-            let durationMinutes = DayPlanBlock.clampedDuration(rawDuration, startMinute: startMinute)
+            let durationMinutes = DayPlanBlock.clampedDuration(
+                rawDuration,
+                startMinute: startMinute,
+                minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+            )
             let block = DayPlanBlock(
                 id: session.id,
                 taskID: session.id,
@@ -1704,7 +1708,8 @@ enum DayPlanAwayBlocks {
                 titleSnapshot: session.displayTitle,
                 emojiSnapshot: nil,
                 createdAt: startedAt,
-                updatedAt: endedAt
+                updatedAt: endedAt,
+                minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
             )
             let interval = DayPlanBlockedInterval(
                 dayKey: dayKey,
@@ -1724,7 +1729,10 @@ enum DayPlanAwayBlocks {
     private static func startMinute(for timestamp: Date, calendar: Calendar) -> Int {
         let components = calendar.dateComponents([.hour, .minute], from: timestamp)
         let minute = ((components.hour ?? 0) * 60) + (components.minute ?? 0)
-        return DayPlanBlock.clampedStartMinute(minute)
+        return DayPlanBlock.clampedStartMinute(
+            minute,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
     }
 }
 

@@ -140,6 +140,34 @@ struct AwaySessionSupportTests {
         #expect(nextBlock.block.durationMinutes == 20)
     }
 
+    @MainActor
+    @Test
+    func awayBlockUsesActualEarlyEndDurationBelowPlannerMinimum() throws {
+        let calendar = makeTestCalendar()
+        let day = makeDate("2026-06-01T12:00:00Z")
+        let startedAt = makeDate("2026-06-01T10:59:10Z")
+        let endedAt = makeDate("2026-06-01T10:59:45Z")
+        let session = AwaySession(
+            preset: .reset,
+            startedAt: startedAt,
+            plannedDurationSeconds: 15 * 60,
+            endedEarlyAt: endedAt
+        )
+
+        let awayBlocksByDayKey = DayPlanAwayBlocks.blocksByDayKey(
+            on: [day],
+            from: [session],
+            referenceDate: endedAt,
+            calendar: calendar
+        )
+
+        let dayKey = DayPlanStorage.dayKey(for: day, calendar: calendar)
+        let block = try #require(awayBlocksByDayKey[dayKey]?.first)
+        #expect(block.block.startMinute == 10 * 60 + 59)
+        #expect(block.block.durationMinutes == 1)
+        #expect(block.interval.durationMinutes == 1)
+    }
+
     @Test
     func statsMetricsCountAwaySessionsSeparatelyFromFocus() {
         let calendar = makeTestCalendar()
