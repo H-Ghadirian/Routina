@@ -7,6 +7,7 @@ struct TaskDetailTodoPrimaryActionSection: View {
     let showsPressureControl: Bool
     let stateTimingSummary: TodoStateTimingSummary?
     let showPersianDates: Bool
+    @State private var isStateTimingExpanded = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -14,7 +15,7 @@ struct TaskDetailTodoPrimaryActionSection: View {
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: 8) {
                         if showsTodoStateControl {
-                            TaskDetailTodoStatePickerPill(store: store)
+                            todoStateControl
                         }
                         if showsPressureControl {
                             TaskDetailPressurePickerPill(store: store)
@@ -22,7 +23,7 @@ struct TaskDetailTodoPrimaryActionSection: View {
                     }
                     VStack(alignment: .leading, spacing: 8) {
                         if showsTodoStateControl {
-                            TaskDetailTodoStatePickerPill(store: store)
+                            todoStateControl
                         }
                         if showsPressureControl {
                             TaskDetailPressurePickerPill(store: store)
@@ -31,7 +32,7 @@ struct TaskDetailTodoPrimaryActionSection: View {
                 }
             }
 
-            if showsTodoStateControl, let stateTimingSummary {
+            if showsTodoStateControl, let stateTimingSummary, isStateTimingExpanded {
                 TodoStateTimingInlineView(
                     summary: stateTimingSummary,
                     showPersianDates: showPersianDates
@@ -50,10 +51,40 @@ struct TaskDetailTodoPrimaryActionSection: View {
         }
         .padding(16)
         .detailCardStyle()
+        .onChange(of: store.task.id) { _, _ in
+            isStateTimingExpanded = false
+        }
+        .onChange(of: store.task.todoStateRawValue) { _, _ in
+            isStateTimingExpanded = false
+        }
     }
 
     private var shouldShowStatusControls: Bool {
         showsTodoStateControl || showsPressureControl
+    }
+
+    @ViewBuilder
+    private var todoStateControl: some View {
+        if showsTodoStateControl {
+            HStack(spacing: 6) {
+                TaskDetailTodoStatePickerPill(store: store)
+
+                if stateTimingSummary != nil {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            isStateTimingExpanded.toggle()
+                        }
+                    } label: {
+                        Image(systemName: isStateTimingExpanded ? "chevron.up.circle.fill" : "chevron.down.circle")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 28, height: 28)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(isStateTimingExpanded ? "Collapse state details" : "Expand state details")
+                }
+            }
+        }
     }
 }
 
