@@ -320,43 +320,61 @@ struct EmotionLogEditorView: View {
 
     private var contextCard: some View {
         EmotionLogCard(title: "Links", systemImage: "link") {
-            VStack(alignment: .leading, spacing: 12) {
-                contextPicker(
+            LazyVGrid(
+                columns: contextLinkColumns,
+                alignment: .leading,
+                spacing: 10
+            ) {
+                contextLinkMenu(
                     title: "Note",
+                    pluralTitle: "notes",
+                    systemImage: "note.text",
                     selection: $linkedNoteID,
                     items: notes,
                     label: { $0.displayTitle }
                 )
 
-                contextPicker(
+                contextLinkMenu(
                     title: "Goal",
+                    pluralTitle: "goals",
+                    systemImage: "target",
                     selection: $linkedGoalID,
                     items: goals,
                     label: { $0.displayTitle }
                 )
 
-                contextPicker(
+                contextLinkMenu(
                     title: "Task",
+                    pluralTitle: "tasks",
+                    systemImage: "checklist",
                     selection: $linkedTaskID,
                     items: tasks.sorted { taskTitle($0).localizedCaseInsensitiveCompare(taskTitle($1)) == .orderedAscending },
                     label: taskTitle
                 )
 
-                contextPicker(
+                contextLinkMenu(
                     title: "Place",
+                    pluralTitle: "places",
+                    systemImage: "mappin.and.ellipse",
                     selection: $linkedPlaceID,
                     items: places,
                     label: { $0.displayName }
                 )
 
-                contextPicker(
+                contextLinkMenu(
                     title: "Sleep",
+                    pluralTitle: "sleep sessions",
+                    systemImage: "bed.double.fill",
                     selection: $linkedSleepSessionID,
                     items: sleepSessions,
                     label: sleepTitle
                 )
             }
         }
+    }
+
+    private var contextLinkColumns: [GridItem] {
+        [GridItem(.adaptive(minimum: 220), spacing: 10)]
     }
 
     private var shouldShowContextCard: Bool {
@@ -513,43 +531,85 @@ struct EmotionLogEditorView: View {
         )
     }
 
-    private func contextPicker<Item: Identifiable>(
+    @ViewBuilder
+    private func contextLinkMenu<Item: Identifiable>(
         title: String,
+        pluralTitle: String,
+        systemImage: String,
         selection: Binding<UUID?>,
         items: [Item],
         label: @escaping (Item) -> String
     ) -> some View where Item.ID == UUID {
         let selectedTitle = selectedContextTitle(
             title: title,
+            pluralTitle: pluralTitle,
             selection: selection.wrappedValue,
             items: items,
             label: label
         )
+        let isEnabled = !items.isEmpty || selection.wrappedValue != nil
 
-        return Group {
-            if !items.isEmpty || selection.wrappedValue != nil {
-                Picker(selection: selection) {
-                    Text("No \(title.lowercased())").tag(Optional<UUID>.none)
-                    ForEach(items) { item in
-                        Text(label(item)).tag(Optional(item.id))
+        if isEnabled {
+            Menu {
+                if selection.wrappedValue != nil {
+                    Button {
+                        selection.wrappedValue = nil
+                    } label: {
+                        Label("Remove \(title.lowercased()) link", systemImage: "xmark.circle")
                     }
-                } label: {
-                    contextPickerLabel(title: title, selectedTitle: selectedTitle)
+
+                    if !items.isEmpty {
+                        Divider()
+                    }
                 }
-                .pickerStyle(.menu)
-                .tint(primarySelectedFamily.tintColor)
+
+                ForEach(items) { item in
+                    Button {
+                        selection.wrappedValue = item.id
+                    } label: {
+                        if selection.wrappedValue == item.id {
+                            Label(label(item), systemImage: "checkmark")
+                        } else {
+                            Text(label(item))
+                        }
+                    }
+                }
+            } label: {
+                contextLinkLabel(
+                    title: title,
+                    selectedTitle: selectedTitle,
+                    systemImage: systemImage,
+                    isSelected: selection.wrappedValue != nil,
+                    isEnabled: true
+                )
             }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .accessibilityLabel("Link \(title.lowercased())")
+        } else {
+            contextLinkLabel(
+                title: title,
+                selectedTitle: selectedTitle,
+                systemImage: systemImage,
+                isSelected: false,
+                isEnabled: false
+            )
+            .accessibilityLabel("No \(pluralTitle) available")
         }
     }
 
     private func selectedContextTitle<Item: Identifiable>(
         title: String,
+        pluralTitle: String,
         selection: UUID?,
         items: [Item],
         label: (Item) -> String
     ) -> String where Item.ID == UUID {
         guard let selection else {
-            return "No \(title.lowercased())"
+            if items.isEmpty {
+                return "No \(pluralTitle)"
+            }
+            return "Choose \(title.lowercased())"
         }
         guard let selectedItem = items.first(where: { $0.id == selection }) else {
             return "Missing \(title.lowercased())"
@@ -557,25 +617,50 @@ struct EmotionLogEditorView: View {
         return label(selectedItem)
     }
 
-    private func contextPickerLabel(title: String, selectedTitle: String) -> some View {
-        HStack(spacing: 10) {
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.primary)
+    private func contextLinkLabel(
+        title: String,
+        selectedTitle: String,
+        systemImage: String,
+        isSelected: Bool,
+        isEnabled: Bool
+    ) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(primarySelectedFamily.tintColor.opacity(isEnabled ? 0.14 : 0.06))
+                Image(systemName: systemImage)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(isEnabled ? primarySelectedFamily.tintColor : .secondary)
+            }
+            .frame(width: 34, height: 34)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                Text(selectedTitle)
+                    .font(.subheadline.weight(isSelected ? .semibold : .medium))
+                    .foregroundStyle(isEnabled ? .primary : .secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+            }
 
             Spacer(minLength: 8)
 
-            Text(selectedTitle)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .truncationMode(.tail)
-
-            Image(systemName: "chevron.up.chevron.down")
+            Image(systemName: isEnabled ? "chevron.up.chevron.down" : "minus.circle")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(primarySelectedFamily.tintColor)
+                .foregroundStyle(isEnabled ? primarySelectedFamily.tintColor : Color.secondary.opacity(0.6))
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .routinaGlassCard(
+            cornerRadius: 12,
+            tint: isSelected ? primarySelectedFamily.tintColor : .secondary,
+            tintOpacity: isSelected ? 0.16 : 0.07,
+            interactive: isEnabled
+        )
         .contentShape(Rectangle())
     }
 
