@@ -94,18 +94,26 @@ struct TaskDetailOptionalActionsSectionView: View {
     let background: Color
     let stroke: Color
 
+    @State private var isExpanded = false
+
     var body: some View {
         TaskDetailSectionCardView(background: background, stroke: stroke) {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Add More")
-                    .font(.headline)
+            VStack(alignment: .leading, spacing: 12) {
+                TaskDetailCollapsibleSectionHeaderView(
+                    title: "Add more details",
+                    count: actions.count,
+                    isExpanded: isExpanded,
+                    onToggle: { isExpanded.toggle() }
+                )
 
-                LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 124), spacing: 8)],
-                    alignment: .leading,
-                    spacing: 8
-                ) {
-                    actionButtons
+                if isExpanded {
+                    LazyVGrid(
+                        columns: [GridItem(.adaptive(minimum: 124), spacing: 8)],
+                        alignment: .leading,
+                        spacing: 8
+                    ) {
+                        actionButtons
+                    }
                 }
             }
         }
