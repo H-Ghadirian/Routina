@@ -340,15 +340,24 @@ extension HomeTCAView {
     }
 
     var macTimelineSidebarView: some View {
-        HomeMacTimelineSidebarView(
-            timelineEntryCount: store.timelineLogs.count + events.count + emotionLogs.count + notes.count + sleepSessions.count + placeCheckInSessions.count,
-            groupedEntries: groupedTimelineEntries,
-            selection: macSidebarSelectionBinding,
-            sectionTitle: { date in
-                TimelineLogic.daySectionTitle(for: date, calendar: calendar)
+        VStack(spacing: 0) {
+            TimelinePigmentControl(selection: Binding(
+                get: { store.selectedTimelineFilterType },
+                set: { store.send(.selectedTimelineFilterTypeChanged($0)) }
+            ))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+
+            HomeMacTimelineSidebarView(
+                timelineEntryCount: store.timelineLogs.count + events.count + emotionLogs.count + notes.count + sleepSessions.count + placeCheckInSessions.count,
+                groupedEntries: groupedTimelineEntries,
+                selection: macSidebarSelectionBinding,
+                sectionTitle: { date in
+                    TimelineLogic.daySectionTitle(for: date, calendar: calendar)
+                }
+            ) { entry, rowNumber in
+                timelineSidebarRow(entry, rowNumber: rowNumber)
             }
-        ) { entry, rowNumber in
-            timelineSidebarRow(entry, rowNumber: rowNumber)
         }
     }
 

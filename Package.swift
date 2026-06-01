@@ -435,6 +435,7 @@ let package = Package(
                 "SharedCore/Views/StatsTagUsageSection.swift",
                 "SharedCore/Views/StatsSummaryGrid.swift",
                 "SharedCore/Views/StatsSummaryCardItemBuilder.swift",
+                "SharedCore/Views/TimelinePigmentControl.swift",
                 "SharedCore/Views/UnassignedFocusSessionsCard.swift",
                 "SharedCore/Views/SettingsQuickAddSyntaxViews.swift",
                 "SharedCore/Views/SettingsTaskRowPreviewView.swift",

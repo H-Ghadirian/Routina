@@ -391,15 +391,10 @@ extension HomeTCAView {
     }
 
     var platformTimelineTypePicker: some View {
-        Picker("Type", selection: Binding(
+        TimelinePigmentControl(selection: Binding(
             get: { store.selectedTimelineFilterType },
             set: { store.send(.selectedTimelineFilterTypeChanged($0)) }
-        )) {
-            ForEach(TimelineFilterType.allCases) { type in
-                Text(type.rawValue).tag(type)
-            }
-        }
-        .pickerStyle(.segmented)
+        ))
     }
 
     @ViewBuilder

@@ -284,16 +284,34 @@ NavigationStack {
         store.hasActiveFilters
     }
 
+    private var hasAnyTimelineRecords: Bool {
+        !logs.isEmpty
+            || !events.isEmpty
+            || !emotionLogs.isEmpty
+            || !notes.isEmpty
+            || !sleepSessions.isEmpty
+            || !placeCheckInSessions.isEmpty
+    }
+
+    private var timelinePigmentControl: some View {
+        TimelinePigmentControl(selection: filterTypeBinding)
+    }
+
     @ViewBuilder
     private var content: some View {
-        if logs.isEmpty && notes.isEmpty && sleepSessions.isEmpty && placeCheckInSessions.isEmpty {
+        if !hasAnyTimelineRecords {
             ContentUnavailableView(
                 "No timeline entries yet",
                 systemImage: "clock.arrow.circlepath",
-                description: Text("Completed items, notes, place check-ins, and sleep records will appear here in chronological order.")
+                description: Text("Completed items, notes, place check-ins, emotions, and sleep records will appear here in chronological order.")
             )
         } else {
             VStack(spacing: 0) {
+                timelinePigmentControl
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                    .padding(.bottom, 8)
+
                 if groupedByDay.isEmpty {
                     ContentUnavailableView(
                         "No matches",

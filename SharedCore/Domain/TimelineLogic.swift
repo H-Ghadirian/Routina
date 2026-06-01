@@ -21,6 +21,20 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
     case missed = "Missed"
     case canceled = "Canceled"
     var id: Self { self }
+
+    static let timelinePigmentCases: [TimelineFilterType] = [
+        .all,
+        .routines,
+        .todos,
+        .notes,
+        .places,
+        .emotions,
+        .sleep,
+    ]
+
+    var isTimelinePigmentCase: Bool {
+        Self.timelinePigmentCases.contains(self)
+    }
 }
 
 enum TimelineEntryType: Equatable {

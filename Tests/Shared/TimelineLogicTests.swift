@@ -55,6 +55,22 @@ struct TimelineLogicTests {
     // MARK: - filteredEntries
 
     @Test
+    func timelinePigmentCasesUsePrimaryTimelineTypes() {
+        #expect(TimelineFilterType.timelinePigmentCases == [
+            .all,
+            .routines,
+            .todos,
+            .notes,
+            .places,
+            .emotions,
+            .sleep,
+        ])
+        #expect(TimelineFilterType.timelinePigmentCases.allSatisfy { $0.isTimelinePigmentCase })
+        #expect(TimelineFilterType.events.isTimelinePigmentCase == false)
+        #expect(TimelineFilterType.done.isTimelinePigmentCase == false)
+    }
+
+    @Test
     func filteredEntries_returnsAllEntriesForAllRange() {
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-20T10:00:00Z")

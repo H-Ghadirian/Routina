@@ -391,20 +391,48 @@ timelineRoot
         store.hasActiveFilters
     }
 
+    private var hasAnyTimelineRecords: Bool {
+        !logs.isEmpty
+            || !events.isEmpty
+            || !emotionLogs.isEmpty
+            || !notes.isEmpty
+            || !sleepSessions.isEmpty
+            || !placeCheckInSessions.isEmpty
+    }
+
+    private var hasActiveFilterChips: Bool {
+        store.selectedRange != .all
+            || (store.filterType != .all && !store.filterType.isTimelinePigmentCase)
+            || !store.effectiveSelectedTags.isEmpty
+            || !store.excludedTags.isEmpty
+            || store.selectedImportanceUrgencyFilter != nil
+            || store.mediaFilter != .all
+    }
+
+    private var timelinePigmentControl: some View {
+        TimelinePigmentControl(selection: filterTypeBinding)
+    }
+
     @ViewBuilder
     private var content: some View {
-        if logs.isEmpty && notes.isEmpty && sleepSessions.isEmpty && placeCheckInSessions.isEmpty {
+        if !hasAnyTimelineRecords {
             ContentUnavailableView(
                 "No timeline entries yet",
                 systemImage: "clock.arrow.circlepath",
-                description: Text("Completed items, notes, place check-ins, and sleep records will appear here in chronological order.")
+                description: Text("Completed items, notes, place check-ins, emotions, and sleep records will appear here in chronological order.")
             )
         } else {
             VStack(spacing: 0) {
-                if hasActiveFilters {
+                timelinePigmentControl
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, hasActiveFilterChips ? 0 : 8)
+
+                if hasActiveFilterChips {
                     activeFilterChipBar
                         .padding(.horizontal, 16)
-                        .padding(.top, 12)
+                        .padding(.top, 8)
+                        .padding(.bottom, 8)
                 }
 
                 if groupedByDay.isEmpty {
@@ -436,7 +464,7 @@ timelineRoot
                     }
                 }
 
-                if store.filterType != .all {
+                if store.filterType != .all && !store.filterType.isTimelinePigmentCase {
                     compactFilterChip(title: store.filterType.rawValue) {
                         store.send(.filterTypeChanged(.all))
                     }
@@ -504,17 +532,23 @@ timelineRoot
     @ViewBuilder
     private var timelineSidebarContent: some View {
         VStack(spacing: 0) {
-            if hasActiveFilters {
+            timelinePigmentControl
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+                .padding(.bottom, hasActiveFilterChips ? 0 : 8)
+
+            if hasActiveFilterChips {
                 activeFilterChipBar
                     .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
+                    .padding(.top, 8)
+                    .padding(.bottom, 10)
             }
 
-            if logs.isEmpty && notes.isEmpty && sleepSessions.isEmpty && placeCheckInSessions.isEmpty {
+            if !hasAnyTimelineRecords {
                 ContentUnavailableView(
                     "No timeline entries yet",
                     systemImage: "clock.arrow.circlepath",
-                    description: Text("Completed items, notes, place check-ins, and sleep records will appear here in chronological order.")
+                    description: Text("Completed items, notes, place check-ins, emotions, and sleep records will appear here in chronological order.")
                 )
             } else if groupedByDay.isEmpty {
                 ContentUnavailableView(

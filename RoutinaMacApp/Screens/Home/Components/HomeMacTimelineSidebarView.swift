@@ -13,7 +13,7 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
                 ContentUnavailableView(
                     "No timeline entries yet",
                     systemImage: "clock.arrow.circlepath",
-                    description: Text("Completed items and sleep records will appear here in chronological order.")
+                    description: Text("Completed items, notes, place check-ins, emotions, and sleep records will appear here in chronological order.")
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if groupedEntries.isEmpty {
