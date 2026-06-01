@@ -252,38 +252,59 @@ struct TaskDetailCommentsSectionView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .taskDetailCopyableText(comment.body)
 
-                VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(metadataText(for: comment))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    HStack(spacing: 12) {
-                        Spacer(minLength: 0)
+                    Spacer(minLength: 8)
 
-                        Button {
-                            hideComment(comment.id)
-                        } label: {
-                            Label("Hide", systemImage: "eye.slash")
-                        }
-                        .buttonStyle(.plain)
-
-                        Button {
-                            onEditComment(comment.id)
-                        } label: {
-                            Label("Edit", systemImage: "pencil")
-                        }
-                        .buttonStyle(.plain)
-
-                        Button(role: .destructive) {
-                            onDeleteComment(comment.id)
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                        .buttonStyle(.plain)
-                    }
+                    commentActionsMenu(comment)
                 }
             }
+            .contextMenu {
+                commentActions(comment)
+            }
+        }
+    }
+
+    private func commentActionsMenu(_ comment: RoutineTaskComment) -> some View {
+        Menu {
+            commentActions(comment)
+        } label: {
+            Label("Comment actions", systemImage: "ellipsis.circle")
+                .labelStyle(.iconOnly)
+                .imageScale(.medium)
+                .frame(width: 28, height: 24)
+                .contentShape(Rectangle())
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .accessibilityLabel("Comment actions")
+    }
+
+    @ViewBuilder
+    private func commentActions(_ comment: RoutineTaskComment) -> some View {
+        Button {
+            hideComment(comment.id)
+        } label: {
+            Label("Hide", systemImage: "eye.slash")
+        }
+
+        Button {
+            onEditComment(comment.id)
+        } label: {
+            Label("Edit", systemImage: "pencil")
+        }
+
+        Divider()
+
+        Button(role: .destructive) {
+            onDeleteComment(comment.id)
+        } label: {
+            Label("Delete", systemImage: "trash")
         }
     }
 
