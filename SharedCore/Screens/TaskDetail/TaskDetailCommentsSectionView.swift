@@ -18,10 +18,29 @@ struct TaskDetailCommentsSectionView: View {
     let onDeleteComment: (UUID) -> Void
 
     @State private var isExpanded = true
+    @State private var isShowingAllComments = false
     @State private var hiddenCommentIDs: Set<UUID> = []
 
+    private static let collapsedCommentLimit = 3
+
     private var displayedComments: [RoutineTaskComment] {
+        RoutineTaskCommentPresentation.visibleComments(
+            comments,
+            showAll: isShowingAllComments,
+            limit: Self.collapsedCommentLimit
+        )
+    }
+
+    private var sortedComments: [RoutineTaskComment] {
         RoutineTaskCommentPresentation.newestFirst(comments)
+    }
+
+    private var hiddenOlderCommentCount: Int {
+        max(0, sortedComments.count - displayedComments.count)
+    }
+
+    private var shouldShowMoreCommentsControl: Bool {
+        !isShowingAllComments && hiddenOlderCommentCount > 0
     }
 
     private var currentCommentIDs: Set<UUID> {
@@ -53,6 +72,9 @@ struct TaskDetailCommentsSectionView: View {
         }
         .onChange(of: comments.map(\.id)) { _, commentIDs in
             hiddenCommentIDs.formIntersection(Set(commentIDs))
+            if commentIDs.count <= Self.collapsedCommentLimit {
+                isShowingAllComments = false
+            }
         }
     }
 
@@ -98,8 +120,29 @@ struct TaskDetailCommentsSectionView: View {
                             .padding(.vertical, 10)
                     }
                 }
+
+                if shouldShowMoreCommentsControl {
+                    Divider()
+                        .padding(.vertical, 10)
+
+                    showMoreCommentsButton
+                }
             }
         }
+    }
+
+    private var showMoreCommentsButton: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.16)) {
+                isShowingAllComments = true
+            }
+        } label: {
+            Label("Show more", systemImage: "chevron.down.circle")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .accessibilityHint("Shows \(hiddenOlderCommentCount) older comments")
     }
 
     private var hiddenCommentsControl: some View {
@@ -295,5 +338,18 @@ enum RoutineTaskCommentPresentation {
                 return left.offset > right.offset
             }
             .map(\.element)
+    }
+
+    static func visibleComments(
+        _ comments: [RoutineTaskComment],
+        showAll: Bool,
+        limit: Int = 3
+    ) -> [RoutineTaskComment] {
+        let sortedComments = newestFirst(comments)
+        guard !showAll, limit > 0 else {
+            return sortedComments
+        }
+
+        return Array(sortedComments.prefix(limit))
     }
 }

@@ -70,6 +70,35 @@ struct TaskDetailCommentsTests {
     }
 
     @Test
+    func commentPresentationShowsOnlyThreeNewestCommentsByDefault() {
+        let comments = [
+            RoutineTaskComment(body: "First", createdAt: makeDate("2026-04-02T08:00:00Z")),
+            RoutineTaskComment(body: "Second", createdAt: makeDate("2026-04-02T08:05:00Z")),
+            RoutineTaskComment(body: "Third", createdAt: makeDate("2026-04-02T08:10:00Z")),
+            RoutineTaskComment(body: "Fourth", createdAt: makeDate("2026-04-02T08:15:00Z")),
+            RoutineTaskComment(body: "Fifth", createdAt: makeDate("2026-04-02T08:20:00Z"))
+        ]
+
+        let visibleComments = RoutineTaskCommentPresentation.visibleComments(comments, showAll: false)
+
+        #expect(visibleComments.map(\.body) == ["Fifth", "Fourth", "Third"])
+    }
+
+    @Test
+    func commentPresentationShowsAllCommentsWhenExpanded() {
+        let comments = [
+            RoutineTaskComment(body: "First", createdAt: makeDate("2026-04-02T08:00:00Z")),
+            RoutineTaskComment(body: "Second", createdAt: makeDate("2026-04-02T08:05:00Z")),
+            RoutineTaskComment(body: "Third", createdAt: makeDate("2026-04-02T08:10:00Z")),
+            RoutineTaskComment(body: "Fourth", createdAt: makeDate("2026-04-02T08:15:00Z"))
+        ]
+
+        let visibleComments = RoutineTaskCommentPresentation.visibleComments(comments, showAll: true)
+
+        #expect(visibleComments.map(\.body) == ["Fourth", "Third", "Second", "First"])
+    }
+
+    @Test
     func detailComments_canAddEditAndDeleteWithoutOpeningEditSheet() async throws {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Journal", interval: 1, lastDone: nil, emoji: "J")
