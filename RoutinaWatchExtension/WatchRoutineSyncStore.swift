@@ -394,6 +394,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
     private let placeCheckInCacheKey = "watch.cachedPlaceCheckIn.v1"
     private let sleepCacheKey = "watch.cachedSleepSession.v1"
     private let focusCacheKey = "watch.cachedFocusSession.v1"
+    private let locallyEndedSleepAtKey = "watch.locallyEndedSleepAt.v1"
     private let pendingRoutineKey = "watch.pendingRoutines.v3"
     private let installationIDKey = "watch.device.installationID.v1"
     private var pendingRoutineByID: [UUID: WatchRoutine] = [:]
@@ -425,11 +426,10 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             applyPayload(context)
         }
 
-        if session.isReachable {
-            session.sendMessage(actionPayload(["requestSync": true]), replyHandler: nil)
-        } else {
-            session.transferUserInfo(actionPayload(["requestSync": true]))
-        }
+        sendActionPayload(
+            actionPayload(["requestSync": true]),
+            failureLog: "Watch request sync message failed"
+        )
     }
 
     func markRoutineDone(id: UUID) {
@@ -438,19 +438,13 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         savePendingRoutines()
         saveCachedRoutines()
 
-        guard let session else { return }
-
         let payload = actionPayload([
             "action": "markDone",
             "taskID": id.uuidString,
             "completedAt": completionDate.timeIntervalSince1970
         ])
 
-        if session.isReachable {
-            session.sendMessage(payload, replyHandler: nil)
-        } else {
-            session.transferUserInfo(payload)
-        }
+        sendActionPayload(payload, failureLog: "Watch mark routine done message failed")
     }
 
     func checkInPlace(id: UUID) {
@@ -466,19 +460,13 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             saveCachedPlaceCheckIn()
         }
 
-        guard let session else { return }
-
         let payload = actionPayload([
             "action": "checkInPlace",
             "placeID": id.uuidString,
             "checkedInAt": checkedInAt.timeIntervalSince1970
         ])
 
-        if session.isReachable {
-            session.sendMessage(payload, replyHandler: nil)
-        } else {
-            session.transferUserInfo(payload)
-        }
+        sendActionPayload(payload, failureLog: "Watch place check-in message failed")
     }
 
     func endPlaceCheckIn() {
@@ -486,22 +474,17 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         activePlaceCheckIn = nil
         saveCachedPlaceCheckIn()
 
-        guard let session else { return }
-
         let payload = actionPayload([
             "action": "endPlaceCheckIn",
             "endedAt": endedAt.timeIntervalSince1970
         ])
 
-        if session.isReachable {
-            session.sendMessage(payload, replyHandler: nil)
-        } else {
-            session.transferUserInfo(payload)
-        }
+        sendActionPayload(payload, failureLog: "Watch end place check-in message failed")
     }
 
     func startSleep() {
         let startedAt = Date()
+        clearLocallyEndedSleepAt()
         activeSleepSession = WatchSleepSession(
             id: UUID(),
             startedAt: startedAt,
@@ -510,37 +493,26 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         )
         saveCachedSleepSession()
 
-        guard let session else { return }
-
         let payload = actionPayload([
             "action": "startSleep",
             "startedAt": startedAt.timeIntervalSince1970
         ])
 
-        if session.isReachable {
-            session.sendMessage(payload, replyHandler: nil)
-        } else {
-            session.transferUserInfo(payload)
-        }
+        sendActionPayload(payload, failureLog: "Watch start sleep message failed")
     }
 
     func endSleep() {
         let endedAt = Date()
+        setLocallyEndedSleepAt(endedAt)
         activeSleepSession = nil
         saveCachedSleepSession()
-
-        guard let session else { return }
 
         let payload = actionPayload([
             "action": "endSleep",
             "endedAt": endedAt.timeIntervalSince1970
         ])
 
-        if session.isReachable {
-            session.sendMessage(payload, replyHandler: nil)
-        } else {
-            session.transferUserInfo(payload)
-        }
+        sendActionPayload(payload, failureLog: "Watch end sleep message failed")
     }
 
     func startFocus() {
@@ -560,27 +532,19 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         )
         saveCachedFocusSession()
 
-        guard let session else { return }
-
         let payload = actionPayload([
             "action": "startUnassignedFocus",
             "sessionID": sessionID.uuidString,
             "startedAt": startedAt.timeIntervalSince1970
         ])
 
-        if session.isReachable {
-            session.sendMessage(payload, replyHandler: nil)
-        } else {
-            session.transferUserInfo(payload)
-        }
+        sendActionPayload(payload, failureLog: "Watch start focus message failed")
     }
 
     func pauseFocus(_ focus: WatchFocusSession) {
         let pausedAt = Date()
         activeFocusSession = focus.pausing(at: pausedAt)
         saveCachedFocusSession()
-
-        guard let session else { return }
 
         let payload = actionPayload([
             "action": "pauseFocus",
@@ -589,19 +553,13 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             "pausedAt": pausedAt.timeIntervalSince1970
         ])
 
-        if session.isReachable {
-            session.sendMessage(payload, replyHandler: nil)
-        } else {
-            session.transferUserInfo(payload)
-        }
+        sendActionPayload(payload, failureLog: "Watch pause focus message failed")
     }
 
     func resumeFocus(_ focus: WatchFocusSession) {
         let resumedAt = Date()
         activeFocusSession = focus.resuming(at: resumedAt)
         saveCachedFocusSession()
-
-        guard let session else { return }
 
         let payload = actionPayload([
             "action": "resumeFocus",
@@ -610,19 +568,13 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             "resumedAt": resumedAt.timeIntervalSince1970
         ])
 
-        if session.isReachable {
-            session.sendMessage(payload, replyHandler: nil)
-        } else {
-            session.transferUserInfo(payload)
-        }
+        sendActionPayload(payload, failureLog: "Watch resume focus message failed")
     }
 
     func finishFocus(_ focus: WatchFocusSession) {
         let endedAt = Date()
         activeFocusSession = nil
         saveCachedFocusSession()
-
-        guard let session else { return }
 
         let payload = actionPayload([
             "action": "finishFocus",
@@ -631,11 +583,7 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
             "endedAt": endedAt.timeIntervalSince1970
         ])
 
-        if session.isReachable {
-            session.sendMessage(payload, replyHandler: nil)
-        } else {
-            session.transferUserInfo(payload)
-        }
+        sendActionPayload(payload, failureLog: "Watch finish focus message failed")
     }
 
     func openOnPhone(_ focus: WatchFocusSession) {
@@ -878,6 +826,19 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
         return payload
     }
 
+    private func sendActionPayload(_ payload: [String: Any], failureLog: String) {
+        guard let session else { return }
+
+        if session.isReachable {
+            session.sendMessage(payload, replyHandler: nil) { error in
+                NSLog("\(failureLog): \(error.localizedDescription)")
+                session.transferUserInfo(payload)
+            }
+        } else {
+            session.transferUserInfo(payload)
+        }
+    }
+
     private func currentDeviceSourcePayload() -> [String: Any] {
         let device = WKInterfaceDevice.current()
         return [
@@ -951,6 +912,18 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
     }
 
     private func setActiveSleepSession(_ sleep: WatchSleepSession?) {
+        if let sleep {
+            if let locallyEndedAt = locallyEndedSleepAt(), sleep.startedAt <= locallyEndedAt {
+                activeSleepSession = nil
+                saveCachedSleepSession()
+                return
+            }
+
+            clearLocallyEndedSleepAt()
+        } else {
+            clearLocallyEndedSleepAt()
+        }
+
         activeSleepSession = sleep
         saveCachedSleepSession()
     }
@@ -1227,6 +1200,21 @@ final class WatchRoutineSyncStore: NSObject, ObservableObject, WCSessionDelegate
 
         guard let data = try? JSONEncoder().encode(activeSleepSession) else { return }
         UserDefaults.standard.set(data, forKey: sleepCacheKey)
+    }
+
+    private func locallyEndedSleepAt() -> Date? {
+        guard let timestamp = UserDefaults.standard.object(forKey: locallyEndedSleepAtKey) as? TimeInterval else {
+            return nil
+        }
+        return Date(timeIntervalSince1970: timestamp)
+    }
+
+    private func setLocallyEndedSleepAt(_ date: Date) {
+        UserDefaults.standard.set(date.timeIntervalSince1970, forKey: locallyEndedSleepAtKey)
+    }
+
+    private func clearLocallyEndedSleepAt() {
+        UserDefaults.standard.removeObject(forKey: locallyEndedSleepAtKey)
     }
 
     private func saveCachedFocusSession() {
