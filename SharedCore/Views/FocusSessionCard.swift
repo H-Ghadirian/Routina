@@ -12,7 +12,9 @@ struct FocusSessionCard: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.calendar) private var calendar
     @Query private var activeSleepSessions: [SleepSession]
-    @State private var isExpanded = false
+    @State private var isExpanded: Bool
+    @State private var isShowingAllHistory = false
+    @State private var isShieldControlsExpanded = false
     @State private var editingSession: FocusSession?
     @State private var editStartedAt = Date()
     @State private var editDurationMinutes = 25
@@ -57,6 +59,7 @@ struct FocusSessionCard: View {
             sort: \.startedAt,
             order: .reverse
         )
+        _isExpanded = State(initialValue: isEmbedded)
         self.task = task
         self.sessions = sessions
         self.allTasks = allTasks
@@ -133,7 +136,10 @@ struct FocusSessionCard: View {
 
                 if !snapshot.completedSessionsForTask.isEmpty {
                     Divider()
-                    focusHistorySummary(snapshot: snapshot)
+                    focusHistorySummary(
+                        snapshot: snapshot,
+                        showsAccumulatedBlocks: snapshot.activeSessionForTask == nil
+                    )
                     focusSessionHistory(snapshot: snapshot)
                 }
             }
@@ -205,7 +211,14 @@ struct FocusSessionCard: View {
             #endif
         }
         .onChange(of: task.id) { _, _ in
-            isExpanded = false
+            isExpanded = isEmbedded
+            isShowingAllHistory = false
+            isShieldControlsExpanded = false
+        }
+        .onChange(of: snapshot.completedSessionsForTask.count) { _, count in
+            if count <= 3 {
+                isShowingAllHistory = false
+            }
         }
         .task {
             syncFocusShieldForCurrentContext()
@@ -224,11 +237,17 @@ struct FocusSessionCard: View {
             syncFocusShieldForCurrentContext()
         }
         .onChange(of: isFocusShieldEnabled) { _, _ in
+            if !isFocusShieldEnabled {
+                isShieldControlsExpanded = false
+            }
             focusShieldStatusMessage = focusShieldSelection.routinaSummaryText
             syncFocusShieldForCurrentContext()
         }
         #elseif os(macOS)
         .onChange(of: isMacFocusAppBlockingEnabled) { _, _ in
+            if !isMacFocusAppBlockingEnabled {
+                isShieldControlsExpanded = false
+            }
             macFocusShieldStatusMessage = FocusShieldSupport.macBlockedAppsSummaryText(macBlockedApps)
             syncFocusShieldForCurrentContext()
         }
@@ -310,37 +329,16 @@ struct FocusSessionCard: View {
 
     private var startFocusControls: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Button {
-                startCountUpSession()
-            } label: {
-                Label("Count up", systemImage: "stopwatch")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.teal)
-            .controlSize(.regular)
-
-            HStack(spacing: 8) {
-                ForEach(durationOptions.prefix(3), id: \.self) { seconds in
-                    Button(FocusSessionFormatting.compactDurationText(seconds: seconds)) {
-                        startSession(duration: seconds)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.regular)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) {
+                    countUpStartButton
+                    durationStartButtons
                 }
 
-                Menu {
-                    ForEach(durationOptions.dropFirst(3), id: \.self) { seconds in
-                        Button(FocusSessionFormatting.compactDurationText(seconds: seconds)) {
-                            startSession(duration: seconds)
-                        }
-                    }
-                } label: {
-                    Label("More", systemImage: "ellipsis.circle")
-                        .labelStyle(.iconOnly)
+                VStack(alignment: .leading, spacing: 8) {
+                    countUpStartButton
+                    durationStartButtons
                 }
-                .buttonStyle(.bordered)
-                .accessibilityLabel("More focus durations")
             }
 
             #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
@@ -355,16 +353,77 @@ struct FocusSessionCard: View {
         }
     }
 
+    private var countUpStartButton: some View {
+        Button {
+            startCountUpSession()
+        } label: {
+            Label("Start count up", systemImage: "stopwatch")
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(.teal)
+        .controlSize(.regular)
+    }
+
+    private var durationStartButtons: some View {
+        HStack(spacing: 8) {
+            ForEach(durationOptions.prefix(3), id: \.self) { seconds in
+                Button(FocusSessionFormatting.compactDurationText(seconds: seconds)) {
+                    startSession(duration: seconds)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.regular)
+            }
+
+            Menu {
+                ForEach(durationOptions.dropFirst(3), id: \.self) { seconds in
+                    Button(FocusSessionFormatting.compactDurationText(seconds: seconds)) {
+                        startSession(duration: seconds)
+                    }
+                }
+            } label: {
+                Label("More durations", systemImage: "ellipsis.circle")
+                    .labelStyle(.iconOnly)
+            }
+            .buttonStyle(.bordered)
+            .accessibilityLabel("More focus durations")
+        }
+    }
+
     #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
     private var focusShieldControls: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Toggle(isOn: $isFocusShieldEnabled) {
-                Label("Block apps and websites", systemImage: "lock.shield")
-                    .font(.subheadline.weight(.semibold))
-            }
-            .toggleStyle(.switch)
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .center, spacing: 10) {
+                Toggle(isOn: $isFocusShieldEnabled) {
+                    Label("Block apps and websites", systemImage: "lock.shield")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .toggleStyle(.switch)
 
-            if isFocusShieldEnabled {
+                Spacer(minLength: 8)
+
+                Text(isFocusShieldEnabled ? focusShieldControlSummary : "Off")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+
+                if isFocusShieldEnabled {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.16)) {
+                            isShieldControlsExpanded.toggle()
+                        }
+                    } label: {
+                        Label("Focus blocking options", systemImage: "chevron.down")
+                    }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(isShieldControlsExpanded ? 180 : 0))
+                    .accessibilityLabel(isShieldControlsExpanded ? "Hide blocking options" : "Show blocking options")
+                }
+            }
+
+            if isFocusShieldEnabled && isShieldControlsExpanded {
                 HStack(spacing: 8) {
                     Button {
                         requestFocusShieldAuthorization()
@@ -392,6 +451,19 @@ struct FocusSessionCard: View {
         }
         .padding(10)
         .routinaGlassCard(cornerRadius: 10, tint: .teal, tintOpacity: 0.05)
+    }
+
+    private var focusShieldControlSummary: String {
+        switch focusShieldAuthorizationState {
+        case .approved:
+            return focusShieldSelection.routinaSummaryText
+        case .denied:
+            return "Access off"
+        case .notDetermined:
+            return "Needs access"
+        case .unavailable:
+            return "Unavailable"
+        }
     }
 
     private var focusShieldAuthorizationState: FocusShieldAuthorizationState {
@@ -447,14 +519,39 @@ struct FocusSessionCard: View {
 
     #if os(macOS)
     private var macFocusShieldControls: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Toggle(isOn: $isMacFocusAppBlockingEnabled) {
-                Label("Block apps", systemImage: "lock.shield")
-                    .font(.subheadline.weight(.semibold))
-            }
-            .toggleStyle(.switch)
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .center, spacing: 10) {
+                Toggle(isOn: $isMacFocusAppBlockingEnabled) {
+                    Label("Block apps", systemImage: "lock.shield")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .toggleStyle(.switch)
 
-            if isMacFocusAppBlockingEnabled {
+                Spacer(minLength: 8)
+
+                Text(isMacFocusAppBlockingEnabled ? FocusShieldSupport.macBlockedAppsSummaryText(macBlockedApps) : "Off")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+
+                if isMacFocusAppBlockingEnabled {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.16)) {
+                            isShieldControlsExpanded.toggle()
+                        }
+                    } label: {
+                        Label("Focus blocking options", systemImage: "chevron.down")
+                    }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(isShieldControlsExpanded ? 180 : 0))
+                    .accessibilityLabel(isShieldControlsExpanded ? "Hide blocking options" : "Show blocking options")
+                }
+            }
+
+            if isMacFocusAppBlockingEnabled && isShieldControlsExpanded {
                 HStack(spacing: 8) {
                     Button {
                         chooseMacBlockedApps()
@@ -600,10 +697,7 @@ struct FocusSessionCard: View {
                     }
 
                     if isCountUp {
-                        countUpFocusBlocks(
-                            elapsedSeconds: elapsedSeconds,
-                            completedBlockCount: snapshot.completedFocusBlockCount
-                        )
+                        countUpFocusBlocks(elapsedSeconds: elapsedSeconds)
                     } else {
                         ProgressView(value: progress)
                             .tint(.teal)
@@ -651,13 +745,9 @@ struct FocusSessionCard: View {
         }
     }
 
-    private func countUpFocusBlocks(
-        elapsedSeconds: TimeInterval,
-        completedBlockCount: Int
-    ) -> some View {
+    private func countUpFocusBlocks(elapsedSeconds: TimeInterval) -> some View {
         let sessionBlockCount = FocusBlockProgress.filledBlockCount(for: elapsedSeconds)
         let visibleSessionBlockCount = FocusBlockProgress.visibleSessionBlockCount(for: elapsedSeconds)
-        let accumulatedBlockCount = completedBlockCount + sessionBlockCount
         let nextBlockSeconds = FocusBlockProgress.secondsUntilNextBlock(for: elapsedSeconds)
 
         return VStack(alignment: .leading, spacing: 10) {
@@ -674,25 +764,6 @@ struct FocusSessionCard: View {
                     blockSize: 12,
                     spacing: 5
                 )
-            }
-
-            if accumulatedBlockCount > 0 {
-                VStack(alignment: .leading, spacing: 6) {
-                    blockHeader(
-                        title: "All focus blocks",
-                        value: FocusBlockProgress.blockCountText(accumulatedBlockCount),
-                        trailingValue: FocusSessionFormatting.compactDurationText(
-                            seconds: TimeInterval(accumulatedBlockCount) * FocusBlockProgress.blockDurationSeconds
-                        )
-                    )
-
-                    FocusBlockGrid(
-                        filledCount: accumulatedBlockCount,
-                        totalCount: accumulatedBlockCount,
-                        blockSize: 8,
-                        spacing: 4
-                    )
-                }
             }
         }
     }
@@ -747,7 +818,10 @@ struct FocusSessionCard: View {
         }
     }
 
-    private func focusHistorySummary(snapshot: FocusSessionCardSnapshot) -> some View {
+    private func focusHistorySummary(
+        snapshot: FocusSessionCardSnapshot,
+        showsAccumulatedBlocks: Bool = true
+    ) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 12) {
                 metricTile(
@@ -766,7 +840,7 @@ struct FocusSessionCard: View {
                 }
             }
 
-            if snapshot.completedFocusBlockCount > 0 {
+            if showsAccumulatedBlocks && snapshot.completedFocusBlockCount > 0 {
                 VStack(alignment: .leading, spacing: 6) {
                     blockHeader(
                         title: "Accumulated blocks",
@@ -788,12 +862,29 @@ struct FocusSessionCard: View {
     }
 
     private func focusSessionHistory(snapshot: FocusSessionCardSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Recent focus")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
+        let allSessions = snapshot.completedSessionsForTask
+        let visibleSessions = isShowingAllHistory
+            ? allSessions
+            : Array(allSessions.prefix(3))
 
-            ForEach(snapshot.completedSessionsForTask.prefix(3)) { session in
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Text(isShowingAllHistory ? "Focus history" : "Recent focus")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                Text(allSessions.count.formatted())
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(Color.secondary.opacity(0.14))
+                    )
+            }
+
+            ForEach(visibleSessions) { session in
                 HStack(spacing: 8) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(session.completedAt?.formatted(date: .abbreviated, time: .shortened) ?? "Unknown date")
@@ -817,6 +908,23 @@ struct FocusSessionCard: View {
                     .accessibilityLabel("Edit focus session")
                 }
                 .padding(.vertical, 4)
+            }
+
+            if allSessions.count > 3 {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.16)) {
+                        isShowingAllHistory.toggle()
+                    }
+                } label: {
+                    Label(
+                        isShowingAllHistory ? "Show less" : "Show all \(allSessions.count) sessions",
+                        systemImage: isShowingAllHistory ? "chevron.up.circle" : "chevron.down.circle"
+                    )
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .accessibilityLabel(isShowingAllHistory ? "Show fewer focus sessions" : "Show all focus sessions")
             }
         }
     }
