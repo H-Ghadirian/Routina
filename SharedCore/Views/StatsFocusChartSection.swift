@@ -196,8 +196,7 @@ struct StatsFocusChartSection: View {
                 }
             }
 
-            if let detailPoint = selectedPoint ?? peakPoint,
-               detailPoint.seconds > 0 {
+            if let detailPoint = selectedPoint ?? peakPoint {
                 StatsFocusPointDetailPanel(
                     title: selectedPoint == nil ? selectedGrouping.peakBadgeTitle : "Selected \(selectedGrouping.unitName)",
                     point: detailPoint,
@@ -538,29 +537,33 @@ private struct StatsFocusPointDetailPanel: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    Text(FocusSessionFormatting.durationText(seconds: point.seconds))
-                        .font(.system(.headline, design: .rounded, weight: .bold))
-                        .foregroundStyle(.primary)
-
-                    Text(grouping.detailTitle(for: point.date, calendar: calendar))
-                        .font(.caption.weight(.medium))
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
+
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                        Text(FocusSessionFormatting.durationText(seconds: point.seconds))
+                            .font(.system(.headline, design: .rounded, weight: .bold))
+                            .foregroundStyle(.primary)
+
+                        Text(grouping.detailTitle(for: point.date, calendar: calendar))
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(.secondary)
+                    }
                 }
+
+                Spacer(minLength: 0)
             }
 
             if visibleContributions.isEmpty {
-                Text("No task detail")
+                Text(point.seconds == 0 ? "No focus logged" : "No task detail")
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.secondary)
             } else {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 4) {
                     ForEach(visibleContributions) { contribution in
                         HStack(alignment: .firstTextBaseline, spacing: 8) {
                             Text(contribution.title)
@@ -585,8 +588,9 @@ private struct StatsFocusPointDetailPanel: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, minHeight: 118, alignment: .topLeading)
-        .padding(12)
+        .frame(maxWidth: .infinity, minHeight: 78, alignment: .topLeading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
         .routinaGlassCard(cornerRadius: 16, tint: .accentColor, tintOpacity: colorScheme == .dark ? 0.18 : 0.12)
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
