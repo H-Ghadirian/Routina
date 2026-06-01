@@ -13,10 +13,13 @@ struct StatsCreatedTasksChartSection: View {
     let colorScheme: ColorScheme
     let onSelectTaskTypeFilter: (StatsTaskTypeFilter) -> Void
 
+    @State private var selectedCreatedPointID: Date?
+
     var body: some View {
         let createdXAxisDates = chartPresentation.dailyBarXAxisDates(from: metrics.createdChartPoints)
         let createdAxisUpperBound = StatsChartCountAxis.upperBound(for: metrics.createdChartUpperBound)
         let createdYAxisPosition: AxisMarkPosition = chartPresentation.usesHorizontalChartScroll ? .trailing : .leading
+        let selectedCreatedPoint = selectedPoint(in: metrics.createdChartPoints)
 
         VStack(alignment: .leading, spacing: 18) {
             StatsSectionHeader(
@@ -49,6 +52,7 @@ struct StatsCreatedTasksChartSection: View {
             StatsHorizontalChartContainer(chartPresentation: chartPresentation, minHeight: 240) {
                 Chart {
                     ForEach(metrics.createdChartPoints) { point in
+                        let isSelected = point.date == selectedCreatedPoint?.date
                         let isHighlighted = point.date == metrics.highlightedCreatedDay?.date
 
                         BarMark(
@@ -57,7 +61,7 @@ struct StatsCreatedTasksChartSection: View {
                         )
                         .cornerRadius(7)
                         .foregroundStyle(
-                            isHighlighted
+                            isSelected || isHighlighted
                                 ? AnyShapeStyle(highlightBarFill)
                                 : AnyShapeStyle(createdBarFill)
                         )
@@ -85,6 +89,12 @@ struct StatsCreatedTasksChartSection: View {
                         )
                         .symbolSize(selectedRange == .year ? 46 : 64)
                         .foregroundStyle(Color.white)
+                    }
+
+                    if let selectedCreatedPoint {
+                        RuleMark(x: .value("Selected day", selectedCreatedPoint.date, unit: .day))
+                            .lineStyle(StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
+                            .foregroundStyle(Color.white.opacity(0.48))
                     }
                 }
                 .chartYScale(domain: 0...createdAxisUpperBound)
@@ -122,6 +132,50 @@ struct StatsCreatedTasksChartSection: View {
                     plotArea.statsChartPlotBackground(colorScheme: colorScheme)
                 }
                 .chartYAxisLabel("Created tasks")
+                .chartOverlay { proxy in
+                    GeometryReader { geometry in
+                        Rectangle()
+                            .fill(.clear)
+                            .contentShape(Rectangle())
+                            .gesture(
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { value in
+                                        updateSelectedPoint(
+                                            at: value.location,
+                                            proxy: proxy,
+                                            geometry: geometry,
+                                            points: metrics.createdChartPoints
+                                        )
+                                    }
+                            )
+                        #if os(macOS)
+                            .onContinuousHover { phase in
+                                switch phase {
+                                case .active(let location):
+                                    updateSelectedPoint(
+                                        at: location,
+                                        proxy: proxy,
+                                        geometry: geometry,
+                                        points: metrics.createdChartPoints
+                                    )
+                                case .ended:
+                                    selectedCreatedPointID = nil
+                                }
+                            }
+                        #endif
+                    }
+                }
+            }
+
+            if let detailPoint = selectedCreatedPoint ?? metrics.highlightedCreatedDay ?? metrics.createdChartPoints.last {
+                StatsCreatedTasksPointDetailPanel(
+                    title: selectedCreatedPoint == nil
+                        ? (metrics.highlightedCreatedDay == nil ? "Latest day" : "Most created")
+                        : "Selected day",
+                    point: detailPoint,
+                    chartPresentation: chartPresentation,
+                    colorScheme: colorScheme
+                )
             }
 
             StatsChartInsightRow(
@@ -141,5 +195,95 @@ struct StatsCreatedTasksChartSection: View {
             get: { selectedTaskTypeFilter },
             set: { onSelectTaskTypeFilter($0) }
         )
+    }
+
+    private func selectedPoint(in points: [DoneChartPoint]) -> DoneChartPoint? {
+        guard let selectedCreatedPointID else { return nil }
+        return points.first { $0.date == selectedCreatedPointID }
+    }
+
+    private func updateSelectedPoint(
+        at location: CGPoint,
+        proxy: ChartProxy,
+        geometry: GeometryProxy,
+        points: [DoneChartPoint]
+    ) {
+        guard let plotFrame = proxy.plotFrame else {
+            selectedCreatedPointID = nil
+            return
+        }
+
+        let frame = geometry[plotFrame]
+        guard frame.contains(location) else {
+            selectedCreatedPointID = nil
+            return
+        }
+
+        let xPosition = location.x - frame.origin.x
+        guard let date: Date = proxy.value(atX: xPosition),
+              let nearestPoint = nearestPoint(to: date, in: points) else {
+            selectedCreatedPointID = nil
+            return
+        }
+
+        selectedCreatedPointID = nearestPoint.date
+    }
+
+    private func nearestPoint(
+        to date: Date,
+        in points: [DoneChartPoint]
+    ) -> DoneChartPoint? {
+        points.min { lhs, rhs in
+            abs(lhs.date.timeIntervalSince(date)) < abs(rhs.date.timeIntervalSince(date))
+        }
+    }
+}
+
+private struct StatsCreatedTasksPointDetailPanel: View {
+    let title: String
+    let point: DoneChartPoint
+    let chartPresentation: StatsChartPresentation
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(point.count.formatted())
+                    .font(.system(.headline, design: .rounded, weight: .bold))
+                    .foregroundStyle(.primary)
+
+                Text(chartPresentation.bestDayCaption(for: point))
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
+
+            Text(detailText)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, minHeight: 78, alignment: .topLeading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .routinaGlassCard(cornerRadius: 16, tint: .green, tintOpacity: colorScheme == .dark ? 0.18 : 0.12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.white.opacity(colorScheme == .dark ? 0.12 : 0.35), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.28 : 0.12), radius: 12, y: 8)
+    }
+
+    private var detailText: String {
+        switch point.count {
+        case 0:
+            return "No tasks created"
+        case 1:
+            return "1 task created"
+        default:
+            return "\(point.count) tasks created"
+        }
     }
 }
