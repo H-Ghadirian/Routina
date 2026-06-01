@@ -18,7 +18,7 @@ struct TaskDetailCommentsSectionView: View {
     let onSaveEditComment: (UUID) -> Void
     let onDeleteComment: (UUID) -> Void
 
-    @State private var isExpanded = true
+    @State private var isExpanded = false
     @State private var isShowingAllComments = false
     @State private var hiddenCommentIDs: Set<UUID> = []
 
@@ -52,6 +52,18 @@ struct TaskDetailCommentsSectionView: View {
         isCommentComposerVisible || hasCommentDraft
     }
 
+    private var isEditingComment: Bool {
+        editingCommentID != nil
+    }
+
+    private var shouldForceExpanded: Bool {
+        shouldShowCommentComposer || isEditingComment
+    }
+
+    private var isContentExpanded: Bool {
+        isExpanded || shouldForceExpanded
+    }
+
     private var currentCommentIDs: Set<UUID> {
         Set(comments.map(\.id))
     }
@@ -70,11 +82,11 @@ struct TaskDetailCommentsSectionView: View {
                 TaskDetailCollapsibleSectionHeaderView(
                     title: "Comments",
                     count: comments.count,
-                    isExpanded: isExpanded,
-                    onToggle: { isExpanded.toggle() }
+                    isExpanded: isContentExpanded,
+                    onToggle: toggleExpanded
                 )
 
-                if isExpanded {
+                if isContentExpanded {
                     expandedContent
                 }
             }
@@ -198,7 +210,7 @@ struct TaskDetailCommentsSectionView: View {
             Button {
                 withAnimation(.easeInOut(duration: 0.16)) {
                     hiddenCommentIDs.removeAll()
-                    isExpanded = true
+                    expand()
                 }
             } label: {
                 Label("Show All", systemImage: "eye")
@@ -387,6 +399,18 @@ struct TaskDetailCommentsSectionView: View {
         withAnimation(.easeInOut(duration: 0.16)) {
             _ = hiddenCommentIDs.remove(id)
         }
+    }
+
+    private func toggleExpanded() {
+        if shouldForceExpanded {
+            expand()
+        } else {
+            isExpanded.toggle()
+        }
+    }
+
+    private func expand() {
+        isExpanded = true
     }
 }
 
