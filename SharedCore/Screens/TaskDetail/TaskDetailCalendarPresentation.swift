@@ -33,9 +33,9 @@ struct TaskDetailCalendarDayPresentation: Equatable {
     var backgroundColor: Color {
         if isDoneDate { return TaskDetailStatusPalette.done }
         if isAssumedDate { return TaskDetailStatusPalette.assumed }
-        if isPausedDate { return TaskDetailStatusPalette.paused }
         if isCanceledDate { return TaskDetailStatusPalette.canceled }
         if isMissedDate { return TaskDetailStatusPalette.missed }
+        if isPausedDate { return TaskDetailStatusPalette.paused }
         if isDueToTodayRangeDate { return TaskDetailStatusPalette.overdue }
         if isDueDate { return TaskDetailStatusPalette.due }
         if isSoftDueDate { return TaskDetailStatusPalette.due }
@@ -123,7 +123,7 @@ enum TaskDetailCalendarPresentation {
             referenceDate: referenceDate,
             calendar: calendar
         )
-        let isPausedDate = isInPausedRange(
+        let isPausedDate = !isDoneDate && !isAssumedDate && !isCanceledDate && !isMissedDate && isInPausedRange(
             day: day,
             pausedAt: pausedAt,
             referenceDate: referenceDate,

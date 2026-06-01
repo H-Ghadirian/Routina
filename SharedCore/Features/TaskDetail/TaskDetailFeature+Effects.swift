@@ -735,7 +735,7 @@ extension TaskDetailFeature {
     func handlePauseRoutine(taskID: UUID, pausedAt: Date) -> Effect<Action> {
         .run { @MainActor _ in
             do {
-                let context = modelContext()
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
                 if task.scheduleAnchor == nil {
                     task.scheduleAnchor = RoutineDateMath.effectiveScheduleAnchor(for: task, referenceDate: pausedAt)
@@ -762,7 +762,7 @@ extension TaskDetailFeature {
     func handleNotTodayRoutine(taskID: UUID, snoozedUntil: Date) -> Effect<Action> {
         .run { @MainActor _ in
             do {
-                let context = modelContext()
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
                 task.snoozedUntil = snoozedUntil
                 DeviceActivityRecorder.recordAction(
@@ -801,7 +801,7 @@ extension TaskDetailFeature {
     func handleResumeRoutine(taskID: UUID, resumedAt: Date) -> Effect<Action> {
         .run { @MainActor _ in
             do {
-                let context = modelContext()
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
                 if let pausedAt = task.pausedAt, task.isChecklistDriven {
                     task.shiftChecklistItems(by: max(resumedAt.timeIntervalSince(pausedAt), 0))

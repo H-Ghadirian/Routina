@@ -554,6 +554,54 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func calendarPresentationPrefersCanceledOverPausedWhenSameDate() {
+        let calendar = makeTestCalendar()
+        let occurrenceDate = makeDate("2026-06-01T17:00:00Z")
+        let occurrenceDay = calendar.startOfDay(for: occurrenceDate)
+        let presentation = TaskDetailCalendarPresentation.dayPresentation(
+            day: occurrenceDate,
+            doneDates: [],
+            assumedDates: [],
+            dueDate: nil,
+            missedDates: [],
+            canceledDates: [occurrenceDay],
+            createdAt: nil,
+            pausedAt: makeDate("2026-06-01T18:00:00Z"),
+            isOrangeUrgencyToday: false,
+            referenceDate: makeDate("2026-06-02T10:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(presentation.isCanceledDate)
+        #expect(!presentation.isPausedDate)
+        #expect(presentation.isHighlightedDay)
+    }
+
+    @Test
+    func calendarPresentationPrefersMissedOverPausedWhenSameDate() {
+        let calendar = makeTestCalendar()
+        let occurrenceDate = makeDate("2026-06-01T17:00:00Z")
+        let occurrenceDay = calendar.startOfDay(for: occurrenceDate)
+        let presentation = TaskDetailCalendarPresentation.dayPresentation(
+            day: occurrenceDate,
+            doneDates: [],
+            assumedDates: [],
+            dueDate: nil,
+            missedDates: [occurrenceDay],
+            canceledDates: [],
+            createdAt: nil,
+            pausedAt: makeDate("2026-06-01T18:00:00Z"),
+            isOrangeUrgencyToday: false,
+            referenceDate: makeDate("2026-06-02T10:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(presentation.isMissedDate)
+        #expect(!presentation.isPausedDate)
+        #expect(presentation.isHighlightedDay)
+    }
+
+    @Test
     func checklistPresentationSortsAndSummarizesDueItems() {
         let calendar = makeTestCalendar()
         let referenceDate = makeDate("2026-04-25T10:00:00Z")

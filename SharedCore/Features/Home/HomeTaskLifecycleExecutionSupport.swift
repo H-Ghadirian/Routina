@@ -184,7 +184,7 @@ enum HomeTaskLifecycleExecutionSupport {
     ) -> Effect<Action> {
         .run { @MainActor _ in
             do {
-                let context = modelContext()
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 guard let task = try context.fetch(HomeTaskSupport.taskDescriptor(for: update.taskID)).first else {
                     return
                 }
@@ -221,7 +221,7 @@ enum HomeTaskLifecycleExecutionSupport {
     ) -> Effect<Action> {
         .run { @MainActor _ in
             do {
-                let context = modelContext()
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 guard let task = try context.fetch(HomeTaskSupport.taskDescriptor(for: update.taskID)).first else {
                     return
                 }
@@ -271,7 +271,7 @@ enum HomeTaskLifecycleExecutionSupport {
     ) -> Effect<Action> {
         .run { @MainActor _ in
             do {
-                let context = modelContext()
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 guard let task = try context.fetch(HomeTaskSupport.taskDescriptor(for: update.taskID)).first else {
                     return
                 }
