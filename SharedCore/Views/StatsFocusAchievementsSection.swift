@@ -9,6 +9,10 @@ struct StatsFocusAchievementsSection: View {
         FocusAchievementStats.earnedCount(in: achievements)
     }
 
+    private var displayAchievements: [FocusAchievementProgress] {
+        FocusAchievementStats.displayOrdered(achievements)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             StatsSectionHeader(
@@ -24,7 +28,7 @@ struct StatsFocusAchievementsSection: View {
             }
 
             LazyVGrid(columns: badgeColumns, alignment: .leading, spacing: 12) {
-                ForEach(achievements) { achievement in
+                ForEach(displayAchievements) { achievement in
                     FocusAchievementBadgeCard(
                         achievement: achievement,
                         colorScheme: colorScheme

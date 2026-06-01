@@ -100,6 +100,35 @@ struct FocusAchievementStatsTests {
         #expect(comeback.progressText == "7 quiet days / 7 quiet days")
     }
 
+    @Test
+    func displayOrderShowsUnearnedAchievementsBeforeEarnedOnes() throws {
+        let calendar = makeTestCalendar()
+        let sessions = [
+            focusSession(
+                startedAt: makeDate("2026-05-01T08:00:00Z"),
+                durationSeconds: 2 * 60 * 60
+            ),
+            focusSession(
+                startedAt: makeDate("2026-05-02T08:00:00Z"),
+                durationSeconds: 8 * 60 * 60
+            ),
+        ]
+        let achievements = FocusAchievementStats.achievements(
+            sessions: sessions,
+            calendar: calendar
+        )
+
+        let orderedAchievements = FocusAchievementStats.displayOrdered(achievements)
+        let firstEarnedIndex = try #require(orderedAchievements.firstIndex { $0.isEarned })
+        let unearnedIDs = achievements.filter { !$0.isEarned }.map(\.id)
+        let earnedIDs = achievements.filter(\.isEarned).map(\.id)
+
+        #expect(orderedAchievements[..<firstEarnedIndex].allSatisfy { !$0.isEarned })
+        #expect(orderedAchievements[firstEarnedIndex...].allSatisfy { $0.isEarned })
+        #expect(orderedAchievements.filter { !$0.isEarned }.map(\.id) == unearnedIDs)
+        #expect(orderedAchievements.filter(\.isEarned).map(\.id) == earnedIDs)
+    }
+
     private func achievement(
         _ id: String,
         in achievements: [FocusAchievementProgress]

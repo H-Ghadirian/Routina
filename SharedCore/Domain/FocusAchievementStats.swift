@@ -229,6 +229,19 @@ enum FocusAchievementStats {
         achievements.filter(\.isEarned).count
     }
 
+    static func displayOrdered(_ achievements: [FocusAchievementProgress]) -> [FocusAchievementProgress] {
+        achievements
+            .enumerated()
+            .sorted { lhs, rhs in
+                if lhs.element.isEarned != rhs.element.isEarned {
+                    return !lhs.element.isEarned
+                }
+
+                return lhs.offset < rhs.offset
+            }
+            .map(\.element)
+    }
+
     private static func focusSecondsByDay(
         sessions: [FocusSession],
         calendar: Calendar
