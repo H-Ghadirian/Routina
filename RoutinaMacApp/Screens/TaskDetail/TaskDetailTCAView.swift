@@ -563,6 +563,7 @@ detailBody
             editingCommentID: store.editingDetailCommentID,
             editingCommentDraft: store.editingDetailCommentDraft,
             canSaveEditedComment: store.canSaveEditingDetailComment,
+            isCommentComposerVisible: $isCommentComposerVisible,
             background: routineLogsBackground,
             stroke: TaskDetailPlatformStyle.sectionCardStroke,
             onNewCommentDraftChanged: { store.send(.detailCommentDraftChanged($0)) },

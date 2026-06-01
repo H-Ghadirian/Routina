@@ -7,6 +7,7 @@ struct TaskDetailCommentsSectionView: View {
     let editingCommentID: UUID?
     let editingCommentDraft: String
     let canSaveEditedComment: Bool
+    @Binding var isCommentComposerVisible: Bool
     let background: Color
     let stroke: Color
     let onNewCommentDraftChanged: (String) -> Void
@@ -41,6 +42,14 @@ struct TaskDetailCommentsSectionView: View {
 
     private var shouldShowMoreCommentsControl: Bool {
         !isShowingAllComments && hiddenOlderCommentCount > 0
+    }
+
+    private var hasCommentDraft: Bool {
+        !newCommentDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var shouldShowCommentComposer: Bool {
+        isCommentComposerVisible || hasCommentDraft
     }
 
     private var currentCommentIDs: Set<UUID> {
@@ -80,25 +89,7 @@ struct TaskDetailCommentsSectionView: View {
 
     @ViewBuilder
     private var expandedContent: some View {
-        commentEditor(
-            draft: newCommentDraft,
-            placeholder: "Add a comment...",
-            minHeight: 86,
-            accessibilityIdentifier: "task-detail-new-comment-editor",
-            onChanged: onNewCommentDraftChanged
-        )
-
-        HStack {
-            Spacer()
-
-            Button {
-                onAddComment()
-            } label: {
-                Label("Add", systemImage: "plus.circle.fill")
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(!canAddComment)
-        }
+        commentComposerControl
 
         if hiddenCommentCount > 0 {
             hiddenCommentsControl
@@ -128,6 +119,58 @@ struct TaskDetailCommentsSectionView: View {
                     showMoreCommentsButton
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    private var commentComposerControl: some View {
+        if shouldShowCommentComposer {
+            commentEditor(
+                draft: newCommentDraft,
+                placeholder: "Add a comment...",
+                minHeight: 86,
+                accessibilityIdentifier: "task-detail-new-comment-editor",
+                onChanged: onNewCommentDraftChanged
+            )
+
+            HStack {
+                Spacer()
+
+                Button {
+                    onNewCommentDraftChanged("")
+                    withAnimation(.easeInOut(duration: 0.16)) {
+                        isCommentComposerVisible = false
+                    }
+                } label: {
+                    Label("Cancel", systemImage: "xmark.circle")
+                }
+                .buttonStyle(.bordered)
+
+                Button {
+                    let shouldHideComposer = canAddComment
+                    onAddComment()
+                    if shouldHideComposer {
+                        withAnimation(.easeInOut(duration: 0.16)) {
+                            isCommentComposerVisible = false
+                        }
+                    }
+                } label: {
+                    Label("Add", systemImage: "plus.circle.fill")
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(!canAddComment)
+            }
+        } else {
+            Button {
+                withAnimation(.easeInOut(duration: 0.16)) {
+                    isCommentComposerVisible = true
+                }
+            } label: {
+                Label("Add comment", systemImage: "plus.bubble")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
         }
     }
 
