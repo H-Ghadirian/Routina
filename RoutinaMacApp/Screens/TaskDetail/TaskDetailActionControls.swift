@@ -65,9 +65,9 @@ struct TaskDetailTodoStateSegmentedPicker: View {
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.secondary)
 
-                    Spacer(minLength: 8)
-
                     stateSummaryPill(currentState)
+
+                    Spacer(minLength: 8)
 
                     Image(systemName: "chevron.down")
                         .font(.caption.weight(.semibold))
@@ -109,8 +109,18 @@ struct TaskDetailTodoStateSegmentedPicker: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, minHeight: 54, alignment: .topLeading)
-        .detailHeaderBoxStyle(tint: TaskDetailPriorityPresentation.todoStateTint(for: currentState, style: .segmentedControl))
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .padding(.horizontal, 10)
+        .padding(.vertical, isExpanded ? 10 : 6)
+        .frame(maxWidth: .infinity, minHeight: isExpanded ? 54 : nil, alignment: .topLeading)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(TaskDetailPriorityPresentation.todoStateTint(for: currentState, style: .segmentedControl).opacity(0.12))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(TaskDetailPriorityPresentation.todoStateTint(for: currentState, style: .segmentedControl).opacity(0.24), lineWidth: 1)
+        )
         .alert(
             "Blocked Task",
             isPresented: Binding(
@@ -137,11 +147,11 @@ struct TaskDetailTodoStateSegmentedPicker: View {
         let tint = TaskDetailPriorityPresentation.todoStateTint(for: state, style: .compactPill)
 
         return Label(state.displayTitle, systemImage: state.systemImage)
-            .font(.subheadline.weight(.semibold))
+            .font(.caption.weight(.semibold))
             .foregroundStyle(tint)
             .lineLimit(1)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
             .background(tint.opacity(0.13), in: Capsule())
     }
 }
