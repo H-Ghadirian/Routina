@@ -75,6 +75,7 @@ struct StatsView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var isActiveItemsInfoPresented = false
+    @State private var selectedDashboardScope = StatsDashboardScope.all
     @State private var isEditingDashboard = false
     @State private var isAddDashboardItemSheetPresented = false
     @State private var draggedDashboardItemID: String?
@@ -216,6 +217,10 @@ struct StatsView: View {
         orderedAvailableDashboardItems.filter(isDashboardItemVisible)
     }
 
+    private var scopedVisibleOrderedDashboardItems: [StatsMacDashboardItem] {
+        visibleOrderedDashboardItems.filter { $0.isIncluded(in: selectedDashboardScope) }
+    }
+
     private var hiddenAvailableDashboardItems: [StatsMacDashboardItem] {
         orderedAvailableDashboardItems.filter { hiddenDashboardItemIDs.contains($0.rawValue) }
     }
@@ -254,6 +259,8 @@ struct StatsView: View {
                 maxContentWidth: statsContentMaxWidth
             ) {
                 VStack(alignment: .leading, spacing: 24) {
+                    dashboardScopePicker
+
                     if isEditingDashboard {
                         dashboardEditControls
                     }
@@ -290,7 +297,7 @@ struct StatsView: View {
             pendingSummaryItems.removeAll()
         }
 
-        for item in visibleOrderedDashboardItems {
+        for item in scopedVisibleOrderedDashboardItems {
             if item.isSummaryCard {
                 pendingSummaryItems.append(item)
             } else {
@@ -539,6 +546,17 @@ struct StatsView: View {
         }
         .help("Change summary card density")
         .accessibilityLabel("Summary card view")
+    }
+
+    private var dashboardScopePicker: some View {
+        Picker("Stats category", selection: $selectedDashboardScope) {
+            ForEach(StatsDashboardScope.allCases) { scope in
+                Text(scope.title).tag(scope)
+            }
+        }
+        .pickerStyle(.segmented)
+        .frame(maxWidth: 280)
+        .accessibilityIdentifier("stats.dashboard.scopePicker")
     }
 
     private var dashboardEditControls: some View {
@@ -942,7 +960,7 @@ struct StatsView: View {
                     delegate: StatsDashboardReorderDropDelegate(
                         itemID: item.rawValue,
                         draggedItemID: $draggedDashboardItemID,
-                        orderedItemIDs: visibleOrderedDashboardItems.map(\.rawValue),
+                        orderedItemIDs: scopedVisibleOrderedDashboardItems.map(\.rawValue),
                         onMove: moveDashboardItem
                     )
                 )
@@ -1209,6 +1227,31 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
     var isSummaryCard: Bool {
         switch self {
         case .dailyAverage, .focusTime, .awayTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
+            return true
+        default:
+            return false
+        }
+    }
+
+    func isIncluded(in scope: StatsDashboardScope) -> Bool {
+        switch scope {
+        case .all:
+            return true
+        case .focus:
+            return isFocusRelated
+        }
+    }
+
+    private var isFocusRelated: Bool {
+        switch self {
+        case .focusTime,
+             .awayTime,
+             .focusAverage,
+             .unassignedFocus,
+             .focusChart,
+             .focus2048,
+             .focusAchievements,
+             .focusWorkChart:
             return true
         default:
             return false

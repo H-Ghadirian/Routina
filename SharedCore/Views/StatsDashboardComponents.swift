@@ -57,6 +57,22 @@ enum StatsSummaryDisplayMode: String, CaseIterable, Identifiable {
     }
 }
 
+enum StatsDashboardScope: String, CaseIterable, Identifiable {
+    case all
+    case focus
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .all:
+            return "All"
+        case .focus:
+            return "Focus"
+        }
+    }
+}
+
 struct StatsSummaryCard<Accessory: View>: View {
     let icon: String
     let accent: Color

@@ -28,6 +28,7 @@ struct StatsView: View {
     @Query private var noteAttachments: [RoutineNoteAttachment]
     @Query private var goals: [RoutineGoal]
     @State private var relatedFilterTagSuggestionAnchor: String?
+    @State private var selectedDashboardScope = StatsDashboardScope.all
     @State private var isEditingDashboard = false
     @State private var isAddDashboardItemSheetPresented = false
     @State private var draggedDashboardItemID: String?
@@ -253,6 +254,10 @@ struct StatsView: View {
         orderedAvailableDashboardItems.filter(isDashboardItemVisible)
     }
 
+    private var scopedVisibleOrderedDashboardItems: [StatsDashboardItem] {
+        visibleOrderedDashboardItems.filter { $0.isIncluded(in: selectedDashboardScope) }
+    }
+
     private var hiddenAvailableDashboardItems: [StatsDashboardItem] {
         orderedAvailableDashboardItems.filter { hiddenDashboardItemIDs.contains($0.rawValue) }
     }
@@ -356,6 +361,8 @@ struct StatsView: View {
             let currentMetrics = metrics
             VStack(alignment: .leading, spacing: 24) {
                 AnyView(rangeSection)
+                AnyView(dashboardScopePicker)
+
                 if hasActiveSheetFilters {
                     AnyView(activeFilterChipBar)
                 }
@@ -421,7 +428,7 @@ struct StatsView: View {
             pendingSummaryItems.removeAll()
         }
 
-        for item in visibleOrderedDashboardItems {
+        for item in scopedVisibleOrderedDashboardItems {
             if item.isSummaryCard {
                 pendingSummaryItems.append(item)
             } else {
@@ -616,6 +623,17 @@ struct StatsView: View {
         StatsRangeSelectorView(selectedRange: selectedRange) { range in
             _ = store.send(.selectedRangeChanged(range))
         }
+    }
+
+    private var dashboardScopePicker: some View {
+        Picker("Stats category", selection: $selectedDashboardScope) {
+            ForEach(StatsDashboardScope.allCases) { scope in
+                Text(scope.title).tag(scope)
+            }
+        }
+        .pickerStyle(.segmented)
+        .frame(maxWidth: 280)
+        .accessibilityIdentifier("stats.dashboard.scopePicker")
     }
 
     @ViewBuilder
@@ -1094,7 +1112,7 @@ struct StatsView: View {
                     delegate: StatsDashboardReorderDropDelegate(
                         itemID: item.rawValue,
                         draggedItemID: $draggedDashboardItemID,
-                        orderedItemIDs: visibleOrderedDashboardItems.map(\.rawValue),
+                        orderedItemIDs: scopedVisibleOrderedDashboardItems.map(\.rawValue),
                         onMove: moveDashboardItem
                     )
                 )
@@ -1382,6 +1400,31 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
     var isSummaryCard: Bool {
         switch self {
         case .dailyAverage, .healthSteps, .healthActiveCalories, .healthDistance, .healthExercise, .focusTime, .awayTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
+            return true
+        default:
+            return false
+        }
+    }
+
+    func isIncluded(in scope: StatsDashboardScope) -> Bool {
+        switch scope {
+        case .all:
+            return true
+        case .focus:
+            return isFocusRelated
+        }
+    }
+
+    private var isFocusRelated: Bool {
+        switch self {
+        case .focusTime,
+             .awayTime,
+             .focusAverage,
+             .unassignedFocus,
+             .focusChart,
+             .focus2048,
+             .focusAchievements,
+             .focusWorkChart:
             return true
         default:
             return false
