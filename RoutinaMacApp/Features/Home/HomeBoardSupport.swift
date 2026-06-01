@@ -504,7 +504,8 @@ extension HomeFeature {
         let previousAllocations = allocationMinutesByTask(session.allocations)
         let allocations = cappedSprintFocusAllocations(
             drafts: state.sprintFocusAllocationDrafts,
-            recordedMinutes: session.roundedDurationMinutes
+            recordedMinutes: session.roundedDurationMinutes,
+            existingAllocations: session.allocations
         )
         let updatedAllocations = allocationMinutesByTask(allocations)
         let allAllocatedTaskIDs = Set(previousAllocations.keys).union(updatedAllocations.keys)
@@ -580,15 +581,26 @@ extension HomeFeature {
 
     private func cappedSprintFocusAllocations(
         drafts: [SprintFocusAllocationDraft],
-        recordedMinutes: Int
+        recordedMinutes: Int,
+        existingAllocations: [SprintFocusAllocation] = []
     ) -> [SprintFocusAllocation] {
         var remainingMinutes = max(0, recordedMinutes)
         var allocations: [SprintFocusAllocation] = []
+        let existingIDsByTaskID = Dictionary(
+            existingAllocations.map { ($0.taskID, $0.id) },
+            uniquingKeysWith: { first, _ in first }
+        )
 
         for draft in drafts where remainingMinutes > 0 {
             let minutes = min(max(0, draft.minutes), remainingMinutes)
             if minutes > 0 {
-                allocations.append(SprintFocusAllocation(taskID: draft.taskID, minutes: minutes))
+                allocations.append(
+                    SprintFocusAllocation(
+                        id: existingIDsByTaskID[draft.taskID] ?? UUID(),
+                        taskID: draft.taskID,
+                        minutes: minutes
+                    )
+                )
                 remainingMinutes -= minutes
             }
         }

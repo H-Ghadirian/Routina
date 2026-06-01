@@ -121,6 +121,18 @@ struct DayPlanFocusSessionBlock: Identifiable, Equatable {
     }
 }
 
+struct DayPlanSprintFocusBlock: Identifiable, Equatable {
+    var sessionID: UUID
+    var block: DayPlanBlock
+    var interval: DayPlanBlockedInterval
+    var isActive: Bool
+    var isAllocatedToTask: Bool
+
+    var id: String {
+        "sprint-focus-\(sessionID.uuidString)-\(block.id.uuidString)-\(block.dayKey)"
+    }
+}
+
 struct DayPlanBlockedInterval: Equatable, Sendable {
     var dayKey: String
     var startMinute: Int
@@ -1447,6 +1459,231 @@ enum DayPlanFocusSessionPlannerSync {
 
         return plannedBlock.startMinute < focusBlock.endMinute
             && focusBlock.startMinute < plannedBlock.endMinute
+    }
+}
+
+enum DayPlanSprintFocusBlocks {
+    static func blocksByDayKey(
+        on dates: [Date],
+        from sessions: [SprintFocusSessionRecord],
+        allocations: [SprintFocusAllocationRecord],
+        sprints: [BoardSprintRecord],
+        tasks: [RoutineTask],
+        referenceDate: Date = Date(),
+        calendar: Calendar
+    ) -> [String: [DayPlanSprintFocusBlock]] {
+        let visibleDates = dates.map { calendar.startOfDay(for: $0) }
+        guard !visibleDates.isEmpty else { return [:] }
+
+        let allocationsBySessionID = Dictionary(grouping: allocations, by: \.sessionID)
+        let sprintsByID = Dictionary(grouping: sprints, by: \.id).compactMapValues(\.first)
+        let tasksByID = Dictionary(grouping: tasks, by: \.id).compactMapValues(\.first)
+        let blocks = sessions.flatMap { session in
+            blocksForSession(
+                session,
+                allocations: allocationsBySessionID[session.id] ?? [],
+                sprint: sprintsByID[session.sprintID],
+                tasksByID: tasksByID,
+                visibleDates: visibleDates,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+        }
+
+        return Dictionary(grouping: blocks, by: \.block.dayKey)
+            .mapValues {
+                $0.sorted { lhs, rhs in
+                    if lhs.block.startMinute != rhs.block.startMinute {
+                        return lhs.block.startMinute < rhs.block.startMinute
+                    }
+                    if lhs.isAllocatedToTask != rhs.isAllocatedToTask {
+                        return lhs.isAllocatedToTask && !rhs.isAllocatedToTask
+                    }
+                    return lhs.block.titleSnapshot.localizedCaseInsensitiveCompare(rhs.block.titleSnapshot) == .orderedAscending
+                }
+            }
+    }
+
+    static func blockedIntervalsByDayKey(
+        on dates: [Date],
+        from sessions: [SprintFocusSessionRecord],
+        allocations: [SprintFocusAllocationRecord],
+        sprints: [BoardSprintRecord],
+        tasks: [RoutineTask],
+        referenceDate: Date = Date(),
+        calendar: Calendar
+    ) -> [String: [DayPlanBlockedInterval]] {
+        blocksByDayKey(
+            on: dates,
+            from: sessions,
+            allocations: allocations,
+            sprints: sprints,
+            tasks: tasks,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        .mapValues { blocks in
+            blocks.map(\.interval)
+        }
+    }
+
+    private static func blocksForSession(
+        _ session: SprintFocusSessionRecord,
+        allocations: [SprintFocusAllocationRecord],
+        sprint: BoardSprintRecord?,
+        tasksByID: [UUID: RoutineTask],
+        visibleDates: [Date],
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> [DayPlanSprintFocusBlock] {
+        let totalMinutes = recordedMinutes(for: session, referenceDate: referenceDate)
+        guard totalMinutes > 0 else { return [] }
+
+        var cursorMinutes = 0
+        var blocks: [DayPlanSprintFocusBlock] = []
+        let sortedAllocations = allocations
+            .filter { $0.minutes > 0 }
+            .sorted { lhs, rhs in
+                if lhs.sortOrder != rhs.sortOrder {
+                    return lhs.sortOrder < rhs.sortOrder
+                }
+                return lhs.taskID.uuidString < rhs.taskID.uuidString
+            }
+
+        for allocation in sortedAllocations where cursorMinutes < totalMinutes {
+            let minutes = min(max(0, allocation.minutes), totalMinutes - cursorMinutes)
+            guard minutes > 0 else { continue }
+
+            let task = tasksByID[allocation.taskID]
+            let title = task.map(DayPlanTaskSorting.title) ?? "Allocated focus"
+            let emoji = task.flatMap { CalendarTaskImportSupport.displayEmoji(for: $0.emoji) }
+            blocks.append(contentsOf: segmentBlocks(
+                id: allocation.id,
+                sessionID: session.id,
+                taskID: allocation.taskID,
+                title: title,
+                emoji: emoji,
+                startedAt: session.startedAt,
+                offsetMinutes: cursorMinutes,
+                durationMinutes: minutes,
+                visibleDates: visibleDates,
+                updatedAt: session.stoppedAt ?? referenceDate,
+                isActive: session.isActive,
+                isAllocatedToTask: true,
+                calendar: calendar
+            ))
+            cursorMinutes += minutes
+        }
+
+        let remainingMinutes = totalMinutes - cursorMinutes
+        if remainingMinutes > 0 {
+            blocks.append(contentsOf: segmentBlocks(
+                id: session.id,
+                sessionID: session.id,
+                taskID: session.sprintID,
+                title: sprintTitle(sprint),
+                emoji: "🏁",
+                startedAt: session.startedAt,
+                offsetMinutes: cursorMinutes,
+                durationMinutes: remainingMinutes,
+                visibleDates: visibleDates,
+                updatedAt: session.stoppedAt ?? referenceDate,
+                isActive: session.isActive,
+                isAllocatedToTask: false,
+                calendar: calendar
+            ))
+        }
+
+        return blocks
+    }
+
+    private static func segmentBlocks(
+        id: UUID,
+        sessionID: UUID,
+        taskID: UUID,
+        title: String,
+        emoji: String?,
+        startedAt: Date,
+        offsetMinutes: Int,
+        durationMinutes: Int,
+        visibleDates: [Date],
+        updatedAt: Date,
+        isActive: Bool,
+        isAllocatedToTask: Bool,
+        calendar: Calendar
+    ) -> [DayPlanSprintFocusBlock] {
+        guard let segmentStart = calendar.date(byAdding: .minute, value: offsetMinutes, to: startedAt),
+              let segmentEnd = calendar.date(byAdding: .minute, value: durationMinutes, to: segmentStart),
+              segmentEnd > segmentStart else {
+            return []
+        }
+
+        return visibleDates.compactMap { visibleDate -> DayPlanSprintFocusBlock? in
+            let dayStart = calendar.startOfDay(for: visibleDate)
+            guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else {
+                return nil
+            }
+
+            let intervalStart = max(segmentStart, dayStart)
+            let intervalEnd = min(segmentEnd, dayEnd)
+            guard intervalEnd > intervalStart else { return nil }
+
+            let dayKey = DayPlanStorage.dayKey(for: dayStart, calendar: calendar)
+            let startMinute = Self.startMinute(for: intervalStart, calendar: calendar)
+            let rawDuration = max(1, Int(ceil(intervalEnd.timeIntervalSince(intervalStart) / 60)))
+            let durationMinutes = DayPlanBlock.clampedDuration(
+                rawDuration,
+                startMinute: startMinute,
+                minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+            )
+            let block = DayPlanBlock(
+                id: id,
+                taskID: taskID,
+                dayKey: dayKey,
+                startMinute: startMinute,
+                durationMinutes: durationMinutes,
+                titleSnapshot: title,
+                emojiSnapshot: emoji,
+                createdAt: startedAt,
+                updatedAt: updatedAt,
+                minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+            )
+            let interval = DayPlanBlockedInterval(
+                dayKey: dayKey,
+                startMinute: block.startMinute,
+                endMinute: block.endMinute,
+                title: title
+            )
+
+            return DayPlanSprintFocusBlock(
+                sessionID: sessionID,
+                block: block,
+                interval: interval,
+                isActive: isActive,
+                isAllocatedToTask: isAllocatedToTask
+            )
+        }
+    }
+
+    private static func recordedMinutes(
+        for session: SprintFocusSessionRecord,
+        referenceDate: Date
+    ) -> Int {
+        max(1, Int((session.activeDurationSeconds(at: referenceDate) / 60).rounded()))
+    }
+
+    private static func sprintTitle(_ sprint: BoardSprintRecord?) -> String {
+        let title = sprint?.title.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return title.isEmpty ? "Board focus" : title
+    }
+
+    private static func startMinute(for timestamp: Date, calendar: Calendar) -> Int {
+        let components = calendar.dateComponents([.hour, .minute], from: timestamp)
+        let minute = ((components.hour ?? 0) * 60) + (components.minute ?? 0)
+        return DayPlanBlock.clampedStartMinute(
+            minute,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
     }
 }
 

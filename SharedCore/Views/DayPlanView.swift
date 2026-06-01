@@ -410,6 +410,9 @@ private struct DayPlanTimelinePanelView: View {
     @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
     @Query(sort: \AwaySession.startedAt, order: .reverse) private var awaySessions: [AwaySession]
     @Query(sort: \RoutineEvent.startedAt, order: .reverse) private var events: [RoutineEvent]
+    @Query(sort: \SprintFocusSessionRecord.startedAt, order: .reverse) private var sprintFocusSessions: [SprintFocusSessionRecord]
+    @Query private var sprintFocusAllocations: [SprintFocusAllocationRecord]
+    @Query private var boardSprints: [BoardSprintRecord]
     @Query(
         filter: #Predicate<FocusSession> { session in
             session.completedAt == nil && session.abandonedAt == nil
@@ -460,14 +463,40 @@ private struct DayPlanTimelinePanelView: View {
             referenceDate: referenceDate,
             calendar: calendar
         )
+        let completedSprintFocusSessions = sprintFocusSessions.filter { !$0.isActive }
+        let activeSprintFocusSessions = sprintFocusSessions.filter(\.isActive)
+        let sprintFocusBlocksByDayKey = DayPlanSprintFocusBlocks.blocksByDayKey(
+            on: weekDates,
+            from: completedSprintFocusSessions,
+            allocations: sprintFocusAllocations,
+            sprints: boardSprints,
+            tasks: tasks,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let activeSprintFocusBlocksByDayKey = DayPlanSprintFocusBlocks.blocksByDayKey(
+            on: weekDates,
+            from: activeSprintFocusSessions,
+            allocations: sprintFocusAllocations,
+            sprints: boardSprints,
+            tasks: tasks,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
         let eventBlocksByDayKey = DayPlanEventBlocks.blocksByDayKey(
             on: weekDates,
             from: events,
             calendar: calendar
         )
         let blockedIntervalsByDayKey = mergeBlockedIntervals(
-            sleepBlocksByDayKey.mapValues { blocks in blocks.map(\.interval) },
-            awayBlocksByDayKey.mapValues { blocks in blocks.map(\.interval) }
+            mergeBlockedIntervals(
+                sleepBlocksByDayKey.mapValues { blocks in blocks.map(\.interval) },
+                awayBlocksByDayKey.mapValues { blocks in blocks.map(\.interval) }
+            ),
+            mergeBlockedIntervals(
+                sprintFocusBlocksByDayKey.mapValues { blocks in blocks.map(\.interval) },
+                activeSprintFocusBlocksByDayKey.mapValues { blocks in blocks.map(\.interval) }
+            )
         )
         let allDayBlocks = DayPlanAllDayTasks.blocks(
             on: weekDates,
@@ -521,6 +550,10 @@ private struct DayPlanTimelinePanelView: View {
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
                     return awayBlocksByDayKey[dayKey] ?? []
                 },
+                sprintFocusBlocksForDate: { date in
+                    let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+                    return sprintFocusBlocksByDayKey[dayKey] ?? []
+                },
                 blockedIntervalsForDate: { date in
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
                     return blockedIntervalsByDayKey[dayKey] ?? []
@@ -533,6 +566,19 @@ private struct DayPlanTimelinePanelView: View {
                         calendar: calendar,
                         excluding: plannedBlocks
                     )
+                },
+                activeSprintFocusBlocks: { now in
+                    DayPlanSprintFocusBlocks.blocksByDayKey(
+                        on: weekDates,
+                        from: activeSprintFocusSessions,
+                        allocations: sprintFocusAllocations,
+                        sprints: boardSprints,
+                        tasks: tasks,
+                        referenceDate: now,
+                        calendar: calendar
+                    )
+                    .values
+                    .flatMap { $0 }
                 },
                 allDayBlocks: allDayBlocks,
                 unplannedCompletedCount: { date in

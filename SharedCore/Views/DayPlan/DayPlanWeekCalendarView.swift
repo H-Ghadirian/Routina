@@ -18,8 +18,10 @@ struct DayPlanWeekCalendarView: View {
     var eventBlocksForDate: (Date) -> [DayPlanEventBlock] = { _ in [] }
     var sleepBlocksForDate: (Date) -> [DayPlanSleepBlock] = { _ in [] }
     var awayBlocksForDate: (Date) -> [DayPlanAwayBlock] = { _ in [] }
+    var sprintFocusBlocksForDate: (Date) -> [DayPlanSprintFocusBlock] = { _ in [] }
     var blockedIntervalsForDate: (Date) -> [DayPlanBlockedInterval] = { _ in [] }
     var activeFocusSessionBlocks: (Date) -> [DayPlanFocusSessionBlock] = { _ in [] }
+    var activeSprintFocusBlocks: (Date) -> [DayPlanSprintFocusBlock] = { _ in [] }
     var allDayBlocks: [DayPlanAllDayBlock] = []
     var unplannedCompletedCount: (Date) -> Int
     var taskTint: (DayPlanBlock) -> Color
@@ -120,6 +122,7 @@ struct DayPlanWeekCalendarView: View {
                                 eventBlocksForDate: eventBlocksForDate,
                                 sleepBlocksForDate: sleepBlocksForDate,
                                 awayBlocksForDate: awayBlocksForDate,
+                                sprintFocusBlocksForDate: sprintFocusBlocksForDate,
                                 taskTint: taskTint,
                                 onSelectBlock: onSelectBlock,
                                 onOpenBlockDetails: onOpenBlockDetails,
@@ -172,6 +175,18 @@ struct DayPlanWeekCalendarView: View {
                                         onOpenFocusTaskDetails: onOpenFocusTaskDetails
                                     )
                                     .zIndex(3)
+
+                                    DayPlanSprintFocusBlockLayer(
+                                        dates: dates,
+                                        calendar: calendar,
+                                        dayWidth: dayWidth,
+                                        hourHeight: hourHeight,
+                                        timeColumnWidth: timeColumnWidth,
+                                        sprintFocusBlocks: activeSprintFocusBlocks(timeline.date),
+                                        taskTint: taskTint,
+                                        onOpenFocusTaskDetails: onOpenFocusTaskDetails
+                                    )
+                                    .zIndex(3.5)
 
                                     DayPlanCurrentTimeIndicator(
                                         dates: dates,

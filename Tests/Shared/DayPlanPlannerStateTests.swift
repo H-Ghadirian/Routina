@@ -1159,6 +1159,125 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func sprintFocusSessionsRenderAsPlannerBlocks() throws {
+        let calendar = gregorianCalendar
+        let visibleDate = try #require(date("2026-05-07T12:00:00Z"))
+        let startedAt = try #require(date("2026-05-07T09:30:00Z"))
+        let stoppedAt = try #require(date("2026-05-07T10:05:00Z"))
+        let sprint = BoardSprintRecord(
+            title: "Launch board",
+            startedAt: date("2026-05-07T09:00:00Z")
+        )
+        let session = SprintFocusSessionRecord(
+            sprintID: sprint.id,
+            startedAt: startedAt,
+            stoppedAt: stoppedAt
+        )
+
+        let blocksByDayKey = DayPlanSprintFocusBlocks.blocksByDayKey(
+            on: [visibleDate],
+            from: [session],
+            allocations: [],
+            sprints: [sprint],
+            tasks: [],
+            referenceDate: stoppedAt,
+            calendar: calendar
+        )
+
+        let dayKey = DayPlanStorage.dayKey(for: visibleDate, calendar: calendar)
+        let block = try #require(blocksByDayKey[dayKey]?.first)
+        #expect(block.sessionID == session.id)
+        #expect(block.block.id == session.id)
+        #expect(block.block.taskID == sprint.id)
+        #expect(block.block.titleSnapshot == "Launch board")
+        #expect(block.block.emojiSnapshot == "🏁")
+        #expect(block.block.startMinute == 9 * 60 + 30)
+        #expect(block.block.durationMinutes == 35)
+        #expect(block.interval.durationMinutes == 35)
+        #expect(!block.isActive)
+        #expect(!block.isAllocatedToTask)
+    }
+
+    @Test
+    func sprintFocusAllocationsSplitPlannerBlocksAndLeaveResidualBoardFocus() throws {
+        let calendar = gregorianCalendar
+        let visibleDate = try #require(date("2026-05-07T12:00:00Z"))
+        let startedAt = try #require(date("2026-05-07T09:00:00Z"))
+        let stoppedAt = try #require(date("2026-05-07T10:00:00Z"))
+        let firstTask = RoutineTask(
+            id: UUID(),
+            name: "Implement board",
+            emoji: "🧩",
+            scheduleMode: .oneOff
+        )
+        let secondTask = RoutineTask(
+            id: UUID(),
+            name: "Review board",
+            emoji: "🔎",
+            scheduleMode: .oneOff
+        )
+        let sprint = BoardSprintRecord(title: "Launch board")
+        let session = SprintFocusSessionRecord(
+            sprintID: sprint.id,
+            startedAt: startedAt,
+            stoppedAt: stoppedAt
+        )
+        let firstAllocation = SprintFocusAllocationRecord(
+            sessionID: session.id,
+            taskID: firstTask.id,
+            minutes: 20,
+            sortOrder: 0
+        )
+        let secondAllocation = SprintFocusAllocationRecord(
+            sessionID: session.id,
+            taskID: secondTask.id,
+            minutes: 15,
+            sortOrder: 1
+        )
+
+        let blocksByDayKey = DayPlanSprintFocusBlocks.blocksByDayKey(
+            on: [visibleDate],
+            from: [session],
+            allocations: [secondAllocation, firstAllocation],
+            sprints: [sprint],
+            tasks: [firstTask, secondTask],
+            referenceDate: stoppedAt,
+            calendar: calendar
+        )
+        let blockedIntervalsByDayKey = DayPlanSprintFocusBlocks.blockedIntervalsByDayKey(
+            on: [visibleDate],
+            from: [session],
+            allocations: [secondAllocation, firstAllocation],
+            sprints: [sprint],
+            tasks: [firstTask, secondTask],
+            referenceDate: stoppedAt,
+            calendar: calendar
+        )
+
+        let dayKey = DayPlanStorage.dayKey(for: visibleDate, calendar: calendar)
+        let blocks = try #require(blocksByDayKey[dayKey])
+        #expect(blocks.count == 3)
+        #expect(blocks[0].block.id == firstAllocation.id)
+        #expect(blocks[0].block.taskID == firstTask.id)
+        #expect(blocks[0].block.titleSnapshot == "Implement board")
+        #expect(blocks[0].block.startMinute == 9 * 60)
+        #expect(blocks[0].block.durationMinutes == 20)
+        #expect(blocks[0].isAllocatedToTask)
+        #expect(blocks[1].block.id == secondAllocation.id)
+        #expect(blocks[1].block.taskID == secondTask.id)
+        #expect(blocks[1].block.startMinute == 9 * 60 + 20)
+        #expect(blocks[1].block.durationMinutes == 15)
+        #expect(blocks[1].isAllocatedToTask)
+        #expect(blocks[2].block.id == session.id)
+        #expect(blocks[2].block.taskID == sprint.id)
+        #expect(blocks[2].block.titleSnapshot == "Launch board")
+        #expect(blocks[2].block.startMinute == 9 * 60 + 35)
+        #expect(blocks[2].block.durationMinutes == 25)
+        #expect(!blocks[2].isAllocatedToTask)
+        #expect(blockedIntervalsByDayKey[dayKey]?.map(\.durationMinutes) == [20, 15, 25])
+    }
+
+    @Test
     func activeFocusSessionBlocksExcludePersistedPlannerBlocks() throws {
         let calendar = gregorianCalendar
         let visibleDate = try #require(date("2026-05-07T12:00:00Z"))

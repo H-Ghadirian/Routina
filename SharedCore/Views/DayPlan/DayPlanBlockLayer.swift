@@ -13,6 +13,7 @@ struct DayPlanBlockLayer: View {
     var eventBlocksForDate: (Date) -> [DayPlanEventBlock] = { _ in [] }
     var sleepBlocksForDate: (Date) -> [DayPlanSleepBlock] = { _ in [] }
     var awayBlocksForDate: (Date) -> [DayPlanAwayBlock] = { _ in [] }
+    var sprintFocusBlocksForDate: (Date) -> [DayPlanSprintFocusBlock] = { _ in [] }
     var taskTint: (DayPlanBlock) -> Color
     var onSelectBlock: (DayPlanBlock, Date) -> Void
     var onOpenBlockDetails: (DayPlanBlock, Date) -> Void
@@ -170,6 +171,45 @@ struct DayPlanBlockLayer: View {
                     .zIndex(0.75)
                 }
 
+                ForEach(sprintFocusBlocksForDate(date)) { sprintFocusBlock in
+                    let block = sprintFocusBlock.block
+                    let blockHeight = blockHeight(for: block)
+                    DayPlanBlockCard(
+                        block: block,
+                        tint: sprintFocusBlock.isAllocatedToTask ? taskTint(block) : .teal,
+                        style: .sprintFocus(
+                            isActive: sprintFocusBlock.isActive,
+                            isAllocated: sprintFocusBlock.isAllocatedToTask
+                        ),
+                        isSelected: false,
+                        renderedHeight: blockHeight,
+                        selectedDate: date,
+                        calendar: calendar,
+                        onSelect: {},
+                        onOpenDetails: {
+                            if sprintFocusBlock.isAllocatedToTask {
+                                onOpenTimelineTaskDetails(block.taskID)
+                            }
+                        },
+                        onDelete: {},
+                        onResizeStarted: {},
+                        onResizeChanged: { _, _ in },
+                        onResizeEnded: {},
+                        onDragProvider: {
+                            NSItemProvider(object: "" as NSString)
+                        }
+                    )
+                    .frame(
+                        width: max(dayWidth - 10, 90),
+                        height: blockHeight
+                    )
+                    .offset(
+                        x: timeColumnWidth + CGFloat(dayIndex) * dayWidth + 5,
+                        y: yOffset(for: block.startMinute)
+                    )
+                    .zIndex(sprintFocusBlock.isActive ? 3 : 0.85)
+                }
+
                 ForEach(blocksForDate(date)) { block in
                     let blockHeight = blockHeight(for: block)
                     DayPlanBlockCard(
@@ -321,5 +361,102 @@ private struct PositionedFocusSessionBlock: Identifiable {
 
     var id: String {
         focusBlock.id
+    }
+}
+
+struct DayPlanSprintFocusBlockLayer: View {
+    var dates: [Date]
+    var calendar: Calendar
+    var dayWidth: CGFloat
+    var hourHeight: CGFloat
+    var timeColumnWidth: CGFloat
+    var sprintFocusBlocks: [DayPlanSprintFocusBlock]
+    var taskTint: (DayPlanBlock) -> Color
+    var onOpenFocusTaskDetails: (UUID) -> Void
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            ForEach(positionedBlocks) { positionedBlock in
+                let sprintFocusBlock = positionedBlock.sprintFocusBlock
+                let block = sprintFocusBlock.block
+                let blockHeight = blockHeight(for: block)
+                DayPlanBlockCard(
+                    block: block,
+                    tint: sprintFocusBlock.isAllocatedToTask ? taskTint(block) : .teal,
+                    style: .sprintFocus(
+                        isActive: sprintFocusBlock.isActive,
+                        isAllocated: sprintFocusBlock.isAllocatedToTask
+                    ),
+                    isSelected: false,
+                    renderedHeight: blockHeight,
+                    selectedDate: positionedBlock.date,
+                    calendar: calendar,
+                    onSelect: {},
+                    onOpenDetails: {
+                        if sprintFocusBlock.isAllocatedToTask {
+                            onOpenFocusTaskDetails(block.taskID)
+                        }
+                    },
+                    onDelete: {},
+                    onResizeStarted: {},
+                    onResizeChanged: { _, _ in },
+                    onResizeEnded: {},
+                    onDragProvider: {
+                        NSItemProvider(object: "" as NSString)
+                    }
+                )
+                .frame(
+                    width: max(dayWidth - 10, 90),
+                    height: blockHeight
+                )
+                .offset(
+                    x: timeColumnWidth + CGFloat(positionedBlock.dayIndex) * dayWidth + 5,
+                    y: yOffset(for: block.startMinute)
+                )
+            }
+        }
+        .frame(width: contentWidth, height: contentHeight, alignment: .topLeading)
+    }
+
+    private var positionedBlocks: [PositionedSprintFocusBlock] {
+        sprintFocusBlocks.compactMap { block in
+            guard let dayIndex = dates.firstIndex(where: {
+                DayPlanStorage.dayKey(for: $0, calendar: calendar) == block.block.dayKey
+            }) else {
+                return nil
+            }
+
+            return PositionedSprintFocusBlock(
+                dayIndex: dayIndex,
+                date: dates[dayIndex],
+                sprintFocusBlock: block
+            )
+        }
+    }
+
+    private func yOffset(for minute: Int) -> CGFloat {
+        CGFloat(minute) / 60 * hourHeight
+    }
+
+    private func blockHeight(for block: DayPlanBlock) -> CGFloat {
+        max(CGFloat(block.durationMinutes) / 60 * hourHeight, 18)
+    }
+
+    private var contentWidth: CGFloat {
+        timeColumnWidth + (CGFloat(dates.count) * dayWidth)
+    }
+
+    private var contentHeight: CGFloat {
+        hourHeight * 24
+    }
+}
+
+private struct PositionedSprintFocusBlock: Identifiable {
+    var dayIndex: Int
+    var date: Date
+    var sprintFocusBlock: DayPlanSprintFocusBlock
+
+    var id: String {
+        sprintFocusBlock.id
     }
 }

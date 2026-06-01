@@ -7,6 +7,7 @@ struct DayPlanBlockCard: View {
         case automatic(RoutineLogKind)
         case event
         case liveFocus
+        case sprintFocus(isActive: Bool, isAllocated: Bool)
         case sleep
         case away
     }
@@ -34,6 +35,8 @@ struct DayPlanBlockCard: View {
             automaticCard
         } else if isLiveFocus {
             liveFocusCard
+        } else if isSprintFocus {
+            sprintFocusCard
         } else if isEvent {
             eventCard
         } else if isSleep {
@@ -149,6 +152,16 @@ struct DayPlanBlockCard: View {
                 onOpenDetails()
             }
             .help("Focus timer in progress")
+    }
+
+    private var sprintFocusCard: some View {
+        baseCard
+            .onTapGesture {
+                if sprintFocusIsAllocated {
+                    onOpenDetails()
+                }
+            }
+            .help(sprintFocusHelpText)
     }
 
     private var eventCard: some View {
@@ -285,6 +298,13 @@ struct DayPlanBlockCard: View {
         return false
     }
 
+    private var isSprintFocus: Bool {
+        if case .sprintFocus = style {
+            return true
+        }
+        return false
+    }
+
     private var isSleep: Bool {
         if case .sleep = style {
             return true
@@ -307,11 +327,11 @@ struct DayPlanBlockCard: View {
     }
 
     private var showsActivityStripe: Bool {
-        isAutomatic || isLiveFocus || isEvent || isSleep || isAway
+        isAutomatic || isLiveFocus || isSprintFocus || isEvent || isSleep || isAway
     }
 
     private var showsStatusIcon: Bool {
-        renderedHeight >= 28 && (isAutomatic || isLiveFocus || isEvent || isSleep || isAway)
+        renderedHeight >= 28 && (isAutomatic || isLiveFocus || isSprintFocus || isEvent || isSleep || isAway)
     }
 
     private var fillOpacity: Double {
@@ -320,6 +340,9 @@ struct DayPlanBlockCard: View {
         }
         if isLiveFocus {
             return 0.2
+        }
+        if isSprintFocus {
+            return sprintFocusIsActive ? 0.2 : 0.16
         }
         if isEvent {
             return 0.12
@@ -340,6 +363,9 @@ struct DayPlanBlockCard: View {
         if isLiveFocus {
             return 0.85
         }
+        if isSprintFocus {
+            return sprintFocusIsActive ? 0.85 : 0.78
+        }
         if isEvent {
             return 0.78
         }
@@ -358,6 +384,9 @@ struct DayPlanBlockCard: View {
         }
         if isLiveFocus {
             return 2
+        }
+        if isSprintFocus {
+            return sprintFocusIsActive ? 2 : 1.5
         }
         if isEvent {
             return 1.5
@@ -379,6 +408,12 @@ struct DayPlanBlockCard: View {
         if isLiveFocus {
             return "timer.circle.fill"
         }
+        if isSprintFocus {
+            if sprintFocusIsActive {
+                return "timer.circle.fill"
+            }
+            return sprintFocusIsAllocated ? "checkmark.circle.fill" : "flag.checkered"
+        }
         if isEvent {
             return "calendar"
         }
@@ -389,6 +424,27 @@ struct DayPlanBlockCard: View {
             return "lock.shield.fill"
         }
         return nil
+    }
+
+    private var sprintFocusIsActive: Bool {
+        if case let .sprintFocus(isActive, _) = style {
+            return isActive
+        }
+        return false
+    }
+
+    private var sprintFocusIsAllocated: Bool {
+        if case let .sprintFocus(_, isAllocated) = style {
+            return isAllocated
+        }
+        return false
+    }
+
+    private var sprintFocusHelpText: String {
+        if sprintFocusIsActive {
+            return sprintFocusIsAllocated ? "Allocated board focus in progress" : "Board focus timer in progress"
+        }
+        return sprintFocusIsAllocated ? "Allocated board focus time" : "Board focus time is blocked"
     }
 
     private func automaticIconName(for kind: RoutineLogKind) -> String {
