@@ -92,6 +92,8 @@ struct HomeTCAView: View {
     @FocusState var isSprintRenameFieldFocused: Bool
     @FocusState var isMacTaskSourceListFocused: Bool
     @Query(sort: \FocusSession.startedAt, order: .reverse) var focusSessions: [FocusSession]
+    @Query(sort: \SprintFocusSessionRecord.startedAt, order: .reverse) var sprintFocusSessions: [SprintFocusSessionRecord]
+    @Query(sort: \BoardSprintRecord.createdAt, order: .reverse) var boardSprints: [BoardSprintRecord]
     @Query(sort: \SleepSession.startedAt, order: .reverse) var sleepSessions: [SleepSession]
     @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) var placeCheckInSessions: [PlaceCheckInSession]
     @Query private var fileAttachments: [RoutineAttachment]

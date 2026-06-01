@@ -27,6 +27,12 @@ final class BoardSprintRecord {
     }
 }
 
+extension BoardSprintRecord: Identifiable, Equatable {
+    static func == (lhs: BoardSprintRecord, rhs: BoardSprintRecord) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
 @Model
 final class SprintAssignmentRecord {
     var todoID: UUID = UUID()
@@ -95,6 +101,12 @@ final class SprintFocusSessionRecord {
         self.sprintID = sprintID
         self.startedAt = startedAt
         self.stoppedAt = stoppedAt
+    }
+}
+
+extension SprintFocusSessionRecord: Identifiable, Equatable {
+    static func == (lhs: SprintFocusSessionRecord, rhs: SprintFocusSessionRecord) -> Bool {
+        lhs.id == rhs.id
     }
 }
 

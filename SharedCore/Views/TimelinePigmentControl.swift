@@ -55,6 +55,8 @@ private extension TimelineFilterType {
             return "arrow.clockwise"
         case .todos:
             return "checkmark.circle.fill"
+        case .focus:
+            return "timer"
         case .notes:
             return "note.text"
         case .places:
@@ -82,6 +84,8 @@ private extension TimelineFilterType {
             return .teal
         case .todos:
             return .green
+        case .focus:
+            return .cyan
         case .notes:
             return .indigo
         case .places:

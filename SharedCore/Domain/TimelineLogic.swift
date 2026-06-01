@@ -12,6 +12,7 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
     case all = "All"
     case routines = "Routines"
     case todos = "Todos"
+    case focus = "Focus"
     case events = "Events"
     case emotions = "Emotions"
     case notes = "Notes"
@@ -26,6 +27,7 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
         .all,
         .routines,
         .todos,
+        .focus,
         .notes,
         .places,
         .emotions,
@@ -42,6 +44,7 @@ enum TimelineEntryType: Equatable {
     case event
     case emotion
     case note
+    case focus
     case sleep
     case placeCheckIn
 }
@@ -140,6 +143,10 @@ struct TimelineEntry: Identifiable, Equatable {
         entryType == .note
     }
 
+    var isFocus: Bool {
+        entryType == .focus
+    }
+
     var isPlaceCheckIn: Bool {
         entryType == .placeCheckIn
     }
@@ -152,6 +159,9 @@ enum TimelineLogic {
         events: [RoutineEvent] = [],
         emotionLogs: [EmotionLog] = [],
         notes: [RoutineNote] = [],
+        focusSessions: [FocusSession] = [],
+        sprintFocusSessions: [SprintFocusSessionRecord] = [],
+        boardSprints: [BoardSprintRecord] = [],
         sleepSessions: [SleepSession] = [],
         placeCheckInSessions: [PlaceCheckInSession] = [],
         fileAttachmentTaskIDs: Set<UUID> = [],
@@ -198,6 +208,7 @@ enum TimelineLogic {
             case .events: return nil
             case .emotions: return nil
             case .notes: return nil
+            case .focus: return nil
             case .places: return nil
             case .sleep: return nil
             case .done: if log.kind != .completed { return nil }
@@ -306,6 +317,103 @@ enum TimelineLogic {
             )
         }
 
+        let focusEntries = focusSessions.compactMap { session -> TimelineEntry? in
+            guard filterType == .all || filterType == .focus,
+                  mediaFilter == .all,
+                  let startedAt = session.startedAt
+            else {
+                return nil
+            }
+
+            if let cutoff, startedAt < cutoff { return nil }
+
+            let task = session.isUnassigned ? nil : lookup[session.taskID]
+            let title: String
+            let emoji: String
+            let tags: [String]
+            let importance: RoutineTaskImportance
+            let urgency: RoutineTaskUrgency
+            let isOneOff: Bool
+            let entryTaskID: UUID?
+
+            if session.isUnassigned {
+                title = "Unassigned focus"
+                emoji = "⏱️"
+                tags = []
+                importance = .level2
+                urgency = .level2
+                isOneOff = false
+                entryTaskID = nil
+            } else {
+                title = task?.name ?? "Deleted Routine"
+                emoji = task?.emoji ?? "⏱️"
+                tags = task?.tags ?? []
+                importance = task?.importance ?? .level2
+                urgency = task?.urgency ?? .level2
+                isOneOff = task?.isOneOffTask ?? false
+                entryTaskID = session.taskID
+            }
+
+            return TimelineEntry(
+                id: session.id,
+                taskID: entryTaskID,
+                timestamp: startedAt,
+                startTimestamp: startedAt,
+                endTimestamp: session.finishedAt,
+                taskName: title,
+                taskEmoji: emoji,
+                tags: tags,
+                importance: importance,
+                urgency: urgency,
+                isOneOff: isOneOff,
+                kind: .completed,
+                entryType: .focus,
+                durationSeconds: session.activeDurationSeconds(at: now),
+                activityTitle: focusActivityTitle(for: session)
+            )
+        }
+
+        let sprintLookup = Dictionary(
+            boardSprints.map { ($0.id, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let sprintFocusEntries = sprintFocusSessions.compactMap { session -> TimelineEntry? in
+            guard filterType == .all || filterType == .focus,
+                  mediaFilter == .all
+            else {
+                return nil
+            }
+
+            let startedAt = session.startedAt
+            if let cutoff, startedAt < cutoff { return nil }
+
+            let sprintTitle = sprintLookup[session.sprintID]?.title
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let title = if let sprintTitle, !sprintTitle.isEmpty {
+                sprintTitle
+            } else {
+                "Board focus"
+            }
+            let stoppedAt = session.stoppedAt
+            let duration = max(0, (stoppedAt ?? now).timeIntervalSince(startedAt))
+
+            return TimelineEntry(
+                id: session.id,
+                taskID: nil,
+                timestamp: startedAt,
+                startTimestamp: startedAt,
+                endTimestamp: stoppedAt,
+                taskName: title,
+                taskEmoji: "🎯",
+                tags: [],
+                isOneOff: false,
+                kind: .completed,
+                entryType: .focus,
+                durationSeconds: duration,
+                activityTitle: stoppedAt == nil ? "Active board focus" : "Board focus"
+            )
+        }
+
         let sleepEntries = sleepSessions.compactMap { session -> TimelineEntry? in
             guard filterType == .all || filterType == .sleep,
                   mediaFilter == .all,
@@ -369,7 +477,14 @@ enum TimelineLogic {
             )
         }
 
-        return logEntries + eventEntries + emotionEntries + noteEntries + sleepEntries + placeEntries
+        return logEntries
+            + eventEntries
+            + emotionEntries
+            + noteEntries
+            + focusEntries
+            + sprintFocusEntries
+            + sleepEntries
+            + placeEntries
     }
 
     static func availableTags(from entries: [TimelineEntry]) -> [String] {
@@ -432,6 +547,17 @@ enum TimelineLogic {
         ]
         .compactMap(EmotionLog.cleanedText)
         .joined(separator: "\n")
+    }
+
+    private static func focusActivityTitle(for session: FocusSession) -> String {
+        switch session.state {
+        case .active:
+            return session.isPaused ? "Paused focus" : "Active focus"
+        case .completed:
+            return "Completed focus"
+        case .abandoned:
+            return "Abandoned focus"
+        }
     }
 
     static func daySectionTitle(

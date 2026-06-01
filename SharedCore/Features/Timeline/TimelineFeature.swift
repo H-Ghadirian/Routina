@@ -17,6 +17,9 @@ struct TimelineFeature {
         var events: [RoutineEvent] = []
         var emotionLogs: [EmotionLog] = []
         var notes: [RoutineNote] = []
+        var focusSessions: [FocusSession] = []
+        var sprintFocusSessions: [SprintFocusSessionRecord] = []
+        var boardSprints: [BoardSprintRecord] = []
         var fileAttachmentTaskIDs: Set<UUID> = []
         var noteAttachmentNoteIDs: Set<UUID> = []
         var sleepSessions: [SleepSession] = []
@@ -68,6 +71,9 @@ struct TimelineFeature {
             events: [RoutineEvent] = [],
             emotionLogs: [EmotionLog] = [],
             notes: [RoutineNote] = [],
+            focusSessions: [FocusSession] = [],
+            sprintFocusSessions: [SprintFocusSessionRecord] = [],
+            boardSprints: [BoardSprintRecord] = [],
             sleepSessions: [SleepSession] = [],
             placeCheckInSessions: [PlaceCheckInSession] = [],
             fileAttachmentTaskIDs: Set<UUID> = [],
@@ -95,12 +101,15 @@ struct TimelineFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case let .setData(tasks, logs, events, emotionLogs, notes, sleepSessions, placeCheckInSessions, fileAttachmentTaskIDs, noteAttachmentNoteIDs):
+            case let .setData(tasks, logs, events, emotionLogs, notes, focusSessions, sprintFocusSessions, boardSprints, sleepSessions, placeCheckInSessions, fileAttachmentTaskIDs, noteAttachmentNoteIDs):
                 state.tasks = tasks
                 state.logs = logs
                 state.events = events
                 state.emotionLogs = emotionLogs
                 state.notes = notes
+                state.focusSessions = focusSessions
+                state.sprintFocusSessions = sprintFocusSessions
+                state.boardSprints = boardSprints
                 state.sleepSessions = sleepSessions
                 state.placeCheckInSessions = placeCheckInSessions
                 state.fileAttachmentTaskIDs = fileAttachmentTaskIDs
@@ -203,6 +212,9 @@ struct TimelineFeature {
             events: state.events,
             emotionLogs: state.emotionLogs,
             notes: state.notes,
+            focusSessions: state.focusSessions,
+            sprintFocusSessions: state.sprintFocusSessions,
+            boardSprints: state.boardSprints,
             sleepSessions: state.sleepSessions,
             placeCheckInSessions: state.placeCheckInSessions,
             fileAttachmentTaskIDs: state.fileAttachmentTaskIDs,

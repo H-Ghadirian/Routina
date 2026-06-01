@@ -178,6 +178,13 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
                 description: Text("Sleep detail is not available yet.")
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if let selectedTimelineEntry, selectedTimelineEntry.isFocus {
+            ContentUnavailableView(
+                "Focus record",
+                systemImage: "timer",
+                description: Text(timelineFocusSubtitle(for: selectedTimelineEntry))
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             ContentUnavailableView(
                 "Select a timeline entry or filters",
@@ -186,6 +193,18 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+    }
+
+    private func timelineFocusSubtitle(for entry: TimelineEntry) -> String {
+        let startedAt = entry.startTimestamp ?? entry.timestamp
+        let range: String
+        if let endedAt = entry.endTimestamp {
+            range = "\(startedAt.formatted(date: .omitted, time: .shortened)) - \(endedAt.formatted(date: .omitted, time: .shortened))"
+        } else {
+            range = "Since \(startedAt.formatted(date: .omitted, time: .shortened))"
+        }
+        let duration = entry.durationSeconds.map { FocusSessionFormatting.compactDurationText(seconds: $0) }
+        return [range, duration, entry.activityTitle].compactMap(\.self).joined(separator: " · ")
     }
 
     @ViewBuilder

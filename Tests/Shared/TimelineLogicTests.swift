@@ -60,6 +60,7 @@ struct TimelineLogicTests {
             .all,
             .routines,
             .todos,
+            .focus,
             .notes,
             .places,
             .emotions,
@@ -388,6 +389,128 @@ struct TimelineLogicTests {
         #expect(sleepEntry?.durationSeconds == endedAt.timeIntervalSince(startedAt))
         #expect(sleepEntries.map(\.id) == [sleepSession.id])
         #expect(doneEntries.map(\.id) == [log.id])
+    }
+
+    @Test
+    func filteredEntries_includesTaskFocusSessionsAtStartTimeAndSupportsFocusFilter() {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let task = makeTodoTask(name: "Write brief", emoji: "✍️", tags: ["Focus"])
+        let log = makeLog(taskID: task.id, timestamp: makeDate("2026-03-20T08:00:00Z"))
+        let startedAt = makeDate("2026-03-20T09:00:00Z")
+        let completedAt = makeDate("2026-03-20T09:25:00Z")
+        let focusSession = FocusSession(
+            taskID: task.id,
+            startedAt: startedAt,
+            completedAt: completedAt
+        )
+
+        let allEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            focusSessions: [focusSession],
+            range: .all,
+            filterType: .all,
+            now: now,
+            calendar: calendar
+        )
+        let focusEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            focusSessions: [focusSession],
+            range: .all,
+            filterType: .focus,
+            now: now,
+            calendar: calendar
+        )
+        let doneEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            focusSessions: [focusSession],
+            range: .all,
+            filterType: .done,
+            now: now,
+            calendar: calendar
+        )
+
+        let focusEntry = allEntries.first { $0.id == focusSession.id }
+        #expect(allEntries.count == 2)
+        #expect(focusEntry?.isFocus == true)
+        #expect(focusEntry?.taskID == task.id)
+        #expect(focusEntry?.taskName == "Write brief")
+        #expect(focusEntry?.taskEmoji == "✍️")
+        #expect(focusEntry?.tags == ["Focus"])
+        #expect(focusEntry?.timestamp == startedAt)
+        #expect(focusEntry?.startTimestamp == startedAt)
+        #expect(focusEntry?.endTimestamp == completedAt)
+        #expect(focusEntry?.durationSeconds == completedAt.timeIntervalSince(startedAt))
+        #expect(focusEntry?.activityTitle == "Completed focus")
+        #expect(focusEntries.map(\.id) == [focusSession.id])
+        #expect(doneEntries.map(\.id) == [log.id])
+    }
+
+    @Test
+    func filteredEntries_includesActiveBoardFocusSessions() {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let task = makeRoutineTask(name: "Read")
+        let log = makeLog(taskID: task.id, timestamp: makeDate("2026-03-20T08:00:00Z"))
+        let sprint = BoardSprintRecord(
+            title: "Launch board",
+            startedAt: makeDate("2026-03-20T07:00:00Z")
+        )
+        let startedAt = makeDate("2026-03-20T09:30:00Z")
+        let focusSession = SprintFocusSessionRecord(
+            sprintID: sprint.id,
+            startedAt: startedAt
+        )
+
+        let allEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            focusSessions: [],
+            sprintFocusSessions: [focusSession],
+            boardSprints: [sprint],
+            range: .all,
+            filterType: .all,
+            now: now,
+            calendar: calendar
+        )
+        let focusEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            sprintFocusSessions: [focusSession],
+            boardSprints: [sprint],
+            range: .all,
+            filterType: .focus,
+            now: now,
+            calendar: calendar
+        )
+        let mediaEntries = TimelineLogic.filteredEntries(
+            logs: [log],
+            tasks: [task],
+            sprintFocusSessions: [focusSession],
+            boardSprints: [sprint],
+            range: .all,
+            filterType: .all,
+            mediaFilter: .withImage,
+            now: now,
+            calendar: calendar
+        )
+
+        let focusEntry = allEntries.first { $0.id == focusSession.id }
+        #expect(allEntries.count == 2)
+        #expect(focusEntry?.isFocus == true)
+        #expect(focusEntry?.taskID == nil)
+        #expect(focusEntry?.taskName == "Launch board")
+        #expect(focusEntry?.taskEmoji == "🎯")
+        #expect(focusEntry?.timestamp == startedAt)
+        #expect(focusEntry?.startTimestamp == startedAt)
+        #expect(focusEntry?.endTimestamp == nil)
+        #expect(focusEntry?.durationSeconds == now.timeIntervalSince(startedAt))
+        #expect(focusEntry?.activityTitle == "Active board focus")
+        #expect(focusEntries.map(\.id) == [focusSession.id])
+        #expect(mediaEntries.isEmpty)
     }
 
     @Test

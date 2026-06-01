@@ -15,6 +15,9 @@ struct TimelineView: View {
     @Query(sort: \EmotionLog.createdAt, order: .reverse) private var emotionLogs: [EmotionLog]
     @Query(sort: \RoutineNote.createdAt, order: .reverse) private var notes: [RoutineNote]
     @Query private var noteAttachments: [RoutineNoteAttachment]
+    @Query(sort: \FocusSession.startedAt, order: .reverse) private var focusSessions: [FocusSession]
+    @Query(sort: \SprintFocusSessionRecord.startedAt, order: .reverse) private var sprintFocusSessions: [SprintFocusSessionRecord]
+    @Query(sort: \BoardSprintRecord.createdAt, order: .reverse) private var boardSprints: [BoardSprintRecord]
     @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
     @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) private var placeCheckInSessions: [PlaceCheckInSession]
     @State private var relatedFilterTagSuggestionAnchor: String?
@@ -46,6 +49,15 @@ timelineRoot
     syncTimelineData()
 }
 .onChange(of: logs) { _, _ in
+    syncTimelineData()
+}
+.onChange(of: focusSessionChangeToken) { _, _ in
+    syncTimelineData()
+}
+.onChange(of: sprintFocusSessionChangeToken) { _, _ in
+    syncTimelineData()
+}
+.onChange(of: boardSprintChangeToken) { _, _ in
     syncTimelineData()
 }
 .onChange(of: sleepSessionChangeToken) { _, _ in
@@ -123,6 +135,44 @@ timelineRoot
         }
     }
 
+    private var focusSessionChangeToken: [String] {
+        focusSessions.map { session in
+            [
+                session.id.uuidString,
+                session.taskID.uuidString,
+                session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                session.completedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                session.abandonedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                session.pausedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                session.accumulatedPausedSeconds.description,
+            ].joined(separator: ":")
+        }
+    }
+
+    private var sprintFocusSessionChangeToken: [String] {
+        sprintFocusSessions.map { session in
+            [
+                session.id.uuidString,
+                session.sprintID.uuidString,
+                session.startedAt.timeIntervalSinceReferenceDate.description,
+                session.stoppedAt?.timeIntervalSinceReferenceDate.description ?? "",
+            ].joined(separator: ":")
+        }
+    }
+
+    private var boardSprintChangeToken: [String] {
+        boardSprints.map { sprint in
+            [
+                sprint.id.uuidString,
+                sprint.title,
+                sprint.statusRawValue,
+                sprint.createdAt.timeIntervalSinceReferenceDate.description,
+                sprint.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                sprint.finishedAt?.timeIntervalSinceReferenceDate.description ?? "",
+            ].joined(separator: ":")
+        }
+    }
+
     private var fileAttachmentTaskIDs: Set<UUID> {
         Set(fileAttachments.map(\.taskID))
     }
@@ -196,6 +246,9 @@ timelineRoot
             events: events,
             emotionLogs: emotionLogs,
             notes: notes,
+            focusSessions: focusSessions,
+            sprintFocusSessions: sprintFocusSessions,
+            boardSprints: boardSprints,
             sleepSessions: sleepSessions,
             placeCheckInSessions: placeCheckInSessions,
             fileAttachmentTaskIDs: fileAttachmentTaskIDs,
@@ -305,8 +358,12 @@ timelineRoot
         let baseEntries = TimelineLogic.filteredEntries(
             logs: store.logs,
             tasks: store.tasks,
+            events: store.events,
             emotionLogs: store.emotionLogs,
             notes: store.notes,
+            focusSessions: store.focusSessions,
+            sprintFocusSessions: store.sprintFocusSessions,
+            boardSprints: store.boardSprints,
             sleepSessions: store.sleepSessions,
             placeCheckInSessions: store.placeCheckInSessions,
             fileAttachmentTaskIDs: store.fileAttachmentTaskIDs,
@@ -396,6 +453,8 @@ timelineRoot
             || !events.isEmpty
             || !emotionLogs.isEmpty
             || !notes.isEmpty
+            || !focusSessions.isEmpty
+            || !sprintFocusSessions.isEmpty
             || !sleepSessions.isEmpty
             || !placeCheckInSessions.isEmpty
     }
@@ -419,7 +478,7 @@ timelineRoot
             ContentUnavailableView(
                 "No timeline entries yet",
                 systemImage: "clock.arrow.circlepath",
-                description: Text("Completed items, notes, place check-ins, emotions, and sleep records will appear here in chronological order.")
+                description: Text("Completed items, focus sessions, notes, place check-ins, emotions, and sleep records will appear here in chronological order.")
             )
         } else {
             VStack(spacing: 0) {
@@ -548,7 +607,7 @@ timelineRoot
                 ContentUnavailableView(
                     "No timeline entries yet",
                     systemImage: "clock.arrow.circlepath",
-                    description: Text("Completed items, notes, place check-ins, emotions, and sleep records will appear here in chronological order.")
+                    description: Text("Completed items, focus sessions, notes, place check-ins, emotions, and sleep records will appear here in chronological order.")
                 )
             } else if groupedByDay.isEmpty {
                 ContentUnavailableView(
@@ -602,6 +661,13 @@ timelineRoot
                 description: Text(timelineSubtitle(for: selectedTimelineEntry))
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if let selectedTimelineEntry, selectedTimelineEntry.isFocus {
+            ContentUnavailableView(
+                "Focus record",
+                systemImage: "timer",
+                description: Text(timelineSubtitle(for: selectedTimelineEntry))
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let selectedTimelineEntry, selectedTimelineEntry.isPlaceCheckIn {
             ContentUnavailableView(
                 "Place check-in not found",
@@ -646,7 +712,7 @@ timelineRoot
                     .pickerStyle(.inline)
                 }
 
-                if tasks.contains(where: { $0.isOneOffTask }) || !events.isEmpty || !notes.isEmpty || !sleepSessions.isEmpty || !placeCheckInSessions.isEmpty {
+                if tasks.contains(where: { $0.isOneOffTask }) || !events.isEmpty || !notes.isEmpty || !focusSessions.isEmpty || !sprintFocusSessions.isEmpty || !sleepSessions.isEmpty || !placeCheckInSessions.isEmpty {
                     Section("Type") {
                         Picker("Type", selection: filterTypeBinding) {
                             ForEach(TimelineFilterType.allCases) { type in
@@ -800,6 +866,9 @@ timelineRoot
         if entry.isNote {
             return "Note"
         }
+        if entry.isFocus {
+            return "Focus"
+        }
         if entry.isPlaceCheckIn {
             return "Place"
         }
@@ -826,6 +895,9 @@ timelineRoot
         }
         if entry.isNote {
             return .blue
+        }
+        if entry.isFocus {
+            return .cyan
         }
         if entry.isPlaceCheckIn {
             return .teal
@@ -897,6 +969,18 @@ timelineRoot
                 entry.timestamp.formatted(date: .omitted, time: .shortened),
                 mediaSummary
             ].compactMap(\.self).joined(separator: " · ")
+        }
+
+        if entry.isFocus {
+            let startedAt = entry.startTimestamp ?? entry.timestamp
+            let range: String
+            if let endedAt = entry.endTimestamp {
+                range = "\(startedAt.formatted(date: .omitted, time: .shortened)) - \(endedAt.formatted(date: .omitted, time: .shortened))"
+            } else {
+                range = "Since \(startedAt.formatted(date: .omitted, time: .shortened))"
+            }
+            let duration = entry.durationSeconds.map { FocusSessionFormatting.compactDurationText(seconds: $0) }
+            return [range, duration, entry.activityTitle].compactMap(\.self).joined(separator: " · ")
         }
 
         return entry.timestamp.formatted(date: .omitted, time: .shortened)
