@@ -450,6 +450,7 @@ struct HomeMacView: View {
             goalsStore: goalsStore,
             statsStore: statsStore
         )
+        .awayModeGate()
         .sleepModeGate()
         .task {
             appStore.send(.onAppear)
