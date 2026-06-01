@@ -35,6 +35,7 @@ enum SettingsRoutineDataImportEntityInserter {
             in: context
         )
         let sleepSessions = insertSleepSessions(from: backup, in: context)
+        let awaySessions = insertAwaySessions(from: backup, in: context)
         let placeCheckInCount = try insertPlaceCheckInSessions(
             from: backup,
             attachmentData: attachmentData,
@@ -75,6 +76,7 @@ enum SettingsRoutineDataImportEntityInserter {
             tasks: tasks.count,
             logs: logCount,
             sleepSessions: sleepSessions.count,
+            awaySessions: awaySessions.count,
             placeCheckInSessions: placeCheckInCount,
             emotionLogs: emotionLogCount,
             notes: notes.count,
@@ -346,6 +348,34 @@ enum SettingsRoutineDataImportEntityInserter {
                 targetDurationMinutes: sleepSession.targetDurationMinutes ?? 8 * 60,
                 createdAt: sleepSession.createdAt,
                 updatedAt: sleepSession.updatedAt
+            )
+            context.insert(importedSession)
+            importedCount += 1
+        }
+        return (importedIDs, importedCount)
+    }
+
+    @MainActor
+    private static func insertAwaySessions(
+        from backup: Backup,
+        in context: ModelContext
+    ) -> (ids: Set<UUID>, count: Int) {
+        var importedIDs = Set<UUID>()
+        var importedCount = 0
+        for awaySession in backup.awaySessions ?? [] {
+            guard importedIDs.insert(awaySession.id).inserted else { continue }
+
+            let importedSession = AwaySession(
+                id: awaySession.id,
+                preset: awaySession.preset ?? .custom,
+                title: awaySession.title,
+                startedAt: awaySession.startedAt,
+                plannedDurationSeconds: awaySession.plannedDurationSeconds ?? 20 * 60,
+                completedAt: awaySession.completedAt,
+                endedEarlyAt: awaySession.endedEarlyAt,
+                extensionCount: awaySession.extensionCount ?? 0,
+                createdAt: awaySession.createdAt,
+                updatedAt: awaySession.updatedAt
             )
             context.insert(importedSession)
             importedCount += 1

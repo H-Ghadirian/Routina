@@ -17,6 +17,7 @@ struct DayPlanWeekCalendarView: View {
     var automaticTimelineBlocksForDate: (Date) -> [DayPlanTimelineActivityBlock] = { _ in [] }
     var eventBlocksForDate: (Date) -> [DayPlanEventBlock] = { _ in [] }
     var sleepBlocksForDate: (Date) -> [DayPlanSleepBlock] = { _ in [] }
+    var awayBlocksForDate: (Date) -> [DayPlanAwayBlock] = { _ in [] }
     var blockedIntervalsForDate: (Date) -> [DayPlanBlockedInterval] = { _ in [] }
     var activeFocusSessionBlocks: (Date) -> [DayPlanFocusSessionBlock] = { _ in [] }
     var allDayBlocks: [DayPlanAllDayBlock] = []
@@ -118,6 +119,7 @@ struct DayPlanWeekCalendarView: View {
                                 automaticTimelineBlocksForDate: automaticTimelineBlocksForDate,
                                 eventBlocksForDate: eventBlocksForDate,
                                 sleepBlocksForDate: sleepBlocksForDate,
+                                awayBlocksForDate: awayBlocksForDate,
                                 taskTint: taskTint,
                                 onSelectBlock: onSelectBlock,
                                 onOpenBlockDetails: onOpenBlockDetails,

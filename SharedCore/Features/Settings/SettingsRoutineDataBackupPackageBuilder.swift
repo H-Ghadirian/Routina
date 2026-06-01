@@ -46,6 +46,7 @@ enum SettingsRoutineDataBackupPackageBuilder {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
         let sleepSessions = try context.fetch(FetchDescriptor<SleepSession>())
+        let awaySessions = try context.fetch(FetchDescriptor<AwaySession>())
         let placeCheckInSessions = try context.fetch(FetchDescriptor<PlaceCheckInSession>())
         let emotionLogs = try context.fetch(FetchDescriptor<EmotionLog>())
         let notes = try context.fetch(FetchDescriptor<RoutineNote>())
@@ -213,6 +214,7 @@ enum SettingsRoutineDataBackupPackageBuilder {
             },
             logs: logs.map(SettingsRoutineDataBackupMapping.log),
             sleepSessions: sleepSessions.map(SettingsRoutineDataBackupMapping.sleep),
+            awaySessions: awaySessions.map(SettingsRoutineDataBackupMapping.away),
             placeCheckInSessions: placeCheckInSessions.map {
                 SettingsRoutineDataBackupMapping.placeCheckIn(
                     $0,

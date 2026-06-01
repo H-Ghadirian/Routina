@@ -21,6 +21,7 @@ struct StatsView: View {
     @Query private var logs: [RoutineLog]
     @Query private var tasks: [RoutineTask]
     @Query private var focusSessions: [FocusSession]
+    @Query private var awaySessions: [AwaySession]
     @Query private var emotionLogs: [EmotionLog]
     @Query private var notes: [RoutineNote]
     @Query private var events: [RoutineEvent]
@@ -296,18 +297,20 @@ struct StatsView: View {
                 tasks: tasks,
                 logs: logs,
                 focusSessions: focusSessions,
+                awaySessions: awaySessions,
                 emotionLogs: emotionLogs,
                 notes: notes,
                 events: events,
                 noteAttachmentNoteIDs: Set(noteAttachments.map(\.noteID)),
                 goals: goals,
                 onAppear: { store.send(.onAppear) },
-                onDataChanged: { tasks, logs, focusSessions, emotionLogs, notes, events, noteAttachmentNoteIDs, goals in
+                onDataChanged: { tasks, logs, focusSessions, awaySessions, emotionLogs, notes, events, noteAttachmentNoteIDs, goals in
                     store.send(
                         .setData(
                             tasks: tasks,
                             logs: logs,
                             focusSessions: focusSessions,
+                            awaySessions: awaySessions,
                             emotionLogs: emotionLogs,
                             notes: notes,
                             events: events,
@@ -1125,6 +1128,7 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
     case healthDistance
     case healthExercise
     case focusTime
+    case awayTime
     case emotions
     case notes
     case events
@@ -1167,6 +1171,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             self = .healthExercise
         case "stats.summary.focusTime":
             self = .focusTime
+        case "stats.summary.awayTime":
+            self = .awayTime
         case "stats.summary.emotions":
             self = .emotions
         case "stats.summary.notes":
@@ -1214,6 +1220,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "Exercise"
         case .focusTime:
             return "Focus time"
+        case .awayTime:
+            return "Away time"
         case .emotions:
             return "Emotions"
         case .notes:
@@ -1271,7 +1279,7 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
         switch self {
         case .hero:
             return "The large stats summary at the top of the screen."
-        case .dailyAverage, .healthSteps, .healthActiveCalories, .healthDistance, .healthExercise, .focusTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
+        case .dailyAverage, .healthSteps, .healthActiveCalories, .healthDistance, .healthExercise, .focusTime, .awayTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
             return "A compact stats card in the summary grid."
         case .unassignedFocus:
             return "Focus sessions waiting to be assigned."
@@ -1316,6 +1324,8 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "figure.run"
         case .focusTime:
             return "timer"
+        case .awayTime:
+            return "lock.shield.fill"
         case .emotions:
             return "heart.fill"
         case .notes:
@@ -1371,7 +1381,7 @@ private enum StatsDashboardItem: String, CaseIterable, Identifiable {
 
     var isSummaryCard: Bool {
         switch self {
-        case .dailyAverage, .healthSteps, .healthActiveCalories, .healthDistance, .healthExercise, .focusTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
+        case .dailyAverage, .healthSteps, .healthActiveCalories, .healthDistance, .healthExercise, .focusTime, .awayTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
             return true
         default:
             return false

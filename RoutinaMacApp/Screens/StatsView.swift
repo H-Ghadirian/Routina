@@ -43,6 +43,7 @@ private struct StatsDataObserver: View {
             let tasks = try modelContext.fetch(FetchDescriptor<RoutineTask>())
             let logs = try modelContext.fetch(FetchDescriptor<RoutineLog>())
             let focusSessions = try modelContext.fetch(FetchDescriptor<FocusSession>())
+            let awaySessions = try modelContext.fetch(FetchDescriptor<AwaySession>())
             let emotionLogs = try modelContext.fetch(FetchDescriptor<EmotionLog>())
             let notes = try modelContext.fetch(FetchDescriptor<RoutineNote>())
             let events = try modelContext.fetch(FetchDescriptor<RoutineEvent>())
@@ -53,6 +54,7 @@ private struct StatsDataObserver: View {
                     tasks: tasks,
                     logs: logs,
                     focusSessions: focusSessions,
+                    awaySessions: awaySessions,
                     emotionLogs: emotionLogs,
                     notes: notes,
                     events: events,
@@ -970,6 +972,7 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
     case hero
     case dailyAverage
     case focusTime
+    case awayTime
     case emotions
     case notes
     case events
@@ -1005,6 +1008,8 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             self = .dailyAverage
         case "stats.summary.focusTime":
             self = .focusTime
+        case "stats.summary.awayTime":
+            self = .awayTime
         case "stats.summary.emotions":
             self = .emotions
         case "stats.summary.notes":
@@ -1044,6 +1049,8 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return "Daily average"
         case .focusTime:
             return "Focus time"
+        case .awayTime:
+            return "Away time"
         case .emotions:
             return "Emotions"
         case .notes:
@@ -1103,7 +1110,7 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
         switch self {
         case .hero:
             return "The large stats summary at the top of the screen."
-        case .dailyAverage, .focusTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
+        case .dailyAverage, .focusTime, .awayTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
             return "A compact stats card in the summary grid."
         case .unassignedFocus:
             return "Focus sessions waiting to be assigned."
@@ -1142,6 +1149,8 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return "gauge.with.dots.needle.50percent"
         case .focusTime:
             return "timer"
+        case .awayTime:
+            return "lock.shield.fill"
         case .emotions:
             return "heart.fill"
         case .notes:
@@ -1199,7 +1208,7 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
 
     var isSummaryCard: Bool {
         switch self {
-        case .dailyAverage, .focusTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
+        case .dailyAverage, .focusTime, .awayTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
             return true
         default:
             return false

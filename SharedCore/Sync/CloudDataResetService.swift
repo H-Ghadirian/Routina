@@ -35,6 +35,11 @@ enum CloudDataResetService {
             context.delete(session)
         }
 
+        let awaySessions = try context.fetch(FetchDescriptor<AwaySession>())
+        for session in awaySessions {
+            context.delete(session)
+        }
+
         let placeCheckIns = try context.fetch(FetchDescriptor<PlaceCheckInSession>())
         for session in placeCheckIns {
             context.delete(session)

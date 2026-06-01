@@ -9,6 +9,7 @@ extension SettingsRoutineDataPersistence {
         var tasks: [Task]
         var logs: [Log]
         var sleepSessions: [Sleep]?
+        var awaySessions: [Away]?
         var placeCheckInSessions: [PlaceCheckIn]?
         var emotionLogs: [Emotion]?
         var notes: [Note]?
@@ -97,6 +98,19 @@ extension SettingsRoutineDataPersistence {
             var startedAt: Date?
             var endedAt: Date?
             var targetDurationMinutes: Int?
+            var createdAt: Date?
+            var updatedAt: Date?
+        }
+
+        struct Away: Codable {
+            var id: UUID
+            var preset: AwaySessionPreset?
+            var title: String?
+            var startedAt: Date?
+            var plannedDurationSeconds: TimeInterval?
+            var completedAt: Date?
+            var endedEarlyAt: Date?
+            var extensionCount: Int?
             var createdAt: Date?
             var updatedAt: Date?
         }
@@ -197,6 +211,7 @@ extension SettingsRoutineDataPersistence {
         var tasks: Int
         var logs: Int
         var sleepSessions: Int = 0
+        var awaySessions: Int = 0
         var placeCheckInSessions: Int = 0
         var emotionLogs: Int = 0
         var notes: Int = 0

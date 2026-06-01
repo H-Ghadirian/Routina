@@ -59,6 +59,7 @@ enum RoutinaDeviceActionEntity: String, Codable, Equatable, Sendable {
     case place
     case placeCheckIn
     case focusSession
+    case awaySession
     case sleepSession
     case dayPlan
     case goal

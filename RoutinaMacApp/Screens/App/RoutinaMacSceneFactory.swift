@@ -68,6 +68,7 @@ enum RoutinaMacSceneFactory {
                             )
                         }
                     }
+                    .awayModeGate()
                     .sleepModeGate()
                 }
             }

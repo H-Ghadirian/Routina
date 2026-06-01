@@ -25,6 +25,11 @@ struct StatsFeatureMetrics: Equatable {
     var noteWithMediaCount: Int = 0
     var eventCount: Int = 0
     var eventActiveDayCount: Int = 0
+    var awaySessionCount: Int = 0
+    var completedAwaySessionCount: Int = 0
+    var endedEarlyAwaySessionCount: Int = 0
+    var totalAwaySeconds: TimeInterval = 0
+    var awayActiveDayCount: Int = 0
     var activeGoalCount: Int = 0
     var archivedGoalCount: Int = 0
     var goalsCreatedCount: Int = 0
@@ -67,6 +72,7 @@ enum StatsFeatureDerivedStateBuilder {
         tasks: [RoutineTask],
         logs: [RoutineLog],
         focusSessions: [FocusSession],
+        awaySessions: [AwaySession] = [],
         emotionLogs: [EmotionLog] = [],
         notes: [RoutineNote] = [],
         events: [RoutineEvent] = [],
@@ -216,6 +222,14 @@ enum StatsFeatureDerivedStateBuilder {
                 calendar: calendar
             )
         }
+        let awaySessionsInRange = awaySessions.filter { session in
+            dateIsInRange(
+                session.startedAt ?? session.createdAt,
+                selectedRange: selectedRange,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+        }
         let goalsCreatedInRange = goals.filter { goal in
             dateIsInRange(
                 goal.createdAt,
@@ -228,7 +242,8 @@ enum StatsFeatureDerivedStateBuilder {
             filteredTasks.compactMap(\.createdAt).min(),
             createdChartFilteredTasks.compactMap(\.createdAt).min(),
             filteredLogs.compactMap(\.timestamp).min(),
-            filteredFocusSessions.compactMap(\.startedAt).min()
+            filteredFocusSessions.compactMap(\.startedAt).min(),
+            awaySessions.compactMap(\.startedAt).min()
         ].compactMap { $0 }.min()
 
         let chartPoints: [DoneChartPoint] = RoutineCompletionStats.points(
@@ -335,6 +350,16 @@ enum StatsFeatureDerivedStateBuilder {
                 .compactMap { $0.startedAt ?? $0.createdAt }
                 .map { calendar.startOfDay(for: $0) }
         ).count
+        let totalAwaySeconds = awaySessionsInRange.reduce(0) { total, session in
+            total + session.durationSeconds(referenceDate: referenceDate)
+        }
+        let awayActiveDayCount = Set(
+            awaySessionsInRange
+                .compactMap(\.startedAt)
+                .map { calendar.startOfDay(for: $0) }
+        ).count
+        let completedAwaySessionCount = awaySessionsInRange.filter { $0.state == .completed }.count
+        let endedEarlyAwaySessionCount = awaySessionsInRange.filter { $0.state == .endedEarly }.count
         let activeGoalCount = goals.filter { $0.status == .active }.count
         let archivedGoalCount = goals.filter { $0.status == .archived }.count
         let routineCount = filteredTasks.filter { !$0.isOneOffTask }.count
@@ -388,6 +413,11 @@ enum StatsFeatureDerivedStateBuilder {
                 noteWithMediaCount: noteWithMediaCount,
                 eventCount: eventsInRange.count,
                 eventActiveDayCount: eventActiveDayCount,
+                awaySessionCount: awaySessionsInRange.count,
+                completedAwaySessionCount: completedAwaySessionCount,
+                endedEarlyAwaySessionCount: endedEarlyAwaySessionCount,
+                totalAwaySeconds: totalAwaySeconds,
+                awayActiveDayCount: awayActiveDayCount,
                 activeGoalCount: activeGoalCount,
                 archivedGoalCount: archivedGoalCount,
                 goalsCreatedCount: goalsCreatedInRange.count,

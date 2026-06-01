@@ -17,6 +17,9 @@ enum FocusSessionSupport {
         guard try SleepSessionSupport.activeSession(in: context) == nil else {
             throw RoutinaQuickAddError.activeSleepSession
         }
+        guard try AwaySessionSupport.activeSession(in: context) == nil else {
+            throw RoutinaQuickAddError.activeAwaySession
+        }
         guard try activeTaskFocus(in: context) == nil else {
             throw RoutinaQuickAddError.activeFocusSession(nil)
         }

@@ -14,6 +14,11 @@ enum SettingsRoutineDataImportStoreResetter {
             context.delete(session)
         }
 
+        let existingAwaySessions = try context.fetch(FetchDescriptor<AwaySession>())
+        for session in existingAwaySessions {
+            context.delete(session)
+        }
+
         let existingPlaceCheckIns = try context.fetch(FetchDescriptor<PlaceCheckInSession>())
         for session in existingPlaceCheckIns {
             context.delete(session)

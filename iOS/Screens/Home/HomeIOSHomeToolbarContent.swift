@@ -13,6 +13,7 @@ struct HomeIOSHomeToolbarContent: ToolbarContent {
     let onAddEmotion: () -> Void
     let onAddNote: () -> Void
     let onCheckIn: () -> Void
+    let onStartAway: () -> Void
     let onStartSleep: () -> Void
     let onToggleTopActions: () -> Void
 
@@ -53,6 +54,14 @@ struct HomeIOSHomeToolbarContent: ToolbarContent {
                         action: onStartSleep
                     )
                 }
+
+                topActionButton(
+                    title: "Start Away",
+                    systemImage: "lock.shield.fill",
+                    tint: .teal,
+                    isHighlighted: false,
+                    action: onStartAway
+                )
 
                 topActionButton(
                     title: "Add Event",

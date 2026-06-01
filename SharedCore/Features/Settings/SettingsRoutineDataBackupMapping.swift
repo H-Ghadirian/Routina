@@ -106,6 +106,21 @@ enum SettingsRoutineDataBackupMapping {
         )
     }
 
+    static func away(_ session: AwaySession) -> Backup.Away {
+        Backup.Away(
+            id: session.id,
+            preset: session.preset,
+            title: session.title,
+            startedAt: session.startedAt,
+            plannedDurationSeconds: session.plannedDurationSeconds,
+            completedAt: session.completedAt,
+            endedEarlyAt: session.endedEarlyAt,
+            extensionCount: session.extensionCount,
+            createdAt: session.createdAt,
+            updatedAt: session.updatedAt
+        )
+    }
+
     static func placeCheckIn(
         _ session: PlaceCheckInSession,
         imageData: Data?,

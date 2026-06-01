@@ -79,6 +79,7 @@ Group {
     }
 }
 .preferredColorScheme(appColorScheme.preferredColorScheme)
+.awayModeGate()
 .sleepModeGate()
     }
 

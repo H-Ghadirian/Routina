@@ -32,6 +32,7 @@ struct HomeTCAView: View {
     @State var isEventEditorPresented = false
     @State var isEmotionLogEditorPresented = false
     @State var isNoteEditorPresented = false
+    @State var isAwayStartSheetPresented = false
     @State var isPlaceCheckInMapPresented = false
     @State var isRefreshScheduled = false
     @State private var homeActionSleepWarningMessage: String?
@@ -82,6 +83,9 @@ homeContent
                 }
                 .sheet(isPresented: $isEmotionLogEditorPresented) {
                     EmotionLogEditorView()
+                }
+                .sheet(isPresented: $isAwayStartSheetPresented) {
+                    AwaySessionStartSheet()
                 }
                 .sheet(isPresented: $isPlaceCheckInMapPresented) {
                     PlaceCheckInMapSheet(selectedActivity: nil)

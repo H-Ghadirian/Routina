@@ -1,0 +1,236 @@
+import Foundation
+import SwiftData
+import Testing
+#if SWIFT_PACKAGE
+@testable @preconcurrency import RoutinaAppSupport
+#elseif os(macOS)
+@testable @preconcurrency import RoutinaMacOSDev
+#else
+@testable @preconcurrency import Routina
+#endif
+
+struct AwaySessionSupportTests {
+    @MainActor
+    @Test
+    func startAway_createsActiveSessionAndTracksExtensionAndEarlyEnd() throws {
+        let context = makeInMemoryContext()
+        let startedAt = makeDate("2026-06-01T06:30:00Z")
+        let extendedAt = makeDate("2026-06-01T06:40:00Z")
+        let endedAt = makeDate("2026-06-01T06:48:00Z")
+
+        let session = try AwaySessionSupport.startAway(
+            preset: .wake,
+            durationMinutes: 20,
+            startedAt: startedAt,
+            context: context
+        )
+        let extended = try #require(try AwaySessionSupport.extendActiveAway(
+            byMinutes: 5,
+            in: context,
+            at: extendedAt
+        ))
+        let ended = try #require(try AwaySessionSupport.endActiveAwayEarly(
+            in: context,
+            at: endedAt
+        ))
+
+        #expect(session.id == extended.id)
+        #expect(extended.extensionCount == 1)
+        #expect(extended.plannedDurationSeconds == TimeInterval(25 * 60))
+        #expect(ended.id == session.id)
+        #expect(ended.state == .endedEarly)
+        #expect(ended.endedEarlyAt == endedAt)
+        #expect(try AwaySessionSupport.activeSession(in: context) == nil)
+    }
+
+    @MainActor
+    @Test
+    func completeExpiredSessions_finishesAtPlannedEnd() throws {
+        let context = makeInMemoryContext()
+        let startedAt = makeDate("2026-06-01T07:00:00Z")
+        let referenceDate = makeDate("2026-06-01T07:16:00Z")
+
+        let session = try AwaySessionSupport.startAway(
+            preset: .reset,
+            durationMinutes: 15,
+            startedAt: startedAt,
+            context: context
+        )
+
+        let completedCount = try AwaySessionSupport.completeExpiredSessions(
+            in: context,
+            referenceDate: referenceDate
+        )
+
+        #expect(completedCount == 1)
+        #expect(session.state == .completed)
+        #expect(session.completedAt == makeDate("2026-06-01T07:15:00Z"))
+        #expect(try AwaySessionSupport.activeSessions(in: context).isEmpty)
+    }
+
+    @MainActor
+    @Test
+    func startFocusSession_failsWhileAwayIsActive() throws {
+        let context = makeInMemoryContext()
+        let task = makeTask(
+            in: context,
+            name: "Deep work",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil
+        )
+        task.focusModeEnabled = true
+        try context.save()
+        _ = try AwaySessionSupport.startAway(
+            preset: .outside,
+            durationMinutes: 30,
+            startedAt: makeDate("2026-06-01T08:00:00Z"),
+            context: context
+        )
+
+        do {
+            _ = try RoutinaQuickAddService.startFocusSession(
+                taskName: "Deep work",
+                durationMinutes: 25,
+                context: context,
+                referenceDate: makeDate("2026-06-01T08:05:00Z"),
+                calendar: makeTestCalendar()
+            )
+            Issue.record("Expected starting focus to fail while away mode is active.")
+        } catch let error as RoutinaQuickAddError {
+            #expect(error == .activeAwaySession)
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+
+        #expect(try context.fetch(FetchDescriptor<FocusSession>()).isEmpty)
+    }
+
+    @MainActor
+    @Test
+    func awayBlocksSplitOvernightSessionsByVisibleDay() throws {
+        let calendar = makeTestCalendar()
+        let previousDate = makeDate("2026-06-01T12:00:00Z")
+        let nextDate = makeDate("2026-06-02T12:00:00Z")
+        let startedAt = makeDate("2026-06-01T23:30:00Z")
+        let completedAt = makeDate("2026-06-02T00:20:00Z")
+        let session = AwaySession(
+            preset: .windDown,
+            startedAt: startedAt,
+            plannedDurationSeconds: 50 * 60,
+            completedAt: completedAt
+        )
+
+        let awayBlocksByDayKey = DayPlanAwayBlocks.blocksByDayKey(
+            on: [previousDate, nextDate],
+            from: [session],
+            referenceDate: completedAt,
+            calendar: calendar
+        )
+
+        let previousDayKey = DayPlanStorage.dayKey(for: previousDate, calendar: calendar)
+        let nextDayKey = DayPlanStorage.dayKey(for: nextDate, calendar: calendar)
+        let previousBlock = try #require(awayBlocksByDayKey[previousDayKey]?.first)
+        let nextBlock = try #require(awayBlocksByDayKey[nextDayKey]?.first)
+        #expect(previousBlock.sessionID == session.id)
+        #expect(previousBlock.block.titleSnapshot == "Wind Down")
+        #expect(previousBlock.block.startMinute == 23 * 60 + 30)
+        #expect(previousBlock.block.durationMinutes == 30)
+        #expect(nextBlock.block.startMinute == 0)
+        #expect(nextBlock.block.durationMinutes == 20)
+    }
+
+    @Test
+    func statsMetricsCountAwaySessionsSeparatelyFromFocus() {
+        let calendar = makeTestCalendar()
+        let referenceDate = makeDate("2026-06-07T12:00:00Z")
+        let task = RoutineTask(
+            name: "Deep work",
+            tags: ["Focus"],
+            createdAt: makeDate("2026-06-01T08:00:00Z")
+        )
+        let focusSession = FocusSession(
+            taskID: task.id,
+            startedAt: makeDate("2026-06-05T09:00:00Z"),
+            completedAt: makeDate("2026-06-05T10:00:00Z")
+        )
+        let completedAway = AwaySession(
+            preset: .wake,
+            startedAt: makeDate("2026-06-05T06:30:00Z"),
+            plannedDurationSeconds: 20 * 60,
+            completedAt: makeDate("2026-06-05T06:50:00Z")
+        )
+        let endedAway = AwaySession(
+            preset: .outside,
+            startedAt: makeDate("2026-06-06T15:00:00Z"),
+            plannedDurationSeconds: 30 * 60,
+            endedEarlyAt: makeDate("2026-06-06T15:12:00Z")
+        )
+
+        let state = StatsFeatureDerivedStateBuilder.build(
+            tasks: [task],
+            logs: [],
+            focusSessions: [focusSession],
+            awaySessions: [completedAway, endedAway],
+            selectedRange: .week,
+            taskTypeFilter: .all,
+            selectedImportanceUrgencyFilter: nil,
+            advancedQuery: "",
+            selectedTags: [],
+            includeTagMatchMode: .all,
+            excludedTags: [],
+            excludeTagMatchMode: .any,
+            tagColors: [:],
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(state.metrics.totalFocusSeconds == TimeInterval(60 * 60))
+        #expect(state.metrics.awaySessionCount == 2)
+        #expect(state.metrics.completedAwaySessionCount == 1)
+        #expect(state.metrics.endedEarlyAwaySessionCount == 1)
+        #expect(state.metrics.totalAwaySeconds == TimeInterval(32 * 60))
+        #expect(state.metrics.awayActiveDayCount == 2)
+    }
+
+    @MainActor
+    @Test
+    func backupPackage_roundTripsAwaySessions() throws {
+        let sourceContext = makeInMemoryContext()
+        let session = AwaySession(
+            id: UUID(),
+            preset: .outside,
+            title: "Touch grass",
+            startedAt: makeDate("2026-06-01T17:00:00Z"),
+            plannedDurationSeconds: 35 * 60,
+            completedAt: makeDate("2026-06-01T17:35:00Z"),
+            extensionCount: 1,
+            createdAt: makeDate("2026-06-01T17:00:00Z"),
+            updatedAt: makeDate("2026-06-01T17:35:00Z")
+        )
+        sourceContext.insert(session)
+        try sourceContext.save()
+
+        let package = try SettingsRoutineDataPersistence.buildBackupPackage(
+            from: sourceContext,
+            exportedAt: makeDate("2026-06-01T18:00:00Z")
+        )
+
+        let restoreContext = makeInMemoryContext()
+        let summary = try SettingsRoutineDataPersistence.replaceAllRoutineData(
+            with: package.manifestData,
+            in: restoreContext,
+            importDate: makeDate("2026-06-01T18:05:00Z")
+        )
+        let restored = try #require(try restoreContext.fetch(FetchDescriptor<AwaySession>()).first)
+
+        #expect(summary.awaySessions == 1)
+        #expect(restored.id == session.id)
+        #expect(restored.preset == .outside)
+        #expect(restored.title == "Touch grass")
+        #expect(restored.startedAt == session.startedAt)
+        #expect(restored.completedAt == session.completedAt)
+        #expect(restored.plannedDurationSeconds == TimeInterval(35 * 60))
+        #expect(restored.extensionCount == 1)
+    }
+}

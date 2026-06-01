@@ -846,6 +846,9 @@ struct FocusSessionCard: View {
             guard try SleepSessionSupport.activeSession(in: modelContext) == nil else {
                 return
             }
+            guard try AwaySessionSupport.activeSession(in: modelContext) == nil else {
+                return
+            }
             let startedAt = Date()
             let session = FocusSession(
                 taskID: task.id,

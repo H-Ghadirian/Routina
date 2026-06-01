@@ -12,6 +12,7 @@ struct DayPlanBlockLayer: View {
     var automaticTimelineBlocksForDate: (Date) -> [DayPlanTimelineActivityBlock] = { _ in [] }
     var eventBlocksForDate: (Date) -> [DayPlanEventBlock] = { _ in [] }
     var sleepBlocksForDate: (Date) -> [DayPlanSleepBlock] = { _ in [] }
+    var awayBlocksForDate: (Date) -> [DayPlanAwayBlock] = { _ in [] }
     var taskTint: (DayPlanBlock) -> Color
     var onSelectBlock: (DayPlanBlock, Date) -> Void
     var onOpenBlockDetails: (DayPlanBlock, Date) -> Void
@@ -101,6 +102,38 @@ struct DayPlanBlockLayer: View {
                         y: yOffset(for: block.startMinute)
                     )
                     .zIndex(0)
+                }
+
+                ForEach(awayBlocksForDate(date)) { awayBlock in
+                    let block = awayBlock.block
+                    let blockHeight = blockHeight(for: block)
+                    DayPlanBlockCard(
+                        block: block,
+                        tint: .teal,
+                        style: .away,
+                        isSelected: false,
+                        renderedHeight: blockHeight,
+                        selectedDate: date,
+                        calendar: calendar,
+                        onSelect: {},
+                        onOpenDetails: {},
+                        onDelete: {},
+                        onResizeStarted: {},
+                        onResizeChanged: { _, _ in },
+                        onResizeEnded: {},
+                        onDragProvider: {
+                            NSItemProvider(object: "" as NSString)
+                        }
+                    )
+                    .frame(
+                        width: max(dayWidth - 10, 90),
+                        height: blockHeight
+                    )
+                    .offset(
+                        x: timeColumnWidth + CGFloat(dayIndex) * dayWidth + 5,
+                        y: yOffset(for: block.startMinute)
+                    )
+                    .zIndex(0.65)
                 }
 
                 ForEach(eventBlocksForDate(date)) { eventBlock in

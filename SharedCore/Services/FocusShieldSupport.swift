@@ -55,20 +55,25 @@ enum FocusShieldSupport {
     @MainActor
     static func syncFocusShield(using context: ModelContext) {
         #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
-        guard hasActiveFocusSession(in: context) else {
+        guard hasActiveProtectedSession(in: context) else {
             clearShield()
             return
         }
 
         _ = applyShieldForCurrentSelection()
         #elseif os(macOS)
-        guard hasActiveFocusSession(in: context) else {
+        guard hasActiveProtectedSession(in: context) else {
             MacFocusAppBlocker.shared.stop()
             return
         }
 
         MacFocusAppBlocker.shared.sync()
         #endif
+    }
+
+    @MainActor
+    private static func hasActiveProtectedSession(in context: ModelContext) -> Bool {
+        hasActiveFocusSession(in: context) || hasActiveAwaySession(in: context)
     }
 
     @MainActor
@@ -83,6 +88,22 @@ enum FocusShieldSupport {
             return try context.fetch(descriptor).contains { $0.pausedAt == nil }
         } catch {
             NSLog("Focus shield active-session check failed: \(error.localizedDescription)")
+            return false
+        }
+    }
+
+    @MainActor
+    private static func hasActiveAwaySession(in context: ModelContext) -> Bool {
+        let predicate = #Predicate<AwaySession> { session in
+            session.completedAt == nil && session.endedEarlyAt == nil
+        }
+        var descriptor = FetchDescriptor<AwaySession>(predicate: predicate)
+        descriptor.fetchLimit = 1
+
+        do {
+            return try !context.fetch(descriptor).isEmpty
+        } catch {
+            NSLog("Focus shield active-away check failed: \(error.localizedDescription)")
             return false
         }
     }

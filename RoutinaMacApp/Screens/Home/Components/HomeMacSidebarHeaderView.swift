@@ -14,6 +14,7 @@ struct HomeMacSidebarHeaderView<SearchPanel: View>: View {
     let onAddGoal: () -> Void
     let onAddTask: () -> Void
     let onCheckIn: () -> Void
+    let onStartAway: () -> Void
     let onStartSleep: () -> Void
     @ViewBuilder let searchPanel: () -> SearchPanel
 
@@ -27,6 +28,7 @@ struct HomeMacSidebarHeaderView<SearchPanel: View>: View {
                 onAddGoal: onAddGoal,
                 onAddTask: onAddTask,
                 onCheckIn: onCheckIn,
+                onStartAway: onStartAway,
                 onStartSleep: onStartSleep
             )
 

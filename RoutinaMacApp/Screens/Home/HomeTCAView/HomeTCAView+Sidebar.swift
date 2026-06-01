@@ -551,6 +551,7 @@ extension HomeTCAView {
                 onAddGoal: openAddGoal,
                 onAddTask: openAddTask,
                 onCheckIn: openCheckInFromAddMenu,
+                onStartAway: openAwayFromAddMenu,
                 onStartSleep: startSleepFromAddMenu
             )
         }
@@ -619,6 +620,7 @@ extension HomeTCAView {
             onAddGoal: openAddGoal,
             onAddTask: openAddTask,
             onCheckIn: openCheckInFromAddMenu,
+            onStartAway: openAwayFromAddMenu,
             onStartSleep: startSleepFromAddMenu
         ) {
             if isMacGoalsMode {
@@ -708,15 +710,26 @@ extension HomeTCAView {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
+        isAwayStartSheetPresented = false
         store.send(.setSelectedTask(nil))
         store.send(.setAddRoutineSheet(false))
         openMacPlacesWorkspace(activity: nil)
+    }
+
+    func openAwayFromAddMenu() {
+        isEventEditorPresented = false
+        isEmotionLogEditorPresented = false
+        isNoteEditorPresented = false
+        store.send(.setSelectedTask(nil))
+        store.send(.setAddRoutineSheet(false))
+        isAwayStartSheetPresented = true
     }
 
     func startSleepFromAddMenu() {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
+        isAwayStartSheetPresented = false
         store.send(.setSelectedTask(nil))
         store.send(.setAddRoutineSheet(false))
         RoutinaMacSleepModeStarter.requestStartUsingSharedPersistence()

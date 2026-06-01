@@ -51,6 +51,17 @@ enum StatsSummaryCardItemBuilder {
 
         items.append(
             StatsSummaryCardItem(
+                icon: "lock.shield.fill",
+                accent: .mint,
+                title: "Away time",
+                value: chartPresentation.focusDurationText(metrics.totalAwaySeconds),
+                caption: awayCaption(metrics: metrics),
+                accessibilityIdentifier: "stats.summary.awayTime"
+            )
+        )
+
+        items.append(
+            StatsSummaryCardItem(
                 icon: "heart.fill",
                 accent: .pink,
                 title: "Emotions",
@@ -261,6 +272,18 @@ enum StatsSummaryCardItemBuilder {
         }
 
         return "\(metrics.eventActiveDayCount) calendar \(metrics.eventActiveDayCount == 1 ? "day" : "days")"
+    }
+
+    private static func awayCaption(metrics: StatsFeatureMetrics) -> String {
+        guard metrics.awaySessionCount > 0 else {
+            return "No away sessions in range"
+        }
+
+        if metrics.endedEarlyAwaySessionCount > 0 {
+            return "\(metrics.awaySessionCount) sessions, \(metrics.endedEarlyAwaySessionCount) ended early"
+        }
+
+        return "\(metrics.completedAwaySessionCount) completed across \(metrics.awayActiveDayCount) \(metrics.awayActiveDayCount == 1 ? "day" : "days")"
     }
 
     private static func goalCaption(metrics: StatsFeatureMetrics) -> String {

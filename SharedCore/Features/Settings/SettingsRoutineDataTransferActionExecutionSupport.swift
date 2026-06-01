@@ -209,6 +209,6 @@ enum SettingsRoutineDataTransferActionExecution {
     }
 
     private static func importSuccessMessage(for summary: SettingsRoutineDataPersistence.ImportSummary) -> String {
-        "Loaded \(summary.tasks) routines, \(summary.goals) goals, \(summary.places) places, \(summary.logs) logs, \(summary.sleepSessions) sleep sessions, \(summary.placeCheckInSessions) place check-ins, \(summary.emotionLogs) emotions, \(summary.notes) notes, \(summary.events) events, and \(summary.attachments) attachments."
+        "Loaded \(summary.tasks) routines, \(summary.goals) goals, \(summary.places) places, \(summary.logs) logs, \(summary.sleepSessions) sleep sessions, \(summary.awaySessions) away sessions, \(summary.placeCheckInSessions) place check-ins, \(summary.emotionLogs) emotions, \(summary.notes) notes, \(summary.events) events, and \(summary.attachments) attachments."
     }
 }

@@ -60,6 +60,10 @@ extension HomeTCAView {
                 collapseExpandedToolbarActions()
                 isPlaceCheckInMapPresented = true
             },
+            onStartAway: {
+                collapseExpandedToolbarActions()
+                isAwayStartSheetPresented = true
+            },
             onStartSleep: {
                 requestStartSleepFromHomeAction()
             },

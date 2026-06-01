@@ -146,6 +146,7 @@ Group {
 } message: {
     Text(homeMenuSleepWarningMessage ?? "Starting sleep mode will stop the current focus timer.")
 }
+.awayModeGate()
 .sleepModeGate()
     }
 

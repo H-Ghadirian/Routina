@@ -8,6 +8,7 @@ struct DayPlanBlockCard: View {
         case event
         case liveFocus
         case sleep
+        case away
     }
 
     var block: DayPlanBlock
@@ -37,6 +38,8 @@ struct DayPlanBlockCard: View {
             eventCard
         } else if isSleep {
             sleepCard
+        } else if isAway {
+            awayCard
         } else {
             manualCard
         }
@@ -159,6 +162,11 @@ struct DayPlanBlockCard: View {
     private var sleepCard: some View {
         baseCard
             .help("Sleep time is blocked")
+    }
+
+    private var awayCard: some View {
+        baseCard
+            .help("Away time is blocked")
     }
 
     @ViewBuilder
@@ -284,6 +292,13 @@ struct DayPlanBlockCard: View {
         return false
     }
 
+    private var isAway: Bool {
+        if case .away = style {
+            return true
+        }
+        return false
+    }
+
     private var automaticKind: RoutineLogKind? {
         if case let .automatic(kind) = style {
             return kind
@@ -292,11 +307,11 @@ struct DayPlanBlockCard: View {
     }
 
     private var showsActivityStripe: Bool {
-        isAutomatic || isLiveFocus || isEvent || isSleep
+        isAutomatic || isLiveFocus || isEvent || isSleep || isAway
     }
 
     private var showsStatusIcon: Bool {
-        renderedHeight >= 28 && (isAutomatic || isLiveFocus || isEvent || isSleep)
+        renderedHeight >= 28 && (isAutomatic || isLiveFocus || isEvent || isSleep || isAway)
     }
 
     private var fillOpacity: Double {
@@ -310,6 +325,9 @@ struct DayPlanBlockCard: View {
             return 0.12
         }
         if isSleep {
+            return 0.16
+        }
+        if isAway {
             return 0.16
         }
         return isSelected ? 0.22 : 0.14
@@ -328,6 +346,9 @@ struct DayPlanBlockCard: View {
         if isSleep {
             return 0.78
         }
+        if isAway {
+            return 0.78
+        }
         return isSelected ? 0.75 : 0.35
     }
 
@@ -342,6 +363,9 @@ struct DayPlanBlockCard: View {
             return 1.5
         }
         if isSleep {
+            return 1.5
+        }
+        if isAway {
             return 1.5
         }
         return isSelected ? 2 : 1
@@ -360,6 +384,9 @@ struct DayPlanBlockCard: View {
         }
         if isSleep {
             return "bed.double.fill"
+        }
+        if isAway {
+            return "lock.shield.fill"
         }
         return nil
     }

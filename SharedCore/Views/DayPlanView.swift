@@ -51,6 +51,7 @@ struct DayPlanSidebarView: View {
     @Query private var tasks: [RoutineTask]
     @Query private var logs: [RoutineLog]
     @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
+    @Query(sort: \AwaySession.startedAt, order: .reverse) private var awaySessions: [AwaySession]
     var usesPanelBackground = true
     @AppStorage(
         UserDefaultBoolValueKey.appSettingShowTimelineTasksInDayPlanner.rawValue,
@@ -63,7 +64,7 @@ struct DayPlanSidebarView: View {
 
     var body: some View {
         taskPanel
-            .dayPlanLifecycle(planner: planner, tasks: tasks, sleepSessions: sleepSessions, calendar: calendar)
+            .dayPlanLifecycle(planner: planner, tasks: tasks, sleepSessions: sleepSessions, awaySessions: awaySessions, calendar: calendar)
     }
 
     private var taskPanel: some View {
@@ -183,6 +184,12 @@ struct DayPlanSidebarView: View {
                     .foregroundStyle(.indigo)
             }
 
+            if let awayConflict {
+                Label("Overlaps \(awayConflict.title)", systemImage: "lock.shield.fill")
+                    .font(.caption)
+                    .foregroundStyle(.teal)
+            }
+
             HStack {
                 Button(planner.selectedBlock == nil ? "Add" : "Save") {
                     if let selectedTask {
@@ -249,7 +256,7 @@ struct DayPlanSidebarView: View {
     }
 
     private var canCommitBlock: Bool {
-        selectedTask != nil && planner.conflictingBlock == nil && sleepConflict == nil
+        selectedTask != nil && planner.conflictingBlock == nil && sleepConflict == nil && awayConflict == nil
     }
 
     private var sleepConflict: DayPlanBlockedInterval? {
@@ -257,6 +264,19 @@ struct DayPlanSidebarView: View {
             in: DayPlanSleepBlocks.blockedIntervals(
                 on: planner.selectedDate,
                 from: sleepSessions,
+                referenceDate: Date(),
+                calendar: calendar
+            ),
+            startMinute: planner.startMinute,
+            durationMinutes: planner.durationMinutes
+        )
+    }
+
+    private var awayConflict: DayPlanBlockedInterval? {
+        planner.sleepConflict(
+            in: DayPlanAwayBlocks.blockedIntervals(
+                on: planner.selectedDate,
+                from: awaySessions,
                 referenceDate: Date(),
                 calendar: calendar
             ),
@@ -388,6 +408,7 @@ private struct DayPlanTimelinePanelView: View {
     @Query private var tasks: [RoutineTask]
     @Query private var logs: [RoutineLog]
     @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
+    @Query(sort: \AwaySession.startedAt, order: .reverse) private var awaySessions: [AwaySession]
     @Query(sort: \RoutineEvent.startedAt, order: .reverse) private var events: [RoutineEvent]
     @Query(
         filter: #Predicate<FocusSession> { session in
@@ -433,14 +454,21 @@ private struct DayPlanTimelinePanelView: View {
             referenceDate: referenceDate,
             calendar: calendar
         )
+        let awayBlocksByDayKey = DayPlanAwayBlocks.blocksByDayKey(
+            on: weekDates,
+            from: awaySessions,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
         let eventBlocksByDayKey = DayPlanEventBlocks.blocksByDayKey(
             on: weekDates,
             from: events,
             calendar: calendar
         )
-        let blockedIntervalsByDayKey = sleepBlocksByDayKey.mapValues { blocks in
-            blocks.map(\.interval)
-        }
+        let blockedIntervalsByDayKey = mergeBlockedIntervals(
+            sleepBlocksByDayKey.mapValues { blocks in blocks.map(\.interval) },
+            awayBlocksByDayKey.mapValues { blocks in blocks.map(\.interval) }
+        )
         let allDayBlocks = DayPlanAllDayTasks.blocks(
             on: weekDates,
             from: tasks,
@@ -488,6 +516,10 @@ private struct DayPlanTimelinePanelView: View {
                 sleepBlocksForDate: { date in
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
                     return sleepBlocksByDayKey[dayKey] ?? []
+                },
+                awayBlocksForDate: { date in
+                    let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+                    return awayBlocksByDayKey[dayKey] ?? []
                 },
                 blockedIntervalsForDate: { date in
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
@@ -634,7 +666,7 @@ private struct DayPlanTimelinePanelView: View {
                 }
             )
         }
-        .dayPlanLifecycle(planner: planner, tasks: tasks, sleepSessions: sleepSessions, calendar: calendar)
+        .dayPlanLifecycle(planner: planner, tasks: tasks, sleepSessions: sleepSessions, awaySessions: awaySessions, calendar: calendar)
         .onChange(of: showsTimelineTasksInDayPlanner) { _, isEnabled in
             if isEnabled {
                 planner.clearFocusedUnplannedCompletedTasks()
@@ -672,6 +704,17 @@ private struct DayPlanTimelinePanelView: View {
                 )
             }
         )
+    }
+
+    private func mergeBlockedIntervals(
+        _ lhs: [String: [DayPlanBlockedInterval]],
+        _ rhs: [String: [DayPlanBlockedInterval]]
+    ) -> [String: [DayPlanBlockedInterval]] {
+        var result = lhs
+        for (dayKey, intervals) in rhs {
+            result[dayKey, default: []].append(contentsOf: intervals)
+        }
+        return result
     }
 
     private func tintsByTaskID() -> [UUID: Color] {
@@ -829,6 +872,7 @@ private struct DayPlanLifecycleModifier: ViewModifier {
     @ObservedObject var planner: DayPlanPlannerState
     var tasks: [RoutineTask]
     var sleepSessions: [SleepSession]
+    var awaySessions: [AwaySession]
     var calendar: Calendar
 
     func body(content: Content) -> some View {
@@ -849,6 +893,9 @@ private struct DayPlanLifecycleModifier: ViewModifier {
             .onChange(of: sleepSessionChangeToken) { _, _ in
                 showExactTimedTasks()
             }
+            .onChange(of: awaySessionChangeToken) { _, _ in
+                showExactTimedTasks()
+            }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
                     planner.loadBlocks(calendar: calendar, context: modelContext)
@@ -867,14 +914,34 @@ private struct DayPlanLifecycleModifier: ViewModifier {
         }
     }
 
+    private var awaySessionChangeToken: [String] {
+        awaySessions.map { session in
+            [
+                session.id.uuidString,
+                session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                session.finishedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                session.plannedEndAt?.timeIntervalSinceReferenceDate.description ?? "",
+            ].joined(separator: ":")
+        }
+    }
+
     private func showExactTimedTasks() {
         let dates = planner.weekDates(calendar: calendar) + [planner.selectedDate]
-        let blockedIntervalsByDayKey = DayPlanSleepBlocks.blockedIntervalsByDayKey(
+        var blockedIntervalsByDayKey = DayPlanSleepBlocks.blockedIntervalsByDayKey(
             on: dates,
             from: sleepSessions,
             referenceDate: Date(),
             calendar: calendar
         )
+        let awayBlockedIntervalsByDayKey = DayPlanAwayBlocks.blockedIntervalsByDayKey(
+            on: dates,
+            from: awaySessions,
+            referenceDate: Date(),
+            calendar: calendar
+        )
+        for (dayKey, intervals) in awayBlockedIntervalsByDayKey {
+            blockedIntervalsByDayKey[dayKey, default: []].append(contentsOf: intervals)
+        }
         planner.showExactTimedTasks(
             from: tasks,
             blockedIntervalsByDayKey: blockedIntervalsByDayKey,
@@ -889,6 +956,7 @@ private extension View {
         planner: DayPlanPlannerState,
         tasks: [RoutineTask],
         sleepSessions: [SleepSession],
+        awaySessions: [AwaySession],
         calendar: Calendar
     ) -> some View {
         modifier(
@@ -896,6 +964,7 @@ private extension View {
                 planner: planner,
                 tasks: tasks,
                 sleepSessions: sleepSessions,
+                awaySessions: awaySessions,
                 calendar: calendar
             )
         )

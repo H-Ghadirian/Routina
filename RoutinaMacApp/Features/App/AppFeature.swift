@@ -108,6 +108,7 @@ struct AppFeature {
                 let statsTasks = state.stats.tasks
                 let statsLogs = state.stats.logs
                 let statsFocusSessions = state.stats.focusSessions
+                let statsAwaySessions = state.stats.awaySessions
                 let statsEmotionLogs = state.stats.emotionLogs
                 let statsNotes = state.stats.notes
                 let statsEvents = state.stats.events
@@ -128,6 +129,7 @@ struct AppFeature {
                         tasks: statsTasks,
                         logs: statsLogs,
                         focusSessions: statsFocusSessions,
+                        awaySessions: statsAwaySessions,
                         emotionLogs: statsEmotionLogs,
                         notes: statsNotes,
                         events: statsEvents,
@@ -254,6 +256,7 @@ struct StatsFeature {
         var tasks: [RoutineTask] = []
         var logs: [RoutineLog] = []
         var focusSessions: [FocusSession] = []
+        var awaySessions: [AwaySession] = []
         var emotionLogs: [EmotionLog] = []
         var notes: [RoutineNote] = []
         var events: [RoutineEvent] = []
@@ -313,6 +316,7 @@ struct StatsFeature {
             tasks: [RoutineTask],
             logs: [RoutineLog],
             focusSessions: [FocusSession],
+            awaySessions: [AwaySession] = [],
             emotionLogs: [EmotionLog] = [],
             notes: [RoutineNote] = [],
             events: [RoutineEvent] = [],
@@ -345,10 +349,11 @@ struct StatsFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case let .setData(tasks, logs, focusSessions, emotionLogs, notes, events, noteAttachmentNoteIDs, goals):
+            case let .setData(tasks, logs, focusSessions, awaySessions, emotionLogs, notes, events, noteAttachmentNoteIDs, goals):
                 state.tasks = tasks
                 state.logs = logs
                 state.focusSessions = focusSessions
+                state.awaySessions = awaySessions
                 state.emotionLogs = emotionLogs
                 state.notes = notes
                 state.events = events
@@ -536,6 +541,7 @@ struct StatsFeature {
             tasks: state.tasks,
             logs: state.logs,
             focusSessions: state.focusSessions,
+            awaySessions: state.awaySessions,
             emotionLogs: state.emotionLogs,
             notes: state.notes,
             events: state.events,
