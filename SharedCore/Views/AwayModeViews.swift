@@ -47,6 +47,7 @@ struct AwaySessionStartSheet: View {
     @Environment(\.modelContext) private var modelContext
     @State private var selectedPreset: AwaySessionPreset = .wake
     @State private var durationMinutes = AwaySessionPreset.wake.defaultDurationMinutes
+    @State private var hasCustomizedDuration = false
     @State private var errorText: String?
     var onStarted: () -> Void = {}
 
@@ -66,7 +67,7 @@ struct AwaySessionStartSheet: View {
                 Section("Timer") {
                     Stepper(
                         "Duration: \(durationMinutes)m",
-                        value: $durationMinutes,
+                        value: durationMinutesBinding,
                         in: 1...720,
                         step: 5
                     )
@@ -104,7 +105,19 @@ struct AwaySessionStartSheet: View {
             get: { selectedPreset },
             set: { preset in
                 selectedPreset = preset
-                durationMinutes = preset.defaultDurationMinutes
+                if !hasCustomizedDuration {
+                    durationMinutes = preset.defaultDurationMinutes
+                }
+            }
+        )
+    }
+
+    private var durationMinutesBinding: Binding<Int> {
+        Binding(
+            get: { durationMinutes },
+            set: { value in
+                durationMinutes = value
+                hasCustomizedDuration = true
             }
         )
     }
