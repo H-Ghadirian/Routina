@@ -99,7 +99,7 @@ private struct FocusTimerWidgetView: View {
 
     private var mediumLayout: some View {
 #if os(macOS)
-        HStack(spacing: 14) {
+        HStack(alignment: .center, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
                 header
                 taskTitle
@@ -110,18 +110,17 @@ private struct FocusTimerWidgetView: View {
 
             Spacer(minLength: 0)
 
-            VStack(alignment: .trailing, spacing: 6) {
+            VStack(alignment: .trailing, spacing: 8) {
                 timerText
                     .font(.system(size: 38, weight: .bold, design: .rounded))
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.65)
-                progressView
-                    .frame(width: 118)
+                timerAccessory
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
 #else
         HStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
@@ -140,8 +139,7 @@ private struct FocusTimerWidgetView: View {
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.65)
-                progressView
-                    .frame(width: 118)
+                timerAccessory
             }
         }
         .padding(14)
@@ -233,6 +231,33 @@ private struct FocusTimerWidgetView: View {
             .lineLimit(1)
     }
 
+    private var statusChip: some View {
+        HStack(spacing: 5) {
+            Image(systemName: statusSystemImage)
+                .font(.caption2.weight(.bold))
+            Text(entry.focus.isActive ? activeStateText : "Idle")
+                .lineLimit(1)
+        }
+        .font(.caption2.weight(.semibold))
+        .foregroundStyle(entry.focus.isActive ? .teal : .secondary)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(
+            Capsule(style: .continuous)
+                .fill((entry.focus.isActive ? Color.teal : Color.secondary).opacity(0.14))
+        )
+    }
+
+    @ViewBuilder
+    private var timerAccessory: some View {
+        if entry.focus.plannedDurationSeconds > 0 {
+            progressView
+                .frame(width: 118)
+        } else if entry.focus.isActive {
+            statusChip
+        }
+    }
+
     @ViewBuilder
     private var progressView: some View {
         if entry.focus.isPaused, entry.focus.plannedDurationSeconds > 0 {
@@ -246,9 +271,6 @@ private struct FocusTimerWidgetView: View {
             .tint(.teal)
         } else if entry.focus.isPaused {
             EmptyView()
-        } else if entry.focus.isActive {
-            ProgressView()
-                .tint(.teal)
         }
     }
 
@@ -259,11 +281,18 @@ private struct FocusTimerWidgetView: View {
         return entry.focus.isActive ? "timer" : "timer.square"
     }
 
+    private var statusSystemImage: String {
+        if entry.focus.isPaused {
+            return "pause.fill"
+        }
+        return entry.focus.isCountUp ? "arrow.up.right" : "target"
+    }
+
     private var activeStateText: String {
         if entry.focus.isPaused {
             return "Paused"
         }
-        return entry.focus.isCountUp ? "Counting up" : "In focus"
+        return entry.focus.isCountUp ? "Elapsed" : "Remaining"
     }
 
     private var staticTimerText: String {
