@@ -13,7 +13,7 @@ struct TaskDetailTimeSpentHeaderBox: View {
     let onCompletedFocusDuration: (TimeInterval) -> Void
 
     var body: some View {
-        let isForcedExpanded = hasActiveFocusForTask
+        let isForcedExpanded = task.focusModeEnabled || hasActiveFocusForTask
         let isContentExpanded = isExpanded || isForcedExpanded
 
         VStack(alignment: .leading, spacing: 12) {

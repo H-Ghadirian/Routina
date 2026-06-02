@@ -481,7 +481,8 @@ detailBody
                 isTimeControlRevealed
                     || TaskDetailOptionalControlVisibility.showsTimeSpent(
                         for: store.task,
-                        hasActiveFocus: hasActiveFocusForTask
+                        hasActiveFocus: hasActiveFocusForTask,
+                        showsFocusTimer: store.task.focusModeEnabled
                     )
             )
     }

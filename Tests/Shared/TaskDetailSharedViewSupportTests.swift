@@ -185,6 +185,14 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func optionalTimeSpentVisibilityCanIncludeFocusTimer() {
+        let task = RoutineTask(name: "Focus later", scheduleMode: .oneOff, focusModeEnabled: true)
+
+        #expect(!TaskDetailOptionalControlVisibility.showsTimeSpent(for: task))
+        #expect(TaskDetailOptionalControlVisibility.showsTimeSpent(for: task, showsFocusTimer: true))
+    }
+
+    @Test
     func statusContextCopyPreservesPlatformDifferences() {
         let completedTodo = RoutineTask(
             name: "Submit report",

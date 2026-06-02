@@ -120,8 +120,12 @@ enum TaskDetailOptionalControlVisibility {
         task.pressure != .none
     }
 
-    static func showsTimeSpent(for task: RoutineTask, hasActiveFocus: Bool = false) -> Bool {
-        task.actualDurationMinutes != nil || hasActiveFocus
+    static func showsTimeSpent(
+        for task: RoutineTask,
+        hasActiveFocus: Bool = false,
+        showsFocusTimer: Bool = false
+    ) -> Bool {
+        task.actualDurationMinutes != nil || hasActiveFocus || showsFocusTimer
     }
 }
 
