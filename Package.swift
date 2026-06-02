@@ -443,6 +443,7 @@ let package = Package(
                 "SharedCore/Views/SleepModeViews.swift",
                 "SharedCore/Views/PlaceCheckInDockView.swift",
                 "SharedCore/Views/PlaceCheckInMapSheet.swift",
+                "SharedCore/Views/PlaceCheckInMapSheetSupport.swift",
                 "SharedCore/Views/EmotionLogViews.swift",
                 "SharedCore/Views/RoutineNoteViews.swift",
                 "SharedCore/Views/RoutineEventViews.swift",
