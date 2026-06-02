@@ -486,6 +486,39 @@ enum StatsAchievementStats {
                 unit: .count(singular: "done", plural: "done")
             ),
             StatsAchievementProgress(
+                id: "done.total.250",
+                title: "Quarter-K Done",
+                subtitle: "Mark 250 tasks done.",
+                systemImage: "flag.checkered",
+                domain: .done,
+                category: .done,
+                currentValue: Double(completedLogs.count),
+                targetValue: 250,
+                unit: .count(singular: "done", plural: "done")
+            ),
+            StatsAchievementProgress(
+                id: "done.total.500",
+                title: "Five Hundred Done",
+                subtitle: "Mark 500 tasks done.",
+                systemImage: "medal.fill",
+                domain: .done,
+                category: .done,
+                currentValue: Double(completedLogs.count),
+                targetValue: 500,
+                unit: .count(singular: "done", plural: "done")
+            ),
+            StatsAchievementProgress(
+                id: "done.total.1000",
+                title: "Thousand Done",
+                subtitle: "Mark 1,000 tasks done.",
+                systemImage: "crown.fill",
+                domain: .done,
+                category: .done,
+                currentValue: Double(completedLogs.count),
+                targetValue: 1_000,
+                unit: .count(singular: "done", plural: "done")
+            ),
+            StatsAchievementProgress(
                 id: "done.day.5",
                 title: "Five-Done Day",
                 subtitle: "Mark five tasks done in one day.",
@@ -494,6 +527,28 @@ enum StatsAchievementStats {
                 category: .done,
                 currentValue: Double(bestDailyDoneCount),
                 targetValue: 5,
+                unit: .count(singular: "done", plural: "done")
+            ),
+            StatsAchievementProgress(
+                id: "done.day.10",
+                title: "Ten-Done Day",
+                subtitle: "Mark ten tasks done in one day.",
+                systemImage: "10.circle.fill",
+                domain: .done,
+                category: .done,
+                currentValue: Double(bestDailyDoneCount),
+                targetValue: 10,
+                unit: .count(singular: "done", plural: "done")
+            ),
+            StatsAchievementProgress(
+                id: "done.day.20",
+                title: "Twenty-Done Day",
+                subtitle: "Mark 20 tasks done in one day.",
+                systemImage: "20.circle.fill",
+                domain: .done,
+                category: .done,
+                currentValue: Double(bestDailyDoneCount),
+                targetValue: 20,
                 unit: .count(singular: "done", plural: "done")
             ),
             StatsAchievementProgress(
@@ -508,6 +563,28 @@ enum StatsAchievementStats {
                 unit: .count(singular: "day", plural: "days")
             ),
             StatsAchievementProgress(
+                id: "done.streak.30d",
+                title: "Thirty-Day Done Streak",
+                subtitle: "Mark something done on 30 days in a row.",
+                systemImage: "calendar.badge.checkmark",
+                domain: .done,
+                category: .doneStreak,
+                currentValue: Double(longestDoneStreakDays),
+                targetValue: 30,
+                unit: .count(singular: "day", plural: "days")
+            ),
+            StatsAchievementProgress(
+                id: "done.streak.100d",
+                title: "Hundred-Day Done Streak",
+                subtitle: "Mark something done on 100 days in a row.",
+                systemImage: "calendar.circle.fill",
+                domain: .done,
+                category: .doneStreak,
+                currentValue: Double(longestDoneStreakDays),
+                targetValue: 100,
+                unit: .count(singular: "day", plural: "days")
+            ),
+            StatsAchievementProgress(
                 id: "done.week.5d",
                 title: "Steady Done Week",
                 subtitle: "Mark work done on five days inside any seven-day span.",
@@ -516,6 +593,17 @@ enum StatsAchievementStats {
                 category: .doneStreak,
                 currentValue: Double(bestRollingWeekDoneDays),
                 targetValue: 5,
+                unit: .count(singular: "day", plural: "days")
+            ),
+            StatsAchievementProgress(
+                id: "done.week.7d",
+                title: "Everyday Done Week",
+                subtitle: "Mark work done on all seven days inside a week.",
+                systemImage: "calendar",
+                domain: .done,
+                category: .doneStreak,
+                currentValue: Double(bestRollingWeekDoneDays),
+                targetValue: 7,
                 unit: .count(singular: "day", plural: "days")
             ),
         ]

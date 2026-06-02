@@ -158,8 +158,12 @@ struct FocusAchievementStatsTests {
         let awayTotal = try #require(achievement("away.total.5h", in: achievements))
         let awayCompleted = try #require(achievement("away.completed.5", in: achievements))
         let doneDay = try #require(achievement("done.day.5", in: achievements))
+        let tenDoneDay = try #require(achievement("done.day.10", in: achievements))
         let doneStreak = try #require(achievement("done.streak.7d", in: achievements))
+        let thirtyDayStreak = try #require(achievement("done.streak.30d", in: achievements))
+        let everydayWeek = try #require(achievement("done.week.7d", in: achievements))
         let doneCentury = try #require(achievement("done.total.100", in: achievements))
+        let quarterKDone = try #require(achievement("done.total.250", in: achievements))
 
         #expect(sleepTotal.isEarned)
         #expect(sleepTotal.domain == .sleep)
@@ -171,8 +175,13 @@ struct FocusAchievementStatsTests {
         #expect(awayCompleted.isEarned)
         #expect(doneDay.isEarned)
         #expect(doneDay.domain == .done)
+        #expect(!tenDoneDay.isEarned)
+        #expect(tenDoneDay.progressText == "5 done / 10 done")
         #expect(doneStreak.isEarned)
+        #expect(thirtyDayStreak.progressText == "7 days / 30 days")
+        #expect(everydayWeek.isEarned)
         #expect(!doneCentury.isEarned)
+        #expect(!quarterKDone.isEarned)
     }
 
     @Test

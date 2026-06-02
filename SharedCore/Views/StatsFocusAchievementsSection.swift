@@ -6,14 +6,14 @@ struct StatsAchievementsSection: View {
     let colorScheme: ColorScheme
     @State private var selectedDomain = StatsAchievementDomain.all
 
-    private var earnedCount: Int {
-        StatsAchievementStats.earnedCount(in: achievements)
-    }
-
     private var filteredAchievements: [StatsAchievementProgress] {
         achievements.filter { achievement in
             selectedDomain == .all || achievement.domain == selectedDomain
         }
+    }
+
+    private var filteredEarnedCount: Int {
+        StatsAchievementStats.earnedCount(in: filteredAchievements)
     }
 
     private var achievementGroups: [StatsAchievementDisplayGroup] {
@@ -42,7 +42,7 @@ struct StatsAchievementsSection: View {
             ) {
                 StatsSmallHighlightBadge(
                     title: "Earned",
-                    value: "\(earnedCount)/\(achievements.count)",
+                    value: "\(filteredEarnedCount)/\(filteredAchievements.count)",
                     colorScheme: colorScheme,
                     surfaceGradient: surfaceGradient
                 )
