@@ -21,6 +21,8 @@ struct StatsView: View {
     @Query private var logs: [RoutineLog]
     @Query private var tasks: [RoutineTask]
     @Query private var focusSessions: [FocusSession]
+    @Query private var sprintFocusSessions: [SprintFocusSessionRecord]
+    @Query private var boardSprints: [BoardSprintRecord]
     @Query private var sleepSessions: [SleepSession]
     @Query private var awaySessions: [AwaySession]
     @Query private var emotionLogs: [EmotionLog]
@@ -305,6 +307,8 @@ struct StatsView: View {
                 tasks: tasks,
                 logs: logs,
                 focusSessions: focusSessions,
+                sprintFocusSessions: sprintFocusSessions,
+                boardSprints: boardSprints,
                 sleepSessions: sleepSessions,
                 awaySessions: awaySessions,
                 emotionLogs: emotionLogs,
@@ -315,12 +319,14 @@ struct StatsView: View {
                 places: places,
                 placeCheckInSessions: placeCheckInSessions,
                 onAppear: { store.send(.onAppear) },
-                onDataChanged: { tasks, logs, focusSessions, sleepSessions, awaySessions, emotionLogs, notes, events, noteAttachmentNoteIDs, goals, places, placeCheckInSessions in
+                onDataChanged: { tasks, logs, focusSessions, sprintFocusSessions, boardSprints, sleepSessions, awaySessions, emotionLogs, notes, events, noteAttachmentNoteIDs, goals, places, placeCheckInSessions in
                     store.send(
                         .setData(
                             tasks: tasks,
                             logs: logs,
                             focusSessions: focusSessions,
+                            sprintFocusSessions: sprintFocusSessions,
+                            boardSprints: boardSprints,
                             sleepSessions: sleepSessions,
                             awaySessions: awaySessions,
                             emotionLogs: emotionLogs,

@@ -72,6 +72,8 @@ enum StatsFeatureDerivedStateBuilder {
         tasks: [RoutineTask],
         logs: [RoutineLog],
         focusSessions: [FocusSession],
+        sprintFocusSessions: [SprintFocusSessionRecord] = [],
+        boardSprints: [BoardSprintRecord] = [],
         awaySessions: [AwaySession] = [],
         emotionLogs: [EmotionLog] = [],
         notes: [RoutineNote] = [],
@@ -243,6 +245,7 @@ enum StatsFeatureDerivedStateBuilder {
             createdChartFilteredTasks.compactMap(\.createdAt).min(),
             filteredLogs.compactMap(\.timestamp).min(),
             filteredFocusSessions.compactMap(\.startedAt).min(),
+            sprintFocusSessions.map(\.startedAt).min(),
             awaySessions.compactMap(\.startedAt).min()
         ].compactMap { $0 }.min()
 
@@ -275,7 +278,9 @@ enum StatsFeatureDerivedStateBuilder {
         let focusChartPoints: [FocusDurationChartPoint] = FocusDurationStats.points(
             for: selectedRange,
             sessions: filteredFocusSessions,
+            sprintSessions: sprintFocusSessions,
             tasks: filteredTasks,
+            boardSprints: boardSprints,
             earliestActivityDate: earliestActivityDate,
             referenceDate: referenceDate,
             calendar: calendar

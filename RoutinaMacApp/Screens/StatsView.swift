@@ -43,6 +43,8 @@ private struct StatsDataObserver: View {
             let tasks = try modelContext.fetch(FetchDescriptor<RoutineTask>())
             let logs = try modelContext.fetch(FetchDescriptor<RoutineLog>())
             let focusSessions = try modelContext.fetch(FetchDescriptor<FocusSession>())
+            let sprintFocusSessions = try modelContext.fetch(FetchDescriptor<SprintFocusSessionRecord>())
+            let boardSprints = try modelContext.fetch(FetchDescriptor<BoardSprintRecord>())
             let sleepSessions = try modelContext.fetch(FetchDescriptor<SleepSession>())
             let awaySessions = try modelContext.fetch(FetchDescriptor<AwaySession>())
             let emotionLogs = try modelContext.fetch(FetchDescriptor<EmotionLog>())
@@ -57,6 +59,8 @@ private struct StatsDataObserver: View {
                     tasks: tasks,
                     logs: logs,
                     focusSessions: focusSessions,
+                    sprintFocusSessions: sprintFocusSessions,
+                    boardSprints: boardSprints,
                     sleepSessions: sleepSessions,
                     awaySessions: awaySessions,
                     emotionLogs: emotionLogs,

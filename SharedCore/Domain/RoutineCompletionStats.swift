@@ -561,7 +561,9 @@ enum FocusDurationStats {
     static func points(
         for range: DoneChartRange,
         sessions: [FocusSession],
+        sprintSessions: [SprintFocusSessionRecord] = [],
         tasks: [RoutineTask] = [],
+        boardSprints: [BoardSprintRecord] = [],
         earliestActivityDate: Date? = nil,
         referenceDate: Date = .now,
         calendar: Calendar = .current
@@ -586,17 +588,24 @@ enum FocusDurationStats {
                 ($0.id, RoutineTask.trimmedName($0.name) ?? "Untitled task")
             }
         )
+        let sprintTitlesByID = boardSprints.reduce(into: [UUID: String]()) { titles, sprint in
+            titles[sprint.id] = sprint.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
         var secondsByDay: [Date: TimeInterval] = [:]
-        var contributionsByDay: [Date: [UUID: FocusContributionAccumulator]] = [:]
+        var contributionsByDay: [Date: [String: FocusContributionAccumulator]] = [:]
 
         sessions.forEach { session in
-            guard session.state == .completed else { return }
-            let daySource = session.completedAt ?? session.startedAt
-            guard let daySource else { return }
-            let day = calendar.startOfDay(for: daySource)
+            guard let contribution = focusContribution(
+                for: session,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) else {
+                return
+            }
+            let day = contribution.day
             guard day >= startDate, day <= endDate else { return }
 
-            let seconds = session.actualDurationSeconds
+            let seconds = contribution.seconds
             guard seconds > 0 else { return }
 
             secondsByDay[day, default: 0] += seconds
@@ -609,11 +618,47 @@ enum FocusDurationStats {
                 title = taskTitlesByID[taskID] ?? "Unknown task"
             }
 
-            var accumulator = contributionsByDay[day, default: [:]][taskID]
-                ?? FocusContributionAccumulator(taskID: taskID, title: title)
+            let key: String
+            let contributionTaskID: UUID?
+            if taskID == FocusSession.unassignedTaskID {
+                key = "unassigned-focus"
+                contributionTaskID = nil
+            } else {
+                key = "task-\(taskID.uuidString)"
+                contributionTaskID = taskID
+            }
+
+            var accumulator = contributionsByDay[day, default: [:]][key]
+                ?? FocusContributionAccumulator(taskID: contributionTaskID, title: title)
             accumulator.seconds += seconds
             accumulator.sessionCount += 1
-            contributionsByDay[day, default: [:]][taskID] = accumulator
+            contributionsByDay[day, default: [:]][key] = accumulator
+        }
+
+        sprintSessions.forEach { session in
+            guard let contribution = focusContribution(
+                for: session,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) else {
+                return
+            }
+            let day = contribution.day
+            guard day >= startDate, day <= endDate else { return }
+
+            let seconds = contribution.seconds
+            guard seconds > 0 else { return }
+
+            secondsByDay[day, default: 0] += seconds
+
+            let title = sprintTitlesByID[session.sprintID].flatMap { $0.isEmpty ? nil : $0 }
+                ?? "Board focus"
+            let key = "sprint-\(session.sprintID.uuidString)"
+            var accumulator = contributionsByDay[day, default: [:]][key]
+                ?? FocusContributionAccumulator(taskID: nil, title: title)
+            accumulator.seconds += seconds
+            accumulator.sessionCount += 1
+            contributionsByDay[day, default: [:]][key] = accumulator
         }
 
         return (0..<dayCount).compactMap { dayOffset in
@@ -653,7 +698,7 @@ enum FocusDurationStats {
                 let key = contribution.taskID?.uuidString ?? "unassigned-\(contribution.title)"
                 var accumulator = contributionsByBucket[bucketStart, default: [:]][key]
                     ?? FocusContributionAccumulator(
-                        taskID: contribution.taskID ?? FocusSession.unassignedTaskID,
+                        taskID: contribution.taskID,
                         title: contribution.title
                     )
                 accumulator.seconds += contribution.seconds
@@ -785,13 +830,94 @@ enum FocusDurationStats {
         }
     }
 
+    private static func focusContribution(
+        for session: FocusSession,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> (day: Date, seconds: TimeInterval)? {
+        switch session.state {
+        case .completed:
+            guard let daySource = session.completedAt ?? session.startedAt else {
+                return nil
+            }
+            return (
+                day: calendar.startOfDay(for: daySource),
+                seconds: session.actualDurationSeconds
+            )
+
+        case .active:
+            let day = calendar.startOfDay(for: referenceDate)
+            return (
+                day: day,
+                seconds: activeFocusSecondsOnReferenceDay(
+                    startedAt: session.startedAt,
+                    pausedAt: session.pausedAt,
+                    activeSeconds: session.activeDurationSeconds(at: referenceDate),
+                    referenceDate: referenceDate,
+                    calendar: calendar
+                )
+            )
+
+        case .abandoned:
+            return nil
+        }
+    }
+
+    private static func focusContribution(
+        for session: SprintFocusSessionRecord,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> (day: Date, seconds: TimeInterval)? {
+        if let stoppedAt = session.stoppedAt {
+            return (
+                day: calendar.startOfDay(for: stoppedAt),
+                seconds: session.activeDurationSeconds(at: referenceDate)
+            )
+        }
+
+        return (
+            day: calendar.startOfDay(for: referenceDate),
+            seconds: activeFocusSecondsOnReferenceDay(
+                startedAt: session.startedAt,
+                pausedAt: session.pausedAt,
+                activeSeconds: session.activeDurationSeconds(at: referenceDate),
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+        )
+    }
+
+    private static func activeFocusSecondsOnReferenceDay(
+        startedAt: Date?,
+        pausedAt: Date?,
+        activeSeconds: TimeInterval,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> TimeInterval {
+        guard let startedAt, startedAt <= referenceDate else {
+            return 0
+        }
+
+        let dayStart = calendar.startOfDay(for: referenceDate)
+        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart),
+              startedAt < dayEnd else {
+            return 0
+        }
+
+        let endedAt = min(pausedAt ?? referenceDate, referenceDate)
+        let dayRangeStart = max(startedAt, dayStart)
+        let dayRangeEnd = min(endedAt, referenceDate)
+        let wallClockSecondsOnDay = max(0, dayRangeEnd.timeIntervalSince(dayRangeStart))
+        return min(max(0, activeSeconds), wallClockSecondsOnDay)
+    }
+
     private static func orderedContributions(
         from accumulators: [FocusContributionAccumulator]
     ) -> [FocusDurationContribution] {
         accumulators
             .map {
                 FocusDurationContribution(
-                    taskID: $0.taskID == FocusSession.unassignedTaskID ? nil : $0.taskID,
+                    taskID: $0.taskID,
                     title: $0.title,
                     seconds: $0.seconds,
                     sessionCount: $0.sessionCount
@@ -806,7 +932,7 @@ enum FocusDurationStats {
     }
 
     private struct FocusContributionAccumulator {
-        let taskID: UUID
+        let taskID: UUID?
         let title: String
         var seconds: TimeInterval = 0
         var sessionCount: Int = 0

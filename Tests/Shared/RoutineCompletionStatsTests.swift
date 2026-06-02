@@ -312,6 +312,96 @@ struct RoutineCompletionStatsTests {
     }
 
     @Test
+    func focusDurationPoints_includeActiveFocusForReferenceDay() {
+        let calendar = makeTestCalendar()
+        let referenceDate = makeDate("2026-03-14T12:00:00Z")
+        let task = RoutineTask(name: "Implement payments")
+        let sessions = [
+            FocusSession(
+                taskID: task.id,
+                startedAt: makeDate("2026-03-14T08:00:00Z"),
+                completedAt: makeDate("2026-03-14T08:56:00Z")
+            ),
+            FocusSession(
+                taskID: task.id,
+                startedAt: makeDate("2026-03-14T10:00:00Z"),
+                plannedDurationSeconds: 0
+            )
+        ]
+
+        let points = FocusDurationStats.points(
+            for: .week,
+            sessions: sessions,
+            tasks: [task],
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let focusedDay = points.first { $0.date == makeDate("2026-03-14T00:00:00Z") }
+
+        #expect(focusedDay?.seconds == TimeInterval(176 * 60))
+        #expect(focusedDay?.contributions.map(\.title) == ["Implement payments"])
+        #expect(focusedDay?.contributions.map(\.seconds) == [TimeInterval(176 * 60)])
+        #expect(focusedDay?.contributions.map(\.sessionCount) == [2])
+    }
+
+    @Test
+    func focusDurationPoints_freezePausedActiveFocusForReferenceDay() {
+        let calendar = makeTestCalendar()
+        let referenceDate = makeDate("2026-03-14T12:00:00Z")
+        let session = FocusSession(
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: makeDate("2026-03-14T11:20:00Z"),
+            plannedDurationSeconds: 0,
+            pausedAt: makeDate("2026-03-14T11:35:00Z")
+        )
+
+        let points = FocusDurationStats.points(
+            for: .week,
+            sessions: [session],
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let focusedDay = points.first { $0.date == makeDate("2026-03-14T00:00:00Z") }
+
+        #expect(focusedDay?.seconds == TimeInterval(15 * 60))
+        #expect(focusedDay?.contributions.map(\.title) == ["Unassigned focus"])
+        #expect(focusedDay?.contributions.map(\.sessionCount) == [1])
+    }
+
+    @Test
+    func focusDurationPoints_includeBoardFocusForReferenceDay() {
+        let calendar = makeTestCalendar()
+        let referenceDate = makeDate("2026-03-14T12:00:00Z")
+        let sprint = BoardSprintRecord(title: "Launch board")
+        let sessions = [
+            SprintFocusSessionRecord(
+                sprintID: sprint.id,
+                startedAt: makeDate("2026-03-14T10:00:00Z"),
+                stoppedAt: makeDate("2026-03-14T10:20:00Z")
+            ),
+            SprintFocusSessionRecord(
+                sprintID: sprint.id,
+                startedAt: makeDate("2026-03-14T11:45:00Z")
+            )
+        ]
+
+        let points = FocusDurationStats.points(
+            for: .week,
+            sessions: [],
+            sprintSessions: sessions,
+            boardSprints: [sprint],
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let focusedDay = points.first { $0.date == makeDate("2026-03-14T00:00:00Z") }
+
+        #expect(focusedDay?.seconds == TimeInterval(35 * 60))
+        #expect(focusedDay?.contributions.map(\.title) == ["Launch board"])
+        #expect(focusedDay?.contributions.map(\.seconds) == [TimeInterval(35 * 60)])
+        #expect(focusedDay?.contributions.map(\.sessionCount) == [2])
+    }
+
+    @Test
     func groupedFocusDurationPoints_rollUpDailyTaskBreakdowns() {
         var calendar = makeTestCalendar()
         calendar.firstWeekday = 2
