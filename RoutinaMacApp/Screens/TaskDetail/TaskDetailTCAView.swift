@@ -241,192 +241,18 @@ detailBody
         )
     }
 
-    private func headerTagsBox(minHeight: CGFloat? = nil) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("TAGS")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-            HomeFilterFlowLayout(horizontalSpacing: 6, verticalSpacing: 6) {
-                ForEach(store.task.tags, id: \.self) { tag in
-                    statusTagChip(tag)
-                }
-            }
+    private var headerSupplementaryContent: some View {
+        TaskDetailMacHeaderSupplementaryContent(
+            task: store.task,
+            goals: store.taskGoalSummaries,
+            selectedDate: store.resolvedSelectedDate,
+            showPersianDates: showPersianDates,
+            isCalendarExpanded: $isCalendarExpanded,
+            sectionCardStroke: TaskDetailPlatformStyle.sectionCardStroke,
+            tagTint: { tagTint(for: $0) }
+        ) {
+            calendarSection
         }
-        .detailHeaderBoxStyle(minHeight: minHeight)
-    }
-
-    @ViewBuilder
-    private func headerPointsBox(minHeight: CGFloat? = nil) -> some View {
-        if let storyPoints = store.task.storyPoints {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("POINTS")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.secondary)
-
-                Text(TaskDetailHeaderBadgePresentation.storyPointsText(for: storyPoints))
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .detailHeaderBoxStyle(tint: .purple, minHeight: minHeight)
-        }
-    }
-
-    @ViewBuilder
-    private var headerMetadataRow: some View {
-        let hasTags = !store.task.tags.isEmpty
-        let hasLinks = !store.task.resolvedLinkURLs.isEmpty
-        let hasPoints = store.task.storyPoints != nil
-
-        if hasLinks && hasPoints {
-            ViewThatFits(in: .horizontal) {
-                TaskDetailEqualHeightPairRow(spacing: 8) { minHeight in
-                    headerDetailsBox(includesTags: hasTags, minHeight: minHeight)
-                } trailing: { minHeight in
-                    headerPointsBox(minHeight: minHeight)
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    headerDetailsBox(includesTags: hasTags)
-                    headerPointsBox()
-                }
-            }
-        } else if hasLinks {
-            headerDetailsBox(includesTags: hasTags)
-        } else if hasTags && hasPoints {
-            ViewThatFits(in: .horizontal) {
-                TaskDetailEqualHeightPairRow(spacing: 8) { minHeight in
-                    headerTagsBox(minHeight: minHeight)
-                } trailing: { minHeight in
-                    headerPointsBox(minHeight: minHeight)
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    headerTagsBox()
-                    headerPointsBox()
-                }
-            }
-        } else if hasTags {
-            headerTagsBox()
-        } else if hasPoints {
-            headerPointsBox()
-        }
-    }
-
-    @ViewBuilder
-    private func headerDetailsBox(includesTags: Bool, minHeight: CGFloat? = nil) -> some View {
-        let links = store.task.resolvedLinkURLs
-        let tags = includesTags ? store.task.tags : []
-
-        if !links.isEmpty || !tags.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("DETAILS")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.secondary)
-
-                if !tags.isEmpty {
-                    HomeFilterFlowLayout(horizontalSpacing: 6, verticalSpacing: 6) {
-                        ForEach(tags, id: \.self) { tag in
-                            statusTagChip(tag)
-                        }
-                    }
-                }
-
-                if !tags.isEmpty && !links.isEmpty {
-                    Divider()
-                        .padding(.vertical, 2)
-                }
-
-                if !links.isEmpty {
-                    VStack(alignment: .leading, spacing: 6) {
-                        ForEach(links) { link in
-                            Link(destination: link.url) {
-                                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                                    Image(systemName: "link")
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(.blue)
-                                    Text(link.text)
-                                        .font(.subheadline.weight(.semibold))
-                                        .foregroundStyle(.blue)
-                                        .lineLimit(2)
-                                        .multilineTextAlignment(.leading)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                            }
-                            .taskDetailCopyableText(link.text)
-                        }
-                    }
-                }
-            }
-            .detailHeaderBoxStyle(minHeight: minHeight)
-        }
-    }
-
-    @ViewBuilder
-    private var headerGoalsBox: some View {
-        if !store.taskGoalSummaries.isEmpty {
-            TaskDetailGoalsHeaderBoxView(goals: store.taskGoalSummaries)
-        }
-    }
-
-    private var headerCalendarDisclosure: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.16)) {
-                    isCalendarExpanded.toggle()
-                }
-            } label: {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("CALENDAR")
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.secondary)
-
-                        HStack(alignment: .firstTextBaseline, spacing: 6) {
-                            Image(systemName: "calendar")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.blue)
-                            Text(headerCalendarSummaryText)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.primary)
-                                .lineLimit(2)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-                    Spacer(minLength: 8)
-                    Image(systemName: "chevron.down")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .rotationEffect(.degrees(isCalendarExpanded ? 180 : 0))
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            if isCalendarExpanded {
-                Divider()
-                calendarSection
-                    .routinaGlassCard(cornerRadius: 12, tint: .secondary, tintOpacity: 0.06)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
-                    )
-            }
-        }
-        .detailHeaderBoxStyle(tint: .blue)
-    }
-
-    private var headerCalendarSummaryText: String {
-        let dateText = PersianDateDisplay.appendingSupplementaryDate(
-            to: store.resolvedSelectedDate.formatted(date: .abbreviated, time: .omitted),
-            for: store.resolvedSelectedDate,
-            enabled: showPersianDates
-        )
-        if Calendar.current.isDateInToday(store.resolvedSelectedDate) {
-            return "Today • \(dateText)"
-        }
-        return dateText
     }
 
     @ViewBuilder
@@ -913,10 +739,7 @@ detailBody
         } additionalContent: {
             VStack(alignment: .leading, spacing: 8) {
                 todoHeaderControls
-
-                headerCalendarDisclosure
-                headerMetadataRow
-                headerGoalsBox
+                headerSupplementaryContent
             }
         }
     }
@@ -932,11 +755,7 @@ detailBody
         } additionalContent: {
             VStack(alignment: .leading, spacing: 8) {
                 routineHeaderControls
-
-                headerCalendarDisclosure
-
-                headerMetadataRow
-                headerGoalsBox
+                headerSupplementaryContent
             }
         }
     }
