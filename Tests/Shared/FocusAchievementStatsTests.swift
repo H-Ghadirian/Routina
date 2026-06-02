@@ -162,12 +162,15 @@ struct FocusAchievementStatsTests {
         let doneCentury = try #require(achievement("done.total.100", in: achievements))
 
         #expect(sleepTotal.isEarned)
+        #expect(sleepTotal.domain == .sleep)
         #expect(sleepTotal.progressText == "56h / 56h")
         #expect(sleepStreak.isEarned)
         #expect(awayTotal.isEarned)
+        #expect(awayTotal.domain == .away)
         #expect(awayTotal.progressText == "5h / 5h")
         #expect(awayCompleted.isEarned)
         #expect(doneDay.isEarned)
+        #expect(doneDay.domain == .done)
         #expect(doneStreak.isEarned)
         #expect(!doneCentury.isEarned)
     }

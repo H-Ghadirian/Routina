@@ -15,6 +15,31 @@ enum StatsAchievementCategory: String, Equatable {
     case doneStreak
 }
 
+enum StatsAchievementDomain: String, CaseIterable, Equatable, Identifiable {
+    case all
+    case focus
+    case sleep
+    case away
+    case done
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .all:
+            return "All"
+        case .focus:
+            return "Focus"
+        case .sleep:
+            return "Sleep"
+        case .away:
+            return "Away"
+        case .done:
+            return "Done"
+        }
+    }
+}
+
 enum StatsAchievementUnit: Equatable {
     case seconds
     case count(singular: String, plural: String)
@@ -49,6 +74,7 @@ struct StatsAchievementProgress: Equatable, Identifiable {
     let title: String
     let subtitle: String
     let systemImage: String
+    let domain: StatsAchievementDomain
     let category: StatsAchievementCategory
     let currentValue: Double
     let targetValue: Double
@@ -129,6 +155,7 @@ enum StatsAchievementStats {
                 title: "First Focus",
                 subtitle: "Complete your first focus session.",
                 systemImage: "sparkles",
+                domain: .focus,
                 category: .session,
                 currentValue: Double(completedSessions.count),
                 targetValue: 1,
@@ -139,6 +166,7 @@ enum StatsAchievementStats {
                 title: "Block Builder",
                 subtitle: "Earn 100 five-minute focus blocks.",
                 systemImage: "square.grid.3x3.fill",
+                domain: .focus,
                 category: .blocks,
                 currentValue: Double(totalBlocks),
                 targetValue: 100,
@@ -149,6 +177,7 @@ enum StatsAchievementStats {
                 title: "Ten-Hour Foundation",
                 subtitle: "Reach 10 total hours of focus.",
                 systemImage: "timer",
+                domain: .focus,
                 category: .total,
                 currentValue: totalSeconds,
                 targetValue: 10 * 60 * 60,
@@ -159,6 +188,7 @@ enum StatsAchievementStats {
                 title: "Deep Work Builder",
                 subtitle: "Reach 50 total hours of focus.",
                 systemImage: "clock.badge.checkmark.fill",
+                domain: .focus,
                 category: .total,
                 currentValue: totalSeconds,
                 targetValue: 50 * 60 * 60,
@@ -169,6 +199,7 @@ enum StatsAchievementStats {
                 title: "Focus Centurion",
                 subtitle: "Reach 100 total hours of focus.",
                 systemImage: "trophy.fill",
+                domain: .focus,
                 category: .total,
                 currentValue: totalSeconds,
                 targetValue: 100 * 60 * 60,
@@ -179,6 +210,7 @@ enum StatsAchievementStats {
                 title: "One-Hour Deep Dive",
                 subtitle: "Complete a one-hour focus session.",
                 systemImage: "stopwatch.fill",
+                domain: .focus,
                 category: .session,
                 currentValue: longestSessionSeconds,
                 targetValue: 60 * 60,
@@ -189,6 +221,7 @@ enum StatsAchievementStats {
                 title: "Two-Hour Flow",
                 subtitle: "Complete a two-hour focus session.",
                 systemImage: "hourglass",
+                domain: .focus,
                 category: .session,
                 currentValue: longestSessionSeconds,
                 targetValue: 2 * 60 * 60,
@@ -199,6 +232,7 @@ enum StatsAchievementStats {
                 title: "Strong Focus Day",
                 subtitle: "Log two hours of focus in one day.",
                 systemImage: "sun.max.fill",
+                domain: .focus,
                 category: .daily,
                 currentValue: bestDailyFocusSeconds,
                 targetValue: 2 * 60 * 60,
@@ -209,6 +243,7 @@ enum StatsAchievementStats {
                 title: "Protected Day",
                 subtitle: "Log four hours of focus in one day.",
                 systemImage: "shield.lefthalf.filled",
+                domain: .focus,
                 category: .daily,
                 currentValue: bestDailyFocusSeconds,
                 targetValue: 4 * 60 * 60,
@@ -219,6 +254,7 @@ enum StatsAchievementStats {
                 title: "Five-Day Thread",
                 subtitle: "Focus on five days in a row.",
                 systemImage: "flame.fill",
+                domain: .focus,
                 category: .streak,
                 currentValue: Double(longestStreakDays),
                 targetValue: 5,
@@ -229,6 +265,7 @@ enum StatsAchievementStats {
                 title: "Two-Week Rhythm",
                 subtitle: "Focus on 14 days in a row.",
                 systemImage: "calendar.badge.checkmark",
+                domain: .focus,
                 category: .streak,
                 currentValue: Double(longestStreakDays),
                 targetValue: 14,
@@ -239,6 +276,7 @@ enum StatsAchievementStats {
                 title: "Monthly Anchor",
                 subtitle: "Focus on 30 days in a row.",
                 systemImage: "calendar.circle.fill",
+                domain: .focus,
                 category: .streak,
                 currentValue: Double(longestStreakDays),
                 targetValue: 30,
@@ -249,6 +287,7 @@ enum StatsAchievementStats {
                 title: "Steady Week",
                 subtitle: "Focus on five days inside any seven-day span.",
                 systemImage: "calendar.day.timeline.left",
+                domain: .focus,
                 category: .weekly,
                 currentValue: Double(bestRollingWeekFocusDays),
                 targetValue: 5,
@@ -259,6 +298,7 @@ enum StatsAchievementStats {
                 title: "Comeback Focus",
                 subtitle: "Return to focus after seven quiet days.",
                 systemImage: "arrow.uturn.forward.circle.fill",
+                domain: .focus,
                 category: .comeback,
                 currentValue: Double(comebackQuietDays),
                 targetValue: 7,
@@ -290,6 +330,7 @@ enum StatsAchievementStats {
                 title: "First Sleep",
                 subtitle: "Finish your first sleep session.",
                 systemImage: "bed.double.fill",
+                domain: .sleep,
                 category: .sleep,
                 currentValue: Double(completedSessions.count),
                 targetValue: 1,
@@ -300,6 +341,7 @@ enum StatsAchievementStats {
                 title: "Sleep Bank",
                 subtitle: "Record 56 total hours of sleep.",
                 systemImage: "moon.zzz.fill",
+                domain: .sleep,
                 category: .sleep,
                 currentValue: totalSeconds,
                 targetValue: 56 * 60 * 60,
@@ -310,6 +352,7 @@ enum StatsAchievementStats {
                 title: "Seven-Hour Stretch",
                 subtitle: "Finish a sleep session lasting seven hours.",
                 systemImage: "moon.stars.fill",
+                domain: .sleep,
                 category: .sleep,
                 currentValue: longestSleepSeconds,
                 targetValue: 7 * 60 * 60,
@@ -320,6 +363,7 @@ enum StatsAchievementStats {
                 title: "Week of Sleep",
                 subtitle: "Record sleep on seven days in a row.",
                 systemImage: "calendar.badge.clock",
+                domain: .sleep,
                 category: .sleepStreak,
                 currentValue: Double(longestSleepStreakDays),
                 targetValue: 7,
@@ -348,6 +392,7 @@ enum StatsAchievementStats {
                 title: "First Away",
                 subtitle: "Finish your first Away session.",
                 systemImage: "lock.shield.fill",
+                domain: .away,
                 category: .away,
                 currentValue: Double(finishedSessions.count),
                 targetValue: 1,
@@ -358,6 +403,7 @@ enum StatsAchievementStats {
                 title: "Protected Hours",
                 subtitle: "Record five total hours in Away sessions.",
                 systemImage: "shield.checkered",
+                domain: .away,
                 category: .away,
                 currentValue: totalSeconds,
                 targetValue: 5 * 60 * 60,
@@ -368,6 +414,7 @@ enum StatsAchievementStats {
                 title: "Ten True Breaks",
                 subtitle: "Finish ten Away sessions.",
                 systemImage: "figure.walk.circle.fill",
+                domain: .away,
                 category: .away,
                 currentValue: Double(finishedSessions.count),
                 targetValue: 10,
@@ -378,6 +425,7 @@ enum StatsAchievementStats {
                 title: "Stay the Course",
                 subtitle: "Complete five Away sessions for their planned duration.",
                 systemImage: "checkmark.shield.fill",
+                domain: .away,
                 category: .away,
                 currentValue: Double(completedSessions.count),
                 targetValue: 5,
@@ -387,7 +435,8 @@ enum StatsAchievementStats {
                 id: "away.days.5",
                 title: "Away Week",
                 subtitle: "Use Away on five different days.",
-                systemImage: "calendar.day.timeline.leading",
+                systemImage: "calendar.day.timeline.left",
+                domain: .away,
                 category: .away,
                 currentValue: Double(awayDays.count),
                 targetValue: 5,
@@ -419,6 +468,7 @@ enum StatsAchievementStats {
                 title: "First Done",
                 subtitle: "Mark your first task done.",
                 systemImage: "checkmark.seal.fill",
+                domain: .done,
                 category: .done,
                 currentValue: Double(completedLogs.count),
                 targetValue: 1,
@@ -429,6 +479,7 @@ enum StatsAchievementStats {
                 title: "Century of Done",
                 subtitle: "Mark 100 tasks done.",
                 systemImage: "trophy.fill",
+                domain: .done,
                 category: .done,
                 currentValue: Double(completedLogs.count),
                 targetValue: 100,
@@ -439,6 +490,7 @@ enum StatsAchievementStats {
                 title: "Five-Done Day",
                 subtitle: "Mark five tasks done in one day.",
                 systemImage: "5.circle.fill",
+                domain: .done,
                 category: .done,
                 currentValue: Double(bestDailyDoneCount),
                 targetValue: 5,
@@ -449,6 +501,7 @@ enum StatsAchievementStats {
                 title: "Seven-Day Done Streak",
                 subtitle: "Mark something done on seven days in a row.",
                 systemImage: "flame.fill",
+                domain: .done,
                 category: .doneStreak,
                 currentValue: Double(longestDoneStreakDays),
                 targetValue: 7,
@@ -459,6 +512,7 @@ enum StatsAchievementStats {
                 title: "Steady Done Week",
                 subtitle: "Mark work done on five days inside any seven-day span.",
                 systemImage: "calendar.day.timeline.left",
+                domain: .done,
                 category: .doneStreak,
                 currentValue: Double(bestRollingWeekDoneDays),
                 targetValue: 5,

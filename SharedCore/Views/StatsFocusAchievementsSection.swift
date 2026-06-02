@@ -4,13 +4,34 @@ struct StatsAchievementsSection: View {
     let achievements: [StatsAchievementProgress]
     let surfaceGradient: LinearGradient
     let colorScheme: ColorScheme
+    @State private var selectedDomain = StatsAchievementDomain.all
 
     private var earnedCount: Int {
         StatsAchievementStats.earnedCount(in: achievements)
     }
 
-    private var displayAchievements: [StatsAchievementProgress] {
-        StatsAchievementStats.displayOrdered(achievements)
+    private var filteredAchievements: [StatsAchievementProgress] {
+        achievements.filter { achievement in
+            selectedDomain == .all || achievement.domain == selectedDomain
+        }
+    }
+
+    private var achievementGroups: [StatsAchievementDisplayGroup] {
+        let inProgress = filteredAchievements.filter { !$0.isEarned }
+        let achieved = filteredAchievements.filter(\.isEarned)
+
+        return [
+            StatsAchievementDisplayGroup(
+                title: "In Progress",
+                systemImage: "clock.fill",
+                achievements: inProgress
+            ),
+            StatsAchievementDisplayGroup(
+                title: "Achieved",
+                systemImage: "checkmark.seal.fill",
+                achievements: achieved
+            ),
+        ].filter { !$0.achievements.isEmpty }
     }
 
     var body: some View {
@@ -27,10 +48,13 @@ struct StatsAchievementsSection: View {
                 )
             }
 
-            LazyVGrid(columns: badgeColumns, alignment: .leading, spacing: 12) {
-                ForEach(displayAchievements) { achievement in
-                    StatsAchievementBadgeCard(
-                        achievement: achievement,
+            categoryPicker
+
+            VStack(alignment: .leading, spacing: 20) {
+                ForEach(achievementGroups) { group in
+                    StatsAchievementGroupView(
+                        group: group,
+                        badgeColumns: badgeColumns,
                         colorScheme: colorScheme
                     )
                 }
@@ -41,6 +65,17 @@ struct StatsAchievementsSection: View {
         .accessibilityIdentifier("stats.achievements.section")
     }
 
+    private var categoryPicker: some View {
+        Picker("Achievement category", selection: $selectedDomain) {
+            ForEach(StatsAchievementDomain.allCases) { domain in
+                Text(domain.title).tag(domain)
+            }
+        }
+        .pickerStyle(.segmented)
+        .frame(maxWidth: 440)
+        .accessibilityIdentifier("stats.achievements.categoryPicker")
+    }
+
     private var badgeColumns: [GridItem] {
         [
             GridItem(
@@ -49,6 +84,55 @@ struct StatsAchievementsSection: View {
                 alignment: .topLeading
             ),
         ]
+    }
+}
+
+private struct StatsAchievementDisplayGroup: Identifiable {
+    let title: String
+    let systemImage: String
+    let achievements: [StatsAchievementProgress]
+
+    var id: String { title }
+}
+
+private struct StatsAchievementGroupView: View {
+    let group: StatsAchievementDisplayGroup
+    let badgeColumns: [GridItem]
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: group.systemImage)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                Text(group.title)
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(.primary)
+
+                Text("\(group.achievements.count)")
+                    .font(.caption.monospacedDigit().weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(Color.secondary.opacity(colorScheme == .dark ? 0.14 : 0.08))
+                    )
+
+                Spacer(minLength: 0)
+            }
+
+            LazyVGrid(columns: badgeColumns, alignment: .leading, spacing: 12) {
+                ForEach(group.achievements) { achievement in
+                    StatsAchievementBadgeCard(
+                        achievement: achievement,
+                        colorScheme: colorScheme
+                    )
+                }
+            }
+        }
     }
 }
 
