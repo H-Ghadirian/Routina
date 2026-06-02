@@ -6,10 +6,19 @@ private struct RoutinaMacFocusTimerStatusStoreKey: EnvironmentKey {
     static let defaultValue: RoutinaMacFocusTimerStatusStore? = nil
 }
 
+private struct RoutinaMacOpenFocusTimerTargetKey: EnvironmentKey {
+    nonisolated(unsafe) static let defaultValue: ((RoutinaDeepLink?) -> Void)? = nil
+}
+
 extension EnvironmentValues {
     var routinaMacFocusTimerStatusStore: RoutinaMacFocusTimerStatusStore? {
         get { self[RoutinaMacFocusTimerStatusStoreKey.self] }
         set { self[RoutinaMacFocusTimerStatusStoreKey.self] = newValue }
+    }
+
+    var routinaMacOpenFocusTimerTarget: ((RoutinaDeepLink?) -> Void)? {
+        get { self[RoutinaMacOpenFocusTimerTargetKey.self] }
+        set { self[RoutinaMacOpenFocusTimerTargetKey.self] = newValue }
     }
 }
 
@@ -46,6 +55,7 @@ struct RoutinaMacFocusTimerToolbarItem: ToolbarContent {
 
 private struct RoutinaMacFocusTimerToolbarBadgeContent: View {
     @ObservedObject var statusStore: RoutinaMacFocusTimerStatusStore
+    @Environment(\.routinaMacOpenFocusTimerTarget) private var openFocusTimerTarget
 
     let showsTitle: Bool
     let maxTitleWidth: CGFloat
@@ -79,6 +89,11 @@ private struct RoutinaMacFocusTimerToolbarBadgeContent: View {
     }
 
     private func open(_ status: RoutinaMacFocusTimerStatus) {
+        if let openFocusTimerTarget {
+            openFocusTimerTarget(status.deepLink)
+            return
+        }
+
         guard let deepLink = status.deepLink else {
             RoutinaMacWindowRouter.shared.openHomeAndActivate()
             return

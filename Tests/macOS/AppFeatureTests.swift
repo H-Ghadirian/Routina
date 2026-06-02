@@ -215,6 +215,35 @@ struct AppFeatureTests {
     }
 
     @Test
+    func openDeepLink_sprintSelectsHomeBoardScope() async {
+        let sprintID = UUID()
+        let sprint = BoardSprint(id: sprintID, title: "Release prep", status: .active)
+        let store = TestStore(
+            initialState: AppFeature.State(
+                selectedTab: .stats,
+                home: HomeFeature.State(
+                    sprintBoardData: SprintBoardData(sprints: [sprint]),
+                    taskListMode: .todos,
+                    macSidebarMode: .stats,
+                    selectedBoardScope: .backlog
+                )
+            )
+        ) {
+            AppFeature()
+        }
+
+        await store.send(.openDeepLink(.sprint(sprintID))) {
+            $0.hasRestoredTemporaryViewState = true
+            $0.selectedTab = .home
+        }
+
+        await store.receive(.home(.openSprintDeepLink(sprintID))) {
+            $0.home.macSidebarMode = .board
+            $0.home.selectedBoardScope = .sprint(sprintID)
+        }
+    }
+
+    @Test
     func tabSelected_persistsSelectedTab() async {
         let persistedState = LockIsolated<TemporaryViewState?>(nil)
 

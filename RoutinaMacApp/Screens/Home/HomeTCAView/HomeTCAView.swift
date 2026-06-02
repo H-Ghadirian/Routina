@@ -32,6 +32,7 @@ struct HomeTCAView: View {
     let settingsStore: StoreOf<SettingsFeature>
     let goalsStore: StoreOf<GoalsFeature>
     let statsStore: StoreOf<StatsFeature>?
+    let openActiveFocusTarget: (RoutinaDeepLink?) -> Void
     @State var addEditFormCoordinator = AddEditFormCoordinator()
     let externalSearchText: Binding<String>?
     @Environment(\.calendar) var calendar
@@ -107,12 +108,20 @@ struct HomeTCAView: View {
         settingsStore: StoreOf<SettingsFeature>,
         goalsStore: StoreOf<GoalsFeature>,
         statsStore: StoreOf<StatsFeature>? = nil,
+        openActiveFocusTarget: @escaping (RoutinaDeepLink?) -> Void = { deepLink in
+            guard let deepLink else {
+                RoutinaMacWindowRouter.shared.openHomeAndActivate()
+                return
+            }
+            RoutinaDeepLinkDispatcher.open(deepLink)
+        },
         searchText: Binding<String>? = nil
     ) {
         self.store = store
         self.settingsStore = settingsStore
         self.goalsStore = goalsStore
         self.statsStore = statsStore
+        self.openActiveFocusTarget = openActiveFocusTarget
         self.externalSearchText = searchText
     }
 
@@ -148,6 +157,7 @@ homeContent
                     syncFileAttachmentTaskIDs()
                 }
         )
+        .environment(\.routinaMacOpenFocusTimerTarget, openFocusTimerTarget)
     }
 
     private var fileAttachmentChangeToken: [String] {
@@ -156,6 +166,30 @@ homeContent
 
     private func syncFileAttachmentTaskIDs() {
         store.send(.fileAttachmentTaskIDsChanged(Set(fileAttachments.map(\.taskID))))
+    }
+
+    private func openFocusTimerTarget(_ deepLink: RoutinaDeepLink?) {
+        RoutinaMacWindowRouter.shared.openHomeAndActivate()
+
+        guard let deepLink else { return }
+
+        isRestoringMacNavigationHistory = true
+        switch deepLink {
+        case .task:
+            macHomeDetailMode = .details
+        case .sprint:
+            macHomeDetailMode = .board
+        case .goal, .note:
+            break
+        }
+
+        openActiveFocusTarget(deepLink)
+
+        Task { @MainActor in
+            await Task.yield()
+            isRestoringMacNavigationHistory = false
+            macNavigationHistory.replaceCurrent(macNavigationSnapshot)
+        }
     }
 
     @ViewBuilder

@@ -448,7 +448,11 @@ struct HomeMacView: View {
             store: store,
             settingsStore: settingsStore,
             goalsStore: goalsStore,
-            statsStore: statsStore
+            statsStore: statsStore,
+            openActiveFocusTarget: { deepLink in
+                guard let deepLink else { return }
+                appStore.send(.openDeepLink(deepLink))
+            }
         )
         .awayModeGate()
         .sleepModeGate()
