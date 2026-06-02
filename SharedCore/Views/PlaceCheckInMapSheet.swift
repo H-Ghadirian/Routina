@@ -683,363 +683,39 @@ struct PlaceCheckInMapSheet: View {
     }
 
     private var currentLocationPanel: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
-                Button {
-                    checkInAtCurrentLocation()
-                } label: {
-                    Label(currentLocationButtonTitle, systemImage: "location.fill")
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.regular)
-                .disabled(currentLocation == nil || isLoadingLocation)
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text(locationStatusText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                if showsLocationSettingsButton {
-                    Button {
-                        openLocationSettings()
-                    } label: {
-                        Label("Open Location Settings", systemImage: "gearshape")
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
-            }
-        }
+        PlaceCheckInCurrentLocationPanel(
+            buttonTitle: currentLocationButtonTitle,
+            statusText: locationStatusText,
+            showsLocationSettingsButton: showsLocationSettingsButton,
+            isCheckInDisabled: currentLocation == nil || isLoadingLocation,
+            onCheckInAtCurrentLocation: { checkInAtCurrentLocation() },
+            onOpenLocationSettings: { openLocationSettings() }
+        )
     }
 
     private var placesList: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if orderedPlaces.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("No saved places yet")
-                        .font(.subheadline.weight(.semibold))
-                    Text("Current-location check-ins still work, and named places can be added in Settings.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(12)
-                .routinaGlassCard(cornerRadius: 8, tint: .secondary, tintOpacity: 0.08)
-            } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 8) {
-                        ForEach(orderedPlaces) { place in
-                            placeRow(place)
-                        }
-                    }
-                }
-            }
-        }
+        PlaceCheckInPlacesList(
+            places: orderedPlaces,
+            activeSessionPlaceID: activeSession?.placeID,
+            selectedPlaceID: selectedPlaceID,
+            currentLocation: currentLocation,
+            onSelectPlace: { selectPlace($0) },
+            onCheckInAtPlace: { checkIn(at: $0) },
+            onEditPlace: { beginEditing($0) },
+            onDeletePlace: { confirmDelete($0) }
+        )
     }
 
     private var dayTimeline: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if daySections.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("No check-ins")
-                        .font(.subheadline.weight(.semibold))
-                    Text("Your place sessions will appear here grouped by date.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(12)
-                .routinaGlassCard(cornerRadius: 8, tint: .secondary, tintOpacity: 0.08)
-            } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 14) {
-                        ForEach(daySections) { section in
-                            dayTimelineSection(section)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private func dayTimelineSection(_ section: PlaceCheckInDaySection) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(TimelineLogic.daySectionTitle(for: section.date, calendar: calendar))
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 2)
-
-            LazyVStack(alignment: .leading, spacing: 8) {
-                ForEach(section.sessions) { session in
-                    dayTimelineRow(session)
-                }
-            }
-        }
-    }
-
-    private func placeRow(_ place: RoutinePlace) -> some View {
-        HStack(spacing: 10) {
-            Button {
-                selectPlace(place)
-            } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: activeSession?.placeID == place.id ? "location.fill" : "mappin")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(isSelected(place) ? Color.accentColor : Color.secondary)
-                        .frame(width: 28, height: 28)
-                        .routinaGlassPill(
-                            tint: isSelected(place) ? .accentColor : .secondary,
-                            tintOpacity: isSelected(place) ? 0.16 : 0.10
-                        )
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(place.displayName)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.primary)
-                            .lineLimit(1)
-
-                        Text(placeSubtitle(place))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-
-                    Spacer(minLength: 8)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .buttonStyle(.plain)
-            .accessibilityLabel("Show \(place.displayName) on map")
-
-            Button {
-                checkIn(at: place)
-            } label: {
-                Image(systemName: "checkmark.circle")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 28, height: 28)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Check in at \(place.displayName)")
-            .help("Check in at \(place.displayName)")
-
-            placeActionsMenu(place)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 9)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .routinaGlassCard(
-            cornerRadius: 8,
-            tint: isSelected(place) ? .accentColor : .secondary,
-            tintOpacity: isSelected(place) ? 0.12 : 0.07,
-            interactive: true
+        PlaceCheckInDayTimelineList(
+            sections: daySections,
+            calendar: calendar,
+            canFocusOnSession: { canFocusOnSession($0) },
+            onFocusSession: { focusOnSession($0) },
+            onEditSession: { beginEditing($0) },
+            onDeleteSession: { confirmDelete($0) },
+            onConfirmAutomaticSession: { confirmAutomaticSession($0) }
         )
-        .contextMenu {
-            Button {
-                beginEditing(place)
-            } label: {
-                Label("Edit Place", systemImage: "pencil")
-            }
-
-            Button(role: .destructive) {
-                confirmDelete(place)
-            } label: {
-                Label("Delete Place", systemImage: "trash")
-            }
-        }
-    }
-
-    private func placeActionsMenu(_ place: RoutinePlace) -> some View {
-        Menu {
-            Button {
-                beginEditing(place)
-            } label: {
-                Label("Edit Place", systemImage: "pencil")
-            }
-
-            Button(role: .destructive) {
-                confirmDelete(place)
-            } label: {
-                Label("Delete Place", systemImage: "trash")
-            }
-        } label: {
-            Label("Place actions", systemImage: "ellipsis.circle")
-                .labelStyle(.iconOnly)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .frame(width: 28, height: 28)
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
-        .accessibilityLabel("Place actions")
-        .help("More actions")
-    }
-
-    private func dayTimelineRow(_ session: PlaceCheckInSession) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            Button {
-                focusOnSession(session)
-            } label: {
-                let canFocus = canFocusOnSession(session)
-
-                HStack(alignment: .top, spacing: 10) {
-                    VStack(spacing: 4) {
-                        Circle()
-                            .fill(session.isActive ? Color.teal : Color.accentColor)
-                            .frame(width: 10, height: 10)
-                        Rectangle()
-                            .fill(Color.secondary.opacity(0.22))
-                            .frame(width: 2, height: 34)
-                    }
-                    .frame(width: 18)
-
-                    VStack(alignment: .leading, spacing: 3) {
-                        HStack(spacing: 6) {
-                            Text(session.displayPlaceName)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.primary)
-                                .lineLimit(1)
-
-                            if session.isActive {
-                                Text("Now")
-                                    .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(.teal)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .routinaGlassPill(tint: .teal, tintOpacity: 0.12)
-                            }
-
-                            if session.isAutomatic {
-                                let autoTint = session.requiresConfirmation ? Color.orange : Color.secondary
-                                Text("Auto")
-                                    .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(autoTint)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .routinaGlassPill(
-                                        tint: autoTint,
-                                        tintOpacity: session.requiresConfirmation ? 0.14 : 0.10
-                                    )
-                            }
-                        }
-
-                        Text(sessionTimelineSubtitle(session))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-
-                        if let activity = session.activity {
-                            Label(activity.title, systemImage: activity.systemImage)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-
-                    Spacer(minLength: 8)
-
-                    if let imageData = session.imageData, !imageData.isEmpty {
-                        PlaceCheckInImagePreview(data: imageData, contentMode: .fill)
-                            .frame(width: 46, height: 46)
-                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                    .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
-                            )
-                    }
-
-                    Image(systemName: canFocus ? "scope" : "mappin.slash")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .buttonStyle(.plain)
-            .disabled(!canFocusOnSession(session))
-
-            sessionActionsMenu(session)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 9)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .routinaGlassCard(cornerRadius: 8, tint: .secondary, tintOpacity: 0.07, interactive: true)
-        .contextMenu {
-            if session.requiresConfirmation {
-                Button {
-                    confirmAutomaticSession(session)
-                } label: {
-                    Label("Confirm Auto Check-In", systemImage: "checkmark.circle")
-                }
-
-                Divider()
-            }
-
-            Button {
-                beginEditing(session)
-            } label: {
-                Label("Edit Check-In", systemImage: "pencil")
-            }
-
-            Button(role: .destructive) {
-                confirmDelete(session)
-            } label: {
-                Label("Delete Check-In", systemImage: "trash")
-            }
-        }
-        .modifier(
-            PlaceCheckInConfirmSwipeModifier(
-                showsConfirm: session.requiresConfirmation,
-                action: { confirmAutomaticSession(session) }
-            )
-        )
-        .accessibilityLabel("Show \(session.displayPlaceName) on map")
-    }
-
-    private func sessionActionsMenu(_ session: PlaceCheckInSession) -> some View {
-        Menu {
-            if session.requiresConfirmation {
-                Button {
-                    confirmAutomaticSession(session)
-                } label: {
-                    Label("Confirm Auto Check-In", systemImage: "checkmark.circle")
-                }
-
-                Divider()
-            }
-
-            Button {
-                beginEditing(session)
-            } label: {
-                Label("Edit Check-In", systemImage: "pencil")
-            }
-
-            Button(role: .destructive) {
-                confirmDelete(session)
-            } label: {
-                Label("Delete Check-In", systemImage: "trash")
-            }
-        } label: {
-            Label("Check-in actions", systemImage: "ellipsis.circle")
-                .labelStyle(.iconOnly)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .frame(width: 28, height: 28)
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
-        .accessibilityLabel("Check-in actions")
-        .help("More actions")
     }
 
     private var mapTitle: String {
@@ -1099,24 +775,6 @@ struct PlaceCheckInMapSheet: View {
         }
     }
 
-    private func placeSubtitle(_ place: RoutinePlace) -> String {
-        let radius = "\(Int(place.radiusMeters.rounded())) m radius"
-        guard let currentLocation else { return radius }
-
-        if place.contains(currentLocation) {
-            return "Here · \(radius)"
-        }
-
-        let distance = place.distance(to: currentLocation)
-        let distanceText: String
-        if distance < 1_000 {
-            distanceText = "\(Int(distance.rounded())) m away"
-        } else {
-            distanceText = String(format: "%.1f km away", distance / 1_000)
-        }
-        return "\(distanceText) · \(radius)"
-    }
-
     private func placeMapTint(for place: RoutinePlace) -> Color {
         if currentMatchedPlace?.id == place.id {
             return .blue
@@ -1133,29 +791,6 @@ struct PlaceCheckInMapSheet: View {
         selectedHistoryMarkerID = nil
         selectedPlaceID = place.id
         syncMapPosition()
-    }
-
-    private func sessionTimelineSubtitle(_ session: PlaceCheckInSession) -> String {
-        guard let start = session.startedAt ?? session.createdAt else {
-            return "Time unavailable"
-        }
-
-        let referenceDate = Date()
-        let rawFinish = session.endedAt ?? referenceDate
-        let normalizedFinish = rawFinish > start ? rawFinish : start
-        let startText = start.formatted(.dateTime.hour().minute())
-        let finishText: String
-        if session.endedAt == nil {
-            finishText = "Now"
-        } else {
-            finishText = normalizedFinish.formatted(.dateTime.hour().minute())
-        }
-
-        let range = "\(startText)-\(finishText)"
-        let duration = PlaceCheckInFormatting.durationText(
-            seconds: session.durationSeconds(referenceDate: referenceDate)
-        )
-        return "\(range) · \(duration)"
     }
 
     @MainActor
