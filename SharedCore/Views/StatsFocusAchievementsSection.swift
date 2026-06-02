@@ -1,23 +1,23 @@
 import SwiftUI
 
-struct StatsFocusAchievementsSection: View {
-    let achievements: [FocusAchievementProgress]
+struct StatsAchievementsSection: View {
+    let achievements: [StatsAchievementProgress]
     let surfaceGradient: LinearGradient
     let colorScheme: ColorScheme
 
     private var earnedCount: Int {
-        FocusAchievementStats.earnedCount(in: achievements)
+        StatsAchievementStats.earnedCount(in: achievements)
     }
 
-    private var displayAchievements: [FocusAchievementProgress] {
-        FocusAchievementStats.displayOrdered(achievements)
+    private var displayAchievements: [StatsAchievementProgress] {
+        StatsAchievementStats.displayOrdered(achievements)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             StatsSectionHeader(
-                title: "Focus achievements",
-                subtitle: "All-time badges earned from completed focus sessions."
+                title: "Achievements",
+                subtitle: "All-time badges earned from focus, sleep, away, and completed work history."
             ) {
                 StatsSmallHighlightBadge(
                     title: "Earned",
@@ -29,7 +29,7 @@ struct StatsFocusAchievementsSection: View {
 
             LazyVGrid(columns: badgeColumns, alignment: .leading, spacing: 12) {
                 ForEach(displayAchievements) { achievement in
-                    FocusAchievementBadgeCard(
+                    StatsAchievementBadgeCard(
                         achievement: achievement,
                         colorScheme: colorScheme
                     )
@@ -38,7 +38,7 @@ struct StatsFocusAchievementsSection: View {
         }
         .statsChartCard(surfaceGradient: surfaceGradient, colorScheme: colorScheme)
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("stats.focusAchievements.section")
+        .accessibilityIdentifier("stats.achievements.section")
     }
 
     private var badgeColumns: [GridItem] {
@@ -52,8 +52,8 @@ struct StatsFocusAchievementsSection: View {
     }
 }
 
-private struct FocusAchievementBadgeCard: View {
-    let achievement: FocusAchievementProgress
+private struct StatsAchievementBadgeCard: View {
+    let achievement: StatsAchievementProgress
     let colorScheme: ColorScheme
 
     private var accent: Color {
@@ -144,7 +144,7 @@ private struct FocusAchievementBadgeCard: View {
     }
 }
 
-private extension FocusAchievementCategory {
+private extension StatsAchievementCategory {
     var accentColor: Color {
         switch self {
         case .total:
@@ -161,6 +161,16 @@ private extension FocusAchievementCategory {
             return .green
         case .comeback:
             return .pink
+        case .sleep:
+            return .purple
+        case .sleepStreak:
+            return .indigo
+        case .away:
+            return .cyan
+        case .done:
+            return .green
+        case .doneStreak:
+            return .orange
         }
     }
 }

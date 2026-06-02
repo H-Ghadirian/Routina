@@ -112,6 +112,7 @@ struct AppFeature {
                 let statsTasks = state.stats.tasks
                 let statsLogs = state.stats.logs
                 let statsFocusSessions = state.stats.focusSessions
+                let statsSleepSessions = state.stats.sleepSessions
                 let statsAwaySessions = state.stats.awaySessions
                 let statsEmotionLogs = state.stats.emotionLogs
                 let statsNotes = state.stats.notes
@@ -136,6 +137,7 @@ struct AppFeature {
                         tasks: statsTasks,
                         logs: statsLogs,
                         focusSessions: statsFocusSessions,
+                        sleepSessions: statsSleepSessions,
                         awaySessions: statsAwaySessions,
                         emotionLogs: statsEmotionLogs,
                         notes: statsNotes,
@@ -238,6 +240,7 @@ struct StatsFeature {
         var tasks: [RoutineTask] = []
         var logs: [RoutineLog] = []
         var focusSessions: [FocusSession] = []
+        var sleepSessions: [SleepSession] = []
         var awaySessions: [AwaySession] = []
         var emotionLogs: [EmotionLog] = []
         var notes: [RoutineNote] = []
@@ -299,6 +302,7 @@ struct StatsFeature {
             tasks: [RoutineTask],
             logs: [RoutineLog],
             focusSessions: [FocusSession],
+            sleepSessions: [SleepSession] = [],
             awaySessions: [AwaySession] = [],
             emotionLogs: [EmotionLog] = [],
             notes: [RoutineNote] = [],
@@ -337,10 +341,11 @@ struct StatsFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case let .setData(tasks, logs, focusSessions, awaySessions, emotionLogs, notes, events, noteAttachmentNoteIDs, goals):
+            case let .setData(tasks, logs, focusSessions, sleepSessions, awaySessions, emotionLogs, notes, events, noteAttachmentNoteIDs, goals):
                 state.tasks = tasks
                 state.logs = logs
                 state.focusSessions = focusSessions
+                state.sleepSessions = sleepSessions
                 state.awaySessions = awaySessions
                 state.emotionLogs = emotionLogs
                 state.notes = notes

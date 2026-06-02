@@ -43,6 +43,7 @@ private struct StatsDataObserver: View {
             let tasks = try modelContext.fetch(FetchDescriptor<RoutineTask>())
             let logs = try modelContext.fetch(FetchDescriptor<RoutineLog>())
             let focusSessions = try modelContext.fetch(FetchDescriptor<FocusSession>())
+            let sleepSessions = try modelContext.fetch(FetchDescriptor<SleepSession>())
             let awaySessions = try modelContext.fetch(FetchDescriptor<AwaySession>())
             let emotionLogs = try modelContext.fetch(FetchDescriptor<EmotionLog>())
             let notes = try modelContext.fetch(FetchDescriptor<RoutineNote>())
@@ -54,6 +55,7 @@ private struct StatsDataObserver: View {
                     tasks: tasks,
                     logs: logs,
                     focusSessions: focusSessions,
+                    sleepSessions: sleepSessions,
                     awaySessions: awaySessions,
                     emotionLogs: emotionLogs,
                     notes: notes,
@@ -364,7 +366,7 @@ struct StatsView: View {
             }
         case .focusAchievements:
             editableDashboardSection(.focusAchievements) {
-                focusAchievementsSection()
+                achievementsSection()
             }
         case .focusWorkChart:
             editableDashboardSection(.focusWorkChart) {
@@ -555,7 +557,7 @@ struct StatsView: View {
             }
         }
         .pickerStyle(.segmented)
-        .frame(maxWidth: 280)
+        .frame(maxWidth: 360)
         .accessibilityIdentifier("stats.dashboard.scopePicker")
     }
 
@@ -738,10 +740,13 @@ struct StatsView: View {
         )
     }
 
-    private func focusAchievementsSection() -> some View {
-        StatsFocusAchievementsSection(
-            achievements: FocusAchievementStats.achievements(
-                sessions: store.focusSessions,
+    private func achievementsSection() -> some View {
+        StatsAchievementsSection(
+            achievements: StatsAchievementStats.achievements(
+                focusSessions: store.focusSessions,
+                sleepSessions: store.sleepSessions,
+                awaySessions: store.awaySessions,
+                logs: store.logs,
                 calendar: calendar
             ),
             surfaceGradient: surfaceGradient,
@@ -1110,7 +1115,7 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
         case .focus2048:
             return "Focus 2048"
         case .focusAchievements:
-            return "Focus achievements"
+            return "Achievements"
         case .focusWorkChart:
             return "Focus vs done"
         case .estimateActual:
@@ -1145,7 +1150,7 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
         case .focus2048:
             return "A 2048-style board generated from focused hours."
         case .focusAchievements:
-            return "All-time focus badges and achievement progress."
+            return "All-time badges and achievement progress."
         case .focusWorkChart:
             return "A scatter chart comparing focus time with completed work."
         case .estimateActual:
@@ -1210,7 +1215,7 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
         case .focus2048:
             return "square.grid.3x3.fill"
         case .focusAchievements:
-            return "rosette"
+            return "medal.fill"
         case .focusWorkChart:
             return "chart.dots.scatter"
         case .estimateActual:
@@ -1239,6 +1244,8 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return true
         case .focus:
             return isFocusRelated
+        case .achievements:
+            return self == .focusAchievements
         }
     }
 
@@ -1250,7 +1257,6 @@ private enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
              .unassignedFocus,
              .focusChart,
              .focus2048,
-             .focusAchievements,
              .focusWorkChart:
             return true
         default:

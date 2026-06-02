@@ -101,6 +101,78 @@ struct FocusAchievementStatsTests {
     }
 
     @Test
+    func achievementsIncludeSleepAwayAndDoneBadges() throws {
+        let calendar = makeTestCalendar()
+        let sleepSessions = (0..<7).compactMap { dayOffset -> SleepSession? in
+            guard let startedAt = calendar.date(
+                byAdding: .day,
+                value: dayOffset,
+                to: makeDate("2026-05-01T22:00:00Z")
+            ) else { return nil }
+
+            return SleepSession(
+                startedAt: startedAt,
+                endedAt: startedAt.addingTimeInterval(8 * 60 * 60)
+            )
+        }
+        let awaySessions = (0..<10).compactMap { index -> AwaySession? in
+            guard let startedAt = calendar.date(
+                byAdding: .hour,
+                value: index,
+                to: makeDate("2026-05-01T08:00:00Z")
+            ) else { return nil }
+            let finishedAt = startedAt.addingTimeInterval(30 * 60)
+            let completedAt = index < 5 ? finishedAt : nil
+            let endedEarlyAt = index < 5 ? nil : finishedAt
+
+            return AwaySession(
+                preset: .reset,
+                startedAt: startedAt,
+                plannedDurationSeconds: 30 * 60,
+                completedAt: completedAt,
+                endedEarlyAt: endedEarlyAt
+            )
+        }
+        let doneLogs = (0..<7).flatMap { dayOffset -> [RoutineLog] in
+            guard let timestamp = calendar.date(
+                byAdding: .day,
+                value: dayOffset,
+                to: makeDate("2026-05-01T09:00:00Z")
+            ) else { return [] }
+            let count = dayOffset == 0 ? 5 : 1
+            return (0..<count).map { _ in
+                RoutineLog(timestamp: timestamp, taskID: UUID(), kind: .completed)
+            }
+        }
+
+        let achievements = StatsAchievementStats.achievements(
+            focusSessions: [],
+            sleepSessions: sleepSessions,
+            awaySessions: awaySessions,
+            logs: doneLogs,
+            calendar: calendar
+        )
+
+        let sleepTotal = try #require(achievement("sleep.total.56h", in: achievements))
+        let sleepStreak = try #require(achievement("sleep.streak.7d", in: achievements))
+        let awayTotal = try #require(achievement("away.total.5h", in: achievements))
+        let awayCompleted = try #require(achievement("away.completed.5", in: achievements))
+        let doneDay = try #require(achievement("done.day.5", in: achievements))
+        let doneStreak = try #require(achievement("done.streak.7d", in: achievements))
+        let doneCentury = try #require(achievement("done.total.100", in: achievements))
+
+        #expect(sleepTotal.isEarned)
+        #expect(sleepTotal.progressText == "56h / 56h")
+        #expect(sleepStreak.isEarned)
+        #expect(awayTotal.isEarned)
+        #expect(awayTotal.progressText == "5h / 5h")
+        #expect(awayCompleted.isEarned)
+        #expect(doneDay.isEarned)
+        #expect(doneStreak.isEarned)
+        #expect(!doneCentury.isEarned)
+    }
+
+    @Test
     func displayOrderShowsUnearnedAchievementsBeforeEarnedOnes() throws {
         let calendar = makeTestCalendar()
         let sessions = [
