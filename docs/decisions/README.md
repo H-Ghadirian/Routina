@@ -16,6 +16,7 @@ Use decision records for architecture, conventions, data model, dependencies, pr
 When decision records overlap, follow explicit supersession first and then prefer the later accepted record.
 
 - **Decision log:** Keep decisions in this directory. Add or supersede records for meaningful long-term architecture, data model, dependency, product behavior, build setup, or convention changes.
+- **Code organization:** When meaningful work touches a source file over roughly 500 lines, consider a behavior-preserving refactor into smaller, meaningful classes, structs, files, functions, views, reducers, services, or helper types. Do this only when it improves cohesion, readability, testability, ownership boundaries, or reviewability; avoid mechanical splitting when a large file is clearer intact.
 - **Timed routines:** Exact-time routine occurrences become missed assumptions after their scheduled day instead of staying overdue across later days. Unresolved assumptions stay visible until resolved as done, missed, or canceled. Time-range routines reuse the same missed-resolution model, with the range start stored as the occurrence timestamp.
 - **Routine recurrence storage:** Recurrence metadata is stored in typed SwiftData columns. Legacy recurrence JSON remains only as a migration source and should not be used for new writes.
 - **Outcome language and styling:** Timeline activity includes done, missed, and canceled outcomes. Canceled outcomes use neutral gray styling, missed stays distinct from red overdue styling, due/soon-due keeps orange, and overdue keeps red.
@@ -238,3 +239,4 @@ When decision records overlap, follow explicit supersession first and then prefe
 | [0133](0133-extend-done-achievement-ladder.md) | Extend the Done Achievement Ladder | Accepted | 2026-06-02 |
 | [0134](0134-add-personal-record-achievement-domains.md) | Add Personal Record Achievement Domains | Accepted | 2026-06-02 |
 | [0135](0135-show-today-focus-widget.md) | Show Today Focus Widget | Accepted | 2026-06-02 |
+| [0136](0136-refactor-large-files-judiciously.md) | Refactor Large Files Judiciously | Accepted | 2026-06-02 |
