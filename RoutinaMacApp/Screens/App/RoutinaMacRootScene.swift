@@ -126,8 +126,7 @@ private final class RoutinaMacWidgetRefreshScheduler {
     }
 
     private func refreshStatsWidget() {
-        WidgetStatsService.refresh(using: persistence.container)
-        WidgetCenter.shared.reloadTimelines(ofKind: WidgetStatsService.widgetKind)
+        WidgetStatsService.refreshAndReload(using: persistence.container)
     }
 }
 

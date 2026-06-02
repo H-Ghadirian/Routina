@@ -8,6 +8,15 @@ public enum WidgetStatsService {
     static let appGroupID = "group.ir.hamedgh.Routinam"
     static let statsFileName = "widget_stats.json"
     static let widgetKind = "RoutinaStatsWidget"
+    static let todayFocusWidgetKind = "RoutinaTodayFocusWidget"
+
+    static var reloadWidgetKinds: [String] {
+        #if os(macOS)
+        [widgetKind, todayFocusWidgetKind]
+        #else
+        [widgetKind]
+        #endif
+    }
 
     static var statsFileURL: URL? {
         FileManager.default
@@ -32,7 +41,19 @@ public enum WidgetStatsService {
                 }
             )
             let logs = try context.fetch(completedLogsDescriptor)
-            let stats = WidgetStatsComputer.compute(tasks: tasks, logs: logs)
+            let focusSessionsDescriptor = FetchDescriptor<FocusSession>(
+                predicate: #Predicate { session in
+                    session.abandonedAt == nil
+                }
+            )
+            let focusSessions = try context.fetch(focusSessionsDescriptor)
+            let sprintFocusSessions = try context.fetch(FetchDescriptor<SprintFocusSessionRecord>())
+            let stats = WidgetStatsComputer.compute(
+                tasks: tasks,
+                logs: logs,
+                focusSessions: focusSessions,
+                sprintFocusSessions: sprintFocusSessions
+            )
             write(stats)
         } catch {
             NSLog("WidgetStatsService: failed to compute stats — \(error)")
@@ -43,7 +64,7 @@ public enum WidgetStatsService {
     public static func refreshAndReload(using context: ModelContext) {
         refresh(using: context)
 #if canImport(WidgetKit)
-        WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
+        reloadTimelines()
 #endif
     }
 
@@ -58,4 +79,12 @@ public enum WidgetStatsService {
         guard let data = try? JSONEncoder().encode(stats) else { return }
         try? data.write(to: url, options: .atomic)
     }
+
+#if canImport(WidgetKit)
+    private static func reloadTimelines() {
+        for kind in reloadWidgetKinds {
+            WidgetCenter.shared.reloadTimelines(ofKind: kind)
+        }
+    }
+#endif
 }

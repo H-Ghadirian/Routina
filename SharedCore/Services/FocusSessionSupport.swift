@@ -372,6 +372,7 @@ enum FocusSessionSupport {
         FocusShieldSupport.syncFocusShield(using: context)
         #endif
         FocusTimerWidgetService.refreshAndReload(using: context)
+        WidgetStatsService.refreshAndReload(using: context)
         NotificationCenter.default.postRoutineDidUpdate()
         #if os(iOS) && canImport(ActivityKit)
         Task { @MainActor in

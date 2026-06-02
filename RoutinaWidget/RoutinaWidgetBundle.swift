@@ -12,6 +12,9 @@ import SwiftUI
 struct RoutinaWidgetBundle: WidgetBundle {
     var body: some Widget {
         RoutinaStatsWidget()
+#if os(macOS)
+        RoutinaTodayFocusWidget()
+#endif
         RoutinaFocusTimerWidget()
 #if os(iOS)
         RoutinaFocusTimerLiveActivity()
