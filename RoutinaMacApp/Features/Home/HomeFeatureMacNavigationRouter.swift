@@ -83,6 +83,61 @@ struct HomeFeatureMacNavigationRouter {
         return .none
     }
 
+    func openTaskDeepLink(
+        _ taskID: UUID,
+        state: inout HomeFeature.State,
+        setSelectedTask: (UUID, inout HomeFeature.State) -> Effect<HomeFeature.Action>
+    ) -> Effect<HomeFeature.Action> {
+        guard state.routineTasks.contains(where: { $0.id == taskID }) else {
+            return .none
+        }
+
+        state.macSidebarMode = .routines
+        state.presentation.isMacFilterDetailPresented = false
+        selectTaskInSidebar(taskID, state: &state)
+        return setSelectedTask(taskID, &state)
+    }
+
+    func openNoteDeepLink(
+        _ noteID: UUID,
+        state: inout HomeFeature.State
+    ) -> Effect<HomeFeature.Action> {
+        state.macSidebarMode = .timeline
+        state.macSidebarSelection = .timelineEntry(noteID)
+        state.presentation.isMacFilterDetailPresented = false
+        state.presentation.isAddRoutineSheetPresented = false
+        state.presentation.addRoutineState = nil
+        state.selectedTimelineRange = .all
+        state.selectedTimelineFilterType = .notes
+        state.selectedTimelineTags = []
+        state.selectedTimelineIncludeTagMatchMode = .all
+        state.selectedTimelineExcludedTags = []
+        state.selectedTimelineExcludeTagMatchMode = .any
+        state.selectedTimelineImportanceUrgencyFilter = nil
+        state.selectedTimelineMediaFilter = .all
+        HomeSelectionEditor.clearTaskSelection(&state.selection)
+        persistTemporaryViewState(state)
+        return .none
+    }
+
+    func openSprintDeepLink(
+        _ sprintID: UUID,
+        state: inout HomeFeature.State
+    ) -> Effect<HomeFeature.Action> {
+        guard state.sprintBoardData.sprints.contains(where: { $0.id == sprintID }) else {
+            return .none
+        }
+
+        state.macSidebarMode = .board
+        state.macSidebarSelection = nil
+        state.presentation.isMacFilterDetailPresented = false
+        HomeSelectionEditor.clearTaskSelection(&state.selection)
+        state.selectedBoardScope = .sprint(sprintID)
+
+        guard state.taskListMode != .todos else { return .none }
+        return .send(.taskListModeChanged(.todos))
+    }
+
     func selectTaskInSidebar(
         _ taskID: UUID,
         state: inout HomeFeature.State

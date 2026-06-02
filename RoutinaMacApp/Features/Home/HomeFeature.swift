@@ -1156,13 +1156,19 @@ struct HomeFeature {
                 return macBoardCommandRouter().selectedBoardScopeChanged(scope, state: &state)
 
             case let .openTaskDeepLink(taskID):
-                return openTaskDeepLink(taskID, state: &state)
+                return macNavigationRouter().openTaskDeepLink(
+                    taskID,
+                    state: &state,
+                    setSelectedTask: { taskID, state in
+                        selectionRouter().setSelectedTask(taskID, state: &state)
+                    }
+                )
 
             case let .openNoteDeepLink(noteID):
-                return openNoteDeepLink(noteID, state: &state)
+                return macNavigationRouter().openNoteDeepLink(noteID, state: &state)
 
             case let .openSprintDeepLink(sprintID):
-                return openSprintDeepLink(sprintID, state: &state)
+                return macNavigationRouter().openSprintDeepLink(sprintID, state: &state)
 
             case .createSprintTapped:
                 return macBoardCommandRouter().createSprintTapped(state: &state)
@@ -1486,60 +1492,6 @@ struct HomeFeature {
 
     func syncSelectedTaskDetailState(_ state: inout State) {
         selectionRouter().refreshSelectedTaskDetailState(&state)
-    }
-
-    private func openTaskDeepLink(
-        _ taskID: UUID,
-        state: inout State
-    ) -> Effect<Action> {
-        guard state.routineTasks.contains(where: { $0.id == taskID }) else {
-            return .none
-        }
-
-        state.macSidebarMode = .routines
-        state.presentation.isMacFilterDetailPresented = false
-        macNavigationRouter().selectTaskInSidebar(taskID, state: &state)
-        return selectionRouter().setSelectedTask(taskID, state: &state)
-    }
-
-    private func openNoteDeepLink(
-        _ noteID: UUID,
-        state: inout State
-    ) -> Effect<Action> {
-        state.macSidebarMode = .timeline
-        state.macSidebarSelection = .timelineEntry(noteID)
-        state.presentation.isMacFilterDetailPresented = false
-        state.presentation.isAddRoutineSheetPresented = false
-        state.presentation.addRoutineState = nil
-        state.selectedTimelineRange = .all
-        state.selectedTimelineFilterType = .notes
-        state.selectedTimelineTags = []
-        state.selectedTimelineIncludeTagMatchMode = .all
-        state.selectedTimelineExcludedTags = []
-        state.selectedTimelineExcludeTagMatchMode = .any
-        state.selectedTimelineImportanceUrgencyFilter = nil
-        state.selectedTimelineMediaFilter = .all
-        HomeSelectionEditor.clearTaskSelection(&state.selection)
-        persistTemporaryViewState(state)
-        return .none
-    }
-
-    private func openSprintDeepLink(
-        _ sprintID: UUID,
-        state: inout State
-    ) -> Effect<Action> {
-        guard state.sprintBoardData.sprints.contains(where: { $0.id == sprintID }) else {
-            return .none
-        }
-
-        state.macSidebarMode = .board
-        state.macSidebarSelection = nil
-        state.presentation.isMacFilterDetailPresented = false
-        HomeSelectionEditor.clearTaskSelection(&state.selection)
-        state.selectedBoardScope = .sprint(sprintID)
-
-        guard state.taskListMode != .todos else { return .none }
-        return .send(.taskListModeChanged(.todos))
     }
 
     private func applyTemporaryViewState(_ persistedState: TemporaryViewState?, to state: inout State) {
