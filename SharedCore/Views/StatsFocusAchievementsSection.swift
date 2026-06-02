@@ -38,7 +38,7 @@ struct StatsAchievementsSection: View {
         VStack(alignment: .leading, spacing: 18) {
             StatsSectionHeader(
                 title: "Achievements",
-                subtitle: "All-time badges earned from focus, sleep, away, and completed work history."
+                subtitle: "All-time badges earned from focus, sleep, away, done, emotion, place, goal, and note history."
             ) {
                 StatsSmallHighlightBadge(
                     title: "Earned",
@@ -72,7 +72,7 @@ struct StatsAchievementsSection: View {
             }
         }
         .pickerStyle(.segmented)
-        .frame(maxWidth: 440)
+        .frame(maxWidth: 860)
         .accessibilityIdentifier("stats.achievements.categoryPicker")
     }
 
@@ -255,6 +255,20 @@ private extension StatsAchievementCategory {
             return .green
         case .doneStreak:
             return .orange
+        case .emotion:
+            return .pink
+        case .emotionStreak:
+            return .red
+        case .place:
+            return .cyan
+        case .placeStreak:
+            return .teal
+        case .goal:
+            return .yellow
+        case .note:
+            return .blue
+        case .noteStreak:
+            return .indigo
         }
     }
 }

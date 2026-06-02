@@ -185,6 +185,115 @@ struct FocusAchievementStatsTests {
     }
 
     @Test
+    func achievementsIncludeEmotionPlaceGoalAndNoteBadges() throws {
+        let calendar = makeTestCalendar()
+        let startDate = makeDate("2026-05-01T09:00:00Z")
+        let emotionLogs = EmotionFamily.allCases.enumerated().compactMap { index, family -> EmotionLog? in
+            guard let createdAt = calendar.date(byAdding: .day, value: index, to: startDate) else { return nil }
+            return EmotionLog(
+                family: family,
+                label: family.defaultLabel,
+                valence: 0.2,
+                arousal: 0.1,
+                intensity: 3,
+                reflection: "Reflection \(index)",
+                linkedTaskID: index < 4 ? UUID() : nil,
+                createdAt: createdAt
+            )
+        }
+
+        let notes = (0..<7).compactMap { index -> RoutineNote? in
+            guard let createdAt = calendar.date(byAdding: .day, value: index, to: startDate) else { return nil }
+            return RoutineNote(
+                title: "Note \(index)",
+                body: "Body \(index)",
+                tags: index < 5 ? ["journal"] : [],
+                imageData: index == 0 ? Data([1]) : nil,
+                voiceNoteData: index == 1 ? Data([1]) : nil,
+                voiceNoteDurationSeconds: index == 1 ? 12 : nil,
+                voiceNoteCreatedAt: index == 1 ? createdAt : nil,
+                createdAt: createdAt
+            )
+        }
+        let noteAttachmentNoteIDs = Set(notes.prefix(3).map(\.id))
+
+        let parentGoalID = UUID()
+        let goals = (0..<5).compactMap { index -> RoutineGoal? in
+            let id = index == 0 ? parentGoalID : UUID()
+            guard let targetDate = calendar.date(byAdding: .day, value: index + 10, to: startDate) else { return nil }
+            return RoutineGoal(
+                id: id,
+                title: "Goal \(index)",
+                targetDate: targetDate,
+                tags: ["growth"],
+                status: index == 3 ? .archived : .active,
+                parentGoalID: index == 0 || index == 4 ? nil : parentGoalID,
+                createdAt: startDate
+            )
+        }
+
+        let placeIDs = (0..<5).map { _ in UUID() }
+        let places = placeIDs.enumerated().map { index, id in
+            RoutinePlace(
+                id: id,
+                name: "Place \(index)",
+                latitude: Double(index),
+                longitude: Double(index)
+            )
+        }
+        let placeCheckInSessions = (0..<7).compactMap { index -> PlaceCheckInSession? in
+            guard let startedAt = calendar.date(byAdding: .day, value: index, to: startDate) else { return nil }
+            let placeIndex = index % placeIDs.count
+            return PlaceCheckInSession(
+                placeID: placeIDs[placeIndex],
+                placeName: "Place \(placeIndex)",
+                activity: .work,
+                note: index < 3 ? "Context \(index)" : nil,
+                imageData: index == 3 ? Data([1]) : nil,
+                startedAt: startedAt,
+                endedAt: startedAt.addingTimeInterval(30 * 60)
+            )
+        }
+
+        let achievements = StatsAchievementStats.achievements(
+            focusSessions: [],
+            logs: [],
+            emotionLogs: emotionLogs,
+            notes: notes,
+            noteAttachmentNoteIDs: noteAttachmentNoteIDs,
+            goals: goals,
+            places: places,
+            placeCheckInSessions: placeCheckInSessions,
+            calendar: calendar
+        )
+
+        let emotionSpectrum = try #require(achievement("emotion.family.all", in: achievements))
+        let emotionReflections = try #require(achievement("emotion.reflection.10", in: achievements))
+        let placeLibrary = try #require(achievement("place.saved.5", in: achievements))
+        let placeActivity = try #require(achievement("place.activity.10", in: achievements))
+        let goalTree = try #require(achievement("goal.child.3", in: achievements))
+        let archivedGoal = try #require(achievement("goal.archived.1", in: achievements))
+        let noteStreak = try #require(achievement("note.streak.7d", in: achievements))
+        let mediaNotes = try #require(achievement("note.media.10", in: achievements))
+
+        #expect(emotionSpectrum.isEarned)
+        #expect(emotionSpectrum.domain == .emotions)
+        #expect(!emotionReflections.isEarned)
+        #expect(emotionReflections.progressText == "8 reflections / 10 reflections")
+        #expect(placeLibrary.isEarned)
+        #expect(placeLibrary.domain == .places)
+        #expect(!placeActivity.isEarned)
+        #expect(placeActivity.progressText == "7 activities / 10 activities")
+        #expect(goalTree.isEarned)
+        #expect(goalTree.domain == .goals)
+        #expect(archivedGoal.isEarned)
+        #expect(noteStreak.isEarned)
+        #expect(noteStreak.domain == .notes)
+        #expect(!mediaNotes.isEarned)
+        #expect(mediaNotes.progressText == "3 media notes / 10 media notes")
+    }
+
+    @Test
     func displayOrderShowsUnearnedAchievementsBeforeEarnedOnes() throws {
         let calendar = makeTestCalendar()
         let sessions = [

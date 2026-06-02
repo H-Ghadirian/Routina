@@ -50,6 +50,8 @@ private struct StatsDataObserver: View {
             let events = try modelContext.fetch(FetchDescriptor<RoutineEvent>())
             let noteAttachments = try modelContext.fetch(FetchDescriptor<RoutineNoteAttachment>())
             let goals = try modelContext.fetch(FetchDescriptor<RoutineGoal>())
+            let places = try modelContext.fetch(FetchDescriptor<RoutinePlace>())
+            let placeCheckInSessions = try modelContext.fetch(FetchDescriptor<PlaceCheckInSession>())
             store.send(
                 .setData(
                     tasks: tasks,
@@ -61,7 +63,9 @@ private struct StatsDataObserver: View {
                     notes: notes,
                     events: events,
                     noteAttachmentNoteIDs: Set(noteAttachments.map(\.noteID)),
-                    goals: goals
+                    goals: goals,
+                    places: places,
+                    placeCheckInSessions: placeCheckInSessions
                 )
             )
         } catch {
@@ -747,6 +751,12 @@ struct StatsView: View {
                 sleepSessions: store.sleepSessions,
                 awaySessions: store.awaySessions,
                 logs: store.logs,
+                emotionLogs: store.emotionLogs,
+                notes: store.notes,
+                noteAttachmentNoteIDs: store.noteAttachmentNoteIDs,
+                goals: store.goals,
+                places: store.places,
+                placeCheckInSessions: store.placeCheckInSessions,
                 calendar: calendar
             ),
             surfaceGradient: surfaceGradient,

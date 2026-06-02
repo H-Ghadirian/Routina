@@ -28,6 +28,8 @@ struct StatsView: View {
     @Query private var events: [RoutineEvent]
     @Query private var noteAttachments: [RoutineNoteAttachment]
     @Query private var goals: [RoutineGoal]
+    @Query private var places: [RoutinePlace]
+    @Query private var placeCheckInSessions: [PlaceCheckInSession]
     @State private var relatedFilterTagSuggestionAnchor: String?
     @State private var selectedDashboardScope = StatsDashboardScope.all
     @State private var isEditingDashboard = false
@@ -310,8 +312,10 @@ struct StatsView: View {
                 events: events,
                 noteAttachmentNoteIDs: Set(noteAttachments.map(\.noteID)),
                 goals: goals,
+                places: places,
+                placeCheckInSessions: placeCheckInSessions,
                 onAppear: { store.send(.onAppear) },
-                onDataChanged: { tasks, logs, focusSessions, sleepSessions, awaySessions, emotionLogs, notes, events, noteAttachmentNoteIDs, goals in
+                onDataChanged: { tasks, logs, focusSessions, sleepSessions, awaySessions, emotionLogs, notes, events, noteAttachmentNoteIDs, goals, places, placeCheckInSessions in
                     store.send(
                         .setData(
                             tasks: tasks,
@@ -323,7 +327,9 @@ struct StatsView: View {
                             notes: notes,
                             events: events,
                             noteAttachmentNoteIDs: noteAttachmentNoteIDs,
-                            goals: goals
+                            goals: goals,
+                            places: places,
+                            placeCheckInSessions: placeCheckInSessions
                         )
                     )
                 }
@@ -925,6 +931,12 @@ struct StatsView: View {
                 sleepSessions: sleepSessions,
                 awaySessions: awaySessions,
                 logs: logs,
+                emotionLogs: emotionLogs,
+                notes: notes,
+                noteAttachmentNoteIDs: Set(noteAttachments.map(\.noteID)),
+                goals: goals,
+                places: places,
+                placeCheckInSessions: placeCheckInSessions,
                 calendar: calendar
             ),
             surfaceGradient: surfaceGradient,

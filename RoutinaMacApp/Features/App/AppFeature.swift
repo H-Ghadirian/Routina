@@ -118,6 +118,8 @@ struct AppFeature {
                 let statsEvents = state.stats.events
                 let statsNoteAttachmentNoteIDs = state.stats.noteAttachmentNoteIDs
                 let statsGoals = state.stats.goals
+                let statsPlaces = state.stats.places
+                let statsPlaceCheckInSessions = state.stats.placeCheckInSessions
                 resetTemporaryViewState(&state)
                 persistTemporaryViewState(state)
                 return .merge(
@@ -142,7 +144,9 @@ struct AppFeature {
                         notes: statsNotes,
                         events: statsEvents,
                         noteAttachmentNoteIDs: statsNoteAttachmentNoteIDs,
-                        goals: statsGoals
+                        goals: statsGoals,
+                        places: statsPlaces,
+                        placeCheckInSessions: statsPlaceCheckInSessions
                     )))
                 )
             case .timeline(.selectedRangeChanged),
@@ -271,6 +275,8 @@ struct StatsFeature {
         var events: [RoutineEvent] = []
         var noteAttachmentNoteIDs: Set<UUID> = []
         var goals: [RoutineGoal] = []
+        var places: [RoutinePlace] = []
+        var placeCheckInSessions: [PlaceCheckInSession] = []
         var selectedRange: DoneChartRange = .week
         var taskTypeFilter: StatsTaskTypeFilter = .all
         var createdChartTaskTypeFilter: StatsTaskTypeFilter = .all
@@ -331,7 +337,9 @@ struct StatsFeature {
             notes: [RoutineNote] = [],
             events: [RoutineEvent] = [],
             noteAttachmentNoteIDs: Set<UUID> = [],
-            goals: [RoutineGoal] = []
+            goals: [RoutineGoal] = [],
+            places: [RoutinePlace] = [],
+            placeCheckInSessions: [PlaceCheckInSession] = []
         )
         case onAppear
         case selectedRangeChanged(DoneChartRange)
@@ -359,7 +367,7 @@ struct StatsFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case let .setData(tasks, logs, focusSessions, sleepSessions, awaySessions, emotionLogs, notes, events, noteAttachmentNoteIDs, goals):
+            case let .setData(tasks, logs, focusSessions, sleepSessions, awaySessions, emotionLogs, notes, events, noteAttachmentNoteIDs, goals, places, placeCheckInSessions):
                 state.tasks = tasks
                 state.logs = logs
                 state.focusSessions = focusSessions
@@ -370,6 +378,8 @@ struct StatsFeature {
                 state.events = events
                 state.noteAttachmentNoteIDs = noteAttachmentNoteIDs
                 state.goals = goals
+                state.places = places
+                state.placeCheckInSessions = placeCheckInSessions
                 state.relatedTagRules = RoutineTagRelations.sanitized(
                     appSettingsClient.relatedTagRules()
                     + RoutineTagRelations.learnedRules(from: tasks.map(\.tags))
