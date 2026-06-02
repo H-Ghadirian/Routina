@@ -100,9 +100,7 @@ private struct RoutinaMacFocusTimerToolbarBadgeContent: View {
         }
 
         RoutinaMacWindowRouter.shared.openHomeAndActivate()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-            RoutinaDeepLinkDispatcher.open(deepLink)
-        }
+        RoutinaDeepLinkDispatcher.open(deepLink)
     }
 }
 

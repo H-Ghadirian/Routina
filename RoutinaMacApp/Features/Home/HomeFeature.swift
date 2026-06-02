@@ -1498,7 +1498,8 @@ struct HomeFeature {
 
         state.macSidebarMode = .routines
         state.presentation.isMacFilterDetailPresented = false
-        return .send(.macSidebarSelectionChanged(.task(taskID)))
+        macNavigationRouter().selectTaskInSidebar(taskID, state: &state)
+        return selectionRouter().setSelectedTask(taskID, state: &state)
     }
 
     private func openNoteDeepLink(

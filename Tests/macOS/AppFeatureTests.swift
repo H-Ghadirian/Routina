@@ -139,8 +139,6 @@ struct AppFeatureTests {
 
         await store.send(.openDeepLink(.task(taskID)))
         await store.receive(.home(.openTaskDeepLink(taskID)))
-        await store.receive(.home(.macSidebarSelectionChanged(.task(taskID))))
-        await store.receive(.home(.setSelectedTask(taskID)))
 
         #expect(store.state.selectedTab == .home)
         #expect(store.state.home.macSidebarMode == .routines)

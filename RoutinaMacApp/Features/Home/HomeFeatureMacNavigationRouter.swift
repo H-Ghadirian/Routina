@@ -58,10 +58,7 @@ struct HomeFeatureMacNavigationRouter {
         state.presentation.isMacFilterDetailPresented = false
         switch selection {
         case let .task(taskID):
-            if state.macSidebarMode != .board {
-                state.macSidebarMode = .routines
-            }
-            alignTaskListModeForSelectedTask(taskID, state: &state)
+            selectTaskInSidebar(taskID, state: &state)
             return .send(.setSelectedTask(taskID))
 
         case .timelineEntry:
@@ -84,6 +81,19 @@ struct HomeFeatureMacNavigationRouter {
         state.selectedSettingsSection = section
         persistTemporaryViewState(state)
         return .none
+    }
+
+    func selectTaskInSidebar(
+        _ taskID: UUID,
+        state: inout HomeFeature.State
+    ) {
+        state.macSidebarSelection = .task(taskID)
+        dismissAddRoutineSheet(&state)
+        state.presentation.isMacFilterDetailPresented = false
+        if state.macSidebarMode != .board {
+            state.macSidebarMode = .routines
+        }
+        alignTaskListModeForSelectedTask(taskID, state: &state)
     }
 
     private func dismissAddRoutineSheet(_ state: inout HomeFeature.State) {
