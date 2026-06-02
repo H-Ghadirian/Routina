@@ -186,6 +186,7 @@ let package = Package(
                 "SharedCore/Features/AddRoutine/AddRoutineFeatureState.swift",
                 "SharedCore/Features/AddRoutine/AddRoutineValidationSupport.swift",
                 "SharedCore/Features/AddRoutine/AddRoutineViewModifiers.swift",
+                "SharedCore/Features/AddRoutine/TaskFormDurationEntryPresentation.swift",
                 "SharedCore/Features/AddRoutine/TaskFormPresentation.swift",
                 "SharedCore/Features/Goals/GoalsFeature.swift",
                 "SharedCore/Features/Home/AppFeatureTemporaryViewStateSupport.swift",

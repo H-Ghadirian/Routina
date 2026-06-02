@@ -15,20 +15,22 @@ struct TaskFormMacEstimationCard: View {
                     VStack(alignment: .leading, spacing: 10) {
                         Toggle("Set duration estimate", isOn: estimatedDurationEnabledBinding)
                         if estimatedDurationEnabledBinding.wrappedValue {
-                            Stepper(value: estimatedDurationStepperBinding, in: 5...10_080, step: 5) {
-                                Text(TaskFormPresentation.estimatedDurationLabel(for: estimatedDurationStepperBinding.wrappedValue))
-                                    .frame(minWidth: 160, alignment: .leading)
-                            }
-                            .fixedSize()
+                            TaskFormDurationEntry(
+                                title: "Estimate",
+                                minutes: estimatedDurationBinding,
+                                bounds: TaskFormDurationEntryPresentation.estimatedDurationBounds,
+                                presets: TaskFormDurationEntryPresentation.durationPresets
+                            )
                         }
                         if model.taskType.wrappedValue == .todo, model.actualDurationMinutes != nil {
                             Toggle("Set actual time spent", isOn: actualDurationEnabledBinding)
                             if actualDurationEnabledBinding.wrappedValue {
-                                Stepper(value: actualDurationStepperBinding, in: 1...1_440, step: 5) {
-                                    Text(TaskFormPresentation.estimatedDurationLabel(for: actualDurationStepperBinding.wrappedValue))
-                                        .frame(minWidth: 160, alignment: .leading)
-                                }
-                                .fixedSize()
+                                TaskFormDurationEntry(
+                                    title: "Actual",
+                                    minutes: actualDurationBinding,
+                                    bounds: TaskFormDurationEntryPresentation.actualDurationBounds,
+                                    presets: TaskFormDurationEntryPresentation.durationPresets
+                                )
                             }
                         }
                     }
@@ -65,7 +67,7 @@ struct TaskFormMacEstimationCard: View {
         )
     }
 
-    private var estimatedDurationStepperBinding: Binding<Int> {
+    private var estimatedDurationBinding: Binding<Int> {
         Binding(
             get: { max(model.estimatedDurationMinutes.wrappedValue ?? 30, 5) },
             set: { model.estimatedDurationMinutes.wrappedValue = RoutineTask.sanitizedEstimatedDurationMinutes(max($0, 5)) }
@@ -84,7 +86,7 @@ struct TaskFormMacEstimationCard: View {
         )
     }
 
-    private var actualDurationStepperBinding: Binding<Int> {
+    private var actualDurationBinding: Binding<Int> {
         Binding(
             get: { max(model.actualDurationMinutes?.wrappedValue ?? model.estimatedDurationMinutes.wrappedValue ?? 30, 1) },
             set: { model.actualDurationMinutes?.wrappedValue = RoutineTask.sanitizedActualDurationMinutes(max($0, 1)) }

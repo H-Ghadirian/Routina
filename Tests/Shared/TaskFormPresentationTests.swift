@@ -83,6 +83,34 @@ struct TaskFormPresentationTests {
     }
 
     @Test
+    func durationEntryPresentationBuildsAndClampsHourMinuteValues() {
+        #expect(
+            TaskFormDurationEntryPresentation.combinedMinutes(
+                hours: 20,
+                minuteRemainder: 0,
+                bounds: TaskFormDurationEntryPresentation.estimatedDurationBounds
+            ) == 1_200
+        )
+        #expect(TaskFormDurationEntryPresentation.hours(for: 1_240) == 20)
+        #expect(TaskFormDurationEntryPresentation.minuteRemainder(for: 1_240) == 40)
+        #expect(
+            TaskFormDurationEntryPresentation.combinedMinutes(
+                hours: 0,
+                minuteRemainder: 0,
+                bounds: TaskFormDurationEntryPresentation.estimatedDurationBounds
+            ) == 5
+        )
+        #expect(
+            TaskFormDurationEntryPresentation.combinedMinutes(
+                hours: 999,
+                minuteRemainder: 90,
+                bounds: TaskFormDurationEntryPresentation.actualDurationBounds
+            ) == 1_440
+        )
+        #expect(TaskFormDurationEntryPresentation.durationPresets.contains { $0.minutes == 1_200 && $0.label == "20h" })
+    }
+
+    @Test
     func compactSectionOrderKeepsVoiceNoteDiscoverableNearNotes() throws {
         let order = TaskFormCompactSection.defaultOrder
         let notesIndex = try #require(order.firstIndex(of: .notes))
