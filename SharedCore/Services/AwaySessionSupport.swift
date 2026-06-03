@@ -51,13 +51,25 @@ enum AwaySessionSupport {
         id: UUID = UUID(),
         preset: AwaySessionPreset,
         durationMinutes: Int? = nil,
+        countsUp: Bool = false,
         title: String? = nil,
         startedAt: Date = Date(),
         context: ModelContext,
         sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> AwaySession {
-        let durationMinutes = durationMinutes ?? preset.defaultDurationMinutes
-        guard (1...720).contains(durationMinutes) else {
+        let plannedDurationSeconds: TimeInterval
+        if countsUp {
+            plannedDurationSeconds = 0
+        } else {
+            let durationMinutes = durationMinutes ?? preset.defaultDurationMinutes
+            guard (1...720).contains(durationMinutes) else {
+                throw AwaySessionSupportError.invalidDuration
+            }
+            plannedDurationSeconds = TimeInterval(durationMinutes * 60)
+        }
+        guard plannedDurationSeconds == 0
+            || (TimeInterval(60)...TimeInterval(720 * 60)).contains(plannedDurationSeconds)
+        else {
             throw AwaySessionSupportError.invalidDuration
         }
         if let existing = try awaySession(id: id, in: context) {
@@ -78,7 +90,7 @@ enum AwaySessionSupport {
             preset: preset,
             title: title,
             startedAt: startedAt,
-            plannedDurationSeconds: TimeInterval(durationMinutes * 60),
+            plannedDurationSeconds: plannedDurationSeconds,
             createdAt: startedAt,
             updatedAt: startedAt
         )
@@ -135,10 +147,10 @@ enum AwaySessionSupport {
         guard let first = sessions.first else { return nil }
 
         for session in sessions {
-            let wasExpired = session.isExpired(at: endedAt)
+            let shouldComplete = session.isCountUp || session.isExpired(at: endedAt)
             session.endEarly(at: endedAt)
             DeviceActivityRecorder.recordAction(
-                wasExpired ? .completed : .ended,
+                shouldComplete ? .completed : .ended,
                 entity: .awaySession,
                 entityID: session.id,
                 entityTitle: session.displayTitle,

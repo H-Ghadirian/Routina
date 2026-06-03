@@ -294,6 +294,40 @@ struct FocusAchievementStatsTests {
     }
 
     @Test
+    func countUpAwaySessionsDoNotCountAsPlannedDurationCompletions() throws {
+        let calendar = makeTestCalendar()
+        let awaySessions = (0..<5).compactMap { index -> AwaySession? in
+            guard let startedAt = calendar.date(
+                byAdding: .hour,
+                value: index,
+                to: makeDate("2026-05-01T08:00:00Z")
+            ) else { return nil }
+
+            return AwaySession(
+                preset: .outside,
+                startedAt: startedAt,
+                plannedDurationSeconds: 0,
+                completedAt: startedAt.addingTimeInterval(30 * 60)
+            )
+        }
+
+        let achievements = StatsAchievementStats.achievements(
+            focusSessions: [],
+            sleepSessions: [],
+            awaySessions: awaySessions,
+            logs: [],
+            calendar: calendar
+        )
+
+        let awayFirst = try #require(achievement("away.first", in: achievements))
+        let awayCompleted = try #require(achievement("away.completed.5", in: achievements))
+
+        #expect(awayFirst.isEarned)
+        #expect(!awayCompleted.isEarned)
+        #expect(awayCompleted.progressText == "0 sessions / 5 sessions")
+    }
+
+    @Test
     func displayOrderShowsUnearnedAchievementsBeforeEarnedOnes() throws {
         let calendar = makeTestCalendar()
         let sessions = [

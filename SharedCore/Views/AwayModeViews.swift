@@ -42,10 +42,27 @@ private struct AwayModeRootModifier: ViewModifier {
     }
 }
 
+private enum AwaySessionTimerMode: String, CaseIterable, Identifiable {
+    case fixedDuration
+    case countUp
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .fixedDuration:
+            return "Duration"
+        case .countUp:
+            return "Count Up"
+        }
+    }
+}
+
 struct AwaySessionStartSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @State private var selectedPreset: AwaySessionPreset = .wake
+    @State private var timerMode: AwaySessionTimerMode = .fixedDuration
     @State private var durationMinutes = AwaySessionPreset.wake.defaultDurationMinutes
     @State private var hasCustomizedDuration = false
     @State private var errorText: String?
@@ -65,12 +82,26 @@ struct AwaySessionStartSheet: View {
                 }
 
                 Section("Timer") {
-                    Stepper(
-                        "Duration: \(durationMinutes)m",
-                        value: durationMinutesBinding,
-                        in: 1...720,
-                        step: 5
-                    )
+                    Picker("Timer", selection: $timerMode) {
+                        ForEach(AwaySessionTimerMode.allCases) { mode in
+                            Text(mode.title)
+                                .tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    if timerMode == .fixedDuration {
+                        Stepper(
+                            "Duration: \(durationMinutes)m",
+                            value: durationMinutesBinding,
+                            in: 1...720,
+                            step: 5
+                        )
+                    } else {
+                        LabeledContent("Duration") {
+                            Text("Open-ended")
+                        }
+                    }
                 }
 
                 if let errorText {
@@ -127,7 +158,8 @@ struct AwaySessionStartSheet: View {
         do {
             _ = try AwaySessionSupport.startAway(
                 preset: selectedPreset,
-                durationMinutes: durationMinutes,
+                durationMinutes: timerMode == .fixedDuration ? durationMinutes : nil,
+                countsUp: timerMode == .countUp,
                 context: modelContext
             )
             errorText = nil
@@ -155,7 +187,7 @@ private struct AwayModeFullScreenView: View {
                     now: timeline.date,
                     errorText: errorText,
                     onExtend: extendAway,
-                    onEndEarly: endEarly
+                    onEnd: endAway
                 )
                 .task(id: session.isExpired(at: timeline.date)) {
                     guard session.isExpired(at: timeline.date) else { return }
@@ -208,9 +240,13 @@ private struct AwayModeFullScreenView: View {
     }
 
     @MainActor
-    private func endEarly() {
+    private func endAway() {
         do {
-            _ = try AwaySessionSupport.endActiveAwayEarly(in: modelContext)
+            if session.isCountUp {
+                _ = try AwaySessionSupport.completeActiveAway(in: modelContext)
+            } else {
+                _ = try AwaySessionSupport.endActiveAwayEarly(in: modelContext)
+            }
             errorText = nil
         } catch {
             errorText = "Could not end away time."
@@ -224,7 +260,7 @@ private struct AwayModeContent: View {
     let now: Date
     let errorText: String?
     let onExtend: () -> Void
-    let onEndEarly: () -> Void
+    let onEnd: () -> Void
 
     var body: some View {
         VStack(spacing: 28) {
@@ -257,12 +293,12 @@ private struct AwayModeContent: View {
                         .rotationEffect(.degrees(-90))
 
                     VStack(spacing: 5) {
-                        Text(AwaySessionFormatting.timerText(seconds: session.remainingSeconds(referenceDate: now)))
+                        Text(AwaySessionFormatting.timerText(seconds: timerSeconds))
                             .font(.system(size: 42, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
                             .monospacedDigit()
 
-                        Text("remaining")
+                        Text(timerLabel)
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.white.opacity(0.62))
                     }
@@ -277,7 +313,7 @@ private struct AwayModeContent: View {
                     )
                     AwayMetricRow(
                         title: "Ends",
-                        value: timeText(session.plannedEndAt),
+                        value: session.isCountUp ? "Open-ended" : timeText(session.plannedEndAt),
                         systemImage: "flag.checkered"
                     )
                     AwayMetricRow(
@@ -299,26 +335,42 @@ private struct AwayModeContent: View {
             Spacer(minLength: 16)
 
             VStack(spacing: 10) {
-                Button {
-                    onExtend()
-                } label: {
-                    Label("Extend 5 min", systemImage: "plus.circle.fill")
-                        .font(.headline.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 7)
+                if !session.isCountUp {
+                    Button {
+                        onExtend()
+                    } label: {
+                        Label("Extend 5 min", systemImage: "plus.circle.fill")
+                            .font(.headline.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 7)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .tint(.teal)
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .tint(.teal)
 
-                Button(role: .destructive) {
-                    onEndEarly()
-                } label: {
-                    Text("End early")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.72))
+                if session.isCountUp {
+                    Button {
+                        onEnd()
+                    } label: {
+                        Label("End away", systemImage: "checkmark.circle.fill")
+                            .font(.headline.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 7)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .tint(.teal)
+                } else {
+                    Button(role: .destructive) {
+                        onEnd()
+                    } label: {
+                        Text("End early")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.white.opacity(0.72))
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
 
                 if let errorText {
                     Text(errorText)
@@ -332,6 +384,16 @@ private struct AwayModeContent: View {
         .padding(.vertical, 28)
         .frame(maxWidth: 520)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var timerSeconds: TimeInterval {
+        session.isCountUp
+            ? session.durationSeconds(referenceDate: now)
+            : session.remainingSeconds(referenceDate: now)
+    }
+
+    private var timerLabel: String {
+        session.isCountUp ? "elapsed" : "remaining"
     }
 
     private func timeText(_ date: Date?) -> String {

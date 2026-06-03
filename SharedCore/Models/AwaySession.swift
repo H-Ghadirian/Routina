@@ -109,8 +109,12 @@ final class AwaySession {
         completedAt ?? endedEarlyAt
     }
 
+    var isCountUp: Bool {
+        plannedDurationSeconds <= 0
+    }
+
     var plannedEndAt: Date? {
-        guard let startedAt else { return nil }
+        guard !isCountUp, let startedAt else { return nil }
         return startedAt.addingTimeInterval(max(60, plannedDurationSeconds))
     }
 
@@ -130,7 +134,7 @@ final class AwaySession {
         self.presetRawValue = preset.rawValue
         self.title = Self.cleanedTitle(title) ?? preset.title
         self.startedAt = startedAt
-        self.plannedDurationSeconds = max(60, plannedDurationSeconds)
+        self.plannedDurationSeconds = max(0, plannedDurationSeconds)
         self.completedAt = completedAt
         self.endedEarlyAt = endedEarlyAt
         self.extensionCount = max(0, extensionCount)
@@ -150,7 +154,7 @@ final class AwaySession {
     }
 
     func completionProgress(referenceDate: Date = Date()) -> Double {
-        guard plannedDurationSeconds > 0 else { return 0 }
+        guard !isCountUp else { return 1 }
         return min(max(durationSeconds(referenceDate: referenceDate) / plannedDurationSeconds, 0), 1)
     }
 
@@ -167,7 +171,7 @@ final class AwaySession {
 
     func endEarly(at date: Date = Date()) {
         guard isActive else { return }
-        if isExpired(at: date) {
+        if isCountUp || isExpired(at: date) {
             complete(at: date)
             return
         }
@@ -176,7 +180,7 @@ final class AwaySession {
     }
 
     func extend(byMinutes minutes: Int, at date: Date = Date()) {
-        guard isActive else { return }
+        guard isActive, !isCountUp else { return }
         let addedSeconds = TimeInterval(max(1, minutes) * 60)
         plannedDurationSeconds = max(60, plannedDurationSeconds + addedSeconds)
         extensionCount += 1

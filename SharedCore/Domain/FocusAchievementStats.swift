@@ -414,7 +414,7 @@ enum StatsAchievementStats {
         calendar: Calendar
     ) -> [StatsAchievementProgress] {
         let finishedSessions = sessions.filter { !$0.isActive }
-        let completedSessions = finishedSessions.filter { $0.state == .completed }
+        let completedTimedSessions = finishedSessions.filter { $0.state == .completed && !$0.isCountUp }
         let totalSeconds = finishedSessions.reduce(0) { total, session in
             total + session.durationSeconds()
         }
@@ -464,7 +464,7 @@ enum StatsAchievementStats {
                 systemImage: "checkmark.shield.fill",
                 domain: .away,
                 category: .away,
-                currentValue: Double(completedSessions.count),
+                currentValue: Double(completedTimedSessions.count),
                 targetValue: 5,
                 unit: .count(singular: "session", plural: "sessions")
             ),

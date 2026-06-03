@@ -967,6 +967,7 @@ private struct DayPlanLifecycleModifier: ViewModifier {
                 session.id.uuidString,
                 session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
                 session.finishedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                session.plannedDurationSeconds.description,
                 session.plannedEndAt?.timeIntervalSinceReferenceDate.description ?? "",
             ].joined(separator: ":")
         }
