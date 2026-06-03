@@ -35,7 +35,7 @@ struct StatsDashboardScrollContainer<Content: View>: View {
                     .padding(.horizontal, horizontalPadding)
                     .padding(.top, topPadding)
                     .padding(.bottom, bottomPadding)
-                    .frame(maxWidth: .infinity, alignment: .top)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
             }
         }
         .background(pageBackground.ignoresSafeArea())

@@ -371,7 +371,7 @@ struct StatsView: View {
         StatsDashboardScrollContainer(
             pageBackground: pageBackground,
             bottomPadding: contentBottomPadding,
-            maxContentWidth: statsContentMaxWidth
+            maxContentWidth: nil
         ) {
             let currentMetrics = metrics
             VStack(alignment: .leading, spacing: 24) {
@@ -1048,10 +1048,6 @@ struct StatsView: View {
             colorScheme: colorScheme,
             surfaceGradient: surfaceGradient
         )
-    }
-
-    private var statsContentMaxWidth: CGFloat? {
-        horizontalSizeClass == .regular ? 980 : nil
     }
 
     private var contentBottomPadding: CGFloat {
