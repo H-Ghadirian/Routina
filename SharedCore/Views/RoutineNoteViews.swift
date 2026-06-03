@@ -910,7 +910,18 @@ struct RoutinaFormattedText: View {
 struct RoutineNoteDetailView: View {
     let note: RoutineNote
     let attachments: [RoutineNoteAttachment]
+    let onEdit: (() -> Void)?
     @State private var isEditing = false
+
+    init(
+        note: RoutineNote,
+        attachments: [RoutineNoteAttachment],
+        onEdit: (() -> Void)? = nil
+    ) {
+        self.note = note
+        self.attachments = attachments
+        self.onEdit = onEdit
+    }
 
     var body: some View {
         ScrollView {
@@ -996,7 +1007,11 @@ struct RoutineNoteDetailView: View {
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 Button {
-                    isEditing = true
+                    if let onEdit {
+                        onEdit()
+                    } else {
+                        isEditing = true
+                    }
                 } label: {
                     Label("Edit Note", systemImage: "pencil")
                 }

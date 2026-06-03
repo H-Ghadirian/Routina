@@ -88,10 +88,27 @@ extension HomeTCAView {
                     onSaved: openSavedEvent
                 )
             } else if isNoteEditorPresented {
-                RoutineNoteEditorView(
-                    onCancel: closeAddNote,
-                    onSaved: openSavedNote
-                )
+                if editingNoteID != nil {
+                    if let editingNote {
+                        RoutineNoteEditorView(
+                            note: editingNote,
+                            attachments: noteAttachments(for: editingNote),
+                            onCancel: closeAddNote,
+                            onSaved: openSavedNote
+                        )
+                    } else {
+                        ContentUnavailableView(
+                            "Note unavailable",
+                            systemImage: "note.text",
+                            description: Text("The note being edited is no longer available.")
+                        )
+                    }
+                } else {
+                    RoutineNoteEditorView(
+                        onCancel: closeAddNote,
+                        onSaved: openSavedNote
+                    )
+                }
             } else {
                 MacDetailContainerView(
                     store: store,
@@ -121,6 +138,7 @@ extension HomeTCAView {
                     onOpenDayPlanTaskDetails: { taskID in
                         openDayPlanTaskDetails(taskID)
                     },
+                    onEditNote: openEditNote,
                     onToggleBoardInspector: toggleMacBoardTicketInspector,
                     addRoutineStore: self.store.scope(
                         state: \.addRoutineState,

@@ -71,6 +71,7 @@ struct HomeTCAView: View {
     @State var isEventEditorPresented = false
     @State var isEmotionLogEditorPresented = false
     @State var isNoteEditorPresented = false
+    @State var editingNoteID: UUID?
     @State var isAwayStartSheetPresented = false
     @State var selectedNoteID: UUID?
     @State var isRefreshScheduled = false
@@ -210,7 +211,8 @@ homeContent
         } else if let selectedNote {
             RoutineNoteDetailView(
                 note: selectedNote,
-                attachments: noteAttachments(for: selectedNote)
+                attachments: noteAttachments(for: selectedNote),
+                onEdit: { openEditNote(selectedNote.id) }
             )
         } else {
             ContentUnavailableView(
@@ -227,7 +229,12 @@ homeContent
         return notes.first { $0.id == selectedNoteID }
     }
 
-    private func noteAttachments(for note: RoutineNote) -> [RoutineNoteAttachment] {
+    var editingNote: RoutineNote? {
+        guard let editingNoteID else { return nil }
+        return notes.first { $0.id == editingNoteID }
+    }
+
+    func noteAttachments(for note: RoutineNote) -> [RoutineNoteAttachment] {
         noteAttachments
             .filter { $0.noteID == note.id }
             .sorted { $0.createdAt < $1.createdAt }

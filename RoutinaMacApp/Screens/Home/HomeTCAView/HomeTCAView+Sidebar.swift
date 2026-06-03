@@ -269,6 +269,7 @@ extension HomeTCAView {
     func openAddNote() {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
+        editingNoteID = nil
         selectedNoteID = nil
         macHomeDetailMode = .details
         store.send(.setSelectedTask(nil))
@@ -277,14 +278,27 @@ extension HomeTCAView {
         isNoteEditorPresented = true
     }
 
+    func openEditNote(_ noteID: UUID) {
+        isEventEditorPresented = false
+        isEmotionLogEditorPresented = false
+        editingNoteID = noteID
+        selectedNoteID = noteID
+        macHomeDetailMode = .details
+        store.send(.setSelectedTask(nil))
+        store.send(.setAddRoutineSheet(false))
+        isNoteEditorPresented = true
+    }
+
     func closeAddNote() {
         isNoteEditorPresented = false
+        editingNoteID = nil
     }
 
     func openSavedNote(_ noteID: UUID) {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
+        editingNoteID = nil
         selectedNoteID = noteID
         macHomeDetailMode = .details
         searchTextBinding.wrappedValue = ""
