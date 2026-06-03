@@ -2,9 +2,12 @@ import SwiftUI
 
 struct StatsAchievementsSection: View {
     let achievements: [StatsAchievementProgress]
+    let earnedAchievementIDsByPeriod: [StatsAchievementCelebrationPeriod: Set<String>]
     let surfaceGradient: LinearGradient
     let colorScheme: ColorScheme
     @State private var selectedDomain = StatsAchievementDomain.all
+    @State private var selectedStatus = StatsAchievementStatusFilter.inProgress
+    @State private var selectedEarnedPeriod = StatsAchievementCelebrationPeriod.today
 
     private var filteredAchievements: [StatsAchievementProgress] {
         achievements.filter { achievement in
@@ -16,22 +19,33 @@ struct StatsAchievementsSection: View {
         StatsAchievementStats.earnedCount(in: filteredAchievements)
     }
 
-    private var achievementGroups: [StatsAchievementDisplayGroup] {
-        let inProgress = filteredAchievements.filter { !$0.isEarned }
-        let achieved = filteredAchievements.filter(\.isEarned)
+    private var visibleAchievements: [StatsAchievementProgress] {
+        switch selectedStatus {
+        case .inProgress:
+            return filteredAchievements.filter { !$0.isEarned }
+        case .achieved:
+            let earnedAchievementIDs = earnedAchievementIDsByPeriod[selectedEarnedPeriod] ?? []
+            return filteredAchievements.filter { achievement in
+                achievement.isEarned && earnedAchievementIDs.contains(achievement.id)
+            }
+        }
+    }
 
-        return [
-            StatsAchievementDisplayGroup(
-                title: "In Progress",
-                systemImage: "clock.fill",
-                achievements: inProgress
-            ),
-            StatsAchievementDisplayGroup(
-                title: "Achieved",
-                systemImage: "checkmark.seal.fill",
-                achievements: achieved
-            ),
-        ].filter { !$0.achievements.isEmpty }
+    private var visibleGroup: StatsAchievementDisplayGroup {
+        StatsAchievementDisplayGroup(
+            title: selectedStatus.groupTitle(period: selectedEarnedPeriod),
+            systemImage: selectedStatus.systemImage,
+            achievements: visibleAchievements
+        )
+    }
+
+    private var emptyTitle: String {
+        switch selectedStatus {
+        case .inProgress:
+            return "No in-progress badges"
+        case .achieved:
+            return "No badges achieved \(selectedEarnedPeriod.emptyStateSuffix)"
+        }
     }
 
     var body: some View {
@@ -50,14 +64,26 @@ struct StatsAchievementsSection: View {
 
             categoryPicker
 
-            VStack(alignment: .leading, spacing: 20) {
-                ForEach(achievementGroups) { group in
-                    StatsAchievementGroupView(
-                        group: group,
-                        badgeColumns: badgeColumns,
-                        colorScheme: colorScheme
-                    )
-                }
+            statusPicker
+
+            if selectedStatus == .achieved {
+                achievedPeriodPicker
+            }
+
+            if visibleAchievements.isEmpty {
+                ContentUnavailableView(emptyTitle, systemImage: selectedStatus.emptyStateSystemImage)
+                    .frame(maxWidth: .infinity, minHeight: 180)
+            } else {
+                StatsAchievementGroupView(
+                    group: visibleGroup,
+                    badgeColumns: badgeColumns,
+                    colorScheme: colorScheme
+                )
+            }
+        }
+        .onChange(of: selectedStatus) { _, status in
+            if status == .achieved {
+                selectedEarnedPeriod = .today
             }
         }
         .statsChartCard(surfaceGradient: surfaceGradient, colorScheme: colorScheme)
@@ -76,6 +102,28 @@ struct StatsAchievementsSection: View {
         .accessibilityIdentifier("stats.achievements.categoryPicker")
     }
 
+    private var statusPicker: some View {
+        Picker("Achievement status", selection: $selectedStatus) {
+            ForEach(StatsAchievementStatusFilter.allCases) { status in
+                Text(status.title).tag(status)
+            }
+        }
+        .pickerStyle(.segmented)
+        .frame(maxWidth: 360)
+        .accessibilityIdentifier("stats.achievements.statusPicker")
+    }
+
+    private var achievedPeriodPicker: some View {
+        Picker("Achieved period", selection: $selectedEarnedPeriod) {
+            ForEach(StatsAchievementCelebrationPeriod.allCases) { period in
+                Text(period.title).tag(period)
+            }
+        }
+        .pickerStyle(.segmented)
+        .frame(maxWidth: 560)
+        .accessibilityIdentifier("stats.achievements.achievedPeriodPicker")
+    }
+
     private var badgeColumns: [GridItem] {
         [
             GridItem(
@@ -84,6 +132,64 @@ struct StatsAchievementsSection: View {
                 alignment: .topLeading
             ),
         ]
+    }
+}
+
+private enum StatsAchievementStatusFilter: String, CaseIterable, Identifiable {
+    case inProgress
+    case achieved
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .inProgress:
+            return "In Progress"
+        case .achieved:
+            return "Achieved"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .inProgress:
+            return "clock.fill"
+        case .achieved:
+            return "checkmark.seal.fill"
+        }
+    }
+
+    var emptyStateSystemImage: String {
+        switch self {
+        case .inProgress:
+            return "checkmark.seal"
+        case .achieved:
+            return "medal"
+        }
+    }
+
+    func groupTitle(period: StatsAchievementCelebrationPeriod) -> String {
+        switch self {
+        case .inProgress:
+            return "In Progress"
+        case .achieved:
+            return "Achieved \(period.title)"
+        }
+    }
+}
+
+private extension StatsAchievementCelebrationPeriod {
+    var emptyStateSuffix: String {
+        switch self {
+        case .today:
+            return "today"
+        case .week:
+            return "this week"
+        case .month:
+            return "this month"
+        case .year:
+            return "this year"
+        }
     }
 }
 

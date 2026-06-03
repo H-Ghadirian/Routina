@@ -397,6 +397,53 @@ struct FocusAchievementStatsTests {
         #expect(celebrations.isEmpty)
     }
 
+    @Test
+    func achievementPeriodsShowBadgesFirstEarnedInsidePeriod() throws {
+        let calendar = makeTestCalendar()
+        let referenceDate = makeDate("2026-06-20T12:00:00Z")
+        let priorFocusSessions = (0..<9).compactMap { dayOffset -> FocusSession? in
+            guard let startedAt = calendar.date(
+                byAdding: .day,
+                value: dayOffset,
+                to: makeDate("2026-06-01T08:00:00Z")
+            ) else { return nil }
+
+            return focusSession(startedAt: startedAt, durationSeconds: 60 * 60)
+        }
+        let todayFocusSession = focusSession(
+            startedAt: makeDate("2026-06-20T08:00:00Z"),
+            durationSeconds: 60 * 60
+        )
+        let priorDoneLogs = (0..<99).map { index in
+            RoutineLog(
+                timestamp: makeDate("2026-05-20T09:00:00Z").addingTimeInterval(TimeInterval(index)),
+                taskID: UUID(),
+                kind: .completed
+            )
+        }
+        let todayDoneLog = RoutineLog(
+            timestamp: makeDate("2026-06-20T09:00:00Z"),
+            taskID: UUID(),
+            kind: .completed
+        )
+
+        let earnedIDsByPeriod = StatsAchievementStats.achievementIDsEarnedByPeriod(
+            focusSessions: priorFocusSessions + [todayFocusSession],
+            logs: priorDoneLogs + [todayDoneLog],
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        let todayIDs = try #require(earnedIDsByPeriod[.today])
+        #expect(todayIDs.contains("focus.total.10h"))
+        #expect(todayIDs.contains("done.total.100"))
+        #expect(!todayIDs.contains("focus.first"))
+
+        #expect(try #require(earnedIDsByPeriod[.week]).contains("focus.total.10h"))
+        #expect(try #require(earnedIDsByPeriod[.month]).contains("focus.total.10h"))
+        #expect(try #require(earnedIDsByPeriod[.year]).contains("focus.total.10h"))
+    }
+
     private func achievement(
         _ id: String,
         in achievements: [FocusAchievementProgress]

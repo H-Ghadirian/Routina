@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted
+Superseded
+
+## Superseded By
+
+[0146](0146-tab-achievement-status-and-periods.md)
 
 ## Date
 

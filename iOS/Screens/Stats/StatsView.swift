@@ -949,6 +949,20 @@ struct StatsView: View {
                 placeCheckInSessions: placeCheckInSessions,
                 calendar: calendar
             ),
+            earnedAchievementIDsByPeriod: StatsAchievementStats.achievementIDsEarnedByPeriod(
+                focusSessions: focusSessions,
+                sleepSessions: sleepSessions,
+                awaySessions: awaySessions,
+                logs: logs,
+                emotionLogs: emotionLogs,
+                notes: notes,
+                noteAttachmentNoteIDs: Set(noteAttachments.map(\.noteID)),
+                goals: goals,
+                places: places,
+                placeCheckInSessions: placeCheckInSessions,
+                referenceDate: Date(),
+                calendar: calendar
+            ),
             surfaceGradient: surfaceGradient,
             colorScheme: colorScheme
         )

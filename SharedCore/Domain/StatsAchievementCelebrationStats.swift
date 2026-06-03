@@ -46,7 +46,7 @@ enum StatsAchievementCelebrationPeriod: String, CaseIterable, Equatable, Identif
         return interval.contains(date)
     }
 
-    private func dateInterval(
+    func dateInterval(
         referenceDate: Date,
         calendar: Calendar
     ) -> DateInterval? {
@@ -79,6 +79,91 @@ struct StatsAchievementCelebration: Equatable, Identifiable {
 }
 
 extension StatsAchievementStats {
+    static func achievementIDsEarnedByPeriod(
+        focusSessions: [FocusSession],
+        sleepSessions: [SleepSession] = [],
+        awaySessions: [AwaySession] = [],
+        logs: [RoutineLog] = [],
+        emotionLogs: [EmotionLog] = [],
+        notes: [RoutineNote] = [],
+        noteAttachmentNoteIDs: Set<UUID> = [],
+        goals: [RoutineGoal] = [],
+        places: [RoutinePlace] = [],
+        placeCheckInSessions: [PlaceCheckInSession] = [],
+        referenceDate: Date = Date(),
+        calendar: Calendar = .current
+    ) -> [StatsAchievementCelebrationPeriod: Set<String>] {
+        let currentEarnedAchievementIDs = Set(
+            achievements(
+                focusSessions: focusSessions,
+                sleepSessions: sleepSessions,
+                awaySessions: awaySessions,
+                logs: logs,
+                emotionLogs: emotionLogs,
+                notes: notes,
+                noteAttachmentNoteIDs: noteAttachmentNoteIDs,
+                goals: goals,
+                places: places,
+                placeCheckInSessions: placeCheckInSessions,
+                calendar: calendar
+            )
+            .filter(\.isEarned)
+            .map(\.id)
+        )
+
+        return Dictionary(
+            uniqueKeysWithValues: StatsAchievementCelebrationPeriod.allCases.map { period in
+                guard let periodStart = period.dateInterval(
+                    referenceDate: referenceDate,
+                    calendar: calendar
+                )?.start else {
+                    return (period, [])
+                }
+
+                let priorEarnedAchievementIDs = Set(
+                    achievements(
+                        focusSessions: focusSessions.filter {
+                            isBeforePeriodStart($0.completedAt ?? $0.startedAt, periodStart: periodStart)
+                        },
+                        sleepSessions: sleepSessions.filter {
+                            isBeforePeriodStart($0.endedAt ?? $0.startedAt, periodStart: periodStart)
+                        },
+                        awaySessions: awaySessions.filter {
+                            isBeforePeriodStart($0.finishedAt ?? $0.startedAt, periodStart: periodStart)
+                        },
+                        logs: logs.filter {
+                            isBeforePeriodStart($0.timestamp, periodStart: periodStart)
+                        },
+                        emotionLogs: emotionLogs.filter {
+                            isBeforePeriodStart($0.createdAt, periodStart: periodStart)
+                        },
+                        notes: notes.filter {
+                            isBeforePeriodStart($0.createdAt, periodStart: periodStart)
+                        },
+                        noteAttachmentNoteIDs: noteAttachmentNoteIDs,
+                        goals: goals.filter {
+                            isBeforePeriodStart($0.createdAt, periodStart: periodStart)
+                        },
+                        places: places.filter {
+                            isBeforePeriodStart($0.createdAt, periodStart: periodStart)
+                        },
+                        placeCheckInSessions: placeCheckInSessions.filter {
+                            isBeforePeriodStart(
+                                $0.endedAt ?? $0.startedAt ?? $0.createdAt,
+                                periodStart: periodStart
+                            )
+                        },
+                        calendar: calendar
+                    )
+                    .filter(\.isEarned)
+                    .map(\.id)
+                )
+
+                return (period, currentEarnedAchievementIDs.subtracting(priorEarnedAchievementIDs))
+            }
+        )
+    }
+
     static func celebrationPeriods(
         focusSessions: [FocusSession],
         sleepSessions: [SleepSession] = [],
@@ -111,6 +196,14 @@ extension StatsAchievementStats {
             guard !highlights.isEmpty else { return nil }
             return StatsAchievementCelebration(period: period, highlights: highlights)
         }
+    }
+
+    private static func isBeforePeriodStart(
+        _ date: Date?,
+        periodStart: Date
+    ) -> Bool {
+        guard let date else { return false }
+        return date < periodStart
     }
 
     private static func celebrationHighlights(
