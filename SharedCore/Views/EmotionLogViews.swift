@@ -345,7 +345,7 @@ struct EmotionLogEditorView: View {
                 alignment: .leading,
                 spacing: 10
             ) {
-                contextLinkMenu(
+                contextLinkPicker(
                     title: "Note",
                     pluralTitle: "notes",
                     systemImage: "note.text",
@@ -354,7 +354,7 @@ struct EmotionLogEditorView: View {
                     label: { $0.displayTitle }
                 )
 
-                contextLinkMenu(
+                contextLinkPicker(
                     title: "Goal",
                     pluralTitle: "goals",
                     systemImage: "target",
@@ -363,7 +363,7 @@ struct EmotionLogEditorView: View {
                     label: { $0.displayTitle }
                 )
 
-                contextLinkMenu(
+                contextLinkPicker(
                     title: "Task",
                     pluralTitle: "tasks",
                     systemImage: "checklist",
@@ -372,7 +372,7 @@ struct EmotionLogEditorView: View {
                     label: taskTitle
                 )
 
-                contextLinkMenu(
+                contextLinkPicker(
                     title: "Place",
                     pluralTitle: "places",
                     systemImage: "mappin.and.ellipse",
@@ -381,7 +381,7 @@ struct EmotionLogEditorView: View {
                     label: { $0.displayName }
                 )
 
-                contextLinkMenu(
+                contextLinkPicker(
                     title: "Sleep",
                     pluralTitle: "sleep sessions",
                     systemImage: "bed.double.fill",
@@ -568,137 +568,23 @@ struct EmotionLogEditorView: View {
         )
     }
 
-    @ViewBuilder
-    private func contextLinkMenu<Item: Identifiable>(
+    private func contextLinkPicker<Item: Identifiable>(
         title: String,
         pluralTitle: String,
         systemImage: String,
         selection: Binding<UUID?>,
         items: [Item],
         label: @escaping (Item) -> String
-    ) -> some View where Item.ID == UUID {
-        let selectedTitle = selectedContextTitle(
+    ) -> EmotionLogContextLinkPicker<Item> where Item.ID == UUID {
+        EmotionLogContextLinkPicker(
             title: title,
             pluralTitle: pluralTitle,
-            selection: selection.wrappedValue,
+            systemImage: systemImage,
+            tint: primarySelectedFamily.tintColor,
+            selection: selection,
             items: items,
             label: label
         )
-        let isEnabled = !items.isEmpty || selection.wrappedValue != nil
-
-        if isEnabled {
-            Menu {
-                if selection.wrappedValue != nil {
-                    Button {
-                        selection.wrappedValue = nil
-                    } label: {
-                        Label("Remove \(title.lowercased()) link", systemImage: "xmark.circle")
-                    }
-
-                    if !items.isEmpty {
-                        Divider()
-                    }
-                }
-
-                ForEach(items) { item in
-                    Button {
-                        selection.wrappedValue = item.id
-                    } label: {
-                        if selection.wrappedValue == item.id {
-                            Label(label(item), systemImage: "checkmark")
-                        } else {
-                            Text(label(item))
-                        }
-                    }
-                }
-            } label: {
-                contextLinkLabel(
-                    title: title,
-                    selectedTitle: selectedTitle,
-                    systemImage: systemImage,
-                    isSelected: selection.wrappedValue != nil,
-                    isEnabled: true
-                )
-            }
-            .menuStyle(.button)
-            .buttonStyle(.plain)
-            .accessibilityLabel("Link \(title.lowercased())")
-        } else {
-            contextLinkLabel(
-                title: title,
-                selectedTitle: selectedTitle,
-                systemImage: systemImage,
-                isSelected: false,
-                isEnabled: false
-            )
-            .accessibilityLabel("No \(pluralTitle) available")
-        }
-    }
-
-    private func selectedContextTitle<Item: Identifiable>(
-        title: String,
-        pluralTitle: String,
-        selection: UUID?,
-        items: [Item],
-        label: (Item) -> String
-    ) -> String where Item.ID == UUID {
-        guard let selection else {
-            if items.isEmpty {
-                return "No \(pluralTitle)"
-            }
-            return "Choose \(title.lowercased())"
-        }
-        guard let selectedItem = items.first(where: { $0.id == selection }) else {
-            return "Missing \(title.lowercased())"
-        }
-        return label(selectedItem)
-    }
-
-    private func contextLinkLabel(
-        title: String,
-        selectedTitle: String,
-        systemImage: String,
-        isSelected: Bool,
-        isEnabled: Bool
-    ) -> some View {
-        HStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(primarySelectedFamily.tintColor.opacity(isEnabled ? 0.14 : 0.06))
-                Image(systemName: systemImage)
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(isEnabled ? primarySelectedFamily.tintColor : .secondary)
-            }
-            .frame(width: 34, height: 34)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-
-                Text(selectedTitle)
-                    .font(.subheadline.weight(isSelected ? .semibold : .medium))
-                    .foregroundStyle(isEnabled ? .primary : .secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-            }
-
-            Spacer(minLength: 8)
-
-            Image(systemName: isEnabled ? "chevron.up.chevron.down" : "minus.circle")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(isEnabled ? primarySelectedFamily.tintColor : Color.secondary.opacity(0.6))
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .routinaGlassCard(
-            cornerRadius: 12,
-            tint: isSelected ? primarySelectedFamily.tintColor : .secondary,
-            tintOpacity: isSelected ? 0.16 : 0.07,
-            interactive: isEnabled
-        )
-        .contentShape(Rectangle())
     }
 
     private func taskTitle(_ task: RoutineTask) -> String {
