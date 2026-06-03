@@ -50,16 +50,24 @@ enum StatsAchievementCelebrationPeriod: String, CaseIterable, Equatable, Identif
         referenceDate: Date,
         calendar: Calendar
     ) -> DateInterval? {
+        let startDate: Date?
+
         switch self {
         case .today:
-            return calendar.dateInterval(of: .day, for: referenceDate)
+            startDate = calendar.dateInterval(of: .day, for: referenceDate)?.start
         case .week:
-            return calendar.dateInterval(of: .weekOfYear, for: referenceDate)
+            startDate = calendar.date(byAdding: .weekOfYear, value: -1, to: referenceDate)
+                .map { calendar.startOfDay(for: $0) }
         case .month:
-            return calendar.dateInterval(of: .month, for: referenceDate)
+            startDate = calendar.date(byAdding: .month, value: -1, to: referenceDate)
+                .map { calendar.startOfDay(for: $0) }
         case .year:
-            return calendar.dateInterval(of: .year, for: referenceDate)
+            startDate = calendar.date(byAdding: .year, value: -1, to: referenceDate)
+                .map { calendar.startOfDay(for: $0) }
         }
+
+        guard let startDate else { return nil }
+        return DateInterval(start: startDate, end: referenceDate)
     }
 }
 

@@ -419,7 +419,7 @@ struct FocusAchievementStatsTests {
             focusSessions: [],
             logs: [
                 RoutineLog(
-                    timestamp: makeDate("2025-12-31T09:00:00Z"),
+                    timestamp: makeDate("2025-06-19T09:00:00Z"),
                     taskID: UUID(),
                     kind: .completed
                 ),
@@ -429,6 +429,73 @@ struct FocusAchievementStatsTests {
         )
 
         #expect(celebrations.isEmpty)
+    }
+
+    @Test
+    func celebrationPeriodsUseRollingWindowsThroughReferenceDate() throws {
+        let calendar = makeTestCalendar()
+        let referenceDate = makeDate("2026-06-03T12:00:00Z")
+        let logs = [
+            RoutineLog(
+                timestamp: makeDate("2026-06-03T10:00:00Z"),
+                taskID: UUID(),
+                kind: .completed
+            ),
+            RoutineLog(
+                timestamp: makeDate("2026-06-03T13:00:00Z"),
+                taskID: UUID(),
+                kind: .completed
+            ),
+            RoutineLog(
+                timestamp: makeDate("2026-05-27T12:00:00Z"),
+                taskID: UUID(),
+                kind: .completed
+            ),
+            RoutineLog(
+                timestamp: makeDate("2026-05-27T11:59:59Z"),
+                taskID: UUID(),
+                kind: .completed
+            ),
+            RoutineLog(
+                timestamp: makeDate("2026-05-03T12:00:00Z"),
+                taskID: UUID(),
+                kind: .completed
+            ),
+            RoutineLog(
+                timestamp: makeDate("2026-05-03T11:59:59Z"),
+                taskID: UUID(),
+                kind: .completed
+            ),
+            RoutineLog(
+                timestamp: makeDate("2025-06-03T12:00:00Z"),
+                taskID: UUID(),
+                kind: .completed
+            ),
+            RoutineLog(
+                timestamp: makeDate("2025-06-03T11:59:59Z"),
+                taskID: UUID(),
+                kind: .completed
+            ),
+        ]
+
+        let celebrations = StatsAchievementStats.celebrationPeriods(
+            focusSessions: [],
+            logs: logs,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        let today = try #require(celebration(.today, in: celebrations))
+        #expect(try #require(highlight("done", in: today)).value == "1 done")
+
+        let week = try #require(celebration(.week, in: celebrations))
+        #expect(try #require(highlight("done", in: week)).value == "3 done")
+
+        let month = try #require(celebration(.month, in: celebrations))
+        #expect(try #require(highlight("done", in: month)).value == "5 done")
+
+        let year = try #require(celebration(.year, in: celebrations))
+        #expect(try #require(highlight("done", in: year)).value == "7 done")
     }
 
     @Test
@@ -476,6 +543,33 @@ struct FocusAchievementStatsTests {
         #expect(try #require(earnedIDsByPeriod[.week]).contains("focus.total.10h"))
         #expect(try #require(earnedIDsByPeriod[.month]).contains("focus.total.10h"))
         #expect(try #require(earnedIDsByPeriod[.year]).contains("focus.total.10h"))
+    }
+
+    @Test
+    func achievementPeriodsUseRollingWindowStartsForBadges() throws {
+        let calendar = makeTestCalendar()
+        let referenceDate = makeDate("2026-06-03T12:00:00Z")
+        let priorDoneLogs = (0..<99).map { index in
+            RoutineLog(
+                timestamp: makeDate("2026-05-02T11:00:00Z").addingTimeInterval(TimeInterval(index)),
+                taskID: UUID(),
+                kind: .completed
+            )
+        }
+        let rollingMonthDoneLog = RoutineLog(
+            timestamp: makeDate("2026-05-03T00:00:00Z"),
+            taskID: UUID(),
+            kind: .completed
+        )
+
+        let earnedIDsByPeriod = StatsAchievementStats.achievementIDsEarnedByPeriod(
+            focusSessions: [],
+            logs: priorDoneLogs + [rollingMonthDoneLog],
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(try #require(earnedIDsByPeriod[.month]).contains("done.total.100"))
     }
 
     private func achievement(
