@@ -11,6 +11,8 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     let isTimelinePresented: Bool
     let isStatsPresented: Bool
     let isSettingsPresented: Bool
+    let isAdventurePresented: Bool
+    let adventureProgression: HomeAdventureProgression
     let placeCheckInMapActivity: PlaceCheckInActivity?
     let settingsStore: StoreOf<SettingsFeature>
     let statsStore: StoreOf<StatsFeature>?
@@ -60,6 +62,8 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
                     store: settingsStore,
                     section: selectedSettingsSection
                 )
+            } else if isAdventurePresented {
+                HomeMacAdventureView(progression: adventureProgression)
             } else if isTimelinePresented {
                 timelineDetailContent
             } else {
@@ -144,6 +148,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
             && !isTimelinePresented
             && !isStatsPresented
             && !isSettingsPresented
+            && !isAdventurePresented
             && addRoutineStore == nil
     }
 

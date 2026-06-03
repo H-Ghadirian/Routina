@@ -97,6 +97,7 @@ struct HomeTCAView: View {
     @Query(sort: \SprintFocusSessionRecord.startedAt, order: .reverse) var sprintFocusSessions: [SprintFocusSessionRecord]
     @Query(sort: \BoardSprintRecord.createdAt, order: .reverse) var boardSprints: [BoardSprintRecord]
     @Query(sort: \SleepSession.startedAt, order: .reverse) var sleepSessions: [SleepSession]
+    @Query(sort: \AwaySession.startedAt, order: .reverse) var awaySessions: [AwaySession]
     @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) var placeCheckInSessions: [PlaceCheckInSession]
     @Query private var fileAttachments: [RoutineAttachment]
     @Query(sort: \RoutineEvent.startedAt, order: .reverse) var events: [RoutineEvent]
@@ -238,6 +239,24 @@ homeContent
         noteAttachments
             .filter { $0.noteID == note.id }
             .sorted { $0.createdAt < $1.createdAt }
+    }
+
+    var homeAdventureProgression: HomeAdventureProgression {
+        HomeAdventureProgressionBuilder.build(
+            tasks: store.routineTasks,
+            logs: store.timelineLogs,
+            focusSessions: focusSessions,
+            sprintFocusSessions: sprintFocusSessions,
+            sleepSessions: sleepSessions,
+            awaySessions: awaySessions,
+            emotionLogs: emotionLogs,
+            notes: notes,
+            events: events,
+            goals: store.routineGoals,
+            placeCheckInSessions: placeCheckInSessions,
+            referenceDate: Date(),
+            calendar: calendar
+        )
     }
 
     var addRoutineSheetBinding: Binding<Bool> {

@@ -42,6 +42,7 @@ extension HomeTCAView {
             && !isMacStatsMode
             && !isMacSettingsMode
             && !isMacGoalsMode
+            && !isMacAdventureMode
             && !isMacAddTaskMode
             && !isEmotionLogEditorPresented
             && !isNoteEditorPresented
@@ -116,6 +117,8 @@ extension HomeTCAView {
                     isTimelinePresented: isMacTimelineMode,
                     isStatsPresented: isMacStatsMode,
                     isSettingsPresented: isMacSettingsMode,
+                    isAdventurePresented: isMacAdventureMode,
+                    adventureProgression: homeAdventureProgression,
                     placeCheckInMapActivity: placeCheckInMapActivity,
                     settingsStore: settingsStore,
                     statsStore: statsStore,
@@ -249,6 +252,7 @@ extension HomeTCAView {
             onOpenRoutines: showRoutinesInSidebar,
             onOpenAddTask: openAddTask,
             onOpenQuickAdd: showQuickAddSpotlight,
+            onOpenAdventure: openAdventureInSidebar,
             onOpenTimeline: openTimelineInSidebar,
             onOpenStats: openStatsInSidebar
         ) { mode in

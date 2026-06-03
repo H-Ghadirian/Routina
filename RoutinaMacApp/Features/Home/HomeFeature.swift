@@ -27,6 +27,7 @@ struct HomeFeature {
         case routines = "Routines"
         case board = "Board"
         case goals = "Goals"
+        case adventure = "Adventure"
         case timeline = "Timeline"
         case stats    = "Stats"
         case settings = "Settings"
@@ -37,6 +38,7 @@ struct HomeFeature {
         static let sidebarStripModes: [Self] = [
             .routines,
             .goals,
+            .adventure,
             .timeline,
             .stats,
             .settings,

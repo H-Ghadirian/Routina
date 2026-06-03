@@ -137,6 +137,7 @@ struct HomeMacSidebarModeStripView: View {
         case .routines: return "checklist"
         case .board: return "square.grid.3x3.topleft.filled"
         case .goals: return "target"
+        case .adventure: return "map.fill"
         case .timeline: return "clock.arrow.circlepath"
         case .stats: return "chart.bar.xaxis"
         case .settings: return "gearshape"

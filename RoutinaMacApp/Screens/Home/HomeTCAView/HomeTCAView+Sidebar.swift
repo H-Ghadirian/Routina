@@ -8,6 +8,7 @@ extension HomeTCAView {
     var isMacRoutinesMode: Bool { store.macSidebarMode == .routines }
     var isMacBoardMode: Bool { store.macSidebarMode == .board }
     var isMacGoalsMode: Bool { store.macSidebarMode == .goals }
+    var isMacAdventureMode: Bool { store.macSidebarMode == .adventure }
     var isMacAddTaskMode: Bool { store.macSidebarMode == .addTask }
     var isMacSegmentedBoardMode: Bool { isMacRoutinesMode && macHomeDetailMode == .board }
     var isMacBoardSidebarPresented: Bool { isMacBoardMode || isMacSegmentedBoardMode }
@@ -31,6 +32,8 @@ extension HomeTCAView {
             return boardPresentation.scopeTitle
         case .goals:
             return "Goals"
+        case .adventure:
+            return "Adventure"
         case .timeline:
             return "Timeline"
         case .stats:
@@ -76,6 +79,8 @@ extension HomeTCAView {
             return "Filter Board"
         case .goals:
             return "Goals"
+        case .adventure:
+            return "Adventure"
         case .timeline:
             return "Filter Timeline"
         case .stats:
@@ -108,7 +113,7 @@ extension HomeTCAView {
                 || !store.selectedTimelineExcludedTags.isEmpty
         case .routines, .board:
             return store.selectedFilter != .all || hasActiveOptionalFilters
-        case .goals, .stats, .settings, .addTask:
+        case .goals, .adventure, .stats, .settings, .addTask:
             return false
         }
     }
@@ -130,7 +135,7 @@ extension HomeTCAView {
             macActiveTimelineFiltersSummary
         case .routines, .board:
             macActiveTaskFiltersSummary
-        case .goals, .stats, .settings, .addTask:
+        case .goals, .adventure, .stats, .settings, .addTask:
             nil
         }
     }
@@ -176,6 +181,7 @@ extension HomeTCAView {
                 case .routines:  showRoutinesInSidebar()
                 case .board:     openBoardInSidebar()
                 case .goals:     openGoalsInSidebar()
+                case .adventure: openAdventureInSidebar()
                 case .timeline:  openTimelineInSidebar()
                 case .stats:     openStatsInSidebar()
                 case .settings:  openSettingsInSidebar()
@@ -264,6 +270,13 @@ extension HomeTCAView {
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         store.send(.macSidebarModeChanged(.goals))
+    }
+
+    func openAdventureInSidebar() {
+        isEventEditorPresented = false
+        isEmotionLogEditorPresented = false
+        isNoteEditorPresented = false
+        store.send(.macSidebarModeChanged(.adventure))
     }
 
     func openAddNote() {
@@ -516,6 +529,8 @@ extension HomeTCAView {
                         macTimelineSidebarView
                     } else if isMacGoalsMode {
                         MacGoalsSidebarView(store: goalsStore)
+                    } else if isMacAdventureMode {
+                        HomeMacAdventureSidebarView(progression: homeAdventureProgression)
                     } else if isMacStatsMode {
                         macStatsSidebarView
                     } else if isMacSettingsMode {

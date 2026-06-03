@@ -19,6 +19,7 @@ struct HomeMacSidebarPresentation {
     var isRoutinesMode: Bool { mode == .routines }
     var isBoardMode: Bool { mode == .board }
     var isGoalsMode: Bool { mode == .goals }
+    var isAdventureMode: Bool { mode == .adventure }
     var isAddTaskMode: Bool { mode == .addTask }
 
     var navigationTitle: String {
@@ -33,6 +34,8 @@ struct HomeMacSidebarPresentation {
             return boardScopeTitle
         case .goals:
             return "Goals"
+        case .adventure:
+            return "Adventure"
         case .timeline:
             return "Timeline"
         case .stats:
@@ -53,6 +56,7 @@ struct HomeMacSidebarPresentation {
                 || !selectedTimelineExcludedTags.isEmpty
         }
         if mode == .goals { return false }
+        if mode == .adventure { return false }
         if mode == .stats { return false }
         return selectedFilter != .all || hasActiveOptionalFilters
     }
@@ -65,6 +69,8 @@ struct HomeMacSidebarPresentation {
             return "Filter Board"
         case .goals:
             return "Goals"
+        case .adventure:
+            return "Adventure"
         case .timeline:
             return "Filter Timeline"
         case .stats:

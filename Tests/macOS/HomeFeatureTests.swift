@@ -13,6 +13,7 @@ struct HomeFeatureTests {
         #expect(HomeFeature.MacSidebarMode.sidebarStripModes == [
             .routines,
             .goals,
+            .adventure,
             .timeline,
             .stats,
             .settings,

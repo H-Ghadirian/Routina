@@ -33,7 +33,7 @@ struct HomeFeatureMacNavigationRouter {
                 return .send(.taskListModeChanged(.todos))
             }
 
-        case .goals, .timeline, .stats, .settings:
+        case .goals, .adventure, .timeline, .stats, .settings:
             dismissAddRoutineSheet(&state)
             state.macSidebarSelection = nil
             HomeSelectionEditor.clearTaskSelection(&state.selection)
