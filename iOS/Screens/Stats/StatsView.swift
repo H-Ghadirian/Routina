@@ -945,6 +945,19 @@ struct StatsView: View {
                 placeCheckInSessions: placeCheckInSessions,
                 calendar: calendar
             ),
+            celebrations: StatsAchievementStats.celebrationPeriods(
+                focusSessions: focusSessions,
+                sleepSessions: sleepSessions,
+                awaySessions: awaySessions,
+                logs: logs,
+                emotionLogs: emotionLogs,
+                notes: notes,
+                goals: goals,
+                places: places,
+                placeCheckInSessions: placeCheckInSessions,
+                referenceDate: Date(),
+                calendar: calendar
+            ),
             surfaceGradient: surfaceGradient,
             colorScheme: colorScheme
         )

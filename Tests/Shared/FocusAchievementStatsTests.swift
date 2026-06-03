@@ -322,11 +322,100 @@ struct FocusAchievementStatsTests {
         #expect(orderedAchievements.filter(\.isEarned).map(\.id) == earnedIDs)
     }
 
+    @Test
+    func celebrationPeriodsSummarizeOnlyPeriodsWithActivity() throws {
+        let calendar = makeTestCalendar()
+        let referenceDate = makeDate("2026-06-20T12:00:00Z")
+        let doneLog = RoutineLog(
+            timestamp: makeDate("2026-06-20T09:00:00Z"),
+            taskID: UUID(),
+            kind: .completed
+        )
+        let focusSessions = [
+            focusSession(
+                startedAt: makeDate("2026-06-16T08:00:00Z"),
+                durationSeconds: 30 * 60
+            ),
+        ]
+        let notes = [
+            RoutineNote(
+                title: "Month note",
+                body: "A useful thing",
+                createdAt: makeDate("2026-06-03T08:00:00Z")
+            ),
+        ]
+        let places = [
+            RoutinePlace(
+                name: "Library",
+                latitude: 52.52,
+                longitude: 13.405,
+                createdAt: makeDate("2026-02-01T08:00:00Z")
+            ),
+        ]
+
+        let celebrations = StatsAchievementStats.celebrationPeriods(
+            focusSessions: focusSessions,
+            logs: [doneLog],
+            notes: notes,
+            places: places,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(celebrations.map(\.period) == [.today, .week, .month, .year])
+
+        let today = try #require(celebration(.today, in: celebrations))
+        #expect(today.highlights.map(\.id) == ["done"])
+        #expect(try #require(highlight("done", in: today)).value == "1 done")
+
+        let week = try #require(celebration(.week, in: celebrations))
+        #expect(try #require(highlight("focus", in: week)).value == "30m")
+
+        let month = try #require(celebration(.month, in: celebrations))
+        #expect(try #require(highlight("notes", in: month)).value == "1 note")
+
+        let year = try #require(celebration(.year, in: celebrations))
+        #expect(try #require(highlight("places.saved", in: year)).value == "1 place")
+    }
+
+    @Test
+    func celebrationPeriodsAreEmptyWhenThereIsNothingCurrentToCelebrate() {
+        let calendar = makeTestCalendar()
+        let celebrations = StatsAchievementStats.celebrationPeriods(
+            focusSessions: [],
+            logs: [
+                RoutineLog(
+                    timestamp: makeDate("2025-12-31T09:00:00Z"),
+                    taskID: UUID(),
+                    kind: .completed
+                ),
+            ],
+            referenceDate: makeDate("2026-06-20T12:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(celebrations.isEmpty)
+    }
+
     private func achievement(
         _ id: String,
         in achievements: [FocusAchievementProgress]
     ) -> FocusAchievementProgress? {
         achievements.first { $0.id == id }
+    }
+
+    private func celebration(
+        _ period: StatsAchievementCelebrationPeriod,
+        in celebrations: [StatsAchievementCelebration]
+    ) -> StatsAchievementCelebration? {
+        celebrations.first { $0.period == period }
+    }
+
+    private func highlight(
+        _ id: String,
+        in celebration: StatsAchievementCelebration
+    ) -> StatsAchievementCelebrationHighlight? {
+        celebration.highlights.first { $0.id == id }
     }
 
     private func focusSession(

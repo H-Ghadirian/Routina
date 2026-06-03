@@ -2,6 +2,7 @@ import SwiftUI
 
 struct StatsAchievementsSection: View {
     let achievements: [StatsAchievementProgress]
+    let celebrations: [StatsAchievementCelebration]
     let surfaceGradient: LinearGradient
     let colorScheme: ColorScheme
     @State private var selectedDomain = StatsAchievementDomain.all
@@ -50,6 +51,14 @@ struct StatsAchievementsSection: View {
 
             categoryPicker
 
+            if !celebrations.isEmpty {
+                StatsAchievementCelebrationsView(
+                    celebrations: celebrations,
+                    columns: celebrationColumns,
+                    colorScheme: colorScheme
+                )
+            }
+
             VStack(alignment: .leading, spacing: 20) {
                 ForEach(achievementGroups) { group in
                     StatsAchievementGroupView(
@@ -76,6 +85,16 @@ struct StatsAchievementsSection: View {
         .accessibilityIdentifier("stats.achievements.categoryPicker")
     }
 
+    private var celebrationColumns: [GridItem] {
+        [
+            GridItem(
+                .adaptive(minimum: 220, maximum: 340),
+                spacing: 12,
+                alignment: .topLeading
+            ),
+        ]
+    }
+
     private var badgeColumns: [GridItem] {
         [
             GridItem(
@@ -84,6 +103,122 @@ struct StatsAchievementsSection: View {
                 alignment: .topLeading
             ),
         ]
+    }
+}
+
+private struct StatsAchievementCelebrationsView: View {
+    let celebrations: [StatsAchievementCelebration]
+    let columns: [GridItem]
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Recent Wins", systemImage: "party.popper.fill")
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(.primary)
+
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
+                ForEach(celebrations) { celebration in
+                    StatsAchievementCelebrationCard(
+                        celebration: celebration,
+                        colorScheme: colorScheme
+                    )
+                }
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("stats.achievements.recentWins")
+    }
+}
+
+private struct StatsAchievementCelebrationCard: View {
+    let celebration: StatsAchievementCelebration
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: celebration.period.systemImage)
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(.orange)
+                    .frame(width: 36, height: 36)
+                    .routinaGlassCard(
+                        cornerRadius: 12,
+                        tint: .orange,
+                        tintOpacity: colorScheme == .dark ? 0.18 : 0.12
+                    )
+
+                Text(celebration.period.title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+
+                Spacer(minLength: 0)
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(celebration.highlights) { highlight in
+                    StatsAchievementCelebrationHighlightRow(
+                        highlight: highlight,
+                        colorScheme: colorScheme
+                    )
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 136, alignment: .topLeading)
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.orange.opacity(colorScheme == .dark ? 0.12 : 0.07))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.orange.opacity(colorScheme == .dark ? 0.28 : 0.2), lineWidth: 1)
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(celebration.period.title)
+        .accessibilityValue(accessibilityValue)
+    }
+
+    private var accessibilityValue: String {
+        celebration.highlights
+            .map { "\($0.title): \($0.value)" }
+            .joined(separator: ". ")
+    }
+}
+
+private struct StatsAchievementCelebrationHighlightRow: View {
+    let highlight: StatsAchievementCelebrationHighlight
+    let colorScheme: ColorScheme
+
+    private var accent: Color {
+        highlight.domain.accentColor
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: highlight.systemImage)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(accent)
+                .frame(width: 24, height: 24)
+                .routinaGlassCard(
+                    cornerRadius: 8,
+                    tint: accent,
+                    tintOpacity: colorScheme == .dark ? 0.16 : 0.1
+                )
+
+            Text(highlight.title)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+
+            Spacer(minLength: 8)
+
+            Text(highlight.value)
+                .font(.caption.monospacedDigit().weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+        }
     }
 }
 
@@ -225,6 +360,31 @@ private struct StatsAchievementBadgeCard: View {
             return accent.opacity(colorScheme == .dark ? 0.32 : 0.22)
         }
         return Color.secondary.opacity(colorScheme == .dark ? 0.24 : 0.16)
+    }
+}
+
+private extension StatsAchievementDomain {
+    var accentColor: Color {
+        switch self {
+        case .all:
+            return .accentColor
+        case .focus:
+            return .teal
+        case .sleep:
+            return .purple
+        case .away:
+            return .cyan
+        case .done:
+            return .green
+        case .emotions:
+            return .pink
+        case .places:
+            return .teal
+        case .goals:
+            return .yellow
+        case .notes:
+            return .blue
+        }
     }
 }
 
