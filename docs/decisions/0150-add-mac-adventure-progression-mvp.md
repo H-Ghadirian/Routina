@@ -31,6 +31,6 @@ Adventure uses generated, local asset-catalog world artwork for the first five m
 - Adventure can be shipped and tuned without a SwiftData migration.
 - Deleting or editing underlying activity can change Adventure progress because the state is derived.
 - The first art pass can be revised by replacing asset-catalog images without changing the progression rules.
-- The Adventure UI should label the current stage, next locked stage, and star meanings so the map does not rely on inferred game rules.
+- The Adventure UI should label the current stage, next locked stage, star meanings, missing unlock deltas, and example actions so the map does not rely on inferred game rules.
 - Future versions that need spending, purchases, limited-time rewards, or one-time claim celebrations will need explicit persisted economy state and a new decision record.
 - Existing achievements remain factual Stats presentation state; Adventure is a separate motivational surface.

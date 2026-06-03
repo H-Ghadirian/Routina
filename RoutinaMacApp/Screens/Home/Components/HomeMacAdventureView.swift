@@ -37,7 +37,7 @@ struct HomeMacAdventureSidebarView: View {
                 }
 
                 if let stage = progression.nextLockedStage {
-                    HomeAdventureSidebarStageCard(title: "Next Unlock", stage: stage)
+                    HomeAdventureSidebarUnlockCard(stage: stage, progression: progression)
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
@@ -190,6 +190,7 @@ struct HomeMacAdventureView: View {
             ForEach(progression.worlds) { world in
                 HomeAdventureWorldSection(
                     world: world,
+                    progression: progression,
                     currentStageID: progression.currentStage?.id,
                     nextLockedStageID: progression.nextLockedStage?.id
                 )
@@ -225,6 +226,7 @@ struct HomeMacAdventureView: View {
 
 private struct HomeAdventureWorldSection: View {
     let world: HomeAdventureWorld
+    let progression: HomeAdventureProgression
     let currentStageID: String?
     let nextLockedStageID: String?
 
@@ -245,6 +247,7 @@ private struct HomeAdventureWorldSection: View {
             HomeAdventureWorldRoute(
                 stages: world.stages,
                 accent: accent,
+                progression: progression,
                 currentStageID: currentStageID,
                 nextLockedStageID: nextLockedStageID
             )
@@ -329,9 +332,9 @@ private struct HomeAdventureGuideStrip: View {
             )
 
             HomeAdventureGuideCard(
-                title: "Next unlock",
+                title: "Do this next",
                 value: nextStageText,
-                detail: nextStageDetail,
+                detail: nextActionDetail,
                 systemImage: "lock.open.fill",
                 tint: .orange
             )
@@ -383,18 +386,13 @@ private struct HomeAdventureGuideStrip: View {
         return "Need \(missing.joined(separator: ", "))."
     }
 
+    private var nextActionDetail: String {
+        guard let stage = progression.nextLockedStage else { return "All Adventure stages are cleared." }
+        return HomeAdventureUnlockGuidance(stage: stage, progression: progression).summary
+    }
+
     private func missingRequirements(for stage: HomeAdventureStage) -> [String] {
-        var missing: [String] = []
-        if progression.totalCoins < stage.requiredCoins {
-            missing.append("\((stage.requiredCoins - progression.totalCoins).formatted()) coins")
-        }
-        if progression.actionCount < stage.requiredActions {
-            missing.append("\((stage.requiredActions - progression.actionCount).formatted()) actions")
-        }
-        if progression.activeDayCount < stage.requiredActiveDays {
-            missing.append("\((stage.requiredActiveDays - progression.activeDayCount).formatted()) active days")
-        }
-        return missing
+        HomeAdventureUnlockGuidance(stage: stage, progression: progression).missingRequirements
     }
 }
 
@@ -422,12 +420,80 @@ private struct HomeAdventureGuideCard: View {
                 Text(detail)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
+
+private struct HomeAdventureUnlockGuidance {
+    let stage: HomeAdventureStage
+    let progression: HomeAdventureProgression
+
+    var missingRequirements: [String] {
+        var missing: [String] = []
+        if coinGap > 0 {
+            missing.append("\(coinGap.formatted()) more coins")
+        }
+        if actionGap > 0 {
+            missing.append("\(actionGap.formatted()) more actions")
+        }
+        if activeDayGap > 0 {
+            missing.append("\(activeDayGap.formatted()) more active days")
+        }
+        return missing
+    }
+
+    var shortSummary: String {
+        if coinGap > 0 {
+            return "Need \(coinGap.formatted()) more coins"
+        }
+        if actionGap > 0 {
+            return "Need \(actionGap.formatted()) more actions"
+        }
+        if activeDayGap > 0 {
+            return "Need \(activeDayGap.formatted()) more days"
+        }
+        return "Ready to unlock"
+    }
+
+    var summary: String {
+        if coinGap > 0 {
+            return "Earn \(coinGap.formatted()) coins: \(coinExampleText)."
+        }
+        if actionGap > 0 {
+            return "Do \(actionGap.formatted()) more Routina actions: complete/create tasks, focus, capture notes, log goals, or check in."
+        }
+        if activeDayGap > 0 {
+            return "Use Routina on \(activeDayGap.formatted()) more active days."
+        }
+        return "Ready: the next stage will open when the path reaches it."
+    }
+
+    var coinGap: Int {
+        max(0, stage.requiredCoins - progression.totalCoins)
+    }
+
+    var actionGap: Int {
+        max(0, stage.requiredActions - progression.actionCount)
+    }
+
+    var activeDayGap: Int {
+        max(0, stage.requiredActiveDays - progression.activeDayCount)
+    }
+
+    private var coinExampleText: String {
+        let taskCount = requiredCount(forCoinsPerAction: 12)
+        let focusCount = requiredCount(forCoinsPerAction: 4)
+        let noteCount = requiredCount(forCoinsPerAction: 6)
+        return "complete \(taskCount) task\(taskCount == 1 ? "" : "s"), log \(focusCount) focus block\(focusCount == 1 ? "" : "s"), or capture \(noteCount) note/event/emotion action\(noteCount == 1 ? "" : "s")"
+    }
+
+    private func requiredCount(forCoinsPerAction coins: Int) -> Int {
+        max(1, Int(ceil(Double(coinGap) / Double(coins))))
     }
 }
 
@@ -466,6 +532,7 @@ private enum HomeAdventureStagePinRole: Equatable {
 private struct HomeAdventureWorldRoute: View {
     let stages: [HomeAdventureStage]
     let accent: Color
+    let progression: HomeAdventureProgression
     let currentStageID: String?
     let nextLockedStageID: String?
 
@@ -493,7 +560,12 @@ private struct HomeAdventureWorldRoute: View {
             }
 
             ForEach(Array(stages.enumerated()), id: \.element.id) { index, stage in
-                HomeAdventureStagePin(stage: stage, accent: accent, role: pinRole(for: stage))
+                HomeAdventureStagePin(
+                    stage: stage,
+                    accent: accent,
+                    role: pinRole(for: stage),
+                    unlockGuidance: unlockGuidance(for: stage)
+                )
                     .position(stagePoints[index])
             }
         }
@@ -516,6 +588,11 @@ private struct HomeAdventureWorldRoute: View {
             return .next
         }
         return .regular
+    }
+
+    private func unlockGuidance(for stage: HomeAdventureStage) -> String? {
+        guard stage.id == nextLockedStageID else { return nil }
+        return HomeAdventureUnlockGuidance(stage: stage, progression: progression).shortSummary
     }
 
     private func segmentColor(at index: Int) -> Color {
@@ -547,6 +624,7 @@ private struct HomeAdventureStagePin: View {
     let stage: HomeAdventureStage
     let accent: Color
     let role: HomeAdventureStagePinRole
+    let unlockGuidance: String?
 
     var body: some View {
         VStack(spacing: 6) {
@@ -586,7 +664,7 @@ private struct HomeAdventureStagePin: View {
                     HomeAdventureStageRequirementMarks(stage: stage)
                 }
 
-                Text(stageProgressText)
+                Text(unlockGuidance ?? stageProgressText)
                     .font(.system(size: 9, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.72))
                     .lineLimit(1)
@@ -815,6 +893,110 @@ private struct HomeAdventureSidebarStageCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
+
+private struct HomeAdventureSidebarUnlockCard: View {
+    let stage: HomeAdventureStage
+    let progression: HomeAdventureProgression
+
+    private var guidance: HomeAdventureUnlockGuidance {
+        HomeAdventureUnlockGuidance(stage: stage, progression: progression)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 5) {
+                Text("Next Unlock")
+                    .font(.subheadline.weight(.semibold))
+                Text("Stage \(stage.number): \(stage.title)")
+                    .font(.callout.weight(.medium))
+                Label(guidance.shortSummary, systemImage: "lock.open.fill")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.orange)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                HomeAdventureRequirementProgressRow(
+                    title: "Coins",
+                    currentValue: progression.totalCoins,
+                    targetValue: stage.requiredCoins,
+                    gapValue: guidance.coinGap,
+                    unit: "coins",
+                    systemImage: "circle.hexagongrid.fill",
+                    tint: .yellow
+                )
+                HomeAdventureRequirementProgressRow(
+                    title: "Actions",
+                    currentValue: progression.actionCount,
+                    targetValue: stage.requiredActions,
+                    gapValue: guidance.actionGap,
+                    unit: "actions",
+                    systemImage: "bolt.fill",
+                    tint: .orange
+                )
+                HomeAdventureRequirementProgressRow(
+                    title: "Active days",
+                    currentValue: progression.activeDayCount,
+                    targetValue: stage.requiredActiveDays,
+                    gapValue: guidance.activeDayGap,
+                    unit: "days",
+                    systemImage: "calendar",
+                    tint: .cyan
+                )
+            }
+
+            Text(guidance.summary)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
+
+private struct HomeAdventureRequirementProgressRow: View {
+    let title: String
+    let currentValue: Int
+    let targetValue: Int
+    let gapValue: Int
+    let unit: String
+    let systemImage: String
+    let tint: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                Image(systemName: gapValue == 0 ? "checkmark.circle.fill" : systemImage)
+                    .foregroundStyle(gapValue == 0 ? Color.green : tint)
+                    .frame(width: 16)
+
+                Text(title)
+                    .font(.caption.weight(.semibold))
+
+                Spacer()
+
+                Text("\(currentValue.formatted())/\(targetValue.formatted())")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+
+            ProgressView(value: min(Double(currentValue), Double(targetValue)), total: Double(targetValue))
+                .tint(gapValue == 0 ? .green : tint)
+
+            Text(gapText)
+                .font(.caption2)
+                .foregroundStyle(gapValue == 0 ? Color.green : Color.secondary)
+        }
+    }
+
+    private var gapText: String {
+        if gapValue == 0 {
+            return "Requirement met"
+        }
+        return "Need \(gapValue.formatted()) more \(unit)"
     }
 }
 
