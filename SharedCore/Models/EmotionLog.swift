@@ -50,7 +50,7 @@ enum EmotionFamily: String, CaseIterable, Codable, Equatable, Identifiable, Send
         case .calm:
             return ["calm", "content", "relaxed", "safe", "relieved", "grounded", "tender"]
         case .sadness:
-            return ["sad", "lonely", "disappointed", "grief", "empty", "hopeless", "discouraged"]
+            return ["sad", "tired", "sleepy", "exhausted", "drained", "lonely", "disappointed", "grief", "empty", "hopeless", "discouraged"]
         case .anger:
             return ["irritated", "frustrated", "angry", "resentful", "offended", "furious", "impatient"]
         case .fear:

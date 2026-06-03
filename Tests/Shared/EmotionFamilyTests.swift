@@ -119,6 +119,14 @@ struct EmotionFamilyTests {
     }
 
     @Test
+    func sadnessLabels_includeLowEnergySleepFeelings() {
+        #expect(EmotionFamily.sadness.labels.contains("tired"))
+        #expect(EmotionFamily.sadness.labels.contains("sleepy"))
+        #expect(EmotionFamily.sadness.labels.contains("exhausted"))
+        #expect(EmotionFamily.sadness.labels.contains("drained"))
+    }
+
+    @Test
     func suggestedFamilies_matchUnpleasantLowEnergyMood() {
         let families = EmotionFamily.suggestedFamilies(valence: -0.65, arousal: -0.65)
 

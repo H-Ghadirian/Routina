@@ -2,6 +2,9 @@ import SwiftData
 import SwiftUI
 
 struct EmotionLogEditorView: View {
+    private static let tiredNeedSleepLabel = "tired"
+    private static let tiredNeedSleepReflection = "Need more sleep."
+
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \RoutineNote.createdAt, order: .reverse) private var notes: [RoutineNote]
@@ -125,6 +128,7 @@ struct EmotionLogEditorView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 header
+                quickPresetCard
                 moodCard
                 detailCard
                 bodyCard
@@ -189,6 +193,18 @@ struct EmotionLogEditorView: View {
         emotion == nil ? "Save" : "Update"
     }
 
+    private var quickPresetCard: some View {
+        EmotionLogCard(title: "Quick log", systemImage: "bolt.heart.fill") {
+            EmotionLogQuickPresetButton(
+                title: "Tired / need sleep",
+                detail: tiredNeedSleepPresetDetail,
+                systemImage: "bed.double.fill",
+                tint: .indigo,
+                action: applyTiredNeedSleepPreset
+            )
+        }
+    }
+
     private var moodCard: some View {
         EmotionLogCard(title: "Mood", systemImage: "slider.horizontal.3") {
             VStack(alignment: .leading, spacing: 16) {
@@ -200,6 +216,10 @@ struct EmotionLogEditorView: View {
                     .foregroundStyle(.secondary)
             }
         }
+    }
+
+    private var tiredNeedSleepPresetDetail: String {
+        sleepSessions.isEmpty ? "Low energy, tired" : "Low energy, linked to latest sleep"
     }
 
     private var pleasantnessPicker: some View {
@@ -510,6 +530,23 @@ struct EmotionLogEditorView: View {
             selectedBodyAreas.remove(area)
         } else {
             selectedBodyAreas.insert(area)
+        }
+    }
+
+    private func applyTiredNeedSleepPreset() {
+        valence = PleasantnessSegment.unpleasant.value
+        arousal = EnergySegment.low.value
+        selectedFamilies = [.sadness]
+        selectedLabels = [Self.tiredNeedSleepLabel]
+        intensity = max(intensity, 3)
+        selectedBodyAreas.insert(.energy)
+
+        if linkedSleepSessionID == nil {
+            linkedSleepSessionID = sleepSessions.first?.id
+        }
+
+        if EmotionLog.cleanedText(reflection) == nil {
+            reflection = Self.tiredNeedSleepReflection
         }
     }
 

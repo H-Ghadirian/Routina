@@ -448,6 +448,7 @@ let package = Package(
                 "SharedCore/Views/PlaceCheckInMapSheet.swift",
                 "SharedCore/Views/PlaceCheckInMapSheetContent.swift",
                 "SharedCore/Views/PlaceCheckInMapSheetSupport.swift",
+                "SharedCore/Views/EmotionLogQuickPresetButton.swift",
                 "SharedCore/Views/EmotionLogViews.swift",
                 "SharedCore/Views/RoutineNoteViews.swift",
                 "SharedCore/Views/RoutineEventViews.swift",
