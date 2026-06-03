@@ -647,7 +647,7 @@ struct StatsView: View {
             }
         }
         .pickerStyle(.segmented)
-        .frame(maxWidth: 440)
+        .frame(maxWidth: 520)
         .accessibilityIdentifier("stats.dashboard.scopePicker")
     }
 
@@ -681,6 +681,10 @@ struct StatsView: View {
         case .focus2048:
             editableDashboardSection(.focus2048) {
                 focus2048Section(metrics: metrics)
+            }
+        case .recentWins:
+            editableDashboardSection(.recentWins) {
+                recentWinsSection()
             }
         case .focusAchievements:
             editableDashboardSection(.focusAchievements) {
@@ -945,6 +949,13 @@ struct StatsView: View {
                 placeCheckInSessions: placeCheckInSessions,
                 calendar: calendar
             ),
+            surfaceGradient: surfaceGradient,
+            colorScheme: colorScheme
+        )
+    }
+
+    private func recentWinsSection() -> some View {
+        StatsRecentWinsSection(
             celebrations: StatsAchievementStats.celebrationPeriods(
                 focusSessions: focusSessions,
                 sleepSessions: sleepSessions,

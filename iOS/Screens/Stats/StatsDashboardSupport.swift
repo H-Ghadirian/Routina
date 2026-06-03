@@ -44,6 +44,7 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
     case tagUsage
     case focusChart
     case focus2048
+    case recentWins
     case focusAchievements
     case focusWorkChart
     case estimateActual
@@ -164,6 +165,8 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "Focus chart"
         case .focus2048:
             return "Focus 2048"
+        case .recentWins:
+            return "Recent Wins"
         case .focusAchievements:
             return "Achievements"
         case .focusWorkChart:
@@ -197,6 +200,8 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "A bar chart of focus time over time."
         case .focus2048:
             return "A 2048-style board generated from focused hours."
+        case .recentWins:
+            return "Today, week, month, and year accomplishments."
         case .focusAchievements:
             return "All-time badges and achievement progress."
         case .focusWorkChart:
@@ -272,6 +277,8 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "chart.xyaxis.line"
         case .focus2048:
             return "square.grid.3x3.fill"
+        case .recentWins:
+            return "party.popper.fill"
         case .focusAchievements:
             return "medal.fill"
         case .focusWorkChart:
@@ -304,6 +311,8 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return isFocusRelated
         case .sleep:
             return isSleepRelated
+        case .wins:
+            return self == .recentWins
         case .achievements:
             return self == .focusAchievements
         }

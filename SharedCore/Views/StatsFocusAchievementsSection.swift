@@ -2,7 +2,6 @@ import SwiftUI
 
 struct StatsAchievementsSection: View {
     let achievements: [StatsAchievementProgress]
-    let celebrations: [StatsAchievementCelebration]
     let surfaceGradient: LinearGradient
     let colorScheme: ColorScheme
     @State private var selectedDomain = StatsAchievementDomain.all
@@ -51,14 +50,6 @@ struct StatsAchievementsSection: View {
 
             categoryPicker
 
-            if !celebrations.isEmpty {
-                StatsAchievementCelebrationsView(
-                    celebrations: celebrations,
-                    columns: celebrationColumns,
-                    colorScheme: colorScheme
-                )
-            }
-
             VStack(alignment: .leading, spacing: 20) {
                 ForEach(achievementGroups) { group in
                     StatsAchievementGroupView(
@@ -85,20 +76,56 @@ struct StatsAchievementsSection: View {
         .accessibilityIdentifier("stats.achievements.categoryPicker")
     }
 
-    private var celebrationColumns: [GridItem] {
+    private var badgeColumns: [GridItem] {
         [
             GridItem(
-                .adaptive(minimum: 220, maximum: 340),
+                .adaptive(minimum: 210, maximum: 320),
                 spacing: 12,
                 alignment: .topLeading
             ),
         ]
     }
+}
 
-    private var badgeColumns: [GridItem] {
+struct StatsRecentWinsSection: View {
+    let celebrations: [StatsAchievementCelebration]
+    let surfaceGradient: LinearGradient
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            StatsSectionHeader(
+                title: "Recent Wins",
+                subtitle: "Today, this week, this month, and this year accomplishments."
+            ) {
+                StatsSmallHighlightBadge(
+                    title: "Periods",
+                    value: "\(celebrations.count)",
+                    colorScheme: colorScheme,
+                    surfaceGradient: surfaceGradient
+                )
+            }
+
+            if celebrations.isEmpty {
+                ContentUnavailableView("No recent wins yet", systemImage: "party.popper")
+                    .frame(maxWidth: .infinity, minHeight: 180)
+            } else {
+                StatsAchievementCelebrationsView(
+                    celebrations: celebrations,
+                    columns: celebrationColumns,
+                    colorScheme: colorScheme
+                )
+            }
+        }
+        .statsChartCard(surfaceGradient: surfaceGradient, colorScheme: colorScheme)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("stats.recentWins.section")
+    }
+
+    private var celebrationColumns: [GridItem] {
         [
             GridItem(
-                .adaptive(minimum: 210, maximum: 320),
+                .adaptive(minimum: 220, maximum: 340),
                 spacing: 12,
                 alignment: .topLeading
             ),
@@ -112,22 +139,16 @@ private struct StatsAchievementCelebrationsView: View {
     let colorScheme: ColorScheme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label("Recent Wins", systemImage: "party.popper.fill")
-                .font(.headline.weight(.semibold))
-                .foregroundStyle(.primary)
-
-            LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
-                ForEach(celebrations) { celebration in
-                    StatsAchievementCelebrationCard(
-                        celebration: celebration,
-                        colorScheme: colorScheme
-                    )
-                }
+        LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
+            ForEach(celebrations) { celebration in
+                StatsAchievementCelebrationCard(
+                    celebration: celebration,
+                    colorScheme: colorScheme
+                )
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("stats.achievements.recentWins")
+        .accessibilityIdentifier("stats.recentWins.grid")
     }
 }
 

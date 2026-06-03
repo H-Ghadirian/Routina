@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted
+Superseded
+
+## Superseded By
+
+[0145](0145-separate-recent-wins-from-achievements.md)
 
 ## Date
 
