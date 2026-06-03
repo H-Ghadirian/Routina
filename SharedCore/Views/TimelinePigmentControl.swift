@@ -40,6 +40,7 @@ struct TimelinePigmentControl: View {
                 tintOpacity: isSelected ? 0.22 : 0.08,
                 interactive: true
             )
+            .contentShape(Capsule(style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
