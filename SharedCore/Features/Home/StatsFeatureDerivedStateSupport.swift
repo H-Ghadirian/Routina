@@ -25,6 +25,10 @@ struct StatsFeatureMetrics: Equatable {
     var noteWithMediaCount: Int = 0
     var eventCount: Int = 0
     var eventActiveDayCount: Int = 0
+    var sleepSessionCount: Int = 0
+    var completedSleepSessionCount: Int = 0
+    var totalSleepSeconds: TimeInterval = 0
+    var sleepActiveDayCount: Int = 0
     var awaySessionCount: Int = 0
     var completedAwaySessionCount: Int = 0
     var endedEarlyAwaySessionCount: Int = 0
@@ -74,6 +78,7 @@ enum StatsFeatureDerivedStateBuilder {
         focusSessions: [FocusSession],
         sprintFocusSessions: [SprintFocusSessionRecord] = [],
         boardSprints: [BoardSprintRecord] = [],
+        sleepSessions: [SleepSession] = [],
         awaySessions: [AwaySession] = [],
         emotionLogs: [EmotionLog] = [],
         notes: [RoutineNote] = [],
@@ -224,6 +229,14 @@ enum StatsFeatureDerivedStateBuilder {
                 calendar: calendar
             )
         }
+        let sleepSessionsInRange = sleepSessions.filter { session in
+            dateIsInRange(
+                session.startedAt,
+                selectedRange: selectedRange,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+        }
         let awaySessionsInRange = awaySessions.filter { session in
             dateIsInRange(
                 session.startedAt ?? session.createdAt,
@@ -355,6 +368,15 @@ enum StatsFeatureDerivedStateBuilder {
                 .compactMap { $0.startedAt ?? $0.createdAt }
                 .map { calendar.startOfDay(for: $0) }
         ).count
+        let totalSleepSeconds = sleepSessionsInRange.reduce(0) { total, session in
+            total + session.durationSeconds(referenceDate: referenceDate)
+        }
+        let sleepActiveDayCount = Set(
+            sleepSessionsInRange
+                .compactMap(\.startedAt)
+                .map { calendar.startOfDay(for: $0) }
+        ).count
+        let completedSleepSessionCount = sleepSessionsInRange.filter { !$0.isActive }.count
         let totalAwaySeconds = awaySessionsInRange.reduce(0) { total, session in
             total + session.durationSeconds(referenceDate: referenceDate)
         }
@@ -418,6 +440,10 @@ enum StatsFeatureDerivedStateBuilder {
                 noteWithMediaCount: noteWithMediaCount,
                 eventCount: eventsInRange.count,
                 eventActiveDayCount: eventActiveDayCount,
+                sleepSessionCount: sleepSessionsInRange.count,
+                completedSleepSessionCount: completedSleepSessionCount,
+                totalSleepSeconds: totalSleepSeconds,
+                sleepActiveDayCount: sleepActiveDayCount,
                 awaySessionCount: awaySessionsInRange.count,
                 completedAwaySessionCount: completedAwaySessionCount,
                 endedEarlyAwaySessionCount: endedEarlyAwaySessionCount,

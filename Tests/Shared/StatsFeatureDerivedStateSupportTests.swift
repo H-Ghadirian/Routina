@@ -77,6 +77,47 @@ struct StatsFeatureDerivedStateSupportTests {
     }
 
     @Test
+    func build_countsSleepSessionStats() {
+        let calendar = makeTestCalendar()
+        let referenceDate = makeDate("2026-05-09T10:00:00Z")
+        let completedSleep = SleepSession(
+            startedAt: makeDate("2026-05-07T22:00:00Z"),
+            endedAt: makeDate("2026-05-08T06:00:00Z")
+        )
+        let activeSleep = SleepSession(
+            startedAt: makeDate("2026-05-09T08:00:00Z"),
+            endedAt: nil
+        )
+        let oldSleep = SleepSession(
+            startedAt: makeDate("2026-04-25T22:00:00Z"),
+            endedAt: makeDate("2026-04-26T06:00:00Z")
+        )
+
+        let state = StatsFeatureDerivedStateBuilder.build(
+            tasks: [],
+            logs: [],
+            focusSessions: [],
+            sleepSessions: [completedSleep, activeSleep, oldSleep],
+            selectedRange: .week,
+            taskTypeFilter: .all,
+            selectedImportanceUrgencyFilter: nil,
+            advancedQuery: "",
+            selectedTags: [],
+            includeTagMatchMode: .all,
+            excludedTags: [],
+            excludeTagMatchMode: .any,
+            tagColors: [:],
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(state.metrics.sleepSessionCount == 2)
+        #expect(state.metrics.completedSleepSessionCount == 1)
+        #expect(state.metrics.totalSleepSeconds == TimeInterval(10 * 60 * 60))
+        #expect(state.metrics.sleepActiveDayCount == 2)
+    }
+
+    @Test
     func build_countsEmotionNoteEventAndGoalStats() {
         let calendar = makeTestCalendar()
         let referenceDate = makeDate("2026-05-09T10:00:00Z")

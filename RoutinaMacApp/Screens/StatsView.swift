@@ -565,7 +565,7 @@ struct StatsView: View {
             }
         }
         .pickerStyle(.segmented)
-        .frame(maxWidth: 360)
+        .frame(maxWidth: 440)
         .accessibilityIdentifier("stats.dashboard.scopePicker")
     }
 

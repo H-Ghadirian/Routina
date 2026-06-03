@@ -18,6 +18,8 @@ enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
     case hero
     case dailyAverage
     case focusTime
+    case sleepTime
+    case sleepSessions
     case awayTime
     case emotions
     case notes
@@ -54,6 +56,10 @@ enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             self = .dailyAverage
         case "stats.summary.focusTime":
             self = .focusTime
+        case "stats.summary.sleepTime":
+            self = .sleepTime
+        case "stats.summary.sleepSessions":
+            self = .sleepSessions
         case "stats.summary.awayTime":
             self = .awayTime
         case "stats.summary.emotions":
@@ -95,6 +101,10 @@ enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return "Daily average"
         case .focusTime:
             return "Focus time"
+        case .sleepTime:
+            return "Sleep time"
+        case .sleepSessions:
+            return "Sleep sessions"
         case .awayTime:
             return "Away time"
         case .emotions:
@@ -156,7 +166,7 @@ enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
         switch self {
         case .hero:
             return "The large stats summary at the top of the screen."
-        case .dailyAverage, .focusTime, .awayTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
+        case .dailyAverage, .focusTime, .sleepTime, .sleepSessions, .awayTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
             return "A compact stats card in the summary grid."
         case .unassignedFocus:
             return "Focus sessions waiting to be assigned."
@@ -195,6 +205,10 @@ enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return "gauge.with.dots.needle.50percent"
         case .focusTime:
             return "timer"
+        case .sleepTime:
+            return "bed.double.fill"
+        case .sleepSessions:
+            return "moon.fill"
         case .awayTime:
             return "lock.shield.fill"
         case .emotions:
@@ -254,7 +268,7 @@ enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
 
     var isSummaryCard: Bool {
         switch self {
-        case .dailyAverage, .focusTime, .awayTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
+        case .dailyAverage, .focusTime, .sleepTime, .sleepSessions, .awayTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
             return true
         default:
             return false
@@ -267,6 +281,8 @@ enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return true
         case .focus:
             return isFocusRelated
+        case .sleep:
+            return isSleepRelated
         case .achievements:
             return self == .focusAchievements
         }
@@ -281,6 +297,16 @@ enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
              .focusChart,
              .focus2048,
              .focusWorkChart:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private var isSleepRelated: Bool {
+        switch self {
+        case .sleepTime,
+             .sleepSessions:
             return true
         default:
             return false

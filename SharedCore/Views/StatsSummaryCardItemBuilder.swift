@@ -51,6 +51,28 @@ enum StatsSummaryCardItemBuilder {
 
         items.append(
             StatsSummaryCardItem(
+                icon: "bed.double.fill",
+                accent: .indigo,
+                title: "Sleep time",
+                value: SleepSessionFormatting.durationText(seconds: metrics.totalSleepSeconds),
+                caption: sleepTimeCaption(metrics: metrics),
+                accessibilityIdentifier: "stats.summary.sleepTime"
+            )
+        )
+
+        items.append(
+            StatsSummaryCardItem(
+                icon: "moon.fill",
+                accent: .blue,
+                title: "Sleep sessions",
+                value: metrics.sleepSessionCount.formatted(),
+                caption: sleepSessionCaption(metrics: metrics),
+                accessibilityIdentifier: "stats.summary.sleepSessions"
+            )
+        )
+
+        items.append(
+            StatsSummaryCardItem(
                 icon: "lock.shield.fill",
                 accent: .mint,
                 title: "Away time",
@@ -272,6 +294,27 @@ enum StatsSummaryCardItemBuilder {
         }
 
         return "\(metrics.eventActiveDayCount) calendar \(metrics.eventActiveDayCount == 1 ? "day" : "days")"
+    }
+
+    private static func sleepTimeCaption(metrics: StatsFeatureMetrics) -> String {
+        guard metrics.sleepSessionCount > 0 else {
+            return "No sleep sessions in range"
+        }
+
+        return "\(metrics.sleepActiveDayCount) sleep \(metrics.sleepActiveDayCount == 1 ? "day" : "days")"
+    }
+
+    private static func sleepSessionCaption(metrics: StatsFeatureMetrics) -> String {
+        guard metrics.sleepSessionCount > 0 else {
+            return "No sleep sessions in range"
+        }
+
+        let activeCount = metrics.sleepSessionCount - metrics.completedSleepSessionCount
+        if activeCount > 0 {
+            return "\(metrics.completedSleepSessionCount) completed, \(activeCount) active"
+        }
+
+        return "\(metrics.completedSleepSessionCount) completed"
     }
 
     private static func awayCaption(metrics: StatsFeatureMetrics) -> String {

@@ -60,6 +60,7 @@ enum StatsSummaryDisplayMode: String, CaseIterable, Identifiable {
 enum StatsDashboardScope: String, CaseIterable, Identifiable {
     case all
     case focus
+    case sleep
     case achievements
 
     var id: String { rawValue }
@@ -70,6 +71,8 @@ enum StatsDashboardScope: String, CaseIterable, Identifiable {
             return "All"
         case .focus:
             return "Focus"
+        case .sleep:
+            return "Sleep"
         case .achievements:
             return "Achievements"
         }

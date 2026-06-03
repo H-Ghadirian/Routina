@@ -580,6 +580,7 @@ struct StatsFeature {
             focusSessions: state.focusSessions,
             sprintFocusSessions: state.sprintFocusSessions,
             boardSprints: state.boardSprints,
+            sleepSessions: state.sleepSessions,
             awaySessions: state.awaySessions,
             emotionLogs: state.emotionLogs,
             notes: state.notes,
