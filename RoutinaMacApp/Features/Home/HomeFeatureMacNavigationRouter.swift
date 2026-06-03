@@ -9,9 +9,10 @@ struct HomeFeatureMacNavigationRouter {
         _ mode: HomeFeature.MacSidebarMode,
         state: inout HomeFeature.State
     ) -> Effect<HomeFeature.Action> {
-        state.macSidebarMode = mode
+        let resolvedMode: HomeFeature.MacSidebarMode = mode == .adventure ? .stats : mode
+        state.macSidebarMode = resolvedMode
         state.presentation.isMacFilterDetailPresented = false
-        switch mode {
+        switch resolvedMode {
         case .routines:
             dismissAddRoutineSheet(&state)
             state.macSidebarSelection = state.selection.selectedTaskID.map(HomeFeature.MacSidebarSelection.task)
@@ -37,7 +38,7 @@ struct HomeFeatureMacNavigationRouter {
             dismissAddRoutineSheet(&state)
             state.macSidebarSelection = nil
             HomeSelectionEditor.clearTaskSelection(&state.selection)
-            if mode == .settings && state.selectedSettingsSection == nil {
+            if resolvedMode == .settings && state.selectedSettingsSection == nil {
                 state.selectedSettingsSection = .notifications
             }
 

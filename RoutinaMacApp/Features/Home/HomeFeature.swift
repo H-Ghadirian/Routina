@@ -38,7 +38,6 @@ struct HomeFeature {
         static let sidebarStripModes: [Self] = [
             .routines,
             .goals,
-            .adventure,
             .timeline,
             .stats,
             .settings,
@@ -1540,7 +1539,14 @@ struct HomeFeature {
     }
 
     private func normalizedMacSidebarMode(_ mode: MacSidebarMode) -> MacSidebarMode {
-        mode == .board ? .routines : mode
+        switch mode {
+        case .board:
+            return .routines
+        case .adventure:
+            return .stats
+        case .routines, .goals, .timeline, .stats, .settings, .addTask:
+            return mode
+        }
     }
 
 }

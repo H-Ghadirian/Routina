@@ -14,7 +14,7 @@ struct HomeMacSidebarPresentation {
     let hasActiveOptionalFilters: Bool
 
     var isTimelineMode: Bool { mode == .timeline }
-    var isStatsMode: Bool { mode == .stats }
+    var isStatsMode: Bool { mode == .stats || mode == .adventure }
     var isSettingsMode: Bool { mode == .settings }
     var isRoutinesMode: Bool { mode == .routines }
     var isBoardMode: Bool { mode == .board }
@@ -35,7 +35,7 @@ struct HomeMacSidebarPresentation {
         case .goals:
             return "Goals"
         case .adventure:
-            return "Adventure"
+            return "Stats"
         case .timeline:
             return "Timeline"
         case .stats:
@@ -70,7 +70,7 @@ struct HomeMacSidebarPresentation {
         case .goals:
             return "Goals"
         case .adventure:
-            return "Adventure"
+            return "Stats"
         case .timeline:
             return "Filter Timeline"
         case .stats:

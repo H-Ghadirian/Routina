@@ -28,7 +28,9 @@ extension HomeTCAView {
         HomeMacHomeToolbarContent(
             mode: homeToolbarMode,
             showsDetailModePicker: showsDetailModePickerInToolbar,
+            showsProgressModePicker: showsProgressModePickerInToolbar,
             detailMode: mainDetailModeBinding,
+            progressMode: macHomeProgressModeBinding,
             onPlaceCheckInMapRequested: { activity in
                 openMacPlacesWorkspace(activity: activity)
             }
@@ -44,6 +46,14 @@ extension HomeTCAView {
             && !isMacGoalsMode
             && !isMacAdventureMode
             && !isMacAddTaskMode
+            && !isEmotionLogEditorPresented
+            && !isNoteEditorPresented
+            && store.addRoutineState == nil
+    }
+
+    private var showsProgressModePickerInToolbar: Bool {
+        !store.isMacFilterDetailPresented
+            && isMacStatsMode
             && !isEmotionLogEditorPresented
             && !isNoteEditorPresented
             && store.addRoutineState == nil
@@ -117,7 +127,6 @@ extension HomeTCAView {
                     isTimelinePresented: isMacTimelineMode,
                     isStatsPresented: isMacStatsMode,
                     isSettingsPresented: isMacSettingsMode,
-                    isAdventurePresented: isMacAdventureMode,
                     adventureProgression: homeAdventureProgression,
                     placeCheckInMapActivity: placeCheckInMapActivity,
                     settingsStore: settingsStore,
@@ -125,6 +134,7 @@ extension HomeTCAView {
                     selectedSettingsSection: currentSelectedSettingsSection,
                     dayPlanPlanner: dayPlanPlanner,
                     mainDetailMode: mainDetailModeBinding,
+                    progressMode: macHomeProgressModeBinding,
                     isBoardInspectorPresented: macBoardInspectorPresentedBinding,
                     placeCheckInSelectedPlaceID: $placeCheckInSelectedPlaceID,
                     placeCheckInSelectedHistoryMarkerID: $placeCheckInSelectedHistoryMarkerID,

@@ -75,13 +75,35 @@ struct HomeMacNavigationHistoryTests {
         #expect(history.current == emptyDetails)
     }
 
+    @Test
+    func progressModeParticipatesInHistorySnapshots() {
+        let stats = snapshot(
+            sidebarMode: .stats,
+            detailMode: .details,
+            progressMode: .stats
+        )
+        let adventure = snapshot(
+            sidebarMode: .stats,
+            detailMode: .details,
+            progressMode: .adventure
+        )
+        var history = HomeMacNavigationHistory()
+
+        history.record(stats)
+        history.record(adventure)
+
+        #expect(history.goBack(from: adventure) == stats)
+        #expect(history.goForward(from: stats) == adventure)
+    }
+
     private func snapshot(
         sidebarMode: HomeFeature.MacSidebarMode = .routines,
         sidebarSelection: HomeFeature.MacSidebarSelection? = nil,
         selectedTaskID: UUID? = nil,
         selectedSettingsSection: SettingsMacSection = .notifications,
         selectedBoardScope: HomeFeature.BoardScope = .backlog,
-        detailMode: MacHomeDetailMode
+        detailMode: MacHomeDetailMode,
+        progressMode: MacHomeProgressMode = .stats
     ) -> HomeMacNavigationSnapshot {
         HomeMacNavigationSnapshot(
             sidebarMode: sidebarMode,
@@ -89,7 +111,8 @@ struct HomeMacNavigationHistoryTests {
             selectedTaskID: selectedTaskID,
             selectedSettingsSection: selectedSettingsSection,
             selectedBoardScope: selectedBoardScope,
-            detailMode: detailMode
+            detailMode: detailMode,
+            progressMode: progressMode
         )
     }
 }

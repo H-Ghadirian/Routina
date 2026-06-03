@@ -11,6 +11,13 @@ enum MacHomeDetailMode: String, CaseIterable, Identifiable {
     var id: Self { self }
 }
 
+enum MacHomeProgressMode: String, CaseIterable, Identifiable {
+    case stats = "Stats"
+    case adventure = "Adventure"
+
+    var id: Self { self }
+}
+
 struct MacSidebarTaskScrollRequest: Equatable {
     enum Anchor: Equatable {
         case center
@@ -80,6 +87,7 @@ struct HomeTCAView: View {
     @State var relatedStatsTagSuggestionAnchor: String?
     @State var draggedSection: FormSection?
     @State var macHomeDetailMode: MacHomeDetailMode = .details
+    @State var macHomeProgressMode: MacHomeProgressMode = .stats
     @State var macNavigationHistory = HomeMacNavigationHistory()
     @State var isRestoringMacNavigationHistory = false
     @StateObject var dayPlanPlanner = DayPlanPlannerState()

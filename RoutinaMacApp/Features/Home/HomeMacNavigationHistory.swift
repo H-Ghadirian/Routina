@@ -7,6 +7,7 @@ struct HomeMacNavigationSnapshot: Equatable {
     var selectedSettingsSection: SettingsMacSection
     var selectedBoardScope: HomeFeature.BoardScope
     var detailMode: MacHomeDetailMode
+    var progressMode: MacHomeProgressMode
 
     init(
         sidebarMode: HomeFeature.MacSidebarMode,
@@ -14,7 +15,8 @@ struct HomeMacNavigationSnapshot: Equatable {
         selectedTaskID: UUID?,
         selectedSettingsSection: SettingsMacSection?,
         selectedBoardScope: HomeFeature.BoardScope,
-        detailMode: MacHomeDetailMode
+        detailMode: MacHomeDetailMode,
+        progressMode: MacHomeProgressMode = .stats
     ) {
         self.sidebarMode = sidebarMode
         self.sidebarSelection = sidebarSelection
@@ -27,6 +29,7 @@ struct HomeMacNavigationSnapshot: Equatable {
             : .notifications
         self.selectedBoardScope = selectedBoardScope
         self.detailMode = detailMode
+        self.progressMode = progressMode
     }
 
     private static func normalizedSelectedTaskID(

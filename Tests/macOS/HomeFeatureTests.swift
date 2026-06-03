@@ -13,13 +13,13 @@ struct HomeFeatureTests {
         #expect(HomeFeature.MacSidebarMode.sidebarStripModes == [
             .routines,
             .goals,
-            .adventure,
             .timeline,
             .stats,
             .settings,
             .addTask
         ])
         #expect(!HomeFeature.MacSidebarMode.sidebarStripModes.contains(.board))
+        #expect(!HomeFeature.MacSidebarMode.sidebarStripModes.contains(.adventure))
     }
 
     @Test
@@ -422,6 +422,37 @@ struct HomeFeatureTests {
 
         #expect(persistedState.value?.macHomeSidebarModeRawValue == HomeFeature.MacSidebarMode.stats.rawValue)
         #expect(persistedState.value?.macSelectedSettingsSectionRawValue == SettingsMacSection.notifications.rawValue)
+    }
+
+    @Test
+    func macSidebarModeChanged_adventureUsesStatsSidebarTab() async {
+        let context = makeInMemoryContext()
+        let persistedState = LockIsolated<TemporaryViewState?>(nil)
+        let selectedTaskID = UUID()
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                selectedTaskID: selectedTaskID,
+                macSidebarMode: .routines,
+                macSidebarSelection: .task(selectedTaskID)
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
+        }
+
+        await store.send(.macSidebarModeChanged(.adventure)) {
+            $0.macSidebarMode = .stats
+            $0.selectedTaskID = nil
+            $0.taskDetailState = nil
+            $0.selectedTaskReloadGuard = nil
+            $0.pendingSelectedChecklistReloadGuardTaskID = nil
+            $0.macSidebarSelection = nil
+        }
+
+        #expect(persistedState.value?.macHomeSidebarModeRawValue == HomeFeature.MacSidebarMode.stats.rawValue)
     }
 
     @Test

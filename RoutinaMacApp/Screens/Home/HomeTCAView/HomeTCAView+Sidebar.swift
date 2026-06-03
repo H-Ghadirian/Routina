@@ -3,7 +3,7 @@ import SwiftUI
 
 extension HomeTCAView {
     var isMacTimelineMode: Bool { store.macSidebarMode == .timeline }
-    var isMacStatsMode: Bool { store.macSidebarMode == .stats }
+    var isMacStatsMode: Bool { store.macSidebarMode == .stats || store.macSidebarMode == .adventure }
     var isMacSettingsMode: Bool { store.macSidebarMode == .settings }
     var isMacRoutinesMode: Bool { store.macSidebarMode == .routines }
     var isMacBoardMode: Bool { store.macSidebarMode == .board }
@@ -33,7 +33,7 @@ extension HomeTCAView {
         case .goals:
             return "Goals"
         case .adventure:
-            return "Adventure"
+            return "Stats"
         case .timeline:
             return "Timeline"
         case .stats:
@@ -80,7 +80,7 @@ extension HomeTCAView {
         case .goals:
             return "Goals"
         case .adventure:
-            return "Adventure"
+            return "Stats"
         case .timeline:
             return "Filter Timeline"
         case .stats:
@@ -211,6 +211,17 @@ extension HomeTCAView {
         )
     }
 
+    var macHomeProgressModeBinding: Binding<MacHomeProgressMode> {
+        Binding(
+            get: { macHomeProgressMode },
+            set: { mode in
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    macHomeProgressMode = mode
+                }
+            }
+        )
+    }
+
     func openMacPlacesWorkspace(activity: PlaceCheckInActivity?) {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
@@ -276,6 +287,7 @@ extension HomeTCAView {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
+        macHomeProgressMode = .adventure
         store.send(.macSidebarModeChanged(.adventure))
     }
 
@@ -330,6 +342,7 @@ extension HomeTCAView {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
+        macHomeProgressMode = .stats
         store.send(.macSidebarModeChanged(.stats))
     }
 
@@ -529,10 +542,8 @@ extension HomeTCAView {
                         macTimelineSidebarView
                     } else if isMacGoalsMode {
                         MacGoalsSidebarView(store: goalsStore)
-                    } else if isMacAdventureMode {
-                        HomeMacAdventureSidebarView(progression: homeAdventureProgression)
                     } else if isMacStatsMode {
-                        macStatsSidebarView
+                        macProgressSidebarView
                     } else if isMacSettingsMode {
                         macSettingsSidebarView
                     } else if isMacBoardSidebarPresented {

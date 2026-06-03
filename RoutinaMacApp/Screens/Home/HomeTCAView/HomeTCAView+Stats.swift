@@ -1,6 +1,16 @@
 import SwiftUI
 
 extension HomeTCAView {
+    @ViewBuilder
+    var macProgressSidebarView: some View {
+        switch macHomeProgressMode {
+        case .stats:
+            macStatsSidebarView
+        case .adventure:
+            HomeMacAdventureSidebarView(progression: homeAdventureProgression)
+        }
+    }
+
     var macStatsSidebarView: some View {
         let filterPresentation = statsFilterPresentation
         let statsTasks = statsStore?.tasks ?? store.routineTasks

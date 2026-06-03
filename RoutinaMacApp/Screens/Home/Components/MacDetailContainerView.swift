@@ -11,7 +11,6 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     let isTimelinePresented: Bool
     let isStatsPresented: Bool
     let isSettingsPresented: Bool
-    let isAdventurePresented: Bool
     let adventureProgression: HomeAdventureProgression
     let placeCheckInMapActivity: PlaceCheckInActivity?
     let settingsStore: StoreOf<SettingsFeature>
@@ -19,6 +18,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     let selectedSettingsSection: SettingsMacSection
     let dayPlanPlanner: DayPlanPlannerState
     @Binding var mainDetailMode: MacHomeDetailMode
+    @Binding var progressMode: MacHomeProgressMode
     @Binding var isBoardInspectorPresented: Bool
     @Binding var placeCheckInSelectedPlaceID: UUID?
     @Binding var placeCheckInSelectedHistoryMarkerID: PlaceCheckInHistoryMapMarker.ID?
@@ -46,24 +46,13 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
                 boardDetailContent
             } else if let addRoutineStore {
                 AddRoutineTCAView(store: addRoutineStore)
-            } else if isStatsPresented, let statsStore {
-                StatsViewWrapper(
-                    store: statsStore,
-                    showsFocusTimerToolbarItem: false
-                )
             } else if isStatsPresented {
-                ContentUnavailableView(
-                    "Stats unavailable",
-                    systemImage: "chart.bar.xaxis",
-                    description: Text("The stats store is not currently connected for this view.")
-                )
+                progressDetailContent
             } else if isSettingsPresented {
                 EmbeddedSettingsMacDetailView(
                     store: settingsStore,
                     section: selectedSettingsSection
                 )
-            } else if isAdventurePresented {
-                HomeMacAdventureView(progression: adventureProgression)
             } else if isTimelinePresented {
                 timelineDetailContent
             } else {
@@ -148,12 +137,32 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
             && !isTimelinePresented
             && !isStatsPresented
             && !isSettingsPresented
-            && !isAdventurePresented
             && addRoutineStore == nil
     }
 
     private var shouldShowBoardInspectorToolbarButton: Bool {
         shouldShowDetailModePicker && mainDetailMode == .board
+    }
+
+    @ViewBuilder
+    private var progressDetailContent: some View {
+        switch progressMode {
+        case .stats:
+            if let statsStore {
+                StatsViewWrapper(
+                    store: statsStore,
+                    showsFocusTimerToolbarItem: false
+                )
+            } else {
+                ContentUnavailableView(
+                    "Stats unavailable",
+                    systemImage: "chart.bar.xaxis",
+                    description: Text("The stats store is not currently connected for this view.")
+                )
+            }
+        case .adventure:
+            HomeMacAdventureView(progression: adventureProgression)
+        }
     }
 
     @ViewBuilder
@@ -247,6 +256,14 @@ struct MacHomeDetailModePicker: View {
     }
 }
 
+struct MacHomeProgressModePicker: View {
+    @Binding var selection: MacHomeProgressMode
+
+    var body: some View {
+        MacLiquidGlassHomeProgressModePicker(selection: $selection)
+    }
+}
+
 private struct MacLiquidGlassHomeDetailModePicker: View {
     @Binding var selection: MacHomeDetailMode
     @Namespace private var glassNamespace
@@ -290,6 +307,56 @@ private struct MacLiquidGlassHomeDetailModePicker: View {
                         in: .rect(cornerRadius: 10)
                     )
                     .glassEffectID("MacHomeDetailModeSelection", in: glassNamespace)
+            }
+        }
+        .accessibilityLabel(mode.rawValue)
+        .accessibilityValue(isSelected ? "Selected" : "")
+    }
+}
+
+private struct MacLiquidGlassHomeProgressModePicker: View {
+    @Binding var selection: MacHomeProgressMode
+    @Namespace private var glassNamespace
+
+    var body: some View {
+        GlassEffectContainer(spacing: 4) {
+            HStack(spacing: 4) {
+                ForEach(MacHomeProgressMode.allCases) { mode in
+                    segmentButton(for: mode)
+                }
+            }
+            .padding(4)
+            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 14))
+        }
+        .frame(width: 260)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Progress mode")
+    }
+
+    private func segmentButton(for mode: MacHomeProgressMode) -> some View {
+        let isSelected = selection == mode
+
+        return Button {
+            withAnimation(.easeInOut(duration: 0.18)) {
+                selection = mode
+            }
+        } label: {
+            Text(mode.rawValue)
+                .font(.system(size: 14, weight: isSelected ? .semibold : .medium))
+                .foregroundStyle(isSelected ? .primary : .secondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 7)
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .background {
+            if isSelected {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .glassEffect(
+                        .regular.tint(Color.accentColor.opacity(0.34)).interactive(),
+                        in: .rect(cornerRadius: 10)
+                    )
+                    .glassEffectID("MacHomeProgressModeSelection", in: glassNamespace)
             }
         }
         .accessibilityLabel(mode.rawValue)
