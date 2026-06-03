@@ -56,6 +56,37 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func openSleepDeepLink_requestsPlannerFocusAndClearsSelection() async {
+        let sleepID = UUID()
+        let selectedTaskID = UUID()
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                selectedTaskID: selectedTaskID,
+                isAddRoutineSheetPresented: true,
+                isMacFilterDetailPresented: true,
+                macSidebarMode: .timeline,
+                macSidebarSelection: .timelineEntry(UUID())
+            )
+        ) {
+            HomeFeature()
+        }
+
+        await store.send(.openSleepDeepLink(sleepID)) {
+            $0.selectedTaskID = nil
+            $0.taskDetailState = nil
+            $0.pendingSleepPlannerSessionID = sleepID
+            $0.isAddRoutineSheetPresented = false
+            $0.isMacFilterDetailPresented = false
+            $0.macSidebarMode = .routines
+            $0.macSidebarSelection = nil
+        }
+
+        await store.send(.sleepPlannerDeepLinkHandled(sleepID)) {
+            $0.pendingSleepPlannerSessionID = nil
+        }
+    }
+
+    @Test
     func staleTaskDetailLoadActionAfterDismissIsIgnored() async {
         let store = TestStore(initialState: HomeFeature.State()) {
             HomeFeature()

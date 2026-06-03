@@ -779,7 +779,12 @@ struct EmotionLogDetailView: View {
                                 contextRow("Place", value: place.displayName, systemImage: "mappin.and.ellipse")
                             }
                             if let sleep = linkedSleepSession {
-                                contextRow("Sleep", value: sleepTitle(sleep), systemImage: "bed.double.fill")
+                                linkedEntityRow(
+                                    "Sleep",
+                                    value: sleepTitle(sleep),
+                                    systemImage: "bed.double.fill",
+                                    deepLink: .sleep(sleep.id)
+                                )
                             }
                         }
                     }

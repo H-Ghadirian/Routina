@@ -624,6 +624,13 @@ NavigationStack {
             } label: {
                 timelineRowContent(entry)
             }
+        } else if entry.isSleep {
+            Button {
+                RoutinaDeepLinkDispatcher.open(.sleep(entry.id))
+            } label: {
+                timelineRowContent(entry)
+            }
+            .buttonStyle(.plain)
         } else {
             timelineRowContent(entry)
         }

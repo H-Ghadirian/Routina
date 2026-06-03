@@ -61,6 +61,35 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func focusSleepSessionSelectsStartDayAndScrollMinute() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let selectedDate = try #require(date("2026-05-03T12:00:00Z"))
+        let startedAt = try #require(date("2026-05-07T22:30:00Z"))
+        let endedAt = try #require(date("2026-05-08T06:45:00Z"))
+        let sleepID = UUID()
+        let planner = DayPlanPlannerState(selectedDate: selectedDate)
+        planner.selectedTaskID = UUID()
+        planner.selectedBlockID = UUID()
+        planner.focusedUnplannedCompletedDate = selectedDate
+
+        planner.focusSleepSession(
+            SleepSession(id: sleepID, startedAt: startedAt, endedAt: endedAt),
+            calendar: calendar,
+            context: context
+        )
+
+        #expect(planner.selectedDate == calendar.startOfDay(for: startedAt))
+        #expect(planner.weekDates(calendar: calendar).contains(where: { calendar.isDate($0, inSameDayAs: startedAt) }))
+        #expect(planner.selectedTaskID == nil)
+        #expect(planner.selectedBlockID == nil)
+        #expect(planner.focusedUnplannedCompletedDate == nil)
+        #expect(planner.startMinute == 22 * 60 + 30)
+        #expect(planner.focusedSleep?.sessionID == sleepID)
+        #expect(planner.focusedSleep?.startMinute == 22 * 60 + 30)
+    }
+
+    @Test
     func persistsBlocksInSwiftData() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

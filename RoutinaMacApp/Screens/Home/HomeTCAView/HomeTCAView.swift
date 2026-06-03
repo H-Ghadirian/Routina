@@ -156,6 +156,12 @@ homeContent
                 .onChange(of: fileAttachmentChangeToken) { _, _ in
                     syncFileAttachmentTaskIDs()
                 }
+                .onAppear {
+                    handlePendingSleepPlannerDeepLink(store.pendingSleepPlannerSessionID)
+                }
+                .onChange(of: store.pendingSleepPlannerSessionID) { _, sleepID in
+                    handlePendingSleepPlannerDeepLink(sleepID)
+                }
         )
         .environment(\.routinaMacOpenFocusTimerTarget, openFocusTimerTarget)
     }
@@ -179,6 +185,8 @@ homeContent
             macHomeDetailMode = .details
         case .sprint:
             macHomeDetailMode = .board
+        case .sleep:
+            macHomeDetailMode = .planner
         case .goal, .note:
             break
         }

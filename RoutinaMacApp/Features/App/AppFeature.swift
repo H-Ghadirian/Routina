@@ -232,6 +232,12 @@ struct AppFeature {
             state.pendingDeepLinkedSprintID = nil
             persistTemporaryViewState(state)
             return .send(.home(.openNoteDeepLink(noteID)))
+        case let .sleep(sleepID):
+            state.selectedTab = .home
+            state.pendingDeepLinkedTaskID = nil
+            state.pendingDeepLinkedSprintID = nil
+            persistTemporaryViewState(state)
+            return .send(.home(.openSleepDeepLink(sleepID)))
         case let .sprint(sprintID):
             state.selectedTab = .home
             state.pendingDeepLinkedTaskID = nil

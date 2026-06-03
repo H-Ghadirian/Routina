@@ -664,6 +664,8 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
             return "watch-open-note-\(noteID.uuidString)"
         case let .sprint(sprintID):
             return "watch-open-sprint-\(sprintID.uuidString)"
+        case let .sleep(sleepID):
+            return "watch-open-sleep-\(sleepID.uuidString)"
         }
     }
 
@@ -677,6 +679,8 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
             return "Open note on iPhone"
         case .sprint:
             return "Open sprint timer on iPhone"
+        case .sleep:
+            return "Open sleep on iPhone"
         }
     }
 

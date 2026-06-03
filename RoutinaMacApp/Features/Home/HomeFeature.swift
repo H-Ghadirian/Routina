@@ -73,6 +73,7 @@ struct HomeFeature {
         var timelineFilters = HomeTimelineFiltersState()
         var statsFilters = HomeStatsFiltersState()
         var navigation = HomeMacNavigationState()
+        var pendingSleepPlannerSessionID: UUID?
         var relatedTagRules: [RoutineRelatedTagRule] = []
         var tagColors: [String: String] = [:]
 
@@ -519,6 +520,8 @@ struct HomeFeature {
         case openTaskDeepLink(UUID)
         case openNoteDeepLink(UUID)
         case openSprintDeepLink(UUID)
+        case openSleepDeepLink(UUID)
+        case sleepPlannerDeepLinkHandled(UUID)
         case createBacklogTapped
         case createBacklogTitleChanged(String)
         case createBacklogConfirmed
@@ -1169,6 +1172,14 @@ struct HomeFeature {
 
             case let .openSprintDeepLink(sprintID):
                 return macNavigationRouter().openSprintDeepLink(sprintID, state: &state)
+
+            case let .openSleepDeepLink(sleepID):
+                return macNavigationRouter().openSleepDeepLink(sleepID, state: &state)
+
+            case let .sleepPlannerDeepLinkHandled(sleepID):
+                guard state.pendingSleepPlannerSessionID == sleepID else { return .none }
+                state.pendingSleepPlannerSessionID = nil
+                return .none
 
             case .createSprintTapped:
                 return macBoardCommandRouter().createSprintTapped(state: &state)

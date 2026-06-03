@@ -213,6 +213,30 @@ struct AppFeatureTests {
     }
 
     @Test
+    func openDeepLink_sleepSelectsHomeAndRequestsPlannerFocus() async {
+        let sleepID = UUID()
+        let store = TestStore(
+            initialState: AppFeature.State(
+                selectedTab: .stats,
+                home: HomeFeature.State(macSidebarMode: .timeline)
+            )
+        ) {
+            AppFeature()
+        }
+
+        await store.send(.openDeepLink(.sleep(sleepID))) {
+            $0.hasRestoredTemporaryViewState = true
+            $0.selectedTab = .home
+        }
+
+        await store.receive(.home(.openSleepDeepLink(sleepID))) {
+            $0.home.macSidebarMode = .routines
+            $0.home.macSidebarSelection = nil
+            $0.home.pendingSleepPlannerSessionID = sleepID
+        }
+    }
+
+    @Test
     func openDeepLink_sprintSelectsHomeBoardScope() async {
         let sprintID = UUID()
         let sprint = BoardSprint(id: sprintID, title: "Release prep", status: .active)

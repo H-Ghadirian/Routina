@@ -10,6 +10,7 @@ struct DayPlanWeekCalendarView: View {
     var selectedBlockID: DayPlanBlock.ID?
     var selectedDate: Date
     var focusedUnplannedCompletedDate: Date?
+    var focusedSleep: DayPlanFocusedSleep?
     var calendar: Calendar
     var dropDurationMinutes: Int
     var showsUnplannedCompletedBadges: Bool
@@ -112,6 +113,7 @@ struct DayPlanWeekCalendarView: View {
                             DayPlanBlockLayer(
                                 dates: dates,
                                 selectedBlockID: selectedBlockID,
+                                focusedSleepSessionID: focusedSleep?.sessionID,
                                 calendar: calendar,
                                 dayWidth: dayWidth,
                                 hourHeight: hourHeight,
@@ -161,6 +163,14 @@ struct DayPlanWeekCalendarView: View {
                                 hourHeight: hourHeight,
                                 timeColumnWidth: timeColumnWidth
                             )
+                            if let focusedSleep {
+                                DayPlanMinuteScrollAnchor(
+                                    target: .focusedSleep(focusedSleep.scrollTargetID),
+                                    minute: focusedSleep.startMinute,
+                                    hourHeight: hourHeight,
+                                    timeColumnWidth: timeColumnWidth
+                                )
+                            }
                             SwiftUI.TimelineView(.periodic(from: Date(), by: 60)) { timeline in
                                 ZStack(alignment: .topLeading) {
                                     DayPlanFocusSessionBlockLayer(
@@ -231,10 +241,13 @@ struct DayPlanWeekCalendarView: View {
                     .frame(height: hourHeight * 24)
                 }
                 .onAppear {
-                    scrollToCurrentTime(with: scrollProxy)
+                    scrollToInitialTarget(with: scrollProxy)
                 }
                 .onChange(of: dates) { _, _ in
-                    scrollToCurrentTime(with: scrollProxy)
+                    scrollToInitialTarget(with: scrollProxy)
+                }
+                .onChange(of: focusedSleep) { _, _ in
+                    scrollToFocusedSleep(with: scrollProxy)
                 }
             }
         }
@@ -336,6 +349,22 @@ struct DayPlanWeekCalendarView: View {
         DispatchQueue.main.async {
             proxy.scrollTo(DayPlanScrollTarget.currentTime, anchor: .center)
         }
+    }
+
+    private func scrollToInitialTarget(with proxy: ScrollViewProxy) {
+        if !scrollToFocusedSleep(with: proxy) {
+            scrollToCurrentTime(with: proxy)
+        }
+    }
+
+    @discardableResult
+    private func scrollToFocusedSleep(with proxy: ScrollViewProxy) -> Bool {
+        guard let focusedSleep else { return false }
+
+        DispatchQueue.main.async {
+            proxy.scrollTo(DayPlanScrollTarget.focusedSleep(focusedSleep.scrollTargetID), anchor: .center)
+        }
+        return true
     }
 
 }

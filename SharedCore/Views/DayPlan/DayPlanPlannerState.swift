@@ -2,6 +2,16 @@ import Combine
 import Foundation
 import SwiftData
 
+struct DayPlanFocusedSleep: Equatable {
+    let sessionID: UUID
+    let startMinute: Int
+    private let token = UUID()
+
+    var scrollTargetID: UUID {
+        token
+    }
+}
+
 final class DayPlanPlannerState: ObservableObject {
     @Published var selectedDate: Date
     @Published var blocks: [DayPlanBlock] = []
@@ -12,6 +22,7 @@ final class DayPlanPlannerState: ObservableObject {
     @Published var startMinute = 9 * 60
     @Published var durationMinutes = 60
     @Published var focusedUnplannedCompletedDate: Date?
+    @Published var focusedSleep: DayPlanFocusedSleep?
 
     @Published private var visibleDate: Date
 
@@ -166,6 +177,7 @@ final class DayPlanPlannerState: ObservableObject {
     }
 
     func selectTask(_ task: RoutineTask) {
+        focusedSleep = nil
         selectedTaskID = task.id
         if selectedBlock == nil, let estimate = task.estimatedDurationMinutes {
             durationMinutes = DayPlanBlock.clampedDuration(estimate, startMinute: startMinute)
@@ -173,6 +185,7 @@ final class DayPlanPlannerState: ObservableObject {
     }
 
     func focusUnplannedCompletedTasks(on date: Date, calendar: Calendar) {
+        focusedSleep = nil
         focusedUnplannedCompletedDate = calendar.startOfDay(for: date)
         searchText = ""
     }
@@ -181,7 +194,24 @@ final class DayPlanPlannerState: ObservableObject {
         focusedUnplannedCompletedDate = nil
     }
 
+    func focusSleepSession(_ session: SleepSession, calendar: Calendar, context: ModelContext) {
+        guard let startedAt = session.startedAt else { return }
+        showDate(startedAt, calendar: calendar, context: context)
+        let sleepStartMinute = startMinute(for: startedAt, calendar: calendar)
+        selectedTaskID = nil
+        selectedBlockID = nil
+        startMinute = sleepStartMinute
+        focusedUnplannedCompletedDate = nil
+        searchText = ""
+        focusedSleep = DayPlanFocusedSleep(sessionID: session.id, startMinute: sleepStartMinute)
+    }
+
+    func clearFocusedSleep() {
+        focusedSleep = nil
+    }
+
     func selectSlot(on date: Date, startMinute: Int, calendar: Calendar, context: ModelContext) {
+        focusedSleep = nil
         selectedDate = date
         selectedBlockID = nil
         syncSelectedDayBlocks(calendar: calendar, context: context)
@@ -190,6 +220,7 @@ final class DayPlanPlannerState: ObservableObject {
     }
 
     func edit(_ block: DayPlanBlock, on date: Date? = nil, calendar: Calendar? = nil, context: ModelContext) {
+        focusedSleep = nil
         if let date, let calendar {
             selectedDate = date
             syncSelectedDayBlocks(calendar: calendar, context: context)
@@ -268,6 +299,7 @@ final class DayPlanPlannerState: ObservableObject {
         }
 
         selectedDate = date
+        focusedSleep = nil
         selectedBlockID = movedBlock.id
         selectedTaskID = movedBlock.taskID
         self.startMinute = movedBlock.startMinute
@@ -288,6 +320,7 @@ final class DayPlanPlannerState: ObservableObject {
 
         if let existingBlock = dayBlocks.first(where: { $0.taskID == activity.block.taskID }) {
             selectedDate = date
+            focusedSleep = nil
             selectedBlockID = existingBlock.id
             selectedTaskID = existingBlock.taskID
             startMinute = existingBlock.startMinute
@@ -315,6 +348,7 @@ final class DayPlanPlannerState: ObservableObject {
         DayPlanStorage.saveBlocks(sortedBlocks, forDayKey: dayKey, context: context)
 
         selectedDate = date
+        focusedSleep = nil
         selectedBlockID = confirmedBlock.id
         selectedTaskID = confirmedBlock.taskID
         startMinute = confirmedBlock.startMinute
@@ -368,6 +402,7 @@ final class DayPlanPlannerState: ObservableObject {
         DayPlanStorage.saveBlocks(sortedBlocks, forDayKey: dayKey, context: context)
 
         selectedDate = date
+        focusedSleep = nil
         selectedBlockID = resizedBlock.id
         selectedTaskID = resizedBlock.taskID
         self.startMinute = resizedBlock.startMinute
@@ -378,6 +413,7 @@ final class DayPlanPlannerState: ObservableObject {
 
     func commitBlock(task: RoutineTask, calendar: Calendar, context: ModelContext) {
         guard conflictingBlock == nil else { return }
+        focusedSleep = nil
 
         let dayKey = DayPlanStorage.dayKey(for: selectedDate, calendar: calendar)
         let now = Date()
@@ -428,6 +464,7 @@ final class DayPlanPlannerState: ObservableObject {
         let dayDelta = value * 7
         selectedDate = calendar.date(byAdding: .day, value: dayDelta, to: selectedDate) ?? selectedDate
         visibleDate = calendar.date(byAdding: .day, value: dayDelta, to: visibleDate) ?? visibleDate
+        focusedSleep = nil
         selectedBlockID = nil
         loadBlocks(calendar: calendar, context: context)
     }
@@ -436,6 +473,7 @@ final class DayPlanPlannerState: ObservableObject {
         let today = calendar.startOfDay(for: Date())
         selectedDate = today
         visibleDate = today
+        focusedSleep = nil
         selectedBlockID = nil
         loadBlocks(calendar: calendar, context: context)
     }
@@ -444,6 +482,7 @@ final class DayPlanPlannerState: ObservableObject {
         let selectedDay = calendar.startOfDay(for: date)
         selectedDate = selectedDay
         visibleDate = selectedDay
+        focusedSleep = nil
         selectedBlockID = nil
         loadBlocks(calendar: calendar, context: context)
     }

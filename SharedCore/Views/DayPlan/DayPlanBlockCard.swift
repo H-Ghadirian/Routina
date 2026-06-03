@@ -348,7 +348,7 @@ struct DayPlanBlockCard: View {
             return 0.12
         }
         if isSleep {
-            return 0.16
+            return isSelected ? 0.24 : 0.16
         }
         if isAway {
             return 0.16
@@ -370,7 +370,7 @@ struct DayPlanBlockCard: View {
             return 0.78
         }
         if isSleep {
-            return 0.78
+            return isSelected ? 0.95 : 0.78
         }
         if isAway {
             return 0.78
@@ -392,7 +392,7 @@ struct DayPlanBlockCard: View {
             return 1.5
         }
         if isSleep {
-            return 1.5
+            return isSelected ? 2.5 : 1.5
         }
         if isAway {
             return 1.5

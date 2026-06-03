@@ -35,3 +35,30 @@ struct DayPlanCurrentTimeScrollAnchor: View {
         return min(max(minute, 0), DayPlanBlock.minutesPerDay)
     }
 }
+
+struct DayPlanMinuteScrollAnchor: View {
+    var target: DayPlanScrollTarget
+    var minute: Int
+    var hourHeight: CGFloat
+    var timeColumnWidth: CGFloat
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Color.clear
+                .frame(height: yOffset)
+
+            Color.clear
+                .frame(width: 1, height: 1)
+                .id(target)
+
+            Spacer(minLength: 0)
+        }
+        .frame(width: 1, height: hourHeight * 24)
+        .offset(x: timeColumnWidth)
+    }
+
+    private var yOffset: CGFloat {
+        let clampedMinute = min(max(minute, 0), DayPlanBlock.minutesPerDay)
+        return CGFloat(clampedMinute) / 60 * hourHeight
+    }
+}

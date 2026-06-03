@@ -138,6 +138,21 @@ struct HomeFeatureMacNavigationRouter {
         return .send(.taskListModeChanged(.todos))
     }
 
+    func openSleepDeepLink(
+        _ sleepID: UUID,
+        state: inout HomeFeature.State
+    ) -> Effect<HomeFeature.Action> {
+        state.macSidebarMode = .routines
+        state.macSidebarSelection = nil
+        state.pendingSleepPlannerSessionID = sleepID
+        state.presentation.isMacFilterDetailPresented = false
+        state.presentation.isAddRoutineSheetPresented = false
+        state.presentation.addRoutineState = nil
+        HomeSelectionEditor.clearTaskSelection(&state.selection)
+        persistTemporaryViewState(state)
+        return .none
+    }
+
     func selectTaskInSidebar(
         _ taskID: UUID,
         state: inout HomeFeature.State

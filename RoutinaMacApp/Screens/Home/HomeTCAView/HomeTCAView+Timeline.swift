@@ -127,12 +127,40 @@ extension HomeTCAView {
     }
 
     private func openTimelineEntry(_ entry: TimelineEntry) {
+        if entry.isSleep {
+            openSleepInPlanner(entry.id)
+            return
+        }
+
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         selectedNoteID = entry.isNote ? entry.id : nil
         store.send(.macSidebarSelectionChanged(.timelineEntry(entry.id)))
         store.send(.setSelectedTask(entry.taskID))
+    }
+
+    func handlePendingSleepPlannerDeepLink(_ sleepID: UUID?) {
+        guard let sleepID else { return }
+        openSleepInPlanner(sleepID)
+    }
+
+    func openSleepInPlanner(_ sleepID: UUID) {
+        guard let session = sleepSessions.first(where: { $0.id == sleepID }) else {
+            store.send(.sleepPlannerDeepLinkHandled(sleepID))
+            return
+        }
+
+        isEventEditorPresented = false
+        isEmotionLogEditorPresented = false
+        isNoteEditorPresented = false
+        selectedNoteID = nil
+        dayPlanUnplannedCompletedFilterDate = nil
+        macHomeDetailMode = .planner
+        store.send(.setSelectedTask(nil))
+        store.send(.macSidebarModeChanged(.routines))
+        dayPlanPlanner.focusSleepSession(session, calendar: calendar, context: modelContext)
+        store.send(.sleepPlannerDeepLinkHandled(sleepID))
     }
 
     func openTimelineInSidebar() {

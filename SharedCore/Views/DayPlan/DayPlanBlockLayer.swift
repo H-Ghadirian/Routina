@@ -3,6 +3,7 @@ import SwiftUI
 struct DayPlanBlockLayer: View {
     var dates: [Date]
     var selectedBlockID: DayPlanBlock.ID?
+    var focusedSleepSessionID: UUID?
     var calendar: Calendar
     var dayWidth: CGFloat
     var hourHeight: CGFloat
@@ -40,7 +41,7 @@ struct DayPlanBlockLayer: View {
                         block: block,
                         tint: .indigo,
                         style: .sleep,
-                        isSelected: false,
+                        isSelected: sleepBlock.sessionID == focusedSleepSessionID,
                         renderedHeight: blockHeight,
                         selectedDate: date,
                         calendar: calendar,
@@ -62,7 +63,7 @@ struct DayPlanBlockLayer: View {
                         x: timeColumnWidth + CGFloat(dayIndex) * dayWidth + 5,
                         y: yOffset(for: block.startMinute)
                     )
-                    .zIndex(0.5)
+                    .zIndex(sleepBlock.sessionID == focusedSleepSessionID ? 1.5 : 0.5)
                 }
 
                 ForEach(automaticTimelineBlocksForDate(date)) { activity in

@@ -210,6 +210,21 @@ struct AppFeatureTests {
     }
 
     @Test
+    func openDeepLink_sleepSelectsTimelineFallback() async {
+        let sleepID = UUID()
+        let store = TestStore(
+            initialState: AppFeature.State(selectedTab: .home)
+        ) {
+            AppFeature()
+        }
+
+        await store.send(.openDeepLink(.sleep(sleepID))) {
+            $0.hasRestoredTemporaryViewState = true
+            $0.selectedTab = .timeline
+        }
+    }
+
+    @Test
     func tabSelected_switchesToStatsTab() async {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()

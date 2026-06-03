@@ -5,6 +5,7 @@ enum RoutinaDeepLink: Equatable, Sendable {
     case goal(UUID)
     case note(UUID)
     case sprint(UUID)
+    case sleep(UUID)
 
     init?(url: URL) {
         guard
@@ -32,6 +33,11 @@ enum RoutinaDeepLink: Equatable, Sendable {
 
         if let sprintID = Self.targetID(for: "sprint", url: url, components: components) {
             self = .sprint(sprintID)
+            return
+        }
+
+        if let sleepID = Self.targetID(for: "sleep", url: url, components: components) {
+            self = .sleep(sleepID)
             return
         }
 
@@ -68,6 +74,8 @@ enum RoutinaDeepLink: Equatable, Sendable {
             return "note/\(noteID.uuidString)"
         case let .sprint(sprintID):
             return "sprint/\(sprintID.uuidString)"
+        case let .sleep(sleepID):
+            return "sleep/\(sleepID.uuidString)"
         }
     }
 

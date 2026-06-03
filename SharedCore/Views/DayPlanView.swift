@@ -526,6 +526,7 @@ private struct DayPlanTimelinePanelView: View {
                 selectedBlockID: planner.selectedBlockID,
                 selectedDate: planner.selectedDate,
                 focusedUnplannedCompletedDate: activeFocusedUnplannedCompletedDate,
+                focusedSleep: planner.focusedSleep,
                 calendar: calendar,
                 dropDurationMinutes: planner.durationMinutes,
                 showsUnplannedCompletedBadges: !showsTimelineTasksInDayPlanner,

@@ -279,7 +279,7 @@ Group {
     @MainActor
     private func openDeepLink(_ deepLink: RoutinaDeepLink) {
         switch deepLink {
-        case .task, .goal, .note:
+        case .task, .goal, .note, .sleep:
             presentedSprintFocusDeepLink = nil
         case let .sprint(sprintID):
             presentedSprintFocusDeepLink = SprintFocusDeepLinkPresentation(id: sprintID)
