@@ -92,6 +92,7 @@ struct HomeMacAdventureView: View {
             }
             .padding(24)
             .frame(maxWidth: 1100, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .background(adventureBackground)
         .navigationTitle("Adventure")
@@ -224,62 +225,22 @@ private struct HomeAdventureWorldSection: View {
         ZStack(alignment: .topLeading) {
             LinearGradient(
                 colors: [
-                    Color.black.opacity(world.isUnlocked ? 0.5 : 0.72),
-                    Color.black.opacity(world.isUnlocked ? 0.22 : 0.52),
-                    Color.black.opacity(world.isUnlocked ? 0.62 : 0.76)
+                    Color.black.opacity(world.isUnlocked ? 0.36 : 0.72),
+                    Color.black.opacity(world.isUnlocked ? 0.1 : 0.52),
+                    Color.black.opacity(world.isUnlocked ? 0.48 : 0.76)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
 
-            VStack(alignment: .leading, spacing: 16) {
-                HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: world.systemImage)
-                        .font(.title2.weight(.bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 44, height: 44)
-                        .background(accent, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            HomeAdventureWorldHeader(world: world, accent: accent)
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 8) {
-                            Text(world.title)
-                                .font(.headline)
-                                .foregroundStyle(.white)
-                            Text(world.isUnlocked ? "Open" : "Locked")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(world.isUnlocked ? .green : .white.opacity(0.72))
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(.ultraThinMaterial, in: Capsule())
-                        }
-                        Text(world.subtitle)
-                            .font(.caption)
-                            .foregroundStyle(.white.opacity(0.74))
-                    }
-
-                    Spacer()
-
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text("\(world.clearedStageCount)/\(world.stages.count)")
-                            .font(.headline.weight(.bold))
-                            .foregroundStyle(.white)
-                        Text("cleared")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.white.opacity(0.72))
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                }
-
-                VStack(spacing: 10) {
-                    ForEach(world.stages) { stage in
-                        HomeAdventureStagePathRow(stage: stage, accent: accent)
-                    }
-                }
-            }
-            .padding(16)
+            HomeAdventureWorldRoute(stages: world.stages, accent: accent)
+                .padding(.horizontal, 18)
+                .padding(.top, 66)
+                .padding(.bottom, 18)
         }
+        .frame(minHeight: 392)
         .background {
             HomeAdventureWorldArt(assetName: world.artAssetName, isUnlocked: world.isUnlocked)
         }
@@ -295,77 +256,180 @@ private struct HomeAdventureWorldSection: View {
     }
 }
 
-private struct HomeAdventureStagePathRow: View {
-    let stage: HomeAdventureStage
+private struct HomeAdventureWorldHeader: View {
+    let world: HomeAdventureWorld
     let accent: Color
 
     var body: some View {
-        HStack {
-            if stage.number.isMultiple(of: 2) {
-                Spacer(minLength: 80)
-            }
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: world.systemImage)
+                .font(.title2.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+                .background(accent, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
-            HomeAdventureStageCard(stage: stage, accent: accent)
-                .frame(maxWidth: 480)
-
-            if !stage.number.isMultiple(of: 2) {
-                Spacer(minLength: 80)
-            }
-        }
-    }
-}
-
-private struct HomeAdventureStageCard: View {
-    let stage: HomeAdventureStage
-    let accent: Color
-
-    var body: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(stageFill)
-                Image(systemName: stageIcon)
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(stage.status == .locked ? Color.secondary : Color.white)
-            }
-            .frame(width: 48, height: 48)
-
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
-                    Text("\(stage.number). \(stage.title)")
-                        .font(.subheadline.weight(.semibold))
-                    stars
+                    Text(world.title)
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                    Text(world.isUnlocked ? "Open" : "Locked")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(world.isUnlocked ? .green : .white.opacity(0.72))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(.ultraThinMaterial, in: Capsule())
                 }
-                Text(stage.subtitle)
+                Text(world.subtitle)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(stage.requirementText)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.white.opacity(0.74))
             }
 
             Spacer()
+
+            VStack(alignment: .trailing, spacing: 4) {
+                Text("\(world.clearedStageCount)/\(world.stages.count)")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.white)
+                Text("cleared")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.72))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
-        .padding(12)
-        .background {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(.thinMaterial)
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(stageBackground)
+        .padding(16)
+    }
+}
+
+private struct HomeAdventureWorldRoute: View {
+    let stages: [HomeAdventureStage]
+    let accent: Color
+
+    private let positions = [
+        CGPoint(x: 0.12, y: 0.76),
+        CGPoint(x: 0.34, y: 0.58),
+        CGPoint(x: 0.22, y: 0.36),
+        CGPoint(x: 0.54, y: 0.28),
+        CGPoint(x: 0.42, y: 0.12),
+        CGPoint(x: 0.8, y: 0.22)
+    ]
+
+    var body: some View {
+        GeometryReader { geometry in
+            let stagePoints = stages.indices.map { index in
+                routePoint(at: index, in: geometry.size)
+            }
+
+            Path { path in
+                guard let first = stagePoints.first else { return }
+                path.move(to: first)
+                for point in stagePoints.dropFirst() {
+                    path.addLine(to: point)
+                }
+            }
+            .stroke(Color.white.opacity(0.28), style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round, dash: [10, 9]))
+
+            Path { path in
+                guard let first = stagePoints.first else { return }
+                path.move(to: first)
+                for point in stagePoints.dropFirst() {
+                    path.addLine(to: point)
+                }
+            }
+            .stroke(accent.opacity(0.48), style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+
+            ForEach(Array(stages.enumerated()), id: \.element.id) { index, stage in
+                HomeAdventureStagePin(stage: stage, accent: accent)
+                    .position(stagePoints[index])
+            }
         }
-        .overlay {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(stage.status == .available ? accent.opacity(0.35) : Color.white.opacity(0.1), lineWidth: 1)
+        .frame(height: 280)
+    }
+
+    private func routePoint(at index: Int, in size: CGSize) -> CGPoint {
+        let position = positions[index % positions.count]
+        return CGPoint(
+            x: position.x * size.width,
+            y: position.y * size.height
+        )
+    }
+}
+
+private struct HomeAdventureStagePin: View {
+    let stage: HomeAdventureStage
+    let accent: Color
+
+    var body: some View {
+        VStack(spacing: 7) {
+            ZStack {
+                Circle()
+                    .fill(nodeFill)
+                    .shadow(color: nodeGlow, radius: stage.status == .available ? 18 : 8)
+
+                Circle()
+                    .strokeBorder(Color.white.opacity(0.78), lineWidth: 2)
+
+                Image(systemName: stageIcon)
+                    .font(.system(size: 22, weight: .heavy))
+                    .foregroundStyle(stage.status == .locked ? Color.white.opacity(0.56) : Color.white)
+            }
+            .frame(width: 58, height: 58)
+
+            VStack(spacing: 3) {
+                HStack(spacing: 4) {
+                    Text("\(stage.number)")
+                        .font(.caption2.weight(.black))
+                        .foregroundStyle(.white.opacity(0.72))
+                    Text(stage.title)
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                    stars
+                }
+
+                Text(stage.status == .locked ? "\(stage.requiredCoins.formatted()) coins" : stageStatusText)
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.72))
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .frame(width: 156)
+            .background {
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                Capsule()
+                    .fill(nodePlateFill)
+            }
+            .overlay {
+                Capsule()
+                    .stroke(Color.white.opacity(0.14), lineWidth: 1)
+            }
         }
+        .frame(width: 166, height: 110)
+        .help("\(stage.subtitle)\n\(stage.requirementText)")
     }
 
     private var stars: some View {
-        HStack(spacing: 1) {
+        HStack(spacing: 0) {
             ForEach(0..<3, id: \.self) { index in
                 Image(systemName: index < stage.stars ? "star.fill" : "star")
-                    .font(.caption2)
-                    .foregroundStyle(index < stage.stars ? Color.yellow : Color.secondary.opacity(0.45))
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(index < stage.stars ? Color.yellow : Color.white.opacity(0.35))
             }
+        }
+    }
+
+    private var stageStatusText: String {
+        switch stage.status {
+        case .locked:
+            return "\(stage.requiredCoins.formatted()) coins"
+        case .available:
+            return "next route"
+        case .cleared:
+            return "cleared"
         }
     }
 
@@ -380,10 +444,10 @@ private struct HomeAdventureStageCard: View {
         }
     }
 
-    private var stageFill: Color {
+    private var nodeFill: Color {
         switch stage.status {
         case .locked:
-            return Color.secondary.opacity(0.16)
+            return Color.black.opacity(0.42)
         case .available:
             return accent
         case .cleared:
@@ -391,14 +455,25 @@ private struct HomeAdventureStageCard: View {
         }
     }
 
-    private var stageBackground: Color {
+    private var nodePlateFill: Color {
         switch stage.status {
         case .locked:
-            return Color.secondary.opacity(0.06)
+            return Color.black.opacity(0.18)
         case .available:
-            return accent.opacity(0.14)
+            return accent.opacity(0.22)
         case .cleared:
-            return Color.green.opacity(0.12)
+            return Color.green.opacity(0.2)
+        }
+    }
+
+    private var nodeGlow: Color {
+        switch stage.status {
+        case .locked:
+            return Color.black.opacity(0.1)
+        case .available:
+            return accent.opacity(0.48)
+        case .cleared:
+            return Color.green.opacity(0.34)
         }
     }
 }
