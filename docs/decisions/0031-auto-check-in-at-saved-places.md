@@ -10,7 +10,7 @@ Accepted
 
 ## Supersedes
 
-[0026: Require an Explicit Saved-Place Check-In Action](0026-require-explicit-saved-place-check-in-action.md)
+[0026: Require an Explicit Saved-Place Check-In Action](superseded/0026-require-explicit-saved-place-check-in-action.md)
 
 ## Context
 

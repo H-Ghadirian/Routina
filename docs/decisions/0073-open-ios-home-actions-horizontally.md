@@ -8,7 +8,7 @@ Accepted
 
 2026-05-26
 
-Supersedes [0054](0054-open-ios-home-top-actions-vertically.md) and updates [0055](0055-move-ios-home-place-and-sleep-into-action-rail.md).
+Supersedes [0054](superseded/0054-open-ios-home-top-actions-vertically.md) and updates [0055](0055-move-ios-home-place-and-sleep-into-action-rail.md).
 
 ## Context
 

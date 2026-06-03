@@ -1,6 +1,6 @@
 # 0090: Support Manual All-Day Tasks in the Planner
 
-- Status: Superseded by [0093](0093-support-all-day-routines.md)
+- Status: Superseded by [0093](../0093-support-all-day-routines.md)
 - Date: 2026-05-28
 - Supersedes: [0086](0086-show-all-day-calendar-events-in-planner.md)
 

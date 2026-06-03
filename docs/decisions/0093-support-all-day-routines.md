@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-05-28
-- Supersedes: [0090](0090-support-manual-all-day-tasks.md)
+- Supersedes: [0090](superseded/0090-support-manual-all-day-tasks.md)
 
 ## Context
 

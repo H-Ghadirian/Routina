@@ -10,7 +10,7 @@ Accepted
 
 ## Supersedes
 
-- [0059: Use a Mac Home Sidebar Add Menu](0059-use-mac-home-sidebar-add-menu.md)
+- [0059: Use a Mac Home Sidebar Add Menu](superseded/0059-use-mac-home-sidebar-add-menu.md)
 - The Timeline-only media-filter exclusions in [0049](0049-filter-tasks-and-done-items-by-media.md) and [0053](0053-record-task-voice-notes.md)
 
 ## Context

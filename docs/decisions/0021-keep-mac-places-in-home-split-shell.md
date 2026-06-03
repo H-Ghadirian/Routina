@@ -10,7 +10,7 @@ Accepted
 
 ## Supersedes
 
-[0020: Show Mac Places as a Workspace](0020-show-mac-places-as-workspace.md)
+[0020: Show Mac Places as a Workspace](superseded/0020-show-mac-places-as-workspace.md)
 
 ## Context
 

@@ -8,7 +8,7 @@ Accepted
 
 2026-05-25
 
-Supersedes the bottom floating action placement from [0052](0052-use-compact-ios-home-actions.md) and updates the rail contents from [0054](0054-open-ios-home-top-actions-vertically.md).
+Supersedes the bottom floating action placement from [0052](superseded/0052-use-compact-ios-home-actions.md) and updates the rail contents from [0054](superseded/0054-open-ios-home-top-actions-vertically.md).
 
 ## Context
 

@@ -3,7 +3,7 @@
 - Status: Superseded
 - Date: 2026-05-30
 - Supersedes: [0102](0102-create-planner-blocks-when-task-focus-starts.md)
-- Superseded by: [0105](0105-remove-abandoned-focus-blocks-from-planner.md)
+- Superseded by: [0105](../0105-remove-abandoned-focus-blocks-from-planner.md)
 
 ## Context
 

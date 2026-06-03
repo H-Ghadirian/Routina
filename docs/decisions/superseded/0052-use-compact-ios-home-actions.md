@@ -8,9 +8,9 @@ Superseded
 
 2026-05-25
 
-Superseded by [0055](0055-move-ios-home-place-and-sleep-into-action-rail.md).
+Superseded by [0055](../0055-move-ios-home-place-and-sleep-into-action-rail.md).
 
-Supersedes the iPhone bottom-dock expectation in [0039](0039-move-mac-check-in-to-home-toolbar.md) and updates the iOS Home sleep dock presentation from [0012](0012-model-sleep-as-app-level-session-mode.md).
+Supersedes the iPhone bottom-dock expectation in [0039](../0039-move-mac-check-in-to-home-toolbar.md) and updates the iOS Home sleep dock presentation from [0012](../0012-model-sleep-as-app-level-session-mode.md).
 
 ## Context
 

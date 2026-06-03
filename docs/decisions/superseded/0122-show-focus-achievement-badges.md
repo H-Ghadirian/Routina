@@ -6,7 +6,7 @@ Superseded
 
 ## Superseded By
 
-[0131](0131-show-general-achievement-badges.md)
+[0131](../0131-show-general-achievement-badges.md)
 
 ## Date
 

@@ -10,11 +10,11 @@ Accepted
 
 ## Supersedes
 
-[0132](0132-categorize-achievement-badges.md)
+[0132](superseded/0132-categorize-achievement-badges.md)
 
 ## Context
 
-[0132](0132-categorize-achievement-badges.md) separated achievement badges into In Progress and Achieved groups inside one Achievements view. As the badge list grew, showing both groups together made the section long and made recent unlocks harder to inspect. Users also want to look at badges achieved during familiar periods such as today, this week, this month, and this year.
+[0132](superseded/0132-categorize-achievement-badges.md) separated achievement badges into In Progress and Achieved groups inside one Achievements view. As the badge list grew, showing both groups together made the section long and made recent unlocks harder to inspect. Users also want to look at badges achieved during familiar periods such as today, this week, this month, and this year.
 
 ## Decision
 

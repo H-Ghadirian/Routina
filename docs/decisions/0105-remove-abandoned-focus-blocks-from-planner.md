@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-05-30
-- Supersedes: [0103](0103-record-count-up-focus-blocks-at-elapsed-duration.md)
+- Supersedes: [0103](superseded/0103-record-count-up-focus-blocks-at-elapsed-duration.md)
 
 ## Context
 

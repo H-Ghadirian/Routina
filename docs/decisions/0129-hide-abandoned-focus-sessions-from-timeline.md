@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-06-01
-- Supersedes: [0126](0126-show-focus-sessions-in-timeline.md)
+- Supersedes: [0126](superseded/0126-show-focus-sessions-in-timeline.md)
 
 ## Context
 

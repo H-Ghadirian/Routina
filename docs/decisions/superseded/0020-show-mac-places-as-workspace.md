@@ -14,7 +14,7 @@ Superseded
 
 ## Superseded By
 
-[0021: Keep Mac Places in the Home Split Shell](0021-keep-mac-places-in-home-split-shell.md)
+[0021: Keep Mac Places in the Home Split Shell](../0021-keep-mac-places-in-home-split-shell.md)
 
 ## Context
 

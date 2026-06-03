@@ -6,7 +6,7 @@ Superseded
 
 ## Superseded By
 
-[0146](0146-tab-achievement-status-and-periods.md)
+[0146](../0146-tab-achievement-status-and-periods.md)
 
 ## Date
 
@@ -14,7 +14,7 @@ Superseded
 
 ## Context
 
-[0131](0131-show-general-achievement-badges.md) broadened Stats achievements beyond focus. A single mixed badge grid makes it harder to scan progress once focus, sleep, away, and done milestones live together.
+[0131](../0131-show-general-achievement-badges.md) broadened Stats achievements beyond focus. A single mixed badge grid makes it harder to scan progress once focus, sleep, away, and done milestones live together.
 
 ## Decision
 

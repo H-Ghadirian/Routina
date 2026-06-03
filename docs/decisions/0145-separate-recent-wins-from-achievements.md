@@ -10,11 +10,11 @@ Accepted
 
 ## Supersedes
 
-[0141](0141-show-achievement-period-celebrations.md)
+[0141](superseded/0141-show-achievement-period-celebrations.md)
 
 ## Context
 
-[0141](0141-show-achievement-period-celebrations.md) placed Recent Wins inside the Achievements section before all-time badge progress. That kept celebrations near badges, but it made the Achievements surface mix two different jobs: recent period summaries and long-term badge progress. Once Stats gained more top-level scopes, Recent Wins could stand on its own without crowding the badge category picker.
+[0141](superseded/0141-show-achievement-period-celebrations.md) placed Recent Wins inside the Achievements section before all-time badge progress. That kept celebrations near badges, but it made the Achievements surface mix two different jobs: recent period summaries and long-term badge progress. Once Stats gained more top-level scopes, Recent Wins could stand on its own without crowding the badge category picker.
 
 ## Decision
 

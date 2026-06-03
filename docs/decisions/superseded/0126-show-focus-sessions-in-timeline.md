@@ -2,7 +2,7 @@
 
 - Status: Superseded
 - Date: 2026-06-01
-- Superseded by: [0129](0129-hide-abandoned-focus-sessions-from-timeline.md)
+- Superseded by: [0129](../0129-hide-abandoned-focus-sessions-from-timeline.md)
 
 ## Context
 

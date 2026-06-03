@@ -10,7 +10,7 @@ Accepted
 
 ## Supersedes
 
-- [0066: Include Check In in the Mac Add Menu](0066-include-check-in-in-mac-add-menu.md)
+- [0066: Include Check In in the Mac Add Menu](superseded/0066-include-check-in-in-mac-add-menu.md)
 - The sleep-button placement portion of [0039: Move Mac Check-In to the Home Toolbar](0039-move-mac-check-in-to-home-toolbar.md)
 
 ## Context
