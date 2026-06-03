@@ -16,13 +16,16 @@ struct RoutineNoteEditorView: View {
     @Query private var goals: [RoutineGoal]
     @Query(sort: \RoutineNote.createdAt, order: .reverse) private var existingNotes: [RoutineNote]
 
-    @State private var title = ""
-    @State private var bodyText = ""
-    @State private var tags: [String] = []
+    let note: RoutineNote?
+    private let initialAttachments: [RoutineNoteAttachment]
+
+    @State private var title: String
+    @State private var bodyText: String
+    @State private var tags: [String]
     @State private var tagDraft = ""
     @State private var imageData: Data?
     @State private var voiceNote: RoutineVoiceNote?
-    @State private var attachments: [AttachmentItem] = []
+    @State private var attachments: [AttachmentItem]
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var isImageImporterPresented = false
     @State private var isFileImporterPresented = false
@@ -32,17 +35,29 @@ struct RoutineNoteEditorView: View {
     let onSaved: ((UUID) -> Void)?
 
     init(
+        note: RoutineNote? = nil,
+        attachments: [RoutineNoteAttachment] = [],
         onCancel: (() -> Void)? = nil,
         onSaved: ((UUID) -> Void)? = nil
     ) {
+        self.note = note
+        self.initialAttachments = attachments
         self.onCancel = onCancel
         self.onSaved = onSaved
+        _title = State(initialValue: note?.title ?? "")
+        _bodyText = State(initialValue: note?.body ?? "")
+        _tags = State(initialValue: note?.tags ?? [])
+        _imageData = State(initialValue: note?.imageData)
+        _voiceNote = State(initialValue: note?.voiceNote)
+        _attachments = State(initialValue: attachments.sorted { $0.createdAt < $1.createdAt }.map {
+            AttachmentItem(id: $0.id, fileName: $0.fileName, data: $0.data)
+        })
     }
 
     var body: some View {
         NavigationStack {
             editorContent
-            .navigationTitle("New Note")
+            .navigationTitle(editorTitle)
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -83,6 +98,10 @@ struct RoutineNoteEditorView: View {
         #if os(macOS)
         .frame(minWidth: 460, minHeight: 620)
         #endif
+    }
+
+    private var editorTitle: String {
+        note == nil ? "New Note" : "Edit Note"
     }
 
     @ViewBuilder
@@ -184,7 +203,7 @@ struct RoutineNoteEditorView: View {
             }
             .frame(width: 48, height: 48)
 
-            Text("New Note")
+            Text(editorTitle)
                 .font(.largeTitle.weight(.semibold))
                 .lineLimit(1)
 
@@ -575,36 +594,54 @@ struct RoutineNoteEditorView: View {
     private func save() {
         guard hasContent else { return }
         let now = Date()
-        let note = RoutineNote(
-            title: title,
-            body: bodyText,
-            tags: tags,
-            imageData: imageData,
-            voiceNoteData: voiceNote?.data,
-            voiceNoteDurationSeconds: voiceNote?.durationSeconds,
-            voiceNoteCreatedAt: voiceNote?.createdAt,
-            createdAt: now,
-            updatedAt: now
-        )
-        modelContext.insert(note)
+        let target = note ?? RoutineNote(createdAt: now, updatedAt: now)
+        target.title = RoutineNote.cleanedText(title)
+        target.body = RoutineNote.cleanedText(bodyText)
+        target.tags = tags
+        target.imageData = imageData?.isEmpty == false ? imageData : nil
+        target.voiceNote = voiceNote
+        if target.createdAt == nil {
+            target.createdAt = now
+        }
+        target.updatedAt = now
+
+        if note == nil {
+            modelContext.insert(target)
+        }
+        syncAttachments(for: target, savedAt: now)
+
+        do {
+            try modelContext.save()
+            onSaved?(target.id)
+            dismiss()
+        } catch {
+            errorText = "Could not save the note."
+        }
+    }
+
+    private func syncAttachments(for note: RoutineNote, savedAt now: Date) {
+        let existingAttachments = initialAttachments.filter { $0.noteID == note.id }
+        let existingByID = Dictionary(uniqueKeysWithValues: existingAttachments.map { ($0.id, $0) })
+        let draftIDs = Set(attachments.map(\.id))
+
+        for existingAttachment in existingAttachments where !draftIDs.contains(existingAttachment.id) {
+            modelContext.delete(existingAttachment)
+        }
+
         for attachment in attachments {
-            modelContext.insert(
-                RoutineNoteAttachment(
+            if let existingAttachment = existingByID[attachment.id] {
+                existingAttachment.noteID = note.id
+                existingAttachment.fileName = RoutineNoteAttachment.cleanedFileName(attachment.fileName)
+                existingAttachment.data = attachment.data
+            } else {
+                modelContext.insert(RoutineNoteAttachment(
                     id: attachment.id,
                     noteID: note.id,
                     fileName: attachment.fileName,
                     data: attachment.data,
                     createdAt: now
-                )
-            )
-        }
-
-        do {
-            try modelContext.save()
-            onSaved?(note.id)
-            dismiss()
-        } catch {
-            errorText = "Could not save the note."
+                ))
+            }
         }
     }
 
@@ -873,6 +910,7 @@ struct RoutinaFormattedText: View {
 struct RoutineNoteDetailView: View {
     let note: RoutineNote
     let attachments: [RoutineNoteAttachment]
+    @State private var isEditing = false
 
     var body: some View {
         ScrollView {
@@ -956,12 +994,24 @@ struct RoutineNoteDetailView: View {
         }
         .navigationTitle(note.displayTitle)
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button {
+                    isEditing = true
+                } label: {
+                    Label("Edit Note", systemImage: "pencil")
+                }
+
                 RoutinaDeepLinkShareMenu(
                     title: note.displayTitle,
                     deepLink: .note(note.id)
                 )
             }
+        }
+        .sheet(isPresented: $isEditing) {
+            RoutineNoteEditorView(note: note, attachments: attachments)
+        }
+        .onChange(of: note.id) { _, _ in
+            isEditing = false
         }
     }
 
@@ -971,9 +1021,15 @@ struct RoutineNoteDetailView: View {
                 .font(.largeTitle.weight(.semibold))
                 .lineLimit(3)
 
-            Text((note.createdAt ?? Date()).formatted(date: .abbreviated, time: .shortened))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text((note.createdAt ?? Date()).formatted(date: .abbreviated, time: .shortened))
+
+                if let editedDateText {
+                    Text(editedDateText)
+                }
+            }
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
 
             if let mediaSummary = RoutineNoteMediaSummary.text(
                 hasImage: note.hasImage,
@@ -985,6 +1041,15 @@ struct RoutineNoteDetailView: View {
                     .foregroundStyle(.secondary)
             }
         }
+    }
+
+    private var editedDateText: String? {
+        guard let updatedAt = note.updatedAt else { return nil }
+        if let createdAt = note.createdAt,
+           updatedAt.timeIntervalSince(createdAt) < 1 {
+            return nil
+        }
+        return RoutineNoteDateFormatting.editedText(for: updatedAt)
     }
 }
 
@@ -1017,6 +1082,12 @@ struct RoutineNoteImagePreview: View {
         #else
         return nil
         #endif
+    }
+}
+
+enum RoutineNoteDateFormatting {
+    static func editedText(for date: Date) -> String {
+        "Edited \(date.formatted(.dateTime.day().month(.wide).year().locale(Locale(identifier: "en_GB"))))"
     }
 }
 
