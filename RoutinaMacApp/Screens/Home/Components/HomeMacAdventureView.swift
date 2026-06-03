@@ -33,7 +33,7 @@ struct HomeMacAdventureSidebarView: View {
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                 if let stage = progression.currentStage {
-                    HomeAdventureSidebarStageCard(title: "Current Stage", stage: stage)
+                    HomeAdventureSidebarStageCard(title: "You Are Here", stage: stage)
                 }
 
                 if let stage = progression.nextLockedStage {
@@ -87,12 +87,13 @@ struct HomeMacAdventureView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 hero
+                HomeAdventureGuideStrip(progression: progression)
                 worldsSection
                 itemsSection
             }
             .padding(24)
             .frame(maxWidth: 1100, alignment: .leading)
-            .frame(maxWidth: .infinity, alignment: .topLeading)
+            .frame(maxWidth: .infinity, alignment: .top)
         }
         .background(adventureBackground)
         .navigationTitle("Adventure")
@@ -187,7 +188,11 @@ struct HomeMacAdventureView: View {
                 .font(.title3.weight(.bold))
 
             ForEach(progression.worlds) { world in
-                HomeAdventureWorldSection(world: world)
+                HomeAdventureWorldSection(
+                    world: world,
+                    currentStageID: progression.currentStage?.id,
+                    nextLockedStageID: progression.nextLockedStage?.id
+                )
             }
         }
     }
@@ -220,6 +225,8 @@ struct HomeMacAdventureView: View {
 
 private struct HomeAdventureWorldSection: View {
     let world: HomeAdventureWorld
+    let currentStageID: String?
+    let nextLockedStageID: String?
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -235,7 +242,12 @@ private struct HomeAdventureWorldSection: View {
 
             HomeAdventureWorldHeader(world: world, accent: accent)
 
-            HomeAdventureWorldRoute(stages: world.stages, accent: accent)
+            HomeAdventureWorldRoute(
+                stages: world.stages,
+                accent: accent,
+                currentStageID: currentStageID,
+                nextLockedStageID: nextLockedStageID
+            )
                 .padding(.horizontal, 18)
                 .padding(.top, 66)
                 .padding(.bottom, 18)
@@ -303,9 +315,159 @@ private struct HomeAdventureWorldHeader: View {
     }
 }
 
+private struct HomeAdventureGuideStrip: View {
+    let progression: HomeAdventureProgression
+
+    var body: some View {
+        HStack(spacing: 10) {
+            HomeAdventureGuideCard(
+                title: "You are here",
+                value: currentStageText,
+                detail: currentStageDetail,
+                systemImage: "location.fill",
+                tint: .yellow
+            )
+
+            HomeAdventureGuideCard(
+                title: "Next unlock",
+                value: nextStageText,
+                detail: nextStageDetail,
+                systemImage: "lock.open.fill",
+                tint: .orange
+            )
+
+            HomeAdventureGuideCard(
+                title: "Path",
+                value: "Linear 1 -> 30",
+                detail: "Each stage leads to the next numbered stage.",
+                systemImage: "arrow.right.circle.fill",
+                tint: .green
+            )
+
+            HomeAdventureGuideCard(
+                title: "Stage stars",
+                value: "Coins + actions + days",
+                detail: "Each star is one met requirement.",
+                systemImage: "star.fill",
+                tint: .purple
+            )
+        }
+    }
+
+    private var currentStageText: String {
+        guard let stage = progression.currentStage else { return "Before Stage 1" }
+        return "Stage \(stage.number): \(stage.title)"
+    }
+
+    private var currentStageDetail: String {
+        guard let stage = progression.currentStage else { return "Earn coins to open the first route." }
+        switch stage.status {
+        case .locked:
+            return "Earn coins to open this gate."
+        case .available:
+            return "\(stage.stars)/3 stars earned."
+        case .cleared:
+            return "Last cleared stage."
+        }
+    }
+
+    private var nextStageText: String {
+        guard let stage = progression.nextLockedStage else { return "Season complete" }
+        return "Stage \(stage.number): \(stage.title)"
+    }
+
+    private var nextStageDetail: String {
+        guard let stage = progression.nextLockedStage else { return "All Adventure stages are cleared." }
+        let missing = missingRequirements(for: stage)
+        guard !missing.isEmpty else { return "Ready when the path reaches it." }
+        return "Need \(missing.joined(separator: ", "))."
+    }
+
+    private func missingRequirements(for stage: HomeAdventureStage) -> [String] {
+        var missing: [String] = []
+        if progression.totalCoins < stage.requiredCoins {
+            missing.append("\((stage.requiredCoins - progression.totalCoins).formatted()) coins")
+        }
+        if progression.actionCount < stage.requiredActions {
+            missing.append("\((stage.requiredActions - progression.actionCount).formatted()) actions")
+        }
+        if progression.activeDayCount < stage.requiredActiveDays {
+            missing.append("\((stage.requiredActiveDays - progression.activeDayCount).formatted()) active days")
+        }
+        return missing
+    }
+}
+
+private struct HomeAdventureGuideCard: View {
+    let title: String
+    let value: String
+    let detail: String
+    let systemImage: String
+    let tint: Color
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: systemImage)
+                .font(.callout.weight(.bold))
+                .foregroundStyle(tint)
+                .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.secondary)
+                Text(value)
+                    .font(.caption.weight(.semibold))
+                    .lineLimit(1)
+                Text(detail)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
+
+private enum HomeAdventureStagePinRole: Equatable {
+    case current
+    case next
+    case regular
+
+    var badgeTitle: String? {
+        switch self {
+        case .current:
+            return "YOU ARE HERE"
+        case .next:
+            return "NEXT UNLOCK"
+        case .regular:
+            return nil
+        }
+    }
+
+    var badgeTint: Color {
+        switch self {
+        case .current:
+            return .yellow
+        case .next:
+            return .orange
+        case .regular:
+            return .secondary
+        }
+    }
+
+    var isHighlighted: Bool {
+        self != .regular
+    }
+}
+
 private struct HomeAdventureWorldRoute: View {
     let stages: [HomeAdventureStage]
     let accent: Color
+    let currentStageID: String?
+    let nextLockedStageID: String?
 
     private let positions = [
         CGPoint(x: 0.12, y: 0.76),
@@ -322,26 +484,16 @@ private struct HomeAdventureWorldRoute: View {
                 routePoint(at: index, in: geometry.size)
             }
 
-            Path { path in
-                guard let first = stagePoints.first else { return }
-                path.move(to: first)
-                for point in stagePoints.dropFirst() {
-                    path.addLine(to: point)
+            ForEach(Array(stages.indices.dropLast()), id: \.self) { index in
+                Path { path in
+                    path.move(to: stagePoints[index])
+                    path.addLine(to: stagePoints[index + 1])
                 }
+                .stroke(segmentColor(at: index), style: segmentStroke(at: index))
             }
-            .stroke(Color.white.opacity(0.28), style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round, dash: [10, 9]))
-
-            Path { path in
-                guard let first = stagePoints.first else { return }
-                path.move(to: first)
-                for point in stagePoints.dropFirst() {
-                    path.addLine(to: point)
-                }
-            }
-            .stroke(accent.opacity(0.48), style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
 
             ForEach(Array(stages.enumerated()), id: \.element.id) { index, stage in
-                HomeAdventureStagePin(stage: stage, accent: accent)
+                HomeAdventureStagePin(stage: stage, accent: accent, role: pinRole(for: stage))
                     .position(stagePoints[index])
             }
         }
@@ -355,21 +507,66 @@ private struct HomeAdventureWorldRoute: View {
             y: position.y * size.height
         )
     }
+
+    private func pinRole(for stage: HomeAdventureStage) -> HomeAdventureStagePinRole {
+        if stage.id == currentStageID {
+            return .current
+        }
+        if stage.id == nextLockedStageID {
+            return .next
+        }
+        return .regular
+    }
+
+    private func segmentColor(at index: Int) -> Color {
+        let fromStage = stages[index]
+        let toStage = stages[index + 1]
+        if fromStage.status == .cleared && toStage.status == .cleared {
+            return .green.opacity(0.72)
+        }
+        if fromStage.status != .locked || toStage.status != .locked {
+            return accent.opacity(0.64)
+        }
+        return Color.white.opacity(0.32)
+    }
+
+    private func segmentStroke(at index: Int) -> StrokeStyle {
+        let fromStage = stages[index]
+        let toStage = stages[index + 1]
+        let isCompleted = fromStage.status == .cleared && toStage.status == .cleared
+        return StrokeStyle(
+            lineWidth: isCompleted ? 5 : 4,
+            lineCap: .round,
+            lineJoin: .round,
+            dash: isCompleted ? [] : [9, 8]
+        )
+    }
 }
 
 private struct HomeAdventureStagePin: View {
     let stage: HomeAdventureStage
     let accent: Color
+    let role: HomeAdventureStagePinRole
 
     var body: some View {
-        VStack(spacing: 7) {
+        VStack(spacing: 6) {
+            if let badgeTitle = role.badgeTitle {
+                Text(badgeTitle)
+                    .font(.system(size: 8, weight: .black))
+                    .foregroundStyle(role == .current ? Color.black : Color.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(role.badgeTint, in: Capsule())
+                    .shadow(color: role.badgeTint.opacity(0.35), radius: 8)
+            }
+
             ZStack {
                 Circle()
                     .fill(nodeFill)
-                    .shadow(color: nodeGlow, radius: stage.status == .available ? 18 : 8)
+                    .shadow(color: nodeGlow, radius: role.isHighlighted || stage.status == .available ? 18 : 8)
 
                 Circle()
-                    .strokeBorder(Color.white.opacity(0.78), lineWidth: 2)
+                    .strokeBorder(nodeStroke, lineWidth: role.isHighlighted ? 4 : 2)
 
                 Image(systemName: stageIcon)
                     .font(.system(size: 22, weight: .heavy))
@@ -386,10 +583,10 @@ private struct HomeAdventureStagePin: View {
                         .font(.caption2.weight(.bold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
-                    stars
+                    HomeAdventureStageRequirementMarks(stage: stage)
                 }
 
-                Text(stage.status == .locked ? "\(stage.requiredCoins.formatted()) coins" : stageStatusText)
+                Text(stageProgressText)
                     .font(.system(size: 9, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.72))
                     .lineLimit(1)
@@ -408,28 +605,19 @@ private struct HomeAdventureStagePin: View {
                     .stroke(Color.white.opacity(0.14), lineWidth: 1)
             }
         }
-        .frame(width: 166, height: 110)
+        .frame(width: 166, height: 126)
         .help("\(stage.subtitle)\n\(stage.requirementText)")
     }
 
-    private var stars: some View {
-        HStack(spacing: 0) {
-            ForEach(0..<3, id: \.self) { index in
-                Image(systemName: index < stage.stars ? "star.fill" : "star")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(index < stage.stars ? Color.yellow : Color.white.opacity(0.35))
-            }
-        }
-    }
-
-    private var stageStatusText: String {
+    private var stageProgressText: String {
+        let starText = "\(stage.stars)/3 stars"
         switch stage.status {
         case .locked:
-            return "\(stage.requiredCoins.formatted()) coins"
+            return "\(starText) | \(stage.requiredCoins.formatted()) coins"
         case .available:
-            return "next route"
+            return "\(starText) | finish requirements"
         case .cleared:
-            return "cleared"
+            return "\(starText) | cleared"
         }
     }
 
@@ -441,6 +629,17 @@ private struct HomeAdventureStagePin: View {
             return "play.fill"
         case .cleared:
             return "checkmark"
+        }
+    }
+
+    private var nodeStroke: Color {
+        switch role {
+        case .current:
+            return .yellow
+        case .next:
+            return .orange
+        case .regular:
+            return Color.white.opacity(0.78)
         }
     }
 
@@ -467,6 +666,12 @@ private struct HomeAdventureStagePin: View {
     }
 
     private var nodeGlow: Color {
+        if role == .current {
+            return Color.yellow.opacity(0.55)
+        }
+        if role == .next {
+            return Color.orange.opacity(0.52)
+        }
         switch stage.status {
         case .locked:
             return Color.black.opacity(0.1)
@@ -475,6 +680,25 @@ private struct HomeAdventureStagePin: View {
         case .cleared:
             return Color.green.opacity(0.34)
         }
+    }
+}
+
+private struct HomeAdventureStageRequirementMarks: View {
+    let stage: HomeAdventureStage
+
+    var body: some View {
+        HStack(spacing: 2) {
+            requirementMark(systemImage: "circle.hexagongrid.fill", isEarned: stage.coinStarEarned, tint: .yellow)
+            requirementMark(systemImage: "bolt.fill", isEarned: stage.actionStarEarned, tint: .orange)
+            requirementMark(systemImage: "calendar", isEarned: stage.activeDayStarEarned, tint: .cyan)
+        }
+    }
+
+    private func requirementMark(systemImage: String, isEarned: Bool, tint: Color) -> some View {
+        Image(systemName: systemImage)
+            .font(.system(size: 8, weight: .bold))
+            .foregroundStyle(isEarned ? tint : Color.white.opacity(0.32))
+            .frame(width: 10, height: 10)
     }
 }
 

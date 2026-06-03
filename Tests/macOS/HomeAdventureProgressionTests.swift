@@ -153,6 +153,10 @@ struct HomeAdventureProgressionTests {
         #expect(progression.completedStageCount == 12)
         #expect(progression.worlds.flatMap(\.stages).count == 30)
         #expect(progression.nextLockedStage?.number == 13)
+        #expect(progression.nextLockedStage?.coinStarEarned == false)
+        #expect(progression.nextLockedStage?.actionStarEarned == true)
+        #expect(progression.nextLockedStage?.activeDayStarEarned == true)
+        #expect(progression.nextLockedStage?.stars == 2)
         #expect(progression.unlockedItemCount == 5)
     }
 }

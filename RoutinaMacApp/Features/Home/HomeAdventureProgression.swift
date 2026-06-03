@@ -81,8 +81,18 @@ struct HomeAdventureStage: Identifiable, Equatable {
     let requiredActions: Int
     let requiredActiveDays: Int
     let rewardCoins: Int
-    var stars: Int
+    let coinStarEarned: Bool
+    let actionStarEarned: Bool
+    let activeDayStarEarned: Bool
     var status: Status
+
+    var stars: Int {
+        [
+            coinStarEarned,
+            actionStarEarned,
+            activeDayStarEarned
+        ].filter(\.self).count
+    }
 
     var requirementText: String {
         let coinText = "\(requiredCoins.formatted()) coins"
@@ -223,15 +233,13 @@ enum HomeAdventureProgressionBuilder {
         actionCount: Int,
         activeDayCount: Int
     ) -> HomeAdventureStage {
-        let stars = [
-            totalCoins >= stage.requiredCoins,
-            actionCount >= stage.requiredActions,
-            activeDayCount >= stage.requiredActiveDays
-        ].filter(\.self).count
+        let coinStarEarned = totalCoins >= stage.requiredCoins
+        let actionStarEarned = actionCount >= stage.requiredActions
+        let activeDayStarEarned = activeDayCount >= stage.requiredActiveDays
         let status: HomeAdventureStage.Status
-        if totalCoins < stage.requiredCoins {
+        if !coinStarEarned {
             status = .locked
-        } else if stars == 3 {
+        } else if coinStarEarned && actionStarEarned && activeDayStarEarned {
             status = .cleared
         } else {
             status = .available
@@ -247,7 +255,9 @@ enum HomeAdventureProgressionBuilder {
             requiredActions: stage.requiredActions,
             requiredActiveDays: stage.requiredActiveDays,
             rewardCoins: stage.rewardCoins,
-            stars: stars,
+            coinStarEarned: coinStarEarned,
+            actionStarEarned: actionStarEarned,
+            activeDayStarEarned: activeDayStarEarned,
             status: status
         )
     }
