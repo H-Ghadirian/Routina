@@ -991,57 +991,23 @@ private struct HomeAdventureStagePin: View {
     @State private var isStageDetailPinned = false
 
     var body: some View {
-        VStack(spacing: 0) {
+        ZStack(alignment: .bottomTrailing) {
             Button {
-                if isStageDetailPinned {
-                    isStageDetailPinned = false
-                    isStageDetailHovered = false
-                } else {
-                    isStageDetailPinned = true
-                }
+                toggleStageDetailPin()
             } label: {
-                ZStack(alignment: .bottomTrailing) {
-                    HomeAdventureStageArtwork(
-                        stage: stage,
-                        accent: accent,
-                        creatureSheetAssetName: creatureSheetAssetName,
-                        creatureIndex: creatureIndex,
-                        role: role
-                    )
-                    .frame(width: markerSize, height: markerSize)
-
-                    if let badgeTitle = role.compactBadgeTitle {
-                        Text(badgeTitle)
-                            .font(.system(size: 8, weight: .black))
-                            .foregroundStyle(role == .current ? Color.black.opacity(0.82) : Color.white)
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 4)
-                            .background(role.badgeTint, in: Capsule())
-                            .overlay {
-                                Capsule()
-                                    .stroke(Color.white.opacity(0.28), lineWidth: 1)
-                            }
-                            .shadow(color: role.badgeTint.opacity(0.38), radius: 7)
-                            .frame(width: markerSize, height: markerSize, alignment: .top)
-                            .offset(y: -8)
-                    }
-
-                    Image(systemName: statusIcon)
-                        .font(.system(size: 13, weight: .heavy))
-                        .foregroundStyle(statusForeground)
-                        .frame(width: 26, height: 26)
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .stroke(Color.white.opacity(0.22), lineWidth: 1)
-                        }
-                        .shadow(color: statusGlow, radius: 8)
-                }
+                HomeAdventureStageArtwork(
+                    stage: stage,
+                    accent: accent,
+                    creatureSheetAssetName: creatureSheetAssetName,
+                    creatureIndex: creatureIndex,
+                    role: role
+                )
+                .frame(width: markerSize, height: markerSize)
             }
             .buttonStyle(.plain)
-            .onHover { isHovering in
-                isStageDetailHovered = isHovering
-            }
+            .frame(width: markerSize, height: markerSize)
+            .contentShape(Circle())
+            .onContinuousHover(coordinateSpace: .local, perform: updateStageDetailHover)
             .help(helpText)
             .accessibilityLabel(accessibilityLabel)
             .popover(isPresented: stageDetailPresentation, arrowEdge: .bottom) {
@@ -1053,12 +1019,70 @@ private struct HomeAdventureStagePin: View {
                     onUnlock: onUnlock
                 )
             }
+
+            if let badgeTitle = role.compactBadgeTitle {
+                Text(badgeTitle)
+                    .font(.system(size: 8, weight: .black))
+                    .foregroundStyle(role == .current ? Color.black.opacity(0.82) : Color.white)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 4)
+                    .background(role.badgeTint, in: Capsule())
+                    .overlay {
+                        Capsule()
+                            .stroke(Color.white.opacity(0.28), lineWidth: 1)
+                    }
+                    .shadow(color: role.badgeTint.opacity(0.38), radius: 7)
+                    .frame(width: markerSize, height: markerSize, alignment: .top)
+                    .offset(y: -8)
+                    .allowsHitTesting(false)
+            }
+
+            Image(systemName: statusIcon)
+                .font(.system(size: 13, weight: .heavy))
+                .foregroundStyle(statusForeground)
+                .frame(width: 26, height: 26)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Color.white.opacity(0.22), lineWidth: 1)
+                }
+                .shadow(color: statusGlow, radius: 8)
+                .allowsHitTesting(false)
         }
-        .frame(width: 112, height: 96)
+        .frame(width: markerHitFrameSize, height: markerHitFrameSize)
     }
 
     private var markerSize: CGFloat {
         role.isHighlighted ? 78 : 70
+    }
+
+    private var markerHitFrameSize: CGFloat {
+        role.isHighlighted ? 94 : 86
+    }
+
+    private func toggleStageDetailPin() {
+        if isStageDetailPinned {
+            isStageDetailPinned = false
+            isStageDetailHovered = false
+        } else {
+            isStageDetailPinned = true
+        }
+    }
+
+    private func updateStageDetailHover(_ phase: HoverPhase) {
+        switch phase {
+        case let .active(location):
+            isStageDetailHovered = isInsideCreatureMedallion(location)
+        case .ended:
+            isStageDetailHovered = false
+        }
+    }
+
+    private func isInsideCreatureMedallion(_ location: CGPoint) -> Bool {
+        let radius = markerSize / 2
+        let center = CGPoint(x: radius, y: radius)
+        let distance = hypot(location.x - center.x, location.y - center.y)
+        return distance <= radius
     }
 
     private var stageDetailPresentation: Binding<Bool> {
