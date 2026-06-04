@@ -53,20 +53,35 @@ struct HomeAdventureProgression: Equatable {
 
 struct HomeAdventureWallet: Equatable {
     let totalCoins: Int
+    let actionCount: Int
+    let activeDayCount: Int
     let completedStageCount: Int
+    let worlds: [HomeAdventureWorld]
     let items: [HomeAdventureItem]
     let ownedItemIDs: Set<String>
+    let unlockedWorldIDs: Set<String>
+    let unlockedStageIDs: Set<String>
 
     init(
         totalCoins: Int,
+        actionCount: Int = 0,
+        activeDayCount: Int = 0,
         completedStageCount: Int = 0,
+        worlds: [HomeAdventureWorld] = [],
         items: [HomeAdventureItem],
-        ownedItemIDs: Set<String>
+        ownedItemIDs: Set<String>,
+        unlockedWorldIDs: Set<String> = [],
+        unlockedStageIDs: Set<String> = []
     ) {
         self.totalCoins = totalCoins
+        self.actionCount = actionCount
+        self.activeDayCount = activeDayCount
         self.completedStageCount = completedStageCount
+        self.worlds = worlds
         self.items = items
         self.ownedItemIDs = ownedItemIDs
+        self.unlockedWorldIDs = unlockedWorldIDs
+        self.unlockedStageIDs = unlockedStageIDs
     }
 
     var ownedItems: [HomeAdventureItem] {
@@ -77,8 +92,27 @@ struct HomeAdventureWallet: Equatable {
         ownedItems.count
     }
 
+    var unlockedWorlds: [HomeAdventureWorld] {
+        worlds.filter { unlockedWorldIDs.contains($0.id) }
+    }
+
+    var unlockedWorldCount: Int {
+        unlockedWorlds.count
+    }
+
+    var unlockedStages: [HomeAdventureStage] {
+        worlds.flatMap(\.stages).filter { unlockedStageIDs.contains($0.id) }
+    }
+
+    var unlockedStageCount: Int {
+        unlockedStages.count
+    }
+
     var spentCoins: Int {
-        ownedItems.reduce(0) { $0 + $1.requiredCoins }
+        let itemCoins = ownedItems.reduce(0) { $0 + $1.requiredCoins }
+        let worldCoins = unlockedWorlds.reduce(0) { $0 + $1.unlockCost }
+        let stageCoins = unlockedStages.reduce(0) { $0 + $1.unlockCost }
+        return itemCoins + worldCoins + stageCoins
     }
 
     var spendableCoins: Int {
@@ -89,12 +123,91 @@ struct HomeAdventureWallet: Equatable {
         items.first { canUnlock($0) }
     }
 
+    var firstPurchasableWorld: HomeAdventureWorld? {
+        worlds.first { canUnlock($0) }
+    }
+
+    var firstPurchasableStage: HomeAdventureStage? {
+        worlds.flatMap(\.stages).first { canUnlock($0) }
+    }
+
     func owns(_ item: HomeAdventureItem) -> Bool {
         ownedItemIDs.contains(item.id)
     }
 
+    func isWorldUnlocked(_ world: HomeAdventureWorld) -> Bool {
+        unlockedWorldIDs.contains(world.id)
+    }
+
+    func isStageUnlocked(_ stage: HomeAdventureStage) -> Bool {
+        unlockedStageIDs.contains(stage.id)
+    }
+
+    func canUnlock(_ world: HomeAdventureWorld) -> Bool {
+        !isWorldUnlocked(world)
+            && world.isEligible(totalCoins: totalCoins, actionCount: actionCount)
+            && spendableCoins >= world.unlockCost
+    }
+
+    func canUnlock(_ stage: HomeAdventureStage) -> Bool {
+        !isStageUnlocked(stage)
+            && unlockedWorldIDs.contains(stage.worldID)
+            && stage.isEligible
+            && spendableCoins >= stage.unlockCost
+    }
+
     func canUnlock(_ item: HomeAdventureItem) -> Bool {
-        item.isUnlocked && !owns(item) && spendableCoins >= item.requiredCoins
+        item.isUnlocked
+            && !owns(item)
+            && completedStageCount >= item.requiredStageCount
+            && spendableCoins >= item.requiredCoins
+    }
+
+    func unlockGuidance(for world: HomeAdventureWorld) -> String {
+        if isWorldUnlocked(world) {
+            return "Unlocked"
+        }
+
+        if !world.isEligible(totalCoins: totalCoins, actionCount: actionCount) {
+            let gaps = world.missingRequirementSummaries(
+                totalCoins: totalCoins,
+                actionCount: actionCount
+            )
+            return gaps.first ?? "Keep earning progress"
+        }
+
+        let coinGap = max(0, world.unlockCost - spendableCoins)
+        if coinGap > 0 {
+            return "Need \(coinGap.formatted()) more spendable coins"
+        }
+
+        return world.unlockCost == 0 ? "Ready to choose" : "Ready to unlock"
+    }
+
+    func unlockGuidance(for stage: HomeAdventureStage) -> String {
+        if isStageUnlocked(stage) {
+            return "Unlocked"
+        }
+
+        guard unlockedWorldIDs.contains(stage.worldID) else {
+            return "Unlock the world first"
+        }
+
+        if !stage.isEligible {
+            let gaps = stage.missingRequirementSummaries(
+                totalCoins: totalCoins,
+                actionCount: actionCount,
+                activeDayCount: activeDayCount
+            )
+            return gaps.first ?? "Earn all 3 stars first"
+        }
+
+        let coinGap = max(0, stage.unlockCost - spendableCoins)
+        if coinGap > 0 {
+            return "Need \(coinGap.formatted()) more spendable coins"
+        }
+
+        return "Ready to unlock"
     }
 
     func unlockGuidance(for item: HomeAdventureItem) -> String {
@@ -106,7 +219,7 @@ struct HomeAdventureWallet: Equatable {
             let stageGap = max(0, item.requiredStageCount - completedStageCount)
             let coinGap = max(0, item.requiredCoins - totalCoins)
             if stageGap > 0 {
-                return "Clear \(stageGap.formatted()) more stage\(stageGap == 1 ? "" : "s")"
+                return "Unlock \(stageGap.formatted()) more creature\(stageGap == 1 ? "" : "s")"
             }
             if coinGap > 0 {
                 return "Earn \(coinGap.formatted()) more coins"
@@ -160,6 +273,27 @@ struct HomeAdventureWorld: Identifiable, Equatable {
     var availableStageCount: Int {
         stages.filter { $0.status != .locked }.count
     }
+
+    var unlockCost: Int {
+        requiredCoins
+    }
+
+    func isEligible(totalCoins: Int, actionCount: Int) -> Bool {
+        totalCoins >= requiredCoins && actionCount >= requiredActions
+    }
+
+    func missingRequirementSummaries(totalCoins: Int, actionCount: Int) -> [String] {
+        var summaries: [String] = []
+        let coinGap = max(0, requiredCoins - totalCoins)
+        let actionGap = max(0, requiredActions - actionCount)
+        if coinGap > 0 {
+            summaries.append("\(coinGap.formatted()) more coins")
+        }
+        if actionGap > 0 {
+            summaries.append("\(actionGap.formatted()) more actions")
+        }
+        return summaries
+    }
 }
 
 struct HomeAdventureStage: Identifiable, Equatable {
@@ -196,6 +330,35 @@ struct HomeAdventureStage: Identifiable, Equatable {
         let actionText = "\(requiredActions.formatted()) actions"
         let dayText = "\(requiredActiveDays.formatted()) active days"
         return [coinText, actionText, dayText].joined(separator: " | ")
+    }
+
+    var unlockCost: Int {
+        requiredCoins
+    }
+
+    var isEligible: Bool {
+        coinStarEarned && actionStarEarned && activeDayStarEarned
+    }
+
+    func missingRequirementSummaries(
+        totalCoins: Int,
+        actionCount: Int,
+        activeDayCount: Int
+    ) -> [String] {
+        var summaries: [String] = []
+        let coinGap = max(0, requiredCoins - totalCoins)
+        let actionGap = max(0, requiredActions - actionCount)
+        let dayGap = max(0, requiredActiveDays - activeDayCount)
+        if coinGap > 0 {
+            summaries.append("\(coinGap.formatted()) more coins")
+        }
+        if actionGap > 0 {
+            summaries.append("\(actionGap.formatted()) more actions")
+        }
+        if dayGap > 0 {
+            summaries.append("\(dayGap.formatted()) more active days")
+        }
+        return summaries
     }
 }
 

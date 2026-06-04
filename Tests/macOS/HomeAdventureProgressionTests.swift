@@ -169,7 +169,7 @@ struct HomeAdventureProgressionTests {
         #expect(wallet.spendableCoins == 800)
         #expect(wallet.canUnlock(items[1]) == false)
         #expect(wallet.unlockGuidance(for: items[1]) == "Need 100 more spendable coins")
-        #expect(wallet.unlockGuidance(for: items[2]) == "Clear 4 more stages")
+        #expect(wallet.unlockGuidance(for: items[2]) == "Unlock 4 more creatures")
 
         let richerWallet = HomeAdventureWallet(
             totalCoins: 1_200,
@@ -179,6 +179,84 @@ struct HomeAdventureProgressionTests {
         )
 
         #expect(richerWallet.canUnlock(items[1]) == true)
+    }
+
+    @Test
+    func wallet_requiresExplicitWorldAndCreatureChoices() {
+        let stage = HomeAdventureStage(
+            id: "meadow-1",
+            worldID: "morning-meadow",
+            number: 1,
+            title: "First Steps",
+            subtitle: "Complete or create anything in Routina.",
+            requiredCoins: 50,
+            requiredActions: 2,
+            requiredActiveDays: 1,
+            rewardCoins: 20,
+            coinStarEarned: true,
+            actionStarEarned: true,
+            activeDayStarEarned: true,
+            status: .cleared
+        )
+        let world = HomeAdventureWorld(
+            id: "morning-meadow",
+            title: "Morning Meadow",
+            subtitle: "Start the trail with ordinary wins.",
+            systemImage: "sun.max.fill",
+            accentName: "green",
+            artAssetName: "AdventureMorningMeadow",
+            requiredCoins: 0,
+            requiredActions: 0,
+            stages: [stage]
+        )
+
+        let freshWallet = HomeAdventureWallet(
+            totalCoins: 200,
+            actionCount: 10,
+            activeDayCount: 3,
+            worlds: [world],
+            items: [],
+            ownedItemIDs: []
+        )
+
+        #expect(freshWallet.unlockedWorldCount == 0)
+        #expect(freshWallet.unlockedStageCount == 0)
+        #expect(freshWallet.canUnlock(world) == true)
+        #expect(freshWallet.canUnlock(stage) == false)
+        #expect(freshWallet.unlockGuidance(for: stage) == "Unlock the world first")
+
+        let worldWallet = HomeAdventureWallet(
+            totalCoins: 200,
+            actionCount: 10,
+            activeDayCount: 3,
+            worlds: [world],
+            items: [],
+            ownedItemIDs: [],
+            unlockedWorldIDs: ["morning-meadow"]
+        )
+
+        #expect(worldWallet.unlockedWorldCount == 1)
+        #expect(worldWallet.unlockedStageCount == 0)
+        #expect(worldWallet.spendableCoins == 200)
+        #expect(worldWallet.canUnlock(stage) == true)
+
+        let creatureWallet = HomeAdventureWallet(
+            totalCoins: 200,
+            actionCount: 10,
+            activeDayCount: 3,
+            completedStageCount: 1,
+            worlds: [world],
+            items: [],
+            ownedItemIDs: [],
+            unlockedWorldIDs: ["morning-meadow"],
+            unlockedStageIDs: ["meadow-1"]
+        )
+
+        #expect(creatureWallet.unlockedStageCount == 1)
+        #expect(creatureWallet.spentCoins == 50)
+        #expect(creatureWallet.spendableCoins == 150)
+        #expect(creatureWallet.canUnlock(stage) == false)
+        #expect(creatureWallet.unlockGuidance(for: stage) == "Unlocked")
     }
 
     @Test

@@ -4,18 +4,43 @@ struct HomeMacAdventureSidebarView: View {
     let progression: HomeAdventureProgression
     @AppStorage(UserDefaultStringValueKey.appSettingMacAdventureOwnedItemIDs.rawValue, store: SharedDefaults.app)
     private var ownedItemIDsRaw = ""
+    @AppStorage(UserDefaultStringValueKey.appSettingMacAdventureUnlockedWorldIDs.rawValue, store: SharedDefaults.app)
+    private var unlockedWorldIDsRaw = ""
+    @AppStorage(UserDefaultStringValueKey.appSettingMacAdventureUnlockedStageIDs.rawValue, store: SharedDefaults.app)
+    private var unlockedStageIDsRaw = ""
+
+    private var ownedItemIDs: Set<String> {
+        HomeAdventureOwnedItemIDs.decode(ownedItemIDsRaw)
+    }
+
+    private var unlockedWorldIDs: Set<String> {
+        HomeAdventureOwnedItemIDs.decode(unlockedWorldIDsRaw)
+    }
+
+    private var unlockedStageIDs: Set<String> {
+        HomeAdventureOwnedItemIDs.decode(unlockedStageIDsRaw)
+    }
 
     private var wallet: HomeAdventureWallet {
         HomeAdventureWallet(
             totalCoins: progression.totalCoins,
-            completedStageCount: progression.completedStageCount,
+            actionCount: progression.actionCount,
+            activeDayCount: progression.activeDayCount,
+            completedStageCount: unlockedStageCount,
+            worlds: progression.worlds,
             items: progression.items,
-            ownedItemIDs: HomeAdventureOwnedItemIDs.decode(ownedItemIDsRaw)
+            ownedItemIDs: ownedItemIDs,
+            unlockedWorldIDs: unlockedWorldIDs,
+            unlockedStageIDs: unlockedStageIDs
         )
     }
 
     private var totalStageCount: Int {
         progression.worlds.flatMap(\.stages).count
+    }
+
+    private var unlockedStageCount: Int {
+        progression.worlds.flatMap(\.stages).filter { unlockedStageIDs.contains($0.id) }.count
     }
 
     var body: some View {
@@ -45,8 +70,8 @@ struct HomeMacAdventureSidebarView: View {
                             systemImage: "sparkles"
                         )
                         HomeAdventureSidebarMetric(
-                            title: "Stages Cleared",
-                            value: "\(progression.completedStageCount)/\(totalStageCount)",
+                            title: "Creatures",
+                            value: "\(wallet.unlockedStageCount)/\(totalStageCount)",
                             systemImage: "flag.checkered"
                         )
                     }
@@ -60,16 +85,16 @@ struct HomeMacAdventureSidebarView: View {
                 .padding(12)
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
-                if let stage = progression.currentStage {
-                    HomeAdventureSidebarStageCard(title: "You Are Here", stage: stage)
+                if let world = wallet.firstPurchasableWorld {
+                    HomeAdventureSidebarWorldCard(title: "Choose World", world: world, wallet: wallet)
+                }
+
+                if let stage = wallet.firstPurchasableStage {
+                    HomeAdventureSidebarStageCard(title: "Choose Creature", stage: stage, wallet: wallet)
                 }
 
                 if let item = wallet.firstPurchasableItem {
                     HomeAdventureSidebarItemCard(item: item, wallet: wallet)
-                }
-
-                if let stage = progression.nextLockedStage {
-                    HomeAdventureSidebarUnlockCard(stage: stage, progression: progression)
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
@@ -112,33 +137,58 @@ struct HomeMacAdventureView: View {
     let progression: HomeAdventureProgression
     @AppStorage(UserDefaultStringValueKey.appSettingMacAdventureOwnedItemIDs.rawValue, store: SharedDefaults.app)
     private var ownedItemIDsRaw = ""
+    @AppStorage(UserDefaultStringValueKey.appSettingMacAdventureUnlockedWorldIDs.rawValue, store: SharedDefaults.app)
+    private var unlockedWorldIDsRaw = ""
+    @AppStorage(UserDefaultStringValueKey.appSettingMacAdventureUnlockedStageIDs.rawValue, store: SharedDefaults.app)
+    private var unlockedStageIDsRaw = ""
 
     private let itemColumns = [
-        GridItem(.adaptive(minimum: 180), spacing: 12)
+        GridItem(.adaptive(minimum: 230), spacing: 12)
     ]
 
     private var ownedItemIDs: Set<String> {
         HomeAdventureOwnedItemIDs.decode(ownedItemIDsRaw)
     }
 
+    private var unlockedWorldIDs: Set<String> {
+        HomeAdventureOwnedItemIDs.decode(unlockedWorldIDsRaw)
+    }
+
+    private var unlockedStageIDs: Set<String> {
+        HomeAdventureOwnedItemIDs.decode(unlockedStageIDsRaw)
+    }
+
     private var wallet: HomeAdventureWallet {
         HomeAdventureWallet(
             totalCoins: progression.totalCoins,
-            completedStageCount: progression.completedStageCount,
+            actionCount: progression.actionCount,
+            activeDayCount: progression.activeDayCount,
+            completedStageCount: unlockedStageCount,
+            worlds: progression.worlds,
             items: progression.items,
-            ownedItemIDs: ownedItemIDs
+            ownedItemIDs: ownedItemIDs,
+            unlockedWorldIDs: unlockedWorldIDs,
+            unlockedStageIDs: unlockedStageIDs
         )
+    }
+
+    private var totalWorldCount: Int {
+        progression.worlds.count
     }
 
     private var totalStageCount: Int {
         progression.worlds.flatMap(\.stages).count
     }
 
+    private var unlockedStageCount: Int {
+        progression.worlds.flatMap(\.stages).filter { unlockedStageIDs.contains($0.id) }.count
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 hero
-                HomeAdventureGuideStrip(progression: progression, wallet: wallet)
+                HomeAdventureGuideStrip(wallet: wallet)
                 worldsSection
                 itemsSection
             }
@@ -167,7 +217,7 @@ struct HomeMacAdventureView: View {
                     if let world = heroWorld {
                         HomeAdventureWorldMedallion(
                             creatureSheetAssetName: "\(world.artAssetName)Creatures",
-                            isUnlocked: true,
+                            isUnlocked: wallet.isWorldUnlocked(world),
                             size: 58
                         )
                     }
@@ -182,12 +232,10 @@ struct HomeMacAdventureView: View {
                             .foregroundStyle(.white.opacity(0.92))
                             .lineLimit(2)
                             .shadow(color: .black.opacity(0.55), radius: 2, y: 1)
-                        if let world = progression.currentWorld {
-                            Text("Current world: \(world.title)")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.white.opacity(0.82))
-                                .shadow(color: .black.opacity(0.45), radius: 1, y: 1)
-                        }
+                        Text(heroWorldStatusText)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.white.opacity(0.82))
+                            .shadow(color: .black.opacity(0.45), radius: 1, y: 1)
                     }
                     .padding(.horizontal, 14)
                     .padding(.vertical, 11)
@@ -221,16 +269,16 @@ struct HomeMacAdventureView: View {
                         tint: .purple
                     )
                     HomeAdventureMetricTile(
-                        title: "Stages Cleared",
-                        value: "\(progression.completedStageCount)/\(totalStageCount)",
-                        detail: "Map encounters finished",
+                        title: "Creatures Unlocked",
+                        value: "\(wallet.unlockedStageCount)/\(totalStageCount)",
+                        detail: "Chosen creature companions",
                         systemImage: "flag.checkered",
                         tint: .green
                     )
                     HomeAdventureMetricTile(
                         title: "Inventory",
                         value: "\(wallet.ownedItemCount)/\(progression.items.count)",
-                        detail: "Companions and artifacts owned",
+                        detail: "Artifacts and tools owned",
                         systemImage: "backpack.fill",
                         tint: .orange
                     )
@@ -254,7 +302,7 @@ struct HomeMacAdventureView: View {
         }
         .background {
             if let world = heroWorld {
-                HomeAdventureWorldArt(assetName: world.artAssetName, isUnlocked: true)
+                HomeAdventureWorldArt(assetName: world.artAssetName, isUnlocked: wallet.isWorldUnlocked(world))
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
@@ -265,7 +313,19 @@ struct HomeMacAdventureView: View {
     }
 
     private var heroWorld: HomeAdventureWorld? {
-        progression.currentWorld ?? progression.worlds.first
+        wallet.unlockedWorlds.last
+            ?? wallet.firstPurchasableWorld
+            ?? progression.worlds.first
+    }
+
+    private var heroWorldStatusText: String {
+        if let world = wallet.unlockedWorlds.last {
+            return "Chosen world: \(world.title)"
+        }
+        if let world = wallet.firstPurchasableWorld {
+            return "Choose a world to begin: \(world.title)"
+        }
+        return "\(wallet.unlockedWorldCount)/\(totalWorldCount) worlds chosen"
     }
 
     private var worldsSection: some View {
@@ -277,8 +337,9 @@ struct HomeMacAdventureView: View {
                 HomeAdventureWorldSection(
                     world: world,
                     progression: progression,
-                    currentStageID: progression.currentStage?.id,
-                    nextLockedStageID: progression.nextLockedStage?.id
+                    wallet: wallet,
+                    onUnlockWorld: { unlock(world) },
+                    onUnlockStage: { unlock($0) }
                 )
             }
         }
@@ -338,6 +399,24 @@ struct HomeMacAdventureView: View {
         ownedItemIDsRaw = HomeAdventureOwnedItemIDs.encode(ids)
     }
 
+    private func unlock(_ world: HomeAdventureWorld) {
+        let currentWallet = wallet
+        guard currentWallet.canUnlock(world) else { return }
+
+        var ids = unlockedWorldIDs
+        ids.insert(world.id)
+        unlockedWorldIDsRaw = HomeAdventureOwnedItemIDs.encode(ids)
+    }
+
+    private func unlock(_ stage: HomeAdventureStage) {
+        let currentWallet = wallet
+        guard currentWallet.canUnlock(stage) else { return }
+
+        var ids = unlockedStageIDs
+        ids.insert(stage.id)
+        unlockedStageIDsRaw = HomeAdventureOwnedItemIDs.encode(ids)
+    }
+
     private var adventureBackground: some ShapeStyle {
         LinearGradient(
             colors: [
@@ -354,16 +433,17 @@ struct HomeMacAdventureView: View {
 private struct HomeAdventureWorldSection: View {
     let world: HomeAdventureWorld
     let progression: HomeAdventureProgression
-    let currentStageID: String?
-    let nextLockedStageID: String?
+    let wallet: HomeAdventureWallet
+    let onUnlockWorld: () -> Void
+    let onUnlockStage: (HomeAdventureStage) -> Void
 
     var body: some View {
         ZStack(alignment: .topLeading) {
             LinearGradient(
                 colors: [
-                    Color.black.opacity(world.isUnlocked ? 0.36 : 0.72),
-                    Color.black.opacity(world.isUnlocked ? 0.1 : 0.52),
-                    Color.black.opacity(world.isUnlocked ? 0.48 : 0.76)
+                    Color.black.opacity(isWorldUnlocked ? 0.36 : 0.72),
+                    Color.black.opacity(isWorldUnlocked ? 0.1 : 0.52),
+                    Color.black.opacity(isWorldUnlocked ? 0.48 : 0.78)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -372,16 +452,21 @@ private struct HomeAdventureWorldSection: View {
             HomeAdventureWorldHeader(
                 world: world,
                 accent: accent,
-                creatureSheetAssetName: creatureSheetAssetName
+                creatureSheetAssetName: creatureSheetAssetName,
+                isWorldUnlocked: isWorldUnlocked,
+                unlockedStageCount: unlockedStageCount,
+                canUnlockWorld: wallet.canUnlock(world),
+                unlockGuidance: wallet.unlockGuidance(for: world),
+                onUnlock: onUnlockWorld
             )
 
             HomeAdventureWorldEncounterField(
-                stages: world.stages,
+                stages: displayedStages,
                 accent: accent,
                 creatureSheetAssetName: creatureSheetAssetName,
                 progression: progression,
-                currentStageID: currentStageID,
-                nextLockedStageID: nextLockedStageID
+                wallet: wallet,
+                onUnlockStage: onUnlockStage
             )
                 .padding(.horizontal, 18)
                 .padding(.top, 88)
@@ -389,13 +474,45 @@ private struct HomeAdventureWorldSection: View {
         }
         .frame(minHeight: 392)
         .background {
-            HomeAdventureWorldArt(assetName: world.artAssetName, isUnlocked: world.isUnlocked)
+            HomeAdventureWorldArt(assetName: world.artAssetName, isUnlocked: isWorldUnlocked)
         }
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(accent.opacity(world.isUnlocked ? 0.42 : 0.22), lineWidth: 1)
+                .stroke(accent.opacity(borderOpacity), lineWidth: 1)
         }
+    }
+
+    private var isWorldUnlocked: Bool {
+        wallet.isWorldUnlocked(world)
+    }
+
+    private var unlockedStageCount: Int {
+        world.stages.filter { wallet.isStageUnlocked($0) }.count
+    }
+
+    private var displayedStages: [HomeAdventureStage] {
+        world.stages.map { stage in
+            var displayStage = stage
+            if wallet.isStageUnlocked(stage) {
+                displayStage.status = .cleared
+            } else if wallet.canUnlock(stage) {
+                displayStage.status = .available
+            } else {
+                displayStage.status = .locked
+            }
+            return displayStage
+        }
+    }
+
+    private var borderOpacity: Double {
+        if isWorldUnlocked {
+            return 0.42
+        }
+        if wallet.canUnlock(world) {
+            return 0.58
+        }
+        return 0.22
     }
 
     private var accent: Color {
@@ -411,12 +528,17 @@ private struct HomeAdventureWorldHeader: View {
     let world: HomeAdventureWorld
     let accent: Color
     let creatureSheetAssetName: String
+    let isWorldUnlocked: Bool
+    let unlockedStageCount: Int
+    let canUnlockWorld: Bool
+    let unlockGuidance: String
+    let onUnlock: () -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             HomeAdventureWorldMedallion(
                 creatureSheetAssetName: creatureSheetAssetName,
-                isUnlocked: world.isUnlocked,
+                isUnlocked: isWorldUnlocked,
                 size: 54
             )
 
@@ -427,12 +549,11 @@ private struct HomeAdventureWorldHeader: View {
                         .foregroundStyle(.white)
                         .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
 
-                    if !world.isUnlocked {
-                        Label("Locked", systemImage: "lock.fill")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.white.opacity(0.72))
-                            .labelStyle(.titleAndIcon)
-                    }
+                    Label(statusTitle, systemImage: statusIcon)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(statusTint)
+                        .labelStyle(.titleAndIcon)
+                        .lineLimit(1)
                 }
 
                 Text(world.subtitle)
@@ -456,13 +577,36 @@ private struct HomeAdventureWorldHeader: View {
 
             Spacer()
 
-            VStack(alignment: .trailing, spacing: 4) {
-                Text("\(world.clearedStageCount)/\(world.stages.count)")
-                    .font(.headline.weight(.bold))
-                    .foregroundStyle(.white)
-                Text("cleared")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.72))
+            VStack(alignment: .trailing, spacing: 8) {
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("\(unlockedStageCount)/\(world.stages.count)")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.white)
+                    Text("creatures")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.72))
+                }
+
+                if !isWorldUnlocked {
+                    if canUnlockWorld {
+                        Button {
+                            onUnlock()
+                        } label: {
+                            Label(world.unlockCost == 0 ? "Choose World" : "\(world.unlockCost.formatted()) coins", systemImage: "lock.open.fill")
+                        }
+                        .font(.caption.weight(.bold))
+                        .buttonStyle(.borderedProminent)
+                        .tint(accent)
+                    } else {
+                        Label(unlockGuidance, systemImage: "lock.fill")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.white.opacity(0.72))
+                            .labelStyle(.titleAndIcon)
+                            .multilineTextAlignment(.trailing)
+                            .lineLimit(2)
+                            .frame(maxWidth: 154, alignment: .trailing)
+                    }
+                }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
@@ -473,6 +617,36 @@ private struct HomeAdventureWorldHeader: View {
             }
         }
         .padding(16)
+    }
+
+    private var statusTitle: String {
+        if isWorldUnlocked {
+            return "Chosen"
+        }
+        if canUnlockWorld {
+            return "Ready"
+        }
+        return "Locked"
+    }
+
+    private var statusIcon: String {
+        if isWorldUnlocked {
+            return "checkmark.seal.fill"
+        }
+        if canUnlockWorld {
+            return "sparkles"
+        }
+        return "lock.fill"
+    }
+
+    private var statusTint: Color {
+        if isWorldUnlocked {
+            return .mint
+        }
+        if canUnlockWorld {
+            return accent
+        }
+        return .white.opacity(0.72)
     }
 }
 
@@ -519,95 +693,88 @@ private struct HomeAdventureWorldMedallion: View {
 }
 
 private struct HomeAdventureGuideStrip: View {
-    let progression: HomeAdventureProgression
     let wallet: HomeAdventureWallet
 
     var body: some View {
         HStack(spacing: 10) {
             HomeAdventureGuideCard(
-                title: "You are here",
-                value: currentStageText,
-                detail: currentStageDetail,
+                title: "Chosen now",
+                value: chosenText,
+                detail: chosenDetail,
                 systemImage: "location.fill",
                 tint: .yellow
             )
 
             HomeAdventureGuideCard(
                 title: "Do this next",
-                value: nextStageText,
-                detail: nextActionDetail,
+                value: nextChoiceText,
+                detail: nextChoiceDetail,
                 systemImage: "lock.open.fill",
                 tint: .orange
             )
 
             HomeAdventureGuideCard(
-                title: "Choose unlock",
-                value: unlockChoiceText,
-                detail: unlockChoiceDetail,
+                title: "Spendable coins",
+                value: "\(wallet.spendableCoins.formatted()) coins",
+                detail: "Spend them on any ready world, creature, or item.",
                 systemImage: "wand.and.stars",
                 tint: .green
             )
 
             HomeAdventureGuideCard(
-                title: "Stage stars",
+                title: "Creature stars",
                 value: "Coins + actions + days",
-                detail: "Each star is one met requirement.",
+                detail: "Stars make a creature ready; clicking unlocks it.",
                 systemImage: "star.fill",
                 tint: .purple
             )
         }
     }
 
-    private var currentStageText: String {
-        guard let stage = progression.currentStage else { return "Before Stage 1" }
-        return "Stage \(stage.number): \(stage.title)"
-    }
-
-    private var currentStageDetail: String {
-        guard let stage = progression.currentStage else { return "Earn coins to open the first encounter." }
-        switch stage.status {
-        case .locked:
-            return "Earn coins to open this gate."
-        case .available:
-            return "\(stage.stars)/3 stars earned."
-        case .cleared:
-            return "Last cleared stage."
+    private var chosenText: String {
+        if let stage = wallet.unlockedStages.last {
+            return "Creature \(stage.number): \(stage.title)"
         }
-    }
-
-    private var nextStageText: String {
-        guard let stage = progression.nextLockedStage else { return "Season complete" }
-        return "Stage \(stage.number): \(stage.title)"
-    }
-
-    private var nextStageDetail: String {
-        guard let stage = progression.nextLockedStage else { return "All Adventure stages are cleared." }
-        let missing = missingRequirements(for: stage)
-        guard !missing.isEmpty else { return "Ready now." }
-        return "Need \(missing.joined(separator: ", "))."
-    }
-
-    private var nextActionDetail: String {
-        guard let stage = progression.nextLockedStage else { return "All Adventure stages are cleared." }
-        return HomeAdventureUnlockGuidance(stage: stage, progression: progression).summary
-    }
-
-    private var unlockChoiceText: String {
-        guard let item = wallet.firstPurchasableItem else {
-            return "\(wallet.spendableCoins.formatted()) spendable coins"
+        if let world = wallet.unlockedWorlds.last {
+            return world.title
         }
-        return item.title
+        return "Nothing chosen yet"
     }
 
-    private var unlockChoiceDetail: String {
-        guard let item = wallet.firstPurchasableItem else {
-            return "Earn progress or save coins for the next item choice."
+    private var chosenDetail: String {
+        if let stage = wallet.unlockedStages.last {
+            return "\(stage.stars)/3 stars earned and unlocked."
         }
-        return "\(item.requiredCoins.formatted()) coins | \(item.kind.title)"
+        if wallet.unlockedWorlds.last != nil {
+            return "Pick any ready creature in this world."
+        }
+        return "Start by choosing an eligible world."
     }
 
-    private func missingRequirements(for stage: HomeAdventureStage) -> [String] {
-        HomeAdventureUnlockGuidance(stage: stage, progression: progression).missingRequirements
+    private var nextChoiceText: String {
+        if let world = wallet.firstPurchasableWorld {
+            return "Choose \(world.title)"
+        }
+        if let stage = wallet.firstPurchasableStage {
+            return "Unlock \(stage.title)"
+        }
+        if let item = wallet.firstPurchasableItem {
+            return "Unlock \(item.title)"
+        }
+        return "Earn more progress"
+    }
+
+    private var nextChoiceDetail: String {
+        if let world = wallet.firstPurchasableWorld {
+            return wallet.unlockGuidance(for: world)
+        }
+        if let stage = wallet.firstPurchasableStage {
+            return wallet.unlockGuidance(for: stage)
+        }
+        if let item = wallet.firstPurchasableItem {
+            return wallet.unlockGuidance(for: item)
+        }
+        return "Earn coins, actions, and active days to make choices ready."
     }
 }
 
@@ -720,9 +887,9 @@ private enum HomeAdventureStagePinRole: Equatable {
     var compactBadgeTitle: String? {
         switch self {
         case .current:
-            return "HERE"
+            return "OWNED"
         case .next:
-            return "NEXT"
+            return "READY"
         case .regular:
             return nil
         }
@@ -731,7 +898,7 @@ private enum HomeAdventureStagePinRole: Equatable {
     var badgeTint: Color {
         switch self {
         case .current:
-            return .yellow
+            return .mint
         case .next:
             return .orange
         case .regular:
@@ -749,8 +916,8 @@ private struct HomeAdventureWorldEncounterField: View {
     let accent: Color
     let creatureSheetAssetName: String
     let progression: HomeAdventureProgression
-    let currentStageID: String?
-    let nextLockedStageID: String?
+    let wallet: HomeAdventureWallet
+    let onUnlockStage: (HomeAdventureStage) -> Void
 
     private let positions = [
         CGPoint(x: 0.12, y: 0.76),
@@ -770,8 +937,9 @@ private struct HomeAdventureWorldEncounterField: View {
                     creatureSheetAssetName: creatureSheetAssetName,
                     creatureIndex: index,
                     progression: progression,
+                    wallet: wallet,
                     role: pinRole(for: stage),
-                    unlockGuidance: unlockGuidance(for: stage)
+                    onUnlock: { onUnlockStage(stage) }
                 )
                 .position(encounterPoint(at: index, in: geometry.size))
             }
@@ -792,18 +960,21 @@ private struct HomeAdventureWorldEncounterField: View {
     }
 
     private func pinRole(for stage: HomeAdventureStage) -> HomeAdventureStagePinRole {
-        if stage.id == currentStageID {
+        if stage.id == lastUnlockedStageID {
             return .current
         }
-        if stage.id == nextLockedStageID {
+        if stage.id == firstReadyStageID {
             return .next
         }
         return .regular
     }
 
-    private func unlockGuidance(for stage: HomeAdventureStage) -> String? {
-        guard stage.id == nextLockedStageID else { return nil }
-        return HomeAdventureUnlockGuidance(stage: stage, progression: progression).shortSummary
+    private var lastUnlockedStageID: String? {
+        stages.last { wallet.isStageUnlocked($0) }?.id
+    }
+
+    private var firstReadyStageID: String? {
+        stages.first { wallet.canUnlock($0) }?.id
     }
 }
 
@@ -813,8 +984,9 @@ private struct HomeAdventureStagePin: View {
     let creatureSheetAssetName: String
     let creatureIndex: Int
     let progression: HomeAdventureProgression
+    let wallet: HomeAdventureWallet
     let role: HomeAdventureStagePinRole
-    let unlockGuidance: String?
+    let onUnlock: () -> Void
     @State private var isStageDetailHovered = false
     @State private var isStageDetailPinned = false
 
@@ -841,7 +1013,7 @@ private struct HomeAdventureStagePin: View {
                     if let badgeTitle = role.compactBadgeTitle {
                         Text(badgeTitle)
                             .font(.system(size: 8, weight: .black))
-                            .foregroundStyle(role == .current ? Color.black : Color.white)
+                            .foregroundStyle(role == .current ? Color.black.opacity(0.82) : Color.white)
                             .padding(.horizontal, 7)
                             .padding(.vertical, 4)
                             .background(role.badgeTint, in: Capsule())
@@ -876,7 +1048,9 @@ private struct HomeAdventureStagePin: View {
                 HomeAdventureStageDetailPopover(
                     stage: stage,
                     progression: progression,
-                    guidanceText: unlockGuidance ?? stageProgressText
+                    wallet: wallet,
+                    guidanceText: wallet.unlockGuidance(for: stage),
+                    onUnlock: onUnlock
                 )
             }
         }
@@ -901,22 +1075,22 @@ private struct HomeAdventureStagePin: View {
     }
 
     private var helpText: String {
-        "\(stage.title)\n\(stage.subtitle)\n\(unlockGuidance ?? stageProgressText)\n\(stage.requirementText)"
+        "\(stage.title)\n\(stage.subtitle)\n\(wallet.unlockGuidance(for: stage))\n\(stage.requirementText)"
     }
 
     private var accessibilityLabel: String {
-        "Stage \(stage.number), \(stage.title), \(unlockGuidance ?? stageProgressText)"
+        "Creature \(stage.number), \(stage.title), \(wallet.unlockGuidance(for: stage))"
     }
 
     private var stageProgressText: String {
         let starText = "\(stage.stars)/3 stars"
         switch stage.status {
         case .locked:
-            return "\(starText) | \(stage.requiredCoins.formatted()) coins"
+            return "\(starText) | \(wallet.unlockGuidance(for: stage))"
         case .available:
-            return "\(starText) | finish requirements"
+            return "\(starText) | ready to unlock"
         case .cleared:
-            return "\(starText) | cleared"
+            return "\(starText) | unlocked"
         }
     }
 
@@ -944,7 +1118,7 @@ private struct HomeAdventureStagePin: View {
 
     private var statusGlow: Color {
         if role == .current {
-            return Color.yellow.opacity(0.55)
+            return Color.mint.opacity(0.48)
         }
         if role == .next {
             return Color.orange.opacity(0.52)
@@ -963,7 +1137,9 @@ private struct HomeAdventureStagePin: View {
 private struct HomeAdventureStageDetailPopover: View {
     let stage: HomeAdventureStage
     let progression: HomeAdventureProgression
+    let wallet: HomeAdventureWallet
     let guidanceText: String
+    let onUnlock: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -975,6 +1151,25 @@ private struct HomeAdventureStageDetailPopover: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(statusTint)
                 .fixedSize(horizontal: false, vertical: true)
+
+            if wallet.isStageUnlocked(stage) {
+                Label("Creature unlocked", systemImage: "checkmark.seal.fill")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.mint)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 7)
+                    .background(Color.mint.opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            } else {
+                Button {
+                    onUnlock()
+                } label: {
+                    Label(wallet.canUnlock(stage) ? "Unlock Creature" : "Locked", systemImage: wallet.canUnlock(stage) ? "lock.open.fill" : "lock.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(wallet.canUnlock(stage) ? .orange : .secondary)
+                .disabled(!wallet.canUnlock(stage))
+            }
         }
         .padding(14)
         .frame(width: 286, alignment: .leading)
@@ -983,7 +1178,7 @@ private struct HomeAdventureStageDetailPopover: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text("Stage \(stage.number)")
+                Text("Creature \(stage.number)")
                     .font(.caption.weight(.black))
                     .foregroundStyle(.secondary)
 
@@ -1045,9 +1240,9 @@ private struct HomeAdventureStageDetailPopover: View {
         case .locked:
             return "Locked"
         case .available:
-            return "Open"
+            return "Ready"
         case .cleared:
-            return "Cleared"
+            return "Unlocked"
         }
     }
 
@@ -1280,24 +1475,31 @@ private struct HomeAdventureItemCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 10) {
-                HomeAdventureItemArtwork(item: item, isOwned: isOwned, isAvailable: item.isUnlocked)
+                HomeAdventureItemArtwork(item: item, isOwned: isOwned, isAvailable: isOwned || canUnlock)
                     .frame(width: 56, height: 56)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(item.title)
                         .font(.subheadline.weight(.bold))
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .layoutPriority(1)
                     Text(item.kind.title)
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(kindTint)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                         .padding(.horizontal, 7)
                         .padding(.vertical, 3)
                         .background(kindTint.opacity(0.14), in: Capsule())
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
 
                 Spacer(minLength: 4)
 
                 Image(systemName: statusIcon)
                     .foregroundStyle(statusTint)
+                    .frame(width: 18, alignment: .trailing)
             }
 
             VStack(alignment: .leading, spacing: 4) {
@@ -1369,9 +1571,6 @@ private struct HomeAdventureItemCard: View {
         }
         if canUnlock {
             return .orange
-        }
-        if item.isUnlocked {
-            return .yellow
         }
         return .secondary
     }
@@ -1525,16 +1724,52 @@ private struct HomeAdventureSidebarMetric: View {
     }
 }
 
+private struct HomeAdventureSidebarWorldCard: View {
+    let title: String
+    let world: HomeAdventureWorld
+    let wallet: HomeAdventureWallet
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Label(title, systemImage: "lock.open.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.orange)
+
+            Text(world.title)
+                .font(.callout.weight(.medium))
+
+            Text(wallet.unlockGuidance(for: world))
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(wallet.canUnlock(world) ? Color.orange : Color.secondary)
+
+            Text("\(world.unlockCost.formatted()) coins | \(world.stages.count) creatures")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
+
 private struct HomeAdventureSidebarStageCard: View {
     let title: String
     let stage: HomeAdventureStage
+    let wallet: HomeAdventureWallet
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
+        VStack(alignment: .leading, spacing: 7) {
+            Label(title, systemImage: "sparkles")
                 .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.orange)
+
             Text(stage.title)
                 .font(.callout.weight(.medium))
+
+            Text(wallet.unlockGuidance(for: stage))
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(wallet.canUnlock(stage) ? Color.orange : Color.secondary)
+
             Text(stage.requirementText)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -1566,7 +1801,7 @@ private struct HomeAdventureSidebarItemCard: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            Text("Claim now, or save coins for a rarer companion or artifact.")
+            Text("Unlock now, or save coins for a rarer companion or artifact.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
