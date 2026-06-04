@@ -124,11 +124,11 @@ extension HomeTCAView {
                 }
             } else if isAwayStartPresented {
                 AwaySessionStartSheet(
+                    presentation: .inline,
                     onCancel: closeAwayStart,
                     onStarted: closeAwayStart,
                     dismissOnCompletion: false
                 )
-                .frame(maxWidth: 560, maxHeight: .infinity)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 MacDetailContainerView(
