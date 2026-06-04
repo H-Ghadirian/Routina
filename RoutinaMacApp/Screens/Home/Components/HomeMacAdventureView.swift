@@ -1001,7 +1001,6 @@ private struct HomeAdventureStagePin: View {
     let wallet: HomeAdventureWallet
     let role: HomeAdventureStagePinRole
     let onUnlock: () -> Void
-    @State private var isStageDetailHovered = false
     @State private var isStageDetailPinned = false
 
     var body: some View {
@@ -1021,7 +1020,6 @@ private struct HomeAdventureStagePin: View {
             .buttonStyle(.plain)
             .frame(width: markerSize, height: markerSize)
             .contentShape(Circle())
-            .onContinuousHover(coordinateSpace: .local, perform: updateStageDetailHover)
             .help(helpText)
             .accessibilityLabel(accessibilityLabel)
             .popover(isPresented: stageDetailPresentation, arrowEdge: .bottom) {
@@ -1030,7 +1028,7 @@ private struct HomeAdventureStagePin: View {
                     progression: progression,
                     wallet: wallet,
                     guidanceText: wallet.unlockGuidance(for: stage),
-                    onUnlock: onUnlock
+                    onUnlock: unlockAndClose
                 )
             }
 
@@ -1075,45 +1073,28 @@ private struct HomeAdventureStagePin: View {
     }
 
     private func toggleStageDetailPin() {
-        if isStageDetailPinned {
-            isStageDetailPinned = false
-            isStageDetailHovered = false
-        } else {
-            isStageDetailPinned = true
-        }
+        isStageDetailPinned.toggle()
     }
 
-    private func updateStageDetailHover(_ phase: HoverPhase) {
-        switch phase {
-        case let .active(location):
-            isStageDetailHovered = isInsideCreatureMedallion(location)
-        case .ended:
-            isStageDetailHovered = false
-        }
-    }
-
-    private func isInsideCreatureMedallion(_ location: CGPoint) -> Bool {
-        let radius = markerSize / 2
-        let center = CGPoint(x: radius, y: radius)
-        let distance = hypot(location.x - center.x, location.y - center.y)
-        return distance <= radius
+    private func unlockAndClose() {
+        onUnlock()
+        isStageDetailPinned = false
     }
 
     private var stageDetailPresentation: Binding<Bool> {
         Binding(
             get: {
-                isStageDetailHovered || isStageDetailPinned
+                isStageDetailPinned
             },
             set: { isPresented in
                 guard !isPresented else { return }
-                isStageDetailHovered = false
                 isStageDetailPinned = false
             }
         )
     }
 
     private var helpText: String {
-        "\(stage.title)\n\(stage.subtitle)\n\(wallet.unlockGuidance(for: stage))\n\(stage.requirementText)"
+        "\(stage.title)\n\(stage.subtitle)\n\(wallet.unlockGuidance(for: stage))\nClick for details and unlock.\n\(stage.requirementText)"
     }
 
     private var accessibilityLabel: String {
