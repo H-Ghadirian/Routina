@@ -1,6 +1,8 @@
 import Foundation
 
 struct HomeAdventureProgression: Equatable {
+    static let xpPerRank = 500
+
     var totalCoins: Int
     var totalXP: Int
     var level: Int
@@ -22,6 +24,14 @@ struct HomeAdventureProgression: Equatable {
     var currentStage: HomeAdventureStage? {
         worlds.flatMap(\.stages).first { $0.status == .available }
             ?? worlds.flatMap(\.stages).last { $0.status == .cleared }
+    }
+
+    var nextRank: Int {
+        level + 1
+    }
+
+    var currentRankXP: Int {
+        totalXP % Self.xpPerRank
     }
 
     static let empty = HomeAdventureProgression(
@@ -269,7 +279,7 @@ enum HomeAdventureProgressionBuilder {
             + metrics.captureActionCount * 5
             + metrics.goalCount * 12
             + metrics.placeCheckInCount * 8
-        let levelXP = 500
+        let levelXP = HomeAdventureProgression.xpPerRank
         let level = max(1, totalXP / levelXP + 1)
         let currentLevelXP = max(0, totalXP - ((level - 1) * levelXP))
         let levelProgress = min(max(Double(currentLevelXP) / Double(levelXP), 0), 1)

@@ -14,6 +14,10 @@ struct HomeMacAdventureSidebarView: View {
         )
     }
 
+    private var totalStageCount: Int {
+        progression.worlds.flatMap(\.stages).count
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
@@ -28,28 +32,28 @@ struct HomeMacAdventureSidebarView: View {
                             systemImage: "circle.hexagongrid.fill"
                         )
                         HomeAdventureSidebarMetric(
-                            title: "Owned",
-                            value: "\(wallet.ownedItemCount)",
+                            title: "Inventory",
+                            value: "\(wallet.ownedItemCount)/\(progression.items.count)",
                             systemImage: "backpack.fill"
                         )
                     }
 
                     HStack(spacing: 8) {
                         HomeAdventureSidebarMetric(
-                            title: "Level",
+                            title: "XP Rank",
                             value: "\(progression.level)",
                             systemImage: "sparkles"
                         )
                         HomeAdventureSidebarMetric(
-                            title: "Stages",
-                            value: "\(progression.completedStageCount)",
+                            title: "Stages Cleared",
+                            value: "\(progression.completedStageCount)/\(totalStageCount)",
                             systemImage: "flag.checkered"
                         )
                     }
 
                     ProgressView(value: progression.levelProgress)
                         .tint(.yellow)
-                    Text("\(progression.totalXP.formatted()) XP")
+                    Text("\(progression.currentRankXP.formatted()) / \(HomeAdventureProgression.xpPerRank.formatted()) XP to Rank \(progression.nextRank)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -126,6 +130,10 @@ struct HomeMacAdventureView: View {
         )
     }
 
+    private var totalStageCount: Int {
+        progression.worlds.flatMap(\.stages).count
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
@@ -198,19 +206,43 @@ struct HomeMacAdventureView: View {
                 }
 
                 HStack(spacing: 12) {
-                    HomeAdventureMetricTile(title: "Spendable", value: wallet.spendableCoins.formatted(), systemImage: "circle.hexagongrid.fill", tint: .yellow)
-                    HomeAdventureMetricTile(title: "Level", value: "\(progression.level)", systemImage: "sparkles", tint: .purple)
-                    HomeAdventureMetricTile(title: "Stages", value: "\(progression.completedStageCount)/\(progression.worlds.flatMap(\.stages).count)", systemImage: "flag.checkered", tint: .green)
-                    HomeAdventureMetricTile(title: "Owned", value: "\(wallet.ownedItemCount)/\(progression.items.count)", systemImage: "backpack.fill", tint: .orange)
+                    HomeAdventureMetricTile(
+                        title: "Spendable Coins",
+                        value: wallet.spendableCoins.formatted(),
+                        detail: "Budget for unlock choices",
+                        systemImage: "circle.hexagongrid.fill",
+                        tint: .yellow
+                    )
+                    HomeAdventureMetricTile(
+                        title: "XP Rank",
+                        value: "\(progression.level)",
+                        detail: "\(progression.totalXP.formatted()) total XP",
+                        systemImage: "sparkles",
+                        tint: .purple
+                    )
+                    HomeAdventureMetricTile(
+                        title: "Stages Cleared",
+                        value: "\(progression.completedStageCount)/\(totalStageCount)",
+                        detail: "Map encounters finished",
+                        systemImage: "flag.checkered",
+                        tint: .green
+                    )
+                    HomeAdventureMetricTile(
+                        title: "Inventory",
+                        value: "\(wallet.ownedItemCount)/\(progression.items.count)",
+                        detail: "Companions and artifacts owned",
+                        systemImage: "backpack.fill",
+                        tint: .orange
+                    )
                 }
 
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
-                        Text("Level \(progression.level) progress")
+                        Text("XP toward Rank \(progression.nextRank)")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.white.opacity(0.9))
                         Spacer()
-                        Text("\(Int((progression.levelProgress * 100).rounded()))%")
+                        Text("\(progression.currentRankXP.formatted()) / \(HomeAdventureProgression.xpPerRank.formatted()) XP")
                             .font(.caption)
                             .foregroundStyle(.white.opacity(0.72))
                     }
@@ -395,16 +427,12 @@ private struct HomeAdventureWorldHeader: View {
                         .foregroundStyle(.white)
                         .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
 
-                    Text(world.isUnlocked ? "Open" : "Locked")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(world.isUnlocked ? .mint : .white.opacity(0.78))
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 4)
-                        .background(Color.black.opacity(0.38), in: Capsule())
-                        .overlay {
-                            Capsule()
-                                .stroke(Color.white.opacity(0.14), lineWidth: 1)
-                        }
+                    if !world.isUnlocked {
+                        Label("Locked", systemImage: "lock.fill")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.white.opacity(0.72))
+                            .labelStyle(.titleAndIcon)
+                    }
                 }
 
                 Text(world.subtitle)
@@ -461,9 +489,9 @@ private struct HomeAdventureWorldMedallion: View {
             HomeAdventureStageCreatureCrop(
                 assetName: creatureSheetAssetName,
                 index: 0,
-                status: isUnlocked ? .cleared : .locked
+                status: isUnlocked ? .cleared : .locked,
+                zoom: 1.14
             )
-            .padding(max(4, size * 0.08))
 
             LinearGradient(
                 colors: [
@@ -478,7 +506,12 @@ private struct HomeAdventureWorldMedallion: View {
         .clipShape(Circle())
         .overlay {
             Circle()
-                .strokeBorder(Color.white.opacity(isUnlocked ? 0.7 : 0.34), lineWidth: 2)
+                .strokeBorder(Color.black.opacity(0.42), lineWidth: max(3, size * 0.07))
+        }
+        .overlay {
+            Circle()
+                .inset(by: max(2, size * 0.05))
+                .strokeBorder(Color.white.opacity(isUnlocked ? 0.74 : 0.34), lineWidth: 1.6)
         }
         .shadow(color: Color.black.opacity(0.32), radius: 8, y: 4)
         .accessibilityHidden(true)
@@ -684,12 +717,12 @@ private enum HomeAdventureStagePinRole: Equatable {
     case next
     case regular
 
-    var badgeTitle: String? {
+    var compactBadgeTitle: String? {
         switch self {
         case .current:
-            return "YOU ARE HERE"
+            return "HERE"
         case .next:
-            return "NEXT UNLOCK"
+            return "NEXT"
         case .regular:
             return nil
         }
@@ -736,6 +769,7 @@ private struct HomeAdventureWorldEncounterField: View {
                     accent: accent,
                     creatureSheetAssetName: creatureSheetAssetName,
                     creatureIndex: index,
+                    progression: progression,
                     role: pinRole(for: stage),
                     unlockGuidance: unlockGuidance(for: stage)
                 )
@@ -778,76 +812,100 @@ private struct HomeAdventureStagePin: View {
     let accent: Color
     let creatureSheetAssetName: String
     let creatureIndex: Int
+    let progression: HomeAdventureProgression
     let role: HomeAdventureStagePinRole
     let unlockGuidance: String?
+    @State private var isStageDetailHovered = false
+    @State private var isStageDetailPinned = false
 
     var body: some View {
-        VStack(spacing: 5) {
-            if let badgeTitle = role.badgeTitle {
-                Text(badgeTitle)
-                    .font(.system(size: 8, weight: .black))
-                    .foregroundStyle(role == .current ? Color.black : Color.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(role.badgeTint, in: Capsule())
-                    .shadow(color: role.badgeTint.opacity(0.35), radius: 8)
-            }
-
-            ZStack(alignment: .bottomTrailing) {
-                HomeAdventureStageArtwork(
-                    stage: stage,
-                    accent: accent,
-                    creatureSheetAssetName: creatureSheetAssetName,
-                    creatureIndex: creatureIndex,
-                    role: role
-                )
-                    .frame(width: role.isHighlighted ? 74 : 66, height: role.isHighlighted ? 74 : 66)
-
-                Image(systemName: statusIcon)
-                    .font(.system(size: 13, weight: .heavy))
-                    .foregroundStyle(statusForeground)
-                    .frame(width: 26, height: 26)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .stroke(Color.white.opacity(0.22), lineWidth: 1)
-                    }
-                    .shadow(color: statusGlow, radius: 8)
-            }
-
-            VStack(spacing: 3) {
-                HStack(spacing: 4) {
-                    Text("\(stage.number)")
-                        .font(.caption2.weight(.black))
-                        .foregroundStyle(.white.opacity(0.72))
-                    Text(stage.title)
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                    HomeAdventureStageRequirementMarks(stage: stage)
+        VStack(spacing: 0) {
+            Button {
+                if isStageDetailPinned {
+                    isStageDetailPinned = false
+                    isStageDetailHovered = false
+                } else {
+                    isStageDetailPinned = true
                 }
+            } label: {
+                ZStack(alignment: .bottomTrailing) {
+                    HomeAdventureStageArtwork(
+                        stage: stage,
+                        accent: accent,
+                        creatureSheetAssetName: creatureSheetAssetName,
+                        creatureIndex: creatureIndex,
+                        role: role
+                    )
+                    .frame(width: markerSize, height: markerSize)
 
-                Text(unlockGuidance ?? stageProgressText)
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.72))
-                    .lineLimit(1)
+                    if let badgeTitle = role.compactBadgeTitle {
+                        Text(badgeTitle)
+                            .font(.system(size: 8, weight: .black))
+                            .foregroundStyle(role == .current ? Color.black : Color.white)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 4)
+                            .background(role.badgeTint, in: Capsule())
+                            .overlay {
+                                Capsule()
+                                    .stroke(Color.white.opacity(0.28), lineWidth: 1)
+                            }
+                            .shadow(color: role.badgeTint.opacity(0.38), radius: 7)
+                            .frame(width: markerSize, height: markerSize, alignment: .top)
+                            .offset(y: -8)
+                    }
+
+                    Image(systemName: statusIcon)
+                        .font(.system(size: 13, weight: .heavy))
+                        .foregroundStyle(statusForeground)
+                        .frame(width: 26, height: 26)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .stroke(Color.white.opacity(0.22), lineWidth: 1)
+                        }
+                        .shadow(color: statusGlow, radius: 8)
+                }
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 6)
-            .frame(width: 156)
-            .background {
-                Capsule()
-                    .fill(.ultraThinMaterial)
-                Capsule()
-                    .fill(plateFill)
+            .buttonStyle(.plain)
+            .onHover { isHovering in
+                isStageDetailHovered = isHovering
             }
-            .overlay {
-                Capsule()
-                    .stroke(Color.white.opacity(0.14), lineWidth: 1)
+            .help(helpText)
+            .accessibilityLabel(accessibilityLabel)
+            .popover(isPresented: stageDetailPresentation, arrowEdge: .bottom) {
+                HomeAdventureStageDetailPopover(
+                    stage: stage,
+                    progression: progression,
+                    guidanceText: unlockGuidance ?? stageProgressText
+                )
             }
         }
-        .frame(width: 168, height: 132)
-        .help("\(stage.subtitle)\n\(stage.requirementText)")
+        .frame(width: 112, height: 96)
+    }
+
+    private var markerSize: CGFloat {
+        role.isHighlighted ? 78 : 70
+    }
+
+    private var stageDetailPresentation: Binding<Bool> {
+        Binding(
+            get: {
+                isStageDetailHovered || isStageDetailPinned
+            },
+            set: { isPresented in
+                guard !isPresented else { return }
+                isStageDetailHovered = false
+                isStageDetailPinned = false
+            }
+        )
+    }
+
+    private var helpText: String {
+        "\(stage.title)\n\(stage.subtitle)\n\(unlockGuidance ?? stageProgressText)\n\(stage.requirementText)"
+    }
+
+    private var accessibilityLabel: String {
+        "Stage \(stage.number), \(stage.title), \(unlockGuidance ?? stageProgressText)"
     }
 
     private var stageProgressText: String {
@@ -884,17 +942,6 @@ private struct HomeAdventureStagePin: View {
         }
     }
 
-    private var plateFill: Color {
-        switch stage.status {
-        case .locked:
-            return Color.black.opacity(0.18)
-        case .available:
-            return accent.opacity(0.22)
-        case .cleared:
-            return Color.green.opacity(0.2)
-        }
-    }
-
     private var statusGlow: Color {
         if role == .current {
             return Color.yellow.opacity(0.55)
@@ -910,6 +957,151 @@ private struct HomeAdventureStagePin: View {
         case .cleared:
             return Color.mint.opacity(0.34)
         }
+    }
+}
+
+private struct HomeAdventureStageDetailPopover: View {
+    let stage: HomeAdventureStage
+    let progression: HomeAdventureProgression
+    let guidanceText: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            header
+            Divider()
+            requirements
+            Divider()
+            Text(guidanceText)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(statusTint)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(14)
+        .frame(width: 286, alignment: .leading)
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("Stage \(stage.number)")
+                    .font(.caption.weight(.black))
+                    .foregroundStyle(.secondary)
+
+                Text(stageStatusTitle)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(statusTint)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(statusTint.opacity(0.16), in: Capsule())
+            }
+
+            Text(stage.title)
+                .font(.headline.weight(.semibold))
+
+            Text(stage.subtitle)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var requirements: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("\(stage.stars)/3 stars")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            HomeAdventureStageRequirementRow(
+                title: "Coins",
+                systemImage: "circle.hexagongrid.fill",
+                tint: .yellow,
+                currentValue: progression.totalCoins,
+                targetValue: stage.requiredCoins,
+                isEarned: stage.coinStarEarned
+            )
+
+            HomeAdventureStageRequirementRow(
+                title: "Actions",
+                systemImage: "bolt.fill",
+                tint: .orange,
+                currentValue: progression.actionCount,
+                targetValue: stage.requiredActions,
+                isEarned: stage.actionStarEarned
+            )
+
+            HomeAdventureStageRequirementRow(
+                title: "Active days",
+                systemImage: "calendar",
+                tint: .cyan,
+                currentValue: progression.activeDayCount,
+                targetValue: stage.requiredActiveDays,
+                isEarned: stage.activeDayStarEarned
+            )
+        }
+    }
+
+    private var stageStatusTitle: String {
+        switch stage.status {
+        case .locked:
+            return "Locked"
+        case .available:
+            return "Open"
+        case .cleared:
+            return "Cleared"
+        }
+    }
+
+    private var statusTint: Color {
+        switch stage.status {
+        case .locked:
+            return .secondary
+        case .available:
+            return .yellow
+        case .cleared:
+            return .mint
+        }
+    }
+}
+
+private struct HomeAdventureStageRequirementRow: View {
+    let title: String
+    let systemImage: String
+    let tint: Color
+    let currentValue: Int
+    let targetValue: Int
+    let isEarned: Bool
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: systemImage)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(tint)
+                .frame(width: 16)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+
+                Text(progressText)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 8)
+
+            Image(systemName: isEarned ? "checkmark.circle.fill" : "circle")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(isEarned ? Color.mint : Color.secondary.opacity(0.55))
+        }
+    }
+
+    private var progressText: String {
+        if targetValue <= 0 {
+            return "Ready"
+        }
+
+        let cappedCurrentValue = min(currentValue, targetValue)
+        return "\(cappedCurrentValue.formatted()) / \(targetValue.formatted())"
     }
 }
 
@@ -931,15 +1123,15 @@ private struct HomeAdventureStageArtwork: View {
                 HomeAdventureStageCreatureCrop(
                     assetName: creatureSheetAssetName,
                     index: creatureIndex,
-                    status: stage.status
+                    status: stage.status,
+                    zoom: 1.16
                 )
-                .padding(stage.status == .locked ? 6 : 5)
 
                 LinearGradient(
                     colors: [
-                        Color.black.opacity(stage.status == .locked ? 0.5 : 0.18),
-                        accent.opacity(stage.status == .locked ? 0.12 : 0.2),
-                        Color.black.opacity(0.32)
+                        Color.white.opacity(stage.status == .locked ? 0.04 : 0.16),
+                        accent.opacity(stage.status == .locked ? 0.08 : 0.18),
+                        Color.black.opacity(stage.status == .locked ? 0.46 : 0.18)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -954,7 +1146,17 @@ private struct HomeAdventureStageArtwork: View {
         .clipShape(Circle())
         .overlay {
             Circle()
-                .stroke(artworkStroke, lineWidth: role.isHighlighted ? 3 : 1.5)
+                .strokeBorder(Color.black.opacity(stage.status == .locked ? 0.58 : 0.42), lineWidth: role.isHighlighted ? 5 : 4)
+        }
+        .overlay {
+            Circle()
+                .inset(by: role.isHighlighted ? 3 : 2.5)
+                .strokeBorder(artworkStroke, lineWidth: role.isHighlighted ? 3 : 2)
+        }
+        .overlay {
+            Circle()
+                .inset(by: role.isHighlighted ? 7 : 6)
+                .strokeBorder(Color.white.opacity(stage.status == .locked ? 0.18 : 0.42), lineWidth: 1)
         }
         .shadow(color: artworkGlow, radius: role.isHighlighted || stage.status == .available ? 18 : 8)
         .saturation(stage.status == .locked ? 0.12 : 1)
@@ -995,26 +1197,26 @@ private struct HomeAdventureStageCreatureCrop: View {
     let assetName: String
     let index: Int
     let status: HomeAdventureStage.Status
+    let zoom: CGFloat
 
     var body: some View {
         GeometryReader { geometry in
             let size = geometry.size
-            let columns: CGFloat = 3
-            let rows: CGFloat = 2
-            let clampedIndex = max(0, min(index, 5))
-            let column = CGFloat(clampedIndex % Int(columns))
-            let row = CGFloat(clampedIndex / Int(columns))
-            let imageWidth = size.width * columns
-            let imageHeight = size.height * rows
+            let grid = HomeAdventureCreatureSheetGrid(assetName: assetName)
+            let clampedIndex = max(0, min(index, grid.cellCount - 1))
+            let column = CGFloat(clampedIndex % grid.columns)
+            let row = CGFloat(clampedIndex / grid.columns)
+            let cellSize = grid.renderedCellSize(in: size, zoom: zoom)
+            let imageWidth = cellSize.width * CGFloat(grid.columns)
+            let imageHeight = cellSize.height * CGFloat(grid.rows)
 
             ZStack {
                 Image(assetName)
                     .resizable()
-                    .scaledToFill()
                     .frame(width: imageWidth, height: imageHeight)
                     .offset(
-                        x: ((columns - 1) / 2 - column) * size.width,
-                        y: ((rows - 1) / 2 - row) * size.height
+                        x: ((CGFloat(grid.columns) - 1) / 2 - column) * cellSize.width,
+                        y: ((CGFloat(grid.rows) - 1) / 2 - row) * cellSize.height
                     )
                     .saturation(status == .locked ? 0.04 : 1.08)
                     .brightness(status == .locked ? -0.2 : 0.02)
@@ -1027,22 +1229,46 @@ private struct HomeAdventureStageCreatureCrop: View {
     }
 }
 
-private struct HomeAdventureStageRequirementMarks: View {
-    let stage: HomeAdventureStage
+private struct HomeAdventureCreatureSheetGrid {
+    let assetName: String
+    let columns = 3
+    let rows = 2
 
-    var body: some View {
-        HStack(spacing: 2) {
-            requirementMark(systemImage: "circle.hexagongrid.fill", isEarned: stage.coinStarEarned, tint: .yellow)
-            requirementMark(systemImage: "bolt.fill", isEarned: stage.actionStarEarned, tint: .orange)
-            requirementMark(systemImage: "calendar", isEarned: stage.activeDayStarEarned, tint: .cyan)
+    var cellCount: Int {
+        columns * rows
+    }
+
+    var cellAspectRatio: CGFloat {
+        let size = pixelSize
+        let cellWidth = size.width / CGFloat(columns)
+        let cellHeight = size.height / CGFloat(rows)
+        return cellWidth / cellHeight
+    }
+
+    func renderedCellSize(in viewport: CGSize, zoom: CGFloat) -> CGSize {
+        let width = max(viewport.width, 1)
+        let height = max(viewport.height, 1)
+        let viewportAspectRatio = width / height
+        let safeZoom = max(1, zoom)
+
+        if cellAspectRatio >= viewportAspectRatio {
+            let renderedHeight = height * safeZoom
+            return CGSize(width: renderedHeight * cellAspectRatio, height: renderedHeight)
+        } else {
+            let renderedWidth = width * safeZoom
+            return CGSize(width: renderedWidth, height: renderedWidth / cellAspectRatio)
         }
     }
 
-    private func requirementMark(systemImage: String, isEarned: Bool, tint: Color) -> some View {
-        Image(systemName: systemImage)
-            .font(.system(size: 8, weight: .bold))
-            .foregroundStyle(isEarned ? tint : Color.white.opacity(0.32))
-            .frame(width: 10, height: 10)
+    private var pixelSize: CGSize {
+        switch assetName {
+        case "AdventureClockworkCityCreatures":
+            return CGSize(width: 1581, height: 995)
+        case "AdventureLunarArchiveCreatures":
+            return CGSize(width: 1636, height: 961)
+        default:
+            return CGSize(width: 1536, height: 1024)
+        }
     }
 }
 
@@ -1235,6 +1461,7 @@ private struct HomeAdventureItemArtwork: View {
 private struct HomeAdventureMetricTile: View {
     let title: String
     let value: String
+    let detail: String
     let systemImage: String
     let tint: Color
 
@@ -1248,7 +1475,13 @@ private struct HomeAdventureMetricTile: View {
                     .font(.headline)
                 Text(title)
                     .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.white.opacity(0.78))
+                    .lineLimit(1)
+                Text(detail)
+                    .font(.caption2)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
