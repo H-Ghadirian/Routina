@@ -168,14 +168,30 @@ struct HomeMacAdventureView: View {
                         Text("Adventure Map")
                             .font(.system(size: 30, weight: .bold))
                             .foregroundStyle(.white)
+                            .shadow(color: .black.opacity(0.52), radius: 2, y: 1)
                         Text("Earn coins from real routine progress, then choose which companions and artifacts to unlock.")
-                            .font(.callout)
-                            .foregroundStyle(.white.opacity(0.82))
+                            .font(.callout.weight(.semibold))
+                            .foregroundStyle(.white.opacity(0.92))
+                            .lineLimit(2)
+                            .shadow(color: .black.opacity(0.55), radius: 2, y: 1)
                         if let world = progression.currentWorld {
                             Text("Current world: \(world.title)")
                                 .font(.caption.weight(.semibold))
-                                .foregroundStyle(.white.opacity(0.72))
+                                .foregroundStyle(.white.opacity(0.82))
+                                .shadow(color: .black.opacity(0.45), radius: 1, y: 1)
                         }
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 11)
+                    .background {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(Color.black.opacity(0.42))
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(Color.white.opacity(0.04))
+                    }
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
                     }
 
                     Spacer()
