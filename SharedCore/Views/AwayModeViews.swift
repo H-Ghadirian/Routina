@@ -605,12 +605,17 @@ private struct AwayStartSummaryPanel: View {
             } label: {
                 Label("Start Away", systemImage: "lock.shield.fill")
                     .font(.headline.weight(.semibold))
+                    .foregroundStyle(preset.actionForeground)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 7)
+                    .padding(.vertical, 11)
+                    .background(preset.actionTint, in: Capsule())
+                    .overlay {
+                        Capsule()
+                            .stroke(.white.opacity(0.16), lineWidth: 1)
+                    }
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .tint(preset.tint)
+            .buttonStyle(.plain)
+            .contentShape(Capsule())
             .keyboardShortcut(.defaultAction)
 
             if let errorText {
@@ -676,6 +681,24 @@ private extension AwaySessionPreset {
             return .pink
         case .custom:
             return .cyan
+        }
+    }
+
+    var actionTint: Color {
+        switch self {
+        case .wake:
+            return Color(red: 0.96, green: 0.57, blue: 0.16)
+        default:
+            return tint
+        }
+    }
+
+    var actionForeground: Color {
+        switch self {
+        case .windDown:
+            return .white
+        default:
+            return Color.black.opacity(0.84)
         }
     }
 

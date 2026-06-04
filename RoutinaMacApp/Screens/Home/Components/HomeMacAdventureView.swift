@@ -1165,6 +1165,10 @@ private struct HomeAdventureStageDetailPopover: View {
             header
             Divider()
             requirements
+            if showsSpendableBudget {
+                Divider()
+                spendableBudget
+            }
             Divider()
             Text(guidanceText)
                 .font(.caption.weight(.semibold))
@@ -1182,7 +1186,7 @@ private struct HomeAdventureStageDetailPopover: View {
                 Button {
                     onUnlock()
                 } label: {
-                    Label(wallet.canUnlock(stage) ? "Unlock Creature" : "Locked", systemImage: wallet.canUnlock(stage) ? "lock.open.fill" : "lock.fill")
+                    Label(unlockButtonTitle, systemImage: unlockButtonIcon)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
@@ -1226,7 +1230,7 @@ private struct HomeAdventureStageDetailPopover: View {
                 .foregroundStyle(.secondary)
 
             HomeAdventureStageRequirementRow(
-                title: "Coins",
+                title: "Coins earned",
                 systemImage: "circle.hexagongrid.fill",
                 tint: .yellow,
                 currentValue: progression.totalCoins,
@@ -1254,7 +1258,66 @@ private struct HomeAdventureStageDetailPopover: View {
         }
     }
 
+    private var spendableBudget: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Unlock price")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            HomeAdventureStageRequirementRow(
+                title: "Spendable budget",
+                systemImage: "circle.hexagongrid.fill",
+                tint: .yellow,
+                currentValue: wallet.spendableCoins,
+                targetValue: stage.unlockCost,
+                isEarned: wallet.spendableCoins >= stage.unlockCost
+            )
+        }
+    }
+
+    private var showsSpendableBudget: Bool {
+        !wallet.isStageUnlocked(stage)
+            && isWorldChosen
+            && stage.isEligible
+    }
+
+    private var isWorldChosen: Bool {
+        wallet.unlockedWorldIDs.contains(stage.worldID)
+    }
+
+    private var spendableCoinGap: Int {
+        max(0, stage.unlockCost - wallet.spendableCoins)
+    }
+
+    private var isEligibleButCannotAfford: Bool {
+        showsSpendableBudget && spendableCoinGap > 0
+    }
+
+    private var unlockButtonTitle: String {
+        if wallet.canUnlock(stage) {
+            return "Unlock Creature"
+        }
+        if isEligibleButCannotAfford {
+            return "Need \(spendableCoinGap.formatted()) Spendable"
+        }
+        return "Locked"
+    }
+
+    private var unlockButtonIcon: String {
+        wallet.canUnlock(stage) ? "lock.open.fill" : "lock.fill"
+    }
+
     private var stageStatusTitle: String {
+        if wallet.isStageUnlocked(stage) {
+            return "Unlocked"
+        }
+        if wallet.canUnlock(stage) {
+            return "Ready"
+        }
+        if isEligibleButCannotAfford {
+            return "Need Coins"
+        }
+
         switch stage.status {
         case .locked:
             return "Locked"
@@ -1266,6 +1329,13 @@ private struct HomeAdventureStageDetailPopover: View {
     }
 
     private var statusTint: Color {
+        if wallet.isStageUnlocked(stage) {
+            return .mint
+        }
+        if wallet.canUnlock(stage) || isEligibleButCannotAfford {
+            return .yellow
+        }
+
         switch stage.status {
         case .locked:
             return .secondary
