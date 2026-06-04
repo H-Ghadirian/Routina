@@ -119,16 +119,28 @@ struct HomeAdventureWallet: Equatable {
         max(0, totalCoins - spentCoins)
     }
 
+    var purchasableItems: [HomeAdventureItem] {
+        items.filter { canUnlock($0) }
+    }
+
+    var purchasableWorlds: [HomeAdventureWorld] {
+        worlds.filter { canUnlock($0) }
+    }
+
+    var purchasableStages: [HomeAdventureStage] {
+        worlds.flatMap(\.stages).filter { canUnlock($0) }
+    }
+
     var firstPurchasableItem: HomeAdventureItem? {
-        items.first { canUnlock($0) }
+        purchasableItems.first
     }
 
     var firstPurchasableWorld: HomeAdventureWorld? {
-        worlds.first { canUnlock($0) }
+        purchasableWorlds.first
     }
 
     var firstPurchasableStage: HomeAdventureStage? {
-        worlds.flatMap(\.stages).first { canUnlock($0) }
+        purchasableStages.first
     }
 
     func owns(_ item: HomeAdventureItem) -> Bool {

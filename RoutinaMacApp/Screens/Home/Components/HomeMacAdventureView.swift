@@ -86,15 +86,29 @@ struct HomeMacAdventureSidebarView: View {
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                 if let world = wallet.firstPurchasableWorld {
-                    HomeAdventureSidebarWorldCard(title: "Choose World", world: world, wallet: wallet)
+                    HomeAdventureSidebarWorldCard(
+                        title: wallet.purchasableWorlds.count == 1 ? "Ready World" : "Ready Worlds",
+                        world: world,
+                        wallet: wallet,
+                        readyCount: wallet.purchasableWorlds.count
+                    )
                 }
 
                 if let stage = wallet.firstPurchasableStage {
-                    HomeAdventureSidebarStageCard(title: "Choose Creature", stage: stage, wallet: wallet)
+                    HomeAdventureSidebarStageCard(
+                        title: wallet.purchasableStages.count == 1 ? "Ready Creature" : "Ready Creatures",
+                        stage: stage,
+                        wallet: wallet,
+                        readyCount: wallet.purchasableStages.count
+                    )
                 }
 
                 if let item = wallet.firstPurchasableItem {
-                    HomeAdventureSidebarItemCard(item: item, wallet: wallet)
+                    HomeAdventureSidebarItemCard(
+                        item: item,
+                        wallet: wallet,
+                        readyCount: wallet.purchasableItems.count
+                    )
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
@@ -322,8 +336,12 @@ struct HomeMacAdventureView: View {
         if let world = wallet.unlockedWorlds.last {
             return "Chosen world: \(world.title)"
         }
-        if let world = wallet.firstPurchasableWorld {
-            return "Choose a world to begin: \(world.title)"
+        let purchasableWorlds = wallet.purchasableWorlds
+        if purchasableWorlds.count > 1 {
+            return "\(purchasableWorlds.count) worlds ready to choose"
+        }
+        if let world = purchasableWorlds.first {
+            return "World ready to choose: \(world.title)"
         }
         return "\(wallet.unlockedWorldCount)/\(totalWorldCount) worlds chosen"
     }
@@ -706,9 +724,9 @@ private struct HomeAdventureGuideStrip: View {
             )
 
             HomeAdventureGuideCard(
-                title: "Do this next",
-                value: nextChoiceText,
-                detail: nextChoiceDetail,
+                title: "Ready choices",
+                value: readyChoiceText,
+                detail: readyChoiceDetail,
                 systemImage: "lock.open.fill",
                 tint: .orange
             )
@@ -751,30 +769,30 @@ private struct HomeAdventureGuideStrip: View {
         return "Start by choosing an eligible world."
     }
 
-    private var nextChoiceText: String {
-        if let world = wallet.firstPurchasableWorld {
-            return "Choose \(world.title)"
-        }
-        if let stage = wallet.firstPurchasableStage {
-            return "Unlock \(stage.title)"
-        }
-        if let item = wallet.firstPurchasableItem {
-            return "Unlock \(item.title)"
-        }
-        return "Earn more progress"
+    private var readyChoiceText: String {
+        let choices = [
+            choiceCountText(wallet.purchasableWorlds.count, singular: "world", plural: "worlds"),
+            choiceCountText(wallet.purchasableStages.count, singular: "creature", plural: "creatures"),
+            choiceCountText(wallet.purchasableItems.count, singular: "item", plural: "items")
+        ].compactMap(\.self)
+
+        return choices.isEmpty ? "Earn more progress" : choices.joined(separator: " + ")
     }
 
-    private var nextChoiceDetail: String {
-        if let world = wallet.firstPurchasableWorld {
-            return wallet.unlockGuidance(for: world)
-        }
-        if let stage = wallet.firstPurchasableStage {
-            return wallet.unlockGuidance(for: stage)
-        }
-        if let item = wallet.firstPurchasableItem {
-            return wallet.unlockGuidance(for: item)
+    private var readyChoiceDetail: String {
+        let readyChoiceCount = wallet.purchasableWorlds.count
+            + wallet.purchasableStages.count
+            + wallet.purchasableItems.count
+
+        if readyChoiceCount > 0 {
+            return "Pick any highlighted choice. Order is yours."
         }
         return "Earn coins, actions, and active days to make choices ready."
+    }
+
+    private func choiceCountText(_ count: Int, singular: String, plural: String) -> String? {
+        guard count > 0 else { return nil }
+        return "\(count) ready \(count == 1 ? singular : plural)"
     }
 }
 
@@ -852,7 +870,7 @@ private struct HomeAdventureUnlockGuidance {
         if activeDayGap > 0 {
             return "Use Routina on \(activeDayGap.formatted()) more active days."
         }
-        return "Ready: the next encounter is open."
+        return "Ready: choose this creature whenever you want."
     }
 
     var coinGap: Int {
@@ -963,7 +981,7 @@ private struct HomeAdventureWorldEncounterField: View {
         if stage.id == lastUnlockedStageID {
             return .current
         }
-        if stage.id == firstReadyStageID {
+        if wallet.canUnlock(stage) {
             return .next
         }
         return .regular
@@ -971,10 +989,6 @@ private struct HomeAdventureWorldEncounterField: View {
 
     private var lastUnlockedStageID: String? {
         stages.last { wallet.isStageUnlocked($0) }?.id
-    }
-
-    private var firstReadyStageID: String? {
-        stages.first { wallet.canUnlock($0) }?.id
     }
 }
 
@@ -1752,6 +1766,7 @@ private struct HomeAdventureSidebarWorldCard: View {
     let title: String
     let world: HomeAdventureWorld
     let wallet: HomeAdventureWallet
+    let readyCount: Int
 
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
@@ -1759,20 +1774,35 @@ private struct HomeAdventureSidebarWorldCard: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.orange)
 
-            Text(world.title)
+            Text(readyTitle)
                 .font(.callout.weight(.medium))
 
-            Text(wallet.unlockGuidance(for: world))
+            Text(readyDetail)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(wallet.canUnlock(world) ? Color.orange : Color.secondary)
 
-            Text("\(world.unlockCost.formatted()) coins | \(world.stages.count) creatures")
+            Text(readyFootnote)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    private var readyTitle: String {
+        readyCount > 1 ? "\(readyCount) worlds ready" : world.title
+    }
+
+    private var readyDetail: String {
+        readyCount > 1 ? "Choose any highlighted world card." : wallet.unlockGuidance(for: world)
+    }
+
+    private var readyFootnote: String {
+        if readyCount > 1 {
+            return "Costs use spendable coins."
+        }
+        return "\(world.unlockCost.formatted()) coins | \(world.stages.count) creatures"
     }
 }
 
@@ -1780,6 +1810,7 @@ private struct HomeAdventureSidebarStageCard: View {
     let title: String
     let stage: HomeAdventureStage
     let wallet: HomeAdventureWallet
+    let readyCount: Int
 
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
@@ -1787,14 +1818,14 @@ private struct HomeAdventureSidebarStageCard: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.orange)
 
-            Text(stage.title)
+            Text(readyTitle)
                 .font(.callout.weight(.medium))
 
-            Text(wallet.unlockGuidance(for: stage))
+            Text(readyDetail)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(wallet.canUnlock(stage) ? Color.orange : Color.secondary)
 
-            Text(stage.requirementText)
+            Text(readyFootnote)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -1802,11 +1833,24 @@ private struct HomeAdventureSidebarStageCard: View {
         .padding(12)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
+
+    private var readyTitle: String {
+        readyCount > 1 ? "\(readyCount) creatures ready" : stage.title
+    }
+
+    private var readyDetail: String {
+        readyCount > 1 ? "Unlock any glowing creature." : wallet.unlockGuidance(for: stage)
+    }
+
+    private var readyFootnote: String {
+        readyCount > 1 ? "No creature order is required." : stage.requirementText
+    }
 }
 
 private struct HomeAdventureSidebarItemCard: View {
     let item: HomeAdventureItem
     let wallet: HomeAdventureWallet
+    let readyCount: Int
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -1814,14 +1858,14 @@ private struct HomeAdventureSidebarItemCard: View {
                 Image(systemName: item.systemImage)
                     .foregroundStyle(.orange)
                     .frame(width: 18)
-                Text("Ready Item")
+                Text(readyCount == 1 ? "Ready Item" : "Ready Items")
                     .font(.subheadline.weight(.semibold))
             }
 
-            Text(item.title)
+            Text(readyTitle)
                 .font(.callout.weight(.medium))
 
-            Text("\(item.requiredCoins.formatted()) coins | \(wallet.spendableCoins.formatted()) spendable")
+            Text(readyCostText)
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -1833,6 +1877,16 @@ private struct HomeAdventureSidebarItemCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    private var readyTitle: String {
+        readyCount > 1 ? "\(readyCount) items ready" : item.title
+    }
+
+    private var readyCostText: String {
+        readyCount > 1
+            ? "\(wallet.spendableCoins.formatted()) spendable coins"
+            : "\(item.requiredCoins.formatted()) coins | \(wallet.spendableCoins.formatted()) spendable"
     }
 }
 
@@ -1847,7 +1901,7 @@ private struct HomeAdventureSidebarUnlockCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 5) {
-                Text("Next Unlock")
+                Text("Unlock Goal")
                     .font(.subheadline.weight(.semibold))
                 Text("Stage \(stage.number): \(stage.title)")
                     .font(.callout.weight(.medium))

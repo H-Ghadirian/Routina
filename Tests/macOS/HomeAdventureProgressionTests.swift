@@ -260,6 +260,123 @@ struct HomeAdventureProgressionTests {
     }
 
     @Test
+    func wallet_allowsReadyWorldsAndCreaturesToBeChosenOutOfOrder() {
+        func stage(
+            id: String,
+            worldID: String,
+            number: Int,
+            title: String,
+            requiredCoins: Int
+        ) -> HomeAdventureStage {
+            HomeAdventureStage(
+                id: id,
+                worldID: worldID,
+                number: number,
+                title: title,
+                subtitle: "Ready creature",
+                requiredCoins: requiredCoins,
+                requiredActions: 4,
+                requiredActiveDays: 2,
+                rewardCoins: 20,
+                coinStarEarned: true,
+                actionStarEarned: true,
+                activeDayStarEarned: true,
+                status: .cleared
+            )
+        }
+
+        let firstWorld = HomeAdventureWorld(
+            id: "morning-meadow",
+            title: "Morning Meadow",
+            subtitle: "Starter world",
+            systemImage: "sun.max.fill",
+            accentName: "green",
+            artAssetName: "AdventureMorningMeadow",
+            requiredCoins: 0,
+            requiredActions: 0,
+            stages: [
+                stage(
+                    id: "meadow-1",
+                    worldID: "morning-meadow",
+                    number: 1,
+                    title: "First Steps",
+                    requiredCoins: 50
+                )
+            ]
+        )
+        let laterWorld = HomeAdventureWorld(
+            id: "lunar-archive",
+            title: "Lunar Archive",
+            subtitle: "Later world",
+            systemImage: "moon.stars.fill",
+            accentName: "purple",
+            artAssetName: "AdventureLunarArchive",
+            requiredCoins: 500,
+            requiredActions: 8,
+            stages: [
+                stage(
+                    id: "archive-1",
+                    worldID: "lunar-archive",
+                    number: 13,
+                    title: "Quiet Launch",
+                    requiredCoins: 100
+                ),
+                stage(
+                    id: "archive-2",
+                    worldID: "lunar-archive",
+                    number: 14,
+                    title: "Memory Vault",
+                    requiredCoins: 300
+                )
+            ]
+        )
+        let worlds = [firstWorld, laterWorld]
+
+        let freshWallet = HomeAdventureWallet(
+            totalCoins: 1_000,
+            actionCount: 50,
+            activeDayCount: 10,
+            worlds: worlds,
+            items: [],
+            ownedItemIDs: []
+        )
+
+        #expect(freshWallet.purchasableWorlds.map(\.id) == ["morning-meadow", "lunar-archive"])
+        #expect(freshWallet.canUnlock(laterWorld) == true)
+        #expect(freshWallet.canUnlock(laterWorld.stages[1]) == false)
+
+        let laterWorldWallet = HomeAdventureWallet(
+            totalCoins: 1_000,
+            actionCount: 50,
+            activeDayCount: 10,
+            worlds: worlds,
+            items: [],
+            ownedItemIDs: [],
+            unlockedWorldIDs: ["lunar-archive"]
+        )
+
+        #expect(laterWorldWallet.isWorldUnlocked(laterWorld) == true)
+        #expect(laterWorldWallet.isWorldUnlocked(firstWorld) == false)
+        #expect(laterWorldWallet.purchasableStages.map(\.id) == ["archive-1", "archive-2"])
+        #expect(laterWorldWallet.canUnlock(laterWorld.stages[1]) == true)
+
+        let skippedCreatureWallet = HomeAdventureWallet(
+            totalCoins: 1_000,
+            actionCount: 50,
+            activeDayCount: 10,
+            worlds: worlds,
+            items: [],
+            ownedItemIDs: [],
+            unlockedWorldIDs: ["lunar-archive"],
+            unlockedStageIDs: ["archive-2"]
+        )
+
+        #expect(skippedCreatureWallet.isStageUnlocked(laterWorld.stages[1]) == true)
+        #expect(skippedCreatureWallet.isStageUnlocked(laterWorld.stages[0]) == false)
+        #expect(skippedCreatureWallet.canUnlock(laterWorld.stages[0]) == true)
+    }
+
+    @Test
     func build_keepsSevenThousandCoinsInMidgame() {
         let referenceDate = Date(timeIntervalSince1970: 1_800_000_000)
         let calendar = Calendar(identifier: .gregorian)
