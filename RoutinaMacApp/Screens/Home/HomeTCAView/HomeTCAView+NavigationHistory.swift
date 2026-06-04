@@ -16,6 +16,7 @@ extension HomeTCAView {
     var shouldRecordMacNavigationSnapshot: Bool {
         !store.isAddRoutineSheetPresented
             && !store.isMacFilterDetailPresented
+            && !isAwayStartPresented
             && store.macSidebarMode != .addTask
     }
 

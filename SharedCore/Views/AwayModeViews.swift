@@ -66,7 +66,9 @@ struct AwaySessionStartSheet: View {
     @State private var durationMinutes = AwaySessionPreset.wake.defaultDurationMinutes
     @State private var hasCustomizedDuration = false
     @State private var errorText: String?
+    var onCancel: () -> Void = {}
     var onStarted: () -> Void = {}
+    var dismissOnCompletion = true
 
     var body: some View {
         NavigationStack {
@@ -118,7 +120,7 @@ struct AwaySessionStartSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
-                        dismiss()
+                        cancel()
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
@@ -154,6 +156,14 @@ struct AwaySessionStartSheet: View {
     }
 
     @MainActor
+    private func cancel() {
+        onCancel()
+        if dismissOnCompletion {
+            dismiss()
+        }
+    }
+
+    @MainActor
     private func startAway() {
         do {
             _ = try AwaySessionSupport.startAway(
@@ -164,7 +174,9 @@ struct AwaySessionStartSheet: View {
             )
             errorText = nil
             onStarted()
-            dismiss()
+            if dismissOnCompletion {
+                dismiss()
+            }
         } catch {
             errorText = error.localizedDescription
             NSLog("Failed to start away session: \(error.localizedDescription)")

@@ -226,6 +226,7 @@ extension HomeTCAView {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
+        isAwayStartPresented = false
         placeCheckInMapActivity = activity
         withAnimation(.easeInOut(duration: 0.18)) {
             store.send(.setMacFilterDetailPresented(false))
@@ -244,6 +245,7 @@ extension HomeTCAView {
                 isEventEditorPresented = false
                 isEmotionLogEditorPresented = false
                 isNoteEditorPresented = false
+                isAwayStartPresented = false
                 switch selection {
                 case let .task(taskID):
                     selectedNoteID = nil
@@ -266,6 +268,7 @@ extension HomeTCAView {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
+        isAwayStartPresented = false
         store.send(.macSidebarModeChanged(.routines))
     }
 
@@ -273,6 +276,7 @@ extension HomeTCAView {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
+        isAwayStartPresented = false
         store.send(.macSidebarModeChanged(.board))
     }
 
@@ -280,6 +284,7 @@ extension HomeTCAView {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
+        isAwayStartPresented = false
         store.send(.macSidebarModeChanged(.goals))
     }
 
@@ -287,6 +292,7 @@ extension HomeTCAView {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
+        isAwayStartPresented = false
         macHomeProgressMode = .adventure
         store.send(.macSidebarModeChanged(.adventure))
     }
@@ -294,6 +300,7 @@ extension HomeTCAView {
     func openAddNote() {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
+        isAwayStartPresented = false
         editingNoteID = nil
         selectedNoteID = nil
         macHomeDetailMode = .details
@@ -306,6 +313,7 @@ extension HomeTCAView {
     func openEditNote(_ noteID: UUID) {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
+        isAwayStartPresented = false
         editingNoteID = noteID
         selectedNoteID = noteID
         macHomeDetailMode = .details
@@ -323,6 +331,7 @@ extension HomeTCAView {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
+        isAwayStartPresented = false
         editingNoteID = nil
         selectedNoteID = noteID
         macHomeDetailMode = .details
@@ -334,6 +343,7 @@ extension HomeTCAView {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
+        isAwayStartPresented = false
         store.send(.macSidebarModeChanged(.goals))
         goalsStore.send(.addGoalTapped)
     }
@@ -342,6 +352,7 @@ extension HomeTCAView {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
+        isAwayStartPresented = false
         macHomeProgressMode = .stats
         store.send(.macSidebarModeChanged(.stats))
     }
@@ -350,6 +361,7 @@ extension HomeTCAView {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
+        isAwayStartPresented = false
         store.send(.macSidebarModeChanged(.settings))
         settingsStore.send(.onAppear)
     }
@@ -358,6 +370,7 @@ extension HomeTCAView {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
+        isAwayStartPresented = false
         store.send(.selectedSettingsSectionChanged(.places))
         store.send(.macSidebarModeChanged(.settings))
         settingsStore.send(.onAppear)
@@ -674,6 +687,7 @@ extension HomeTCAView {
     func openAddEmotion() {
         isEventEditorPresented = false
         isNoteEditorPresented = false
+        isAwayStartPresented = false
         selectedNoteID = nil
         macHomeDetailMode = .details
         store.send(.setSelectedTask(nil))
@@ -690,6 +704,7 @@ extension HomeTCAView {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
+        isAwayStartPresented = false
         selectedNoteID = nil
         macHomeDetailMode = .details
         store.send(.setSelectedTask(nil))
@@ -706,6 +721,7 @@ extension HomeTCAView {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
+        isAwayStartPresented = false
         selectedNoteID = nil
         macHomeDetailMode = .details
         searchTextBinding.wrappedValue = ""
@@ -728,6 +744,7 @@ extension HomeTCAView {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
+        isAwayStartPresented = false
         selectedNoteID = nil
         macHomeDetailMode = .details
         searchTextBinding.wrappedValue = ""
@@ -750,7 +767,7 @@ extension HomeTCAView {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
-        isAwayStartSheetPresented = false
+        isAwayStartPresented = false
         store.send(.setSelectedTask(nil))
         store.send(.setAddRoutineSheet(false))
         openMacPlacesWorkspace(activity: nil)
@@ -760,16 +777,26 @@ extension HomeTCAView {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
+        selectedNoteID = nil
+        macHomeDetailMode = .details
         store.send(.setSelectedTask(nil))
         store.send(.setAddRoutineSheet(false))
-        isAwayStartSheetPresented = true
+        store.send(.setMacFilterDetailPresented(false))
+        if store.macSidebarMode != .routines {
+            store.send(.macSidebarModeChanged(.routines))
+        }
+        isAwayStartPresented = true
+    }
+
+    func closeAwayStart() {
+        isAwayStartPresented = false
     }
 
     func startSleepFromAddMenu() {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
-        isAwayStartSheetPresented = false
+        isAwayStartPresented = false
         store.send(.setSelectedTask(nil))
         store.send(.setAddRoutineSheet(false))
         RoutinaMacSleepModeStarter.requestStartUsingSharedPersistence()

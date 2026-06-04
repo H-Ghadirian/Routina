@@ -79,7 +79,7 @@ struct HomeTCAView: View {
     @State var isEmotionLogEditorPresented = false
     @State var isNoteEditorPresented = false
     @State var editingNoteID: UUID?
-    @State var isAwayStartSheetPresented = false
+    @State var isAwayStartPresented = false
     @State var selectedNoteID: UUID?
     @State var isRefreshScheduled = false
     @State var relatedFilterTagSuggestionAnchor: String?
@@ -155,10 +155,6 @@ homeContent
             )
                 .sheet(isPresented: isFilterSheetPresentedBinding) {
                     homeFiltersSheet
-                }
-                .sheet(isPresented: $isAwayStartSheetPresented) {
-                    AwaySessionStartSheet()
-                        .frame(minWidth: 360, minHeight: 460)
                 }
                 .task {
                     syncFileAttachmentTaskIDs()

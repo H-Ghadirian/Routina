@@ -48,6 +48,7 @@ extension HomeTCAView {
             && !isMacAddTaskMode
             && !isEmotionLogEditorPresented
             && !isNoteEditorPresented
+            && !isAwayStartPresented
             && store.addRoutineState == nil
     }
 
@@ -56,6 +57,7 @@ extension HomeTCAView {
             && isMacStatsMode
             && !isEmotionLogEditorPresented
             && !isNoteEditorPresented
+            && !isAwayStartPresented
             && store.addRoutineState == nil
     }
 
@@ -120,6 +122,14 @@ extension HomeTCAView {
                         onSaved: openSavedNote
                     )
                 }
+            } else if isAwayStartPresented {
+                AwaySessionStartSheet(
+                    onCancel: closeAwayStart,
+                    onStarted: closeAwayStart,
+                    dismissOnCompletion: false
+                )
+                .frame(maxWidth: 560, maxHeight: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 MacDetailContainerView(
                     store: store,
@@ -282,11 +292,13 @@ extension HomeTCAView {
             if taskID != nil {
                 isEmotionLogEditorPresented = false
                 isNoteEditorPresented = false
+                isAwayStartPresented = false
             }
         }
         .onChange(of: store.macSidebarMode) { _, mode in
             if mode != .routines {
                 isNoteEditorPresented = false
+                isAwayStartPresented = false
             }
         }
         .onChange(of: store.isAddRoutineSheetPresented) { wasPresented, isPresented in
@@ -361,6 +373,7 @@ extension HomeTCAView {
     func openAddTask() {
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
+        isAwayStartPresented = false
         addEditFormCoordinator.resetRevealedTaskFormSections()
         store.send(.macSidebarModeChanged(.addTask))
         store.send(.setAddRoutineSheet(true))
