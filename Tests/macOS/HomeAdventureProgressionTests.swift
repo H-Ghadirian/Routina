@@ -121,6 +121,67 @@ struct HomeAdventureProgressionTests {
     }
 
     @Test
+    func wallet_countsSpendableCoinsForChosenOwnedItems() {
+        let items = [
+            HomeAdventureItem(
+                id: "starter",
+                title: "Starter",
+                subtitle: "First item",
+                systemImage: "sparkles",
+                kind: .tool,
+                requiredCoins: 200,
+                requiredStageCount: 1,
+                isUnlocked: true
+            ),
+            HomeAdventureItem(
+                id: "guide",
+                title: "Guide",
+                subtitle: "Choice item",
+                systemImage: "sun.max.fill",
+                kind: .companion,
+                requiredCoins: 900,
+                requiredStageCount: 4,
+                isUnlocked: true
+            ),
+            HomeAdventureItem(
+                id: "late",
+                title: "Late",
+                subtitle: "Locked item",
+                systemImage: "lock.fill",
+                kind: .artifact,
+                requiredCoins: 1_200,
+                requiredStageCount: 8,
+                isUnlocked: false
+            )
+        ]
+        let ownedIDs = HomeAdventureOwnedItemIDs.decode("starter,missing,starter")
+        let wallet = HomeAdventureWallet(
+            totalCoins: 1_000,
+            completedStageCount: 4,
+            items: items,
+            ownedItemIDs: ownedIDs
+        )
+
+        #expect(ownedIDs == Set(["starter", "missing"]))
+        #expect(HomeAdventureOwnedItemIDs.encode(ownedIDs) == "missing,starter")
+        #expect(wallet.ownedItemCount == 1)
+        #expect(wallet.spentCoins == 200)
+        #expect(wallet.spendableCoins == 800)
+        #expect(wallet.canUnlock(items[1]) == false)
+        #expect(wallet.unlockGuidance(for: items[1]) == "Need 100 more spendable coins")
+        #expect(wallet.unlockGuidance(for: items[2]) == "Clear 4 more stages")
+
+        let richerWallet = HomeAdventureWallet(
+            totalCoins: 1_200,
+            completedStageCount: 4,
+            items: items,
+            ownedItemIDs: ownedIDs
+        )
+
+        #expect(richerWallet.canUnlock(items[1]) == true)
+    }
+
+    @Test
     func build_keepsSevenThousandCoinsInMidgame() {
         let referenceDate = Date(timeIntervalSince1970: 1_800_000_000)
         let calendar = Calendar(identifier: .gregorian)

@@ -80,6 +80,7 @@ public enum UserDefaultStringValueKey: String, Sendable {
     case appSettingMacStatsDashboardHiddenItemIDs
     case appSettingMacStatsDashboardItemOrderIDs
     case appSettingMacStatsSummaryDisplayMode
+    case appSettingMacAdventureOwnedItemIDs
     case appSettingHiddenDayPlanTimelineActivityIDs
     case appSettingTemporaryViewState
     case appSettingFocusShieldSelection

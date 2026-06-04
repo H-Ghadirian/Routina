@@ -41,6 +41,93 @@ struct HomeAdventureProgression: Equatable {
     )
 }
 
+struct HomeAdventureWallet: Equatable {
+    let totalCoins: Int
+    let completedStageCount: Int
+    let items: [HomeAdventureItem]
+    let ownedItemIDs: Set<String>
+
+    init(
+        totalCoins: Int,
+        completedStageCount: Int = 0,
+        items: [HomeAdventureItem],
+        ownedItemIDs: Set<String>
+    ) {
+        self.totalCoins = totalCoins
+        self.completedStageCount = completedStageCount
+        self.items = items
+        self.ownedItemIDs = ownedItemIDs
+    }
+
+    var ownedItems: [HomeAdventureItem] {
+        items.filter { ownedItemIDs.contains($0.id) }
+    }
+
+    var ownedItemCount: Int {
+        ownedItems.count
+    }
+
+    var spentCoins: Int {
+        ownedItems.reduce(0) { $0 + $1.requiredCoins }
+    }
+
+    var spendableCoins: Int {
+        max(0, totalCoins - spentCoins)
+    }
+
+    var firstPurchasableItem: HomeAdventureItem? {
+        items.first { canUnlock($0) }
+    }
+
+    func owns(_ item: HomeAdventureItem) -> Bool {
+        ownedItemIDs.contains(item.id)
+    }
+
+    func canUnlock(_ item: HomeAdventureItem) -> Bool {
+        item.isUnlocked && !owns(item) && spendableCoins >= item.requiredCoins
+    }
+
+    func unlockGuidance(for item: HomeAdventureItem) -> String {
+        if owns(item) {
+            return "Owned"
+        }
+
+        if !item.isUnlocked {
+            let stageGap = max(0, item.requiredStageCount - completedStageCount)
+            let coinGap = max(0, item.requiredCoins - totalCoins)
+            if stageGap > 0 {
+                return "Clear \(stageGap.formatted()) more stage\(stageGap == 1 ? "" : "s")"
+            }
+            if coinGap > 0 {
+                return "Earn \(coinGap.formatted()) more coins"
+            }
+            return "Keep earning progress"
+        }
+
+        let coinGap = max(0, item.requiredCoins - spendableCoins)
+        if coinGap > 0 {
+            return "Need \(coinGap.formatted()) more spendable coins"
+        }
+
+        return "Ready to unlock"
+    }
+}
+
+enum HomeAdventureOwnedItemIDs {
+    static func decode(_ rawValue: String) -> Set<String> {
+        Set(
+            rawValue
+                .split(separator: ",")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+        )
+    }
+
+    static func encode(_ ids: Set<String>) -> String {
+        ids.sorted().joined(separator: ",")
+    }
+}
+
 struct HomeAdventureWorld: Identifiable, Equatable {
     let id: String
     let title: String
@@ -105,8 +192,22 @@ struct HomeAdventureStage: Identifiable, Equatable {
 struct HomeAdventureItem: Identifiable, Equatable {
     enum Kind: Equatable {
         case tool
-        case cosmetic
+        case companion
+        case artifact
         case booster
+
+        var title: String {
+            switch self {
+            case .tool:
+                return "Tool"
+            case .companion:
+                return "Companion"
+            case .artifact:
+                return "Artifact"
+            case .booster:
+                return "Booster"
+            }
+        }
     }
 
     let id: String
@@ -336,17 +437,17 @@ enum HomeAdventureProgressionBuilder {
                 requiredActions: 0,
                 stages: [
                     StageTemplate("meadow-1", "morning-meadow", 1, "First Steps", "Complete or create anything in Routina.", 50, 2, 1, 20),
-                    StageTemplate("meadow-2", "morning-meadow", 2, "Checklist Path", "Turn repeated effort into coins.", 150, 8, 2, 30),
+                    StageTemplate("meadow-2", "morning-meadow", 2, "Checklist Nook", "Turn repeated effort into coins.", 150, 8, 2, 30),
                     StageTemplate("meadow-3", "morning-meadow", 3, "Focus Pond", "Mix focus blocks with task progress.", 300, 18, 4, 40),
                     StageTemplate("meadow-4", "morning-meadow", 4, "Habit Gate", "Build several active days.", 550, 35, 7, 55),
                     StageTemplate("meadow-5", "morning-meadow", 5, "Tag Grove", "Organized tasks push the trail forward.", 850, 55, 10, 70),
-                    StageTemplate("meadow-6", "morning-meadow", 6, "Meadow Gate", "Clear the first route with steady history.", 1_200, 80, 14, 90)
+                    StageTemplate("meadow-6", "morning-meadow", 6, "Meadow Gate", "Clear the first map with steady history.", 1_200, 80, 14, 90)
                 ]
             ),
             WorldTemplate(
                 id: "clockwork-city",
                 title: "Clockwork City",
-                subtitle: "Unlock deeper routes with steady output.",
+                subtitle: "Unlock deeper encounters with steady output.",
                 systemImage: "gearshape.2.fill",
                 accentName: "blue",
                 artAssetName: "AdventureClockworkCity",
@@ -364,7 +465,7 @@ enum HomeAdventureProgressionBuilder {
             WorldTemplate(
                 id: "lunar-archive",
                 title: "Lunar Archive",
-                subtitle: "Late-game routes for a broad Routina history.",
+                subtitle: "Late-game encounters for a broad Routina history.",
                 systemImage: "moon.stars.fill",
                 accentName: "indigo",
                 artAssetName: "AdventureLunarArchive",
@@ -373,7 +474,7 @@ enum HomeAdventureProgressionBuilder {
                 stages: [
                     StageTemplate("lunar-1", "lunar-archive", 13, "Quiet Launch", "Unlock the archive with broad consistency.", 7_200, 430, 64, 280),
                     StageTemplate("lunar-2", "lunar-archive", 14, "Memory Vault", "Captured thoughts become map progress.", 8_800, 520, 76, 330),
-                    StageTemplate("lunar-3", "lunar-archive", 15, "Starlit Sprint", "A larger action history clears the path.", 10_600, 620, 90, 390),
+                    StageTemplate("lunar-3", "lunar-archive", 15, "Starlit Sprint", "A larger action history lights the archive.", 10_600, 620, 90, 390),
                     StageTemplate("lunar-4", "lunar-archive", 16, "Moonlit Library", "Balance focus, notes, sleep, and tasks.", 12_600, 735, 105, 460),
                     StageTemplate("lunar-5", "lunar-archive", 17, "Orbit Hall", "A long-lived routine history opens the hall.", 15_000, 865, 122, 540),
                     StageTemplate("lunar-6", "lunar-archive", 18, "Archive Gate", "Clear the archive with mature momentum.", 17_800, 1_010, 140, 640)
@@ -421,17 +522,17 @@ enum HomeAdventureProgressionBuilder {
     private static func itemTemplates() -> [ItemTemplate] {
         [
             ItemTemplate("trail-compass", "Trail Compass", "Unlocked after the first few wins.", "location.north.line.fill", .tool, 200, 1),
-            ItemTemplate("meadow-boots", "Meadow Boots", "Early momentum for the first map.", "shoeprints.fill", .cosmetic, 900, 4),
+            ItemTemplate("meadow-guide", "Meadow Guide", "A tiny guide for the first map.", "sun.max.fill", .companion, 900, 4),
             ItemTemplate("focus-lantern", "Focus Lantern", "A badge for showing up to focus.", "lamp.desk.fill", .tool, 1_900, 7),
-            ItemTemplate("campfire-kit", "Campfire Kit", "Marks a balanced routine history.", "flame.fill", .tool, 3_500, 10),
-            ItemTemplate("city-banner", "City Banner", "Marks the second-world clear.", "flag.checkered", .cosmetic, 6_000, 12),
-            ItemTemplate("lunar-key", "Lunar Key", "Signals entry into the archive.", "key.fill", .booster, 11_000, 15),
-            ItemTemplate("archive-cloak", "Archive Cloak", "A late archive cosmetic.", "theatermasks.fill", .cosmetic, 18_500, 18),
-            ItemTemplate("aurora-pickaxe", "Aurora Pickaxe", "A tool for the high mountain path.", "hammer.fill", .tool, 30_000, 21),
-            ItemTemplate("summit-banner", "Summit Banner", "A trophy from Aurora Peaks.", "flag.2.crossed.fill", .cosmetic, 47_000, 24),
-            ItemTemplate("forge-core", "Forge Core", "The first endgame artifact.", "atom", .booster, 65_000, 26),
-            ItemTemplate("nebula-crown", "Nebula Crown", "A rare long-run cosmetic.", "crown.fill", .cosmetic, 86_000, 28),
-            ItemTemplate("world-engine", "World Engine", "The first Adventure season capstone.", "infinity.circle.fill", .cosmetic, 110_000, 30)
+            ItemTemplate("quiet-keeper", "Quiet Keeper", "A calm character for balanced routines.", "sparkles", .companion, 3_500, 10),
+            ItemTemplate("city-banner", "City Banner", "Marks the second-world clear.", "flag.checkered", .artifact, 6_000, 12),
+            ItemTemplate("lunar-key", "Lunar Key", "Signals entry into the archive.", "key.fill", .artifact, 11_000, 15),
+            ItemTemplate("archive-cloak", "Archive Cloak", "A late archive artifact.", "theatermasks.fill", .artifact, 18_500, 18),
+            ItemTemplate("aurora-pickaxe", "Aurora Pickaxe", "A tool for the high mountain climb.", "hammer.fill", .tool, 30_000, 21),
+            ItemTemplate("summit-banner", "Summit Banner", "A trophy from Aurora Peaks.", "flag.2.crossed.fill", .artifact, 47_000, 24),
+            ItemTemplate("forge-core", "Forge Core", "The first endgame booster.", "atom", .booster, 65_000, 26),
+            ItemTemplate("nebula-crown", "Nebula Crown", "A rare long-run artifact.", "crown.fill", .artifact, 86_000, 28),
+            ItemTemplate("world-engine", "World Engine", "The first Adventure season capstone.", "infinity.circle.fill", .artifact, 110_000, 30)
         ]
     }
 }
