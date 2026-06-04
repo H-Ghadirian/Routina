@@ -153,6 +153,54 @@ struct RoutineDuplicateIDCleanupTests {
     }
 
     @Test
+    func mergesOverlappingSleepSessionsAndRedirectsEmotionLinks() throws {
+        let context = makeInMemoryContext()
+        let keeperID = UUID()
+        let duplicateID = UUID()
+        let keeper = SleepSession(
+            id: keeperID,
+            startedAt: makeDate("2026-06-03T03:06:00Z"),
+            endedAt: makeDate("2026-06-03T09:11:00Z"),
+            targetDurationMinutes: 480,
+            createdAt: makeDate("2026-06-03T03:06:00Z"),
+            updatedAt: makeDate("2026-06-03T09:11:00Z")
+        )
+        let duplicate = SleepSession(
+            id: duplicateID,
+            startedAt: makeDate("2026-06-03T03:06:00Z"),
+            endedAt: makeDate("2026-06-03T03:21:00Z"),
+            targetDurationMinutes: 20,
+            createdAt: makeDate("2026-06-03T03:06:00Z"),
+            updatedAt: makeDate("2026-06-03T03:21:00Z")
+        )
+        let emotion = EmotionLog(
+            family: .sadness,
+            label: "tired",
+            valence: -0.2,
+            arousal: -0.6,
+            intensity: 3,
+            linkedSleepSessionID: duplicateID,
+            createdAt: makeDate("2026-06-03T09:20:00Z"),
+            updatedAt: makeDate("2026-06-03T09:20:00Z")
+        )
+        context.insert(keeper)
+        context.insert(duplicate)
+        context.insert(emotion)
+        try context.save()
+
+        RoutineDuplicateIDCleanup.run(in: context)
+
+        let remaining = try context.fetch(FetchDescriptor<SleepSession>())
+        let remainingSession = try #require(remaining.first)
+        let emotions = try context.fetch(FetchDescriptor<EmotionLog>())
+        #expect(remaining.count == 1)
+        #expect(remainingSession.id == keeperID)
+        #expect(remainingSession.startedAt == makeDate("2026-06-03T03:06:00Z"))
+        #expect(remainingSession.endedAt == makeDate("2026-06-03T09:11:00Z"))
+        #expect(emotions.first?.linkedSleepSessionID == keeperID)
+    }
+
+    @Test
     func isIdempotent() throws {
         let context = makeInMemoryContext()
         let sharedID = UUID()

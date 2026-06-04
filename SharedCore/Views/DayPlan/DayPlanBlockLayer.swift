@@ -37,11 +37,12 @@ struct DayPlanBlockLayer: View {
                 ForEach(sleepBlocksForDate(date)) { sleepBlock in
                     let block = sleepBlock.block
                     let blockHeight = blockHeight(for: block)
+                    let isFocusedSleep = sleepBlock.contains(sessionID: focusedSleepSessionID)
                     DayPlanBlockCard(
                         block: block,
                         tint: .indigo,
                         style: .sleep,
-                        isSelected: sleepBlock.sessionID == focusedSleepSessionID,
+                        isSelected: isFocusedSleep,
                         renderedHeight: blockHeight,
                         selectedDate: date,
                         calendar: calendar,
@@ -63,7 +64,7 @@ struct DayPlanBlockLayer: View {
                         x: timeColumnWidth + CGFloat(dayIndex) * dayWidth + 5,
                         y: yOffset(for: block.startMinute)
                     )
-                    .zIndex(sleepBlock.sessionID == focusedSleepSessionID ? 1.5 : 0.5)
+                    .zIndex(isFocusedSleep ? 1.5 : 0.5)
                 }
 
                 ForEach(automaticTimelineBlocksForDate(date)) { activity in

@@ -1532,6 +1532,42 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func sleepBlocksMergeOverlappingSessionsBeforeRendering() throws {
+        let calendar = gregorianCalendar
+        let visibleDate = try #require(date("2026-06-03T12:00:00Z"))
+        let primaryID = UUID()
+        let duplicateID = UUID()
+        let primary = SleepSession(
+            id: primaryID,
+            startedAt: date("2026-06-03T03:06:00Z"),
+            endedAt: date("2026-06-03T09:11:00Z")
+        )
+        let duplicate = SleepSession(
+            id: duplicateID,
+            startedAt: date("2026-06-03T03:06:00Z"),
+            endedAt: date("2026-06-03T03:21:00Z")
+        )
+        let referenceDate = try #require(date("2026-06-03T09:30:00Z"))
+
+        let sleepBlocksByDayKey = DayPlanSleepBlocks.blocksByDayKey(
+            on: [visibleDate],
+            from: [duplicate, primary],
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        let dayKey = DayPlanStorage.dayKey(for: visibleDate, calendar: calendar)
+        let blocks = sleepBlocksByDayKey[dayKey] ?? []
+        #expect(blocks.count == 1)
+        guard let block = blocks.first else { return }
+        #expect(block.block.startMinute == 3 * 60 + 6)
+        #expect(block.block.durationMinutes == 6 * 60 + 5)
+        #expect(block.sourceSessionIDs == Set([primaryID, duplicateID]))
+        #expect(block.contains(sessionID: primaryID))
+        #expect(block.contains(sessionID: duplicateID))
+    }
+
+    @Test
     func sleepBlockedIntervalsRejectOverlappingPlannerTimes() throws {
         let calendar = gregorianCalendar
         let previousDate = try #require(date("2026-05-09T12:00:00Z"))

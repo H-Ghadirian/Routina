@@ -2,11 +2,17 @@ import Foundation
 
 struct DayPlanSleepBlock: Identifiable, Equatable {
     var sessionID: UUID
+    var sourceSessionIDs: Set<UUID>
     var block: DayPlanBlock
     var interval: DayPlanBlockedInterval
 
     var id: String {
         "sleep-\(sessionID.uuidString)-\(block.dayKey)"
+    }
+
+    func contains(sessionID: UUID?) -> Bool {
+        guard let sessionID else { return false }
+        return self.sessionID == sessionID || sourceSessionIDs.contains(sessionID)
     }
 }
 
@@ -30,11 +36,14 @@ enum DayPlanSleepBlocks {
         let visibleDates = dates.map { calendar.startOfDay(for: $0) }
         guard !visibleDates.isEmpty else { return [:] }
 
-        let blocks = sessions.flatMap { session in
-            blocksForSession(
-                for: session,
+        let blocks = mergedIntervals(
+            from: sessions,
+            referenceDate: referenceDate
+        )
+        .flatMap { interval in
+            blocksForInterval(
+                interval,
                 on: visibleDates,
-                referenceDate: referenceDate,
                 calendar: calendar
             )
         }
@@ -101,16 +110,13 @@ enum DayPlanSleepBlocks {
         }
     }
 
-    private static func blocksForSession(
-        for session: SleepSession,
+    private static func blocksForInterval(
+        _ sleepInterval: SleepInterval,
         on visibleDates: [Date],
-        referenceDate: Date,
         calendar: Calendar
     ) -> [DayPlanSleepBlock] {
-        guard let startedAt = session.startedAt else { return [] }
-
-        let endedAt = session.endedAt ?? referenceDate
-        guard endedAt > startedAt else { return [] }
+        let startedAt = sleepInterval.startedAt
+        let endedAt = sleepInterval.endedAt
 
         return visibleDates.compactMap { visibleDate -> DayPlanSleepBlock? in
             let dayStart = calendar.startOfDay(for: visibleDate)
@@ -127,8 +133,8 @@ enum DayPlanSleepBlocks {
             let rawDuration = max(1, Int(ceil(intervalEnd.timeIntervalSince(intervalStart) / 60)))
             let durationMinutes = DayPlanBlock.clampedDuration(rawDuration, startMinute: startMinute)
             let block = DayPlanBlock(
-                id: session.id,
-                taskID: session.id,
+                id: sleepInterval.sessionID,
+                taskID: sleepInterval.sessionID,
                 dayKey: dayKey,
                 startMinute: startMinute,
                 durationMinutes: durationMinutes,
@@ -145,11 +151,62 @@ enum DayPlanSleepBlocks {
             )
 
             return DayPlanSleepBlock(
-                sessionID: session.id,
+                sessionID: sleepInterval.sessionID,
+                sourceSessionIDs: sleepInterval.sourceSessionIDs,
                 block: block,
                 interval: interval
             )
         }
+    }
+
+    private static func mergedIntervals(
+        from sessions: [SleepSession],
+        referenceDate: Date
+    ) -> [SleepInterval] {
+        let intervals = sessions.compactMap { session -> SleepInterval? in
+            guard let startedAt = session.startedAt else { return nil }
+            let endedAt = session.endedAt ?? referenceDate
+            guard endedAt > startedAt else { return nil }
+            return SleepInterval(
+                sessionID: session.id,
+                sourceSessionIDs: [session.id],
+                startedAt: startedAt,
+                endedAt: endedAt
+            )
+        }
+        .sorted { lhs, rhs in
+            if lhs.startedAt != rhs.startedAt {
+                return lhs.startedAt < rhs.startedAt
+            }
+            if lhs.endedAt != rhs.endedAt {
+                return lhs.endedAt > rhs.endedAt
+            }
+            return lhs.sessionID.uuidString < rhs.sessionID.uuidString
+        }
+
+        var merged: [SleepInterval] = []
+        for interval in intervals {
+            guard var last = merged.last else {
+                merged.append(interval)
+                continue
+            }
+
+            if interval.startedAt < last.endedAt {
+                last.endedAt = max(last.endedAt, interval.endedAt)
+                last.sourceSessionIDs.formUnion(interval.sourceSessionIDs)
+                merged[merged.count - 1] = last
+            } else {
+                merged.append(interval)
+            }
+        }
+        return merged
+    }
+
+    private struct SleepInterval {
+        var sessionID: UUID
+        var sourceSessionIDs: Set<UUID>
+        var startedAt: Date
+        var endedAt: Date
     }
 
     private static func startMinute(for timestamp: Date, calendar: Calendar) -> Int {
