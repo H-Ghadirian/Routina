@@ -435,22 +435,6 @@ private struct DayPlanTimelinePanelView: View {
         let weekDates = planner.weekDates(calendar: calendar)
         let plannedBlocksByDayKey = plannedBlocksByDayKey(for: weekDates)
         let hiddenTimelineActivityIDs = DayPlanHiddenTimelineActivityStore.hiddenIDs(from: hiddenTimelineActivityStorage)
-        let timelineBlocksByDayKey = DayPlanTimelineTasks.activityBlocksByDayKey(
-            on: weekDates,
-            from: tasks,
-            logs: logs,
-            plannedBlocksByDayKey: plannedBlocksByDayKey,
-            calendar: calendar,
-            hiddenActivityIDs: hiddenTimelineActivityIDs
-        )
-        let automaticSuggestionBlocksByDayKey = DayPlanTimelineTasks.automaticSuggestionBlocksByDayKey(
-            on: weekDates,
-            from: tasks,
-            logs: logs,
-            plannedBlocksByDayKey: plannedBlocksByDayKey,
-            calendar: calendar,
-            hiddenActivityIDs: hiddenTimelineActivityIDs
-        )
         let sleepBlocksByDayKey = DayPlanSleepBlocks.blocksByDayKey(
             on: weekDates,
             from: sleepSessions,
@@ -497,6 +481,36 @@ private struct DayPlanTimelinePanelView: View {
                 sprintFocusBlocksByDayKey.mapValues { blocks in blocks.map(\.interval) },
                 activeSprintFocusBlocksByDayKey.mapValues { blocks in blocks.map(\.interval) }
             )
+        )
+        let rawAutomaticSuggestionBlocksByDayKey = DayPlanTimelineTasks.automaticSuggestionBlocksByDayKey(
+            on: weekDates,
+            from: tasks,
+            logs: logs,
+            plannedBlocksByDayKey: plannedBlocksByDayKey,
+            calendar: calendar,
+            hiddenActivityIDs: hiddenTimelineActivityIDs
+        )
+        let linkedAwayBlocksByDayKey = DayPlanAwayBlocks.linkedBlocksByDayKey(
+            awayBlocksByDayKey,
+            timelineActivitiesByDayKey: rawAutomaticSuggestionBlocksByDayKey
+        )
+        let timelineBlocksByDayKey = DayPlanTimelineTasks.activityBlocksByDayKey(
+            on: weekDates,
+            from: tasks,
+            logs: logs,
+            plannedBlocksByDayKey: plannedBlocksByDayKey,
+            blockedIntervalsByDayKey: blockedIntervalsByDayKey,
+            calendar: calendar,
+            hiddenActivityIDs: hiddenTimelineActivityIDs
+        )
+        let automaticSuggestionBlocksByDayKey = DayPlanTimelineTasks.automaticSuggestionBlocksByDayKey(
+            on: weekDates,
+            from: tasks,
+            logs: logs,
+            plannedBlocksByDayKey: plannedBlocksByDayKey,
+            blockedIntervalsByDayKey: blockedIntervalsByDayKey,
+            calendar: calendar,
+            hiddenActivityIDs: hiddenTimelineActivityIDs
         )
         let allDayBlocks = DayPlanAllDayTasks.blocks(
             on: weekDates,
@@ -549,7 +563,7 @@ private struct DayPlanTimelinePanelView: View {
                 },
                 awayBlocksForDate: { date in
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-                    return awayBlocksByDayKey[dayKey] ?? []
+                    return linkedAwayBlocksByDayKey[dayKey] ?? []
                 },
                 sprintFocusBlocksForDate: { date in
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)

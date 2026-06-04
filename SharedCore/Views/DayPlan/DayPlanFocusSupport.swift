@@ -39,6 +39,10 @@ struct DayPlanBlockedInterval: Equatable, Sendable {
         let targetEnd = min(DayPlanBlock.minutesPerDay, targetStart + targetDuration)
         return max(targetStart, self.startMinute) < min(targetEnd, endMinute)
     }
+
+    func overlaps(block: DayPlanBlock) -> Bool {
+        max(block.startMinute, startMinute) < min(block.endMinute, endMinute)
+    }
 }
 
 enum DayPlanFocusSessionBlocks {

@@ -77,6 +77,7 @@ enum DayPlanTimelineTasks {
         tasks: [RoutineTask],
         logs: [RoutineLog],
         plannedBlocks: [DayPlanBlock],
+        blockedIntervals: [DayPlanBlockedInterval] = [],
         calendar: Calendar,
         hiddenActivityIDs: Set<String> = []
     ) -> Int {
@@ -85,6 +86,7 @@ enum DayPlanTimelineTasks {
             from: tasks,
             logs: logs,
             plannedBlocks: plannedBlocks,
+            blockedIntervals: blockedIntervals,
             calendar: calendar,
             hiddenActivityIDs: hiddenActivityIDs
         )
@@ -96,6 +98,7 @@ enum DayPlanTimelineTasks {
         from tasks: [RoutineTask],
         logs: [RoutineLog],
         plannedBlocks: [DayPlanBlock],
+        blockedIntervals: [DayPlanBlockedInterval] = [],
         calendar: Calendar,
         hiddenActivityIDs: Set<String> = []
     ) -> [RoutineTask] {
@@ -104,6 +107,7 @@ enum DayPlanTimelineTasks {
             from: tasks,
             logs: logs,
             plannedBlocks: plannedBlocks,
+            blockedIntervals: blockedIntervals,
             calendar: calendar,
             hiddenActivityIDs: hiddenActivityIDs
         ).map(\.block.taskID))
@@ -139,6 +143,7 @@ enum DayPlanTimelineTasks {
         from tasks: [RoutineTask],
         logs: [RoutineLog],
         plannedBlocks: [DayPlanBlock],
+        blockedIntervals: [DayPlanBlockedInterval] = [],
         calendar: Calendar,
         hiddenActivityIDs: Set<String> = []
     ) -> [DayPlanTimelineActivityBlock] {
@@ -148,6 +153,7 @@ enum DayPlanTimelineTasks {
             from: tasks,
             logs: logs,
             plannedBlocksByDayKey: [dayKey: plannedBlocks],
+            blockedIntervalsByDayKey: [dayKey: blockedIntervals],
             calendar: calendar,
             hiddenActivityIDs: hiddenActivityIDs
         )[dayKey] ?? []
@@ -158,6 +164,7 @@ enum DayPlanTimelineTasks {
         from tasks: [RoutineTask],
         logs: [RoutineLog],
         plannedBlocks: [DayPlanBlock],
+        blockedIntervals: [DayPlanBlockedInterval] = [],
         calendar: Calendar,
         hiddenActivityIDs: Set<String> = []
     ) -> [DayPlanTimelineActivityBlock] {
@@ -167,6 +174,7 @@ enum DayPlanTimelineTasks {
             from: tasks,
             logs: logs,
             plannedBlocksByDayKey: [dayKey: plannedBlocks],
+            blockedIntervalsByDayKey: [dayKey: blockedIntervals],
             calendar: calendar,
             hiddenActivityIDs: hiddenActivityIDs
         )[dayKey] ?? []
@@ -177,6 +185,7 @@ enum DayPlanTimelineTasks {
         from tasks: [RoutineTask],
         logs: [RoutineLog],
         plannedBlocksByDayKey: [String: [DayPlanBlock]],
+        blockedIntervalsByDayKey: [String: [DayPlanBlockedInterval]] = [:],
         calendar: Calendar,
         hiddenActivityIDs: Set<String> = []
     ) -> [String: [DayPlanTimelineActivityBlock]] {
@@ -185,6 +194,7 @@ enum DayPlanTimelineTasks {
             from: tasks,
             logs: logs,
             plannedBlocksByDayKey: plannedBlocksByDayKey,
+            blockedIntervalsByDayKey: blockedIntervalsByDayKey,
             calendar: calendar,
             hiddenActivityIDs: hiddenActivityIDs,
             excludesAllDayTasks: true,
@@ -197,6 +207,7 @@ enum DayPlanTimelineTasks {
         from tasks: [RoutineTask],
         logs: [RoutineLog],
         plannedBlocksByDayKey: [String: [DayPlanBlock]],
+        blockedIntervalsByDayKey: [String: [DayPlanBlockedInterval]] = [:],
         calendar: Calendar,
         hiddenActivityIDs: Set<String> = [],
         excludesAllDayTasks: Bool = false,
@@ -299,6 +310,7 @@ enum DayPlanTimelineTasks {
                 plannedBlocks: plannedBlocks,
                 calendar: calendar
             )
+            .filter { !isBlocked($0.block, by: blockedIntervalsByDayKey[dayKey] ?? []) }
             .sorted { lhs, rhs in
                 if lhs.block.startMinute != rhs.block.startMinute {
                     return lhs.block.startMinute < rhs.block.startMinute
@@ -505,6 +517,10 @@ enum DayPlanTimelineTasks {
         let components = calendar.dateComponents([.hour, .minute], from: timestamp)
         let minute = ((components.hour ?? 0) * 60) + (components.minute ?? 0)
         return DayPlanBlock.clampedStartMinute(minute)
+    }
+
+    private static func isBlocked(_ block: DayPlanBlock, by intervals: [DayPlanBlockedInterval]) -> Bool {
+        intervals.contains { $0.overlaps(block: block) }
     }
 
     private static func arrangedTimelineActivityBlocks(

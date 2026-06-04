@@ -20,6 +20,7 @@ struct DayPlanAwayBlock: Identifiable, Equatable {
     var sessionID: UUID
     var block: DayPlanBlock
     var interval: DayPlanBlockedInterval
+    var linkedActivityTitles: [String] = []
 
     var id: String {
         "away-\(sessionID.uuidString)-\(block.dayKey)"
@@ -217,6 +218,20 @@ enum DayPlanSleepBlocks {
 }
 
 enum DayPlanAwayBlocks {
+    static func linkedBlocksByDayKey(
+        _ blocksByDayKey: [String: [DayPlanAwayBlock]],
+        timelineActivitiesByDayKey: [String: [DayPlanTimelineActivityBlock]]
+    ) -> [String: [DayPlanAwayBlock]] {
+        blocksByDayKey.mapValues { blocks in
+            blocks.map { block in
+                linkedBlock(
+                    block,
+                    activities: timelineActivitiesByDayKey[block.block.dayKey] ?? []
+                )
+            }
+        }
+    }
+
     static func blocksByDayKey(
         on dates: [Date],
         from sessions: [AwaySession],
@@ -360,6 +375,74 @@ enum DayPlanAwayBlocks {
             minute,
             minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
         )
+    }
+
+    private static func linkedBlock(
+        _ block: DayPlanAwayBlock,
+        activities: [DayPlanTimelineActivityBlock]
+    ) -> DayPlanAwayBlock {
+        let overlappingActivities = activities
+            .filter { $0.kind == .completed && block.interval.overlaps(block: $0.block) }
+            .sorted { lhs, rhs in
+                if lhs.block.updatedAt != rhs.block.updatedAt {
+                    return lhs.block.updatedAt < rhs.block.updatedAt
+                }
+                return lhs.block.titleSnapshot.localizedCaseInsensitiveCompare(rhs.block.titleSnapshot) == .orderedAscending
+            }
+        let linkedTitles = uniqueLinkedTitles(
+            overlappingActivities.map(\.block.titleSnapshot),
+            excluding: block.block.titleSnapshot
+        )
+        guard !linkedTitles.isEmpty else { return block }
+
+        var linkedBlock = block
+        linkedBlock.linkedActivityTitles = linkedTitles
+        linkedBlock.block = DayPlanBlock(
+            id: block.block.id,
+            taskID: block.block.taskID,
+            dayKey: block.block.dayKey,
+            startMinute: block.block.startMinute,
+            durationMinutes: block.block.durationMinutes,
+            titleSnapshot: linkedTitle(
+                awayTitle: block.block.titleSnapshot,
+                linkedTitles: linkedTitles
+            ),
+            emojiSnapshot: overlappingActivities.compactMap(\.block.emojiSnapshot).first ?? block.block.emojiSnapshot,
+            createdAt: block.block.createdAt,
+            updatedAt: block.block.updatedAt,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
+        return linkedBlock
+    }
+
+    private static func uniqueLinkedTitles(_ titles: [String], excluding awayTitle: String) -> [String] {
+        let normalizedAwayTitle = normalizedTitle(awayTitle)
+        var seen: Set<String> = []
+        var result: [String] = []
+
+        for title in titles {
+            let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+            let normalizedLinkedTitle = normalizedTitle(trimmedTitle)
+            guard !trimmedTitle.isEmpty, normalizedLinkedTitle != normalizedAwayTitle, !seen.contains(normalizedLinkedTitle) else {
+                continue
+            }
+            seen.insert(normalizedLinkedTitle)
+            result.append(trimmedTitle)
+        }
+        return result
+    }
+
+    private static func linkedTitle(awayTitle: String, linkedTitles: [String]) -> String {
+        guard let firstTitle = linkedTitles.first else { return awayTitle }
+        if linkedTitles.count == 1 {
+            return "\(awayTitle) · \(firstTitle)"
+        }
+        return "\(awayTitle) · \(firstTitle) +\(linkedTitles.count - 1)"
+    }
+
+    private static func normalizedTitle(_ title: String) -> String {
+        title.trimmingCharacters(in: .whitespacesAndNewlines)
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
     }
 }
 

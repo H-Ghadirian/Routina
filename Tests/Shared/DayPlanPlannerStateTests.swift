@@ -246,6 +246,74 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func automaticPlannerSuggestionsLinkIntoOverlappingAwayBlocks() throws {
+        let calendar = gregorianCalendar
+        let activityDate = try #require(date("2026-06-04T12:00:00Z"))
+        let awayStartedAt = try #require(date("2026-06-04T17:40:00Z"))
+        let awayCompletedAt = try #require(date("2026-06-04T19:05:00Z"))
+        let exerciseCompletedAt = try #require(date("2026-06-04T19:55:00Z"))
+        let taskID = UUID()
+        let exercise = RoutineTask(
+            id: taskID,
+            name: "Exercise",
+            emoji: "🏃",
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 60
+        )
+        let logs = [
+            RoutineLog(
+                timestamp: exerciseCompletedAt,
+                taskID: taskID,
+                kind: .completed,
+                actualDurationMinutes: 60
+            ),
+        ]
+        let awaySession = AwaySession(
+            preset: .custom,
+            startedAt: awayStartedAt,
+            plannedDurationSeconds: 85 * 60,
+            completedAt: awayCompletedAt
+        )
+        let awayBlocksByDayKey = DayPlanAwayBlocks.blocksByDayKey(
+            on: [activityDate],
+            from: [awaySession],
+            referenceDate: awayCompletedAt,
+            calendar: calendar
+        )
+        let rawSuggestionsByDayKey = DayPlanTimelineTasks.automaticSuggestionBlocksByDayKey(
+            on: [activityDate],
+            from: [exercise],
+            logs: logs,
+            plannedBlocksByDayKey: [:],
+            calendar: calendar
+        )
+        let blockedIntervalsByDayKey = awayBlocksByDayKey.mapValues { blocks in
+            blocks.map(\.interval)
+        }
+
+        let linkedAwayBlocksByDayKey = DayPlanAwayBlocks.linkedBlocksByDayKey(
+            awayBlocksByDayKey,
+            timelineActivitiesByDayKey: rawSuggestionsByDayKey
+        )
+        let visibleSuggestionsByDayKey = DayPlanTimelineTasks.automaticSuggestionBlocksByDayKey(
+            on: [activityDate],
+            from: [exercise],
+            logs: logs,
+            plannedBlocksByDayKey: [:],
+            blockedIntervalsByDayKey: blockedIntervalsByDayKey,
+            calendar: calendar
+        )
+
+        let dayKey = DayPlanStorage.dayKey(for: activityDate, calendar: calendar)
+        let linkedAwayBlock = try #require(linkedAwayBlocksByDayKey[dayKey]?.first)
+        #expect(rawSuggestionsByDayKey[dayKey]?.map(\.block.titleSnapshot) == ["Exercise"])
+        #expect(linkedAwayBlock.block.titleSnapshot == "Away · Exercise")
+        #expect(linkedAwayBlock.block.emojiSnapshot == "🏃")
+        #expect(linkedAwayBlock.linkedActivityTitles == ["Exercise"])
+        #expect(visibleSuggestionsByDayKey[dayKey]?.isEmpty ?? true)
+    }
+
+    @Test
     func automaticPlannerSuggestionsExcludeMissedAndCanceledActivity() throws {
         let calendar = gregorianCalendar
         let activityDate = try #require(date("2026-05-07T12:00:00Z"))
