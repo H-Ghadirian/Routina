@@ -87,6 +87,16 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testMacToolbarStatusBadgeKeepsStableTextWidth() throws {
+        let source = try Self.sourceFile("RoutinaMacApp/Screens/Shared/MacToolbarComponents.swift")
+
+        XCTAssertTrue(
+            source.contains("greaterThanOrEqualToConstant: Self.measuredTitleWidth"),
+            "Toolbar status badges should reserve their measured text width so labels like the Done counter do not truncate while AppKit relayouts."
+        )
+        XCTAssertTrue(source.contains("setContentCompressionResistancePriority(.required, for: .horizontal)"))
+    }
+
     func testMacFocusTimerStatusFreezesPausedTaskTimer() {
         let status = RoutinaMacFocusTimerStatus(
             id: UUID(),

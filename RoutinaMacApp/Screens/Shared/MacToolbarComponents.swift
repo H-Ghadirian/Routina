@@ -58,12 +58,18 @@ struct MacToolbarStatusBadge: NSViewRepresentable {
         imageView.contentTintColor = tintColor
 
         let textField = NSTextField(labelWithString: title)
-        textField.font = .monospacedDigitSystemFont(ofSize: 13, weight: .semibold)
+        let font = Self.badgeFont
+        textField.font = font
         textField.textColor = tintColor
         textField.lineBreakMode = .byTruncatingTail
         textField.maximumNumberOfLines = 1
-        textField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        textField.setContentCompressionResistancePriority(.required, for: .horizontal)
         textField.setContentHuggingPriority(.required, for: .horizontal)
+        let widthConstraint = textField.widthAnchor.constraint(
+            greaterThanOrEqualToConstant: Self.measuredTitleWidth(title, font: font)
+        )
+        widthConstraint.identifier = Self.titleWidthConstraintIdentifier
+        widthConstraint.isActive = true
 
         let stackView = NSStackView(views: [imageView, textField])
         stackView.orientation = .horizontal
@@ -71,7 +77,7 @@ struct MacToolbarStatusBadge: NSViewRepresentable {
         stackView.spacing = 5
         stackView.edgeInsets = NSEdgeInsets(top: 0, left: 4, bottom: 0, right: 8)
         stackView.setContentHuggingPriority(.required, for: .horizontal)
-        stackView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        stackView.setContentCompressionResistancePriority(.required, for: .horizontal)
 
         update(stackView: stackView, imageView: imageView, textField: textField)
         return stackView
@@ -93,8 +99,22 @@ struct MacToolbarStatusBadge: NSViewRepresentable {
         imageView.image = NSImage(systemSymbolName: systemImage, accessibilityDescription: title)
         imageView.toolTip = title
         imageView.contentTintColor = tintColor
+        textField.widthConstraint?.constant = Self.measuredTitleWidth(title, font: textField.font ?? Self.badgeFont)
         textField.stringValue = title
         textField.textColor = tintColor
         stackView.toolTip = title
+    }
+
+    fileprivate static let titleWidthConstraintIdentifier = "MacToolbarStatusBadge.titleWidth"
+    private static let badgeFont = NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .semibold)
+
+    private static func measuredTitleWidth(_ title: String, font: NSFont) -> CGFloat {
+        ceil((title as NSString).size(withAttributes: [.font: font]).width) + 2
+    }
+}
+
+private extension NSTextField {
+    var widthConstraint: NSLayoutConstraint? {
+        constraints.first { $0.identifier == MacToolbarStatusBadge.titleWidthConstraintIdentifier }
     }
 }
