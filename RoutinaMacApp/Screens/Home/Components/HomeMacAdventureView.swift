@@ -128,10 +128,13 @@ struct HomeMacAdventureSidebarView: View {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(source.title)
                                         .font(.caption.weight(.medium))
+                                        .fixedSize(horizontal: false, vertical: true)
                                     Text("\(source.countText) at \(source.rateText)")
                                         .font(.caption2)
                                         .foregroundStyle(.secondary)
+                                        .fixedSize(horizontal: false, vertical: true)
                                 }
+                                .layoutPriority(1)
                                 Spacer()
                                 VStack(alignment: .trailing, spacing: 2) {
                                     Text("+\(source.coins.formatted())")
@@ -140,6 +143,7 @@ struct HomeMacAdventureSidebarView: View {
                                         .font(.caption2)
                                         .foregroundStyle(.secondary)
                                 }
+                                .fixedSize()
                             }
                         }
                     }
@@ -154,6 +158,7 @@ struct HomeMacAdventureSidebarView: View {
 
 struct HomeMacAdventureView: View {
     let progression: HomeAdventureProgression
+    @State private var selectedScreen = HomeAdventureScreen.map
     @AppStorage(UserDefaultStringValueKey.appSettingMacAdventureOwnedItemIDs.rawValue, store: SharedDefaults.app)
     private var ownedItemIDsRaw = ""
     @AppStorage(UserDefaultStringValueKey.appSettingMacAdventureUnlockedWorldIDs.rawValue, store: SharedDefaults.app)
@@ -207,10 +212,8 @@ struct HomeMacAdventureView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 hero
-                HomeAdventureGuideStrip(wallet: wallet)
-                HomeAdventureCoinGuide()
-                worldsSection
-                itemsSection
+                screenPicker
+                selectedScreenContent
             }
             .padding(24)
             .frame(maxWidth: 1100, alignment: .leading)
@@ -218,6 +221,38 @@ struct HomeMacAdventureView: View {
         }
         .background(adventureBackground)
         .navigationTitle("Adventure")
+    }
+
+    private var screenPicker: some View {
+        Picker("Adventure screen", selection: $selectedScreen) {
+            ForEach(HomeAdventureScreen.allCases) { screen in
+                Text(screen.title).tag(screen)
+            }
+        }
+        .pickerStyle(.segmented)
+        .frame(maxWidth: 300, alignment: .leading)
+        .accessibilityIdentifier("adventure.screenPicker")
+    }
+
+    @ViewBuilder
+    private var selectedScreenContent: some View {
+        switch selectedScreen {
+        case .map:
+            mapContent
+        case .earnCoins:
+            HomeAdventureCoinGuideScreen(
+                progression: progression,
+                wallet: wallet
+            )
+        }
+    }
+
+    private var mapContent: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HomeAdventureGuideStrip(wallet: wallet)
+            worldsSection
+            itemsSection
+        }
     }
 
     private var hero: some View {
@@ -802,72 +837,186 @@ private struct HomeAdventureGuideStrip: View {
     }
 }
 
-private struct HomeAdventureCoinGuide: View {
+private enum HomeAdventureScreen: String, CaseIterable, Identifiable {
+    case map
+    case earnCoins
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .map:
+            return "Map"
+        case .earnCoins:
+            return "Earn Coins"
+        }
+    }
+}
+
+private struct HomeAdventureCoinGuideScreen: View {
+    let progression: HomeAdventureProgression
+    let wallet: HomeAdventureWallet
+
+    private let summaryColumns = [
+        GridItem(.adaptive(minimum: 210), spacing: 10)
+    ]
+
     private let columns = [
-        GridItem(.adaptive(minimum: 235), spacing: 10)
+        GridItem(.adaptive(minimum: 300), spacing: 12)
     ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline) {
-                Label("How to earn coins", systemImage: "circle.hexagongrid.fill")
-                    .font(.headline.weight(.bold))
-                    .foregroundStyle(.primary)
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .top, spacing: 14) {
+                    Image(systemName: "circle.hexagongrid.fill")
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(.yellow)
+                        .frame(width: 36, height: 36)
+                        .background(Color.yellow.opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
-                Spacer()
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("How to earn coins")
+                            .font(.title3.weight(.bold))
+                        Text("Every action below adds to lifetime Adventure coins. Spendable coins are what remain after your chosen world, creature, and item unlocks.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
 
-                Text("Spendable = earned coins minus chosen unlock costs")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    Spacer(minLength: 12)
+
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text(wallet.spendableCoins.formatted())
+                            .font(.title2.weight(.heavy))
+                            .foregroundStyle(.yellow)
+                        Text("spendable")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .fixedSize()
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                }
+
+                LazyVGrid(columns: summaryColumns, alignment: .leading, spacing: 10) {
+                    HomeAdventureCoinSummaryPill(
+                        title: "Lifetime earned",
+                        value: progression.totalCoins.formatted(),
+                        systemImage: "banknote.fill",
+                        tint: .yellow
+                    )
+                    HomeAdventureCoinSummaryPill(
+                        title: "Chosen unlock costs",
+                        value: max(0, progression.totalCoins - wallet.spendableCoins).formatted(),
+                        systemImage: "lock.open.fill",
+                        tint: .orange
+                    )
+                    HomeAdventureCoinSummaryPill(
+                        title: "Rewarded actions",
+                        value: progression.actionCount.formatted(),
+                        systemImage: "sparkles",
+                        tint: .green
+                    )
+                }
+            }
+            .padding(16)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
             }
 
             LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
                 ForEach(HomeAdventureCoinRule.all) { rule in
-                    HomeAdventureCoinRuleRow(rule: rule)
+                    HomeAdventureCoinRuleCard(
+                        rule: rule,
+                        source: progression.sources.first { $0.id == rule.id }
+                    )
                 }
             }
         }
+    }
+}
+
+private struct HomeAdventureCoinSummaryPill: View {
+    let title: String
+    let value: String
+    let systemImage: String
+    let tint: Color
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: systemImage)
+                .font(.callout.weight(.bold))
+                .foregroundStyle(tint)
+                .frame(width: 20)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(value)
+                    .font(.headline.weight(.bold))
+                Text(title)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .layoutPriority(1)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
+
+private struct HomeAdventureCoinRuleCard: View {
+    let rule: HomeAdventureCoinRule
+    let source: HomeAdventureCoinSource?
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: rule.systemImage)
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(.yellow)
+                .frame(width: 34, height: 34)
+                .background(Color.yellow.opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 7) {
+                Text(rule.actionTitle)
+                    .font(.subheadline.weight(.bold))
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text("Each \(rule.unitSingular) gives \(rule.coinsPerAction.formatted()) coins.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if let source {
+                    Text("\(source.countText) so far = \(source.coins.formatted()) coins")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .layoutPriority(1)
+
+            Spacer(minLength: 6)
+
+            Text("+\(rule.coinsPerAction.formatted())")
+                .font(.callout.weight(.heavy))
+                .foregroundStyle(.yellow)
+                .fixedSize()
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(Color.yellow.opacity(0.14), in: Capsule())
+        }
+        .frame(maxWidth: .infinity, minHeight: 116, alignment: .topLeading)
         .padding(14)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .stroke(Color.white.opacity(0.08), lineWidth: 1)
         }
-    }
-}
-
-private struct HomeAdventureCoinRuleRow: View {
-    let rule: HomeAdventureCoinRule
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: rule.systemImage)
-                .font(.callout.weight(.semibold))
-                .foregroundStyle(.yellow)
-                .frame(width: 22)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(rule.actionTitle)
-                    .font(.caption.weight(.semibold))
-                    .lineLimit(1)
-                Text(rule.unitSingular.capitalized)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-
-            Spacer(minLength: 8)
-
-            Text("+\(rule.coinsPerAction.formatted())")
-                .font(.callout.weight(.heavy))
-                .foregroundStyle(.yellow)
-                .padding(.horizontal, 9)
-                .padding(.vertical, 5)
-                .background(Color.yellow.opacity(0.14), in: Capsule())
-        }
-        .padding(10)
-        .background(Color.secondary.opacity(0.07), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
 
