@@ -4,6 +4,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
     case general
     case devices
     case notifications
+    case blocking
     case calendar
     case places
     case tags
@@ -30,6 +31,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
                 .general,
                 .devices,
                 .notifications,
+                .blocking,
                 .calendar,
                 .places,
                 .tags,
@@ -73,6 +75,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         case .general:       return "General"
         case .devices:       return "Devices"
         case .notifications: return "Notifications"
+        case .blocking:      return "Blocking"
         case .calendar:      return "Calendar"
         case .places:        return "Places"
         case .tags:          return "Tags"
@@ -92,6 +95,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         case .general:       return "gearshape.fill"
         case .devices:       return "desktopcomputer.and.macbook"
         case .notifications: return "bell.badge.fill"
+        case .blocking:      return "lock.shield.fill"
         case .calendar:      return "calendar.badge.plus"
         case .places:        return "mappin.and.ellipse"
         case .tags:          return "tag.fill"
@@ -123,6 +127,12 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
             return SettingsSectionRowPresentation(
                 subtitle: state.notifications.overviewSubtitle,
                 value: state.notifications.notificationsEnabled ? "On" : "Off"
+            )
+
+        case .blocking:
+            return SettingsSectionRowPresentation(
+                subtitle: "Apps and websites across protected modes",
+                value: "Modes"
             )
 
         case .calendar:

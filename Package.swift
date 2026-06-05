@@ -147,6 +147,7 @@ let package = Package(
                 "SharedCore/Domain/FocusTimerWidgetData.swift",
                 "SharedCore/Domain/NotificationPreferences.swift",
                 "SharedCore/Domain/PersonalRecordAchievementStats.swift",
+                "SharedCore/Domain/ProtectionBlockingMode.swift",
                 "SharedCore/Domain/StatsAchievementCelebrationStats.swift",
                 "SharedCore/Domain/RoutineCompletionStats.swift",
                 "SharedCore/Domain/RoutinaDeepLink.swift",

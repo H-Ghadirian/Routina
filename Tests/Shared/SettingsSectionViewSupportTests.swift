@@ -53,6 +53,18 @@ struct SettingsSectionViewSupportTests {
     }
 
     @Test
+    func compactSectionsIncludeBlocking() {
+        let compactSections = SettingsSectionID.compactSectionGroups(isGitFeaturesEnabled: false).flatMap { $0 }
+
+        #expect(compactSections.contains(.blocking))
+        #expect(SettingsSectionID.blocking.title == "Blocking")
+        #expect(SettingsSectionID.blocking.rowPresentation(in: SettingsFeatureState()) == SettingsSectionRowPresentation(
+            subtitle: "Apps and websites across protected modes",
+            value: "Modes"
+        ))
+    }
+
+    @Test
     func rowPresentationBuildsNotificationSummary() {
         var state = SettingsFeatureState()
         state.notifications.notificationsEnabled = true

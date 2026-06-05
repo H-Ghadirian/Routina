@@ -229,8 +229,8 @@ struct FocusSessionCard: View {
         }
         #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
         .familyActivityPicker(
-            title: "Blocked During Focus",
-            headerText: "Choose the apps, categories, and websites Routina should block while a focus timer is running.",
+            title: "Blocked During Protected Modes",
+            headerText: "Choose the apps, categories, and websites Routina should block during enabled protected modes.",
             footerText: "Routina only receives private tokens for your choices.",
             isPresented: $isFocusShieldPickerPresented,
             selection: $focusShieldSelection
@@ -417,7 +417,7 @@ struct FocusSessionCard: View {
                             isShieldControlsExpanded.toggle()
                         }
                     } label: {
-                        Label("Focus blocking options", systemImage: "chevron.down")
+                        Label("Blocking options", systemImage: "chevron.down")
                     }
                     .labelStyle(.iconOnly)
                     .buttonStyle(.plain)
@@ -496,9 +496,9 @@ struct FocusSessionCard: View {
         case .approved:
             return focusShieldSelection.routinaSummaryText
         case .denied:
-            return "Screen Time access is off. Allow access to block selected apps and websites during focus."
+            return "Screen Time access is off. Allow access to block selected apps and websites during enabled protected modes."
         case .notDetermined:
-            return "Allow Screen Time access, then choose what to block during focus."
+            return "Allow Screen Time access, then choose what to block during enabled protected modes."
         case .unavailable:
             return "App and website blocking is available on iPhone and iPad."
         }
@@ -545,7 +545,7 @@ struct FocusSessionCard: View {
                             isShieldControlsExpanded.toggle()
                         }
                     } label: {
-                        Label("Focus blocking options", systemImage: "chevron.down")
+                        Label("Blocking options", systemImage: "chevron.down")
                     }
                     .labelStyle(.iconOnly)
                     .buttonStyle(.plain)
@@ -616,7 +616,7 @@ struct FocusSessionCard: View {
         }
 
         let appSummary = FocusShieldSupport.macBlockedAppsSummaryText(macBlockedApps)
-        return "\(appSummary). Routina closes selected Mac apps while a focus timer is running. Website blocking is only available through iOS Screen Time."
+        return "\(appSummary). Routina closes selected Mac apps during enabled protected modes. Website blocking is only available through iOS Screen Time."
     }
 
     private func chooseMacBlockedApps() {
@@ -625,7 +625,7 @@ struct FocusSessionCard: View {
         panel.allowsMultipleSelection = true
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
-        panel.message = "Choose apps to block while a focus timer is running."
+        panel.message = "Choose apps to block during enabled protected modes."
         panel.prompt = "Choose"
 
         guard panel.runModal() == .OK else { return }

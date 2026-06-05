@@ -61,7 +61,7 @@ enum SleepSessionSupport {
             if stoppedFocusTimers {
                 try context.save()
                 syncFocusTimerSurfaces()
-                NotificationCenter.default.postRoutineDidUpdate()
+                notifySleepChanged(using: context)
             }
             return activeSession
         }
@@ -81,7 +81,7 @@ enum SleepSessionSupport {
         if stoppedFocusTimers {
             syncFocusTimerSurfaces()
         }
-        NotificationCenter.default.postRoutineDidUpdate()
+        notifySleepChanged(using: context)
         return session
     }
 
@@ -110,7 +110,7 @@ enum SleepSessionSupport {
             )
         }
         try context.save()
-        NotificationCenter.default.postRoutineDidUpdate()
+        notifySleepChanged(using: context)
         return activeSession
     }
 
@@ -128,7 +128,7 @@ enum SleepSessionSupport {
         )
         context.delete(session)
         try context.save()
-        NotificationCenter.default.postRoutineDidUpdate()
+        notifySleepChanged(using: context)
     }
 
     @MainActor
@@ -212,5 +212,13 @@ enum SleepSessionSupport {
             )
         }
         #endif
+    }
+
+    @MainActor
+    private static func notifySleepChanged(using context: ModelContext) {
+        #if (os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)) || os(macOS)
+        FocusShieldSupport.syncFocusShield(using: context)
+        #endif
+        NotificationCenter.default.postRoutineDidUpdate()
     }
 }

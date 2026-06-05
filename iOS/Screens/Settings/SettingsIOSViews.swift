@@ -105,6 +105,8 @@ struct SettingsIOSDetailView: View {
             SettingsDevicesDetailView(store: store)
         case .notifications:
             SettingsNotificationsDetailView(store: store)
+        case .blocking:
+            SettingsBlockingDetailView()
         case .calendar:
             SettingsCalendarDetailView(store: store)
         case .places:

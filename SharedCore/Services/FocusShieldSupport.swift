@@ -54,26 +54,78 @@ enum FocusShieldSupport {
 
     @MainActor
     static func syncFocusShield(using context: ModelContext) {
-        #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
-        guard hasActiveProtectedSession(in: context) else {
-            clearShield()
+        guard let activeMode = activeBlockingMode(in: context),
+              isBlockingEnabled(for: activeMode) else {
+            clearCurrentBlocking()
             return
         }
 
+        #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
         _ = applyShieldForCurrentSelection()
         #elseif os(macOS)
-        guard hasActiveProtectedSession(in: context) else {
-            MacFocusAppBlocker.shared.stop()
-            return
-        }
-
-        MacFocusAppBlocker.shared.sync()
+        MacFocusAppBlocker.shared.sync(for: activeMode)
         #endif
     }
 
+    static func loadEnabledBlockingModes() -> Set<ProtectionBlockingMode> {
+        ProtectionBlockingMode.decodedSet(
+            from: SharedDefaults.app[.appSettingProtectionBlockingEnabledModes]
+        )
+    }
+
+    static func saveEnabledBlockingModes(_ modes: Set<ProtectionBlockingMode>) {
+        SharedDefaults.app[.appSettingProtectionBlockingEnabledModes] = ProtectionBlockingMode.encodedSet(modes)
+    }
+
+    static func setBlockingMode(_ mode: ProtectionBlockingMode, isEnabled: Bool) -> Set<ProtectionBlockingMode> {
+        var modes = loadEnabledBlockingModes()
+        if isEnabled {
+            modes.insert(mode)
+        } else {
+            modes.remove(mode)
+        }
+        saveEnabledBlockingModes(modes)
+        return modes
+    }
+
+    static func enabledBlockingModesSummaryText(_ modes: Set<ProtectionBlockingMode>) -> String {
+        if modes.isEmpty {
+            return "No modes"
+        }
+        if modes == ProtectionBlockingMode.defaultEnabledModes {
+            return "Focus, Away, Sleep"
+        }
+        return ProtectionBlockingMode.allCases
+            .filter { modes.contains($0) }
+            .map(\.title)
+            .joined(separator: ", ")
+    }
+
+    private static func isBlockingEnabled(for mode: ProtectionBlockingMode) -> Bool {
+        loadEnabledBlockingModes().contains(mode)
+    }
+
     @MainActor
-    private static func hasActiveProtectedSession(in context: ModelContext) -> Bool {
-        hasActiveFocusSession(in: context) || hasActiveAwaySession(in: context)
+    private static func activeBlockingMode(in context: ModelContext) -> ProtectionBlockingMode? {
+        if hasActiveFocusSession(in: context) {
+            return .focus
+        }
+        if hasActiveAwaySession(in: context) {
+            return .away
+        }
+        if hasActiveSleepSession(in: context) {
+            return .sleep
+        }
+        return nil
+    }
+
+    @MainActor
+    private static func clearCurrentBlocking() {
+        #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
+        clearShield()
+        #elseif os(macOS)
+        MacFocusAppBlocker.shared.stop()
+        #endif
     }
 
     @MainActor
@@ -85,11 +137,24 @@ enum FocusShieldSupport {
         descriptor.fetchLimit = 8
 
         do {
-            return try context.fetch(descriptor).contains { $0.pausedAt == nil }
+            if try context.fetch(descriptor).contains(where: { $0.pausedAt == nil }) {
+                return true
+            }
+            return try hasActiveSprintFocusSession(in: context)
         } catch {
             NSLog("Focus shield active-session check failed: \(error.localizedDescription)")
             return false
         }
+    }
+
+    @MainActor
+    private static func hasActiveSprintFocusSession(in context: ModelContext) throws -> Bool {
+        let predicate = #Predicate<SprintFocusSessionRecord> { session in
+            session.stoppedAt == nil
+        }
+        var descriptor = FetchDescriptor<SprintFocusSessionRecord>(predicate: predicate)
+        descriptor.fetchLimit = 8
+        return try context.fetch(descriptor).contains { $0.pausedAt == nil }
     }
 
     @MainActor
@@ -107,6 +172,22 @@ enum FocusShieldSupport {
             return false
         }
     }
+
+    @MainActor
+    private static func hasActiveSleepSession(in context: ModelContext) -> Bool {
+        let predicate = #Predicate<SleepSession> { session in
+            session.endedAt == nil
+        }
+        var descriptor = FetchDescriptor<SleepSession>(predicate: predicate)
+        descriptor.fetchLimit = 1
+
+        do {
+            return try !context.fetch(descriptor).isEmpty
+        } catch {
+            NSLog("Focus shield active-sleep check failed: \(error.localizedDescription)")
+            return false
+        }
+    }
 }
 
 #if os(macOS)
@@ -114,8 +195,48 @@ struct MacFocusBlockedApp: Codable, Equatable, Hashable, Identifiable, Sendable 
     var bundleIdentifier: String
     var displayName: String
     var bundlePath: String?
+    var enabledModes: Set<ProtectionBlockingMode>
 
     var id: String { bundleIdentifier }
+
+    init(
+        bundleIdentifier: String,
+        displayName: String,
+        bundlePath: String?,
+        enabledModes: Set<ProtectionBlockingMode> = ProtectionBlockingMode.defaultEnabledModes
+    ) {
+        self.bundleIdentifier = bundleIdentifier
+        self.displayName = displayName
+        self.bundlePath = bundlePath
+        self.enabledModes = enabledModes
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case bundleIdentifier
+        case displayName
+        case bundlePath
+        case enabledModes
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        bundleIdentifier = try container.decode(String.self, forKey: .bundleIdentifier)
+        displayName = try container.decode(String.self, forKey: .displayName)
+        bundlePath = try container.decodeIfPresent(String.self, forKey: .bundlePath)
+        let decodedModes = try container.decodeIfPresent([ProtectionBlockingMode].self, forKey: .enabledModes)
+        enabledModes = decodedModes.map(Set.init) ?? ProtectionBlockingMode.defaultEnabledModes
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(bundleIdentifier, forKey: .bundleIdentifier)
+        try container.encode(displayName, forKey: .displayName)
+        try container.encodeIfPresent(bundlePath, forKey: .bundlePath)
+        try container.encode(
+            ProtectionBlockingMode.allCases.filter { enabledModes.contains($0) },
+            forKey: .enabledModes
+        )
+    }
 }
 
 extension FocusShieldSupport {
@@ -199,7 +320,8 @@ extension FocusShieldSupport {
                     displayName: app.displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                         ? bundleIdentifier
                         : app.displayName.trimmingCharacters(in: .whitespacesAndNewlines),
-                    bundlePath: app.bundlePath
+                    bundlePath: app.bundlePath,
+                    enabledModes: app.enabledModes
                 )
             )
         }
@@ -221,8 +343,9 @@ private final class MacFocusAppBlocker: NSObject {
 
     private override init() {}
 
-    func sync() {
+    func sync(for activeMode: ProtectionBlockingMode) {
         let apps = FocusShieldSupport.loadMacBlockedApps()
+            .filter { $0.enabledModes.contains(activeMode) }
         guard FocusShieldSupport.isMacFocusAppBlockingEnabled, !apps.isEmpty else {
             stop()
             return

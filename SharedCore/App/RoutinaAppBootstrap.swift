@@ -41,6 +41,9 @@ enum RoutinaAppBootstrap {
             UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue: RoutineListSectioningMode.defaultValue.rawValue,
             UserDefaultStringValueKey.appSettingCollapsedTagTaskListSections.rawValue: "",
             UserDefaultStringValueKey.appSettingHomeTaskRowHiddenFields.rawValue: "",
+            UserDefaultStringValueKey.appSettingProtectionBlockingEnabledModes.rawValue: ProtectionBlockingMode.encodedSet(
+                ProtectionBlockingMode.defaultEnabledModes
+            ),
             UserDefaultStringValueKey.macQuickAddShortcut.rawValue: "optionCommandN",
             BatteryRoutinePreferences.thresholdPercentDefaultsKey: BatteryRoutinePreferences.defaultThresholdPercent
         ])

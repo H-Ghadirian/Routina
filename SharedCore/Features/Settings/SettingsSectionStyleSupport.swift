@@ -9,6 +9,8 @@ extension SettingsSectionID {
             return .teal
         case .notifications:
             return .red
+        case .blocking:
+            return .teal
         case .calendar:
             return .purple
         case .places:

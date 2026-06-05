@@ -81,6 +81,8 @@ struct SettingsMacDetailView: View {
             SettingsMacDevicesDetailView(store: store)
         case .notifications:
             SettingsMacNotificationsDetailView(store: store)
+        case .blocking:
+            SettingsMacBlockingDetailView()
         case .calendar:
             SettingsMacCalendarDetailView(store: store)
         case .places:
