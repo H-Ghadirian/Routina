@@ -104,6 +104,7 @@ struct HomeTCAView: View {
     @Query(sort: \FocusSession.startedAt, order: .reverse) var focusSessions: [FocusSession]
     @Query(sort: \SprintFocusSessionRecord.startedAt, order: .reverse) var sprintFocusSessions: [SprintFocusSessionRecord]
     @Query(sort: \BoardSprintRecord.createdAt, order: .reverse) var boardSprints: [BoardSprintRecord]
+    @Query(sort: \DayPlanBlockRecord.createdAt, order: .reverse) var dayPlanBlocks: [DayPlanBlockRecord]
     @Query(sort: \SleepSession.startedAt, order: .reverse) var sleepSessions: [SleepSession]
     @Query(sort: \AwaySession.startedAt, order: .reverse) var awaySessions: [AwaySession]
     @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) var placeCheckInSessions: [PlaceCheckInSession]
@@ -253,6 +254,7 @@ homeContent
             sprintFocusSessions: sprintFocusSessions,
             sleepSessions: sleepSessions,
             awaySessions: awaySessions,
+            dayPlanBlocks: dayPlanBlocks,
             emotionLogs: emotionLogs,
             notes: notes,
             events: events,

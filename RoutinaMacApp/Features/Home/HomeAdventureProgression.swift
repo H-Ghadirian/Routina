@@ -475,6 +475,33 @@ struct HomeAdventureCoinRule: Identifiable, Equatable {
             coinsPerAction: 6
         ),
         HomeAdventureCoinRule(
+            id: "plannerBlocks",
+            actionTitle: "Plan a block",
+            sourceTitle: "Planner blocks",
+            systemImage: "calendar.badge.plus",
+            unitSingular: "block",
+            unitPlural: "blocks",
+            coinsPerAction: 4
+        ),
+        HomeAdventureCoinRule(
+            id: "plannedHours",
+            actionTitle: "Plan one hour",
+            sourceTitle: "Planned hours",
+            systemImage: "clock.fill",
+            unitSingular: "hour",
+            unitPlural: "hours",
+            coinsPerAction: 2
+        ),
+        HomeAdventureCoinRule(
+            id: "plannerRefinements",
+            actionTitle: "Refine a plan",
+            sourceTitle: "Plan refinements",
+            systemImage: "slider.horizontal.3",
+            unitSingular: "refinement",
+            unitPlural: "refinements",
+            coinsPerAction: 2
+        ),
+        HomeAdventureCoinRule(
             id: "sleep",
             actionTitle: "Complete sleep",
             sourceTitle: "Completed sleep",
@@ -543,6 +570,7 @@ enum HomeAdventureProgressionBuilder {
         sprintFocusSessions: [SprintFocusSessionRecord],
         sleepSessions: [SleepSession],
         awaySessions: [AwaySession],
+        dayPlanBlocks: [DayPlanBlockRecord],
         emotionLogs: [EmotionLog],
         notes: [RoutineNote],
         events: [RoutineEvent],
@@ -558,6 +586,7 @@ enum HomeAdventureProgressionBuilder {
             sprintFocusSessions: sprintFocusSessions,
             sleepSessions: sleepSessions,
             awaySessions: awaySessions,
+            dayPlanBlocks: dayPlanBlocks,
             emotionLogs: emotionLogs,
             notes: notes,
             events: events,
@@ -572,6 +601,9 @@ enum HomeAdventureProgressionBuilder {
             + metrics.createdTaskCount * 4
             + metrics.taskFocusBlockCount * 3
             + metrics.boardFocusBlockCount * 4
+            + metrics.plannerBlockCount * 3
+            + metrics.plannedHourCount
+            + metrics.plannerRefinementCount * 2
             + metrics.completedSleepCount * 18
             + metrics.completedAwayCount * 10
             + metrics.captureActionCount * 5
@@ -677,6 +709,9 @@ enum HomeAdventureProgressionBuilder {
             "created": metrics.createdTaskCount,
             "focus": metrics.taskFocusBlockCount,
             "boardFocus": metrics.boardFocusBlockCount,
+            "plannerBlocks": metrics.plannerBlockCount,
+            "plannedHours": metrics.plannedHourCount,
+            "plannerRefinements": metrics.plannerRefinementCount,
             "sleep": metrics.completedSleepCount,
             "away": metrics.completedAwayCount,
             "captures": metrics.captureActionCount,
@@ -883,6 +918,9 @@ private struct Metrics {
     let createdTaskCount: Int
     let taskFocusBlockCount: Int
     let boardFocusBlockCount: Int
+    let plannerBlockCount: Int
+    let plannedHourCount: Int
+    let plannerRefinementCount: Int
     let completedSleepCount: Int
     let completedAwayCount: Int
     let captureActionCount: Int
@@ -895,6 +933,9 @@ private struct Metrics {
             + createdTaskCount
             + taskFocusBlockCount
             + boardFocusBlockCount
+            + plannerBlockCount
+            + plannedHourCount
+            + plannerRefinementCount
             + completedSleepCount
             + completedAwayCount
             + captureActionCount
@@ -909,6 +950,7 @@ private struct Metrics {
         sprintFocusSessions: [SprintFocusSessionRecord],
         sleepSessions: [SleepSession],
         awaySessions: [AwaySession],
+        dayPlanBlocks: [DayPlanBlockRecord],
         emotionLogs: [EmotionLog],
         notes: [RoutineNote],
         events: [RoutineEvent],
@@ -927,6 +969,13 @@ private struct Metrics {
         }
         taskFocusBlockCount = FocusBlockProgress.filledBlockCount(for: taskFocusSeconds)
         boardFocusBlockCount = FocusBlockProgress.filledBlockCount(for: boardFocusSeconds)
+        plannerBlockCount = dayPlanBlocks.count
+        plannedHourCount = dayPlanBlocks.reduce(0) { total, block in
+            total + max(0, block.durationMinutes) / 60
+        }
+        plannerRefinementCount = dayPlanBlocks.filter { block in
+            block.updatedAt.timeIntervalSince(block.createdAt) > 1
+        }.count
         completedSleepCount = sleepSessions.filter { !$0.isActive }.count
         completedAwayCount = awaySessions.filter { $0.state == .completed }.count
         captureActionCount = emotionLogs.count + notes.count + events.count
@@ -942,6 +991,12 @@ private struct Metrics {
         tasks.forEach { insertDay($0.createdAt) }
         focusSessions.forEach { insertDay($0.startedAt) }
         sprintFocusSessions.forEach { insertDay($0.startedAt) }
+        dayPlanBlocks.forEach { block in
+            insertDay(block.createdAt)
+            if block.updatedAt.timeIntervalSince(block.createdAt) > 1 {
+                insertDay(block.updatedAt)
+            }
+        }
         sleepSessions.forEach { insertDay($0.startedAt) }
         awaySessions.forEach { insertDay($0.startedAt) }
         emotionLogs.forEach { insertDay($0.createdAt) }

@@ -57,6 +57,24 @@ struct HomeAdventureProgressionTests {
             endedAt: referenceDate,
             createdAt: yesterday
         )
+        let refinedPlannerBlock = DayPlanBlockRecord(
+            taskID: taskA.id,
+            dayKey: DayPlanStorage.dayKey(for: twoDaysAgo, calendar: calendar),
+            startMinute: 9 * 60,
+            durationMinutes: 90,
+            titleSnapshot: "Morning",
+            createdAt: twoDaysAgo,
+            updatedAt: yesterday
+        )
+        let plannerBlock = DayPlanBlockRecord(
+            taskID: taskB.id,
+            dayKey: DayPlanStorage.dayKey(for: referenceDate, calendar: calendar),
+            startMinute: 14 * 60,
+            durationMinutes: 30,
+            titleSnapshot: "Read",
+            createdAt: referenceDate,
+            updatedAt: referenceDate
+        )
 
         let progression = HomeAdventureProgressionBuilder.build(
             tasks: [taskA, taskB],
@@ -65,6 +83,7 @@ struct HomeAdventureProgressionTests {
             sprintFocusSessions: [sprintFocusSession],
             sleepSessions: [sleepSession],
             awaySessions: [awaySession],
+            dayPlanBlocks: [refinedPlannerBlock, plannerBlock],
             emotionLogs: [emotion],
             notes: [note],
             events: [event],
@@ -74,8 +93,8 @@ struct HomeAdventureProgressionTests {
             calendar: calendar
         )
 
-        #expect(progression.totalCoins == 161)
-        #expect(progression.actionCount == 19)
+        #expect(progression.totalCoins == 175)
+        #expect(progression.actionCount == 24)
         #expect(progression.activeDayCount == 3)
         #expect(progression.level == 1)
         #expect(progression.completedStageCount == 2)
@@ -84,6 +103,9 @@ struct HomeAdventureProgressionTests {
             "created",
             "focus",
             "boardFocus",
+            "plannerBlocks",
+            "plannedHours",
+            "plannerRefinements",
             "sleep",
             "away",
             "captures",
@@ -96,7 +118,10 @@ struct HomeAdventureProgressionTests {
         #expect(progression.sources.first { $0.id == "focus" }?.countText == "5 blocks")
         #expect(progression.sources.first { $0.id == "boardFocus" }?.countText == "2 blocks")
         #expect(progression.sources.first { $0.id == "boardFocus" }?.coins == 12)
-        #expect(HomeAdventureCoinRule.all.map(\.coinsPerAction) == [12, 5, 4, 6, 25, 16, 6, 14, 10])
+        #expect(progression.sources.first { $0.id == "plannerBlocks" }?.countText == "2 blocks")
+        #expect(progression.sources.first { $0.id == "plannedHours" }?.countText == "2 hours")
+        #expect(progression.sources.first { $0.id == "plannerRefinements" }?.countText == "1 refinement")
+        #expect(HomeAdventureCoinRule.all.map(\.coinsPerAction) == [12, 5, 4, 6, 4, 2, 2, 25, 16, 6, 14, 10])
     }
 
     @Test
@@ -110,6 +135,7 @@ struct HomeAdventureProgressionTests {
             sprintFocusSessions: [],
             sleepSessions: [],
             awaySessions: [],
+            dayPlanBlocks: [],
             emotionLogs: [],
             notes: [],
             events: [],
@@ -404,6 +430,7 @@ struct HomeAdventureProgressionTests {
             sprintFocusSessions: [],
             sleepSessions: [],
             awaySessions: [],
+            dayPlanBlocks: [],
             emotionLogs: [],
             notes: [],
             events: [],
