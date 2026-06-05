@@ -458,12 +458,21 @@ struct HomeAdventureCoinRule: Identifiable, Equatable {
         ),
         HomeAdventureCoinRule(
             id: "focus",
-            actionTitle: "Finish a focus block",
-            sourceTitle: "Focus blocks",
+            actionTitle: "Finish a task focus block",
+            sourceTitle: "Task focus blocks",
             systemImage: "timer",
             unitSingular: "block",
             unitPlural: "blocks",
             coinsPerAction: 4
+        ),
+        HomeAdventureCoinRule(
+            id: "boardFocus",
+            actionTitle: "Finish a board focus block",
+            sourceTitle: "Board focus blocks",
+            systemImage: "square.grid.3x3.fill",
+            unitSingular: "block",
+            unitPlural: "blocks",
+            coinsPerAction: 6
         ),
         HomeAdventureCoinRule(
             id: "sleep",
@@ -561,7 +570,8 @@ enum HomeAdventureProgressionBuilder {
         let totalCoins = sources.reduce(0) { $0 + $1.coins }
         let totalXP = metrics.completedLogCount * 10
             + metrics.createdTaskCount * 4
-            + metrics.focusBlockCount * 3
+            + metrics.taskFocusBlockCount * 3
+            + metrics.boardFocusBlockCount * 4
             + metrics.completedSleepCount * 18
             + metrics.completedAwayCount * 10
             + metrics.captureActionCount * 5
@@ -665,7 +675,8 @@ enum HomeAdventureProgressionBuilder {
         let countsByRuleID: [String: Int] = [
             "done": metrics.completedLogCount,
             "created": metrics.createdTaskCount,
-            "focus": metrics.focusBlockCount,
+            "focus": metrics.taskFocusBlockCount,
+            "boardFocus": metrics.boardFocusBlockCount,
             "sleep": metrics.completedSleepCount,
             "away": metrics.completedAwayCount,
             "captures": metrics.captureActionCount,
@@ -870,7 +881,8 @@ private struct ItemTemplate {
 private struct Metrics {
     let completedLogCount: Int
     let createdTaskCount: Int
-    let focusBlockCount: Int
+    let taskFocusBlockCount: Int
+    let boardFocusBlockCount: Int
     let completedSleepCount: Int
     let completedAwayCount: Int
     let captureActionCount: Int
@@ -881,7 +893,8 @@ private struct Metrics {
     var rewardedActionCount: Int {
         completedLogCount
             + createdTaskCount
-            + focusBlockCount
+            + taskFocusBlockCount
+            + boardFocusBlockCount
             + completedSleepCount
             + completedAwayCount
             + captureActionCount
@@ -906,12 +919,14 @@ private struct Metrics {
     ) {
         completedLogCount = logs.filter { $0.kind == .completed }.count
         createdTaskCount = tasks.filter { $0.createdAt != nil }.count
-        let focusSeconds = focusSessions.reduce(0) { total, session in
-            total + session.activeDurationSeconds(at: referenceDate)
-        } + sprintFocusSessions.reduce(0) { total, session in
+        let taskFocusSeconds = focusSessions.reduce(0) { total, session in
             total + session.activeDurationSeconds(at: referenceDate)
         }
-        focusBlockCount = FocusBlockProgress.filledBlockCount(for: focusSeconds)
+        let boardFocusSeconds = sprintFocusSessions.reduce(0) { total, session in
+            total + session.activeDurationSeconds(at: referenceDate)
+        }
+        taskFocusBlockCount = FocusBlockProgress.filledBlockCount(for: taskFocusSeconds)
+        boardFocusBlockCount = FocusBlockProgress.filledBlockCount(for: boardFocusSeconds)
         completedSleepCount = sleepSessions.filter { !$0.isActive }.count
         completedAwayCount = awaySessions.filter { $0.state == .completed }.count
         captureActionCount = emotionLogs.count + notes.count + events.count

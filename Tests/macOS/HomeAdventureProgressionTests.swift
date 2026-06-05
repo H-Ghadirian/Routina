@@ -74,7 +74,7 @@ struct HomeAdventureProgressionTests {
             calendar: calendar
         )
 
-        #expect(progression.totalCoins == 157)
+        #expect(progression.totalCoins == 161)
         #expect(progression.actionCount == 19)
         #expect(progression.activeDayCount == 3)
         #expect(progression.level == 1)
@@ -83,6 +83,7 @@ struct HomeAdventureProgressionTests {
             "done",
             "created",
             "focus",
+            "boardFocus",
             "sleep",
             "away",
             "captures",
@@ -92,7 +93,10 @@ struct HomeAdventureProgressionTests {
         #expect(progression.sources.first { $0.id == "done" }?.coinsPerAction == 12)
         #expect(progression.sources.first { $0.id == "done" }?.countText == "3 completions")
         #expect(progression.sources.first { $0.id == "done" }?.formulaText == "3 x 12")
-        #expect(HomeAdventureCoinRule.all.map(\.coinsPerAction) == [12, 5, 4, 25, 16, 6, 14, 10])
+        #expect(progression.sources.first { $0.id == "focus" }?.countText == "5 blocks")
+        #expect(progression.sources.first { $0.id == "boardFocus" }?.countText == "2 blocks")
+        #expect(progression.sources.first { $0.id == "boardFocus" }?.coins == 12)
+        #expect(HomeAdventureCoinRule.all.map(\.coinsPerAction) == [12, 5, 4, 6, 25, 16, 6, 14, 10])
     }
 
     @Test
