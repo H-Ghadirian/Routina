@@ -411,6 +411,119 @@ struct HomeAdventureCoinSource: Identifiable, Equatable {
     let systemImage: String
     let count: Int
     let coins: Int
+    let coinsPerAction: Int
+    let unitSingular: String
+    let unitPlural: String
+
+    var countText: String {
+        "\(count.formatted()) \(count == 1 ? unitSingular : unitPlural)"
+    }
+
+    var rateText: String {
+        "+\(coinsPerAction.formatted()) each"
+    }
+
+    var formulaText: String {
+        "\(count.formatted()) x \(coinsPerAction.formatted())"
+    }
+}
+
+struct HomeAdventureCoinRule: Identifiable, Equatable {
+    let id: String
+    let actionTitle: String
+    let sourceTitle: String
+    let systemImage: String
+    let unitSingular: String
+    let unitPlural: String
+    let coinsPerAction: Int
+
+    static let all: [HomeAdventureCoinRule] = [
+        HomeAdventureCoinRule(
+            id: "done",
+            actionTitle: "Complete a task",
+            sourceTitle: "Task completions",
+            systemImage: "checkmark.seal.fill",
+            unitSingular: "completion",
+            unitPlural: "completions",
+            coinsPerAction: 12
+        ),
+        HomeAdventureCoinRule(
+            id: "created",
+            actionTitle: "Create a task",
+            sourceTitle: "Created tasks",
+            systemImage: "plus.circle.fill",
+            unitSingular: "task",
+            unitPlural: "tasks",
+            coinsPerAction: 5
+        ),
+        HomeAdventureCoinRule(
+            id: "focus",
+            actionTitle: "Finish a focus block",
+            sourceTitle: "Focus blocks",
+            systemImage: "timer",
+            unitSingular: "block",
+            unitPlural: "blocks",
+            coinsPerAction: 4
+        ),
+        HomeAdventureCoinRule(
+            id: "sleep",
+            actionTitle: "Complete sleep",
+            sourceTitle: "Completed sleep",
+            systemImage: "bed.double.fill",
+            unitSingular: "session",
+            unitPlural: "sessions",
+            coinsPerAction: 25
+        ),
+        HomeAdventureCoinRule(
+            id: "away",
+            actionTitle: "Complete away",
+            sourceTitle: "Completed away",
+            systemImage: "lock.shield.fill",
+            unitSingular: "session",
+            unitPlural: "sessions",
+            coinsPerAction: 16
+        ),
+        HomeAdventureCoinRule(
+            id: "captures",
+            actionTitle: "Capture a note, event, or emotion",
+            sourceTitle: "Notes, events, emotions",
+            systemImage: "sparkles",
+            unitSingular: "capture",
+            unitPlural: "captures",
+            coinsPerAction: 6
+        ),
+        HomeAdventureCoinRule(
+            id: "goals",
+            actionTitle: "Create a goal",
+            sourceTitle: "Goals",
+            systemImage: "target",
+            unitSingular: "goal",
+            unitPlural: "goals",
+            coinsPerAction: 14
+        ),
+        HomeAdventureCoinRule(
+            id: "places",
+            actionTitle: "Check in to a place",
+            sourceTitle: "Check-ins",
+            systemImage: "mappin.and.ellipse",
+            unitSingular: "check-in",
+            unitPlural: "check-ins",
+            coinsPerAction: 10
+        )
+    ]
+
+    func source(count: Int) -> HomeAdventureCoinSource {
+        HomeAdventureCoinSource(
+            id: id,
+            title: sourceTitle,
+            systemImage: systemImage,
+            count: count,
+            coins: count * coinsPerAction,
+            coinsPerAction: coinsPerAction,
+            unitSingular: unitSingular,
+            unitPlural: unitPlural
+        )
+    }
 }
 
 enum HomeAdventureProgressionBuilder {
@@ -549,64 +662,22 @@ enum HomeAdventureProgressionBuilder {
     }
 
     private static func coinSources(from metrics: Metrics) -> [HomeAdventureCoinSource] {
-        [
-            HomeAdventureCoinSource(
-                id: "done",
-                title: "Completed tasks",
-                systemImage: "checkmark.seal.fill",
-                count: metrics.completedLogCount,
-                coins: metrics.completedLogCount * 12
-            ),
-            HomeAdventureCoinSource(
-                id: "created",
-                title: "Created tasks",
-                systemImage: "plus.circle.fill",
-                count: metrics.createdTaskCount,
-                coins: metrics.createdTaskCount * 5
-            ),
-            HomeAdventureCoinSource(
-                id: "focus",
-                title: "Focus blocks",
-                systemImage: "timer",
-                count: metrics.focusBlockCount,
-                coins: metrics.focusBlockCount * 4
-            ),
-            HomeAdventureCoinSource(
-                id: "sleep",
-                title: "Completed sleep",
-                systemImage: "bed.double.fill",
-                count: metrics.completedSleepCount,
-                coins: metrics.completedSleepCount * 25
-            ),
-            HomeAdventureCoinSource(
-                id: "away",
-                title: "Completed away",
-                systemImage: "lock.shield.fill",
-                count: metrics.completedAwayCount,
-                coins: metrics.completedAwayCount * 16
-            ),
-            HomeAdventureCoinSource(
-                id: "captures",
-                title: "Notes, events, emotions",
-                systemImage: "sparkles",
-                count: metrics.captureActionCount,
-                coins: metrics.captureActionCount * 6
-            ),
-            HomeAdventureCoinSource(
-                id: "goals",
-                title: "Goals",
-                systemImage: "target",
-                count: metrics.goalCount,
-                coins: metrics.goalCount * 14
-            ),
-            HomeAdventureCoinSource(
-                id: "places",
-                title: "Check-ins",
-                systemImage: "mappin.and.ellipse",
-                count: metrics.placeCheckInCount,
-                coins: metrics.placeCheckInCount * 10
-            )
-        ].filter { $0.count > 0 || $0.coins > 0 }
+        let countsByRuleID: [String: Int] = [
+            "done": metrics.completedLogCount,
+            "created": metrics.createdTaskCount,
+            "focus": metrics.focusBlockCount,
+            "sleep": metrics.completedSleepCount,
+            "away": metrics.completedAwayCount,
+            "captures": metrics.captureActionCount,
+            "goals": metrics.goalCount,
+            "places": metrics.placeCheckInCount
+        ]
+
+        let sources = HomeAdventureCoinRule.all.map { rule in
+            rule.source(count: countsByRuleID[rule.id] ?? 0)
+        }
+
+        return sources.filter { $0.count > 0 || $0.coins > 0 }
     }
 
     private static func worldTemplates() -> [WorldTemplate] {

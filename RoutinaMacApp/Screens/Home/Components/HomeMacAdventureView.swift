@@ -128,13 +128,18 @@ struct HomeMacAdventureSidebarView: View {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(source.title)
                                         .font(.caption.weight(.medium))
-                                    Text("\(source.count.formatted()) actions")
+                                    Text("\(source.countText) at \(source.rateText)")
                                         .font(.caption2)
                                         .foregroundStyle(.secondary)
                                 }
                                 Spacer()
-                                Text("+\(source.coins.formatted())")
-                                    .font(.caption.weight(.semibold))
+                                VStack(alignment: .trailing, spacing: 2) {
+                                    Text("+\(source.coins.formatted())")
+                                        .font(.caption.weight(.semibold))
+                                    Text(source.formulaText)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                         }
                     }
@@ -203,6 +208,7 @@ struct HomeMacAdventureView: View {
             VStack(alignment: .leading, spacing: 18) {
                 hero
                 HomeAdventureGuideStrip(wallet: wallet)
+                HomeAdventureCoinGuide()
                 worldsSection
                 itemsSection
             }
@@ -793,6 +799,75 @@ private struct HomeAdventureGuideStrip: View {
     private func choiceCountText(_ count: Int, singular: String, plural: String) -> String? {
         guard count > 0 else { return nil }
         return "\(count) ready \(count == 1 ? singular : plural)"
+    }
+}
+
+private struct HomeAdventureCoinGuide: View {
+    private let columns = [
+        GridItem(.adaptive(minimum: 235), spacing: 10)
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Label("How to earn coins", systemImage: "circle.hexagongrid.fill")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.primary)
+
+                Spacer()
+
+                Text("Spendable = earned coins minus chosen unlock costs")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
+                ForEach(HomeAdventureCoinRule.all) { rule in
+                    HomeAdventureCoinRuleRow(rule: rule)
+                }
+            }
+        }
+        .padding(14)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        }
+    }
+}
+
+private struct HomeAdventureCoinRuleRow: View {
+    let rule: HomeAdventureCoinRule
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: rule.systemImage)
+                .font(.callout.weight(.semibold))
+                .foregroundStyle(.yellow)
+                .frame(width: 22)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(rule.actionTitle)
+                    .font(.caption.weight(.semibold))
+                    .lineLimit(1)
+                Text(rule.unitSingular.capitalized)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 8)
+
+            Text("+\(rule.coinsPerAction.formatted())")
+                .font(.callout.weight(.heavy))
+                .foregroundStyle(.yellow)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 5)
+                .background(Color.yellow.opacity(0.14), in: Capsule())
+        }
+        .padding(10)
+        .background(Color.secondary.opacity(0.07), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
 

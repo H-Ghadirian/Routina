@@ -89,6 +89,10 @@ struct HomeAdventureProgressionTests {
             "goals",
             "places"
         ])
+        #expect(progression.sources.first { $0.id == "done" }?.coinsPerAction == 12)
+        #expect(progression.sources.first { $0.id == "done" }?.countText == "3 completions")
+        #expect(progression.sources.first { $0.id == "done" }?.formulaText == "3 x 12")
+        #expect(HomeAdventureCoinRule.all.map(\.coinsPerAction) == [12, 5, 4, 25, 16, 6, 14, 10])
     }
 
     @Test
