@@ -64,6 +64,7 @@ enum FocusShieldSupport {
         _ = applyShieldForCurrentSelection(for: activeMode)
         #elseif os(macOS)
         MacFocusAppBlocker.shared.sync(for: activeMode)
+        MacWebsiteBlocker.shared.sync(for: activeMode)
         #endif
     }
 
@@ -170,6 +171,19 @@ enum FocusShieldSupport {
         }
     }
 
+    static func shouldBlockWebsiteURL(
+        _ rawURL: String,
+        against domains: [BlockingWebsiteDomain]
+    ) -> Bool {
+        guard let host = BlockingWebsiteDomain.normalizedHost(from: rawURL) else {
+            return false
+        }
+
+        return domains.contains { domain in
+            host == domain.domain || host.hasSuffix(".\(domain.domain)")
+        }
+    }
+
     @MainActor
     private static func activeBlockingMode(in context: ModelContext) -> ProtectionBlockingMode? {
         if hasActiveFocusSession(in: context) {
@@ -190,6 +204,7 @@ enum FocusShieldSupport {
         clearShield()
         #elseif os(macOS)
         MacFocusAppBlocker.shared.stop()
+        MacWebsiteBlocker.shared.stop()
         #endif
     }
 
@@ -530,6 +545,176 @@ private final class MacFocusAppBlocker: NSObject {
                 NSLog("Focus app blocking could not force quit \(bundleIdentifier).")
             }
         }
+    }
+}
+
+@MainActor
+private final class MacWebsiteBlocker {
+    static let shared = MacWebsiteBlocker()
+
+    private var blockedDomains: [BlockingWebsiteDomain] = []
+    private var enforcementTask: Task<Void, Never>?
+    private var automationCooldownUntilByBundleID: [String: Date] = [:]
+
+    private let supportedBrowsersByBundleID: [String: MacBrowserAutomationTarget] = {
+        let targets: [MacBrowserAutomationTarget] = [
+            MacBrowserAutomationTarget(bundleIdentifier: "com.apple.Safari", kind: .safari),
+            MacBrowserAutomationTarget(bundleIdentifier: "com.apple.SafariTechnologyPreview", kind: .safari),
+            MacBrowserAutomationTarget(bundleIdentifier: "com.google.Chrome", kind: .chromium),
+            MacBrowserAutomationTarget(bundleIdentifier: "com.google.Chrome.canary", kind: .chromium),
+            MacBrowserAutomationTarget(bundleIdentifier: "org.chromium.Chromium", kind: .chromium),
+            MacBrowserAutomationTarget(bundleIdentifier: "com.brave.Browser", kind: .chromium),
+            MacBrowserAutomationTarget(bundleIdentifier: "com.microsoft.edgemac", kind: .chromium),
+            MacBrowserAutomationTarget(bundleIdentifier: "com.microsoft.edgemac.Dev", kind: .chromium),
+            MacBrowserAutomationTarget(bundleIdentifier: "com.operasoftware.Opera", kind: .chromium),
+            MacBrowserAutomationTarget(bundleIdentifier: "com.vivaldi.Vivaldi", kind: .chromium),
+            MacBrowserAutomationTarget(bundleIdentifier: "company.thebrowser.Browser", kind: .chromium),
+        ]
+        return Dictionary(uniqueKeysWithValues: targets.map { ($0.bundleIdentifier, $0) })
+    }()
+
+    private init() {}
+
+    func sync(for activeMode: ProtectionBlockingMode) {
+        blockedDomains = FocusShieldSupport.loadBlockedWebsiteDomains()
+            .filter { $0.enabledModes.contains(activeMode) }
+        guard !blockedDomains.isEmpty else {
+            stop()
+            return
+        }
+
+        startEnforcementTaskIfNeeded()
+        enforceFrontmostBrowser()
+    }
+
+    func stop() {
+        blockedDomains.removeAll()
+        enforcementTask?.cancel()
+        enforcementTask = nil
+    }
+
+    private func startEnforcementTaskIfNeeded() {
+        guard enforcementTask == nil else { return }
+        enforcementTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 700_000_000)
+                guard !Task.isCancelled else { return }
+                self?.enforceFrontmostBrowser()
+            }
+        }
+    }
+
+    private func enforceFrontmostBrowser() {
+        guard !blockedDomains.isEmpty,
+              let bundleIdentifier = NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
+              let browser = supportedBrowsersByBundleID[bundleIdentifier],
+              canAttemptAutomation(for: bundleIdentifier)
+        else {
+            return
+        }
+
+        do {
+            guard let currentURL = try browser.currentURL(),
+                  FocusShieldSupport.shouldBlockWebsiteURL(currentURL, against: blockedDomains) else {
+                return
+            }
+
+            try browser.redirectCurrentTabToBlank()
+        } catch {
+            automationCooldownUntilByBundleID[bundleIdentifier] = Date().addingTimeInterval(30)
+            NSLog("Mac website blocking could not control \(bundleIdentifier): \(error.localizedDescription)")
+        }
+    }
+
+    private func canAttemptAutomation(for bundleIdentifier: String) -> Bool {
+        guard let cooldownUntil = automationCooldownUntilByBundleID[bundleIdentifier] else {
+            return true
+        }
+        if cooldownUntil <= Date() {
+            automationCooldownUntilByBundleID[bundleIdentifier] = nil
+            return true
+        }
+        return false
+    }
+}
+
+private struct MacBrowserAutomationTarget: Sendable {
+    enum Kind: Sendable {
+        case safari
+        case chromium
+    }
+
+    let bundleIdentifier: String
+    let kind: Kind
+
+    func currentURL() throws -> String? {
+        let script: String
+        switch kind {
+        case .safari:
+            script = """
+            tell application id "\(bundleIdentifier)"
+                if (count of windows) is 0 then return ""
+                return URL of current tab of front window
+            end tell
+            """
+        case .chromium:
+            script = """
+            tell application id "\(bundleIdentifier)"
+                if (count of windows) is 0 then return ""
+                return URL of active tab of front window
+            end tell
+            """
+        }
+
+        let value = try runAppleScript(script)
+        let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    func redirectCurrentTabToBlank() throws {
+        let script: String
+        switch kind {
+        case .safari:
+            script = """
+            tell application id "\(bundleIdentifier)"
+                if (count of windows) is 0 then return
+                set URL of current tab of front window to "about:blank"
+            end tell
+            """
+        case .chromium:
+            script = """
+            tell application id "\(bundleIdentifier)"
+                if (count of windows) is 0 then return
+                set URL of active tab of front window to "about:blank"
+            end tell
+            """
+        }
+
+        _ = try runAppleScript(script)
+    }
+
+    private func runAppleScript(_ source: String) throws -> String? {
+        var errorInfo: NSDictionary?
+        guard let script = NSAppleScript(source: source) else {
+            throw MacBrowserAutomationError(message: "Could not create browser automation script.")
+        }
+
+        let result = script.executeAndReturnError(&errorInfo)
+        if let errorInfo {
+            let message = errorInfo[NSAppleScript.errorMessage] as? String
+                ?? "Browser automation was not allowed."
+            throw MacBrowserAutomationError(message: message)
+        }
+
+        return result.stringValue
+    }
+}
+
+private struct MacBrowserAutomationError: LocalizedError {
+    var message: String
+
+    var errorDescription: String? {
+        message
     }
 }
 #endif

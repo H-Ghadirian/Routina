@@ -86,6 +86,20 @@ struct FocusShieldSupportTests {
     }
 
     @Test
+    func shouldBlockWebsiteURL_matchesExactHostsAndSubdomainsOnly() {
+        let domains = [
+            BlockingWebsiteDomain(domain: "youtube.com"),
+            BlockingWebsiteDomain(domain: "reddit.com"),
+        ]
+
+        #expect(FocusShieldSupport.shouldBlockWebsiteURL("https://youtube.com/watch?v=123", against: domains))
+        #expect(FocusShieldSupport.shouldBlockWebsiteURL("https://m.youtube.com/watch?v=123", against: domains))
+        #expect(FocusShieldSupport.shouldBlockWebsiteURL("old.reddit.com", against: domains))
+        #expect(!FocusShieldSupport.shouldBlockWebsiteURL("https://notyoutube.com", against: domains))
+        #expect(!FocusShieldSupport.shouldBlockWebsiteURL("https://youtube.com.example.org", against: domains))
+    }
+
+    @Test
     func macFocusAppBlockingDefaultsToEnabledButHonorsUserDisable() {
         let key = UserDefaultBoolValueKey.appSettingMacFocusAppBlockingEnabled.rawValue
         let previousValue = SharedDefaults.app.object(forKey: key)

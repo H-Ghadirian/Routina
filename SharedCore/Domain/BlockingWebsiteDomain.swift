@@ -36,6 +36,10 @@ struct BlockingWebsiteDomain: Codable, Equatable, Hashable, Identifiable, Sendab
     }
 
     static func normalizedDomain(from input: String) -> String? {
+        normalizedHost(from: input)
+    }
+
+    static func normalizedHost(from input: String) -> String? {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
 

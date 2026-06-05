@@ -16,7 +16,10 @@ struct SettingsMacBlockingDetailView: View {
         store: SharedDefaults.app
     ) private var isMacAppBlockingEnabled = true
     @State private var blockedApps = FocusShieldSupport.loadMacBlockedApps()
+    @State private var blockedWebsiteDomains = FocusShieldSupport.loadBlockedWebsiteDomains()
+    @State private var websiteDraft = ""
     @State private var statusMessage: String?
+    @State private var websiteStatusMessage: String?
     #endif
 
     var body: some View {
@@ -97,10 +100,45 @@ struct SettingsMacBlockingDetailView: View {
             }
 
             SettingsMacDetailCard(title: "Websites") {
-                Label("Entered website blocking is available on iPhone and iPad through Screen Time.", systemImage: "globe")
-                    .font(.subheadline.weight(.semibold))
+                HStack(spacing: 10) {
+                    TextField("example.com", text: $websiteDraft)
+                        .textFieldStyle(.roundedBorder)
+                        .onSubmit(addWebsiteDomain)
 
-                Text("Native Mac website blocking still needs a supported content-filter or browser-extension path before Routina can enforce typed domains on macOS.")
+                    Button {
+                        addWebsiteDomain()
+                    } label: {
+                        Label("Add Website", systemImage: "plus.circle.fill")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(websiteDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+
+                if let websiteStatusMessage {
+                    Text(websiteStatusMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
+                if blockedWebsiteDomains.isEmpty {
+                    Text("No websites entered.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } else {
+                    VStack(alignment: .leading, spacing: 10) {
+                        ForEach(blockedWebsiteDomains) { website in
+                            SettingsMacBlockedWebsiteRow(
+                                website: website,
+                                onRemove: { removeWebsiteDomain(website) },
+                                onModeChanged: { mode, isEnabled in
+                                    setWebsiteMode(mode, isEnabled: isEnabled, for: website)
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Text("Routina redirects matching tabs in Safari and common Chromium browsers while blocking is active. macOS may ask for permission to control each browser. Firefox support needs a future browser extension.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -110,6 +148,7 @@ struct SettingsMacBlockingDetailView: View {
             enabledModes = FocusShieldSupport.loadEnabledBlockingModes()
             #if os(macOS)
             blockedApps = FocusShieldSupport.loadMacBlockedApps()
+            blockedWebsiteDomains = FocusShieldSupport.loadBlockedWebsiteDomains()
             #endif
         }
     }
@@ -170,6 +209,44 @@ struct SettingsMacBlockingDetailView: View {
         syncBlocking()
     }
 
+    private func addWebsiteDomain() {
+        guard let website = FocusShieldSupport.blockedWebsiteDomain(from: websiteDraft) else {
+            websiteStatusMessage = "Enter a valid website domain."
+            return
+        }
+
+        blockedWebsiteDomains.append(website)
+        FocusShieldSupport.saveBlockedWebsiteDomains(blockedWebsiteDomains)
+        blockedWebsiteDomains = FocusShieldSupport.loadBlockedWebsiteDomains()
+        websiteDraft = ""
+        websiteStatusMessage = "\(website.domain) added."
+        syncBlocking()
+    }
+
+    private func removeWebsiteDomain(_ website: BlockingWebsiteDomain) {
+        blockedWebsiteDomains.removeAll { $0.id == website.id }
+        FocusShieldSupport.saveBlockedWebsiteDomains(blockedWebsiteDomains)
+        blockedWebsiteDomains = FocusShieldSupport.loadBlockedWebsiteDomains()
+        websiteStatusMessage = FocusShieldSupport.blockedWebsiteDomainsSummaryText(blockedWebsiteDomains)
+        syncBlocking()
+    }
+
+    private func setWebsiteMode(
+        _ mode: ProtectionBlockingMode,
+        isEnabled: Bool,
+        for website: BlockingWebsiteDomain
+    ) {
+        guard let index = blockedWebsiteDomains.firstIndex(where: { $0.id == website.id }) else { return }
+        if isEnabled {
+            blockedWebsiteDomains[index].enabledModes.insert(mode)
+        } else {
+            blockedWebsiteDomains[index].enabledModes.remove(mode)
+        }
+        FocusShieldSupport.saveBlockedWebsiteDomains(blockedWebsiteDomains)
+        blockedWebsiteDomains = FocusShieldSupport.loadBlockedWebsiteDomains()
+        syncBlocking()
+    }
+
     private func setMode(
         _ mode: ProtectionBlockingMode,
         isEnabled: Bool,
@@ -189,6 +266,55 @@ struct SettingsMacBlockingDetailView: View {
 }
 
 #if os(macOS)
+private struct SettingsMacBlockedWebsiteRow: View {
+    let website: BlockingWebsiteDomain
+    let onRemove: () -> Void
+    let onModeChanged: (ProtectionBlockingMode, Bool) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                Image(systemName: "globe")
+                    .foregroundStyle(.secondary)
+                    .frame(width: 22)
+
+                Text(website.domain)
+                    .font(.subheadline.weight(.semibold))
+
+                Spacer(minLength: 10)
+
+                Button {
+                    onRemove()
+                } label: {
+                    Label("Remove \(website.domain)", systemImage: "minus.circle")
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .help("Remove")
+            }
+
+            HStack(spacing: 14) {
+                ForEach(ProtectionBlockingMode.allCases) { mode in
+                    Toggle(mode.title, isOn: modeBinding(mode))
+                        .toggleStyle(.checkbox)
+                        .font(.caption)
+                }
+            }
+            .padding(.leading, 32)
+        }
+        .padding(10)
+        .routinaGlassCard(cornerRadius: 10, tint: .secondary, tintOpacity: 0.04)
+    }
+
+    private func modeBinding(_ mode: ProtectionBlockingMode) -> Binding<Bool> {
+        Binding(
+            get: { website.enabledModes.contains(mode) },
+            set: { onModeChanged(mode, $0) }
+        )
+    }
+}
+
 private struct SettingsMacBlockedAppRow: View {
     let app: MacFocusBlockedApp
     let onRemove: () -> Void
