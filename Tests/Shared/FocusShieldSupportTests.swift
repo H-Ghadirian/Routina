@@ -36,6 +36,56 @@ struct FocusShieldSupportTests {
     }
 
     @Test
+    func blockedWebsiteDomainNormalization_acceptsDomainsAndURLs() throws {
+        #expect(BlockingWebsiteDomain.normalizedDomain(from: "youtube.com") == "youtube.com")
+        #expect(BlockingWebsiteDomain.normalizedDomain(from: " https://www.youtube.com/watch?v=123 ") == "www.youtube.com")
+        #expect(BlockingWebsiteDomain.normalizedDomain(from: "*.reddit.com") == "reddit.com")
+        #expect(BlockingWebsiteDomain.normalizedDomain(from: "bad domain") == nil)
+
+        let website = try #require(FocusShieldSupport.blockedWebsiteDomain(from: "https://x.com/home"))
+        #expect(website.domain == "x.com")
+        #expect(website.enabledModes == ProtectionBlockingMode.defaultEnabledModes)
+    }
+
+    @Test
+    func blockedWebsiteDomainStorage_deduplicatesAndPreservesModes() {
+        let previousDomains = SharedDefaults.app[.appSettingBlockingWebsiteDomains]
+        defer {
+            SharedDefaults.app[.appSettingBlockingWebsiteDomains] = previousDomains
+        }
+
+        FocusShieldSupport.saveBlockedWebsiteDomains([
+            BlockingWebsiteDomain(domain: "https://www.youtube.com/watch?v=123", enabledModes: [.focus]),
+            BlockingWebsiteDomain(domain: "www.youtube.com", enabledModes: [.away]),
+            BlockingWebsiteDomain(domain: "reddit.com", enabledModes: [.sleep]),
+        ])
+
+        let domains = FocusShieldSupport.loadBlockedWebsiteDomains()
+
+        #expect(domains.map(\.domain) == ["reddit.com", "www.youtube.com"])
+        #expect(domains.first { $0.domain == "www.youtube.com" }?.enabledModes == [.focus])
+        #expect(FocusShieldSupport.blockedWebsiteDomainsSummaryText(domains) == "2 websites entered")
+        #expect(FocusShieldSupport.blockedWebsiteDomainsSummaryText([]) == "No websites entered")
+    }
+
+    @Test
+    func blockedWebsiteDomainStorage_migratesOlderSelectionsToAllProtectedModes() throws {
+        let previousDomains = SharedDefaults.app[.appSettingBlockingWebsiteDomains]
+        defer {
+            SharedDefaults.app[.appSettingBlockingWebsiteDomains] = previousDomains
+        }
+
+        SharedDefaults.app[.appSettingBlockingWebsiteDomains] = """
+        [{"domain":"example.com"}]
+        """
+
+        let domain = try #require(FocusShieldSupport.loadBlockedWebsiteDomains().first)
+
+        #expect(domain.domain == "example.com")
+        #expect(domain.enabledModes == ProtectionBlockingMode.defaultEnabledModes)
+    }
+
+    @Test
     func macFocusAppBlockingDefaultsToEnabledButHonorsUserDisable() {
         let key = UserDefaultBoolValueKey.appSettingMacFocusAppBlockingEnabled.rawValue
         let previousValue = SharedDefaults.app.object(forKey: key)

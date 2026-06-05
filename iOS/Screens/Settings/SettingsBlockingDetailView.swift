@@ -9,6 +9,9 @@ import ManagedSettings
 struct SettingsBlockingDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var enabledModes = FocusShieldSupport.loadEnabledBlockingModes()
+    @State private var blockedWebsiteDomains = FocusShieldSupport.loadBlockedWebsiteDomains()
+    @State private var websiteDraft = ""
+    @State private var websiteStatusMessage: String?
 
     #if canImport(FamilyControls) && canImport(ManagedSettings)
     @AppStorage(
@@ -55,6 +58,48 @@ struct SettingsBlockingDetailView: View {
                 Text(descriptionText)
                     .foregroundStyle(.secondary)
             }
+
+            Section("Entered Websites") {
+                HStack(spacing: 10) {
+                    TextField("example.com", text: $websiteDraft)
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(.URL)
+                        .autocorrectionDisabled()
+
+                    Button {
+                        addWebsiteDomain()
+                    } label: {
+                        Label("Add Website", systemImage: "plus.circle.fill")
+                            .labelStyle(.iconOnly)
+                    }
+                    .disabled(websiteDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+
+                if let websiteStatusMessage {
+                    Text(websiteStatusMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
+                if blockedWebsiteDomains.isEmpty {
+                    Text("No entered websites.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(blockedWebsiteDomains) { website in
+                        SettingsBlockedWebsiteRow(
+                            website: website,
+                            onRemove: { removeWebsiteDomain(website) },
+                            onModeChanged: { mode, isEnabled in
+                                setWebsiteMode(mode, isEnabled: isEnabled, for: website)
+                            }
+                        )
+                    }
+                }
+
+                Text("Entered websites are enforced on iPhone and iPad through Screen Time web content filtering.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
             #else
             Section("Apps & Websites") {
                 Text("App and website blocking is available on iPhone and iPad through Screen Time.")
@@ -67,6 +112,7 @@ struct SettingsBlockingDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             enabledModes = FocusShieldSupport.loadEnabledBlockingModes()
+            blockedWebsiteDomains = FocusShieldSupport.loadBlockedWebsiteDomains()
             #if canImport(FamilyControls) && canImport(ManagedSettings)
             focusShieldSelection = FocusShieldSupport.loadSelection()
             #endif
@@ -81,11 +127,15 @@ struct SettingsBlockingDetailView: View {
         )
         .onChange(of: focusShieldSelection) { _, selection in
             FocusShieldSupport.saveSelection(selection)
-            statusMessage = selection.routinaSummaryText
+            statusMessage = selection.routinaSummaryText(
+                includingEnteredWebsiteCount: blockedWebsiteDomains.count
+            )
             syncBlocking()
         }
         .onChange(of: isFocusShieldEnabled) { _, _ in
-            statusMessage = focusShieldSelection.routinaSummaryText
+            statusMessage = focusShieldSelection.routinaSummaryText(
+                includingEnteredWebsiteCount: blockedWebsiteDomains.count
+            )
             syncBlocking()
         }
         #endif
@@ -99,6 +149,44 @@ struct SettingsBlockingDetailView: View {
                 syncBlocking()
             }
         )
+    }
+
+    private func addWebsiteDomain() {
+        guard let website = FocusShieldSupport.blockedWebsiteDomain(from: websiteDraft) else {
+            websiteStatusMessage = "Enter a valid website domain."
+            return
+        }
+
+        blockedWebsiteDomains.append(website)
+        FocusShieldSupport.saveBlockedWebsiteDomains(blockedWebsiteDomains)
+        blockedWebsiteDomains = FocusShieldSupport.loadBlockedWebsiteDomains()
+        websiteDraft = ""
+        websiteStatusMessage = "\(website.domain) added."
+        syncBlocking()
+    }
+
+    private func removeWebsiteDomain(_ website: BlockingWebsiteDomain) {
+        blockedWebsiteDomains.removeAll { $0.id == website.id }
+        FocusShieldSupport.saveBlockedWebsiteDomains(blockedWebsiteDomains)
+        blockedWebsiteDomains = FocusShieldSupport.loadBlockedWebsiteDomains()
+        websiteStatusMessage = FocusShieldSupport.blockedWebsiteDomainsSummaryText(blockedWebsiteDomains)
+        syncBlocking()
+    }
+
+    private func setWebsiteMode(
+        _ mode: ProtectionBlockingMode,
+        isEnabled: Bool,
+        for website: BlockingWebsiteDomain
+    ) {
+        guard let index = blockedWebsiteDomains.firstIndex(where: { $0.id == website.id }) else { return }
+        if isEnabled {
+            blockedWebsiteDomains[index].enabledModes.insert(mode)
+        } else {
+            blockedWebsiteDomains[index].enabledModes.remove(mode)
+        }
+        FocusShieldSupport.saveBlockedWebsiteDomains(blockedWebsiteDomains)
+        blockedWebsiteDomains = FocusShieldSupport.loadBlockedWebsiteDomains()
+        syncBlocking()
     }
 
     private func syncBlocking() {
@@ -136,7 +224,9 @@ struct SettingsBlockingDetailView: View {
 
         switch authorizationState {
         case .approved:
-            return focusShieldSelection.routinaSummaryText
+            return focusShieldSelection.routinaSummaryText(
+                includingEnteredWebsiteCount: blockedWebsiteDomains.count
+            )
         case .denied:
             return "Screen Time access is off. Allow access to block selected apps and websites."
         case .notDetermined:
@@ -162,6 +252,50 @@ struct SettingsBlockingDetailView: View {
         }
     }
     #endif
+}
+
+private struct SettingsBlockedWebsiteRow: View {
+    let website: BlockingWebsiteDomain
+    let onRemove: () -> Void
+    let onModeChanged: (ProtectionBlockingMode, Bool) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                Image(systemName: "globe")
+                    .foregroundStyle(.secondary)
+                    .frame(width: 22)
+
+                Text(website.domain)
+                    .font(.subheadline.weight(.semibold))
+
+                Spacer(minLength: 10)
+
+                Button(role: .destructive) {
+                    onRemove()
+                } label: {
+                    Label("Remove \(website.domain)", systemImage: "minus.circle")
+                        .labelStyle(.iconOnly)
+                }
+                .buttonStyle(.plain)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(ProtectionBlockingMode.allCases) { mode in
+                    Toggle(mode.title, isOn: modeBinding(mode))
+                        .font(.footnote)
+                }
+            }
+            .padding(.leading, 32)
+        }
+    }
+
+    private func modeBinding(_ mode: ProtectionBlockingMode) -> Binding<Bool> {
+        Binding(
+            get: { website.enabledModes.contains(mode) },
+            set: { onModeChanged(mode, $0) }
+        )
+    }
 }
 
 private struct SettingsBlockingModeLabel: View {

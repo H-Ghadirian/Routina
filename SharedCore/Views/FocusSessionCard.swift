@@ -24,6 +24,7 @@ struct FocusSessionCard: View {
         store: SharedDefaults.app
     ) private var isFocusShieldEnabled = false
     @State private var focusShieldSelection = FocusShieldSupport.loadSelection()
+    @State private var blockedWebsiteDomains = FocusShieldSupport.loadBlockedWebsiteDomains()
     @State private var isFocusShieldPickerPresented = false
     @State private var isRequestingFocusShieldAuthorization = false
     @State private var focusShieldStatusMessage: String?
@@ -225,6 +226,9 @@ struct FocusSessionCard: View {
             }
         }
         .task {
+            #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
+            blockedWebsiteDomains = FocusShieldSupport.loadBlockedWebsiteDomains()
+            #endif
             syncFocusShieldForCurrentContext()
         }
         #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
@@ -237,14 +241,18 @@ struct FocusSessionCard: View {
         )
         .onChange(of: focusShieldSelection) { _, selection in
             FocusShieldSupport.saveSelection(selection)
-            focusShieldStatusMessage = selection.routinaSummaryText
+            focusShieldStatusMessage = selection.routinaSummaryText(
+                includingEnteredWebsiteCount: blockedWebsiteDomains.count
+            )
             syncFocusShieldForCurrentContext()
         }
         .onChange(of: isFocusShieldEnabled) { _, _ in
             if !isFocusShieldEnabled {
                 isShieldControlsExpanded = false
             }
-            focusShieldStatusMessage = focusShieldSelection.routinaSummaryText
+            focusShieldStatusMessage = focusShieldSelection.routinaSummaryText(
+                includingEnteredWebsiteCount: blockedWebsiteDomains.count
+            )
             syncFocusShieldForCurrentContext()
         }
         #elseif os(macOS)
@@ -460,7 +468,9 @@ struct FocusSessionCard: View {
     private var focusShieldControlSummary: String {
         switch focusShieldAuthorizationState {
         case .approved:
-            return focusShieldSelection.routinaSummaryText
+            return focusShieldSelection.routinaSummaryText(
+                includingEnteredWebsiteCount: blockedWebsiteDomains.count
+            )
         case .denied:
             return "Access off"
         case .notDetermined:
@@ -494,7 +504,9 @@ struct FocusSessionCard: View {
 
         switch focusShieldAuthorizationState {
         case .approved:
-            return focusShieldSelection.routinaSummaryText
+            return focusShieldSelection.routinaSummaryText(
+                includingEnteredWebsiteCount: blockedWebsiteDomains.count
+            )
         case .denied:
             return "Screen Time access is off. Allow access to block selected apps and websites during enabled protected modes."
         case .notDetermined:
@@ -510,7 +522,9 @@ struct FocusSessionCard: View {
             do {
                 try await FocusShieldSupport.requestAuthorization()
                 focusShieldStatusMessage = FocusShieldSupport.authorizationState() == .approved
-                    ? focusShieldSelection.routinaSummaryText
+                    ? focusShieldSelection.routinaSummaryText(
+                        includingEnteredWebsiteCount: blockedWebsiteDomains.count
+                    )
                     : "Screen Time access was not approved."
                 syncFocusShieldForCurrentContext()
             } catch {

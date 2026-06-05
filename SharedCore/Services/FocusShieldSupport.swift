@@ -61,7 +61,7 @@ enum FocusShieldSupport {
         }
 
         #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
-        _ = applyShieldForCurrentSelection()
+        _ = applyShieldForCurrentSelection(for: activeMode)
         #elseif os(macOS)
         MacFocusAppBlocker.shared.sync(for: activeMode)
         #endif
@@ -101,8 +101,73 @@ enum FocusShieldSupport {
             .joined(separator: ", ")
     }
 
+    static func blockedWebsiteDomain(from input: String) -> BlockingWebsiteDomain? {
+        guard let domain = BlockingWebsiteDomain.normalizedDomain(from: input) else {
+            return nil
+        }
+        return BlockingWebsiteDomain(domain: domain)
+    }
+
+    static func loadBlockedWebsiteDomains() -> [BlockingWebsiteDomain] {
+        guard let rawValue = SharedDefaults.app[.appSettingBlockingWebsiteDomains],
+              let data = rawValue.data(using: .utf8),
+              let domains = try? JSONDecoder().decode([BlockingWebsiteDomain].self, from: data)
+        else {
+            return []
+        }
+
+        return deduplicatedBlockedWebsiteDomains(domains)
+    }
+
+    static func saveBlockedWebsiteDomains(_ domains: [BlockingWebsiteDomain]) {
+        let deduplicatedDomains = deduplicatedBlockedWebsiteDomains(domains)
+        guard let data = try? JSONEncoder().encode(deduplicatedDomains),
+              let rawValue = String(data: data, encoding: .utf8) else {
+            return
+        }
+
+        SharedDefaults.app[.appSettingBlockingWebsiteDomains] = rawValue
+    }
+
+    static func blockedWebsiteDomainsSummaryText(_ domains: [BlockingWebsiteDomain]) -> String {
+        switch domains.count {
+        case 0:
+            return "No websites entered"
+        case 1:
+            return "1 website entered"
+        default:
+            return "\(domains.count) websites entered"
+        }
+    }
+
     private static func isBlockingEnabled(for mode: ProtectionBlockingMode) -> Bool {
         loadEnabledBlockingModes().contains(mode)
+    }
+
+    private static func deduplicatedBlockedWebsiteDomains(
+        _ domains: [BlockingWebsiteDomain]
+    ) -> [BlockingWebsiteDomain] {
+        var seenDomains: Set<String> = []
+        var result: [BlockingWebsiteDomain] = []
+
+        for item in domains {
+            guard let normalizedDomain = BlockingWebsiteDomain.normalizedDomain(from: item.domain),
+                  !seenDomains.contains(normalizedDomain) else {
+                continue
+            }
+
+            seenDomains.insert(normalizedDomain)
+            result.append(
+                BlockingWebsiteDomain(
+                    domain: normalizedDomain,
+                    enabledModes: item.enabledModes
+                )
+            )
+        }
+
+        return result.sorted {
+            $0.domain.localizedCaseInsensitiveCompare($1.domain) == .orderedAscending
+        }
     }
 
     @MainActor
@@ -490,7 +555,7 @@ extension FocusShieldSupport {
     }
 
     @MainActor
-    static func applyShieldForCurrentSelection() -> Bool {
+    static func applyShieldForCurrentSelection(for mode: ProtectionBlockingMode) -> Bool {
         guard SharedDefaults.app[.appSettingFocusShieldEnabled],
               authorizationState() == .approved else {
             clearShield()
@@ -498,7 +563,11 @@ extension FocusShieldSupport {
         }
 
         let selection = loadSelection()
-        guard !selection.routinaIsEmpty else {
+        let enteredWebDomains = loadBlockedWebsiteDomains()
+            .filter { $0.enabledModes.contains(mode) }
+            .map { WebDomain(domain: $0.domain) }
+
+        guard !selection.routinaIsEmpty || !enteredWebDomains.isEmpty else {
             clearShield()
             return false
         }
@@ -511,6 +580,9 @@ extension FocusShieldSupport {
         store.shield.webDomainCategories = selection.categoryTokens.isEmpty
             ? nil
             : .specific(selection.categoryTokens)
+        store.webContent.blockedByFilter = enteredWebDomains.isEmpty
+            ? nil
+            : .specific(Set(enteredWebDomains))
         return true
     }
 
@@ -520,6 +592,7 @@ extension FocusShieldSupport {
         store.shield.webDomains = nil
         store.shield.applicationCategories = nil
         store.shield.webDomainCategories = nil
+        store.webContent.blockedByFilter = nil
     }
 }
 
@@ -531,13 +604,18 @@ extension FamilyActivitySelection {
     }
 
     var routinaSummaryText: String {
+        routinaSummaryText(includingEnteredWebsiteCount: 0)
+    }
+
+    func routinaSummaryText(includingEnteredWebsiteCount enteredWebsiteCount: Int) -> String {
         var parts: [String] = []
 
         if !applicationTokens.isEmpty {
             parts.append(applicationTokens.count == 1 ? "1 app" : "\(applicationTokens.count) apps")
         }
-        if !webDomainTokens.isEmpty {
-            parts.append(webDomainTokens.count == 1 ? "1 website" : "\(webDomainTokens.count) websites")
+        let websiteCount = webDomainTokens.count + enteredWebsiteCount
+        if websiteCount > 0 {
+            parts.append(websiteCount == 1 ? "1 website" : "\(websiteCount) websites")
         }
         if !categoryTokens.isEmpty {
             parts.append(categoryTokens.count == 1 ? "1 category" : "\(categoryTokens.count) categories")

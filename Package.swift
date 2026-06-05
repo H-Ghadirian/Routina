@@ -141,6 +141,7 @@ let package = Package(
                 "SharedCore/Dependencies/PlatformSupport.swift",
                 "SharedCore/Dependencies/UserDefaultsProtocol.swift",
                 "SharedCore/Domain/EmojiCatalog.swift",
+                "SharedCore/Domain/BlockingWebsiteDomain.swift",
                 "SharedCore/Domain/FocusAchievementStats.swift",
                 "SharedCore/Domain/FocusDurationStats.swift",
                 "SharedCore/Domain/FocusTimerActivityAttributes.swift",

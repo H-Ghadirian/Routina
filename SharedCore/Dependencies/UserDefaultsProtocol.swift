@@ -86,6 +86,7 @@ public enum UserDefaultStringValueKey: String, Sendable {
     case appSettingHiddenDayPlanTimelineActivityIDs
     case appSettingTemporaryViewState
     case appSettingProtectionBlockingEnabledModes
+    case appSettingBlockingWebsiteDomains
     case appSettingFocusShieldSelection
     case appSettingMacFocusBlockedApps
     case macFormSectionOrder

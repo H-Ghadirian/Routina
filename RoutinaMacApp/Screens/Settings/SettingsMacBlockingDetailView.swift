@@ -95,6 +95,15 @@ struct SettingsMacBlockingDetailView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
+
+            SettingsMacDetailCard(title: "Websites") {
+                Label("Entered website blocking is available on iPhone and iPad through Screen Time.", systemImage: "globe")
+                    .font(.subheadline.weight(.semibold))
+
+                Text("Native Mac website blocking still needs a supported content-filter or browser-extension path before Routina can enforce typed domains on macOS.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
             #endif
         }
         .onAppear {
