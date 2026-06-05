@@ -77,6 +77,13 @@ enum TaskDetailTimeSpentPresentation {
             && preview <= maximumMinutes
     }
 
+    static func shouldForceExpandSection(
+        hasActiveFocus: Bool,
+        showsFocusTimer _: Bool
+    ) -> Bool {
+        hasActiveFocus
+    }
+
     static func focusSessionMinutes(from seconds: TimeInterval) -> Int {
         clampedMinutes(Int((seconds / 60).rounded()))
     }

@@ -37,6 +37,18 @@ struct TaskDetailTimeSpentPresentationTests {
     }
 
     @Test
+    func timeSectionOnlyForcesOpenForActiveFocus() {
+        #expect(!TaskDetailTimeSpentPresentation.shouldForceExpandSection(
+            hasActiveFocus: false,
+            showsFocusTimer: true
+        ))
+        #expect(TaskDetailTimeSpentPresentation.shouldForceExpandSection(
+            hasActiveFocus: true,
+            showsFocusTimer: false
+        ))
+    }
+
+    @Test
     func defaultEditMinutesCanBeBuiltFromTaskAndLog() {
         let task = RoutineTask(name: "Practice", estimatedDurationMinutes: 40, actualDurationMinutes: 10)
         let log = RoutineLog(taskID: task.id, kind: .completed, actualDurationMinutes: nil)
