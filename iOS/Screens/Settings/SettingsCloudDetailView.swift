@@ -1,5 +1,7 @@
+import Foundation
 import SwiftUI
 import ComposableArchitecture
+import UniformTypeIdentifiers
 
 struct SettingsCloudDetailView: View {
     let store: StoreOf<SettingsFeature>
@@ -80,10 +82,35 @@ private struct SettingsCloudDataResetConfirmationSheet: View {
     let store: StoreOf<SettingsFeature>
 
     @Environment(\.dismiss) private var dismiss
+    @State private var isBackupExporterPresented = false
 
     var body: some View {
 NavigationStack {
     Form {
+        Section("Back Up First") {
+            Text("Save a Routina backup before deleting iCloud data so you have a recovery point.")
+                .foregroundStyle(.secondary)
+
+            Button {
+                isBackupExporterPresented = true
+            } label: {
+                Label("Save Backup First", systemImage: "square.and.arrow.down")
+            }
+            .disabled(store.dataTransfer.isDataTransferInProgress)
+
+            if store.dataTransfer.isDataTransferInProgress {
+                HStack(spacing: 10) {
+                    ProgressView()
+                    Text(store.dataTransfer.statusText)
+                        .foregroundStyle(.secondary)
+                }
+            } else if !store.dataTransfer.dataTransferStatusMessage.isEmpty {
+                Text(store.dataTransfer.dataTransferStatusMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+
         Section {
             Text("This permanently deletes all Routina data from iCloud and from this device.")
                 .foregroundStyle(.secondary)
@@ -117,6 +144,27 @@ NavigationStack {
             .disabled(!store.cloud.isCloudDataResetPasswordReady)
         }
     }
+    .fileExporter(
+        isPresented: $isBackupExporterPresented,
+        document: SettingsIOSCloudResetBackupExportDocument(),
+        contentType: .routinaBackupPackage,
+        defaultFilename: SettingsRoutineDataPersistence.defaultBackupFileName()
+    ) { result in
+        switch result {
+        case let .success(destinationURL):
+            store.send(.exportRoutineDataDestinationSelected(destinationURL))
+
+        case let .failure(error):
+            store.send(.routineDataTransferFinished(
+                success: false,
+                message: dataTransferFailureMessage(
+                    prefix: "Save",
+                    canceledMessage: "Save canceled.",
+                    error: error
+                )
+            ))
+        }
+    }
 }
     }
 
@@ -132,5 +180,36 @@ NavigationStack {
             get: { store.cloud.cloudDataResetPasswordConfirmationDraft },
             set: { store.send(.cloudDataResetPasswordConfirmationChanged($0)) }
         )
+    }
+
+    private func dataTransferFailureMessage(
+        prefix: String,
+        canceledMessage: String,
+        error: Error
+    ) -> String {
+        let nsError = error as NSError
+        if nsError.domain == NSCocoaErrorDomain && nsError.code == NSUserCancelledError {
+            return canceledMessage
+        }
+        return "\(prefix) failed: \(error.localizedDescription)"
+    }
+}
+
+private struct SettingsIOSCloudResetBackupExportDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.routinaBackupPackage] }
+    static var writableContentTypes: [UTType] { [.routinaBackupPackage] }
+
+    init() {}
+
+    init(configuration: ReadConfiguration) throws {}
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        FileWrapper(directoryWithFileWrappers: [:])
+    }
+}
+
+private extension UTType {
+    static var routinaBackupPackage: UTType {
+        UTType(filenameExtension: SettingsRoutineDataPersistence.backupPackageExtension) ?? .package
     }
 }
