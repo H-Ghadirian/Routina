@@ -15,6 +15,16 @@ extension SettingsRoutineDataPersistence {
         var notes: [Note]?
         var events: [Event]?
         var attachments: [Attachment]?
+        var focusSessions: [Focus]? = nil
+        var dayPlanBlocks: [DayPlanBlock]? = nil
+        var boardSprints: [BoardSprint]? = nil
+        var sprintAssignments: [SprintAssignment]? = nil
+        var boardBacklogs: [BoardBacklog]? = nil
+        var backlogAssignments: [BacklogAssignment]? = nil
+        var sprintFocusSessions: [SprintFocus]? = nil
+        var sprintFocusAllocations: [SprintFocusAllocation]? = nil
+        var deviceSessions: [DeviceSession]? = nil
+        var deviceActionLogs: [DeviceActionLog]? = nil
 
         struct Place: Codable {
             var id: UUID
@@ -203,6 +213,107 @@ extension SettingsRoutineDataPersistence {
             var originalFileName: String?
             var createdAt: Date?
         }
+
+        struct Focus: Codable {
+            var id: UUID
+            var taskID: UUID
+            var startedAt: Date?
+            var plannedDurationSeconds: TimeInterval
+            var completedAt: Date?
+            var abandonedAt: Date?
+            var pausedAt: Date?
+            var accumulatedPausedSeconds: TimeInterval?
+        }
+
+        struct DayPlanBlock: Codable {
+            var id: UUID
+            var taskID: UUID
+            var dayKey: String
+            var startMinute: Int
+            var durationMinutes: Int
+            var titleSnapshot: String
+            var emojiSnapshot: String?
+            var createdAt: Date
+            var updatedAt: Date
+        }
+
+        struct BoardSprint: Codable {
+            var id: UUID
+            var title: String
+            var status: SprintStatus
+            var createdAt: Date
+            var startedAt: Date?
+            var finishedAt: Date?
+        }
+
+        struct SprintAssignment: Codable {
+            var todoID: UUID
+            var sprintID: UUID
+            var sortOrder: Int?
+        }
+
+        struct BoardBacklog: Codable {
+            var id: UUID
+            var title: String
+            var createdAt: Date
+            var routingTags: [String]?
+        }
+
+        struct BacklogAssignment: Codable {
+            var todoID: UUID
+            var backlogID: UUID
+            var sortOrder: Int?
+        }
+
+        struct SprintFocus: Codable {
+            var id: UUID
+            var sprintID: UUID
+            var startedAt: Date
+            var stoppedAt: Date?
+            var pausedAt: Date?
+            var accumulatedPausedSeconds: TimeInterval?
+        }
+
+        struct SprintFocusAllocation: Codable {
+            var id: UUID
+            var sessionID: UUID
+            var taskID: UUID
+            var minutes: Int
+            var sortOrder: Int?
+        }
+
+        struct DeviceSession: Codable {
+            var id: UUID
+            var installationID: String
+            var displayName: String
+            var platform: RoutinaDevicePlatform
+            var modelName: String
+            var systemName: String
+            var systemVersion: String
+            var appVersion: String
+            var bundleIdentifier: String
+            var firstSeenAt: Date
+            var lastSeenAt: Date
+            var lastActiveAt: Date
+            var lastMutationAt: Date?
+        }
+
+        struct DeviceActionLog: Codable {
+            var id: UUID
+            var timestamp: Date
+            var action: RoutinaDeviceActionKind
+            var entity: RoutinaDeviceActionEntity
+            var entityID: String
+            var entityTitle: String?
+            var deviceInstallationID: String
+            var deviceDisplayName: String
+            var devicePlatform: RoutinaDevicePlatform
+            var deviceModelName: String
+            var systemName: String
+            var systemVersion: String
+            var appVersion: String
+            var details: String?
+        }
     }
 
     struct ImportSummary {
@@ -217,6 +328,16 @@ extension SettingsRoutineDataPersistence {
         var notes: Int = 0
         var events: Int = 0
         var attachments: Int
+        var focusSessions: Int = 0
+        var dayPlanBlocks: Int = 0
+        var boardSprints: Int = 0
+        var sprintAssignments: Int = 0
+        var boardBacklogs: Int = 0
+        var backlogAssignments: Int = 0
+        var sprintFocusSessions: Int = 0
+        var sprintFocusAllocations: Int = 0
+        var deviceSessions: Int = 0
+        var deviceActionLogs: Int = 0
     }
 
     enum Error: LocalizedError {

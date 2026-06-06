@@ -65,7 +65,7 @@ struct SettingsRoutineDataBackupMappingTests {
             imageAttachmentID: attachmentID,
             voiceNoteData: nil,
             voiceNoteAttachmentID: voiceAttachmentID,
-            includesPressure: false
+            includesPressure: true
         )
 
         #expect(inline.id == taskID)
@@ -83,7 +83,7 @@ struct SettingsRoutineDataBackupMappingTests {
         #expect(packaged.imageAttachmentID == attachmentID)
         #expect(packaged.voiceNoteData == nil)
         #expect(packaged.voiceNoteAttachmentID == voiceAttachmentID)
-        #expect(packaged.pressure == nil)
+        #expect(packaged.pressure == .high)
     }
 
     @Test

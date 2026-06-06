@@ -159,6 +159,121 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func localUserDataReset_deletesEverySwiftDataUserModel() throws {
+        let context = makeInMemoryContext()
+        let source = RoutinaDeviceActivitySource(
+            installationID: "test-device",
+            displayName: "Test Mac",
+            platform: .mac,
+            modelName: "Mac",
+            systemName: "macOS",
+            systemVersion: "26.4",
+            appVersion: "1",
+            bundleIdentifier: "com.routina.test"
+        )
+        let place = makePlace(in: context, name: "Home")
+        let goal = RoutineGoal(title: "Health")
+        context.insert(goal)
+        let task = makeTask(
+            in: context,
+            name: "Stretch",
+            interval: 1,
+            lastDone: makeDate("2026-06-06T08:00:00Z"),
+            emoji: nil,
+            placeID: place.id
+        )
+        task.goalIDs = [goal.id]
+        _ = makeLog(in: context, task: task, timestamp: makeDate("2026-06-06T08:30:00Z"))
+
+        let sprint = BoardSprintRecord(title: "Launch", status: .active)
+        let backlog = BoardBacklogRecord(title: "Someday")
+        let sprintFocus = SprintFocusSessionRecord(sprintID: sprint.id)
+        let note = RoutineNote(title: "Timeline note", body: "Body")
+        context.insert(FocusSession(taskID: task.id))
+        context.insert(sprint)
+        context.insert(SprintAssignmentRecord(todoID: task.id, sprintID: sprint.id))
+        context.insert(backlog)
+        context.insert(BacklogAssignmentRecord(todoID: task.id, backlogID: backlog.id))
+        context.insert(sprintFocus)
+        context.insert(SprintFocusAllocationRecord(
+            sessionID: sprintFocus.id,
+            taskID: task.id,
+            minutes: 25
+        ))
+        context.insert(SleepSession())
+        context.insert(AwaySession())
+        context.insert(PlaceCheckInSession(placeID: place.id, placeName: place.displayName))
+        context.insert(EmotionLog(
+            family: .joy,
+            label: "happy",
+            valence: 0.8,
+            arousal: 0.4,
+            intensity: 3
+        ))
+        context.insert(note)
+        context.insert(RoutineNoteAttachment(
+            noteID: note.id,
+            fileName: "note.txt",
+            data: Data("note".utf8)
+        ))
+        context.insert(RoutineEvent(title: "Appointment"))
+        context.insert(RoutineAttachment(
+            taskID: task.id,
+            fileName: "task.txt",
+            data: Data("task".utf8)
+        ))
+        context.insert(RoutinaDeviceSession(
+            installationID: source.installationID,
+            displayName: source.displayName,
+            platform: source.platform,
+            modelName: source.modelName,
+            systemName: source.systemName,
+            systemVersion: source.systemVersion,
+            appVersion: source.appVersion,
+            bundleIdentifier: source.bundleIdentifier
+        ))
+        context.insert(RoutinaDeviceActionLog(
+            action: .created,
+            entity: .task,
+            entityID: task.id.uuidString,
+            source: source
+        ))
+        context.insert(DayPlanBlockRecord(
+            taskID: task.id,
+            dayKey: "2026-06-06",
+            startMinute: 9 * 60,
+            durationMinutes: 45,
+            titleSnapshot: "Stretch"
+        ))
+        try context.save()
+
+        try LocalUserDataResetService.wipeAllUserData(in: context)
+
+        #expect(try count(RoutineTask.self, in: context) == 0)
+        #expect(try count(RoutineGoal.self, in: context) == 0)
+        #expect(try count(RoutineLog.self, in: context) == 0)
+        #expect(try count(FocusSession.self, in: context) == 0)
+        #expect(try count(SprintFocusSessionRecord.self, in: context) == 0)
+        #expect(try count(SprintFocusAllocationRecord.self, in: context) == 0)
+        #expect(try count(SleepSession.self, in: context) == 0)
+        #expect(try count(AwaySession.self, in: context) == 0)
+        #expect(try count(PlaceCheckInSession.self, in: context) == 0)
+        #expect(try count(RoutinePlace.self, in: context) == 0)
+        #expect(try count(EmotionLog.self, in: context) == 0)
+        #expect(try count(RoutineNote.self, in: context) == 0)
+        #expect(try count(RoutineNoteAttachment.self, in: context) == 0)
+        #expect(try count(RoutineEvent.self, in: context) == 0)
+        #expect(try count(RoutineAttachment.self, in: context) == 0)
+        #expect(try count(RoutinaDeviceSession.self, in: context) == 0)
+        #expect(try count(RoutinaDeviceActionLog.self, in: context) == 0)
+        #expect(try count(DayPlanBlockRecord.self, in: context) == 0)
+        #expect(try count(BoardSprintRecord.self, in: context) == 0)
+        #expect(try count(SprintAssignmentRecord.self, in: context) == 0)
+        #expect(try count(BoardBacklogRecord.self, in: context) == 0)
+        #expect(try count(BacklogAssignmentRecord.self, in: context) == 0)
+    }
+
+    @Test
     func appIconOptionMappings_matchExpectedAlternateIconNames() {
         #expect(AppIconOption.orange.iOSAlternateIconName == nil)
         #expect(AppIconOption.yellow.iOSAlternateIconName == "AppIconYellow")
@@ -1357,4 +1472,9 @@ struct SettingsFeatureTests {
         #expect(restoredTask.id == task.id)
         #expect(restoredTask.tags == ["Safe"])
     }
+}
+
+@MainActor
+private func count<T: PersistentModel>(_ model: T.Type, in context: ModelContext) throws -> Int {
+    try context.fetch(FetchDescriptor<T>()).count
 }

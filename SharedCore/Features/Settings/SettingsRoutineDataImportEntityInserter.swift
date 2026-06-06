@@ -34,6 +34,11 @@ enum SettingsRoutineDataImportEntityInserter {
             importedTaskIDs: tasks.ids,
             in: context
         )
+        let focusSessionCount = insertFocusSessions(
+            from: backup,
+            importedTaskIDs: tasks.ids,
+            in: context
+        )
         let sleepSessions = insertSleepSessions(from: backup, in: context)
         let awaySessions = insertAwaySessions(from: backup, in: context)
         let placeCheckInCount = try insertPlaceCheckInSessions(
@@ -69,6 +74,50 @@ enum SettingsRoutineDataImportEntityInserter {
             in: context,
             importDate: importDate
         )
+        let dayPlanBlockCount = insertDayPlanBlocks(
+            from: backup,
+            importedTaskIDs: tasks.ids,
+            in: context
+        )
+        let boardSprints = insertBoardSprints(
+            from: backup,
+            in: context
+        )
+        let boardBacklogs = insertBoardBacklogs(
+            from: backup,
+            in: context
+        )
+        let sprintAssignmentCount = insertSprintAssignments(
+            from: backup,
+            importedTaskIDs: tasks.ids,
+            importedSprintIDs: boardSprints.ids,
+            in: context
+        )
+        let backlogAssignmentCount = insertBacklogAssignments(
+            from: backup,
+            importedTaskIDs: tasks.ids,
+            importedBacklogIDs: boardBacklogs.ids,
+            in: context
+        )
+        let sprintFocusSessions = insertSprintFocusSessions(
+            from: backup,
+            importedSprintIDs: boardSprints.ids,
+            in: context
+        )
+        let sprintFocusAllocationCount = insertSprintFocusAllocations(
+            from: backup,
+            importedSprintFocusSessionIDs: sprintFocusSessions.ids,
+            importedTaskIDs: tasks.ids,
+            in: context
+        )
+        let deviceSessionCount = insertDeviceSessions(
+            from: backup,
+            in: context
+        )
+        let deviceActionLogCount = insertDeviceActionLogs(
+            from: backup,
+            in: context
+        )
 
         return ImportSummary(
             places: places.count,
@@ -81,7 +130,17 @@ enum SettingsRoutineDataImportEntityInserter {
             emotionLogs: emotionLogCount,
             notes: notes.count,
             events: eventCount,
-            attachments: taskAttachmentCount + noteAttachmentCount
+            attachments: taskAttachmentCount + noteAttachmentCount,
+            focusSessions: focusSessionCount,
+            dayPlanBlocks: dayPlanBlockCount,
+            boardSprints: boardSprints.count,
+            sprintAssignments: sprintAssignmentCount,
+            boardBacklogs: boardBacklogs.count,
+            backlogAssignments: backlogAssignmentCount,
+            sprintFocusSessions: sprintFocusSessions.count,
+            sprintFocusAllocations: sprintFocusAllocationCount,
+            deviceSessions: deviceSessionCount,
+            deviceActionLogs: deviceActionLogCount
         )
     }
 
@@ -287,7 +346,7 @@ enum SettingsRoutineDataImportEntityInserter {
             else { continue }
             guard importedIDs.insert(attachment.id).inserted else { continue }
             guard let data = try attachmentData(attachment.fileName) else {
-                if backup.schemaVersion >= SettingsRoutineDataPersistence.currentSchemaVersion {
+                if SettingsRoutineDataPersistence.requiresExternalAttachmentFiles(schemaVersion: backup.schemaVersion) {
                     throw SettingsRoutineDataPersistence.Error.missingAttachment(attachment.fileName)
                 }
                 continue
@@ -328,6 +387,37 @@ enum SettingsRoutineDataImportEntityInserter {
             context.insert(importedLog)
             importedCount += 1
         }
+        return importedCount
+    }
+
+    @MainActor
+    private static func insertFocusSessions(
+        from backup: Backup,
+        importedTaskIDs: Set<UUID>,
+        in context: ModelContext
+    ) -> Int {
+        var importedIDs = Set<UUID>()
+        var importedCount = 0
+
+        for session in backup.focusSessions ?? [] {
+            let taskID = session.taskID
+            guard taskID == FocusSession.unassignedTaskID || importedTaskIDs.contains(taskID) else { continue }
+            guard importedIDs.insert(session.id).inserted else { continue }
+
+            let importedSession = FocusSession(
+                id: session.id,
+                taskID: taskID,
+                startedAt: session.startedAt,
+                plannedDurationSeconds: session.plannedDurationSeconds,
+                completedAt: session.completedAt,
+                abandonedAt: session.abandonedAt,
+                pausedAt: session.pausedAt,
+                accumulatedPausedSeconds: session.accumulatedPausedSeconds ?? 0
+            )
+            context.insert(importedSession)
+            importedCount += 1
+        }
+
         return importedCount
     }
 
@@ -443,7 +533,7 @@ enum SettingsRoutineDataImportEntityInserter {
         }
 
         guard let data = try attachmentData(imageAttachment.fileName) else {
-            if backupSchemaVersion >= SettingsRoutineDataPersistence.currentSchemaVersion {
+            if SettingsRoutineDataPersistence.requiresExternalAttachmentFiles(schemaVersion: backupSchemaVersion) {
                 throw SettingsRoutineDataPersistence.Error.missingAttachment(imageAttachment.fileName)
             }
             return session.imageData
@@ -552,7 +642,7 @@ enum SettingsRoutineDataImportEntityInserter {
         }
 
         guard let data = try attachmentData(imageAttachment.fileName) else {
-            if backupSchemaVersion >= SettingsRoutineDataPersistence.currentSchemaVersion {
+            if SettingsRoutineDataPersistence.requiresExternalAttachmentFiles(schemaVersion: backupSchemaVersion) {
                 throw SettingsRoutineDataPersistence.Error.missingAttachment(imageAttachment.fileName)
             }
             return note.imageData
@@ -572,7 +662,7 @@ enum SettingsRoutineDataImportEntityInserter {
         }
 
         guard let data = try attachmentData(voiceNoteAttachment.fileName) else {
-            if backupSchemaVersion >= SettingsRoutineDataPersistence.currentSchemaVersion {
+            if SettingsRoutineDataPersistence.requiresExternalAttachmentFiles(schemaVersion: backupSchemaVersion) {
                 throw SettingsRoutineDataPersistence.Error.missingAttachment(voiceNoteAttachment.fileName)
             }
             return note.voiceNoteData
@@ -627,7 +717,7 @@ enum SettingsRoutineDataImportEntityInserter {
             else { continue }
             guard importedIDs.insert(attachment.id).inserted else { continue }
             guard let data = try attachmentData(attachment.fileName) else {
-                if backup.schemaVersion >= SettingsRoutineDataPersistence.currentSchemaVersion {
+                if SettingsRoutineDataPersistence.requiresExternalAttachmentFiles(schemaVersion: backup.schemaVersion) {
                     throw SettingsRoutineDataPersistence.Error.missingAttachment(attachment.fileName)
                 }
                 continue
@@ -643,6 +733,277 @@ enum SettingsRoutineDataImportEntityInserter {
             context.insert(importedAttachment)
             importedCount += 1
         }
+        return importedCount
+    }
+
+    @MainActor
+    private static func insertDayPlanBlocks(
+        from backup: Backup,
+        importedTaskIDs: Set<UUID>,
+        in context: ModelContext
+    ) -> Int {
+        var importedIDs = Set<UUID>()
+        var importedCount = 0
+
+        for block in backup.dayPlanBlocks ?? [] {
+            guard importedTaskIDs.contains(block.taskID) else { continue }
+            guard importedIDs.insert(block.id).inserted else { continue }
+
+            let importedBlock = DayPlanBlockRecord(
+                id: block.id,
+                taskID: block.taskID,
+                dayKey: block.dayKey,
+                startMinute: block.startMinute,
+                durationMinutes: block.durationMinutes,
+                titleSnapshot: block.titleSnapshot,
+                emojiSnapshot: block.emojiSnapshot,
+                createdAt: block.createdAt,
+                updatedAt: block.updatedAt
+            )
+            context.insert(importedBlock)
+            importedCount += 1
+        }
+
+        return importedCount
+    }
+
+    @MainActor
+    private static func insertBoardSprints(
+        from backup: Backup,
+        in context: ModelContext
+    ) -> (ids: Set<UUID>, count: Int) {
+        var importedIDs = Set<UUID>()
+        var importedCount = 0
+
+        for sprint in backup.boardSprints ?? [] {
+            guard importedIDs.insert(sprint.id).inserted else { continue }
+
+            let importedSprint = BoardSprintRecord(
+                id: sprint.id,
+                title: sprint.title,
+                status: sprint.status,
+                createdAt: sprint.createdAt,
+                startedAt: sprint.startedAt,
+                finishedAt: sprint.finishedAt
+            )
+            context.insert(importedSprint)
+            importedCount += 1
+        }
+
+        return (importedIDs, importedCount)
+    }
+
+    @MainActor
+    private static func insertSprintAssignments(
+        from backup: Backup,
+        importedTaskIDs: Set<UUID>,
+        importedSprintIDs: Set<UUID>,
+        in context: ModelContext
+    ) -> Int {
+        var importedKeys = Set<String>()
+        var importedCount = 0
+
+        for assignment in backup.sprintAssignments ?? [] {
+            guard importedTaskIDs.contains(assignment.todoID),
+                  importedSprintIDs.contains(assignment.sprintID)
+            else { continue }
+            let key = "\(assignment.todoID.uuidString):\(assignment.sprintID.uuidString)"
+            guard importedKeys.insert(key).inserted else { continue }
+
+            context.insert(
+                SprintAssignmentRecord(
+                    todoID: assignment.todoID,
+                    sprintID: assignment.sprintID,
+                    sortOrder: max(0, assignment.sortOrder ?? importedCount)
+                )
+            )
+            importedCount += 1
+        }
+
+        return importedCount
+    }
+
+    @MainActor
+    private static func insertBoardBacklogs(
+        from backup: Backup,
+        in context: ModelContext
+    ) -> (ids: Set<UUID>, count: Int) {
+        var importedIDs = Set<UUID>()
+        var importedCount = 0
+
+        for backlog in backup.boardBacklogs ?? [] {
+            guard importedIDs.insert(backlog.id).inserted else { continue }
+
+            let importedBacklog = BoardBacklogRecord(
+                id: backlog.id,
+                title: backlog.title,
+                createdAt: backlog.createdAt,
+                routingTags: backlog.routingTags ?? []
+            )
+            context.insert(importedBacklog)
+            importedCount += 1
+        }
+
+        return (importedIDs, importedCount)
+    }
+
+    @MainActor
+    private static func insertBacklogAssignments(
+        from backup: Backup,
+        importedTaskIDs: Set<UUID>,
+        importedBacklogIDs: Set<UUID>,
+        in context: ModelContext
+    ) -> Int {
+        var importedKeys = Set<String>()
+        var importedCount = 0
+
+        for assignment in backup.backlogAssignments ?? [] {
+            guard importedTaskIDs.contains(assignment.todoID),
+                  importedBacklogIDs.contains(assignment.backlogID)
+            else { continue }
+            let key = "\(assignment.todoID.uuidString):\(assignment.backlogID.uuidString)"
+            guard importedKeys.insert(key).inserted else { continue }
+
+            context.insert(
+                BacklogAssignmentRecord(
+                    todoID: assignment.todoID,
+                    backlogID: assignment.backlogID,
+                    sortOrder: max(0, assignment.sortOrder ?? importedCount)
+                )
+            )
+            importedCount += 1
+        }
+
+        return importedCount
+    }
+
+    @MainActor
+    private static func insertSprintFocusSessions(
+        from backup: Backup,
+        importedSprintIDs: Set<UUID>,
+        in context: ModelContext
+    ) -> (ids: Set<UUID>, count: Int) {
+        var importedIDs = Set<UUID>()
+        var importedCount = 0
+
+        for session in backup.sprintFocusSessions ?? [] {
+            guard importedSprintIDs.contains(session.sprintID) else { continue }
+            guard importedIDs.insert(session.id).inserted else { continue }
+
+            let importedSession = SprintFocusSessionRecord(
+                id: session.id,
+                sprintID: session.sprintID,
+                startedAt: session.startedAt,
+                stoppedAt: session.stoppedAt,
+                pausedAt: session.pausedAt,
+                accumulatedPausedSeconds: session.accumulatedPausedSeconds ?? 0
+            )
+            context.insert(importedSession)
+            importedCount += 1
+        }
+
+        return (importedIDs, importedCount)
+    }
+
+    @MainActor
+    private static func insertSprintFocusAllocations(
+        from backup: Backup,
+        importedSprintFocusSessionIDs: Set<UUID>,
+        importedTaskIDs: Set<UUID>,
+        in context: ModelContext
+    ) -> Int {
+        var importedIDs = Set<UUID>()
+        var importedCount = 0
+
+        for allocation in backup.sprintFocusAllocations ?? [] {
+            guard importedSprintFocusSessionIDs.contains(allocation.sessionID),
+                  importedTaskIDs.contains(allocation.taskID)
+            else { continue }
+            guard importedIDs.insert(allocation.id).inserted else { continue }
+
+            context.insert(
+                SprintFocusAllocationRecord(
+                    id: allocation.id,
+                    sessionID: allocation.sessionID,
+                    taskID: allocation.taskID,
+                    minutes: allocation.minutes,
+                    sortOrder: max(0, allocation.sortOrder ?? importedCount)
+                )
+            )
+            importedCount += 1
+        }
+
+        return importedCount
+    }
+
+    @MainActor
+    private static func insertDeviceSessions(
+        from backup: Backup,
+        in context: ModelContext
+    ) -> Int {
+        var importedIDs = Set<UUID>()
+        var importedCount = 0
+
+        for session in backup.deviceSessions ?? [] {
+            guard importedIDs.insert(session.id).inserted else { continue }
+
+            let importedSession = RoutinaDeviceSession(
+                id: session.id,
+                installationID: session.installationID,
+                displayName: session.displayName,
+                platform: session.platform,
+                modelName: session.modelName,
+                systemName: session.systemName,
+                systemVersion: session.systemVersion,
+                appVersion: session.appVersion,
+                bundleIdentifier: session.bundleIdentifier,
+                firstSeenAt: session.firstSeenAt,
+                lastSeenAt: session.lastSeenAt,
+                lastActiveAt: session.lastActiveAt,
+                lastMutationAt: session.lastMutationAt
+            )
+            context.insert(importedSession)
+            importedCount += 1
+        }
+
+        return importedCount
+    }
+
+    @MainActor
+    private static func insertDeviceActionLogs(
+        from backup: Backup,
+        in context: ModelContext
+    ) -> Int {
+        var importedIDs = Set<UUID>()
+        var importedCount = 0
+
+        for log in backup.deviceActionLogs ?? [] {
+            guard importedIDs.insert(log.id).inserted else { continue }
+
+            let source = RoutinaDeviceActivitySource(
+                installationID: log.deviceInstallationID,
+                displayName: log.deviceDisplayName,
+                platform: log.devicePlatform,
+                modelName: log.deviceModelName,
+                systemName: log.systemName,
+                systemVersion: log.systemVersion,
+                appVersion: log.appVersion,
+                bundleIdentifier: ""
+            )
+            let importedLog = RoutinaDeviceActionLog(
+                id: log.id,
+                timestamp: log.timestamp,
+                action: log.action,
+                entity: log.entity,
+                entityID: log.entityID,
+                entityTitle: log.entityTitle,
+                source: source,
+                details: log.details
+            )
+            context.insert(importedLog)
+            importedCount += 1
+        }
+
         return importedCount
     }
 

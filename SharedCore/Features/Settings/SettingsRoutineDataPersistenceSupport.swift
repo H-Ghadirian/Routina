@@ -2,12 +2,17 @@ import Foundation
 import SwiftData
 
 enum SettingsRoutineDataPersistence {
-    static let currentSchemaVersion = 30
+    static let currentSchemaVersion = 31
     static let legacyJSONSchemaVersion = 14
+    static let externalAttachmentManifestSchemaVersion = 30
     static let backupPackageExtension = "routinabackup"
     static let legacyJSONBackupExtension = "json"
     static let manifestFileName = "manifest.json"
     static let attachmentsDirectoryName = "attachments"
+
+    static func requiresExternalAttachmentFiles(schemaVersion: Int) -> Bool {
+        schemaVersion >= externalAttachmentManifestSchemaVersion
+    }
 
     static func defaultBackupFileName(now: Date = Date()) -> String {
         SettingsRoutineDataBackupFileNaming.defaultBackupFileName(

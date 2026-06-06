@@ -95,6 +95,19 @@ enum SettingsRoutineDataBackupMapping {
         )
     }
 
+    static func focus(_ session: FocusSession) -> Backup.Focus {
+        Backup.Focus(
+            id: session.id,
+            taskID: session.taskID,
+            startedAt: session.startedAt,
+            plannedDurationSeconds: session.plannedDurationSeconds,
+            completedAt: session.completedAt,
+            abandonedAt: session.abandonedAt,
+            pausedAt: session.pausedAt,
+            accumulatedPausedSeconds: session.accumulatedPausedSeconds
+        )
+    }
+
     static func sleep(_ session: SleepSession) -> Backup.Sleep {
         Backup.Sleep(
             id: session.id,
@@ -204,6 +217,114 @@ enum SettingsRoutineDataBackupMapping {
             endedAt: event.endedAt,
             createdAt: event.createdAt,
             updatedAt: event.updatedAt
+        )
+    }
+
+    static func dayPlanBlock(_ record: DayPlanBlockRecord) -> Backup.DayPlanBlock {
+        Backup.DayPlanBlock(
+            id: record.id,
+            taskID: record.taskID,
+            dayKey: record.dayKey,
+            startMinute: record.startMinute,
+            durationMinutes: record.durationMinutes,
+            titleSnapshot: record.titleSnapshot,
+            emojiSnapshot: record.emojiSnapshot,
+            createdAt: record.createdAt,
+            updatedAt: record.updatedAt
+        )
+    }
+
+    static func boardSprint(_ sprint: BoardSprintRecord) -> Backup.BoardSprint {
+        Backup.BoardSprint(
+            id: sprint.id,
+            title: sprint.title,
+            status: SprintStatus(rawValue: sprint.statusRawValue) ?? .planned,
+            createdAt: sprint.createdAt,
+            startedAt: sprint.startedAt,
+            finishedAt: sprint.finishedAt
+        )
+    }
+
+    static func sprintAssignment(_ assignment: SprintAssignmentRecord) -> Backup.SprintAssignment {
+        Backup.SprintAssignment(
+            todoID: assignment.todoID,
+            sprintID: assignment.sprintID,
+            sortOrder: assignment.sortOrder
+        )
+    }
+
+    static func boardBacklog(_ backlog: BoardBacklogRecord) -> Backup.BoardBacklog {
+        Backup.BoardBacklog(
+            id: backlog.id,
+            title: backlog.title,
+            createdAt: backlog.createdAt,
+            routingTags: backlog.routingTags
+        )
+    }
+
+    static func backlogAssignment(_ assignment: BacklogAssignmentRecord) -> Backup.BacklogAssignment {
+        Backup.BacklogAssignment(
+            todoID: assignment.todoID,
+            backlogID: assignment.backlogID,
+            sortOrder: assignment.sortOrder
+        )
+    }
+
+    static func sprintFocus(_ session: SprintFocusSessionRecord) -> Backup.SprintFocus {
+        Backup.SprintFocus(
+            id: session.id,
+            sprintID: session.sprintID,
+            startedAt: session.startedAt,
+            stoppedAt: session.stoppedAt,
+            pausedAt: session.pausedAt,
+            accumulatedPausedSeconds: session.accumulatedPausedSeconds
+        )
+    }
+
+    static func sprintFocusAllocation(_ allocation: SprintFocusAllocationRecord) -> Backup.SprintFocusAllocation {
+        Backup.SprintFocusAllocation(
+            id: allocation.id,
+            sessionID: allocation.sessionID,
+            taskID: allocation.taskID,
+            minutes: allocation.minutes,
+            sortOrder: allocation.sortOrder
+        )
+    }
+
+    static func deviceSession(_ session: RoutinaDeviceSession) -> Backup.DeviceSession {
+        Backup.DeviceSession(
+            id: session.id,
+            installationID: session.installationID,
+            displayName: session.displayName,
+            platform: session.platform,
+            modelName: session.modelName,
+            systemName: session.systemName,
+            systemVersion: session.systemVersion,
+            appVersion: session.appVersion,
+            bundleIdentifier: session.bundleIdentifier,
+            firstSeenAt: session.firstSeenAt,
+            lastSeenAt: session.lastSeenAt,
+            lastActiveAt: session.lastActiveAt,
+            lastMutationAt: session.lastMutationAt
+        )
+    }
+
+    static func deviceActionLog(_ log: RoutinaDeviceActionLog) -> Backup.DeviceActionLog {
+        Backup.DeviceActionLog(
+            id: log.id,
+            timestamp: log.timestamp,
+            action: log.action,
+            entity: log.entity,
+            entityID: log.entityID,
+            entityTitle: log.entityTitle,
+            deviceInstallationID: log.deviceInstallationID,
+            deviceDisplayName: log.deviceDisplayName,
+            devicePlatform: log.devicePlatform,
+            deviceModelName: log.deviceModelName,
+            systemName: log.systemName,
+            systemVersion: log.systemVersion,
+            appVersion: log.appVersion,
+            details: log.details
         )
     }
 }

@@ -85,6 +85,7 @@ struct SettingsRoutineDataPersistenceTests {
         let attachmentData = Data([0x04, 0x05, 0x06])
         let task = RoutineTask(
             name: "File insurance",
+            pressure: .high,
             imageData: imageData,
             voiceNoteData: voiceData,
             voiceNoteDurationSeconds: 3.5,
@@ -120,6 +121,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(restoredTask.voiceNoteData == voiceData)
         #expect(restoredTask.voiceNoteDurationSeconds == 3.5)
         #expect(restoredTask.voiceNoteCreatedAt == voiceCreatedAt)
+        #expect(restoredTask.pressure == .high)
         let restoredAttachment = try #require(restoreContext.fetch(FetchDescriptor<RoutineAttachment>()).first)
         #expect(restoredAttachment.taskID == restoredTask.id)
         #expect(restoredAttachment.fileName == "receipt.jpg")
@@ -234,6 +236,188 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(restoredEvent.endedAt == endedAt)
         #expect(restoredEvent.createdAt == createdAt)
         #expect(restoredEvent.updatedAt == updatedAt)
+    }
+
+    @Test
+    func backupPackageAndRestore_preservesPlannerBoardFocusAndDeviceData() async throws {
+        let context = makeInMemoryContext()
+        let createdAt = Date(timeIntervalSince1970: 1_780_100_000)
+        let updatedAt = Date(timeIntervalSince1970: 1_780_101_000)
+        let task = RoutineTask(
+            name: "Stretch",
+            emoji: "🧘",
+            scheduleMode: .oneOff,
+            createdAt: createdAt
+        )
+        context.insert(task)
+
+        let focus = FocusSession(
+            taskID: task.id,
+            startedAt: createdAt,
+            plannedDurationSeconds: 30 * 60,
+            completedAt: updatedAt,
+            accumulatedPausedSeconds: 60
+        )
+        let plannerBlock = DayPlanBlockRecord(
+            taskID: task.id,
+            dayKey: "2026-06-06",
+            startMinute: 9 * 60,
+            durationMinutes: 45,
+            titleSnapshot: "Stretch",
+            emojiSnapshot: "🧘",
+            createdAt: createdAt,
+            updatedAt: updatedAt
+        )
+        let sprint = BoardSprintRecord(
+            title: "Launch",
+            status: .active,
+            createdAt: createdAt,
+            startedAt: createdAt
+        )
+        let backlog = BoardBacklogRecord(
+            title: "Later",
+            createdAt: createdAt,
+            routingTags: ["Someday"]
+        )
+        let sprintAssignment = SprintAssignmentRecord(
+            todoID: task.id,
+            sprintID: sprint.id,
+            sortOrder: 3
+        )
+        let backlogAssignment = BacklogAssignmentRecord(
+            todoID: task.id,
+            backlogID: backlog.id,
+            sortOrder: 4
+        )
+        let sprintFocus = SprintFocusSessionRecord(
+            sprintID: sprint.id,
+            startedAt: createdAt,
+            stoppedAt: updatedAt,
+            accumulatedPausedSeconds: 30
+        )
+        let sprintAllocation = SprintFocusAllocationRecord(
+            sessionID: sprintFocus.id,
+            taskID: task.id,
+            minutes: 25,
+            sortOrder: 2
+        )
+        let source = RoutinaDeviceActivitySource(
+            installationID: "install-1",
+            displayName: "Mac Studio",
+            platform: .mac,
+            modelName: "Mac",
+            systemName: "macOS",
+            systemVersion: "26.4",
+            appVersion: "1.0",
+            bundleIdentifier: "com.routina.test"
+        )
+        let deviceSession = RoutinaDeviceSession(
+            installationID: source.installationID,
+            displayName: source.displayName,
+            platform: source.platform,
+            modelName: source.modelName,
+            systemName: source.systemName,
+            systemVersion: source.systemVersion,
+            appVersion: source.appVersion,
+            bundleIdentifier: source.bundleIdentifier,
+            firstSeenAt: createdAt,
+            lastSeenAt: updatedAt,
+            lastActiveAt: updatedAt,
+            lastMutationAt: updatedAt
+        )
+        let deviceLog = RoutinaDeviceActionLog(
+            timestamp: updatedAt,
+            action: .completed,
+            entity: .focusSession,
+            entityID: focus.id.uuidString,
+            entityTitle: "Stretch",
+            source: source,
+            details: "Completed focus"
+        )
+
+        context.insert(focus)
+        context.insert(plannerBlock)
+        context.insert(sprint)
+        context.insert(backlog)
+        context.insert(sprintAssignment)
+        context.insert(backlogAssignment)
+        context.insert(sprintFocus)
+        context.insert(sprintAllocation)
+        context.insert(deviceSession)
+        context.insert(deviceLog)
+        try context.save()
+
+        let package = try SettingsRoutineDataPersistence.buildBackupPackage(
+            from: context,
+            exportedAt: updatedAt
+        )
+        let backup = try SettingsRoutineDataBackupCoding.decodeBackup(from: package.manifestData)
+
+        #expect(backup.schemaVersion == SettingsRoutineDataPersistence.currentSchemaVersion)
+        #expect(backup.focusSessions?.count == 1)
+        #expect(backup.dayPlanBlocks?.count == 1)
+        #expect(backup.boardSprints?.count == 1)
+        #expect(backup.sprintAssignments?.count == 1)
+        #expect(backup.boardBacklogs?.count == 1)
+        #expect(backup.backlogAssignments?.count == 1)
+        #expect(backup.sprintFocusSessions?.count == 1)
+        #expect(backup.sprintFocusAllocations?.count == 1)
+        #expect(backup.deviceSessions?.count == 1)
+        #expect(backup.deviceActionLogs?.count == 1)
+
+        let restoreContext = makeInMemoryContext()
+        let summary = try SettingsRoutineDataPersistence.replaceAllRoutineData(
+            with: package.manifestData,
+            in: restoreContext,
+            importDate: updatedAt
+        )
+
+        #expect(summary.tasks == 1)
+        #expect(summary.focusSessions == 1)
+        #expect(summary.dayPlanBlocks == 1)
+        #expect(summary.boardSprints == 1)
+        #expect(summary.sprintAssignments == 1)
+        #expect(summary.boardBacklogs == 1)
+        #expect(summary.backlogAssignments == 1)
+        #expect(summary.sprintFocusSessions == 1)
+        #expect(summary.sprintFocusAllocations == 1)
+        #expect(summary.deviceSessions == 1)
+        #expect(summary.deviceActionLogs == 1)
+
+        let restoredFocus = try #require(restoreContext.fetch(FetchDescriptor<FocusSession>()).first)
+        let restoredBlock = try #require(restoreContext.fetch(FetchDescriptor<DayPlanBlockRecord>()).first)
+        let restoredSprint = try #require(restoreContext.fetch(FetchDescriptor<BoardSprintRecord>()).first)
+        let restoredBacklog = try #require(restoreContext.fetch(FetchDescriptor<BoardBacklogRecord>()).first)
+        let restoredSprintAssignment = try #require(restoreContext.fetch(FetchDescriptor<SprintAssignmentRecord>()).first)
+        let restoredBacklogAssignment = try #require(restoreContext.fetch(FetchDescriptor<BacklogAssignmentRecord>()).first)
+        let restoredSprintFocus = try #require(restoreContext.fetch(FetchDescriptor<SprintFocusSessionRecord>()).first)
+        let restoredAllocation = try #require(restoreContext.fetch(FetchDescriptor<SprintFocusAllocationRecord>()).first)
+        let restoredDevice = try #require(restoreContext.fetch(FetchDescriptor<RoutinaDeviceSession>()).first)
+        let restoredDeviceLog = try #require(restoreContext.fetch(FetchDescriptor<RoutinaDeviceActionLog>()).first)
+
+        #expect(restoredFocus.id == focus.id)
+        #expect(restoredFocus.taskID == task.id)
+        #expect(restoredFocus.completedAt == updatedAt)
+        #expect(restoredFocus.accumulatedPausedSeconds == 60)
+        #expect(restoredBlock.id == plannerBlock.id)
+        #expect(restoredBlock.dayKey == "2026-06-06")
+        #expect(restoredBlock.titleSnapshot == "Stretch")
+        #expect(restoredSprint.id == sprint.id)
+        #expect(restoredSprint.statusRawValue == SprintStatus.active.rawValue)
+        #expect(restoredBacklog.routingTags == ["Someday"])
+        #expect(restoredSprintAssignment.sortOrder == 3)
+        #expect(restoredBacklogAssignment.sortOrder == 4)
+        #expect(restoredSprintFocus.id == sprintFocus.id)
+        #expect(restoredSprintFocus.stoppedAt == updatedAt)
+        #expect(restoredAllocation.sessionID == sprintFocus.id)
+        #expect(restoredAllocation.minutes == 25)
+        #expect(restoredAllocation.sortOrder == 2)
+        #expect(restoredDevice.installationID == source.installationID)
+        #expect(restoredDevice.lastMutationAt == updatedAt)
+        #expect(restoredDeviceLog.action == .completed)
+        #expect(restoredDeviceLog.entity == .focusSession)
+        #expect(restoredDeviceLog.entityID == focus.id.uuidString)
+        #expect(restoredDeviceLog.details == "Completed focus")
     }
 
     @Test

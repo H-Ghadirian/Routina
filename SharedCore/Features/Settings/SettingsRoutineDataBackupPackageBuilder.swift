@@ -45,6 +45,7 @@ enum SettingsRoutineDataBackupPackageBuilder {
         let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+        let focusSessions = try context.fetch(FetchDescriptor<FocusSession>())
         let sleepSessions = try context.fetch(FetchDescriptor<SleepSession>())
         let awaySessions = try context.fetch(FetchDescriptor<AwaySession>())
         let placeCheckInSessions = try context.fetch(FetchDescriptor<PlaceCheckInSession>())
@@ -53,6 +54,15 @@ enum SettingsRoutineDataBackupPackageBuilder {
         let events = try context.fetch(FetchDescriptor<RoutineEvent>())
         let storedAttachments = try context.fetch(FetchDescriptor<RoutineAttachment>())
         let storedNoteAttachments = try context.fetch(FetchDescriptor<RoutineNoteAttachment>())
+        let dayPlanBlocks = try context.fetch(FetchDescriptor<DayPlanBlockRecord>())
+        let boardSprints = try context.fetch(FetchDescriptor<BoardSprintRecord>())
+        let sprintAssignments = try context.fetch(FetchDescriptor<SprintAssignmentRecord>())
+        let boardBacklogs = try context.fetch(FetchDescriptor<BoardBacklogRecord>())
+        let backlogAssignments = try context.fetch(FetchDescriptor<BacklogAssignmentRecord>())
+        let sprintFocusSessions = try context.fetch(FetchDescriptor<SprintFocusSessionRecord>())
+        let sprintFocusAllocations = try context.fetch(FetchDescriptor<SprintFocusAllocationRecord>())
+        let deviceSessions = try context.fetch(FetchDescriptor<RoutinaDeviceSession>())
+        let deviceActionLogs = try context.fetch(FetchDescriptor<RoutinaDeviceActionLog>())
 
         var attachmentManifests: [Backup.Attachment] = []
         var taskImageAttachmentIDs: [UUID: UUID] = [:]
@@ -209,7 +219,7 @@ enum SettingsRoutineDataBackupPackageBuilder {
                     imageAttachmentID: taskImageAttachmentIDs[$0.id],
                     voiceNoteData: nil,
                     voiceNoteAttachmentID: taskVoiceNoteAttachmentIDs[$0.id],
-                    includesPressure: false
+                    includesPressure: true
                 )
             },
             logs: logs.map(SettingsRoutineDataBackupMapping.log),
@@ -233,7 +243,17 @@ enum SettingsRoutineDataBackupPackageBuilder {
                 )
             },
             events: events.map(SettingsRoutineDataBackupMapping.event),
-            attachments: attachmentManifests
+            attachments: attachmentManifests,
+            focusSessions: focusSessions.map(SettingsRoutineDataBackupMapping.focus),
+            dayPlanBlocks: dayPlanBlocks.map(SettingsRoutineDataBackupMapping.dayPlanBlock),
+            boardSprints: boardSprints.map(SettingsRoutineDataBackupMapping.boardSprint),
+            sprintAssignments: sprintAssignments.map(SettingsRoutineDataBackupMapping.sprintAssignment),
+            boardBacklogs: boardBacklogs.map(SettingsRoutineDataBackupMapping.boardBacklog),
+            backlogAssignments: backlogAssignments.map(SettingsRoutineDataBackupMapping.backlogAssignment),
+            sprintFocusSessions: sprintFocusSessions.map(SettingsRoutineDataBackupMapping.sprintFocus),
+            sprintFocusAllocations: sprintFocusAllocations.map(SettingsRoutineDataBackupMapping.sprintFocusAllocation),
+            deviceSessions: deviceSessions.map(SettingsRoutineDataBackupMapping.deviceSession),
+            deviceActionLogs: deviceActionLogs.map(SettingsRoutineDataBackupMapping.deviceActionLog)
         )
 
         return try SettingsRoutineDataBackupCoding.encode(backup)
