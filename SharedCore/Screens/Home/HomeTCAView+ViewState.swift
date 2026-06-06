@@ -186,6 +186,14 @@ extension HomeTCAView {
         homeFilterPresentation.hasActiveOptionalFilters
     }
 
+    var showsInitialTaskLoading: Bool {
+        store.routineTasks.isEmpty && !store.hasLoadedTaskSnapshot
+    }
+
+    var showsLoadedEmptyTaskList: Bool {
+        store.routineTasks.isEmpty && store.hasLoadedTaskSnapshot
+    }
+
     var hasSavedPlaces: Bool {
         !sortedRoutinePlaces.isEmpty
     }

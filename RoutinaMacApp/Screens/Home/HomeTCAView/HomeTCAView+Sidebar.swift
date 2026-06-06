@@ -498,14 +498,14 @@ extension HomeTCAView {
                 macPlacesSidebarView
             } else if isMacAddTaskMode || store.taskDetailState?.isEditSheetPresented == true {
                 macFormSectionNav
-            } else if isMacRoutinesMode && store.isLoading && store.routineTasks.isEmpty && !shouldHideMacSidebarHeaderForDayPlanTimelineFilter {
+            } else if isMacRoutinesMode && showsInitialTaskLoading && !shouldHideMacSidebarHeaderForDayPlanTimelineFilter {
                 VStack(spacing: 0) {
                     macSidebarHeader
                     Divider()
                     HomeLoadingStateView()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            } else if isMacRoutinesMode && store.routineTasks.isEmpty && !shouldHideMacSidebarHeaderForDayPlanTimelineFilter {
+            } else if isMacRoutinesMode && showsLoadedEmptyTaskList && !shouldHideMacSidebarHeaderForDayPlanTimelineFilter {
                 VStack(spacing: 0) {
                     macSidebarHeader
                     Divider()
@@ -518,7 +518,7 @@ extension HomeTCAView {
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            } else if isMacBoardSidebarPresented && store.isLoading && store.routineTasks.isEmpty {
+            } else if isMacBoardSidebarPresented && showsInitialTaskLoading {
                 VStack(spacing: 0) {
                     macSidebarHeader
                     Divider()

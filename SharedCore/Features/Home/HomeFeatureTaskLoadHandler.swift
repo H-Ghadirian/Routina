@@ -8,6 +8,7 @@ protocol HomeFeatureTaskLoadState {
     var timelineLogs: [RoutineLog] { get set }
     var doneStats: HomeDoneStats { get set }
     var isLoading: Bool { get set }
+    var hasLoadedTaskSnapshot: Bool { get set }
     var selection: HomeSelectionState { get set }
     var presentation: HomePresentationState { get set }
     var relatedTagRules: [RoutineRelatedTagRule] { get set }
@@ -52,6 +53,7 @@ struct HomeFeatureTaskLoadHandler<State: HomeFeatureTaskLoadState, Action> {
         state.timelineLogs = snapshot.timelineLogs
         state.doneStats = snapshot.doneStats
         state.isLoading = false
+        state.hasLoadedTaskSnapshot = true
         refreshDisplays(&state)
         syncSelectedTaskDetailState(&state)
         validateFilterState(&state)

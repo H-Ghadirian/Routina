@@ -55,6 +55,7 @@ struct HomeFeatureTaskLoadHandlerTests {
         #expect(state.timelineLogs.map(\.timestamp) == [newerLogDate, olderLogDate])
         #expect(state.doneStats == doneStats)
         #expect(state.isLoading == false)
+        #expect(state.hasLoadedTaskSnapshot)
         #expect(state.relatedTagRules == [RoutineRelatedTagRule(tag: "Focus", relatedTags: ["Planning"])])
         #expect(state.tagColors == ["Focus": "#112233", "validated": "true"])
         #expect(recorder.events == ["refresh", "sync", "validate", "persist", "detail"])
@@ -108,6 +109,7 @@ private struct TestTaskLoadState: HomeFeatureTaskLoadState, Equatable {
     var timelineLogs: [RoutineLog] = []
     var doneStats = HomeDoneStats()
     var isLoading = false
+    var hasLoadedTaskSnapshot = false
     var selection = HomeSelectionState()
     var presentation = HomePresentationState()
     var relatedTagRules: [RoutineRelatedTagRule] = []

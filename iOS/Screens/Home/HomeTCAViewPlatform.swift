@@ -388,7 +388,7 @@ detailContent
     @ViewBuilder
     private var iosSidebarContent: some View {
         HomeIOSSidebarContent(
-            isEmpty: store.routineTasks.isEmpty && !store.isLoading,
+            isEmpty: showsLoadedEmptyTaskList,
             navigationTitle: homeNavigationTitle
         ) {
             emptyStateView(
@@ -399,7 +399,7 @@ detailContent
                 openAddTask()
             }
         } taskListContent: {
-            if store.isLoading && store.routineTasks.isEmpty {
+            if showsInitialTaskLoading {
                 HomeLoadingStateView()
             } else {
                 listOfSortedTasksView(

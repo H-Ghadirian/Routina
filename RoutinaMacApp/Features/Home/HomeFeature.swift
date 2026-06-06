@@ -60,6 +60,7 @@ struct HomeFeature {
         var board = HomeBoardState()
         var doneStats: DoneStats = DoneStats()
         var isLoading = false
+        var hasLoadedTaskSnapshot = false
         var selection = HomeSelectionState()
         var presentation = HomePresentationState()
         var locationSnapshot = LocationSnapshot(
@@ -91,6 +92,7 @@ struct HomeFeature {
             sprintBoardData: SprintBoardData = SprintBoardData(),
             doneStats: DoneStats = DoneStats(),
             isLoading: Bool = false,
+            hasLoadedTaskSnapshot: Bool = false,
             selectedTaskID: UUID? = nil,
             isAddRoutineSheetPresented: Bool = false,
             locationSnapshot: LocationSnapshot = LocationSnapshot(
@@ -161,6 +163,7 @@ struct HomeFeature {
             )
             self.doneStats = doneStats
             self.isLoading = isLoading
+            self.hasLoadedTaskSnapshot = hasLoadedTaskSnapshot
             self.selection = HomeSelectionState(
                 selectedTaskID: selectedTaskID,
                 taskDetailState: taskDetailState,
@@ -981,6 +984,7 @@ struct HomeFeature {
 
             case .tasksLoadFailed:
                 state.isLoading = false
+                state.hasLoadedTaskSnapshot = true
                 return lifecycleActionHandler().tasksLoadFailed()
 
             case let .locationSnapshotUpdated(snapshot):
