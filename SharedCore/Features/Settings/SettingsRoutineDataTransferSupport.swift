@@ -1,6 +1,6 @@
 import Foundation
 
-enum SettingsRoutineDataTransferOperation: Equatable {
+enum SettingsRoutineDataTransferOperation: Equatable, Sendable {
     case export
     case `import`
 
@@ -24,6 +24,7 @@ enum SettingsRoutineDataTransferEditor {
         }
 
         state.isDataTransferInProgress = true
+        state.activeOperation = operation
         state.dataTransferStatusMessage = operation.inProgressMessage
         return true
     }
@@ -33,6 +34,7 @@ enum SettingsRoutineDataTransferEditor {
         state: inout SettingsDataTransferState
     ) {
         state.isDataTransferInProgress = false
+        state.activeOperation = nil
         state.dataTransferStatusMessage = message
     }
 }

@@ -40,11 +40,14 @@ enum SettingsCloudActionExecution {
 
     static func beginDataResetAuthentication(
         state: inout SettingsCloudState,
+        dataTransferState: SettingsDataTransferState,
+        referenceDate: Date,
         appLockEnabled: Bool,
         deviceAuthenticationClient: DeviceAuthenticationClient
     ) -> Effect<SettingsFeature.Action> {
         guard SettingsCloudEditor.beginDataResetAuthentication(
             appLockEnabled: appLockEnabled,
+            hasRecentBackup: dataTransferState.hasRecentSuccessfulBackup(referenceDate: referenceDate),
             state: &state
         ) else {
             return .none
@@ -62,9 +65,16 @@ enum SettingsCloudActionExecution {
         _ result: DeviceAuthenticationResult,
         cloudContainerIdentifier: String?,
         state: inout SettingsCloudState,
+        dataTransferState: SettingsDataTransferState,
+        referenceDate: Date,
         modelContext: @escaping @MainActor @Sendable () -> ModelContext
     ) -> Effect<SettingsFeature.Action> {
         guard SettingsCloudEditor.finishDataResetAuthentication(result, state: &state) else {
+            return .none
+        }
+
+        guard dataTransferState.hasRecentSuccessfulBackup(referenceDate: referenceDate) else {
+            state.cloudStatusMessage = SettingsCloudEditor.recentBackupRequiredMessage
             return .none
         }
 

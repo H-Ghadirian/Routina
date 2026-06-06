@@ -143,4 +143,20 @@ struct SettingsSectionViewSupportTests {
         #expect(presentation.subtitle == "Sync, export, and import routine data")
         #expect(presentation.value == nil)
     }
+
+    @Test
+    func dataTransferBackupFreshnessUsesTwentyFourHourWindow() {
+        let now = makeDate("2026-06-06T12:00:00Z")
+        var state = SettingsDataTransferState(
+            lastSuccessfulBackupDate: now.addingTimeInterval(-23 * 60 * 60)
+        )
+
+        #expect(state.hasRecentSuccessfulBackup(referenceDate: now))
+        #expect(state.cloudResetBackupRequirementText(referenceDate: now).contains("Recent backup saved"))
+
+        state.lastSuccessfulBackupDate = now.addingTimeInterval(-25 * 60 * 60)
+
+        #expect(!state.hasRecentSuccessfulBackup(referenceDate: now))
+        #expect(state.cloudResetBackupRequirementText(referenceDate: now).contains("within the last 24 hours"))
+    }
 }

@@ -99,6 +99,8 @@ extension SettingsCloudState {
 }
 
 extension SettingsDataTransferState {
+    static let recentBackupWindow: TimeInterval = 24 * 60 * 60
+
     var overviewSubtitle: String {
         if isDataTransferInProgress {
             return "Importing or exporting backup"
@@ -117,5 +119,33 @@ extension SettingsDataTransferState {
             return dataTransferStatusMessage
         }
         return "Export a full backup package, or import a package or legacy JSON file."
+    }
+
+    func hasRecentSuccessfulBackup(referenceDate: Date = Date()) -> Bool {
+        guard let lastSuccessfulBackupDate else { return false }
+        let age = referenceDate.timeIntervalSince(lastSuccessfulBackupDate)
+        return age >= 0 && age <= Self.recentBackupWindow
+    }
+
+    func backupFreshnessText(referenceDate: Date = Date()) -> String {
+        guard let lastSuccessfulBackupDate else {
+            return "No recent backup saved on this device."
+        }
+
+        let formattedDate = lastSuccessfulBackupDate.formatted(
+            date: .abbreviated,
+            time: .shortened
+        )
+        if hasRecentSuccessfulBackup(referenceDate: referenceDate) {
+            return "Recent backup saved \(formattedDate)."
+        }
+        return "Last backup was \(formattedDate), more than 24 hours ago."
+    }
+
+    func cloudResetBackupRequirementText(referenceDate: Date = Date()) -> String {
+        if hasRecentSuccessfulBackup(referenceDate: referenceDate) {
+            return backupFreshnessText(referenceDate: referenceDate)
+        }
+        return "\(backupFreshnessText(referenceDate: referenceDate)) Save a backup within the last 24 hours before deleting iCloud data."
     }
 }

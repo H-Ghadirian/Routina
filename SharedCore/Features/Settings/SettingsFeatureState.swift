@@ -91,7 +91,9 @@ struct SettingsCloudState: Equatable {
 
 struct SettingsDataTransferState: Equatable {
     var isDataTransferInProgress: Bool = false
+    var activeOperation: SettingsRoutineDataTransferOperation?
     var dataTransferStatusMessage: String = ""
+    var lastSuccessfulBackupDate: Date?
 }
 
 struct SettingsGitHubState: Equatable {

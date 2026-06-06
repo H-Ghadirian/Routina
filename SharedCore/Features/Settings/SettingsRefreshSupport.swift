@@ -21,6 +21,7 @@ struct SettingsOnAppearSnapshot: Equatable {
     var deviceAuthenticationStatus: DeviceAuthenticationStatus
     var selectedAppIcon: AppIconOption
     var hasTemporaryViewStateToReset: Bool
+    var lastRoutineDataBackupDate: Date?
     var cloudDiagnosticsSummary: String
     var cloudDiagnosticsTimestamp: String
     var pushDiagnosticsStatus: String
@@ -39,6 +40,7 @@ enum SettingsRefreshEditor {
         state.diagnostics.cloudDiagnosticsTimestamp = snapshot.cloudDiagnosticsTimestamp
         state.diagnostics.pushDiagnosticsStatus = snapshot.pushDiagnosticsStatus
         state.cloud.cloudSyncAvailable = snapshot.cloudSyncAvailable
+        state.dataTransfer.lastSuccessfulBackupDate = snapshot.lastRoutineDataBackupDate
         state.github.scope = snapshot.gitHubConnection.scope
         state.github.connectedScope = snapshot.gitHubConnection.scope
         state.github.repositoryOwner = snapshot.gitHubConnection.repository?.owner ?? ""
@@ -91,12 +93,14 @@ enum SettingsRefreshEditor {
         hasTemporaryViewStateToReset: Bool,
         appLockEnabled: Bool,
         gitFeaturesEnabled: Bool,
+        lastRoutineDataBackupDate: Date?,
         deviceAuthenticationStatus: DeviceAuthenticationStatus,
         state: inout SettingsFeatureState
     ) {
         state.appearance.hasTemporaryViewStateToReset = hasTemporaryViewStateToReset
         state.appearance.isAppLockEnabled = appLockEnabled
         state.appearance.isGitFeaturesEnabled = gitFeaturesEnabled
+        state.dataTransfer.lastSuccessfulBackupDate = lastRoutineDataBackupDate
         state.appearance.appLockMethodDescription = deviceAuthenticationStatus.methodDescription
         state.appearance.appLockUnavailableReason = deviceAuthenticationStatus.unavailableReason
     }

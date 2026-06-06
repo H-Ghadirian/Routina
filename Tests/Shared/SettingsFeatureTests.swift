@@ -81,12 +81,31 @@ struct SettingsFeatureTests {
 
         #expect(!SettingsCloudEditor.beginDataResetAuthentication(
             appLockEnabled: false,
+            hasRecentBackup: true,
             state: &state
         ))
         #expect(state.isCloudDataResetConfirmationPresented)
         #expect(!state.isCloudDataResetAuthenticationInProgress)
         #expect(!state.isCloudDataResetInProgress)
         #expect(state.cloudStatusMessage == "Turn on App Lock before deleting iCloud data.")
+    }
+
+    @Test
+    func cloudDataReset_requiresRecentBackupBeforeAuthentication() {
+        var state = SettingsCloudState(
+            cloudSyncAvailable: true,
+            isCloudDataResetConfirmationPresented: true
+        )
+
+        #expect(!SettingsCloudEditor.beginDataResetAuthentication(
+            appLockEnabled: true,
+            hasRecentBackup: false,
+            state: &state
+        ))
+        #expect(state.isCloudDataResetConfirmationPresented)
+        #expect(!state.isCloudDataResetAuthenticationInProgress)
+        #expect(!state.isCloudDataResetInProgress)
+        #expect(state.cloudStatusMessage == "Save a backup within the last 24 hours before deleting iCloud data.")
     }
 
     @Test
@@ -98,6 +117,7 @@ struct SettingsFeatureTests {
 
         #expect(SettingsCloudEditor.beginDataResetAuthentication(
             appLockEnabled: true,
+            hasRecentBackup: true,
             state: &state
         ))
         #expect(state.isCloudDataResetConfirmationPresented)
@@ -123,6 +143,7 @@ struct SettingsFeatureTests {
 
         #expect(SettingsCloudEditor.beginDataResetAuthentication(
             appLockEnabled: true,
+            hasRecentBackup: true,
             state: &state
         ))
         #expect(SettingsCloudEditor.finishDataResetAuthentication(.success, state: &state))
@@ -468,6 +489,7 @@ struct SettingsFeatureTests {
     @Test
     func resetCloudDataConfirmed_authenticatesWithAppLockBeforeDeleting() async {
         let context = makeInMemoryContext()
+        let now = makeDate("2026-06-06T12:00:00Z")
         let authenticateReason = LockIsolated<String?>(nil)
 
         let store = TestStore(
@@ -476,11 +498,13 @@ struct SettingsFeatureTests {
                 cloud: .init(
                     cloudSyncAvailable: true,
                     isCloudDataResetConfirmationPresented: true
-                )
+                ),
+                dataTransfer: .init(lastSuccessfulBackupDate: now.addingTimeInterval(-60 * 60))
             )
         ) {
             SettingsFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0, now: now)
             $0.modelContext = { context }
             $0.appSettingsClient.appLockEnabled = { true }
             $0.deviceAuthenticationClient.authenticate = { reason in
@@ -500,6 +524,39 @@ struct SettingsFeatureTests {
         }
 
         #expect(authenticateReason.value == "Delete Routina iCloud data")
+    }
+
+    @Test
+    func resetCloudDataConfirmed_requiresRecentBackupBeforeAuthentication() async {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-06-06T12:00:00Z")
+        let authenticateCallCount = LockIsolated(0)
+
+        let store = TestStore(
+            initialState: SettingsFeature.State(
+                appearance: .init(isAppLockEnabled: true),
+                cloud: .init(
+                    cloudSyncAvailable: true,
+                    isCloudDataResetConfirmationPresented: true
+                )
+            )
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now)
+            $0.modelContext = { context }
+            $0.appSettingsClient.appLockEnabled = { true }
+            $0.deviceAuthenticationClient.authenticate = { _ in
+                authenticateCallCount.withValue { $0 += 1 }
+                return .success
+            }
+        }
+
+        await store.send(.resetCloudDataConfirmed) {
+            $0.cloud.cloudStatusMessage = "Save a backup within the last 24 hours before deleting iCloud data."
+        }
+
+        #expect(authenticateCallCount.value == 0)
     }
 
     @Test
@@ -1154,11 +1211,13 @@ struct SettingsFeatureTests {
 
         await store.send(.exportRoutineDataTapped) {
             $0.dataTransfer.isDataTransferInProgress = true
+            $0.dataTransfer.activeOperation = .export
             $0.dataTransfer.dataTransferStatusMessage = "Saving routine data..."
         }
 
         await store.receive(.routineDataTransferFinished(success: false, message: "Save canceled.")) {
             $0.dataTransfer.isDataTransferInProgress = false
+            $0.dataTransfer.activeOperation = nil
             $0.dataTransfer.dataTransferStatusMessage = "Save canceled."
         }
     }
@@ -1166,6 +1225,8 @@ struct SettingsFeatureTests {
     @Test
     func exportRoutineDataDestinationSelected_writesSelectedBackupPackage() async throws {
         let context = makeInMemoryContext()
+        let now = makeDate("2026-06-06T12:00:00Z")
+        let persistedBackupDate = LockIsolated<Date?>(nil)
         let task = RoutineTask(
             name: "Backup me",
             link: "example.com/primary",
@@ -1183,18 +1244,26 @@ struct SettingsFeatureTests {
         let store = TestStore(initialState: SettingsFeature.State()) {
             SettingsFeature()
         } withDependencies: {
+            setTestDateDependencies(&$0, now: now)
             $0.modelContext = { context }
+            $0.appSettingsClient.setLastRoutineDataBackupDate = { date in
+                persistedBackupDate.setValue(date)
+            }
         }
 
         await store.send(.exportRoutineDataDestinationSelected(packageURL)) {
             $0.dataTransfer.isDataTransferInProgress = true
+            $0.dataTransfer.activeOperation = .export
             $0.dataTransfer.dataTransferStatusMessage = "Saving routine data..."
         }
 
         await store.receive(.routineDataTransferFinished(success: true, message: "Saved to \(packageURL.lastPathComponent).")) {
             $0.dataTransfer.isDataTransferInProgress = false
+            $0.dataTransfer.activeOperation = nil
             $0.dataTransfer.dataTransferStatusMessage = "Saved to \(packageURL.lastPathComponent)."
+            $0.dataTransfer.lastSuccessfulBackupDate = now
         }
+        #expect(persistedBackupDate.value == now)
 
         var isDirectory: ObjCBool = false
         #expect(FileManager.default.fileExists(atPath: packageURL.path, isDirectory: &isDirectory))
@@ -1224,11 +1293,13 @@ struct SettingsFeatureTests {
 
         await store.send(.importRoutineDataTapped) {
             $0.dataTransfer.isDataTransferInProgress = true
+            $0.dataTransfer.activeOperation = .import
             $0.dataTransfer.dataTransferStatusMessage = "Loading routine data..."
         }
 
         await store.receive(.routineDataTransferFinished(success: false, message: "Load canceled.")) {
             $0.dataTransfer.isDataTransferInProgress = false
+            $0.dataTransfer.activeOperation = nil
             $0.dataTransfer.dataTransferStatusMessage = "Load canceled."
         }
     }
@@ -1261,6 +1332,7 @@ struct SettingsFeatureTests {
 
         await store.send(.importRoutineDataSourceSelected(packageURL)) {
             $0.dataTransfer.isDataTransferInProgress = true
+            $0.dataTransfer.activeOperation = .import
             $0.dataTransfer.dataTransferStatusMessage = "Loading routine data..."
         }
 
@@ -1277,6 +1349,7 @@ struct SettingsFeatureTests {
         let successMessage = "Loaded 1 routines, 0 goals, 0 places, 0 logs, 0 sleep sessions, 0 away sessions, 0 place check-ins, 0 emotions, 0 notes, 0 events, and 0 attachments."
         await store.receive(.routineDataTransferFinished(success: true, message: successMessage)) {
             $0.dataTransfer.isDataTransferInProgress = false
+            $0.dataTransfer.activeOperation = nil
             $0.dataTransfer.dataTransferStatusMessage = successMessage
         }
 

@@ -103,6 +103,7 @@ struct SettingsFeature {
     @Dependency(\.routineDataTransferClient) var routineDataTransferClient
     @Dependency(\.gitHubStatsClient) var gitHubStatsClient
     @Dependency(\.gitLabStatsClient) var gitLabStatsClient
+    @Dependency(\.date.now) var now
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -388,6 +389,7 @@ struct SettingsFeature {
                     ),
                     appLockEnabled: appSettingsClient.appLockEnabled(),
                     gitFeaturesEnabled: appSettingsClient.gitFeaturesEnabled(),
+                    lastRoutineDataBackupDate: appSettingsClient.lastRoutineDataBackupDate(),
                     deviceAuthenticationStatus: deviceAuthenticationClient.status(),
                     state: &state
                 )
@@ -413,6 +415,8 @@ struct SettingsFeature {
             case .resetCloudDataConfirmed:
                 return SettingsCloudActionExecution.beginDataResetAuthentication(
                     state: &state.cloud,
+                    dataTransferState: state.dataTransfer,
+                    referenceDate: now,
                     appLockEnabled: self.appSettingsClient.appLockEnabled(),
                     deviceAuthenticationClient: self.deviceAuthenticationClient
                 )
@@ -422,6 +426,8 @@ struct SettingsFeature {
                     result,
                     cloudContainerIdentifier: AppEnvironment.cloudKitContainerIdentifier,
                     state: &state.cloud,
+                    dataTransferState: state.dataTransfer,
+                    referenceDate: now,
                     modelContext: self.modelContext
                 )
 
@@ -673,7 +679,12 @@ struct SettingsFeature {
                     state: &state.appearance
                 )
 
-            case let .routineDataTransferFinished(_, message):
+            case let .routineDataTransferFinished(success, message):
+                let completedOperation = state.dataTransfer.activeOperation
+                if success, completedOperation == .export {
+                    state.dataTransfer.lastSuccessfulBackupDate = now
+                    appSettingsClient.setLastRoutineDataBackupDate(now)
+                }
                 SettingsRoutineDataTransferEditor.finish(
                     message: message,
                     state: &state.dataTransfer

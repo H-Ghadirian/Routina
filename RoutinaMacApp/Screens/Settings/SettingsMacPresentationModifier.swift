@@ -101,6 +101,13 @@ VStack(alignment: .leading, spacing: 18) {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
+
+        Text(store.dataTransfer.cloudResetBackupRequirementText())
+            .font(.caption)
+            .foregroundStyle(
+                store.dataTransfer.hasRecentSuccessfulBackup() ? Color.secondary : Color.red
+            )
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     Divider()
@@ -198,6 +205,7 @@ VStack(alignment: .leading, spacing: 18) {
     }
 
     private var deleteDisabled: Bool {
+        !store.dataTransfer.hasRecentSuccessfulBackup() ||
         !store.appearance.isAppLockEnabled ||
         store.appearance.isAppLockToggleInProgress ||
         store.cloud.isCloudDataResetAuthenticationInProgress ||

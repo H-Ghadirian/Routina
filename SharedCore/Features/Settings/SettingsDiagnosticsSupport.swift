@@ -32,6 +32,7 @@ enum SettingsDiagnosticsLoader {
             hasTemporaryViewStateToReset: SettingsExecutionSupport.hasTemporaryViewStateToReset(
                 appSettingsClient: appSettingsClient
             ),
+            lastRoutineDataBackupDate: appSettingsClient.lastRoutineDataBackupDate(),
             cloudDiagnosticsSummary: diagnostics.summary,
             cloudDiagnosticsTimestamp: diagnostics.timestampText,
             pushDiagnosticsStatus: diagnostics.pushStatus

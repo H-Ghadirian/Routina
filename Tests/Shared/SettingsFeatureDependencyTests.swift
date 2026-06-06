@@ -30,6 +30,7 @@ struct SettingsFeatureDependencyTests {
         try context.save()
 
         let reminderTime = makeDate("2026-03-20T06:45:00Z")
+        let lastBackupDate = makeDate("2026-03-20T07:15:00Z")
         let snapshot = LocationSnapshot(
             authorizationStatus: .authorizedAlways,
             coordinate: LocationCoordinate(latitude: 52.52, longitude: 13.405),
@@ -82,6 +83,8 @@ struct SettingsFeatureDependencyTests {
                 setFastFilterTags: { _ in },
                 notificationReminderTime: { reminderTime },
                 setNotificationReminderTime: { _ in },
+                lastRoutineDataBackupDate: { lastBackupDate },
+                setLastRoutineDataBackupDate: { _ in },
                 selectedAppIcon: { .teal },
                 temporaryViewState: { nil },
                 setTemporaryViewState: { _ in },
@@ -121,6 +124,7 @@ struct SettingsFeatureDependencyTests {
             $0.appearance.selectedAppIcon = .teal
             $0.appearance.appIconStatusMessage = ""
             $0.diagnostics.isDebugSectionVisible = false
+            $0.dataTransfer.lastSuccessfulBackupDate = lastBackupDate
         }
 
         await store.receive(.systemNotificationPermissionChecked(true))

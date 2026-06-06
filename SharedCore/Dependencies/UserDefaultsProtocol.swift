@@ -89,6 +89,7 @@ public enum UserDefaultStringValueKey: String, Sendable {
     case appSettingBlockingWebsiteDomains
     case appSettingFocusShieldSelection
     case appSettingMacFocusBlockedApps
+    case appSettingLastRoutineDataBackupDate
     case macFormSectionOrder
     case macQuickAddShortcut
 }
@@ -130,6 +131,8 @@ struct AppSettingsClient: Sendable {
     var setFastFilterTags: @Sendable ([String]) -> Void
     var notificationReminderTime: @Sendable () -> Date
     var setNotificationReminderTime: @Sendable (Date) -> Void
+    var lastRoutineDataBackupDate: @Sendable () -> Date?
+    var setLastRoutineDataBackupDate: @Sendable (Date?) -> Void
     var selectedAppIcon: @Sendable () -> AppIconOption
     var temporaryViewState: @Sendable () -> TemporaryViewState?
     var setTemporaryViewState: @Sendable (TemporaryViewState?) -> Void
@@ -409,6 +412,19 @@ extension AppSettingsClient {
         setNotificationReminderTime: { date in
             NotificationPreferences.storeReminderTime(date)
         },
+        lastRoutineDataBackupDate: {
+            guard let rawValue = SharedDefaults.app[.appSettingLastRoutineDataBackupDate],
+                  let timestamp = TimeInterval(rawValue)
+            else {
+                return nil
+            }
+            return Date(timeIntervalSince1970: timestamp)
+        },
+        setLastRoutineDataBackupDate: { date in
+            SharedDefaults.app[.appSettingLastRoutineDataBackupDate] = date.map {
+                String($0.timeIntervalSince1970)
+            }
+        },
         selectedAppIcon: {
             .persistedSelection
         },
@@ -472,6 +488,8 @@ extension AppSettingsClient {
         setFastFilterTags: { _ in },
         notificationReminderTime: { Date() },
         setNotificationReminderTime: { _ in },
+        lastRoutineDataBackupDate: { nil },
+        setLastRoutineDataBackupDate: { _ in },
         selectedAppIcon: { .orange },
         temporaryViewState: { nil },
         setTemporaryViewState: { _ in },

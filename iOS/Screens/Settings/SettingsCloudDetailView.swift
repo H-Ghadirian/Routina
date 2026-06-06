@@ -68,6 +68,12 @@ List {
             Text(store.dataTransfer.statusText)
                 .foregroundStyle(.secondary)
         }
+
+        Text(store.dataTransfer.backupFreshnessText())
+            .font(.caption)
+            .foregroundStyle(
+                store.dataTransfer.hasRecentSuccessfulBackup() ? Color.secondary : Color.red
+            )
     }
 
     Section("Estimated Usage") {
@@ -195,6 +201,12 @@ NavigationStack {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+
+            Text(store.dataTransfer.cloudResetBackupRequirementText())
+                .font(.caption)
+                .foregroundStyle(
+                    store.dataTransfer.hasRecentSuccessfulBackup() ? Color.secondary : Color.red
+                )
         }
 
         Section {
@@ -281,6 +293,7 @@ NavigationStack {
     }
 
     private var deleteDisabled: Bool {
+        !store.dataTransfer.hasRecentSuccessfulBackup() ||
         !store.appearance.isAppLockEnabled ||
         store.appearance.isAppLockToggleInProgress ||
         store.cloud.isCloudDataResetAuthenticationInProgress ||

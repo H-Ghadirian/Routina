@@ -1,6 +1,8 @@
 import Foundation
 
 enum SettingsCloudEditor {
+    static let recentBackupRequiredMessage = "Save a backup within the last 24 hours before deleting iCloud data."
+
     static func beginSync(
         state: inout SettingsCloudState
     ) -> Bool {
@@ -26,6 +28,7 @@ enum SettingsCloudEditor {
 
     static func beginDataResetAuthentication(
         appLockEnabled: Bool,
+        hasRecentBackup: Bool,
         state: inout SettingsCloudState
     ) -> Bool {
         guard !state.isCloudSyncInProgress,
@@ -37,6 +40,11 @@ enum SettingsCloudEditor {
 
         guard state.cloudSyncAvailable else {
             state.cloudStatusMessage = "iCloud sync is disabled in this build."
+            return false
+        }
+
+        guard hasRecentBackup else {
+            state.cloudStatusMessage = recentBackupRequiredMessage
             return false
         }
 

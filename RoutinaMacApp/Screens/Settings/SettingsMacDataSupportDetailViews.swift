@@ -65,6 +65,12 @@ SettingsMacDetailShell(
         Text(store.dataTransfer.statusText)
             .font(.footnote)
             .foregroundStyle(.secondary)
+
+        Text(store.dataTransfer.backupFreshnessText())
+            .font(.footnote)
+            .foregroundStyle(
+                store.dataTransfer.hasRecentSuccessfulBackup() ? Color.secondary : Color.red
+            )
     }
 
     SettingsMacDetailCard(title: "iCloud Status") {
