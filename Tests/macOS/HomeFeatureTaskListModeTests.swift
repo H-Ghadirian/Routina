@@ -363,6 +363,23 @@ struct HomeFeatureTaskListModeTests {
     }
 
     @Test
+    func macNavigationRouter_normalizesMergedBackupSettingsSection() {
+        let persistedSections = LockIsolated<[SettingsMacSection?]>([])
+        let router = HomeFeatureMacNavigationRouter(
+            setHideUnavailableRoutines: { _ in },
+            persistTemporaryViewState: { state in
+                persistedSections.withValue { $0.append(state.selectedSettingsSection) }
+            }
+        )
+        var state = HomeFeature.State(selectedSettingsSection: .notifications)
+
+        _ = router.selectedSettingsSectionChanged(.backup, state: &state)
+
+        #expect(state.selectedSettingsSection == .iCloud)
+        #expect(persistedSections.value == [.iCloud])
+    }
+
+    @Test
     func macNavigationRouter_boardModeClearsRoutineSelection() {
         let routine = RoutineTask(name: "Meditate", scheduleMode: .fixedInterval, createdAt: nil)
         let router = HomeFeatureMacNavigationRouter(

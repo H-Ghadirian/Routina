@@ -79,7 +79,7 @@ struct HomeFeatureMacNavigationRouter {
         _ section: SettingsMacSection?,
         state: inout HomeFeature.State
     ) -> Effect<HomeFeature.Action> {
-        state.selectedSettingsSection = section
+        state.selectedSettingsSection = section?.resolvedNavigationSection
         persistTemporaryViewState(state)
         return .none
     }

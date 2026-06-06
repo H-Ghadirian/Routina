@@ -1518,7 +1518,8 @@ struct HomeFeature {
             state.macSidebarMode = normalizedMacSidebarMode(mode)
         }
         if let rawValue = restoredState.macSelectedSettingsSectionRawValue {
-            state.selectedSettingsSection = SettingsMacSection(rawValue: rawValue)
+            state.selectedSettingsSection = SettingsMacSection(rawValue: rawValue)?
+                .resolvedNavigationSection
         }
 
         if let rawValue = restoredState.taskListModeRawValue,

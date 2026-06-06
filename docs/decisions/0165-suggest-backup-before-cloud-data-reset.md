@@ -6,7 +6,7 @@
 
 ## Context
 
-The iCloud reset flow is destructive even with a typed password gate. A user who reaches this screen should be pushed toward creating a restorable backup before taking the final delete action.
+The iCloud reset flow is destructive even with an App Lock gate. A user who reaches this screen should be pushed toward creating a restorable backup before taking the final delete action.
 
 ## Decision
 
@@ -15,5 +15,5 @@ The cloud data reset confirmation presents backup as the first step. The confirm
 ## Consequences
 
 - Users see a recovery-oriented action before the destructive confirmation controls.
-- The reset password remains the final gate, but backup is the first visible path.
+- App Lock remains the final gate, but backup is the first visible path.
 - Future data-wide destructive flows should place backup or export options before irreversible actions when a recovery artifact can be created.

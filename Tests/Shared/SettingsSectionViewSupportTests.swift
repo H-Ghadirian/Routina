@@ -42,6 +42,18 @@ struct SettingsSectionViewSupportTests {
     }
 
     @Test
+    func visibleSectionsHideMergedBackupSection() {
+        let sections = SettingsSectionID.visibleSections(isGitFeaturesEnabled: false)
+        let compactSections = SettingsSectionID.compactSectionGroups(isGitFeaturesEnabled: false).flatMap { $0 }
+
+        #expect(!sections.contains(.backup))
+        #expect(!compactSections.contains(.backup))
+        #expect(sections.contains(.iCloud))
+        #expect(SettingsSectionID.iCloud.title == "iCloud & Backup")
+        #expect(SettingsSectionID.backup.resolvedNavigationSection == .iCloud)
+    }
+
+    @Test
     func compactSectionsIncludeShortcuts() {
         let compactSections = SettingsSectionID.compactSectionGroups(isGitFeaturesEnabled: false).flatMap { $0 }
 
@@ -119,5 +131,16 @@ struct SettingsSectionViewSupportTests {
 
         #expect(presentation.subtitle.contains("Email support"))
         #expect(presentation.subtitle.contains("Version 1.2.3"))
+    }
+
+    @Test
+    func rowPresentationBuildsMergedDataContinuitySummary() {
+        var state = SettingsFeatureState()
+        state.cloud.cloudSyncAvailable = true
+
+        let presentation = SettingsSectionID.iCloud.rowPresentation(in: state)
+
+        #expect(presentation.subtitle == "Sync, export, and import routine data")
+        #expect(presentation.value == nil)
     }
 }

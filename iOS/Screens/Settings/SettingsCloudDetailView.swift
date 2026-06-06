@@ -5,10 +5,12 @@ import UniformTypeIdentifiers
 
 struct SettingsCloudDetailView: View {
     let store: StoreOf<SettingsFeature>
+    @State private var isBackupExporterPresented = false
+    @State private var isBackupImporterPresented = false
 
     var body: some View {
 List {
-    Section("Actions") {
+    Section("iCloud") {
         Button {
             store.send(.syncNowTapped)
         } label: {
@@ -24,7 +26,23 @@ List {
         .disabled(actionsDisabled)
     }
 
-    Section("Status") {
+    Section("Data Backup") {
+        Button {
+            isBackupExporterPresented = true
+        } label: {
+            Label("Export Routine Data", systemImage: "square.and.arrow.down")
+        }
+        .disabled(store.dataTransfer.isDataTransferInProgress)
+
+        Button {
+            isBackupImporterPresented = true
+        } label: {
+            Label("Import Routine Data", systemImage: "square.and.arrow.up")
+        }
+        .disabled(store.dataTransfer.isDataTransferInProgress)
+    }
+
+    Section("iCloud Status") {
         if store.cloud.isCloudSyncInProgress ||
             store.cloud.isCloudDataResetAuthenticationInProgress ||
             store.cloud.isCloudDataResetInProgress {
@@ -35,6 +53,19 @@ List {
             }
         } else {
             Text(store.cloud.syncStatusText)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    Section("Backup Status") {
+        if store.dataTransfer.isDataTransferInProgress {
+            HStack(spacing: 10) {
+                ProgressView()
+                Text(store.dataTransfer.statusText)
+                    .foregroundStyle(.secondary)
+            }
+        } else {
+            Text(store.dataTransfer.statusText)
                 .foregroundStyle(.secondary)
         }
     }
@@ -59,10 +90,50 @@ List {
     }
 }
 .listStyle(.insetGrouped)
-.navigationTitle("iCloud")
+.navigationTitle("iCloud & Backup")
 .navigationBarTitleDisplayMode(.inline)
     .sheet(isPresented: cloudDataResetConfirmationBinding) {
         SettingsCloudDataResetConfirmationSheet(store: store)
+    }
+    .fileExporter(
+        isPresented: $isBackupExporterPresented,
+        document: SettingsIOSRoutineBackupExportDocument(),
+        contentType: .routinaBackupPackage,
+        defaultFilename: SettingsRoutineDataPersistence.defaultBackupFileName()
+    ) { result in
+        switch result {
+        case let .success(destinationURL):
+            store.send(.exportRoutineDataDestinationSelected(destinationURL))
+
+        case let .failure(error):
+            store.send(.routineDataTransferFinished(
+                success: false,
+                message: dataTransferFailureMessage(
+                    prefix: "Save",
+                    canceledMessage: "Save canceled.",
+                    error: error
+                )
+            ))
+        }
+    }
+    .fileImporter(
+        isPresented: $isBackupImporterPresented,
+        allowedContentTypes: [.routinaBackupPackage, .folder, .json]
+    ) { result in
+        switch result {
+        case let .success(sourceURL):
+            store.send(.importRoutineDataSourceSelected(sourceURL))
+
+        case let .failure(error):
+            store.send(.routineDataTransferFinished(
+                success: false,
+                message: dataTransferFailureMessage(
+                    prefix: "Load",
+                    canceledMessage: "Load canceled.",
+                    error: error
+                )
+            ))
+        }
     }
     }
 
@@ -78,6 +149,18 @@ List {
             get: { store.cloud.isCloudDataResetConfirmationPresented },
             set: { store.send(.setCloudDataResetConfirmation($0)) }
         )
+    }
+
+    private func dataTransferFailureMessage(
+        prefix: String,
+        canceledMessage: String,
+        error: Error
+    ) -> String {
+        let nsError = error as NSError
+        if nsError.domain == NSCocoaErrorDomain && nsError.code == NSUserCancelledError {
+            return canceledMessage
+        }
+        return "\(prefix) failed: \(error.localizedDescription)"
     }
 }
 
@@ -175,7 +258,7 @@ NavigationStack {
     }
     .fileExporter(
         isPresented: $isBackupExporterPresented,
-        document: SettingsIOSCloudResetBackupExportDocument(),
+        document: SettingsIOSRoutineBackupExportDocument(),
         contentType: .routinaBackupPackage,
         defaultFilename: SettingsRoutineDataPersistence.defaultBackupFileName()
     ) { result in
@@ -217,7 +300,7 @@ NavigationStack {
     }
 }
 
-private struct SettingsIOSCloudResetBackupExportDocument: FileDocument {
+private struct SettingsIOSRoutineBackupExportDocument: FileDocument {
     static var readableContentTypes: [UTType] { [.routinaBackupPackage] }
     static var writableContentTypes: [UTType] { [.routinaBackupPackage] }
 

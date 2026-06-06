@@ -42,7 +42,6 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
                 .shortcuts
             ],
             [
-                .backup,
                 .about
             ]
         ]
@@ -66,8 +65,22 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         if section == .support {
             return false
         }
+        if section == .backup {
+            return false
+        }
 
         return true
+    }
+
+    var resolvedNavigationSection: SettingsSectionID {
+        switch self {
+        case .support:
+            return .about
+        case .backup:
+            return .iCloud
+        default:
+            return self
+        }
     }
 
     var title: String {
@@ -80,7 +93,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         case .places:        return "Places"
         case .tags:          return "Tags"
         case .appearance:    return "Appearance"
-        case .iCloud:        return "iCloud"
+        case .iCloud:        return "iCloud & Backup"
         case .git:           return "Git"
         case .backup:        return "Data Backup"
         case .quickAdd:      return "Quick Add"
@@ -152,8 +165,8 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
 
         case .iCloud:
             return SettingsSectionRowPresentation(
-                subtitle: state.cloud.overviewSubtitle,
-                value: state.cloud.cloudSyncAvailable ? nil : "Off"
+                subtitle: dataContinuitySubtitle(in: state),
+                value: dataContinuityValue(in: state)
             )
 
         case .git:
@@ -181,7 +194,10 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
             )
 
         case .backup:
-            return SettingsSectionRowPresentation(subtitle: state.dataTransfer.overviewSubtitle)
+            return SettingsSectionRowPresentation(
+                subtitle: dataContinuitySubtitle(in: state),
+                value: dataContinuityValue(in: state)
+            )
 
         case .quickAdd:
             return SettingsSectionRowPresentation(subtitle: "Supported syntax and examples")
@@ -199,6 +215,40 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
 
     private func aboutAndSupportSubtitle(in state: SettingsFeatureState) -> String {
         "Email support • \(state.diagnostics.aboutOverviewSubtitle)"
+    }
+
+    private func dataContinuitySubtitle(in state: SettingsFeatureState) -> String {
+        if state.cloud.isCloudSyncInProgress ||
+            state.cloud.isCloudDataResetAuthenticationInProgress ||
+            state.cloud.isCloudDataResetInProgress ||
+            !state.cloud.cloudStatusMessage.isEmpty ||
+            !state.cloud.cloudSyncAvailable {
+            return state.cloud.overviewSubtitle
+        }
+
+        if state.dataTransfer.isDataTransferInProgress ||
+            !state.dataTransfer.dataTransferStatusMessage.isEmpty {
+            return state.dataTransfer.overviewSubtitle
+        }
+
+        return "Sync, export, and import routine data"
+    }
+
+    private func dataContinuityValue(in state: SettingsFeatureState) -> String? {
+        if !state.cloud.cloudSyncAvailable {
+            return "Off"
+        }
+        if state.cloud.isCloudSyncInProgress {
+            return "Syncing"
+        }
+        if state.cloud.isCloudDataResetAuthenticationInProgress ||
+            state.cloud.isCloudDataResetInProgress {
+            return "Reset"
+        }
+        if state.dataTransfer.isDataTransferInProgress {
+            return "Backup"
+        }
+        return nil
     }
 }
 

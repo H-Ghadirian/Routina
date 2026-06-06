@@ -4,13 +4,14 @@ import UniformTypeIdentifiers
 
 struct SettingsMacCloudDetailView: View {
     let store: StoreOf<SettingsFeature>
+    @State private var isBackupExporterPresented = false
 
     var body: some View {
 SettingsMacDetailShell(
-    title: "iCloud",
-    subtitle: "Keep your routines synced across devices and manage the cloud copy when needed."
+    title: "iCloud & Backup",
+    subtitle: "Sync routines across devices, save backup packages, and manage the cloud copy when needed."
 ) {
-    SettingsMacDetailCard(title: "Actions") {
+    SettingsMacDetailCard(title: "iCloud") {
         HStack(spacing: 10) {
             Button {
                 store.send(.syncNowTapped)
@@ -37,53 +38,7 @@ SettingsMacDetailShell(
         }
     }
 
-    SettingsMacDetailCard(title: "Status") {
-        Text(store.cloud.syncStatusText)
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-    }
-
-    SettingsMacDetailCard(title: "Estimated Usage") {
-        settingsInfoRow(title: "Estimated iCloud Data", value: store.cloud.usageTotalText)
-        settingsInfoRow(title: "Tasks", value: "\(store.cloud.cloudUsageEstimate.taskCount) • \(store.cloud.usageTaskPayloadText)")
-        settingsInfoRow(title: "Logs", value: "\(store.cloud.cloudUsageEstimate.logCount) • \(store.cloud.usageLogPayloadText)")
-        settingsInfoRow(title: "Places", value: "\(store.cloud.cloudUsageEstimate.placeCount) • \(store.cloud.usagePlacePayloadText)")
-        settingsInfoRow(title: "Goals", value: "\(store.cloud.cloudUsageEstimate.goalCount) • \(store.cloud.usageGoalPayloadText)")
-        settingsInfoRow(title: "Emotions", value: "\(store.cloud.cloudUsageEstimate.emotionLogCount) • \(store.cloud.usageEmotionPayloadText)")
-        settingsInfoRow(title: "Notes", value: "\(store.cloud.cloudUsageEstimate.noteCount) • \(store.cloud.usageNotePayloadText)")
-        settingsInfoRow(title: "Events", value: "\(store.cloud.cloudUsageEstimate.eventCount) • \(store.cloud.usageEventPayloadText)")
-        settingsInfoRow(title: "Images", value: "\(store.cloud.cloudUsageEstimate.imageCount) • \(store.cloud.usageImagePayloadText)")
-        settingsInfoRow(title: "Voice Notes", value: "\(store.cloud.cloudUsageEstimate.voiceNoteCount) • \(store.cloud.usageVoiceNotePayloadText)")
-
-        Text(store.cloud.usageSummaryText)
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-        Text(store.cloud.usageFootnoteText)
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-    }
-}
-    }
-
-    private var actionsDisabled: Bool {
-        store.cloud.isCloudSyncInProgress ||
-        store.cloud.isCloudDataResetAuthenticationInProgress ||
-        store.cloud.isCloudDataResetInProgress ||
-        !store.cloud.cloudSyncAvailable
-    }
-}
-
-struct SettingsMacBackupDetailView: View {
-    let store: StoreOf<SettingsFeature>
-
-    @State private var isBackupExporterPresented = false
-
-    var body: some View {
-SettingsMacDetailShell(
-    title: "Data Backup",
-    subtitle: "Save a full backup package or bring a previous backup back into Routina."
-) {
-    SettingsMacDetailCard(title: "Routine Data") {
+    SettingsMacDetailCard(title: "Data Backup") {
         HStack(spacing: 10) {
             Button {
                 isBackupExporterPresented = true
@@ -111,6 +66,32 @@ SettingsMacDetailShell(
             .font(.footnote)
             .foregroundStyle(.secondary)
     }
+
+    SettingsMacDetailCard(title: "iCloud Status") {
+        Text(store.cloud.syncStatusText)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+    }
+
+    SettingsMacDetailCard(title: "Estimated Usage") {
+        settingsInfoRow(title: "Estimated iCloud Data", value: store.cloud.usageTotalText)
+        settingsInfoRow(title: "Tasks", value: "\(store.cloud.cloudUsageEstimate.taskCount) • \(store.cloud.usageTaskPayloadText)")
+        settingsInfoRow(title: "Logs", value: "\(store.cloud.cloudUsageEstimate.logCount) • \(store.cloud.usageLogPayloadText)")
+        settingsInfoRow(title: "Places", value: "\(store.cloud.cloudUsageEstimate.placeCount) • \(store.cloud.usagePlacePayloadText)")
+        settingsInfoRow(title: "Goals", value: "\(store.cloud.cloudUsageEstimate.goalCount) • \(store.cloud.usageGoalPayloadText)")
+        settingsInfoRow(title: "Emotions", value: "\(store.cloud.cloudUsageEstimate.emotionLogCount) • \(store.cloud.usageEmotionPayloadText)")
+        settingsInfoRow(title: "Notes", value: "\(store.cloud.cloudUsageEstimate.noteCount) • \(store.cloud.usageNotePayloadText)")
+        settingsInfoRow(title: "Events", value: "\(store.cloud.cloudUsageEstimate.eventCount) • \(store.cloud.usageEventPayloadText)")
+        settingsInfoRow(title: "Images", value: "\(store.cloud.cloudUsageEstimate.imageCount) • \(store.cloud.usageImagePayloadText)")
+        settingsInfoRow(title: "Voice Notes", value: "\(store.cloud.cloudUsageEstimate.voiceNoteCount) • \(store.cloud.usageVoiceNotePayloadText)")
+
+        Text(store.cloud.usageSummaryText)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+        Text(store.cloud.usageFootnoteText)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+    }
 }
     .fileExporter(
         isPresented: $isBackupExporterPresented,
@@ -129,6 +110,13 @@ SettingsMacDetailShell(
             ))
         }
     }
+    }
+
+    private var actionsDisabled: Bool {
+        store.cloud.isCloudSyncInProgress ||
+        store.cloud.isCloudDataResetAuthenticationInProgress ||
+        store.cloud.isCloudDataResetInProgress ||
+        !store.cloud.cloudSyncAvailable
     }
 }
 

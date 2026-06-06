@@ -97,9 +97,9 @@ extension HomeTCAView {
             isGitFeaturesEnabled: settingsStore.appearance.isGitFeaturesEnabled
         )
         let candidate = store.selectedSettingsSection ?? .notifications
-        if candidate == .support { return .about }
-        guard visibleSections.contains(candidate) else { return .general }
-        return candidate
+        let resolvedSection = candidate.resolvedNavigationSection
+        guard visibleSections.contains(resolvedSection) else { return .general }
+        return resolvedSection
     }
 
     var macHasCustomFiltersApplied: Bool {

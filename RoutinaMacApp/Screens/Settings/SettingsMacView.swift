@@ -56,9 +56,9 @@ NavigationSplitView {
 
     private var selectedDetailSection: SettingsMacSection {
         let candidate = selectedSection ?? .notifications
-        if candidate == .support { return .about }
-        guard visibleSections.contains(candidate) else { return .general }
-        return candidate
+        let resolvedSection = candidate.resolvedNavigationSection
+        guard visibleSections.contains(resolvedSection) else { return .general }
+        return resolvedSection
     }
 
     private var visibleSections: [SettingsMacSection] {
@@ -94,12 +94,10 @@ struct SettingsMacDetailView: View {
             SettingsMacTagsDetailView(store: store)
         case .appearance:
             SettingsMacAppearanceDetailView(store: store)
-        case .iCloud:
+        case .iCloud, .backup:
             SettingsMacCloudDetailView(store: store)
         case .git:
             SettingsMacGitDetailView(store: store)
-        case .backup:
-            SettingsMacBackupDetailView(store: store)
         case .quickAdd:
             SettingsMacQuickAddDetailView()
         case .shortcuts:
