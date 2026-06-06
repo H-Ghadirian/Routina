@@ -28,7 +28,9 @@ SettingsMacDetailShell(
             .buttonStyle(.bordered)
             .disabled(actionsDisabled)
 
-            if store.cloud.isCloudSyncInProgress || store.cloud.isCloudDataResetInProgress {
+            if store.cloud.isCloudSyncInProgress ||
+                store.cloud.isCloudDataResetAuthenticationInProgress ||
+                store.cloud.isCloudDataResetInProgress {
                 ProgressView()
                     .controlSize(.small)
             }
@@ -65,6 +67,7 @@ SettingsMacDetailShell(
 
     private var actionsDisabled: Bool {
         store.cloud.isCloudSyncInProgress ||
+        store.cloud.isCloudDataResetAuthenticationInProgress ||
         store.cloud.isCloudDataResetInProgress ||
         !store.cloud.cloudSyncAvailable
     }

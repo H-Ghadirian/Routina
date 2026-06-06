@@ -73,49 +73,67 @@ struct SettingsFeatureTests {
     }
 
     @Test
-    func cloudDataReset_requiresMatchingDeletionPassword() {
+    func cloudDataReset_requiresAppLockBeforeAuthentication() {
         var state = SettingsCloudState(
             cloudSyncAvailable: true,
             isCloudDataResetConfirmationPresented: true
         )
 
-        #expect(!SettingsCloudEditor.prepareDataReset(
-            hasCloudContainerIdentifier: true,
+        #expect(!SettingsCloudEditor.beginDataResetAuthentication(
+            appLockEnabled: false,
             state: &state
         ))
         #expect(state.isCloudDataResetConfirmationPresented)
+        #expect(!state.isCloudDataResetAuthenticationInProgress)
         #expect(!state.isCloudDataResetInProgress)
-        #expect(state.cloudStatusMessage == "Create and re-enter a matching deletion password first.")
-
-        SettingsCloudEditor.setDataResetPassword("delete12", state: &state)
-        SettingsCloudEditor.setDataResetPasswordConfirmation("different12", state: &state)
-
-        #expect(!SettingsCloudEditor.prepareDataReset(
-            hasCloudContainerIdentifier: true,
-            state: &state
-        ))
-        #expect(state.isCloudDataResetConfirmationPresented)
-        #expect(!state.isCloudDataResetInProgress)
-        #expect(state.cloudStatusMessage == "Create and re-enter a matching deletion password first.")
+        #expect(state.cloudStatusMessage == "Turn on App Lock before deleting iCloud data.")
     }
 
     @Test
-    func cloudDataReset_matchingDeletionPasswordBeginsResetAndClearsDrafts() {
+    func cloudDataReset_appLockAuthenticationFailureStopsReset() {
         var state = SettingsCloudState(
             cloudSyncAvailable: true,
             isCloudDataResetConfirmationPresented: true
         )
-        SettingsCloudEditor.setDataResetPassword("delete12", state: &state)
-        SettingsCloudEditor.setDataResetPasswordConfirmation("delete12", state: &state)
+
+        #expect(SettingsCloudEditor.beginDataResetAuthentication(
+            appLockEnabled: true,
+            state: &state
+        ))
+        #expect(state.isCloudDataResetConfirmationPresented)
+        #expect(state.isCloudDataResetAuthenticationInProgress)
+        #expect(!state.isCloudDataResetInProgress)
+
+        #expect(!SettingsCloudEditor.finishDataResetAuthentication(
+            .failure("Authentication was canceled."),
+            state: &state
+        ))
+        #expect(state.isCloudDataResetConfirmationPresented)
+        #expect(!state.isCloudDataResetAuthenticationInProgress)
+        #expect(!state.isCloudDataResetInProgress)
+        #expect(state.cloudStatusMessage == "Authentication was canceled.")
+    }
+
+    @Test
+    func cloudDataReset_appLockAuthenticationSuccessAllowsReset() {
+        var state = SettingsCloudState(
+            cloudSyncAvailable: true,
+            isCloudDataResetConfirmationPresented: true
+        )
+
+        #expect(SettingsCloudEditor.beginDataResetAuthentication(
+            appLockEnabled: true,
+            state: &state
+        ))
+        #expect(SettingsCloudEditor.finishDataResetAuthentication(.success, state: &state))
 
         #expect(SettingsCloudEditor.prepareDataReset(
             hasCloudContainerIdentifier: true,
             state: &state
         ))
         #expect(!state.isCloudDataResetConfirmationPresented)
+        #expect(!state.isCloudDataResetAuthenticationInProgress)
         #expect(state.isCloudDataResetInProgress)
-        #expect(state.cloudDataResetPasswordDraft.isEmpty)
-        #expect(state.cloudDataResetPasswordConfirmationDraft.isEmpty)
         #expect(state.cloudStatusMessage == "Deleting iCloud data...")
     }
 
@@ -445,6 +463,43 @@ struct SettingsFeatureTests {
 
         #expect(persistedValue.value == nil)
         #expect(store.state.appearance.isAppLockEnabled == false)
+    }
+
+    @Test
+    func resetCloudDataConfirmed_authenticatesWithAppLockBeforeDeleting() async {
+        let context = makeInMemoryContext()
+        let authenticateReason = LockIsolated<String?>(nil)
+
+        let store = TestStore(
+            initialState: SettingsFeature.State(
+                appearance: .init(isAppLockEnabled: true),
+                cloud: .init(
+                    cloudSyncAvailable: true,
+                    isCloudDataResetConfirmationPresented: true
+                )
+            )
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.appSettingsClient.appLockEnabled = { true }
+            $0.deviceAuthenticationClient.authenticate = { reason in
+                authenticateReason.setValue(reason)
+                return .failure("Authentication was canceled.")
+            }
+        }
+
+        await store.send(.resetCloudDataConfirmed) {
+            $0.cloud.isCloudDataResetAuthenticationInProgress = true
+            $0.cloud.cloudStatusMessage = "Confirming App Lock..."
+        }
+
+        await store.receive(.cloudDataResetAuthenticationFinished(.failure("Authentication was canceled."))) {
+            $0.cloud.isCloudDataResetAuthenticationInProgress = false
+            $0.cloud.cloudStatusMessage = "Authentication was canceled."
+        }
+
+        #expect(authenticateReason.value == "Delete Routina iCloud data")
     }
 
     @Test

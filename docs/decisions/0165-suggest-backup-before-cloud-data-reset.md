@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-06-06
-- Refines: [0164 Require a Password for Cloud Data Reset](0164-require-password-for-cloud-data-reset.md)
+- Refines: [0166 Use App Lock for Cloud Data Reset](0166-use-app-lock-for-cloud-data-reset.md)
 
 ## Context
 
@@ -10,7 +10,7 @@ The iCloud reset flow is destructive even with a typed password gate. A user who
 
 ## Decision
 
-The cloud data reset confirmation presents backup as the first step. The confirmation sheet recommends saving a Routina backup, exposes a direct `Save Backup First` export action, and shows backup progress or the last backup result before the deletion password section.
+The cloud data reset confirmation presents backup as the first step. The confirmation sheet recommends saving a Routina backup, exposes a direct `Save Backup First` export action, and shows backup progress or the last backup result before the App Lock confirmation section.
 
 ## Consequences
 

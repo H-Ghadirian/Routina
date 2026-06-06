@@ -46,9 +46,8 @@ struct SettingsFeature {
         case deviceSessionsLoaded([RoutinaDeviceSessionSummary])
         case syncNowTapped
         case setCloudDataResetConfirmation(Bool)
-        case cloudDataResetPasswordChanged(String)
-        case cloudDataResetPasswordConfirmationChanged(String)
         case resetCloudDataConfirmed
+        case cloudDataResetAuthenticationFinished(DeviceAuthenticationResult)
         case setDeletePlaceConfirmation(Bool)
         case setDeleteTagConfirmation(Bool)
         case setTagRenameSheet(Bool)
@@ -411,16 +410,16 @@ struct SettingsFeature {
                 SettingsCloudEditor.setDataResetConfirmation(isPresented, state: &state.cloud)
                 return .none
 
-            case let .cloudDataResetPasswordChanged(password):
-                SettingsCloudEditor.setDataResetPassword(password, state: &state.cloud)
-                return .none
-
-            case let .cloudDataResetPasswordConfirmationChanged(password):
-                SettingsCloudEditor.setDataResetPasswordConfirmation(password, state: &state.cloud)
-                return .none
-
             case .resetCloudDataConfirmed:
-                return SettingsCloudActionExecution.beginDataReset(
+                return SettingsCloudActionExecution.beginDataResetAuthentication(
+                    state: &state.cloud,
+                    appLockEnabled: self.appSettingsClient.appLockEnabled(),
+                    deviceAuthenticationClient: self.deviceAuthenticationClient
+                )
+
+            case let .cloudDataResetAuthenticationFinished(result):
+                return SettingsCloudActionExecution.dataResetAuthenticationFinished(
+                    result,
                     cloudContainerIdentifier: AppEnvironment.cloudKitContainerIdentifier,
                     state: &state.cloud,
                     modelContext: self.modelContext

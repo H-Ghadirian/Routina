@@ -38,6 +38,43 @@ enum SettingsCloudActionExecution {
         )
     }
 
+    static func beginDataResetAuthentication(
+        state: inout SettingsCloudState,
+        appLockEnabled: Bool,
+        deviceAuthenticationClient: DeviceAuthenticationClient
+    ) -> Effect<SettingsFeature.Action> {
+        guard SettingsCloudEditor.beginDataResetAuthentication(
+            appLockEnabled: appLockEnabled,
+            state: &state
+        ) else {
+            return .none
+        }
+
+        return .run { send in
+            let result = await deviceAuthenticationClient.authenticate(
+                "Delete Routina iCloud data"
+            )
+            await send(.cloudDataResetAuthenticationFinished(result))
+        }
+    }
+
+    static func dataResetAuthenticationFinished(
+        _ result: DeviceAuthenticationResult,
+        cloudContainerIdentifier: String?,
+        state: inout SettingsCloudState,
+        modelContext: @escaping @MainActor @Sendable () -> ModelContext
+    ) -> Effect<SettingsFeature.Action> {
+        guard SettingsCloudEditor.finishDataResetAuthentication(result, state: &state) else {
+            return .none
+        }
+
+        return beginDataReset(
+            cloudContainerIdentifier: cloudContainerIdentifier,
+            state: &state,
+            modelContext: modelContext
+        )
+    }
+
     static func syncNow(
         modelContext: @escaping @MainActor @Sendable () -> ModelContext,
         cloudSyncClient: CloudSyncClient

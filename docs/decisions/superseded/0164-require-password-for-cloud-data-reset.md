@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-06-06
+- Superseded by: [0166 Use App Lock for Cloud Data Reset](../0166-use-app-lock-for-cloud-data-reset.md)
 
 ## Context
 

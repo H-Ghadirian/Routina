@@ -1,8 +1,6 @@
 import Foundation
 
 enum SettingsCloudEditor {
-    static let dataResetMinimumPasswordLength = 8
-
     static func beginSync(
         state: inout SettingsCloudState
     ) -> Bool {
@@ -24,21 +22,48 @@ enum SettingsCloudEditor {
         state: inout SettingsCloudState
     ) {
         state.isCloudDataResetConfirmationPresented = isPresented
-        clearDataResetPasswordDrafts(state: &state)
     }
 
-    static func setDataResetPassword(
-        _ password: String,
+    static func beginDataResetAuthentication(
+        appLockEnabled: Bool,
         state: inout SettingsCloudState
-    ) {
-        state.cloudDataResetPasswordDraft = password
+    ) -> Bool {
+        guard !state.isCloudSyncInProgress,
+              !state.isCloudDataResetInProgress,
+              !state.isCloudDataResetAuthenticationInProgress
+        else {
+            return false
+        }
+
+        guard state.cloudSyncAvailable else {
+            state.cloudStatusMessage = "iCloud sync is disabled in this build."
+            return false
+        }
+
+        guard appLockEnabled else {
+            state.cloudStatusMessage = "Turn on App Lock before deleting iCloud data."
+            return false
+        }
+
+        state.isCloudDataResetAuthenticationInProgress = true
+        state.cloudStatusMessage = "Confirming App Lock..."
+        return true
     }
 
-    static func setDataResetPasswordConfirmation(
-        _ password: String,
+    static func finishDataResetAuthentication(
+        _ result: DeviceAuthenticationResult,
         state: inout SettingsCloudState
-    ) {
-        state.cloudDataResetPasswordConfirmationDraft = password
+    ) -> Bool {
+        state.isCloudDataResetAuthenticationInProgress = false
+
+        switch result {
+        case .success:
+            state.cloudStatusMessage = ""
+            return true
+        case let .failure(message):
+            state.cloudStatusMessage = message
+            return false
+        }
     }
 
     static func prepareDataReset(
@@ -51,18 +76,12 @@ enum SettingsCloudEditor {
             return false
         }
 
-        guard state.isCloudDataResetPasswordReady else {
-            state.cloudStatusMessage = "Create and re-enter a matching deletion password first."
-            return false
-        }
-
         guard state.cloudSyncAvailable, hasCloudContainerIdentifier else {
             state.cloudStatusMessage = "iCloud sync is disabled in this build."
             return false
         }
 
         state.isCloudDataResetConfirmationPresented = false
-        clearDataResetPasswordDrafts(state: &state)
         state.isCloudDataResetInProgress = true
         state.cloudStatusMessage = "Deleting iCloud data..."
         return true
@@ -81,14 +100,6 @@ enum SettingsCloudEditor {
         state: inout SettingsCloudState
     ) {
         state.isCloudDataResetInProgress = false
-        clearDataResetPasswordDrafts(state: &state)
         state.cloudStatusMessage = message
-    }
-
-    private static func clearDataResetPasswordDrafts(
-        state: inout SettingsCloudState
-    ) {
-        state.cloudDataResetPasswordDraft = ""
-        state.cloudDataResetPasswordConfirmationDraft = ""
     }
 }

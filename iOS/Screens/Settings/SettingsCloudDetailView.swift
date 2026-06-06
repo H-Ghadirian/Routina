@@ -25,7 +25,9 @@ List {
     }
 
     Section("Status") {
-        if store.cloud.isCloudSyncInProgress || store.cloud.isCloudDataResetInProgress {
+        if store.cloud.isCloudSyncInProgress ||
+            store.cloud.isCloudDataResetAuthenticationInProgress ||
+            store.cloud.isCloudDataResetInProgress {
             HStack(spacing: 10) {
                 ProgressView()
                 Text(store.cloud.syncStatusText)
@@ -66,6 +68,7 @@ List {
 
     private var actionsDisabled: Bool {
         store.cloud.isCloudSyncInProgress ||
+        store.cloud.isCloudDataResetAuthenticationInProgress ||
         store.cloud.isCloudDataResetInProgress ||
         !store.cloud.cloudSyncAvailable
     }
@@ -116,15 +119,41 @@ NavigationStack {
                 .foregroundStyle(.secondary)
         }
 
-        Section("Deletion Password") {
-            SecureField("Create Password", text: passwordBinding)
-                .textContentType(.newPassword)
-            SecureField("Re-enter Password", text: passwordConfirmationBinding)
-                .textContentType(.newPassword)
+        Section("App Lock") {
+            if store.appearance.isAppLockEnabled {
+                Label("App Lock is on", systemImage: "lock.fill")
+                Text("Routina will ask for \(store.appearance.appLockMethodDescription) before deleting iCloud data.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                Text("Turn on App Lock before deleting iCloud data. Routina will use \(store.appearance.appLockMethodDescription) to confirm this action.")
+                    .foregroundStyle(.secondary)
 
-            Text(store.cloud.cloudDataResetPasswordStatusText)
-                .font(.caption)
-                .foregroundStyle(store.cloud.isCloudDataResetPasswordReady ? Color.secondary : Color.red)
+                Button {
+                    store.send(.appLockToggled(true))
+                } label: {
+                    Label("Turn On App Lock", systemImage: "lock")
+                }
+                .disabled(store.appearance.isAppLockToggleInProgress)
+            }
+
+            if store.appearance.isAppLockToggleInProgress ||
+                store.cloud.isCloudDataResetAuthenticationInProgress {
+                HStack(spacing: 10) {
+                    ProgressView()
+                    Text(store.appearance.isAppLockToggleInProgress ? "Turning on App Lock..." : "Confirming App Lock...")
+                        .foregroundStyle(.secondary)
+                }
+            } else if !store.appearance.appLockStatusMessage.isEmpty {
+                Text(store.appearance.appLockStatusMessage)
+                    .font(.caption)
+                    .foregroundStyle(store.appearance.isAppLockEnabled ? Color.secondary : Color.red)
+            } else if let reason = store.appearance.appLockUnavailableReason,
+                      !store.appearance.isAppLockEnabled {
+                Text(reason)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
         }
     }
     .navigationTitle("Delete iCloud Data")
@@ -141,7 +170,7 @@ NavigationStack {
             Button("Delete", role: .destructive) {
                 store.send(.resetCloudDataConfirmed)
             }
-            .disabled(!store.cloud.isCloudDataResetPasswordReady)
+            .disabled(deleteDisabled)
         }
     }
     .fileExporter(
@@ -168,18 +197,11 @@ NavigationStack {
 }
     }
 
-    private var passwordBinding: Binding<String> {
-        Binding(
-            get: { store.cloud.cloudDataResetPasswordDraft },
-            set: { store.send(.cloudDataResetPasswordChanged($0)) }
-        )
-    }
-
-    private var passwordConfirmationBinding: Binding<String> {
-        Binding(
-            get: { store.cloud.cloudDataResetPasswordConfirmationDraft },
-            set: { store.send(.cloudDataResetPasswordConfirmationChanged($0)) }
-        )
+    private var deleteDisabled: Bool {
+        !store.appearance.isAppLockEnabled ||
+        store.appearance.isAppLockToggleInProgress ||
+        store.cloud.isCloudDataResetAuthenticationInProgress ||
+        store.cloud.isCloudDataResetInProgress
     }
 
     private func dataTransferFailureMessage(
