@@ -59,6 +59,27 @@ extension SettingsCloudState {
         "Estimate based on local Routina data. Actual iCloud storage can be higher because CloudKit adds its own metadata and history."
     }
 
+    var isCloudDataResetPasswordReady: Bool {
+        cloudDataResetPasswordDraft.count >= SettingsCloudEditor.dataResetMinimumPasswordLength &&
+            cloudDataResetPasswordDraft == cloudDataResetPasswordConfirmationDraft
+    }
+
+    var cloudDataResetPasswordStatusText: String {
+        if cloudDataResetPasswordDraft.isEmpty && cloudDataResetPasswordConfirmationDraft.isEmpty {
+            return "Create a one-time deletion password, then re-enter it to unlock deletion."
+        }
+        if cloudDataResetPasswordDraft.count < SettingsCloudEditor.dataResetMinimumPasswordLength {
+            return "Use at least \(SettingsCloudEditor.dataResetMinimumPasswordLength) characters."
+        }
+        if cloudDataResetPasswordConfirmationDraft.isEmpty {
+            return "Re-enter the deletion password."
+        }
+        if cloudDataResetPasswordDraft != cloudDataResetPasswordConfirmationDraft {
+            return "Passwords do not match."
+        }
+        return "Deletion password matched. The password will not be saved."
+    }
+
     var overviewSubtitle: String {
         if isCloudSyncInProgress {
             return "Syncing with iCloud"

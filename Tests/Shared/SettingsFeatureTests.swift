@@ -73,6 +73,53 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func cloudDataReset_requiresMatchingDeletionPassword() {
+        var state = SettingsCloudState(
+            cloudSyncAvailable: true,
+            isCloudDataResetConfirmationPresented: true
+        )
+
+        #expect(!SettingsCloudEditor.prepareDataReset(
+            hasCloudContainerIdentifier: true,
+            state: &state
+        ))
+        #expect(state.isCloudDataResetConfirmationPresented)
+        #expect(!state.isCloudDataResetInProgress)
+        #expect(state.cloudStatusMessage == "Create and re-enter a matching deletion password first.")
+
+        SettingsCloudEditor.setDataResetPassword("delete12", state: &state)
+        SettingsCloudEditor.setDataResetPasswordConfirmation("different12", state: &state)
+
+        #expect(!SettingsCloudEditor.prepareDataReset(
+            hasCloudContainerIdentifier: true,
+            state: &state
+        ))
+        #expect(state.isCloudDataResetConfirmationPresented)
+        #expect(!state.isCloudDataResetInProgress)
+        #expect(state.cloudStatusMessage == "Create and re-enter a matching deletion password first.")
+    }
+
+    @Test
+    func cloudDataReset_matchingDeletionPasswordBeginsResetAndClearsDrafts() {
+        var state = SettingsCloudState(
+            cloudSyncAvailable: true,
+            isCloudDataResetConfirmationPresented: true
+        )
+        SettingsCloudEditor.setDataResetPassword("delete12", state: &state)
+        SettingsCloudEditor.setDataResetPasswordConfirmation("delete12", state: &state)
+
+        #expect(SettingsCloudEditor.prepareDataReset(
+            hasCloudContainerIdentifier: true,
+            state: &state
+        ))
+        #expect(!state.isCloudDataResetConfirmationPresented)
+        #expect(state.isCloudDataResetInProgress)
+        #expect(state.cloudDataResetPasswordDraft.isEmpty)
+        #expect(state.cloudDataResetPasswordConfirmationDraft.isEmpty)
+        #expect(state.cloudStatusMessage == "Deleting iCloud data...")
+    }
+
+    @Test
     func appIconOptionMappings_matchExpectedAlternateIconNames() {
         #expect(AppIconOption.orange.iOSAlternateIconName == nil)
         #expect(AppIconOption.yellow.iOSAlternateIconName == "AppIconYellow")

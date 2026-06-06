@@ -57,19 +57,9 @@ List {
 .listStyle(.insetGrouped)
 .navigationTitle("iCloud")
 .navigationBarTitleDisplayMode(.inline)
-.alert(
-    "Delete iCloud Data?",
-    isPresented: cloudDataResetConfirmationBinding
-) {
-    Button("Delete Data", role: .destructive) {
-        store.send(.resetCloudDataConfirmed)
+    .sheet(isPresented: cloudDataResetConfirmationBinding) {
+        SettingsCloudDataResetConfirmationSheet(store: store)
     }
-    Button("Cancel", role: .cancel) {
-        store.send(.setCloudDataResetConfirmation(false))
-    }
-} message: {
-    Text("This permanently deletes all Routina data from iCloud and from this device.")
-}
     }
 
     private var actionsDisabled: Bool {
@@ -82,6 +72,65 @@ List {
         Binding(
             get: { store.cloud.isCloudDataResetConfirmationPresented },
             set: { store.send(.setCloudDataResetConfirmation($0)) }
+        )
+    }
+}
+
+private struct SettingsCloudDataResetConfirmationSheet: View {
+    let store: StoreOf<SettingsFeature>
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+NavigationStack {
+    Form {
+        Section {
+            Text("This permanently deletes all Routina data from iCloud and from this device.")
+                .foregroundStyle(.secondary)
+        }
+
+        Section("Deletion Password") {
+            SecureField("Create Password", text: passwordBinding)
+                .textContentType(.newPassword)
+            SecureField("Re-enter Password", text: passwordConfirmationBinding)
+                .textContentType(.newPassword)
+
+            Text(store.cloud.cloudDataResetPasswordStatusText)
+                .font(.caption)
+                .foregroundStyle(store.cloud.isCloudDataResetPasswordReady ? Color.secondary : Color.red)
+        }
+    }
+    .navigationTitle("Delete iCloud Data")
+    .navigationBarTitleDisplayMode(.inline)
+    .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+            Button("Cancel") {
+                store.send(.setCloudDataResetConfirmation(false))
+                dismiss()
+            }
+        }
+
+        ToolbarItem(placement: .confirmationAction) {
+            Button("Delete", role: .destructive) {
+                store.send(.resetCloudDataConfirmed)
+            }
+            .disabled(!store.cloud.isCloudDataResetPasswordReady)
+        }
+    }
+}
+    }
+
+    private var passwordBinding: Binding<String> {
+        Binding(
+            get: { store.cloud.cloudDataResetPasswordDraft },
+            set: { store.send(.cloudDataResetPasswordChanged($0)) }
+        )
+    }
+
+    private var passwordConfirmationBinding: Binding<String> {
+        Binding(
+            get: { store.cloud.cloudDataResetPasswordConfirmationDraft },
+            set: { store.send(.cloudDataResetPasswordConfirmationChanged($0)) }
         )
     }
 }

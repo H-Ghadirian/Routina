@@ -85,6 +85,8 @@ struct SettingsCloudState: Equatable {
     var isCloudSyncInProgress: Bool = false
     var isCloudDataResetInProgress: Bool = false
     var isCloudDataResetConfirmationPresented: Bool = false
+    var cloudDataResetPasswordDraft: String = ""
+    var cloudDataResetPasswordConfirmationDraft: String = ""
     var cloudStatusMessage: String = ""
 }
 
