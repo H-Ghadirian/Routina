@@ -1,12 +1,5 @@
 import SwiftData
 import SwiftUI
-#if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
-import FamilyControls
-#endif
-#if os(macOS)
-import AppKit
-import UniformTypeIdentifiers
-#endif
 
 struct FocusSessionCard: View {
     @Environment(\.modelContext) private var modelContext
@@ -14,29 +7,9 @@ struct FocusSessionCard: View {
     @Query private var activeSleepSessions: [SleepSession]
     @State private var isExpanded: Bool
     @State private var isShowingAllHistory = false
-    @State private var isShieldControlsExpanded = false
     @State private var editingSession: FocusSession?
     @State private var editStartedAt = Date()
     @State private var editDurationMinutes = 25
-    #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
-    @AppStorage(
-        UserDefaultBoolValueKey.appSettingFocusShieldEnabled.rawValue,
-        store: SharedDefaults.app
-    ) private var isFocusShieldEnabled = false
-    @State private var focusShieldSelection = FocusShieldSupport.loadSelection()
-    @State private var blockedWebsiteDomains = FocusShieldSupport.loadBlockedWebsiteDomains()
-    @State private var isFocusShieldPickerPresented = false
-    @State private var isRequestingFocusShieldAuthorization = false
-    @State private var focusShieldStatusMessage: String?
-    #endif
-    #if os(macOS)
-    @AppStorage(
-        UserDefaultBoolValueKey.appSettingMacFocusAppBlockingEnabled.rawValue,
-        store: SharedDefaults.app
-    ) private var isMacFocusAppBlockingEnabled = true
-    @State private var macBlockedApps = FocusShieldSupport.loadMacBlockedApps()
-    @State private var macFocusShieldStatusMessage: String?
-    #endif
 
     let task: RoutineTask
     let sessions: [FocusSession]
@@ -218,7 +191,6 @@ struct FocusSessionCard: View {
         .onChange(of: task.id) { _, _ in
             isExpanded = isEmbedded
             isShowingAllHistory = false
-            isShieldControlsExpanded = false
         }
         .onChange(of: snapshot.completedSessionsForTask.count) { _, count in
             if count <= 3 {
@@ -226,44 +198,8 @@ struct FocusSessionCard: View {
             }
         }
         .task {
-            #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
-            blockedWebsiteDomains = FocusShieldSupport.loadBlockedWebsiteDomains()
-            #endif
             syncFocusShieldForCurrentContext()
         }
-        #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
-        .familyActivityPicker(
-            title: "Blocked During Protected Modes",
-            headerText: "Choose the apps, categories, and websites Routina should block during enabled protected modes.",
-            footerText: "Routina only receives private tokens for your choices.",
-            isPresented: $isFocusShieldPickerPresented,
-            selection: $focusShieldSelection
-        )
-        .onChange(of: focusShieldSelection) { _, selection in
-            FocusShieldSupport.saveSelection(selection)
-            focusShieldStatusMessage = selection.routinaSummaryText(
-                includingEnteredWebsiteCount: blockedWebsiteDomains.count
-            )
-            syncFocusShieldForCurrentContext()
-        }
-        .onChange(of: isFocusShieldEnabled) { _, _ in
-            if !isFocusShieldEnabled {
-                isShieldControlsExpanded = false
-            }
-            focusShieldStatusMessage = focusShieldSelection.routinaSummaryText(
-                includingEnteredWebsiteCount: blockedWebsiteDomains.count
-            )
-            syncFocusShieldForCurrentContext()
-        }
-        #elseif os(macOS)
-        .onChange(of: isMacFocusAppBlockingEnabled) { _, _ in
-            if !isMacFocusAppBlockingEnabled {
-                isShieldControlsExpanded = false
-            }
-            macFocusShieldStatusMessage = FocusShieldSupport.macBlockedAppsSummaryText(macBlockedApps)
-            syncFocusShieldForCurrentContext()
-        }
-        #endif
     }
 
     #if os(macOS)
@@ -353,12 +289,6 @@ struct FocusSessionCard: View {
                 }
             }
 
-            #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
-            focusShieldControls
-            #elseif os(macOS)
-            macFocusShieldControls
-            #endif
-
             Text(focusTrackingDescription)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -400,271 +330,6 @@ struct FocusSessionCard: View {
             .accessibilityLabel("More focus durations")
         }
     }
-
-    #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
-    private var focusShieldControls: some View {
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .center, spacing: 10) {
-                Toggle(isOn: $isFocusShieldEnabled) {
-                    Label("Block apps and websites", systemImage: "lock.shield")
-                        .font(.subheadline.weight(.semibold))
-                }
-                .toggleStyle(.switch)
-
-                Spacer(minLength: 8)
-
-                Text(isFocusShieldEnabled ? focusShieldControlSummary : "Off")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-
-                if isFocusShieldEnabled {
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.16)) {
-                            isShieldControlsExpanded.toggle()
-                        }
-                    } label: {
-                        Label("Blocking options", systemImage: "chevron.down")
-                    }
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                    .rotationEffect(.degrees(isShieldControlsExpanded ? 180 : 0))
-                    .accessibilityLabel(isShieldControlsExpanded ? "Hide blocking options" : "Show blocking options")
-                }
-            }
-
-            if isFocusShieldEnabled && isShieldControlsExpanded {
-                HStack(spacing: 8) {
-                    Button {
-                        requestFocusShieldAuthorization()
-                    } label: {
-                        Label(focusShieldAuthorizationButtonTitle, systemImage: "person.badge.key")
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(isRequestingFocusShieldAuthorization)
-
-                    Button {
-                        focusShieldSelection = FocusShieldSupport.loadSelection()
-                        isFocusShieldPickerPresented = true
-                    } label: {
-                        Label("Choose", systemImage: "slider.horizontal.3")
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(focusShieldAuthorizationState != .approved)
-                }
-
-                Text(focusShieldDescription)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(10)
-        .routinaGlassCard(cornerRadius: 10, tint: .teal, tintOpacity: 0.05)
-    }
-
-    private var focusShieldControlSummary: String {
-        switch focusShieldAuthorizationState {
-        case .approved:
-            return focusShieldSelection.routinaSummaryText(
-                includingEnteredWebsiteCount: blockedWebsiteDomains.count
-            )
-        case .denied:
-            return "Access off"
-        case .notDetermined:
-            return "Needs access"
-        case .unavailable:
-            return "Unavailable"
-        }
-    }
-
-    private var focusShieldAuthorizationState: FocusShieldAuthorizationState {
-        FocusShieldSupport.authorizationState()
-    }
-
-    private var focusShieldAuthorizationButtonTitle: String {
-        switch focusShieldAuthorizationState {
-        case .approved:
-            return "Allowed"
-        case .denied:
-            return "Allow Access"
-        case .notDetermined:
-            return "Allow Access"
-        case .unavailable:
-            return "Unavailable"
-        }
-    }
-
-    private var focusShieldDescription: String {
-        if let focusShieldStatusMessage {
-            return focusShieldStatusMessage
-        }
-
-        switch focusShieldAuthorizationState {
-        case .approved:
-            return focusShieldSelection.routinaSummaryText(
-                includingEnteredWebsiteCount: blockedWebsiteDomains.count
-            )
-        case .denied:
-            return "Screen Time access is off. Allow access to block selected apps and websites during enabled protected modes."
-        case .notDetermined:
-            return "Allow Screen Time access, then choose what to block during enabled protected modes."
-        case .unavailable:
-            return "App and website blocking is available on iPhone and iPad."
-        }
-    }
-
-    private func requestFocusShieldAuthorization() {
-        isRequestingFocusShieldAuthorization = true
-        Task { @MainActor in
-            do {
-                try await FocusShieldSupport.requestAuthorization()
-                focusShieldStatusMessage = FocusShieldSupport.authorizationState() == .approved
-                    ? focusShieldSelection.routinaSummaryText(
-                        includingEnteredWebsiteCount: blockedWebsiteDomains.count
-                    )
-                    : "Screen Time access was not approved."
-                syncFocusShieldForCurrentContext()
-            } catch {
-                focusShieldStatusMessage = "Screen Time access failed: \(error.localizedDescription)"
-            }
-            isRequestingFocusShieldAuthorization = false
-        }
-    }
-    #endif
-
-    #if os(macOS)
-    private var macFocusShieldControls: some View {
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .center, spacing: 10) {
-                Toggle(isOn: $isMacFocusAppBlockingEnabled) {
-                    Label("Block apps", systemImage: "lock.shield")
-                        .font(.subheadline.weight(.semibold))
-                }
-                .toggleStyle(.switch)
-
-                Spacer(minLength: 8)
-
-                Text(isMacFocusAppBlockingEnabled ? FocusShieldSupport.macBlockedAppsSummaryText(macBlockedApps) : "Off")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-
-                if isMacFocusAppBlockingEnabled {
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.16)) {
-                            isShieldControlsExpanded.toggle()
-                        }
-                    } label: {
-                        Label("Blocking options", systemImage: "chevron.down")
-                    }
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                    .rotationEffect(.degrees(isShieldControlsExpanded ? 180 : 0))
-                    .accessibilityLabel(isShieldControlsExpanded ? "Hide blocking options" : "Show blocking options")
-                }
-            }
-
-            if isMacFocusAppBlockingEnabled && isShieldControlsExpanded {
-                HStack(spacing: 8) {
-                    Button {
-                        chooseMacBlockedApps()
-                    } label: {
-                        Label("Choose Apps", systemImage: "plus.app")
-                    }
-                    .buttonStyle(.bordered)
-
-                    Button {
-                        macBlockedApps = []
-                        FocusShieldSupport.saveMacBlockedApps(macBlockedApps)
-                        macFocusShieldStatusMessage = FocusShieldSupport.macBlockedAppsSummaryText(macBlockedApps)
-                        syncFocusShieldForCurrentContext()
-                    } label: {
-                        Label("Clear", systemImage: "xmark.circle")
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(macBlockedApps.isEmpty)
-                }
-
-                if !macBlockedApps.isEmpty {
-                    VStack(alignment: .leading, spacing: 6) {
-                        ForEach(macBlockedApps) { app in
-                            HStack(spacing: 8) {
-                                Text(app.displayName)
-                                    .font(.caption.weight(.semibold))
-                                    .lineLimit(1)
-
-                                Spacer(minLength: 8)
-
-                                Button {
-                                    removeMacBlockedApp(app)
-                                } label: {
-                                    Label("Remove \(app.displayName)", systemImage: "minus.circle")
-                                }
-                                .labelStyle(.iconOnly)
-                                .buttonStyle(.plain)
-                                .foregroundStyle(.secondary)
-                                .help("Remove")
-                            }
-                        }
-                    }
-                }
-
-                Text(macFocusShieldDescription)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(10)
-        .routinaGlassCard(cornerRadius: 10, tint: .teal, tintOpacity: 0.05)
-    }
-
-    private var macFocusShieldDescription: String {
-        if let macFocusShieldStatusMessage {
-            return "\(macFocusShieldStatusMessage). Website blocking is only available through iOS Screen Time."
-        }
-
-        let appSummary = FocusShieldSupport.macBlockedAppsSummaryText(macBlockedApps)
-        return "\(appSummary). Routina closes selected Mac apps during enabled protected modes. Website blocking is only available through iOS Screen Time."
-    }
-
-    private func chooseMacBlockedApps() {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.applicationBundle]
-        panel.allowsMultipleSelection = true
-        panel.canChooseDirectories = false
-        panel.canChooseFiles = true
-        panel.message = "Choose apps to block during enabled protected modes."
-        panel.prompt = "Choose"
-
-        guard panel.runModal() == .OK else { return }
-
-        let newApps = panel.urls.compactMap(FocusShieldSupport.macBlockedApp(from:))
-        guard !newApps.isEmpty else {
-            macFocusShieldStatusMessage = "No valid apps selected"
-            return
-        }
-
-        macBlockedApps.append(contentsOf: newApps)
-        FocusShieldSupport.saveMacBlockedApps(macBlockedApps)
-        macBlockedApps = FocusShieldSupport.loadMacBlockedApps()
-        macFocusShieldStatusMessage = FocusShieldSupport.macBlockedAppsSummaryText(macBlockedApps)
-        syncFocusShieldForCurrentContext()
-    }
-
-    private func removeMacBlockedApp(_ app: MacFocusBlockedApp) {
-        macBlockedApps.removeAll { $0.id == app.id }
-        FocusShieldSupport.saveMacBlockedApps(macBlockedApps)
-        macBlockedApps = FocusShieldSupport.loadMacBlockedApps()
-        macFocusShieldStatusMessage = FocusShieldSupport.macBlockedAppsSummaryText(macBlockedApps)
-        syncFocusShieldForCurrentContext()
-    }
-    #endif
 
     private var focusTrackingDescription: String {
         if onCompletedDuration != nil {
@@ -754,12 +419,6 @@ struct FocusSessionCard: View {
                     }
                 }
             }
-
-            #if os(iOS) && canImport(FamilyControls) && canImport(ManagedSettings)
-            focusShieldControls
-            #elseif os(macOS)
-            macFocusShieldControls
-            #endif
         }
     }
 
