@@ -45,6 +45,23 @@ struct HomeIOSHomeToolbarContent: ToolbarContent {
                     action: onShowFilters
                 )
 
+                // Compact iPhone toolbars can elide later items; keep the core Home actions first.
+                topActionButton(
+                    title: "Check In",
+                    systemImage: "mappin.and.ellipse",
+                    tint: .teal,
+                    isHighlighted: false,
+                    action: onCheckIn
+                )
+
+                topActionButton(
+                    title: "Add Note",
+                    systemImage: "note.text",
+                    tint: .blue,
+                    isHighlighted: false,
+                    action: onAddNote
+                )
+
                 if showsSleepAction {
                     topActionButton(
                         title: "Going to sleep",
@@ -54,6 +71,14 @@ struct HomeIOSHomeToolbarContent: ToolbarContent {
                         action: onStartSleep
                     )
                 }
+
+                topActionButton(
+                    title: "Log Emotion",
+                    systemImage: "face.smiling",
+                    tint: .pink,
+                    isHighlighted: false,
+                    action: onAddEmotion
+                )
 
                 topActionButton(
                     title: "Start Away",
@@ -69,30 +94,6 @@ struct HomeIOSHomeToolbarContent: ToolbarContent {
                     tint: .teal,
                     isHighlighted: false,
                     action: onAddEvent
-                )
-
-                topActionButton(
-                    title: "Add Note",
-                    systemImage: "note.text",
-                    tint: .blue,
-                    isHighlighted: false,
-                    action: onAddNote
-                )
-
-                topActionButton(
-                    title: "Check In",
-                    systemImage: "mappin.and.ellipse",
-                    tint: .teal,
-                    isHighlighted: false,
-                    action: onCheckIn
-                )
-
-                topActionButton(
-                    title: "Log Emotion",
-                    systemImage: "face.smiling",
-                    tint: .pink,
-                    isHighlighted: false,
-                    action: onAddEmotion
                 )
             }
 
