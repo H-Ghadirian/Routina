@@ -152,12 +152,12 @@ struct SettingsMacShortcutsDetailView: View {
     ) private var quickAddShortcutRawValue = MacQuickAddShortcut.defaultValue.rawValue
 
     private let appShortcuts: [SettingsMacShortcutRowModel] = [
-        SettingsMacShortcutRowModel(title: "Quick Add", detail: "“Quick add in Routina” or “Add a task in Routina”", shortcut: "Shortcuts"),
-        SettingsMacShortcutRowModel(title: "Mark Done", detail: "“Mark task done in Routina” or “Complete a task in Routina”", shortcut: "Shortcuts"),
-        SettingsMacShortcutRowModel(title: "Start Focus", detail: "“Start focus in Routina” or “Focus with Routina”", shortcut: "Shortcuts"),
-        SettingsMacShortcutRowModel(title: "Sleep", detail: "“I am going to sleep in Routina” or “Start sleep mode in Routina”", shortcut: "Shortcuts"),
-        SettingsMacShortcutRowModel(title: "Wake Up", detail: "“I woke up in Routina” or “I am awake in Routina”", shortcut: "Shortcuts"),
-        SettingsMacShortcutRowModel(title: "Today", detail: "“What's due in Routina” or “Today in Routina”", shortcut: "Shortcuts")
+        SettingsMacShortcutRowModel(title: "Quick Add", detail: "“Quick add in Routina” or “Add a task in Routina”"),
+        SettingsMacShortcutRowModel(title: "Mark Done", detail: "“Mark task done in Routina” or “Complete a task in Routina”"),
+        SettingsMacShortcutRowModel(title: "Start Focus", detail: "“Start focus in Routina” or “Focus with Routina”"),
+        SettingsMacShortcutRowModel(title: "Sleep", detail: "“I am going to sleep in Routina” or “Start sleep mode in Routina”"),
+        SettingsMacShortcutRowModel(title: "Wake Up", detail: "“I woke up in Routina” or “I am awake in Routina”"),
+        SettingsMacShortcutRowModel(title: "Today", detail: "“What's due in Routina” or “Today in Routina”")
     ]
 
     var body: some View {
@@ -255,7 +255,7 @@ private struct SettingsMacShortcutRowModel: Identifiable {
     let id = UUID()
     let title: String
     let detail: String
-    let shortcut: String
+    var shortcut: String?
 }
 
 private struct SettingsMacShortcutRow: View {
@@ -275,10 +275,12 @@ private struct SettingsMacShortcutRow: View {
             }
             .layoutPriority(1)
 
-            Spacer(minLength: 12)
+            if let shortcut = shortcut.shortcut {
+                Spacer(minLength: 12)
 
-            SettingsMacShortcutKeyCluster(shortcut: shortcut.shortcut)
-                .frame(minWidth: 120, alignment: .trailing)
+                SettingsMacShortcutKeyCluster(shortcut: shortcut)
+                    .frame(minWidth: 120, alignment: .trailing)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 8)
@@ -309,7 +311,7 @@ private struct SettingsMacShortcutKeyCluster: View {
 
     private var tokens: [String] {
         switch shortcut {
-        case "Return", "Esc", "Shortcuts":
+        case "Return", "Esc":
             return [shortcut]
         default:
             return shortcut.map(String.init)
