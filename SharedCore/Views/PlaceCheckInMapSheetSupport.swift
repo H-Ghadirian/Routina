@@ -95,6 +95,7 @@ struct PlaceCheckInNewPlaceDraft: Identifiable, Equatable {
     var name = ""
     var radiusMeters = defaultRadiusMeters
     var statusMessage = ""
+    var sourceSessionID: UUID?
 }
 
 struct PlaceCheckInPlaceEditDraft: Identifiable, Equatable {

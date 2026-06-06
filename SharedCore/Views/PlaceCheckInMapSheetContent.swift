@@ -235,9 +235,11 @@ struct PlaceCheckInDayTimelineList: View {
     let sections: [PlaceCheckInDaySection]
     let calendar: Calendar
     let canFocusOnSession: (PlaceCheckInSession) -> Bool
+    let canSaveSessionAsPlace: (PlaceCheckInSession) -> Bool
     let onFocusSession: (PlaceCheckInSession) -> Void
     let onEditSession: (PlaceCheckInSession) -> Void
     let onDeleteSession: (PlaceCheckInSession) -> Void
+    let onSaveSessionAsPlace: (PlaceCheckInSession) -> Void
     let onConfirmAutomaticSession: (PlaceCheckInSession) -> Void
 
     var body: some View {
@@ -252,9 +254,11 @@ struct PlaceCheckInDayTimelineList: View {
                                 section: section,
                                 calendar: calendar,
                                 canFocusOnSession: canFocusOnSession,
+                                canSaveSessionAsPlace: canSaveSessionAsPlace,
                                 onFocusSession: onFocusSession,
                                 onEditSession: onEditSession,
                                 onDeleteSession: onDeleteSession,
+                                onSaveSessionAsPlace: onSaveSessionAsPlace,
                                 onConfirmAutomaticSession: onConfirmAutomaticSession
                             )
                         }
@@ -282,9 +286,11 @@ private struct PlaceCheckInDayTimelineSectionView: View {
     let section: PlaceCheckInDaySection
     let calendar: Calendar
     let canFocusOnSession: (PlaceCheckInSession) -> Bool
+    let canSaveSessionAsPlace: (PlaceCheckInSession) -> Bool
     let onFocusSession: (PlaceCheckInSession) -> Void
     let onEditSession: (PlaceCheckInSession) -> Void
     let onDeleteSession: (PlaceCheckInSession) -> Void
+    let onSaveSessionAsPlace: (PlaceCheckInSession) -> Void
     let onConfirmAutomaticSession: (PlaceCheckInSession) -> Void
 
     var body: some View {
@@ -300,9 +306,11 @@ private struct PlaceCheckInDayTimelineSectionView: View {
                     PlaceCheckInDayTimelineRow(
                         session: session,
                         canFocus: canFocusOnSession(session),
+                        canSaveAsPlace: canSaveSessionAsPlace(session),
                         onFocus: { onFocusSession(session) },
                         onEdit: { onEditSession(session) },
                         onDelete: { onDeleteSession(session) },
+                        onSaveAsPlace: { onSaveSessionAsPlace(session) },
                         onConfirm: { onConfirmAutomaticSession(session) }
                     )
                 }
@@ -314,9 +322,11 @@ private struct PlaceCheckInDayTimelineSectionView: View {
 private struct PlaceCheckInDayTimelineRow: View {
     let session: PlaceCheckInSession
     let canFocus: Bool
+    let canSaveAsPlace: Bool
     let onFocus: () -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
+    let onSaveAsPlace: () -> Void
     let onConfirm: () -> Void
 
     var body: some View {
@@ -343,9 +353,11 @@ private struct PlaceCheckInDayTimelineRow: View {
 
             PlaceCheckInSessionActionsMenu(
                 showsConfirm: session.requiresConfirmation,
+                showsSaveAsPlace: canSaveAsPlace,
                 onConfirm: onConfirm,
                 onEdit: onEdit,
-                onDelete: onDelete
+                onDelete: onDelete,
+                onSaveAsPlace: onSaveAsPlace
             )
         }
         .padding(.horizontal, 10)
@@ -367,6 +379,14 @@ private struct PlaceCheckInDayTimelineRow: View {
                 onEdit()
             } label: {
                 Label("Edit Check-In", systemImage: "pencil")
+            }
+
+            if canSaveAsPlace {
+                Button {
+                    onSaveAsPlace()
+                } label: {
+                    Label("Save as Place", systemImage: "mappin.and.ellipse")
+                }
             }
 
             Button(role: .destructive) {
@@ -438,6 +458,17 @@ private struct PlaceCheckInDayTimelineRow: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
+
+            if canSaveAsPlace {
+                Button {
+                    onSaveAsPlace()
+                } label: {
+                    Label("Save as Place", systemImage: "mappin.and.ellipse")
+                }
+                .font(.caption.weight(.semibold))
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
         }
     }
 
@@ -480,9 +511,11 @@ private struct PlaceCheckInDayTimelineRow: View {
 
 private struct PlaceCheckInSessionActionsMenu: View {
     let showsConfirm: Bool
+    let showsSaveAsPlace: Bool
     let onConfirm: () -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
+    let onSaveAsPlace: () -> Void
 
     var body: some View {
         Menu {
@@ -500,6 +533,14 @@ private struct PlaceCheckInSessionActionsMenu: View {
                 onEdit()
             } label: {
                 Label("Edit Check-In", systemImage: "pencil")
+            }
+
+            if showsSaveAsPlace {
+                Button {
+                    onSaveAsPlace()
+                } label: {
+                    Label("Save as Place", systemImage: "mappin.and.ellipse")
+                }
             }
 
             Button(role: .destructive) {

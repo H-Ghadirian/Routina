@@ -711,9 +711,11 @@ struct PlaceCheckInMapSheet: View {
             sections: daySections,
             calendar: calendar,
             canFocusOnSession: { canFocusOnSession($0) },
+            canSaveSessionAsPlace: { canSaveSessionAsPlace($0) },
             onFocusSession: { focusOnSession($0) },
             onEditSession: { beginEditing($0) },
             onDeleteSession: { confirmDelete($0) },
+            onSaveSessionAsPlace: { beginNewPlaceDraft(from: $0) },
             onConfirmAutomaticSession: { confirmAutomaticSession($0) }
         )
     }
@@ -905,6 +907,10 @@ struct PlaceCheckInMapSheet: View {
         session.coordinate != nil || place(for: session) != nil
     }
 
+    private func canSaveSessionAsPlace(_ session: PlaceCheckInSession) -> Bool {
+        session.placeID == nil && session.coordinate != nil
+    }
+
     private func place(for session: PlaceCheckInSession) -> RoutinePlace? {
         guard let placeID = session.placeID else { return nil }
         return places.first { $0.id == placeID }
@@ -936,6 +942,30 @@ struct PlaceCheckInMapSheet: View {
         selectedHistoryMarkerID = nil
         selectedPlaceID = nil
         errorText = nil
+    }
+
+    private func beginNewPlaceDraft(from session: PlaceCheckInSession) {
+        guard let coordinate = session.coordinate else {
+            errorText = "This check-in does not have a saved location."
+            return
+        }
+
+        var draft = PlaceCheckInNewPlaceDraft(coordinate: coordinate)
+        draft.name = suggestedNewPlaceName(for: session)
+        draft.sourceSessionID = session.id
+        newPlaceDraft = draft
+        selectedHistoryMarkerID = PlaceCheckInSupport.historyMapMarkerID(for: coordinate)
+        selectedPlaceID = nil
+        selectedMode = .checkIns
+        errorText = nil
+        focus(on: coordinate)
+    }
+
+    private func suggestedNewPlaceName(for session: PlaceCheckInSession) -> String {
+        if PlaceCheckInSupport.isGeneratedRawCurrentLocationName(session.placeName) {
+            return ""
+        }
+        return session.displayPlaceName
     }
 
     private func cancelNewPlaceDraft() {
@@ -990,6 +1020,14 @@ struct PlaceCheckInMapSheet: View {
                 in: modelContext
             )
             try modelContext.save()
+
+            if let sourceSessionID = draft.sourceSessionID {
+                _ = try PlaceCheckInSupport.linkSessionToPlace(
+                    sessionID: sourceSessionID,
+                    place: place,
+                    in: modelContext
+                )
+            }
 
             newPlaceDraft = nil
             selectedHistoryMarkerID = nil
@@ -1124,13 +1162,18 @@ struct PlaceCheckInMapSheet: View {
         }
 
         do {
-            _ = try PlaceCheckInSupport.checkInAtCurrentLocation(
+            let session = try PlaceCheckInSupport.checkInAtCurrentLocation(
                 coordinate: currentLocation,
                 horizontalAccuracyMeters: locationSnapshot.horizontalAccuracy,
                 activity: selectedActivity,
                 in: modelContext
             )
             errorText = nil
+            if canSaveSessionAsPlace(session) {
+                signalSuccess()
+                beginNewPlaceDraft(from: session)
+                return
+            }
             finishSuccessfulCheckIn()
         } catch {
             errorText = "Could not check in at current location."

@@ -140,11 +140,84 @@ struct PlaceCheckInSupportTests {
         )
 
         #expect(session.placeID == nil)
-        #expect(session.displayPlaceName == "Current Location")
+        #expect(session.displayPlaceName.hasPrefix("Check-in at "))
         #expect(session.coordinate == coordinate)
         #expect(session.horizontalAccuracyMeters == 18)
         #expect(session.placeRadiusMeters == nil)
         #expect(session.activity == .errands)
+    }
+
+    @MainActor
+    @Test
+    func checkInAtCurrentLocation_namesRawCoordinateNearSavedPlace() throws {
+        let context = makeInMemoryContext()
+        _ = makePlace(in: context, name: "Office", latitude: 52.5200, longitude: 13.4050, radiusMeters: 100)
+
+        let session = try PlaceCheckInSupport.checkInAtCurrentLocation(
+            coordinate: LocationCoordinate(latitude: 52.5230, longitude: 13.4050),
+            date: makeDate("2026-05-10T11:00:00Z"),
+            in: context
+        )
+
+        #expect(session.placeID == nil)
+        #expect(session.displayPlaceName == "Near Office")
+    }
+
+    @MainActor
+    @Test
+    func checkInAtCurrentLocation_reusesPreviouslyNamedRawLocation() throws {
+        let context = makeInMemoryContext()
+        let coordinate = LocationCoordinate(latitude: 48.8566, longitude: 2.3522)
+        context.insert(
+            PlaceCheckInSession(
+                placeID: nil,
+                placeName: "Favorite Cafe",
+                latitude: coordinate.latitude,
+                longitude: coordinate.longitude,
+                startedAt: makeDate("2026-05-09T11:00:00Z"),
+                endedAt: makeDate("2026-05-09T12:00:00Z")
+            )
+        )
+        try context.save()
+
+        let session = try PlaceCheckInSupport.checkInAtCurrentLocation(
+            coordinate: LocationCoordinate(latitude: 48.8567, longitude: 2.3521),
+            date: makeDate("2026-05-10T11:00:00Z"),
+            in: context
+        )
+
+        #expect(session.placeID == nil)
+        #expect(session.displayPlaceName == "Favorite Cafe")
+    }
+
+    @MainActor
+    @Test
+    func linkSessionToPlace_promotesRawCheckInToSavedPlace() throws {
+        let context = makeInMemoryContext()
+        let coordinate = LocationCoordinate(latitude: 48.8566, longitude: 2.3522)
+        let session = PlaceCheckInSession(
+            placeID: nil,
+            placeName: "Check-in at 11:00",
+            latitude: coordinate.latitude,
+            longitude: coordinate.longitude,
+            startedAt: makeDate("2026-05-10T11:00:00Z")
+        )
+        context.insert(session)
+        let cafe = makePlace(in: context, name: "Cafe", latitude: 48.8565, longitude: 2.3520, radiusMeters: 125)
+
+        let linked = try PlaceCheckInSupport.linkSessionToPlace(
+            sessionID: session.id,
+            place: cafe,
+            date: makeDate("2026-05-10T11:05:00Z"),
+            in: context
+        )
+
+        #expect(linked.id == session.id)
+        #expect(linked.placeID == cafe.id)
+        #expect(linked.displayPlaceName == "Cafe")
+        #expect(linked.coordinate == coordinate)
+        #expect(linked.placeRadiusMeters == 125)
+        #expect(linked.updatedAt == makeDate("2026-05-10T11:05:00Z"))
     }
 
     @MainActor

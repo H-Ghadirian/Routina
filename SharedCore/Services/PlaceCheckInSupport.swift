@@ -52,6 +52,8 @@ extension PlaceCheckInSessionEditError: LocalizedError {
 }
 
 enum PlaceCheckInSupport {
+    static let rawCurrentLocationName = "Current Location"
+
     @MainActor
     static func activeSession(in context: ModelContext) throws -> PlaceCheckInSession? {
         var descriptor = FetchDescriptor<PlaceCheckInSession>(
@@ -160,9 +162,17 @@ enum PlaceCheckInSupport {
         sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> PlaceCheckInSession {
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
+        let sessions = try context.fetch(FetchDescriptor<PlaceCheckInSession>())
         if let place = nearestContainingPlace(to: coordinate, places: places) {
             return try checkIn(at: place, activity: activity, date: date, in: context, sourceDevice: sourceDevice)
         }
+
+        let rawPlaceName = suggestedRawCurrentLocationName(
+            coordinate: coordinate,
+            places: places,
+            sessions: sessions,
+            date: date
+        )
 
         if
             let active = try activeSession(in: context),
@@ -172,7 +182,9 @@ enum PlaceCheckInSupport {
                 horizontalAccuracyMeters: horizontalAccuracyMeters
             )
         {
-            active.placeName = "Current Location"
+            if isGeneratedRawCurrentLocationName(active.placeName) {
+                active.placeName = rawPlaceName
+            }
             active.latitude = coordinate.latitude
             active.longitude = coordinate.longitude
             active.horizontalAccuracyMeters = horizontalAccuracyMeters.map { max($0, 0) }
@@ -196,7 +208,7 @@ enum PlaceCheckInSupport {
         try endActiveSessions(at: date, in: context, saves: false, sourceDevice: sourceDevice)
         let session = PlaceCheckInSession(
             placeID: nil,
-            placeName: "Current Location",
+            placeName: rawPlaceName,
             latitude: coordinate.latitude,
             longitude: coordinate.longitude,
             horizontalAccuracyMeters: horizontalAccuracyMeters,
@@ -208,6 +220,41 @@ enum PlaceCheckInSupport {
         context.insert(session)
         DeviceActivityRecorder.recordAction(
             .started,
+            entity: .placeCheckIn,
+            entityID: session.id,
+            entityTitle: session.displayPlaceName,
+            sourceDevice: sourceDevice,
+            at: date,
+            in: context
+        )
+        try context.save()
+        NotificationCenter.default.postRoutineDidUpdate()
+        return session
+    }
+
+    @MainActor
+    @discardableResult
+    static func linkSessionToPlace(
+        sessionID: UUID,
+        place: RoutinePlace,
+        date: Date = Date(),
+        in context: ModelContext,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
+    ) throws -> PlaceCheckInSession {
+        guard let session = try session(id: sessionID, in: context) else {
+            throw PlaceCheckInSessionEditError.missingSession
+        }
+
+        session.placeID = place.id
+        session.placeName = place.displayName
+        if session.latitude == nil || session.longitude == nil {
+            session.latitude = place.latitude
+            session.longitude = place.longitude
+        }
+        session.placeRadiusMeters = place.radiusMeters
+        session.updatedAt = date
+        DeviceActivityRecorder.recordAction(
+            .updated,
             entity: .placeCheckIn,
             entityID: session.id,
             entityTitle: session.displayPlaceName,
@@ -487,6 +534,36 @@ enum PlaceCheckInSupport {
             }
     }
 
+    static func suggestedRawCurrentLocationName(
+        coordinate: LocationCoordinate,
+        places: [RoutinePlace],
+        sessions: [PlaceCheckInSession],
+        date: Date,
+        calendar: Calendar = .current
+    ) -> String {
+        if let previousName = previousNamedRawLocationName(
+            coordinate: coordinate,
+            sessions: sessions
+        ) {
+            return previousName
+        }
+
+        if let nearbyPlace = nearestNearbyPlace(to: coordinate, places: places) {
+            return "Near \(nearbyPlace.displayName)"
+        }
+
+        return fallbackRawCurrentLocationName(date: date, calendar: calendar)
+    }
+
+    static func isGeneratedRawCurrentLocationName(_ name: String?) -> Bool {
+        guard let cleanedName = RoutinePlace.cleanedName(name) else {
+            return true
+        }
+        return cleanedName == rawCurrentLocationName
+            || cleanedName.hasPrefix("Check-in at ")
+            || cleanedName.hasPrefix("Near ")
+    }
+
     static func sessions(
         _ sessions: [PlaceCheckInSession],
         on day: Date,
@@ -652,6 +729,49 @@ enum PlaceCheckInSupport {
             horizontalAccuracyMeters ?? 0
         )
         return sessionCoordinate.distance(to: coordinate) <= tolerance
+    }
+
+    private static func previousNamedRawLocationName(
+        coordinate: LocationCoordinate,
+        sessions: [PlaceCheckInSession]
+    ) -> String? {
+        sessions
+            .filter { session in
+                guard session.placeID == nil,
+                      let sessionCoordinate = session.coordinate,
+                      !isGeneratedRawCurrentLocationName(session.placeName)
+                else { return false }
+                return sessionCoordinate.distance(to: coordinate) <= 150
+            }
+            .sorted(by: compareSessionsByRecentUse)
+            .compactMap { RoutinePlace.cleanedName($0.placeName) }
+            .first
+    }
+
+    private static func nearestNearbyPlace(
+        to coordinate: LocationCoordinate,
+        places: [RoutinePlace]
+    ) -> RoutinePlace? {
+        places
+            .filter { place in
+                let nearbyThreshold = max(place.radiusMeters + 500, 300)
+                return place.distance(to: coordinate) <= nearbyThreshold
+            }
+            .min { lhs, rhs in
+                lhs.distance(to: coordinate) < rhs.distance(to: coordinate)
+            }
+    }
+
+    private static func fallbackRawCurrentLocationName(
+        date: Date,
+        calendar: Calendar
+    ) -> String {
+        let components = calendar.dateComponents([.hour, .minute], from: date)
+        guard let hour = components.hour, let minute = components.minute else {
+            return rawCurrentLocationName
+        }
+
+        return "Check-in at \(String(format: "%02d:%02d", hour, minute))"
     }
 
     private static func sessionOverlaps(
