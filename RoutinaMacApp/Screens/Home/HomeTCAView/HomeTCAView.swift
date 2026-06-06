@@ -16,6 +16,12 @@ enum MacHomeProgressMode: String, CaseIterable, Identifiable {
     case adventure = "Adventure"
 
     var id: Self { self }
+
+    static let visibleModes: [Self] = [.stats]
+
+    var visibleSurfaceMode: Self {
+        Self.visibleModes.contains(self) ? self : .stats
+    }
 }
 
 struct MacSidebarTaskScrollRequest: Equatable {
@@ -243,25 +249,6 @@ homeContent
         noteAttachments
             .filter { $0.noteID == note.id }
             .sorted { $0.createdAt < $1.createdAt }
-    }
-
-    var homeAdventureProgression: HomeAdventureProgression {
-        HomeAdventureProgressionBuilder.build(
-            tasks: store.routineTasks,
-            logs: store.timelineLogs,
-            focusSessions: focusSessions,
-            sprintFocusSessions: sprintFocusSessions,
-            sleepSessions: sleepSessions,
-            awaySessions: awaySessions,
-            dayPlanBlocks: dayPlanBlocks,
-            emotionLogs: emotionLogs,
-            notes: notes,
-            events: events,
-            goals: store.routineGoals,
-            placeCheckInSessions: placeCheckInSessions,
-            referenceDate: Date(),
-            calendar: calendar
-        )
     }
 
     var addRoutineSheetBinding: Binding<Bool> {

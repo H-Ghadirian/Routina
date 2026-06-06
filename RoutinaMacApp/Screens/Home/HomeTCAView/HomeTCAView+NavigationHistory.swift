@@ -48,7 +48,7 @@ extension HomeTCAView {
 
         withAnimation(.easeInOut(duration: 0.18)) {
             macHomeDetailMode = snapshot.detailMode
-            macHomeProgressMode = snapshot.progressMode
+            macHomeProgressMode = snapshot.progressMode.visibleSurfaceMode
         }
 
         if snapshot.sidebarMode == .settings,

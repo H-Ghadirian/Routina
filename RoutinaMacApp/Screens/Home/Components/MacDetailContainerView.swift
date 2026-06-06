@@ -11,13 +11,11 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     let isTimelinePresented: Bool
     let isStatsPresented: Bool
     let isSettingsPresented: Bool
-    let adventureProgression: HomeAdventureProgression
     let settingsStore: StoreOf<SettingsFeature>
     let statsStore: StoreOf<StatsFeature>?
     let selectedSettingsSection: SettingsMacSection
     let dayPlanPlanner: DayPlanPlannerState
     @Binding var mainDetailMode: MacHomeDetailMode
-    @Binding var progressMode: MacHomeProgressMode
     @Binding var isBoardInspectorPresented: Bool
     @Binding var placeCheckInSelectedPlaceID: UUID?
     @Binding var placeCheckInSelectedHistoryMarkerID: PlaceCheckInHistoryMapMarker.ID?
@@ -144,22 +142,17 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
 
     @ViewBuilder
     private var progressDetailContent: some View {
-        switch progressMode {
-        case .stats:
-            if let statsStore {
-                StatsViewWrapper(
-                    store: statsStore,
-                    showsFocusTimerToolbarItem: false
-                )
-            } else {
-                ContentUnavailableView(
-                    "Stats unavailable",
-                    systemImage: "chart.bar.xaxis",
-                    description: Text("The stats store is not currently connected for this view.")
-                )
-            }
-        case .adventure:
-            HomeMacAdventureView(progression: adventureProgression)
+        if let statsStore {
+            StatsViewWrapper(
+                store: statsStore,
+                showsFocusTimerToolbarItem: false
+            )
+        } else {
+            ContentUnavailableView(
+                "Stats unavailable",
+                systemImage: "chart.bar.xaxis",
+                description: Text("The stats store is not currently connected for this view.")
+            )
         }
     }
 
@@ -319,7 +312,7 @@ private struct MacLiquidGlassHomeProgressModePicker: View {
     var body: some View {
         GlassEffectContainer(spacing: 4) {
             HStack(spacing: 4) {
-                ForEach(MacHomeProgressMode.allCases) { mode in
+                ForEach(MacHomeProgressMode.visibleModes) { mode in
                     segmentButton(for: mode)
                 }
             }

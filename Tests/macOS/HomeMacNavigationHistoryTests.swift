@@ -76,24 +76,14 @@ struct HomeMacNavigationHistoryTests {
     }
 
     @Test
-    func progressModeParticipatesInHistorySnapshots() {
-        let stats = snapshot(
-            sidebarMode: .stats,
-            detailMode: .details,
-            progressMode: .stats
-        )
+    func hiddenAdventureProgressModeNormalizesToStatsInHistorySnapshots() {
         let adventure = snapshot(
             sidebarMode: .stats,
             detailMode: .details,
             progressMode: .adventure
         )
-        var history = HomeMacNavigationHistory()
 
-        history.record(stats)
-        history.record(adventure)
-
-        #expect(history.goBack(from: adventure) == stats)
-        #expect(history.goForward(from: stats) == adventure)
+        #expect(adventure.progressMode == .stats)
     }
 
     private func snapshot(

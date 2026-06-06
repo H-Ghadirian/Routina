@@ -29,7 +29,7 @@ struct HomeMacNavigationSnapshot: Equatable {
             : .notifications
         self.selectedBoardScope = selectedBoardScope
         self.detailMode = detailMode
-        self.progressMode = progressMode
+        self.progressMode = progressMode.visibleSurfaceMode
     }
 
     private static func normalizedSelectedTaskID(

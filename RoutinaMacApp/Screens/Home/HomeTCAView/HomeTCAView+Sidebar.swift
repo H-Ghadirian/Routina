@@ -212,10 +212,10 @@ extension HomeTCAView {
 
     var macHomeProgressModeBinding: Binding<MacHomeProgressMode> {
         Binding(
-            get: { macHomeProgressMode },
+            get: { macHomeProgressMode.visibleSurfaceMode },
             set: { mode in
                 withAnimation(.easeInOut(duration: 0.18)) {
-                    macHomeProgressMode = mode
+                    macHomeProgressMode = mode.visibleSurfaceMode
                 }
             }
         )
@@ -287,12 +287,7 @@ extension HomeTCAView {
     }
 
     func openAdventureInSidebar() {
-        isEventEditorPresented = false
-        isEmotionLogEditorPresented = false
-        isNoteEditorPresented = false
-        isAwayStartPresented = false
-        macHomeProgressMode = .adventure
-        store.send(.macSidebarModeChanged(.adventure))
+        openStatsInSidebar()
     }
 
     func openAddNote() {

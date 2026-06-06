@@ -6,7 +6,6 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
     let onOpenRoutines: () -> Void
     let onOpenAddTask: () -> Void
     let onOpenQuickAdd: () -> Void
-    let onOpenAdventure: () -> Void
     let onOpenTimeline: () -> Void
     let onOpenStats: () -> Void
     let onModeChanged: (HomeFeature.MacSidebarMode) -> Void
@@ -17,7 +16,6 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
         onOpenRoutines: @escaping () -> Void,
         onOpenAddTask: @escaping () -> Void,
         onOpenQuickAdd: @escaping () -> Void,
-        onOpenAdventure: @escaping () -> Void,
         onOpenTimeline: @escaping () -> Void,
         onOpenStats: @escaping () -> Void,
         onModeChanged: @escaping (HomeFeature.MacSidebarMode) -> Void
@@ -27,7 +25,6 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
         self.onOpenRoutines = onOpenRoutines
         self.onOpenAddTask = onOpenAddTask
         self.onOpenQuickAdd = onOpenQuickAdd
-        self.onOpenAdventure = onOpenAdventure
         self.onOpenTimeline = onOpenTimeline
         self.onOpenStats = onOpenStats
         self.onModeChanged = onModeChanged
@@ -43,9 +40,6 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenQuickAdd)) { _ in
                 onOpenQuickAdd()
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenAdventureInSidebar)) { _ in
-                onOpenAdventure()
             }
             .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenTimelineInSidebar)) { _ in
                 onOpenTimeline()

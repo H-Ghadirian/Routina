@@ -23,6 +23,12 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func macProgressModes_hideAdventureFromVisibleReleaseModes() {
+        #expect(MacHomeProgressMode.visibleModes == [.stats])
+        #expect(MacHomeProgressMode.adventure.visibleSurfaceMode == .stats)
+    }
+
+    @Test
     func openNoteDeepLink_selectsTimelineSidebarEntryAndClearsTimelineFilters() async {
         let noteID = UUID()
         let selectedTaskID = UUID()

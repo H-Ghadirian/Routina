@@ -3,7 +3,6 @@ import SwiftUI
 
 extension Notification.Name {
     static let routinaMacOpenRoutinesInSidebar = Notification.Name("routina.mac.openRoutinesInSidebar")
-    static let routinaMacOpenAdventureInSidebar = Notification.Name("routina.mac.openAdventureInSidebar")
     static let routinaMacOpenTimelineInSidebar = Notification.Name("routina.mac.openTimelineInSidebar")
     static let routinaMacOpenStatsInSidebar = Notification.Name("routina.mac.openStatsInSidebar")
     static let routinaMacOpenAddTask = Notification.Name("routina.mac.openAddTask")
@@ -62,15 +61,10 @@ struct RoutineCommands: Commands {
             }
             .keyboardShortcut("2", modifiers: [.command, .option])
 
-            Button("Adventure") {
-                NotificationCenter.default.post(name: .routinaMacOpenAdventureInSidebar, object: nil)
-            }
-            .keyboardShortcut("3", modifiers: [.command, .option])
-
             Button("Timeline") {
                 NotificationCenter.default.post(name: .routinaMacOpenTimelineInSidebar, object: nil)
             }
-            .keyboardShortcut("4", modifiers: [.command, .option])
+            .keyboardShortcut("3", modifiers: [.command, .option])
         }
     }
 

@@ -3,12 +3,7 @@ import SwiftUI
 extension HomeTCAView {
     @ViewBuilder
     var macProgressSidebarView: some View {
-        switch macHomeProgressMode {
-        case .stats:
-            macStatsSidebarView
-        case .adventure:
-            HomeMacAdventureSidebarView(progression: homeAdventureProgression)
-        }
+        macStatsSidebarView
     }
 
     var macStatsSidebarView: some View {

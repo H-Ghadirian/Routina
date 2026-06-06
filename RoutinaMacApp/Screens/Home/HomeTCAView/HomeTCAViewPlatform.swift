@@ -55,6 +55,7 @@ extension HomeTCAView {
     private var showsProgressModePickerInToolbar: Bool {
         !store.isMacFilterDetailPresented
             && isMacStatsMode
+            && MacHomeProgressMode.visibleModes.count > 1
             && !isEmotionLogEditorPresented
             && !isNoteEditorPresented
             && !isAwayStartPresented
@@ -137,13 +138,11 @@ extension HomeTCAView {
                     isTimelinePresented: isMacTimelineMode,
                     isStatsPresented: isMacStatsMode,
                     isSettingsPresented: isMacSettingsMode,
-                    adventureProgression: homeAdventureProgression,
                     settingsStore: settingsStore,
                     statsStore: statsStore,
                     selectedSettingsSection: currentSelectedSettingsSection,
                     dayPlanPlanner: dayPlanPlanner,
                     mainDetailMode: mainDetailModeBinding,
-                    progressMode: macHomeProgressModeBinding,
                     isBoardInspectorPresented: macBoardInspectorPresentedBinding,
                     placeCheckInSelectedPlaceID: $placeCheckInSelectedPlaceID,
                     placeCheckInSelectedHistoryMarkerID: $placeCheckInSelectedHistoryMarkerID,
@@ -271,7 +270,6 @@ extension HomeTCAView {
             onOpenRoutines: showRoutinesInSidebar,
             onOpenAddTask: openAddTask,
             onOpenQuickAdd: showQuickAddSpotlight,
-            onOpenAdventure: openAdventureInSidebar,
             onOpenTimeline: openTimelineInSidebar,
             onOpenStats: openStatsInSidebar
         ) { mode in
