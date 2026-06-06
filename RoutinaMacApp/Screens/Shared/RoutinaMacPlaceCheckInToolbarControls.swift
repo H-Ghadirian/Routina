@@ -2,7 +2,7 @@ import SwiftData
 import SwiftUI
 
 struct RoutinaMacPlaceCheckInToolbarItem: ToolbarContent {
-    let onMapRequested: (PlaceCheckInActivity?) -> Void
+    let onMapRequested: () -> Void
 
     var body: some ToolbarContent {
         ToolbarItem(placement: .navigation) {
@@ -12,12 +12,11 @@ struct RoutinaMacPlaceCheckInToolbarItem: ToolbarContent {
 }
 
 private struct RoutinaMacPlaceCheckInToolbarButton: View {
-    let onMapRequested: (PlaceCheckInActivity?) -> Void
+    let onMapRequested: () -> Void
 
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \RoutinePlace.name) private var places: [RoutinePlace]
     @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) private var sessions: [PlaceCheckInSession]
-    @State private var selectedActivity: PlaceCheckInActivity?
     @State private var errorText: String?
 
     var body: some View {
@@ -28,12 +27,10 @@ private struct RoutinaMacPlaceCheckInToolbarButton: View {
                 Divider()
 
                 Button {
-                    onMapRequested(selectedActivity)
+                    onMapRequested()
                 } label: {
                     Label("Open Places", systemImage: "map")
                 }
-
-                activityMenuContent
 
                 if !suggestedPlaces.isEmpty {
                     Divider()
@@ -90,31 +87,8 @@ private struct RoutinaMacPlaceCheckInToolbarButton: View {
     private func statusContent(now: Date) -> some View {
         if let activeSession {
             Text(activeStatusText(for: activeSession, now: now))
-        } else if let selectedActivity {
-            Text("Next: \(selectedActivity.title)")
         } else {
             Text("Check in")
-        }
-    }
-
-    @ViewBuilder
-    private var activityMenuContent: some View {
-        Menu {
-            Button {
-                updateActivity(nil)
-            } label: {
-                Label("No Activity", systemImage: selectedActivity == nil ? "checkmark" : "tag")
-            }
-
-            ForEach(PlaceCheckInActivity.allCases) { activity in
-                Button {
-                    updateActivity(activity)
-                } label: {
-                    Label(activity.title, systemImage: activity.systemImage)
-                }
-            }
-        } label: {
-            Label(activityMenuTitle, systemImage: selectedActivity?.systemImage ?? "tag")
         }
     }
 
@@ -163,10 +137,6 @@ private struct RoutinaMacPlaceCheckInToolbarButton: View {
         return "Check In"
     }
 
-    private var activityMenuTitle: String {
-        selectedActivity?.title ?? "Activity"
-    }
-
     private func helpText(now: Date) -> String {
         if let activeSession {
             return activeStatusText(for: activeSession, now: now)
@@ -201,7 +171,7 @@ private struct RoutinaMacPlaceCheckInToolbarButton: View {
         do {
             _ = try PlaceCheckInSupport.checkIn(
                 at: place,
-                activity: selectedActivity,
+                activity: nil,
                 in: modelContext
             )
             errorText = nil
@@ -219,20 +189,6 @@ private struct RoutinaMacPlaceCheckInToolbarButton: View {
         } catch {
             errorText = "Could not end check-in."
             NSLog("Failed to end place check-in from toolbar: \(error.localizedDescription)")
-        }
-    }
-
-    @MainActor
-    private func updateActivity(_ activity: PlaceCheckInActivity?) {
-        selectedActivity = activity
-        guard activeSession != nil else { return }
-
-        do {
-            try PlaceCheckInSupport.updateActiveActivity(activity, in: modelContext)
-            errorText = nil
-        } catch {
-            errorText = "Could not update activity."
-            NSLog("Failed to update place check-in activity from toolbar: \(error.localizedDescription)")
         }
     }
 }

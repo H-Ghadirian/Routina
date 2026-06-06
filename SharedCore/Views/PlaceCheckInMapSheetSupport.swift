@@ -240,16 +240,6 @@ struct PlaceCheckInSessionEditor: View {
                 Section("Check-In") {
                     TextField("Place name", text: $draft.placeName)
 
-                    Picker("Activity", selection: $draft.activity) {
-                        Label("No Activity", systemImage: "tag.slash")
-                            .tag(nil as PlaceCheckInActivity?)
-
-                        ForEach(PlaceCheckInActivity.allCases) { activity in
-                            Label(activity.title, systemImage: activity.systemImage)
-                                .tag(Optional(activity))
-                        }
-                    }
-
                     TextField("Note", text: $draft.note, axis: .vertical)
                         .lineLimit(3, reservesSpace: true)
                 }

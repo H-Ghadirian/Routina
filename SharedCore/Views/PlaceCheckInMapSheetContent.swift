@@ -330,35 +330,42 @@ private struct PlaceCheckInDayTimelineRow: View {
     let onConfirm: () -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
-            Button {
-                onFocus()
-            } label: {
-                HStack(alignment: .top, spacing: 10) {
-                    timelineMarker
-                    content
-                    Spacer(minLength: 8)
-                    imagePreview
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 8) {
+                Button {
+                    onFocus()
+                } label: {
+                    HStack(alignment: .top, spacing: 10) {
+                        timelineMarker
+                        content
+                        Spacer(minLength: 8)
+                        imagePreview
 
-                    Image(systemName: canFocus ? "scope" : "mappin.slash")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        Image(systemName: canFocus ? "scope" : "mappin.slash")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .buttonStyle(.plain)
-            .disabled(!canFocus)
+                .buttonStyle(.plain)
+                .disabled(!canFocus)
 
-            PlaceCheckInSessionActionsMenu(
-                showsConfirm: session.requiresConfirmation,
-                showsSaveAsPlace: canSaveAsPlace,
-                onConfirm: onConfirm,
-                onEdit: onEdit,
-                onDelete: onDelete,
-                onSaveAsPlace: onSaveAsPlace
-            )
+                PlaceCheckInSessionActionsMenu(
+                    showsConfirm: session.requiresConfirmation,
+                    showsSaveAsPlace: canSaveAsPlace,
+                    onConfirm: onConfirm,
+                    onEdit: onEdit,
+                    onDelete: onDelete,
+                    onSaveAsPlace: onSaveAsPlace
+                )
+            }
+
+            if canSaveAsPlace {
+                saveAsPlaceButton
+                    .padding(.leading, 28)
+            }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 9)
@@ -458,18 +465,18 @@ private struct PlaceCheckInDayTimelineRow: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
-
-            if canSaveAsPlace {
-                Button {
-                    onSaveAsPlace()
-                } label: {
-                    Label("Save as Place", systemImage: "mappin.and.ellipse")
-                }
-                .font(.caption.weight(.semibold))
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-            }
         }
+    }
+
+    private var saveAsPlaceButton: some View {
+        Button {
+            onSaveAsPlace()
+        } label: {
+            Label("Save as Place", systemImage: "mappin.and.ellipse")
+        }
+        .font(.caption.weight(.semibold))
+        .buttonStyle(.bordered)
+        .controlSize(.small)
     }
 
     @ViewBuilder

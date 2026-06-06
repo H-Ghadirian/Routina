@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-enum PlaceCheckInActivity: String, CaseIterable, Codable, Equatable, Identifiable, Sendable {
+enum PlaceCheckInActivity: String, Codable, Equatable, Identifiable, Sendable {
     case work
     case commute
     case errands

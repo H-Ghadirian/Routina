@@ -6,12 +6,11 @@ import UIKit
 
 struct PlaceCheckInDockView: View {
     var maximumPlaceButtons = 4
-    var onMapRequested: ((PlaceCheckInActivity?) -> Void)?
+    var onMapRequested: (() -> Void)?
 
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \RoutinePlace.name) private var places: [RoutinePlace]
     @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) private var sessions: [PlaceCheckInSession]
-    @State private var selectedActivity: PlaceCheckInActivity?
     @State private var isMapSheetPresented = false
     @State private var errorText: String?
 
@@ -75,8 +74,6 @@ struct PlaceCheckInDockView: View {
                 .controlSize(.small)
                 .accessibilityLabel("Map check-in")
 
-                activityMenu
-
                 if activeSession != nil {
                     Button("End") {
                         endActiveSession()
@@ -124,32 +121,8 @@ struct PlaceCheckInDockView: View {
         .shadow(color: .black.opacity(0.10), radius: 12, y: 6)
         .accessibilityElement(children: .contain)
         .sheet(isPresented: $isMapSheetPresented) {
-            PlaceCheckInMapSheet(selectedActivity: selectedActivity)
+            PlaceCheckInMapSheet()
         }
-    }
-
-    private var activityMenu: some View {
-        Menu {
-            Button("No Activity") {
-                updateActivity(nil)
-            }
-
-            ForEach(PlaceCheckInActivity.allCases) { activity in
-                Button {
-                    updateActivity(activity)
-                } label: {
-                    Label(activity.title, systemImage: activity.systemImage)
-                }
-            }
-        } label: {
-            Image(systemName: "tag")
-                .font(.subheadline.weight(.semibold))
-                .frame(width: 30, height: 28)
-        }
-        .menuStyle(.button)
-        .buttonStyle(.bordered)
-        .controlSize(.small)
-        .accessibilityLabel("Place activity")
     }
 
     private var titleText: String {
@@ -170,9 +143,6 @@ struct PlaceCheckInDockView: View {
             return "\(duration) here"
         }
 
-        if let selectedActivity {
-            return "Next check-in tagged \(selectedActivity.title)"
-        }
         return "Record where you are now"
     }
 
@@ -187,7 +157,7 @@ struct PlaceCheckInDockView: View {
     @MainActor
     private func presentMap() {
         if let onMapRequested {
-            onMapRequested(selectedActivity)
+            onMapRequested()
         } else {
             isMapSheetPresented = true
         }
@@ -198,7 +168,7 @@ struct PlaceCheckInDockView: View {
         do {
             _ = try PlaceCheckInSupport.checkIn(
                 at: place,
-                activity: selectedActivity,
+                activity: nil,
                 in: modelContext
             )
             errorText = nil
@@ -218,20 +188,6 @@ struct PlaceCheckInDockView: View {
         } catch {
             errorText = "Could not end check-in."
             NSLog("Failed to end place check-in: \(error.localizedDescription)")
-        }
-    }
-
-    @MainActor
-    private func updateActivity(_ activity: PlaceCheckInActivity?) {
-        selectedActivity = activity
-        guard activeSession != nil else { return }
-
-        do {
-            try PlaceCheckInSupport.updateActiveActivity(activity, in: modelContext)
-            errorText = nil
-        } catch {
-            errorText = "Could not update activity."
-            NSLog("Failed to update place check-in activity: \(error.localizedDescription)")
         }
     }
 

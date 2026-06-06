@@ -13,7 +13,7 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     let showsProgressModePicker: Bool
     @Binding var detailMode: MacHomeDetailMode
     @Binding var progressMode: MacHomeProgressMode
-    let onPlaceCheckInMapRequested: (PlaceCheckInActivity?) -> Void
+    let onPlaceCheckInMapRequested: () -> Void
 
     var body: some ToolbarContent {
         switch mode {

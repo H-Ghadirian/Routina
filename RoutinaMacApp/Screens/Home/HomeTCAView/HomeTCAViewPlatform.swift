@@ -31,8 +31,8 @@ extension HomeTCAView {
             showsProgressModePicker: showsProgressModePickerInToolbar,
             detailMode: mainDetailModeBinding,
             progressMode: macHomeProgressModeBinding,
-            onPlaceCheckInMapRequested: { activity in
-                openMacPlacesWorkspace(activity: activity)
+            onPlaceCheckInMapRequested: {
+                openMacPlacesWorkspace()
             }
         )
     }
@@ -138,7 +138,6 @@ extension HomeTCAView {
                     isStatsPresented: isMacStatsMode,
                     isSettingsPresented: isMacSettingsMode,
                     adventureProgression: homeAdventureProgression,
-                    placeCheckInMapActivity: placeCheckInMapActivity,
                     settingsStore: settingsStore,
                     statsStore: statsStore,
                     selectedSettingsSection: currentSelectedSettingsSection,

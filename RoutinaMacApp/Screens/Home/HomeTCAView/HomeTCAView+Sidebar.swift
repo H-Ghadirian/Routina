@@ -200,7 +200,6 @@ extension HomeTCAView {
                     clearDayPlanUnplannedCompletedFilter()
                 }
                 if mode != .places {
-                    placeCheckInMapActivity = nil
                     placeCheckInSelectedPlaceID = nil
                     placeCheckInSelectedHistoryMarkerID = nil
                 }
@@ -222,12 +221,11 @@ extension HomeTCAView {
         )
     }
 
-    func openMacPlacesWorkspace(activity: PlaceCheckInActivity?) {
+    func openMacPlacesWorkspace() {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
         isAwayStartPresented = false
-        placeCheckInMapActivity = activity
         withAnimation(.easeInOut(duration: 0.18)) {
             store.send(.setMacFilterDetailPresented(false))
             clearDayPlanUnplannedCompletedFilter()
@@ -582,7 +580,6 @@ extension HomeTCAView {
             Divider()
 
             PlaceCheckInMapSheet(
-                selectedActivity: placeCheckInMapActivity,
                 showsNavigationChrome: false,
                 showsInlineHeader: false,
                 layout: .controlsOnly,
@@ -770,7 +767,7 @@ extension HomeTCAView {
         isAwayStartPresented = false
         store.send(.setSelectedTask(nil))
         store.send(.setAddRoutineSheet(false))
-        openMacPlacesWorkspace(activity: nil)
+        openMacPlacesWorkspace()
     }
 
     func openAwayFromAddMenu() {

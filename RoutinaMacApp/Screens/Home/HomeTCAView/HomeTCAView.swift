@@ -94,7 +94,6 @@ struct HomeTCAView: View {
     @State var dayPlanUnplannedCompletedFilterDate: Date?
     @State var macSidebarTaskScrollRequest: MacSidebarTaskScrollRequest?
     @State var isFinishedSprintsExpanded = false
-    @State var placeCheckInMapActivity: PlaceCheckInActivity?
     @State var placeCheckInSelectedPlaceID: UUID?
     @State var placeCheckInSelectedHistoryMarkerID: PlaceCheckInHistoryMapMarker.ID?
     @FocusState var isSprintCreationFieldFocused: Bool

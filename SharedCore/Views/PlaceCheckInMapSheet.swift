@@ -15,7 +15,6 @@ enum PlaceCheckInMapSheetLayout {
 }
 
 struct PlaceCheckInMapSheet: View {
-    let selectedActivity: PlaceCheckInActivity?
     private let showsNavigationChrome: Bool
     private let showsInlineHeader: Bool
     private let layout: PlaceCheckInMapSheetLayout
@@ -63,7 +62,6 @@ struct PlaceCheckInMapSheet: View {
     @State private var newPlaceDraft: PlaceCheckInNewPlaceDraft?
 
     init(
-        selectedActivity: PlaceCheckInActivity?,
         showsNavigationChrome: Bool = true,
         showsInlineHeader: Bool = true,
         layout: PlaceCheckInMapSheetLayout = .stack,
@@ -71,7 +69,6 @@ struct PlaceCheckInMapSheet: View {
         selectedPlaceID: Binding<UUID?>? = nil,
         selectedHistoryMarkerID: Binding<PlaceCheckInHistoryMapMarker.ID?>? = nil
     ) {
-        self.selectedActivity = selectedActivity
         self.showsNavigationChrome = showsNavigationChrome
         self.showsInlineHeader = showsInlineHeader
         self.layout = layout
@@ -315,6 +312,10 @@ struct PlaceCheckInMapSheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 currentLocationPanel
+
+                if newPlaceDraft != nil {
+                    newPlaceDraftPanel
+                }
 
                 Divider()
 
@@ -833,7 +834,7 @@ struct PlaceCheckInMapSheet: View {
             _ = try PlaceCheckInSupport.reconcileAutomaticCheckIn(
                 coordinate: coordinate,
                 horizontalAccuracyMeters: snapshot.horizontalAccuracy,
-                activity: selectedActivity,
+                activity: nil,
                 in: modelContext
             )
         } catch {
@@ -1165,7 +1166,7 @@ struct PlaceCheckInMapSheet: View {
             let session = try PlaceCheckInSupport.checkInAtCurrentLocation(
                 coordinate: currentLocation,
                 horizontalAccuracyMeters: locationSnapshot.horizontalAccuracy,
-                activity: selectedActivity,
+                activity: nil,
                 in: modelContext
             )
             errorText = nil
@@ -1186,7 +1187,7 @@ struct PlaceCheckInMapSheet: View {
         do {
             _ = try PlaceCheckInSupport.checkIn(
                 at: place,
-                activity: selectedActivity,
+                activity: nil,
                 in: modelContext
             )
             errorText = nil

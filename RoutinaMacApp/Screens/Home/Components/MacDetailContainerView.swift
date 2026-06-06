@@ -12,7 +12,6 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     let isStatsPresented: Bool
     let isSettingsPresented: Bool
     let adventureProgression: HomeAdventureProgression
-    let placeCheckInMapActivity: PlaceCheckInActivity?
     let settingsStore: StoreOf<SettingsFeature>
     let statsStore: StoreOf<StatsFeature>?
     let selectedSettingsSection: SettingsMacSection
@@ -103,7 +102,6 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
 
     private var placesDetailContent: some View {
         PlaceCheckInMapSheet(
-            selectedActivity: placeCheckInMapActivity,
             showsNavigationChrome: false,
             showsInlineHeader: false,
             layout: .mapOnly,

@@ -88,7 +88,7 @@ homeContent
                     AwaySessionStartSheet()
                 }
                 .sheet(isPresented: $isPlaceCheckInMapPresented) {
-                    PlaceCheckInMapSheet(selectedActivity: nil)
+                    PlaceCheckInMapSheet()
                 }
                 .alert("Stop focus timer?", isPresented: homeActionSleepWarningPresented) {
                     Button("Start Sleep", role: .destructive) {
