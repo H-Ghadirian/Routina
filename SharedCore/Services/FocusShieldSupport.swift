@@ -7,6 +7,7 @@ import ManagedSettings
 #endif
 #if os(macOS)
 import AppKit
+import ApplicationServices
 #endif
 
 enum FocusShieldAuthorizationState: Equatable {
@@ -184,6 +185,18 @@ enum FocusShieldSupport {
         }
     }
 
+    #if os(macOS)
+    @MainActor
+    static func macWebsiteBlockingStatus() -> MacWebsiteBlockingStatus {
+        MacWebsiteBlocker.shared.status
+    }
+
+    @MainActor
+    static func supportedMacWebsiteBrowserBundleIdentifiers() -> Set<String> {
+        MacWebsiteBlocker.supportedBrowserBundleIdentifiers
+    }
+    #endif
+
     @MainActor
     private static func activeBlockingMode(in context: ModelContext) -> ProtectionBlockingMode? {
         if hasActiveFocusSession(in: context) {
@@ -271,6 +284,25 @@ enum FocusShieldSupport {
 }
 
 #if os(macOS)
+extension Notification.Name {
+    static let routinaMacWebsiteBlockingStatusDidChange = Notification.Name(
+        "RoutinaMacWebsiteBlockingStatusDidChange"
+    )
+}
+
+struct MacWebsiteBlockingStatus: Equatable, Sendable {
+    enum Kind: Equatable, Sendable {
+        case inactive
+        case active
+        case warning
+    }
+
+    var kind: Kind
+    var message: String?
+
+    static let inactive = MacWebsiteBlockingStatus(kind: .inactive, message: nil)
+}
+
 struct MacFocusBlockedApp: Codable, Equatable, Hashable, Identifiable, Sendable {
     var bundleIdentifier: String
     var displayName: String
@@ -552,45 +584,133 @@ private final class MacFocusAppBlocker: NSObject {
 private final class MacWebsiteBlocker {
     static let shared = MacWebsiteBlocker()
 
+    private static let supportedBrowserTargets: [MacBrowserAutomationTarget] = [
+        MacBrowserAutomationTarget(
+            bundleIdentifier: "com.apple.Safari",
+            displayName: "Safari",
+            kind: .safari
+        ),
+        MacBrowserAutomationTarget(
+            bundleIdentifier: "com.apple.SafariTechnologyPreview",
+            displayName: "Safari Technology Preview",
+            kind: .safari
+        ),
+        MacBrowserAutomationTarget(
+            bundleIdentifier: "com.google.Chrome",
+            displayName: "Google Chrome",
+            kind: .chromium
+        ),
+        MacBrowserAutomationTarget(
+            bundleIdentifier: "com.google.Chrome.beta",
+            displayName: "Google Chrome Beta",
+            kind: .chromium
+        ),
+        MacBrowserAutomationTarget(
+            bundleIdentifier: "com.google.Chrome.dev",
+            displayName: "Google Chrome Dev",
+            kind: .chromium
+        ),
+        MacBrowserAutomationTarget(
+            bundleIdentifier: "com.google.Chrome.canary",
+            displayName: "Google Chrome Canary",
+            kind: .chromium
+        ),
+        MacBrowserAutomationTarget(
+            bundleIdentifier: "org.chromium.Chromium",
+            displayName: "Chromium",
+            kind: .chromium
+        ),
+        MacBrowserAutomationTarget(
+            bundleIdentifier: "com.brave.Browser",
+            displayName: "Brave",
+            kind: .chromium
+        ),
+        MacBrowserAutomationTarget(
+            bundleIdentifier: "com.microsoft.edgemac",
+            displayName: "Microsoft Edge",
+            kind: .chromium
+        ),
+        MacBrowserAutomationTarget(
+            bundleIdentifier: "com.microsoft.edgemac.Beta",
+            displayName: "Microsoft Edge Beta",
+            kind: .chromium
+        ),
+        MacBrowserAutomationTarget(
+            bundleIdentifier: "com.microsoft.edgemac.Dev",
+            displayName: "Microsoft Edge Dev",
+            kind: .chromium
+        ),
+        MacBrowserAutomationTarget(
+            bundleIdentifier: "com.microsoft.edgemac.Canary",
+            displayName: "Microsoft Edge Canary",
+            kind: .chromium
+        ),
+        MacBrowserAutomationTarget(
+            bundleIdentifier: "com.operasoftware.Opera",
+            displayName: "Opera",
+            kind: .chromium
+        ),
+        MacBrowserAutomationTarget(
+            bundleIdentifier: "com.operasoftware.OperaGX",
+            displayName: "Opera GX",
+            kind: .chromium
+        ),
+        MacBrowserAutomationTarget(
+            bundleIdentifier: "com.vivaldi.Vivaldi",
+            displayName: "Vivaldi",
+            kind: .chromium
+        ),
+        MacBrowserAutomationTarget(
+            bundleIdentifier: "company.thebrowser.Browser",
+            displayName: "Arc",
+            kind: .chromium
+        ),
+    ]
+
+    static var supportedBrowserBundleIdentifiers: Set<String> {
+        Set(supportedBrowserTargets.map(\.bundleIdentifier))
+    }
+
+    private static var supportedBrowsersByBundleID: [String: MacBrowserAutomationTarget] {
+        Dictionary(uniqueKeysWithValues: supportedBrowserTargets.map { ($0.bundleIdentifier, $0) })
+    }
+
+    private(set) var status: MacWebsiteBlockingStatus = .inactive
     private var blockedDomains: [BlockingWebsiteDomain] = []
     private var enforcementTask: Task<Void, Never>?
     private var automationCooldownUntilByBundleID: [String: Date] = [:]
-
-    private let supportedBrowsersByBundleID: [String: MacBrowserAutomationTarget] = {
-        let targets: [MacBrowserAutomationTarget] = [
-            MacBrowserAutomationTarget(bundleIdentifier: "com.apple.Safari", kind: .safari),
-            MacBrowserAutomationTarget(bundleIdentifier: "com.apple.SafariTechnologyPreview", kind: .safari),
-            MacBrowserAutomationTarget(bundleIdentifier: "com.google.Chrome", kind: .chromium),
-            MacBrowserAutomationTarget(bundleIdentifier: "com.google.Chrome.canary", kind: .chromium),
-            MacBrowserAutomationTarget(bundleIdentifier: "org.chromium.Chromium", kind: .chromium),
-            MacBrowserAutomationTarget(bundleIdentifier: "com.brave.Browser", kind: .chromium),
-            MacBrowserAutomationTarget(bundleIdentifier: "com.microsoft.edgemac", kind: .chromium),
-            MacBrowserAutomationTarget(bundleIdentifier: "com.microsoft.edgemac.Dev", kind: .chromium),
-            MacBrowserAutomationTarget(bundleIdentifier: "com.operasoftware.Opera", kind: .chromium),
-            MacBrowserAutomationTarget(bundleIdentifier: "com.vivaldi.Vivaldi", kind: .chromium),
-            MacBrowserAutomationTarget(bundleIdentifier: "company.thebrowser.Browser", kind: .chromium),
-        ]
-        return Dictionary(uniqueKeysWithValues: targets.map { ($0.bundleIdentifier, $0) })
-    }()
+    private var activeMode: ProtectionBlockingMode?
 
     private init() {}
 
     func sync(for activeMode: ProtectionBlockingMode) {
+        self.activeMode = activeMode
         blockedDomains = FocusShieldSupport.loadBlockedWebsiteDomains()
             .filter { $0.enabledModes.contains(activeMode) }
         guard !blockedDomains.isEmpty else {
-            stop()
+            stop(
+                status: MacWebsiteBlockingStatus(
+                    kind: .inactive,
+                    message: "No websites are enabled for \(activeMode.title)."
+                )
+            )
             return
         }
 
+        updateStatus(
+            kind: .active,
+            message: "Website blocking is active for \(activeMode.title) with \(domainCountText)."
+        )
         startEnforcementTaskIfNeeded()
         enforceFrontmostBrowser()
     }
 
-    func stop() {
+    func stop(status: MacWebsiteBlockingStatus = .inactive) {
+        activeMode = nil
         blockedDomains.removeAll()
         enforcementTask?.cancel()
         enforcementTask = nil
+        updateStatus(status)
     }
 
     private func startEnforcementTaskIfNeeded() {
@@ -607,21 +727,34 @@ private final class MacWebsiteBlocker {
     private func enforceFrontmostBrowser() {
         guard !blockedDomains.isEmpty,
               let bundleIdentifier = NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
-              let browser = supportedBrowsersByBundleID[bundleIdentifier],
+              let browser = Self.supportedBrowsersByBundleID[bundleIdentifier],
               canAttemptAutomation(for: bundleIdentifier)
         else {
             return
         }
 
         do {
+            try browser.requestAutomationPermission()
             guard let currentURL = try browser.currentURL(),
                   FocusShieldSupport.shouldBlockWebsiteURL(currentURL, against: blockedDomains) else {
+                updateStatus(
+                    kind: .active,
+                    message: "Website blocking is active for \(activeModeTitle) and watching \(browser.displayName)."
+                )
                 return
             }
 
             try browser.redirectCurrentTabToBlank()
+            updateStatus(
+                kind: .active,
+                message: "Blocked \(currentURL) in \(browser.displayName)."
+            )
         } catch {
             automationCooldownUntilByBundleID[bundleIdentifier] = Date().addingTimeInterval(30)
+            updateStatus(
+                kind: .warning,
+                message: "Routina could not control \(browser.displayName): \(error.localizedDescription)"
+            )
             NSLog("Mac website blocking could not control \(bundleIdentifier): \(error.localizedDescription)")
         }
     }
@@ -636,6 +769,24 @@ private final class MacWebsiteBlocker {
         }
         return false
     }
+
+    private var activeModeTitle: String {
+        activeMode?.title ?? "the active mode"
+    }
+
+    private var domainCountText: String {
+        blockedDomains.count == 1 ? "1 website" : "\(blockedDomains.count) websites"
+    }
+
+    private func updateStatus(kind: MacWebsiteBlockingStatus.Kind, message: String?) {
+        updateStatus(MacWebsiteBlockingStatus(kind: kind, message: message))
+    }
+
+    private func updateStatus(_ nextStatus: MacWebsiteBlockingStatus) {
+        guard status != nextStatus else { return }
+        status = nextStatus
+        NotificationCenter.default.post(name: .routinaMacWebsiteBlockingStatusDidChange, object: nil)
+    }
 }
 
 private struct MacBrowserAutomationTarget: Sendable {
@@ -645,7 +796,51 @@ private struct MacBrowserAutomationTarget: Sendable {
     }
 
     let bundleIdentifier: String
+    let displayName: String
     let kind: Kind
+
+    func requestAutomationPermission() throws {
+        var targetDescription = AEAddressDesc()
+        let createStatus = bundleIdentifier.withCString { pointer in
+            AECreateDesc(
+                DescType(typeApplicationBundleID),
+                pointer,
+                bundleIdentifier.utf8.count,
+                &targetDescription
+            )
+        }
+        guard createStatus == noErr else {
+            throw MacBrowserAutomationError(
+                message: "Could not prepare the Automation permission request (\(createStatus))."
+            )
+        }
+        defer {
+            AEDisposeDesc(&targetDescription)
+        }
+
+        let permissionStatus = AEDeterminePermissionToAutomateTarget(
+            &targetDescription,
+            typeWildCard,
+            typeWildCard,
+            true
+        )
+        switch permissionStatus {
+        case noErr:
+            return
+        case OSStatus(errAEEventNotPermitted):
+            throw MacBrowserAutomationError(
+                message: "Automation permission is denied. Allow Routina under System Settings > Privacy & Security > Automation."
+            )
+        case OSStatus(errAEEventWouldRequireUserConsent):
+            throw MacBrowserAutomationError(
+                message: "Automation permission is needed, but macOS did not show the permission prompt."
+            )
+        default:
+            throw MacBrowserAutomationError(
+                message: "Automation permission check failed (\(permissionStatus))."
+            )
+        }
+    }
 
     func currentURL() throws -> String? {
         let script: String

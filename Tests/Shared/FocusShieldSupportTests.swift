@@ -99,6 +99,16 @@ struct FocusShieldSupportTests {
         #expect(!FocusShieldSupport.shouldBlockWebsiteURL("https://youtube.com.example.org", against: domains))
     }
 
+    @Test @MainActor
+    func macWebsiteBlockingSupportsCommonChromeVariants() {
+        let bundleIdentifiers = FocusShieldSupport.supportedMacWebsiteBrowserBundleIdentifiers()
+
+        #expect(bundleIdentifiers.contains("com.google.Chrome"))
+        #expect(bundleIdentifiers.contains("com.google.Chrome.beta"))
+        #expect(bundleIdentifiers.contains("com.google.Chrome.dev"))
+        #expect(bundleIdentifiers.contains("com.google.Chrome.canary"))
+    }
+
     @Test
     func macFocusAppBlockingDefaultsToEnabledButHonorsUserDisable() {
         let key = UserDefaultBoolValueKey.appSettingMacFocusAppBlockingEnabled.rawValue

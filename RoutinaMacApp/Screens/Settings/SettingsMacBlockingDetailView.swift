@@ -20,6 +20,7 @@ struct SettingsMacBlockingDetailView: View {
     @State private var websiteDraft = ""
     @State private var statusMessage: String?
     @State private var websiteStatusMessage: String?
+    @State private var websiteBlockingStatus = FocusShieldSupport.macWebsiteBlockingStatus()
     #endif
 
     var body: some View {
@@ -120,6 +121,12 @@ struct SettingsMacBlockingDetailView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                if let message = websiteBlockingStatus.message {
+                    Label(message, systemImage: websiteBlockingStatusSystemImage)
+                        .font(.footnote)
+                        .foregroundStyle(websiteBlockingStatusForegroundStyle)
+                }
+
                 if blockedWebsiteDomains.isEmpty {
                     Text("No websites entered.")
                         .font(.footnote)
@@ -138,7 +145,7 @@ struct SettingsMacBlockingDetailView: View {
                     }
                 }
 
-                Text("Routina redirects matching tabs in Safari and common Chromium browsers while blocking is active. macOS may ask for permission to control each browser. Firefox support needs a future browser extension.")
+                Text("Routina redirects matching tabs in Safari, Chrome, Edge, Brave, Arc, Opera, Vivaldi, and Chromium while blocking is active. macOS may ask for permission to control each browser. Firefox support needs a future browser extension.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -149,8 +156,14 @@ struct SettingsMacBlockingDetailView: View {
             #if os(macOS)
             blockedApps = FocusShieldSupport.loadMacBlockedApps()
             blockedWebsiteDomains = FocusShieldSupport.loadBlockedWebsiteDomains()
+            websiteBlockingStatus = FocusShieldSupport.macWebsiteBlockingStatus()
             #endif
         }
+        #if os(macOS)
+        .onReceive(NotificationCenter.default.publisher(for: .routinaMacWebsiteBlockingStatusDidChange)) { _ in
+            websiteBlockingStatus = FocusShieldSupport.macWebsiteBlockingStatus()
+        }
+        #endif
     }
 
     private func binding(for mode: ProtectionBlockingMode) -> Binding<Bool> {
@@ -172,9 +185,29 @@ struct SettingsMacBlockingDetailView: View {
     #if os(macOS)
     private var macDescription: String {
         if let statusMessage {
-            return "\(statusMessage). Website blocking is only available through iOS Screen Time."
+            return "\(statusMessage). Routina closes selected Mac apps during enabled protected modes."
         }
-        return "\(FocusShieldSupport.macBlockedAppsSummaryText(blockedApps)). Routina closes selected Mac apps during enabled protected modes. Website blocking is only available through iOS Screen Time."
+        return "\(FocusShieldSupport.macBlockedAppsSummaryText(blockedApps)). Routina closes selected Mac apps during enabled protected modes."
+    }
+
+    private var websiteBlockingStatusSystemImage: String {
+        switch websiteBlockingStatus.kind {
+        case .inactive:
+            return "info.circle"
+        case .active:
+            return "checkmark.shield"
+        case .warning:
+            return "exclamationmark.triangle"
+        }
+    }
+
+    private var websiteBlockingStatusForegroundStyle: Color {
+        switch websiteBlockingStatus.kind {
+        case .warning:
+            return .orange
+        case .inactive, .active:
+            return .secondary
+        }
     }
 
     private func chooseBlockedApps() {
