@@ -267,6 +267,7 @@ These are ordered from newest resolver to oldest resolver.
 | [0159](0159-support-entered-website-blocking-on-ios.md) | Support Entered Website Blocking on iOS | Accepted | 2026-06-05 |
 | [0160](0160-support-mac-browser-website-blocking.md) | Support Mac Browser Website Blocking | Accepted | 2026-06-05 |
 | [0161](0161-hide-mac-adventure-for-release-stabilization.md) | Hide Mac Adventure for Release Stabilization | Accepted | 2026-06-06 |
+| [0162](0162-track-release-stabilization-branch-changes.md) | Track Release Stabilization Branch Changes | Accepted | 2026-06-06 |
 | [0163](0163-name-raw-current-location-check-ins-opportunistically.md) | Name Raw Current-Location Check-Ins Opportunistically | Accepted | 2026-06-06 |
 | [0164](superseded/0164-require-password-for-cloud-data-reset.md) | Require a Password for Cloud Data Reset | Superseded | 2026-06-06 |
 | [0165](0165-suggest-backup-before-cloud-data-reset.md) | Suggest Backup Before Cloud Data Reset | Accepted | 2026-06-06 |
