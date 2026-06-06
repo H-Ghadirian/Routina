@@ -100,54 +100,56 @@ struct SettingsMacBlockingDetailView: View {
                     .foregroundStyle(.secondary)
             }
 
-            SettingsMacDetailCard(title: "Websites") {
-                HStack(spacing: 10) {
-                    TextField("example.com", text: $websiteDraft)
-                        .textFieldStyle(.roundedBorder)
-                        .onSubmit(addWebsiteDomain)
+            if FocusShieldSupport.isMacWebsiteBlockingAvailable {
+                SettingsMacDetailCard(title: "Websites") {
+                    HStack(spacing: 10) {
+                        TextField("example.com", text: $websiteDraft)
+                            .textFieldStyle(.roundedBorder)
+                            .onSubmit(addWebsiteDomain)
 
-                    Button {
-                        addWebsiteDomain()
-                    } label: {
-                        Label("Add Website", systemImage: "plus.circle.fill")
+                        Button {
+                            addWebsiteDomain()
+                        } label: {
+                            Label("Add Website", systemImage: "plus.circle.fill")
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(websiteDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(websiteDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
 
-                if let websiteStatusMessage {
-                    Text(websiteStatusMessage)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
+                    if let websiteStatusMessage {
+                        Text(websiteStatusMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
 
-                if let message = websiteBlockingStatus.message {
-                    Label(message, systemImage: websiteBlockingStatusSystemImage)
-                        .font(.footnote)
-                        .foregroundStyle(websiteBlockingStatusForegroundStyle)
-                }
+                    if let message = websiteBlockingStatus.message {
+                        Label(message, systemImage: websiteBlockingStatusSystemImage)
+                            .font(.footnote)
+                            .foregroundStyle(websiteBlockingStatusForegroundStyle)
+                    }
 
-                if blockedWebsiteDomains.isEmpty {
-                    Text("No websites entered.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                } else {
-                    VStack(alignment: .leading, spacing: 10) {
-                        ForEach(blockedWebsiteDomains) { website in
-                            SettingsMacBlockedWebsiteRow(
-                                website: website,
-                                onRemove: { removeWebsiteDomain(website) },
-                                onModeChanged: { mode, isEnabled in
-                                    setWebsiteMode(mode, isEnabled: isEnabled, for: website)
-                                }
-                            )
+                    if blockedWebsiteDomains.isEmpty {
+                        Text("No websites entered.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        VStack(alignment: .leading, spacing: 10) {
+                            ForEach(blockedWebsiteDomains) { website in
+                                SettingsMacBlockedWebsiteRow(
+                                    website: website,
+                                    onRemove: { removeWebsiteDomain(website) },
+                                    onModeChanged: { mode, isEnabled in
+                                        setWebsiteMode(mode, isEnabled: isEnabled, for: website)
+                                    }
+                                )
+                            }
                         }
                     }
-                }
 
-                Text("Routina redirects matching tabs in Safari, Chrome, Edge, Brave, Arc, Opera, Vivaldi, and Chromium while blocking is active. macOS may ask for permission to control each browser. Firefox support needs a future browser extension.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    Text("Routina redirects matching tabs in Safari, Chrome, Edge, Brave, Arc, Opera, Vivaldi, and Chromium while blocking is active. macOS may ask for permission to control each browser. Firefox support needs a future browser extension.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
             #endif
         }

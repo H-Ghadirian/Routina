@@ -90,23 +90,33 @@ struct FocusShieldSupportTests {
         let domains = [
             BlockingWebsiteDomain(domain: "youtube.com"),
             BlockingWebsiteDomain(domain: "reddit.com"),
+            BlockingWebsiteDomain(domain: "coinmarketcap.com"),
         ]
 
         #expect(FocusShieldSupport.shouldBlockWebsiteURL("https://youtube.com/watch?v=123", against: domains))
         #expect(FocusShieldSupport.shouldBlockWebsiteURL("https://m.youtube.com/watch?v=123", against: domains))
         #expect(FocusShieldSupport.shouldBlockWebsiteURL("old.reddit.com", against: domains))
+        #expect(FocusShieldSupport.shouldBlockWebsiteURL("https://coinmarketcap.com/currencies/bitcoin/", against: domains))
+        #expect(FocusShieldSupport.shouldBlockWebsiteURL("https://www.coinmarketcap.com/", against: domains))
         #expect(!FocusShieldSupport.shouldBlockWebsiteURL("https://notyoutube.com", against: domains))
         #expect(!FocusShieldSupport.shouldBlockWebsiteURL("https://youtube.com.example.org", against: domains))
+        #expect(!FocusShieldSupport.shouldBlockWebsiteURL("https://fakecoinmarketcap.com", against: domains))
     }
 
     @Test @MainActor
-    func macWebsiteBlockingSupportsCommonChromeVariants() {
+    func macWebsiteBlockingSupportsCommonChromiumBrowsers() {
         let bundleIdentifiers = FocusShieldSupport.supportedMacWebsiteBrowserBundleIdentifiers()
 
         #expect(bundleIdentifiers.contains("com.google.Chrome"))
         #expect(bundleIdentifiers.contains("com.google.Chrome.beta"))
         #expect(bundleIdentifiers.contains("com.google.Chrome.dev"))
         #expect(bundleIdentifiers.contains("com.google.Chrome.canary"))
+        #expect(bundleIdentifiers.contains("com.microsoft.edgemac"))
+    }
+
+    @Test
+    func macWebsiteBlockingIsAvailableInSandboxAndTestMode() {
+        #expect(FocusShieldSupport.isMacWebsiteBlockingAvailable)
     }
 
     @Test

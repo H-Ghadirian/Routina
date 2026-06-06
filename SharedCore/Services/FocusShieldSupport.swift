@@ -65,6 +65,10 @@ enum FocusShieldSupport {
         _ = applyShieldForCurrentSelection(for: activeMode)
         #elseif os(macOS)
         MacFocusAppBlocker.shared.sync(for: activeMode)
+        guard isMacWebsiteBlockingAvailable else {
+            MacWebsiteBlocker.shared.stop()
+            return
+        }
         MacWebsiteBlocker.shared.sync(for: activeMode)
         #endif
     }
@@ -186,6 +190,10 @@ enum FocusShieldSupport {
     }
 
     #if os(macOS)
+    static var isMacWebsiteBlockingAvailable: Bool {
+        AppEnvironment.isSandboxDataMode
+    }
+
     @MainActor
     static func macWebsiteBlockingStatus() -> MacWebsiteBlockingStatus {
         MacWebsiteBlocker.shared.status
@@ -452,6 +460,7 @@ private final class MacFocusAppBlocker: NSObject {
     private var isObservingWorkspace = false
     private var enforcementTask: Task<Void, Never>?
     private var pendingForceTerminations: Set<pid_t> = []
+    private var enforcementActivity: NSObjectProtocol?
 
     private override init() {}
 
@@ -464,6 +473,7 @@ private final class MacFocusAppBlocker: NSObject {
         }
 
         blockedBundleIdentifiers = Set(apps.map(\.bundleIdentifier))
+        beginEnforcementActivityIfNeeded()
         installWorkspaceObserversIfNeeded()
         startEnforcementTaskIfNeeded()
         enforceRunningApplications()
@@ -489,6 +499,21 @@ private final class MacFocusAppBlocker: NSObject {
 
         enforcementTask?.cancel()
         enforcementTask = nil
+        endEnforcementActivity()
+    }
+
+    private func beginEnforcementActivityIfNeeded() {
+        guard enforcementActivity == nil else { return }
+        enforcementActivity = ProcessInfo.processInfo.beginActivity(
+            options: [.userInitiated],
+            reason: "Routina is enforcing app blocking during a protected mode."
+        )
+    }
+
+    private func endEnforcementActivity() {
+        guard let enforcementActivity else { return }
+        ProcessInfo.processInfo.endActivity(enforcementActivity)
+        self.enforcementActivity = nil
     }
 
     private func installWorkspaceObserversIfNeeded() {
@@ -532,8 +557,17 @@ private final class MacFocusAppBlocker: NSObject {
     }
 
     private func enforceRunningApplications() {
+        var seenProcessIdentifiers: Set<pid_t> = []
         for app in NSWorkspace.shared.runningApplications {
+            guard seenProcessIdentifiers.insert(app.processIdentifier).inserted else { continue }
             enforce(app)
+        }
+
+        for bundleIdentifier in blockedBundleIdentifiers {
+            for app in NSRunningApplication.runningApplications(withBundleIdentifier: bundleIdentifier) {
+                guard seenProcessIdentifiers.insert(app.processIdentifier).inserted else { continue }
+                enforce(app)
+            }
         }
     }
 
@@ -563,12 +597,13 @@ private final class MacFocusAppBlocker: NSObject {
         guard !pendingForceTerminations.contains(processIdentifier) else { return }
         pendingForceTerminations.insert(processIdentifier)
 
-        Task { @MainActor [weak self, weak app] in
-            try? await Task.sleep(nanoseconds: 1_000_000_000)
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 350_000_000)
             guard let self else { return }
             self.pendingForceTerminations.remove(processIdentifier)
             guard self.blockedBundleIdentifiers.contains(bundleIdentifier),
-                  let app,
+                  let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundleIdentifier)
+                    .first(where: { $0.processIdentifier == processIdentifier }),
                   app.isTerminated == false else {
                 return
             }
@@ -680,6 +715,8 @@ private final class MacWebsiteBlocker {
     private var enforcementTask: Task<Void, Never>?
     private var automationCooldownUntilByBundleID: [String: Date] = [:]
     private var activeMode: ProtectionBlockingMode?
+    private var isObservingWorkspace = false
+    private var enforcementActivity: NSObjectProtocol?
 
     private init() {}
 
@@ -701,6 +738,8 @@ private final class MacWebsiteBlocker {
             kind: .active,
             message: "Website blocking is active for \(activeMode.title) with \(domainCountText)."
         )
+        beginEnforcementActivityIfNeeded()
+        installWorkspaceObserversIfNeeded()
         startEnforcementTaskIfNeeded()
         enforceFrontmostBrowser()
     }
@@ -710,7 +749,52 @@ private final class MacWebsiteBlocker {
         blockedDomains.removeAll()
         enforcementTask?.cancel()
         enforcementTask = nil
+        if isObservingWorkspace {
+            NSWorkspace.shared.notificationCenter.removeObserver(
+                self,
+                name: NSWorkspace.didLaunchApplicationNotification,
+                object: nil
+            )
+            NSWorkspace.shared.notificationCenter.removeObserver(
+                self,
+                name: NSWorkspace.didActivateApplicationNotification,
+                object: nil
+            )
+            isObservingWorkspace = false
+        }
+        endEnforcementActivity()
         updateStatus(status)
+    }
+
+    private func beginEnforcementActivityIfNeeded() {
+        guard enforcementActivity == nil else { return }
+        enforcementActivity = ProcessInfo.processInfo.beginActivity(
+            options: [.userInitiated],
+            reason: "Routina is enforcing website blocking during a protected mode."
+        )
+    }
+
+    private func endEnforcementActivity() {
+        guard let enforcementActivity else { return }
+        ProcessInfo.processInfo.endActivity(enforcementActivity)
+        self.enforcementActivity = nil
+    }
+
+    private func installWorkspaceObserversIfNeeded() {
+        guard !isObservingWorkspace else { return }
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self,
+            selector: #selector(browserMayNeedWebsiteBlocking(_:)),
+            name: NSWorkspace.didLaunchApplicationNotification,
+            object: nil
+        )
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self,
+            selector: #selector(browserMayNeedWebsiteBlocking(_:)),
+            name: NSWorkspace.didActivateApplicationNotification,
+            object: nil
+        )
+        isObservingWorkspace = true
     }
 
     private func startEnforcementTaskIfNeeded() {
@@ -724,6 +808,20 @@ private final class MacWebsiteBlocker {
         }
     }
 
+    @objc private func browserMayNeedWebsiteBlocking(_ notification: Notification) {
+        guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+              let bundleIdentifier = app.bundleIdentifier,
+              Self.supportedBrowsersByBundleID[bundleIdentifier] != nil else {
+            return
+        }
+
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 150_000_000)
+            guard !Task.isCancelled else { return }
+            self?.enforceFrontmostBrowser()
+        }
+    }
+
     private func enforceFrontmostBrowser() {
         guard !blockedDomains.isEmpty,
               let bundleIdentifier = NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
@@ -732,11 +830,18 @@ private final class MacWebsiteBlocker {
         else {
             return
         }
+        guard !isBlockedAsMacApp(bundleIdentifier) else {
+            updateStatus(
+                kind: .active,
+                message: "Website blocking is active for \(activeModeTitle); \(browser.displayName) is blocked as an app."
+            )
+            return
+        }
 
         do {
             try browser.requestAutomationPermission()
-            guard let currentURL = try browser.currentURL(),
-                  FocusShieldSupport.shouldBlockWebsiteURL(currentURL, against: blockedDomains) else {
+            let blockedTabs = try browser.blockedTabs(against: blockedDomains)
+            guard !blockedTabs.isEmpty else {
                 updateStatus(
                     kind: .active,
                     message: "Website blocking is active for \(activeModeTitle) and watching \(browser.displayName)."
@@ -744,12 +849,21 @@ private final class MacWebsiteBlocker {
                 return
             }
 
-            try browser.redirectCurrentTabToBlank()
+            try browser.redirectTabsToBlank(blockedTabs)
+            let firstURL = blockedTabs.first?.url ?? "matching website"
             updateStatus(
                 kind: .active,
-                message: "Blocked \(currentURL) in \(browser.displayName)."
+                message: blockedTabs.count == 1
+                    ? "Blocked \(firstURL) in \(browser.displayName)."
+                    : "Blocked \(blockedTabs.count) tabs in \(browser.displayName)."
             )
         } catch {
+            if let automationError = error as? MacBrowserAutomationError,
+               automationError.isTransient {
+                NSLog("Mac website blocking deferred for \(bundleIdentifier): \(automationError.localizedDescription)")
+                return
+            }
+
             automationCooldownUntilByBundleID[bundleIdentifier] = Date().addingTimeInterval(30)
             updateStatus(
                 kind: .warning,
@@ -768,6 +882,18 @@ private final class MacWebsiteBlocker {
             return true
         }
         return false
+    }
+
+    private func isBlockedAsMacApp(_ bundleIdentifier: String) -> Bool {
+        guard let activeMode,
+              FocusShieldSupport.isMacFocusAppBlockingEnabled else {
+            return false
+        }
+
+        return FocusShieldSupport.loadMacBlockedApps().contains { app in
+            app.bundleIdentifier == bundleIdentifier
+                && app.enabledModes.contains(activeMode)
+        }
     }
 
     private var activeModeTitle: String {
@@ -835,6 +961,11 @@ private struct MacBrowserAutomationTarget: Sendable {
             throw MacBrowserAutomationError(
                 message: "Automation permission is needed, but macOS did not show the permission prompt."
             )
+        case -600:
+            throw MacBrowserAutomationError(
+                message: "Browser automation target is not available.",
+                isTransient: true
+            )
         default:
             throw MacBrowserAutomationError(
                 message: "Automation permission check failed (\(permissionStatus))."
@@ -842,45 +973,103 @@ private struct MacBrowserAutomationTarget: Sendable {
         }
     }
 
-    func currentURL() throws -> String? {
+    func blockedTabs(against domains: [BlockingWebsiteDomain]) throws -> [MacBrowserTabReference] {
+        try tabReferences().filter { tab in
+            FocusShieldSupport.shouldBlockWebsiteURL(tab.url, against: domains)
+        }
+    }
+
+    private func tabReferences() throws -> [MacBrowserTabReference] {
         let script: String
         switch kind {
         case .safari:
             script = """
             tell application id "\(bundleIdentifier)"
                 if (count of windows) is 0 then return ""
-                return URL of current tab of front window
+                set separator to character id 9
+                set oldDelimiters to AppleScript's text item delimiters
+                set tabRows to {}
+                repeat with windowIndex from 1 to count of windows
+                    repeat with tabIndex from 1 to count of tabs of window windowIndex
+                        set tabURL to URL of tab tabIndex of window windowIndex
+                        if tabURL is not "" then
+                            set end of tabRows to (windowIndex as text) & separator & (tabIndex as text) & separator & tabURL
+                        end if
+                    end repeat
+                end repeat
+                set AppleScript's text item delimiters to linefeed
+                set rowText to tabRows as text
+                set AppleScript's text item delimiters to oldDelimiters
+                return rowText
             end tell
             """
         case .chromium:
             script = """
             tell application id "\(bundleIdentifier)"
                 if (count of windows) is 0 then return ""
-                return URL of active tab of front window
+                set separator to character id 9
+                set oldDelimiters to AppleScript's text item delimiters
+                set tabRows to {}
+                repeat with windowIndex from 1 to count of windows
+                    repeat with tabIndex from 1 to count of tabs of window windowIndex
+                        set tabURL to URL of tab tabIndex of window windowIndex
+                        if tabURL is not "" then
+                            set end of tabRows to (windowIndex as text) & separator & (tabIndex as text) & separator & tabURL
+                        end if
+                    end repeat
+                end repeat
+                set AppleScript's text item delimiters to linefeed
+                set rowText to tabRows as text
+                set AppleScript's text item delimiters to oldDelimiters
+                return rowText
             end tell
             """
         }
 
         let value = try runAppleScript(script)
         let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return trimmed.isEmpty ? nil : trimmed
+        guard !trimmed.isEmpty else { return [] }
+
+        return trimmed
+            .split(separator: "\n", omittingEmptySubsequences: true)
+            .compactMap { line in
+                let parts = line.split(separator: "\t", maxSplits: 2, omittingEmptySubsequences: false)
+                guard parts.count == 3,
+                      let windowIndex = Int(parts[0]),
+                      let tabIndex = Int(parts[1]) else {
+                    return nil
+                }
+
+                let url = String(parts[2]).trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !url.isEmpty else { return nil }
+                return MacBrowserTabReference(windowIndex: windowIndex, tabIndex: tabIndex, url: url)
+            }
     }
 
-    func redirectCurrentTabToBlank() throws {
+    func redirectTabsToBlank(_ tabs: [MacBrowserTabReference]) throws {
+        guard !tabs.isEmpty else { return }
+
+        let commands = tabs.map { tab in
+            """
+            if (count of windows) >= \(tab.windowIndex) and (count of tabs of window \(tab.windowIndex)) >= \(tab.tabIndex) then
+                set URL of tab \(tab.tabIndex) of window \(tab.windowIndex) to "about:blank"
+            end if
+            """
+        }
+        .joined(separator: "\n")
+
         let script: String
         switch kind {
         case .safari:
             script = """
             tell application id "\(bundleIdentifier)"
-                if (count of windows) is 0 then return
-                set URL of current tab of front window to "about:blank"
+                \(commands)
             end tell
             """
         case .chromium:
             script = """
             tell application id "\(bundleIdentifier)"
-                if (count of windows) is 0 then return
-                set URL of active tab of front window to "about:blank"
+                \(commands)
             end tell
             """
         }
@@ -896,8 +1085,20 @@ private struct MacBrowserAutomationTarget: Sendable {
 
         let result = script.executeAndReturnError(&errorInfo)
         if let errorInfo {
+            if let errorNumber = errorInfo[NSAppleScript.errorNumber] as? NSNumber,
+               errorNumber.int32Value == -600 {
+                throw MacBrowserAutomationError(
+                    message: "Browser automation target is not available.",
+                    isTransient: true
+                )
+            }
+
             let message = errorInfo[NSAppleScript.errorMessage] as? String
                 ?? "Browser automation was not allowed."
+            if message.localizedCaseInsensitiveContains("isn't running")
+                || message.localizedCaseInsensitiveContains("not running") {
+                throw MacBrowserAutomationError(message: message, isTransient: true)
+            }
             throw MacBrowserAutomationError(message: message)
         }
 
@@ -905,8 +1106,15 @@ private struct MacBrowserAutomationTarget: Sendable {
     }
 }
 
+private struct MacBrowserTabReference: Equatable {
+    var windowIndex: Int
+    var tabIndex: Int
+    var url: String
+}
+
 private struct MacBrowserAutomationError: LocalizedError {
     var message: String
+    var isTransient = false
 
     var errorDescription: String? {
         message
