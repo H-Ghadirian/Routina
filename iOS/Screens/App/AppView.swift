@@ -12,17 +12,17 @@ struct AppView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
     @State private var searchText = ""
     @State private var moreDestination: AppMoreDestination?
     @State private var presentedSprintFocusDeepLink: SprintFocusDeepLinkPresentation?
-    @State private var isHomeMenuSleepConfirmationPresented = false
-    @State private var homeMenuSleepWarningMessage: String?
+    @State private var presentedNewActionSheet: NewActionSheet?
+    @State private var isNewMenuSleepConfirmationPresented = false
+    @State private var newMenuSleepWarningMessage: String?
     @AppStorage(UserDefaultStringValueKey.appSettingAppColorScheme.rawValue, store: SharedDefaults.app)
     private var appColorSchemeRawValue = AppColorScheme.system.rawValue
-    @AppStorage(UserDefaultStringValueKey.appSettingFastFilterTags.rawValue, store: SharedDefaults.app)
-    private var fastFilterTagsRawValue = ""
     @AppStorage(UserDefaultBoolValueKey.appSettingSleepHomeMenuEnabled.rawValue, store: SharedDefaults.app)
-    private var isSleepHomeMenuEnabled = true
+    private var isSleepNewMenuEnabled = true
 
     var body: some View {
 let tabView = TabView(
@@ -44,7 +44,7 @@ let tabView = TabView(
         }
     }
 
-    SwiftUI.Tab("Task", systemImage: "plus", value: AppTabBarItem.addTask) {
+    SwiftUI.Tab("New", systemImage: "plus", value: AppTabBarItem.addTask) {
         Color.clear
     }
 
@@ -119,32 +119,26 @@ Group {
     handleLiveActivityContinuation(userActivity)
 }
 .background {
-    HomeTabContextMenuBridge(
-        fastFilters: fastFilterTags,
-        selectedTags: store.home.selectedTags,
-        isSleepActionEnabled: isSleepHomeMenuEnabled,
-        onSelect: { tag in
-            store.send(.homeFastFilterSelected(tag))
-        },
-        onClear: {
-            store.send(.home(.clearOptionalFilters))
-        },
-        onStartSleep: {
-            requestSleepFromHomeMenu()
-        }
+    NewTabContextMenuBridge(
+        newTabIndex: newTabIndex,
+        isSleepActionEnabled: isNewMenuSleepActionEnabled,
+        onSelect: performNewTabAction
     )
     .frame(width: 0, height: 0)
 }
 .sheet(item: $presentedSprintFocusDeepLink) { presentation in
     SprintFocusDeepLinkView(sprintID: presentation.id)
 }
-.alert("Stop focus timer?", isPresented: $isHomeMenuSleepConfirmationPresented) {
+.sheet(item: $presentedNewActionSheet) { sheet in
+    newActionSheetContent(for: sheet)
+}
+.alert("Stop focus timer?", isPresented: $isNewMenuSleepConfirmationPresented) {
     Button("Start Sleep", role: .destructive) {
-        startSleepFromHomeMenu()
+        startSleepFromNewMenu()
     }
     Button("Cancel", role: .cancel) {}
 } message: {
-    Text(homeMenuSleepWarningMessage ?? "Starting sleep mode will stop the current focus timer.")
+    Text(newMenuSleepWarningMessage ?? "Starting sleep mode will stop the current focus timer.")
 }
 .awayModeGate()
 .sleepModeGate()
@@ -180,11 +174,17 @@ Group {
         horizontalSizeClass == .compact || verticalSizeClass == .compact
     }
 
+    private var newTabIndex: Int {
+        usesCompactMoreTab ? 2 : 3
+    }
+
+    private var isNewMenuSleepActionEnabled: Bool {
+        isSleepNewMenuEnabled && sleepSessions.first(where: { $0.endedAt == nil }) == nil
+    }
+
     private func selectTab(_ tab: AppTabBarItem) {
         if tab == .addTask {
-            moreDestination = nil
-            store.send(.tabSelected(.home))
-            store.send(.home(.setAddRoutineSheet(true)))
+            openNewTask()
             return
         }
 
@@ -196,33 +196,85 @@ Group {
         store.send(.tabSelected(appTab))
     }
 
-    private var fastFilterTags: [String] {
-        FastFilterTags.decoded(from: fastFilterTagsRawValue)
+    @MainActor
+    private func performNewTabAction(_ action: NewTabAction) {
+        switch action {
+        case .event:
+            presentedNewActionSheet = .event
+        case .emotion:
+            presentedNewActionSheet = .emotion
+        case .note:
+            presentedNewActionSheet = .note
+        case .goal:
+            openNewGoal()
+        case .task:
+            openNewTask()
+        case .checkIn:
+            presentedNewActionSheet = .checkIn
+        case .away:
+            presentedNewActionSheet = .away
+        case .sleep:
+            requestSleepFromNewMenu()
+        }
     }
 
-    @MainActor
-    private func requestSleepFromHomeMenu() {
-        do {
-            if let warningMessage = try SleepSessionSupport.activeFocusTimerWarningMessage(in: modelContext) {
-                homeMenuSleepWarningMessage = warningMessage
-                isHomeMenuSleepConfirmationPresented = true
-                return
-            }
+    private func openNewTask() {
+        presentedNewActionSheet = nil
+        moreDestination = nil
+        store.send(.tabSelected(.home))
+        store.send(.home(.setSmartAddTaskSheet(true)))
+    }
 
-            startSleepFromHomeMenu()
-        } catch {
-            NSLog("Failed to check active focus before Home menu sleep start: \(error.localizedDescription)")
+    private func openNewGoal() {
+        presentedNewActionSheet = nil
+        if usesCompactMoreTab {
+            moreDestination = .goals
+        } else {
+            moreDestination = nil
+        }
+        store.send(.tabSelected(.goals))
+        store.send(.goals(.addGoalTapped))
+    }
+
+    @ViewBuilder
+    private func newActionSheetContent(for sheet: NewActionSheet) -> some View {
+        switch sheet {
+        case .event:
+            RoutineEventEditorView()
+        case .emotion:
+            EmotionLogEditorView()
+        case .note:
+            RoutineNoteEditorView()
+        case .checkIn:
+            PlaceCheckInMapSheet()
+        case .away:
+            AwaySessionStartSheet()
         }
     }
 
     @MainActor
-    private func startSleepFromHomeMenu() {
+    private func requestSleepFromNewMenu() {
+        do {
+            if let warningMessage = try SleepSessionSupport.activeFocusTimerWarningMessage(in: modelContext) {
+                newMenuSleepWarningMessage = warningMessage
+                isNewMenuSleepConfirmationPresented = true
+                return
+            }
+
+            startSleepFromNewMenu()
+        } catch {
+            NSLog("Failed to check active focus before New menu sleep start: \(error.localizedDescription)")
+        }
+    }
+
+    @MainActor
+    private func startSleepFromNewMenu() {
         do {
             _ = try SleepSessionSupport.startSleep(in: modelContext)
-            homeMenuSleepWarningMessage = nil
-            isHomeMenuSleepConfirmationPresented = false
+            newMenuSleepWarningMessage = nil
+            isNewMenuSleepConfirmationPresented = false
         } catch {
-            NSLog("Failed to start sleep session from Home menu: \(error.localizedDescription)")
+            NSLog("Failed to start sleep session from New menu: \(error.localizedDescription)")
         }
     }
 
@@ -438,6 +490,72 @@ private struct SprintFocusDeepLinkPresentation: Identifiable, Equatable {
     let id: UUID
 }
 
+private enum NewActionSheet: String, Identifiable {
+    case event
+    case emotion
+    case note
+    case checkIn
+    case away
+
+    var id: String { rawValue }
+}
+
+private enum NewTabAction: CaseIterable, Equatable {
+    case event
+    case emotion
+    case note
+    case goal
+    case task
+    case checkIn
+    case away
+    case sleep
+
+    static let creationActions: [NewTabAction] = [.event, .emotion, .note, .goal, .task]
+    static let sessionActions: [NewTabAction] = [.checkIn, .away, .sleep]
+
+    var title: String {
+        switch self {
+        case .event:
+            return "Event"
+        case .emotion:
+            return "Emotion"
+        case .note:
+            return "Note"
+        case .goal:
+            return "Goal"
+        case .task:
+            return "Task"
+        case .checkIn:
+            return "Check In"
+        case .away:
+            return "Away"
+        case .sleep:
+            return "Going to sleep"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .event:
+            return "calendar.badge.plus"
+        case .emotion:
+            return "face.smiling"
+        case .note:
+            return "note.text"
+        case .goal:
+            return "target"
+        case .task:
+            return "checklist"
+        case .checkIn:
+            return "mappin.and.ellipse"
+        case .away:
+            return "lock.shield.fill"
+        case .sleep:
+            return "bed.double.fill"
+        }
+    }
+}
+
 private extension AppColorScheme {
     var preferredColorScheme: ColorScheme? {
         switch self {
@@ -609,13 +727,10 @@ private struct AppMoreNavigationView: View {
     }
 }
 
-private struct HomeTabContextMenuBridge: UIViewRepresentable {
-    var fastFilters: [String]
-    var selectedTags: Set<String>
+private struct NewTabContextMenuBridge: UIViewRepresentable {
+    var newTabIndex: Int
     var isSleepActionEnabled: Bool
-    var onSelect: (String) -> Void
-    var onClear: () -> Void
-    var onStartSleep: () -> Void
+    var onSelect: (NewTabAction) -> Void
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -630,12 +745,9 @@ private struct HomeTabContextMenuBridge: UIViewRepresentable {
 
     func updateUIView(_ uiView: UIView, context: Context) {
         let coordinator = context.coordinator
-        coordinator.fastFilters = fastFilters
-        coordinator.selectedTags = selectedTags
+        coordinator.newTabIndex = newTabIndex
         coordinator.isSleepActionEnabled = isSleepActionEnabled
         coordinator.onSelect = onSelect
-        coordinator.onClear = onClear
-        coordinator.onStartSleep = onStartSleep
 
         DispatchQueue.main.async { [weak uiView] in
             guard let uiView else { return }
@@ -648,12 +760,9 @@ private struct HomeTabContextMenuBridge: UIViewRepresentable {
     }
 
     final class Coordinator: NSObject, UIGestureRecognizerDelegate {
-        var fastFilters: [String] = []
-        var selectedTags: Set<String> = []
+        var newTabIndex = 2
         var isSleepActionEnabled = false
-        var onSelect: (String) -> Void = { _ in }
-        var onClear: () -> Void = {}
-        var onStartSleep: () -> Void = {}
+        var onSelect: (NewTabAction) -> Void = { _ in }
 
         private weak var installedTabBar: UITabBar?
         private weak var menuSourceButton: UIButton?
@@ -722,14 +831,13 @@ private struct HomeTabContextMenuBridge: UIViewRepresentable {
 
         @objc private func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
             guard let tabBar = installedTabBar,
-                  hasMenuItems,
                   gesture.state == .began
             else {
                 return
             }
 
             let location = gesture.location(in: tabBar)
-            guard isHomeTabLocation(location, in: tabBar) else { return }
+            guard isNewTabLocation(location, in: tabBar) else { return }
 
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             presentMenu(from: tabBar)
@@ -739,14 +847,14 @@ private struct HomeTabContextMenuBridge: UIViewRepresentable {
             let sourceButton = menuSourceButton ?? makeMenuSourceButton(in: tabBar)
             menuSourceButton = sourceButton
 
-            if let homeFrame = homeTabFrame(in: tabBar) {
+            if let newFrame = newTabFrame(in: tabBar) {
                 sourceButton.center = CGPoint(
-                    x: max(homeFrame.minX + 12, tabBar.bounds.minX + 12),
+                    x: newFrame.midX,
                     y: tabBar.bounds.minY - 10
                 )
             } else {
                 sourceButton.center = CGPoint(
-                    x: tabBar.bounds.minX + 12,
+                    x: fallbackNewTabMidX(in: tabBar),
                     y: tabBar.bounds.minY - 10
                 )
             }
@@ -766,94 +874,76 @@ private struct HomeTabContextMenuBridge: UIViewRepresentable {
         }
 
         private func makeMenu() -> UIMenu {
-            var sections: [UIMenuElement] = []
+            let creationMenu = UIMenu(
+                title: "",
+                options: .displayInline,
+                children: NewTabAction.creationActions.map { menuAction(for: $0) }
+            )
 
-            let fastFilterActions = makeFastFilterActions()
-            if !fastFilterActions.isEmpty {
-                sections.append(
-                    UIMenu(
-                        title: "Fast Filters",
-                        options: .displayInline,
-                        children: fastFilterActions
-                    )
-                )
+            var sessionActions = NewTabAction.sessionActions
+            if !isSleepActionEnabled {
+                sessionActions.removeAll { $0 == .sleep }
             }
 
-            if isSleepActionEnabled {
-                sections.append(
-                    UIMenu(
-                        title: "Sleep",
-                        options: .displayInline,
-                        children: [
-                            UIAction(
-                                title: "Going to sleep",
-                                image: UIImage(systemName: "bed.double.fill")
-                            ) { [weak self] _ in
-                                self?.onStartSleep()
-                            }
-                        ]
-                    )
-                )
-            }
+            let sessionMenu = UIMenu(
+                title: "",
+                options: .displayInline,
+                children: sessionActions.map { menuAction(for: $0) }
+            )
 
-            return UIMenu(title: "Home", children: sections)
+            return UIMenu(title: "New", children: [creationMenu, sessionMenu])
         }
 
-        private func makeFastFilterActions() -> [UIMenuElement] {
-            var actions: [UIMenuElement] = fastFilters.map { tag in
-                UIAction(
-                    title: "#\(tag)",
-                    image: UIImage(systemName: "tag"),
-                    state: selectedTags.contains { RoutineTag.contains($0, in: [tag]) } ? .on : .off
-                ) { [weak self] _ in
-                    self?.onSelect(tag)
-                }
+        private func menuAction(for action: NewTabAction) -> UIAction {
+            UIAction(
+                title: action.title,
+                image: UIImage(systemName: action.systemImage)
+            ) { [weak self] _ in
+                self?.onSelect(action)
             }
-
-            if !selectedTags.isEmpty {
-                actions.append(
-                    UIAction(
-                        title: "Clear Filters",
-                        image: UIImage(systemName: "line.3.horizontal.decrease.circle")
-                    ) { [weak self] _ in
-                        self?.onClear()
-                    }
-                )
-            }
-
-            return actions
         }
 
-        private var hasMenuItems: Bool {
-            isSleepActionEnabled || !fastFilters.isEmpty
-        }
-
-        private func isHomeTabLocation(_ location: CGPoint, in tabBar: UITabBar) -> Bool {
-            if let homeTabFrame = homeTabFrame(in: tabBar) {
-                return homeTabFrame.contains(location)
+        private func isNewTabLocation(_ location: CGPoint, in tabBar: UITabBar) -> Bool {
+            if let newTabFrame = newTabFrame(in: tabBar) {
+                return newTabFrame.contains(location)
             }
 
             let itemCount = tabBar.items?.count ?? 0
             guard itemCount > 0, tabBar.bounds.width > 0 else { return false }
 
             let itemWidth = tabBar.bounds.width / CGFloat(itemCount)
-            return location.x >= 0 && location.x <= itemWidth
+            let minX = itemWidth * CGFloat(min(newTabIndex, itemCount - 1))
+            let maxX = minX + itemWidth
+            return location.x >= minX && location.x <= maxX
         }
 
-        private func homeTabFrame(in tabBar: UITabBar) -> CGRect? {
-            guard let homeTabButton = homeTabButton(in: tabBar) else { return nil }
-            return homeTabButton.convert(homeTabButton.bounds, to: tabBar)
+        private func newTabFrame(in tabBar: UITabBar) -> CGRect? {
+            guard let newTabButton = newTabButton(in: tabBar) else { return nil }
+            return newTabButton.convert(newTabButton.bounds, to: tabBar)
         }
 
-        private func homeTabButton(in tabBar: UITabBar) -> UIView? {
+        private func newTabButton(in tabBar: UITabBar) -> UIView? {
             tabBar.layoutIfNeeded()
 
-            return tabBar.tabBarControls
+            let controls = tabBar.tabBarControls
                 .filter { !$0.isHidden && $0.alpha > 0.01 && $0.bounds.width > 0 && $0.bounds.height > 0 }
                 .sorted {
                     $0.convert($0.bounds, to: tabBar).minX < $1.convert($1.bounds, to: tabBar).minX
                 }
-                .first
+
+            guard controls.indices.contains(newTabIndex) else { return nil }
+            return controls[newTabIndex]
+        }
+
+        private func fallbackNewTabMidX(in tabBar: UITabBar) -> CGFloat {
+            let itemCount = tabBar.items?.count ?? 0
+            guard itemCount > 0, tabBar.bounds.width > 0 else {
+                return tabBar.bounds.midX
+            }
+
+            let safeIndex = min(newTabIndex, itemCount - 1)
+            let itemWidth = tabBar.bounds.width / CGFloat(itemCount)
+            return itemWidth * CGFloat(safeIndex) + itemWidth / 2
         }
 
         private func findTabBarController(from view: UIView) -> UITabBarController? {

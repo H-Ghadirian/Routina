@@ -3,19 +3,10 @@ import SwiftUI
 struct HomeIOSHomeToolbarContent: ToolbarContent {
     let taskListMode: HomeFeature.TaskListMode
     let areTaskListModeActionsExpanded: Bool
-    let areTopActionsExpanded: Bool
     let hasActiveOptionalFilters: Bool
-    let showsSleepAction: Bool
     let onSelectTaskListMode: (HomeFeature.TaskListMode) -> Void
     let onToggleTaskListModeActions: () -> Void
     let onShowFilters: () -> Void
-    let onAddEvent: () -> Void
-    let onAddEmotion: () -> Void
-    let onAddNote: () -> Void
-    let onCheckIn: () -> Void
-    let onStartAway: () -> Void
-    let onStartSleep: () -> Void
-    let onToggleTopActions: () -> Void
 
     var body: some ToolbarContent {
         ToolbarItemGroup(placement: .topBarLeading) {
@@ -34,75 +25,15 @@ struct HomeIOSHomeToolbarContent: ToolbarContent {
         }
 
         ToolbarItemGroup(placement: .primaryAction) {
-            if areTopActionsExpanded {
-                topActionButton(
-                    title: "Filters",
-                    systemImage: hasActiveOptionalFilters
-                        ? "line.3.horizontal.decrease.circle.fill"
-                        : "line.3.horizontal.decrease.circle",
-                    tint: hasActiveOptionalFilters ? .accentColor : .secondary,
-                    isHighlighted: hasActiveOptionalFilters,
-                    action: onShowFilters
-                )
-
-                // Compact iPhone toolbars can elide later items; keep the core Home actions first.
-                topActionButton(
-                    title: "Check In",
-                    systemImage: "mappin.and.ellipse",
-                    tint: .teal,
-                    isHighlighted: false,
-                    action: onCheckIn
-                )
-
-                topActionButton(
-                    title: "Add Note",
-                    systemImage: "note.text",
-                    tint: .blue,
-                    isHighlighted: false,
-                    action: onAddNote
-                )
-
-                if showsSleepAction {
-                    topActionButton(
-                        title: "Going to sleep",
-                        systemImage: "bed.double.fill",
-                        tint: .indigo,
-                        isHighlighted: false,
-                        action: onStartSleep
-                    )
-                }
-
-                topActionButton(
-                    title: "Log Emotion",
-                    systemImage: "face.smiling",
-                    tint: .pink,
-                    isHighlighted: false,
-                    action: onAddEmotion
-                )
-
-                topActionButton(
-                    title: "Start Away",
-                    systemImage: "lock.shield.fill",
-                    tint: .teal,
-                    isHighlighted: false,
-                    action: onStartAway
-                )
-
-                topActionButton(
-                    title: "Add Event",
-                    systemImage: "calendar.badge.plus",
-                    tint: .teal,
-                    isHighlighted: false,
-                    action: onAddEvent
-                )
-            }
-
-            Button(action: onToggleTopActions) {
-                Label(
-                    areTopActionsExpanded ? "Collapse Actions" : "Expand Actions",
-                    systemImage: areTopActionsExpanded ? "chevron.right.circle" : "ellipsis.circle"
-                )
-            }
+            topActionButton(
+                title: "Filters",
+                systemImage: hasActiveOptionalFilters
+                    ? "line.3.horizontal.decrease.circle.fill"
+                    : "line.3.horizontal.decrease.circle",
+                tint: hasActiveOptionalFilters ? .accentColor : .secondary,
+                isHighlighted: hasActiveOptionalFilters,
+                action: onShowFilters
+            )
         }
     }
 

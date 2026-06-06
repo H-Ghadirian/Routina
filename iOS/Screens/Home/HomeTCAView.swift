@@ -6,9 +6,7 @@ struct HomeTCAView: View {
     let store: StoreOf<HomeFeature>
     let externalSearchText: Binding<String>?
     @Environment(\.calendar) var calendar
-    @Environment(\.modelContext) private var modelContext
     @Query private var fileAttachments: [RoutineAttachment]
-    @Query private var activeSleepSessions: [SleepSession]
     @AppStorage(
         UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue,
         store: SharedDefaults.app
@@ -21,22 +19,10 @@ struct HomeTCAView: View {
         UserDefaultStringValueKey.appSettingHomeTaskRowHiddenFields.rawValue,
         store: SharedDefaults.app
     ) private var taskRowHiddenFieldsRawValue = ""
-    @AppStorage(
-        UserDefaultBoolValueKey.appSettingSleepHomeActionEnabled.rawValue,
-        store: SharedDefaults.app
-    ) var isSleepHomeActionEnabled = true
     @State private var localSearchText = ""
     @State var isCompactHeaderHidden = false
     @State var areTaskListModeActionsExpanded = false
-    @State var areTopActionsExpanded = false
-    @State var isEventEditorPresented = false
-    @State var isEmotionLogEditorPresented = false
-    @State var isNoteEditorPresented = false
-    @State var isAwayStartSheetPresented = false
-    @State var isPlaceCheckInMapPresented = false
     @State var isRefreshScheduled = false
-    @State private var homeActionSleepWarningMessage: String?
-    @State private var homeActionSleepErrorMessage: String?
     @State var relatedFilterTagSuggestionAnchor: String?
 
     init(
@@ -45,13 +31,6 @@ struct HomeTCAView: View {
     ) {
         self.store = store
         self.externalSearchText = searchText
-        _activeSleepSessions = Query(
-            filter: #Predicate<SleepSession> { session in
-                session.endedAt == nil
-            },
-            sort: \.startedAt,
-            order: .reverse
-        )
     }
 
     var body: some View {
@@ -74,34 +53,6 @@ homeContent
             )
                 .sheet(isPresented: isFilterSheetPresentedBinding) {
                     homeFiltersSheet
-                }
-                .sheet(isPresented: $isNoteEditorPresented) {
-                    RoutineNoteEditorView()
-                }
-                .sheet(isPresented: $isEventEditorPresented) {
-                    RoutineEventEditorView()
-                }
-                .sheet(isPresented: $isEmotionLogEditorPresented) {
-                    EmotionLogEditorView()
-                }
-                .sheet(isPresented: $isAwayStartSheetPresented) {
-                    AwaySessionStartSheet()
-                }
-                .sheet(isPresented: $isPlaceCheckInMapPresented) {
-                    PlaceCheckInMapSheet()
-                }
-                .alert("Stop focus timer?", isPresented: homeActionSleepWarningPresented) {
-                    Button("Start Sleep", role: .destructive) {
-                        startSleepFromHomeAction()
-                    }
-                    Button("Cancel", role: .cancel) {}
-                } message: {
-                    Text(homeActionSleepWarningMessage ?? "Starting sleep mode will stop the current focus timer.")
-                }
-                .alert("Could not start sleep mode", isPresented: homeActionSleepErrorPresented) {
-                    Button("OK", role: .cancel) {}
-                } message: {
-                    Text(homeActionSleepErrorMessage ?? "Try again from Home.")
                 }
                 .task {
                     syncFileAttachmentTaskIDs()
@@ -163,10 +114,6 @@ homeContent
 
     var taskRowVisibility: HomeTaskRowVisibility {
         HomeTaskRowVisibility(storageRawValue: taskRowHiddenFieldsRawValue)
-    }
-
-    var shouldShowHomeSleepAction: Bool {
-        isSleepHomeActionEnabled && activeSleepSessions.first == nil
     }
 
     var selectedTaskBinding: Binding<UUID?> {
@@ -340,62 +287,10 @@ homeContent
     }
 
     func collapseExpandedToolbarActions() {
-        guard areTaskListModeActionsExpanded || areTopActionsExpanded else { return }
+        guard areTaskListModeActionsExpanded else { return }
         withAnimation(.snappy(duration: 0.2)) {
             areTaskListModeActionsExpanded = false
-            areTopActionsExpanded = false
         }
-    }
-
-    @MainActor
-    func requestStartSleepFromHomeAction() {
-        collapseExpandedToolbarActions()
-
-        do {
-            if let warningMessage = try SleepSessionSupport.activeFocusTimerWarningMessage(in: modelContext) {
-                homeActionSleepWarningMessage = warningMessage
-                return
-            }
-
-            startSleepFromHomeAction()
-        } catch {
-            homeActionSleepErrorMessage = "Routina could not check the current focus timer state."
-            NSLog("Failed to check active focus before Home action sleep start: \(error.localizedDescription)")
-        }
-    }
-
-    @MainActor
-    func startSleepFromHomeAction() {
-        do {
-            _ = try SleepSessionSupport.startSleep(in: modelContext)
-            homeActionSleepWarningMessage = nil
-            homeActionSleepErrorMessage = nil
-        } catch {
-            homeActionSleepErrorMessage = "Routina could not start sleep mode."
-            NSLog("Failed to start sleep session from Home action: \(error.localizedDescription)")
-        }
-    }
-
-    private var homeActionSleepWarningPresented: Binding<Bool> {
-        Binding(
-            get: { homeActionSleepWarningMessage != nil },
-            set: { isPresented in
-                if !isPresented {
-                    homeActionSleepWarningMessage = nil
-                }
-            }
-        )
-    }
-
-    private var homeActionSleepErrorPresented: Binding<Bool> {
-        Binding(
-            get: { homeActionSleepErrorMessage != nil },
-            set: { isPresented in
-                if !isPresented {
-                    homeActionSleepErrorMessage = nil
-                }
-            }
-        )
     }
 }
 

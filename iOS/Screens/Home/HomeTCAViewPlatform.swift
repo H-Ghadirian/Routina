@@ -25,9 +25,7 @@ extension HomeTCAView {
         HomeIOSHomeToolbarContent(
             taskListMode: store.taskListMode,
             areTaskListModeActionsExpanded: areTaskListModeActionsExpanded,
-            areTopActionsExpanded: areTopActionsExpanded,
             hasActiveOptionalFilters: hasActiveOptionalFilters,
-            showsSleepAction: shouldShowHomeSleepAction,
             onSelectTaskListMode: { mode in
                 store.send(.taskListModeChanged(mode))
                 collapseExpandedToolbarActions()
@@ -35,45 +33,11 @@ extension HomeTCAView {
             onToggleTaskListModeActions: {
                 withAnimation(.snappy(duration: 0.2)) {
                     areTaskListModeActionsExpanded.toggle()
-                    if areTaskListModeActionsExpanded {
-                        areTopActionsExpanded = false
-                    }
                 }
             },
             onShowFilters: {
                 collapseExpandedToolbarActions()
                 store.send(.isFilterSheetPresentedChanged(true))
-            },
-            onAddEvent: {
-                collapseExpandedToolbarActions()
-                isEventEditorPresented = true
-            },
-            onAddEmotion: {
-                collapseExpandedToolbarActions()
-                isEmotionLogEditorPresented = true
-            },
-            onAddNote: {
-                collapseExpandedToolbarActions()
-                isNoteEditorPresented = true
-            },
-            onCheckIn: {
-                collapseExpandedToolbarActions()
-                isPlaceCheckInMapPresented = true
-            },
-            onStartAway: {
-                collapseExpandedToolbarActions()
-                isAwayStartSheetPresented = true
-            },
-            onStartSleep: {
-                requestStartSleepFromHomeAction()
-            },
-            onToggleTopActions: {
-                withAnimation(.snappy(duration: 0.2)) {
-                    areTopActionsExpanded.toggle()
-                    if areTopActionsExpanded {
-                        areTaskListModeActionsExpanded = false
-                    }
-                }
             }
         )
     }

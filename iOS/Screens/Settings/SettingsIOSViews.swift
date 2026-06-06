@@ -131,13 +131,9 @@ struct SettingsIOSDetailView: View {
 
 private struct SettingsIOSShortcutsDetailView: View {
     @AppStorage(
-        UserDefaultBoolValueKey.appSettingSleepHomeActionEnabled.rawValue,
-        store: SharedDefaults.app
-    ) private var isSleepHomeActionEnabled = true
-    @AppStorage(
         UserDefaultBoolValueKey.appSettingSleepHomeMenuEnabled.rawValue,
         store: SharedDefaults.app
-    ) private var isSleepHomeMenuEnabled = true
+    ) private var isSleepNewMenuEnabled = true
     @AppStorage(
         UserDefaultBoolValueKey.appSettingShakeToStartSleepEnabled.rawValue,
         store: SharedDefaults.app
@@ -146,11 +142,10 @@ private struct SettingsIOSShortcutsDetailView: View {
     var body: some View {
         List {
             Section("Sleep Shortcuts") {
-                Toggle("Show Going to sleep in Home actions", isOn: $isSleepHomeActionEnabled)
-                Toggle("Show Going to sleep in Home menu", isOn: $isSleepHomeMenuEnabled)
+                Toggle("Show Going to sleep in New menu", isOn: $isSleepNewMenuEnabled)
                 Toggle("Shake to start sleep mode", isOn: $isShakeToStartSleepEnabled)
 
-                Text("Long-press the Home tab to open the Home menu. Shake always asks for confirmation before sleep mode starts.")
+                Text("Long-press the New tab to open the New menu. Shake always asks for confirmation before sleep mode starts.")
                     .foregroundStyle(.secondary)
             }
 
