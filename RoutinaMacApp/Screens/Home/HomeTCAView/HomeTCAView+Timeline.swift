@@ -303,6 +303,7 @@ extension HomeTCAView {
 
     var macTimelineFiltersDetailView: some View {
         HomeMacTimelineFilterDetailContainerView(
+            title: macFilterDetailTitle,
             onAvailableTagsChange: { validateSelectedTimelineTag() },
             availableTags: availableTimelineTags
         ) {

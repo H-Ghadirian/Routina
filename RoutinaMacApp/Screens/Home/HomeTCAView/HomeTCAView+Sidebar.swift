@@ -18,7 +18,7 @@ extension HomeTCAView {
 
     var macSidebarNavigationTitle: String {
         if store.isMacFilterDetailPresented {
-            return macFilterDetailNavigationTitle
+            return macFilterDetailTitle
         }
 
         if isMacSegmentedBoardMode {
@@ -67,7 +67,7 @@ extension HomeTCAView {
         }
     }
 
-    private var macFilterDetailNavigationTitle: String {
+    var macFilterDetailTitle: String {
         if isMacSegmentedBoardMode {
             return "Filter Board"
         }
@@ -858,6 +858,7 @@ extension HomeTCAView {
 
     var macFiltersDetailView: some View {
         HomeMacFilterDetailContainerView(
+            title: macFilterDetailTitle
         ) {
             HomeMacRoutineFiltersDetailView(
                 availableFilters: macAvailableFilters,

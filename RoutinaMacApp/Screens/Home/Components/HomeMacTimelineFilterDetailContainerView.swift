@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct HomeMacTimelineFilterDetailContainerView<Content: View>: View {
+    let title: String
     let onAvailableTagsChange: () -> Void
     let availableTags: [String]
     @ViewBuilder let content: () -> Content
@@ -8,6 +9,7 @@ struct HomeMacTimelineFilterDetailContainerView<Content: View>: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                HomeMacFilterDetailTitleView(title: title)
                 content()
             }
             .onChange(of: availableTags) { _, _ in
