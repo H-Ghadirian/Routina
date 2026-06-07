@@ -491,6 +491,59 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func onAppear_afterInitialLoadKeepsLiveAddTaskSidebarMode() async {
+        let context = makeInMemoryContext()
+        let persistedState = TemporaryViewState(
+            selectedAppTabRawValue: Tab.home.rawValue,
+            homeTaskListModeRawValue: HomeFeature.TaskListMode.routines.rawValue,
+            homeSelectedFilter: .all,
+            homeSelectedTag: nil,
+            homeExcludedTags: [],
+            homeSelectedManualPlaceFilterID: nil,
+            homeTabFilterSnapshots: [:],
+            hideUnavailableRoutines: false,
+            homeSelectedTimelineRange: .all,
+            homeSelectedTimelineFilterType: .all,
+            homeSelectedTimelineTag: nil,
+            macHomeSidebarModeRawValue: HomeFeature.MacSidebarMode.routines.rawValue,
+            macSelectedSettingsSectionRawValue: nil,
+            timelineSelectedRange: .all,
+            timelineFilterType: .all,
+            timelineSelectedTag: nil,
+            statsSelectedRange: .week,
+            statsSelectedTag: nil,
+            statsExcludedTags: [],
+            statsTaskTypeFilterRawValue: nil
+        )
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                hasLoadedTaskSnapshot: true,
+                isAddRoutineSheetPresented: true,
+                taskListMode: .todos,
+                macSidebarMode: .addTask
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+            $0.modelContext = { context }
+            $0.locationClient.snapshot = { _ in LocationSnapshot() }
+            $0.appSettingsClient.temporaryViewState = { persistedState }
+            $0.appSettingsClient.hideUnavailableRoutines = { false }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.onAppear) {
+            $0.isLoading = true
+        }
+
+        #expect(store.state.macSidebarMode == .addTask)
+        #expect(store.state.taskListMode == .todos)
+        #expect(store.state.isAddRoutineSheetPresented)
+    }
+
+    @Test
     func macSidebarModeChanged_adventureUsesStatsSidebarTab() async {
         let context = makeInMemoryContext()
         let persistedState = LockIsolated<TemporaryViewState?>(nil)

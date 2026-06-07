@@ -6,6 +6,7 @@ protocol HomeFeatureLifecycleState {
     var locationSnapshot: LocationSnapshot { get set }
     var tagColors: [String: String] { get set }
     var isLoading: Bool { get set }
+    var hasLoadedTaskSnapshot: Bool { get }
 }
 
 struct HomeFeatureLifecycleActionHandler<State: HomeFeatureLifecycleState, Action> {
@@ -20,7 +21,9 @@ struct HomeFeatureLifecycleActionHandler<State: HomeFeatureLifecycleState, Actio
     var loadFailureLogger: (String) -> Void = { print($0) }
 
     func onAppear(state: inout State) -> Effect<Action> {
-        applyTemporaryViewState(temporaryViewState(), &state)
+        if !state.hasLoadedTaskSnapshot {
+            applyTemporaryViewState(temporaryViewState(), &state)
+        }
         state.tagColors = tagColors()
         state.isLoading = true
         return loadOnAppearEffect(state)
