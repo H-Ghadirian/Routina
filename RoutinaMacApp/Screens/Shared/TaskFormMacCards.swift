@@ -156,7 +156,6 @@ private struct TaskFormMacScheduleBehaviorPreviewBadge: View {
 
 struct TaskFormMacIdentityCard<NameField: View>: View {
     let model: TaskFormModel
-    let previewScheduleModeTitle: String?
     let previewPlaceSummary: String?
     let smartNameDraft: RoutinaQuickAddDraft?
     let smartNameCalendar: Calendar
@@ -210,9 +209,6 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
 
     private var previewPillItems: [PreviewPillItem] {
         var items: [PreviewPillItem] = []
-        if let previewScheduleModeTitle {
-            items.append(PreviewPillItem(title: previewScheduleModeTitle, systemImage: "repeat"))
-        }
         if let previewPlaceSummary {
             items.append(PreviewPillItem(title: previewPlaceSummary, systemImage: "mappin.and.ellipse"))
         }

@@ -193,7 +193,6 @@ struct TaskFormContent: View {
     private var identityCard: some View {
         TaskFormMacIdentityCard(
             model: model,
-            previewScheduleModeTitle: previewScheduleModeTitle,
             previewPlaceSummary: previewPlaceSummary,
             smartNameDraft: smartNameDraft,
             smartNameCalendar: calendar,
@@ -214,7 +213,7 @@ struct TaskFormContent: View {
 
     private var taskNameField: some View {
         MacFocusableTextField(
-            placeholder: "Task name",
+            placeholder: "Water plants every Sat at 9am #home @Balcony !high 25m",
             text: model.name,
             isFocusRequested: model.autofocusName,
             focusRequestID: model.nameFocusRequestID,
@@ -512,19 +511,6 @@ struct TaskFormContent: View {
         case .derivedFromChecklist: return "A routine driven by the due dates of its checklist items."
         case .softDerivedFromChecklist: return "A gentle routine driven by checklist item timing."
         case .oneOff: return "A one-off task you can finish once."
-        }
-    }
-
-    private var previewScheduleModeTitle: String? {
-        guard model.taskType.wrappedValue == .routine else { return nil }
-        switch model.scheduleMode.wrappedValue {
-        case .fixedInterval: return "Due"
-        case .softInterval: return "Gentle"
-        case .fixedIntervalChecklist: return "Due Checklist"
-        case .softIntervalChecklist: return "Gentle Checklist"
-        case .derivedFromChecklist: return "Due Runout"
-        case .softDerivedFromChecklist: return "Gentle Runout"
-        case .oneOff: return nil
         }
     }
 
