@@ -665,7 +665,7 @@ struct TaskFormMacBehaviorCard: View {
 
     private var scheduleResultPreview: some View {
         VStack(alignment: .leading, spacing: 11) {
-            Text("Live preview")
+            Text(scheduleResultHeader)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
@@ -673,15 +673,15 @@ struct TaskFormMacBehaviorCard: View {
                 .font(.callout.weight(.semibold))
                 .foregroundStyle(scheduleResultTint)
 
-            Text(scheduleResultDescription)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-
             if model.taskType.wrappedValue == .routine {
                 TaskFormMacScheduleBehaviorHint(
                     behavior: model.scheduleBehavior.wrappedValue,
-                    description: scheduleResultBadgeDescription
+                    description: model.scheduleBehavior.wrappedValue.rowPreviewDescription
                 )
+            } else {
+                Text(scheduleResultDescription)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(14)
@@ -723,10 +723,8 @@ struct TaskFormMacBehaviorCard: View {
         }
     }
 
-    private var scheduleResultBadgeDescription: String {
-        model.scheduleBehavior.wrappedValue == .soft
-            ? "The row stays calm and nudges again later."
-            : "The row can move from due to overdue."
+    private var scheduleResultHeader: String {
+        model.taskType.wrappedValue == .routine ? "Row badge preview" : "Schedule summary"
     }
 
     private var scheduleResultSystemImage: String {

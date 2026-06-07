@@ -127,6 +127,15 @@ enum RoutineScheduleBehavior: String, CaseIterable, Equatable, Hashable, Identif
             ]
         }
     }
+
+    var rowPreviewDescription: String {
+        switch self {
+        case .fixed:
+            return "Rows show Today, then Overdue if not completed."
+        case .soft:
+            return "Rows show Ready or Gentle nudge, never Overdue."
+        }
+    }
 }
 
 struct RoutineScheduleBehaviorPreviewBadge: Equatable, Hashable, Identifiable, Sendable {

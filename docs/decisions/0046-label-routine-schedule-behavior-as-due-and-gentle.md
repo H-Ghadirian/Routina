@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-05-14
+- **Refined by:** [0180](0180-clarify-schedule-behavior-summary.md)
 
 ## Context
 
@@ -15,7 +16,7 @@ Routine forms label the fixed schedule behavior as "Due" and the soft schedule b
 
 - Due means the routine can become due or overdue.
 - Gentle means the routine stays visible and can be nudged again without overdue pressure.
-- The schedule behavior control should show an immediate visual preview of the row/detail badges the user can expect, such as Today/Overdue for Due and Ready/Gentle nudge for Gentle.
+- Decision [0180](0180-clarify-schedule-behavior-summary.md) later narrows the preview to expected row badges plus one concise explanatory line, avoiding extra cadence or availability explanation inside the badge preview.
 - Internal enum cases and persisted `RoutineScheduleMode` values keep their existing fixed/soft naming to avoid data migration and preserve domain semantics in code.
 - Quick Add can continue accepting "soft" and "softly" as input syntax, while app-facing result copy should describe the created routine as Gentle.
 

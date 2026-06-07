@@ -101,10 +101,7 @@ struct TaskFormIOSScheduleTypeSection: View {
                 }
             }
             .pickerStyle(.segmented)
-            TaskFormIOSScheduleBehaviorHint(
-                behavior: model.scheduleBehavior.wrappedValue,
-                description: presentation.scheduleBehaviorDescription
-            )
+            TaskFormIOSScheduleBehaviorHint(behavior: model.scheduleBehavior.wrappedValue)
         }
 
         Section(header: Text("Completion")) {
@@ -121,7 +118,6 @@ struct TaskFormIOSScheduleTypeSection: View {
 
 private struct TaskFormIOSScheduleBehaviorHint: View {
     let behavior: RoutineScheduleBehavior
-    let description: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -131,7 +127,7 @@ private struct TaskFormIOSScheduleBehaviorHint: View {
                 }
             }
 
-            Text(description)
+            Text(behavior.rowPreviewDescription)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

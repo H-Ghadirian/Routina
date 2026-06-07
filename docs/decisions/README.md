@@ -26,6 +26,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0180](0180-clarify-schedule-behavior-summary.md) refines [0046](0046-label-routine-schedule-behavior-as-due-and-gentle.md) for schedule behavior badge previews:** Routine forms show expected Due/Gentle row badges with one concise explanatory line, without repeating cadence or availability text in the preview.
 - **[0179](0179-make-all-day-an-availability-choice.md) refines [0093](0093-support-all-day-routines.md) and [0178](0178-make-recurrence-availability-independent.md) for task form scheduling controls:** Routine all-day is presented as an Availability timing choice; routine Availability appears before repeat type/calendar pattern controls, while todo all-day remains an independent task property outside deadline controls.
 - **[0178](0178-make-recurrence-availability-independent.md) refines [0009](0009-support-routine-time-ranges.md) and [0177](0177-separate-interval-and-calendar-repeat-controls.md) for recurrence availability:** Routine forms show `Availability` as an independent section for Due repeats and Gentle interval cadences; interval recurrence rules may store exact time or time ranges while the interval still determines the scheduled day.
 - **[0177](0177-separate-interval-and-calendar-repeat-controls.md) refines recurrence form presentation:** Routine forms first choose whether a repeat is `Interval` or `Calendar`; calendar repeats then reveal `Daily`, `Weekday`, and `Month day` patterns. Stored recurrence kinds remain unchanged.
@@ -269,3 +270,4 @@ These are ordered from newest resolver to oldest resolver.
 | [0177](0177-separate-interval-and-calendar-repeat-controls.md) | Separate Interval and Calendar Repeat Controls | Accepted | 2026-06-07 |
 | [0178](0178-make-recurrence-availability-independent.md) | Make Recurrence Availability Independent | Accepted | 2026-06-07 |
 | [0179](0179-make-all-day-an-availability-choice.md) | Make Routine All Day an Availability Choice | Accepted | 2026-06-07 |
+| [0180](0180-clarify-schedule-behavior-summary.md) | Clarify Schedule Behavior Badge Preview | Accepted | 2026-06-07 |
