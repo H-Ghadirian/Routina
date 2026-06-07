@@ -49,6 +49,50 @@ struct TaskFormMacControlBlock<Content: View>: View {
     }
 }
 
+struct TaskFormMacToggleBlock<Content: View>: View {
+    let title: String
+    var caption: String?
+    @Binding var isOn: Bool
+    var isDisabled = false
+    @ViewBuilder let content: Content
+
+    init(
+        title: String,
+        isOn: Binding<Bool>,
+        caption: String? = nil,
+        isDisabled: Bool = false,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        self.caption = caption
+        self._isOn = isOn
+        self.isDisabled = isDisabled
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Toggle(isOn: $isOn) {
+                Text(title)
+                    .font(.body.weight(.medium))
+            }
+            .disabled(isDisabled)
+
+            if let caption {
+                Text(caption)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            if isOn {
+                content
+                    .padding(.top, 2)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
 struct TaskFormMacInfoPill: View {
     let title: String
     let systemImage: String
@@ -391,20 +435,64 @@ struct TaskFormMacBehaviorCard: View {
 
     var body: some View {
         TaskFormMacSectionCard(title: "Scheduling") {
-            VStack(alignment: .leading, spacing: 18) {
-                taskTypeControl
-                allDayControl
-                routineScheduleControls
-                repeatControls
-                todoDeadlineControl
-                reminderControl
+            ViewThatFits(in: .horizontal) {
+                wideSchedulingLayout
+                compactSchedulingLayout
             }
         }
     }
 
+    private var wideSchedulingLayout: some View {
+        HStack(alignment: .top, spacing: 28) {
+            schedulingMainColumn
+                .frame(width: 560, alignment: .topLeading)
+
+            schedulingSupportColumn
+                .frame(width: 360, alignment: .topLeading)
+        }
+        .frame(width: 948, alignment: .leading)
+    }
+
+    private var compactSchedulingLayout: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            schedulingMainColumn
+            Divider()
+            schedulingSupportColumn
+        }
+        .frame(maxWidth: 820, alignment: .leading)
+    }
+
+    private var schedulingMainColumn: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            taskTypeControl
+            allDayControl
+
+            Divider()
+
+            if model.taskType.wrappedValue == .routine {
+                routineScheduleControls
+                routineCadenceControls
+            } else {
+                todoDeadlineControl
+            }
+        }
+    }
+
+    private var schedulingSupportColumn: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            scheduleResultPreview
+
+            if model.taskType.wrappedValue == .routine {
+                assumedDoneControl
+            }
+
+            reminderControl
+        }
+    }
+
     private var taskTypeControl: some View {
-        TaskFormMacControlBlock(title: "Kind", caption: presentation.taskTypeDescription) {
-            VStack(alignment: .leading, spacing: 10) {
+        TaskFormMacControlBlock(title: "Kind") {
+            VStack(alignment: .leading, spacing: 8) {
                 Picker("Kind", selection: model.taskType) {
                     Text("Routine").tag(RoutineTaskType.routine)
                     Text("Todo").tag(RoutineTaskType.todo)
@@ -412,22 +500,30 @@ struct TaskFormMacBehaviorCard: View {
                 .labelsHidden()
                 .pickerStyle(.segmented)
                 .fixedSize()
+
+                Text(presentation.taskTypeDescription)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
         }
     }
 
     private var allDayControl: some View {
-        TaskFormMacControlBlock(title: "All day") {
-            Toggle("All Day", isOn: model.isAllDay)
+        TaskFormMacToggleBlock(
+            title: "Keep it all day",
+            isOn: model.isAllDay,
+            caption: "Use the whole day instead of choosing a specific time."
+        ) {
+            EmptyView()
         }
     }
 
     @ViewBuilder
     private var routineScheduleControls: some View {
         if model.taskType.wrappedValue == .routine {
-            TaskFormMacControlBlock(title: "Schedule behavior") {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 18) {
+                TaskFormMacControlBlock(title: "Schedule behavior") {
+                    VStack(alignment: .leading, spacing: 8) {
                         Picker("Schedule Behavior", selection: model.scheduleBehavior) {
                             ForEach(RoutineScheduleBehavior.allCases) { behavior in
                                 Text(behavior.rawValue).tag(behavior)
@@ -436,54 +532,154 @@ struct TaskFormMacBehaviorCard: View {
                         .labelsHidden()
                         .pickerStyle(.segmented)
                         .fixedSize()
-                        Spacer(minLength: 0)
-                    }
 
-                    TaskFormMacScheduleBehaviorHint(
-                        behavior: model.scheduleBehavior.wrappedValue,
-                        description: presentation.scheduleBehaviorDescription
-                    )
+                        Text(presentation.scheduleBehaviorDescription)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                 }
-            }
 
-            TaskFormMacControlBlock(title: "Routine type", caption: presentation.routineFormatDescription) {
-                HStack(spacing: 0) {
-                    Picker("Routine Type", selection: model.routineFormat) {
-                        ForEach(RoutineFormat.allCases) { format in
-                            Text(format.rawValue).tag(format)
+                TaskFormMacControlBlock(title: "Routine type") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Picker("Routine Type", selection: model.routineFormat) {
+                            ForEach(RoutineFormat.allCases) { format in
+                                Text(format.rawValue).tag(format)
+                            }
                         }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
+                        .fixedSize()
+
+                        Text(presentation.routineFormatDescription)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                     }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
-                    .fixedSize()
-                    Spacer(minLength: 0)
                 }
             }
         }
     }
 
     @ViewBuilder
-    private var repeatControls: some View {
+    private var routineCadenceControls: some View {
         if presentation.showsRepeatControls {
             if model.scheduleMode.wrappedValue.isSoftIntervalRoutine {
                 softReminderControl
             } else {
                 repeatPatternControls
             }
-            assumedDoneControl
         }
     }
 
     private var softReminderControl: some View {
-        TaskFormMacControlBlock(title: "Gentle reminder") {
+        TaskFormMacControlBlock(title: "Gentle cadence") {
             VStack(alignment: .leading, spacing: 12) {
-                frequencyStepper(prefix: "Highlight again after")
+                frequencyStepper(prefix: "Nudge every")
 
-                Text("This routine stays visible and never becomes overdue. Routina will gently nudge it again after this much time has passed.")
+                Text("This routine stays visible and never becomes overdue.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
+    }
+
+    private var scheduleResultPreview: some View {
+        TaskFormMacControlBlock(title: "Result") {
+            VStack(alignment: .leading, spacing: 10) {
+                Label(scheduleResultTitle, systemImage: scheduleResultSystemImage)
+                    .font(.callout.weight(.semibold))
+                    .foregroundStyle(scheduleResultTint)
+
+                Text(scheduleResultDescription)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                if model.taskType.wrappedValue == .routine {
+                    TaskFormMacScheduleBehaviorHint(
+                        behavior: model.scheduleBehavior.wrappedValue,
+                        description: scheduleResultBadgeDescription
+                    )
+                }
+            }
+        }
+    }
+
+    private var scheduleResultTitle: String {
+        switch model.taskType.wrappedValue {
+        case .todo:
+            return model.deadlineEnabled.wrappedValue ? "Todo with deadline" : "One-time todo"
+        case .routine:
+            return model.scheduleBehavior.wrappedValue == .soft ? "Gentle routine" : "Due routine"
+        }
+    }
+
+    private var scheduleResultDescription: String {
+        switch model.taskType.wrappedValue {
+        case .todo:
+            if model.deadlineEnabled.wrappedValue {
+                return "Deadline: \(model.deadline.wrappedValue.formatted(date: .abbreviated, time: model.isAllDay.wrappedValue ? .omitted : .shortened))."
+            }
+            return "No repeat schedule. Add a deadline only when this needs one."
+        case .routine:
+            if model.scheduleMode.wrappedValue.routineFormat == .runout {
+                return presentation.routineFormatDescription
+            }
+            if model.scheduleMode.wrappedValue.isSoftIntervalRoutine {
+                return "Stays visible and nudges \(frequencyIntervalPhrase)."
+            }
+            return dueRoutineCadenceSummary
+        }
+    }
+
+    private var scheduleResultBadgeDescription: String {
+        model.scheduleBehavior.wrappedValue == .soft
+            ? "The row stays calm and nudges again later."
+            : "The row can move from due to overdue."
+    }
+
+    private var scheduleResultSystemImage: String {
+        switch model.taskType.wrappedValue {
+        case .todo:
+            return model.deadlineEnabled.wrappedValue ? "calendar.badge.clock" : "checklist.unchecked"
+        case .routine:
+            return model.scheduleBehavior.wrappedValue == .soft ? "sparkles" : "clock.badge.exclamationmark"
+        }
+    }
+
+    private var scheduleResultTint: Color {
+        switch model.taskType.wrappedValue {
+        case .todo:
+            return .accentColor
+        case .routine:
+            return model.scheduleBehavior.wrappedValue == .soft ? .teal : .orange
+        }
+    }
+
+    private var dueRoutineCadenceSummary: String {
+        switch model.recurrenceKind.wrappedValue {
+        case .intervalDays:
+            return "Repeats \(frequencyIntervalPhrase)."
+        case .dailyTime:
+            return presentation.dailyRecurrenceTimeHelpText(
+                exactTimeText: exactTimeText,
+                timeRangeText: timeRangeText
+            )
+        case .weekly:
+            return presentation.weeklyRecurrenceTimeHelpText(
+                explicitTimeText: exactTimeText,
+                timeRangeText: timeRangeText
+            )
+        case .monthlyDay:
+            return presentation.monthlyRecurrenceTimeHelpText(
+                explicitTimeText: exactTimeText,
+                timeRangeText: timeRangeText
+            )
+        }
+    }
+
+    private var frequencyIntervalPhrase: String {
+        let value = model.frequencyValue.wrappedValue
+        let unit = model.frequencyUnit.wrappedValue.singularLabel
+        return value == 1 ? "every \(unit)" : "every \(value) \(unit)s"
     }
 
     @ViewBuilder
@@ -702,74 +898,71 @@ struct TaskFormMacBehaviorCard: View {
     }
 
     private var assumedDoneControl: some View {
-        TaskFormMacControlBlock(
-            title: "Assumed done",
-            caption: presentation.autoAssumeDailyDoneHelpText
+        TaskFormMacToggleBlock(
+            title: "Assume done automatically",
+            isOn: model.autoAssumeDailyDone,
+            caption: presentation.autoAssumeDailyDoneHelpText,
+            isDisabled: !model.canAutoAssumeDailyDone
         ) {
-            Toggle("Assume done automatically", isOn: model.autoAssumeDailyDone)
-                .disabled(!model.canAutoAssumeDailyDone)
+            EmptyView()
         }
     }
 
     @ViewBuilder
     private var todoDeadlineControl: some View {
         if model.taskType.wrappedValue == .todo {
-            TaskFormMacControlBlock(title: "Deadline") {
-                VStack(alignment: .leading, spacing: 10) {
-                    Toggle("Set deadline", isOn: model.deadlineEnabled)
-                    if model.deadlineEnabled.wrappedValue {
-                        DatePicker(
-                            "Deadline",
-                            selection: model.deadline,
-                            displayedComponents: model.isAllDay.wrappedValue ? .date : [.date, .hourAndMinute]
-                        )
-                            .labelsHidden()
-                        if let persianDeadlineText {
-                            Text(persianDeadlineText)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
+            TaskFormMacToggleBlock(
+                title: "Set deadline",
+                isOn: model.deadlineEnabled,
+                caption: "Add a due date only when this todo needs one."
+            ) {
+                DatePicker(
+                    "Deadline",
+                    selection: model.deadline,
+                    displayedComponents: model.isAllDay.wrappedValue ? .date : [.date, .hourAndMinute]
+                )
+                .labelsHidden()
+
+                if let persianDeadlineText {
+                    Text(persianDeadlineText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
     private var reminderControl: some View {
-        TaskFormMacControlBlock(
-            title: "Reminder",
+        TaskFormMacToggleBlock(
+            title: "Set reminder",
+            isOn: model.reminderEnabled,
             caption: model.reminderEventDate == nil
                 ? "Send one notification at an exact date and time."
                 : "Choose a lead time before the event, or set a custom notification time."
         ) {
             VStack(alignment: .leading, spacing: 10) {
-                Toggle("Set reminder", isOn: model.reminderEnabled)
-                if model.reminderEnabled.wrappedValue {
-                    if let reminderEventDate = model.reminderEventDate {
-                        Picker("When", selection: model.reminderLeadMinutes) {
-                            Text("Custom time").tag(Optional<Int>.none)
-                            ForEach(TaskFormReminderLeadTime.allCases) { option in
-                                Text(option.title).tag(Optional(option.rawValue))
-                            }
+                if let reminderEventDate = model.reminderEventDate {
+                    Picker("When", selection: model.reminderLeadMinutes) {
+                        Text("Custom time").tag(Optional<Int>.none)
+                        ForEach(TaskFormReminderLeadTime.allCases) { option in
+                            Text(option.title).tag(Optional(option.rawValue))
                         }
-                        .pickerStyle(.menu)
-                        .frame(width: 180)
-
-                        Text("Event: \(reminderEventDate.formatted(date: .abbreviated, time: .shortened))")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
                     }
+                    .pickerStyle(.menu)
+                    .frame(width: 180)
 
-                    DatePicker(
-                        model.reminderEventDate == nil ? "Reminder" : "Custom time",
-                        selection: model.reminderAt
-                    )
-                    .labelsHidden()
+                    Text("Event: \(reminderEventDate.formatted(date: .abbreviated, time: .shortened))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
+
+                DatePicker(
+                    model.reminderEventDate == nil ? "Reminder" : "Custom time",
+                    selection: model.reminderAt
+                )
+                .labelsHidden()
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
