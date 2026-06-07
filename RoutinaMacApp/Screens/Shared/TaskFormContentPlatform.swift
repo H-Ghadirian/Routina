@@ -95,15 +95,22 @@ struct TaskFormContent: View {
             from: availableSections,
             mode: model.visibilityMode,
             revealedSections: formCoordinator.revealedTaskFormSections,
-            populatedSections: model.populatedMacFormSections
+            populatedSections: model.populatedMacFormSections,
+            allowsOptionalChecklistReveal: model.allowsOptionalChecklistReveal
         )
     }
 
     private var hiddenOptionalSections: [FormSection] {
         let visibleSet = Set(visibleSections)
         return formCoordinator.orderedSections(available: availableSections).filter {
-            $0 != .identity && !visibleSet.contains($0)
+            $0 != .identity
+                && !visibleSet.contains($0)
+                && canRevealOptionalSection($0)
         }
+    }
+
+    private func canRevealOptionalSection(_ section: FormSection) -> Bool {
+        section != .checklist || model.allowsOptionalChecklistReveal
     }
 
     @ViewBuilder

@@ -625,6 +625,7 @@ extension HomeTCAView {
     var macAddFormSections: [FormSection] {
         let addState = store.addRoutineState
         let scheduleMode = addState?.schedule.scheduleMode ?? .fixedInterval
+        let populatedSections = addState?.populatedMacFormSections ?? []
         let sections = FormSection.taskFormSections(
             scheduleMode: scheduleMode,
             includesIdentity: true,
@@ -634,7 +635,8 @@ extension HomeTCAView {
             from: sections,
             mode: .progressiveCreate,
             revealedSections: addEditFormCoordinator.revealedTaskFormSections,
-            populatedSections: addState?.populatedMacFormSections ?? []
+            populatedSections: populatedSections,
+            allowsOptionalChecklistReveal: addState?.taskType == .todo
         )
     }
 
@@ -649,7 +651,8 @@ extension HomeTCAView {
             from: sections,
             mode: .progressiveEdit,
             revealedSections: addEditFormCoordinator.revealedTaskFormSections,
-            populatedSections: detail.populatedMacFormSections
+            populatedSections: detail.populatedMacFormSections,
+            allowsOptionalChecklistReveal: detail.editScheduleMode.taskType == .todo
         )
     }
 

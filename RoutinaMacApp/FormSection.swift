@@ -104,17 +104,21 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
         from sections: [FormSection],
         mode: TaskFormVisibilityMode,
         revealedSections: Set<FormSection>,
-        populatedSections: Set<FormSection>
+        populatedSections: Set<FormSection>,
+        allowsOptionalChecklistReveal: Bool = true
     ) -> [FormSection] {
         guard mode.usesProgressiveDisclosure else {
             return sections
         }
 
         let primarySections: Set<FormSection> = [.identity, .behavior]
+        let effectiveRevealedSections = allowsOptionalChecklistReveal
+            ? revealedSections
+            : revealedSections.subtracting([.checklist])
         return sections.filter {
             primarySections.contains($0)
                 || populatedSections.contains($0)
-                || revealedSections.contains($0)
+                || effectiveRevealedSections.contains($0)
         }
     }
 }

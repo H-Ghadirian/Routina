@@ -26,6 +26,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0175](0175-use-routine-finish-mode-for-checklist-creation.md) refines [0045](0045-split-routine-schedule-behavior-and-format.md), [0069](0069-support-optional-task-checklists.md), and [0101](0101-treat-empty-checklists-as-optional-task-details.md) for routine checklists:** Empty standard routines no longer offer Checklist as an optional More Details reveal; choosing Checklist or Runout in `How it finishes` is the routine checklist creation path, while todos and existing routine checklist content remain supported.
 - **[0174](0174-do-not-restore-mac-add-task-composer.md) refines [0074](0074-parse-mac-add-task-title.md) and [0076](0076-select-saved-home-items-after-creation.md) for Mac task creation:** Add Task is a transient Mac Home sidebar mode; it can be opened in-session, but temporary view-state persistence normalizes it to Routines so relaunch never restores a stale form navigator without form state.
 - **[0173](0173-use-ios-new-tab-sheet.md) supersedes part of [0071](0071-move-ios-task-add-to-tab-bar.md) and [0073](0073-open-ios-home-actions-horizontally.md) for compact iOS capture actions:** The bottom-bar `Task` action is now `New`, and tapping it opens a compact action sheet with Event, Emotion, Note, Goal, Task, Check In, Away, and Going to sleep while Home keeps Home-specific controls such as filters.
 - **[0172](0172-hide-battery-routines-until-enabled.md) refines device-aware routine creation:** Battery charge routines are opt-in, default off, and removed while disabled so Charge Mac, Charge iPhone, and related managed routines only appear after the user enables the setting.
@@ -259,3 +260,4 @@ These are ordered from newest resolver to oldest resolver.
 | [0172](0172-hide-battery-routines-until-enabled.md) | Hide Battery Routines Until Enabled | Accepted | 2026-06-07 |
 | [0173](0173-use-ios-new-tab-sheet.md) | Use iOS New Tab Sheet | Accepted | 2026-06-07 |
 | [0174](0174-do-not-restore-mac-add-task-composer.md) | Do Not Restore Mac Add Task Composer | Accepted | 2026-06-07 |
+| [0175](0175-use-routine-finish-mode-for-checklist-creation.md) | Use Routine Finish Mode for Checklist Creation | Accepted | 2026-06-07 |

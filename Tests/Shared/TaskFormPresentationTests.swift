@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import Testing
 #if SWIFT_PACKAGE
 @testable @preconcurrency import RoutinaAppSupport
@@ -134,6 +135,23 @@ struct TaskFormPresentationTests {
     }
 
     @Test
+    func compactSectionsDoNotOfferEmptyStandardRoutineChecklistDetails() {
+        let routine = taskFormModel(scheduleMode: .fixedInterval)
+        let checklistRoutine = taskFormModel(scheduleMode: .fixedIntervalChecklist)
+        let existingChecklistRoutine = taskFormModel(
+            scheduleMode: .fixedInterval,
+            checklistItems: [RoutineChecklistItem(title: "Bread", intervalDays: 3)]
+        )
+        let todo = taskFormModel(taskType: .todo, scheduleMode: .oneOff)
+
+        #expect(!routine.visibleCompactSections(isShowingMoreDetails: true).contains(.checklist))
+        #expect(checklistRoutine.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
+        #expect(existingChecklistRoutine.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
+        #expect(!todo.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
+        #expect(todo.visibleCompactSections(isShowingMoreDetails: true).contains(.checklist))
+    }
+
+    @Test
     func textFormattingCommandsInsertMarkdownSnippets() {
         #expect(RoutinaTextFormattingCommand.bold.applying(to: "") == "**bold text**")
         #expect(RoutinaTextFormattingCommand.italic.applying(to: "Start") == "Start _italic text_")
@@ -173,6 +191,79 @@ struct TaskFormPresentationTests {
             goalDraft: goalDraft,
             selectedPlaceName: selectedPlaceName,
             canAutoAssumeDailyDone: canAutoAssumeDailyDone
+        )
+    }
+
+    private func taskFormModel(
+        taskType: RoutineTaskType = .routine,
+        scheduleMode: RoutineScheduleMode = .fixedInterval,
+        checklistItems: [RoutineChecklistItem] = []
+    ) -> TaskFormModel {
+        TaskFormModel(
+            name: .constant("Task"),
+            nameValidationMessage: nil,
+            taskType: .constant(taskType),
+            emoji: .constant("✨"),
+            emojiOptions: [],
+            isEmojiPickerPresented: .constant(false),
+            notes: .constant(""),
+            link: .constant(""),
+            deadlineEnabled: .constant(false),
+            deadline: .constant(Date()),
+            reminderEnabled: .constant(false),
+            reminderAt: .constant(Date()),
+            importance: .constant(.level2),
+            urgency: .constant(.level2),
+            pressure: .constant(.none),
+            estimatedDurationMinutes: .constant(nil),
+            storyPoints: .constant(nil),
+            imageData: nil,
+            onImagePicked: { _ in },
+            onRemoveImage: {},
+            voiceNote: nil,
+            onVoiceNoteChanged: { _ in },
+            attachments: [],
+            onAttachmentPicked: { _, _ in },
+            onRemoveAttachment: { _ in },
+            tagDraft: .constant(""),
+            routineTags: [],
+            availableTags: [],
+            onAddTag: {},
+            onRemoveTag: { _ in },
+            onToggleTagSelection: { _ in },
+            goalDraft: .constant(""),
+            selectedGoals: [],
+            availableGoals: [],
+            onAddGoal: {},
+            onRemoveGoal: { _ in },
+            onToggleGoalSelection: { _ in },
+            relationships: [],
+            availableRelationshipTasks: [],
+            onAddRelationship: { _, _ in },
+            onRemoveRelationship: { _ in },
+            scheduleMode: .constant(scheduleMode),
+            stepDraft: .constant(""),
+            routineSteps: [],
+            onAddStep: {},
+            onRemoveStep: { _ in },
+            onMoveStepUp: { _ in },
+            onMoveStepDown: { _ in },
+            checklistItemDraftTitle: .constant(""),
+            checklistItemDraftInterval: .constant(3),
+            routineChecklistItems: checklistItems,
+            onAddChecklistItem: {},
+            onRemoveChecklistItem: { _ in },
+            availablePlaces: [],
+            selectedPlaceID: .constant(nil),
+            recurrenceKind: .constant(.intervalDays),
+            recurrenceHasExplicitTime: .constant(false),
+            recurrenceTimeOfDay: .constant(Date()),
+            recurrenceWeekday: .constant(2),
+            recurrenceDayOfMonth: .constant(1),
+            frequencyUnit: .constant(.day),
+            frequencyValue: .constant(1),
+            color: .constant(.none),
+            visibilityMode: .progressiveCreate
         )
     }
 }

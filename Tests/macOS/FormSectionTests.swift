@@ -41,17 +41,63 @@ struct FormSectionTests {
         let collapsed = FormSection.visibleTaskFormSections(
             from: sections,
             mode: .progressiveCreate,
-            isShowingMoreDetails: false,
+            revealedSections: [],
             populatedSections: [.notes, .tags]
         )
         let expanded = FormSection.visibleTaskFormSections(
             from: sections,
             mode: .progressiveCreate,
-            isShowingMoreDetails: true,
+            revealedSections: Set(sections),
             populatedSections: [.notes, .tags]
         )
 
-        #expect(collapsed == [.identity, .behavior, .tags, .notes, .checklist])
+        #expect(collapsed == [.identity, .behavior, .tags, .notes])
         #expect(expanded == sections)
+    }
+
+    @Test
+    func progressiveTaskFormSectionsDoNotRevealEmptyRoutineChecklistDetails() {
+        let sections = FormSection.taskFormSections(
+            scheduleMode: .fixedInterval,
+            includesIdentity: true,
+            includesDangerZone: false
+        )
+
+        let revealed = FormSection.visibleTaskFormSections(
+            from: sections,
+            mode: .progressiveCreate,
+            revealedSections: [.checklist],
+            populatedSections: [],
+            allowsOptionalChecklistReveal: false
+        )
+        let populated = FormSection.visibleTaskFormSections(
+            from: sections,
+            mode: .progressiveCreate,
+            revealedSections: [],
+            populatedSections: [.checklist],
+            allowsOptionalChecklistReveal: false
+        )
+
+        #expect(!revealed.contains(.checklist))
+        #expect(populated.contains(.checklist))
+    }
+
+    @Test
+    func progressiveTaskFormSectionsKeepTodoChecklistRevealAvailable() {
+        let sections = FormSection.taskFormSections(
+            scheduleMode: .oneOff,
+            includesIdentity: true,
+            includesDangerZone: false
+        )
+
+        let visible = FormSection.visibleTaskFormSections(
+            from: sections,
+            mode: .progressiveCreate,
+            revealedSections: [.checklist],
+            populatedSections: [],
+            allowsOptionalChecklistReveal: true
+        )
+
+        #expect(visible.contains(.checklist))
     }
 }

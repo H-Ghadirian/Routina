@@ -199,15 +199,36 @@ extension TaskFormModel {
     }
 
     func visibleCompactSections(isShowingMoreDetails: Bool) -> [TaskFormCompactSection] {
+        let availableSections = availableCompactSections
         guard visibilityMode.usesProgressiveDisclosure, !isShowingMoreDetails else {
-            return TaskFormCompactSection.defaultOrder
+            return availableSections
         }
 
         let primarySections = progressivePrimaryCompactSections
         let populatedSections = populatedCompactSections
-        return TaskFormCompactSection.defaultOrder.filter {
+        return availableSections.filter {
             primarySections.contains($0) || populatedSections.contains($0)
         }
+    }
+
+    var allowsOptionalChecklistReveal: Bool {
+        taskType.wrappedValue == .todo
+    }
+
+    var shouldShowChecklistSection: Bool {
+        allowsOptionalChecklistReveal
+            || hasChecklistSectionContent
+            || scheduleMode.wrappedValue.isRoutineModeRequiringChecklistItems
+    }
+
+    private var availableCompactSections: [TaskFormCompactSection] {
+        TaskFormCompactSection.defaultOrder.filter { section in
+            section != .checklist || shouldShowChecklistSection
+        }
+    }
+
+    private var hasChecklistSectionContent: Bool {
+        !routineChecklistItems.isEmpty || hasText(checklistItemDraftTitle.wrappedValue)
     }
 
     private var progressivePrimaryCompactSections: Set<TaskFormCompactSection> {
