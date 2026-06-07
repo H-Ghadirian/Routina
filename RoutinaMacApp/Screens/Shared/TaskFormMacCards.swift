@@ -578,16 +578,16 @@ struct TaskFormMacBehaviorCard: View {
     private var routineFormatControl: some View {
         TaskFormMacControlBlock(title: "How it finishes") {
             VStack(alignment: .leading, spacing: 8) {
-                Picker("Routine Type", selection: model.routineFormat) {
-                    ForEach(RoutineFormat.allCases) { format in
-                        Text(format.rawValue).tag(format)
+                Picker("How it finishes", selection: model.routineFinishMode) {
+                    ForEach(RoutineFinishMode.allCases) { mode in
+                        Text(mode.rawValue).tag(mode)
                     }
                 }
                 .labelsHidden()
                 .pickerStyle(.segmented)
                 .fixedSize()
 
-                Text(presentation.routineFormatDescription)
+                Text(presentation.routineFinishDescription)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -596,11 +596,36 @@ struct TaskFormMacBehaviorCard: View {
 
     @ViewBuilder
     private var routineCadenceControls: some View {
-        if presentation.showsRepeatControls {
-            if model.scheduleMode.wrappedValue.isSoftIntervalRoutine {
-                softReminderControl
-            } else {
-                repeatPatternControls
+        VStack(alignment: .leading, spacing: 18) {
+            if presentation.showsChecklistTimingControls {
+                checklistTimingControl
+            }
+
+            if presentation.showsRepeatControls {
+                if model.scheduleMode.wrappedValue.isSoftIntervalRoutine {
+                    softReminderControl
+                } else {
+                    repeatPatternControls
+                }
+            }
+        }
+    }
+
+    private var checklistTimingControl: some View {
+        TaskFormMacControlBlock(title: "Checklist cadence") {
+            VStack(alignment: .leading, spacing: 8) {
+                Picker("Checklist cadence", selection: model.checklistTimingMode) {
+                    ForEach(ChecklistTimingMode.allCases) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .fixedSize()
+
+                Text(presentation.checklistTimingDescription)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -668,7 +693,7 @@ struct TaskFormMacBehaviorCard: View {
             return "No repeat schedule. Add a deadline only when this needs one."
         case .routine:
             if model.scheduleMode.wrappedValue.routineFormat == .runout {
-                return presentation.routineFormatDescription
+                return presentation.checklistTimingDescription
             }
             if model.scheduleMode.wrappedValue.isSoftIntervalRoutine {
                 return "Stays visible and nudges \(frequencyIntervalPhrase)."

@@ -157,7 +157,7 @@ struct TaskFormContent: View {
         case .place:
             placeSection
         case .repeatPattern:
-            if presentation.showsRepeatControls {
+            if presentation.showsRepeatControls || presentation.showsChecklistTimingControls {
                 repeatPatternSections
             }
         case .delete:

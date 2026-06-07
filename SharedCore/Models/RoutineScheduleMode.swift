@@ -33,6 +33,32 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
         }
     }
 
+    var routineFinishMode: RoutineFinishMode {
+        routineFormat == .standard ? .standard : .checklist
+    }
+
+    var checklistTimingMode: ChecklistTimingMode {
+        routineFormat == .runout ? .runout : .together
+    }
+
+    func replacingRoutineFinishMode(_ finishMode: RoutineFinishMode) -> RoutineScheduleMode {
+        let format: RoutineFormat
+        switch finishMode {
+        case .standard:
+            format = .standard
+        case .checklist:
+            format = routineFormat == .runout ? .runout : .checklist
+        }
+        return Self.routineMode(behavior: scheduleBehavior, format: format)
+    }
+
+    func replacingChecklistTimingMode(_ timingMode: ChecklistTimingMode) -> RoutineScheduleMode {
+        Self.routineMode(
+            behavior: scheduleBehavior,
+            format: timingMode == .runout ? .runout : .checklist
+        )
+    }
+
     var isSoftIntervalRoutine: Bool {
         scheduleBehavior == .soft
     }
@@ -121,6 +147,20 @@ enum RoutineScheduleBehaviorPreviewBadgeStyle: String, Equatable, Hashable, Send
 enum RoutineFormat: String, CaseIterable, Equatable, Hashable, Identifiable, Sendable {
     case standard = "Standard"
     case checklist = "Checklist"
+    case runout = "Runout"
+
+    var id: String { rawValue }
+}
+
+enum RoutineFinishMode: String, CaseIterable, Equatable, Hashable, Identifiable, Sendable {
+    case standard = "Standard"
+    case checklist = "Checklist"
+
+    var id: String { rawValue }
+}
+
+enum ChecklistTimingMode: String, CaseIterable, Equatable, Hashable, Identifiable, Sendable {
+    case together = "Together"
     case runout = "Runout"
 
     var id: String { rawValue }

@@ -107,14 +107,14 @@ struct TaskFormIOSScheduleTypeSection: View {
             )
         }
 
-        Section(header: Text("Routine Type")) {
-            Picker("Routine Type", selection: model.routineFormat) {
-                ForEach(RoutineFormat.allCases) { format in
-                    Text(format.rawValue).tag(format)
+        Section(header: Text("Routine Finish")) {
+            Picker("How it finishes", selection: model.routineFinishMode) {
+                ForEach(RoutineFinishMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
                 }
             }
             .pickerStyle(.segmented)
-            Text(presentation.routineFormatDescription).font(.caption).foregroundStyle(.secondary)
+            Text(presentation.routineFinishDescription).font(.caption).foregroundStyle(.secondary)
         }
     }
 }
@@ -300,15 +300,35 @@ struct TaskFormIOSRepeatPatternSections: View {
     let presentation: TaskFormPresentation
 
     var body: some View {
-        if model.scheduleMode.wrappedValue.isSoftIntervalRoutine {
-            softReminderSection
-        } else {
-            repeatPatternSection
-            recurrenceSpecificSections
+        if presentation.showsChecklistTimingControls {
+            checklistTimingSection
+        }
+
+        if presentation.showsRepeatControls {
+            if model.scheduleMode.wrappedValue.isSoftIntervalRoutine {
+                softReminderSection
+            } else {
+                repeatPatternSection
+                recurrenceSpecificSections
+            }
         }
 
         if model.taskType.wrappedValue == .routine {
             assumedDoneSection
+        }
+    }
+
+    private var checklistTimingSection: some View {
+        Section(header: Text("Checklist Cadence")) {
+            Picker("Checklist Cadence", selection: model.checklistTimingMode) {
+                ForEach(ChecklistTimingMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            Text(presentation.checklistTimingDescription)
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 

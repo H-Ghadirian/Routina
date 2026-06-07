@@ -100,6 +100,10 @@ struct TaskFormPresentation {
         scheduleMode.showsRoutineRepeatControls
     }
 
+    var showsChecklistTimingControls: Bool {
+        taskType == .routine && scheduleMode.routineFinishMode == .checklist
+    }
+
     var derivedPriority: RoutineTaskPriority {
         let score = importance.sortOrder + urgency.sortOrder
         switch score {
@@ -184,6 +188,24 @@ struct TaskFormPresentation {
         case .standard: return "Mark it done once, or advance its steps."
         case .checklist: return "The routine is done when every checklist item is completed."
         case .runout: return "Checklist items have their own timing; the earliest due item drives the routine."
+        }
+    }
+
+    var routineFinishDescription: String {
+        switch scheduleMode.routineFinishMode {
+        case .standard:
+            return "Mark it done once, or advance its steps."
+        case .checklist:
+            return "Finish with checklist items; choose their cadence below."
+        }
+    }
+
+    var checklistTimingDescription: String {
+        switch scheduleMode.checklistTimingMode {
+        case .together:
+            return "Checklist items follow the routine cadence and finish together."
+        case .runout:
+            return "Each checklist item has its own timing; the earliest due item drives the routine."
         }
     }
 

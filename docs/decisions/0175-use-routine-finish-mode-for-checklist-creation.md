@@ -10,6 +10,8 @@ Accepted
 
 Refines [0045](0045-split-routine-schedule-behavior-and-format.md), [0069](0069-support-optional-task-checklists.md), and [0101](0101-treat-empty-checklists-as-optional-task-details.md) for routine creation and editing.
 
+Refined by [0176](0176-nest-runout-under-checklist-cadence.md), which keeps Checklist as the routine checklist entry path and moves Runout under checklist cadence/timing.
+
 ## Context
 
 Routine forms had two visible paths that both appeared to add a checklist: the `How it finishes` routine format picker, and the optional Checklist button in More Details. The two paths represented different concepts, but sharing the same label made routine creation confusing and introduced ambiguous states.

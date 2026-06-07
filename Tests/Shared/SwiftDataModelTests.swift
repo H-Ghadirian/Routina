@@ -133,8 +133,18 @@ struct SwiftDataModelTests {
 
         #expect(RoutineScheduleMode.softIntervalChecklist.scheduleBehavior == .soft)
         #expect(RoutineScheduleMode.softIntervalChecklist.routineFormat == .checklist)
+        #expect(RoutineScheduleMode.softIntervalChecklist.routineFinishMode == .checklist)
+        #expect(RoutineScheduleMode.softIntervalChecklist.checklistTimingMode == .together)
         #expect(RoutineScheduleMode.softDerivedFromChecklist.scheduleBehavior == .soft)
         #expect(RoutineScheduleMode.softDerivedFromChecklist.routineFormat == .runout)
+        #expect(RoutineScheduleMode.softDerivedFromChecklist.routineFinishMode == .checklist)
+        #expect(RoutineScheduleMode.softDerivedFromChecklist.checklistTimingMode == .runout)
+        #expect(RoutineScheduleMode.fixedInterval.routineFinishMode == .standard)
+        #expect(RoutineScheduleMode.derivedFromChecklist.replacingRoutineFinishMode(.standard) == .fixedInterval)
+        #expect(RoutineScheduleMode.derivedFromChecklist.replacingRoutineFinishMode(.checklist) == .derivedFromChecklist)
+        #expect(RoutineScheduleMode.fixedInterval.replacingRoutineFinishMode(.checklist) == .fixedIntervalChecklist)
+        #expect(RoutineScheduleMode.derivedFromChecklist.replacingChecklistTimingMode(.together) == .fixedIntervalChecklist)
+        #expect(RoutineScheduleMode.softIntervalChecklist.replacingChecklistTimingMode(.runout) == .softDerivedFromChecklist)
 
         #expect(RoutineScheduleBehavior.fixed.rawValue == "Due")
         #expect(RoutineScheduleBehavior.soft.rawValue == "Gentle")

@@ -14,17 +14,26 @@ struct TaskFormPresentationTests {
     func scheduleAndDescriptionCopyMatchTaskFormModes() {
         let fixed = presentation(scheduleMode: .fixedIntervalChecklist)
         let gentle = presentation(scheduleMode: .softInterval)
+        let runout = presentation(scheduleMode: .derivedFromChecklist)
         let oneOff = presentation(taskType: .todo, scheduleMode: .oneOff)
 
         #expect(fixed.isStepBasedMode == false)
         #expect(fixed.showsRepeatControls)
+        #expect(fixed.showsChecklistTimingControls)
+        #expect(fixed.routineFinishDescription == "Finish with checklist items; choose their cadence below.")
+        #expect(fixed.checklistTimingDescription == "Checklist items follow the routine cadence and finish together.")
         #expect(fixed.scheduleModeDescription == "One scheduled routine that finishes after every checklist item is done.")
         #expect(fixed.scheduleBehaviorDescription == "Due means this can become due or overdue.")
         #expect(fixed.checklistSectionDescription(includesDerivedChecklistDueDetail: false) == "The routine is done when every checklist item is completed.")
+        #expect(runout.showsRepeatControls == false)
+        #expect(runout.showsChecklistTimingControls)
+        #expect(runout.checklistTimingDescription == "Each checklist item has its own timing; the earliest due item drives the routine.")
         #expect(gentle.scheduleBehaviorDescription == "Gentle keeps it visible and nudges you without overdue pressure.")
+        #expect(gentle.showsChecklistTimingControls == false)
 
         #expect(oneOff.isStepBasedMode)
         #expect(oneOff.showsRepeatControls == false)
+        #expect(oneOff.showsChecklistTimingControls == false)
         #expect(oneOff.taskTypeDescription == "Happens once. Use a deadline instead of repeat settings.")
         #expect(oneOff.notesHelpText == "Capture extra context, links, or reminders for this todo.")
         #expect(oneOff.checklistSectionDescription(includesDerivedChecklistDueDetail: false) == "Use checklist items for parts you want to tick off before finishing the todo.")
@@ -138,6 +147,7 @@ struct TaskFormPresentationTests {
     func compactSectionsDoNotOfferEmptyStandardRoutineChecklistDetails() {
         let routine = taskFormModel(scheduleMode: .fixedInterval)
         let checklistRoutine = taskFormModel(scheduleMode: .fixedIntervalChecklist)
+        let runoutRoutine = taskFormModel(scheduleMode: .derivedFromChecklist)
         let existingChecklistRoutine = taskFormModel(
             scheduleMode: .fixedInterval,
             checklistItems: [RoutineChecklistItem(title: "Bread", intervalDays: 3)]
@@ -146,6 +156,8 @@ struct TaskFormPresentationTests {
 
         #expect(!routine.visibleCompactSections(isShowingMoreDetails: true).contains(.checklist))
         #expect(checklistRoutine.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
+        #expect(runoutRoutine.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
+        #expect(runoutRoutine.visibleCompactSections(isShowingMoreDetails: false).contains(.repeatPattern))
         #expect(existingChecklistRoutine.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
         #expect(!todo.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
         #expect(todo.visibleCompactSections(isShowingMoreDetails: true).contains(.checklist))

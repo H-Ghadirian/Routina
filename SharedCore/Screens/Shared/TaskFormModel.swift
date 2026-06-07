@@ -174,6 +174,30 @@ extension TaskFormModel {
         )
     }
 
+    var routineFinishMode: Binding<RoutineFinishMode> {
+        let scheduleMode = scheduleMode
+        return Binding(
+            get: {
+                scheduleMode.wrappedValue.routineFinishMode
+            },
+            set: { finishMode in
+                scheduleMode.wrappedValue = scheduleMode.wrappedValue.replacingRoutineFinishMode(finishMode)
+            }
+        )
+    }
+
+    var checklistTimingMode: Binding<ChecklistTimingMode> {
+        let scheduleMode = scheduleMode
+        return Binding(
+            get: {
+                scheduleMode.wrappedValue.checklistTimingMode
+            },
+            set: { timingMode in
+                scheduleMode.wrappedValue = scheduleMode.wrappedValue.replacingChecklistTimingMode(timingMode)
+            }
+        )
+    }
+
     var suggestedRelatedTags: [String] {
         RoutineTagRelations.relatedTags(
             for: routineTags,
@@ -243,7 +267,8 @@ extension TaskFormModel {
             sections.insert(.scheduleType)
         }
 
-        if scheduleMode.wrappedValue.showsRoutineRepeatControls {
+        if scheduleMode.wrappedValue.showsRoutineRepeatControls
+            || scheduleMode.wrappedValue.routineFinishMode == .checklist {
             sections.insert(.repeatPattern)
         }
 
