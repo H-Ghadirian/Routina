@@ -29,6 +29,10 @@ struct TaskFormIOSTaskTypeSection: View {
             }
             .pickerStyle(.segmented)
 
+            if model.taskType.wrappedValue == .todo {
+                Toggle("All Day", isOn: model.isAllDay)
+            }
+
             Text(presentation.taskTypeDescription)
                 .font(.caption)
                 .foregroundStyle(.secondary)

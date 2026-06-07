@@ -8,12 +8,6 @@ struct TaskFormIOSDeadlineSection: View {
         Section(header: Text("Deadline")) {
             Toggle("Set deadline", isOn: model.deadlineEnabled)
             if model.deadlineEnabled.wrappedValue {
-                Picker("Timing", selection: model.isAllDay) {
-                    Text("At time").tag(false)
-                    Text("All day").tag(true)
-                }
-                .pickerStyle(.segmented)
-
                 DatePicker(
                     "Deadline",
                     selection: model.deadline,
@@ -314,8 +308,8 @@ struct TaskFormIOSRepeatPatternSections: View {
             if model.scheduleMode.wrappedValue.isSoftIntervalRoutine {
                 softReminderSection
             } else {
-                repeatPatternSection
                 availabilitySection
+                repeatPatternSection
                 recurrenceSpecificSections
             }
         }

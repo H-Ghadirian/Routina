@@ -493,8 +493,25 @@ struct TaskFormMacBehaviorCard: View {
         }
     }
 
+    @ViewBuilder
     private var scheduleBasicsControls: some View {
-        taskTypeControl
+        if model.taskType.wrappedValue == .todo {
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .top, spacing: 22) {
+                    taskTypeControl
+                        .frame(width: 320, alignment: .leading)
+                    todoAllDayControl
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                VStack(alignment: .leading, spacing: 16) {
+                    taskTypeControl
+                    todoAllDayControl
+                }
+            }
+        } else {
+            taskTypeControl
+        }
     }
 
     private var taskTypeControl: some View {
@@ -512,6 +529,15 @@ struct TaskFormMacBehaviorCard: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var todoAllDayControl: some View {
+        TaskFormMacToggleBlock(
+            title: "All day",
+            isOn: model.isAllDay
+        ) {
+            EmptyView()
+        }
     }
 
     @ViewBuilder
@@ -748,6 +774,8 @@ struct TaskFormMacBehaviorCard: View {
 
     @ViewBuilder
     private var repeatPatternControls: some View {
+        availabilityControl
+
         TaskFormMacControlBlock(title: "Repeat type") {
             HStack(spacing: 0) {
                 Picker("Repeat type", selection: model.repeatBasis) {
@@ -765,8 +793,6 @@ struct TaskFormMacBehaviorCard: View {
         if model.repeatBasis.wrappedValue == .calendar {
             calendarPatternControl
         }
-
-        availabilityControl
 
         switch model.recurrenceKind.wrappedValue {
         case .intervalDays:
@@ -1004,14 +1030,6 @@ struct TaskFormMacBehaviorCard: View {
                 title: "Set deadline",
                 isOn: model.deadlineEnabled
             ) {
-                Picker("Deadline timing", selection: model.isAllDay) {
-                    Text("At time").tag(false)
-                    Text("All day").tag(true)
-                }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .fixedSize()
-
                 DatePicker(
                     "Deadline",
                     selection: model.deadline,
