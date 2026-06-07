@@ -133,7 +133,7 @@ private struct SettingsIOSShortcutsDetailView: View {
     @AppStorage(
         UserDefaultBoolValueKey.appSettingSleepHomeMenuEnabled.rawValue,
         store: SharedDefaults.app
-    ) private var isSleepNewMenuEnabled = true
+    ) private var isSleepNewSheetEnabled = true
     @AppStorage(
         UserDefaultBoolValueKey.appSettingShakeToStartSleepEnabled.rawValue,
         store: SharedDefaults.app
@@ -142,10 +142,10 @@ private struct SettingsIOSShortcutsDetailView: View {
     var body: some View {
         List {
             Section("Sleep Shortcuts") {
-                Toggle("Show Going to sleep in New menu", isOn: $isSleepNewMenuEnabled)
+                Toggle("Show Going to sleep in New sheet", isOn: $isSleepNewSheetEnabled)
                 Toggle("Shake to start sleep mode", isOn: $isShakeToStartSleepEnabled)
 
-                Text("Long-press the New tab to open the New menu. Shake always asks for confirmation before sleep mode starts.")
+                Text("Tap the New tab to open the New action sheet. Shake always asks for confirmation before sleep mode starts.")
                     .foregroundStyle(.secondary)
             }
 

@@ -4,7 +4,6 @@ import ActivityKit
 #endif
 import ComposableArchitecture
 import SwiftData
-import UIKit
 import WidgetKit
 
 struct AppView: View {
@@ -16,13 +15,15 @@ struct AppView: View {
     @State private var searchText = ""
     @State private var moreDestination: AppMoreDestination?
     @State private var presentedSprintFocusDeepLink: SprintFocusDeepLinkPresentation?
+    @State private var isNewActionListPresented = false
+    @State private var pendingNewTabAction: NewTabAction?
     @State private var presentedNewActionSheet: NewActionSheet?
-    @State private var isNewMenuSleepConfirmationPresented = false
-    @State private var newMenuSleepWarningMessage: String?
+    @State private var isNewSheetSleepConfirmationPresented = false
+    @State private var newSheetSleepWarningMessage: String?
     @AppStorage(UserDefaultStringValueKey.appSettingAppColorScheme.rawValue, store: SharedDefaults.app)
     private var appColorSchemeRawValue = AppColorScheme.system.rawValue
     @AppStorage(UserDefaultBoolValueKey.appSettingSleepHomeMenuEnabled.rawValue, store: SharedDefaults.app)
-    private var isSleepNewMenuEnabled = true
+    private var isSleepNewSheetEnabled = true
 
     var body: some View {
 let tabView = TabView(
@@ -118,27 +119,27 @@ Group {
 .onContinueUserActivity(NSUserActivityTypeLiveActivity) { userActivity in
     handleLiveActivityContinuation(userActivity)
 }
-.background {
-    NewTabContextMenuBridge(
-        newTabIndex: newTabIndex,
-        isSleepActionEnabled: isNewMenuSleepActionEnabled,
-        onSelect: performNewTabAction
-    )
-    .frame(width: 0, height: 0)
-}
 .sheet(item: $presentedSprintFocusDeepLink) { presentation in
     SprintFocusDeepLinkView(sprintID: presentation.id)
+}
+.sheet(isPresented: $isNewActionListPresented, onDismiss: performPendingNewTabAction) {
+    NewActionListSheet(
+        actions: availableNewTabActions,
+        onSelect: queueNewTabAction
+    )
+    .presentationDetents([.height(newActionListSheetHeight)])
+    .presentationDragIndicator(.visible)
 }
 .sheet(item: $presentedNewActionSheet) { sheet in
     newActionSheetContent(for: sheet)
 }
-.alert("Stop focus timer?", isPresented: $isNewMenuSleepConfirmationPresented) {
+.alert("Stop focus timer?", isPresented: $isNewSheetSleepConfirmationPresented) {
     Button("Start Sleep", role: .destructive) {
-        startSleepFromNewMenu()
+        startSleepFromNewSheet()
     }
     Button("Cancel", role: .cancel) {}
 } message: {
-    Text(newMenuSleepWarningMessage ?? "Starting sleep mode will stop the current focus timer.")
+    Text(newSheetSleepWarningMessage ?? "Starting sleep mode will stop the current focus timer.")
 }
 .awayModeGate()
 .sleepModeGate()
@@ -174,17 +175,23 @@ Group {
         horizontalSizeClass == .compact || verticalSizeClass == .compact
     }
 
-    private var newTabIndex: Int {
-        usesCompactMoreTab ? 2 : 3
+    private var isNewSheetSleepActionEnabled: Bool {
+        isSleepNewSheetEnabled && sleepSessions.first(where: { $0.endedAt == nil }) == nil
     }
 
-    private var isNewMenuSleepActionEnabled: Bool {
-        isSleepNewMenuEnabled && sleepSessions.first(where: { $0.endedAt == nil }) == nil
+    private var availableNewTabActions: [NewTabAction] {
+        NewTabAction.creationActions + NewTabAction.sessionActions.filter { action in
+            action != .sleep || isNewSheetSleepActionEnabled
+        }
+    }
+
+    private var newActionListSheetHeight: CGFloat {
+        min(CGFloat(availableNewTabActions.count) * 54 + 92, 520)
     }
 
     private func selectTab(_ tab: AppTabBarItem) {
         if tab == .addTask {
-            openNewTask()
+            isNewActionListPresented = true
             return
         }
 
@@ -194,6 +201,18 @@ Group {
 
         guard let appTab = tab.appTab else { return }
         store.send(.tabSelected(appTab))
+    }
+
+    private func queueNewTabAction(_ action: NewTabAction) {
+        pendingNewTabAction = action
+        isNewActionListPresented = false
+    }
+
+    @MainActor
+    private func performPendingNewTabAction() {
+        guard let action = pendingNewTabAction else { return }
+        pendingNewTabAction = nil
+        performNewTabAction(action)
     }
 
     @MainActor
@@ -214,7 +233,7 @@ Group {
         case .away:
             presentedNewActionSheet = .away
         case .sleep:
-            requestSleepFromNewMenu()
+            requestSleepFromNewSheet()
         }
     }
 
@@ -253,28 +272,28 @@ Group {
     }
 
     @MainActor
-    private func requestSleepFromNewMenu() {
+    private func requestSleepFromNewSheet() {
         do {
             if let warningMessage = try SleepSessionSupport.activeFocusTimerWarningMessage(in: modelContext) {
-                newMenuSleepWarningMessage = warningMessage
-                isNewMenuSleepConfirmationPresented = true
+                newSheetSleepWarningMessage = warningMessage
+                isNewSheetSleepConfirmationPresented = true
                 return
             }
 
-            startSleepFromNewMenu()
+            startSleepFromNewSheet()
         } catch {
-            NSLog("Failed to check active focus before New menu sleep start: \(error.localizedDescription)")
+            NSLog("Failed to check active focus before New sheet sleep start: \(error.localizedDescription)")
         }
     }
 
     @MainActor
-    private func startSleepFromNewMenu() {
+    private func startSleepFromNewSheet() {
         do {
             _ = try SleepSessionSupport.startSleep(in: modelContext)
-            newMenuSleepWarningMessage = nil
-            isNewMenuSleepConfirmationPresented = false
+            newSheetSleepWarningMessage = nil
+            isNewSheetSleepConfirmationPresented = false
         } catch {
-            NSLog("Failed to start sleep session from New menu: \(error.localizedDescription)")
+            NSLog("Failed to start sleep session from New sheet: \(error.localizedDescription)")
         }
     }
 
@@ -500,7 +519,7 @@ private enum NewActionSheet: String, Identifiable {
     var id: String { rawValue }
 }
 
-private enum NewTabAction: CaseIterable, Equatable {
+private enum NewTabAction: CaseIterable, Equatable, Hashable, Identifiable {
     case event
     case emotion
     case note
@@ -512,6 +531,8 @@ private enum NewTabAction: CaseIterable, Equatable {
 
     static let creationActions: [NewTabAction] = [.event, .emotion, .note, .goal, .task]
     static let sessionActions: [NewTabAction] = [.checkIn, .away, .sleep]
+
+    var id: Self { self }
 
     var title: String {
         switch self {
@@ -727,268 +748,60 @@ private struct AppMoreNavigationView: View {
     }
 }
 
-private struct NewTabContextMenuBridge: UIViewRepresentable {
-    var newTabIndex: Int
-    var isSleepActionEnabled: Bool
-    var onSelect: (NewTabAction) -> Void
+private struct NewActionListSheet: View {
+    let actions: [NewTabAction]
+    let onSelect: (NewTabAction) -> Void
+    @Environment(\.dismiss) private var dismiss
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator()
-    }
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 0) {
+                    ForEach(Array(actions.enumerated()), id: \.element) { index, action in
+                        actionButton(action)
 
-    func makeUIView(context: Context) -> UIView {
-        let view = UIView(frame: .zero)
-        view.isUserInteractionEnabled = false
-        view.backgroundColor = .clear
-        return view
-    }
-
-    func updateUIView(_ uiView: UIView, context: Context) {
-        let coordinator = context.coordinator
-        coordinator.newTabIndex = newTabIndex
-        coordinator.isSleepActionEnabled = isSleepActionEnabled
-        coordinator.onSelect = onSelect
-
-        DispatchQueue.main.async { [weak uiView] in
-            guard let uiView else { return }
-            coordinator.install(from: uiView)
-        }
-    }
-
-    static func dismantleUIView(_ uiView: UIView, coordinator: Coordinator) {
-        coordinator.deactivate()
-    }
-
-    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
-        var newTabIndex = 2
-        var isSleepActionEnabled = false
-        var onSelect: (NewTabAction) -> Void = { _ in }
-
-        private weak var installedTabBar: UITabBar?
-        private weak var menuSourceButton: UIButton?
-        private var longPressGesture: UILongPressGestureRecognizer?
-        private var isActive = true
-
-        deinit {
-            MainActor.assumeIsolated {
-                uninstall()
-            }
-        }
-
-        func deactivate() {
-            isActive = false
-            uninstall()
-        }
-
-        func install(from view: UIView, attempt: Int = 0) {
-            guard isActive else { return }
-
-            guard let tabBar = findTabBarController(from: view)?.tabBar else {
-                guard attempt < 6 else { return }
-
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self, weak view] in
-                    guard let self, let view else { return }
-                    self.install(from: view, attempt: attempt + 1)
+                        if index < actions.count - 1 {
+                            Divider()
+                                .padding(.leading, 52)
+                        }
+                    }
                 }
-                return
+                .padding(.horizontal, 20)
+                .padding(.vertical, 8)
             }
-
-            if installedTabBar !== tabBar || longPressGesture == nil {
-                uninstall()
-                let gesture = makeLongPressGesture()
-                tabBar.addGestureRecognizer(gesture)
-                longPressGesture = gesture
-                installedTabBar = tabBar
-            }
-        }
-
-        func uninstall() {
-            if let longPressGesture {
-                longPressGesture.delegate = nil
-                longPressGesture.removeTarget(self, action: #selector(handleLongPress(_:)))
-                installedTabBar?.removeGestureRecognizer(longPressGesture)
-            }
-
-            menuSourceButton?.removeFromSuperview()
-            menuSourceButton = nil
-            longPressGesture = nil
-            installedTabBar = nil
-        }
-
-        private func makeLongPressGesture() -> UILongPressGestureRecognizer {
-            let gesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
-            gesture.cancelsTouchesInView = false
-            gesture.delegate = self
-            return gesture
-        }
-
-        func gestureRecognizer(
-            _ gestureRecognizer: UIGestureRecognizer,
-            shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
-        ) -> Bool {
-            true
-        }
-
-        @objc private func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
-            guard let tabBar = installedTabBar,
-                  gesture.state == .began
-            else {
-                return
-            }
-
-            let location = gesture.location(in: tabBar)
-            guard isNewTabLocation(location, in: tabBar) else { return }
-
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            presentMenu(from: tabBar)
-        }
-
-        private func presentMenu(from tabBar: UITabBar) {
-            let sourceButton = menuSourceButton ?? makeMenuSourceButton(in: tabBar)
-            menuSourceButton = sourceButton
-
-            if let newFrame = newTabFrame(in: tabBar) {
-                sourceButton.center = CGPoint(
-                    x: newFrame.midX,
-                    y: tabBar.bounds.minY - 10
-                )
-            } else {
-                sourceButton.center = CGPoint(
-                    x: fallbackNewTabMidX(in: tabBar),
-                    y: tabBar.bounds.minY - 10
-                )
-            }
-
-            sourceButton.menu = makeMenu()
-            sourceButton.showsMenuAsPrimaryAction = true
-            sourceButton.performPrimaryAction()
-        }
-
-        private func makeMenuSourceButton(in tabBar: UITabBar) -> UIButton {
-            let button = UIButton(type: .system)
-            button.frame = CGRect(x: 0, y: 0, width: 8, height: 8)
-            button.alpha = 0.01
-            button.isAccessibilityElement = false
-            tabBar.addSubview(button)
-            return button
-        }
-
-        private func makeMenu() -> UIMenu {
-            let creationMenu = UIMenu(
-                title: "",
-                options: .displayInline,
-                children: NewTabAction.creationActions.map { menuAction(for: $0) }
-            )
-
-            var sessionActions = NewTabAction.sessionActions
-            if !isSleepActionEnabled {
-                sessionActions.removeAll { $0 == .sleep }
-            }
-
-            let sessionMenu = UIMenu(
-                title: "",
-                options: .displayInline,
-                children: sessionActions.map { menuAction(for: $0) }
-            )
-
-            return UIMenu(title: "New", children: [creationMenu, sessionMenu])
-        }
-
-        private func menuAction(for action: NewTabAction) -> UIAction {
-            UIAction(
-                title: action.title,
-                image: UIImage(systemName: action.systemImage)
-            ) { [weak self] _ in
-                self?.onSelect(action)
-            }
-        }
-
-        private func isNewTabLocation(_ location: CGPoint, in tabBar: UITabBar) -> Bool {
-            if let newTabFrame = newTabFrame(in: tabBar) {
-                return newTabFrame.contains(location)
-            }
-
-            let itemCount = tabBar.items?.count ?? 0
-            guard itemCount > 0, tabBar.bounds.width > 0 else { return false }
-
-            let itemWidth = tabBar.bounds.width / CGFloat(itemCount)
-            let minX = itemWidth * CGFloat(min(newTabIndex, itemCount - 1))
-            let maxX = minX + itemWidth
-            return location.x >= minX && location.x <= maxX
-        }
-
-        private func newTabFrame(in tabBar: UITabBar) -> CGRect? {
-            guard let newTabButton = newTabButton(in: tabBar) else { return nil }
-            return newTabButton.convert(newTabButton.bounds, to: tabBar)
-        }
-
-        private func newTabButton(in tabBar: UITabBar) -> UIView? {
-            tabBar.layoutIfNeeded()
-
-            let controls = tabBar.tabBarControls
-                .filter { !$0.isHidden && $0.alpha > 0.01 && $0.bounds.width > 0 && $0.bounds.height > 0 }
-                .sorted {
-                    $0.convert($0.bounds, to: tabBar).minX < $1.convert($1.bounds, to: tabBar).minX
+            .scrollBounceBehavior(.basedOnSize)
+            .navigationTitle("New")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
                 }
-
-            guard controls.indices.contains(newTabIndex) else { return nil }
-            return controls[newTabIndex]
-        }
-
-        private func fallbackNewTabMidX(in tabBar: UITabBar) -> CGFloat {
-            let itemCount = tabBar.items?.count ?? 0
-            guard itemCount > 0, tabBar.bounds.width > 0 else {
-                return tabBar.bounds.midX
             }
-
-            let safeIndex = min(newTabIndex, itemCount - 1)
-            let itemWidth = tabBar.bounds.width / CGFloat(itemCount)
-            return itemWidth * CGFloat(safeIndex) + itemWidth / 2
-        }
-
-        private func findTabBarController(from view: UIView) -> UITabBarController? {
-            var responder: UIResponder? = view
-            while let current = responder {
-                if let tabBarController = current as? UITabBarController {
-                    return tabBarController
-                }
-                responder = current.next
-            }
-
-            return view.window?.rootViewController?.firstDescendant(of: UITabBarController.self)
         }
     }
-}
 
-private extension UIView {
-    var tabBarControls: [UIControl] {
-        subviews.flatMap { subview -> [UIControl] in
-            var controls = subview.tabBarControls
-            if let control = subview as? UIControl {
-                controls.append(control)
+    private func actionButton(_ action: NewTabAction) -> some View {
+        Button {
+            onSelect(action)
+        } label: {
+            HStack(spacing: 16) {
+                Image(systemName: action.systemImage)
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(Color.accentColor)
+                    .frame(width: 28)
+
+                Text(action.title)
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(.primary)
+
+                Spacer()
             }
-            return controls
+            .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+            .contentShape(Rectangle())
         }
-    }
-}
-
-private extension UIViewController {
-    func firstDescendant<T: UIViewController>(of type: T.Type) -> T? {
-        if let match = self as? T {
-            return match
-        }
-
-        for child in children {
-            if let match = child.firstDescendant(of: type) {
-                return match
-            }
-        }
-
-        if let presentedViewController,
-           let match = presentedViewController.firstDescendant(of: type) {
-            return match
-        }
-
-        return nil
+        .buttonStyle(.plain)
+        .accessibilityLabel(action.title)
     }
 }
