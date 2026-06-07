@@ -442,7 +442,7 @@ struct TaskFormMacBehaviorCard: View {
     private var schedulingContentMinHeight: CGFloat {
         switch model.taskType.wrappedValue {
         case .todo:
-            return 220
+            return 180
         case .routine:
             if model.scheduleMode.wrappedValue.isChecklistDrivenMode {
                 return 240
@@ -492,10 +492,12 @@ struct TaskFormMacBehaviorCard: View {
 
     private var schedulingSupportColumn: some View {
         VStack(alignment: .leading, spacing: 16) {
-            scheduleResultPreview
+            if model.taskType.wrappedValue == .routine {
+                scheduleResultPreview
 
-            if model.taskType.wrappedValue == .routine, showsAssumedDoneControl {
-                assumedDoneControl
+                if showsAssumedDoneControl {
+                    assumedDoneControl
+                }
             }
 
             reminderControl
@@ -504,26 +506,10 @@ struct TaskFormMacBehaviorCard: View {
 
     @ViewBuilder
     private var scheduleBasicsControls: some View {
-        if model.taskType.wrappedValue == .todo {
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .top, spacing: 22) {
-                    taskTypeControl
-                        .frame(width: 320, alignment: .leading)
-                    todoAllDayControl
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                VStack(alignment: .leading, spacing: 16) {
-                    taskTypeControl
-                    todoAllDayControl
-                }
-            }
-        } else {
-            VStack(alignment: .leading, spacing: 16) {
-                taskTypeControl
-                if showsRoutineAvailabilityControl {
-                    availabilityControl
-                }
+        VStack(alignment: .leading, spacing: 16) {
+            taskTypeControl
+            if showsAvailabilityControl {
+                availabilityControl
             }
         }
     }
@@ -545,17 +531,13 @@ struct TaskFormMacBehaviorCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var todoAllDayControl: some View {
-        TaskFormMacToggleBlock(
-            title: "All-day block",
-            isOn: model.isAllDay
-        ) {
-            EmptyView()
+    private var showsAvailabilityControl: Bool {
+        switch model.taskType.wrappedValue {
+        case .todo:
+            return true
+        case .routine:
+            return presentation.showsRepeatControls
         }
-    }
-
-    private var showsRoutineAvailabilityControl: Bool {
-        model.taskType.wrappedValue == .routine && presentation.showsRepeatControls
     }
 
     @ViewBuilder
@@ -649,141 +631,29 @@ struct TaskFormMacBehaviorCard: View {
 
     private var scheduleResultPreview: some View {
         VStack(alignment: .leading, spacing: 11) {
-            Text(scheduleResultHeader)
+            Text("Row badge preview")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            if model.taskType.wrappedValue == .routine {
-                TaskFormMacScheduleBehaviorHint(
-                    behavior: model.scheduleBehavior.wrappedValue,
-                    description: model.scheduleBehavior.wrappedValue.rowPreviewDescription
-                )
-            } else {
-                Label(scheduleResultTitle, systemImage: scheduleResultSystemImage)
-                    .font(.callout.weight(.semibold))
-                    .foregroundStyle(scheduleResultTint)
-
-                Text(scheduleResultDescription)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
+            TaskFormMacScheduleBehaviorHint(
+                behavior: model.scheduleBehavior.wrappedValue,
+                description: model.scheduleBehavior.wrappedValue.rowPreviewDescription
+            )
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(scheduleResultTint.opacity(0.08))
+                .fill(schedulePreviewTint.opacity(0.08))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(scheduleResultTint.opacity(0.18), lineWidth: 1)
+                .stroke(schedulePreviewTint.opacity(0.18), lineWidth: 1)
         )
     }
 
-    private var scheduleResultTitle: String {
-        switch model.taskType.wrappedValue {
-        case .todo:
-            return model.deadlineEnabled.wrappedValue ? "Todo with deadline" : "One-time todo"
-        case .routine:
-            return model.scheduleBehavior.wrappedValue == .soft ? "Gentle routine" : "Due routine"
-        }
-    }
-
-    private var scheduleResultDescription: String {
-        switch model.taskType.wrappedValue {
-        case .todo:
-            if model.deadlineEnabled.wrappedValue {
-                return "Deadline: \(model.deadline.wrappedValue.formatted(date: .abbreviated, time: model.isAllDay.wrappedValue ? .omitted : .shortened))."
-            }
-            return "No repeat schedule. Add a deadline only when this needs one."
-        case .routine:
-            if model.scheduleMode.wrappedValue.routineFormat == .runout {
-                return presentation.checklistTimingDescription
-            }
-            if model.scheduleMode.wrappedValue.isSoftIntervalRoutine {
-                return gentleRoutineCadenceSummary
-            }
-            return dueRoutineCadenceSummary
-        }
-    }
-
-    private var scheduleResultHeader: String {
-        model.taskType.wrappedValue == .routine ? "Row badge preview" : "Schedule summary"
-    }
-
-    private var scheduleResultSystemImage: String {
-        switch model.taskType.wrappedValue {
-        case .todo:
-            return model.deadlineEnabled.wrappedValue ? "calendar.badge.clock" : "checklist.unchecked"
-        case .routine:
-            return model.scheduleBehavior.wrappedValue == .soft ? "sparkles" : "clock.badge.exclamationmark"
-        }
-    }
-
-    private var scheduleResultTint: Color {
-        switch model.taskType.wrappedValue {
-        case .todo:
-            return .accentColor
-        case .routine:
-            return model.scheduleBehavior.wrappedValue == .soft ? .teal : .orange
-        }
-    }
-
-    private var dueRoutineCadenceSummary: String {
-        switch model.recurrenceKind.wrappedValue {
-        case .intervalDays:
-            if model.isAllDay.wrappedValue {
-                return allDayAvailabilityHelpText
-            }
-            return presentation.intervalRecurrenceTimeHelpText(
-                exactTimeText: exactTimeText,
-                timeRangeText: timeRangeText
-            )
-        case .dailyTime:
-            if model.isAllDay.wrappedValue {
-                return allDayAvailabilityHelpText
-            }
-            return presentation.dailyRecurrenceTimeHelpText(
-                exactTimeText: exactTimeText,
-                timeRangeText: timeRangeText
-            )
-        case .weekly:
-            if model.isAllDay.wrappedValue {
-                return allDayAvailabilityHelpText
-            }
-            return presentation.weeklyRecurrenceTimeHelpText(
-                explicitTimeText: exactTimeText,
-                timeRangeText: timeRangeText
-            )
-        case .monthlyDay:
-            if model.isAllDay.wrappedValue {
-                return allDayAvailabilityHelpText
-            }
-            return presentation.monthlyRecurrenceTimeHelpText(
-                explicitTimeText: exactTimeText,
-                timeRangeText: timeRangeText
-            )
-        }
-    }
-
-    private var frequencyIntervalPhrase: String {
-        let value = model.frequencyValue.wrappedValue
-        let unit = model.frequencyUnit.wrappedValue.singularLabel
-        return value == 1 ? "every \(unit)" : "every \(value) \(unit)s"
-    }
-
-    private var gentleRoutineCadenceSummary: String {
-        let cadence = "Nudges \(frequencyIntervalPhrase)"
-        if model.isAllDay.wrappedValue {
-            return "\(cadence); shows in the all-day lane."
-        }
-        if model.recurrenceHasTimeRange.wrappedValue {
-            return "\(cadence), available \(timeRangeText)."
-        }
-        if model.recurrenceHasExplicitTime.wrappedValue {
-            return "\(cadence), available at \(exactTimeText)."
-        }
-        return "Stays visible and nudges \(frequencyIntervalPhrase)."
+    private var schedulePreviewTint: Color {
+        model.scheduleBehavior.wrappedValue == .soft ? .teal : .orange
     }
 
     @ViewBuilder
@@ -867,7 +737,7 @@ struct TaskFormMacBehaviorCard: View {
 
     private var availabilityControl: some View {
         TaskFormMacControlBlock(title: "Availability") {
-            recurrenceExplicitTimeControls(helpText: recurrenceAvailabilityHelpText)
+            recurrenceExplicitTimeControls(helpText: availabilityHelpText)
         }
     }
 
@@ -904,7 +774,7 @@ struct TaskFormMacBehaviorCard: View {
     private func recurrenceExplicitTimeControls(helpText: String) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Picker("Availability", selection: timingModeBinding) {
-                ForEach(TaskFormTimingMode.allCases) { mode in
+                ForEach(TaskFormTimingMode.cases(for: model.taskType.wrappedValue)) { mode in
                     Text(mode.rawValue).tag(mode)
                 }
             }
@@ -912,14 +782,14 @@ struct TaskFormMacBehaviorCard: View {
             .pickerStyle(.segmented)
             .fixedSize()
 
-            if model.recurrenceHasExplicitTime.wrappedValue {
+            if currentTimingMode == .exact {
                 DatePicker(
                     "Time",
                     selection: model.recurrenceTimeOfDay,
                     displayedComponents: .hourAndMinute
                 )
                 .labelsHidden()
-            } else if model.recurrenceHasTimeRange.wrappedValue {
+            } else if currentTimingMode == .range {
                 timeRangePickers
             }
             Text(helpText)
@@ -946,36 +816,16 @@ struct TaskFormMacBehaviorCard: View {
         }
     }
 
-    private var exactTimeText: String {
-        model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened)
-    }
-
-    private var timeRangeText: String {
-        "\(model.recurrenceTimeRangeStart.wrappedValue.formatted(date: .omitted, time: .shortened)) to \(model.recurrenceTimeRangeEnd.wrappedValue.formatted(date: .omitted, time: .shortened))"
-    }
-
-    private var recurrenceAvailabilityHelpText: String {
+    private var availabilityHelpText: String {
         presentation.availabilityControlHelpText(isAllDay: model.isAllDay.wrappedValue)
-    }
-
-    private var allDayAvailabilityHelpText: String {
-        switch model.recurrenceKind.wrappedValue {
-        case .intervalDays:
-            return "Shows in the all-day lane once the interval has passed."
-        case .dailyTime:
-            return "Shows in the all-day lane every day."
-        case .weekly:
-            let weekday = TaskFormPresentation.weekdayName(for: model.recurrenceWeekday.wrappedValue)
-            return "Shows in the all-day lane every \(weekday)."
-        case .monthlyDay:
-            let day = TaskFormPresentation.ordinalDay(model.recurrenceDayOfMonth.wrappedValue)
-            return "Shows in the all-day lane on the \(day) of each month."
-        }
     }
 
     private var timingModeBinding: Binding<TaskFormTimingMode> {
         Binding(
             get: {
+                if model.taskType.wrappedValue == .todo {
+                    return model.isAllDay.wrappedValue ? .allDay : .none
+                }
                 if model.isAllDay.wrappedValue {
                     return .allDay
                 }
@@ -988,11 +838,21 @@ struct TaskFormMacBehaviorCard: View {
                 return .none
             },
             set: { mode in
+                if model.taskType.wrappedValue == .todo {
+                    model.isAllDay.wrappedValue = mode == .allDay
+                    model.recurrenceHasExplicitTime.wrappedValue = false
+                    model.recurrenceHasTimeRange.wrappedValue = false
+                    return
+                }
                 model.isAllDay.wrappedValue = mode == .allDay
                 model.recurrenceHasExplicitTime.wrappedValue = mode == .exact
                 model.recurrenceHasTimeRange.wrappedValue = mode == .range
             }
         )
+    }
+
+    private var currentTimingMode: TaskFormTimingMode {
+        timingModeBinding.wrappedValue
     }
 
     private var showsAssumedDoneControl: Bool {

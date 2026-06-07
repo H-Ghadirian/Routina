@@ -29,9 +29,7 @@ struct TaskFormIOSTaskTypeSection: View {
             }
             .pickerStyle(.segmented)
 
-            if model.taskType.wrappedValue == .todo {
-                Toggle("All-day block", isOn: model.isAllDay)
-            } else if showsRoutineAvailabilityControl {
+            if showsAvailabilityControl {
                 Divider()
                 availabilityContent
             }
@@ -42,8 +40,13 @@ struct TaskFormIOSTaskTypeSection: View {
         }
     }
 
-    private var showsRoutineAvailabilityControl: Bool {
-        model.taskType.wrappedValue == .routine && presentation.showsRepeatControls
+    private var showsAvailabilityControl: Bool {
+        switch model.taskType.wrappedValue {
+        case .todo:
+            return true
+        case .routine:
+            return presentation.showsRepeatControls
+        }
     }
 
     private var availabilityContent: some View {
@@ -53,15 +56,15 @@ struct TaskFormIOSTaskTypeSection: View {
                 .foregroundStyle(.secondary)
 
             Picker("Availability", selection: timingModeBinding) {
-                ForEach(TaskFormTimingMode.allCases) { mode in
+                ForEach(TaskFormTimingMode.cases(for: model.taskType.wrappedValue)) { mode in
                     Text(mode.rawValue).tag(mode)
                 }
             }
             .pickerStyle(.segmented)
 
-            if model.recurrenceHasExplicitTime.wrappedValue {
+            if currentTimingMode == .exact {
                 DatePicker("Time", selection: model.recurrenceTimeOfDay, displayedComponents: .hourAndMinute)
-            } else if model.recurrenceHasTimeRange.wrappedValue {
+            } else if currentTimingMode == .range {
                 timeRangePickers
             }
 
@@ -85,6 +88,9 @@ struct TaskFormIOSTaskTypeSection: View {
     private var timingModeBinding: Binding<TaskFormTimingMode> {
         Binding(
             get: {
+                if model.taskType.wrappedValue == .todo {
+                    return model.isAllDay.wrappedValue ? .allDay : .none
+                }
                 if model.isAllDay.wrappedValue {
                     return .allDay
                 }
@@ -97,11 +103,21 @@ struct TaskFormIOSTaskTypeSection: View {
                 return .none
             },
             set: { mode in
+                if model.taskType.wrappedValue == .todo {
+                    model.isAllDay.wrappedValue = mode == .allDay
+                    model.recurrenceHasExplicitTime.wrappedValue = false
+                    model.recurrenceHasTimeRange.wrappedValue = false
+                    return
+                }
                 model.isAllDay.wrappedValue = mode == .allDay
                 model.recurrenceHasExplicitTime.wrappedValue = mode == .exact
                 model.recurrenceHasTimeRange.wrappedValue = mode == .range
             }
         )
+    }
+
+    private var currentTimingMode: TaskFormTimingMode {
+        timingModeBinding.wrappedValue
     }
 }
 

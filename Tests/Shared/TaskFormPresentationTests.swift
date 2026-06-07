@@ -97,6 +97,18 @@ struct TaskFormPresentationTests {
     }
 
     @Test
+    func availabilityModesMatchPersistedTaskTypeSupport() {
+        let todo = presentation(taskType: .todo, scheduleMode: .oneOff)
+        let routine = presentation(scheduleMode: .fixedInterval)
+
+        #expect(TaskFormTimingMode.cases(for: .todo) == [.none, .allDay])
+        #expect(TaskFormTimingMode.cases(for: .routine) == [.none, .allDay, .exact, .range])
+        #expect(todo.availabilityControlHelpText(isAllDay: false) == "Available any time.")
+        #expect(todo.availabilityControlHelpText(isAllDay: true) == "Marked as all-day; deadline stays optional.")
+        #expect(routine.availabilityControlHelpText(isAllDay: true) == "Shows in the planner all-day lane on scheduled days.")
+    }
+
+    @Test
     func durationEntryPresentationBuildsAndClampsHourMinuteValues() {
         #expect(
             TaskFormDurationEntryPresentation.combinedMinutes(
