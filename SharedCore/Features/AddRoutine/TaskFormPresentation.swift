@@ -24,13 +24,8 @@ enum TaskFormTimingMode: String, CaseIterable, Equatable, Identifiable, Sendable
 
     var id: String { rawValue }
 
-    static func cases(for taskType: RoutineTaskType) -> [Self] {
-        switch taskType {
-        case .todo:
-            return [.none, .allDay]
-        case .routine:
-            return allCases
-        }
+    static func cases(for _: RoutineTaskType) -> [Self] {
+        allCases
     }
 }
 
@@ -343,9 +338,16 @@ struct TaskFormPresentation {
 
     func availabilityControlHelpText(isAllDay: Bool) -> String {
         if taskType == .todo {
-            return isAllDay
-                ? "Marked as all-day; deadline stays optional."
-                : "Available any time."
+            if isAllDay {
+                return "Marked as all-day; deadline stays optional."
+            }
+            if recurrenceHasTimeRange {
+                return "Available only during this window; deadline stays optional."
+            }
+            if recurrenceHasExplicitTime {
+                return "Available at this time; deadline stays optional."
+            }
+            return "Available any time."
         }
         if isAllDay {
             return "Shows in the planner all-day lane on scheduled days."

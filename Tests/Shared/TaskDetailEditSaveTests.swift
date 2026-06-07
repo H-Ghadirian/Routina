@@ -26,7 +26,9 @@ struct TaskDetailEditSaveTests {
                 isEditSheetPresented: true,
                 editRoutineName: "Buy tickets",
                 editRoutineEmoji: "🎟️",
-                editScheduleMode: .oneOff
+                editScheduleMode: .oneOff,
+                editRecurrenceHasExplicitTime: true,
+                editRecurrenceHasTimeRange: true
             )
         ) {
             TaskDetailFeature()
@@ -36,6 +38,8 @@ struct TaskDetailEditSaveTests {
 
         await store.send(.editAllDayChanged(true)) {
             $0.editIsAllDay = true
+            $0.editRecurrenceHasExplicitTime = false
+            $0.editRecurrenceHasTimeRange = false
         }
 
         #expect(store.state.editDeadline == nil)
@@ -129,6 +133,67 @@ struct TaskDetailEditSaveTests {
         )
         #expect(persistedTask.deadline == calendar.startOfDay(for: deadline))
         #expect(persistedTask.isAllDay)
+    }
+
+    @Test
+    func editSaveTapped_persistsWindowAvailabilityForTodos() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let task = RoutineTask(
+            name: "Call landlord",
+            scheduleMode: .oneOff,
+            recurrenceRule: .interval(days: 1)
+        )
+        context.insert(task)
+        try context.save()
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 7, minute: 0),
+            end: RoutineTimeOfDay(hour: 10, minute: 0)
+        )
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Call landlord",
+                editRoutineEmoji: "📞",
+                editScheduleMode: .oneOff,
+                editFrequency: .day,
+                editFrequencyValue: 1,
+                editRecurrenceKind: .intervalDays,
+                editRecurrenceHasTimeRange: true,
+                editRecurrenceTimeRangeStart: window.start,
+                editRecurrenceTimeRangeEnd: window.end
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+        await store.receive(.onAppear)
+
+        let taskID = task.id
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { task in
+                        task.id == taskID
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.scheduleMode == .oneOff)
+        #expect(persistedTask.deadline == nil)
+        #expect(persistedTask.recurrenceRule == .interval(days: 1, timeRange: window))
     }
 
     @Test

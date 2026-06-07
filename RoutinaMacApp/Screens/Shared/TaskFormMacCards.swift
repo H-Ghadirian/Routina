@@ -479,13 +479,10 @@ struct TaskFormMacBehaviorCard: View {
         VStack(alignment: .leading, spacing: 18) {
             scheduleBasicsControls
 
-            Divider()
-
             if model.taskType.wrappedValue == .routine {
+                Divider()
                 routineScheduleControls
                 routineCadenceControls
-            } else {
-                todoDeadlineControl
             }
         }
     }
@@ -501,6 +498,10 @@ struct TaskFormMacBehaviorCard: View {
             }
 
             reminderControl
+
+            if model.taskType.wrappedValue == .todo {
+                todoDeadlineControl
+            }
         }
     }
 
@@ -823,9 +824,6 @@ struct TaskFormMacBehaviorCard: View {
     private var timingModeBinding: Binding<TaskFormTimingMode> {
         Binding(
             get: {
-                if model.taskType.wrappedValue == .todo {
-                    return model.isAllDay.wrappedValue ? .allDay : .none
-                }
                 if model.isAllDay.wrappedValue {
                     return .allDay
                 }
@@ -838,12 +836,6 @@ struct TaskFormMacBehaviorCard: View {
                 return .none
             },
             set: { mode in
-                if model.taskType.wrappedValue == .todo {
-                    model.isAllDay.wrappedValue = mode == .allDay
-                    model.recurrenceHasExplicitTime.wrappedValue = false
-                    model.recurrenceHasTimeRange.wrappedValue = false
-                    return
-                }
                 model.isAllDay.wrappedValue = mode == .allDay
                 model.recurrenceHasExplicitTime.wrappedValue = mode == .exact
                 model.recurrenceHasTimeRange.wrappedValue = mode == .range

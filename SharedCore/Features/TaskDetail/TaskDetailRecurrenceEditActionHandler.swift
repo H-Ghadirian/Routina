@@ -33,7 +33,7 @@ struct TaskDetailRecurrenceEditActionHandler {
             if isAllDay, state.editScheduleMode == .oneOff, let deadline = state.editDeadline {
                 state.editDeadline = calendar.startOfDay(for: deadline)
             }
-            if isAllDay, state.editScheduleMode != .oneOff {
+            if isAllDay {
                 state.editRecurrenceHasExplicitTime = false
                 state.editRecurrenceHasTimeRange = false
             }

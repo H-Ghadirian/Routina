@@ -110,6 +110,39 @@ struct AddRoutineFeatureSaveTests {
     }
 
     @Test
+    func saveTapped_includesExactAvailabilityForTodosWithoutDeadline() async {
+        let exactTime = RoutineTimeOfDay(hour: 20, minute: 0)
+        let capturedRequest = LockIsolated<AddRoutineSaveRequest?>(nil)
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(routineName: "Call landlord"),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .oneOff,
+                    recurrenceHasExplicitTime: true,
+                    recurrenceTimeOfDay: exactTime
+                )
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { request in
+                    capturedRequest.withValue { $0 = request }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.saveTapped)
+
+        #expect(capturedRequest.value?.scheduleMode == .oneOff)
+        #expect(capturedRequest.value?.deadline == nil)
+        #expect(capturedRequest.value?.recurrenceRule == .interval(days: 1, at: exactTime))
+    }
+
+    @Test
     func saveTapped_includesAllDayFlagForRoutines() async {
         let capturedRequest = LockIsolated<AddRoutineSaveRequest?>(nil)
         let store = TestStore(
@@ -162,6 +195,32 @@ struct AddRoutineFeatureSaveTests {
 
         #expect(task.deadline == deadline)
         #expect(task.isAllDay)
+    }
+
+    @Test
+    func makeRoutine_persistsWindowAvailabilityFromTodoSaveRequest() {
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 7, minute: 0),
+            end: RoutineTimeOfDay(hour: 10, minute: 0)
+        )
+        let request = makeSaveRequest(
+            name: "Call landlord",
+            frequencyInDays: 1,
+            recurrenceRule: .interval(days: 1, timeRange: window),
+            emoji: "📞",
+            scheduleMode: .oneOff
+        )
+
+        let task = HomeAddRoutineSupport.makeRoutine(
+            from: request,
+            name: request.name,
+            goalIDs: [],
+            scheduleAnchor: makeDate("2026-03-22T00:00:00Z")
+        )
+
+        #expect(task.scheduleMode == .oneOff)
+        #expect(task.recurrenceRule == .interval(days: 1, timeRange: window))
+        #expect(task.interval == 1)
     }
 
     @Test

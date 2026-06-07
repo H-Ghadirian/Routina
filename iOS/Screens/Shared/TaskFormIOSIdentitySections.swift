@@ -88,9 +88,6 @@ struct TaskFormIOSTaskTypeSection: View {
     private var timingModeBinding: Binding<TaskFormTimingMode> {
         Binding(
             get: {
-                if model.taskType.wrappedValue == .todo {
-                    return model.isAllDay.wrappedValue ? .allDay : .none
-                }
                 if model.isAllDay.wrappedValue {
                     return .allDay
                 }
@@ -103,12 +100,6 @@ struct TaskFormIOSTaskTypeSection: View {
                 return .none
             },
             set: { mode in
-                if model.taskType.wrappedValue == .todo {
-                    model.isAllDay.wrappedValue = mode == .allDay
-                    model.recurrenceHasExplicitTime.wrappedValue = false
-                    model.recurrenceHasTimeRange.wrappedValue = false
-                    return
-                }
                 model.isAllDay.wrappedValue = mode == .allDay
                 model.recurrenceHasExplicitTime.wrappedValue = mode == .exact
                 model.recurrenceHasTimeRange.wrappedValue = mode == .range

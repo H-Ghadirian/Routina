@@ -24,16 +24,21 @@ extension TaskDetailFeature {
         for state: State,
         fallbackInterval: Int
     ) -> RoutineRecurrenceRule {
+        let usesAvailabilityTiming = !state.editIsAllDay
+        let timeRange = usesAvailabilityTiming ? state.editRecurrenceTimeRange : nil
+
         guard state.editScheduleMode != .oneOff else {
-            return .interval(days: 1)
+            return .interval(
+                days: 1,
+                at: usesAvailabilityTiming && state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil,
+                timeRange: timeRange
+            )
         }
 
         guard !state.editScheduleMode.isChecklistDrivenMode else {
             return .interval(days: max(fallbackInterval, 1))
         }
 
-        let usesAvailabilityTiming = !state.editIsAllDay
-        let timeRange = usesAvailabilityTiming ? state.editRecurrenceTimeRange : nil
         switch state.editRecurrenceKind {
         case .intervalDays:
             return .interval(

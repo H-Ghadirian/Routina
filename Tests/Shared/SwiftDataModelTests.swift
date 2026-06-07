@@ -247,6 +247,21 @@ struct SwiftDataModelTests {
     }
 
     @Test
+    func routineTask_oneOffKeepsAvailabilityTimingWhileForcingSingleDayInterval() {
+        let exactTime = RoutineTimeOfDay(hour: 20, minute: 0)
+        let task = RoutineTask(
+            name: "Call landlord",
+            scheduleMode: .oneOff,
+            interval: 14,
+            recurrenceRule: .interval(days: 14, at: exactTime)
+        )
+
+        #expect(task.scheduleMode == .oneOff)
+        #expect(task.interval == 1)
+        #expect(task.recurrenceRule == .interval(days: 1, at: exactTime))
+    }
+
+    @Test
     func routineTask_optionalChecklistProgressCanBeToggled() {
         let itemID = UUID()
         let task = RoutineTask(

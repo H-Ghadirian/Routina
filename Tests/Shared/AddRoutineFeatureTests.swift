@@ -110,7 +110,11 @@ struct AddRoutineFeatureTests {
     func allDayChanged_forTodoDoesNotCreateDeadline() async {
         let store = TestStore(
             initialState: makeState(
-                schedule: AddRoutineScheduleState(scheduleMode: .oneOff)
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .oneOff,
+                    recurrenceHasExplicitTime: true,
+                    recurrenceHasTimeRange: true
+                )
             )
         ) {
             makeFeature()
@@ -120,6 +124,8 @@ struct AddRoutineFeatureTests {
 
         await store.send(.allDayChanged(true)) {
             $0.basics.isAllDay = true
+            $0.schedule.recurrenceHasExplicitTime = false
+            $0.schedule.recurrenceHasTimeRange = false
         }
 
         #expect(store.state.basics.deadline == nil)

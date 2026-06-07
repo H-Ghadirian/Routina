@@ -91,7 +91,11 @@ struct TaskDetailFeature: Reducer {
             let timeRange = usesAvailabilityTiming ? editRecurrenceTimeRange : nil
 
             guard editScheduleMode != .oneOff else {
-                return .interval(days: 1)
+                return .interval(
+                    days: 1,
+                    at: usesAvailabilityTiming && editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil,
+                    timeRange: timeRange
+                )
             }
 
             guard !editScheduleMode.isChecklistDrivenMode else {

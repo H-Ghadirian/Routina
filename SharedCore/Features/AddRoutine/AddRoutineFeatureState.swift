@@ -121,7 +121,11 @@ struct AddRoutineFeatureState: Equatable {
         let timeRange = usesAvailabilityTiming ? schedule.recurrenceTimeRange : nil
 
         guard schedule.scheduleMode != .oneOff else {
-            return .interval(days: 1)
+            return .interval(
+                days: 1,
+                at: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
+                timeRange: timeRange
+            )
         }
 
         guard !schedule.scheduleMode.isChecklistDrivenMode else {

@@ -150,7 +150,7 @@ struct AddRoutineFeature: Reducer {
                 scheduleMode: state.schedule.scheduleMode,
                 basics: &state.basics
             )
-            if isAllDay, state.schedule.scheduleMode != .oneOff {
+            if isAllDay {
                 state.schedule.recurrenceHasExplicitTime = false
                 state.schedule.recurrenceHasTimeRange = false
             }

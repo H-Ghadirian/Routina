@@ -176,6 +176,14 @@ enum TaskDetailEditChangeDetector {
             )
             : nil
 
+        if request.scheduleMode == .oneOff {
+            return .interval(
+                days: 1,
+                at: usesAvailabilityTiming && request.recurrenceHasExplicitTime ? request.recurrenceTimeOfDay : nil,
+                timeRange: timeRange
+            )
+        }
+
         switch request.recurrenceKind {
         case .intervalDays:
             return .interval(

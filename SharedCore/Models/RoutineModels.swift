@@ -243,7 +243,14 @@ final class RoutineTask {
                 ?? recurrenceRuleFromColumns
         }
         set {
-            storeRecurrenceRuleInColumns(newValue)
+            let normalizedRule = scheduleMode == .oneOff
+                ? RoutineRecurrenceRule.interval(
+                    days: 1,
+                    at: newValue.timeOfDay,
+                    timeRange: newValue.timeRange
+                )
+                : newValue
+            storeRecurrenceRuleInColumns(normalizedRule)
         }
     }
 
@@ -297,9 +304,14 @@ final class RoutineTask {
     ) {
         let resolvedScheduleMode = scheduleMode ?? (checklistItems.isEmpty ? .fixedInterval : .derivedFromChecklist)
         let resolvedChecklistItems = checklistItems
+        let inputRecurrenceRule = recurrenceRule ?? RoutineRecurrenceRule.interval(days: max(Int(interval), 1))
         let resolvedRecurrenceRule = resolvedScheduleMode == .oneOff
-            ? RoutineRecurrenceRule.interval(days: 1)
-            : recurrenceRule ?? RoutineRecurrenceRule.interval(days: max(Int(interval), 1))
+            ? RoutineRecurrenceRule.interval(
+                days: 1,
+                at: inputRecurrenceRule.timeOfDay,
+                timeRange: inputRecurrenceRule.timeRange
+            )
+            : inputRecurrenceRule
         self.id = id
         self.name = name
         self.emoji = emoji
