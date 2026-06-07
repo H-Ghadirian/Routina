@@ -36,12 +36,13 @@ extension TaskDetailFeature {
             return .interval(days: max(fallbackInterval, 1))
         }
 
-        let timeRange = state.editRecurrenceTimeRange
+        let usesAvailabilityTiming = !state.editIsAllDay
+        let timeRange = usesAvailabilityTiming ? state.editRecurrenceTimeRange : nil
         switch state.editRecurrenceKind {
         case .intervalDays:
             return .interval(
                 days: max(fallbackInterval, 1),
-                at: state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil,
+                at: usesAvailabilityTiming && state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
         case .dailyTime:
@@ -50,18 +51,18 @@ extension TaskDetailFeature {
             }
             return RoutineRecurrenceRule(
                 kind: .dailyTime,
-                timeOfDay: state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil
+                timeOfDay: usesAvailabilityTiming && state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil
             )
         case .weekly:
             return .weekly(
                 on: state.editRecurrenceWeekday,
-                at: state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil,
+                at: usesAvailabilityTiming && state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
         case .monthlyDay:
             return .monthly(
                 on: state.editRecurrenceDayOfMonth,
-                at: state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil,
+                at: usesAvailabilityTiming && state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
         }

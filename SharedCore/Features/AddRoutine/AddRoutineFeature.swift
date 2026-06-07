@@ -150,6 +150,13 @@ struct AddRoutineFeature: Reducer {
                 scheduleMode: state.schedule.scheduleMode,
                 basics: &state.basics
             )
+            if isAllDay, state.schedule.scheduleMode != .oneOff {
+                state.schedule.recurrenceHasExplicitTime = false
+                state.schedule.recurrenceHasTimeRange = false
+            }
+            if !state.canAutoAssumeDailyDone {
+                state.schedule.autoAssumeDailyDone = false
+            }
             return .none
 
         case let .reminderEnabledChanged(isEnabled):

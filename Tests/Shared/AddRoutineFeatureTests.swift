@@ -60,6 +60,30 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func allDayChanged_forRoutineClearsAvailabilityTiming() async {
+        let store = TestStore(
+            initialState: makeState(
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .fixedInterval,
+                    recurrenceKind: .intervalDays,
+                    recurrenceHasExplicitTime: true,
+                    recurrenceHasTimeRange: true
+                )
+            )
+        ) {
+            makeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.allDayChanged(true)) {
+            $0.basics.isAllDay = true
+            $0.schedule.recurrenceHasExplicitTime = false
+            $0.schedule.recurrenceHasTimeRange = false
+        }
+    }
+
+    @Test
     func emojiSanitization_keepsOnlyFirstCharacter() async {
         let store = TestStore(initialState: makeState()) {
             makeFeature()

@@ -18,6 +18,7 @@ enum TaskFormFrequencyUnit: String, CaseIterable, Equatable, Sendable {
 
 enum TaskFormTimingMode: String, CaseIterable, Equatable, Identifiable, Sendable {
     case none = "Any time"
+    case allDay = "All day"
     case exact = "At time"
     case range = "Window"
 

@@ -8,6 +8,12 @@ struct TaskFormIOSDeadlineSection: View {
         Section(header: Text("Deadline")) {
             Toggle("Set deadline", isOn: model.deadlineEnabled)
             if model.deadlineEnabled.wrappedValue {
+                Picker("Timing", selection: model.isAllDay) {
+                    Text("At time").tag(false)
+                    Text("All day").tag(true)
+                }
+                .pickerStyle(.segmented)
+
                 DatePicker(
                     "Deadline",
                     selection: model.deadline,
@@ -451,6 +457,9 @@ struct TaskFormIOSRepeatPatternSections: View {
     }
 
     private var recurrenceAvailabilityHelpText: String {
+        if model.isAllDay.wrappedValue {
+            return allDayAvailabilityHelpText
+        }
         switch model.recurrenceKind.wrappedValue {
         case .intervalDays:
             return presentation.intervalRecurrenceTimeHelpText(
@@ -475,9 +484,27 @@ struct TaskFormIOSRepeatPatternSections: View {
         }
     }
 
+    private var allDayAvailabilityHelpText: String {
+        switch model.recurrenceKind.wrappedValue {
+        case .intervalDays:
+            return "Shows as all-day once the interval has passed."
+        case .dailyTime:
+            return "Shows as all-day every day."
+        case .weekly:
+            let weekday = TaskFormPresentation.weekdayName(for: model.recurrenceWeekday.wrappedValue)
+            return "Shows as all-day every \(weekday)."
+        case .monthlyDay:
+            let day = TaskFormPresentation.ordinalDay(model.recurrenceDayOfMonth.wrappedValue)
+            return "Shows as all-day on the \(day) of each month."
+        }
+    }
+
     private var timingModeBinding: Binding<TaskFormTimingMode> {
         Binding(
             get: {
+                if model.isAllDay.wrappedValue {
+                    return .allDay
+                }
                 if model.recurrenceHasTimeRange.wrappedValue {
                     return .range
                 }
@@ -487,6 +514,7 @@ struct TaskFormIOSRepeatPatternSections: View {
                 return .none
             },
             set: { mode in
+                model.isAllDay.wrappedValue = mode == .allDay
                 model.recurrenceHasExplicitTime.wrappedValue = mode == .exact
                 model.recurrenceHasTimeRange.wrappedValue = mode == .range
             }

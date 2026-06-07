@@ -494,47 +494,24 @@ struct TaskFormMacBehaviorCard: View {
     }
 
     private var scheduleBasicsControls: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .top, spacing: 22) {
-                taskTypeControl
-                    .frame(width: 320, alignment: .leading)
-                allDayControl
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            VStack(alignment: .leading, spacing: 16) {
-                taskTypeControl
-                allDayControl
-            }
-        }
+        taskTypeControl
     }
 
     private var taskTypeControl: some View {
-        TaskFormMacControlBlock(title: "Create as") {
-            VStack(alignment: .leading, spacing: 8) {
-                Picker("Create as", selection: model.taskType) {
-                    Text("Routine").tag(RoutineTaskType.routine)
-                    Text("Todo").tag(RoutineTaskType.todo)
-                }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .fixedSize()
-
-                Text(presentation.taskTypeDescription)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 8) {
+            Picker("Task type", selection: model.taskType) {
+                Text("Routine").tag(RoutineTaskType.routine)
+                Text("Todo").tag(RoutineTaskType.todo)
             }
-        }
-    }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .fixedSize()
 
-    private var allDayControl: some View {
-        TaskFormMacToggleBlock(
-            title: "Keep it all day",
-            isOn: model.isAllDay,
-            caption: "Use the whole day instead of choosing a specific time."
-        ) {
-            EmptyView()
+            Text(presentation.taskTypeDescription)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder
@@ -729,21 +706,33 @@ struct TaskFormMacBehaviorCard: View {
     private var dueRoutineCadenceSummary: String {
         switch model.recurrenceKind.wrappedValue {
         case .intervalDays:
+            if model.isAllDay.wrappedValue {
+                return allDayAvailabilityHelpText
+            }
             return presentation.intervalRecurrenceTimeHelpText(
                 exactTimeText: exactTimeText,
                 timeRangeText: timeRangeText
             )
         case .dailyTime:
+            if model.isAllDay.wrappedValue {
+                return allDayAvailabilityHelpText
+            }
             return presentation.dailyRecurrenceTimeHelpText(
                 exactTimeText: exactTimeText,
                 timeRangeText: timeRangeText
             )
         case .weekly:
+            if model.isAllDay.wrappedValue {
+                return allDayAvailabilityHelpText
+            }
             return presentation.weeklyRecurrenceTimeHelpText(
                 explicitTimeText: exactTimeText,
                 timeRangeText: timeRangeText
             )
         case .monthlyDay:
+            if model.isAllDay.wrappedValue {
+                return allDayAvailabilityHelpText
+            }
             return presentation.monthlyRecurrenceTimeHelpText(
                 explicitTimeText: exactTimeText,
                 timeRangeText: timeRangeText
@@ -926,21 +915,33 @@ struct TaskFormMacBehaviorCard: View {
     private var recurrenceAvailabilityHelpText: String {
         switch model.recurrenceKind.wrappedValue {
         case .intervalDays:
+            if model.isAllDay.wrappedValue {
+                return allDayAvailabilityHelpText
+            }
             return presentation.intervalRecurrenceTimeHelpText(
                 exactTimeText: exactTimeText,
                 timeRangeText: timeRangeText
             )
         case .dailyTime:
+            if model.isAllDay.wrappedValue {
+                return allDayAvailabilityHelpText
+            }
             return presentation.dailyRecurrenceTimeHelpText(
                 exactTimeText: exactTimeText,
                 timeRangeText: timeRangeText
             )
         case .weekly:
+            if model.isAllDay.wrappedValue {
+                return allDayAvailabilityHelpText
+            }
             return presentation.weeklyRecurrenceTimeHelpText(
                 explicitTimeText: exactTimeText,
                 timeRangeText: timeRangeText
             )
         case .monthlyDay:
+            if model.isAllDay.wrappedValue {
+                return allDayAvailabilityHelpText
+            }
             return presentation.monthlyRecurrenceTimeHelpText(
                 explicitTimeText: exactTimeText,
                 timeRangeText: timeRangeText
@@ -948,9 +949,27 @@ struct TaskFormMacBehaviorCard: View {
         }
     }
 
+    private var allDayAvailabilityHelpText: String {
+        switch model.recurrenceKind.wrappedValue {
+        case .intervalDays:
+            return "Shows as all-day once the interval has passed."
+        case .dailyTime:
+            return "Shows as all-day every day."
+        case .weekly:
+            let weekday = TaskFormPresentation.weekdayName(for: model.recurrenceWeekday.wrappedValue)
+            return "Shows as all-day every \(weekday)."
+        case .monthlyDay:
+            let day = TaskFormPresentation.ordinalDay(model.recurrenceDayOfMonth.wrappedValue)
+            return "Shows as all-day on the \(day) of each month."
+        }
+    }
+
     private var timingModeBinding: Binding<TaskFormTimingMode> {
         Binding(
             get: {
+                if model.isAllDay.wrappedValue {
+                    return .allDay
+                }
                 if model.recurrenceHasTimeRange.wrappedValue {
                     return .range
                 }
@@ -960,6 +979,7 @@ struct TaskFormMacBehaviorCard: View {
                 return .none
             },
             set: { mode in
+                model.isAllDay.wrappedValue = mode == .allDay
                 model.recurrenceHasExplicitTime.wrappedValue = mode == .exact
                 model.recurrenceHasTimeRange.wrappedValue = mode == .range
             }
@@ -982,9 +1002,16 @@ struct TaskFormMacBehaviorCard: View {
         if model.taskType.wrappedValue == .todo {
             TaskFormMacToggleBlock(
                 title: "Set deadline",
-                isOn: model.deadlineEnabled,
-                caption: "Add a due date only when this todo needs one."
+                isOn: model.deadlineEnabled
             ) {
+                Picker("Deadline timing", selection: model.isAllDay) {
+                    Text("At time").tag(false)
+                    Text("All day").tag(true)
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .fixedSize()
+
                 DatePicker(
                     "Deadline",
                     selection: model.deadline,

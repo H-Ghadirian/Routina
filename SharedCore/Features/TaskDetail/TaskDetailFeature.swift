@@ -87,7 +87,8 @@ struct TaskDetailFeature: Reducer {
             let fallbackInterval = editScheduleMode == .oneOff
                 ? 1
                 : editFrequencyValue * editFrequency.daysMultiplier
-            let timeRange = editRecurrenceTimeRange
+            let usesAvailabilityTiming = !editIsAllDay
+            let timeRange = usesAvailabilityTiming ? editRecurrenceTimeRange : nil
 
             guard editScheduleMode != .oneOff else {
                 return .interval(days: 1)
@@ -105,7 +106,7 @@ struct TaskDetailFeature: Reducer {
             case .intervalDays:
                 return .interval(
                     days: max(fallbackInterval, 1),
-                    at: editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil,
+                    at: usesAvailabilityTiming && editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil,
                     timeRange: timeRange
                 )
             case .dailyTime:
@@ -114,18 +115,18 @@ struct TaskDetailFeature: Reducer {
                 }
                 return RoutineRecurrenceRule(
                     kind: .dailyTime,
-                    timeOfDay: editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil
+                    timeOfDay: usesAvailabilityTiming && editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil
                 )
             case .weekly:
                 return .weekly(
                     on: editRecurrenceWeekday,
-                    at: editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil,
+                    at: usesAvailabilityTiming && editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil,
                     timeRange: timeRange
                 )
             case .monthlyDay:
                 return .monthly(
                     on: editRecurrenceDayOfMonth,
-                    at: editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil,
+                    at: usesAvailabilityTiming && editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil,
                     timeRange: timeRange
                 )
             }

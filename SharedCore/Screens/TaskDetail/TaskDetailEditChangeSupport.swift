@@ -168,7 +168,8 @@ enum TaskDetailEditChangeDetector {
     }
 
     private static func recurrenceRule(for request: TaskDetailEditChangeRequest) -> RoutineRecurrenceRule {
-        let timeRange = request.recurrenceHasTimeRange
+        let usesAvailabilityTiming = !request.isAllDay
+        let timeRange = usesAvailabilityTiming && request.recurrenceHasTimeRange
             ? RoutineTimeRange(
                 start: request.recurrenceTimeRangeStart,
                 end: request.recurrenceTimeRangeEnd
@@ -179,7 +180,7 @@ enum TaskDetailEditChangeDetector {
         case .intervalDays:
             return .interval(
                 days: request.frequencyValue * request.frequency.daysMultiplier,
-                at: request.recurrenceHasExplicitTime ? request.recurrenceTimeOfDay : nil,
+                at: usesAvailabilityTiming && request.recurrenceHasExplicitTime ? request.recurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
         case .dailyTime:
@@ -188,18 +189,18 @@ enum TaskDetailEditChangeDetector {
             }
             return RoutineRecurrenceRule(
                 kind: .dailyTime,
-                timeOfDay: request.recurrenceHasExplicitTime ? request.recurrenceTimeOfDay : nil
+                timeOfDay: usesAvailabilityTiming && request.recurrenceHasExplicitTime ? request.recurrenceTimeOfDay : nil
             )
         case .weekly:
             return .weekly(
                 on: request.recurrenceWeekday,
-                at: request.recurrenceHasExplicitTime ? request.recurrenceTimeOfDay : nil,
+                at: usesAvailabilityTiming && request.recurrenceHasExplicitTime ? request.recurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
         case .monthlyDay:
             return .monthly(
                 on: request.recurrenceDayOfMonth,
-                at: request.recurrenceHasExplicitTime ? request.recurrenceTimeOfDay : nil,
+                at: usesAvailabilityTiming && request.recurrenceHasExplicitTime ? request.recurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
         }

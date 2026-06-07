@@ -117,7 +117,8 @@ struct AddRoutineFeatureState: Equatable {
         let fallbackInterval = schedule.scheduleMode == .oneOff
             ? 1
             : schedule.frequencyValue * schedule.frequency.daysMultiplier
-        let timeRange = schedule.recurrenceTimeRange
+        let usesAvailabilityTiming = !basics.isAllDay
+        let timeRange = usesAvailabilityTiming ? schedule.recurrenceTimeRange : nil
 
         guard schedule.scheduleMode != .oneOff else {
             return .interval(days: 1)
@@ -135,7 +136,7 @@ struct AddRoutineFeatureState: Equatable {
         case .intervalDays:
             return .interval(
                 days: max(fallbackInterval, 1),
-                at: schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
+                at: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
         case .dailyTime:
@@ -144,18 +145,18 @@ struct AddRoutineFeatureState: Equatable {
             }
             return RoutineRecurrenceRule(
                 kind: .dailyTime,
-                timeOfDay: schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil
+                timeOfDay: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil
             )
         case .weekly:
             return .weekly(
                 on: schedule.recurrenceWeekday,
-                at: schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
+                at: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
         case .monthlyDay:
             return .monthly(
                 on: schedule.recurrenceDayOfMonth,
-                at: schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
+                at: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
         }

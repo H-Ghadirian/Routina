@@ -522,6 +522,48 @@ struct AddRoutineFeatureSaveTests {
     }
 
     @Test
+    func saveTapped_allDayIntervalSchedule_ignoresStaleAvailabilityTiming() async {
+        let capturedRecurrenceRules = LockIsolated<[RoutineRecurrenceRule]>([])
+        let capturedAllDayFlags = LockIsolated<[Bool]>([])
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(
+                    routineName: "Water plants",
+                    isAllDay: true
+                ),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .fixedInterval,
+                    frequency: .week,
+                    frequencyValue: 1,
+                    recurrenceKind: .intervalDays,
+                    recurrenceHasExplicitTime: true,
+                    recurrenceHasTimeRange: true,
+                    recurrenceTimeOfDay: RoutineTimeOfDay(hour: 20, minute: 0),
+                    recurrenceTimeRangeStart: RoutineTimeOfDay(hour: 19, minute: 0),
+                    recurrenceTimeRangeEnd: RoutineTimeOfDay(hour: 21, minute: 0)
+                )
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { request in
+                    capturedRecurrenceRules.withValue { $0 = [request.recurrenceRule] }
+                    capturedAllDayFlags.withValue { $0 = [request.isAllDay] }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.saveTapped)
+
+        #expect(capturedRecurrenceRules.value == [.interval(days: 7)])
+        #expect(capturedAllDayFlags.value == [true])
+    }
+
+    @Test
     func saveTapped_weeklyAndMonthlySchedules_sendCalendarRecurrenceRules() async {
         let capturedRecurrenceRules = LockIsolated<[RoutineRecurrenceRule]>([])
         let weeklyStore = TestStore(

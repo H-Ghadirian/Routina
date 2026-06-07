@@ -175,7 +175,8 @@ struct AddRoutineSaveRequest: Equatable {
         self.frequencyInDays = frequencyInDays
         self.recurrenceRule = Self.selectedRecurrenceRule(
             schedule: schedule,
-            fallbackInterval: frequencyInDays
+            fallbackInterval: frequencyInDays,
+            isAllDay: basics.isAllDay
         )
         self.emoji = basics.routineEmoji
         self.notes = RoutineTask.sanitizedNotes(basics.routineNotes)
@@ -219,9 +220,11 @@ struct AddRoutineSaveRequest: Equatable {
 
     private static func selectedRecurrenceRule(
         schedule: AddRoutineScheduleState,
-        fallbackInterval: Int
+        fallbackInterval: Int,
+        isAllDay: Bool
     ) -> RoutineRecurrenceRule {
-        let timeRange = schedule.recurrenceTimeRange
+        let usesAvailabilityTiming = !isAllDay
+        let timeRange = usesAvailabilityTiming ? schedule.recurrenceTimeRange : nil
 
         guard schedule.scheduleMode != .oneOff else {
             return .interval(days: 1)
@@ -239,7 +242,7 @@ struct AddRoutineSaveRequest: Equatable {
         case .intervalDays:
             return .interval(
                 days: max(fallbackInterval, 1),
-                at: schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
+                at: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
         case .dailyTime:
@@ -248,18 +251,18 @@ struct AddRoutineSaveRequest: Equatable {
             }
             return RoutineRecurrenceRule(
                 kind: .dailyTime,
-                timeOfDay: schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil
+                timeOfDay: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil
             )
         case .weekly:
             return .weekly(
                 on: schedule.recurrenceWeekday,
-                at: schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
+                at: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
         case .monthlyDay:
             return .monthly(
                 on: schedule.recurrenceDayOfMonth,
-                at: schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
+                at: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
         }

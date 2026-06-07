@@ -29,8 +29,6 @@ struct TaskFormIOSTaskTypeSection: View {
             }
             .pickerStyle(.segmented)
 
-            Toggle("All Day", isOn: model.isAllDay)
-
             Text(presentation.taskTypeDescription)
                 .font(.caption)
                 .foregroundStyle(.secondary)
