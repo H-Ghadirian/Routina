@@ -74,6 +74,10 @@ struct TaskFormPresentationTests {
 
         #expect(TaskFormPresentation.weekdayName(for: 99) == weekdaySymbols.last)
         #expect(TaskFormPresentation.ordinalDay(33) == "31st")
+        #expect(TaskFormPresentation.monthDayControlLabel(for: 31) == "Last day of each month")
+        #expect(TaskFormPresentation.monthDayControlLabel(for: 30) == "Day 30, or last day in shorter months")
+        #expect(TaskFormPresentation.monthDayControlLabel(for: 11) == "Day 11 of each month")
+        #expect(TaskFormPresentation.monthDayRepeatLabel(for: 31) == "Every last day of the month")
         #expect(weekly.recurrencePatternDescription(includesOptionalExactTimeDetail: false) == "Repeat after a fixed number of days, weeks, or months, with optional timing.")
         #expect(weekly.intervalRecurrenceTimeHelpText(exactTimeText: "8:00 PM", timeRangeText: "7:00 AM to 10:00 AM") == "Available any time once the interval has passed.")
         #expect(presentation(recurrenceKind: .intervalDays, recurrenceHasExplicitTime: true).intervalRecurrenceTimeHelpText(exactTimeText: "8:00 PM", timeRangeText: "7:00 AM to 10:00 AM") == "Available after the interval, at 8:00 PM.")
@@ -87,6 +91,9 @@ struct TaskFormPresentationTests {
         #expect(TaskFormPresentation.storyPointsLabel(for: 1) == "1 story point")
         #expect(weekly.weeklyRecurrenceTimeHelpText() == "Optional. Leave this off to keep the routine due any time on \(weekdaySymbols[1]).")
         #expect(monthly.monthlyRecurrenceTimeHelpText(explicitTimeText: "9:30 AM") == "Due on the 11th of each month at 9:30 AM.")
+        #expect(presentation(recurrenceDayOfMonth: 31).monthlyRecurrenceSummary == "Due on the last day of each month.")
+        #expect(presentation(recurrenceDayOfMonth: 30).monthlyRecurrenceSummary == "Due on the 30th; shorter months use their last day.")
+        #expect(presentation(recurrenceHasExplicitTime: true, recurrenceDayOfMonth: 31).monthlyRecurrenceTimeHelpText(explicitTimeText: "9:30 AM") == "Due on the last day of each month at 9:30 AM.")
         #expect(weeklyWindow.weeklyRecurrenceTimeHelpText(timeRangeText: "7:00 AM to 10:00 AM") == "Due every \(weekdaySymbols[1]) from 7:00 AM to 10:00 AM.")
     }
 

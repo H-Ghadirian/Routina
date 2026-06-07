@@ -12,7 +12,7 @@ Decision [0046](0046-label-routine-schedule-behavior-as-due-and-gentle.md) intro
 
 Routine forms should keep a compact row badge preview for schedule behavior and explain it with one concise sentence.
 
-- The preview should show only the expected row badges, such as Today/Overdue for Due and Ready/Gentle nudge for Gentle.
+- The preview should show only the expected row badges, such as Today/Overdue for Due and Now/Gentle nudge for Gentle.
 - The preview should not show a separate routine type title or icon, because that can be mistaken for another row badge.
 - The preview should have one short explanatory line about what those badges mean.
 - The preview should not also repeat cadence, availability, or longer behavioral explanations.

@@ -213,14 +213,19 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
             return "Every \(weekdayName)"
 
         case .monthlyDay:
-            let ordinalDay = Self.ordinalString(for: dayOfMonth ?? 1)
             if let timeRange {
-                return "Every \(ordinalDay) from \(timeRange.formatted(calendar: calendar))"
+                return Self.monthlyDisplayText(
+                    for: dayOfMonth ?? 1,
+                    timingText: "from \(timeRange.formatted(calendar: calendar))"
+                )
             }
             if let timeOfDay {
-                return "Every \(ordinalDay) at \(timeOfDay.formatted(calendar: calendar))"
+                return Self.monthlyDisplayText(
+                    for: dayOfMonth ?? 1,
+                    timingText: "at \(timeOfDay.formatted(calendar: calendar))"
+                )
             }
-            return "Every \(ordinalDay) of the month"
+            return Self.monthlyDisplayText(for: dayOfMonth ?? 1)
         }
     }
 
@@ -260,6 +265,22 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
             }
         }
         return "\(resolvedDay)\(suffix)"
+    }
+
+    private static func monthlyDisplayText(
+        for day: Int,
+        timingText: String? = nil
+    ) -> String {
+        let resolvedDay = clampedDayOfMonth(day)
+        let suffix = timingText.map { " \($0)" } ?? ""
+        switch resolvedDay {
+        case 31:
+            return "Every last day of the month\(suffix)"
+        case 29, 30:
+            return "Every \(ordinalString(for: resolvedDay))\(suffix); shorter months use last day"
+        default:
+            return "Every \(ordinalString(for: resolvedDay)) of the month\(suffix)"
+        }
     }
 }
 

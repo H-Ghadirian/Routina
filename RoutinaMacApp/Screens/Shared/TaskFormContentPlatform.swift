@@ -541,12 +541,18 @@ struct TaskFormContent: View {
             return "Every \(TaskFormPresentation.weekdayName(for: model.recurrenceWeekday.wrappedValue))"
         case .monthlyDay:
             if model.recurrenceHasTimeRange.wrappedValue {
-                return "Monthly on the \(TaskFormPresentation.ordinalDay(model.recurrenceDayOfMonth.wrappedValue)) \(previewTimeRangeText)"
+                return TaskFormPresentation.monthlyScheduleSummary(
+                    for: model.recurrenceDayOfMonth.wrappedValue,
+                    timingText: previewTimeRangeText
+                )
             }
             if model.recurrenceHasExplicitTime.wrappedValue {
-                return "Monthly on the \(TaskFormPresentation.ordinalDay(model.recurrenceDayOfMonth.wrappedValue)) at \(model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened))"
+                return TaskFormPresentation.monthlyScheduleSummary(
+                    for: model.recurrenceDayOfMonth.wrappedValue,
+                    timingText: "at \(model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened))"
+                )
             }
-            return "Monthly on the \(TaskFormPresentation.ordinalDay(model.recurrenceDayOfMonth.wrappedValue))"
+            return TaskFormPresentation.monthlyScheduleSummary(for: model.recurrenceDayOfMonth.wrappedValue)
         }
     }
 

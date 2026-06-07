@@ -126,7 +126,7 @@ struct AddRoutineRepeatPatternSections: View {
     private var monthlyDaySection: some View {
         Section(header: Text("Day of Month")) {
             Stepper(value: $recurrenceDayOfMonth, in: 1...31) {
-                Text("Every \(TaskFormPresentation.ordinalDay(recurrenceDayOfMonth))")
+                Text(TaskFormPresentation.monthDayRepeatLabel(for: recurrenceDayOfMonth))
             }
 
             Text(monthlyRecurrenceSummary)

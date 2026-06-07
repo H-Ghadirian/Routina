@@ -145,14 +145,14 @@ private struct TaskFormIOSScheduleBehaviorPreviewBadge: View {
         switch badge.style {
         case .due: return .orange
         case .overdue: return .red
-        case .ready: return .secondary
+        case .now: return .green
         case .gentle: return .teal
         }
     }
 
     private var tintOpacity: Double {
         switch badge.style {
-        case .ready: return 0.10
+        case .now: return 0.14
         default: return 0.14
         }
     }
@@ -373,7 +373,7 @@ struct TaskFormIOSRepeatPatternSections: View {
         case .monthlyDay:
             Section(header: Text("Day of Month")) {
                 Stepper(value: model.recurrenceDayOfMonth, in: 1...31) {
-                    Text("Day \(model.recurrenceDayOfMonth.wrappedValue) of each month")
+                    Text(TaskFormPresentation.monthDayControlLabel(for: model.recurrenceDayOfMonth.wrappedValue))
                 }
                 Text(presentation.monthlyRecurrenceSummary)
                     .font(.caption).foregroundStyle(.secondary)

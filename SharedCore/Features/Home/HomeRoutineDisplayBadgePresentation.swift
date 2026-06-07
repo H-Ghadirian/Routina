@@ -42,7 +42,7 @@ extension HomeRoutineDisplayMetadataPresenter {
                 return badge(softElapsedBadgeTitle(for: task), "clock.arrow.circlepath", .teal, Color.teal.opacity(0.12))
             }
             return badgeMode == .complete
-                ? badge("Ready", "sparkles", .secondary, Color.secondary.opacity(0.10))
+                ? badge("Now", "sparkles", .green, Color.green.opacity(0.14))
                 : nil
         }
         if task.isInProgress {

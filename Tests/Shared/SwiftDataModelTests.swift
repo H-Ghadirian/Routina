@@ -151,9 +151,9 @@ struct SwiftDataModelTests {
         #expect(RoutineScheduleBehavior.fixed.explanation == "Due means this can become due or overdue.")
         #expect(RoutineScheduleBehavior.soft.explanation == "Gentle keeps it visible and nudges you without overdue pressure.")
         #expect(RoutineScheduleBehavior.fixed.rowPreviewBadges.map(\.title) == ["Today", "Overdue 2d"])
-        #expect(RoutineScheduleBehavior.soft.rowPreviewBadges.map(\.title) == ["Ready", "Gentle nudge"])
+        #expect(RoutineScheduleBehavior.soft.rowPreviewBadges.map(\.title) == ["Now", "Gentle nudge"])
         #expect(RoutineScheduleBehavior.fixed.rowPreviewDescription == "Rows show Today, then Overdue if not completed.")
-        #expect(RoutineScheduleBehavior.soft.rowPreviewDescription == "Rows show Ready or Gentle nudge, never Overdue.")
+        #expect(RoutineScheduleBehavior.soft.rowPreviewDescription == "Rows show Now or Gentle nudge, never Overdue.")
     }
 
     @Test
@@ -419,6 +419,15 @@ struct SwiftDataModelTests {
         #expect(rangeTask.recurrenceRule.displayText() == "Every 3 days from \(timeRange.formatted())")
         #expect(rangeTask.recurrenceTimeRangeStartHour == 7)
         #expect(rangeTask.recurrenceTimeRangeEndHour == 10)
+    }
+
+    @Test
+    func routineTask_monthlyDisplayTextUsesLastDayFallbackCopy() {
+        let exactTime = RoutineTimeOfDay(hour: 20, minute: 0)
+
+        #expect(RoutineRecurrenceRule.monthly(on: 31).displayText() == "Every last day of the month")
+        #expect(RoutineRecurrenceRule.monthly(on: 31, at: exactTime).displayText() == "Every last day of the month at \(exactTime.formatted())")
+        #expect(RoutineRecurrenceRule.monthly(on: 30).displayText() == "Every 30th; shorter months use last day")
     }
 
     @Test
