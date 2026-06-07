@@ -1545,11 +1545,11 @@ struct HomeFeature {
 
     private func normalizedMacSidebarMode(_ mode: MacSidebarMode) -> MacSidebarMode {
         switch mode {
-        case .board:
+        case .board, .addTask:
             return .routines
         case .adventure:
             return .stats
-        case .routines, .goals, .timeline, .stats, .settings, .addTask:
+        case .routines, .goals, .timeline, .stats, .settings:
             return mode
         }
     }

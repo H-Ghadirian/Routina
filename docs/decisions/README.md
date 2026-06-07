@@ -26,6 +26,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0174](0174-do-not-restore-mac-add-task-composer.md) refines [0074](0074-parse-mac-add-task-title.md) and [0076](0076-select-saved-home-items-after-creation.md) for Mac task creation:** Add Task is a transient Mac Home sidebar mode; it can be opened in-session, but temporary view-state persistence normalizes it to Routines so relaunch never restores a stale form navigator without form state.
 - **[0173](0173-use-ios-new-tab-sheet.md) supersedes part of [0071](0071-move-ios-task-add-to-tab-bar.md) and [0073](0073-open-ios-home-actions-horizontally.md) for compact iOS capture actions:** The bottom-bar `Task` action is now `New`, and tapping it opens a compact action sheet with Event, Emotion, Note, Goal, Task, Check In, Away, and Going to sleep while Home keeps Home-specific controls such as filters.
 - **[0171](0171-remove-default-check-in-activity-tags.md) refines [0014](0014-model-place-check-ins-as-place-sessions.md), [0023](0023-edit-place-check-ins-from-day-timeline.md), and [0039](0039-move-mac-check-in-to-home-toolbar.md) for place check-ins:** New check-ins no longer offer or apply the built-in Work, Commute, Errands, Exercise, Rest, Social, and Other activity tags; legacy values remain readable for existing sessions and backups.
 - **[0170](0170-treat-backup-reset-as-complete-user-data-operations.md) refines [0167](0167-merge-icloud-and-backup-settings.md) and [0168](0168-require-recent-backup-for-cloud-data-reset.md) for data continuity:** Default `.routinabackup` exports, backup import, and destructive reset are complete user-data operations over the SwiftData user model set, while legacy `.json` backup remains compatibility-only for older task/place/goal/log payloads.
@@ -255,3 +256,4 @@ These are ordered from newest resolver to oldest resolver.
 | [0170](0170-treat-backup-reset-as-complete-user-data-operations.md) | Treat Backup and Reset as Complete User Data Operations | Accepted | 2026-06-06 |
 | [0171](0171-remove-default-check-in-activity-tags.md) | Remove Default Check-In Activity Tags | Accepted | 2026-06-06 |
 | [0173](0173-use-ios-new-tab-sheet.md) | Use iOS New Tab Sheet | Accepted | 2026-06-07 |
+| [0174](0174-do-not-restore-mac-add-task-composer.md) | Do Not Restore Mac Add Task Composer | Accepted | 2026-06-07 |

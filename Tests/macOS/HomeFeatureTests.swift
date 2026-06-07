@@ -425,6 +425,72 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func macSidebarModeChanged_addTaskPersistsRoutinesForRelaunch() async {
+        let context = makeInMemoryContext()
+        let persistedState = LockIsolated<TemporaryViewState?>(nil)
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                macSidebarMode: .routines
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
+        }
+
+        await store.send(.macSidebarModeChanged(.addTask)) {
+            $0.macSidebarMode = .addTask
+            $0.macSidebarSelection = nil
+        }
+
+        #expect(persistedState.value?.macHomeSidebarModeRawValue == HomeFeature.MacSidebarMode.routines.rawValue)
+    }
+
+    @Test
+    func onAppear_normalizesPersistedAddTaskSidebarModeToRoutines() async {
+        let context = makeInMemoryContext()
+        let persistedState = TemporaryViewState(
+            selectedAppTabRawValue: Tab.home.rawValue,
+            homeTaskListModeRawValue: HomeFeature.TaskListMode.todos.rawValue,
+            homeSelectedFilter: .all,
+            homeSelectedTag: nil,
+            homeExcludedTags: [],
+            homeSelectedManualPlaceFilterID: nil,
+            homeTabFilterSnapshots: [:],
+            hideUnavailableRoutines: false,
+            homeSelectedTimelineRange: .all,
+            homeSelectedTimelineFilterType: .all,
+            homeSelectedTimelineTag: nil,
+            macHomeSidebarModeRawValue: HomeFeature.MacSidebarMode.addTask.rawValue,
+            macSelectedSettingsSectionRawValue: nil,
+            timelineSelectedRange: .all,
+            timelineFilterType: .all,
+            timelineSelectedTag: nil,
+            statsSelectedRange: .week,
+            statsSelectedTag: nil,
+            statsExcludedTags: [],
+            statsTaskTypeFilterRawValue: nil
+        )
+
+        let store = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+            $0.modelContext = { context }
+            $0.locationClient.snapshot = { _ in LocationSnapshot() }
+            $0.appSettingsClient.temporaryViewState = { persistedState }
+            $0.appSettingsClient.hideUnavailableRoutines = { false }
+        }
+
+        await store.send(.onAppear) {
+            $0.taskListMode = .todos
+            $0.macSidebarMode = .routines
+        }
+    }
+
+    @Test
     func macSidebarModeChanged_adventureUsesStatsSidebarTab() async {
         let context = makeInMemoryContext()
         let persistedState = LockIsolated<TemporaryViewState?>(nil)
