@@ -119,7 +119,9 @@ struct HomeRoutineDisplayFactory {
         if task.isOneOffTask {
             return task.deadline
         }
-        guard !isArchived, !task.isChecklistDriven, task.recurrenceRule.isFixedCalendar else {
+        guard !isArchived,
+              !task.isChecklistDriven,
+              task.recurrenceRule.isFixedCalendar || task.recurrenceRule.usesTimeConstraint else {
             return nil
         }
         return RoutineDateMath.upcomingDueDate(for: task, referenceDate: now, calendar: calendar)

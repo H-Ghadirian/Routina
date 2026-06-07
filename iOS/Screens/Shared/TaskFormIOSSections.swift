@@ -309,6 +309,7 @@ struct TaskFormIOSRepeatPatternSections: View {
                 softReminderSection
             } else {
                 repeatPatternSection
+                availabilitySection
                 recurrenceSpecificSections
             }
         }
@@ -346,15 +347,31 @@ struct TaskFormIOSRepeatPatternSections: View {
         }
     }
 
+    @ViewBuilder
     private var repeatPatternSection: some View {
-        Section(header: Text("Cadence")) {
-            Picker("Cadence", selection: model.recurrenceKind) {
-                ForEach(RoutineRecurrenceRule.Kind.allCases, id: \.self) { kind in
-                    Text(kind.pickerTitle).tag(kind)
+        Section(header: Text("Repeat Type")) {
+            Picker("Repeat Type", selection: model.repeatBasis) {
+                ForEach(RoutineRepeatBasis.allCases) { basis in
+                    Text(basis.rawValue).tag(basis)
                 }
             }
             .pickerStyle(.segmented)
             Text(presentation.recurrencePatternDescription).font(.caption).foregroundStyle(.secondary)
+        }
+
+        if model.repeatBasis.wrappedValue == .calendar {
+            calendarPatternSection
+        }
+    }
+
+    private var calendarPatternSection: some View {
+        Section(header: Text("Calendar Pattern")) {
+            Picker("Calendar Pattern", selection: model.calendarRecurrenceKind) {
+                ForEach(RoutineRecurrenceRule.Kind.calendarCases, id: \.self) { kind in
+                    Text(kind.pickerTitle).tag(kind)
+                }
+            }
+            .pickerStyle(.segmented)
         }
     }
 
@@ -372,25 +389,7 @@ struct TaskFormIOSRepeatPatternSections: View {
             }
 
         case .dailyTime:
-            Section(header: Text("Availability")) {
-                Picker("Availability", selection: dailyTimingModeBinding) {
-                    Text(TaskFormTimingMode.exact.rawValue).tag(TaskFormTimingMode.exact)
-                    Text(TaskFormTimingMode.range.rawValue).tag(TaskFormTimingMode.range)
-                }
-                .pickerStyle(.segmented)
-                if model.recurrenceHasTimeRange.wrappedValue {
-                    timeRangePickers
-                } else {
-                    DatePicker("Time", selection: model.recurrenceTimeOfDay, displayedComponents: .hourAndMinute)
-                }
-                Text(
-                    presentation.dailyRecurrenceTimeHelpText(
-                        exactTimeText: exactTimeText,
-                        timeRangeText: timeRangeText
-                    )
-                )
-                    .font(.caption).foregroundStyle(.secondary)
-            }
+            EmptyView()
 
         case .weekly:
             Section(header: Text("Weekday")) {
@@ -402,21 +401,6 @@ struct TaskFormIOSRepeatPatternSections: View {
                 Text(presentation.weeklyRecurrenceSummary)
                     .font(.caption).foregroundStyle(.secondary)
             }
-            Section(header: Text("Availability")) {
-                timingModePicker
-                if model.recurrenceHasExplicitTime.wrappedValue {
-                    DatePicker("Time", selection: model.recurrenceTimeOfDay, displayedComponents: .hourAndMinute)
-                } else if model.recurrenceHasTimeRange.wrappedValue {
-                    timeRangePickers
-                }
-                Text(
-                    presentation.weeklyRecurrenceTimeHelpText(
-                        explicitTimeText: exactTimeText,
-                        timeRangeText: timeRangeText
-                    )
-                )
-                    .font(.caption).foregroundStyle(.secondary)
-            }
 
         case .monthlyDay:
             Section(header: Text("Day of Month")) {
@@ -426,21 +410,19 @@ struct TaskFormIOSRepeatPatternSections: View {
                 Text(presentation.monthlyRecurrenceSummary)
                     .font(.caption).foregroundStyle(.secondary)
             }
-            Section(header: Text("Availability")) {
-                timingModePicker
-                if model.recurrenceHasExplicitTime.wrappedValue {
-                    DatePicker("Time", selection: model.recurrenceTimeOfDay, displayedComponents: .hourAndMinute)
-                } else if model.recurrenceHasTimeRange.wrappedValue {
-                    timeRangePickers
-                }
-                Text(
-                    presentation.monthlyRecurrenceTimeHelpText(
-                        explicitTimeText: exactTimeText,
-                        timeRangeText: timeRangeText
-                    )
-                )
-                    .font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    private var availabilitySection: some View {
+        Section(header: Text("Availability")) {
+            timingModePicker
+            if model.recurrenceHasExplicitTime.wrappedValue {
+                DatePicker("Time", selection: model.recurrenceTimeOfDay, displayedComponents: .hourAndMinute)
+            } else if model.recurrenceHasTimeRange.wrappedValue {
+                timeRangePickers
             }
+            Text(recurrenceAvailabilityHelpText)
+                .font(.caption).foregroundStyle(.secondary)
         }
     }
 
@@ -468,6 +450,31 @@ struct TaskFormIOSRepeatPatternSections: View {
         "\(model.recurrenceTimeRangeStart.wrappedValue.formatted(date: .omitted, time: .shortened)) to \(model.recurrenceTimeRangeEnd.wrappedValue.formatted(date: .omitted, time: .shortened))"
     }
 
+    private var recurrenceAvailabilityHelpText: String {
+        switch model.recurrenceKind.wrappedValue {
+        case .intervalDays:
+            return presentation.intervalRecurrenceTimeHelpText(
+                exactTimeText: exactTimeText,
+                timeRangeText: timeRangeText
+            )
+        case .dailyTime:
+            return presentation.dailyRecurrenceTimeHelpText(
+                exactTimeText: exactTimeText,
+                timeRangeText: timeRangeText
+            )
+        case .weekly:
+            return presentation.weeklyRecurrenceTimeHelpText(
+                explicitTimeText: exactTimeText,
+                timeRangeText: timeRangeText
+            )
+        case .monthlyDay:
+            return presentation.monthlyRecurrenceTimeHelpText(
+                explicitTimeText: exactTimeText,
+                timeRangeText: timeRangeText
+            )
+        }
+    }
+
     private var timingModeBinding: Binding<TaskFormTimingMode> {
         Binding(
             get: {
@@ -482,18 +489,6 @@ struct TaskFormIOSRepeatPatternSections: View {
             set: { mode in
                 model.recurrenceHasExplicitTime.wrappedValue = mode == .exact
                 model.recurrenceHasTimeRange.wrappedValue = mode == .range
-            }
-        )
-    }
-
-    private var dailyTimingModeBinding: Binding<TaskFormTimingMode> {
-        Binding(
-            get: {
-                model.recurrenceHasTimeRange.wrappedValue ? .range : .exact
-            },
-            set: { mode in
-                model.recurrenceHasTimeRange.wrappedValue = mode == .range
-                model.recurrenceHasExplicitTime.wrappedValue = mode != .range
             }
         )
     }

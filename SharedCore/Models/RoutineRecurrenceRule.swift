@@ -7,16 +7,31 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
         case weekly
         case monthlyDay
 
+        static let calendarCases: [Kind] = [.dailyTime, .weekly, .monthlyDay]
+
+        var repeatBasis: RoutineRepeatBasis {
+            self == .intervalDays ? .interval : .calendar
+        }
+
         var pickerTitle: String {
             switch self {
             case .intervalDays:
                 return "Interval"
             case .dailyTime:
-                return "Time"
+                return "Daily"
             case .weekly:
-                return "Week"
+                return "Weekday"
             case .monthlyDay:
-                return "Month"
+                return "Month day"
+            }
+        }
+
+        func replacingRepeatBasis(_ basis: RoutineRepeatBasis) -> Kind {
+            switch basis {
+            case .interval:
+                return .intervalDays
+            case .calendar:
+                return self == .intervalDays ? .dailyTime : self
             }
         }
     }
@@ -41,14 +56,14 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
         switch kind {
         case .intervalDays:
             self.interval = max(interval, 1)
-            self.timeOfDay = nil
-            self.timeRange = nil
+            self.timeOfDay = timeRange == nil ? timeOfDay : nil
+            self.timeRange = timeRange
             self.weekday = nil
             self.dayOfMonth = nil
 
         case .dailyTime:
             self.interval = 1
-            self.timeOfDay = timeRange == nil ? (timeOfDay ?? .defaultValue) : nil
+            self.timeOfDay = timeRange == nil ? timeOfDay : nil
             self.timeRange = timeRange
             self.weekday = nil
             self.dayOfMonth = nil
@@ -69,8 +84,17 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
         }
     }
 
-    static func interval(days: Int) -> RoutineRecurrenceRule {
-        RoutineRecurrenceRule(kind: .intervalDays, interval: days)
+    static func interval(
+        days: Int,
+        at timeOfDay: RoutineTimeOfDay? = nil,
+        timeRange: RoutineTimeRange? = nil
+    ) -> RoutineRecurrenceRule {
+        RoutineRecurrenceRule(
+            kind: .intervalDays,
+            interval: days,
+            timeOfDay: timeOfDay,
+            timeRange: timeRange
+        )
     }
 
     static func daily(at timeOfDay: RoutineTimeOfDay) -> RoutineRecurrenceRule {
@@ -151,22 +175,32 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
         switch kind {
         case .intervalDays:
             let resolvedInterval = max(interval, 1)
+            let baseText: String
             if resolvedInterval % 30 == 0 {
                 let months = resolvedInterval / 30
-                return months == 1 ? "Every month" : "Every \(months) months"
-            }
-            if resolvedInterval % 7 == 0 {
+                baseText = months == 1 ? "Every month" : "Every \(months) months"
+            } else if resolvedInterval % 7 == 0 {
                 let weeks = resolvedInterval / 7
-                return weeks == 1 ? "Every week" : "Every \(weeks) weeks"
+                baseText = weeks == 1 ? "Every week" : "Every \(weeks) weeks"
+            } else {
+                baseText = resolvedInterval == 1 ? "Every day" : "Every \(resolvedInterval) days"
             }
-            return resolvedInterval == 1 ? "Every day" : "Every \(resolvedInterval) days"
+            if let timeRange {
+                return "\(baseText) from \(timeRange.formatted(calendar: calendar))"
+            }
+            if let timeOfDay {
+                return "\(baseText) at \(timeOfDay.formatted(calendar: calendar))"
+            }
+            return baseText
 
         case .dailyTime:
             if let timeRange {
                 return "Every day from \(timeRange.formatted(calendar: calendar))"
             }
-            let timeText = (timeOfDay ?? .defaultValue).formatted(calendar: calendar)
-            return "Every day at \(timeText)"
+            if let timeOfDay {
+                return "Every day at \(timeOfDay.formatted(calendar: calendar))"
+            }
+            return "Every day"
 
         case .weekly:
             let weekdayName = Self.weekdayName(for: weekday ?? calendar.firstWeekday, calendar: calendar)
@@ -227,4 +261,11 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
         }
         return "\(resolvedDay)\(suffix)"
     }
+}
+
+enum RoutineRepeatBasis: String, CaseIterable, Equatable, Hashable, Identifiable, Sendable {
+    case interval = "Interval"
+    case calendar = "Calendar"
+
+    var id: String { rawValue }
 }

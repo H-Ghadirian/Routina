@@ -103,12 +103,19 @@ struct TaskDetailFeature: Reducer {
 
             switch editRecurrenceKind {
             case .intervalDays:
-                return .interval(days: max(fallbackInterval, 1))
+                return .interval(
+                    days: max(fallbackInterval, 1),
+                    at: editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil,
+                    timeRange: timeRange
+                )
             case .dailyTime:
                 if let timeRange {
                     return .daily(in: timeRange)
                 }
-                return .daily(at: editRecurrenceTimeOfDay)
+                return RoutineRecurrenceRule(
+                    kind: .dailyTime,
+                    timeOfDay: editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil
+                )
             case .weekly:
                 return .weekly(
                     on: editRecurrenceWeekday,

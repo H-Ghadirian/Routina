@@ -208,6 +208,92 @@ struct RoutineDateMathTests {
     }
 
     @Test
+    func intervalWithExactTime_usesIntervalDayAndTimeAvailability() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let task = RoutineTask(
+            recurrenceRule: .interval(days: 2, at: RoutineTimeOfDay(hour: 20, minute: 0)),
+            scheduleAnchor: makeDate("2026-03-01T10:00:00Z")
+        )
+
+        let dueDate = RoutineDateMath.dueDate(
+            for: task,
+            referenceDate: makeDate("2026-03-03T19:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(dueDate == makeDate("2026-03-03T20:00:00Z"))
+        #expect(!RoutineDateMath.canMarkDone(
+            for: task,
+            referenceDate: makeDate("2026-03-03T19:59:00Z"),
+            calendar: calendar
+        ))
+        #expect(RoutineDateMath.canMarkDone(
+            for: task,
+            referenceDate: makeDate("2026-03-03T20:00:00Z"),
+            calendar: calendar
+        ))
+        #expect(!RoutineDateMath.canMarkDone(
+            for: task,
+            referenceDate: makeDate("2026-03-04T08:00:00Z"),
+            calendar: calendar
+        ))
+        #expect(
+            RoutineDateMath.upcomingDueDate(
+                for: task,
+                referenceDate: makeDate("2026-03-04T08:00:00Z"),
+                calendar: calendar
+            ) == makeDate("2026-03-05T20:00:00Z")
+        )
+    }
+
+    @Test
+    func intervalWithTimeRange_allowsCompletionOnlyInsideWindow() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let timeRange = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 7, minute: 0),
+            end: RoutineTimeOfDay(hour: 10, minute: 0)
+        )
+        let task = RoutineTask(
+            recurrenceRule: .interval(days: 3, timeRange: timeRange),
+            scheduleAnchor: makeDate("2026-03-01T10:00:00Z")
+        )
+
+        let dueDate = RoutineDateMath.dueDate(
+            for: task,
+            referenceDate: makeDate("2026-03-04T08:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(dueDate == makeDate("2026-03-04T07:00:00Z"))
+        #expect(!RoutineDateMath.canMarkDone(
+            for: task,
+            referenceDate: makeDate("2026-03-04T06:59:00Z"),
+            calendar: calendar
+        ))
+        #expect(RoutineDateMath.canMarkDone(
+            for: task,
+            referenceDate: makeDate("2026-03-04T08:00:00Z"),
+            calendar: calendar
+        ))
+        #expect(!RoutineDateMath.canMarkDone(
+            for: task,
+            referenceDate: makeDate("2026-03-04T10:00:00Z"),
+            calendar: calendar
+        ))
+        #expect(
+            RoutineDateMath.upcomingDueDate(
+                for: task,
+                referenceDate: makeDate("2026-03-04T10:00:00Z"),
+                calendar: calendar
+            ) == makeDate("2026-03-07T07:00:00Z")
+        )
+    }
+
+    @Test
     func dueDate_weeklySchedule_usesConfiguredWeekday() {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current

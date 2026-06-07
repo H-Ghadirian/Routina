@@ -14,10 +14,10 @@ struct AddRoutineRepeatPatternSections: View {
     let weekdayOptions: [(id: Int, name: String)]
 
     var body: some View {
-        Section(header: Text("Cadence")) {
-            Picker("Cadence", selection: $recurrenceKind) {
-                ForEach(RoutineRecurrenceRule.Kind.allCases, id: \.self) { kind in
-                    Text(kind.pickerTitle).tag(kind)
+        Section(header: Text("Repeat Type")) {
+            Picker("Repeat Type", selection: repeatBasisBinding) {
+                ForEach(RoutineRepeatBasis.allCases) { basis in
+                    Text(basis.rawValue).tag(basis)
                 }
             }
             .pickerStyle(.segmented)
@@ -25,6 +25,17 @@ struct AddRoutineRepeatPatternSections: View {
             Text(recurrencePatternDescription)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+        }
+
+        if recurrenceKind.repeatBasis == .calendar {
+            Section(header: Text("Calendar Pattern")) {
+                Picker("Calendar Pattern", selection: calendarRecurrenceKindBinding) {
+                    ForEach(RoutineRecurrenceRule.Kind.calendarCases, id: \.self) { kind in
+                        Text(kind.pickerTitle).tag(kind)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
         }
 
         switch recurrenceKind {
@@ -40,6 +51,29 @@ struct AddRoutineRepeatPatternSections: View {
         case .monthlyDay:
             monthlyDaySection
         }
+    }
+
+    private var repeatBasisBinding: Binding<RoutineRepeatBasis> {
+        Binding(
+            get: {
+                recurrenceKind.repeatBasis
+            },
+            set: { basis in
+                recurrenceKind = recurrenceKind.replacingRepeatBasis(basis)
+            }
+        )
+    }
+
+    private var calendarRecurrenceKindBinding: Binding<RoutineRecurrenceRule.Kind> {
+        Binding(
+            get: {
+                recurrenceKind.repeatBasis == .calendar ? recurrenceKind : .dailyTime
+            },
+            set: { kind in
+                guard kind.repeatBasis == .calendar else { return }
+                recurrenceKind = kind
+            }
+        )
     }
 
     private var intervalSections: some View {

@@ -102,19 +102,7 @@ struct TaskDetailRecurrenceEditActionHandler {
         state: inout State
     ) -> Effect<Action> {
         rebaseEditReminderIfUsingLeadTime(&state) { state in
-            let previousHasExplicitTime = state.editRecurrenceHasExplicitTime
             state.editRecurrenceKind = kind
-            switch kind {
-            case .intervalDays:
-                state.editRecurrenceHasExplicitTime = false
-                state.editRecurrenceHasTimeRange = false
-            case .dailyTime:
-                state.editRecurrenceHasExplicitTime = !state.editRecurrenceHasTimeRange
-            case .weekly, .monthlyDay:
-                state.editRecurrenceHasExplicitTime = state.editRecurrenceHasTimeRange
-                    ? false
-                    : previousHasExplicitTime
-            }
         }
         disableAutoAssumeIfNeeded(state: &state)
         return .none
@@ -141,8 +129,6 @@ struct TaskDetailRecurrenceEditActionHandler {
             state.editRecurrenceHasTimeRange = hasTimeRange
             if hasTimeRange {
                 state.editRecurrenceHasExplicitTime = false
-            } else if state.editRecurrenceKind == .dailyTime {
-                state.editRecurrenceHasExplicitTime = true
             }
         }
         disableAutoAssumeIfNeeded(state: &state)

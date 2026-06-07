@@ -26,9 +26,37 @@ struct AddRoutineFeatureTests {
     @Test
     func recurrenceRuleMetadata_describesNewScheduleTypes() {
         #expect(RoutineRecurrenceRule.Kind.intervalDays.pickerTitle == "Interval")
-        #expect(RoutineRecurrenceRule.Kind.dailyTime.pickerTitle == "Time")
-        #expect(RoutineRecurrenceRule.Kind.weekly.pickerTitle == "Week")
-        #expect(RoutineRecurrenceRule.Kind.monthlyDay.pickerTitle == "Month")
+        #expect(RoutineRecurrenceRule.Kind.dailyTime.pickerTitle == "Daily")
+        #expect(RoutineRecurrenceRule.Kind.weekly.pickerTitle == "Weekday")
+        #expect(RoutineRecurrenceRule.Kind.monthlyDay.pickerTitle == "Month day")
+        #expect(RoutineRecurrenceRule.Kind.calendarCases == [.dailyTime, .weekly, .monthlyDay])
+        #expect(RoutineRecurrenceRule.Kind.intervalDays.repeatBasis == .interval)
+        #expect(RoutineRecurrenceRule.Kind.weekly.repeatBasis == .calendar)
+        #expect(RoutineRecurrenceRule.Kind.intervalDays.replacingRepeatBasis(.calendar) == .dailyTime)
+        #expect(RoutineRecurrenceRule.Kind.weekly.replacingRepeatBasis(.interval) == .intervalDays)
+        #expect(RoutineRecurrenceRule.Kind.monthlyDay.replacingRepeatBasis(.calendar) == .monthlyDay)
+    }
+
+    @Test
+    func recurrenceKindChanged_preservesAvailabilitySelection() async {
+        let store = TestStore(
+            initialState: makeState(
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .fixedInterval,
+                    recurrenceKind: .weekly,
+                    recurrenceHasExplicitTime: true
+                )
+            )
+        ) {
+            makeFeature()
+        }
+
+        await store.send(.recurrenceKindChanged(.intervalDays)) {
+            $0.schedule.recurrenceKind = .intervalDays
+        }
+
+        #expect(store.state.schedule.recurrenceHasExplicitTime)
+        #expect(!store.state.schedule.recurrenceHasTimeRange)
     }
 
     @Test

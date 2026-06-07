@@ -398,12 +398,17 @@ final class RoutineTask {
 
         switch kind {
         case .intervalDays:
-            return .interval(days: max(Int(interval), 1))
+            return .interval(
+                days: max(Int(interval), 1),
+                at: exactTime,
+                timeRange: timeRange
+            )
         case .dailyTime:
-            if let timeRange {
-                return .daily(in: timeRange)
-            }
-            return .daily(at: exactTime ?? .defaultValue)
+            return RoutineRecurrenceRule(
+                kind: .dailyTime,
+                timeOfDay: exactTime,
+                timeRange: timeRange
+            )
         case .weekly:
             return .weekly(
                 on: recurrenceWeekday ?? Calendar.current.firstWeekday,

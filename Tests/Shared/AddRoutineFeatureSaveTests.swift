@@ -395,6 +395,7 @@ struct AddRoutineFeatureSaveTests {
                 schedule: AddRoutineScheduleState(
                     scheduleMode: .fixedInterval,
                     recurrenceKind: .dailyTime,
+                    recurrenceHasExplicitTime: true,
                     recurrenceTimeOfDay: RoutineTimeOfDay(hour: 21, minute: 15)
                 )
             )
@@ -450,6 +451,74 @@ struct AddRoutineFeatureSaveTests {
         await store.send(.saveTapped)
 
         #expect(capturedRecurrenceRules.value == [.daily(in: timeRange)])
+    }
+
+    @Test
+    func saveTapped_intervalSchedule_withAvailability_sendsTimedIntervalRecurrenceRule() async {
+        let capturedRecurrenceRules = LockIsolated<[RoutineRecurrenceRule]>([])
+        let exactTime = RoutineTimeOfDay(hour: 20, minute: 0)
+        let timeRange = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 7, minute: 0),
+            end: RoutineTimeOfDay(hour: 10, minute: 0)
+        )
+        let exactStore = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(routineName: "Water plants"),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .fixedInterval,
+                    frequency: .week,
+                    frequencyValue: 1,
+                    recurrenceKind: .intervalDays,
+                    recurrenceHasExplicitTime: true,
+                    recurrenceTimeOfDay: exactTime
+                )
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { request in
+                    capturedRecurrenceRules.withValue { $0.append(request.recurrenceRule) }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+        let rangeStore = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(routineName: "Buy bread"),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .fixedInterval,
+                    frequency: .day,
+                    frequencyValue: 3,
+                    recurrenceKind: .intervalDays,
+                    recurrenceHasExplicitTime: false,
+                    recurrenceHasTimeRange: true,
+                    recurrenceTimeRangeStart: timeRange.start,
+                    recurrenceTimeRangeEnd: timeRange.end
+                )
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { request in
+                    capturedRecurrenceRules.withValue { $0.append(request.recurrenceRule) }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await exactStore.send(.saveTapped)
+        await rangeStore.send(.saveTapped)
+
+        #expect(capturedRecurrenceRules.value == [
+            .interval(days: 7, at: exactTime),
+            .interval(days: 3, timeRange: timeRange)
+        ])
     }
 
     @Test

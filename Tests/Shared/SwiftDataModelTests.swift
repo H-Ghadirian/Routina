@@ -375,6 +375,34 @@ struct SwiftDataModelTests {
     }
 
     @Test
+    func routineTask_intervalRecurrencePreservesAvailability() {
+        let exactTime = RoutineTimeOfDay(hour: 20, minute: 0)
+        let exactTask = RoutineTask(
+            name: "Water plants",
+            recurrenceRule: .interval(days: 7, at: exactTime),
+            scheduleAnchor: makeDate("2026-03-18T10:00:00Z")
+        )
+        let timeRange = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 7, minute: 0),
+            end: RoutineTimeOfDay(hour: 10, minute: 0)
+        )
+        let rangeTask = RoutineTask(
+            name: "Breakfast supplies",
+            recurrenceRule: .interval(days: 3, timeRange: timeRange),
+            scheduleAnchor: makeDate("2026-03-18T06:00:00Z")
+        )
+
+        #expect(exactTask.recurrenceRule == .interval(days: 7, at: exactTime))
+        #expect(exactTask.recurrenceRule.displayText() == "Every week at \(exactTime.formatted())")
+        #expect(exactTask.recurrenceTimeOfDayHour == 20)
+        #expect(exactTask.recurrenceTimeOfDayMinute == 0)
+        #expect(rangeTask.recurrenceRule == .interval(days: 3, timeRange: timeRange))
+        #expect(rangeTask.recurrenceRule.displayText() == "Every 3 days from \(timeRange.formatted())")
+        #expect(rangeTask.recurrenceTimeRangeStartHour == 7)
+        #expect(rangeTask.recurrenceTimeRangeEndHour == 10)
+    }
+
+    @Test
     func routineTask_migratesLegacyJSONRecurrenceRuleToSwiftDataColumns() {
         let legacyRule = RoutineRecurrenceRule.weekly(
             on: 6,

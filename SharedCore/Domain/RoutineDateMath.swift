@@ -3,7 +3,6 @@ import Foundation
 enum RoutineDateMath {
     static func usesExactTimedOccurrenceTracking(for task: RoutineTask) -> Bool {
         !task.isOneOffTask
-            && task.recurrenceRule.isFixedCalendar
             && task.recurrenceRule.usesTimeConstraint
             && !task.isChecklistDriven
     }
@@ -57,11 +56,15 @@ enum RoutineDateMath {
         switch task.recurrenceRule.kind {
         case .intervalDays:
             let anchor = effectiveScheduleAnchor(for: task, referenceDate: referenceDate)
-            return calendar.date(
+            let dueDate = calendar.date(
                 byAdding: .day,
                 value: max(task.recurrenceRule.interval, 1),
                 to: anchor
             ) ?? anchor
+            if let timeOfDay = scheduledTimeOfDay(for: task.recurrenceRule) {
+                return timeOfDay.date(on: dueDate, calendar: calendar)
+            }
+            return dueDate
 
         case .dailyTime:
             let reference = recurrenceReference(for: task, referenceDate: referenceDate)
@@ -79,7 +82,7 @@ enum RoutineDateMath {
             }
             return nextDailyOccurrence(
                 after: base,
-                timeOfDay: scheduledTimeOfDay(for: task.recurrenceRule) ?? .defaultValue,
+                timeOfDay: scheduledTimeOfDay(for: task.recurrenceRule) ?? RoutineTimeOfDay(hour: 0, minute: 0),
                 includeCurrentDate: task.lastDone == nil || reference.includeCurrentDate,
                 calendar: calendar
             )
@@ -210,7 +213,9 @@ enum RoutineDateMath {
             return !task.dueChecklistItems(referenceDate: referenceDate, calendar: calendar).isEmpty
         }
 
-        guard task.recurrenceRule.isFixedCalendar else { return true }
+        if !task.recurrenceRule.isFixedCalendar && !task.recurrenceRule.usesTimeConstraint {
+            return true
+        }
         if let missedDate = missedExactTimedOccurrenceDate(
             for: task,
             referenceDate: referenceDate,
@@ -305,7 +310,7 @@ enum RoutineDateMath {
         case .dailyTime:
             return nextDailyOccurrence(
                 after: missedDate,
-                timeOfDay: scheduledTimeOfDay(for: task.recurrenceRule) ?? .defaultValue,
+                timeOfDay: scheduledTimeOfDay(for: task.recurrenceRule) ?? RoutineTimeOfDay(hour: 0, minute: 0),
                 includeCurrentDate: false,
                 calendar: calendar
             )
@@ -329,7 +334,15 @@ enum RoutineDateMath {
             )
 
         case .intervalDays:
-            return nil
+            let nextDate = calendar.date(
+                byAdding: .day,
+                value: max(task.recurrenceRule.interval, 1),
+                to: missedDate
+            ) ?? missedDate
+            if let timeOfDay = scheduledTimeOfDay(for: task.recurrenceRule) {
+                return timeOfDay.date(on: nextDate, calendar: calendar)
+            }
+            return nextDate
         }
     }
 
@@ -362,7 +375,12 @@ enum RoutineDateMath {
             return timeOfDay.date(on: startOfDay, calendar: calendar)
 
         case .intervalDays:
-            return nil
+            return intervalOccurrence(
+                for: task,
+                on: startOfDay,
+                timeOfDay: timeOfDay,
+                calendar: calendar
+            )
         }
     }
 
@@ -462,6 +480,33 @@ enum RoutineDateMath {
 
     private static func scheduledTimeOfDay(for recurrenceRule: RoutineRecurrenceRule) -> RoutineTimeOfDay? {
         recurrenceRule.timeRange?.start ?? recurrenceRule.timeOfDay
+    }
+
+    private static func intervalOccurrence(
+        for task: RoutineTask,
+        on day: Date,
+        timeOfDay: RoutineTimeOfDay,
+        calendar: Calendar
+    ) -> Date? {
+        let interval = max(task.recurrenceRule.interval, 1)
+        let anchor = effectiveScheduleAnchor(for: task, referenceDate: day)
+        let firstDueDate = calendar.date(
+            byAdding: .day,
+            value: interval,
+            to: anchor
+        ) ?? anchor
+        let firstDueDay = calendar.startOfDay(for: firstDueDate)
+        let targetDay = calendar.startOfDay(for: day)
+        let daysSinceFirstDue = calendar.dateComponents(
+            [.day],
+            from: firstDueDay,
+            to: targetDay
+        ).day ?? 0
+
+        guard daysSinceFirstDue >= 0, daysSinceFirstDue % interval == 0 else {
+            return nil
+        }
+        return timeOfDay.date(on: targetDay, calendar: calendar)
     }
 
     private static func nextDailyOccurrence(

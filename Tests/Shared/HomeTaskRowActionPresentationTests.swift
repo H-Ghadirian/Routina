@@ -130,6 +130,20 @@ struct HomeTaskRowActionPresentationTests {
         #expect(HomeTaskRowCompletionPresentation.isMarkDoneDisabled(emptyChecklist, referenceDate: referenceDate))
         #expect(HomeTaskRowCompletionPresentation.isMarkDoneDisabled(futureCalendarTask, referenceDate: referenceDate))
     }
+
+    @Test
+    func completionPresentationDisablesTimedIntervalBeforeAvailability() {
+        let referenceDate = Date(timeIntervalSince1970: 1_700_000_000)
+        let futureTimedIntervalTask = TestTaskRowDisplay(
+            recurrenceRule: .interval(days: 3, at: RoutineTimeOfDay(hour: 20, minute: 0)),
+            dueDate: referenceDate.addingTimeInterval(60)
+        )
+
+        #expect(HomeTaskRowCompletionPresentation.isMarkDoneDisabled(
+            futureTimedIntervalTask,
+            referenceDate: referenceDate
+        ))
+    }
 }
 
 private struct TestTaskRowDisplay: HomeTaskRowDisplay, Equatable {

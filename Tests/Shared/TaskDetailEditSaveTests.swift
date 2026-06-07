@@ -545,4 +545,63 @@ struct TaskDetailEditSaveTests {
         )
         #expect(persistedTask.recurrenceRule == .daily(in: timeRange))
     }
+
+    @Test
+    func editSaveTapped_persistsIntervalAvailability() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Water plants",
+            interval: 7,
+            lastDone: nil,
+            emoji: "🪴",
+            recurrenceRule: .interval(days: 7),
+            scheduleAnchor: makeDate("2026-03-10T06:00:00Z")
+        )
+        let exactTime = RoutineTimeOfDay(hour: 20, minute: 0)
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Water plants",
+                editRoutineEmoji: "🪴",
+                editScheduleMode: .fixedInterval,
+                editFrequency: .week,
+                editFrequencyValue: 1,
+                editRecurrenceKind: .intervalDays,
+                editRecurrenceHasExplicitTime: true,
+                editRecurrenceTimeOfDay: exactTime
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+        await store.receive(.onAppear) {
+            $0.selectedDate = calendar.startOfDay(for: now)
+        }
+
+        let taskID = task.id
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { task in
+                        task.id == taskID
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.recurrenceRule == .interval(days: 7, at: exactTime))
+    }
 }

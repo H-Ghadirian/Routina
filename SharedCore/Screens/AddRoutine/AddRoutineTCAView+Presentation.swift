@@ -27,6 +27,7 @@ extension AddRoutineTCAView {
             scheduleMode: store.schedule.scheduleMode,
             recurrenceKind: store.schedule.recurrenceKind,
             recurrenceHasExplicitTime: store.schedule.recurrenceHasExplicitTime,
+            recurrenceHasTimeRange: store.schedule.recurrenceHasTimeRange,
             recurrenceWeekday: store.schedule.recurrenceWeekday,
             recurrenceDayOfMonth: store.schedule.recurrenceDayOfMonth,
             importance: store.basics.importance,

@@ -729,7 +729,10 @@ struct TaskFormMacBehaviorCard: View {
     private var dueRoutineCadenceSummary: String {
         switch model.recurrenceKind.wrappedValue {
         case .intervalDays:
-            return "Repeats \(frequencyIntervalPhrase)."
+            return presentation.intervalRecurrenceTimeHelpText(
+                exactTimeText: exactTimeText,
+                timeRangeText: timeRangeText
+            )
         case .dailyTime:
             return presentation.dailyRecurrenceTimeHelpText(
                 exactTimeText: exactTimeText,
@@ -756,11 +759,11 @@ struct TaskFormMacBehaviorCard: View {
 
     @ViewBuilder
     private var repeatPatternControls: some View {
-        TaskFormMacControlBlock(title: "Repeat cadence") {
+        TaskFormMacControlBlock(title: "Repeat type") {
             HStack(spacing: 0) {
-                Picker("Cadence", selection: model.recurrenceKind) {
-                    ForEach(RoutineRecurrenceRule.Kind.allCases, id: \.self) { kind in
-                        Text(kind.pickerTitle).tag(kind)
+                Picker("Repeat type", selection: model.repeatBasis) {
+                    ForEach(RoutineRepeatBasis.allCases) { basis in
+                        Text(basis.rawValue).tag(basis)
                     }
                 }
                 .labelsHidden()
@@ -770,17 +773,39 @@ struct TaskFormMacBehaviorCard: View {
             }
         }
 
+        if model.repeatBasis.wrappedValue == .calendar {
+            calendarPatternControl
+        }
+
+        availabilityControl
+
         switch model.recurrenceKind.wrappedValue {
         case .intervalDays:
             TaskFormMacControlBlock(title: "Repeat") {
                 frequencyStepper(prefix: "Every")
             }
         case .dailyTime:
-            recurrenceTimePicker
+            EmptyView()
         case .weekly:
             weeklyControls
         case .monthlyDay:
             monthlyControls
+        }
+    }
+
+    private var calendarPatternControl: some View {
+        TaskFormMacControlBlock(title: "Calendar pattern") {
+            HStack(spacing: 0) {
+                Picker("Calendar pattern", selection: model.calendarRecurrenceKind) {
+                    ForEach(RoutineRecurrenceRule.Kind.calendarCases, id: \.self) { kind in
+                        Text(kind.pickerTitle).tag(kind)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .fixedSize()
+                Spacer(minLength: 0)
+            }
         }
     }
 
@@ -809,53 +834,14 @@ struct TaskFormMacBehaviorCard: View {
         }
     }
 
-    private var recurrenceTimePicker: some View {
+    private var availabilityControl: some View {
         TaskFormMacControlBlock(title: "Availability") {
-            VStack(alignment: .leading, spacing: 10) {
-                Picker("Availability", selection: dailyTimingModeBinding) {
-                    Text(TaskFormTimingMode.exact.rawValue).tag(TaskFormTimingMode.exact)
-                    Text(TaskFormTimingMode.range.rawValue).tag(TaskFormTimingMode.range)
-                }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .fixedSize()
-
-                if model.recurrenceHasTimeRange.wrappedValue {
-                    timeRangePickers
-                } else {
-                    DatePicker(
-                        "Time",
-                        selection: model.recurrenceTimeOfDay,
-                        displayedComponents: .hourAndMinute
-                    )
-                    .labelsHidden()
-                }
-                Text(
-                    presentation.dailyRecurrenceTimeHelpText(
-                        exactTimeText: exactTimeText,
-                        timeRangeText: timeRangeText
-                    )
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
+            recurrenceExplicitTimeControls(helpText: recurrenceAvailabilityHelpText)
         }
     }
 
     private var weeklyControls: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .top, spacing: 22) {
-                weeklyDayControl
-                    .frame(width: 180, alignment: .leading)
-                weeklyAvailabilityControl
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            VStack(alignment: .leading, spacing: 18) {
-                weeklyDayControl
-                weeklyAvailabilityControl
-            }
-        }
+        weeklyDayControl
     }
 
     private var weeklyDayControl: some View {
@@ -870,31 +856,8 @@ struct TaskFormMacBehaviorCard: View {
         }
     }
 
-    private var weeklyAvailabilityControl: some View {
-        TaskFormMacControlBlock(title: "Availability") {
-            recurrenceExplicitTimeControls(
-                helpText: presentation.weeklyRecurrenceTimeHelpText(
-                    explicitTimeText: exactTimeText,
-                    timeRangeText: timeRangeText
-                )
-            )
-        }
-    }
-
     private var monthlyControls: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .top, spacing: 22) {
-                monthlyDayControl
-                    .frame(width: 180, alignment: .leading)
-                monthlyAvailabilityControl
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            VStack(alignment: .leading, spacing: 18) {
-                monthlyDayControl
-                monthlyAvailabilityControl
-            }
-        }
+        monthlyDayControl
     }
 
     private var monthlyDayControl: some View {
@@ -904,17 +867,6 @@ struct TaskFormMacBehaviorCard: View {
                     .frame(minWidth: 40, alignment: .leading)
             }
             .fixedSize()
-        }
-    }
-
-    private var monthlyAvailabilityControl: some View {
-        TaskFormMacControlBlock(title: "Availability") {
-            recurrenceExplicitTimeControls(
-                helpText: presentation.monthlyRecurrenceTimeHelpText(
-                    explicitTimeText: exactTimeText,
-                    timeRangeText: timeRangeText
-                )
-            )
         }
     }
 
@@ -971,6 +923,31 @@ struct TaskFormMacBehaviorCard: View {
         "\(model.recurrenceTimeRangeStart.wrappedValue.formatted(date: .omitted, time: .shortened)) to \(model.recurrenceTimeRangeEnd.wrappedValue.formatted(date: .omitted, time: .shortened))"
     }
 
+    private var recurrenceAvailabilityHelpText: String {
+        switch model.recurrenceKind.wrappedValue {
+        case .intervalDays:
+            return presentation.intervalRecurrenceTimeHelpText(
+                exactTimeText: exactTimeText,
+                timeRangeText: timeRangeText
+            )
+        case .dailyTime:
+            return presentation.dailyRecurrenceTimeHelpText(
+                exactTimeText: exactTimeText,
+                timeRangeText: timeRangeText
+            )
+        case .weekly:
+            return presentation.weeklyRecurrenceTimeHelpText(
+                explicitTimeText: exactTimeText,
+                timeRangeText: timeRangeText
+            )
+        case .monthlyDay:
+            return presentation.monthlyRecurrenceTimeHelpText(
+                explicitTimeText: exactTimeText,
+                timeRangeText: timeRangeText
+            )
+        }
+    }
+
     private var timingModeBinding: Binding<TaskFormTimingMode> {
         Binding(
             get: {
@@ -985,18 +962,6 @@ struct TaskFormMacBehaviorCard: View {
             set: { mode in
                 model.recurrenceHasExplicitTime.wrappedValue = mode == .exact
                 model.recurrenceHasTimeRange.wrappedValue = mode == .range
-            }
-        )
-    }
-
-    private var dailyTimingModeBinding: Binding<TaskFormTimingMode> {
-        Binding(
-            get: {
-                model.recurrenceHasTimeRange.wrappedValue ? .range : .exact
-            },
-            set: { mode in
-                model.recurrenceHasTimeRange.wrappedValue = mode == .range
-                model.recurrenceHasExplicitTime.wrappedValue = mode != .range
             }
         )
     }

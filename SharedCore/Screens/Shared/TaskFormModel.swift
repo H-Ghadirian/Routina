@@ -198,6 +198,32 @@ extension TaskFormModel {
         )
     }
 
+    var repeatBasis: Binding<RoutineRepeatBasis> {
+        let recurrenceKind = recurrenceKind
+        return Binding(
+            get: {
+                recurrenceKind.wrappedValue.repeatBasis
+            },
+            set: { basis in
+                recurrenceKind.wrappedValue = recurrenceKind.wrappedValue.replacingRepeatBasis(basis)
+            }
+        )
+    }
+
+    var calendarRecurrenceKind: Binding<RoutineRecurrenceRule.Kind> {
+        let recurrenceKind = recurrenceKind
+        return Binding(
+            get: {
+                let currentKind = recurrenceKind.wrappedValue
+                return currentKind.repeatBasis == .calendar ? currentKind : .dailyTime
+            },
+            set: { kind in
+                guard kind.repeatBasis == .calendar else { return }
+                recurrenceKind.wrappedValue = kind
+            }
+        )
+    }
+
     var suggestedRelatedTags: [String] {
         RoutineTagRelations.relatedTags(
             for: routineTags,

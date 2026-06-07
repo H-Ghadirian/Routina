@@ -383,12 +383,17 @@ enum CloudKitDirectPullTaskRecordParser {
 
         switch kind {
         case .intervalDays:
-            return .interval(days: max(interval ?? 1, 1))
+            return .interval(
+                days: max(interval ?? 1, 1),
+                at: exactTime,
+                timeRange: range
+            )
         case .dailyTime:
-            if let range {
-                return .daily(in: range)
-            }
-            return .daily(at: exactTime ?? .defaultValue)
+            return RoutineRecurrenceRule(
+                kind: .dailyTime,
+                timeOfDay: exactTime,
+                timeRange: range
+            )
         case .weekly:
             return .weekly(
                 on: weekday ?? Calendar.current.firstWeekday,

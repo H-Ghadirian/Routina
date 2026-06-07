@@ -243,8 +243,8 @@ struct TaskFormPresentation {
 
     func recurrencePatternDescription(includesOptionalExactTimeDetail: Bool) -> String {
         switch recurrenceKind {
-        case .intervalDays: return "Repeat after a fixed number of days, weeks, or months."
-        case .dailyTime: return "Repeat every day at a specific time or within a time range."
+        case .intervalDays: return "Repeat after a fixed number of days, weeks, or months, with optional timing."
+        case .dailyTime: return "Repeat every day, with optional timing."
         case .weekly:
             return includesOptionalExactTimeDetail
                 ? "Repeat on the same weekday each week, with optional timing."
@@ -278,7 +278,23 @@ struct TaskFormPresentation {
         if recurrenceHasTimeRange {
             return "Due every day from \(timeRangeText)."
         }
-        return "Due every day at \(exactTimeText)."
+        if recurrenceHasExplicitTime {
+            return "Due every day at \(exactTimeText)."
+        }
+        return "Due every day, any time."
+    }
+
+    func intervalRecurrenceTimeHelpText(
+        exactTimeText: String,
+        timeRangeText: String
+    ) -> String {
+        if recurrenceHasTimeRange {
+            return "Available after the interval, from \(timeRangeText)."
+        }
+        if recurrenceHasExplicitTime {
+            return "Available after the interval, at \(exactTimeText)."
+        }
+        return "Available any time once the interval has passed."
     }
 
     func weeklyRecurrenceTimeHelpText(

@@ -177,12 +177,19 @@ enum TaskDetailEditChangeDetector {
 
         switch request.recurrenceKind {
         case .intervalDays:
-            return .interval(days: request.frequencyValue * request.frequency.daysMultiplier)
+            return .interval(
+                days: request.frequencyValue * request.frequency.daysMultiplier,
+                at: request.recurrenceHasExplicitTime ? request.recurrenceTimeOfDay : nil,
+                timeRange: timeRange
+            )
         case .dailyTime:
             if let timeRange {
                 return .daily(in: timeRange)
             }
-            return .daily(at: request.recurrenceTimeOfDay)
+            return RoutineRecurrenceRule(
+                kind: .dailyTime,
+                timeOfDay: request.recurrenceHasExplicitTime ? request.recurrenceTimeOfDay : nil
+            )
         case .weekly:
             return .weekly(
                 on: request.recurrenceWeekday,

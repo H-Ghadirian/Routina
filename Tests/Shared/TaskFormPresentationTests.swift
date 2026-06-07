@@ -79,7 +79,10 @@ struct TaskFormPresentationTests {
 
         #expect(TaskFormPresentation.weekdayName(for: 99) == weekdaySymbols.last)
         #expect(TaskFormPresentation.ordinalDay(33) == "31st")
-        #expect(weekly.recurrencePatternDescription(includesOptionalExactTimeDetail: false) == "Repeat after a fixed number of days, weeks, or months.")
+        #expect(weekly.recurrencePatternDescription(includesOptionalExactTimeDetail: false) == "Repeat after a fixed number of days, weeks, or months, with optional timing.")
+        #expect(weekly.intervalRecurrenceTimeHelpText(exactTimeText: "8:00 PM", timeRangeText: "7:00 AM to 10:00 AM") == "Available any time once the interval has passed.")
+        #expect(presentation(recurrenceKind: .intervalDays, recurrenceHasExplicitTime: true).intervalRecurrenceTimeHelpText(exactTimeText: "8:00 PM", timeRangeText: "7:00 AM to 10:00 AM") == "Available after the interval, at 8:00 PM.")
+        #expect(presentation(recurrenceKind: .dailyTime).dailyRecurrenceTimeHelpText(exactTimeText: "8:00 PM", timeRangeText: "7:00 AM to 10:00 AM") == "Due every day, any time.")
         #expect(presentation(recurrenceKind: .weekly).recurrencePatternDescription(includesOptionalExactTimeDetail: false) == "Repeat on the same weekday each week.")
         #expect(presentation(recurrenceKind: .monthlyDay).recurrencePatternDescription(includesOptionalExactTimeDetail: false) == "Repeat on the same calendar day each month.")
         #expect(TaskFormPresentation.stepperLabel(unit: .week, value: 1) == "Every week")

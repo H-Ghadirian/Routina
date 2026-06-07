@@ -133,12 +133,19 @@ struct AddRoutineFeatureState: Equatable {
 
         switch schedule.recurrenceKind {
         case .intervalDays:
-            return .interval(days: max(fallbackInterval, 1))
+            return .interval(
+                days: max(fallbackInterval, 1),
+                at: schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
+                timeRange: timeRange
+            )
         case .dailyTime:
             if let timeRange {
                 return .daily(in: timeRange)
             }
-            return .daily(at: schedule.recurrenceTimeOfDay)
+            return RoutineRecurrenceRule(
+                kind: .dailyTime,
+                timeOfDay: schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil
+            )
         case .weekly:
             return .weekly(
                 on: schedule.recurrenceWeekday,

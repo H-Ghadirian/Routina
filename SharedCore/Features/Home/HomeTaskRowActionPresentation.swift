@@ -38,7 +38,7 @@ enum HomeTaskRowCompletionPresentation {
         if task.hasMissedExactTimedOccurrence {
             return false
         }
-        if task.recurrenceRule.isFixedCalendar,
+        if (task.recurrenceRule.isFixedCalendar || task.recurrenceRule.usesTimeConstraint),
            let dueDate = task.dueDate,
            dueDate > referenceDate {
             return true
