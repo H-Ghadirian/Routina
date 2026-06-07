@@ -18,7 +18,7 @@ enum TaskFormFrequencyUnit: String, CaseIterable, Equatable, Sendable {
 
 enum TaskFormTimingMode: String, CaseIterable, Equatable, Identifiable, Sendable {
     case none = "Any time"
-    case allDay = "All day"
+    case allDay = "All-day"
     case exact = "At time"
     case range = "Window"
 
@@ -259,7 +259,7 @@ struct TaskFormPresentation {
 
     var autoAssumeDailyDoneHelpText: String {
         if canAutoAssumeDailyDone {
-            return "Show this simple daily routine as assumed done by default. You can still confirm it or mark it not done later."
+            return "Defaults this simple daily routine to done. You can still confirm or mark it not done later."
         }
         return "Available only for simple daily routines without steps or checklist items."
     }
@@ -330,6 +330,19 @@ struct TaskFormPresentation {
             return "Due on the \(Self.ordinalDay(recurrenceDayOfMonth)) of each month at \(explicitTimeText)."
         }
         return "Optional. Leave this off to keep the routine due any time on the \(Self.ordinalDay(recurrenceDayOfMonth)) of each month."
+    }
+
+    func availabilityControlHelpText(isAllDay: Bool) -> String {
+        if isAllDay {
+            return "Shows in the planner all-day lane on scheduled days."
+        }
+        if recurrenceHasTimeRange {
+            return "Available only during this window on scheduled days."
+        }
+        if recurrenceHasExplicitTime {
+            return "Available at this time on scheduled days."
+        }
+        return "Available any time on scheduled days."
     }
 
     static func weekdayName(for weekday: Int) -> String {

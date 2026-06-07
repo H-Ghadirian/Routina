@@ -8,8 +8,6 @@ enum AddRoutineScheduleEditor {
         schedule.scheduleMode = mode
         if mode.isSoftIntervalRoutine {
             schedule.recurrenceKind = .intervalDays
-            schedule.recurrenceHasExplicitTime = false
-            schedule.recurrenceHasTimeRange = false
         }
     }
 

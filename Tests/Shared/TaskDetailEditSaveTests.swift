@@ -13,6 +13,69 @@ import Testing
 @MainActor
 struct TaskDetailEditSaveTests {
     @Test
+    func editAllDayChanged_forTodoWithoutDeadlineDoesNotCreateDeadline() async {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let task = RoutineTask(
+            name: "Buy tickets",
+            scheduleMode: .oneOff
+        )
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Buy tickets",
+                editRoutineEmoji: "🎟️",
+                editScheduleMode: .oneOff
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+        }
+
+        await store.send(.editAllDayChanged(true)) {
+            $0.editIsAllDay = true
+        }
+
+        #expect(store.state.editDeadline == nil)
+    }
+
+    @Test
+    func editDeadlineDisabled_preservesTodoAllDayFlag() async {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let deadline = makeDate("2026-03-14T18:45:00Z")
+        let task = RoutineTask(
+            name: "Conference",
+            deadline: deadline,
+            isAllDay: true,
+            scheduleMode: .oneOff
+        )
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Conference",
+                editRoutineEmoji: "🎟️",
+                editDeadline: deadline,
+                editIsAllDay: true,
+                editScheduleMode: .oneOff
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+        }
+
+        await store.send(.editDeadlineEnabledChanged(false)) {
+            $0.editDeadline = nil
+        }
+
+        #expect(store.state.editIsAllDay)
+    }
+
+    @Test
     func editSaveTapped_persistsAllDayFlagForDatedTodos() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()
@@ -665,6 +728,66 @@ struct TaskDetailEditSaveTests {
                 )
             ).first
         )
+        #expect(persistedTask.recurrenceRule == .interval(days: 7, at: exactTime))
+    }
+
+    @Test
+    func editSaveTapped_persistsGentleIntervalAvailability() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Read",
+            interval: 7,
+            lastDone: nil,
+            emoji: "📚",
+            recurrenceRule: .interval(days: 7),
+            scheduleAnchor: makeDate("2026-03-10T06:00:00Z")
+        )
+        let exactTime = RoutineTimeOfDay(hour: 21, minute: 0)
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Read",
+                editRoutineEmoji: "📚",
+                editScheduleMode: .softInterval,
+                editFrequency: .week,
+                editFrequencyValue: 1,
+                editRecurrenceKind: .intervalDays,
+                editRecurrenceHasExplicitTime: true,
+                editRecurrenceTimeOfDay: exactTime
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+        await store.receive(.onAppear) {
+            $0.selectedDate = calendar.startOfDay(for: now)
+        }
+
+        let taskID = task.id
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { task in
+                        task.id == taskID
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.scheduleMode == .softInterval)
         #expect(persistedTask.recurrenceRule == .interval(days: 7, at: exactTime))
     }
 }

@@ -60,6 +60,29 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func scheduleModeChanged_toGentleKeepsIntervalAvailabilitySelection() async {
+        let store = TestStore(
+            initialState: makeState(
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .fixedInterval,
+                    recurrenceKind: .weekly,
+                    recurrenceHasExplicitTime: true
+                )
+            )
+        ) {
+            makeFeature()
+        }
+
+        await store.send(.scheduleModeChanged(.softInterval)) {
+            $0.schedule.scheduleMode = .softInterval
+            $0.schedule.recurrenceKind = .intervalDays
+        }
+
+        #expect(store.state.schedule.recurrenceHasExplicitTime)
+        #expect(!store.state.schedule.recurrenceHasTimeRange)
+    }
+
+    @Test
     func allDayChanged_forRoutineClearsAvailabilityTiming() async {
         let store = TestStore(
             initialState: makeState(
@@ -81,6 +104,49 @@ struct AddRoutineFeatureTests {
             $0.schedule.recurrenceHasExplicitTime = false
             $0.schedule.recurrenceHasTimeRange = false
         }
+    }
+
+    @Test
+    func allDayChanged_forTodoDoesNotCreateDeadline() async {
+        let store = TestStore(
+            initialState: makeState(
+                schedule: AddRoutineScheduleState(scheduleMode: .oneOff)
+            )
+        ) {
+            makeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.allDayChanged(true)) {
+            $0.basics.isAllDay = true
+        }
+
+        #expect(store.state.basics.deadline == nil)
+    }
+
+    @Test
+    func deadlineDisabled_preservesTodoAllDayFlag() async {
+        let deadline = makeDate("2026-04-10T08:30:00Z")
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(
+                    deadline: deadline,
+                    isAllDay: true
+                ),
+                schedule: AddRoutineScheduleState(scheduleMode: .oneOff)
+            )
+        ) {
+            makeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.deadlineEnabledChanged(false)) {
+            $0.basics.deadline = nil
+        }
+
+        #expect(store.state.basics.isAllDay)
     }
 
     @Test
@@ -630,6 +696,7 @@ struct AddRoutineFeatureTests {
             RoutineChecklistItem(title: "Whites", intervalDays: 3),
             RoutineChecklistItem(title: "Colors", intervalDays: 5)
         ]
+        let exactTime = RoutineTimeOfDay(hour: 18, minute: 30)
 
         let store = TestStore(
             initialState: makeState(
@@ -638,7 +705,9 @@ struct AddRoutineFeatureTests {
                 schedule: AddRoutineScheduleState(
                     scheduleMode: .softIntervalChecklist,
                     frequency: .day,
-                    frequencyValue: 4
+                    frequencyValue: 4,
+                    recurrenceHasExplicitTime: true,
+                    recurrenceTimeOfDay: exactTime
                 ),
                 checklist: AddRoutineChecklistState(
                     routineSteps: [RoutineStep(title: "Sort clothes")],
@@ -660,7 +729,7 @@ struct AddRoutineFeatureTests {
         await store.send(.saveTapped)
 
         #expect(capturedRequest.value?.scheduleMode == .softIntervalChecklist)
-        #expect(capturedRequest.value?.recurrenceRule == .interval(days: 4))
+        #expect(capturedRequest.value?.recurrenceRule == .interval(days: 4, at: exactTime))
         #expect(capturedRequest.value?.steps.isEmpty == true)
         #expect(capturedRequest.value?.checklistItems.map(\.title) == ["Whites", "Colors"])
     }

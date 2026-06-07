@@ -18,7 +18,7 @@ That kept the data model visible too literally. Runout is not a third way to fin
 
 ## Decision
 
-Routine forms present `How it finishes` as `Standard` or `Checklist` only. Choosing `Checklist` reveals a checklist cadence/timing control in the repeat cadence area with:
+Routine forms present the Completion control as `Standard` or `Checklist` only. Choosing `Checklist` reveals a checklist cadence/timing control in the repeat cadence area with:
 
 - `Together`: checklist items follow the routine cadence and the routine is done when every item is completed.
 - `Runout`: checklist items have their own timing and the earliest due item drives the routine.

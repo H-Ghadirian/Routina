@@ -538,9 +538,12 @@ struct AddRoutineFeature: Reducer {
         state.basics.deadline = nil
         state.basics.reminderAt = nil
 
-        guard !draft.scheduleMode.isSoftIntervalRoutine else { return }
-
         let recurrenceRule = draft.recurrenceRule
+        if draft.scheduleMode.isSoftIntervalRoutine {
+            applyTimeConstraint(from: recurrenceRule, state: &state)
+            return
+        }
+
         scheduleMutationHandler().setRecurrenceKind(recurrenceRule.kind, state: &state)
 
         switch recurrenceRule.kind {

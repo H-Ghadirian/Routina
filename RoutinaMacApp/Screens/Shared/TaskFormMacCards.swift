@@ -429,15 +429,28 @@ struct TaskFormMacBehaviorCard: View {
     let presentation: TaskFormPresentation
     let persianDeadlineText: String?
 
-    private static let stableContentMinHeight: CGFloat = 360
-
     var body: some View {
         TaskFormMacSectionCard(title: "Scheduling") {
             ViewThatFits(in: .horizontal) {
                 wideSchedulingLayout
                 compactSchedulingLayout
             }
-            .frame(minHeight: Self.stableContentMinHeight, alignment: .topLeading)
+            .frame(minHeight: schedulingContentMinHeight, alignment: .topLeading)
+        }
+    }
+
+    private var schedulingContentMinHeight: CGFloat {
+        switch model.taskType.wrappedValue {
+        case .todo:
+            return 220
+        case .routine:
+            if model.scheduleMode.wrappedValue.isChecklistDrivenMode {
+                return 240
+            }
+            if model.scheduleMode.wrappedValue.isSoftIntervalRoutine {
+                return 340
+            }
+            return 320
         }
     }
 
@@ -481,7 +494,7 @@ struct TaskFormMacBehaviorCard: View {
         VStack(alignment: .leading, spacing: 16) {
             scheduleResultPreview
 
-            if model.taskType.wrappedValue == .routine {
+            if model.taskType.wrappedValue == .routine, showsAssumedDoneControl {
                 assumedDoneControl
             }
 
@@ -506,7 +519,12 @@ struct TaskFormMacBehaviorCard: View {
                 }
             }
         } else {
-            taskTypeControl
+            VStack(alignment: .leading, spacing: 16) {
+                taskTypeControl
+                if showsRoutineAvailabilityControl {
+                    availabilityControl
+                }
+            }
         }
     }
 
@@ -529,11 +547,15 @@ struct TaskFormMacBehaviorCard: View {
 
     private var todoAllDayControl: some View {
         TaskFormMacToggleBlock(
-            title: "All day",
+            title: "All-day block",
             isOn: model.isAllDay
         ) {
             EmptyView()
         }
+    }
+
+    private var showsRoutineAvailabilityControl: Bool {
+        model.taskType.wrappedValue == .routine && presentation.showsRepeatControls
     }
 
     @ViewBuilder
@@ -556,9 +578,9 @@ struct TaskFormMacBehaviorCard: View {
     }
 
     private var scheduleBehaviorControl: some View {
-        TaskFormMacControlBlock(title: "When it appears") {
+        TaskFormMacControlBlock(title: "Due style") {
             VStack(alignment: .leading, spacing: 8) {
-                Picker("Schedule Behavior", selection: model.scheduleBehavior) {
+                Picker("Due style", selection: model.scheduleBehavior) {
                     ForEach(RoutineScheduleBehavior.allCases) { behavior in
                         Text(behavior.rawValue).tag(behavior)
                     }
@@ -575,9 +597,9 @@ struct TaskFormMacBehaviorCard: View {
     }
 
     private var routineFormatControl: some View {
-        TaskFormMacControlBlock(title: "How it finishes") {
+        TaskFormMacControlBlock(title: "Completion") {
             VStack(alignment: .leading, spacing: 8) {
-                Picker("How it finishes", selection: model.routineFinishMode) {
+                Picker("Completion", selection: model.routineFinishMode) {
                     ForEach(RoutineFinishMode.allCases) { mode in
                         Text(mode.rawValue).tag(mode)
                     }
@@ -695,7 +717,7 @@ struct TaskFormMacBehaviorCard: View {
                 return presentation.checklistTimingDescription
             }
             if model.scheduleMode.wrappedValue.isSoftIntervalRoutine {
-                return "Stays visible and nudges \(frequencyIntervalPhrase)."
+                return gentleRoutineCadenceSummary
             }
             return dueRoutineCadenceSummary
         }
@@ -768,10 +790,22 @@ struct TaskFormMacBehaviorCard: View {
         return value == 1 ? "every \(unit)" : "every \(value) \(unit)s"
     }
 
+    private var gentleRoutineCadenceSummary: String {
+        let cadence = "Nudges \(frequencyIntervalPhrase)"
+        if model.isAllDay.wrappedValue {
+            return "\(cadence); shows in the all-day lane."
+        }
+        if model.recurrenceHasTimeRange.wrappedValue {
+            return "\(cadence), available \(timeRangeText)."
+        }
+        if model.recurrenceHasExplicitTime.wrappedValue {
+            return "\(cadence), available at \(exactTimeText)."
+        }
+        return "Stays visible and nudges \(frequencyIntervalPhrase)."
+    }
+
     @ViewBuilder
     private var repeatPatternControls: some View {
-        availabilityControl
-
         TaskFormMacControlBlock(title: "Repeat type") {
             HStack(spacing: 0) {
                 Picker("Repeat type", selection: model.repeatBasis) {
@@ -874,8 +908,8 @@ struct TaskFormMacBehaviorCard: View {
     private var monthlyDayControl: some View {
         TaskFormMacControlBlock(title: "Month day") {
             Stepper(value: model.recurrenceDayOfMonth, in: 1...31) {
-                Text(TaskFormPresentation.ordinalDay(model.recurrenceDayOfMonth.wrappedValue))
-                    .frame(minWidth: 40, alignment: .leading)
+                Text("Day \(model.recurrenceDayOfMonth.wrappedValue) of each month")
+                    .frame(minWidth: 180, alignment: .leading)
             }
             .fixedSize()
         }
@@ -935,54 +969,21 @@ struct TaskFormMacBehaviorCard: View {
     }
 
     private var recurrenceAvailabilityHelpText: String {
-        switch model.recurrenceKind.wrappedValue {
-        case .intervalDays:
-            if model.isAllDay.wrappedValue {
-                return allDayAvailabilityHelpText
-            }
-            return presentation.intervalRecurrenceTimeHelpText(
-                exactTimeText: exactTimeText,
-                timeRangeText: timeRangeText
-            )
-        case .dailyTime:
-            if model.isAllDay.wrappedValue {
-                return allDayAvailabilityHelpText
-            }
-            return presentation.dailyRecurrenceTimeHelpText(
-                exactTimeText: exactTimeText,
-                timeRangeText: timeRangeText
-            )
-        case .weekly:
-            if model.isAllDay.wrappedValue {
-                return allDayAvailabilityHelpText
-            }
-            return presentation.weeklyRecurrenceTimeHelpText(
-                explicitTimeText: exactTimeText,
-                timeRangeText: timeRangeText
-            )
-        case .monthlyDay:
-            if model.isAllDay.wrappedValue {
-                return allDayAvailabilityHelpText
-            }
-            return presentation.monthlyRecurrenceTimeHelpText(
-                explicitTimeText: exactTimeText,
-                timeRangeText: timeRangeText
-            )
-        }
+        presentation.availabilityControlHelpText(isAllDay: model.isAllDay.wrappedValue)
     }
 
     private var allDayAvailabilityHelpText: String {
         switch model.recurrenceKind.wrappedValue {
         case .intervalDays:
-            return "Shows as all-day once the interval has passed."
+            return "Shows in the all-day lane once the interval has passed."
         case .dailyTime:
-            return "Shows as all-day every day."
+            return "Shows in the all-day lane every day."
         case .weekly:
             let weekday = TaskFormPresentation.weekdayName(for: model.recurrenceWeekday.wrappedValue)
-            return "Shows as all-day every \(weekday)."
+            return "Shows in the all-day lane every \(weekday)."
         case .monthlyDay:
             let day = TaskFormPresentation.ordinalDay(model.recurrenceDayOfMonth.wrappedValue)
-            return "Shows as all-day on the \(day) of each month."
+            return "Shows in the all-day lane on the \(day) of each month."
         }
     }
 
@@ -1008,9 +1009,13 @@ struct TaskFormMacBehaviorCard: View {
         )
     }
 
+    private var showsAssumedDoneControl: Bool {
+        model.canAutoAssumeDailyDone || model.autoAssumeDailyDone.wrappedValue
+    }
+
     private var assumedDoneControl: some View {
         TaskFormMacToggleBlock(
-            title: "Assume done automatically",
+            title: "Auto-assume done",
             isOn: model.autoAssumeDailyDone,
             caption: presentation.autoAssumeDailyDoneHelpText,
             isDisabled: !model.canAutoAssumeDailyDone
@@ -1047,8 +1052,8 @@ struct TaskFormMacBehaviorCard: View {
             title: "Set reminder",
             isOn: model.reminderEnabled,
             caption: model.reminderEventDate == nil
-                ? "Send one notification at an exact date and time."
-                : "Choose a lead time before the event, or set a custom notification time."
+                ? "One notification at a specific date and time."
+                : "Notify before the scheduled time, or choose a custom time."
         ) {
             VStack(alignment: .leading, spacing: 10) {
                 if let reminderEventDate = model.reminderEventDate {

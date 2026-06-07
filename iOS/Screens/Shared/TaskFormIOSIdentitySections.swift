@@ -30,13 +30,78 @@ struct TaskFormIOSTaskTypeSection: View {
             .pickerStyle(.segmented)
 
             if model.taskType.wrappedValue == .todo {
-                Toggle("All Day", isOn: model.isAllDay)
+                Toggle("All-day block", isOn: model.isAllDay)
+            } else if showsRoutineAvailabilityControl {
+                Divider()
+                availabilityContent
             }
 
             Text(presentation.taskTypeDescription)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private var showsRoutineAvailabilityControl: Bool {
+        model.taskType.wrappedValue == .routine && presentation.showsRepeatControls
+    }
+
+    private var availabilityContent: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Availability")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Picker("Availability", selection: timingModeBinding) {
+                ForEach(TaskFormTimingMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            if model.recurrenceHasExplicitTime.wrappedValue {
+                DatePicker("Time", selection: model.recurrenceTimeOfDay, displayedComponents: .hourAndMinute)
+            } else if model.recurrenceHasTimeRange.wrappedValue {
+                timeRangePickers
+            }
+
+            Text(recurrenceAvailabilityHelpText)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var timeRangePickers: some View {
+        VStack(spacing: 8) {
+            DatePicker("Starts", selection: model.recurrenceTimeRangeStart, displayedComponents: .hourAndMinute)
+            DatePicker("Ends", selection: model.recurrenceTimeRangeEnd, displayedComponents: .hourAndMinute)
+        }
+    }
+
+    private var recurrenceAvailabilityHelpText: String {
+        presentation.availabilityControlHelpText(isAllDay: model.isAllDay.wrappedValue)
+    }
+
+    private var timingModeBinding: Binding<TaskFormTimingMode> {
+        Binding(
+            get: {
+                if model.isAllDay.wrappedValue {
+                    return .allDay
+                }
+                if model.recurrenceHasTimeRange.wrappedValue {
+                    return .range
+                }
+                if model.recurrenceHasExplicitTime.wrappedValue {
+                    return .exact
+                }
+                return .none
+            },
+            set: { mode in
+                model.isAllDay.wrappedValue = mode == .allDay
+                model.recurrenceHasExplicitTime.wrappedValue = mode == .exact
+                model.recurrenceHasTimeRange.wrappedValue = mode == .range
+            }
+        )
     }
 }
 

@@ -425,7 +425,15 @@ enum RoutineDateMath {
     ) -> Date? {
         guard task.isSoftIntervalRoutine else { return nil }
         guard let lastDone = task.lastDone else { return nil }
-        return calendar.date(byAdding: .day, value: max(task.recurrenceRule.interval, 1), to: lastDone)
+        let threshold = calendar.date(
+            byAdding: .day,
+            value: max(task.recurrenceRule.interval, 1),
+            to: lastDone
+        ) ?? lastDone
+        if let timeOfDay = scheduledTimeOfDay(for: task.recurrenceRule) {
+            return timeOfDay.date(on: threshold, calendar: calendar)
+        }
+        return threshold
     }
 
     static func hasPassedSoftIntervalThreshold(
@@ -435,6 +443,9 @@ enum RoutineDateMath {
     ) -> Bool {
         guard let thresholdDate = softIntervalThresholdDate(for: task, calendar: calendar) else {
             return false
+        }
+        if task.recurrenceRule.usesTimeConstraint {
+            return referenceDate >= thresholdDate
         }
         return calendar.startOfDay(for: referenceDate) >= calendar.startOfDay(for: thresholdDate)
     }

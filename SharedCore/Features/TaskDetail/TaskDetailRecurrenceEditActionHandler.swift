@@ -14,7 +14,6 @@ struct TaskDetailRecurrenceEditActionHandler {
             state.editDeadline = state.editIsAllDay ? calendar.startOfDay(for: deadline) : deadline
         } else {
             state.editDeadline = nil
-            state.editIsAllDay = false
         }
         return .none
     }
@@ -31,8 +30,8 @@ struct TaskDetailRecurrenceEditActionHandler {
     func editAllDayChanged(_ isAllDay: Bool, state: inout State) -> Effect<Action> {
         rebaseEditReminderIfUsingLeadTime(&state) { state in
             state.editIsAllDay = isAllDay
-            if isAllDay, state.editScheduleMode == .oneOff {
-                state.editDeadline = calendar.startOfDay(for: state.editDeadline ?? now())
+            if isAllDay, state.editScheduleMode == .oneOff, let deadline = state.editDeadline {
+                state.editDeadline = calendar.startOfDay(for: deadline)
             }
             if isAllDay, state.editScheduleMode != .oneOff {
                 state.editRecurrenceHasExplicitTime = false
@@ -78,8 +77,6 @@ struct TaskDetailRecurrenceEditActionHandler {
             }
             if mode.isSoftIntervalRoutine {
                 state.editRecurrenceKind = .intervalDays
-                state.editRecurrenceHasExplicitTime = false
-                state.editRecurrenceHasTimeRange = false
             }
         }
         disableAutoAssumeIfNeeded(state: &state)

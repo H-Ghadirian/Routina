@@ -22,7 +22,7 @@ For one-off todos, all-day remains a task-level property. It can matter even wit
 
 Routine forms present all-day as part of the timing choice for the schedule being edited.
 
-For routines, Availability includes `Any time`, `All day`, `At time`, and `Window`. It appears before repeat type and calendar pattern controls because it answers when a due-day occurrence is actionable before the user chooses how that due day is calculated. Selecting `All day` clears exact-time and time-window recurrence flags, and save/edit builders ignore stale recurrence timing whenever the task is marked all day.
+For routines, Availability includes `Any time`, `All-day`, `At time`, and `Window`. It appears before repeat type and calendar pattern controls because it answers when a due-day occurrence is actionable before the user chooses how that due day is calculated. Selecting `All-day` clears exact-time and time-window recurrence flags, and save/edit builders ignore stale recurrence timing whenever the task is marked all day.
 
 For one-off todos, the all-day control stays independent from `Set deadline`. The deadline section only decides whether there is a deadline and, when present, which date or date/time it uses. The task kind picker remains a compact Routine/Todo control without a visible `Create as` heading.
 

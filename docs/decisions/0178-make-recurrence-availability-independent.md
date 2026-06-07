@@ -18,21 +18,22 @@ Availability was still nested inside specific recurrence branches. Daily showed 
 
 ## Decision
 
-Routine forms present Availability as its own section for standard scheduled routines, regardless of whether the repeat type is `Interval` or `Calendar` and regardless of whether the calendar pattern is Daily, Weekday, or Month day.
+Routine forms present Availability as its own section for Due routines and Gentle routines whose cadence is still routine-level. For Due routines, this applies regardless of whether the repeat type is `Interval` or `Calendar` and regardless of whether the calendar pattern is Daily, Weekday, or Month day. Gentle routines remain interval-based, but they can still choose when the nudge-day work is actionable.
 
-Availability has three choices:
+Availability includes these choices:
 
-- `Any time`: the routine is available for the whole due day.
-- `At time`: the routine becomes available at the selected time on the due day.
+- `Any time`: the routine is available for the whole scheduled day.
+- `All-day`: the routine appears in the planner all-day lane on the scheduled day.
+- `At time`: the routine becomes available at the selected time on the scheduled day.
 - `Window`: the routine is available only between the selected start and end times.
 
 Interval recurrence rules may store an exact time or time range. The interval still determines the due day from the rolling duration anchor; availability determines when that due day is actionable.
 
-Soft interval and checklist-driven schedule modes continue to omit recurrence availability because their visibility is not driven by a single routine occurrence time.
+Checklist-driven Runout schedule modes continue to omit recurrence availability because their timing belongs to each checklist item rather than to one routine-level occurrence.
 
 ## Consequences
 
 - Users no longer see two different places to configure timing for repeat routines.
 - Daily calendar routines can be any-time routines, matching weekday and month-day behavior.
-- Interval routines with exact time or windows must preserve those values in SwiftData columns, sync decoding, save/edit flows, and date math.
+- Interval routines with exact time or windows, including Gentle interval routines, must preserve those values in SwiftData columns, sync decoding, save/edit flows, and date math.
 - Timed interval routines use missed-occurrence handling when their exact time or window passes unresolved.

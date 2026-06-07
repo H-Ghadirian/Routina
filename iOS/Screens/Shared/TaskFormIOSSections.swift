@@ -49,8 +49,8 @@ struct TaskFormIOSReminderSection: View {
                 )
             }
             Text(model.reminderEventDate == nil
-                ? "Send one notification at an exact date and time."
-                : "Choose a lead time before the event, or set a custom notification time.")
+                ? "One notification at a specific date and time."
+                : "Notify before the scheduled time, or choose a custom time.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -94,8 +94,8 @@ struct TaskFormIOSScheduleTypeSection: View {
     let presentation: TaskFormPresentation
 
     var body: some View {
-        Section(header: Text("Schedule Behavior")) {
-            Picker("Schedule Behavior", selection: model.scheduleBehavior) {
+        Section(header: Text("Due Style")) {
+            Picker("Due Style", selection: model.scheduleBehavior) {
                 ForEach(RoutineScheduleBehavior.allCases) { behavior in
                     Text(behavior.rawValue).tag(behavior)
                 }
@@ -107,8 +107,8 @@ struct TaskFormIOSScheduleTypeSection: View {
             )
         }
 
-        Section(header: Text("Routine Finish")) {
-            Picker("How it finishes", selection: model.routineFinishMode) {
+        Section(header: Text("Completion")) {
+            Picker("Completion", selection: model.routineFinishMode) {
                 ForEach(RoutineFinishMode.allCases) { mode in
                     Text(mode.rawValue).tag(mode)
                 }
@@ -308,13 +308,12 @@ struct TaskFormIOSRepeatPatternSections: View {
             if model.scheduleMode.wrappedValue.isSoftIntervalRoutine {
                 softReminderSection
             } else {
-                availabilitySection
                 repeatPatternSection
                 recurrenceSpecificSections
             }
         }
 
-        if model.taskType.wrappedValue == .routine {
+        if model.taskType.wrappedValue == .routine, showsAssumedDoneSection {
             assumedDoneSection
         }
     }
@@ -405,114 +404,12 @@ struct TaskFormIOSRepeatPatternSections: View {
         case .monthlyDay:
             Section(header: Text("Day of Month")) {
                 Stepper(value: model.recurrenceDayOfMonth, in: 1...31) {
-                    Text("Every \(TaskFormPresentation.ordinalDay(model.recurrenceDayOfMonth.wrappedValue))")
+                    Text("Day \(model.recurrenceDayOfMonth.wrappedValue) of each month")
                 }
                 Text(presentation.monthlyRecurrenceSummary)
                     .font(.caption).foregroundStyle(.secondary)
             }
         }
-    }
-
-    private var availabilitySection: some View {
-        Section(header: Text("Availability")) {
-            timingModePicker
-            if model.recurrenceHasExplicitTime.wrappedValue {
-                DatePicker("Time", selection: model.recurrenceTimeOfDay, displayedComponents: .hourAndMinute)
-            } else if model.recurrenceHasTimeRange.wrappedValue {
-                timeRangePickers
-            }
-            Text(recurrenceAvailabilityHelpText)
-                .font(.caption).foregroundStyle(.secondary)
-        }
-    }
-
-    private var timingModePicker: some View {
-        Picker("Availability", selection: timingModeBinding) {
-            ForEach(TaskFormTimingMode.allCases) { mode in
-                Text(mode.rawValue).tag(mode)
-            }
-        }
-        .pickerStyle(.segmented)
-    }
-
-    private var timeRangePickers: some View {
-        VStack(spacing: 8) {
-            DatePicker("Starts", selection: model.recurrenceTimeRangeStart, displayedComponents: .hourAndMinute)
-            DatePicker("Ends", selection: model.recurrenceTimeRangeEnd, displayedComponents: .hourAndMinute)
-        }
-    }
-
-    private var exactTimeText: String {
-        model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened)
-    }
-
-    private var timeRangeText: String {
-        "\(model.recurrenceTimeRangeStart.wrappedValue.formatted(date: .omitted, time: .shortened)) to \(model.recurrenceTimeRangeEnd.wrappedValue.formatted(date: .omitted, time: .shortened))"
-    }
-
-    private var recurrenceAvailabilityHelpText: String {
-        if model.isAllDay.wrappedValue {
-            return allDayAvailabilityHelpText
-        }
-        switch model.recurrenceKind.wrappedValue {
-        case .intervalDays:
-            return presentation.intervalRecurrenceTimeHelpText(
-                exactTimeText: exactTimeText,
-                timeRangeText: timeRangeText
-            )
-        case .dailyTime:
-            return presentation.dailyRecurrenceTimeHelpText(
-                exactTimeText: exactTimeText,
-                timeRangeText: timeRangeText
-            )
-        case .weekly:
-            return presentation.weeklyRecurrenceTimeHelpText(
-                explicitTimeText: exactTimeText,
-                timeRangeText: timeRangeText
-            )
-        case .monthlyDay:
-            return presentation.monthlyRecurrenceTimeHelpText(
-                explicitTimeText: exactTimeText,
-                timeRangeText: timeRangeText
-            )
-        }
-    }
-
-    private var allDayAvailabilityHelpText: String {
-        switch model.recurrenceKind.wrappedValue {
-        case .intervalDays:
-            return "Shows as all-day once the interval has passed."
-        case .dailyTime:
-            return "Shows as all-day every day."
-        case .weekly:
-            let weekday = TaskFormPresentation.weekdayName(for: model.recurrenceWeekday.wrappedValue)
-            return "Shows as all-day every \(weekday)."
-        case .monthlyDay:
-            let day = TaskFormPresentation.ordinalDay(model.recurrenceDayOfMonth.wrappedValue)
-            return "Shows as all-day on the \(day) of each month."
-        }
-    }
-
-    private var timingModeBinding: Binding<TaskFormTimingMode> {
-        Binding(
-            get: {
-                if model.isAllDay.wrappedValue {
-                    return .allDay
-                }
-                if model.recurrenceHasTimeRange.wrappedValue {
-                    return .range
-                }
-                if model.recurrenceHasExplicitTime.wrappedValue {
-                    return .exact
-                }
-                return .none
-            },
-            set: { mode in
-                model.isAllDay.wrappedValue = mode == .allDay
-                model.recurrenceHasExplicitTime.wrappedValue = mode == .exact
-                model.recurrenceHasTimeRange.wrappedValue = mode == .range
-            }
-        )
     }
 
     private var frequencyUnitPicker: some View {
@@ -524,9 +421,13 @@ struct TaskFormIOSRepeatPatternSections: View {
         .pickerStyle(.segmented)
     }
 
+    private var showsAssumedDoneSection: Bool {
+        model.canAutoAssumeDailyDone || model.autoAssumeDailyDone.wrappedValue
+    }
+
     private var assumedDoneSection: some View {
         Section(header: Text("Assumed Done")) {
-            Toggle("Assume done automatically", isOn: model.autoAssumeDailyDone)
+            Toggle("Auto-assume done", isOn: model.autoAssumeDailyDone)
                 .disabled(!model.canAutoAssumeDailyDone)
             Text(presentation.autoAssumeDailyDoneHelpText)
                 .font(.caption)

@@ -126,10 +126,6 @@ struct TaskDetailEditSaveRequestBuilder {
             return .interval(days: 1)
         }
 
-        guard !scheduleMode.isSoftIntervalRoutine else {
-            return .interval(days: max(fallbackInterval, 1))
-        }
-
         guard !scheduleMode.isChecklistDrivenMode else {
             return .interval(days: max(fallbackInterval, 1))
         }

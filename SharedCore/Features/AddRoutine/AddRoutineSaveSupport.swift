@@ -230,10 +230,6 @@ struct AddRoutineSaveRequest: Equatable {
             return .interval(days: 1)
         }
 
-        guard !schedule.scheduleMode.isSoftIntervalRoutine else {
-            return .interval(days: max(fallbackInterval, 1))
-        }
-
         guard !schedule.scheduleMode.isChecklistDrivenMode else {
             return .interval(days: max(fallbackInterval, 1))
         }
