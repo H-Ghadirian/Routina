@@ -539,16 +539,11 @@ struct AddRoutineFeature: Reducer {
         state.basics.reminderAt = nil
 
         let recurrenceRule = draft.recurrenceRule
-        if draft.scheduleMode.isSoftIntervalRoutine {
-            applyTimeConstraint(from: recurrenceRule, state: &state)
-            return
-        }
-
         scheduleMutationHandler().setRecurrenceKind(recurrenceRule.kind, state: &state)
 
         switch recurrenceRule.kind {
         case .intervalDays:
-            break
+            applyTimeConstraint(from: recurrenceRule, state: &state)
         case .dailyTime:
             applyTimeConstraint(from: recurrenceRule, state: &state)
         case .weekly:

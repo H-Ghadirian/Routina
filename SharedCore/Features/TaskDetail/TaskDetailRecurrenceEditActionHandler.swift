@@ -75,9 +75,6 @@ struct TaskDetailRecurrenceEditActionHandler {
             if mode != .oneOff {
                 state.editDeadline = nil
             }
-            if mode.isSoftIntervalRoutine {
-                state.editRecurrenceKind = .intervalDays
-            }
         }
         disableAutoAssumeIfNeeded(state: &state)
         return .none

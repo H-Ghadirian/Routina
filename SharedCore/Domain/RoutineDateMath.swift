@@ -425,6 +425,9 @@ enum RoutineDateMath {
     ) -> Date? {
         guard task.isSoftIntervalRoutine else { return nil }
         guard let lastDone = task.lastDone else { return nil }
+        if task.recurrenceRule.kind.repeatBasis == .calendar {
+            return softCalendarThresholdDate(for: task, after: lastDone, calendar: calendar)
+        }
         let threshold = calendar.date(
             byAdding: .day,
             value: max(task.recurrenceRule.interval, 1),
@@ -434,6 +437,47 @@ enum RoutineDateMath {
             return timeOfDay.date(on: threshold, calendar: calendar)
         }
         return threshold
+    }
+
+    private static func softCalendarThresholdDate(
+        for task: RoutineTask,
+        after lastDone: Date,
+        calendar: Calendar
+    ) -> Date? {
+        let nextSearchBase = calendar.date(
+            byAdding: .day,
+            value: 1,
+            to: calendar.startOfDay(for: lastDone)
+        ) ?? lastDone
+        let timeOfDay = scheduledTimeOfDay(for: task.recurrenceRule)
+
+        switch task.recurrenceRule.kind {
+        case .intervalDays:
+            return nil
+        case .dailyTime:
+            return nextDailyOccurrence(
+                after: nextSearchBase,
+                timeOfDay: timeOfDay ?? RoutineTimeOfDay(hour: 0, minute: 0),
+                includeCurrentDate: true,
+                calendar: calendar
+            )
+        case .weekly:
+            return nextWeeklyOccurrence(
+                after: nextSearchBase,
+                weekday: task.recurrenceRule.weekday ?? calendar.firstWeekday,
+                timeOfDay: timeOfDay,
+                includeCurrentDate: true,
+                calendar: calendar
+            )
+        case .monthlyDay:
+            return nextMonthlyOccurrence(
+                after: nextSearchBase,
+                dayOfMonth: task.recurrenceRule.dayOfMonth ?? 1,
+                timeOfDay: timeOfDay,
+                includeCurrentDate: true,
+                calendar: calendar
+            )
+        }
     }
 
     static func hasPassedSoftIntervalThreshold(

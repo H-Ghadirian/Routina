@@ -28,6 +28,7 @@ struct TaskFormPresentationTests {
         #expect(runout.showsRepeatControls == false)
         #expect(runout.showsChecklistTimingControls)
         #expect(runout.checklistTimingDescription == "Each checklist item has its own timing; the earliest due item drives the routine.")
+        #expect(gentle.showsRepeatControls)
         #expect(gentle.scheduleBehaviorDescription == "Gentle keeps it visible and nudges you without overdue pressure.")
         #expect(gentle.showsChecklistTimingControls == false)
 

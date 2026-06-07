@@ -10,6 +10,8 @@ Accepted
 
 Refines [0009](0009-support-routine-time-ranges.md) and [0177](0177-separate-interval-and-calendar-repeat-controls.md) for routine recurrence forms.
 
+Refined by [0181](0181-allow-gentle-calendar-repeats.md), which allows Gentle routines to use calendar repeats.
+
 ## Context
 
 [0177](0177-separate-interval-and-calendar-repeat-controls.md) split repeat controls into `Interval` and `Calendar` so users first choose whether a routine repeats after an elapsed duration or on a calendar pattern.
@@ -18,7 +20,9 @@ Availability was still nested inside specific recurrence branches. Daily showed 
 
 ## Decision
 
-Routine forms present Availability as its own section for Due routines and Gentle routines whose cadence is still routine-level. For Due routines, this applies regardless of whether the repeat type is `Interval` or `Calendar` and regardless of whether the calendar pattern is Daily, Weekday, or Month day. Gentle routines remain interval-based, but they can still choose when the nudge-day work is actionable.
+Routine forms present Availability as its own section for Due routines and Gentle routines whose cadence is still routine-level. For Due routines, this applies regardless of whether the repeat type is `Interval` or `Calendar` and regardless of whether the calendar pattern is Daily, Weekday, or Month day. At the time of this decision, Gentle routines remained interval-based, but they could still choose when the nudge-day work was actionable.
+
+Decision [0181](0181-allow-gentle-calendar-repeats.md) later allows Gentle routines to use calendar repeats as well, because Due/Gentle controls overdue pressure while Interval/Calendar controls cadence.
 
 Availability includes these choices:
 

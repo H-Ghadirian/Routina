@@ -60,7 +60,7 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
-    func scheduleModeChanged_toGentleKeepsIntervalAvailabilitySelection() async {
+    func scheduleModeChanged_toGentlePreservesCalendarRepeatAndAvailabilitySelection() async {
         let store = TestStore(
             initialState: makeState(
                 schedule: AddRoutineScheduleState(
@@ -75,9 +75,9 @@ struct AddRoutineFeatureTests {
 
         await store.send(.scheduleModeChanged(.softInterval)) {
             $0.schedule.scheduleMode = .softInterval
-            $0.schedule.recurrenceKind = .intervalDays
         }
 
+        #expect(store.state.schedule.recurrenceKind == .weekly)
         #expect(store.state.schedule.recurrenceHasExplicitTime)
         #expect(!store.state.schedule.recurrenceHasTimeRange)
     }
@@ -732,6 +732,41 @@ struct AddRoutineFeatureTests {
         #expect(capturedRequest.value?.recurrenceRule == .interval(days: 4, at: exactTime))
         #expect(capturedRequest.value?.steps.isEmpty == true)
         #expect(capturedRequest.value?.checklistItems.map(\.title) == ["Whites", "Colors"])
+    }
+
+    @Test
+    func saveTapped_forGentleCalendarPreservesWeeklyRepeat() async {
+        let capturedRequest = LockIsolated<AddRoutineSaveRequest?>(nil)
+        let exactTime = RoutineTimeOfDay(hour: 18, minute: 30)
+
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(routineName: "Review plants", routineEmoji: "🪴"),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .softInterval,
+                    recurrenceKind: .weekly,
+                    recurrenceHasExplicitTime: true,
+                    recurrenceTimeOfDay: exactTime,
+                    recurrenceWeekday: 2
+                )
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { request in
+                    capturedRequest.withValue { $0 = request }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.saveTapped)
+
+        #expect(capturedRequest.value?.scheduleMode == .softInterval)
+        #expect(capturedRequest.value?.recurrenceRule == .weekly(on: 2, at: exactTime))
     }
 
     @Test

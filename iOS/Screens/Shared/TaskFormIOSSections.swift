@@ -301,12 +301,8 @@ struct TaskFormIOSRepeatPatternSections: View {
         }
 
         if presentation.showsRepeatControls {
-            if model.scheduleMode.wrappedValue.isSoftIntervalRoutine {
-                softReminderSection
-            } else {
-                repeatPatternSection
-                recurrenceSpecificSections
-            }
+            repeatPatternSection
+            recurrenceSpecificSections
         }
 
         if model.taskType.wrappedValue == .routine, showsAssumedDoneSection {
@@ -323,20 +319,6 @@ struct TaskFormIOSRepeatPatternSections: View {
             }
             .pickerStyle(.segmented)
             Text(presentation.checklistTimingDescription)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private var softReminderSection: some View {
-        Section(header: Text("Gentle Reminder")) {
-            frequencyUnitPicker
-
-            Stepper(value: model.frequencyValue, in: 1...365) {
-                Text("Highlight again after \(TaskFormPresentation.stepperLabel(unit: model.frequencyUnit.wrappedValue, value: model.frequencyValue.wrappedValue).lowercased())")
-            }
-
-            Text("This routine stays visible and never becomes overdue. Routina will gently nudge it again after this much time has passed.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -379,7 +361,7 @@ struct TaskFormIOSRepeatPatternSections: View {
             }
             Section(header: Text("Repeat")) {
                 Stepper(value: model.frequencyValue, in: 1...365) {
-                    Text(TaskFormPresentation.stepperLabel(unit: model.frequencyUnit.wrappedValue, value: model.frequencyValue.wrappedValue))
+                    Text(intervalRepeatLabel)
                 }
             }
 
@@ -415,6 +397,16 @@ struct TaskFormIOSRepeatPatternSections: View {
             }
         }
         .pickerStyle(.segmented)
+    }
+
+    private var intervalRepeatLabel: String {
+        let label = TaskFormPresentation.stepperLabel(
+            unit: model.frequencyUnit.wrappedValue,
+            value: model.frequencyValue.wrappedValue
+        )
+        return model.scheduleBehavior.wrappedValue == .soft
+            ? "Nudge \(label.lowercased())"
+            : label
     }
 
     private var showsAssumedDoneSection: Bool {

@@ -163,6 +163,32 @@ struct RoutineDateMathTests {
     }
 
     @Test
+    func softCalendarThreshold_usesNextCalendarOccurrence() {
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(
+            scheduleMode: .softInterval,
+            recurrenceRule: .weekly(on: 2, at: RoutineTimeOfDay(hour: 20, minute: 0)),
+            lastDone: makeDate("2026-01-05T10:00:00Z"),
+            scheduleAnchor: makeDate("2026-01-05T10:00:00Z")
+        )
+
+        #expect(
+            !RoutineDateMath.hasPassedSoftIntervalThreshold(
+                for: task,
+                referenceDate: makeDate("2026-01-12T19:59:00Z"),
+                calendar: calendar
+            )
+        )
+        #expect(
+            RoutineDateMath.hasPassedSoftIntervalThreshold(
+                for: task,
+                referenceDate: makeDate("2026-01-12T20:00:00Z"),
+                calendar: calendar
+            )
+        )
+    }
+
+    @Test
     func dueDate_dailyTimeSchedule_usesSameDayWhenTimeIsStillAhead() {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current

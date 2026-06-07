@@ -623,11 +623,7 @@ struct TaskFormMacBehaviorCard: View {
             }
 
             if presentation.showsRepeatControls {
-                if model.scheduleMode.wrappedValue.isSoftIntervalRoutine {
-                    softReminderControl
-                } else {
-                    repeatPatternControls
-                }
+                repeatPatternControls
             }
         }
     }
@@ -646,18 +642,6 @@ struct TaskFormMacBehaviorCard: View {
 
                 Text(presentation.checklistTimingDescription)
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    private var softReminderControl: some View {
-        TaskFormMacControlBlock(title: "Gentle cadence") {
-            VStack(alignment: .leading, spacing: 12) {
-                frequencyStepper(prefix: "Nudge every")
-
-                Text("This routine stays visible and never becomes overdue.")
-                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
@@ -825,7 +809,7 @@ struct TaskFormMacBehaviorCard: View {
         switch model.recurrenceKind.wrappedValue {
         case .intervalDays:
             TaskFormMacControlBlock(title: "Repeat") {
-                frequencyStepper(prefix: "Every")
+                frequencyStepper(prefix: intervalFrequencyPrefix)
             }
         case .dailyTime:
             EmptyView()
@@ -834,6 +818,10 @@ struct TaskFormMacBehaviorCard: View {
         case .monthlyDay:
             monthlyControls
         }
+    }
+
+    private var intervalFrequencyPrefix: String {
+        model.scheduleBehavior.wrappedValue == .soft ? "Nudge every" : "Every"
     }
 
     private var calendarPatternControl: some View {
