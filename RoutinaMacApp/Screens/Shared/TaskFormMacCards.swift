@@ -433,12 +433,15 @@ struct TaskFormMacBehaviorCard: View {
     let presentation: TaskFormPresentation
     let persianDeadlineText: String?
 
+    private static let stableContentMinHeight: CGFloat = 360
+
     var body: some View {
         TaskFormMacSectionCard(title: "Scheduling") {
             ViewThatFits(in: .horizontal) {
                 wideSchedulingLayout
                 compactSchedulingLayout
             }
+            .frame(minHeight: Self.stableContentMinHeight, alignment: .topLeading)
         }
     }
 
