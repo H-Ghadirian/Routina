@@ -445,12 +445,13 @@ struct TaskFormMacBehaviorCard: View {
     private var wideSchedulingLayout: some View {
         HStack(alignment: .top, spacing: 28) {
             schedulingMainColumn
-                .frame(width: 560, alignment: .topLeading)
+                .frame(maxWidth: 760, alignment: .topLeading)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
 
             schedulingSupportColumn
-                .frame(width: 360, alignment: .topLeading)
+                .frame(width: 420, alignment: .topLeading)
         }
-        .frame(width: 948, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var compactSchedulingLayout: some View {
@@ -464,8 +465,7 @@ struct TaskFormMacBehaviorCard: View {
 
     private var schedulingMainColumn: some View {
         VStack(alignment: .leading, spacing: 18) {
-            taskTypeControl
-            allDayControl
+            scheduleBasicsControls
 
             Divider()
 
@@ -479,7 +479,7 @@ struct TaskFormMacBehaviorCard: View {
     }
 
     private var schedulingSupportColumn: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 16) {
             scheduleResultPreview
 
             if model.taskType.wrappedValue == .routine {
@@ -490,10 +490,26 @@ struct TaskFormMacBehaviorCard: View {
         }
     }
 
+    private var scheduleBasicsControls: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: 22) {
+                taskTypeControl
+                    .frame(width: 320, alignment: .leading)
+                allDayControl
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            VStack(alignment: .leading, spacing: 16) {
+                taskTypeControl
+                allDayControl
+            }
+        }
+    }
+
     private var taskTypeControl: some View {
-        TaskFormMacControlBlock(title: "Kind") {
+        TaskFormMacControlBlock(title: "Create as") {
             VStack(alignment: .leading, spacing: 8) {
-                Picker("Kind", selection: model.taskType) {
+                Picker("Create as", selection: model.taskType) {
                     Text("Routine").tag(RoutineTaskType.routine)
                     Text("Todo").tag(RoutineTaskType.todo)
                 }
@@ -521,40 +537,56 @@ struct TaskFormMacBehaviorCard: View {
     @ViewBuilder
     private var routineScheduleControls: some View {
         if model.taskType.wrappedValue == .routine {
-            VStack(alignment: .leading, spacing: 18) {
-                TaskFormMacControlBlock(title: "Schedule behavior") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Picker("Schedule Behavior", selection: model.scheduleBehavior) {
-                            ForEach(RoutineScheduleBehavior.allCases) { behavior in
-                                Text(behavior.rawValue).tag(behavior)
-                            }
-                        }
-                        .labelsHidden()
-                        .pickerStyle(.segmented)
-                        .fixedSize()
-
-                        Text(presentation.scheduleBehaviorDescription)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .top, spacing: 22) {
+                    scheduleBehaviorControl
+                        .frame(width: 260, alignment: .leading)
+                    routineFormatControl
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
-                TaskFormMacControlBlock(title: "Routine type") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Picker("Routine Type", selection: model.routineFormat) {
-                            ForEach(RoutineFormat.allCases) { format in
-                                Text(format.rawValue).tag(format)
-                            }
-                        }
-                        .labelsHidden()
-                        .pickerStyle(.segmented)
-                        .fixedSize()
+                VStack(alignment: .leading, spacing: 18) {
+                    scheduleBehaviorControl
+                    routineFormatControl
+                }
+            }
+        }
+    }
 
-                        Text(presentation.routineFormatDescription)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+    private var scheduleBehaviorControl: some View {
+        TaskFormMacControlBlock(title: "When it appears") {
+            VStack(alignment: .leading, spacing: 8) {
+                Picker("Schedule Behavior", selection: model.scheduleBehavior) {
+                    ForEach(RoutineScheduleBehavior.allCases) { behavior in
+                        Text(behavior.rawValue).tag(behavior)
                     }
                 }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .fixedSize()
+
+                Text(presentation.scheduleBehaviorDescription)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var routineFormatControl: some View {
+        TaskFormMacControlBlock(title: "How it finishes") {
+            VStack(alignment: .leading, spacing: 8) {
+                Picker("Routine Type", selection: model.routineFormat) {
+                    ForEach(RoutineFormat.allCases) { format in
+                        Text(format.rawValue).tag(format)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .fixedSize()
+
+                Text(presentation.routineFormatDescription)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -583,24 +615,36 @@ struct TaskFormMacBehaviorCard: View {
     }
 
     private var scheduleResultPreview: some View {
-        TaskFormMacControlBlock(title: "Result") {
-            VStack(alignment: .leading, spacing: 10) {
-                Label(scheduleResultTitle, systemImage: scheduleResultSystemImage)
-                    .font(.callout.weight(.semibold))
-                    .foregroundStyle(scheduleResultTint)
+        VStack(alignment: .leading, spacing: 11) {
+            Text("Live preview")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
 
-                Text(scheduleResultDescription)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+            Label(scheduleResultTitle, systemImage: scheduleResultSystemImage)
+                .font(.callout.weight(.semibold))
+                .foregroundStyle(scheduleResultTint)
 
-                if model.taskType.wrappedValue == .routine {
-                    TaskFormMacScheduleBehaviorHint(
-                        behavior: model.scheduleBehavior.wrappedValue,
-                        description: scheduleResultBadgeDescription
-                    )
-                }
+            Text(scheduleResultDescription)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            if model.taskType.wrappedValue == .routine {
+                TaskFormMacScheduleBehaviorHint(
+                    behavior: model.scheduleBehavior.wrappedValue,
+                    description: scheduleResultBadgeDescription
+                )
             }
         }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(scheduleResultTint.opacity(0.08))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(scheduleResultTint.opacity(0.18), lineWidth: 1)
+        )
     }
 
     private var scheduleResultTitle: String {
@@ -684,7 +728,7 @@ struct TaskFormMacBehaviorCard: View {
 
     @ViewBuilder
     private var repeatPatternControls: some View {
-        TaskFormMacControlBlock(title: "Cadence") {
+        TaskFormMacControlBlock(title: "Repeat cadence") {
             HStack(spacing: 0) {
                 Picker("Cadence", selection: model.recurrenceKind) {
                     ForEach(RoutineRecurrenceRule.Kind.allCases, id: \.self) { kind in
@@ -771,46 +815,78 @@ struct TaskFormMacBehaviorCard: View {
     }
 
     private var weeklyControls: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            TaskFormMacControlBlock(title: "Weekday") {
-                Picker("Weekday", selection: model.recurrenceWeekday) {
-                    ForEach(presentation.weekdayOptions, id: \.id) { option in
-                        Text(option.name).tag(option.id)
-                    }
-                }
-                .labelsHidden()
-                .pickerStyle(.menu)
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: 22) {
+                weeklyDayControl
+                    .frame(width: 180, alignment: .leading)
+                weeklyAvailabilityControl
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            TaskFormMacControlBlock(title: "Availability") {
-                recurrenceExplicitTimeControls(
-                    helpText: presentation.weeklyRecurrenceTimeHelpText(
-                        explicitTimeText: exactTimeText,
-                        timeRangeText: timeRangeText
-                    )
-                )
+            VStack(alignment: .leading, spacing: 18) {
+                weeklyDayControl
+                weeklyAvailabilityControl
             }
         }
     }
 
-    private var monthlyControls: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            TaskFormMacControlBlock(title: "Month day") {
-                Stepper(value: model.recurrenceDayOfMonth, in: 1...31) {
-                    Text(TaskFormPresentation.ordinalDay(model.recurrenceDayOfMonth.wrappedValue))
-                        .frame(minWidth: 40, alignment: .leading)
+    private var weeklyDayControl: some View {
+        TaskFormMacControlBlock(title: "Weekday") {
+            Picker("Weekday", selection: model.recurrenceWeekday) {
+                ForEach(presentation.weekdayOptions, id: \.id) { option in
+                    Text(option.name).tag(option.id)
                 }
-                .fixedSize()
+            }
+            .labelsHidden()
+            .pickerStyle(.menu)
+        }
+    }
+
+    private var weeklyAvailabilityControl: some View {
+        TaskFormMacControlBlock(title: "Availability") {
+            recurrenceExplicitTimeControls(
+                helpText: presentation.weeklyRecurrenceTimeHelpText(
+                    explicitTimeText: exactTimeText,
+                    timeRangeText: timeRangeText
+                )
+            )
+        }
+    }
+
+    private var monthlyControls: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: 22) {
+                monthlyDayControl
+                    .frame(width: 180, alignment: .leading)
+                monthlyAvailabilityControl
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            TaskFormMacControlBlock(title: "Availability") {
-                recurrenceExplicitTimeControls(
-                    helpText: presentation.monthlyRecurrenceTimeHelpText(
-                        explicitTimeText: exactTimeText,
-                        timeRangeText: timeRangeText
-                    )
-                )
+            VStack(alignment: .leading, spacing: 18) {
+                monthlyDayControl
+                monthlyAvailabilityControl
             }
+        }
+    }
+
+    private var monthlyDayControl: some View {
+        TaskFormMacControlBlock(title: "Month day") {
+            Stepper(value: model.recurrenceDayOfMonth, in: 1...31) {
+                Text(TaskFormPresentation.ordinalDay(model.recurrenceDayOfMonth.wrappedValue))
+                    .frame(minWidth: 40, alignment: .leading)
+            }
+            .fixedSize()
+        }
+    }
+
+    private var monthlyAvailabilityControl: some View {
+        TaskFormMacControlBlock(title: "Availability") {
+            recurrenceExplicitTimeControls(
+                helpText: presentation.monthlyRecurrenceTimeHelpText(
+                    explicitTimeText: exactTimeText,
+                    timeRangeText: timeRangeText
+                )
+            )
         }
     }
 
