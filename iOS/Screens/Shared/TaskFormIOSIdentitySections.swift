@@ -33,10 +33,6 @@ struct TaskFormIOSTaskTypeSection: View {
                 Divider()
                 availabilityContent
             }
-
-            Text(presentation.taskTypeDescription)
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
     }
 
@@ -67,10 +63,6 @@ struct TaskFormIOSTaskTypeSection: View {
             } else if currentTimingMode == .range {
                 timeRangePickers
             }
-
-            Text(recurrenceAvailabilityHelpText)
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
     }
 
@@ -79,10 +71,6 @@ struct TaskFormIOSTaskTypeSection: View {
             DatePicker("Starts", selection: model.recurrenceTimeRangeStart, displayedComponents: .hourAndMinute)
             DatePicker("Ends", selection: model.recurrenceTimeRangeEnd, displayedComponents: .hourAndMinute)
         }
-    }
-
-    private var recurrenceAvailabilityHelpText: String {
-        presentation.availabilityControlHelpText(isAllDay: model.isAllDay.wrappedValue)
     }
 
     private var timingModeBinding: Binding<TaskFormTimingMode> {

@@ -20,22 +20,16 @@ struct TaskFormPresentationTests {
         #expect(fixed.isStepBasedMode == false)
         #expect(fixed.showsRepeatControls)
         #expect(fixed.showsChecklistTimingControls)
-        #expect(fixed.routineFinishDescription == "Finish with checklist items; choose their cadence below.")
-        #expect(fixed.checklistTimingDescription == "Checklist items follow the routine cadence and finish together.")
         #expect(fixed.scheduleModeDescription == "One scheduled routine that finishes after every checklist item is done.")
-        #expect(fixed.scheduleBehaviorDescription == "Due means this can become due or overdue.")
         #expect(fixed.checklistSectionDescription(includesDerivedChecklistDueDetail: false) == "The routine is done when every checklist item is completed.")
         #expect(runout.showsRepeatControls == false)
         #expect(runout.showsChecklistTimingControls)
-        #expect(runout.checklistTimingDescription == "Each checklist item has its own timing; the earliest due item drives the routine.")
         #expect(gentle.showsRepeatControls)
-        #expect(gentle.scheduleBehaviorDescription == "Gentle keeps it visible and nudges you without overdue pressure.")
         #expect(gentle.showsChecklistTimingControls == false)
 
         #expect(oneOff.isStepBasedMode)
         #expect(oneOff.showsRepeatControls == false)
         #expect(oneOff.showsChecklistTimingControls == false)
-        #expect(oneOff.taskTypeDescription == "Happens once. Use a deadline instead of repeat settings.")
         #expect(oneOff.notesHelpText == "Capture extra context, links, or reminders for this todo.")
         #expect(oneOff.checklistSectionDescription(includesDerivedChecklistDueDetail: false) == "Use checklist items for parts you want to tick off before finishing the todo.")
     }
@@ -98,26 +92,8 @@ struct TaskFormPresentationTests {
 
     @Test
     func availabilityModesMatchPersistedTaskTypeSupport() {
-        let todo = presentation(taskType: .todo, scheduleMode: .oneOff)
-        let timedTodo = presentation(
-            taskType: .todo,
-            scheduleMode: .oneOff,
-            recurrenceHasExplicitTime: true
-        )
-        let windowTodo = presentation(
-            taskType: .todo,
-            scheduleMode: .oneOff,
-            recurrenceHasTimeRange: true
-        )
-        let routine = presentation(scheduleMode: .fixedInterval)
-
         #expect(TaskFormTimingMode.cases(for: .todo) == [.none, .allDay, .exact, .range])
         #expect(TaskFormTimingMode.cases(for: .routine) == [.none, .allDay, .exact, .range])
-        #expect(todo.availabilityControlHelpText(isAllDay: false) == "Available any time.")
-        #expect(todo.availabilityControlHelpText(isAllDay: true) == "Marked as all-day; deadline stays optional.")
-        #expect(timedTodo.availabilityControlHelpText(isAllDay: false) == "Available at this time; deadline stays optional.")
-        #expect(windowTodo.availabilityControlHelpText(isAllDay: false) == "Available only during this window; deadline stays optional.")
-        #expect(routine.availabilityControlHelpText(isAllDay: true) == "Shows in the planner all-day lane on scheduled days.")
     }
 
     @Test

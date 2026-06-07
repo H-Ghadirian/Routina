@@ -53,10 +53,6 @@ extension AddRoutineTCAView {
         formPresentation.showsRepeatControls
     }
 
-    var taskTypeDescription: String {
-        formPresentation.taskTypeDescription
-    }
-
     var scheduleModeDescription: String {
         formPresentation.scheduleModeDescription
     }

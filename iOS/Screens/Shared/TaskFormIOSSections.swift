@@ -48,11 +48,6 @@ struct TaskFormIOSReminderSection: View {
                     selection: model.reminderAt
                 )
             }
-            Text(model.reminderEventDate == nil
-                ? "One notification at a specific date and time."
-                : "Notify before the scheduled time, or choose a custom time.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
     }
 }
@@ -111,7 +106,6 @@ struct TaskFormIOSScheduleTypeSection: View {
                 }
             }
             .pickerStyle(.segmented)
-            Text(presentation.routineFinishDescription).font(.caption).foregroundStyle(.secondary)
         }
     }
 }
@@ -318,9 +312,6 @@ struct TaskFormIOSRepeatPatternSections: View {
                 }
             }
             .pickerStyle(.segmented)
-            Text(presentation.checklistTimingDescription)
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
     }
 

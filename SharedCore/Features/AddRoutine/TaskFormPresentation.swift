@@ -119,13 +119,6 @@ struct TaskFormPresentation {
         }
     }
 
-    var taskTypeDescription: String {
-        switch taskType {
-        case .routine: return "Repeats on a schedule and stays in your rotation."
-        case .todo: return "Happens once. Use a deadline instead of repeat settings."
-        }
-    }
-
     var notesHelpText: String {
         taskType == .todo
             ? "Capture extra context, links, or reminders for this todo."
@@ -184,33 +177,11 @@ struct TaskFormPresentation {
         }
     }
 
-    var scheduleBehaviorDescription: String {
-        scheduleMode.scheduleBehavior.explanation
-    }
-
     var routineFormatDescription: String {
         switch scheduleMode.routineFormat {
         case .standard: return "Mark it done once, or advance its steps."
         case .checklist: return "The routine is done when every checklist item is completed."
         case .runout: return "Checklist items have their own timing; the earliest due item drives the routine."
-        }
-    }
-
-    var routineFinishDescription: String {
-        switch scheduleMode.routineFinishMode {
-        case .standard:
-            return "Mark it done once, or advance its steps."
-        case .checklist:
-            return "Finish with checklist items; choose their cadence below."
-        }
-    }
-
-    var checklistTimingDescription: String {
-        switch scheduleMode.checklistTimingMode {
-        case .together:
-            return "Checklist items follow the routine cadence and finish together."
-        case .runout:
-            return "Each checklist item has its own timing; the earliest due item drives the routine."
         }
     }
 
@@ -334,31 +305,6 @@ struct TaskFormPresentation {
             return "Due on the \(Self.ordinalDay(recurrenceDayOfMonth)) of each month at \(explicitTimeText)."
         }
         return "Optional. Leave this off to keep the routine due any time on the \(Self.ordinalDay(recurrenceDayOfMonth)) of each month."
-    }
-
-    func availabilityControlHelpText(isAllDay: Bool) -> String {
-        if taskType == .todo {
-            if isAllDay {
-                return "Marked as all-day; deadline stays optional."
-            }
-            if recurrenceHasTimeRange {
-                return "Available only during this window; deadline stays optional."
-            }
-            if recurrenceHasExplicitTime {
-                return "Available at this time; deadline stays optional."
-            }
-            return "Available any time."
-        }
-        if isAllDay {
-            return "Shows in the planner all-day lane on scheduled days."
-        }
-        if recurrenceHasTimeRange {
-            return "Available only during this window on scheduled days."
-        }
-        if recurrenceHasExplicitTime {
-            return "Available at this time on scheduled days."
-        }
-        return "Available any time on scheduled days."
     }
 
     static func weekdayName(for weekday: Int) -> String {

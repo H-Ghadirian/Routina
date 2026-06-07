@@ -516,19 +516,13 @@ struct TaskFormMacBehaviorCard: View {
     }
 
     private var taskTypeControl: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Picker("Task type", selection: model.taskType) {
-                Text("Routine").tag(RoutineTaskType.routine)
-                Text("Todo").tag(RoutineTaskType.todo)
-            }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            .fixedSize()
-
-            Text(presentation.taskTypeDescription)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+        Picker("Task type", selection: model.taskType) {
+            Text("Routine").tag(RoutineTaskType.routine)
+            Text("Todo").tag(RoutineTaskType.todo)
         }
+        .labelsHidden()
+        .pickerStyle(.segmented)
+        .fixedSize()
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
@@ -562,39 +556,27 @@ struct TaskFormMacBehaviorCard: View {
 
     private var scheduleBehaviorControl: some View {
         TaskFormMacControlBlock(title: "Due style") {
-            VStack(alignment: .leading, spacing: 8) {
-                Picker("Due style", selection: model.scheduleBehavior) {
-                    ForEach(RoutineScheduleBehavior.allCases) { behavior in
-                        Text(behavior.rawValue).tag(behavior)
-                    }
+            Picker("Due style", selection: model.scheduleBehavior) {
+                ForEach(RoutineScheduleBehavior.allCases) { behavior in
+                    Text(behavior.rawValue).tag(behavior)
                 }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .fixedSize()
-
-                Text(presentation.scheduleBehaviorDescription)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
             }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .fixedSize()
         }
     }
 
     private var routineFormatControl: some View {
         TaskFormMacControlBlock(title: "Completion") {
-            VStack(alignment: .leading, spacing: 8) {
-                Picker("Completion", selection: model.routineFinishMode) {
-                    ForEach(RoutineFinishMode.allCases) { mode in
-                        Text(mode.rawValue).tag(mode)
-                    }
+            Picker("Completion", selection: model.routineFinishMode) {
+                ForEach(RoutineFinishMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
                 }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .fixedSize()
-
-                Text(presentation.routineFinishDescription)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
             }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .fixedSize()
         }
     }
 
@@ -613,20 +595,14 @@ struct TaskFormMacBehaviorCard: View {
 
     private var checklistTimingControl: some View {
         TaskFormMacControlBlock(title: "Checklist cadence") {
-            VStack(alignment: .leading, spacing: 8) {
-                Picker("Checklist cadence", selection: model.checklistTimingMode) {
-                    ForEach(ChecklistTimingMode.allCases) { mode in
-                        Text(mode.rawValue).tag(mode)
-                    }
+            Picker("Checklist cadence", selection: model.checklistTimingMode) {
+                ForEach(ChecklistTimingMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
                 }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .fixedSize()
-
-                Text(presentation.checklistTimingDescription)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
             }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .fixedSize()
         }
     }
 
@@ -738,7 +714,7 @@ struct TaskFormMacBehaviorCard: View {
 
     private var availabilityControl: some View {
         TaskFormMacControlBlock(title: "Availability") {
-            recurrenceExplicitTimeControls(helpText: availabilityHelpText)
+            recurrenceExplicitTimeControls
         }
     }
 
@@ -772,7 +748,7 @@ struct TaskFormMacBehaviorCard: View {
         }
     }
 
-    private func recurrenceExplicitTimeControls(helpText: String) -> some View {
+    private var recurrenceExplicitTimeControls: some View {
         VStack(alignment: .leading, spacing: 10) {
             Picker("Availability", selection: timingModeBinding) {
                 ForEach(TaskFormTimingMode.cases(for: model.taskType.wrappedValue)) { mode in
@@ -793,9 +769,6 @@ struct TaskFormMacBehaviorCard: View {
             } else if currentTimingMode == .range {
                 timeRangePickers
             }
-            Text(helpText)
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
     }
 
@@ -815,10 +788,6 @@ struct TaskFormMacBehaviorCard: View {
             )
             .fixedSize()
         }
-    }
-
-    private var availabilityHelpText: String {
-        presentation.availabilityControlHelpText(isAllDay: model.isAllDay.wrappedValue)
     }
 
     private var timingModeBinding: Binding<TaskFormTimingMode> {
@@ -888,10 +857,7 @@ struct TaskFormMacBehaviorCard: View {
     private var reminderControl: some View {
         TaskFormMacToggleBlock(
             title: "Set reminder",
-            isOn: model.reminderEnabled,
-            caption: model.reminderEventDate == nil
-                ? "One notification at a specific date and time."
-                : "Notify before the scheduled time, or choose a custom time."
+            isOn: model.reminderEnabled
         ) {
             VStack(alignment: .leading, spacing: 10) {
                 if let reminderEventDate = model.reminderEventDate {
