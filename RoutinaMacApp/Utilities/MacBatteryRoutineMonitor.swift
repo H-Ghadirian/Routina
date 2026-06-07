@@ -73,7 +73,7 @@ final class MacBatteryRoutineMonitor {
         let context = modelContextProvider()
 
         guard BatteryRoutinePreferences.isMonitoringEnabled else {
-            BatteryRoutineService.deactivateManagedRoutines(in: context)
+            BatteryRoutineService.removeManagedRoutines(in: context)
             return
         }
 

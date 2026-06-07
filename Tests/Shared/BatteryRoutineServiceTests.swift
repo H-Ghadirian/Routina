@@ -12,6 +12,23 @@ import Testing
 @MainActor
 struct BatteryRoutineServiceTests {
     @Test
+    func batteryRoutineMonitoringDefaultsOff() {
+        let key = BatteryRoutinePreferences.monitoringEnabledDefaultsKey
+        let previousValue = SharedDefaults.app.object(forKey: key)
+        defer {
+            if let previousValue {
+                SharedDefaults.app.set(previousValue, forKey: key)
+            } else {
+                SharedDefaults.app.removeObject(forKey: key)
+            }
+        }
+
+        SharedDefaults.app.removeObject(forKey: key)
+
+        #expect(BatteryRoutinePreferences.isMonitoringEnabled == false)
+    }
+
+    @Test
     func lowBatteryCreatesRedPinnedUrgentRoutine() throws {
         let context = makeInMemoryContext()
         let date = makeDate("2026-05-08T10:00:00Z")
@@ -36,6 +53,66 @@ struct BatteryRoutineServiceTests {
         #expect(task.urgency == .level4)
         #expect(task.color == .red)
         #expect(task.pinnedAt == date)
+    }
+
+    @Test
+    func disabledBatteryMonitoringRemovesManagedRoutinesAndRelatedRows() throws {
+        let context = makeInMemoryContext()
+        let date = makeDate("2026-05-08T10:00:00Z")
+        let macTask = RoutineTask(
+            id: BatteryRoutineDeviceKind.mac.routineID,
+            name: "Charge Mac",
+            scheduleMode: .softInterval
+        )
+        let iPhoneTask = RoutineTask(
+            id: BatteryRoutineDeviceKind.iPhone.routineID,
+            name: "Charge iPhone",
+            scheduleMode: .softInterval
+        )
+        let normalTask = RoutineTask(
+            name: "Read",
+            relationships: [
+                RoutineTaskRelationship(targetTaskID: iPhoneTask.id, kind: .blockedBy)
+            ]
+        )
+        let managedLog = RoutineLog(timestamp: date, taskID: iPhoneTask.id)
+        let normalLog = RoutineLog(timestamp: date, taskID: normalTask.id)
+        let managedFocus = FocusSession(taskID: macTask.id, startedAt: date)
+        let unassignedFocus = FocusSession(taskID: FocusSession.unassignedTaskID, startedAt: date)
+        let managedAttachment = RoutineAttachment(
+            taskID: iPhoneTask.id,
+            fileName: "battery.txt",
+            data: Data([1])
+        )
+        context.insert(macTask)
+        context.insert(iPhoneTask)
+        context.insert(normalTask)
+        context.insert(managedLog)
+        context.insert(normalLog)
+        context.insert(managedFocus)
+        context.insert(unassignedFocus)
+        context.insert(managedAttachment)
+        try context.save()
+
+        BatteryRoutineService.reconcile(
+            snapshot: BatteryDeviceSnapshot(
+                kind: .iPhone,
+                levelPercent: 5,
+                isCharging: false,
+                capturedAt: date
+            ),
+            in: context,
+            monitoringEnabled: false,
+            thresholdPercent: 20
+        )
+
+        #expect(try fetchBatteryRoutine(.mac, in: context) == nil)
+        #expect(try fetchBatteryRoutine(.iPhone, in: context) == nil)
+        #expect(try context.fetch(FetchDescriptor<RoutineTask>()).map(\.id) == [normalTask.id])
+        #expect(normalTask.relationships.isEmpty)
+        #expect(try context.fetch(FetchDescriptor<RoutineLog>()).map(\.id) == [normalLog.id])
+        #expect(try context.fetch(FetchDescriptor<FocusSession>()).map(\.id) == [unassignedFocus.id])
+        #expect(try context.fetch(FetchDescriptor<RoutineAttachment>()).isEmpty)
     }
 
     @Test

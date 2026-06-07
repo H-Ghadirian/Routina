@@ -5,13 +5,14 @@ enum BatteryRoutinePreferences {
     static let monitoringEnabledDefaultsKey = "appSettingBatteryRoutineMonitoringEnabled"
     static let thresholdPercentDefaultsKey = "appSettingBatteryRoutineThresholdPercent"
     static let didChangeNotification = Notification.Name("BatteryRoutinePreferences.didChange")
+    static let defaultMonitoringEnabled = false
     static let defaultThresholdPercent = 20
     static let minimumThresholdPercent = 5
     static let maximumThresholdPercent = 95
 
     static var isMonitoringEnabled: Bool {
         guard SharedDefaults.app.object(forKey: monitoringEnabledDefaultsKey) != nil else {
-            return true
+            return defaultMonitoringEnabled
         }
         return SharedDefaults.app.bool(forKey: monitoringEnabledDefaultsKey)
     }
@@ -89,7 +90,7 @@ enum BatteryRoutineService {
         thresholdPercent: Int = BatteryRoutinePreferences.thresholdPercent
     ) {
         guard monitoringEnabled else {
-            deactivateManagedRoutine(for: snapshot.kind, in: context)
+            removeManagedRoutines(in: context)
             return
         }
 
@@ -138,26 +139,26 @@ enum BatteryRoutineService {
     }
 
     @MainActor
-    static func deactivateManagedRoutines(in context: ModelContext) {
-        var didChange = false
-        for kind in BatteryRoutineDeviceKind.allCases {
-            guard let task = existingTask(for: kind, in: context) else { continue }
-            didChange = clearLowBatteryState(from: task) || didChange
-        }
+    static func removeManagedRoutines(in context: ModelContext) {
+        do {
+            let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+            let managedIDs = Set(BatteryRoutineDeviceKind.allCases.map(\.routineID))
+            let managedTasks = tasks.filter { managedIDs.contains($0.id) }
+            guard !managedTasks.isEmpty else { return }
+            let managedTaskIDs = Set(managedTasks.map(\.id))
 
-        if didChange {
+            RoutineTask.removeRelationships(
+                targeting: managedTaskIDs,
+                from: tasks
+            )
+            for task in managedTasks {
+                context.delete(task)
+            }
+            try deleteRelatedRows(forTaskIDs: managedTaskIDs, in: context)
             saveAndNotify(context)
+        } catch {
+            NSLog("Failed to remove battery routines: \(error.localizedDescription)")
         }
-    }
-
-    @MainActor
-    private static func deactivateManagedRoutine(
-        for kind: BatteryRoutineDeviceKind,
-        in context: ModelContext
-    ) {
-        guard let task = existingTask(for: kind, in: context) else { return }
-        guard clearLowBatteryState(from: task) else { return }
-        saveAndNotify(context)
     }
 
     @MainActor
@@ -201,6 +202,30 @@ enum BatteryRoutineService {
             }
         )
         return try? context.fetch(descriptor).first
+    }
+
+    @MainActor
+    private static func deleteRelatedRows(
+        forTaskIDs taskIDs: Set<UUID>,
+        in context: ModelContext
+    ) throws {
+        guard !taskIDs.isEmpty else { return }
+
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+        for log in logs where taskIDs.contains(log.taskID) {
+            context.delete(log)
+        }
+
+        let focusSessions = try context.fetch(FetchDescriptor<FocusSession>())
+        for session in focusSessions
+            where !session.isUnassigned && taskIDs.contains(session.taskID) {
+            context.delete(session)
+        }
+
+        let attachments = try context.fetch(FetchDescriptor<RoutineAttachment>())
+        for attachment in attachments where taskIDs.contains(attachment.taskID) {
+            context.delete(attachment)
+        }
     }
 
     private static func applyLowBatteryState(

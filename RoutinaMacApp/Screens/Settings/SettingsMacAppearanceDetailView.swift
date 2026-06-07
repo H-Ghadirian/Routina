@@ -207,7 +207,7 @@ struct SettingsMacGeneralDetailView: View {
     @AppStorage(
         BatteryRoutinePreferences.monitoringEnabledDefaultsKey,
         store: SharedDefaults.app
-    ) private var batteryRoutineMonitoringEnabled = true
+    ) private var batteryRoutineMonitoringEnabled = BatteryRoutinePreferences.defaultMonitoringEnabled
     @AppStorage(
         BatteryRoutinePreferences.thresholdPercentDefaultsKey,
         store: SharedDefaults.app
@@ -242,7 +242,7 @@ SettingsMacDetailShell(
         }
         .disabled(!batteryRoutineMonitoringEnabled)
 
-        Text("Routina creates one charge routine for this Mac and turns it red, urgent, and pinned when the battery is below the threshold.")
+        Text("When enabled, Routina creates one charge routine for this Mac and turns it red, urgent, and pinned when the battery is below the threshold.")
             .font(.footnote)
             .foregroundStyle(.secondary)
     }

@@ -181,7 +181,7 @@ struct SettingsGeneralDetailView: View {
     @AppStorage(
         BatteryRoutinePreferences.monitoringEnabledDefaultsKey,
         store: SharedDefaults.app
-    ) private var batteryRoutineMonitoringEnabled = true
+    ) private var batteryRoutineMonitoringEnabled = BatteryRoutinePreferences.defaultMonitoringEnabled
     @AppStorage(
         BatteryRoutinePreferences.thresholdPercentDefaultsKey,
         store: SharedDefaults.app
@@ -209,7 +209,7 @@ List {
         }
         .disabled(!batteryRoutineMonitoringEnabled)
 
-        Text("Routina creates one charge routine for this device and turns it red, urgent, and pinned when the battery is below the threshold.")
+        Text("When enabled, Routina creates one charge routine for this device and turns it red, urgent, and pinned when the battery is below the threshold.")
             .foregroundStyle(.secondary)
     }
 
