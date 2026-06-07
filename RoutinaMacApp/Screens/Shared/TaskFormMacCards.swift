@@ -669,16 +669,16 @@ struct TaskFormMacBehaviorCard: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            Label(scheduleResultTitle, systemImage: scheduleResultSystemImage)
-                .font(.callout.weight(.semibold))
-                .foregroundStyle(scheduleResultTint)
-
             if model.taskType.wrappedValue == .routine {
                 TaskFormMacScheduleBehaviorHint(
                     behavior: model.scheduleBehavior.wrappedValue,
                     description: model.scheduleBehavior.wrappedValue.rowPreviewDescription
                 )
             } else {
+                Label(scheduleResultTitle, systemImage: scheduleResultSystemImage)
+                    .font(.callout.weight(.semibold))
+                    .foregroundStyle(scheduleResultTint)
+
                 Text(scheduleResultDescription)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
