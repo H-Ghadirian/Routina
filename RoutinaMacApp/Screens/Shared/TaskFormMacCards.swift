@@ -121,34 +121,20 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
 
     var body: some View {
         TaskFormMacSectionCard(title: "Identity") {
-            VStack(alignment: .leading, spacing: 18) {
-                if model.autofocusName {
-                    HStack(alignment: .top, spacing: 16) {
-                        Text(model.emoji.wrappedValue)
-                            .font(.system(size: 30))
-                            .frame(width: 60, height: 60)
-                            .background(Circle().fill(Color.accentColor.opacity(0.16)))
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .top, spacing: 14) {
+                    selectedEmojiButton
 
-                        VStack(alignment: .leading, spacing: 10) {
-                            nameField
-                            validationMessage
-                            smartNamePreview
-                            previewPills
-                        }
-
-                        Spacer(minLength: 0)
-                    }
-                } else {
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 8) {
                         nameField
                         validationMessage
                         smartNamePreview
+                        previewPills
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
-                TaskFormMacControlBlock(title: "") {
-                    emojiPickerRow
-                }
+                emojiPickerRow
             }
         }
     }
@@ -162,17 +148,31 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
         }
     }
 
+    @ViewBuilder
     private var previewPills: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                if let previewScheduleModeTitle {
-                    TaskFormMacInfoPill(title: previewScheduleModeTitle, systemImage: "repeat")
+        if !previewPillItems.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(previewPillItems) { item in
+                        TaskFormMacInfoPill(title: item.title, systemImage: item.systemImage)
+                    }
                 }
-                if let previewPlaceSummary {
-                    TaskFormMacInfoPill(title: previewPlaceSummary, systemImage: "mappin.and.ellipse")
-                }
+                .padding(.vertical, 1)
             }
+            .frame(height: 28)
+            .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    private var previewPillItems: [PreviewPillItem] {
+        var items: [PreviewPillItem] = []
+        if let previewScheduleModeTitle {
+            items.append(PreviewPillItem(title: previewScheduleModeTitle, systemImage: "repeat"))
+        }
+        if let previewPlaceSummary {
+            items.append(PreviewPillItem(title: previewPlaceSummary, systemImage: "mappin.and.ellipse"))
+        }
+        return items
     }
 
     @ViewBuilder
@@ -193,6 +193,7 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
                             Label("Apply", systemImage: "checkmark")
                         }
                         .controlSize(.small)
+                        .help("Apply detected details with Tab")
                     }
                 }
 
@@ -213,7 +214,11 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
 
     private func smartNameRows(for draft: RoutinaQuickAddDraft) -> [SmartNameRow] {
         var rows = [
-            SmartNameRow(title: "Task", value: draft.name, systemImage: "textformat")
+            SmartNameRow(
+                title: draft.scheduleMode == .oneOff ? "Task" : "Routine",
+                value: draft.name,
+                systemImage: "textformat"
+            )
         ]
 
         if draft.scheduleMode != .oneOff {
@@ -287,33 +292,87 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
         }
     }
 
-    private var emojiPickerRow: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    Button("More Emoji") {
-                        model.isEmojiPickerPresented.wrappedValue = true
-                    }
-                    .buttonStyle(.bordered)
+    private var selectedEmojiButton: some View {
+        Button {
+            model.isEmojiPickerPresented.wrappedValue = true
+        } label: {
+            Text(model.emoji.wrappedValue)
+                .font(.system(size: 30))
+                .frame(width: 56, height: 56)
+                .background(Circle().fill(Color.accentColor.opacity(0.16)))
+                .overlay(
+                    Circle()
+                        .stroke(Color.accentColor.opacity(0.22), lineWidth: 1)
+                )
+                .overlay(alignment: .bottomTrailing) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 18, height: 18)
+                        .background(Circle().fill(Color.accentColor))
+                        .overlay(
+                            Circle()
+                                .stroke(Color.primary.opacity(0.10), lineWidth: 1)
+                        )
+                        .shadow(color: .black.opacity(0.16), radius: 3, y: 1)
+                        .accessibilityHidden(true)
+                }
+        }
+        .buttonStyle(.plain)
+        .contentShape(Circle())
+        .help("Choose emoji")
+        .accessibilityLabel("Choose task emoji")
+    }
 
-                    ForEach(Array(model.emojiOptions.prefix(8)), id: \.self) { emoji in
-                        Button {
-                            model.emoji.wrappedValue = emoji
-                        } label: {
-                            Text(emoji)
-                                .font(.title3)
-                                .frame(width: 34, height: 34)
-                                .routinaGlassPill(
-                                    tint: model.emoji.wrappedValue == emoji ? .accentColor : .secondary,
-                                    tintOpacity: model.emoji.wrappedValue == emoji ? 0.20 : 0.08,
-                                    interactive: true
-                                )
-                        }
-                        .buttonStyle(.plain)
+    private var emojiPickerRow: some View {
+        HStack(alignment: .center, spacing: 12) {
+            Color.clear
+                .frame(width: 56, height: 1)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(Array(model.emojiOptions.prefix(12)), id: \.self) { emoji in
+                        quickEmojiButton(emoji)
                     }
                 }
+                .padding(.vertical, 1)
             }
+            .frame(height: 34)
+            .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    private func quickEmojiButton(_ emoji: String) -> some View {
+        Button {
+            model.emoji.wrappedValue = emoji
+        } label: {
+            Text(emoji)
+                .font(.title3)
+                .frame(width: 32, height: 32)
+                .routinaGlassPill(
+                    tint: model.emoji.wrappedValue == emoji ? .accentColor : .secondary,
+                    tintOpacity: model.emoji.wrappedValue == emoji ? 0.20 : 0.08,
+                    interactive: true
+                )
+                .overlay(
+                    Circle()
+                        .stroke(
+                            model.emoji.wrappedValue == emoji ? Color.accentColor.opacity(0.42) : Color.clear,
+                            lineWidth: 1
+                        )
+                )
+        }
+        .buttonStyle(.plain)
+        .contentShape(Circle())
+        .help("Use \(emoji)")
+        .accessibilityLabel("Use \(emoji) emoji")
+    }
+
+    private struct PreviewPillItem: Identifiable {
+        let title: String
+        let systemImage: String
+
+        var id: String { "\(title):\(systemImage)" }
     }
 
     private struct SmartNameRow: Identifiable {

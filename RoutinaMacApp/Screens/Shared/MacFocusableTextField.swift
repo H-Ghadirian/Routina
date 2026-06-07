@@ -6,6 +6,8 @@ struct MacFocusableTextField: NSViewRepresentable {
     let text: Binding<String>
     let isFocusRequested: Bool
     let focusRequestID: Int
+    var onTab: (() -> Void)?
+    private let fieldFont = NSFont.systemFont(ofSize: 20)
 
     final class Coordinator: NSObject, NSTextFieldDelegate {
         var parent: MacFocusableTextField
@@ -23,6 +25,19 @@ struct MacFocusableTextField: NSViewRepresentable {
                 parent.text.wrappedValue = textField.stringValue
             }
         }
+
+        func control(
+            _ control: NSControl,
+            textView: NSTextView,
+            doCommandBy commandSelector: Selector
+        ) -> Bool {
+            guard commandSelector == #selector(NSResponder.insertTab(_:)),
+                  let onTab = parent.onTab else {
+                return false
+            }
+            onTab()
+            return true
+        }
     }
 
     func makeCoordinator() -> Coordinator {
@@ -35,6 +50,8 @@ struct MacFocusableTextField: NSViewRepresentable {
         textField.isBordered = true
         textField.isBezeled = true
         textField.bezelStyle = .roundedBezel
+        textField.controlSize = .large
+        textField.font = fieldFont
         textField.focusRingType = .default
         textField.delegate = context.coordinator
         return textField
@@ -42,6 +59,8 @@ struct MacFocusableTextField: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSTextField, context: Context) {
         context.coordinator.parent = self
+        nsView.controlSize = .large
+        nsView.font = fieldFont
 
         if nsView.stringValue != text.wrappedValue {
             nsView.stringValue = text.wrappedValue

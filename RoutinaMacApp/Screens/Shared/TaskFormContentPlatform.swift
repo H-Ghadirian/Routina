@@ -210,9 +210,10 @@ struct TaskFormContent: View {
             placeholder: "Task name",
             text: model.name,
             isFocusRequested: model.autofocusName,
-            focusRequestID: model.nameFocusRequestID
+            focusRequestID: model.nameFocusRequestID,
+            onTab: smartNameDraft == nil ? nil : model.onApplySmartName
         )
-        .frame(height: 28)
+        .frame(height: 50)
     }
 
     // MARK: Color
