@@ -529,20 +529,6 @@ extension HomeTCAView {
                     )
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            } else if isMacBoardSidebarPresented && !store.routineTasks.contains(where: \.isOneOffTask) {
-                VStack(spacing: 0) {
-                    macSidebarHeader
-                    Divider()
-                    emptyStateView(
-                        title: "No todos yet",
-                        message: "Add a to-do, and the board will group it by workflow state here.",
-                        systemImage: "square.grid.3x3.topleft.filled",
-                        actionTitle: "Add Todo"
-                    ) {
-                        openAddTodo()
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             } else {
                 VStack(spacing: 0) {
                     if !shouldHideMacSidebarHeaderForDayPlanTimelineFilter {
