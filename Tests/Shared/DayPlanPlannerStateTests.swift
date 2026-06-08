@@ -12,6 +12,34 @@ import Testing
 @MainActor
 struct DayPlanPlannerStateTests {
     @Test
+    func dayModeShowsOnlySelectedDate() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let selectedDate = try #require(date("2026-05-03T12:00:00Z"))
+        let planner = DayPlanPlannerState(selectedDate: selectedDate)
+
+        planner.setVisibleRangeMode(.day, calendar: calendar, context: context)
+
+        #expect(planner.visibleRangeMode == .day)
+        #expect(planner.visibleDates(calendar: calendar) == [calendar.startOfDay(for: selectedDate)])
+    }
+
+    @Test
+    func dayModeNavigationMovesOneDay() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let selectedDate = try #require(date("2026-05-03T12:00:00Z"))
+        let expectedSelectedDate = try #require(date("2026-05-04T12:00:00Z"))
+        let expectedVisibleDate = try #require(date("2026-05-04T00:00:00Z"))
+        let planner = DayPlanPlannerState(selectedDate: selectedDate, visibleRangeMode: .day)
+
+        planner.moveVisibleRange(by: 1, calendar: calendar, context: context)
+
+        #expect(planner.selectedDate == expectedSelectedDate)
+        #expect(planner.visibleDates(calendar: calendar) == [expectedVisibleDate])
+    }
+
+    @Test
     func editVisibleFutureBlockKeepsVisibleWeekAnchored() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

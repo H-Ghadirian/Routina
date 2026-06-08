@@ -348,30 +348,21 @@ private struct DayPlanHeaderView: View {
     @ObservedObject var planner: DayPlanPlannerState
 
     var body: some View {
+#if os(macOS)
+        macHeader
+#else
+        compactHeader
+#endif
+    }
+
+    private var macHeader: some View {
         HStack(alignment: .center, spacing: 12) {
-            Button("Today") {
-                planner.moveToToday(calendar: calendar, context: modelContext)
-            }
-            .buttonStyle(.bordered)
+            todayButton
 
-            HStack(spacing: 4) {
-                Button {
-                    planner.moveWeek(by: -1, calendar: calendar, context: modelContext)
-                } label: {
-                    Image(systemName: "chevron.left")
-                }
-
-                Button {
-                    planner.moveWeek(by: 1, calendar: calendar, context: modelContext)
-                } label: {
-                    Image(systemName: "chevron.right")
-                }
-            }
-            .buttonStyle(.plain)
-            .font(.title3.weight(.medium))
+            rangeNavigationButtons
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(planner.weekTitle(calendar: calendar))
+                Text(planner.visibleRangeTitle(calendar: calendar))
                     .font(.title2.weight(.semibold))
 
                 Text("\(planner.blocks.count) blocks on selected day, \(DayPlanFormatting.durationText(planner.plannedMinutes)) planned")
@@ -381,10 +372,86 @@ private struct DayPlanHeaderView: View {
 
             Spacer(minLength: 16)
 
+            visibleRangeModePicker
+                .frame(width: 150)
+
             DatePicker("Selected day", selection: selectedDateBinding, displayedComponents: [.date])
                 .labelsHidden()
                 .datePickerStyle(.compact)
         }
+    }
+
+    private var compactHeader: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center, spacing: 10) {
+                todayButton
+
+                rangeNavigationButtons
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(planner.visibleRangeTitle(calendar: calendar))
+                        .font(.title3.weight(.semibold))
+                        .lineLimit(1)
+
+                    Text("\(planner.blocks.count) blocks, \(DayPlanFormatting.durationText(planner.plannedMinutes)) planned")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 8)
+
+                DatePicker("Selected day", selection: selectedDateBinding, displayedComponents: [.date])
+                    .labelsHidden()
+                    .datePickerStyle(.compact)
+            }
+
+            visibleRangeModePicker
+        }
+    }
+
+    private var todayButton: some View {
+        Button("Today") {
+            planner.moveToToday(calendar: calendar, context: modelContext)
+        }
+        .buttonStyle(.bordered)
+    }
+
+    private var rangeNavigationButtons: some View {
+        HStack(spacing: 4) {
+            Button {
+                planner.moveVisibleRange(by: -1, calendar: calendar, context: modelContext)
+            } label: {
+                Image(systemName: "chevron.left")
+            }
+
+            Button {
+                planner.moveVisibleRange(by: 1, calendar: calendar, context: modelContext)
+            } label: {
+                Image(systemName: "chevron.right")
+            }
+        }
+        .buttonStyle(.plain)
+        .font(.title3.weight(.medium))
+    }
+
+    private var visibleRangeModePicker: some View {
+        Picker("Planner range", selection: visibleRangeModeBinding) {
+            ForEach(DayPlanVisibleRangeMode.allCases) { mode in
+                Text(mode.title).tag(mode)
+            }
+        }
+        .pickerStyle(.segmented)
+    }
+
+    private var visibleRangeModeBinding: Binding<DayPlanVisibleRangeMode> {
+        Binding(
+            get: {
+                planner.visibleRangeMode
+            },
+            set: { mode in
+                planner.setVisibleRangeMode(mode, calendar: calendar, context: modelContext)
+            }
+        )
     }
 
     private var selectedDateBinding: Binding<Date> {
@@ -432,17 +499,17 @@ private struct DayPlanTimelinePanelView: View {
 
     var body: some View {
         let referenceDate = Date()
-        let weekDates = planner.weekDates(calendar: calendar)
-        let plannedBlocksByDayKey = plannedBlocksByDayKey(for: weekDates)
+        let visibleDates = planner.visibleDates(calendar: calendar)
+        let plannedBlocksByDayKey = plannedBlocksByDayKey(for: visibleDates)
         let hiddenTimelineActivityIDs = DayPlanHiddenTimelineActivityStore.hiddenIDs(from: hiddenTimelineActivityStorage)
         let sleepBlocksByDayKey = DayPlanSleepBlocks.blocksByDayKey(
-            on: weekDates,
+            on: visibleDates,
             from: sleepSessions,
             referenceDate: referenceDate,
             calendar: calendar
         )
         let awayBlocksByDayKey = DayPlanAwayBlocks.blocksByDayKey(
-            on: weekDates,
+            on: visibleDates,
             from: awaySessions,
             referenceDate: referenceDate,
             calendar: calendar
@@ -450,7 +517,7 @@ private struct DayPlanTimelinePanelView: View {
         let completedSprintFocusSessions = sprintFocusSessions.filter { !$0.isActive }
         let activeSprintFocusSessions = sprintFocusSessions.filter(\.isActive)
         let sprintFocusBlocksByDayKey = DayPlanSprintFocusBlocks.blocksByDayKey(
-            on: weekDates,
+            on: visibleDates,
             from: completedSprintFocusSessions,
             allocations: sprintFocusAllocations,
             sprints: boardSprints,
@@ -459,7 +526,7 @@ private struct DayPlanTimelinePanelView: View {
             calendar: calendar
         )
         let activeSprintFocusBlocksByDayKey = DayPlanSprintFocusBlocks.blocksByDayKey(
-            on: weekDates,
+            on: visibleDates,
             from: activeSprintFocusSessions,
             allocations: sprintFocusAllocations,
             sprints: boardSprints,
@@ -468,7 +535,7 @@ private struct DayPlanTimelinePanelView: View {
             calendar: calendar
         )
         let eventBlocksByDayKey = DayPlanEventBlocks.blocksByDayKey(
-            on: weekDates,
+            on: visibleDates,
             from: events,
             calendar: calendar
         )
@@ -483,7 +550,7 @@ private struct DayPlanTimelinePanelView: View {
             )
         )
         let rawAutomaticSuggestionBlocksByDayKey = DayPlanTimelineTasks.automaticSuggestionBlocksByDayKey(
-            on: weekDates,
+            on: visibleDates,
             from: tasks,
             logs: logs,
             plannedBlocksByDayKey: plannedBlocksByDayKey,
@@ -495,7 +562,7 @@ private struct DayPlanTimelinePanelView: View {
             timelineActivitiesByDayKey: rawAutomaticSuggestionBlocksByDayKey
         )
         let timelineBlocksByDayKey = DayPlanTimelineTasks.activityBlocksByDayKey(
-            on: weekDates,
+            on: visibleDates,
             from: tasks,
             logs: logs,
             plannedBlocksByDayKey: plannedBlocksByDayKey,
@@ -504,7 +571,7 @@ private struct DayPlanTimelinePanelView: View {
             hiddenActivityIDs: hiddenTimelineActivityIDs
         )
         let automaticSuggestionBlocksByDayKey = DayPlanTimelineTasks.automaticSuggestionBlocksByDayKey(
-            on: weekDates,
+            on: visibleDates,
             from: tasks,
             logs: logs,
             plannedBlocksByDayKey: plannedBlocksByDayKey,
@@ -513,7 +580,7 @@ private struct DayPlanTimelinePanelView: View {
             hiddenActivityIDs: hiddenTimelineActivityIDs
         )
         let allDayBlocks = DayPlanAllDayTasks.blocks(
-            on: weekDates,
+            on: visibleDates,
             from: tasks,
             logs: logs,
             events: events,
@@ -527,7 +594,7 @@ private struct DayPlanTimelinePanelView: View {
 
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Day")
+                Text(planner.visibleRangeMode.title)
                     .font(.headline)
                 Spacer()
                 Text("\(DayPlanFormatting.durationText(max(planner.unplannedMinutes - selectedDayBlockedMinutes, 0))) open on selected day")
@@ -536,7 +603,7 @@ private struct DayPlanTimelinePanelView: View {
             }
 
             DayPlanWeekCalendarView(
-                dates: weekDates,
+                dates: visibleDates,
                 selectedBlockID: planner.selectedBlockID,
                 selectedDate: planner.selectedDate,
                 focusedUnplannedCompletedDate: activeFocusedUnplannedCompletedDate,
@@ -584,7 +651,7 @@ private struct DayPlanTimelinePanelView: View {
                 },
                 activeSprintFocusBlocks: { now in
                     DayPlanSprintFocusBlocks.blocksByDayKey(
-                        on: weekDates,
+                        on: visibleDates,
                         from: activeSprintFocusSessions,
                         allocations: sprintFocusAllocations,
                         sprints: boardSprints,
@@ -947,6 +1014,10 @@ private struct DayPlanLifecycleModifier: ViewModifier {
                 planner.handleSelectedDateChanged(calendar: calendar, context: modelContext)
                 showExactTimedTasks()
             }
+            .onChange(of: planner.visibleRangeMode) { _, _ in
+                planner.loadBlocks(calendar: calendar, context: modelContext)
+                showExactTimedTasks()
+            }
             .onChange(of: tasks.map(\.id)) { _, _ in
                 showExactTimedTasks()
                 planner.selectDefaultTaskIfNeeded(from: tasks)
@@ -988,7 +1059,7 @@ private struct DayPlanLifecycleModifier: ViewModifier {
     }
 
     private func showExactTimedTasks() {
-        let dates = planner.weekDates(calendar: calendar) + [planner.selectedDate]
+        let dates = planner.visibleAndSelectedDates(calendar: calendar)
         var blockedIntervalsByDayKey = DayPlanSleepBlocks.blockedIntervalsByDayKey(
             on: dates,
             from: sleepSessions,

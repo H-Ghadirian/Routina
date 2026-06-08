@@ -12,6 +12,31 @@ struct DayPlanFocusedSleep: Equatable {
     }
 }
 
+enum DayPlanVisibleRangeMode: String, CaseIterable, Identifiable {
+    case day
+    case week
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .day:
+            return "Day"
+        case .week:
+            return "Week"
+        }
+    }
+
+    var navigationDayCount: Int {
+        switch self {
+        case .day:
+            return 1
+        case .week:
+            return 7
+        }
+    }
+}
+
 final class DayPlanPlannerState: ObservableObject {
     @Published var selectedDate: Date
     @Published var blocks: [DayPlanBlock] = []
@@ -23,12 +48,17 @@ final class DayPlanPlannerState: ObservableObject {
     @Published var durationMinutes = 60
     @Published var focusedUnplannedCompletedDate: Date?
     @Published var focusedSleep: DayPlanFocusedSleep?
+    @Published var visibleRangeMode: DayPlanVisibleRangeMode
 
     @Published private var visibleDate: Date
 
-    init(selectedDate: Date = DayPlanPlannerState.defaultSelectedDate()) {
+    init(
+        selectedDate: Date = DayPlanPlannerState.defaultSelectedDate(),
+        visibleRangeMode: DayPlanVisibleRangeMode = .week
+    ) {
         self.selectedDate = selectedDate
         self.visibleDate = selectedDate
+        self.visibleRangeMode = visibleRangeMode
     }
 
     var selectedBlock: DayPlanBlock? {
@@ -456,17 +486,50 @@ final class DayPlanPlannerState: ObservableObject {
         return weekBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
     }
 
+    func visibleDates(calendar: Calendar) -> [Date] {
+        switch visibleRangeMode {
+        case .day:
+            return [calendar.startOfDay(for: selectedDate)]
+        case .week:
+            return weekDates(calendar: calendar)
+        }
+    }
+
+    func visibleAndSelectedDates(calendar: Calendar) -> [Date] {
+        let visibleDates = visibleDates(calendar: calendar)
+        guard !visibleDates.contains(where: { calendar.isDate($0, inSameDayAs: selectedDate) }) else {
+            return visibleDates
+        }
+
+        return visibleDates + [selectedDate]
+    }
+
     func weekDates(calendar: Calendar) -> [Date] {
         weekDates(containing: visibleDate, calendar: calendar)
     }
 
-    func moveWeek(by value: Int, calendar: Calendar, context: ModelContext) {
-        let dayDelta = value * 7
+    func setVisibleRangeMode(
+        _ mode: DayPlanVisibleRangeMode,
+        calendar: Calendar,
+        context: ModelContext
+    ) {
+        guard visibleRangeMode != mode else { return }
+        visibleRangeMode = mode
+        visibleDate = selectedDate
+        loadBlocks(calendar: calendar, context: context)
+    }
+
+    func moveVisibleRange(by value: Int, calendar: Calendar, context: ModelContext) {
+        let dayDelta = value * visibleRangeMode.navigationDayCount
         selectedDate = calendar.date(byAdding: .day, value: dayDelta, to: selectedDate) ?? selectedDate
         visibleDate = calendar.date(byAdding: .day, value: dayDelta, to: visibleDate) ?? visibleDate
         focusedSleep = nil
         selectedBlockID = nil
         loadBlocks(calendar: calendar, context: context)
+    }
+
+    func moveWeek(by value: Int, calendar: Calendar, context: ModelContext) {
+        moveVisibleRange(by: value, calendar: calendar, context: context)
     }
 
     func moveToToday(calendar: Calendar, context: ModelContext) {
@@ -485,6 +548,15 @@ final class DayPlanPlannerState: ObservableObject {
         focusedSleep = nil
         selectedBlockID = nil
         loadBlocks(calendar: calendar, context: context)
+    }
+
+    func visibleRangeTitle(calendar: Calendar) -> String {
+        switch visibleRangeMode {
+        case .day:
+            return selectedDate.formatted(.dateTime.weekday(.wide).month(.abbreviated).day().year())
+        case .week:
+            return weekTitle(calendar: calendar)
+        }
     }
 
     func weekTitle(calendar: Calendar) -> String {
@@ -609,15 +681,6 @@ final class DayPlanPlannerState: ObservableObject {
         return (0..<7).compactMap { offset in
             calendar.date(byAdding: .day, value: offset, to: startDay)
         }
-    }
-
-    private func visibleAndSelectedDates(calendar: Calendar) -> [Date] {
-        let visibleDates = weekDates(calendar: calendar)
-        guard !visibleDates.contains(where: { calendar.isDate($0, inSameDayAs: selectedDate) }) else {
-            return visibleDates
-        }
-
-        return visibleDates + [selectedDate]
     }
 
     private static func defaultSelectedDate(
