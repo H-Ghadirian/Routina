@@ -536,9 +536,10 @@ extension HomeTCAView {
                     emptyStateView(
                         title: "No todos yet",
                         message: "Add a to-do, and the board will group it by workflow state here.",
-                        systemImage: "square.grid.3x3.topleft.filled"
+                        systemImage: "square.grid.3x3.topleft.filled",
+                        actionTitle: "Add Todo"
                     ) {
-                        openAddTask()
+                        openAddTodo()
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)

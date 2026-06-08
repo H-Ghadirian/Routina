@@ -749,6 +749,11 @@ struct HomeFeature {
             calendar: calendar,
             dismissSheet: { state in
                 addRoutinePresentationRouter().dismissSheet(state: &state)
+                if state.macSidebarMode == .addTask {
+                    state.macSidebarMode = .routines
+                    state.presentation.isMacFilterDetailPresented = false
+                    persistTemporaryViewState(state)
+                }
             },
             modelContext: { self.modelContext() },
             scheduleAnchor: { self.now },

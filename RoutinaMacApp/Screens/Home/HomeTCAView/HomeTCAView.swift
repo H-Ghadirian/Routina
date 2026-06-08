@@ -444,12 +444,14 @@ homeContent
         title: String,
         message: String,
         systemImage: String,
+        actionTitle: String = "Add Task",
         action: (() -> Void)? = nil
     ) -> some View {
         HomeEmptyStateView(
             title: title,
             message: message,
             systemImage: systemImage,
+            actionTitle: actionTitle,
             action: action
         )
     }

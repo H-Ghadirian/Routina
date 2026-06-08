@@ -379,6 +379,11 @@ extension HomeTCAView {
         scheduleAddTaskNameFocus()
     }
 
+    func openAddTodo() {
+        openAddTask()
+        store.send(.addRoutineSheet(.taskTypeChanged(.todo)))
+    }
+
     private func scheduleAddTaskNameFocus() {
         let delays: [TimeInterval] = [0, 0.05, 0.15, 0.3, 0.6, 1.0, 1.5]
         for delay in delays {
