@@ -129,7 +129,7 @@ extension TaskDetailFeature.State {
     }
 
     var linkedPlaceSummary: RoutinePlaceSummary? {
-        guard let placeID = task.placeID else { return nil }
+        guard let placeID = task.placeIDs.first else { return nil }
         return availablePlaces.first(where: { $0.id == placeID })
     }
 

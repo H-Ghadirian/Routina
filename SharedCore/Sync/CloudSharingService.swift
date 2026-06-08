@@ -33,6 +33,7 @@ enum CloudSharingService {
         var voiceNoteDurationSeconds: Double?
         var voiceNoteCreatedAt: Date?
         var placeID: UUID?
+        var placeIDs: [UUID]?
         var tags: [String]
         var goalIDs: [UUID]?
         var relationships: [RoutineTaskRelationship]
@@ -279,6 +280,7 @@ extension CloudSharingService.SharedTaskPayload {
         self.voiceNoteDurationSeconds = task.voiceNoteDurationSeconds
         self.voiceNoteCreatedAt = task.voiceNoteCreatedAt
         self.placeID = task.placeID
+        self.placeIDs = task.placeIDs.isEmpty ? nil : task.placeIDs
         self.tags = task.tags
         self.goalIDs = task.goalIDs
         self.relationships = task.relationships
@@ -334,7 +336,7 @@ extension CloudSharingService.SharedTaskPayload {
         task.voiceNoteData = voiceNoteData
         task.voiceNoteDurationSeconds = voiceNoteDurationSeconds
         task.voiceNoteCreatedAt = voiceNoteCreatedAt
-        task.placeID = placeID
+        task.placeIDs = placeIDs ?? placeID.map { [$0] } ?? []
         task.tags = tags
         task.goalIDs = goalIDs ?? []
         task.replaceRelationships(relationships)
@@ -387,6 +389,7 @@ private extension RoutineTask {
             voiceNoteDurationSeconds: payload.voiceNoteDurationSeconds,
             voiceNoteCreatedAt: payload.voiceNoteCreatedAt,
             placeID: payload.placeID,
+            placeIDs: payload.placeIDs ?? payload.placeID.map { [$0] } ?? [],
             tags: payload.tags,
             goalIDs: payload.goalIDs ?? [],
             relationships: payload.relationships,

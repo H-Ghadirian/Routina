@@ -41,7 +41,8 @@ extension AddRoutineTCAView {
     }
 
     var selectedPlaceName: String? {
-        guard let selectedPlaceID = store.basics.selectedPlaceID else { return nil }
+        let selectedPlaceID = store.basics.selectedPlaceIDs.first ?? store.basics.selectedPlaceID
+        guard let selectedPlaceID else { return nil }
         return store.organization.availablePlaces.first { $0.id == selectedPlaceID }?.name
     }
 

@@ -646,6 +646,7 @@ private struct StatsTaskQueryDisplay: HomeTaskListDisplay {
     let emoji: String
     let notes: String?
     let placeID: UUID?
+    let placeIDs: [UUID]
     let placeName: String?
     let tags: [String]
     let goalTitles: [String]
@@ -683,6 +684,7 @@ private struct StatsTaskQueryDisplay: HomeTaskListDisplay {
         self.emoji = CalendarTaskImportSupport.displayEmoji(for: task.emoji) ?? "•"
         self.notes = CalendarTaskImportSupport.displayNotes(from: task.notes)
         self.placeID = task.placeID
+        self.placeIDs = task.placeIDs
         self.placeName = nil
         self.tags = task.tags
         self.goalTitles = []

@@ -22,6 +22,7 @@ final class RoutineTask {
     var voiceNoteDurationSeconds: Double?
     var voiceNoteCreatedAt: Date?
     var placeID: UUID?
+    var placeIDsStorage: String = ""
     var tagsStorage: String = ""
     var stepsStorage: String = ""
     var checklistItemsStorage: String = ""
@@ -157,6 +158,21 @@ final class RoutineTask {
         }
     }
 
+    var placeIDs: [UUID] {
+        get {
+            let storedPlaceIDs = RoutinePlaceIDStorage.deserialize(placeIDsStorage)
+            if !storedPlaceIDs.isEmpty {
+                return storedPlaceIDs
+            }
+            return placeID.map { [$0] } ?? []
+        }
+        set {
+            let sanitizedPlaceIDs = RoutinePlaceIDStorage.sanitized(newValue)
+            placeIDsStorage = RoutinePlaceIDStorage.serialize(sanitizedPlaceIDs)
+            placeID = sanitizedPlaceIDs.first
+        }
+    }
+
     var steps: [RoutineStep] {
         get { RoutineStepStorage.deserialize(stepsStorage) }
         set {
@@ -274,6 +290,7 @@ final class RoutineTask {
         voiceNoteDurationSeconds: Double? = nil,
         voiceNoteCreatedAt: Date? = nil,
         placeID: UUID? = nil,
+        placeIDs: [UUID] = [],
         tags: [String] = [],
         goalIDs: [UUID] = [],
         relationships: [RoutineTaskRelationship] = [],
@@ -336,7 +353,9 @@ final class RoutineTask {
         self.voiceNoteData = sanitizedVoiceNote?.data
         self.voiceNoteDurationSeconds = sanitizedVoiceNote?.durationSeconds
         self.voiceNoteCreatedAt = sanitizedVoiceNote?.createdAt
-        self.placeID = placeID
+        let resolvedPlaceIDs = RoutinePlaceIDStorage.sanitized(placeIDs.isEmpty ? placeID.map { [$0] } ?? [] : placeIDs)
+        self.placeID = resolvedPlaceIDs.first
+        self.placeIDsStorage = RoutinePlaceIDStorage.serialize(resolvedPlaceIDs)
         self.tagsStorage = RoutineTag.serialize(tags)
         self.goalIDsStorage = RoutineGoalIDStorage.serialize(goalIDs)
         self.relationshipsStorage = RoutineTaskRelationshipStorage.serialize(relationships, ownerID: id)
@@ -550,6 +569,7 @@ final class RoutineTask {
             voiceNoteDurationSeconds: voiceNoteDurationSeconds,
             voiceNoteCreatedAt: voiceNoteCreatedAt,
             placeID: placeID,
+            placeIDs: placeIDs,
             tags: tags,
             goalIDs: goalIDs,
             relationships: relationships,

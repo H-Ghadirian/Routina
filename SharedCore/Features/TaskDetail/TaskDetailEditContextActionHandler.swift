@@ -7,10 +7,12 @@ struct TaskDetailEditContextActionHandler {
 
     func availablePlacesLoaded(_ places: [RoutinePlaceSummary], state: inout State) -> Effect<Action> {
         state.availablePlaces = places
-        if let selectedPlaceID = state.editSelectedPlaceID,
-           !places.contains(where: { $0.id == selectedPlaceID }) {
-            state.editSelectedPlaceID = nil
-        }
+        let availablePlaceIDs = Set(places.map(\.id))
+        let currentPlaceIDs = state.editSelectedPlaceIDs.isEmpty
+            ? state.editSelectedPlaceID.map { [$0] } ?? []
+            : state.editSelectedPlaceIDs
+        state.editSelectedPlaceIDs = currentPlaceIDs.filter { availablePlaceIDs.contains($0) }
+        state.editSelectedPlaceID = state.editSelectedPlaceIDs.first
         return .none
     }
 

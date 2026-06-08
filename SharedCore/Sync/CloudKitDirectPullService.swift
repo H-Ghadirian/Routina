@@ -57,6 +57,13 @@ enum CloudKitDirectPullService {
                     in: context
                 )
             }
+            canonicalPayload.placeIDs = canonicalPayload.placeIDs?.compactMap { placeID in
+                CloudKitDirectPullCanonicalIDResolver.canonicalPlaceID(
+                    for: placeID,
+                    mergedPlaceIDs: mergedPlaceIDs,
+                    in: context
+                )
+            }
             canonicalPayload.goalIDs = canonicalPayload.goalIDs?.map { goalID in
                 CloudKitDirectPullCanonicalIDResolver.canonicalGoalID(
                     for: goalID,

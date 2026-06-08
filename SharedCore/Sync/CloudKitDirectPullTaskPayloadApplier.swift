@@ -16,7 +16,7 @@ enum CloudKitDirectPullTaskPayloadApplier {
         task.voiceNoteData = payload.voiceNoteData
         task.voiceNoteDurationSeconds = payload.voiceNoteDurationSeconds
         task.voiceNoteCreatedAt = payload.voiceNoteCreatedAt
-        task.placeID = payload.placeID
+        task.placeIDs = payload.placeIDs ?? payload.placeID.map { [$0] } ?? []
         if let tags = payload.tags {
             task.tags = tags
         }
@@ -99,6 +99,7 @@ enum CloudKitDirectPullTaskPayloadApplier {
             voiceNoteDurationSeconds: payload.voiceNoteDurationSeconds,
             voiceNoteCreatedAt: payload.voiceNoteCreatedAt,
             placeID: payload.placeID,
+            placeIDs: payload.placeIDs ?? payload.placeID.map { [$0] } ?? [],
             tags: payload.tags ?? [],
             goalIDs: payload.goalIDs ?? [],
             steps: payload.steps ?? [],

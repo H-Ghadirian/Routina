@@ -136,7 +136,13 @@ struct TaskDetailEditDraftMutationHandler {
     }
 
     func setSelectedPlace(_ placeID: UUID?, state: inout TaskDetailFeature.State) {
-        state.editSelectedPlaceID = placeID
+        setSelectedPlaces(placeID.map { [$0] } ?? [], state: &state)
+    }
+
+    func setSelectedPlaces(_ placeIDs: [UUID], state: inout TaskDetailFeature.State) {
+        let sanitizedPlaceIDs = RoutinePlaceIDStorage.sanitized(placeIDs)
+        state.editSelectedPlaceIDs = sanitizedPlaceIDs
+        state.editSelectedPlaceID = sanitizedPlaceIDs.first
     }
 
     func toggleTagSelection(_ tag: String, state: inout TaskDetailFeature.State) {

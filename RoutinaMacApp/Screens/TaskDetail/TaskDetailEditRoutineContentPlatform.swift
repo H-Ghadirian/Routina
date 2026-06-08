@@ -138,6 +138,10 @@ struct TaskDetailEditRoutineContent: View {
                 get: { store.editSelectedPlaceID },
                 set: { store.send(.editSelectedPlaceChanged($0)) }
             ),
+            selectedPlaceIDs: Binding(
+                get: { store.editSelectedPlaceIDs },
+                set: { store.send(.editSelectedPlaceIDsChanged($0)) }
+            ),
             recurrenceKind: recurrenceKindBinding,
             recurrenceHasExplicitTime: recurrenceHasExplicitTimeBinding,
             recurrenceHasTimeRange: recurrenceHasTimeRangeBinding,

@@ -56,6 +56,7 @@ enum SettingsRoutineDataBackupMapping {
             voiceNoteDurationSeconds: task.voiceNoteDurationSeconds,
             voiceNoteCreatedAt: task.voiceNoteCreatedAt,
             placeID: task.placeID,
+            placeIDs: task.placeIDs.isEmpty ? nil : task.placeIDs,
             tags: task.tags,
             goalIDs: task.goalIDs,
             steps: task.steps,

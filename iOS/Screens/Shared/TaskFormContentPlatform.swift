@@ -98,7 +98,7 @@ struct TaskFormContent: View {
     }
 
     private var selectedPlaceName: String? {
-        if let id = model.selectedPlaceID.wrappedValue,
+        if let id = model.selectedPlaceIDsValue.first,
            let place = model.availablePlaces.first(where: { $0.id == id }) {
             return place.name
         }

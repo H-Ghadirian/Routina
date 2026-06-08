@@ -144,7 +144,7 @@ enum HomeReloadGuardSupport {
 
         return current.name == incoming.name
             && current.emoji == incoming.emoji
-            && current.placeID == incoming.placeID
+            && current.placeIDs == incoming.placeIDs
             && current.tags == incoming.tags
             && current.goalIDs == incoming.goalIDs
             && current.steps == incoming.steps

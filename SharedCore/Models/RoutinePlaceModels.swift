@@ -106,8 +106,9 @@ final class RoutinePlace {
 
     static func summaries(from places: [RoutinePlace], linkedTo tasks: [RoutineTask]) -> [RoutinePlaceSummary] {
         let linkedCounts = tasks.reduce(into: [UUID: Int]()) { partialResult, task in
-            guard let placeID = task.placeID else { return }
-            partialResult[placeID, default: 0] += 1
+            for placeID in task.placeIDs {
+                partialResult[placeID, default: 0] += 1
+            }
         }
 
         return places

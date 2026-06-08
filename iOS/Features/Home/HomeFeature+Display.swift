@@ -83,6 +83,7 @@ private extension HomeFeature.RoutineDisplay {
             hasImage: core.hasImage,
             hasFileAttachment: core.hasFileAttachment,
             placeID: core.placeID,
+            placeIDs: core.placeIDs,
             placeName: core.placeName,
             locationAvailability: core.locationAvailability,
             tags: core.tags,

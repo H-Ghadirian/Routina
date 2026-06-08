@@ -8,6 +8,7 @@ struct HomeRoutineDisplayCore: Equatable {
     var hasImage: Bool
     var hasFileAttachment: Bool
     var placeID: UUID?
+    var placeIDs: [UUID]
     var placeName: String?
     var locationAvailability: RoutineLocationAvailability
     var tags: [String]

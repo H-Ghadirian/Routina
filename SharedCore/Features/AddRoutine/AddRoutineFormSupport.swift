@@ -57,16 +57,28 @@ enum AddRoutineFormEditor {
         organization: inout AddRoutineOrganizationState
     ) {
         organization.availablePlaces = places
-        if let selectedPlaceID = basics.selectedPlaceID,
-           !places.contains(where: { $0.id == selectedPlaceID }) {
-            basics.selectedPlaceID = nil
-        }
+        let availablePlaceIDs = Set(places.map(\.id))
+        let currentPlaceIDs = basics.selectedPlaceIDs.isEmpty
+            ? basics.selectedPlaceID.map { [$0] } ?? []
+            : basics.selectedPlaceIDs
+        let selectedPlaceIDs = currentPlaceIDs.filter { availablePlaceIDs.contains($0) }
+        basics.selectedPlaceIDs = selectedPlaceIDs
+        basics.selectedPlaceID = selectedPlaceIDs.first
     }
 
     static func setSelectedPlace(
         _ placeID: UUID?,
         basics: inout AddRoutineBasicsState
     ) {
-        basics.selectedPlaceID = placeID
+        setSelectedPlaces(placeID.map { [$0] } ?? [], basics: &basics)
+    }
+
+    static func setSelectedPlaces(
+        _ placeIDs: [UUID],
+        basics: inout AddRoutineBasicsState
+    ) {
+        let sanitizedPlaceIDs = RoutinePlaceIDStorage.sanitized(placeIDs)
+        basics.selectedPlaceIDs = sanitizedPlaceIDs
+        basics.selectedPlaceID = sanitizedPlaceIDs.first
     }
 }

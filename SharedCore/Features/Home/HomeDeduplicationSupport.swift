@@ -79,8 +79,9 @@ enum HomeDeduplicationSupport {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
         let linkedCounts = tasks.reduce(into: [UUID: Int]()) { partialResult, task in
-            guard let placeID = task.placeID else { return }
-            partialResult[placeID, default: 0] += 1
+            for placeID in task.placeIDs {
+                partialResult[placeID, default: 0] += 1
+            }
         }
 
         var placesByNormalizedName: [String: [RoutinePlace]] = [:]
@@ -96,8 +97,8 @@ enum HomeDeduplicationSupport {
 
             let keeper = preferredPlaceToKeep(from: sameNamedPlaces, linkedCounts: linkedCounts)
             for place in sameNamedPlaces where place.id != keeper.id {
-                for task in tasks where task.placeID == place.id {
-                    task.placeID = keeper.id
+                for task in tasks where task.placeIDs.contains(place.id) {
+                    task.placeIDs = task.placeIDs.map { $0 == place.id ? keeper.id : $0 }
                 }
                 context.delete(place)
                 removedAny = true

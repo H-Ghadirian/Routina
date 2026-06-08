@@ -13,6 +13,7 @@ extension CloudKitDirectPullService {
         var isAllDay: Bool?
         var reminderAt: Date?
         var placeID: UUID?
+        var placeIDs: [UUID]?
         var tags: [String]?
         var goalIDs: [UUID]?
         var steps: [RoutineStep]?

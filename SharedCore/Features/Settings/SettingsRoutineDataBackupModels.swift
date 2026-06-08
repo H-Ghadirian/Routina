@@ -67,6 +67,7 @@ extension SettingsRoutineDataPersistence {
             var voiceNoteDurationSeconds: Double?
             var voiceNoteCreatedAt: Date?
             var placeID: UUID?
+            var placeIDs: [UUID]?
             var tags: [String]?
             var goalIDs: [UUID]?
             var steps: [RoutineStep]?

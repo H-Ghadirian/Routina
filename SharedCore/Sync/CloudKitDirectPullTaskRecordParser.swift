@@ -30,6 +30,7 @@ enum CloudKitDirectPullTaskRecordParser {
         let isAllDayValue = boolValue(in: record, keys: storageKeys("isAllDay"))
         let reminderAtValue = dateValue(in: record, keys: ["reminderAt", "REMINDERAT", "zreminderat", "ZREMINDERAT", "cd_reminderat"])
         let placeIDValue = uuidValue(in: record, keys: ["placeID", "placeId", "PLACEID", "zplaceid", "ZPLACEID", "cd_placeid"])
+        let placeIDsStorageValue = stringValue(in: record, keys: storageKeys("placeIDsStorage"))
         let tagsStorageValue = stringValue(in: record, keys: ["tagsStorage", "tagsstorage", "TAGSSTORAGE", "ztagsstorage", "ZTAGSSTORAGE", "cd_tagsstorage"])
         let goalIDsStorageValue = stringValue(
             in: record,
@@ -239,6 +240,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 || actualDurationMinutesValue != nil
                 || storyPointsValue != nil
                 || autoAssumeDailyDoneValue != nil
+                || placeIDsStorageValue != nil
         else {
             return nil
         }
@@ -270,6 +272,7 @@ enum CloudKitDirectPullTaskRecordParser {
             isAllDay: isAllDayValue,
             reminderAt: reminderAtValue,
             placeID: placeIDValue,
+            placeIDs: placeIDsStorageValue.map(RoutinePlaceIDStorage.deserialize),
             tags: tagsStorageValue.map(RoutineTag.deserialize),
             goalIDs: goalIDsStorageValue.map(RoutineGoalIDStorage.deserialize),
             steps: stepsValue,

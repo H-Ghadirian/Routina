@@ -49,8 +49,9 @@ enum CloudKitDirectPullEntityLookup {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
         let linkedCounts = tasks.reduce(into: [UUID: Int]()) { partialResult, task in
-            guard let placeID = task.placeID else { return }
-            partialResult[placeID, default: 0] += 1
+            for placeID in task.placeIDs {
+                partialResult[placeID, default: 0] += 1
+            }
         }
 
         let matchingPlaces = places.filter { place in

@@ -18,6 +18,7 @@ struct TaskDetailEditSaveRequest: Equatable {
     var voiceNote: RoutineVoiceNote?
     var attachments: [AttachmentItem]
     var placeID: UUID?
+    var placeIDs: [UUID]
     var tags: [String]
     var goals: [RoutineGoalSummary]
     var relationships: [RoutineTaskRelationship]
@@ -98,7 +99,8 @@ struct TaskDetailEditSaveRequestBuilder {
             imageData: state.editImageData,
             voiceNote: state.editVoiceNote,
             attachments: state.editAttachments,
-            placeID: state.editSelectedPlaceID,
+            placeID: state.editSelectedPlaceIDs.first,
+            placeIDs: state.editSelectedPlaceIDs,
             tags: RoutineTag.deduplicated(state.editRoutineTags),
             goals: state.editRoutineGoals,
             relationships: state.editRelationships,

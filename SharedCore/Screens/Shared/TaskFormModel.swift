@@ -109,6 +109,7 @@ struct TaskFormModel {
     // MARK: Place
     var availablePlaces: [RoutinePlaceSummary]
     var selectedPlaceID: Binding<UUID?>
+    var selectedPlaceIDs: Binding<[UUID]> = .constant([])
 
     // MARK: Recurrence
     var recurrenceKind: Binding<RoutineRecurrenceRule.Kind>
@@ -420,7 +421,7 @@ extension TaskFormModel {
             || scheduleMode.wrappedValue.isRoutineModeRequiringChecklistItems {
             sections.insert(.checklist)
         }
-        if selectedPlaceID.wrappedValue != nil {
+        if !selectedPlaceIDsValue.isEmpty {
             sections.insert(.place)
         }
 
@@ -437,5 +438,48 @@ extension TaskFormModel {
             behavior: scheduleMode.scheduleBehavior,
             format: fallbackFormat
         )
+    }
+}
+
+extension TaskFormModel {
+    var selectedPlaceIDsValue: [UUID] {
+        let selectedIDs = RoutinePlaceIDStorage.sanitized(selectedPlaceIDs.wrappedValue)
+        if !selectedIDs.isEmpty {
+            return selectedIDs
+        }
+        return selectedPlaceID.wrappedValue.map { [$0] } ?? []
+    }
+
+    var selectedPlaceSummaries: [RoutinePlaceSummary] {
+        let placesByID = Dictionary(availablePlaces.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        return selectedPlaceIDsValue.compactMap { placesByID[$0] }
+    }
+
+    var selectedPlaceMenuTitle: String {
+        let summaries = selectedPlaceSummaries
+        switch summaries.count {
+        case 0:
+            return "Anywhere"
+        case 1:
+            return summaries[0].name
+        default:
+            return "\(summaries[0].name) + \(summaries.count - 1)"
+        }
+    }
+
+    func setSelectedPlaceIDs(_ placeIDs: [UUID]) {
+        let sanitizedPlaceIDs = RoutinePlaceIDStorage.sanitized(placeIDs)
+        selectedPlaceIDs.wrappedValue = sanitizedPlaceIDs
+        selectedPlaceID.wrappedValue = sanitizedPlaceIDs.first
+    }
+
+    func toggleSelectedPlace(_ placeID: UUID) {
+        var selectedIDs = selectedPlaceIDsValue
+        if selectedIDs.contains(placeID) {
+            selectedIDs.removeAll { $0 == placeID }
+        } else {
+            selectedIDs.append(placeID)
+        }
+        setSelectedPlaceIDs(selectedIDs)
     }
 }

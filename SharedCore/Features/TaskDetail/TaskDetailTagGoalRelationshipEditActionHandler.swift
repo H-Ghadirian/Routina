@@ -70,6 +70,11 @@ struct TaskDetailTagGoalRelationshipEditActionHandler {
         return .none
     }
 
+    func editSelectedPlaceIDsChanged(_ placeIDs: [UUID], state: inout State) -> Effect<Action> {
+        draftMutationHandler.setSelectedPlaces(placeIDs, state: &state)
+        return .none
+    }
+
     func editToggleTagSelection(_ tag: String, state: inout State) -> Effect<Action> {
         draftMutationHandler.toggleTagSelection(tag, state: &state)
         return .none

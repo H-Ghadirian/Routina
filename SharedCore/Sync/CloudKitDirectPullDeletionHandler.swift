@@ -94,8 +94,8 @@ enum CloudKitDirectPullDeletionHandler {
     @MainActor
     private static func clearPlaceReference(placeID: UUID, in context: ModelContext) throws {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        for task in tasks where task.placeID == placeID {
-            task.placeID = nil
+        for task in tasks where task.placeIDs.contains(placeID) {
+            task.placeIDs = task.placeIDs.filter { $0 != placeID }
         }
     }
 

@@ -199,7 +199,7 @@ extension HomeTCAView {
     }
 
     var hasPlaceLinkedRoutines: Bool {
-        store.routineTasks.contains { $0.placeID != nil }
+        store.routineTasks.contains { !$0.placeIDs.isEmpty }
     }
 
     var hasPlaceAwareContent: Bool {

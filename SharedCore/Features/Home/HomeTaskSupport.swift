@@ -116,18 +116,21 @@ enum HomeTaskSupport {
             calendar: calendar
         )
 
-        guard let placeID = task.placeID,
-              let place = places.first(where: { $0.id == placeID }) else {
+        let selectedPlaceIDs = Set(task.placeIDs)
+        let linkedPlaces = places.filter { selectedPlaceIDs.contains($0.id) }
+        guard !linkedPlaces.isEmpty else {
             detailState.availablePlaces = []
             return
         }
 
-        let linkedRoutineCount = tasks.reduce(into: 0) { count, candidate in
-            if candidate.placeID == placeID {
-                count += 1
+        let linkedCounts = tasks.reduce(into: [UUID: Int]()) { partialResult, candidate in
+            for placeID in candidate.placeIDs {
+                partialResult[placeID, default: 0] += 1
             }
         }
-        detailState.availablePlaces = [place.summary(linkedRoutineCount: linkedRoutineCount)]
+        detailState.availablePlaces = linkedPlaces.map { place in
+            place.summary(linkedRoutineCount: linkedCounts[place.id, default: 0])
+        }
     }
 
     static func availableTags(from tasks: [RoutineTask]) -> [String] {

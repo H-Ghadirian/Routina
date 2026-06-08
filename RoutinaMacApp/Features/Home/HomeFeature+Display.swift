@@ -98,8 +98,9 @@ extension HomeFeature {
                 }
             }
             .reduce(into: [UUID: Int]()) { partialResult, display in
-                guard let placeID = display.placeID else { return }
-                partialResult[placeID, default: 0] += 1
+                for placeID in display.placeIDs {
+                    partialResult[placeID, default: 0] += 1
+                }
             }
     }
 }
@@ -118,6 +119,7 @@ private extension HomeFeature.RoutineDisplay {
             hasImage: core.hasImage,
             hasFileAttachment: core.hasFileAttachment,
             placeID: core.placeID,
+            placeIDs: core.placeIDs,
             placeName: core.placeName,
             locationAvailability: core.locationAvailability,
             tags: core.tags,

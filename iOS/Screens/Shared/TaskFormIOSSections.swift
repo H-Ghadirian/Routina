@@ -268,19 +268,16 @@ struct TaskFormIOSPlaceSection: View {
     let onManagePlaces: () -> Void
 
     var body: some View {
-        Section(header: Text("Place")) {
-            Picker("Place", selection: model.selectedPlaceID) {
-                Text("Anywhere").tag(Optional<UUID>.none)
-                ForEach(model.availablePlaces) { place in
-                    Text(place.name).tag(Optional(place.id))
+        Section(header: Text("Places")) {
+            HStack {
+                TaskFormPlaceSelectionMenu(model: model)
+                Spacer()
+                Button {
+                    onManagePlaces()
+                } label: {
+                    Label("Manage", systemImage: "map")
                 }
             }
-            Button {
-                onManagePlaces()
-            } label: {
-                Label("Manage Places", systemImage: "map")
-            }
-            Text(presentation.placeSelectionDescription).font(.caption).foregroundStyle(.secondary)
         }
     }
 }

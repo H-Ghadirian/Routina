@@ -62,6 +62,7 @@ enum HomeAddRoutineSupport {
             voiceNoteDurationSeconds: request.voiceNote?.durationSeconds,
             voiceNoteCreatedAt: request.voiceNote?.createdAt,
             placeID: request.selectedPlaceID,
+            placeIDs: request.selectedPlaceIDs,
             tags: request.tags,
             goalIDs: goalIDs,
             relationships: request.relationships,

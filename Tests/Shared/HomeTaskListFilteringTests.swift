@@ -13,10 +13,11 @@ struct HomeTaskListFilteringTests {
     @Test
     func filteredTasksAppliesSearchTagsPlaceAndImportanceFilters() {
         let placeID = UUID()
+        let otherPlaceID = UUID()
         let tasks = [
-            TestTaskDisplay(name: "Write launch plan", placeID: placeID, tags: ["Work", "Focus"], importance: .level3, urgency: .level3),
-            TestTaskDisplay(name: "Write grocery list", placeID: UUID(), tags: ["Home"], importance: .level2, urgency: .level2),
-            TestTaskDisplay(name: "Plan admin backlog", placeID: placeID, tags: ["Admin"], importance: .level4, urgency: .level4)
+            TestTaskDisplay(name: "Write launch plan", placeID: placeID, placeIDs: [placeID], tags: ["Work", "Focus"], importance: .level3, urgency: .level3),
+            TestTaskDisplay(name: "Write grocery list", placeID: otherPlaceID, placeIDs: [otherPlaceID], tags: ["Home"], importance: .level2, urgency: .level2),
+            TestTaskDisplay(name: "Plan admin backlog", placeID: placeID, placeIDs: [placeID], tags: ["Admin"], importance: .level4, urgency: .level4)
         ]
 
         let result = makeFiltering(
@@ -28,6 +29,21 @@ struct HomeTaskListFilteringTests {
         .filteredTasks(tasks)
 
         #expect(result.map(\.name) == ["Write launch plan"])
+    }
+
+    @Test
+    func placeFilterMatchesAnyLinkedPlace() {
+        let homeID = UUID()
+        let gymID = UUID()
+        let tasks = [
+            TestTaskDisplay(name: "Stretch", placeID: homeID, placeIDs: [homeID, gymID]),
+            TestTaskDisplay(name: "Read", placeID: homeID, placeIDs: [homeID])
+        ]
+
+        let result = makeFiltering(selectedManualPlaceFilterID: gymID)
+            .filteredTasks(tasks)
+
+        #expect(result.map(\.name) == ["Stretch"])
     }
 
     @Test
@@ -768,6 +784,7 @@ private struct TestTaskDisplay: HomeRoutineMetadataDisplay, Equatable {
     var hasImage: Bool = false
     var hasFileAttachment: Bool = false
     var placeID: UUID?
+    var placeIDs: [UUID] = []
     var placeName: String?
     var locationAvailability: RoutineLocationAvailability = .unrestricted
     var tags: [String] = []

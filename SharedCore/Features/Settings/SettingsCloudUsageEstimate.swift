@@ -161,6 +161,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var hasImage: Bool
         var hasVoiceNote: Bool
         var placeID: UUID?
+        var placeIDsStorage: String
         var tagsStorage: String
         var goalIDsStorage: String
         var stepsStorage: String
@@ -206,6 +207,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             hasImage = task.hasImage
             hasVoiceNote = task.hasVoiceNote
             placeID = task.placeID
+            placeIDsStorage = task.placeIDsStorage
             tagsStorage = task.tagsStorage
             goalIDsStorage = task.goalIDsStorage
             stepsStorage = task.stepsStorage

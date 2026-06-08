@@ -9,6 +9,7 @@ struct HomeRoutineDisplay: Equatable, Identifiable, HomeTaskListDisplay, HomeTas
     var hasImage: Bool
     var hasFileAttachment: Bool = false
     var placeID: UUID?
+    var placeIDs: [UUID] = []
     var placeName: String?
     var locationAvailability: RoutineLocationAvailability
     var tags: [String]

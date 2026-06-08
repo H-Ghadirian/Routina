@@ -205,7 +205,7 @@ extension AddRoutineFeature.State {
         if basics.estimatedDurationMinutes != nil || basics.storyPoints != nil || basics.focusModeEnabled {
             sections.insert(.estimation)
         }
-        if basics.selectedPlaceID != nil {
+        if !basics.selectedPlaceIDs.isEmpty || basics.selectedPlaceID != nil {
             sections.insert(.places)
         }
         if basics.importance != .level2 || basics.urgency != .level2 {
@@ -268,7 +268,7 @@ extension TaskDetailFeature.State {
             || editFocusModeEnabled {
             sections.insert(.estimation)
         }
-        if editSelectedPlaceID != nil {
+        if !editSelectedPlaceIDs.isEmpty || editSelectedPlaceID != nil {
             sections.insert(.places)
         }
         if editImportance != .level2 || editUrgency != .level2 {

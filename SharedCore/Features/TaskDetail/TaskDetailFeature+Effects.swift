@@ -395,6 +395,7 @@ extension TaskDetailFeature {
             voiceNote: request.voiceNote,
             attachments: request.attachments,
             placeID: request.placeID,
+            placeIDs: request.placeIDs,
             tags: request.tags,
             goals: request.goals,
             relationships: request.relationships,
@@ -429,6 +430,7 @@ extension TaskDetailFeature {
         voiceNote: RoutineVoiceNote?,
         attachments: [AttachmentItem],
         placeID: UUID?,
+        placeIDs: [UUID],
         tags: [String],
         goals: [RoutineGoalSummary],
         relationships: [RoutineTaskRelationship],
@@ -481,7 +483,7 @@ extension TaskDetailFeature {
                     let newAtt = RoutineAttachment(id: item.id, taskID: taskID, fileName: item.fileName, data: item.data)
                     context.insert(newAtt)
                 }
-                task.placeID = placeID
+                task.placeIDs = RoutinePlaceIDStorage.sanitized(placeIDs.isEmpty ? placeID.map { [$0] } ?? [] : placeIDs)
                 task.tags = tags
                 task.goalIDs = try RoutineGoalPersistence.ensureGoals(goals, in: context)
                 task.replaceRelationships(relationships)

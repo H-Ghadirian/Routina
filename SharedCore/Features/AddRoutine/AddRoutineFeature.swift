@@ -67,6 +67,7 @@ struct AddRoutineFeature: Reducer {
         case existingRoutineNamesChanged([String])
         case availablePlacesChanged([RoutinePlaceSummary])
         case selectedPlaceChanged(UUID?)
+        case selectedPlaceIDsChanged([UUID])
         case routineColorChanged(RoutineTaskColor)
         case estimatedDurationChanged(Int?)
         case storyPointsChanged(Int?)
@@ -433,6 +434,13 @@ struct AddRoutineFeature: Reducer {
             )
             return .none
 
+        case let .selectedPlaceIDsChanged(placeIDs):
+            AddRoutineFormEditor.setSelectedPlaces(
+                placeIDs,
+                basics: &state.basics
+            )
+            return .none
+
         case let .routineColorChanged(color):
             AddRoutineBasicsEditor.setColor(
                 color,
@@ -501,7 +509,7 @@ struct AddRoutineFeature: Reducer {
         )
 
         if let placeID = matchingPlaceID(named: draft.placeName, in: state.organization.availablePlaces) {
-            state.basics.selectedPlaceID = placeID
+            AddRoutineFormEditor.setSelectedPlace(placeID, basics: &state.basics)
         }
 
         if draft.importance != .level2 || draft.urgency != .level2 {

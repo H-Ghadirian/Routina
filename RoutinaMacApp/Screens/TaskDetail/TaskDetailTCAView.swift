@@ -510,7 +510,7 @@ detailBody
             })
         }
 
-        if store.task.placeID == nil {
+        if store.task.placeIDs.isEmpty {
             actions.append(editSectionAction(title: "Place", section: .places))
         }
 

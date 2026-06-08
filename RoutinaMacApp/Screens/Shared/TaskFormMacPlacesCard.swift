@@ -7,26 +7,16 @@ struct TaskFormMacPlacesCard: View {
 
     var body: some View {
         TaskFormMacSectionCard(title: "Places") {
-            VStack(alignment: .leading, spacing: 18) {
-                TaskFormMacControlBlock(title: "Place") {
-                    Picker("Place", selection: model.selectedPlaceID) {
-                        Text("Anywhere").tag(Optional<UUID>.none)
-                        ForEach(model.availablePlaces) { place in
-                            Text(place.name).tag(Optional(place.id))
-                        }
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.menu)
-                }
+            HStack(spacing: 10) {
+                TaskFormPlaceSelectionMenu(model: model)
+                    .frame(minWidth: 160, alignment: .leading)
 
-                TaskFormMacControlBlock(title: "") {
-                    Button {
-                        onManagePlaces()
-                    } label: {
-                        Label("Manage Places", systemImage: "map")
-                    }
-                    .buttonStyle(.bordered)
+                Button {
+                    onManagePlaces()
+                } label: {
+                    Label("Manage", systemImage: "map")
                 }
+                .buttonStyle(.bordered)
             }
         }
     }

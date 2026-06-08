@@ -73,7 +73,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
 
     func matchesManualPlaceFilter(_ task: Display) -> Bool {
         guard let selectedManualPlaceFilterID = configuration.selectedManualPlaceFilterID else { return true }
-        return task.placeID == selectedManualPlaceFilterID
+        return task.placeIDs.contains(selectedManualPlaceFilterID)
     }
 
     func matchesTodoStateFilter(_ task: Display) -> Bool {

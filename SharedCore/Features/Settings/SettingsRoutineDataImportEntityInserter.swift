@@ -267,6 +267,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 voiceNoteDurationSeconds: task.voiceNoteDurationSeconds,
                 voiceNoteCreatedAt: task.voiceNoteCreatedAt,
                 placeID: task.placeID.flatMap { importedPlaceIDs.contains($0) ? $0 : nil },
+                placeIDs: (task.placeIDs ?? task.placeID.map { [$0] } ?? []).filter { importedPlaceIDs.contains($0) },
                 tags: task.tags ?? [],
                 goalIDs: (task.goalIDs ?? []).filter { importedGoalIDs.contains($0) },
                 steps: task.steps ?? [],

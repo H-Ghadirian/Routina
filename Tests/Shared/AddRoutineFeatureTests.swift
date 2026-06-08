@@ -374,6 +374,41 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func saveTapped_includesMultipleSelectedPlaceIDs() async {
+        let homeID = UUID()
+        let gymID = UUID()
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(
+                    routineName: "Stretch",
+                    selectedPlaceIDs: [homeID, gymID]
+                ),
+                organization: AddRoutineOrganizationState(
+                    availablePlaces: [
+                        RoutinePlaceSummary(id: homeID, name: "Home", radiusMeters: 150, linkedRoutineCount: 0),
+                        RoutinePlaceSummary(id: gymID, name: "Gym", radiusMeters: 150, linkedRoutineCount: 0)
+                    ]
+                ),
+                schedule: AddRoutineScheduleState(scheduleMode: .fixedInterval)
+            )
+        ) {
+            makeDelegateEchoFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.saveTapped)
+        await store.receive(.delegate(.didSave(makeSaveRequest(
+            name: "Stretch",
+            frequencyInDays: 1,
+            recurrenceRule: .interval(days: 1),
+            emoji: "✨",
+            selectedPlaceID: homeID,
+            selectedPlaceIDs: [homeID, gymID]
+        ))))
+    }
+
+    @Test
     func saveTapped_includesEstimationValuesWhenPresent() async {
         let store = TestStore(
             initialState: makeState(
@@ -481,6 +516,7 @@ struct AddRoutineFeatureTests {
             $0.basics.importance = .level3
             $0.basics.urgency = .level3
             $0.basics.selectedPlaceID = placeID
+            $0.basics.selectedPlaceIDs = [placeID]
             $0.basics.estimatedDurationMinutes = 25
             $0.basics.focusModeEnabled = true
             $0.organization.routineTags = ["home"]

@@ -83,6 +83,10 @@ struct AddRoutineTaskFormModelFactory {
             onRemoveChecklistItem: { store.send(.removeChecklistItem($0)) },
             availablePlaces: store.organization.availablePlaces,
             selectedPlaceID: binding(get: { store.basics.selectedPlaceID }, send: AddRoutineFeature.Action.selectedPlaceChanged),
+            selectedPlaceIDs: binding(
+                get: { store.basics.selectedPlaceIDs },
+                send: AddRoutineFeature.Action.selectedPlaceIDsChanged
+            ),
             recurrenceKind: binding(get: { store.schedule.recurrenceKind }, send: AddRoutineFeature.Action.recurrenceKindChanged),
             recurrenceHasExplicitTime: binding(
                 get: { store.schedule.recurrenceHasExplicitTime },

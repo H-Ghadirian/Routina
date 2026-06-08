@@ -57,6 +57,7 @@ struct TaskDetailFeature: Reducer {
         var relatedTagRules: [RoutineRelatedTagRule] = []
         var availableRelationshipTasks: [RoutineTaskRelationshipCandidate] = []
         var editSelectedPlaceID: UUID?
+        var editSelectedPlaceIDs: [UUID] = []
         var editFrequency: EditFrequency = .day
         var editFrequencyValue: Int = 1
         var editRecurrenceKind: RoutineRecurrenceRule.Kind = .intervalDays
@@ -250,6 +251,7 @@ struct TaskDetailFeature: Reducer {
         case relatedTagRulesLoaded([RoutineRelatedTagRule])
         case availableRelationshipTasksLoaded([RoutineTaskRelationshipCandidate])
         case editSelectedPlaceChanged(UUID?)
+        case editSelectedPlaceIDsChanged([UUID])
         case editToggleTagSelection(String)
         case editToggleGoalSelection(RoutineGoalSummary)
         case editEstimatedDurationChanged(Int?)
@@ -1031,6 +1033,12 @@ struct TaskDetailFeature: Reducer {
         case let .editSelectedPlaceChanged(placeID):
             return tagGoalRelationshipEditActionHandler().editSelectedPlaceChanged(
                 placeID,
+                state: &state
+            )
+
+        case let .editSelectedPlaceIDsChanged(placeIDs):
+            return tagGoalRelationshipEditActionHandler().editSelectedPlaceIDsChanged(
+                placeIDs,
                 state: &state
             )
 

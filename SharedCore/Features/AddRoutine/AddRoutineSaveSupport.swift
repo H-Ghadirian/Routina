@@ -83,6 +83,7 @@ struct AddRoutineSaveRequest: Equatable {
     let imageData: Data?
     let voiceNote: RoutineVoiceNote?
     let selectedPlaceID: UUID?
+    let selectedPlaceIDs: [UUID]
     let tags: [String]
     let goals: [RoutineGoalSummary]
     let relationships: [RoutineTaskRelationship]
@@ -114,6 +115,7 @@ struct AddRoutineSaveRequest: Equatable {
         imageData: Data? = nil,
         voiceNote: RoutineVoiceNote? = nil,
         selectedPlaceID: UUID? = nil,
+        selectedPlaceIDs: [UUID] = [],
         tags: [String] = [],
         goals: [RoutineGoalSummary] = [],
         relationships: [RoutineTaskRelationship] = [],
@@ -144,7 +146,11 @@ struct AddRoutineSaveRequest: Equatable {
         self.pressure = pressure
         self.imageData = imageData
         self.voiceNote = voiceNote
-        self.selectedPlaceID = selectedPlaceID
+        let resolvedPlaceIDs = RoutinePlaceIDStorage.sanitized(
+            selectedPlaceIDs.isEmpty ? selectedPlaceID.map { [$0] } ?? [] : selectedPlaceIDs
+        )
+        self.selectedPlaceID = resolvedPlaceIDs.first
+        self.selectedPlaceIDs = resolvedPlaceIDs
         self.tags = RoutineTag.deduplicated(tags)
         self.goals = RoutineGoalSummary.sanitized(goals)
         self.relationships = relationships
@@ -195,7 +201,10 @@ struct AddRoutineSaveRequest: Equatable {
         self.pressure = basics.pressure
         self.imageData = basics.imageData
         self.voiceNote = basics.voiceNote
-        self.selectedPlaceID = basics.selectedPlaceID
+        self.selectedPlaceIDs = RoutinePlaceIDStorage.sanitized(
+            basics.selectedPlaceIDs.isEmpty ? basics.selectedPlaceID.map { [$0] } ?? [] : basics.selectedPlaceIDs
+        )
+        self.selectedPlaceID = selectedPlaceIDs.first
         self.tags = RoutineTag.deduplicated(organization.routineTags)
         self.goals = organization.routineGoals
         self.relationships = organization.relationships

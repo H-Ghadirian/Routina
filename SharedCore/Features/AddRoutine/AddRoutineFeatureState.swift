@@ -17,6 +17,7 @@ struct AddRoutineBasicsState: Equatable {
     var voiceNote: RoutineVoiceNote?
     var attachments: [AttachmentItem] = []
     var selectedPlaceID: UUID?
+    var selectedPlaceIDs: [UUID] = []
     var routineColor: RoutineTaskColor = .none
     var estimatedDurationMinutes: Int?
     var storyPoints: Int?

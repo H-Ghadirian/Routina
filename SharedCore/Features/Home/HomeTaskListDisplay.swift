@@ -8,6 +8,7 @@ protocol HomeTaskListDisplay {
     var hasImage: Bool { get }
     var hasFileAttachment: Bool { get }
     var placeID: UUID? { get }
+    var placeIDs: [UUID] { get }
     var placeName: String? { get }
     var tags: [String] { get }
     var goalTitles: [String] { get }
@@ -49,6 +50,10 @@ extension HomeTaskListDisplay {
 
     var hasFileAttachment: Bool {
         false
+    }
+
+    var placeIDs: [UUID] {
+        placeID.map { [$0] } ?? []
     }
 
     var isDailyRoutine: Bool {

@@ -19,7 +19,7 @@ struct HomeRoutineDisplayFactory {
             referenceDate: now,
             calendar: calendar
         )
-        let linkedPlace = task.placeID.flatMap { placesByID[$0] }
+        let linkedPlace = task.placeIDs.compactMap { placesByID[$0] }.first
         let locationAvailability = makeLocationAvailability(
             for: linkedPlace,
             locationSnapshot: locationSnapshot
@@ -45,6 +45,7 @@ struct HomeRoutineDisplayFactory {
             hasImage: task.hasImage,
             hasFileAttachment: fileAttachmentTaskIDs.contains(task.id),
             placeID: task.placeID,
+            placeIDs: task.placeIDs,
             placeName: linkedPlace?.displayName,
             locationAvailability: locationAvailability,
             tags: task.tags,
