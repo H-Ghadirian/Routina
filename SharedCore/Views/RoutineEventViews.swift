@@ -13,6 +13,7 @@ struct RoutineEventEditorView: View {
     let event: RoutineEvent?
     let onCancel: (() -> Void)?
     let onSaved: ((UUID) -> Void)?
+    private let draftBaseline: RoutineEventDraftSnapshot
 
     @State private var title: String
     @State private var notesText: String
@@ -32,19 +33,37 @@ struct RoutineEventEditorView: View {
         self.event = event
         self.onCancel = onCancel
         self.onSaved = onSaved
-        _title = State(initialValue: event?.title ?? "")
-        _notesText = State(initialValue: event?.notes ?? "")
-        _emoji = State(initialValue: event?.emoji ?? "")
-        _isAllDay = State(initialValue: event?.isAllDay ?? true)
-        _startDate = State(initialValue: event?.startedAt ?? Date())
-        _endDate = State(initialValue: event?.endedAt ?? Date().addingTimeInterval(60 * 60))
-        _tags = State(initialValue: event?.tags ?? [])
+        let defaultStartDate = Date()
+        let defaultEndDate = defaultStartDate.addingTimeInterval(60 * 60)
+        let draft = event == nil ? RoutineEventDraftSnapshot.load() : nil
+        draftBaseline = RoutineEventDraftSnapshot(
+            title: "",
+            notesText: "",
+            emoji: "",
+            isAllDay: true,
+            startDate: defaultStartDate,
+            endDate: defaultEndDate,
+            tags: [],
+            tagDraft: ""
+        )
+        _title = State(initialValue: event?.title ?? draft?.title ?? "")
+        _notesText = State(initialValue: event?.notes ?? draft?.notesText ?? "")
+        _emoji = State(initialValue: event?.emoji ?? draft?.emoji ?? "")
+        _isAllDay = State(initialValue: event?.isAllDay ?? draft?.isAllDay ?? true)
+        _startDate = State(initialValue: event?.startedAt ?? draft?.startDate ?? defaultStartDate)
+        _endDate = State(initialValue: event?.endedAt ?? draft?.endDate ?? defaultEndDate)
+        _tags = State(initialValue: event?.tags ?? draft?.tags ?? [])
+        _tagDraft = State(initialValue: draft?.tagDraft ?? "")
     }
 
     var body: some View {
         editorContent
             .onChange(of: isAllDay) { _, _ in
                 normalizeDates()
+            }
+            .onChange(of: currentDraftSnapshot) { _, snapshot in
+                guard event == nil else { return }
+                snapshot.persist(comparedTo: draftBaseline)
             }
     }
 
@@ -111,6 +130,19 @@ struct RoutineEventEditorView: View {
     private var canSave: Bool {
         RoutineEvent.cleanedText(title) != nil
             && normalizedEndDate > normalizedStartDate
+    }
+
+    private var currentDraftSnapshot: RoutineEventDraftSnapshot {
+        RoutineEventDraftSnapshot(
+            title: title,
+            notesText: notesText,
+            emoji: emoji,
+            isAllDay: isAllDay,
+            startDate: startDate,
+            endDate: endDate,
+            tags: tags,
+            tagDraft: tagDraft
+        )
     }
 
     private var normalizedStartDate: Date {
@@ -601,6 +633,9 @@ struct RoutineEventEditorView: View {
     }
 
     private func cancel() {
+        if event == nil {
+            CreationDraftPersistence.clear(.event)
+        }
         if let onCancel {
             onCancel()
         } else {
@@ -630,6 +665,9 @@ struct RoutineEventEditorView: View {
 
         do {
             try modelContext.save()
+            if event == nil {
+                CreationDraftPersistence.clear(.event)
+            }
             onSaved?(target.id)
             dismiss()
         } catch {

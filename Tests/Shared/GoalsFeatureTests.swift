@@ -522,6 +522,68 @@ struct GoalsFeatureTests {
     }
 
     @Test
+    func addGoalTappedRestoresSavedCreationDraft() async throws {
+        let draft = GoalsFeature.GoalDraft(
+            title: "Launch",
+            notes: "Ship the first usable version.",
+            tags: ["Work"],
+            tagDraft: "deep"
+        )
+        let rawValue = try encodedDraftString(GoalCreationDraftSnapshot(draft: draft))
+
+        let store = TestStore(initialState: GoalsFeature.State()) {
+            GoalsFeature()
+        } withDependencies: {
+            $0.creationDraftClient.load = { kind in
+                kind == .goal ? rawValue : nil
+            }
+        }
+
+        await store.send(.addGoalTapped) {
+            $0.editorDraft = draft
+            $0.isEditorPresented = true
+        }
+    }
+
+    @Test
+    func newGoalEditorChangesPersistCreationDraftAndDismissClearsIt() async throws {
+        let persistedRawValue = LockIsolated<String?>(nil)
+        let clearedKinds = LockIsolated<[CreationDraftKind]>([])
+        let store = TestStore(
+            initialState: GoalsFeature.State(
+                isEditorPresented: true,
+                editorDraft: GoalsFeature.GoalDraft()
+            )
+        ) {
+            GoalsFeature()
+        } withDependencies: {
+            $0.creationDraftClient.save = { kind, rawValue in
+                if kind == .goal {
+                    persistedRawValue.setValue(rawValue)
+                }
+            }
+            $0.creationDraftClient.clear = { kind in
+                clearedKinds.withValue { $0.append(kind) }
+            }
+        }
+
+        await store.send(.editorTitleChanged("Launch")) {
+            $0.editorDraft.title = "Launch"
+        }
+
+        let rawValue = try #require(persistedRawValue.value)
+        let data = try #require(rawValue.data(using: .utf8))
+        let decoded = try JSONDecoder().decode(GoalCreationDraftSnapshot.self, from: data)
+        #expect(decoded.draft.title == "Launch")
+
+        await store.send(.dismissEditor) {
+            $0.isEditorPresented = false
+            $0.validationMessage = nil
+        }
+        #expect(clearedKinds.value.contains(.goal))
+    }
+
+    @Test
     func saveEditorTapped_linksGoalToParent() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-05-01T09:00:00Z")
@@ -678,5 +740,10 @@ struct GoalsFeatureTests {
         #expect(remainingGoals.map(\.id) == [childGoal.id])
         #expect(remainingGoals.first?.parentGoalID == nil)
         #expect(remainingTasks.first?.goalIDs.isEmpty == true)
+    }
+
+    private func encodedDraftString<T: Encodable>(_ value: T) throws -> String {
+        let data = try JSONEncoder().encode(value)
+        return try #require(String(data: data, encoding: .utf8))
     }
 }

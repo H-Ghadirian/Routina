@@ -38,6 +38,11 @@ private enum AppSettingsClientKey: DependencyKey {
     static let testValue = AppSettingsClient.noop
 }
 
+private enum CreationDraftClientKey: DependencyKey {
+    static let liveValue = CreationDraftClient.live
+    static let testValue = CreationDraftClient.noop
+}
+
 private enum AppInfoClientKey: DependencyKey {
     static let liveValue = AppInfoClient.live
     static let testValue = AppInfoClient.noop
@@ -102,6 +107,11 @@ extension DependencyValues {
     var appSettingsClient: AppSettingsClient {
         get { self[AppSettingsClientKey.self] }
         set { self[AppSettingsClientKey.self] = newValue }
+    }
+
+    var creationDraftClient: CreationDraftClient {
+        get { self[CreationDraftClientKey.self] }
+        set { self[CreationDraftClientKey.self] = newValue }
     }
 
     var appInfoClient: AppInfoClient {

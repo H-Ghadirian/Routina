@@ -628,6 +628,7 @@ struct HomeFeature {
     @Dependency(\.cloudSyncClient) var cloudSyncClient
     @Dependency(\.continuousClock) var clock
     @Dependency(\.appSettingsClient) var appSettingsClient
+    @Dependency(\.creationDraftClient) var creationDraftClient
     @Dependency(\.sprintBoardClient) var sprintBoardClient
 
     private func taskLifecycleCoordinator() -> HomeTaskLifecycleCoordinator<Action> {
@@ -739,7 +740,8 @@ struct HomeFeature {
     private func addRoutinePresentationRouter() -> HomeFeatureAddRoutinePresentationRouter<State> {
         HomeFeatureAddRoutinePresentationRouter(
             tagCounterDisplayMode: { appSettingsClient.tagCounterDisplayMode() },
-            relatedTagRules: { appSettingsClient.relatedTagRules() }
+            relatedTagRules: { appSettingsClient.relatedTagRules() },
+            addRoutineDraft: { AddRoutineDraftSnapshot.load(client: creationDraftClient) }
         )
     }
 
@@ -765,7 +767,8 @@ struct HomeFeature {
             finishMutation: { effect, state in
                 postMutationRefresher().finishMutation(effect, state: &state)
             },
-            loadTasksEffect: { loadTasksEffect() }
+            loadTasksEffect: { loadTasksEffect() },
+            clearDraft: { creationDraftClient.clear(.task) }
         )
     }
 

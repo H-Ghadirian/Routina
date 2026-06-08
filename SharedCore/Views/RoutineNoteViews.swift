@@ -44,14 +44,17 @@ struct RoutineNoteEditorView: View {
         self.initialAttachments = attachments
         self.onCancel = onCancel
         self.onSaved = onSaved
-        _title = State(initialValue: note?.title ?? "")
-        _bodyText = State(initialValue: note?.body ?? "")
-        _tags = State(initialValue: note?.tags ?? [])
-        _imageData = State(initialValue: note?.imageData)
-        _voiceNote = State(initialValue: note?.voiceNote)
-        _attachments = State(initialValue: attachments.sorted { $0.createdAt < $1.createdAt }.map {
+        let draft = note == nil ? RoutineNoteDraftSnapshot.load() : nil
+        let storedAttachments = attachments.sorted { $0.createdAt < $1.createdAt }.map {
             AttachmentItem(id: $0.id, fileName: $0.fileName, data: $0.data)
-        })
+        }
+        _title = State(initialValue: note?.title ?? draft?.title ?? "")
+        _bodyText = State(initialValue: note?.body ?? draft?.bodyText ?? "")
+        _tags = State(initialValue: note?.tags ?? draft?.tags ?? [])
+        _tagDraft = State(initialValue: draft?.tagDraft ?? "")
+        _imageData = State(initialValue: note?.imageData ?? draft?.imageData)
+        _voiceNote = State(initialValue: note?.voiceNote ?? draft?.voiceNote)
+        _attachments = State(initialValue: note == nil ? draft?.attachments ?? [] : storedAttachments)
     }
 
     var body: some View {
@@ -94,6 +97,10 @@ struct RoutineNoteEditorView: View {
             allowsMultipleSelection: false
         ) { result in
             handleFileImport(result)
+        }
+        .onChange(of: currentDraftSnapshot) { _, snapshot in
+            guard note == nil else { return }
+            snapshot.persist()
         }
         #if os(macOS)
         .frame(minWidth: 460, minHeight: 620)
@@ -359,6 +366,18 @@ struct RoutineNoteEditorView: View {
             || !attachments.isEmpty
     }
 
+    private var currentDraftSnapshot: RoutineNoteDraftSnapshot {
+        RoutineNoteDraftSnapshot(
+            title: title,
+            bodyText: bodyText,
+            tags: tags,
+            tagDraft: tagDraft,
+            imageData: imageData,
+            voiceNote: voiceNote,
+            attachments: attachments
+        )
+    }
+
     private var availableTags: [String] {
         RoutineTag.allTags(
             from: tasks.map(\.tags) + goals.map(\.tags) + existingNotes.map(\.tags)
@@ -378,6 +397,9 @@ struct RoutineNoteEditorView: View {
     }
 
     private func cancel() {
+        if note == nil {
+            CreationDraftPersistence.clear(.note)
+        }
         if let onCancel {
             onCancel()
         } else {
@@ -612,6 +634,9 @@ struct RoutineNoteEditorView: View {
 
         do {
             try modelContext.save()
+            if note == nil {
+                CreationDraftPersistence.clear(.note)
+            }
             onSaved?(target.id)
             dismiss()
         } catch {

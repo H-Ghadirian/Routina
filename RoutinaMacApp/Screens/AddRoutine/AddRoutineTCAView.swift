@@ -4,6 +4,7 @@ import PhotosUI
 
 struct AddRoutineTCAView: View {
     let store: StoreOf<AddRoutineFeature>
+    @Dependency(\.creationDraftClient) var creationDraftClient
     @FocusState var isRoutineNameFocused: Bool
     @State var isEmojiPickerPresented = false
     @State var selectedPhotoItem: PhotosPickerItem?
@@ -36,6 +37,9 @@ NavigationStack {
     .onChange(of: selectedPhotoItem) { _, newItem in
         guard let newItem else { return }
         loadPickedImage(from: newItem)
+    }
+    .onChange(of: AddRoutineDraftSnapshot(state: store.state)) { _, snapshot in
+        snapshot.persist(client: creationDraftClient)
     }
 }
     }

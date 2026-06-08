@@ -81,20 +81,22 @@ struct EmotionLogEditorView: View {
         self.onCancel = onCancel
         self.onSaved = onSaved
 
-        let initialFamilies = emotion?.families ?? [.calm]
-        let initialLabels = emotion?.displayLabels ?? [EmotionFamily.calm.defaultLabel]
-        _valence = State(initialValue: emotion?.valence ?? 0.25)
-        _arousal = State(initialValue: emotion?.arousal ?? -0.15)
+        let draft = emotion == nil ? EmotionLogDraftSnapshot.load() : nil
+        let initialFamilies = emotion?.families ?? draft?.selectedFamilies ?? [.calm]
+        let initialLabels = emotion?.displayLabels ?? draft?.selectedLabels ?? [EmotionFamily.calm.defaultLabel]
+        let draftIntensity = min(max(Int((draft?.intensity ?? 3).rounded()), 1), 5)
+        _valence = State(initialValue: emotion?.valence ?? draft?.valence ?? 0.25)
+        _arousal = State(initialValue: emotion?.arousal ?? draft?.arousal ?? -0.15)
         _selectedFamilies = State(initialValue: Set(initialFamilies))
         _selectedLabels = State(initialValue: Set(initialLabels))
-        _intensity = State(initialValue: Double(emotion?.clampedIntensity ?? 3))
-        _selectedBodyAreas = State(initialValue: Set(emotion?.bodyAreas ?? []))
-        _reflection = State(initialValue: emotion?.reflection ?? "")
-        _linkedNoteID = State(initialValue: emotion?.linkedNoteID)
-        _linkedGoalID = State(initialValue: emotion?.linkedGoalID)
-        _linkedTaskID = State(initialValue: emotion?.linkedTaskID)
-        _linkedPlaceID = State(initialValue: emotion?.linkedPlaceID)
-        _linkedSleepSessionID = State(initialValue: emotion?.linkedSleepSessionID)
+        _intensity = State(initialValue: Double(emotion?.clampedIntensity ?? draftIntensity))
+        _selectedBodyAreas = State(initialValue: Set(emotion?.bodyAreas ?? draft?.selectedBodyAreas ?? []))
+        _reflection = State(initialValue: emotion?.reflection ?? draft?.reflection ?? "")
+        _linkedNoteID = State(initialValue: emotion?.linkedNoteID ?? draft?.linkedNoteID)
+        _linkedGoalID = State(initialValue: emotion?.linkedGoalID ?? draft?.linkedGoalID)
+        _linkedTaskID = State(initialValue: emotion?.linkedTaskID ?? draft?.linkedTaskID)
+        _linkedPlaceID = State(initialValue: emotion?.linkedPlaceID ?? draft?.linkedPlaceID)
+        _linkedSleepSessionID = State(initialValue: emotion?.linkedSleepSessionID ?? draft?.linkedSleepSessionID)
     }
 
     var body: some View {
@@ -118,6 +120,10 @@ struct EmotionLogEditorView: View {
                     }
                 }
                 #endif
+        }
+        .onChange(of: currentDraftSnapshot) { _, snapshot in
+            guard emotion == nil else { return }
+            snapshot.persist()
         }
         #if os(macOS)
         .frame(minWidth: 540, minHeight: 680)
@@ -442,6 +448,23 @@ struct EmotionLogEditorView: View {
         return selectedKnownLabels + customLabels
     }
 
+    private var currentDraftSnapshot: EmotionLogDraftSnapshot {
+        EmotionLogDraftSnapshot(
+            valence: valence,
+            arousal: arousal,
+            selectedFamilies: EmotionFamily.allCases.filter { selectedFamilies.contains($0) },
+            selectedLabels: selectedLabelsInDisplayOrder,
+            intensity: intensity,
+            selectedBodyAreas: EmotionBodyArea.allCases.filter { selectedBodyAreas.contains($0) },
+            reflection: reflection,
+            linkedNoteID: linkedNoteID,
+            linkedGoalID: linkedGoalID,
+            linkedTaskID: linkedTaskID,
+            linkedPlaceID: linkedPlaceID,
+            linkedSleepSessionID: linkedSleepSessionID
+        )
+    }
+
     private var primarySelectedFamily: EmotionFamily {
         selectedFamiliesInDisplayOrder.first ?? .calm
     }
@@ -551,6 +574,9 @@ struct EmotionLogEditorView: View {
     }
 
     private func cancel() {
+        if emotion == nil {
+            CreationDraftPersistence.clear(.emotion)
+        }
         if let onCancel {
             onCancel()
         } else {
@@ -639,6 +665,9 @@ struct EmotionLogEditorView: View {
 
         do {
             try modelContext.save()
+            if emotion == nil {
+                CreationDraftPersistence.clear(.emotion)
+            }
             if let onSaved {
                 onSaved(savedID)
             } else {

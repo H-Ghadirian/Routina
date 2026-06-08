@@ -18,9 +18,11 @@ struct HomeFeatureAddRoutineActionHandler<State: HomeFeatureAddRoutineActionStat
     var failedAction: @Sendable () -> Action
     var finishMutation: (Effect<Action>, inout State) -> Effect<Action>
     var loadTasksEffect: () -> Effect<Action>
+    var clearDraft: () -> Void
 
     func cancel(state: inout State) -> Effect<Action> {
         dismissSheet(&state)
+        clearDraft()
         return .none
     }
 
@@ -47,6 +49,7 @@ struct HomeFeatureAddRoutineActionHandler<State: HomeFeatureAddRoutineActionStat
         )
         state.routineTasks = routineTasks
         state.presentation = presentation
+        clearDraft()
         return finishMutation(.merge(effect, loadTasksEffect()), &state)
     }
 

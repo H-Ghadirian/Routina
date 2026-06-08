@@ -12,6 +12,7 @@ protocol HomeFeatureAddRoutinePresentationState {
 struct HomeFeatureAddRoutinePresentationRouter<State: HomeFeatureAddRoutinePresentationState> {
     var tagCounterDisplayMode: () -> TagCounterDisplayMode
     var relatedTagRules: () -> [RoutineRelatedTagRule]
+    var addRoutineDraft: () -> AddRoutineDraftSnapshot?
 
     func setSheet(_ isPresented: Bool, state: inout State) {
         state.presentation.isAddRoutineSheetPresented = isPresented
@@ -70,7 +71,7 @@ struct HomeFeatureAddRoutinePresentationRouter<State: HomeFeatureAddRoutinePrese
         preselectedRelationships: [RoutineTaskRelationship] = [],
         excludingRelationshipTaskID: UUID? = nil
     ) -> AddRoutineFeature.State {
-        HomeAddRoutineSupport.makeAddRoutineState(
+        let addRoutineState = HomeAddRoutineSupport.makeAddRoutineState(
             tasks: state.routineTasks,
             places: state.routinePlaces,
             goals: state.routineGoals,
@@ -80,5 +81,12 @@ struct HomeFeatureAddRoutinePresentationRouter<State: HomeFeatureAddRoutinePrese
             preselectedRelationships: preselectedRelationships,
             excludingRelationshipTaskID: excludingRelationshipTaskID
         )
+        guard preselectedRelationships.isEmpty,
+              excludingRelationshipTaskID == nil,
+              let draft = addRoutineDraft()
+        else {
+            return addRoutineState
+        }
+        return draft.applied(to: addRoutineState)
     }
 }

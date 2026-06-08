@@ -1,6 +1,6 @@
 import Foundation
 
-enum TaskFormFrequencyUnit: String, CaseIterable, Equatable, Sendable {
+enum TaskFormFrequencyUnit: String, Codable, CaseIterable, Equatable, Sendable {
     case day = "Day"
     case week = "Week"
     case month = "Month"

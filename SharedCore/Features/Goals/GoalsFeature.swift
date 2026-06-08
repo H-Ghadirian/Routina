@@ -358,7 +358,7 @@ struct GoalsFeature {
         }
     }
 
-    struct GoalDraft: Equatable {
+    struct GoalDraft: Codable, Equatable {
         var id: UUID?
         var title = ""
         var emoji = ""
@@ -461,6 +461,7 @@ struct GoalsFeature {
     @Dependency(\.date.now) var now
     @Dependency(\.calendar) var calendar
     @Dependency(\.appSettingsClient) var appSettingsClient
+    @Dependency(\.creationDraftClient) var creationDraftClient
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -526,7 +527,7 @@ struct GoalsFeature {
                 return .none
 
             case .addGoalTapped:
-                state.editorDraft = GoalDraft()
+                state.editorDraft = GoalCreationDraftSnapshot.load(client: creationDraftClient)?.draft ?? GoalDraft()
                 state.validationMessage = nil
                 state.isEditorPresented = true
                 return .none
@@ -539,6 +540,9 @@ struct GoalsFeature {
                 return .none
 
             case .dismissEditor:
+                if state.isAddingGoal {
+                    creationDraftClient.clear(.goal)
+                }
                 state.isEditorPresented = false
                 state.validationMessage = nil
                 return .none
@@ -546,14 +550,17 @@ struct GoalsFeature {
             case let .editorTitleChanged(title):
                 state.editorDraft.title = title
                 state.validationMessage = nil
+                persistAddGoalDraft(state)
                 return .none
 
             case let .editorEmojiChanged(emoji):
                 state.editorDraft.emoji = String(emoji.trimmingCharacters(in: .whitespacesAndNewlines).prefix(1))
+                persistAddGoalDraft(state)
                 return .none
 
             case let .editorNotesChanged(notes):
                 state.editorDraft.notes = notes
+                persistAddGoalDraft(state)
                 return .none
 
             case let .editorTargetDateEnabledChanged(isEnabled):
@@ -564,14 +571,17 @@ struct GoalsFeature {
                 } else {
                     state.editorDraft.targetDate = nil
                 }
+                persistAddGoalDraft(state)
                 return .none
 
             case let .editorTargetDateChanged(targetDate):
                 state.editorDraft.targetDate = targetDate
+                persistAddGoalDraft(state)
                 return .none
 
             case let .editorTagDraftChanged(tagDraft):
                 state.editorDraft.tagDraft = tagDraft
+                persistAddGoalDraft(state)
                 return .none
 
             case .editorAcceptTagAutocompleteTapped:
@@ -586,6 +596,7 @@ struct GoalsFeature {
                     suggestion,
                     in: state.editorDraft.tagDraft
                 )
+                persistAddGoalDraft(state)
                 return .none
 
             case .editorAddTagTapped:
@@ -597,10 +608,12 @@ struct GoalsFeature {
                 guard updatedTags != state.editorDraft.tags else { return .none }
                 state.editorDraft.tags = updatedTags
                 state.editorDraft.tagDraft = ""
+                persistAddGoalDraft(state)
                 return .none
 
             case let .editorRemoveTagTapped(tag):
                 state.editorDraft.tags = RoutineTag.removing(tag, from: state.editorDraft.tags)
+                persistAddGoalDraft(state)
                 return .none
 
             case let .editorToggleTagSelection(tag):
@@ -613,14 +626,17 @@ struct GoalsFeature {
                         availableTags: state.availableTags
                     )
                 }
+                persistAddGoalDraft(state)
                 return .none
 
             case let .editorColorChanged(color):
                 state.editorDraft.color = color
+                persistAddGoalDraft(state)
                 return .none
 
             case let .editorParentGoalChanged(parentGoalID):
                 state.editorDraft.parentGoalID = parentGoalID
+                persistAddGoalDraft(state)
                 return .none
 
             case .saveEditorTapped:
@@ -631,6 +647,9 @@ struct GoalsFeature {
                 return saveGoalEffect(state.editorDraft)
 
             case let .goalSaved(goalID):
+                if state.editorDraft.id == nil {
+                    creationDraftClient.clear(.goal)
+                }
                 state.isEditorPresented = false
                 state.validationMessage = nil
                 state.searchText = ""
@@ -897,6 +916,11 @@ struct GoalsFeature {
             }
             return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
         }
+    }
+
+    private func persistAddGoalDraft(_ state: State) {
+        guard state.editorDraft.id == nil else { return }
+        GoalCreationDraftSnapshot(draft: state.editorDraft).persist(client: creationDraftClient)
     }
 }
 

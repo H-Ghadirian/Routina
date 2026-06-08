@@ -26,6 +26,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0189](0189-auto-save-creation-drafts.md) adds interruption recovery for creation flows:** New task, goal, note, emotion, and event forms auto-save local drafts as the user edits; matching drafts restore when the creation surface opens again, while explicit Cancel and successful Save clear them and Mac Add Task remains a transient sidebar mode.
 - **[0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md) sets app-wide UI copy discipline:** Routina should prefer hierarchy, placement, native controls, familiar icons, chip state, enabled/disabled affordances, and clear placeholders over visible instructional copy; text remains for ambiguous, destructive, high-stakes, or domain-specific behavior.
 - **[0187](0187-support-multiple-task-places.md) extends task-place ownership:** Tasks store an ordered list of saved places while preserving `placeID` as the first selected place for compatibility; add/edit forms use a compact multi-select Places control, and filters/counts/backup should honor all selected places.
 - **[0186](0186-put-item-runout-in-repeat-type.md) refines [0176](0176-nest-runout-under-checklist-cadence.md) and [0177](0177-separate-interval-and-calendar-repeat-controls.md) for checklist routine cadence:** Routine forms keep Completion as Standard/Checklist and present `Item runout` inside Repeat type alongside `Interval` and `Calendar` when checklist completion is selected; the separate checklist cadence control is removed while stored runout modes remain unchanged.
@@ -287,3 +288,4 @@ These are ordered from newest resolver to oldest resolver.
 | [0186](0186-put-item-runout-in-repeat-type.md) | Put Item Runout in Repeat Type | Accepted | 2026-06-08 |
 | [0187](0187-support-multiple-task-places.md) | Support Multiple Task Places | Accepted | 2026-06-08 |
 | [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md) | Prefer Self-Explanatory UI Over Instructional Copy | Accepted | 2026-06-08 |
+| [0189](0189-auto-save-creation-drafts.md) | Auto-Save Creation Drafts | Accepted | 2026-06-08 |
