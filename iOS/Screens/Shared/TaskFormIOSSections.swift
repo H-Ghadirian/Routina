@@ -290,10 +290,6 @@ struct TaskFormIOSRepeatPatternSections: View {
     let presentation: TaskFormPresentation
 
     var body: some View {
-        if presentation.showsChecklistTimingControls {
-            checklistTimingSection
-        }
-
         if presentation.showsRepeatControls {
             repeatPatternSection
             recurrenceSpecificSections
@@ -304,30 +300,21 @@ struct TaskFormIOSRepeatPatternSections: View {
         }
     }
 
-    private var checklistTimingSection: some View {
-        Section(header: Text("Checklist Cadence")) {
-            Picker("Checklist Cadence", selection: model.checklistTimingMode) {
-                ForEach(ChecklistTimingMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
-                }
-            }
-            .pickerStyle(.segmented)
-        }
-    }
-
     @ViewBuilder
     private var repeatPatternSection: some View {
         Section(header: Text("Repeat Type")) {
-            Picker("Repeat Type", selection: model.repeatBasis) {
-                ForEach(RoutineRepeatBasis.allCases) { basis in
-                    Text(basis.rawValue).tag(basis)
+            Picker("Repeat Type", selection: model.routineRepeatType) {
+                ForEach(model.routineRepeatTypeCases) { repeatType in
+                    Text(repeatType.rawValue).tag(repeatType)
                 }
             }
             .pickerStyle(.segmented)
-            Text(presentation.recurrencePatternDescription).font(.caption).foregroundStyle(.secondary)
+            if model.routineRepeatType.wrappedValue != .itemRunout {
+                Text(presentation.recurrencePatternDescription).font(.caption).foregroundStyle(.secondary)
+            }
         }
 
-        if model.repeatBasis.wrappedValue == .calendar {
+        if model.routineRepeatType.wrappedValue == .calendar {
             calendarPatternSection
         }
     }
@@ -345,8 +332,8 @@ struct TaskFormIOSRepeatPatternSections: View {
 
     @ViewBuilder
     private var recurrenceSpecificSections: some View {
-        switch model.recurrenceKind.wrappedValue {
-        case .intervalDays:
+        switch model.routineRepeatType.wrappedValue {
+        case .interval:
             Section(header: Text("Frequency")) {
                 frequencyUnitPicker
             }
@@ -356,7 +343,18 @@ struct TaskFormIOSRepeatPatternSections: View {
                 }
             }
 
-        case .dailyTime:
+        case .calendar:
+            calendarSpecificSections
+
+        case .itemRunout:
+            EmptyView()
+        }
+    }
+
+    @ViewBuilder
+    private var calendarSpecificSections: some View {
+        switch model.recurrenceKind.wrappedValue {
+        case .intervalDays, .dailyTime:
             EmptyView()
 
         case .weekly:

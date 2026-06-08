@@ -128,7 +128,7 @@ struct TaskFormContent: View {
     }
 
     private func addDetailsCard(sections: [FormSection]) -> some View {
-        TaskFormMacSectionCard(title: "More Details") {
+        TaskFormMacSectionCard(title: "Add More Details") {
             LazyVGrid(
                 columns: [GridItem(.adaptive(minimum: 132), spacing: 8)],
                 alignment: .leading,

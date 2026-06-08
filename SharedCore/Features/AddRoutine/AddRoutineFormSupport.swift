@@ -45,6 +45,7 @@ enum AddRoutineFormEditor {
                 schedule.scheduleMode = .fixedInterval
             }
             basics.deadline = nil
+            basics.reminderAt = nil
         case .todo:
             schedule.scheduleMode = .oneOff
         }

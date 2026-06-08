@@ -29,6 +29,18 @@ enum TaskFormTimingMode: String, CaseIterable, Equatable, Identifiable, Sendable
     }
 }
 
+enum RoutineRepeatType: String, CaseIterable, Equatable, Hashable, Identifiable, Sendable {
+    case interval = "Interval"
+    case calendar = "Calendar"
+    case itemRunout = "Item runout"
+
+    var id: String { rawValue }
+
+    static func cases(supportsItemRunout: Bool) -> [Self] {
+        supportsItemRunout ? allCases : [.interval, .calendar]
+    }
+}
+
 enum TaskFormCompactSection: Hashable, Sendable {
     case name
     case taskType
@@ -102,11 +114,7 @@ struct TaskFormPresentation {
     }
 
     var showsRepeatControls: Bool {
-        scheduleMode.showsRoutineRepeatControls
-    }
-
-    var showsChecklistTimingControls: Bool {
-        taskType == .routine && scheduleMode.routineFinishMode == .checklist
+        taskType == .routine && scheduleMode != .oneOff
     }
 
     var derivedPriority: RoutineTaskPriority {

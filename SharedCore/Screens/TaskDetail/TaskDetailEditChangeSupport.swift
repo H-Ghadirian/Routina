@@ -55,7 +55,7 @@ struct TaskDetailEditChangeRequest {
         self.storyPoints = state.editStoryPoints
         self.deadline = state.editDeadline
         self.isAllDay = state.editIsAllDay
-        self.reminderAt = state.editReminderAt
+        self.reminderAt = state.editScheduleMode == .oneOff ? state.editReminderAt : nil
         self.priority = state.editPriority
         self.importance = state.editImportance
         self.urgency = state.editUrgency

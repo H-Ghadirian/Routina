@@ -158,12 +158,15 @@ struct TaskDetailFeatureCompletionTests {
     }
 
     @Test
-    func markAsDone_advancesCustomReminderAndSchedulesUpdatedReminder() async throws {
+    func markAsDone_ignoresRoutineExactReminderAndSchedulesCadenceReminder() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-04-25T10:00:00Z")
         let reminderAt = makeDate("2026-04-25T08:00:00Z")
-        let expectedReminderAt = makeDate("2026-04-28T08:00:00Z")
         let calendar = makeTestCalendar()
+        let expectedTriggerDate = NotificationPreferences.reminderDate(
+            on: makeDate("2026-04-28T10:00:00Z"),
+            calendar: calendar
+        )
         let task = makeTask(
             in: context,
             name: "Stretch",
@@ -189,7 +192,6 @@ struct TaskDetailFeatureCompletionTests {
         _ = await store.withExhaustivity(.off) {
             await store.send(.markAsDone) {
                 $0.taskRefreshID = 1
-                $0.task.reminderAt = expectedReminderAt
                 $0.isDoneToday = true
                 $0.daysSinceLastRoutine = 0
                 $0.overdueDays = 0
@@ -207,15 +209,14 @@ struct TaskDetailFeatureCompletionTests {
             )
             $0.logs = ((try? verificationContext.fetch(descriptor)) ?? []).filter { $0.taskID == task.id }
             $0.pendingLocalCompletionDates = []
-            $0.task.reminderAt = expectedReminderAt
             $0.isDoneToday = true
             $0.daysSinceLastRoutine = 0
             $0.overdueDays = 0
         }
 
         let persistedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
-        #expect(persistedTask.reminderAt == expectedReminderAt)
-        #expect(scheduledTriggerDates.value == [expectedReminderAt])
+        #expect(persistedTask.reminderAt == reminderAt)
+        #expect(scheduledTriggerDates.value == [expectedTriggerDate])
     }
 
     @Test

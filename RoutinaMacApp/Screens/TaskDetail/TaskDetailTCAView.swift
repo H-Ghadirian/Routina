@@ -200,7 +200,6 @@ detailBody
             LazyVStack(alignment: .leading, spacing: 14) {
                 todoHeaderSection
                 notificationDisabledWarningSection
-                optionalActionsSection
                 if shouldShowCommentsSection {
                     commentsSection
                 }
@@ -214,6 +213,7 @@ detailBody
                 if hasTaskExtras {
                     taskExtrasSection
                 }
+                optionalActionsSection
             }
             .padding(TaskDetailPlatformStyle.detailContentPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -385,7 +385,6 @@ detailBody
                 if store.task.focusModeEnabled {
                     focusSessionSection
                 }
-                optionalActionsSection
                 if shouldShowCommentsSection {
                     commentsSection
                 }
@@ -399,6 +398,7 @@ detailBody
                 if hasTaskExtras {
                     taskExtrasSection
                 }
+                optionalActionsSection
             }
             .padding(TaskDetailPlatformStyle.detailContentPadding)
             .frame(maxWidth: .infinity, alignment: .leading)

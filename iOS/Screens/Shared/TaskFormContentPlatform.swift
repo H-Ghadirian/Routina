@@ -127,7 +127,9 @@ struct TaskFormContent: View {
                 deadlineSection
             }
         case .reminder:
-            reminderSection
+            if model.supportsExactDateReminder {
+                reminderSection
+            }
         case .importanceUrgency:
             importanceUrgencySection
         case .pressure:
@@ -157,7 +159,7 @@ struct TaskFormContent: View {
         case .place:
             placeSection
         case .repeatPattern:
-            if presentation.showsRepeatControls || presentation.showsChecklistTimingControls {
+            if presentation.showsRepeatControls {
                 repeatPatternSections
             }
         case .delete:

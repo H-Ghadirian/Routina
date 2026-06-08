@@ -603,8 +603,10 @@ struct AddRoutineFeatureTests {
 
     @Test
     func taskTypeChanged_togglesBetweenRoutineAndTodoModes() async {
+        let reminderAt = makeDate("2026-04-25T14:30:00Z")
         let store = TestStore(
             initialState: makeState(
+                basics: AddRoutineBasicsState(reminderAt: reminderAt),
                 schedule: AddRoutineScheduleState(scheduleMode: .fixedIntervalChecklist)
             )
         ) {
@@ -617,6 +619,7 @@ struct AddRoutineFeatureTests {
 
         await store.send(.taskTypeChanged(.routine)) {
             $0.schedule.scheduleMode = .fixedInterval
+            $0.basics.reminderAt = nil
         }
     }
 

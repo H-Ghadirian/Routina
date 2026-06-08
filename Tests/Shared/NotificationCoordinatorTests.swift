@@ -119,7 +119,7 @@ struct NotificationCoordinatorTests {
     }
 
     @Test
-    func notificationPayload_usesCustomReminderAsExactTriggerForRoutine() {
+    func notificationPayload_ignoresExactDateReminderForRoutine() {
         let reminderAt = makeDate("2026-04-25T14:30:00Z")
         let task = RoutineTask(
             name: "Stretch",
@@ -134,9 +134,9 @@ struct NotificationCoordinatorTests {
             referenceDate: makeDate("2026-04-25T12:00:00Z")
         )
 
-        #expect(payload.triggerDate == reminderAt)
-        #expect(payload.isCustomReminder)
-        #expect(payload.usesExactTime)
+        #expect(payload.triggerDate != reminderAt)
+        #expect(!payload.isCustomReminder)
+        #expect(!payload.usesExactTime)
     }
 
     @Test

@@ -442,7 +442,7 @@ struct TaskFormMacBehaviorCard: View {
     private var schedulingContentMinHeight: CGFloat {
         switch model.taskType.wrappedValue {
         case .todo:
-            return 180
+            return 130
         case .routine:
             if model.scheduleMode.wrappedValue.isChecklistDrivenMode {
                 return 240
@@ -497,7 +497,9 @@ struct TaskFormMacBehaviorCard: View {
                 }
             }
 
-            reminderControl
+            if model.supportsExactDateReminder {
+                reminderControl
+            }
 
             if model.taskType.wrappedValue == .todo {
                 todoDeadlineControl
@@ -583,26 +585,9 @@ struct TaskFormMacBehaviorCard: View {
     @ViewBuilder
     private var routineCadenceControls: some View {
         VStack(alignment: .leading, spacing: 18) {
-            if presentation.showsChecklistTimingControls {
-                checklistTimingControl
-            }
-
             if presentation.showsRepeatControls {
                 repeatPatternControls
             }
-        }
-    }
-
-    private var checklistTimingControl: some View {
-        TaskFormMacControlBlock(title: "Checklist cadence") {
-            Picker("Checklist cadence", selection: model.checklistTimingMode) {
-                ForEach(ChecklistTimingMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
-                }
-            }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            .fixedSize()
         }
     }
 
@@ -637,9 +622,9 @@ struct TaskFormMacBehaviorCard: View {
     private var repeatPatternControls: some View {
         TaskFormMacControlBlock(title: "Repeat type") {
             HStack(spacing: 0) {
-                Picker("Repeat type", selection: model.repeatBasis) {
-                    ForEach(RoutineRepeatBasis.allCases) { basis in
-                        Text(basis.rawValue).tag(basis)
+                Picker("Repeat type", selection: model.routineRepeatType) {
+                    ForEach(model.routineRepeatTypeCases) { repeatType in
+                        Text(repeatType.rawValue).tag(repeatType)
                     }
                 }
                 .labelsHidden()
@@ -649,16 +634,26 @@ struct TaskFormMacBehaviorCard: View {
             }
         }
 
-        if model.repeatBasis.wrappedValue == .calendar {
+        if model.routineRepeatType.wrappedValue == .calendar {
             calendarPatternControl
         }
 
-        switch model.recurrenceKind.wrappedValue {
-        case .intervalDays:
+        switch model.routineRepeatType.wrappedValue {
+        case .interval:
             TaskFormMacControlBlock(title: "Repeat") {
                 frequencyStepper(prefix: intervalFrequencyPrefix)
             }
-        case .dailyTime:
+        case .calendar:
+            calendarSpecificControls
+        case .itemRunout:
+            EmptyView()
+        }
+    }
+
+    @ViewBuilder
+    private var calendarSpecificControls: some View {
+        switch model.recurrenceKind.wrappedValue {
+        case .intervalDays, .dailyTime:
             EmptyView()
         case .weekly:
             weeklyControls

@@ -355,57 +355,5 @@ extension RoutineTask {
         if usesRollingScheduleAnchor && shouldUpdateScheduleAnchor(with: completedAt) {
             scheduleAnchor = completedAt
         }
-        advanceReminderAfterCompletion(completedAt: completedAt, calendar: calendar)
-    }
-
-    private func advanceReminderAfterCompletion(completedAt: Date, calendar: Calendar) {
-        guard !isOneOffTask, let reminderAt else { return }
-        guard let nextReminderAt = nextReminderDateAfterCompletion(
-            completedAt: completedAt,
-            previousReminderAt: reminderAt,
-            calendar: calendar
-        ) else {
-            return
-        }
-        self.reminderAt = nextReminderAt
-    }
-
-    private func nextReminderDateAfterCompletion(
-        completedAt: Date,
-        previousReminderAt: Date,
-        calendar: Calendar
-    ) -> Date? {
-        var candidate = previousReminderAt
-        var remainingAdvances = 10_000
-
-        repeat {
-            guard let nextCandidate = nextReminderOccurrence(after: candidate, calendar: calendar) else {
-                return nil
-            }
-            candidate = nextCandidate
-            remainingAdvances -= 1
-        } while candidate <= completedAt && remainingAdvances > 0
-
-        return candidate > completedAt ? candidate : nil
-    }
-
-    private func nextReminderOccurrence(after date: Date, calendar: Calendar) -> Date? {
-        switch recurrenceRule.kind {
-        case .intervalDays:
-            return calendar.date(
-                byAdding: .day,
-                value: max(recurrenceRule.interval, 1),
-                to: date
-            )
-
-        case .dailyTime:
-            return calendar.date(byAdding: .day, value: 1, to: date)
-
-        case .weekly:
-            return calendar.date(byAdding: .day, value: 7, to: date)
-
-        case .monthlyDay:
-            return calendar.date(byAdding: .month, value: 1, to: date)
-        }
     }
 }

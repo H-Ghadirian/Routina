@@ -174,6 +174,37 @@ struct AddRoutineFeatureSaveTests {
     }
 
     @Test
+    func saveTapped_omitsExactDateReminderForRoutines() async {
+        let reminderAt = makeDate("2026-04-25T14:30:00Z")
+        let capturedRequest = LockIsolated<AddRoutineSaveRequest?>(nil)
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(
+                    routineName: "Water plants",
+                    reminderAt: reminderAt
+                ),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(scheduleMode: .fixedInterval)
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { request in
+                    capturedRequest.withValue { $0 = request }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.saveTapped)
+
+        #expect(capturedRequest.value?.scheduleMode == .fixedInterval)
+        #expect(capturedRequest.value?.reminderAt == nil)
+    }
+
+    @Test
     func makeRoutine_persistsAllDayFlagFromSaveRequest() {
         let deadline = makeDate("2026-03-22T00:00:00Z")
         let request = makeSaveRequest(

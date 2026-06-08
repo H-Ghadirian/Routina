@@ -210,6 +210,61 @@ extension TaskFormModel {
         )
     }
 
+    var supportsItemRunoutRepeatType: Bool {
+        taskType.wrappedValue == .routine
+            && scheduleMode.wrappedValue.routineFinishMode == .checklist
+    }
+
+    var routineRepeatTypeCases: [RoutineRepeatType] {
+        RoutineRepeatType.cases(supportsItemRunout: supportsItemRunoutRepeatType)
+    }
+
+    var routineRepeatType: Binding<RoutineRepeatType> {
+        let taskType = taskType
+        let scheduleMode = scheduleMode
+        let recurrenceKind = recurrenceKind
+
+        return Binding(
+            get: {
+                if scheduleMode.wrappedValue.isChecklistDrivenMode {
+                    return .itemRunout
+                }
+
+                switch recurrenceKind.wrappedValue.repeatBasis {
+                case .interval:
+                    return .interval
+                case .calendar:
+                    return .calendar
+                }
+            },
+            set: { repeatType in
+                switch repeatType {
+                case .interval:
+                    if scheduleMode.wrappedValue.isChecklistDrivenMode {
+                        scheduleMode.wrappedValue = Self.nonRunoutScheduleMode(from: scheduleMode.wrappedValue)
+                    }
+                    recurrenceKind.wrappedValue = recurrenceKind.wrappedValue.replacingRepeatBasis(.interval)
+
+                case .calendar:
+                    if scheduleMode.wrappedValue.isChecklistDrivenMode {
+                        scheduleMode.wrappedValue = Self.nonRunoutScheduleMode(from: scheduleMode.wrappedValue)
+                    }
+                    recurrenceKind.wrappedValue = recurrenceKind.wrappedValue.replacingRepeatBasis(.calendar)
+
+                case .itemRunout:
+                    guard taskType.wrappedValue == .routine,
+                          scheduleMode.wrappedValue.routineFinishMode == .checklist
+                    else { return }
+
+                    scheduleMode.wrappedValue = RoutineScheduleMode.routineMode(
+                        behavior: scheduleMode.wrappedValue.scheduleBehavior,
+                        format: .runout
+                    )
+                }
+            }
+        )
+    }
+
     var calendarRecurrenceKind: Binding<RoutineRecurrenceRule.Kind> {
         let recurrenceKind = recurrenceKind
         return Binding(
@@ -271,9 +326,20 @@ extension TaskFormModel {
             || scheduleMode.wrappedValue.isRoutineModeRequiringChecklistItems
     }
 
+    var supportsExactDateReminder: Bool {
+        taskType.wrappedValue == .todo
+    }
+
     private var availableCompactSections: [TaskFormCompactSection] {
         TaskFormCompactSection.defaultOrder.filter { section in
-            section != .checklist || shouldShowChecklistSection
+            switch section {
+            case .checklist:
+                return shouldShowChecklistSection
+            case .reminder:
+                return supportsExactDateReminder
+            default:
+                return true
+            }
         }
     }
 
@@ -285,9 +351,12 @@ extension TaskFormModel {
         var sections: Set<TaskFormCompactSection> = [
             .name,
             .taskType,
-            .deadline,
-            .reminder
+            .deadline
         ]
+
+        if supportsExactDateReminder {
+            sections.insert(.reminder)
+        }
 
         if scheduleMode.wrappedValue.taskType == .routine {
             sections.insert(.scheduleType)
@@ -360,5 +429,13 @@ extension TaskFormModel {
 
     private func hasText(_ value: String) -> Bool {
         !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private static func nonRunoutScheduleMode(from scheduleMode: RoutineScheduleMode) -> RoutineScheduleMode {
+        let fallbackFormat: RoutineFormat = scheduleMode.routineFinishMode == .checklist ? .checklist : .standard
+        return RoutineScheduleMode.routineMode(
+            behavior: scheduleMode.scheduleBehavior,
+            format: fallbackFormat
+        )
     }
 }

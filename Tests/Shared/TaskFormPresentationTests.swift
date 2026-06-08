@@ -19,17 +19,13 @@ struct TaskFormPresentationTests {
 
         #expect(fixed.isStepBasedMode == false)
         #expect(fixed.showsRepeatControls)
-        #expect(fixed.showsChecklistTimingControls)
         #expect(fixed.scheduleModeDescription == "One scheduled routine that finishes after every checklist item is done.")
         #expect(fixed.checklistSectionDescription(includesDerivedChecklistDueDetail: false) == "The routine is done when every checklist item is completed.")
-        #expect(runout.showsRepeatControls == false)
-        #expect(runout.showsChecklistTimingControls)
+        #expect(runout.showsRepeatControls)
         #expect(gentle.showsRepeatControls)
-        #expect(gentle.showsChecklistTimingControls == false)
 
         #expect(oneOff.isStepBasedMode)
         #expect(oneOff.showsRepeatControls == false)
-        #expect(oneOff.showsChecklistTimingControls == false)
         #expect(oneOff.notesHelpText == "Capture extra context, links, or reminders for this todo.")
         #expect(oneOff.checklistSectionDescription(includesDerivedChecklistDueDetail: false) == "Use checklist items for parts you want to tick off before finishing the todo.")
     }
@@ -104,6 +100,70 @@ struct TaskFormPresentationTests {
     }
 
     @Test
+    func routineRepeatTypeOptionsIncludeItemRunoutOnlyForChecklistRoutines() {
+        let standard = taskFormModel(scheduleMode: .fixedInterval)
+        let checklist = taskFormModel(scheduleMode: .fixedIntervalChecklist)
+        let runout = taskFormModel(scheduleMode: .derivedFromChecklist)
+        let todo = taskFormModel(taskType: .todo, scheduleMode: .oneOff)
+
+        #expect(standard.supportsItemRunoutRepeatType == false)
+        #expect(standard.routineRepeatTypeCases == [.interval, .calendar])
+        #expect(standard.routineRepeatType.wrappedValue == .interval)
+        #expect(checklist.supportsItemRunoutRepeatType)
+        #expect(checklist.routineRepeatTypeCases == [.interval, .calendar, .itemRunout])
+        #expect(runout.supportsItemRunoutRepeatType)
+        #expect(runout.routineRepeatTypeCases == [.interval, .calendar, .itemRunout])
+        #expect(runout.routineRepeatType.wrappedValue == .itemRunout)
+        #expect(todo.supportsItemRunoutRepeatType == false)
+        #expect(todo.routineRepeatTypeCases == [.interval, .calendar])
+    }
+
+    @Test @MainActor
+    func routineRepeatTypeBindingSwitchesChecklistRunoutScheduleModes() {
+        var taskType = RoutineTaskType.routine
+        var scheduleMode = RoutineScheduleMode.fixedIntervalChecklist
+        var recurrenceKind = RoutineRecurrenceRule.Kind.weekly
+        let model = taskFormModel(
+            taskTypeBinding: Binding(
+                get: { taskType },
+                set: { taskType = $0 }
+            ),
+            scheduleModeBinding: Binding(
+                get: { scheduleMode },
+                set: { scheduleMode = $0 }
+            ),
+            recurrenceKindBinding: Binding(
+                get: { recurrenceKind },
+                set: { recurrenceKind = $0 }
+            )
+        )
+
+        #expect(model.routineRepeatType.wrappedValue == .calendar)
+
+        model.routineRepeatType.wrappedValue = .itemRunout
+        #expect(scheduleMode == .derivedFromChecklist)
+        #expect(recurrenceKind == .weekly)
+        #expect(model.routineRepeatType.wrappedValue == .itemRunout)
+
+        model.routineRepeatType.wrappedValue = .interval
+        #expect(scheduleMode == .fixedIntervalChecklist)
+        #expect(recurrenceKind == .intervalDays)
+        #expect(model.routineRepeatType.wrappedValue == .interval)
+
+        scheduleMode = .softIntervalChecklist
+        model.routineRepeatType.wrappedValue = .itemRunout
+        #expect(scheduleMode == .softDerivedFromChecklist)
+
+        model.routineRepeatType.wrappedValue = .calendar
+        #expect(scheduleMode == .softIntervalChecklist)
+        #expect(recurrenceKind == .dailyTime)
+
+        taskType = .todo
+        model.routineRepeatType.wrappedValue = .itemRunout
+        #expect(scheduleMode == .softIntervalChecklist)
+    }
+
+    @Test
     func durationEntryPresentationBuildsAndClampsHourMinuteValues() {
         #expect(
             TaskFormDurationEntryPresentation.combinedMinutes(
@@ -172,6 +232,8 @@ struct TaskFormPresentationTests {
         #expect(existingChecklistRoutine.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
         #expect(!todo.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
         #expect(todo.visibleCompactSections(isShowingMoreDetails: true).contains(.checklist))
+        #expect(!routine.visibleCompactSections(isShowingMoreDetails: true).contains(.reminder))
+        #expect(todo.visibleCompactSections(isShowingMoreDetails: false).contains(.reminder))
     }
 
     @Test
@@ -220,12 +282,16 @@ struct TaskFormPresentationTests {
     private func taskFormModel(
         taskType: RoutineTaskType = .routine,
         scheduleMode: RoutineScheduleMode = .fixedInterval,
-        checklistItems: [RoutineChecklistItem] = []
+        checklistItems: [RoutineChecklistItem] = [],
+        recurrenceKind: RoutineRecurrenceRule.Kind = .intervalDays,
+        taskTypeBinding: Binding<RoutineTaskType>? = nil,
+        scheduleModeBinding: Binding<RoutineScheduleMode>? = nil,
+        recurrenceKindBinding: Binding<RoutineRecurrenceRule.Kind>? = nil
     ) -> TaskFormModel {
         TaskFormModel(
             name: .constant("Task"),
             nameValidationMessage: nil,
-            taskType: .constant(taskType),
+            taskType: taskTypeBinding ?? .constant(taskType),
             emoji: .constant("✨"),
             emojiOptions: [],
             isEmojiPickerPresented: .constant(false),
@@ -264,7 +330,7 @@ struct TaskFormPresentationTests {
             availableRelationshipTasks: [],
             onAddRelationship: { _, _ in },
             onRemoveRelationship: { _ in },
-            scheduleMode: .constant(scheduleMode),
+            scheduleMode: scheduleModeBinding ?? .constant(scheduleMode),
             stepDraft: .constant(""),
             routineSteps: [],
             onAddStep: {},
@@ -278,7 +344,7 @@ struct TaskFormPresentationTests {
             onRemoveChecklistItem: { _ in },
             availablePlaces: [],
             selectedPlaceID: .constant(nil),
-            recurrenceKind: .constant(.intervalDays),
+            recurrenceKind: recurrenceKindBinding ?? .constant(recurrenceKind),
             recurrenceHasExplicitTime: .constant(false),
             recurrenceTimeOfDay: .constant(Date()),
             recurrenceWeekday: .constant(2),

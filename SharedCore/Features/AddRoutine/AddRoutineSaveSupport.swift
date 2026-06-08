@@ -185,7 +185,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.links = sanitizedLinks
         self.deadline = schedule.scheduleMode.taskType == .todo ? basics.deadline : nil
         self.isAllDay = basics.isAllDay
-        self.reminderAt = basics.reminderAt
+        self.reminderAt = schedule.scheduleMode == .oneOff ? basics.reminderAt : nil
         self.priority = AddRoutinePriorityMatrix.priority(
             importance: basics.importance,
             urgency: basics.urgency

@@ -252,7 +252,8 @@ extension TaskDetailFeature.State {
     }
 
     var reminderMetadataText: String? {
-        TaskDetailDateMetadataPresentation.reminderMetadataText(reminderAt: task.reminderAt)
+        guard task.isOneOffTask else { return nil }
+        return TaskDetailDateMetadataPresentation.reminderMetadataText(reminderAt: task.reminderAt)
     }
 
     var notificationDisabledWarningText: String? {
@@ -272,7 +273,7 @@ extension TaskDetailFeature.State {
     }
 
     var expectsClockTimeNotification: Bool {
-        if task.reminderAt != nil {
+        if task.isOneOffTask, task.reminderAt != nil {
             return NotificationCoordinator.shouldScheduleNotification(for: task, referenceDate: Date())
         }
         if task.isOneOffTask {

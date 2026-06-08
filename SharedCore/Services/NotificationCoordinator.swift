@@ -388,10 +388,9 @@ enum NotificationCoordinator {
         for task: RoutineTask,
         referenceDate: Date
     ) -> Date? {
+        guard task.isOneOffTask else { return nil }
         guard let reminderAt = task.reminderAt, reminderAt > referenceDate else { return nil }
-        if task.isOneOffTask {
-            guard !task.isCompletedOneOff, !task.isCanceledOneOff else { return nil }
-        }
+        guard !task.isCompletedOneOff, !task.isCanceledOneOff else { return nil }
         return reminderAt
     }
 
