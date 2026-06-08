@@ -370,10 +370,10 @@ private struct DayPlanHeaderView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Spacer(minLength: 16)
-
             visibleRangeModePicker
-                .frame(width: 150)
+                .frame(width: 128)
+
+            Spacer(minLength: 16)
 
             DatePicker("Selected day", selection: selectedDateBinding, displayedComponents: [.date])
                 .labelsHidden()
@@ -440,7 +440,9 @@ private struct DayPlanHeaderView: View {
                 Text(mode.title).tag(mode)
             }
         }
+        .labelsHidden()
         .pickerStyle(.segmented)
+        .accessibilityLabel("Planner range")
     }
 
     private var visibleRangeModeBinding: Binding<DayPlanVisibleRangeMode> {
