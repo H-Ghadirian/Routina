@@ -110,9 +110,6 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
         if task.scheduleMode.isChecklistDrivenMode {
             return "Checklist-driven"
         }
-        if task.isSoftIntervalRoutine {
-            return "Once in a while"
-        }
         return task.recurrenceRule.displayText()
     }
 

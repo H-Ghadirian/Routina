@@ -128,6 +128,18 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func gentleRoutineFrequencyUsesConfiguredCadence() {
+        let task = RoutineTask(
+            name: "Stretch",
+            scheduleMode: .softInterval,
+            interval: 1
+        )
+        let state = TaskDetailFeature.State(task: task)
+
+        #expect(state.frequencyText == "Every day")
+    }
+
+    @Test
     func statusMetadataItemsBuildSharedTaskDetailRows() {
         let referenceDate = makeDate("2026-04-25T10:00:00Z")
         let task = RoutineTask(

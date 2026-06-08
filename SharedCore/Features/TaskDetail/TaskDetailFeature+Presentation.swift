@@ -310,9 +310,6 @@ extension TaskDetailFeature.State {
         if task.isOneOffTask {
             return "One-off todo"
         }
-        if task.isSoftIntervalRoutine {
-            return "Once in a while"
-        }
         if task.isChecklistDriven {
             return "Checklist-driven"
         }

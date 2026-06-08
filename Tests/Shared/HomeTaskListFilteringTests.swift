@@ -705,6 +705,24 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func rowMetadataShowsGentleRoutineCadence() {
+        let task = TestTaskDisplay(
+            name: "Stretch",
+            interval: 1,
+            recurrenceRule: .interval(days: 1),
+            scheduleMode: .softInterval,
+            isSoftIntervalRoutine: true
+        )
+        let presenter = HomeRoutineDisplayMetadataPresenter(
+            filtering: makeFiltering(),
+            showPersianDates: false,
+            badgeMode: .complete
+        )
+
+        #expect(presenter.rowMetadataText(for: task) == "Every day • 0 completions • Ready whenever")
+    }
+
+    @Test
     func taskRowVisibilityRoundTripsHiddenFields() {
         let visibility = HomeTaskRowVisibility(hiddenFields: [.tags, .icon, .colorBadge, .pressure])
         let rawValue = visibility.storageRawValue
