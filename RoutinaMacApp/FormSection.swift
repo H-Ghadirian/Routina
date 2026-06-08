@@ -111,7 +111,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
             return sections
         }
 
-        let primarySections: Set<FormSection> = [.identity, .behavior]
+        let primarySections: Set<FormSection> = [.identity, .behavior, .dangerZone]
         let effectiveRevealedSections = allowsOptionalChecklistReveal
             ? revealedSections
             : revealedSections.subtracting([.checklist])

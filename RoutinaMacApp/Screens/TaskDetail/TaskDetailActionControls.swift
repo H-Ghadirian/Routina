@@ -61,11 +61,7 @@ struct TaskDetailTodoStateSegmentedPicker: View {
                 }
             } label: {
                 HStack(alignment: .center, spacing: 8) {
-                    Text("STATE")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.secondary)
-
-                    stateSummaryPill(currentState)
+                    stateHeaderLabel(for: currentState)
 
                     Spacer(minLength: 8)
 
@@ -91,22 +87,9 @@ struct TaskDetailTodoStateSegmentedPicker: View {
                             store.send(.setBlockedStateConfirmation(true))
                         } else {
                             store.send(.todoStateChanged(newState))
-                            withAnimation(.easeInOut(duration: 0.18)) {
-                                isExpanded = false
-                            }
                         }
                     }
                 )
-
-                if let timingSummary {
-                    Divider()
-                        .padding(.vertical, 6)
-
-                    TodoStateTimingInlineView(
-                        summary: timingSummary,
-                        showPersianDates: showPersianDates
-                    )
-                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -138,20 +121,63 @@ struct TaskDetailTodoStateSegmentedPicker: View {
         .onChange(of: store.task.id) { _, _ in
             isExpanded = false
         }
-        .onChange(of: store.task.todoStateRawValue) { _, _ in
-            isExpanded = false
-        }
     }
 
-    private func stateSummaryPill(_ state: TodoState) -> some View {
+    private func stateHeaderLabel(for state: TodoState) -> some View {
         let tint = TaskDetailPriorityPresentation.todoStateTint(for: state, style: .compactPill)
+        let detailText = stateTimingDetailText(for: state)
 
-        return Label(state.displayTitle, systemImage: state.systemImage)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(tint)
-            .lineLimit(1)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(tint.opacity(0.13), in: Capsule())
+        return HStack(spacing: 7) {
+            Text(state.displayTitle)
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(tint)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(tint.opacity(0.14), in: Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(tint.opacity(0.22), lineWidth: 1)
+                )
+
+            if let detailText {
+                Text(detailText)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .lineLimit(1)
+        .minimumScaleFactor(0.85)
+    }
+
+    private func stateTimingDetailText(for state: TodoState) -> String? {
+        guard let timingSummary else {
+            return nil
+        }
+
+        if timingSummary.currentState != nil,
+           let elapsedDays = timingSummary.currentStateElapsedDays,
+           let startedAt = timingSummary.currentStateStartedAt {
+            return "for \(durationText(elapsedDays)) since \(dateText(startedAt))"
+        }
+
+        if state == .done,
+           let completedLeadDays = timingSummary.completedLeadDays {
+            return "after \(durationText(completedLeadDays)) since \(dateText(timingSummary.createdAt))"
+        }
+
+        return "since \(dateText(timingSummary.createdAt))"
+    }
+
+    private func durationText(_ days: Int) -> String {
+        let clampedDays = max(days, 0)
+        return clampedDays == 1 ? "1 day" : "\(clampedDays) days"
+    }
+
+    private func dateText(_ date: Date) -> String {
+        PersianDateDisplay.appendingSupplementaryDate(
+            to: date.formatted(date: .abbreviated, time: .omitted),
+            for: date,
+            enabled: showPersianDates
+        )
     }
 }

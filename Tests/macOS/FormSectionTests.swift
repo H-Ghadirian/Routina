@@ -51,7 +51,7 @@ struct FormSectionTests {
             populatedSections: [.notes, .tags]
         )
 
-        #expect(collapsed == [.identity, .behavior, .tags, .notes])
+        #expect(collapsed == [.identity, .behavior, .tags, .notes, .dangerZone])
         #expect(expanded == sections)
     }
 
