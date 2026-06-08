@@ -193,7 +193,6 @@ struct TaskFormContent: View {
     private var identityCard: some View {
         TaskFormMacIdentityCard(
             model: model,
-            previewPlaceSummary: previewPlaceSummary,
             smartNameDraft: smartNameDraft,
             smartNameCalendar: calendar,
             onApplySmartName: model.onApplySmartName
@@ -573,10 +572,6 @@ struct TaskFormContent: View {
             for: model.deadline.wrappedValue,
             enabled: showPersianDates
         )
-    }
-
-    private var previewPlaceSummary: String? {
-        model.selectedPlaceSummaries.isEmpty ? nil : model.selectedPlaceMenuTitle
     }
 
     // MARK: - Utilities

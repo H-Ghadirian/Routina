@@ -156,7 +156,6 @@ private struct TaskFormMacScheduleBehaviorPreviewBadge: View {
 
 struct TaskFormMacIdentityCard<NameField: View>: View {
     let model: TaskFormModel
-    let previewPlaceSummary: String?
     let smartNameDraft: RoutinaQuickAddDraft?
     let smartNameCalendar: Calendar
     let onApplySmartName: (() -> Void)?
@@ -172,7 +171,6 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
                         nameField
                         validationMessage
                         smartNamePreview
-                        previewPills
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -189,30 +187,6 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
                 .font(.caption)
                 .foregroundStyle(.red)
         }
-    }
-
-    @ViewBuilder
-    private var previewPills: some View {
-        if !previewPillItems.isEmpty {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(previewPillItems) { item in
-                        TaskFormMacInfoPill(title: item.title, systemImage: item.systemImage)
-                    }
-                }
-                .padding(.vertical, 1)
-            }
-            .frame(height: 28)
-            .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private var previewPillItems: [PreviewPillItem] {
-        var items: [PreviewPillItem] = []
-        if let previewPlaceSummary {
-            items.append(PreviewPillItem(title: previewPlaceSummary, systemImage: "mappin.and.ellipse"))
-        }
-        return items
     }
 
     @ViewBuilder
@@ -406,13 +380,6 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
         .contentShape(Circle())
         .help("Use \(emoji)")
         .accessibilityLabel("Use \(emoji) emoji")
-    }
-
-    private struct PreviewPillItem: Identifiable {
-        let title: String
-        let systemImage: String
-
-        var id: String { "\(title):\(systemImage)" }
     }
 
     private struct SmartNameRow: Identifiable {
