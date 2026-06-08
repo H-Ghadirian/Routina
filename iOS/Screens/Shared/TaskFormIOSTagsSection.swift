@@ -2,20 +2,13 @@ import SwiftUI
 
 struct TaskFormIOSTagsSection: View {
     let model: TaskFormModel
-    let presentation: TaskFormPresentation
     let tagColor: (String) -> Color?
     let onManageTags: () -> Void
 
     var body: some View {
         Section(header: Text("Tags")) {
             tagComposer
-            relatedTagSuggestionsContent
-            availableTagSuggestionsContent
-            manageTagsButton
-            selectedTagsContent
-            Text(presentation.tagSectionHelpText)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            tagChipsContent
         }
     }
 
@@ -42,141 +35,128 @@ struct TaskFormIOSTagsSection: View {
                                 Capsule()
                                     .stroke(tint.opacity(0.28), lineWidth: 1)
                             }
-                    }
+                        }
                     .buttonStyle(.plain)
                     .keyboardShortcut(.tab, modifiers: [])
                 }
             }
 
-            Button("Add") { model.onAddTag() }
-                .disabled(RoutineTag.parseDraft(model.tagDraft.wrappedValue).isEmpty)
+            Button { model.onAddTag() } label: {
+                Image(systemName: "plus")
+            }
+            .disabled(RoutineTag.parseDraft(model.tagDraft.wrappedValue).isEmpty)
+            .accessibilityLabel("Add tag")
+
+            Button(action: onManageTags) {
+                Image(systemName: "slider.horizontal.3")
+            }
+            .accessibilityLabel("Manage Tags")
         }
     }
 
     @ViewBuilder
-    private var selectedTagsContent: some View {
-        if model.routineTags.isEmpty {
-            Text(model.availableTags.isEmpty ? "No tags yet" : "No selected tags yet")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        } else {
+    private var tagChipsContent: some View {
+        if !model.routineTags.isEmpty || !unselectedRelatedTags.isEmpty || !unselectedAvailableTags.isEmpty {
             LazyVGrid(
                 columns: [GridItem(.adaptive(minimum: 90), spacing: 8)],
                 alignment: .leading,
                 spacing: 8
             ) {
                 ForEach(model.routineTags, id: \.self) { tag in
-                    let tint = tagColor(tag) ?? .accentColor
-                    Button { model.onRemoveTag(tag) } label: {
-                        HStack(spacing: 6) {
-                            Text("#\(tag)").lineLimit(1)
-                            Image(systemName: "xmark.circle.fill").font(.caption)
-                        }
-                        .foregroundStyle(tint)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .routinaGlassPill(tint: tint, tintOpacity: 0.14, interactive: true)
-                        .overlay {
-                            Capsule()
-                                .stroke(tint.opacity(0.28), lineWidth: 1)
-                        }
-                    }
-                    .buttonStyle(.plain)
+                    selectedTagButton(tag)
+                }
+
+                ForEach(unselectedRelatedTags, id: \.self) { tag in
+                    relatedTagButton(tag)
+                }
+
+                ForEach(unselectedAvailableTags, id: \.self) { tag in
+                    availableTagButton(tag)
                 }
             }
             .padding(.vertical, 4)
         }
     }
 
-    private var manageTagsButton: some View {
-        Button(action: onManageTags) {
-            Label("Manage Tags", systemImage: "slider.horizontal.3")
+    private func selectedTagButton(_ tag: String) -> some View {
+        let tint = tagColor(tag) ?? .accentColor
+        return Button { model.onRemoveTag(tag) } label: {
+            HStack(spacing: 6) {
+                Text("#\(tag)").lineLimit(1)
+                Image(systemName: "xmark.circle.fill").font(.caption)
+            }
+            .foregroundStyle(tint)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .routinaGlassPill(tint: tint, tintOpacity: 0.14, interactive: true)
+            .overlay {
+                Capsule()
+                    .stroke(tint.opacity(0.28), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Remove tag \(tag)")
+    }
+
+    private func relatedTagButton(_ tag: String) -> some View {
+        let tint = tagColor(tag) ?? .orange
+        return Button { model.onToggleTagSelection(tag) } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.caption)
+                Text("#\(tag)").lineLimit(1)
+            }
+            .foregroundStyle(tint)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .routinaGlassPill(tint: tint, tintOpacity: 0.10, interactive: true)
+            .overlay {
+                Capsule()
+                    .stroke(tint.opacity(0.45), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Add suggested related tag \(tag)")
+    }
+
+    private func availableTagButton(_ tag: String) -> some View {
+        let summary = model.availableTagSummaries.first(where: {
+            RoutineTag.normalized($0.name) == RoutineTag.normalized(tag)
+        })
+        let tint = tagColor(tag) ?? .secondary
+
+        return Button { model.onToggleTagSelection(tag) } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "plus.circle")
+                    .font(.caption)
+                Text(tagChipTitle(tag: tag, summary: summary)).lineLimit(1)
+            }
+            .foregroundStyle(tint)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .routinaGlassPill(
+                tint: tint,
+                tintOpacity: 0.10,
+                interactive: true
+            )
+            .overlay {
+                Capsule()
+                    .stroke(tint.opacity(0.24), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Add tag \(tag)")
+    }
+
+    private var unselectedAvailableTags: [String] {
+        model.availableTags.filter {
+            !RoutineTag.contains($0, in: model.routineTags)
+                && !RoutineTag.contains($0, in: unselectedRelatedTags)
         }
     }
 
-    @ViewBuilder
-    private var relatedTagSuggestionsContent: some View {
-        let suggestions = model.suggestedRelatedTags
-        if !suggestions.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Suggested related tags")
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.secondary)
-                LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 90), spacing: 8)],
-                    alignment: .leading,
-                    spacing: 8
-                ) {
-                    ForEach(suggestions, id: \.self) { tag in
-                        let tint = tagColor(tag) ?? .orange
-                        Button { model.onToggleTagSelection(tag) } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "plus.circle.fill")
-                                    .font(.caption)
-                                Text("#\(tag)").lineLimit(1)
-                            }
-                            .foregroundStyle(tint)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .routinaGlassPill(tint: tint, tintOpacity: 0.10, interactive: true)
-                            .overlay {
-                                Capsule()
-                                    .stroke(tint.opacity(0.45), lineWidth: 1)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Add suggested related tag \(tag)")
-                    }
-                }
-                .padding(.vertical, 4)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var availableTagSuggestionsContent: some View {
-        if !model.availableTags.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Choose from existing tags")
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.secondary)
-                LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 90), spacing: 8)],
-                    alignment: .leading,
-                    spacing: 8
-                ) {
-                    ForEach(model.availableTags, id: \.self) { tag in
-                        let isSelected = RoutineTag.contains(tag, in: model.routineTags)
-                        let summary = model.availableTagSummaries.first(where: {
-                            RoutineTag.normalized($0.name) == RoutineTag.normalized(tag)
-                        })
-                        let tint = tagColor(tag) ?? .accentColor
-                        Button { model.onToggleTagSelection(tag) } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: isSelected ? "checkmark.circle.fill" : "plus.circle")
-                                    .font(.caption)
-                                Text(tagChipTitle(tag: tag, summary: summary)).lineLimit(1)
-                            }
-                            .foregroundStyle(isSelected ? tint : (tagColor(tag) ?? .secondary))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .routinaGlassPill(
-                                tint: isSelected ? tint : (tagColor(tag) ?? .secondary),
-                                tintOpacity: isSelected ? 0.16 : 0.10,
-                                interactive: true
-                            )
-                            .overlay {
-                                Capsule()
-                                    .stroke((tagColor(tag) ?? .secondary).opacity(0.24), lineWidth: 1)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("\(isSelected ? "Remove" : "Add") tag \(tag)")
-                    }
-                }
-                .padding(.vertical, 4)
-            }
-        }
+    private var unselectedRelatedTags: [String] {
+        model.suggestedRelatedTags.filter { !RoutineTag.contains($0, in: model.routineTags) }
     }
 
     private func tagChipTitle(tag: String, summary: RoutineTagSummary?) -> String {

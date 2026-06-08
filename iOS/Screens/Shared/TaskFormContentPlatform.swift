@@ -266,7 +266,6 @@ struct TaskFormContent: View {
     private var tagsSection: some View {
         TaskFormIOSTagsSection(
             model: model,
-            presentation: presentation,
             tagColor: tagColor(for:)
         ) {
             isTagManagerPresented = true

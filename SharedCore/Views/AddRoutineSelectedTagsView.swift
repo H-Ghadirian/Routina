@@ -6,11 +6,7 @@ struct AddRoutineSelectedTagsView: View {
     let onRemoveTag: (String) -> Void
 
     var body: some View {
-        if selectedTags.isEmpty {
-            Text(isAvailableTagsEmpty ? "No tags yet" : "No selected tags yet")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        } else {
+        if !selectedTags.isEmpty {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 8)], alignment: .leading, spacing: 8) {
                 ForEach(selectedTags, id: \.self) { tag in
                     Button {

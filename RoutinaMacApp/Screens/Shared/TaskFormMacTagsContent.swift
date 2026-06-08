@@ -7,10 +7,7 @@ struct TaskFormMacTagsContent: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             tagComposer
-            tagsContent
-            relatedTagSuggestionsContent
-            availableTagSuggestionsContent
-            manageTagsButton
+            tagChipsContent
         }
     }
 
@@ -55,125 +52,119 @@ struct TaskFormMacTagsContent: View {
                 }
             }
 
-            Button("Add") { model.onAddTag() }
-                .buttonStyle(.bordered)
-                .disabled(RoutineTag.parseDraft(model.tagDraft.wrappedValue).isEmpty)
+            Button { model.onAddTag() } label: {
+                Image(systemName: "plus")
+            }
+            .buttonStyle(.bordered)
+            .disabled(RoutineTag.parseDraft(model.tagDraft.wrappedValue).isEmpty)
+            .accessibilityLabel("Add tag")
+            .help("Add tag")
+
+            Button(action: onManageTags) {
+                Image(systemName: "slider.horizontal.3")
+            }
+            .buttonStyle(.bordered)
+            .accessibilityLabel("Manage Tags")
+            .help("Manage tags")
         }
     }
 
     @ViewBuilder
-    private var tagsContent: some View {
-        if model.routineTags.isEmpty {
-            Text(model.availableTags.isEmpty ? "No tags yet" : "No selected tags yet")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        } else {
+    private var tagChipsContent: some View {
+        if !model.routineTags.isEmpty || !unselectedRelatedTags.isEmpty || !unselectedAvailableTags.isEmpty {
             HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
                 ForEach(model.routineTags, id: \.self) { tag in
-                    Button { model.onRemoveTag(tag) } label: {
-                        HStack(spacing: 6) {
-                            Text("#\(tag)")
-                                .lineLimit(1)
-                                .fixedSize(horizontal: true, vertical: false)
-                            Image(systemName: "xmark.circle.fill").font(.caption)
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .routinaGlassPill(tint: .accentColor, tintOpacity: 0.14, interactive: true)
-                    }
-                    .buttonStyle(.plain)
-                    .fixedSize()
-                    .accessibilityLabel("Remove tag \(tag)")
+                    selectedTagButton(tag)
+                }
+
+                ForEach(unselectedRelatedTags, id: \.self) { tag in
+                    relatedTagButton(tag)
+                }
+
+                ForEach(unselectedAvailableTags, id: \.self) { tag in
+                    availableTagButton(tag)
                 }
             }
             .padding(.vertical, 4)
         }
     }
 
-    @ViewBuilder
-    private var relatedTagSuggestionsContent: some View {
-        let suggestions = model.suggestedRelatedTags
-        if !suggestions.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Suggested related tags")
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.secondary)
-
-                HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
-                    ForEach(suggestions, id: \.self) { tag in
-                        Button { model.onToggleTagSelection(tag) } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "plus.circle.fill")
-                                    .font(.caption)
-                                Text("#\(tag)")
-                                    .lineLimit(1)
-                                    .fixedSize(horizontal: true, vertical: false)
-                            }
-                            .foregroundStyle(.orange)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .routinaGlassPill(tint: .orange, tintOpacity: 0.10, interactive: true)
-                            .overlay {
-                                Capsule()
-                                    .stroke(Color.orange.opacity(0.45), lineWidth: 1)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .fixedSize()
-                        .accessibilityLabel("Add suggested related tag \(tag)")
-                    }
-                }
-                .padding(.vertical, 4)
+    private func selectedTagButton(_ tag: String) -> some View {
+        Button { model.onRemoveTag(tag) } label: {
+            HStack(spacing: 6) {
+                Text("#\(tag)")
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                Image(systemName: "xmark.circle.fill").font(.caption)
             }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .routinaGlassPill(tint: .accentColor, tintOpacity: 0.14, interactive: true)
         }
+        .buttonStyle(.plain)
+        .fixedSize()
+        .accessibilityLabel("Remove tag \(tag)")
     }
 
-    @ViewBuilder
-    private var availableTagSuggestionsContent: some View {
-        if !model.availableTags.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Choose from existing tags")
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.secondary)
-
-                HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
-                    ForEach(model.availableTags, id: \.self) { tag in
-                        let isSelected = RoutineTag.contains(tag, in: model.routineTags)
-                        let summary = model.availableTagSummaries.first(where: {
-                            RoutineTag.normalized($0.name) == RoutineTag.normalized(tag)
-                        })
-                        Button { model.onToggleTagSelection(tag) } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: isSelected ? "checkmark.circle.fill" : "plus.circle")
-                                    .font(.caption)
-                                Text(tagChipTitle(tag: tag, summary: summary))
-                                    .lineLimit(1)
-                                    .fixedSize(horizontal: true, vertical: false)
-                            }
-                            .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .routinaGlassPill(
-                                tint: isSelected ? .accentColor : .secondary,
-                                tintOpacity: isSelected ? 0.16 : 0.10,
-                                interactive: true
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        .fixedSize()
-                        .accessibilityLabel("\(isSelected ? "Remove" : "Add") tag \(tag)")
-                    }
-                }
-                .padding(.vertical, 4)
+    private func relatedTagButton(_ tag: String) -> some View {
+        Button { model.onToggleTagSelection(tag) } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.caption)
+                Text("#\(tag)")
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+            .foregroundStyle(.orange)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .routinaGlassPill(tint: .orange, tintOpacity: 0.10, interactive: true)
+            .overlay {
+                Capsule()
+                    .stroke(Color.orange.opacity(0.45), lineWidth: 1)
             }
         }
+        .buttonStyle(.plain)
+        .fixedSize()
+        .accessibilityLabel("Add suggested related tag \(tag)")
     }
 
-    private var manageTagsButton: some View {
-        Button(action: onManageTags) {
-            Label("Manage Tags", systemImage: "slider.horizontal.3")
+    private func availableTagButton(_ tag: String) -> some View {
+        let summary = model.availableTagSummaries.first(where: {
+            RoutineTag.normalized($0.name) == RoutineTag.normalized(tag)
+        })
+
+        return Button { model.onToggleTagSelection(tag) } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "plus.circle")
+                    .font(.caption)
+                Text(tagChipTitle(tag: tag, summary: summary))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+            .foregroundStyle(Color.secondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .routinaGlassPill(
+                tint: .secondary,
+                tintOpacity: 0.10,
+                interactive: true
+            )
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(.plain)
+        .fixedSize()
+        .accessibilityLabel("Add tag \(tag)")
+    }
+
+    private var unselectedRelatedTags: [String] {
+        model.suggestedRelatedTags.filter { !RoutineTag.contains($0, in: model.routineTags) }
+    }
+
+    private var unselectedAvailableTags: [String] {
+        model.availableTags.filter {
+            !RoutineTag.contains($0, in: model.routineTags)
+                && !RoutineTag.contains($0, in: unselectedRelatedTags)
+        }
     }
 
     private func tagChipTitle(tag: String, summary: RoutineTagSummary?) -> String {

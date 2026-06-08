@@ -13,8 +13,10 @@ extension AddRoutineTCAView {
         Button {
             isTagManagerPresented = true
         } label: {
-            Label("Manage Tags", systemImage: "slider.horizontal.3")
+            Image(systemName: "slider.horizontal.3")
         }
+        .accessibilityLabel("Manage Tags")
+        .help("Manage tags")
     }
 
     var stepComposer: some View {

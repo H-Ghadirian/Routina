@@ -154,10 +154,7 @@ struct TaskFormPresentation {
     }
 
     var tagSectionHelpText: String {
-        if hasAvailableTags {
-            return "Tap an existing tag below, open Manage Tags, or press return/Add to create a new one. Separate multiple tags with commas."
-        }
-        return "Press return or Add. Separate multiple tags with commas, or open Manage Tags."
+        "Separate multiple tags with commas."
     }
 
     var goalSectionHelpText: String {
