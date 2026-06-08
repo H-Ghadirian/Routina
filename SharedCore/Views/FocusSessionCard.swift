@@ -55,7 +55,7 @@ struct FocusSessionCard: View {
         let isForcedExpanded = snapshot.activeSessionForTask != nil
         let isContentExpanded = isExpanded || isForcedExpanded
 
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: isEmbedded ? 12 : 14) {
             Button {
                 withAnimation(.easeInOut(duration: 0.16)) {
                     if isForcedExpanded {
@@ -65,21 +65,31 @@ struct FocusSessionCard: View {
                     }
                 }
             } label: {
-                HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: "timer")
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(.teal)
-                        .frame(width: 30, height: 30)
-                        .routinaGlassPill(tint: .teal, tintOpacity: 0.14)
+                HStack(alignment: isEmbedded ? .center : .top, spacing: isEmbedded ? 8 : 12) {
+                    if !isEmbedded {
+                        Image(systemName: "timer")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(.teal)
+                            .frame(width: 30, height: 30)
+                            .routinaGlassPill(tint: .teal, tintOpacity: 0.14)
+                    }
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Focus")
-                            .font(.headline)
+                            .font(isEmbedded ? .subheadline.weight(.semibold) : .headline)
                             .foregroundStyle(.primary)
-                        Text(focusSubtitle(snapshot: snapshot))
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
+
+                        if !isEmbedded {
+                            Text(focusSubtitle(snapshot: snapshot))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        } else if let statusText = embeddedFocusStatusText(snapshot: snapshot) {
+                            Text(statusText)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
                     }
 
                     Spacer(minLength: 8)
@@ -88,7 +98,7 @@ struct FocusSessionCard: View {
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                         .rotationEffect(.degrees(isContentExpanded ? 180 : 0))
-                        .padding(.top, 6)
+                        .padding(.top, isEmbedded ? 0 : 6)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
@@ -275,23 +285,45 @@ struct FocusSessionCard: View {
         return "\(FocusSessionFormatting.compactDurationText(seconds: snapshot.totalCompletedSeconds)) logged for this task"
     }
 
+    private func embeddedFocusStatusText(snapshot: FocusSessionCardSnapshot) -> String? {
+        if isSleepModeActive {
+            return "Sleep active"
+        }
+        if snapshot.activeSessionForTask != nil {
+            return "Running"
+        }
+        if snapshot.activeSessionForAnotherTask != nil || blockingFocusTitle != nil {
+            return "Busy"
+        }
+        if !snapshot.completedSessionsForTask.isEmpty {
+            return FocusSessionFormatting.compactDurationText(seconds: snapshot.totalCompletedSeconds)
+        }
+        return nil
+    }
+
     private var startFocusControls: some View {
         VStack(alignment: .leading, spacing: 10) {
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 8) {
                     countUpStartButton
-                    durationStartButtons
+                    if !isEmbedded {
+                        durationStartButtons
+                    }
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
                     countUpStartButton
-                    durationStartButtons
+                    if !isEmbedded {
+                        durationStartButtons
+                    }
                 }
             }
 
-            Text(focusTrackingDescription)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            if !isEmbedded {
+                Text(focusTrackingDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -299,7 +331,7 @@ struct FocusSessionCard: View {
         Button {
             startCountUpSession()
         } label: {
-            Label("Start count up", systemImage: "stopwatch")
+            Label(isEmbedded ? "Count up" : "Start count up", systemImage: "stopwatch")
         }
         .buttonStyle(.borderedProminent)
         .tint(.teal)
@@ -454,38 +486,14 @@ struct FocusSessionCard: View {
 
     private func startSession(duration: TimeInterval) {
         do {
-            guard try SleepSessionSupport.activeSession(in: modelContext) == nil else {
-                return
-            }
-            guard try AwaySessionSupport.activeSession(in: modelContext) == nil else {
-                return
-            }
-            let startedAt = Date()
-            let session = FocusSession(
-                taskID: task.id,
-                startedAt: startedAt,
-                plannedDurationSeconds: duration
+            _ = try FocusSessionSupport.startTaskFocus(
+                task: task,
+                plannedDurationSeconds: duration,
+                context: modelContext,
+                calendar: calendar
             )
-            modelContext.insert(session)
-            DayPlanFocusSessionPlannerSync.saveStartedFocusBlock(
-                for: task,
-                session: session,
-                startedAt: startedAt,
-                durationSeconds: duration,
-                calendar: calendar,
-                context: modelContext
-            )
-            DeviceActivityRecorder.recordAction(
-                .started,
-                entity: .focusSession,
-                entityID: session.id,
-                entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
-                in: modelContext
-            )
-            saveContext()
-            syncFocusShieldForCurrentContext()
         } catch {
-            NSLog("Failed to check sleep mode before starting focus: \(error.localizedDescription)")
+            NSLog("Failed to start task focus: \(error.localizedDescription)")
         }
     }
 

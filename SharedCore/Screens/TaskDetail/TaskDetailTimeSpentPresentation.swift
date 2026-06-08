@@ -61,13 +61,25 @@ enum TaskDetailTimeSpentPresentation {
     }
 
     static func previewText(currentMinutes: Int?, entryMinutes: Int) -> String {
+        guard entryMinutes > 0 else {
+            guard let currentMinutes, currentMinutes > 0 else {
+                return "Enter time to log"
+            }
+            return "Current total \(TaskDetailHeaderBadgePresentation.durationText(for: currentMinutes))"
+        }
+
         let total = clampedMinutes(previewTotalMinutes(currentMinutes: currentMinutes, entryMinutes: entryMinutes))
-        return "Total \(TaskDetailHeaderBadgePresentation.durationText(for: total))"
+        return "New total \(TaskDetailHeaderBadgePresentation.durationText(for: total))"
     }
 
     static func applyTitle(entryMinutes: Int) -> String {
         let text = TaskDetailHeaderBadgePresentation.durationText(for: clampedMinutes(entryMinutes))
         return "Add \(text)"
+    }
+
+    static func applyTitle(currentMinutes: Int?, entryMinutes: Int) -> String {
+        let text = TaskDetailHeaderBadgePresentation.durationText(for: clampedMinutes(entryMinutes))
+        return currentMinutes == nil ? "Log \(text)" : "Add \(text)"
     }
 
     static func canApplyEntry(currentMinutes: Int?, entryMinutes: Int) -> Bool {

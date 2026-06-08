@@ -54,6 +54,30 @@ struct FocusSessionSupportTests {
     }
 
     @Test
+    func startTaskFocusCreatesPlannerBlock() throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let task = makeTask(in: context, name: "Write", interval: 1, lastDone: nil, emoji: nil)
+        let startedAt = makeDate("2026-05-30T08:15:00Z")
+
+        let session = try FocusSessionSupport.startTaskFocus(
+            task: task,
+            startedAt: startedAt,
+            plannedDurationSeconds: 45 * 60,
+            context: context,
+            calendar: calendar
+        )
+
+        let plannerBlock = try #require(try context.fetch(FetchDescriptor<DayPlanBlockRecord>()).first)
+        #expect(session.taskID == task.id)
+        #expect(session.plannedDurationSeconds == 45 * 60)
+        #expect(plannerBlock.id == session.id)
+        #expect(plannerBlock.taskID == task.id)
+        #expect(plannerBlock.startMinute == 8 * 60 + 15)
+        #expect(plannerBlock.durationMinutes == 45)
+    }
+
+    @Test
     func startUnassignedFocusIsIdempotentForDuplicateWatchMessage() throws {
         let context = makeInMemoryContext()
         let sessionID = UUID()

@@ -3,6 +3,57 @@ import SwiftData
 
 enum FocusSessionSupport {
     @MainActor
+    static func startTaskFocus(
+        task: RoutineTask,
+        startedAt: Date = Date(),
+        plannedDurationSeconds: TimeInterval,
+        context: ModelContext,
+        calendar: Calendar = .current,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
+    ) throws -> FocusSession {
+        guard try SleepSessionSupport.activeSession(in: context) == nil else {
+            throw RoutinaQuickAddError.activeSleepSession
+        }
+        guard try AwaySessionSupport.activeSession(in: context) == nil else {
+            throw RoutinaQuickAddError.activeAwaySession
+        }
+        guard try activeTaskFocus(in: context) == nil else {
+            throw RoutinaQuickAddError.activeFocusSession(nil)
+        }
+        guard try activeSprintFocus(in: context) == nil else {
+            throw RoutinaQuickAddError.activeFocusSession(nil)
+        }
+
+        let duration = max(0, plannedDurationSeconds)
+        let session = FocusSession(
+            taskID: task.id,
+            startedAt: startedAt,
+            plannedDurationSeconds: duration
+        )
+        context.insert(session)
+        DayPlanFocusSessionPlannerSync.saveStartedFocusBlock(
+            for: task,
+            session: session,
+            startedAt: startedAt,
+            durationSeconds: duration,
+            calendar: calendar,
+            context: context
+        )
+        DeviceActivityRecorder.recordAction(
+            .started,
+            entity: .focusSession,
+            entityID: session.id,
+            entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+            sourceDevice: sourceDevice,
+            at: startedAt,
+            in: context
+        )
+        try context.save()
+        notifyFocusChanged(using: context)
+        return session
+    }
+
+    @MainActor
     static func startUnassignedFocus(
         id: UUID = UUID(),
         startedAt: Date = Date(),
