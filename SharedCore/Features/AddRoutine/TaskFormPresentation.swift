@@ -143,12 +143,6 @@ struct TaskFormPresentation {
         return "\(base) map to \(resolvedPriority.title.lowercased()) priority for sorting."
     }
 
-    var estimationHelpText: String {
-        taskType == .todo
-            ? "Estimate is the plan. Actual time records what really happened."
-            : "Estimate is the plan. Routines record actual time on each completion."
-    }
-
     var linkHelpText: String {
         "Add as many websites as you need. URLs without a scheme will use https."
     }

@@ -6,52 +6,41 @@ struct TaskFormMacEstimationCard: View {
     var body: some View {
         TaskFormMacSectionCard(title: "Estimation") {
             VStack(alignment: .leading, spacing: 18) {
-                TaskFormMacControlBlock(
-                    title: "Duration",
-                    caption: model.taskType.wrappedValue == .todo
-                        ? "Estimate is the plan. Actual time records what really happened."
-                        : "Estimate is the plan. Routines record actual time on each completion."
-                ) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Toggle("Set duration estimate", isOn: estimatedDurationEnabledBinding)
-                        if estimatedDurationEnabledBinding.wrappedValue {
+                VStack(alignment: .leading, spacing: 10) {
+                    Toggle("Set duration estimate", isOn: estimatedDurationEnabledBinding)
+                    if estimatedDurationEnabledBinding.wrappedValue {
+                        TaskFormDurationEntry(
+                            title: "Estimate",
+                            minutes: estimatedDurationBinding,
+                            bounds: TaskFormDurationEntryPresentation.estimatedDurationBounds,
+                            presets: TaskFormDurationEntryPresentation.durationPresets
+                        )
+                    }
+                    if model.taskType.wrappedValue == .todo, model.actualDurationMinutes != nil {
+                        Toggle("Set actual time spent", isOn: actualDurationEnabledBinding)
+                        if actualDurationEnabledBinding.wrappedValue {
                             TaskFormDurationEntry(
-                                title: "Estimate",
-                                minutes: estimatedDurationBinding,
-                                bounds: TaskFormDurationEntryPresentation.estimatedDurationBounds,
+                                title: "Actual",
+                                minutes: actualDurationBinding,
+                                bounds: TaskFormDurationEntryPresentation.actualDurationBounds,
                                 presets: TaskFormDurationEntryPresentation.durationPresets
                             )
                         }
-                        if model.taskType.wrappedValue == .todo, model.actualDurationMinutes != nil {
-                            Toggle("Set actual time spent", isOn: actualDurationEnabledBinding)
-                            if actualDurationEnabledBinding.wrappedValue {
-                                TaskFormDurationEntry(
-                                    title: "Actual",
-                                    minutes: actualDurationBinding,
-                                    bounds: TaskFormDurationEntryPresentation.actualDurationBounds,
-                                    presets: TaskFormDurationEntryPresentation.durationPresets
-                                )
-                            }
-                        }
                     }
                 }
 
-                TaskFormMacControlBlock(title: "Story points") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Toggle("Set story points", isOn: storyPointsEnabledBinding)
-                        if storyPointsEnabledBinding.wrappedValue {
-                            Stepper(value: storyPointsStepperBinding, in: 1...100) {
-                                Text(TaskFormPresentation.storyPointsLabel(for: storyPointsStepperBinding.wrappedValue))
-                                    .frame(minWidth: 160, alignment: .leading)
-                            }
-                            .fixedSize()
+                VStack(alignment: .leading, spacing: 10) {
+                    Toggle("Set story points", isOn: storyPointsEnabledBinding)
+                    if storyPointsEnabledBinding.wrappedValue {
+                        Stepper(value: storyPointsStepperBinding, in: 1...100) {
+                            Text(TaskFormPresentation.storyPointsLabel(for: storyPointsStepperBinding.wrappedValue))
+                                .frame(minWidth: 160, alignment: .leading)
                         }
+                        .fixedSize()
                     }
                 }
 
-                TaskFormMacControlBlock(title: "Focus") {
-                    Toggle("Show focus timer", isOn: model.focusModeEnabled)
-                }
+                Toggle("Show focus timer", isOn: model.focusModeEnabled)
             }
         }
     }

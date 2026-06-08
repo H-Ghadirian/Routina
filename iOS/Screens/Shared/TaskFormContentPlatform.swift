@@ -237,7 +237,7 @@ struct TaskFormContent: View {
     }
 
     private var estimationSection: some View {
-        TaskFormIOSEstimationSection(model: model, presentation: presentation)
+        TaskFormIOSEstimationSection(model: model)
     }
 
     private var imageSection: some View {

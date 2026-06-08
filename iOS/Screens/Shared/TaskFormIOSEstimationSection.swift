@@ -2,7 +2,6 @@ import SwiftUI
 
 struct TaskFormIOSEstimationSection: View {
     let model: TaskFormModel
-    let presentation: TaskFormPresentation
 
     var body: some View {
         Section(header: Text("Estimation")) {
@@ -36,8 +35,6 @@ struct TaskFormIOSEstimationSection: View {
             }
 
             Toggle("Show focus timer", isOn: model.focusModeEnabled)
-
-            Text(presentation.estimationHelpText).font(.caption).foregroundStyle(.secondary)
         }
     }
 
