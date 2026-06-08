@@ -516,9 +516,7 @@ detailBody
             })
         }
 
-        if store.task.placeIDs.isEmpty {
-            actions.append(editSectionAction(title: "Place", section: .places))
-        }
+        actions.append(editSectionAction(title: "Places", section: .places))
 
         if !store.task.hasNotes {
             actions.append(editSectionAction(title: "Notes", section: .notes))

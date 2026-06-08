@@ -80,6 +80,81 @@ struct TaskDetailEditSaveTests {
     }
 
     @Test
+    func editSelectedPlaceIDsChanged_tracksMultiplePlacesAndPrimaryFallback() async {
+        let homeID = UUID()
+        let gymID = UUID()
+        let task = RoutineTask(name: "Stretch")
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(task: task)
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.editSelectedPlaceIDsChanged([homeID, gymID])) {
+            $0.editSelectedPlaceIDs = [homeID, gymID]
+            $0.editSelectedPlaceID = homeID
+        }
+    }
+
+    @Test
+    func editSaveTapped_persistsMultipleSelectedPlaceIDs() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let home = makePlace(in: context, name: "Home")
+        let gym = makePlace(in: context, name: "Gym")
+        let task = makeTask(
+            in: context,
+            name: "Stretch",
+            interval: 3,
+            lastDone: nil,
+            emoji: "🤸",
+            placeID: home.id
+        )
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Stretch",
+                editRoutineEmoji: "🤸",
+                editSelectedPlaceID: home.id,
+                editSelectedPlaceIDs: [home.id, gym.id],
+                editFrequency: .day,
+                editFrequencyValue: 3
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+        await store.receive(.onAppear)
+
+        let taskID = task.id
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { task in
+                        task.id == taskID
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.placeID == home.id)
+        #expect(persistedTask.placeIDs == [home.id, gym.id])
+    }
+
+    @Test
     func editSaveTapped_persistsAllDayFlagForDatedTodos() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()

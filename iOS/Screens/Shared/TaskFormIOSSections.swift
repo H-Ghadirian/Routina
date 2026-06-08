@@ -278,6 +278,7 @@ struct TaskFormIOSPlaceSection: View {
                     Label("Manage", systemImage: "map")
                 }
             }
+            TaskFormSelectedPlacesView(model: model)
         }
     }
 }

@@ -27,3 +27,31 @@ struct TaskFormPlaceSelectionMenu: View {
         }
     }
 }
+
+struct TaskFormSelectedPlacesView: View {
+    let model: TaskFormModel
+
+    var body: some View {
+        let summaries = model.selectedPlaceSummaries
+        if !summaries.isEmpty {
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 112), spacing: 8)],
+                alignment: .leading,
+                spacing: 8
+            ) {
+                ForEach(summaries) { place in
+                    Button {
+                        model.toggleSelectedPlace(place.id)
+                    } label: {
+                        Label(place.name, systemImage: "xmark.circle.fill")
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            }
+        }
+    }
+}
