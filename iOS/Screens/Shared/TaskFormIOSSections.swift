@@ -279,6 +279,7 @@ struct TaskFormIOSPlaceSection: View {
                 }
             }
             TaskFormSelectedPlacesView(model: model)
+            TaskFormPlaceOptionsView(model: model)
         }
     }
 }

@@ -35,6 +35,14 @@ enum SettingsPlaceActionHandler {
         return .none
     }
 
+    static func placeDraftKindChanged(
+        _ kind: String,
+        state: inout SettingsPlacesState
+    ) -> Effect<SettingsFeature.Action> {
+        SettingsPlaceEditor.updateDraftKind(kind, state: &state)
+        return .none
+    }
+
     static func placeDraftCoordinateChanged(
         _ coordinate: LocationCoordinate?,
         state: inout SettingsPlacesState

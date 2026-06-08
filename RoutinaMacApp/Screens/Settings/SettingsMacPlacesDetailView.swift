@@ -13,6 +13,8 @@ SettingsMacDetailShell(
     SettingsMacDetailCard(title: "Add Place") {
         TextField("Place name", text: placeDraftNameBinding)
             .textFieldStyle(.roundedBorder)
+        TextField("Kind, e.g. Supermarket", text: placeDraftKindBinding)
+            .textFieldStyle(.roundedBorder)
 
         if let validationMessage = store.places.saveValidationMessage {
             Text(validationMessage)
@@ -114,6 +116,13 @@ SettingsMacDetailShell(
         Binding(
             get: { store.places.placeDraftName },
             set: { store.send(.placeDraftNameChanged($0)) }
+        )
+    }
+
+    private var placeDraftKindBinding: Binding<String> {
+        Binding(
+            get: { store.places.placeDraftKind },
+            set: { store.send(.placeDraftKindChanged($0)) }
         )
     }
 

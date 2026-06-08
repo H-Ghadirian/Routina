@@ -29,6 +29,7 @@ extension SettingsRoutineDataPersistence {
         struct Place: Codable {
             var id: UUID
             var name: String
+            var kind: String?
             var latitude: Double
             var longitude: Double
             var radiusMeters: Double

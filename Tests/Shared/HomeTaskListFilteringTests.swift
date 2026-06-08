@@ -460,7 +460,7 @@ struct HomeTaskListFilteringTests {
         #expect(presentation.hiddenUnavailableTaskCount == 1)
         #expect(presentation.emptyState == HomeTaskListEmptyState(
             title: "No routines available here",
-            message: "1 routines are hidden because you are away from their saved place.",
+            message: "1 routines are hidden because you are away from their matching places.",
             systemImage: "location.slash"
         ))
     }

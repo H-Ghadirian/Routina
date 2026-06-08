@@ -107,7 +107,7 @@ struct HomeFilterPresentationTests {
             locationAuthorizationStatus: .denied
         )
 
-        #expect(hiddenAway.locationStatusText == "3 routines are hidden because you are away from their saved place.")
+        #expect(hiddenAway.locationStatusText == "3 routines are hidden because you are away from their matching places.")
         #expect(unavailable.locationStatusText == "Location access is off, so place-based routines stay visible.")
     }
 }

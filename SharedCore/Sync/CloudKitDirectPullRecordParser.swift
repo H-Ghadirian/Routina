@@ -11,6 +11,10 @@ enum CloudKitDirectPullRecordParser {
         guard let id = UUID(uuidString: record.recordID.recordName) else { return nil }
 
         let nameValue = CloudKitDirectPullService.stringValue(in: record, keys: ["name", "NAME", "zname", "ZNAME", "cd_name"])
+        let kindValue = CloudKitDirectPullService.stringValue(
+            in: record,
+            keys: ["kind", "KIND", "zkind", "ZKIND", "cd_kind"]
+        )
         guard
             let latitudeValue = CloudKitDirectPullService.doubleValue(
                 in: record,
@@ -36,6 +40,7 @@ enum CloudKitDirectPullRecordParser {
         return PlacePayload(
             id: id,
             name: nameValue,
+            kind: kindValue,
             latitude: latitudeValue,
             longitude: longitudeValue,
             radiusMeters: radiusValue,

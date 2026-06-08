@@ -64,6 +64,7 @@ extension CloudKitDirectPullService {
     struct PlacePayload {
         var id: UUID
         var name: String?
+        var kind: String?
         var latitude: Double
         var longitude: Double
         var radiusMeters: Double

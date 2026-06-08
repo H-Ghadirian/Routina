@@ -64,13 +64,15 @@ func makePlace(
     name: String,
     latitude: Double = 52.5200,
     longitude: Double = 13.4050,
-    radiusMeters: Double = 150
+    radiusMeters: Double = 150,
+    kind: String? = nil
 ) -> RoutinePlace {
     let place = RoutinePlace(
         name: name,
         latitude: latitude,
         longitude: longitude,
-        radiusMeters: radiusMeters
+        radiusMeters: radiusMeters,
+        kind: kind
     )
     context.insert(place)
     do {

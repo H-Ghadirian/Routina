@@ -681,6 +681,7 @@ struct SettingsFeatureTests {
             initialState: SettingsFeature.State(
                 places: .init(
                     placeDraftName: "Home",
+                    placeDraftKind: "Supermarket",
                     placeDraftCoordinate: LocationCoordinate(latitude: 52.52, longitude: 13.405),
                     placeDraftRadiusMeters: 180
                 )
@@ -702,6 +703,7 @@ struct SettingsFeatureTests {
             loadedPlaces = places
             #expect(places.count == 1)
             #expect(places.first?.name == "Home")
+            #expect(places.first?.kind == "Supermarket")
             #expect(places.first?.radiusMeters == 180)
             return true
         } assert: {
@@ -719,6 +721,7 @@ struct SettingsFeatureTests {
         await store.receive(.placeOperationFinished(success: true, message: "Saved Home.")) {
             $0.places.isPlaceOperationInProgress = false
             $0.places.placeDraftName = ""
+            $0.places.placeDraftKind = ""
             $0.places.placeDraftCoordinate = nil
             $0.places.placeStatusMessage = "Saved Home."
         }
@@ -726,6 +729,7 @@ struct SettingsFeatureTests {
         let places = try context.fetch(FetchDescriptor<RoutinePlace>())
         #expect(places.count == 1)
         #expect(places.first?.displayName == "Home")
+        #expect(places.first?.displayKind == "Supermarket")
         #expect(places.first?.radiusMeters == 180)
     }
 

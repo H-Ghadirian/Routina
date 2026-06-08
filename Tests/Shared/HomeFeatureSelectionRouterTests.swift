@@ -80,9 +80,11 @@ struct HomeFeatureSelectionRouterTests {
         )
         let unrelatedTask = RoutineTask(id: unrelatedID, name: "Elsewhere", emoji: "E")
         let place = RoutinePlace(id: placeID, name: "Desk", latitude: 1, longitude: 2)
+        let unlinkedPlaceID = UUID()
+        let unlinkedPlace = RoutinePlace(id: unlinkedPlaceID, name: "Library", latitude: 3, longitude: 4)
         var state = TestSelectionRoutingState(
             routineTasks: [task, directRelationshipTask, inverseRelationshipTask, unrelatedTask],
-            routinePlaces: [place]
+            routinePlaces: [place, unlinkedPlace]
         )
         let router = makeRouter(TestSelectionRouterRecorder())
 
@@ -92,7 +94,8 @@ struct HomeFeatureSelectionRouterTests {
         #expect(Set(detailState.availableRelationshipTasks.map(\.id)) == [directRelationshipID, inverseRelationshipID])
         #expect(!detailState.availableRelationshipTasks.contains(where: { $0.id == unrelatedID }))
         #expect(detailState.availablePlaces == [
-            RoutinePlaceSummary(id: placeID, name: "Desk", radiusMeters: 150, linkedRoutineCount: 1)
+            RoutinePlaceSummary(id: placeID, name: "Desk", radiusMeters: 150, linkedRoutineCount: 1),
+            RoutinePlaceSummary(id: unlinkedPlaceID, name: "Library", radiusMeters: 150, linkedRoutineCount: 0)
         ])
     }
 

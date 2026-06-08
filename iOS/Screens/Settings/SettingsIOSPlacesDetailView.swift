@@ -9,6 +9,7 @@ struct SettingsPlacesDetailView: View {
 List {
     Section("Add Place") {
         TextField("Place name", text: placeDraftNameBinding)
+        TextField("Kind, e.g. Supermarket", text: placeDraftKindBinding)
 
         if let validationMessage = store.places.saveValidationMessage {
             Text(validationMessage)
@@ -126,6 +127,13 @@ List {
         Binding(
             get: { store.places.placeDraftName },
             set: { store.send(.placeDraftNameChanged($0)) }
+        )
+    }
+
+    private var placeDraftKindBinding: Binding<String> {
+        Binding(
+            get: { store.places.placeDraftKind },
+            set: { store.send(.placeDraftKindChanged($0)) }
         )
     }
 

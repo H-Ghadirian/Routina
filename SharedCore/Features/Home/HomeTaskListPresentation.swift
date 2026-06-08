@@ -354,7 +354,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         if hiddenUnavailableTaskCount > 0 {
             return HomeTaskListEmptyState(
                 title: "No routines available here",
-                message: "\(hiddenUnavailableTaskCount) routines are hidden because you are away from their saved place.",
+                message: "\(hiddenUnavailableTaskCount) routines are hidden because you are away from their matching places.",
                 systemImage: "location.slash"
             )
         }

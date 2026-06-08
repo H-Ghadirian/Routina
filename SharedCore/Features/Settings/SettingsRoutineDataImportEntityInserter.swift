@@ -161,6 +161,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 latitude: place.latitude,
                 longitude: place.longitude,
                 radiusMeters: place.radiusMeters,
+                kind: place.kind,
                 createdAt: place.createdAt ?? importDate
             )
             context.insert(importedPlace)

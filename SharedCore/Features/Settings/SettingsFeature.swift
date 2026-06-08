@@ -59,6 +59,7 @@ struct SettingsFeature {
         case learnedRelatedTagRulesLoaded([RoutineRelatedTagRule])
         case locationSnapshotUpdated(LocationSnapshot)
         case placeDraftNameChanged(String)
+        case placeDraftKindChanged(String)
         case tagRenameDraftChanged(String)
         case tagSearchQueryChanged(String)
         case fastFilterTagToggled(String)
@@ -496,6 +497,12 @@ struct SettingsFeature {
             case let .placeDraftNameChanged(name):
                 return SettingsPlaceActionHandler.placeDraftNameChanged(
                     name,
+                    state: &state.places
+                )
+
+            case let .placeDraftKindChanged(kind):
+                return SettingsPlaceActionHandler.placeDraftKindChanged(
+                    kind,
                     state: &state.places
                 )
 

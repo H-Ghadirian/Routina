@@ -19,9 +19,15 @@ struct HomeRoutineDisplayFactory {
             referenceDate: now,
             calendar: calendar
         )
-        let linkedPlace = task.placeIDs.compactMap { placesByID[$0] }.first
+        let linkedPlaces = task.placeIDs.compactMap { placesByID[$0] }
+        let displayPlaceName = placeListDisplayName(for: linkedPlaces)
+        let locationPlaces = equivalentPlaces(
+            for: linkedPlaces,
+            allPlaces: Array(placesByID.values)
+        )
         let locationAvailability = makeLocationAvailability(
-            for: linkedPlace,
+            for: locationPlaces,
+            fallbackPlaceName: displayPlaceName,
             locationSnapshot: locationSnapshot
         )
         let isArchived = task.isArchived(referenceDate: now, calendar: calendar)
@@ -46,7 +52,7 @@ struct HomeRoutineDisplayFactory {
             hasFileAttachment: fileAttachmentTaskIDs.contains(task.id),
             placeID: task.placeID,
             placeIDs: task.placeIDs,
-            placeName: linkedPlace?.displayName,
+            placeName: displayPlaceName,
             locationAvailability: locationAvailability,
             tags: task.tags,
             goalIDs: task.goalIDs,
@@ -101,19 +107,60 @@ struct HomeRoutineDisplayFactory {
     }
 
     private func makeLocationAvailability(
-        for linkedPlace: RoutinePlace?,
+        for linkedPlaces: [RoutinePlace],
+        fallbackPlaceName: String?,
         locationSnapshot: LocationSnapshot
     ) -> RoutineLocationAvailability {
-        guard let linkedPlace else { return .unrestricted }
+        guard !linkedPlaces.isEmpty else { return .unrestricted }
+        let placeName = fallbackPlaceName ?? placeListDisplayName(for: linkedPlaces) ?? "saved place"
         guard locationSnapshot.canDeterminePresence, let coordinate = locationSnapshot.coordinate else {
-            return .unknown(placeName: linkedPlace.displayName)
+            return .unknown(placeName: placeName)
         }
 
-        let distance = linkedPlace.distance(to: coordinate)
-        if linkedPlace.contains(coordinate) {
-            return .available(placeName: linkedPlace.displayName)
+        if let containingPlace = linkedPlaces.first(where: { $0.contains(coordinate) }) {
+            return .available(placeName: containingPlace.displayName)
         }
-        return .away(placeName: linkedPlace.displayName, distanceMeters: distance)
+
+        guard let nearestPlace = linkedPlaces.min(by: {
+            $0.distance(to: coordinate) < $1.distance(to: coordinate)
+        }) else { return .away(placeName: placeName, distanceMeters: 0) }
+        return .away(
+            placeName: nearestPlace.displayName,
+            distanceMeters: nearestPlace.distance(to: coordinate)
+        )
+    }
+
+    private func equivalentPlaces(
+        for linkedPlaces: [RoutinePlace],
+        allPlaces: [RoutinePlace]
+    ) -> [RoutinePlace] {
+        let linkedPlaceIDs = Set(linkedPlaces.map(\.id))
+        let linkedKinds = Set(linkedPlaces.compactMap { RoutinePlace.normalizedKind($0.kind) })
+        guard !linkedKinds.isEmpty else { return linkedPlaces }
+
+        let sameKindPlaces = allPlaces
+            .filter { place in
+                guard !linkedPlaceIDs.contains(place.id),
+                      let normalizedKind = RoutinePlace.normalizedKind(place.kind)
+                else { return false }
+                return linkedKinds.contains(normalizedKind)
+            }
+            .sorted { lhs, rhs in
+                lhs.displayName.localizedCaseInsensitiveCompare(rhs.displayName) == .orderedAscending
+            }
+
+        return linkedPlaces + sameKindPlaces
+    }
+
+    private func placeListDisplayName(for places: [RoutinePlace]) -> String? {
+        switch places.count {
+        case 0:
+            return nil
+        case 1:
+            return places[0].displayName
+        default:
+            return "\(places[0].displayName) + \(places.count - 1)"
+        }
     }
 
     private func dueDate(for task: RoutineTask, isArchived: Bool) -> Date? {

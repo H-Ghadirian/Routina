@@ -13,6 +13,7 @@ extension LocationCoordinate {
 struct RoutinePlaceSummary: Equatable, Identifiable, Sendable {
     let id: UUID
     var name: String
+    var kind: String? = nil
     var radiusMeters: Double
     var linkedRoutineCount: Int
 }
@@ -42,6 +43,7 @@ final class RoutinePlace {
     var latitude: Double = 0
     var longitude: Double = 0
     var radiusMeters: Double = 150
+    var kind: String?
     var createdAt: Date = Date()
 
     init(
@@ -50,6 +52,7 @@ final class RoutinePlace {
         latitude: Double,
         longitude: Double,
         radiusMeters: Double = 150,
+        kind: String? = nil,
         createdAt: Date = Date()
     ) {
         self.id = id
@@ -57,6 +60,7 @@ final class RoutinePlace {
         self.latitude = latitude
         self.longitude = longitude
         self.radiusMeters = max(radiusMeters, 25)
+        self.kind = Self.cleanedKind(kind)
         self.createdAt = createdAt
     }
 
@@ -72,6 +76,7 @@ final class RoutinePlace {
         RoutinePlaceSummary(
             id: id,
             name: displayName,
+            kind: displayKind,
             radiusMeters: radiusMeters,
             linkedRoutineCount: linkedRoutineCount
         )
@@ -81,6 +86,10 @@ final class RoutinePlace {
         Self.cleanedName(name) ?? "Unnamed place"
     }
 
+    var displayKind: String? {
+        Self.cleanedKind(kind)
+    }
+
     func detachedCopy() -> RoutinePlace {
         RoutinePlace(
             id: id,
@@ -88,6 +97,7 @@ final class RoutinePlace {
             latitude: latitude,
             longitude: longitude,
             radiusMeters: radiusMeters,
+            kind: kind,
             createdAt: createdAt
         )
     }
@@ -101,6 +111,18 @@ final class RoutinePlace {
 
     static func normalizedName(_ name: String?) -> String? {
         guard let cleaned = cleanedName(name) else { return nil }
+        return cleaned.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+    }
+
+    static func cleanedKind(_ kind: String?) -> String? {
+        guard let kind else { return nil }
+        let trimmed = kind.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return trimmed
+    }
+
+    static func normalizedKind(_ kind: String?) -> String? {
+        guard let cleaned = cleanedKind(kind) else { return nil }
         return cleaned.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
     }
 

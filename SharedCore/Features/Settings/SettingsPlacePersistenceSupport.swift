@@ -41,7 +41,8 @@ enum SettingsPlacePersistence {
             name: cleanedName,
             latitude: request.coordinate.latitude,
             longitude: request.coordinate.longitude,
-            radiusMeters: request.radiusMeters
+            radiusMeters: request.radiusMeters,
+            kind: request.cleanedKind
         )
         context.insert(place)
         DeviceActivityRecorder.recordAction(
@@ -88,6 +89,9 @@ enum SettingsPlacePersistence {
         }
 
         place.name = cleanedName
+        if let cleanedKind = request.cleanedKind {
+            place.kind = RoutinePlace.cleanedKind(cleanedKind)
+        }
         place.latitude = request.coordinate.latitude
         place.longitude = request.coordinate.longitude
         place.radiusMeters = min(max(request.radiusMeters, 25), 2_000)

@@ -129,6 +129,7 @@ struct SettingsPlacesState: Equatable {
     var savedPlaces: [RoutinePlaceSummary] = []
     var placePendingDeletion: RoutinePlaceSummary?
     var placeDraftName: String = ""
+    var placeDraftKind: String = ""
     var placeDraftCoordinate: LocationCoordinate?
     var placeDraftRadiusMeters: Double = 150
     var placeStatusMessage: String = ""

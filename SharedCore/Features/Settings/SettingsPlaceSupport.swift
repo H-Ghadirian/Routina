@@ -2,6 +2,7 @@ import Foundation
 
 struct SettingsPlaceSaveRequest: Equatable {
     var cleanedName: String
+    var cleanedKind: String? = nil
     var coordinate: LocationCoordinate
     var radiusMeters: Double
 }
@@ -9,6 +10,7 @@ struct SettingsPlaceSaveRequest: Equatable {
 struct SettingsPlaceUpdateRequest: Equatable {
     var placeID: UUID
     var cleanedName: String
+    var cleanedKind: String? = nil
     var coordinate: LocationCoordinate
     var radiusMeters: Double
 }
@@ -54,6 +56,14 @@ enum SettingsPlaceEditor {
         state: inout SettingsPlacesState
     ) {
         state.placeDraftName = name
+        state.placeStatusMessage = ""
+    }
+
+    static func updateDraftKind(
+        _ kind: String,
+        state: inout SettingsPlacesState
+    ) {
+        state.placeDraftKind = kind
         state.placeStatusMessage = ""
     }
 
@@ -107,6 +117,7 @@ enum SettingsPlaceEditor {
         state.placeStatusMessage = ""
         return SettingsPlaceSaveRequest(
             cleanedName: cleanedName,
+            cleanedKind: RoutinePlace.cleanedKind(state.placeDraftKind),
             coordinate: coordinate,
             radiusMeters: state.placeDraftRadiusMeters
         )
@@ -136,6 +147,7 @@ enum SettingsPlaceEditor {
         state.placeStatusMessage = message
         if success {
             state.placeDraftName = ""
+            state.placeDraftKind = ""
             state.placeDraftCoordinate = nil
         }
     }

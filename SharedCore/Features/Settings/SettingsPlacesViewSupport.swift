@@ -86,7 +86,8 @@ extension RoutinePlaceSummary {
         let linkedText = linkedRoutineCount == 1
             ? "1 linked routine"
             : "\(linkedRoutineCount) linked routines"
-        return "\(Int(radiusMeters)) m radius • \(linkedText)"
+        let kindText = kind.map { "\($0) • " } ?? ""
+        return "\(kindText)\(Int(radiusMeters)) m radius • \(linkedText)"
     }
 }
 

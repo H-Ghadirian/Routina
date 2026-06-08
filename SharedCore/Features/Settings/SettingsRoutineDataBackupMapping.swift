@@ -7,6 +7,7 @@ enum SettingsRoutineDataBackupMapping {
         Backup.Place(
             id: place.id,
             name: place.displayName,
+            kind: place.displayKind,
             latitude: place.latitude,
             longitude: place.longitude,
             radiusMeters: place.radiusMeters,

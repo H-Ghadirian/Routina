@@ -236,9 +236,9 @@ struct HomeFilterPresentation: Equatable, Sendable {
                 return "All place-linked routines are currently available."
             }
             if hideUnavailableRoutines {
-                return "\(awayRoutineCount) routines are hidden because you are away from their saved place."
+                return "\(awayRoutineCount) routines are hidden because you are away from their matching places."
             }
-            return "\(awayRoutineCount) routines are away from their saved place and shown below."
+            return "\(awayRoutineCount) routines are away from their matching places and shown below."
         case .notDetermined:
             return "Allow location access to automatically separate place-based routines. Until then they stay visible."
         case .disabled:

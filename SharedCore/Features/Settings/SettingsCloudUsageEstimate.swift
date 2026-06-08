@@ -344,6 +344,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
     private struct PlacePayload: Encodable {
         var id: UUID
         var name: String
+        var kind: String?
         var latitude: Double
         var longitude: Double
         var radiusMeters: Double
@@ -352,6 +353,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         init(place: RoutinePlace) {
             id = place.id
             name = place.name
+            kind = place.displayKind
             latitude = place.latitude
             longitude = place.longitude
             radiusMeters = place.radiusMeters

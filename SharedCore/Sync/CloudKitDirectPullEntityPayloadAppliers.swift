@@ -57,6 +57,7 @@ enum CloudKitDirectPullPlacePayloadApplier {
         if updatesName {
             place.name = RoutinePlace.cleanedName(payload.name) ?? place.displayName
         }
+        place.kind = RoutinePlace.cleanedKind(payload.kind)
         place.latitude = payload.latitude
         place.longitude = payload.longitude
         place.radiusMeters = max(payload.radiusMeters, 25)
@@ -72,6 +73,7 @@ enum CloudKitDirectPullPlacePayloadApplier {
             latitude: payload.latitude,
             longitude: payload.longitude,
             radiusMeters: payload.radiusMeters,
+            kind: payload.kind,
             createdAt: payload.createdAt ?? Date()
         )
     }

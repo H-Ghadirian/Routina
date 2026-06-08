@@ -21,6 +21,7 @@ struct TaskFormMacPlacesCard: View {
                 }
 
                 TaskFormSelectedPlacesView(model: model)
+                TaskFormPlaceOptionsView(model: model)
             }
         }
     }
