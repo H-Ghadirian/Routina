@@ -225,17 +225,19 @@ enum TaskDetailHeaderBadgePresentation {
             ])
         }
 
-        let estimationBadges = estimationBadges(
-            task: state.task,
-            displayedActualDurationMinutes: displayedActualDurationMinutes(
+        if layout == .mobile || !state.task.isOneOffTask {
+            let estimationBadges = estimationBadges(
                 task: state.task,
-                logs: state.logs
-            ),
-            includeSpent: layout == .mobile,
-            includeStoryPoints: layout == .mobile
-        )
-        if !estimationBadges.isEmpty {
-            rows.append(estimationBadges)
+                displayedActualDurationMinutes: displayedActualDurationMinutes(
+                    task: state.task,
+                    logs: state.logs
+                ),
+                includeSpent: layout == .mobile,
+                includeStoryPoints: layout == .mobile
+            )
+            if !estimationBadges.isEmpty {
+                rows.append(estimationBadges)
+            }
         }
     }
 

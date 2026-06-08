@@ -259,7 +259,7 @@ detailBody
     private var todoHeaderControls: some View {
         VStack(alignment: .leading, spacing: 8) {
             priorityDisclosureBox
-            if shouldShowTimeControl {
+            if shouldShowEffortSection {
                 todoTimeSpentHeaderBox
             }
 
@@ -313,6 +313,12 @@ detailBody
             )
     }
 
+    private var shouldShowEffortSection: Bool {
+        shouldShowTimeControl
+            || store.task.estimatedDurationMinutes != nil
+            || store.task.storyPoints != nil
+    }
+
     private var shouldShowTodoStateControl: Bool {
         canShowTodoStateControl
             && (isTodoStateControlRevealed || TaskDetailOptionalControlVisibility.showsTodoState(for: store.task))
@@ -331,7 +337,7 @@ detailBody
     }
 
     private var shouldShowTimeAddAction: Bool {
-        canShowTimeControl && !shouldShowTimeControl
+        canShowTimeControl && !shouldShowEffortSection
     }
 
     private var canShowTimeControl: Bool {

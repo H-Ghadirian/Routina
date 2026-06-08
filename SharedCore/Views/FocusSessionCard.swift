@@ -15,6 +15,8 @@ struct FocusSessionCard: View {
     let sessions: [FocusSession]
     let allTasks: [RoutineTask]
     let isEmbedded: Bool
+    let showsEmbeddedHeader: Bool
+    let showsEmbeddedStartControls: Bool
     let blockingFocusTitle: String?
     let onCompletedDuration: ((TimeInterval) -> Void)?
 
@@ -23,6 +25,8 @@ struct FocusSessionCard: View {
         sessions: [FocusSession],
         allTasks: [RoutineTask],
         isEmbedded: Bool = false,
+        showsEmbeddedHeader: Bool = true,
+        showsEmbeddedStartControls: Bool = true,
         blockingFocusTitle: String? = nil,
         onCompletedDuration: ((TimeInterval) -> Void)? = nil
     ) {
@@ -38,6 +42,8 @@ struct FocusSessionCard: View {
         self.sessions = sessions
         self.allTasks = allTasks
         self.isEmbedded = isEmbedded
+        self.showsEmbeddedHeader = showsEmbeddedHeader
+        self.showsEmbeddedStartControls = showsEmbeddedStartControls
         self.blockingFocusTitle = blockingFocusTitle
         self.onCompletedDuration = onCompletedDuration
     }
@@ -56,54 +62,56 @@ struct FocusSessionCard: View {
         let isContentExpanded = isExpanded || isForcedExpanded
 
         VStack(alignment: .leading, spacing: isEmbedded ? 12 : 14) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.16)) {
-                    if isForcedExpanded {
-                        isExpanded = true
-                    } else {
-                        isExpanded.toggle()
-                    }
-                }
-            } label: {
-                HStack(alignment: isEmbedded ? .center : .top, spacing: isEmbedded ? 8 : 12) {
-                    if !isEmbedded {
-                        Image(systemName: "timer")
-                            .font(.title3.weight(.semibold))
-                            .foregroundStyle(.teal)
-                            .frame(width: 30, height: 30)
-                            .routinaGlassPill(tint: .teal, tintOpacity: 0.14)
-                    }
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Focus")
-                            .font(isEmbedded ? .subheadline.weight(.semibold) : .headline)
-                            .foregroundStyle(.primary)
-
-                        if !isEmbedded {
-                            Text(focusSubtitle(snapshot: snapshot))
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        } else if let statusText = embeddedFocusStatusText(snapshot: snapshot) {
-                            Text(statusText)
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
+            if !isEmbedded || showsEmbeddedHeader {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.16)) {
+                        if isForcedExpanded {
+                            isExpanded = true
+                        } else {
+                            isExpanded.toggle()
                         }
                     }
+                } label: {
+                    HStack(alignment: isEmbedded ? .center : .top, spacing: isEmbedded ? 8 : 12) {
+                        if !isEmbedded {
+                            Image(systemName: "timer")
+                                .font(.title3.weight(.semibold))
+                                .foregroundStyle(.teal)
+                                .frame(width: 30, height: 30)
+                                .routinaGlassPill(tint: .teal, tintOpacity: 0.14)
+                        }
 
-                    Spacer(minLength: 8)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Focus")
+                                .font(isEmbedded ? .subheadline.weight(.semibold) : .headline)
+                                .foregroundStyle(.primary)
 
-                    Image(systemName: "chevron.down")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .rotationEffect(.degrees(isContentExpanded ? 180 : 0))
-                        .padding(.top, isEmbedded ? 0 : 6)
+                            if !isEmbedded {
+                                Text(focusSubtitle(snapshot: snapshot))
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            } else if let statusText = embeddedFocusStatusText(snapshot: snapshot) {
+                                Text(statusText)
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                        }
+
+                        Spacer(minLength: 8)
+
+                        Image(systemName: "chevron.down")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .rotationEffect(.degrees(isContentExpanded ? 180 : 0))
+                            .padding(.top, isEmbedded ? 0 : 6)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
 
             if isContentExpanded {
                 if isSleepModeActive {
@@ -115,7 +123,9 @@ struct FocusSessionCard: View {
                 } else if let blockingFocusTitle {
                     blockingFocusContent(blockingFocusTitle)
                 } else {
-                    startFocusControls
+                    if !isEmbedded || showsEmbeddedStartControls {
+                        startFocusControls
+                    }
                 }
 
                 if !snapshot.completedSessionsForTask.isEmpty {

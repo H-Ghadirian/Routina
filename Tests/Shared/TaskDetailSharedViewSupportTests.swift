@@ -39,7 +39,7 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
-    func headerBadgeRowsPreserveMobileAndDesktopTodoLayout() {
+    func headerBadgeRowsKeepDesktopTodoPlanningMetricsOutOfBadges() {
         let placeID = UUID()
         let task = RoutineTask(
             name: "Ship report",
@@ -76,8 +76,7 @@ struct TaskDetailSharedViewSupportTests {
         ])
         #expect(desktopRows.map { $0.map(\.title) } == [
             ["Location"],
-            ["Due"],
-            ["Estimate"]
+            ["Due"]
         ])
     }
 

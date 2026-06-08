@@ -42,7 +42,7 @@ struct TaskDetailMacHeaderSupplementaryContent<CalendarContent: View>: View {
     private var metadataRow: some View {
         let hasTags = !task.tags.isEmpty
         let hasLinks = !task.resolvedLinkURLs.isEmpty
-        let hasPoints = task.storyPoints != nil
+        let hasPoints = !task.isOneOffTask && task.storyPoints != nil
 
         if hasLinks && hasPoints {
             ViewThatFits(in: .horizontal) {
