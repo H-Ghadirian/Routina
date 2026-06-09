@@ -81,7 +81,7 @@ struct StatsHeroSectionView: View {
     private var sparklinePreview: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Daily rhythm")
+                Text(chartPresentation.sparklineTitle)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.white.opacity(0.95))
 
@@ -92,15 +92,35 @@ struct StatsHeroSectionView: View {
                     .foregroundStyle(.white.opacity(0.72))
             }
 
-            HStack(alignment: .bottom, spacing: 6) {
+            HStack(alignment: .bottom, spacing: 8) {
                 ForEach(sparklinePoints) { point in
-                    Capsule(style: .continuous)
-                        .fill(chartPresentation.sparklineColor(for: point, highlightedBusiestDay: highlightedBusiestDay))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: chartPresentation.sparklineBarHeight(for: point, maxCount: sparklineMaxCount))
+                    VStack(spacing: 7) {
+                        ZStack(alignment: .bottom) {
+                            Capsule(style: .continuous)
+                                .fill(chartPresentation.sparklineColor(
+                                    for: point,
+                                    maxCount: sparklineMaxCount,
+                                    highlightedBusiestDay: highlightedBusiestDay
+                                ))
+                                .frame(height: chartPresentation.sparklineBarHeight(
+                                    for: point,
+                                    maxCount: sparklineMaxCount
+                                ))
+                        }
+                        .frame(height: 58, alignment: .bottom)
+
+                        Text(chartPresentation.sparklineLabel(for: point))
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.white.opacity(0.64))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                    }
+                    .frame(maxWidth: chartPresentation.sparklineBucketMaxWidth(pointCount: sparklinePoints.count))
+                    .accessibilityLabel(chartPresentation.sparklineLabel(for: point))
+                    .accessibilityValue(point.count == 1 ? "1 activity" : "\(point.count) activities")
                 }
             }
-            .frame(height: 74, alignment: .bottom)
+            .frame(height: 78, alignment: .bottomLeading)
         }
     }
 

@@ -30,25 +30,64 @@ struct StatsChartPresentation {
         }
     }
 
-    func sparklineCaption(highlightedBusiestDay: DoneChartPoint?) -> String {
-        guard let highlightedBusiestDay else {
-            return "No peak yet"
+    var sparklineTitle: String {
+        switch selectedRange {
+        case .today:
+            return "Activity today"
+        case .week:
+            return "Activity by day"
+        case .month:
+            return "Activity by week"
+        case .year:
+            return "Activity by month"
         }
-
-        return "Peak \(highlightedBusiestDay.count)"
     }
 
-    func sparklineColor(for point: DoneChartPoint, highlightedBusiestDay: DoneChartPoint?) -> Color {
-        if point.date == highlightedBusiestDay?.date {
+    func sparklineCaption(highlightedBusiestDay: DoneChartPoint?) -> String {
+        guard let highlightedBusiestDay else {
+            return "No activity yet"
+        }
+
+        return "Best day \(bestDayCaption(for: highlightedBusiestDay)): \(highlightedBusiestDay.count)"
+    }
+
+    func sparklineColor(for point: DoneChartPoint, maxCount: Int, highlightedBusiestDay: DoneChartPoint?) -> Color {
+        guard point.count > 0 else {
+            return Color.white.opacity(0.12)
+        }
+
+        if sparklineShouldHighlight(point: point, maxCount: maxCount, highlightedBusiestDay: highlightedBusiestDay) {
             return Color.white.opacity(0.96)
         }
 
-        return Color.white.opacity(point.count == 0 ? 0.12 : 0.3)
+        return Color.white.opacity(0.32)
     }
 
     func sparklineBarHeight(for point: DoneChartPoint, maxCount: Int) -> CGFloat {
         let normalized = max(CGFloat(point.count) / CGFloat(max(maxCount, 1)), 0.12)
         return 16 + (normalized * 54)
+    }
+
+    func sparklineLabel(for point: DoneChartPoint) -> String {
+        switch selectedRange {
+        case .today:
+            return "Today"
+        case .week:
+            return point.date.formatted(.dateTime.weekday(.abbreviated))
+        case .month:
+            return point.date.formatted(.dateTime.month(.abbreviated).day())
+        case .year:
+            return point.date.formatted(.dateTime.month(.abbreviated))
+        }
+    }
+
+    func sparklineBucketMaxWidth(pointCount: Int) -> CGFloat {
+        switch selectedRange {
+        case .today, .week:
+            return .infinity
+        case .month, .year:
+            return pointCount <= 3 ? 128 : .infinity
+        }
     }
 
     var chartMinWidth: CGFloat {
@@ -193,5 +232,18 @@ struct StatsChartPresentation {
 
     func bestDayCaption(for point: DoneChartPoint) -> String {
         point.date.formatted(.dateTime.month(.abbreviated).day())
+    }
+
+    private func sparklineShouldHighlight(
+        point: DoneChartPoint,
+        maxCount: Int,
+        highlightedBusiestDay: DoneChartPoint?
+    ) -> Bool {
+        switch selectedRange {
+        case .today, .week:
+            return point.date == highlightedBusiestDay?.date
+        case .month, .year:
+            return point.count == maxCount
+        }
     }
 }

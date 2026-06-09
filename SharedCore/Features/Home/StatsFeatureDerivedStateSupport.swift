@@ -400,7 +400,9 @@ enum StatsFeatureDerivedStateBuilder {
         )
         let sparklinePoints = sampledSparklinePoints(
             from: chartPoints,
-            for: selectedRange
+            for: selectedRange,
+            referenceDate: referenceDate,
+            calendar: calendar
         )
         let maxCount = chartPoints.map(\.count).max() ?? 0
         let maxCreatedCount = createdChartPoints.map(\.count).max() ?? 0
@@ -558,30 +560,68 @@ enum StatsFeatureDerivedStateBuilder {
 
     private static func sampledSparklinePoints(
         from chartPoints: [DoneChartPoint],
-        for range: DoneChartRange
+        for range: DoneChartRange,
+        referenceDate: Date,
+        calendar: Calendar
     ) -> [DoneChartPoint] {
-        let targetCount: Int
-
         switch range {
-        case .today:
-            targetCount = 1
-        case .week:
-            targetCount = 7
+        case .today, .week:
+            return chartPoints
         case .month:
-            targetCount = 15
+            return bucketedSparklinePoints(from: chartPoints, bucketSize: 7)
         case .year:
-            targetCount = 24
+            return monthlySparklinePoints(
+                from: chartPoints,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
         }
+    }
 
-        guard chartPoints.count > targetCount, targetCount > 1 else {
+    private static func bucketedSparklinePoints(
+        from chartPoints: [DoneChartPoint],
+        bucketSize: Int
+    ) -> [DoneChartPoint] {
+        guard chartPoints.count > bucketSize, bucketSize > 1 else {
             return chartPoints
         }
 
-        let step = Double(chartPoints.count - 1) / Double(targetCount - 1)
+        return stride(from: 0, to: chartPoints.count, by: bucketSize).map { startIndex in
+            let endIndex = min(startIndex + bucketSize, chartPoints.count)
+            let bucket = chartPoints[startIndex..<endIndex]
 
-        return (0..<targetCount).map { index in
-            let pointIndex = min(Int((Double(index) * step).rounded()), chartPoints.count - 1)
-            return chartPoints[pointIndex]
+            return DoneChartPoint(
+                date: bucket.first?.date ?? chartPoints[startIndex].date,
+                count: bucket.reduce(0) { $0 + $1.count }
+            )
+        }
+    }
+
+    private static func monthlySparklinePoints(
+        from chartPoints: [DoneChartPoint],
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> [DoneChartPoint] {
+        var countsByMonth: [Date: Int] = [:]
+
+        for point in chartPoints {
+            let monthStart = calendar.dateInterval(of: .month, for: point.date)?.start
+                ?? calendar.startOfDay(for: point.date)
+            countsByMonth[monthStart, default: 0] += point.count
+        }
+
+        let endMonth = calendar.dateInterval(of: .month, for: referenceDate)?.start
+            ?? calendar.startOfDay(for: referenceDate)
+        let startMonth = calendar.date(byAdding: .month, value: -11, to: endMonth) ?? endMonth
+        let monthOrder = (0..<12).compactMap { offset in
+            calendar.date(byAdding: .month, value: offset, to: startMonth)
+        }
+
+        return monthOrder.map { monthStart in
+            DoneChartPoint(
+                date: monthStart,
+                count: countsByMonth[monthStart, default: 0]
+            )
         }
     }
 

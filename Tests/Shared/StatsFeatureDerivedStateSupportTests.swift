@@ -10,6 +10,99 @@ import Testing
 
 struct StatsFeatureDerivedStateSupportTests {
     @Test
+    func build_groupsYearSparklineIntoTrailingTwelveMonths() {
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(
+            name: "Practice",
+            createdAt: makeDate("2026-03-05T08:00:00Z")
+        )
+        let logs = [
+            RoutineLog(timestamp: makeDate("2026-03-05T18:00:00Z"), taskID: task.id, kind: .completed),
+            RoutineLog(timestamp: makeDate("2026-03-20T18:00:00Z"), taskID: task.id, kind: .completed),
+            RoutineLog(timestamp: makeDate("2026-04-10T18:00:00Z"), taskID: task.id, kind: .completed),
+            RoutineLog(timestamp: makeDate("2026-06-08T18:00:00Z"), taskID: task.id, kind: .completed)
+        ]
+
+        let state = StatsFeatureDerivedStateBuilder.build(
+            tasks: [task],
+            logs: logs,
+            focusSessions: [],
+            selectedRange: .year,
+            taskTypeFilter: .all,
+            selectedImportanceUrgencyFilter: nil,
+            advancedQuery: "",
+            selectedTags: [],
+            includeTagMatchMode: .all,
+            excludedTags: [],
+            excludeTagMatchMode: .any,
+            tagColors: [:],
+            referenceDate: makeDate("2026-06-09T10:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(state.metrics.sparklinePoints.count == 12)
+        #expect(state.metrics.sparklinePoints.first == DoneChartPoint(
+            date: makeDate("2025-07-01T00:00:00Z"),
+            count: 0
+        ))
+        #expect(state.metrics.sparklinePoints.last == DoneChartPoint(
+            date: makeDate("2026-06-01T00:00:00Z"),
+            count: 1
+        ))
+        #expect(state.metrics.sparklinePoints.first {
+            calendar.isDate($0.date, equalTo: makeDate("2026-03-01T00:00:00Z"), toGranularity: .month)
+        }?.count == 2)
+        #expect(state.metrics.sparklinePoints.first {
+            calendar.isDate($0.date, equalTo: makeDate("2026-04-01T00:00:00Z"), toGranularity: .month)
+        }?.count == 1)
+        #expect(state.metrics.sparklinePoints.first {
+            calendar.isDate($0.date, equalTo: makeDate("2026-05-01T00:00:00Z"), toGranularity: .month)
+        }?.count == 0)
+        #expect(state.metrics.sparklineMaxCount == 2)
+    }
+
+    @Test
+    func build_groupsMonthSparklineIntoWeekSizedBuckets() {
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(
+            name: "Practice",
+            createdAt: makeDate("2026-03-01T08:00:00Z")
+        )
+        let logs = [
+            RoutineLog(timestamp: makeDate("2026-03-01T18:00:00Z"), taskID: task.id, kind: .completed),
+            RoutineLog(timestamp: makeDate("2026-03-07T18:00:00Z"), taskID: task.id, kind: .completed),
+            RoutineLog(timestamp: makeDate("2026-03-14T18:00:00Z"), taskID: task.id, kind: .completed),
+            RoutineLog(timestamp: makeDate("2026-03-30T18:00:00Z"), taskID: task.id, kind: .completed)
+        ]
+
+        let state = StatsFeatureDerivedStateBuilder.build(
+            tasks: [task],
+            logs: logs,
+            focusSessions: [],
+            selectedRange: .month,
+            taskTypeFilter: .all,
+            selectedImportanceUrgencyFilter: nil,
+            advancedQuery: "",
+            selectedTags: [],
+            includeTagMatchMode: .all,
+            excludedTags: [],
+            excludeTagMatchMode: .any,
+            tagColors: [:],
+            referenceDate: makeDate("2026-03-30T10:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(state.metrics.sparklinePoints == [
+            DoneChartPoint(date: makeDate("2026-03-01T00:00:00Z"), count: 2),
+            DoneChartPoint(date: makeDate("2026-03-08T00:00:00Z"), count: 1),
+            DoneChartPoint(date: makeDate("2026-03-15T00:00:00Z"), count: 0),
+            DoneChartPoint(date: makeDate("2026-03-22T00:00:00Z"), count: 0),
+            DoneChartPoint(date: makeDate("2026-03-29T00:00:00Z"), count: 1)
+        ])
+        #expect(state.metrics.sparklineMaxCount == 2)
+    }
+
+    @Test
     func dailyBarXAxisDatesPreferActiveBarDates() {
         let calendar = makeTestCalendar()
         let startDate = makeDate("2026-01-01T00:00:00Z")
