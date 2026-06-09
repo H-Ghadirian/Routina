@@ -94,6 +94,44 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func openSprintDeepLink_selectsBoardScopeInsideSegmentedHomeShell() async {
+        let sprintID = UUID()
+        let selectedTask = RoutineTask(
+            id: UUID(),
+            name: "Current todo",
+            scheduleMode: .oneOff
+        )
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                routineTasks: [selectedTask],
+                sprintBoardData: SprintBoardData(
+                    sprints: [
+                        BoardSprint(id: sprintID, title: "HSE", status: .active)
+                    ]
+                ),
+                selectedTaskID: selectedTask.id,
+                taskDetailState: TaskDetailFeature.State(task: selectedTask),
+                taskListMode: .todos,
+                isMacFilterDetailPresented: true,
+                macSidebarMode: .stats,
+                macSidebarSelection: .task(selectedTask.id),
+                selectedBoardScope: .backlog
+            )
+        ) {
+            HomeFeature()
+        }
+
+        await store.send(.openSprintDeepLink(sprintID)) {
+            $0.selectedTaskID = nil
+            $0.taskDetailState = nil
+            $0.isMacFilterDetailPresented = false
+            $0.macSidebarMode = .routines
+            $0.macSidebarSelection = nil
+            $0.selectedBoardScope = .sprint(sprintID)
+        }
+    }
+
+    @Test
     func staleTaskDetailLoadActionAfterDismissIsIgnored() async {
         let store = TestStore(initialState: HomeFeature.State()) {
             HomeFeature()

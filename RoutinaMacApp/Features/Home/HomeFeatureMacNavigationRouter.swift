@@ -129,7 +129,7 @@ struct HomeFeatureMacNavigationRouter {
             return .none
         }
 
-        state.macSidebarMode = .board
+        state.macSidebarMode = .routines
         state.macSidebarSelection = nil
         state.presentation.isMacFilterDetailPresented = false
         HomeSelectionEditor.clearTaskSelection(&state.selection)

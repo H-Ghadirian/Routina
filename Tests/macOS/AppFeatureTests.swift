@@ -237,7 +237,7 @@ struct AppFeatureTests {
     }
 
     @Test
-    func openDeepLink_sprintSelectsHomeBoardScope() async {
+    func openDeepLink_sprintSelectsSegmentedHomeBoardScope() async {
         let sprintID = UUID()
         let sprint = BoardSprint(id: sprintID, title: "Release prep", status: .active)
         let store = TestStore(
@@ -260,7 +260,7 @@ struct AppFeatureTests {
         }
 
         await store.receive(.home(.openSprintDeepLink(sprintID))) {
-            $0.home.macSidebarMode = .board
+            $0.home.macSidebarMode = .routines
             $0.home.selectedBoardScope = .sprint(sprintID)
         }
     }
