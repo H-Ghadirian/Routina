@@ -41,6 +41,21 @@ struct LocationSnapshot: Equatable, Sendable {
     var canDeterminePresence: Bool {
         authorizationStatus.isAuthorized && coordinate != nil
     }
+
+    func retainingLastKnownCoordinate(from previous: LocationSnapshot) -> LocationSnapshot {
+        guard authorizationStatus.isAuthorized,
+              coordinate == nil,
+              previous.authorizationStatus.isAuthorized,
+              let previousCoordinate = previous.coordinate
+        else { return self }
+
+        return LocationSnapshot(
+            authorizationStatus: authorizationStatus,
+            coordinate: previousCoordinate,
+            horizontalAccuracy: previous.horizontalAccuracy,
+            timestamp: previous.timestamp
+        )
+    }
 }
 
 struct LocationClient: Sendable {

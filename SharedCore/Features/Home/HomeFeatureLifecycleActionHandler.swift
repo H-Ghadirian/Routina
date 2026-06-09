@@ -39,7 +39,7 @@ struct HomeFeatureLifecycleActionHandler<State: HomeFeatureLifecycleState, Actio
     }
 
     func locationSnapshotUpdated(_ snapshot: LocationSnapshot, state: inout State) -> Effect<Action> {
-        state.locationSnapshot = snapshot
+        state.locationSnapshot = snapshot.retainingLastKnownCoordinate(from: state.locationSnapshot)
         refreshDisplays(&state)
         return .none
     }
