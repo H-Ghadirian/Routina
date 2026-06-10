@@ -52,7 +52,7 @@ enum HomeAddRoutineSupport {
             links: request.links,
             deadline: request.deadline,
             isAllDay: request.isAllDay,
-            allDaySpanDays: request.allDaySpanDays,
+            routineDurationMode: request.routineDurationMode,
             availabilityStartDate: request.availabilityStartDate,
             availabilityEndDate: request.availabilityEndDate,
             reminderAt: request.reminderAt,

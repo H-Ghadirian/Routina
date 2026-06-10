@@ -386,7 +386,7 @@ extension TaskDetailFeature {
             links: request.links,
             deadline: request.deadline,
             isAllDay: request.isAllDay,
-            allDaySpanDays: request.allDaySpanDays,
+            routineDurationMode: request.routineDurationMode,
             availabilityStartDate: request.availabilityStartDate,
             availabilityEndDate: request.availabilityEndDate,
             reminderAt: request.reminderAt,
@@ -425,7 +425,7 @@ extension TaskDetailFeature {
         links: [String],
         deadline: Date?,
         isAllDay: Bool,
-        allDaySpanDays: Int,
+        routineDurationMode: RoutineDurationMode,
         availabilityStartDate: Date?,
         availabilityEndDate: Date?,
         reminderAt: Date?,
@@ -500,9 +500,7 @@ extension TaskDetailFeature {
                 task.scheduleMode = scheduleMode
                 task.deadline = scheduleMode == .oneOff ? deadline : nil
                 task.isAllDay = isAllDay
-                task.allDaySpanDays = scheduleMode != .oneOff && isAllDay
-                    ? RoutineTask.sanitizedAllDaySpanDays(allDaySpanDays)
-                    : 1
+                task.routineDurationMode = scheduleMode == .oneOff ? .oneDay : routineDurationMode
                 let availabilityDateBounds = RoutineTask.normalizedAvailabilityDateBounds(
                     startDate: availabilityStartDate,
                     endDate: availabilityEndDate,
@@ -512,7 +510,7 @@ extension TaskDetailFeature {
                 task.availabilityEndDate = scheduleMode == .oneOff ? availabilityDateBounds.endDate : nil
                 task.recurrenceRule = recurrenceRule
                 task.replaceChecklistItems(checklistItems)
-                if !scheduleMode.isSoftIntervalRoutine {
+                if !task.usesOngoingLifecycle {
                     task.activityState = .idle
                     task.ongoingSince = nil
                 }
@@ -629,6 +627,7 @@ extension TaskDetailFeature {
             do {
                 let context = modelContext()
                 guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
+                guard task.usesOngoingLifecycle else { return }
                 task.startOngoing(at: startedAt)
                 DeviceActivityRecorder.recordAction(
                     .started,
@@ -654,6 +653,7 @@ extension TaskDetailFeature {
             do {
                 let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
                 guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
+                guard task.usesOngoingLifecycle else { return }
                 guard task.isOngoing else { return }
 
                 task.finishOngoing(at: finishedAt)

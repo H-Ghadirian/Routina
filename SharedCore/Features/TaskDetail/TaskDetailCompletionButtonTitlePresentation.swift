@@ -26,11 +26,14 @@ struct TaskDetailCompletionButtonTitlePresentation {
         if task.isArchived() {
             return "Resume the routine to mark dates done"
         }
+        if task.usesOngoingLifecycle && task.isOngoing {
+            return task.isMultiDayRoutine ? "Done" : "Finish ongoing"
+        }
+        if task.isMultiDayRoutine {
+            return "Start"
+        }
         if shouldUseBulkConfirmAsPrimaryAction {
             return bulkConfirmAssumedDaysTitle
-        }
-        if task.isSoftIntervalRoutine && task.isOngoing {
-            return "Finish ongoing"
         }
         if isSelectedDateAssumedDone {
             if calendar.isDateInToday(selectedDate) {

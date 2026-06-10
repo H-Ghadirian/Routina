@@ -146,10 +146,10 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
         if task.scheduleMode.isChecklistCompletionMode && task.completedChecklistItemCount > 0 {
             return "Checklist \(task.completedChecklistItemCount) of \(max(task.checklistItemCount, 1))"
         }
+        if task.isOngoing {
+            return ongoingDescription(for: task)
+        }
         if task.isSoftIntervalRoutine {
-            if task.isOngoing {
-                return ongoingDescription(for: task)
-            }
             if task.isDoneToday {
                 return "Done today"
             }

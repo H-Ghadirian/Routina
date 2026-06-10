@@ -44,7 +44,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
     var routineLink = ""
     var deadline: Date?
     var isAllDay = false
-    var allDaySpanDays: Int?
+    var routineDurationMode: RoutineDurationMode?
     var availabilityStartDate: Date?
     var availabilityEndDate: Date?
     var reminderAt: Date?
@@ -98,7 +98,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
         routineLink = basics.routineLink
         deadline = basics.deadline
         isAllDay = basics.isAllDay
-        allDaySpanDays = basics.allDaySpanDays
+        routineDurationMode = basics.routineDurationMode
         availabilityStartDate = basics.availabilityStartDate
         availabilityEndDate = basics.availabilityEndDate
         reminderAt = basics.reminderAt
@@ -148,7 +148,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
             || hasText(routineLink)
             || deadline != nil
             || isAllDay
-            || (allDaySpanDays ?? 1) != 1
+            || (routineDurationMode ?? .oneDay) != .oneDay
             || availabilityStartDate != nil
             || availabilityEndDate != nil
             || reminderAt != nil
@@ -207,9 +207,9 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
         state.basics.routineLink = routineLink
         state.basics.deadline = deadline
         state.basics.isAllDay = isAllDay
-        state.basics.allDaySpanDays = scheduleMode != .oneOff && isAllDay
-            ? RoutineTask.sanitizedAllDaySpanDays(allDaySpanDays ?? 1)
-            : 1
+        state.basics.routineDurationMode = scheduleMode == .oneOff
+            ? .oneDay
+            : (routineDurationMode ?? .oneDay)
         state.basics.availabilityStartDate = availabilityStartDate
         state.basics.availabilityEndDate = availabilityEndDate
         state.basics.reminderAt = reminderAt

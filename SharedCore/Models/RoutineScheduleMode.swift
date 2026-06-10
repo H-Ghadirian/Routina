@@ -175,6 +175,13 @@ enum ChecklistTimingMode: String, CaseIterable, Equatable, Hashable, Identifiabl
     var id: String { rawValue }
 }
 
+enum RoutineDurationMode: String, Codable, CaseIterable, Equatable, Hashable, Identifiable, Sendable {
+    case oneDay = "One day"
+    case multiDay = "Multi-day"
+
+    var id: String { rawValue }
+}
+
 enum RoutineActivityState: String, Codable, CaseIterable, Equatable, Hashable, Sendable {
     case idle
     case ongoing

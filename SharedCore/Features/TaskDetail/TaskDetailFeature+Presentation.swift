@@ -185,8 +185,11 @@ extension TaskDetailFeature.State {
         if canUndoSelectedDate {
             return .requestUndoSelectedDateCompletion
         }
-        if task.isSoftIntervalRoutine && task.isOngoing {
+        if task.usesOngoingLifecycle && task.isOngoing {
             return .finishOngoingTapped
+        }
+        if task.isMultiDayRoutine {
+            return .startOngoingTapped
         }
         if shouldUseBulkConfirmAsPrimaryAction {
             return .confirmAssumedPastDays
@@ -195,13 +198,18 @@ extension TaskDetailFeature.State {
     }
 
     var completionButtonSystemImage: String? {
-        canUndoSelectedDate ? "arrow.uturn.backward" : nil
+        if canUndoSelectedDate { return "arrow.uturn.backward" }
+        if task.isMultiDayRoutine && !task.isOngoing { return "play.circle.fill" }
+        return nil
     }
 
     var isCompletionButtonDisabled: Bool {
         guard !canUndoSelectedDate else { return false }
-        if task.isSoftIntervalRoutine && task.isOngoing {
+        if task.usesOngoingLifecycle && task.isOngoing {
             return false
+        }
+        if task.isMultiDayRoutine {
+            return task.isArchived()
         }
         if task.isCompletedOneOff || task.isCanceledOneOff {
             return true
@@ -360,11 +368,12 @@ extension TaskDetailFeature.State {
         if let pausedAt {
             return "Paused since \(pausedAt.formatted(date: .abbreviated, time: .omitted))"
         }
-        if task.isSoftIntervalRoutine && task.isOngoing {
+        if task.usesOngoingLifecycle && task.isOngoing {
             if let ongoingSince = task.ongoingSince {
-                return "Ongoing since \(ongoingSince.formatted(date: .abbreviated, time: .omitted))"
+                let prefix = task.isMultiDayRoutine ? "In progress" : "Ongoing"
+                return "\(prefix) since \(ongoingSince.formatted(date: .abbreviated, time: .omitted))"
             }
-            return "Ongoing"
+            return task.isMultiDayRoutine ? "In progress" : "Ongoing"
         }
         if task.isOneOffTask {
             if task.isInProgress {

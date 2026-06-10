@@ -36,23 +36,17 @@ struct TaskDetailRecurrenceEditActionHandler {
             if isAllDay {
                 state.editRecurrenceHasExplicitTime = false
                 state.editRecurrenceHasTimeRange = false
-            } else {
-                state.editAllDaySpanDays = 1
-            }
-            if state.editScheduleMode == .oneOff {
-                state.editAllDaySpanDays = 1
             }
         }
         disableAutoAssumeIfNeeded(state: &state)
         return .none
     }
 
-    func editAllDaySpanDaysChanged(_ days: Int, state: inout State) -> Effect<Action> {
-        guard state.editScheduleMode != .oneOff, state.editIsAllDay else {
-            state.editAllDaySpanDays = 1
-            return .none
-        }
-        state.editAllDaySpanDays = RoutineTask.sanitizedAllDaySpanDays(days)
+    func editRoutineDurationModeChanged(
+        _ durationMode: RoutineDurationMode,
+        state: inout State
+    ) -> Effect<Action> {
+        state.editRoutineDurationMode = state.editScheduleMode == .oneOff ? .oneDay : durationMode
         return .none
     }
 
@@ -113,10 +107,7 @@ struct TaskDetailRecurrenceEditActionHandler {
                 state.editAvailabilityStartDate = nil
                 state.editAvailabilityEndDate = nil
             } else {
-                state.editAllDaySpanDays = 1
-            }
-            if !state.editIsAllDay {
-                state.editAllDaySpanDays = 1
+                state.editRoutineDurationMode = .oneDay
             }
         }
         disableAutoAssumeIfNeeded(state: &state)

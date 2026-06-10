@@ -143,15 +143,13 @@ enum DayPlanAllDayTasks {
                     spans.append(span)
                 }
             } else {
-                let spanDays = RoutineTask.sanitizedAllDaySpanDays(task.allDaySpanDays)
                 spans += routineAllDayOccurrenceStarts(
                     for: task,
                     on: dates,
-                    spanDays: spanDays,
                     calendar: calendar
                 )
                     .compactMap { startDate in
-                        routineAllDaySpan(on: startDate, spanDays: spanDays, calendar: calendar)
+                        oneDaySpan(on: startDate, calendar: calendar)
                     }
             }
 
@@ -181,23 +179,6 @@ enum DayPlanAllDayTasks {
     ) -> AllDaySpan? {
         let startDate = calendar.startOfDay(for: date)
         guard let endDate = calendar.date(byAdding: .day, value: 1, to: startDate),
-              endDate > startDate else {
-            return nil
-        }
-        return (startDate, endDate, false)
-    }
-
-    private static func routineAllDaySpan(
-        on date: Date,
-        spanDays: Int,
-        calendar: Calendar
-    ) -> AllDaySpan? {
-        let startDate = calendar.startOfDay(for: date)
-        guard let endDate = calendar.date(
-            byAdding: .day,
-            value: RoutineTask.sanitizedAllDaySpanDays(spanDays),
-            to: startDate
-        ),
               endDate > startDate else {
             return nil
         }
@@ -274,17 +255,15 @@ enum DayPlanAllDayTasks {
     private static func routineAllDayOccurrenceStarts(
         for task: RoutineTask,
         on dates: [Date],
-        spanDays: Int,
         calendar: Calendar
     ) -> [Date] {
         guard !task.isOneOffTask,
               let firstDate = dates.first,
               let lastDate = dates.last else { return [] }
 
-        let lookbackDays = max(RoutineTask.sanitizedAllDaySpanDays(spanDays) - 1, 0)
         let firstVisibleDay = calendar.startOfDay(for: firstDate)
         let lastVisibleDay = calendar.startOfDay(for: lastDate)
-        var candidateDay = calendar.date(byAdding: .day, value: -lookbackDays, to: firstVisibleDay) ?? firstVisibleDay
+        var candidateDay = firstVisibleDay
         var starts: [Date] = []
 
         while candidateDay <= lastVisibleDay {

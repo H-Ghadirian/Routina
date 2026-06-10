@@ -113,6 +113,56 @@ struct TaskDetailFeatureCompletionTests {
     }
 
     @Test
+    func multiDayRoutinePrimaryActionStartsThenFinishes() {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-04-25T10:00:00Z")
+        let task = RoutineTask(
+            name: "Travel",
+            routineDurationMode: .multiDay,
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 180),
+            scheduleAnchor: makeDate("2026-04-01T10:00:00Z")
+        )
+        var state = TaskDetailFeature.State(task: task)
+        let handler = TaskDetailRoutineLifecycleActionHandler(
+            now: { now },
+            calendar: calendar,
+            refreshTaskView: { $0.taskRefreshID &+= 1 },
+            updateDerivedState: { _ in },
+            upsertLocalLog: { date, state in
+                state.logs.append(RoutineLog(timestamp: date, taskID: state.task.id, kind: .completed))
+            },
+            persistPause: { _, _ in .none },
+            persistNotToday: { _, _ in .none },
+            persistResume: { _, _ in .none },
+            persistStartOngoing: { _, _ in .none },
+            persistFinishOngoing: { _, _ in .none }
+        )
+
+        #expect(state.completionButtonTitle == "Start")
+        #expect(state.completionButtonAction == .startOngoingTapped)
+        #expect(state.completionButtonSystemImage == "play.circle.fill")
+        var futureSelectedState = state
+        futureSelectedState.selectedDate = calendar.date(byAdding: .day, value: 3, to: now)
+        #expect(!futureSelectedState.isCompletionButtonDisabled)
+
+        _ = handler.startOngoingTapped(state: &state)
+
+        #expect(state.task.isOngoing)
+        #expect(state.task.ongoingSince == now)
+        #expect(state.summaryStatusTitle.hasPrefix("In progress since"))
+        #expect(state.completionButtonTitle == "Done")
+        #expect(state.completionButtonAction == .finishOngoingTapped)
+
+        _ = handler.finishOngoingTapped(state: &state)
+
+        #expect(!state.task.isOngoing)
+        #expect(state.task.ongoingSince == nil)
+        #expect(state.task.lastDone == now)
+        #expect(state.logs.count == 1)
+    }
+
+    @Test
     func toggleChecklistItemCompletion_forOptionalChecklistPersistsProgress() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()
