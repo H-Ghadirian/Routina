@@ -51,6 +51,7 @@ struct HomeRoutineDisplayCore: Equatable {
     var checklistItemCount: Int
     var completedChecklistItemCount: Int
     var dueChecklistItemCount: Int
+    var hasDailyRunoutChecklistItem: Bool
     var nextPendingChecklistItemTitle: String?
     var nextDueChecklistItemTitle: String?
     var doneCount: Int

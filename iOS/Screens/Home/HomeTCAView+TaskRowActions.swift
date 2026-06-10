@@ -81,30 +81,32 @@ extension HomeTCAView {
             }
         }
 
-        Divider()
+        if !task.isDailyRoutine {
+            Divider()
 
-        Menu {
-            Button {
-                store.send(.planTask(task.taskID, Date()))
-            } label: {
-                Label("Today", systemImage: "calendar")
-            }
-
-            Button {
-                presentPlanningDatePicker(for: task)
-            } label: {
-                Label("Choose Date...", systemImage: "calendar.badge.plus")
-            }
-
-            if task.plannedDate != nil {
+            Menu {
                 Button {
-                    store.send(.planTask(task.taskID, nil))
+                    store.send(.planTask(task.taskID, Date()))
                 } label: {
-                    Label("Clear Plan", systemImage: "xmark.circle")
+                    Label("Today", systemImage: "calendar")
                 }
+
+                Button {
+                    presentPlanningDatePicker(for: task)
+                } label: {
+                    Label("Choose Date...", systemImage: "calendar.badge.plus")
+                }
+
+                if task.plannedDate != nil {
+                    Button {
+                        store.send(.planTask(task.taskID, nil))
+                    } label: {
+                        Label("Clear Plan", systemImage: "xmark.circle")
+                    }
+                }
+            } label: {
+                Label("Plan to do", systemImage: "calendar.badge.clock")
             }
-        } label: {
-            Label("Plan to do", systemImage: "calendar.badge.clock")
         }
 
         if let pinAction = presentation.pinAction {

@@ -36,6 +36,7 @@ protocol HomeTaskListDisplay {
     var isPinned: Bool { get }
     var isInProgress: Bool { get }
     var completedChecklistItemCount: Int { get }
+    var hasDailyRunoutChecklistItem: Bool { get }
     var manualSectionOrders: [String: Int] { get }
     var todoState: TodoState? { get }
 }
@@ -57,12 +58,21 @@ extension HomeTaskListDisplay {
         nil
     }
 
+    var hasDailyRunoutChecklistItem: Bool {
+        false
+    }
+
     var placeIDs: [UUID] {
         placeID.map { [$0] } ?? []
     }
 
     var isDailyRoutine: Bool {
-        !isOneOffTask && recurrenceRule.isDaily
+        RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+            isOneOffTask: isOneOffTask,
+            scheduleMode: scheduleMode,
+            recurrenceRule: recurrenceRule,
+            hasDailyRunoutChecklistItem: hasDailyRunoutChecklistItem
+        )
     }
 
     var taskListPrimaryTag: String? {

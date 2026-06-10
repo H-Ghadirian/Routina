@@ -40,6 +40,7 @@ struct TaskDetailStepChecklistEditActionHandler {
         state: inout State
     ) -> Effect<Action> {
         state.editChecklistItemDraftTitle = value
+        clearPlanningIfDailyRoutine(state: &state)
         return .none
     }
 
@@ -48,6 +49,7 @@ struct TaskDetailStepChecklistEditActionHandler {
         state: inout State
     ) -> Effect<Action> {
         state.editChecklistItemDraftInterval = RoutineChecklistItem.clampedIntervalDays(value)
+        clearPlanningIfDailyRoutine(state: &state)
         return .none
     }
 
@@ -61,12 +63,14 @@ struct TaskDetailStepChecklistEditActionHandler {
         state.editChecklistItemDraftTitle = ""
         state.editChecklistItemDraftInterval = 3
         disableAutoAssumeIfNeeded(state: &state)
+        clearPlanningIfDailyRoutine(state: &state)
         return .none
     }
 
     func editRemoveChecklistItem(_ itemID: UUID, state: inout State) -> Effect<Action> {
         state.editRoutineChecklistItems.removeAll { $0.id == itemID }
         disableAutoAssumeIfNeeded(state: &state)
+        clearPlanningIfDailyRoutine(state: &state)
         return .none
     }
 
@@ -97,6 +101,28 @@ struct TaskDetailStepChecklistEditActionHandler {
                 createdAt: createdAt
             )
         ]
+    }
+
+    private func candidateChecklistItems(for state: State) -> [RoutineChecklistItem] {
+        if let pendingTitle = RoutineChecklistItem.normalizedTitle(state.editChecklistItemDraftTitle) {
+            return state.editRoutineChecklistItems + [
+                RoutineChecklistItem(
+                    title: pendingTitle,
+                    intervalDays: state.editChecklistItemDraftInterval
+                )
+            ]
+        }
+        return state.editRoutineChecklistItems
+    }
+
+    private func clearPlanningIfDailyRoutine(state: inout State) {
+        if RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+            scheduleMode: state.editScheduleMode,
+            recurrenceRule: state.candidateRecurrenceRule,
+            checklistItems: candidateChecklistItems(for: state)
+        ) {
+            state.editPlannedDate = nil
+        }
     }
 
     private func disableAutoAssumeIfNeeded(state: inout State) {

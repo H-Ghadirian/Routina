@@ -153,6 +153,11 @@ struct HomeTaskListFilteringTests {
         let tasks = [
             TestTaskDisplay(name: "Plan today", plannedDate: referenceDate.addingTimeInterval(12 * 60 * 60)),
             TestTaskDisplay(name: "Plan tomorrow", plannedDate: referenceDate.addingTimeInterval(24 * 60 * 60)),
+            TestTaskDisplay(
+                name: "Daily planned today",
+                recurrenceRule: .interval(days: 1),
+                plannedDate: referenceDate.addingTimeInterval(12 * 60 * 60)
+            ),
             TestTaskDisplay(name: "Unplanned")
         ]
 
@@ -160,6 +165,72 @@ struct HomeTaskListFilteringTests {
             .filteredPlannedTodayTasks(tasks)
 
         #expect(result.map(\.name) == ["Plan today"])
+    }
+
+    @Test
+    func presentationKeepsDailyRoutineOutOfPlannedTodaySection() {
+        let referenceDate = Date(timeIntervalSince1970: 1_714_608_000)
+        let dailyID = UUID()
+        let weeklyID = UUID()
+        let daily = TestTaskDisplay(
+            taskID: dailyID,
+            name: "Daily routine",
+            recurrenceRule: .interval(days: 1),
+            plannedDate: referenceDate
+        )
+        let weekly = TestTaskDisplay(
+            taskID: weeklyID,
+            name: "Weekly routine",
+            recurrenceRule: .interval(days: 7)
+        )
+
+        let presentation = HomeTaskListPresentation.iOS(
+            filtering: makeFiltering(),
+            routineDisplays: [daily, weekly],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            hideUnavailableRoutines: false,
+            taskListKind: .all
+        )
+
+        #expect(presentation.sections.map(\.kind) == [.daily, .regular])
+        #expect(presentation.sections.first?.tasks.map(\.taskID) == [dailyID])
+        #expect(presentation.sections.flatMap(\.tasks).filter { $0.taskID == dailyID }.count == 1)
+    }
+
+    @Test
+    func presentationTreatsChecklistDrivenRoutineAsDailyOnlyWithDailyRunoutItem() {
+        let dailyRunoutID = UUID()
+        let weeklyRunoutID = UUID()
+        let dailyRunout = TestTaskDisplay(
+            taskID: dailyRunoutID,
+            name: "Daily runout",
+            tags: ["Pantry"],
+            recurrenceRule: .interval(days: 1),
+            scheduleMode: .derivedFromChecklist,
+            hasDailyRunoutChecklistItem: true
+        )
+        let weeklyRunout = TestTaskDisplay(
+            taskID: weeklyRunoutID,
+            name: "Weekly runout",
+            tags: ["Pantry"],
+            recurrenceRule: .interval(days: 1),
+            scheduleMode: .derivedFromChecklist,
+            hasDailyRunoutChecklistItem: false
+        )
+
+        let presentation = HomeTaskListPresentation.iOS(
+            filtering: makeFiltering(routineListSectioningMode: .tags),
+            routineDisplays: [dailyRunout, weeklyRunout],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            hideUnavailableRoutines: false,
+            taskListKind: .all
+        )
+
+        #expect(presentation.sections.map(\.kind) == [.daily, .tag])
+        #expect(presentation.sections.map(\.title) == ["Daily Routines", "#Pantry"])
+        #expect(presentation.sections.map { $0.tasks.map(\.taskID) } == [[dailyRunoutID], [weeklyRunoutID]])
     }
 
     @Test
@@ -434,7 +505,7 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
-    func iOSPresentationTagGroupingCombinesDailyAndRegularRows() {
+    func iOSPresentationTagGroupingKeepsDailyRoutinesSeparate() {
         let presentation = HomeTaskListPresentation.iOS(
             filtering: makeFiltering(routineListSectioningMode: .tags),
             routineDisplays: [
@@ -448,14 +519,14 @@ struct HomeTaskListFilteringTests {
             taskListKind: .all
         )
 
-        #expect(presentation.sections.map(\.kind) == [.tag, .tag])
-        #expect(presentation.sections.map(\.title) == ["#Errand", "#Focus"])
-        #expect(presentation.sections.map { $0.tasks.map(\.name) } == [["Todo Errand"], ["Daily Focus", "Weekly Focus"]])
-        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 1])
+        #expect(presentation.sections.map(\.kind) == [.daily, .tag, .tag])
+        #expect(presentation.sections.map(\.title) == ["Daily Routines", "#Errand", "#Focus"])
+        #expect(presentation.sections.map { $0.tasks.map(\.name) } == [["Daily Focus"], ["Todo Errand"], ["Weekly Focus"]])
+        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 1, 2])
     }
 
     @Test
-    func iOSPresentationNoneGroupingCombinesDailyAndRegularRows() {
+    func iOSPresentationNoneGroupingKeepsDailyRoutinesSeparate() {
         let presentation = HomeTaskListPresentation.iOS(
             filtering: makeFiltering(routineListSectioningMode: .none),
             routineDisplays: [
@@ -469,9 +540,9 @@ struct HomeTaskListFilteringTests {
             taskListKind: .all
         )
 
-        #expect(presentation.sections.map(\.kind) == [.regular])
-        #expect(presentation.sections.map(\.title) == ["Tasks"])
-        #expect(presentation.sections.map { $0.tasks.map(\.name) } == [["Daily", "Todo", "Weekly"]])
+        #expect(presentation.sections.map(\.kind) == [.daily, .regular])
+        #expect(presentation.sections.map(\.title) == ["Daily Routines", "Tasks"])
+        #expect(presentation.sections.map { $0.tasks.map(\.name) } == [["Daily"], ["Todo", "Weekly"]])
     }
 
     @Test
@@ -583,14 +654,14 @@ struct HomeTaskListFilteringTests {
             )
         )
 
-        #expect(presentation.sections.map(\.kind) == [.tag, .tag])
-        #expect(presentation.sections.map(\.title) == ["#Admin", "#Focus"])
-        #expect(presentation.sections.compactMap(\.moveContext?.sectionKey) == ["tag:admin", "tag:focus"])
-        #expect(presentation.sections.compactMap(\.moveContext?.orderedTaskIDs.first) == [adminID, focusID])
+        #expect(presentation.sections.map(\.kind) == [.daily, .tag])
+        #expect(presentation.sections.map(\.title) == ["Daily Routines", "#Admin"])
+        #expect(presentation.sections.compactMap(\.moveContext?.sectionKey) == ["daily", "tag:admin"])
+        #expect(presentation.sections.compactMap(\.moveContext?.orderedTaskIDs.first) == [focusID, adminID])
     }
 
     @Test
-    func sidebarPresentationNoneGroupingBuildsFlatMoveContext() {
+    func sidebarPresentationNoneGroupingKeepsDailyRoutinesSeparate() {
         let dailyID = UUID()
         let weeklyID = UUID()
         let presentation = HomeTaskListPresentation.sidebar(
@@ -608,10 +679,10 @@ struct HomeTaskListFilteringTests {
             )
         )
 
-        #expect(presentation.sections.map(\.kind) == [.regular])
-        #expect(presentation.sections.map(\.title) == ["Tasks"])
-        #expect(presentation.sections.compactMap(\.moveContext?.sectionKey) == ["tasks"])
-        #expect(presentation.sections.first?.moveContext?.orderedTaskIDs == [dailyID, weeklyID])
+        #expect(presentation.sections.map(\.kind) == [.daily, .regular])
+        #expect(presentation.sections.map(\.title) == ["Daily Routines", "Tasks"])
+        #expect(presentation.sections.compactMap(\.moveContext?.sectionKey) == ["daily", "tasks"])
+        #expect(presentation.sections.map { $0.moveContext?.orderedTaskIDs } == [[dailyID], [weeklyID]])
     }
 
     @Test
@@ -888,6 +959,7 @@ private struct TestTaskDisplay: HomeRoutineMetadataDisplay, Equatable {
     var checklistItemCount: Int = 0
     var completedChecklistItemCount: Int = 0
     var dueChecklistItemCount: Int = 0
+    var hasDailyRunoutChecklistItem: Bool = false
     var nextPendingChecklistItemTitle: String?
     var nextDueChecklistItemTitle: String?
     var doneCount: Int = 0

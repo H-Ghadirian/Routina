@@ -612,7 +612,9 @@ extension HomeTCAView {
             scheduleMode: scheduleMode,
             includesIdentity: true,
             includesDangerZone: false
-        )
+        ).filter { section in
+            section != .planning || addState?.supportsPlanning != false
+        }
         return FormSection.visibleTaskFormSections(
             from: sections,
             mode: .progressiveCreate,
@@ -628,7 +630,9 @@ extension HomeTCAView {
             scheduleMode: detail.editScheduleMode,
             includesIdentity: true,
             includesDangerZone: true
-        )
+        ).filter { section in
+            section != .planning || detail.supportsPlanning
+        }
         return FormSection.visibleTaskFormSections(
             from: sections,
             mode: .progressiveEdit,

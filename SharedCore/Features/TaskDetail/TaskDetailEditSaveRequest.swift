@@ -93,6 +93,7 @@ struct TaskDetailEditSaveRequestBuilder {
             endDate: state.editAvailabilityEndDate,
             calendar: calendar
         )
+        let sanitizedChecklistItems = RoutineChecklistItem.sanitized(state.editRoutineChecklistItems)
 
         return TaskDetailEditSaveRequest(
             taskID: state.task.id,
@@ -106,7 +107,13 @@ struct TaskDetailEditSaveRequestBuilder {
             routineDurationMode: scheduleMode == .oneOff ? .oneDay : state.editRoutineDurationMode,
             availabilityStartDate: scheduleMode == .oneOff ? availabilityDateBounds.startDate : nil,
             availabilityEndDate: scheduleMode == .oneOff ? availabilityDateBounds.endDate : nil,
-            plannedDate: RoutineTask.normalizedPlannedDate(state.editPlannedDate, calendar: calendar),
+            plannedDate: RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+                scheduleMode: scheduleMode,
+                recurrenceRule: recurrenceRule,
+                checklistItems: sanitizedChecklistItems
+            )
+                ? nil
+                : RoutineTask.normalizedPlannedDate(state.editPlannedDate, calendar: calendar),
             reminderAt: scheduleMode == .oneOff ? state.editReminderAt : nil,
             priority: matrixPriority(state.editImportance, state.editUrgency),
             importance: state.editImportance,
@@ -124,7 +131,7 @@ struct TaskDetailEditSaveRequestBuilder {
             steps: (scheduleMode.isStandardRoutineMode || scheduleMode == .oneOff)
                 ? state.editRoutineSteps
                 : [],
-            checklistItems: RoutineChecklistItem.sanitized(state.editRoutineChecklistItems),
+            checklistItems: sanitizedChecklistItems,
             scheduleMode: scheduleMode,
             recurrenceRule: recurrenceRule,
             color: state.editColor,

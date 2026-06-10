@@ -167,7 +167,7 @@ extension TaskFormModel {
         if !relationships.isEmpty {
             sections.insert(.linkedTasks)
         }
-        if plannedDate.wrappedValue != nil {
+        if supportsPlanning, plannedDate.wrappedValue != nil {
             sections.insert(.planning)
         }
         if hasText(link.wrappedValue) {
@@ -233,7 +233,7 @@ extension AddRoutineFeature.State {
         if !organization.relationships.isEmpty {
             sections.insert(.linkedTasks)
         }
-        if basics.plannedDate != nil {
+        if supportsPlanning, basics.plannedDate != nil {
             sections.insert(.planning)
         }
         if hasText(basics.routineLink) {
@@ -265,6 +265,16 @@ extension AddRoutineFeature.State {
 
     private func hasText(_ value: String) -> Bool {
         !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+}
+
+extension AddRoutineFeature.State {
+    var supportsPlanning: Bool {
+        !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+            scheduleMode: schedule.scheduleMode,
+            recurrenceRule: candidateRecurrenceRule,
+            checklistItems: candidateChecklistItems
+        )
     }
 }
 
@@ -302,6 +312,9 @@ extension TaskDetailFeature.State {
         if !editRelationships.isEmpty {
             sections.insert(.linkedTasks)
         }
+        if supportsPlanning, editPlannedDate != nil {
+            sections.insert(.planning)
+        }
         if hasText(editRoutineLink) {
             sections.insert(.linkURL)
         }
@@ -331,5 +344,27 @@ extension TaskDetailFeature.State {
 
     private func hasText(_ value: String) -> Bool {
         !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+}
+
+extension TaskDetailFeature.State {
+    var supportsPlanning: Bool {
+        !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+            scheduleMode: editScheduleMode,
+            recurrenceRule: candidateRecurrenceRule,
+            checklistItems: candidateChecklistItems
+        )
+    }
+
+    private var candidateChecklistItems: [RoutineChecklistItem] {
+        if let pendingTitle = RoutineChecklistItem.normalizedTitle(editChecklistItemDraftTitle) {
+            return editRoutineChecklistItems + [
+                RoutineChecklistItem(
+                    title: pendingTitle,
+                    intervalDays: editChecklistItemDraftInterval
+                )
+            ]
+        }
+        return editRoutineChecklistItems
     }
 }

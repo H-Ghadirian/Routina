@@ -161,6 +161,112 @@ struct AddRoutineFeatureSaveTests {
     }
 
     @Test
+    func saveTapped_clearsPlannedDateForDailyRoutine() async {
+        let plannedDate = makeDate("2026-06-10T15:30:00Z")
+        let capturedRequest = LockIsolated<AddRoutineSaveRequest?>(nil)
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(
+                    routineName: "Morning review",
+                    plannedDate: plannedDate
+                ),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .fixedInterval,
+                    frequency: .day,
+                    frequencyValue: 1
+                )
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { request in
+                    capturedRequest.withValue { $0 = request }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.saveTapped)
+
+        #expect(capturedRequest.value?.plannedDate == nil)
+        #expect(capturedRequest.value?.recurrenceRule.isDaily == true)
+    }
+
+    @Test
+    func saveTapped_keepsPlannedDateForChecklistDrivenRoutineWithoutDailyRunoutItem() async {
+        let calendar = makeTestCalendar()
+        let plannedDate = makeDate("2026-06-10T15:30:00Z")
+        let capturedRequest = LockIsolated<AddRoutineSaveRequest?>(nil)
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(
+                    routineName: "Pantry restock",
+                    plannedDate: plannedDate
+                ),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(scheduleMode: .derivedFromChecklist),
+                checklist: AddRoutineChecklistState(
+                    routineChecklistItems: [RoutineChecklistItem(title: "Rice", intervalDays: 3)]
+                )
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { request in
+                    capturedRequest.withValue { $0 = request }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0, calendar: calendar)
+        }
+
+        await store.send(.saveTapped)
+
+        #expect(capturedRequest.value?.plannedDate == calendar.startOfDay(for: plannedDate))
+        #expect(capturedRequest.value?.scheduleMode == .derivedFromChecklist)
+        #expect(capturedRequest.value?.recurrenceRule.isDaily == true)
+    }
+
+    @Test
+    func saveTapped_clearsPlannedDateForChecklistDrivenRoutineWithDailyRunoutItem() async {
+        let plannedDate = makeDate("2026-06-10T15:30:00Z")
+        let capturedRequest = LockIsolated<AddRoutineSaveRequest?>(nil)
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(
+                    routineName: "Pantry restock",
+                    plannedDate: plannedDate
+                ),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(scheduleMode: .derivedFromChecklist),
+                checklist: AddRoutineChecklistState(
+                    routineChecklistItems: [RoutineChecklistItem(title: "Milk", intervalDays: 1)]
+                )
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { request in
+                    capturedRequest.withValue { $0 = request }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.saveTapped)
+
+        #expect(capturedRequest.value?.plannedDate == nil)
+        #expect(capturedRequest.value?.scheduleMode == .derivedFromChecklist)
+        #expect(capturedRequest.value?.recurrenceRule.isDaily == true)
+    }
+
+    @Test
     func saveTapped_includesExactAvailabilityForTodosWithoutDeadline() async {
         let exactTime = RoutineTimeOfDay(hour: 20, minute: 0)
         let capturedRequest = LockIsolated<AddRoutineSaveRequest?>(nil)

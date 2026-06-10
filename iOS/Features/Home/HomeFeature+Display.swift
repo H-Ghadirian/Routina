@@ -125,6 +125,7 @@ private extension HomeFeature.RoutineDisplay {
             checklistItemCount: core.checklistItemCount,
             completedChecklistItemCount: core.completedChecklistItemCount,
             dueChecklistItemCount: core.dueChecklistItemCount,
+            hasDailyRunoutChecklistItem: core.hasDailyRunoutChecklistItem,
             nextPendingChecklistItemTitle: core.nextPendingChecklistItemTitle,
             nextDueChecklistItemTitle: core.nextDueChecklistItemTitle,
             doneCount: core.doneCount,

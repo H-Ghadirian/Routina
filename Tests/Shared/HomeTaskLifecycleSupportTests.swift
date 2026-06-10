@@ -150,7 +150,10 @@ struct HomeTaskLifecycleSupportTests {
     @Test
     func planTaskStoresDateOnlyAndCanClearPlan() {
         let calendar = makeTestCalendar()
-        let task = RoutineTask(name: "Draft outline")
+        let task = RoutineTask(
+            name: "Draft outline",
+            scheduleMode: .oneOff
+        )
         let plannedDate = makeDate("2026-06-10T16:20:00Z")
         let normalizedDate = calendar.startOfDay(for: plannedDate)
         var tasks = [task]
@@ -182,6 +185,73 @@ struct HomeTaskLifecycleSupportTests {
         )
 
         #expect(clearUpdate == HomePlanTaskUpdate(taskID: task.id, plannedDate: nil))
+        #expect(tasks[0].plannedDate == nil)
+    }
+
+    @Test
+    func planTaskDoesNotPlanDailyRoutine() {
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(
+            name: "Morning review",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 1)
+        )
+        var tasks = [task]
+
+        let update = HomeTaskLifecycleSupport.planTask(
+            taskID: task.id,
+            plannedDate: makeDate("2026-06-10T16:20:00Z"),
+            calendar: calendar,
+            tasks: &tasks
+        )
+
+        #expect(update == nil)
+        #expect(tasks[0].plannedDate == nil)
+    }
+
+    @Test
+    func planTaskAllowsChecklistDrivenRoutineWithoutDailyRunoutItem() {
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(
+            name: "Pantry restock",
+            checklistItems: [RoutineChecklistItem(title: "Rice", intervalDays: 3)],
+            scheduleMode: .derivedFromChecklist,
+            recurrenceRule: .interval(days: 1)
+        )
+        let plannedDate = makeDate("2026-06-10T16:20:00Z")
+        let normalizedDate = calendar.startOfDay(for: plannedDate)
+        var tasks = [task]
+
+        let update = HomeTaskLifecycleSupport.planTask(
+            taskID: task.id,
+            plannedDate: plannedDate,
+            calendar: calendar,
+            tasks: &tasks
+        )
+
+        #expect(update == HomePlanTaskUpdate(taskID: task.id, plannedDate: normalizedDate))
+        #expect(tasks[0].plannedDate == normalizedDate)
+    }
+
+    @Test
+    func planTaskDoesNotPlanChecklistDrivenRoutineWithDailyRunoutItem() {
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(
+            name: "Pantry restock",
+            checklistItems: [RoutineChecklistItem(title: "Milk", intervalDays: 1)],
+            scheduleMode: .derivedFromChecklist,
+            recurrenceRule: .interval(days: 1)
+        )
+        var tasks = [task]
+
+        let update = HomeTaskLifecycleSupport.planTask(
+            taskID: task.id,
+            plannedDate: makeDate("2026-06-10T16:20:00Z"),
+            calendar: calendar,
+            tasks: &tasks
+        )
+
+        #expect(update == nil)
         #expect(tasks[0].plannedDate == nil)
     }
 }

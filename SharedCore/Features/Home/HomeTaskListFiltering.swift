@@ -137,7 +137,8 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
     func filteredPlannedTodayTasks(_ displays: [Display]) -> [Display] {
         displays
             .filter { task in
-                guard predicate.matchesVisibleTask(task),
+                guard !task.isDailyRoutine,
+                      predicate.matchesVisibleTask(task),
                       let plannedDate = task.plannedDate else { return false }
                 return metrics.configuration.calendar.isDate(
                     plannedDate,
