@@ -10,6 +10,6 @@ enum TimelineSelectionSupport {
         if let currentSelection, visibleEntryIDs.contains(currentSelection) {
             return currentSelection
         }
-        return visibleEntryIDs.first
+        return visibleEntryIDs.last
     }
 }

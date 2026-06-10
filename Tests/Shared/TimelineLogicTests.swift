@@ -708,6 +708,33 @@ struct TimelineLogicTests {
     }
 
     @Test
+    func filteredEntries_marksStatusNotesWithDistinctPresentation() {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-20T12:00:00Z")
+        let note = RoutineNote(
+            body: "Reviewing sprint notes",
+            tags: ["Status"],
+            createdAt: makeDate("2026-03-20T09:30:00Z"),
+            updatedAt: makeDate("2026-03-20T09:30:00Z")
+        )
+
+        let entries = TimelineLogic.filteredEntries(
+            logs: [],
+            tasks: [],
+            notes: [note],
+            range: .all,
+            filterType: .all,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(entries.count == 1)
+        #expect(entries.first?.isStatusNote == true)
+        #expect(entries.first?.taskEmoji == "💬")
+        #expect(entries.first?.taskName == "Reviewing sprint notes")
+    }
+
+    @Test
     func filteredEntries_includesStandaloneEventsAndSupportsEventFilter() {
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-20T10:00:00Z")
@@ -935,15 +962,14 @@ struct TimelineLogicTests {
         )
 
         #expect(groups.count == 2)
-        // Most recent day first
-        #expect(groups[0].date == makeDate("2026-03-20T00:00:00Z"))
-        #expect(groups[0].entries.count == 2)
-        #expect(groups[1].date == makeDate("2026-03-19T00:00:00Z"))
-        #expect(groups[1].entries.count == 1)
+        #expect(groups[0].date == makeDate("2026-03-19T00:00:00Z"))
+        #expect(groups[0].entries.count == 1)
+        #expect(groups[1].date == makeDate("2026-03-20T00:00:00Z"))
+        #expect(groups[1].entries.map(\.taskName) == ["A", "B"])
     }
 
     @Test
-    func groupedByDay_sortsDaysNewestFirst() {
+    func groupedByDay_sortsDaysOldestFirst() {
         let calendar = makeTestCalendar()
         let march18 = TimelineEntry(
             id: UUID(), taskID: nil, timestamp: makeDate("2026-03-18T10:00:00Z"),
@@ -960,7 +986,7 @@ struct TimelineLogicTests {
         )
 
         #expect(groups.count == 2)
-        #expect(groups[0].date > groups[1].date)
+        #expect(groups[0].date < groups[1].date)
     }
 
     @Test

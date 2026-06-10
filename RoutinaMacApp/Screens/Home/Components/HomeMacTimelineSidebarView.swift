@@ -4,6 +4,7 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
     let timelineEntryCount: Int
     let groupedEntries: [(date: Date, entries: [TimelineEntry])]
     @Binding var selection: HomeFeature.MacSidebarSelection?
+    @State private var timelineScrollPosition: UUID?
     let sectionTitle: (Date) -> String
     @ViewBuilder let rowContent: (TimelineEntry, Int) -> RowContent
 
@@ -24,18 +25,43 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List(selection: $selection) {
-                    ForEach(Array(groupedEntries.enumerated()), id: \.element.date) { sectionIndex, section in
-                        let sectionStart = groupedEntries.prefix(sectionIndex).reduce(0) { $0 + $1.entries.count }
-                        Section(sectionTitle(section.date)) {
-                            ForEach(Array(section.entries.enumerated()), id: \.element.id) { index, entry in
-                                rowContent(entry, sectionStart + index + 1)
+                ScrollViewReader { proxy in
+                    List(selection: $selection) {
+                        ForEach(Array(groupedEntries.enumerated()), id: \.element.date) { sectionIndex, section in
+                            let sectionStart = groupedEntries.prefix(sectionIndex).reduce(0) { $0 + $1.entries.count }
+                            Section(sectionTitle(section.date)) {
+                                ForEach(Array(section.entries.enumerated()), id: \.element.id) { index, entry in
+                                    rowContent(entry, sectionStart + index + 1)
+                                        .id(entry.id)
+                                }
                             }
                         }
                     }
+                    .listStyle(.sidebar)
+                    .defaultScrollAnchor(.bottom)
+                    .scrollPosition(id: $timelineScrollPosition, anchor: .bottom)
+                    .onAppear {
+                        scrollToLatestEntry(using: proxy)
+                    }
+                    .onChange(of: latestEntryID) { _, _ in
+                        scrollToLatestEntry(using: proxy)
+                    }
                 }
-                .listStyle(.sidebar)
             }
+        }
+    }
+
+    private var latestEntryID: UUID? {
+        groupedEntries.last?.entries.last?.id
+    }
+
+    private func scrollToLatestEntry(using proxy: ScrollViewProxy) {
+        guard let latestEntryID else { return }
+        timelineScrollPosition = latestEntryID
+        Task { @MainActor in
+            await Task.yield()
+            proxy.scrollTo(latestEntryID, anchor: .bottom)
+            timelineScrollPosition = latestEntryID
         }
     }
 }

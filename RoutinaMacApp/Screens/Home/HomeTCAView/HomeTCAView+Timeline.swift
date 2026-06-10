@@ -403,6 +403,9 @@ extension HomeTCAView {
         if entry.isEvent {
             return "Event"
         }
+        if entry.isStatusNote {
+            return "Status"
+        }
         if entry.isNote {
             return "Note"
         }
@@ -432,6 +435,9 @@ extension HomeTCAView {
         }
         if entry.isEvent {
             return .teal
+        }
+        if entry.isStatusNote {
+            return .mint
         }
         if entry.isNote {
             return .blue
