@@ -9,6 +9,8 @@ struct TaskDetailEditChangeRequest {
     let storyPoints: Int?
     let deadline: Date?
     let isAllDay: Bool
+    let availabilityStartDate: Date?
+    let availabilityEndDate: Date?
     let reminderAt: Date?
     let priority: RoutineTaskPriority
     let importance: RoutineTaskImportance
@@ -56,6 +58,8 @@ struct TaskDetailEditChangeRequest {
         self.storyPoints = state.editStoryPoints
         self.deadline = state.editDeadline
         self.isAllDay = state.editIsAllDay
+        self.availabilityStartDate = state.editAvailabilityStartDate
+        self.availabilityEndDate = state.editAvailabilityEndDate
         self.reminderAt = state.editScheduleMode == .oneOff ? state.editReminderAt : nil
         self.priority = state.editPriority
         self.importance = state.editImportance
@@ -148,6 +152,8 @@ enum TaskDetailEditChangeDetector {
             || request.storyPoints != task.storyPoints
             || request.deadline != currentDeadline
             || request.isAllDay != task.isAllDay
+            || request.availabilityStartDate != task.availabilityStartDate
+            || request.availabilityEndDate != task.availabilityEndDate
             || request.reminderAt != task.reminderAt
             || request.priority != task.priority
             || request.importance != task.importance

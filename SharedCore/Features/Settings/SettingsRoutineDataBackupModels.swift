@@ -60,6 +60,8 @@ extension SettingsRoutineDataPersistence {
             var links: [String]?
             var deadline: Date?
             var isAllDay: Bool?
+            var availabilityStartDate: Date?
+            var availabilityEndDate: Date?
             var reminderAt: Date?
             var imageData: Data?
             var imageAttachmentID: UUID?

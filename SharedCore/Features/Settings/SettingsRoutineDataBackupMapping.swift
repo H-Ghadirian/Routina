@@ -49,6 +49,8 @@ enum SettingsRoutineDataBackupMapping {
             links: task.links.isEmpty ? nil : task.links,
             deadline: task.deadline,
             isAllDay: task.isAllDay,
+            availabilityStartDate: task.availabilityStartDate,
+            availabilityEndDate: task.availabilityEndDate,
             reminderAt: task.reminderAt,
             imageData: imageData,
             imageAttachmentID: imageAttachmentID,

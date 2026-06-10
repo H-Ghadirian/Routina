@@ -9,6 +9,8 @@ extension TaskDetailFeature {
         state.editRoutineLink = RoutineTask.linkEditorText(for: state.task.links)
         state.editDeadline = state.task.deadline
         state.editIsAllDay = state.task.isAllDay
+        state.editAvailabilityStartDate = state.task.availabilityStartDate
+        state.editAvailabilityEndDate = state.task.availabilityEndDate
         state.editReminderAt = state.task.reminderAt
         if state.task.derivedPriorityFromMatrix == state.task.priority || state.task.priority == .none {
             state.editImportance = state.task.importance

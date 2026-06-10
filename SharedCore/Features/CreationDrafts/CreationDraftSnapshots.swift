@@ -44,6 +44,8 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
     var routineLink = ""
     var deadline: Date?
     var isAllDay = false
+    var availabilityStartDate: Date?
+    var availabilityEndDate: Date?
     var reminderAt: Date?
     var priority: RoutineTaskPriority = .medium
     var importance: RoutineTaskImportance = .level2
@@ -94,6 +96,8 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
         routineLink = basics.routineLink
         deadline = basics.deadline
         isAllDay = basics.isAllDay
+        availabilityStartDate = basics.availabilityStartDate
+        availabilityEndDate = basics.availabilityEndDate
         reminderAt = basics.reminderAt
         priority = basics.priority
         importance = basics.importance
@@ -140,6 +144,8 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
             || hasText(routineLink)
             || deadline != nil
             || isAllDay
+            || availabilityStartDate != nil
+            || availabilityEndDate != nil
             || reminderAt != nil
             || priority != .medium
             || importance != .level2
@@ -195,6 +201,8 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
         state.basics.routineLink = routineLink
         state.basics.deadline = deadline
         state.basics.isAllDay = isAllDay
+        state.basics.availabilityStartDate = availabilityStartDate
+        state.basics.availabilityEndDate = availabilityEndDate
         state.basics.reminderAt = reminderAt
         state.basics.priority = priority
         state.basics.importance = importance

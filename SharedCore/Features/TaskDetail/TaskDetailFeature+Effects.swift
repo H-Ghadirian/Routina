@@ -386,6 +386,8 @@ extension TaskDetailFeature {
             links: request.links,
             deadline: request.deadline,
             isAllDay: request.isAllDay,
+            availabilityStartDate: request.availabilityStartDate,
+            availabilityEndDate: request.availabilityEndDate,
             reminderAt: request.reminderAt,
             priority: request.priority,
             importance: request.importance,
@@ -421,6 +423,8 @@ extension TaskDetailFeature {
         links: [String],
         deadline: Date?,
         isAllDay: Bool,
+        availabilityStartDate: Date?,
+        availabilityEndDate: Date?,
         reminderAt: Date?,
         priority: RoutineTaskPriority,
         importance: RoutineTaskImportance,
@@ -491,6 +495,13 @@ extension TaskDetailFeature {
                 task.scheduleMode = scheduleMode
                 task.deadline = scheduleMode == .oneOff ? deadline : nil
                 task.isAllDay = isAllDay
+                let availabilityDateBounds = RoutineTask.normalizedAvailabilityDateBounds(
+                    startDate: availabilityStartDate,
+                    endDate: availabilityEndDate,
+                    calendar: Calendar.current
+                )
+                task.availabilityStartDate = scheduleMode == .oneOff ? availabilityDateBounds.startDate : nil
+                task.availabilityEndDate = scheduleMode == .oneOff ? availabilityDateBounds.endDate : nil
                 task.recurrenceRule = recurrenceRule
                 task.replaceChecklistItems(checklistItems)
                 if !scheduleMode.isSoftIntervalRoutine {

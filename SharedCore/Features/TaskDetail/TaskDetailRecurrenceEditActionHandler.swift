@@ -42,6 +42,28 @@ struct TaskDetailRecurrenceEditActionHandler {
         return .none
     }
 
+    func editAvailabilityStartDateChanged(_ availabilityStartDate: Date?, state: inout State) -> Effect<Action> {
+        let bounds = RoutineTask.normalizedAvailabilityDateBounds(
+            startDate: availabilityStartDate,
+            endDate: state.editAvailabilityEndDate,
+            calendar: calendar
+        )
+        state.editAvailabilityStartDate = bounds.startDate
+        state.editAvailabilityEndDate = bounds.endDate
+        return .none
+    }
+
+    func editAvailabilityEndDateChanged(_ availabilityEndDate: Date?, state: inout State) -> Effect<Action> {
+        let bounds = RoutineTask.normalizedAvailabilityDateBounds(
+            startDate: state.editAvailabilityStartDate,
+            endDate: availabilityEndDate,
+            calendar: calendar
+        )
+        state.editAvailabilityStartDate = bounds.startDate
+        state.editAvailabilityEndDate = bounds.endDate
+        return .none
+    }
+
     func editReminderEnabledChanged(_ isEnabled: Bool, state: inout State) -> Effect<Action> {
         state.editReminderAt = isEnabled
             ? (state.editReminderAt ?? editReminderEventDate(for: state) ?? now())
@@ -74,6 +96,8 @@ struct TaskDetailRecurrenceEditActionHandler {
             state.editScheduleMode = mode
             if mode != .oneOff {
                 state.editDeadline = nil
+                state.editAvailabilityStartDate = nil
+                state.editAvailabilityEndDate = nil
             }
         }
         disableAutoAssumeIfNeeded(state: &state)

@@ -606,6 +606,66 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func allDayBlocksUseTodoAvailabilityDateWithoutDeadline() throws {
+        let calendar = gregorianCalendar
+        let availabilityDate = try #require(date("2026-05-11T15:30:00Z"))
+        let expectedStart = try #require(date("2026-05-11T00:00:00Z"))
+        let expectedEnd = try #require(date("2026-05-12T00:00:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Conference",
+            emoji: "🎟️",
+            isAllDay: true,
+            availabilityStartDate: availabilityDate,
+            scheduleMode: .oneOff
+        )
+
+        let blocks = DayPlanAllDayTasks.blocks(
+            on: try plannerDates(),
+            from: [task],
+            calendar: calendar
+        )
+
+        #expect(blocks.compactMap(\.taskID) == [taskID])
+        #expect(blocks.first?.startDate == expectedStart)
+        #expect(blocks.first?.endDate == expectedEnd)
+        #expect(blocks.first?.isLegacyDateOnlyCalendarTask == false)
+    }
+
+    @Test
+    func allDayBlocksUseTodoAvailabilityDateWindowWithoutDeadline() throws {
+        let calendar = gregorianCalendar
+        let availabilityStartDate = try #require(date("2026-05-10T09:00:00Z"))
+        let availabilityEndDate = try #require(date("2026-05-12T18:00:00Z"))
+        let expectedStarts = try [
+            #require(date("2026-05-10T00:00:00Z")),
+            #require(date("2026-05-11T00:00:00Z")),
+            #require(date("2026-05-12T00:00:00Z")),
+        ]
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Conference",
+            emoji: "🎟️",
+            isAllDay: true,
+            availabilityStartDate: availabilityStartDate,
+            availabilityEndDate: availabilityEndDate,
+            scheduleMode: .oneOff
+        )
+
+        let blocks = DayPlanAllDayTasks.blocks(
+            on: try plannerDates(),
+            from: [task],
+            calendar: calendar
+        )
+
+        #expect(blocks.compactMap(\.taskID) == [taskID, taskID, taskID])
+        #expect(blocks.map(\.startDate) == expectedStarts)
+        #expect(blocks.allSatisfy { !$0.isLegacyDateOnlyCalendarTask })
+    }
+
+    @Test
     func allDayBlocksUseManualAllDayRoutineFlagOnOccurrenceDates() throws {
         let calendar = gregorianCalendar
         let occurrence = try #require(date("2026-05-11T12:00:00Z"))
@@ -696,6 +756,117 @@ struct DayPlanPlannerStateTests {
 
         let timedBlocks = planner.weekBlocksByDayKey.values.flatMap { $0 }
         #expect(timedBlocks.isEmpty)
+    }
+
+    @Test
+    func exactAvailabilityTodoCreatesTimedPlannerBlockWithoutDeadline() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let availabilityDate = try #require(date("2026-05-11T09:15:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Call accountant",
+            emoji: "📞",
+            availabilityStartDate: availabilityDate,
+            scheduleMode: .oneOff,
+            recurrenceRule: .interval(days: 1, at: RoutineTimeOfDay(hour: 9, minute: 15)),
+            estimatedDurationMinutes: 45
+        )
+        context.insert(task)
+        try context.save()
+        let planner = DayPlanPlannerState(selectedDate: availabilityDate)
+
+        planner.showExactTimedTasks(
+            from: [task],
+            calendar: calendar,
+            context: context
+        )
+
+        let block = try #require(planner.weekBlocksByDayKey.values.flatMap { $0 }.first)
+        #expect(block.taskID == taskID)
+        #expect(block.startMinute == 9 * 60 + 15)
+        #expect(block.durationMinutes == 45)
+    }
+
+    @Test
+    func availabilityWindowTodoCreatesTimedPlannerBlockWithWindowDuration() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let availabilityStart = try #require(date("2026-05-11T09:15:00Z"))
+        let availabilityEnd = try #require(date("2026-05-11T11:00:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Call accountant",
+            emoji: "📞",
+            availabilityStartDate: availabilityStart,
+            availabilityEndDate: availabilityEnd,
+            scheduleMode: .oneOff,
+            recurrenceRule: .interval(
+                days: 1,
+                timeRange: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 9, minute: 15),
+                    end: RoutineTimeOfDay(hour: 11, minute: 0)
+                )
+            ),
+            estimatedDurationMinutes: 45
+        )
+        context.insert(task)
+        try context.save()
+        let planner = DayPlanPlannerState(selectedDate: availabilityStart)
+
+        planner.showExactTimedTasks(
+            from: [task],
+            calendar: calendar,
+            context: context
+        )
+
+        let block = try #require(planner.weekBlocksByDayKey.values.flatMap { $0 }.first)
+        #expect(block.taskID == taskID)
+        #expect(block.startMinute == 9 * 60 + 15)
+        #expect(block.durationMinutes == 105)
+    }
+
+    @Test
+    func dateWindowTodoCreatesTimedPlannerBlocksOnEveryEligibleDate() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let availabilityStart = try #require(date("2026-05-11T09:15:00Z"))
+        let availabilityEnd = try #require(date("2026-05-12T11:00:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Call accountant",
+            emoji: "📞",
+            availabilityStartDate: availabilityStart,
+            availabilityEndDate: availabilityEnd,
+            scheduleMode: .oneOff,
+            recurrenceRule: .interval(
+                days: 1,
+                timeRange: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 9, minute: 15),
+                    end: RoutineTimeOfDay(hour: 11, minute: 0)
+                )
+            ),
+            estimatedDurationMinutes: 45
+        )
+        context.insert(task)
+        try context.save()
+        let planner = DayPlanPlannerState(selectedDate: availabilityStart)
+
+        planner.showExactTimedTasks(
+            from: [task],
+            calendar: calendar,
+            context: context
+        )
+
+        let blocks = planner.weekBlocksByDayKey
+            .flatMap { entry in entry.value.map { (entry.key, $0) } }
+            .sorted { lhs, rhs in lhs.0 < rhs.0 }
+        #expect(blocks.map { $0.1.taskID } == [taskID, taskID])
+        #expect(blocks.map { $0.1.startMinute } == [9 * 60 + 15, 9 * 60 + 15])
+        #expect(blocks.map { $0.1.durationMinutes } == [105, 105])
     }
 
     @Test

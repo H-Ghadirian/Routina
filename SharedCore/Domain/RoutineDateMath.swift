@@ -44,7 +44,7 @@ enum RoutineDateMath {
         calendar: Calendar = .current
     ) -> Date {
         if task.isOneOffTask {
-            return task.deadline ?? referenceDate
+            return task.deadline ?? task.availabilityStartDate ?? referenceDate
         }
 
         if task.isChecklistDriven,
@@ -174,9 +174,9 @@ enum RoutineDateMath {
         }
         if task.isOneOffTask {
             guard !task.isCompletedOneOff else { return Int.max }
-            guard let deadline = task.deadline else { return 0 }
+            guard let targetDate = task.deadline ?? task.availabilityStartDate else { return 0 }
             let todayStart = calendar.startOfDay(for: referenceDate)
-            let dueStart = calendar.startOfDay(for: deadline)
+            let dueStart = calendar.startOfDay(for: targetDate)
             return calendar.dateComponents([.day], from: todayStart, to: dueStart).day ?? 0
         }
         let todayStart = calendar.startOfDay(for: referenceDate)

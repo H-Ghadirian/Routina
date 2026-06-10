@@ -52,6 +52,8 @@ enum HomeAddRoutineSupport {
             links: request.links,
             deadline: request.deadline,
             isAllDay: request.isAllDay,
+            availabilityStartDate: request.availabilityStartDate,
+            availabilityEndDate: request.availabilityEndDate,
             reminderAt: request.reminderAt,
             priority: request.priority,
             importance: request.importance,

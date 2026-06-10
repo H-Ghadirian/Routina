@@ -29,6 +29,14 @@ enum TaskFormTimingMode: String, CaseIterable, Equatable, Identifiable, Sendable
     }
 }
 
+enum TaskFormDateAvailabilityMode: String, CaseIterable, Equatable, Identifiable, Sendable {
+    case none = "Any date"
+    case exact = "At date"
+    case range = "Date window"
+
+    var id: String { rawValue }
+}
+
 enum RoutineRepeatType: String, CaseIterable, Equatable, Hashable, Identifiable, Sendable {
     case interval = "Interval"
     case calendar = "Calendar"

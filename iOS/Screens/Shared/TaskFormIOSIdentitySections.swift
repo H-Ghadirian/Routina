@@ -20,6 +20,7 @@ struct TaskFormIOSNameSection: View {
 struct TaskFormIOSTaskTypeSection: View {
     let model: TaskFormModel
     let presentation: TaskFormPresentation
+    @Environment(\.calendar) private var calendar
 
     var body: some View {
         Section(header: Text("Kind")) {
@@ -47,11 +48,38 @@ struct TaskFormIOSTaskTypeSection: View {
 
     private var availabilityContent: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Availability")
+            if model.taskType.wrappedValue == .todo {
+                dateAvailabilityContent
+            }
+
+            timeAvailabilityContent
+        }
+    }
+
+    private var dateAvailabilityContent: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Date availability")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            Picker("Availability", selection: timingModeBinding) {
+            Picker("Date availability", selection: dateAvailabilityModeBinding) {
+                ForEach(TaskFormDateAvailabilityMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            dateAvailabilityPickers
+        }
+    }
+
+    private var timeAvailabilityContent: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Time availability")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Picker("Time availability", selection: timingModeBinding) {
                 ForEach(TaskFormTimingMode.cases(for: model.taskType.wrappedValue)) { mode in
                     Text(mode.rawValue).tag(mode)
                 }
@@ -61,16 +89,56 @@ struct TaskFormIOSTaskTypeSection: View {
             if currentTimingMode == .exact {
                 DatePicker("Time", selection: model.recurrenceTimeOfDay, displayedComponents: .hourAndMinute)
             } else if currentTimingMode == .range {
-                timeRangePickers
+                routineTimeRangePickers
             }
         }
     }
 
-    private var timeRangePickers: some View {
+    @ViewBuilder
+    private var dateAvailabilityPickers: some View {
+        switch currentDateAvailabilityMode {
+        case .none:
+            EmptyView()
+        case .exact:
+            DatePicker("Date", selection: todoAvailabilityStartBinding, displayedComponents: .date)
+        case .range:
+            todoDateRangePickers
+        }
+    }
+
+    private var routineTimeRangePickers: some View {
         VStack(spacing: 8) {
             DatePicker("Starts", selection: model.recurrenceTimeRangeStart, displayedComponents: .hourAndMinute)
             DatePicker("Ends", selection: model.recurrenceTimeRangeEnd, displayedComponents: .hourAndMinute)
         }
+    }
+
+    private var todoDateRangePickers: some View {
+        VStack(spacing: 8) {
+            DatePicker("Starts", selection: todoAvailabilityStartBinding, displayedComponents: .date)
+            DatePicker("Ends", selection: todoAvailabilityEndBinding, displayedComponents: .date)
+        }
+    }
+
+    private var dateAvailabilityModeBinding: Binding<TaskFormDateAvailabilityMode> {
+        Binding(
+            get: {
+                if model.availabilityStartDate.wrappedValue == nil {
+                    return .none
+                }
+                if model.availabilityEndDate.wrappedValue != nil {
+                    return .range
+                }
+                return .exact
+            },
+            set: { mode in
+                applyTodoDateAvailabilityMode(mode)
+            }
+        )
+    }
+
+    private var currentDateAvailabilityMode: TaskFormDateAvailabilityMode {
+        dateAvailabilityModeBinding.wrappedValue
     }
 
     private var timingModeBinding: Binding<TaskFormTimingMode> {
@@ -88,15 +156,76 @@ struct TaskFormIOSTaskTypeSection: View {
                 return .none
             },
             set: { mode in
-                model.isAllDay.wrappedValue = mode == .allDay
-                model.recurrenceHasExplicitTime.wrappedValue = mode == .exact
-                model.recurrenceHasTimeRange.wrappedValue = mode == .range
+                applyTimingMode(mode)
             }
         )
     }
 
     private var currentTimingMode: TaskFormTimingMode {
         timingModeBinding.wrappedValue
+    }
+
+    private var todoAvailabilityStartBinding: Binding<Date> {
+        Binding(
+            get: { model.availabilityStartDate.wrappedValue ?? Date() },
+            set: { setTodoAvailabilityStartDate($0) }
+        )
+    }
+
+    private var todoAvailabilityEndBinding: Binding<Date> {
+        Binding(
+            get: {
+                let start = model.availabilityStartDate.wrappedValue ?? Date()
+                return model.availabilityEndDate.wrappedValue ?? dateAfter(start)
+            },
+            set: { setTodoAvailabilityEndDate($0) }
+        )
+    }
+
+    private func applyTimingMode(_ mode: TaskFormTimingMode) {
+        model.isAllDay.wrappedValue = mode == .allDay
+        model.recurrenceHasExplicitTime.wrappedValue = mode == .exact
+        model.recurrenceHasTimeRange.wrappedValue = mode == .range
+    }
+
+    private func applyTodoDateAvailabilityMode(_ mode: TaskFormDateAvailabilityMode) {
+        let start = model.availabilityStartDate.wrappedValue ?? Date()
+        let end = model.availabilityEndDate.wrappedValue ?? dateAfter(start)
+        switch mode {
+        case .none:
+            model.availabilityStartDate.wrappedValue = nil
+            model.availabilityEndDate.wrappedValue = nil
+        case .exact:
+            model.availabilityStartDate.wrappedValue = calendar.startOfDay(for: start)
+            model.availabilityEndDate.wrappedValue = nil
+        case .range:
+            model.availabilityStartDate.wrappedValue = calendar.startOfDay(for: start)
+            model.availabilityEndDate.wrappedValue = calendar.startOfDay(for: end) < calendar.startOfDay(for: start)
+                ? calendar.startOfDay(for: start)
+                : calendar.startOfDay(for: end)
+        }
+    }
+
+    private func setTodoAvailabilityStartDate(_ date: Date) {
+        let storedDate = calendar.startOfDay(for: date)
+        model.availabilityStartDate.wrappedValue = storedDate
+
+        if currentDateAvailabilityMode == .range,
+           let end = model.availabilityEndDate.wrappedValue,
+           calendar.startOfDay(for: end) < storedDate {
+            model.availabilityEndDate.wrappedValue = storedDate
+        }
+    }
+
+    private func setTodoAvailabilityEndDate(_ date: Date) {
+        let start = calendar.startOfDay(for: model.availabilityStartDate.wrappedValue ?? Date())
+        let storedDate = calendar.startOfDay(for: date)
+        model.availabilityEndDate.wrappedValue = storedDate < start ? start : storedDate
+    }
+
+    private func dateAfter(_ date: Date) -> Date {
+        calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: date))
+            ?? calendar.startOfDay(for: date)
     }
 }
 

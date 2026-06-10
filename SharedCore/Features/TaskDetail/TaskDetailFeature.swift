@@ -31,6 +31,8 @@ struct TaskDetailFeature: Reducer {
         var editRoutineLink: String = ""
         var editDeadline: Date?
         var editIsAllDay: Bool = false
+        var editAvailabilityStartDate: Date?
+        var editAvailabilityEndDate: Date?
         var editReminderAt: Date?
         var editPriority: RoutineTaskPriority = .none
         var editImportance: RoutineTaskImportance = .level2
@@ -212,6 +214,8 @@ struct TaskDetailFeature: Reducer {
         case editDeadlineEnabledChanged(Bool)
         case editDeadlineDateChanged(Date)
         case editAllDayChanged(Bool)
+        case editAvailabilityStartDateChanged(Date?)
+        case editAvailabilityEndDateChanged(Date?)
         case editReminderEnabledChanged(Bool)
         case editReminderDateChanged(Date)
         case editReminderLeadMinutesChanged(Int?)
@@ -491,6 +495,7 @@ struct TaskDetailFeature: Reducer {
     private func editSaveRequestBuilder() -> TaskDetailEditSaveRequestBuilder {
         TaskDetailEditSaveRequestBuilder(
             now: { now },
+            calendar: calendar,
             matrixPriority: { importance, urgency in
                 matrixPriority(importance: importance, urgency: urgency)
             }
@@ -894,6 +899,18 @@ struct TaskDetailFeature: Reducer {
 
         case let .editAllDayChanged(isAllDay):
             return recurrenceEditActionHandler().editAllDayChanged(isAllDay, state: &state)
+
+        case let .editAvailabilityStartDateChanged(availabilityStartDate):
+            return recurrenceEditActionHandler().editAvailabilityStartDateChanged(
+                availabilityStartDate,
+                state: &state
+            )
+
+        case let .editAvailabilityEndDateChanged(availabilityEndDate):
+            return recurrenceEditActionHandler().editAvailabilityEndDateChanged(
+                availabilityEndDate,
+                state: &state
+            )
 
         case let .editReminderEnabledChanged(isEnabled):
             return recurrenceEditActionHandler().editReminderEnabledChanged(isEnabled, state: &state)

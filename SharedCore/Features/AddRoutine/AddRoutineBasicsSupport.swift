@@ -32,6 +32,34 @@ enum AddRoutineBasicsEditor {
             : deadline
     }
 
+    static func setAvailabilityStartDate(
+        _ availabilityStartDate: Date?,
+        calendar: Calendar,
+        basics: inout AddRoutineBasicsState
+    ) {
+        let bounds = RoutineTask.normalizedAvailabilityDateBounds(
+            startDate: availabilityStartDate,
+            endDate: basics.availabilityEndDate,
+            calendar: calendar
+        )
+        basics.availabilityStartDate = bounds.startDate
+        basics.availabilityEndDate = bounds.endDate
+    }
+
+    static func setAvailabilityEndDate(
+        _ availabilityEndDate: Date?,
+        calendar: Calendar,
+        basics: inout AddRoutineBasicsState
+    ) {
+        let bounds = RoutineTask.normalizedAvailabilityDateBounds(
+            startDate: basics.availabilityStartDate,
+            endDate: availabilityEndDate,
+            calendar: calendar
+        )
+        basics.availabilityStartDate = bounds.startDate
+        basics.availabilityEndDate = bounds.endDate
+    }
+
     static func setPriority(
         _ priority: RoutineTaskPriority,
         basics: inout AddRoutineBasicsState
