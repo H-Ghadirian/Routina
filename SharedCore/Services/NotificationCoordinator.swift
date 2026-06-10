@@ -74,6 +74,7 @@ enum NotificationCoordinator {
     static let categoryIdentifier = "ROUTINE_REMINDER"
     static let doneActionIdentifier = "ROUTINE_DONE"
     static let snoozeActionIdentifier = "ROUTINE_SNOOZE"
+    static let eventNotificationIdentifierPrefix = "event-"
 
     static func shouldScheduleNotification(
         for task: RoutineTask,
@@ -101,6 +102,18 @@ enum NotificationCoordinator {
         }
 
         return !task.isSoftIntervalRoutine && !task.isOngoing
+    }
+
+    static func shouldScheduleNotification(
+        for event: RoutineEvent,
+        referenceDate: Date = Date()
+    ) -> Bool {
+        guard let reminderAt = event.reminderAt else { return false }
+        guard reminderAt > referenceDate else { return false }
+        if let endedAt = event.endedAt, endedAt <= referenceDate {
+            return false
+        }
+        return true
     }
 
     static func configureCurrentCenter(delegate: UNUserNotificationCenterDelegate) {
@@ -161,6 +174,41 @@ enum NotificationCoordinator {
             isChecklistCompletionRoutine: task.isChecklistCompletionRoutine,
             nextDueChecklistItemTitle: task.nextDueChecklistItem(referenceDate: referenceDate, calendar: calendar)?.title
         )
+    }
+
+    static func notificationPayload(
+        for event: RoutineEvent,
+        referenceDate: Date = Date(),
+        calendar: Calendar = .current
+    ) -> NotificationPayload {
+        let eventDate = RoutineEvent.reminderEventDate(
+            startedAt: event.startedAt,
+            isAllDay: event.isAllDay,
+            calendar: calendar
+        )
+        return NotificationPayload(
+            identifier: eventNotificationIdentifier(for: event.id),
+            kind: .event,
+            name: event.displayTitle,
+            emoji: event.emoji,
+            interval: 1,
+            lastDone: nil,
+            dueDate: eventDate ?? event.startedAt,
+            triggerDate: event.reminderAt,
+            isOneOffTask: false,
+            isCustomReminder: true,
+            isArchived: !shouldScheduleNotification(for: event, referenceDate: referenceDate),
+            usesExactTime: true,
+            isChecklistDriven: false,
+            isChecklistCompletionRoutine: false,
+            nextDueChecklistItemTitle: nil,
+            deepLink: .event(event.id),
+            isAllDayEvent: event.isAllDay
+        )
+    }
+
+    static func eventNotificationIdentifier(for eventID: UUID) -> String {
+        "\(eventNotificationIdentifierPrefix)\(eventID.uuidString)"
     }
 
     @MainActor
@@ -287,7 +335,7 @@ enum NotificationCoordinator {
         }
     }
 
-    private static func cancelNotification(_ identifier: String) {
+    static func cancelNotification(_ identifier: String) {
         let center = UNUserNotificationCenter.current()
         center.removePendingNotificationRequests(withIdentifiers: [identifier])
         center.removeDeliveredNotifications(withIdentifiers: [identifier])
@@ -329,9 +377,29 @@ enum NotificationCoordinator {
     static func createNotificationContent(for payload: NotificationPayload) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
         let trimmedName = payload.name?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let titleName = (trimmedName?.isEmpty == false ? trimmedName : nil) ?? (payload.isOneOffTask ? "Your task" : "Your routine")
+        let fallbackTitle: String
+        switch payload.kind {
+        case .task:
+            fallbackTitle = payload.isOneOffTask ? "Your task" : "Your routine"
+        case .event:
+            fallbackTitle = "Your event"
+        }
+        let titleName = (trimmedName?.isEmpty == false ? trimmedName : nil) ?? fallbackTitle
         let trimmedEmoji = payload.emoji?.trimmingCharacters(in: .whitespacesAndNewlines)
         let emojiPrefix = (trimmedEmoji?.isEmpty == false ? trimmedEmoji : nil).map { "\($0) " } ?? ""
+
+        if payload.kind == .event {
+            content.title = "\(emojiPrefix)\(titleName) reminder"
+            content.subtitle = eventNotificationSubtitle(for: payload)
+            content.body = eventNotificationBody(for: payload)
+            content.sound = .default
+            if let deepLink = payload.deepLink {
+                content.userInfo = deepLink.notificationUserInfo
+            }
+            content.interruptionLevel = .timeSensitive
+            content.relevanceScore = 1.0
+            return content
+        }
 
         if payload.isCustomReminder {
             content.title = "\(emojiPrefix)\(titleName) reminder"
@@ -357,6 +425,24 @@ enum NotificationCoordinator {
         content.interruptionLevel = payload.usesExactTime ? .timeSensitive : .active
         content.relevanceScore = payload.usesExactTime ? 1.0 : 0.5
         return content
+    }
+
+    private static func eventNotificationSubtitle(for payload: NotificationPayload) -> String {
+        guard let dueDate = payload.dueDate else { return "" }
+        if payload.isAllDayEvent {
+            return "Event \(dueDate.formatted(date: .abbreviated, time: .omitted))"
+        }
+        return "Starts \(dueDate.formatted(date: .abbreviated, time: .shortened))"
+    }
+
+    private static func eventNotificationBody(for payload: NotificationPayload) -> String {
+        guard let dueDate = payload.dueDate else {
+            return "Open Routina to review this event."
+        }
+        if payload.isAllDayEvent {
+            return "This event is on \(dueDate.formatted(date: .abbreviated, time: .omitted)). Open Routina to review it."
+        }
+        return "This event starts \(dueDate.formatted(date: .abbreviated, time: .shortened)). Open Routina to review it."
     }
 
     private static func notificationSubtitle(for payload: NotificationPayload) -> String {
@@ -394,7 +480,7 @@ enum NotificationCoordinator {
         return reminderAt
     }
 
-    private static func scheduleNotification(_ payload: NotificationPayload) async {
+    static func scheduleNotification(_ payload: NotificationPayload) async {
         guard NotificationPreferences.notificationsEnabled else { return }
         guard !payload.isArchived else {
             cancelNotification(payload.identifier)

@@ -30,6 +30,7 @@ extension TaskDetailFeature {
             for: state.task.goalIDs,
             in: state.availableGoals
         )
+        state.editEventIDs = state.task.eventIDs
         state.editRelationships = state.task.relationships
         state.editTagDraft = ""
         state.editGoalDraft = ""

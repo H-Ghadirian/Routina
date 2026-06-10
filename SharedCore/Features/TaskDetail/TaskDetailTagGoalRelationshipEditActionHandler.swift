@@ -88,6 +88,14 @@ struct TaskDetailTagGoalRelationshipEditActionHandler {
         return .none
     }
 
+    func editToggleEventSelection(
+        _ eventID: UUID,
+        state: inout State
+    ) -> Effect<Action> {
+        draftMutationHandler.toggleEventSelection(eventID, state: &state)
+        return .none
+    }
+
     func addLinkedTaskRelationshipKindChanged(
         _ kind: RoutineTaskRelationshipKind,
         state: inout State

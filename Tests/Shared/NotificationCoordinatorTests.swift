@@ -237,6 +237,76 @@ struct NotificationCoordinatorTests {
     }
 
     @Test
+    func shouldScheduleNotification_returnsTrueForFutureEventReminder() {
+        let reminderAt = makeDate("2026-04-25T12:30:00Z")
+        let event = RoutineEvent(
+            title: "Conference",
+            isAllDay: false,
+            startedAt: makeDate("2026-04-25T13:00:00Z"),
+            endedAt: makeDate("2026-04-25T14:00:00Z"),
+            reminderAt: reminderAt
+        )
+
+        #expect(
+            NotificationCoordinator.shouldScheduleNotification(
+                for: event,
+                referenceDate: makeDate("2026-04-25T12:00:00Z")
+            )
+        )
+    }
+
+    @Test
+    func shouldScheduleNotification_returnsFalseForPastEventReminder() {
+        let event = RoutineEvent(
+            title: "Conference",
+            isAllDay: false,
+            startedAt: makeDate("2026-04-25T13:00:00Z"),
+            endedAt: makeDate("2026-04-25T14:00:00Z"),
+            reminderAt: makeDate("2026-04-25T11:30:00Z")
+        )
+
+        #expect(
+            !NotificationCoordinator.shouldScheduleNotification(
+                for: event,
+                referenceDate: makeDate("2026-04-25T12:00:00Z")
+            )
+        )
+    }
+
+    @Test
+    func notificationPayload_forEventUsesReminderAndDeepLink() {
+        let eventID = UUID()
+        let reminderAt = makeDate("2026-04-25T12:30:00Z")
+        let event = RoutineEvent(
+            id: eventID,
+            title: "Conference",
+            emoji: "🎤",
+            isAllDay: false,
+            startedAt: makeDate("2026-04-25T13:00:00Z"),
+            endedAt: makeDate("2026-04-25T14:00:00Z"),
+            reminderAt: reminderAt
+        )
+
+        let payload = NotificationCoordinator.notificationPayload(
+            for: event,
+            referenceDate: makeDate("2026-04-25T12:00:00Z")
+        )
+        let content = NotificationCoordinator.createNotificationContent(for: payload)
+
+        #expect(payload.identifier == NotificationCoordinator.eventNotificationIdentifier(for: eventID))
+        #expect(payload.kind == .event)
+        #expect(payload.triggerDate == reminderAt)
+        #expect(payload.dueDate == event.startedAt)
+        #expect(payload.deepLink == .event(eventID))
+        #expect(content.categoryIdentifier.isEmpty)
+        #expect(RoutinaDeepLink(notificationUserInfo: content.userInfo) == .event(eventID))
+        if #available(iOS 15.0, macOS 12.0, *) {
+            #expect(content.interruptionLevel == .timeSensitive)
+            #expect(content.relevanceScore == 1.0)
+        }
+    }
+
+    @Test
     func notificationTrigger_movesPastNonExactTriggerToNextReminderTime() {
         let now = makeDate("2026-04-25T12:00:00Z")
         let payload = NotificationPayload(

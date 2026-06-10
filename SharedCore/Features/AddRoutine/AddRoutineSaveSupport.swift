@@ -88,6 +88,7 @@ struct AddRoutineSaveRequest: Equatable {
     let selectedPlaceIDs: [UUID]
     let tags: [String]
     let goals: [RoutineGoalSummary]
+    let eventIDs: [UUID]
     let relationships: [RoutineTaskRelationship]
     let steps: [RoutineStep]
     let scheduleMode: RoutineScheduleMode
@@ -122,6 +123,7 @@ struct AddRoutineSaveRequest: Equatable {
         selectedPlaceIDs: [UUID] = [],
         tags: [String] = [],
         goals: [RoutineGoalSummary] = [],
+        eventIDs: [UUID] = [],
         relationships: [RoutineTaskRelationship] = [],
         steps: [RoutineStep] = [],
         scheduleMode: RoutineScheduleMode,
@@ -159,6 +161,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.selectedPlaceIDs = resolvedPlaceIDs
         self.tags = RoutineTag.deduplicated(tags)
         self.goals = RoutineGoalSummary.sanitized(goals)
+        self.eventIDs = RoutineEventIDStorage.sanitized(eventIDs)
         self.relationships = relationships
         self.steps = steps
         self.scheduleMode = scheduleMode
@@ -220,6 +223,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.selectedPlaceID = selectedPlaceIDs.first
         self.tags = RoutineTag.deduplicated(organization.routineTags)
         self.goals = organization.routineGoals
+        self.eventIDs = RoutineEventIDStorage.sanitized(organization.eventIDs)
         self.relationships = organization.relationships
         self.steps = (schedule.scheduleMode.isStandardRoutineMode || schedule.scheduleMode == .oneOff)
             ? RoutineStep.sanitized(checklist.routineSteps)

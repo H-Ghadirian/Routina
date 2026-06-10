@@ -38,6 +38,7 @@ struct TimelineFeature {
         var relatedTagRules: [RoutineRelatedTagRule] = []
         var groupedEntries: [TimelineSection] = []
         var deepLinkedNoteID: UUID?
+        var deepLinkedEventID: UUID?
 
         var hasActiveFilters: Bool {
             selectedRange != .all
@@ -92,6 +93,8 @@ struct TimelineFeature {
         case clearFilters
         case openNoteDeepLink(UUID)
         case noteDeepLinkPresentationDismissed(UUID)
+        case openEventDeepLink(UUID)
+        case eventDeepLinkPresentationDismissed(UUID)
     }
 
     @Dependency(\.calendar) var calendar
@@ -193,12 +196,34 @@ struct TimelineFeature {
                 state.mediaFilter = .all
                 state.isFilterSheetPresented = false
                 state.deepLinkedNoteID = noteID
+                state.deepLinkedEventID = nil
                 refreshDerivedState(&state)
                 return .none
 
             case let .noteDeepLinkPresentationDismissed(noteID):
                 if state.deepLinkedNoteID == noteID {
                     state.deepLinkedNoteID = nil
+                }
+                return .none
+
+            case let .openEventDeepLink(eventID):
+                state.selectedRange = .all
+                state.filterType = .events
+                state.setSelectedTag(nil)
+                state.includeTagMatchMode = .all
+                state.excludedTags = []
+                state.excludeTagMatchMode = .any
+                state.selectedImportanceUrgencyFilter = nil
+                state.mediaFilter = .all
+                state.isFilterSheetPresented = false
+                state.deepLinkedNoteID = nil
+                state.deepLinkedEventID = eventID
+                refreshDerivedState(&state)
+                return .none
+
+            case let .eventDeepLinkPresentationDismissed(eventID):
+                if state.deepLinkedEventID == eventID {
+                    state.deepLinkedEventID = nil
                 }
                 return .none
             }

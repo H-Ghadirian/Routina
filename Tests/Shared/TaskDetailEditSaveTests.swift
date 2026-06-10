@@ -155,6 +155,66 @@ struct TaskDetailEditSaveTests {
     }
 
     @Test
+    func editSaveTapped_persistsLinkedEventIDs() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let event = RoutineEvent(
+            title: "Appointment",
+            startedAt: makeDate("2026-03-12T10:00:00Z")
+        )
+        context.insert(event)
+        let task = makeTask(
+            in: context,
+            name: "Prepare notes",
+            interval: 3,
+            lastDone: nil,
+            emoji: "📝"
+        )
+
+        let eventCandidate = RoutineEventLinkCandidate(event: event)
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Prepare notes",
+                editRoutineEmoji: "📝",
+                availableEvents: [eventCandidate],
+                editFrequency: .day,
+                editFrequencyValue: 3
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editToggleEventSelection(event.id)) {
+            $0.editEventIDs = [event.id]
+        }
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+        await store.receive(.onAppear)
+
+        let taskID = task.id
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { task in
+                        task.id == taskID
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.eventIDs == [event.id])
+    }
+
+    @Test
     func editSaveTapped_persistsAllDayFlagForDatedTodos() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()

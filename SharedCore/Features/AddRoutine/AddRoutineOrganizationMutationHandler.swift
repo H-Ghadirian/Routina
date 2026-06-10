@@ -31,6 +31,16 @@ struct AddRoutineOrganizationMutationHandler {
         )
     }
 
+    func setAvailableEvents(
+        _ events: [RoutineEventLinkCandidate],
+        state: inout AddRoutineFeature.State
+    ) {
+        AddRoutineOrganizationEditor.setAvailableEvents(
+            events,
+            organization: &state.organization
+        )
+    }
+
     func setRelatedTagRules(
         _ rules: [RoutineRelatedTagRule],
         state: inout AddRoutineFeature.State
@@ -113,6 +123,16 @@ struct AddRoutineOrganizationMutationHandler {
     ) {
         AddRoutineOrganizationEditor.toggleGoalSelection(
             goal,
+            organization: &state.organization
+        )
+    }
+
+    func toggleEventSelection(
+        _ eventID: UUID,
+        state: inout AddRoutineFeature.State
+    ) {
+        AddRoutineOrganizationEditor.toggleEventSelection(
+            eventID,
             organization: &state.organization
         )
     }

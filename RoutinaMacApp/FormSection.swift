@@ -18,6 +18,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
     case importanceUrgency  = "Importance & Urgency"
     case tags               = "Tags"
     case goals              = "Goals"
+    case events             = "Events"
     case linkedTasks        = "Linked tasks"
     case linkURL            = "Link URL"
     case notes              = "Notes"
@@ -61,6 +62,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
         case .importanceUrgency: return "flag.fill"
         case .tags:              return "tag.fill"
         case .goals:             return "target"
+        case .events:            return "calendar"
         case .linkedTasks:       return "link"
         case .linkURL:           return "globe"
         case .notes:             return "note.text"
@@ -86,7 +88,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
         includesDangerZone: Bool
     ) -> [FormSection] {
         var sections: [FormSection] = includesIdentity ? [.identity] : []
-        sections += [.color, .behavior, .pressure, .estimation, .places, .importanceUrgency, .tags, .goals, .linkedTasks, .linkURL, .notes]
+        sections += [.color, .behavior, .pressure, .estimation, .places, .importanceUrgency, .tags, .goals, .events, .linkedTasks, .linkURL, .notes]
         if scheduleMode.isTaskFormStepBased {
             sections.append(.steps)
         }
@@ -157,6 +159,9 @@ extension TaskFormModel {
         if !selectedGoals.isEmpty || hasText(goalDraft.wrappedValue) {
             sections.insert(.goals)
         }
+        if !selectedEventIDs.isEmpty {
+            sections.insert(.events)
+        }
         if !relationships.isEmpty {
             sections.insert(.linkedTasks)
         }
@@ -216,6 +221,9 @@ extension AddRoutineFeature.State {
         }
         if !organization.routineGoals.isEmpty || hasText(organization.goalDraft) {
             sections.insert(.goals)
+        }
+        if !organization.eventIDs.isEmpty {
+            sections.insert(.events)
         }
         if !organization.relationships.isEmpty {
             sections.insert(.linkedTasks)
@@ -279,6 +287,9 @@ extension TaskDetailFeature.State {
         }
         if !editRoutineGoals.isEmpty || hasText(editGoalDraft) {
             sections.insert(.goals)
+        }
+        if !editEventIDs.isEmpty {
+            sections.insert(.events)
         }
         if !editRelationships.isEmpty {
             sections.insert(.linkedTasks)

@@ -75,6 +75,13 @@ extension RemoteNotificationMacDelegate: UNUserNotificationCenterDelegate {
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse
     ) async {
+        if let deepLink = RoutinaDeepLink(notificationUserInfo: response.notification.request.content.userInfo) {
+            await MainActor.run {
+                RoutinaDeepLinkDispatcher.open(deepLink)
+            }
+            return
+        }
+
         await NotificationCoordinator.handleResponse(
             actionIdentifier: response.actionIdentifier,
             requestIdentifier: response.notification.request.identifier

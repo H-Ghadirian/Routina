@@ -29,10 +29,12 @@ struct AddRoutineBasicsState: Equatable {
 struct AddRoutineOrganizationState: Equatable {
     var routineTags: [String] = []
     var routineGoals: [RoutineGoalSummary] = []
+    var eventIDs: [UUID] = []
     var relationships: [RoutineTaskRelationship] = []
     var availableTags: [String] = []
     var availableTagSummaries: [RoutineTagSummary] = []
     var availableGoals: [RoutineGoalSummary] = []
+    var availableEvents: [RoutineEventLinkCandidate] = []
     var relatedTagRules: [RoutineRelatedTagRule] = []
     var tagCounterDisplayMode: TagCounterDisplayMode = .defaultValue
     var availableRelationshipTasks: [RoutineTaskRelationshipCandidate] = []

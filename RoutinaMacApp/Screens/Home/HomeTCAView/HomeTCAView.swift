@@ -199,7 +199,7 @@ homeContent
             macHomeDetailMode = .board
         case .sleep:
             macHomeDetailMode = .planner
-        case .goal, .note:
+        case .goal, .note, .event:
             break
         }
 

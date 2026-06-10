@@ -176,6 +176,7 @@ struct TaskFormContent: View {
         case .importanceUrgency:  importanceCard
         case .tags:               tagsCard
         case .goals:              goalsCard
+        case .events:             eventsCard
         case .linkedTasks:        linkedTasksCard
         case .linkURL:            linkURLCard
         case .notes:              notesCard
@@ -317,6 +318,21 @@ struct TaskFormContent: View {
             TaskFormMacGoalsContent(model: model, presentation: presentation)
         }
         .id(FormSection.goals)
+    }
+
+    // MARK: Events
+
+    private var eventsCard: some View {
+        macSectionCard(
+            title: "Events"
+        ) {
+            TaskFormLinkedEventsContent(
+                events: model.availableEvents,
+                selectedEventIDs: model.selectedEventIDs,
+                onToggleEvent: model.onToggleEventSelection
+            )
+        }
+        .id(FormSection.events)
     }
 
     // MARK: Linked Tasks

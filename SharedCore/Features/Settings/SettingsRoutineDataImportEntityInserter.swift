@@ -14,11 +14,13 @@ enum SettingsRoutineDataImportEntityInserter {
     ) throws -> ImportSummary {
         let places = insertPlaces(from: backup, in: context, importDate: importDate)
         let goals = insertGoals(from: backup, in: context, importDate: importDate)
+        let importedEventIDs = Set((backup.events ?? []).map(\.id))
         let tasks = try insertTasks(
             from: backup,
             attachmentData: attachmentData,
             importedPlaceIDs: places.ids,
             importedGoalIDs: goals.ids,
+            importedEventIDs: importedEventIDs,
             in: context,
             importDate: importDate
         )
@@ -227,6 +229,7 @@ enum SettingsRoutineDataImportEntityInserter {
         attachmentData: (String) throws -> Data?,
         importedPlaceIDs: Set<UUID>,
         importedGoalIDs: Set<UUID>,
+        importedEventIDs: Set<UUID>,
         in context: ModelContext,
         importDate: Date
     ) throws -> (ids: Set<UUID>, count: Int) {
@@ -273,6 +276,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 placeIDs: (task.placeIDs ?? task.placeID.map { [$0] } ?? []).filter { importedPlaceIDs.contains($0) },
                 tags: task.tags ?? [],
                 goalIDs: (task.goalIDs ?? []).filter { importedGoalIDs.contains($0) },
+                eventIDs: (task.eventIDs ?? []).filter { importedEventIDs.contains($0) },
                 steps: task.steps ?? [],
                 checklistItems: task.checklistItems ?? [],
                 scheduleMode: task.scheduleMode,
@@ -695,6 +699,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 isAllDay: event.isAllDay ?? true,
                 startedAt: event.startedAt,
                 endedAt: event.endedAt,
+                reminderAt: event.reminderAt,
                 createdAt: event.createdAt ?? importDate,
                 updatedAt: event.updatedAt ?? event.createdAt ?? importDate
             )

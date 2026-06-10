@@ -31,6 +31,7 @@ final class RoutineTask {
     var completedChecklistItemIDsStorage: String = ""
     var relationshipsStorage: String = ""
     var goalIDsStorage: String = ""
+    var eventIDsStorage: String = ""
     var scheduleModeRawValue: String = RoutineScheduleMode.fixedInterval.rawValue
     var recurrenceStorageVersion: Int16 = 0
     var recurrenceKindRawValue: String = RoutineRecurrenceRule.Kind.intervalDays.rawValue
@@ -225,6 +226,11 @@ final class RoutineTask {
         set { goalIDsStorage = RoutineGoalIDStorage.serialize(newValue) }
     }
 
+    var eventIDs: [UUID] {
+        get { RoutineEventIDStorage.deserialize(eventIDsStorage) }
+        set { eventIDsStorage = RoutineEventIDStorage.serialize(newValue) }
+    }
+
     var changeLogEntries: [RoutineTaskChangeLogEntry] {
         get {
             let entries = RoutineTaskChangeLogStorage.deserialize(changeLogStorage)
@@ -299,6 +305,7 @@ final class RoutineTask {
         placeIDs: [UUID] = [],
         tags: [String] = [],
         goalIDs: [UUID] = [],
+        eventIDs: [UUID] = [],
         relationships: [RoutineTaskRelationship] = [],
         steps: [RoutineStep] = [],
         checklistItems: [RoutineChecklistItem] = [],
@@ -366,6 +373,7 @@ final class RoutineTask {
         self.placeIDsStorage = RoutinePlaceIDStorage.serialize(resolvedPlaceIDs)
         self.tagsStorage = RoutineTag.serialize(tags)
         self.goalIDsStorage = RoutineGoalIDStorage.serialize(goalIDs)
+        self.eventIDsStorage = RoutineEventIDStorage.serialize(eventIDs)
         self.relationshipsStorage = RoutineTaskRelationshipStorage.serialize(relationships, ownerID: id)
         self.stepsStorage = RoutineStepStorage.serialize(steps)
         self.checklistItemsStorage = RoutineChecklistItemStorage.serialize(resolvedChecklistItems)
@@ -601,6 +609,7 @@ final class RoutineTask {
             placeIDs: placeIDs,
             tags: tags,
             goalIDs: goalIDs,
+            eventIDs: eventIDs,
             relationships: relationships,
             steps: steps,
             checklistItems: checklistItems,

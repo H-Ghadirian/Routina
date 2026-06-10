@@ -166,6 +166,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var placeIDsStorage: String
         var tagsStorage: String
         var goalIDsStorage: String
+        var eventIDsStorage: String
         var stepsStorage: String
         var checklistItemsStorage: String
         var completedChecklistItemIDsStorage: String
@@ -214,6 +215,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             placeIDsStorage = task.placeIDsStorage
             tagsStorage = task.tagsStorage
             goalIDsStorage = task.goalIDsStorage
+            eventIDsStorage = task.eventIDsStorage
             stepsStorage = task.stepsStorage
             checklistItemsStorage = task.checklistItemsStorage
             completedChecklistItemIDsStorage = task.completedChecklistItemIDsStorage
@@ -288,6 +290,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var isAllDay: Bool
         var startedAt: Date?
         var endedAt: Date?
+        var reminderAt: Date?
         var createdAt: Date?
         var updatedAt: Date?
 
@@ -300,6 +303,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             isAllDay = event.isAllDay
             startedAt = event.startedAt
             endedAt = event.endedAt
+            reminderAt = event.reminderAt
             createdAt = event.createdAt
             updatedAt = event.updatedAt
         }

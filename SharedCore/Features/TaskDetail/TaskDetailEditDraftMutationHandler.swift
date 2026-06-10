@@ -164,6 +164,17 @@ struct TaskDetailEditDraftMutationHandler {
         state.editRoutineGoals = RoutineGoalSummary.toggling(goal, in: state.editRoutineGoals)
     }
 
+    func toggleEventSelection(_ eventID: UUID, state: inout TaskDetailFeature.State) {
+        guard state.availableEvents.contains(where: { $0.id == eventID }) else { return }
+        var eventIDs = state.editEventIDs
+        if eventIDs.contains(eventID) {
+            eventIDs.removeAll { $0 == eventID }
+        } else {
+            eventIDs.append(eventID)
+        }
+        state.editEventIDs = RoutineEventIDStorage.sanitized(eventIDs)
+    }
+
     func setEstimatedDuration(_ value: Int?, state: inout TaskDetailFeature.State) {
         state.editEstimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(value)
     }

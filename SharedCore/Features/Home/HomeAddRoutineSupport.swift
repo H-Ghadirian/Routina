@@ -67,6 +67,7 @@ enum HomeAddRoutineSupport {
             placeIDs: request.selectedPlaceIDs,
             tags: request.tags,
             goalIDs: goalIDs,
+            eventIDs: request.eventIDs,
             relationships: request.relationships,
             steps: request.steps,
             checklistItems: request.checklistItems,

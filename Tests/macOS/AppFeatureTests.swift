@@ -213,6 +213,43 @@ struct AppFeatureTests {
     }
 
     @Test
+    func openDeepLink_eventSelectsHomeTimelineSidebarRow() async {
+        let eventID = UUID()
+        let store = TestStore(
+            initialState: AppFeature.State(
+                selectedTab: .stats,
+                home: HomeFeature.State(
+                    selectedTimelineRange: .month,
+                    selectedTimelineFilterType: .todos,
+                    selectedTimelineTags: ["Errands"],
+                    selectedTimelineExcludedTags: ["Hidden"],
+                    selectedTimelineMediaFilter: .withImage,
+                    macSidebarMode: .settings,
+                    macSidebarSelection: .task(UUID())
+                )
+            )
+        ) {
+            AppFeature()
+        }
+
+        await store.send(.openDeepLink(.event(eventID))) {
+            $0.hasRestoredTemporaryViewState = true
+            $0.selectedTab = .home
+        }
+
+        await store.receive(.home(.openEventDeepLink(eventID))) {
+            $0.home.macSidebarMode = .timeline
+            $0.home.macSidebarSelection = .timelineEntry(eventID)
+            $0.home.selectedTimelineRange = .all
+            $0.home.selectedTimelineFilterType = .events
+            $0.home.selectedTimelineTag = nil
+            $0.home.selectedTimelineTags = []
+            $0.home.selectedTimelineExcludedTags = []
+            $0.home.selectedTimelineMediaFilter = .all
+        }
+    }
+
+    @Test
     func openDeepLink_sleepSelectsHomeAndRequestsPlannerFocus() async {
         let sleepID = UUID()
         let store = TestStore(

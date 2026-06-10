@@ -73,6 +73,57 @@ struct AddRoutineFeatureSaveTests {
     }
 
     @Test
+    func saveTapped_includesLinkedEventIDsInRequest() async {
+        let eventID = UUID()
+        let capturedEventIDs = LockIsolated<[UUID]>([])
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(routineName: "Prepare notes"),
+                organization: AddRoutineOrganizationState(
+                    eventIDs: [eventID],
+                    existingRoutineNames: []
+                )
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { request in
+                    capturedEventIDs.withValue { $0 = request.eventIDs }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.saveTapped)
+
+        #expect(capturedEventIDs.value == [eventID])
+    }
+
+    @Test
+    func makeRoutine_persistsLinkedEventIDsFromSaveRequest() {
+        let createdAt = makeDate("2026-03-20T10:00:00Z")
+        let eventID = UUID()
+        let request = makeSaveRequest(
+            name: "Prepare notes",
+            frequencyInDays: 1,
+            recurrenceRule: .interval(days: 1),
+            emoji: "📝",
+            eventIDs: [eventID]
+        )
+
+        let task = HomeAddRoutineSupport.makeRoutine(
+            from: request,
+            name: request.name,
+            goalIDs: [],
+            scheduleAnchor: createdAt
+        )
+
+        #expect(task.eventIDs == [eventID])
+    }
+
+    @Test
     func saveTapped_includesAllDayFlagForDatedTodos() async {
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-20T10:00:00Z")

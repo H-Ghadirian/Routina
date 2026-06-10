@@ -31,6 +31,7 @@ struct AddRoutineFeature: Reducer {
         case availableTagsChanged([String])
         case availableTagSummariesChanged([RoutineTagSummary])
         case availableGoalsChanged([RoutineGoalSummary])
+        case availableEventsChanged([RoutineEventLinkCandidate])
         case relatedTagRulesChanged([RoutineRelatedTagRule])
         case availableRelationshipTasksChanged([RoutineTaskRelationshipCandidate])
         case tagDraftChanged(String)
@@ -41,6 +42,7 @@ struct AddRoutineFeature: Reducer {
         case removeGoal(UUID)
         case toggleTagSelection(String)
         case toggleGoalSelection(RoutineGoalSummary)
+        case toggleEventSelection(UUID)
         case addRelationship(UUID, RoutineTaskRelationshipKind)
         case removeRelationship(UUID)
         case tagRenamed(oldName: String, newName: String)
@@ -269,6 +271,10 @@ struct AddRoutineFeature: Reducer {
             organizationMutationHandler().setAvailableGoals(goals, state: &state)
             return .none
 
+        case let .availableEventsChanged(events):
+            organizationMutationHandler().setAvailableEvents(events, state: &state)
+            return .none
+
         case let .relatedTagRulesChanged(rules):
             organizationMutationHandler().setRelatedTagRules(rules, state: &state)
             return .none
@@ -307,6 +313,10 @@ struct AddRoutineFeature: Reducer {
 
         case let .toggleGoalSelection(goal):
             organizationMutationHandler().toggleGoalSelection(goal, state: &state)
+            return .none
+
+        case let .toggleEventSelection(eventID):
+            organizationMutationHandler().toggleEventSelection(eventID, state: &state)
             return .none
 
         case let .addRelationship(taskID, kind):

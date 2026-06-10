@@ -36,6 +36,18 @@ struct TaskDetailEditContextActionHandler {
         return .none
     }
 
+    func availableEventsLoaded(
+        _ events: [RoutineEventLinkCandidate],
+        state: inout State
+    ) -> Effect<Action> {
+        state.availableEvents = events.sorted(by: RoutineEventLinkCandidate.sort)
+        let availableEventIDs = Set(state.availableEvents.map(\.id))
+        state.editEventIDs = RoutineEventIDStorage.sanitized(
+            state.editEventIDs.filter { availableEventIDs.contains($0) }
+        )
+        return .none
+    }
+
     func relatedTagRulesLoaded(
         _ rules: [RoutineRelatedTagRule],
         state: inout State

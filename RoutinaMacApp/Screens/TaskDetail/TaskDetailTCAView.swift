@@ -11,6 +11,7 @@ struct TaskDetailTCAView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.addEditFormCoordinator) private var formCoordinator
     @Query(sort: \FocusSession.startedAt, order: .reverse) private var focusSessions: [FocusSession]
+    @Query(sort: \RoutineEvent.startedAt, order: .reverse) private var events: [RoutineEvent]
     @State var displayedMonthStart = Calendar.current.startOfMonth(for: Date())
     @State var isShowingAllLogs = false
     @State private var isRoutineLogsExpanded = false
@@ -125,13 +126,18 @@ detailBody
 .onAppear {
     referenceDate = Date()
     displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)
+    syncAvailableEvents()
     collapseDefaultSections()
+}
+.onChange(of: availableEventCandidates) { _, _ in
+    syncAvailableEvents()
 }
 .onChange(of: store.task.id) { _, _ in
     referenceDate = Date()
     activeBlockingTask = nil
     isCommentComposerVisible = false
     resetRevealedOptionalControls()
+    syncAvailableEvents()
     Task {
         await refreshFocusBlockingContext()
     }
@@ -206,6 +212,9 @@ detailBody
                 historySection
                 if store.task.hasChecklistItems {
                     checklistItemsSection
+                }
+                if shouldShowLinkedEventsSection {
+                    linkedEventsSection
                 }
                 if shouldShowRelationshipsSection {
                     relationshipsSection
@@ -398,6 +407,9 @@ detailBody
                 if store.task.hasChecklistItems {
                     checklistItemsSection
                 }
+                if shouldShowLinkedEventsSection {
+                    linkedEventsSection
+                }
                 if shouldShowRelationshipsSection {
                     relationshipsSection
                 }
@@ -510,6 +522,10 @@ detailBody
             actions.append(editSectionAction(title: "Goals", section: .goals))
         }
 
+        if store.taskEventCandidates.isEmpty {
+            actions.append(editSectionAction(title: "Events", section: .events))
+        }
+
         if !shouldShowRelationshipsSection {
             actions.append(TaskDetailOptionalAction(title: "Linked Task", systemImage: "link.badge.plus") {
                 store.send(.openAddLinkedTask)
@@ -583,6 +599,10 @@ detailBody
         !store.groupedResolvedRelationships.isEmpty
     }
 
+    private var shouldShowLinkedEventsSection: Bool {
+        !store.taskEventCandidates.isEmpty
+    }
+
     private var hasTaskExtras: Bool {
         store.task.hasNotes
             || store.task.hasImage
@@ -612,6 +632,14 @@ detailBody
             return [store.task]
         }
         return [store.task, activeBlockingTask]
+    }
+
+    private var availableEventCandidates: [RoutineEventLinkCandidate] {
+        RoutineEventLinkCandidate.candidates(from: events)
+    }
+
+    private func syncAvailableEvents() {
+        store.send(.availableEventsLoaded(availableEventCandidates))
     }
 
     @MainActor
@@ -851,6 +879,14 @@ detailBody
             onOpenImage: openTaskImage(data:),
             onSaveAttachment: saveAttachment(item:),
             onOpenAttachment: { openAttachment(data: $0.data, fileName: $0.fileName) }
+        )
+    }
+
+    private var linkedEventsSection: some View {
+        TaskDetailLinkedEventsSectionView(
+            events: store.taskEventCandidates,
+            background: routineLogsBackground,
+            stroke: TaskDetailPlatformStyle.sectionCardStroke
         )
     }
 

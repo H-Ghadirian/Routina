@@ -93,6 +93,7 @@ struct SwiftDataModelTests {
     func routineEvent_sanitizesTextTagsAndCopiesDetached() {
         let startedAt = Date(timeIntervalSince1970: 1_780_000_000)
         let endedAt = startedAt.addingTimeInterval(2 * 60 * 60)
+        let reminderAt = startedAt.addingTimeInterval(-15 * 60)
         let event = RoutineEvent(
             title: "  Sick day  ",
             notes: "  Fever and rest  ",
@@ -101,6 +102,7 @@ struct SwiftDataModelTests {
             isAllDay: false,
             startedAt: startedAt,
             endedAt: endedAt,
+            reminderAt: reminderAt,
             createdAt: startedAt,
             updatedAt: endedAt
         )
@@ -112,6 +114,7 @@ struct SwiftDataModelTests {
         #expect(event.displayEmoji == "🤒")
         #expect(event.tags == ["Health", "Recovery"])
         #expect(event.endedAt == endedAt)
+        #expect(event.reminderAt == reminderAt)
 
         let copy = event.detachedCopy()
         #expect(copy.id == event.id)
@@ -120,6 +123,7 @@ struct SwiftDataModelTests {
         #expect(copy.isAllDay == false)
         #expect(copy.startedAt == startedAt)
         #expect(copy.endedAt == endedAt)
+        #expect(copy.reminderAt == reminderAt)
     }
 
     @Test
@@ -559,6 +563,21 @@ struct SwiftDataModelTests {
             "https://example.com/docs",
             "https://example.com/pricing"
         ])
+    }
+
+    @Test
+    func routineTask_sanitizesEventIDsAndCopiesThem() {
+        let firstEventID = UUID()
+        let secondEventID = UUID()
+        let task = RoutineTask(eventIDs: [firstEventID, secondEventID, firstEventID])
+
+        #expect(task.eventIDs == [firstEventID, secondEventID])
+
+        task.eventIDs = [secondEventID, secondEventID, firstEventID]
+        #expect(task.eventIDs == [secondEventID, firstEventID])
+
+        let copy = task.detachedCopy()
+        #expect(copy.eventIDs == [secondEventID, firstEventID])
     }
 
     @Test

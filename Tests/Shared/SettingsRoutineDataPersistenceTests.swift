@@ -195,6 +195,7 @@ struct SettingsRoutineDataPersistenceTests {
         let context = makeInMemoryContext()
         let startedAt = Date(timeIntervalSince1970: 1_780_000_000)
         let endedAt = Date(timeIntervalSince1970: 1_780_086_400)
+        let reminderAt = Date(timeIntervalSince1970: 1_779_996_000)
         let createdAt = Date(timeIntervalSince1970: 1_779_990_000)
         let updatedAt = Date(timeIntervalSince1970: 1_779_995_000)
         let event = RoutineEvent(
@@ -205,10 +206,16 @@ struct SettingsRoutineDataPersistenceTests {
             isAllDay: true,
             startedAt: startedAt,
             endedAt: endedAt,
+            reminderAt: reminderAt,
             createdAt: createdAt,
             updatedAt: updatedAt
         )
         context.insert(event)
+        let task = RoutineTask(
+            name: "Follow up",
+            eventIDs: [event.id]
+        )
+        context.insert(task)
         try context.save()
 
         let packageURL = URL(fileURLWithPath: NSTemporaryDirectory())
@@ -225,7 +232,9 @@ struct SettingsRoutineDataPersistenceTests {
         )
 
         #expect(summary.events == 1)
+        #expect(summary.tasks == 1)
         let restoredEvent = try #require(restoreContext.fetch(FetchDescriptor<RoutineEvent>()).first)
+        let restoredTask = try #require(restoreContext.fetch(FetchDescriptor<RoutineTask>()).first)
         #expect(restoredEvent.id == event.id)
         #expect(restoredEvent.title == "Sick day")
         #expect(restoredEvent.notes == "Fever and rest")
@@ -234,8 +243,10 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(restoredEvent.isAllDay)
         #expect(restoredEvent.startedAt == startedAt)
         #expect(restoredEvent.endedAt == endedAt)
+        #expect(restoredEvent.reminderAt == reminderAt)
         #expect(restoredEvent.createdAt == createdAt)
         #expect(restoredEvent.updatedAt == updatedAt)
+        #expect(restoredTask.eventIDs == [event.id])
     }
 
     @Test

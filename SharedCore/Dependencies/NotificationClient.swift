@@ -1,8 +1,14 @@
 import Foundation
 import UserNotifications
 
+enum NotificationPayloadKind: Equatable, Sendable {
+    case task
+    case event
+}
+
 struct NotificationPayload: Sendable {
     let identifier: String
+    let kind: NotificationPayloadKind
     let name: String?
     let emoji: String?
     let interval: Int
@@ -16,6 +22,46 @@ struct NotificationPayload: Sendable {
     let isChecklistDriven: Bool
     let isChecklistCompletionRoutine: Bool
     let nextDueChecklistItemTitle: String?
+    let deepLink: RoutinaDeepLink?
+    let isAllDayEvent: Bool
+
+    init(
+        identifier: String,
+        kind: NotificationPayloadKind = .task,
+        name: String?,
+        emoji: String?,
+        interval: Int,
+        lastDone: Date?,
+        dueDate: Date?,
+        triggerDate: Date?,
+        isOneOffTask: Bool,
+        isCustomReminder: Bool,
+        isArchived: Bool,
+        usesExactTime: Bool,
+        isChecklistDriven: Bool,
+        isChecklistCompletionRoutine: Bool,
+        nextDueChecklistItemTitle: String?,
+        deepLink: RoutinaDeepLink? = nil,
+        isAllDayEvent: Bool = false
+    ) {
+        self.identifier = identifier
+        self.kind = kind
+        self.name = name
+        self.emoji = emoji
+        self.interval = interval
+        self.lastDone = lastDone
+        self.dueDate = dueDate
+        self.triggerDate = triggerDate
+        self.isOneOffTask = isOneOffTask
+        self.isCustomReminder = isCustomReminder
+        self.isArchived = isArchived
+        self.usesExactTime = usesExactTime
+        self.isChecklistDriven = isChecklistDriven
+        self.isChecklistCompletionRoutine = isChecklistCompletionRoutine
+        self.nextDueChecklistItemTitle = nextDueChecklistItemTitle
+        self.deepLink = deepLink
+        self.isAllDayEvent = isAllDayEvent
+    }
 }
 
 struct NotificationClient: Sendable {

@@ -210,6 +210,45 @@ struct AppFeatureTests {
     }
 
     @Test
+    func openDeepLink_eventSelectsTimelineAndPreparesEventPresentation() async {
+        let eventID = UUID()
+        let store = TestStore(
+            initialState: AppFeature.State(
+                selectedTab: .home,
+                timeline: TimelineFeature.State(
+                    tasks: [],
+                    logs: [],
+                    selectedRange: .month,
+                    filterType: .todos,
+                    selectedTag: "Errands",
+                    selectedTags: ["Errands"],
+                    excludedTags: ["Hidden"],
+                    mediaFilter: .withImage,
+                    isFilterSheetPresented: true
+                )
+            )
+        ) {
+            AppFeature()
+        }
+
+        await store.send(.openDeepLink(.event(eventID))) {
+            $0.hasRestoredTemporaryViewState = true
+            $0.selectedTab = .timeline
+        }
+
+        await store.receive(.timeline(.openEventDeepLink(eventID))) {
+            $0.timeline.selectedRange = .all
+            $0.timeline.filterType = .events
+            $0.timeline.selectedTag = nil
+            $0.timeline.selectedTags = []
+            $0.timeline.excludedTags = []
+            $0.timeline.mediaFilter = .all
+            $0.timeline.isFilterSheetPresented = false
+            $0.timeline.deepLinkedEventID = eventID
+        }
+    }
+
+    @Test
     func openDeepLink_sleepSelectsTimelineFallback() async {
         let sleepID = UUID()
         let store = TestStore(

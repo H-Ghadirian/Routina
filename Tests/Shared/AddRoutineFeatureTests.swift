@@ -333,6 +333,41 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func availableEventsChanged_prunesMissingEventsAndToggleSelection() async {
+        let keptID = UUID()
+        let removedID = UUID()
+        let store = TestStore(
+            initialState: makeState(
+                organization: AddRoutineOrganizationState(eventIDs: [keptID, removedID])
+            )
+        ) {
+            makeFeature()
+        }
+
+        let keptEvent = RoutineEventLinkCandidate(
+            id: keptID,
+            title: "Appointment",
+            emoji: "🗓️",
+            isAllDay: false,
+            startedAt: makeDate("2026-03-20T10:00:00Z"),
+            endedAt: nil
+        )
+
+        await store.send(.availableEventsChanged([keptEvent])) {
+            $0.organization.availableEvents = [keptEvent]
+            $0.organization.eventIDs = [keptID]
+        }
+
+        await store.send(.toggleEventSelection(keptID)) {
+            $0.organization.eventIDs = []
+        }
+
+        await store.send(.toggleEventSelection(keptID)) {
+            $0.organization.eventIDs = [keptID]
+        }
+    }
+
+    @Test
     func availableTagSummariesChanged_sortsByCombinedCounterDescending() async {
         let store = TestStore(initialState: makeState()) {
             makeFeature()

@@ -523,6 +523,7 @@ struct HomeFeature {
         case selectedBoardScopeChanged(BoardScope)
         case openTaskDeepLink(UUID)
         case openNoteDeepLink(UUID)
+        case openEventDeepLink(UUID)
         case openSprintDeepLink(UUID)
         case openSleepDeepLink(UUID)
         case sleepPlannerDeepLinkHandled(UUID)
@@ -1182,6 +1183,9 @@ struct HomeFeature {
 
             case let .openNoteDeepLink(noteID):
                 return macNavigationRouter().openNoteDeepLink(noteID, state: &state)
+
+            case let .openEventDeepLink(eventID):
+                return macNavigationRouter().openEventDeepLink(eventID, state: &state)
 
             case let .openSprintDeepLink(sprintID):
                 return macNavigationRouter().openSprintDeepLink(sprintID, state: &state)

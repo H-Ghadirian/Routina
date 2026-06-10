@@ -23,6 +23,9 @@ enum CloudKitDirectPullTaskPayloadApplier {
         if let goalIDs = payload.goalIDs {
             task.goalIDs = goalIDs
         }
+        if let eventIDs = payload.eventIDs {
+            task.eventIDs = eventIDs
+        }
         if let steps = payload.steps {
             task.replaceSteps(steps)
         }
@@ -110,6 +113,7 @@ enum CloudKitDirectPullTaskPayloadApplier {
             placeIDs: payload.placeIDs ?? payload.placeID.map { [$0] } ?? [],
             tags: payload.tags ?? [],
             goalIDs: payload.goalIDs ?? [],
+            eventIDs: payload.eventIDs ?? [],
             steps: payload.steps ?? [],
             checklistItems: payload.checklistItems ?? [],
             scheduleMode: payload.scheduleMode,

@@ -35,6 +35,7 @@ enum HomeDeduplicationSupport {
             var replacementTaskIDs: [UUID: UUID] = [:]
             for task in sameNamedTasks where task.id != keeper.id {
                 replacementTaskIDs[task.id] = keeper.id
+                keeper.eventIDs = RoutineEventIDStorage.sanitized(keeper.eventIDs + task.eventIDs)
                 mergedRelationships.append(contentsOf: task.relationships)
                 let logs = try context.fetch(HomeTaskSupport.logsDescriptor(for: task.id))
                 for log in logs {

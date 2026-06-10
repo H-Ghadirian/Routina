@@ -9,6 +9,7 @@ struct TaskDetailTCAView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Query private var focusSessions: [FocusSession]
+    @Query(sort: \RoutineEvent.startedAt, order: .reverse) private var events: [RoutineEvent]
     @State var displayedMonthStart = Calendar.current.startOfMonth(for: Date())
     @State var isShowingAllLogs = false
     @State private var isRoutineLogsExpanded = true
@@ -136,12 +137,17 @@ detailBody
 .onAppear {
     referenceDate = Date()
     displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)
+    syncAvailableEvents()
+}
+.onChange(of: availableEventCandidates) { _, _ in
+    syncAvailableEvents()
 }
 .onChange(of: store.task.id) { _, _ in
     referenceDate = Date()
     activeBlockingTask = nil
     isCommentComposerVisible = false
     resetRevealedOptionalControls()
+    syncAvailableEvents()
     Task {
         await refreshFocusBlockingContext()
     }
@@ -231,6 +237,9 @@ detailBody
                 if store.task.hasChecklistItems {
                     checklistItemsSection
                 }
+                if shouldShowLinkedEventsSection {
+                    linkedEventsSection
+                }
                 if shouldShowRelationshipsSection {
                     relationshipsSection
                 }
@@ -270,6 +279,9 @@ detailBody
                 historySection
                 if store.task.hasChecklistItems {
                     checklistItemsSection
+                }
+                if shouldShowLinkedEventsSection {
+                    linkedEventsSection
                 }
                 if shouldShowRelationshipsSection {
                     relationshipsSection
@@ -346,6 +358,12 @@ detailBody
             })
         }
 
+        if !shouldShowLinkedEventsSection {
+            actions.append(TaskDetailOptionalAction(title: "Events", systemImage: "calendar.badge.plus") {
+                store.send(.setEditSheet(true))
+            })
+        }
+
         if shouldShowTimeAddAction {
             actions.append(TaskDetailOptionalAction(title: "Time", systemImage: "clock.badge") {
                 withAnimation(.easeInOut(duration: 0.18)) {
@@ -394,6 +412,10 @@ detailBody
 
     private var shouldShowRelationshipsSection: Bool {
         !store.groupedResolvedRelationships.isEmpty
+    }
+
+    private var shouldShowLinkedEventsSection: Bool {
+        !store.taskEventCandidates.isEmpty
     }
 
     private var shouldShowTimeControl: Bool {
@@ -465,6 +487,14 @@ detailBody
             return [store.task]
         }
         return [store.task, activeBlockingTask]
+    }
+
+    private var availableEventCandidates: [RoutineEventLinkCandidate] {
+        RoutineEventLinkCandidate.candidates(from: events)
+    }
+
+    private func syncAvailableEvents() {
+        store.send(.availableEventsLoaded(availableEventCandidates))
     }
 
     @MainActor
@@ -732,6 +762,14 @@ detailBody
             stroke: TaskDetailPlatformStyle.sectionCardStroke,
             onSaveAttachment: saveAttachment(item:),
             onOpenAttachment: { openAttachment(data: $0.data, fileName: $0.fileName) }
+        )
+    }
+
+    private var linkedEventsSection: some View {
+        TaskDetailLinkedEventsSectionView(
+            events: store.taskEventCandidates,
+            background: routineLogsBackground,
+            stroke: TaskDetailPlatformStyle.sectionCardStroke
         )
     }
 

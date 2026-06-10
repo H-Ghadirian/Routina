@@ -199,12 +199,17 @@ struct TaskFormPresentationTests {
         let voiceNoteIndex = try #require(order.firstIndex(of: .voiceNote))
         let deadlineIndex = try #require(order.firstIndex(of: .deadline))
         let imageIndex = try #require(order.firstIndex(of: .image))
+        let goalsIndex = try #require(order.firstIndex(of: .goals))
+        let eventsIndex = try #require(order.firstIndex(of: .events))
+        let relationshipsIndex = try #require(order.firstIndex(of: .relationships))
         let stepsIndex = try #require(order.firstIndex(of: .steps))
         let checklistIndex = try #require(order.firstIndex(of: .checklist))
 
         #expect(voiceNoteIndex == order.index(after: notesIndex))
         #expect(voiceNoteIndex < deadlineIndex)
         #expect(voiceNoteIndex < imageIndex)
+        #expect(eventsIndex == order.index(after: goalsIndex))
+        #expect(relationshipsIndex == order.index(after: eventsIndex))
         #expect(checklistIndex == order.index(after: stepsIndex))
     }
 

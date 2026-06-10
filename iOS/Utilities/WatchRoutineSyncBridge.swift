@@ -662,6 +662,8 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
             return "watch-open-goal-\(goalID.uuidString)"
         case let .note(noteID):
             return "watch-open-note-\(noteID.uuidString)"
+        case let .event(eventID):
+            return "watch-open-event-\(eventID.uuidString)"
         case let .sprint(sprintID):
             return "watch-open-sprint-\(sprintID.uuidString)"
         case let .sleep(sleepID):
@@ -677,6 +679,8 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
             return "Open goal on iPhone"
         case .note:
             return "Open note on iPhone"
+        case .event:
+            return "Open event on iPhone"
         case .sprint:
             return "Open sprint timer on iPhone"
         case .sleep:
