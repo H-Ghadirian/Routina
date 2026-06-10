@@ -35,6 +35,7 @@ enum RoutinaAppBootstrap {
             .appSettingAutomaticPlaceCheckInEnabled: true,
             .appSettingShowTimelineTasksInDayPlanner: true,
             .appSettingDailyRoutinesSectionCollapsed: false,
+            .appSettingMacPlanTodayDailyRoutinesGroupCollapsed: true,
             .appSettingArchivedRoutinesSectionCollapsed: false
         ])
         SharedDefaults.app.register(defaults: [

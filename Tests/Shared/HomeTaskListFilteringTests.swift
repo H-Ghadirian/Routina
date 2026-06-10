@@ -610,7 +610,7 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
-    func sidebarPresentationSeparatesDailyRoutinesAndBuildsMoveContext() {
+    func sidebarPresentationNestsDailyRoutinesUnderPlanTodayAndBuildsMoveContext() {
         let dailyID = UUID()
         let regularID = UUID()
         let presentation = HomeTaskListPresentation.sidebar(
@@ -628,11 +628,48 @@ struct HomeTaskListFilteringTests {
             )
         )
 
-        #expect(presentation.sections.map(\.kind) == [.daily, .regular])
-        #expect(presentation.sections.map(\.title) == ["Daily Routines", "On Track"])
+        #expect(presentation.sections.map(\.kind) == [.plannedToday, .regular])
+        #expect(presentation.sections.map(\.title) == ["Plan to do today", "On Track"])
         #expect(presentation.sections.map(\.rowNumberOffset) == [0, 1])
-        #expect(presentation.sections.compactMap(\.moveContext?.sectionKey) == ["daily", "onTrack"])
-        #expect(presentation.sections.compactMap(\.moveContext?.orderedTaskIDs.first) == [dailyID, regularID])
+        #expect(presentation.sections.first?.taskGroups.map(\.title) == [String?("Daily Routines")])
+        #expect(presentation.sections.first?.taskGroups.map(\.isCollapsible) == [true])
+        #expect(presentation.sections.first?.taskGroups.compactMap(\.moveContext?.sectionKey) == ["daily"])
+        #expect(presentation.sections.first?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs.first) == [dailyID])
+        #expect(presentation.sections.dropFirst().compactMap(\.moveContext?.sectionKey) == ["onTrack"])
+        #expect(presentation.sections.dropFirst().compactMap(\.moveContext?.orderedTaskIDs.first) == [regularID])
+    }
+
+    @Test
+    func sidebarPresentationNestsDailyRoutinesInsidePlanTodayWithPlannedTasks() {
+        let referenceDate = Date(timeIntervalSince1970: 1_714_608_000)
+        let plannedID = UUID()
+        let dailyID = UUID()
+        let regularID = UUID()
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(),
+            routineDisplays: [
+                TestTaskDisplay(taskID: regularID, name: "Weekly", recurrenceRule: .interval(days: 7), daysUntilDue: 4),
+                TestTaskDisplay(taskID: dailyID, name: "Daily", recurrenceRule: .interval(days: 1), daysUntilDue: 0),
+                TestTaskDisplay(taskID: plannedID, name: "Plan today", plannedDate: referenceDate)
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        let planSection = presentation.sections.first
+        #expect(presentation.sections.map(\.kind) == [.plannedToday, .regular])
+        #expect(presentation.sections.map(\.title) == ["Plan to do today", "On Track"])
+        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 2])
+        #expect(planSection?.tasks.map(\.taskID) == [plannedID, dailyID])
+        #expect(planSection?.taskGroups.map(\.title) == [nil, String?("Daily Routines")])
+        #expect(planSection?.taskGroups.map(\.isCollapsible) == [false, true])
+        #expect(planSection?.taskGroups.compactMap(\.moveContext?.sectionKey) == ["plannedToday", "daily"])
+        #expect(planSection?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs) == [[plannedID], [dailyID]])
     }
 
     @Test
@@ -654,14 +691,18 @@ struct HomeTaskListFilteringTests {
             )
         )
 
-        #expect(presentation.sections.map(\.kind) == [.daily, .tag])
-        #expect(presentation.sections.map(\.title) == ["Daily Routines", "#Admin"])
-        #expect(presentation.sections.compactMap(\.moveContext?.sectionKey) == ["daily", "tag:admin"])
-        #expect(presentation.sections.compactMap(\.moveContext?.orderedTaskIDs.first) == [focusID, adminID])
+        #expect(presentation.sections.map(\.kind) == [.plannedToday, .tag])
+        #expect(presentation.sections.map(\.title) == ["Plan to do today", "#Admin"])
+        #expect(presentation.sections.first?.taskGroups.map(\.title) == [String?("Daily Routines")])
+        #expect(presentation.sections.first?.taskGroups.map(\.isCollapsible) == [true])
+        #expect(presentation.sections.first?.taskGroups.compactMap(\.moveContext?.sectionKey) == ["daily"])
+        #expect(presentation.sections.first?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs.first) == [focusID])
+        #expect(presentation.sections.dropFirst().compactMap(\.moveContext?.sectionKey) == ["tag:admin"])
+        #expect(presentation.sections.dropFirst().compactMap(\.moveContext?.orderedTaskIDs.first) == [adminID])
     }
 
     @Test
-    func sidebarPresentationNoneGroupingKeepsDailyRoutinesSeparate() {
+    func sidebarPresentationNoneGroupingNestsDailyRoutinesUnderPlanToday() {
         let dailyID = UUID()
         let weeklyID = UUID()
         let presentation = HomeTaskListPresentation.sidebar(
@@ -679,10 +720,14 @@ struct HomeTaskListFilteringTests {
             )
         )
 
-        #expect(presentation.sections.map(\.kind) == [.daily, .regular])
-        #expect(presentation.sections.map(\.title) == ["Daily Routines", "Tasks"])
-        #expect(presentation.sections.compactMap(\.moveContext?.sectionKey) == ["daily", "tasks"])
-        #expect(presentation.sections.map { $0.moveContext?.orderedTaskIDs } == [[dailyID], [weeklyID]])
+        #expect(presentation.sections.map(\.kind) == [.plannedToday, .regular])
+        #expect(presentation.sections.map(\.title) == ["Plan to do today", "Tasks"])
+        #expect(presentation.sections.first?.taskGroups.map(\.title) == [String?("Daily Routines")])
+        #expect(presentation.sections.first?.taskGroups.map(\.isCollapsible) == [true])
+        #expect(presentation.sections.first?.taskGroups.compactMap(\.moveContext?.sectionKey) == ["daily"])
+        #expect(presentation.sections.first?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs) == [[dailyID]])
+        #expect(presentation.sections.dropFirst().compactMap(\.moveContext?.sectionKey) == ["tasks"])
+        #expect(presentation.sections.dropFirst().compactMap(\.moveContext?.orderedTaskIDs) == [[weeklyID]])
     }
 
     @Test

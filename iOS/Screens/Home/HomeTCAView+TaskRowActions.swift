@@ -81,27 +81,41 @@ extension HomeTCAView {
             }
         }
 
-        if !task.isDailyRoutine {
+        if !task.isDailyRoutine || presentation.notTodayCommand != nil {
             Divider()
 
             Menu {
-                Button {
-                    store.send(.planTask(task.taskID, Date()))
-                } label: {
-                    Label("Today", systemImage: "calendar")
-                }
-
-                Button {
-                    presentPlanningDatePicker(for: task)
-                } label: {
-                    Label("Choose Date...", systemImage: "calendar.badge.plus")
-                }
-
-                if task.plannedDate != nil {
+                if !task.isDailyRoutine {
                     Button {
-                        store.send(.planTask(task.taskID, nil))
+                        store.send(.planTask(task.taskID, Date()))
                     } label: {
-                        Label("Clear Plan", systemImage: "xmark.circle")
+                        Label("Today", systemImage: "calendar")
+                    }
+
+                    Button {
+                        presentPlanningDatePicker(for: task)
+                    } label: {
+                        Label("Choose Date...", systemImage: "calendar.badge.plus")
+                    }
+
+                    if task.plannedDate != nil {
+                        Button {
+                            store.send(.planTask(task.taskID, nil))
+                        } label: {
+                            Label("Clear Plan", systemImage: "xmark.circle")
+                        }
+                    }
+                }
+
+                if !task.isDailyRoutine, presentation.notTodayCommand != nil {
+                    Divider()
+                }
+
+                if let notTodayCommand = presentation.notTodayCommand {
+                    Button {
+                        homeTaskRowCommandHandler.handle(notTodayCommand)
+                    } label: {
+                        Label("Not today", systemImage: "moon.zzz")
                     }
                 }
             } label: {

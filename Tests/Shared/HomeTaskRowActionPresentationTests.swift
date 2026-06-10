@@ -29,9 +29,9 @@ struct HomeTaskRowActionPresentationTests {
         #expect(presentation.deleteCommand == .delete(taskID))
         #expect(presentation.lifecycleActions == [
             .markDone(title: "Complete Next Step", isDisabled: false),
-            .notToday,
             .pause
         ])
+        #expect(presentation.notTodayCommand == .notToday(taskID))
         #expect(presentation.moveActions.map(\.direction) == [.top, .up, .down, .bottom])
         #expect(presentation.moveActions.map(\.isDisabled) == [false, false, false, false])
         #expect(presentation.moveActions.first?.command(taskID: taskID) == .moveTaskInSection(
@@ -54,6 +54,7 @@ struct HomeTaskRowActionPresentationTests {
         )
 
         #expect(presentation.lifecycleActions == [.resume])
+        #expect(presentation.notTodayCommand == nil)
         #expect(presentation.moveActions.isEmpty)
         #expect(presentation.pinAction == nil)
     }
@@ -68,6 +69,7 @@ struct HomeTaskRowActionPresentationTests {
         )
 
         #expect(presentation.lifecycleActions.isEmpty)
+        #expect(presentation.notTodayCommand == nil)
     }
 
     @Test
@@ -90,6 +92,7 @@ struct HomeTaskRowActionPresentationTests {
             .markCanceled,
             .pause
         ])
+        #expect(presentation.notTodayCommand == nil)
         #expect(presentation.lifecycleActions.map { $0.command(taskID: presentation.taskID) }.contains(.markMissed(presentation.taskID)))
         #expect(presentation.lifecycleActions.map { $0.command(taskID: presentation.taskID) }.contains(.markCanceled(presentation.taskID)))
     }
@@ -110,7 +113,8 @@ struct HomeTaskRowActionPresentationTests {
             referenceDate: Date(timeIntervalSince1970: 0)
         )
 
-        #expect(presentation.lifecycleActions == [.notToday, .pause])
+        #expect(presentation.lifecycleActions == [.pause])
+        #expect(presentation.notTodayCommand == .notToday(taskID))
         #expect(presentation.moveActions.map(\.isDisabled) == [true, true, false, false])
     }
 

@@ -26,6 +26,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0203](0203-place-not-today-in-plan-to-do-menu.md) refines [0200](0200-support-task-planned-dates.md) for task row context menus:** `Not today` lives inside `Plan to do` instead of the top-level lifecycle action list, including daily routines where it is the only planning-adjacent row-menu action.
+- **[0202](0202-nest-daily-routines-under-mac-plan-today.md) refines [0200](0200-support-task-planned-dates.md) for the Mac Home sidebar:** Daily routines render inside the collapsible `Plan to do today` section on Mac, with planned tasks first and an independently collapsible, default-collapsed inner `Daily Routines` group that keeps the `daily` manual ordering bucket.
 - **[0200](0200-support-task-planned-dates.md) refines [0100](0100-reveal-task-form-details-by-section.md), [0197](0197-separate-todo-date-and-time-availability.md), and [0199](0199-support-multiday-routine-start-flow.md) for task planning:** Tasks can store an optional date-only `plannedDate` as a Home-list planning hint for todos and non-daily routines, separate from availability, deadlines, reminders, routine fixed dates, and routine duration; daily routines do not expose planning controls, and checklist-driven routines only count as daily when a checklist item has one-day runout.
 - **[0199](0199-support-multiday-routine-start-flow.md) supersedes [0198](superseded/0198-support-multiday-all-day-routines.md) and refines [0093](0093-support-all-day-routines.md), [0178](0178-make-recurrence-availability-independent.md), [0179](0179-make-all-day-an-availability-choice.md), and [0197](0197-separate-todo-date-and-time-availability.md) for routine duration:** Routines do not get fixed date availability; routine duration is independent from time availability, and multi-day routines use a Start -> in-progress -> Done detail flow.
 - **[0197](0197-separate-todo-date-and-time-availability.md) refines [0196](0196-support-todo-availability-date-bounds.md) and [0183](0183-support-todo-availability-time-windows.md) for todo availability:** Todo availability has separate date and time axes: `Any date` / `At date` / `Date window` combine independently with `Any time` / `All-day` / `At time` / `Window`.
@@ -315,3 +317,5 @@ These are ordered from newest resolver to oldest resolver.
 | [0198](superseded/0198-support-multiday-all-day-routines.md) | Support Multi-Day All-Day Routines | Superseded | 2026-06-10 |
 | [0199](0199-support-multiday-routine-start-flow.md) | Support Multi-Day Routine Start Flow | Accepted | 2026-06-10 |
 | [0200](0200-support-task-planned-dates.md) | Support Task Planned Dates | Accepted | 2026-06-10 |
+| [0202](0202-nest-daily-routines-under-mac-plan-today.md) | Nest Daily Routines Under Mac Plan Today | Accepted | 2026-06-10 |
+| [0203](0203-place-not-today-in-plan-to-do-menu.md) | Place Not Today in Plan To Do Menu | Accepted | 2026-06-10 |
