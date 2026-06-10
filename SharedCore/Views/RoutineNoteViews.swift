@@ -933,19 +933,26 @@ struct RoutinaFormattedText: View {
 }
 
 struct RoutineNoteDetailView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     let note: RoutineNote
     let attachments: [RoutineNoteAttachment]
     let onEdit: (() -> Void)?
+    let onDelete: (() -> Void)?
     @State private var isEditing = false
+    @State private var isDeleteConfirmationPresented = false
+    @State private var deleteErrorText: String?
 
     init(
         note: RoutineNote,
         attachments: [RoutineNoteAttachment],
-        onEdit: (() -> Void)? = nil
+        onEdit: (() -> Void)? = nil,
+        onDelete: (() -> Void)? = nil
     ) {
         self.note = note
         self.attachments = attachments
         self.onEdit = onEdit
+        self.onDelete = onDelete
     }
 
     var body: some View {
@@ -1031,6 +1038,12 @@ struct RoutineNoteDetailView: View {
         .navigationTitle(note.displayTitle)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
+                Button(role: .destructive) {
+                    isDeleteConfirmationPresented = true
+                } label: {
+                    Label("Delete Note", systemImage: "trash")
+                }
+
                 Button {
                     if let onEdit {
                         onEdit()
@@ -1050,8 +1063,25 @@ struct RoutineNoteDetailView: View {
         .sheet(isPresented: $isEditing) {
             RoutineNoteEditorView(note: note, attachments: attachments)
         }
+        .alert("Delete Note", isPresented: $isDeleteConfirmationPresented) {
+            Button("Delete", role: .destructive) {
+                deleteNote()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This note and its files will be permanently deleted.")
+        }
+        .alert("Could Not Delete Note", isPresented: deleteErrorBinding) {
+            Button("OK", role: .cancel) {
+                deleteErrorText = nil
+            }
+        } message: {
+            Text(deleteErrorText ?? "Try again.")
+        }
         .onChange(of: note.id) { _, _ in
             isEditing = false
+            isDeleteConfirmationPresented = false
+            deleteErrorText = nil
         }
     }
 
@@ -1090,6 +1120,34 @@ struct RoutineNoteDetailView: View {
             return nil
         }
         return RoutineNoteDateFormatting.editedText(for: updatedAt)
+    }
+
+    private var deleteErrorBinding: Binding<Bool> {
+        Binding(
+            get: { deleteErrorText != nil },
+            set: { isPresented in
+                if !isPresented {
+                    deleteErrorText = nil
+                }
+            }
+        )
+    }
+
+    private func deleteNote() {
+        isEditing = false
+        for attachment in attachments {
+            modelContext.delete(attachment)
+        }
+        modelContext.delete(note)
+
+        do {
+            try modelContext.save()
+            onDelete?()
+            dismiss()
+        } catch {
+            modelContext.rollback()
+            deleteErrorText = "The note could not be deleted."
+        }
     }
 }
 

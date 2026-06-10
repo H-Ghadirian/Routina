@@ -236,7 +236,8 @@ homeContent
             RoutineNoteDetailView(
                 note: selectedNote,
                 attachments: noteAttachments(for: selectedNote),
-                onEdit: { openEditNote(selectedNote.id) }
+                onEdit: { openEditNote(selectedNote.id) },
+                onDelete: { closeDeletedNote(selectedNote.id) }
             )
         } else {
             ContentUnavailableView(

@@ -332,6 +332,19 @@ extension HomeTCAView {
         store.send(.openNoteDeepLink(noteID))
     }
 
+    func closeDeletedNote(_ noteID: UUID) {
+        if selectedNoteID == noteID {
+            selectedNoteID = nil
+        }
+        if editingNoteID == noteID {
+            editingNoteID = nil
+            isNoteEditorPresented = false
+        }
+        if case .timelineEntry(noteID) = store.macSidebarSelection {
+            store.send(.macSidebarSelectionChanged(nil))
+        }
+    }
+
     func openAddGoal() {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false

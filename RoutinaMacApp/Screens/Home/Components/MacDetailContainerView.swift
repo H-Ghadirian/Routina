@@ -29,6 +29,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     let onSelectDayPlanUnplannedCompletedDate: (Date) -> Void
     let onOpenDayPlanTaskDetails: (UUID) -> Void
     let onEditNote: (UUID) -> Void
+    let onDeleteNote: (UUID) -> Void
     let onToggleBoardInspector: () -> Void
     let addRoutineStore: StoreOf<AddRoutineFeature>?
     @ViewBuilder let filterView: () -> FilterView
@@ -174,7 +175,8 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
             RoutineNoteDetailView(
                 note: selectedTimelineNote,
                 attachments: selectedTimelineNoteAttachments,
-                onEdit: { onEditNote(selectedTimelineNote.id) }
+                onEdit: { onEditNote(selectedTimelineNote.id) },
+                onDelete: { onDeleteNote(selectedTimelineNote.id) }
             )
         } else if let selectedTimelinePlaceCheckInSession {
             PlaceCheckInSessionDetailView(session: selectedTimelinePlaceCheckInSession)
