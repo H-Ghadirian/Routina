@@ -322,7 +322,7 @@ extension HomeTCAView {
         switch deepLink {
         case .task:
             macHomeDetailMode = .details
-        case .goal, .note:
+        case .goal, .note, .event:
             break
         case .sprint:
             macHomeDetailMode = .board

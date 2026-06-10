@@ -21,6 +21,7 @@ struct RoutineEventEditorView: View {
     @State private var isAllDay: Bool
     @State private var startDate: Date
     @State private var endDate: Date
+    @State private var reminderAt: Date?
     @State private var tags: [String]
     @State private var tagDraft = ""
     @State private var errorText: String?
@@ -43,6 +44,7 @@ struct RoutineEventEditorView: View {
             isAllDay: true,
             startDate: defaultStartDate,
             endDate: defaultEndDate,
+            reminderAt: nil,
             tags: [],
             tagDraft: ""
         )
@@ -52,14 +54,21 @@ struct RoutineEventEditorView: View {
         _isAllDay = State(initialValue: event?.isAllDay ?? draft?.isAllDay ?? true)
         _startDate = State(initialValue: event?.startedAt ?? draft?.startDate ?? defaultStartDate)
         _endDate = State(initialValue: event?.endedAt ?? draft?.endDate ?? defaultEndDate)
+        _reminderAt = State(initialValue: event?.reminderAt ?? draft?.reminderAt)
         _tags = State(initialValue: event?.tags ?? draft?.tags ?? [])
         _tagDraft = State(initialValue: draft?.tagDraft ?? "")
     }
 
     var body: some View {
         editorContent
-            .onChange(of: isAllDay) { _, _ in
+            .onChange(of: isAllDay) { oldValue, _ in
+                let previousEventDate = RoutineEvent.reminderEventDate(
+                    startedAt: oldValue ? calendar.startOfDay(for: startDate) : startDate,
+                    isAllDay: oldValue,
+                    calendar: calendar
+                )
                 normalizeDates()
+                rebaseReminderIfUsingLeadTime(previousEventDate: previousEventDate)
             }
             .onChange(of: currentDraftSnapshot) { _, snapshot in
                 guard event == nil else { return }
@@ -74,7 +83,7 @@ struct RoutineEventEditorView: View {
         #else
         NavigationStack {
             formEditorContent
-            .navigationTitle(event == nil ? "New Event" : "Edit Event")
+            .navigationTitle(editorTitle)
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -109,6 +118,8 @@ struct RoutineEventEditorView: View {
                 }
             }
 
+            notificationSection
+
             Section("Notes") {
                 TextField("Context", text: $notesText, axis: .vertical)
                     .lineLimit(4...8)
@@ -140,6 +151,7 @@ struct RoutineEventEditorView: View {
             isAllDay: isAllDay,
             startDate: startDate,
             endDate: endDate,
+            reminderAt: reminderAt,
             tags: tags,
             tagDraft: tagDraft
         )
@@ -166,10 +178,12 @@ struct RoutineEventEditorView: View {
         Binding(
             get: { startDate },
             set: { newValue in
+                let previousEventDate = reminderEventDate
                 startDate = calendar.startOfDay(for: newValue)
                 if calendar.startOfDay(for: endDate) < calendar.startOfDay(for: startDate) {
                     endDate = startDate
                 }
+                rebaseReminderIfUsingLeadTime(previousEventDate: previousEventDate)
             }
         )
     }
@@ -183,7 +197,9 @@ struct RoutineEventEditorView: View {
                 return calendar.startOfDay(for: adjusted)
             },
             set: { newValue in
+                let previousEventDate = reminderEventDate
                 endDate = max(calendar.startOfDay(for: newValue), calendar.startOfDay(for: startDate))
+                rebaseReminderIfUsingLeadTime(previousEventDate: previousEventDate)
             }
         )
     }
@@ -192,11 +208,13 @@ struct RoutineEventEditorView: View {
         Binding(
             get: { startDate },
             set: { newValue in
+                let previousEventDate = reminderEventDate
                 let oldDuration = max(endDate.timeIntervalSince(startDate), 60 * 15)
                 startDate = newValue
                 if endDate <= startDate {
                     endDate = startDate.addingTimeInterval(oldDuration)
                 }
+                rebaseReminderIfUsingLeadTime(previousEventDate: previousEventDate)
             }
         )
     }
@@ -205,9 +223,94 @@ struct RoutineEventEditorView: View {
         Binding(
             get: { endDate },
             set: { newValue in
+                let previousEventDate = reminderEventDate
                 endDate = max(newValue, startDate.addingTimeInterval(60))
+                rebaseReminderIfUsingLeadTime(previousEventDate: previousEventDate)
             }
         )
+    }
+
+    private var reminderEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { reminderAt != nil },
+            set: { isEnabled in
+                reminderAt = isEnabled ? (reminderAt ?? defaultReminderDate) : nil
+            }
+        )
+    }
+
+    private var reminderDateBinding: Binding<Date> {
+        Binding(
+            get: { reminderAt ?? defaultReminderDate },
+            set: { reminderAt = $0 }
+        )
+    }
+
+    private var reminderLeadMinutesBinding: Binding<Int?> {
+        Binding(
+            get: {
+                TaskFormReminderLeadTime.matchedLeadMinutes(
+                    eventDate: reminderEventDate,
+                    reminderAt: reminderAt
+                )
+            },
+            set: { leadMinutes in
+                guard let leadMinutes, let eventDate = reminderEventDate else { return }
+                reminderAt = TaskFormReminderLeadTime.reminderDate(
+                    eventDate: eventDate,
+                    leadMinutes: leadMinutes
+                )
+            }
+        )
+    }
+
+    private var reminderEventDate: Date? {
+        RoutineEvent.reminderEventDate(
+            startedAt: normalizedStartDate,
+            isAllDay: isAllDay,
+            calendar: calendar
+        )
+    }
+
+    private var defaultReminderDate: Date {
+        RoutineEvent.defaultReminderDate(
+            startedAt: normalizedStartDate,
+            isAllDay: isAllDay,
+            calendar: calendar
+        )
+    }
+
+    private var editorTitle: String {
+        event == nil ? "New Event" : "Edit Event"
+    }
+
+    private var notificationSection: some View {
+        Section("Notification") {
+            Toggle("Set notification", isOn: reminderEnabledBinding)
+            if reminderAt != nil {
+                if let reminderEventDate {
+                    Picker("When", selection: reminderLeadMinutesBinding) {
+                        Text("Custom time").tag(Optional<Int>.none)
+                        ForEach(TaskFormReminderLeadTime.allCases) { option in
+                            Text(option.title).tag(Optional(option.rawValue))
+                        }
+                    }
+
+                    Text(
+                        isAllDay
+                            ? "Event: \(reminderEventDate.formatted(date: .abbreviated, time: .omitted))"
+                            : "Event: \(reminderEventDate.formatted(date: .abbreviated, time: .shortened))"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+
+                DatePicker(
+                    reminderEventDate == nil ? "Notification" : "Custom time",
+                    selection: reminderDateBinding
+                )
+            }
+        }
     }
 
     private var availableTags: [String] {
@@ -244,6 +347,7 @@ struct RoutineEventEditorView: View {
 
                         VStack(alignment: .leading, spacing: 18) {
                             macScheduleCard
+                            macNotificationCard
                             macTagsCard
                         }
                         .frame(width: 340, alignment: .topLeading)
@@ -252,6 +356,7 @@ struct RoutineEventEditorView: View {
                     VStack(alignment: .leading, spacing: 18) {
                         macEventCard
                         macScheduleCard
+                        macNotificationCard
                         macNotesCard
                         macTagsCard
                     }
@@ -277,7 +382,7 @@ struct RoutineEventEditorView: View {
                 .routinaGlassCard(cornerRadius: 14, tint: .teal, tintOpacity: 0.14)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(event == nil ? "New Event" : "Edit Event")
+                Text(editorTitle)
                     .font(.largeTitle.weight(.semibold))
                     .lineLimit(1)
 
@@ -381,6 +486,42 @@ struct RoutineEventEditorView: View {
                             displayedComponents: [.date, .hourAndMinute]
                         )
                     }
+                }
+            }
+        }
+    }
+
+    private var macNotificationCard: some View {
+        RoutineEventEditorCard(title: "Notification", systemImage: "bell") {
+            VStack(alignment: .leading, spacing: 12) {
+                Toggle("Set notification", isOn: reminderEnabledBinding)
+
+                if reminderAt != nil {
+                    if let reminderEventDate {
+                        Picker("When", selection: reminderLeadMinutesBinding) {
+                            Text("Custom time").tag(Optional<Int>.none)
+                            ForEach(TaskFormReminderLeadTime.allCases) { option in
+                                Text(option.title).tag(Optional(option.rawValue))
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .frame(width: 190, alignment: .leading)
+
+                        Text(
+                            isAllDay
+                                ? "Event: \(reminderEventDate.formatted(date: .abbreviated, time: .omitted))"
+                                : "Event: \(reminderEventDate.formatted(date: .abbreviated, time: .shortened))"
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    }
+
+                    DatePicker(
+                        reminderEventDate == nil ? "Notification" : "Custom time",
+                        selection: reminderDateBinding
+                    )
+                    .labelsHidden()
+                    .fixedSize()
                 }
             }
         }
@@ -632,6 +773,18 @@ struct RoutineEventEditorView: View {
         }
     }
 
+    private func rebaseReminderIfUsingLeadTime(previousEventDate: Date?) {
+        let leadMinutes = TaskFormReminderLeadTime.matchedLeadMinutes(
+            eventDate: previousEventDate,
+            reminderAt: reminderAt
+        )
+        guard let leadMinutes, let eventDate = reminderEventDate else { return }
+        reminderAt = TaskFormReminderLeadTime.reminderDate(
+            eventDate: eventDate,
+            leadMinutes: leadMinutes
+        )
+    }
+
     private func cancel() {
         if event == nil {
             CreationDraftPersistence.clear(.event)
@@ -654,6 +807,7 @@ struct RoutineEventEditorView: View {
         target.isAllDay = isAllDay
         target.startedAt = normalizedStartDate
         target.endedAt = normalizedEndDate
+        target.reminderAt = reminderAt
         if target.createdAt == nil {
             target.createdAt = now
         }
@@ -665,6 +819,7 @@ struct RoutineEventEditorView: View {
 
         do {
             try modelContext.save()
+            reconcileEventNotification(for: target, referenceDate: now)
             if event == nil {
                 CreationDraftPersistence.clear(.event)
             }
@@ -672,6 +827,24 @@ struct RoutineEventEditorView: View {
             dismiss()
         } catch {
             errorText = "Could not save the event."
+        }
+    }
+
+    private func reconcileEventNotification(
+        for event: RoutineEvent,
+        referenceDate: Date
+    ) {
+        let payload = NotificationCoordinator.notificationPayload(
+            for: event,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        if NotificationCoordinator.shouldScheduleNotification(for: event, referenceDate: referenceDate) {
+            Task {
+                await NotificationCoordinator.scheduleNotification(payload)
+            }
+        } else {
+            NotificationCoordinator.cancelNotification(payload.identifier)
         }
     }
 
@@ -740,6 +913,11 @@ struct RoutineEventDetailView: View {
                         Text(dateText)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
+                        if let reminderText {
+                            Text(reminderText)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
                     }
 
                     Spacer(minLength: 0)
@@ -793,6 +971,11 @@ struct RoutineEventDetailView: View {
             isAllDay: event.isAllDay,
             calendar: calendar
         )
+    }
+
+    private var reminderText: String? {
+        guard let reminderAt = event.reminderAt else { return nil }
+        return "Notification \(reminderAt.formatted(date: .abbreviated, time: .shortened))"
     }
 }
 

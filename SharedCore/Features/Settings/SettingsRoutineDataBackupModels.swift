@@ -73,6 +73,7 @@ extension SettingsRoutineDataPersistence {
             var placeIDs: [UUID]?
             var tags: [String]?
             var goalIDs: [UUID]?
+            var eventIDs: [UUID]?
             var steps: [RoutineStep]?
             var checklistItems: [RoutineChecklistItem]?
             var scheduleMode: RoutineScheduleMode?
@@ -193,6 +194,7 @@ extension SettingsRoutineDataPersistence {
             var isAllDay: Bool?
             var startedAt: Date?
             var endedAt: Date?
+            var reminderAt: Date?
             var createdAt: Date?
             var updatedAt: Date?
         }

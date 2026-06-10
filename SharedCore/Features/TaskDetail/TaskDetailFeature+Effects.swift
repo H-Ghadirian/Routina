@@ -400,6 +400,7 @@ extension TaskDetailFeature {
             placeIDs: request.placeIDs,
             tags: request.tags,
             goals: request.goals,
+            eventIDs: request.eventIDs,
             relationships: request.relationships,
             steps: request.steps,
             checklistItems: request.checklistItems,
@@ -437,6 +438,7 @@ extension TaskDetailFeature {
         placeIDs: [UUID],
         tags: [String],
         goals: [RoutineGoalSummary],
+        eventIDs: [UUID],
         relationships: [RoutineTaskRelationship],
         steps: [RoutineStep],
         checklistItems: [RoutineChecklistItem],
@@ -490,6 +492,7 @@ extension TaskDetailFeature {
                 task.placeIDs = RoutinePlaceIDStorage.sanitized(placeIDs.isEmpty ? placeID.map { [$0] } ?? [] : placeIDs)
                 task.tags = tags
                 task.goalIDs = try RoutineGoalPersistence.ensureGoals(goals, in: context)
+                task.eventIDs = RoutineEventIDStorage.sanitized(eventIDs)
                 task.replaceRelationships(relationships)
                 task.replaceSteps(steps)
                 task.scheduleMode = scheduleMode

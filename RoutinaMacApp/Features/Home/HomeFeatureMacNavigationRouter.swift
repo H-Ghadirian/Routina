@@ -121,6 +121,28 @@ struct HomeFeatureMacNavigationRouter {
         return .none
     }
 
+    func openEventDeepLink(
+        _ eventID: UUID,
+        state: inout HomeFeature.State
+    ) -> Effect<HomeFeature.Action> {
+        state.macSidebarMode = .timeline
+        state.macSidebarSelection = .timelineEntry(eventID)
+        state.presentation.isMacFilterDetailPresented = false
+        state.presentation.isAddRoutineSheetPresented = false
+        state.presentation.addRoutineState = nil
+        state.selectedTimelineRange = .all
+        state.selectedTimelineFilterType = .events
+        state.selectedTimelineTags = []
+        state.selectedTimelineIncludeTagMatchMode = .all
+        state.selectedTimelineExcludedTags = []
+        state.selectedTimelineExcludeTagMatchMode = .any
+        state.selectedTimelineImportanceUrgencyFilter = nil
+        state.selectedTimelineMediaFilter = .all
+        HomeSelectionEditor.clearTaskSelection(&state.selection)
+        persistTemporaryViewState(state)
+        return .none
+    }
+
     func openSprintDeepLink(
         _ sprintID: UUID,
         state: inout HomeFeature.State

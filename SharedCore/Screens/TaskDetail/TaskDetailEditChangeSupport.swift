@@ -25,6 +25,7 @@ struct TaskDetailEditChangeRequest {
     let tags: [String]
     let availableGoals: [RoutineGoalSummary]
     let goals: [RoutineGoalSummary]
+    let eventIDs: [UUID]
     let relationships: [RoutineTaskRelationship]
     let tagDraft: String
     let goalDraft: String
@@ -74,6 +75,7 @@ struct TaskDetailEditChangeRequest {
         self.tags = state.editRoutineTags
         self.availableGoals = state.availableGoals
         self.goals = state.editRoutineGoals
+        self.eventIDs = state.editEventIDs
         self.relationships = state.editRelationships
         self.tagDraft = state.editTagDraft
         self.goalDraft = state.editGoalDraft
@@ -112,6 +114,7 @@ enum TaskDetailEditChangeDetector {
         let currentLink = RoutineTask.linkEditorText(for: task.links)
         let currentTags = RoutineTag.deduplicated(task.tags)
         let currentGoalIDs = task.goalIDs
+        let currentEventIDs = task.eventIDs
         let currentRelationships = RoutineTaskRelationship.sanitized(task.relationships, ownerID: task.id)
         let currentDeadline = task.scheduleMode == .oneOff ? task.deadline : nil
         let candidateTags = RoutineTag.appending(request.tagDraft, to: request.tags)
@@ -167,6 +170,7 @@ enum TaskDetailEditChangeDetector {
             ) != task.placeIDs
             || candidateTags != currentTags
             || candidateGoalIDs != currentGoalIDs
+            || RoutineEventIDStorage.sanitized(request.eventIDs) != currentEventIDs
             || candidateRelationships != currentRelationships
             || request.scheduleMode != task.scheduleMode
             || RoutineStep.sanitized(candidateSteps) != currentSteps

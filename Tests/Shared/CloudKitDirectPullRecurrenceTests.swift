@@ -52,4 +52,34 @@ struct CloudKitDirectPullRecurrenceTests {
         #expect(task.recurrenceStorageVersion == 1)
         #expect(task.recurrenceRuleStorage.isEmpty)
     }
+
+    @Test
+    func cloudKitMerge_readsTaskEventIDStorage() throws {
+        let context = makeInMemoryContext()
+        let taskID = UUID()
+        let eventID = UUID()
+        let remoteTask = CKRecord(
+            recordType: "RoutineTask",
+            recordID: CKRecord.ID(recordName: taskID.uuidString)
+        )
+        remoteTask["name"] = "Prepare notes" as CKRecordValue
+        remoteTask["interval"] = NSNumber(value: 1)
+        remoteTask["eventIDsStorage"] = RoutineEventIDStorage.serialize([eventID]) as CKRecordValue
+
+        try CloudKitDirectPullService.mergeForTesting(
+            .init(changedRecords: [remoteTask], deletedRecordIDs: []),
+            into: context
+        )
+
+        let task = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate { task in
+                        task.id == taskID
+                    }
+                )
+            ).first
+        )
+        #expect(task.eventIDs == [eventID])
+    }
 }

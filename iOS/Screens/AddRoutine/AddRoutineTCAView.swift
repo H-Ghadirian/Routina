@@ -1,6 +1,7 @@
 import SwiftUI
 import ComposableArchitecture
 import PhotosUI
+import SwiftData
 
 struct AddRoutineTCAView: View {
     let store: StoreOf<AddRoutineFeature>
@@ -14,6 +15,7 @@ struct AddRoutineTCAView: View {
     @State var tagManagerStore = Store(initialState: SettingsFeature.State()) {
         SettingsFeature()
     }
+    @Query(sort: \RoutineEvent.startedAt, order: .reverse) private var events: [RoutineEvent]
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
 
@@ -37,6 +39,12 @@ NavigationStack {
         guard let newItem else { return }
         loadPickedImage(from: newItem)
     }
+    .onAppear {
+        syncAvailableEvents()
+    }
+    .onChange(of: availableEventCandidates) { _, _ in
+        syncAvailableEvents()
+    }
     .onChange(of: AddRoutineDraftSnapshot(state: store.state)) { _, snapshot in
         snapshot.persist(client: creationDraftClient)
     }
@@ -46,6 +54,14 @@ NavigationStack {
     @ViewBuilder
     var addRoutineContent: some View {
         platformAddRoutineContent
+    }
+
+    private var availableEventCandidates: [RoutineEventLinkCandidate] {
+        RoutineEventLinkCandidate.candidates(from: events)
+    }
+
+    private func syncAvailableEvents() {
+        store.send(.availableEventsChanged(availableEventCandidates))
     }
 
 }

@@ -84,6 +84,11 @@ struct TaskFormModel {
     var onRemoveGoal: (UUID) -> Void
     var onToggleGoalSelection: (RoutineGoalSummary) -> Void
 
+    // MARK: Events
+    var selectedEventIDs: [UUID] = []
+    var availableEvents: [RoutineEventLinkCandidate] = []
+    var onToggleEventSelection: (UUID) -> Void = { _ in }
+
     // MARK: Relationships
     var relationships: [RoutineTaskRelationship]
     var availableRelationshipTasks: [RoutineTaskRelationshipCandidate]
@@ -412,6 +417,9 @@ extension TaskFormModel {
         if !selectedGoals.isEmpty || hasText(goalDraft.wrappedValue) {
             sections.insert(.goals)
         }
+        if !selectedEventIDs.isEmpty {
+            sections.insert(.events)
+        }
         if !relationships.isEmpty {
             sections.insert(.relationships)
         }
@@ -439,6 +447,15 @@ extension TaskFormModel {
         return RoutineScheduleMode.routineMode(
             behavior: scheduleMode.scheduleBehavior,
             format: fallbackFormat
+        )
+    }
+}
+
+extension TaskFormModel {
+    var selectedEventCandidates: [RoutineEventLinkCandidate] {
+        RoutineEventLinkCandidate.selectedCandidates(
+            for: selectedEventIDs,
+            in: availableEvents
         )
     }
 }

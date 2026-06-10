@@ -61,6 +61,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
     var focusModeEnabled = false
     var routineTags: [String] = []
     var routineGoals: [RoutineGoalSummary] = []
+    var eventIDs: [UUID] = []
     var relationships: [RoutineTaskRelationship] = []
     var tagDraft = ""
     var goalDraft = ""
@@ -115,6 +116,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
         focusModeEnabled = basics.focusModeEnabled
         routineTags = organization.routineTags
         routineGoals = organization.routineGoals
+        eventIDs = RoutineEventIDStorage.sanitized(organization.eventIDs)
         relationships = organization.relationships
         tagDraft = organization.tagDraft
         goalDraft = organization.goalDraft
@@ -161,6 +163,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
             || focusModeEnabled
             || !routineTags.isEmpty
             || !routineGoals.isEmpty
+            || !eventIDs.isEmpty
             || !relationships.isEmpty
             || hasText(tagDraft)
             || hasText(goalDraft)
@@ -222,6 +225,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
             preferredTags: state.organization.availableTags
         )
         state.organization.routineGoals = RoutineGoalSummary.sanitized(routineGoals)
+        state.organization.eventIDs = availableEventIDs(in: state)
         state.organization.relationships = availableRelationships(in: state)
         state.organization.tagDraft = tagDraft
         state.organization.goalDraft = goalDraft
@@ -267,6 +271,13 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
         return RoutineTaskRelationship.sanitized(
             relationships.filter { availableIDs.contains($0.targetTaskID) }
         )
+    }
+
+    private func availableEventIDs(in state: AddRoutineFeature.State) -> [UUID] {
+        let selectedIDs = RoutineEventIDStorage.sanitized(eventIDs)
+        let availableIDs = Set(state.organization.availableEvents.map(\.id))
+        guard !availableIDs.isEmpty else { return selectedIDs }
+        return selectedIDs.filter { availableIDs.contains($0) }
     }
 
     private func hasText(_ value: String) -> Bool {
@@ -390,6 +401,7 @@ struct RoutineEventDraftSnapshot: Codable, Equatable {
     var isAllDay = true
     var startDate = Date()
     var endDate = Date().addingTimeInterval(60 * 60)
+    var reminderAt: Date?
     var tags: [String] = []
     var tagDraft = ""
 
@@ -400,6 +412,7 @@ struct RoutineEventDraftSnapshot: Codable, Equatable {
             || isAllDay != baseline.isAllDay
             || startDate != baseline.startDate
             || endDate != baseline.endDate
+            || reminderAt != baseline.reminderAt
             || !tags.isEmpty
             || !tagDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }

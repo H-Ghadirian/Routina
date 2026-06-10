@@ -230,6 +230,11 @@ struct AppFeature {
             state.pendingDeepLinkedTaskID = nil
             persistTemporaryViewState(state)
             return .send(.timeline(.openNoteDeepLink(noteID)))
+        case let .event(eventID):
+            state.selectedTab = .timeline
+            state.pendingDeepLinkedTaskID = nil
+            persistTemporaryViewState(state)
+            return .send(.timeline(.openEventDeepLink(eventID)))
         case .sleep:
             state.selectedTab = .timeline
             state.pendingDeepLinkedTaskID = nil

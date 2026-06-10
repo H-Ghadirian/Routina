@@ -23,6 +23,7 @@ struct TaskDetailEditSaveRequest: Equatable {
     var placeIDs: [UUID]
     var tags: [String]
     var goals: [RoutineGoalSummary]
+    var eventIDs: [UUID]
     var relationships: [RoutineTaskRelationship]
     var steps: [RoutineStep]
     var checklistItems: [RoutineChecklistItem]
@@ -114,6 +115,7 @@ struct TaskDetailEditSaveRequestBuilder {
             placeIDs: state.editSelectedPlaceIDs,
             tags: RoutineTag.deduplicated(state.editRoutineTags),
             goals: state.editRoutineGoals,
+            eventIDs: RoutineEventIDStorage.sanitized(state.editEventIDs),
             relationships: state.editRelationships,
             steps: (scheduleMode.isStandardRoutineMode || scheduleMode == .oneOff)
                 ? state.editRoutineSteps

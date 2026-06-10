@@ -42,6 +42,17 @@ enum AddRoutineOrganizationEditor {
         )
     }
 
+    static func setAvailableEvents(
+        _ events: [RoutineEventLinkCandidate],
+        organization: inout AddRoutineOrganizationState
+    ) {
+        organization.availableEvents = events.sorted(by: RoutineEventLinkCandidate.sort)
+        let availableEventIDs = Set(organization.availableEvents.map(\.id))
+        organization.eventIDs = RoutineEventIDStorage.sanitized(
+            organization.eventIDs.filter { availableEventIDs.contains($0) }
+        )
+    }
+
     static func setRelatedTagRules(
         _ rules: [RoutineRelatedTagRule],
         organization: inout AddRoutineOrganizationState
@@ -117,6 +128,20 @@ enum AddRoutineOrganizationEditor {
         organization: inout AddRoutineOrganizationState
     ) {
         organization.routineGoals = RoutineGoalSummary.toggling(goal, in: organization.routineGoals)
+    }
+
+    static func toggleEventSelection(
+        _ eventID: UUID,
+        organization: inout AddRoutineOrganizationState
+    ) {
+        guard organization.availableEvents.contains(where: { $0.id == eventID }) else { return }
+        var eventIDs = organization.eventIDs
+        if eventIDs.contains(eventID) {
+            eventIDs.removeAll { $0 == eventID }
+        } else {
+            eventIDs.append(eventID)
+        }
+        organization.eventIDs = RoutineEventIDStorage.sanitized(eventIDs)
     }
 
     static func addRelationship(

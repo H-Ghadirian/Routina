@@ -44,6 +44,7 @@ struct TaskDetailFeature: Reducer {
         var editAttachments: [AttachmentItem] = []
         var editRoutineTags: [String] = []
         var editRoutineGoals: [RoutineGoalSummary] = []
+        var editEventIDs: [UUID] = []
         var editRelationships: [RoutineTaskRelationship] = []
         var editTagDraft: String = ""
         var editGoalDraft: String = ""
@@ -56,6 +57,7 @@ struct TaskDetailFeature: Reducer {
         var availablePlaces: [RoutinePlaceSummary] = []
         var availableTags: [String] = []
         var availableGoals: [RoutineGoalSummary] = []
+        var availableEvents: [RoutineEventLinkCandidate] = []
         var relatedTagRules: [RoutineRelatedTagRule] = []
         var availableRelationshipTasks: [RoutineTaskRelationshipCandidate] = []
         var editSelectedPlaceID: UUID?
@@ -178,6 +180,13 @@ struct TaskDetailFeature: Reducer {
                 in: editRoutineGoals
             )
         }
+
+        var taskEventCandidates: [RoutineEventLinkCandidate] {
+            RoutineEventLinkCandidate.selectedCandidates(
+                for: task.eventIDs,
+                in: availableEvents
+            )
+        }
     }
 
     enum Action: Equatable {
@@ -252,12 +261,14 @@ struct TaskDetailFeature: Reducer {
         case availablePlacesLoaded([RoutinePlaceSummary])
         case availableTagsLoaded([String])
         case availableGoalsLoaded([RoutineGoalSummary])
+        case availableEventsLoaded([RoutineEventLinkCandidate])
         case relatedTagRulesLoaded([RoutineRelatedTagRule])
         case availableRelationshipTasksLoaded([RoutineTaskRelationshipCandidate])
         case editSelectedPlaceChanged(UUID?)
         case editSelectedPlaceIDsChanged([UUID])
         case editToggleTagSelection(String)
         case editToggleGoalSelection(RoutineGoalSummary)
+        case editToggleEventSelection(UUID)
         case editEstimatedDurationChanged(Int?)
         case editActualDurationChanged(Int?)
         case editStoryPointsChanged(Int?)
@@ -1041,6 +1052,9 @@ struct TaskDetailFeature: Reducer {
         case let .availableGoalsLoaded(goals):
             return editContextActionHandler().availableGoalsLoaded(goals, state: &state)
 
+        case let .availableEventsLoaded(events):
+            return editContextActionHandler().availableEventsLoaded(events, state: &state)
+
         case let .relatedTagRulesLoaded(rules):
             return editContextActionHandler().relatedTagRulesLoaded(rules, state: &state)
 
@@ -1068,6 +1082,12 @@ struct TaskDetailFeature: Reducer {
         case let .editToggleGoalSelection(goal):
             return tagGoalRelationshipEditActionHandler().editToggleGoalSelection(
                 goal,
+                state: &state
+            )
+
+        case let .editToggleEventSelection(eventID):
+            return tagGoalRelationshipEditActionHandler().editToggleEventSelection(
+                eventID,
                 state: &state
             )
 

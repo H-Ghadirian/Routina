@@ -62,6 +62,7 @@ enum SettingsRoutineDataBackupMapping {
             placeIDs: task.placeIDs.isEmpty ? nil : task.placeIDs,
             tags: task.tags,
             goalIDs: task.goalIDs,
+            eventIDs: task.eventIDs.isEmpty ? nil : task.eventIDs,
             steps: task.steps,
             checklistItems: task.checklistItems,
             scheduleMode: task.scheduleMode,
@@ -219,6 +220,7 @@ enum SettingsRoutineDataBackupMapping {
             isAllDay: event.isAllDay,
             startedAt: event.startedAt,
             endedAt: event.endedAt,
+            reminderAt: event.reminderAt,
             createdAt: event.createdAt,
             updatedAt: event.updatedAt
         )

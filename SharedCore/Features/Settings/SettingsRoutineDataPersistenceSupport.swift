@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 enum SettingsRoutineDataPersistence {
-    static let currentSchemaVersion = 31
+    static let currentSchemaVersion = 32
     static let legacyJSONSchemaVersion = 14
     static let externalAttachmentManifestSchemaVersion = 30
     static let backupPackageExtension = "routinabackup"

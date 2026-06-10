@@ -66,6 +66,7 @@ enum TaskFormCompactSection: Hashable, Sendable {
     case attachment
     case tags
     case goals
+    case events
     case relationships
     case scheduleType
     case steps
@@ -91,6 +92,7 @@ enum TaskFormCompactSection: Hashable, Sendable {
         .attachment,
         .tags,
         .goals,
+        .events,
         .relationships,
         .scheduleType,
         .steps,

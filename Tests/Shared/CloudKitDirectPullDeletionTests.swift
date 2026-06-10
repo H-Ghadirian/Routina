@@ -68,6 +68,30 @@ struct CloudKitDirectPullDeletionTests {
     }
 
     @Test
+    func cloudKitMerge_deletedEventClearsTaskEventLink() throws {
+        let context = makeInMemoryContext()
+        let event = RoutineEvent(title: "Appointment")
+        let task = RoutineTask(name: "Prepare notes", eventIDs: [event.id])
+        context.insert(event)
+        context.insert(task)
+        try context.save()
+
+        try CloudKitDirectPullService.mergeForTesting(
+            .init(
+                changedRecords: [],
+                deletedRecordIDs: [CKRecord.ID(recordName: event.id.uuidString)]
+            ),
+            into: context
+        )
+
+        let events = try context.fetch(FetchDescriptor<RoutineEvent>())
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        let remainingTask = try #require(tasks.first)
+        #expect(events.isEmpty)
+        #expect(remainingTask.eventIDs.isEmpty)
+    }
+
+    @Test
     func cloudKitMerge_deletedTaskRemovesAssociatedTimelineRows() throws {
         let context = makeInMemoryContext()
         let deletedTask = makeTask(in: context, name: "Old", interval: 1, lastDone: nil, emoji: nil)

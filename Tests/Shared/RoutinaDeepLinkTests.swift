@@ -10,16 +10,18 @@ import Testing
 
 struct RoutinaDeepLinkTests {
     @Test
-    func parsesTaskGoalNoteAndSprintLinks() throws {
+    func parsesTaskGoalNoteEventAndSprintLinks() throws {
         let taskID = UUID()
         let goalID = UUID()
         let noteID = UUID()
+        let eventID = UUID()
         let sprintID = UUID()
         let sleepID = UUID()
 
         #expect(RoutinaDeepLink(url: try #require(URL(string: "routina://task/\(taskID.uuidString)"))) == .task(taskID))
         #expect(RoutinaDeepLink(url: try #require(URL(string: "routina://goal/\(goalID.uuidString)"))) == .goal(goalID))
         #expect(RoutinaDeepLink(url: try #require(URL(string: "routina://note/\(noteID.uuidString)"))) == .note(noteID))
+        #expect(RoutinaDeepLink(url: try #require(URL(string: "routina://event/\(eventID.uuidString)"))) == .event(eventID))
         #expect(RoutinaDeepLink(url: try #require(URL(string: "routina://sprint/\(sprintID.uuidString)"))) == .sprint(sprintID))
         #expect(RoutinaDeepLink(url: try #require(URL(string: "routina://sleep/\(sleepID.uuidString)"))) == .sleep(sleepID))
     }
@@ -29,12 +31,14 @@ struct RoutinaDeepLinkTests {
         let taskID = UUID()
         let goalID = UUID()
         let noteID = UUID()
+        let eventID = UUID()
         let sprintID = UUID()
         let sleepID = UUID()
 
         #expect(RoutinaDeepLink(url: try #require(URL(string: "routina-dev://task/\(taskID.uuidString)"))) == .task(taskID))
         #expect(RoutinaDeepLink(url: try #require(URL(string: "routina-dev://goal/\(goalID.uuidString)"))) == .goal(goalID))
         #expect(RoutinaDeepLink(url: try #require(URL(string: "routina-dev://note/\(noteID.uuidString)"))) == .note(noteID))
+        #expect(RoutinaDeepLink(url: try #require(URL(string: "routina-dev://event/\(eventID.uuidString)"))) == .event(eventID))
         #expect(RoutinaDeepLink(url: try #require(URL(string: "routina-dev://sprint/\(sprintID.uuidString)"))) == .sprint(sprintID))
         #expect(RoutinaDeepLink(url: try #require(URL(string: "routina-dev://sleep/\(sleepID.uuidString)"))) == .sleep(sleepID))
     }
@@ -44,6 +48,7 @@ struct RoutinaDeepLinkTests {
         let taskID = UUID()
         let goalID = UUID()
         let noteID = UUID()
+        let eventID = UUID()
         let sprintID = UUID()
         let sleepID = UUID()
         let scheme = AppEnvironment.deepLinkURLScheme
@@ -51,6 +56,7 @@ struct RoutinaDeepLinkTests {
         #expect(RoutinaDeepLink.task(taskID).url.absoluteString == "\(scheme)://task/\(taskID.uuidString)")
         #expect(RoutinaDeepLink.goal(goalID).url.absoluteString == "\(scheme)://goal/\(goalID.uuidString)")
         #expect(RoutinaDeepLink.note(noteID).url.absoluteString == "\(scheme)://note/\(noteID.uuidString)")
+        #expect(RoutinaDeepLink.event(eventID).url.absoluteString == "\(scheme)://event/\(eventID.uuidString)")
         #expect(RoutinaDeepLink.sprint(sprintID).url.absoluteString == "\(scheme)://sprint/\(sprintID.uuidString)")
         #expect(RoutinaDeepLink.sleep(sleepID).url.absoluteString == "\(scheme)://sleep/\(sleepID.uuidString)")
     }
@@ -60,6 +66,7 @@ struct RoutinaDeepLinkTests {
         let taskID = UUID()
         let goalID = UUID()
         let noteID = UUID()
+        let eventID = UUID()
         let sprintID = UUID()
         let sleepID = UUID()
         let scheme = AppEnvironment.productionDeepLinkURLScheme
@@ -67,6 +74,7 @@ struct RoutinaDeepLinkTests {
         #expect(RoutinaDeepLink.task(taskID).url(scheme: scheme).absoluteString == "routina://task/\(taskID.uuidString)")
         #expect(RoutinaDeepLink.goal(goalID).url(scheme: scheme).absoluteString == "routina://goal/\(goalID.uuidString)")
         #expect(RoutinaDeepLink.note(noteID).url(scheme: scheme).absoluteString == "routina://note/\(noteID.uuidString)")
+        #expect(RoutinaDeepLink.event(eventID).url(scheme: scheme).absoluteString == "routina://event/\(eventID.uuidString)")
         #expect(RoutinaDeepLink.sprint(sprintID).url(scheme: scheme).absoluteString == "routina://sprint/\(sprintID.uuidString)")
         #expect(RoutinaDeepLink.sleep(sleepID).url(scheme: scheme).absoluteString == "routina://sleep/\(sleepID.uuidString)")
     }
@@ -76,6 +84,7 @@ struct RoutinaDeepLinkTests {
         let taskID = UUID()
         let goalID = UUID()
         let noteID = UUID()
+        let eventID = UUID()
         let sprintID = UUID()
         let sleepID = UUID()
         let scheme = AppEnvironment.sandboxDeepLinkURLScheme
@@ -83,6 +92,7 @@ struct RoutinaDeepLinkTests {
         #expect(RoutinaDeepLink.task(taskID).url(scheme: scheme).absoluteString == "routina-dev://task/\(taskID.uuidString)")
         #expect(RoutinaDeepLink.goal(goalID).url(scheme: scheme).absoluteString == "routina-dev://goal/\(goalID.uuidString)")
         #expect(RoutinaDeepLink.note(noteID).url(scheme: scheme).absoluteString == "routina-dev://note/\(noteID.uuidString)")
+        #expect(RoutinaDeepLink.event(eventID).url(scheme: scheme).absoluteString == "routina-dev://event/\(eventID.uuidString)")
         #expect(RoutinaDeepLink.sprint(sprintID).url(scheme: scheme).absoluteString == "routina-dev://sprint/\(sprintID.uuidString)")
         #expect(RoutinaDeepLink.sleep(sleepID).url(scheme: scheme).absoluteString == "routina-dev://sleep/\(sleepID.uuidString)")
     }

@@ -30,6 +30,10 @@ enum CloudKitDirectPullDeletionHandler {
                 continue
             }
 
+            if try deleteEvent(id: id, in: context) {
+                continue
+            }
+
             try CloudKitDirectPullMergeHousekeeping.deleteTaskAndRelatedRows(taskID: id, in: context)
             try deleteLog(id: id, in: context)
         }
@@ -80,6 +84,19 @@ enum CloudKitDirectPullDeletionHandler {
     }
 
     @MainActor
+    private static func deleteEvent(id: UUID, in context: ModelContext) throws -> Bool {
+        let descriptor = FetchDescriptor<RoutineEvent>(
+            predicate: #Predicate { event in
+                event.id == id
+            }
+        )
+        guard let event = try context.fetch(descriptor).first else { return false }
+        context.delete(event)
+        try clearEventReference(eventID: id, in: context)
+        return true
+    }
+
+    @MainActor
     private static func deleteLog(id: UUID, in context: ModelContext) throws {
         let descriptor = FetchDescriptor<RoutineLog>(
             predicate: #Predicate { log in
@@ -109,6 +126,14 @@ enum CloudKitDirectPullDeletionHandler {
         let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
         for goal in goals where goal.parentGoalID == goalID {
             goal.parentGoalID = nil
+        }
+    }
+
+    @MainActor
+    private static func clearEventReference(eventID: UUID, in context: ModelContext) throws {
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        for task in tasks where task.eventIDs.contains(eventID) {
+            task.eventIDs = task.eventIDs.filter { $0 != eventID }
         }
     }
 }

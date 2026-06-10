@@ -45,6 +45,17 @@ enum CloudKitDirectPullTaskRecordParser {
                 "cd_goalidsstorage"
             ]
         )
+        let eventIDsStorageValue = stringValue(
+            in: record,
+            keys: [
+                "eventIDsStorage",
+                "eventidsstorage",
+                "EVENTIDSSTORAGE",
+                "zeventidsstorage",
+                "ZEVENTIDSSTORAGE",
+                "cd_eventidsstorage"
+            ]
+        )
         let stepsStorageValue = stringValue(
             in: record,
             keys: ["stepsStorage", "stepsstorage", "STEPSSTORAGE", "zstepsstorage", "ZSTEPSSTORAGE", "cd_stepsstorage"]
@@ -220,6 +231,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 || placeIDValue != nil
                 || tagsStorageValue != nil
                 || goalIDsStorageValue != nil
+                || eventIDsStorageValue != nil
                 || stepsStorageValue != nil
                 || checklistItemsStorageValue != nil
                 || imageDataValue != nil
@@ -281,6 +293,7 @@ enum CloudKitDirectPullTaskRecordParser {
             placeIDs: placeIDsStorageValue.map(RoutinePlaceIDStorage.deserialize),
             tags: tagsStorageValue.map(RoutineTag.deserialize),
             goalIDs: goalIDsStorageValue.map(RoutineGoalIDStorage.deserialize),
+            eventIDs: eventIDsStorageValue.map(RoutineEventIDStorage.deserialize),
             steps: stepsValue,
             checklistItems: checklistItemsValue,
             imageData: imageDataValue,

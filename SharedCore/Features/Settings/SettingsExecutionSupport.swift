@@ -38,6 +38,12 @@ enum SettingsExecutionSupport {
             guard NotificationCoordinator.shouldScheduleNotification(for: task) else { continue }
             await notificationClient.schedule(NotificationCoordinator.notificationPayload(for: task))
         }
+
+        let events = try context.fetch(FetchDescriptor<RoutineEvent>())
+        for event in events {
+            guard NotificationCoordinator.shouldScheduleNotification(for: event) else { continue }
+            await notificationClient.schedule(NotificationCoordinator.notificationPayload(for: event))
+        }
     }
 
     @MainActor

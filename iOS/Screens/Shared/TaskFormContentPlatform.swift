@@ -144,6 +144,8 @@ struct TaskFormContent: View {
             tagsSection
         case .goals:
             goalsSection
+        case .events:
+            eventsSection
         case .relationships:
             relationshipsSection
         case .scheduleType:
@@ -274,6 +276,10 @@ struct TaskFormContent: View {
 
     private var goalsSection: some View {
         TaskFormIOSGoalsSection(model: model, presentation: presentation)
+    }
+
+    private var eventsSection: some View {
+        TaskFormIOSEventsSection(model: model)
     }
 
     private var relationshipsSection: some View {

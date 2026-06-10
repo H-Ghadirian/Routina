@@ -153,6 +153,34 @@ enum RoutineGoalIDStorage {
     }
 }
 
+enum RoutineEventIDStorage {
+    static func sanitized(_ eventIDs: [UUID]) -> [UUID] {
+        var seenIDs: Set<UUID> = []
+        return eventIDs.filter { seenIDs.insert($0).inserted }
+    }
+
+    static func serialize(_ eventIDs: [UUID]) -> String {
+        let sanitizedIDs = sanitized(eventIDs)
+        guard !sanitizedIDs.isEmpty else { return "" }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        guard let data = try? encoder.encode(sanitizedIDs),
+              let string = String(data: data, encoding: .utf8) else {
+            return ""
+        }
+        return string
+    }
+
+    static func deserialize(_ storage: String) -> [UUID] {
+        guard !storage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              let data = storage.data(using: .utf8),
+              let decoded = try? JSONDecoder().decode([UUID].self, from: data) else {
+            return []
+        }
+        return sanitized(decoded)
+    }
+}
+
 enum RoutinePlaceIDStorage {
     static func sanitized(_ placeIDs: [UUID]) -> [UUID] {
         var seenIDs: Set<UUID> = []

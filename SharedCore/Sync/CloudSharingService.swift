@@ -38,6 +38,7 @@ enum CloudSharingService {
         var placeIDs: [UUID]?
         var tags: [String]
         var goalIDs: [UUID]?
+        var eventIDs: [UUID]?
         var relationships: [RoutineTaskRelationship]
         var steps: [RoutineStep]
         var checklistItems: [RoutineChecklistItem]
@@ -287,6 +288,7 @@ extension CloudSharingService.SharedTaskPayload {
         self.placeIDs = task.placeIDs.isEmpty ? nil : task.placeIDs
         self.tags = task.tags
         self.goalIDs = task.goalIDs
+        self.eventIDs = task.eventIDs.isEmpty ? nil : task.eventIDs
         self.relationships = task.relationships
         self.steps = task.steps
         self.checklistItems = task.checklistItems
@@ -349,6 +351,7 @@ extension CloudSharingService.SharedTaskPayload {
         task.placeIDs = placeIDs ?? placeID.map { [$0] } ?? []
         task.tags = tags
         task.goalIDs = goalIDs ?? []
+        task.eventIDs = eventIDs ?? []
         task.replaceRelationships(relationships)
         task.replaceSteps(steps)
         task.replaceChecklistItems(checklistItems)
@@ -404,6 +407,7 @@ private extension RoutineTask {
             placeIDs: payload.placeIDs ?? payload.placeID.map { [$0] } ?? [],
             tags: payload.tags,
             goalIDs: payload.goalIDs ?? [],
+            eventIDs: payload.eventIDs ?? [],
             relationships: payload.relationships,
             steps: payload.steps,
             checklistItems: payload.checklistItems,
