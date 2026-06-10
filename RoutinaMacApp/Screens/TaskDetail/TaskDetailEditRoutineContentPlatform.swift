@@ -59,6 +59,10 @@ struct TaskDetailEditRoutineContent: View {
                 get: { store.editIsAllDay },
                 set: { store.send(.editAllDayChanged($0)) }
             ),
+            allDaySpanDays: Binding(
+                get: { store.editAllDaySpanDays },
+                set: { store.send(.editAllDaySpanDaysChanged($0)) }
+            ),
             availabilityStartDate: editAvailabilityStartDateBinding,
             availabilityEndDate: editAvailabilityEndDateBinding,
             reminderEnabled: editReminderEnabledBinding,

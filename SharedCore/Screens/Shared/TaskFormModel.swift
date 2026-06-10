@@ -32,6 +32,7 @@ struct TaskFormModel {
     var deadlineEnabled: Binding<Bool>
     var deadline: Binding<Date>
     var isAllDay: Binding<Bool> = .constant(false)
+    var allDaySpanDays: Binding<Int> = .constant(1)
     var availabilityStartDate: Binding<Date?> = .constant(nil)
     var availabilityEndDate: Binding<Date?> = .constant(nil)
 

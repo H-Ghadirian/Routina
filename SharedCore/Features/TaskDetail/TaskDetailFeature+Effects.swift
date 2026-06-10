@@ -386,6 +386,7 @@ extension TaskDetailFeature {
             links: request.links,
             deadline: request.deadline,
             isAllDay: request.isAllDay,
+            allDaySpanDays: request.allDaySpanDays,
             availabilityStartDate: request.availabilityStartDate,
             availabilityEndDate: request.availabilityEndDate,
             reminderAt: request.reminderAt,
@@ -424,6 +425,7 @@ extension TaskDetailFeature {
         links: [String],
         deadline: Date?,
         isAllDay: Bool,
+        allDaySpanDays: Int,
         availabilityStartDate: Date?,
         availabilityEndDate: Date?,
         reminderAt: Date?,
@@ -498,6 +500,9 @@ extension TaskDetailFeature {
                 task.scheduleMode = scheduleMode
                 task.deadline = scheduleMode == .oneOff ? deadline : nil
                 task.isAllDay = isAllDay
+                task.allDaySpanDays = scheduleMode != .oneOff && isAllDay
+                    ? RoutineTask.sanitizedAllDaySpanDays(allDaySpanDays)
+                    : 1
                 let availabilityDateBounds = RoutineTask.normalizedAvailabilityDateBounds(
                     startDate: availabilityStartDate,
                     endDate: availabilityEndDate,

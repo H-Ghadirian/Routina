@@ -154,6 +154,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var linksStorage: String
         var deadline: Date?
         var isAllDay: Bool
+        var allDaySpanDays: Int
         var availabilityStartDate: Date?
         var availabilityEndDate: Date?
         var reminderAt: Date?
@@ -203,6 +204,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             linksStorage = task.linksStorage
             deadline = task.deadline
             isAllDay = task.isAllDay
+            allDaySpanDays = task.allDaySpanDays
             availabilityStartDate = task.availabilityStartDate
             availabilityEndDate = task.availabilityEndDate
             reminderAt = task.reminderAt

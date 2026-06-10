@@ -9,6 +9,9 @@ extension TaskDetailFeature {
         state.editRoutineLink = RoutineTask.linkEditorText(for: state.task.links)
         state.editDeadline = state.task.deadline
         state.editIsAllDay = state.task.isAllDay
+        state.editAllDaySpanDays = state.task.scheduleMode != .oneOff && state.task.isAllDay
+            ? RoutineTask.sanitizedAllDaySpanDays(state.task.allDaySpanDays)
+            : 1
         state.editAvailabilityStartDate = state.task.availabilityStartDate
         state.editAvailabilityEndDate = state.task.availabilityEndDate
         state.editReminderAt = state.task.reminderAt

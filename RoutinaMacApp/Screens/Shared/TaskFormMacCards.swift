@@ -757,6 +757,35 @@ struct TaskFormMacBehaviorCard: View {
             } else if currentTimingMode == .range {
                 routineTimeRangePickers
             }
+
+            if showsRoutineAllDaySpanControl {
+                routineAllDaySpanControls
+            }
+        }
+    }
+
+    private var showsRoutineAllDaySpanControl: Bool {
+        model.taskType.wrappedValue == .routine && currentTimingMode == .allDay
+    }
+
+    private var routineAllDaySpanControls: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Picker("Duration", selection: allDaySpanModeBinding) {
+                ForEach(TaskFormAllDaySpanMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .fixedSize()
+
+            if allDaySpanModeBinding.wrappedValue == .multiDay {
+                Stepper(value: allDaySpanDaysBinding, in: 2...RoutineTask.maximumAllDaySpanDays) {
+                    Text("\(allDaySpanDaysBinding.wrappedValue) days")
+                        .frame(minWidth: 80, alignment: .leading)
+                }
+                .fixedSize()
+            }
         }
     }
 
@@ -858,6 +887,29 @@ struct TaskFormMacBehaviorCard: View {
         timingModeBinding.wrappedValue
     }
 
+    private var allDaySpanModeBinding: Binding<TaskFormAllDaySpanMode> {
+        Binding(
+            get: {
+                model.allDaySpanDays.wrappedValue > 1 ? .multiDay : .oneDay
+            },
+            set: { mode in
+                switch mode {
+                case .oneDay:
+                    model.allDaySpanDays.wrappedValue = 1
+                case .multiDay:
+                    model.allDaySpanDays.wrappedValue = max(model.allDaySpanDays.wrappedValue, 2)
+                }
+            }
+        )
+    }
+
+    private var allDaySpanDaysBinding: Binding<Int> {
+        Binding(
+            get: { max(model.allDaySpanDays.wrappedValue, 2) },
+            set: { model.allDaySpanDays.wrappedValue = $0 }
+        )
+    }
+
     private var todoAvailabilityStartBinding: Binding<Date> {
         Binding(
             get: { model.availabilityStartDate.wrappedValue ?? Date() },
@@ -879,6 +931,9 @@ struct TaskFormMacBehaviorCard: View {
         model.isAllDay.wrappedValue = mode == .allDay
         model.recurrenceHasExplicitTime.wrappedValue = mode == .exact
         model.recurrenceHasTimeRange.wrappedValue = mode == .range
+        if mode != .allDay {
+            model.allDaySpanDays.wrappedValue = 1
+        }
     }
 
     private func applyTodoDateAvailabilityMode(_ mode: TaskFormDateAvailabilityMode) {

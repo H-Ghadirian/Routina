@@ -90,6 +90,43 @@ struct SwiftDataModelTests {
     }
 
     @Test
+    func routineTask_storesAllDaySpanOnlyForAllDayRoutines() {
+        let routine = RoutineTask(
+            name: "Travel",
+            isAllDay: true,
+            allDaySpanDays: 4,
+            scheduleMode: .fixedInterval
+        )
+        let timedRoutine = RoutineTask(
+            name: "Workout",
+            isAllDay: false,
+            allDaySpanDays: 4,
+            scheduleMode: .fixedInterval
+        )
+        let todo = RoutineTask(
+            name: "Conference",
+            isAllDay: true,
+            allDaySpanDays: 4,
+            scheduleMode: .oneOff
+        )
+        let longRoutine = RoutineTask(
+            name: "Retreat",
+            isAllDay: true,
+            allDaySpanDays: 90,
+            scheduleMode: .fixedInterval
+        )
+
+        #expect(routine.allDaySpanDays == 4)
+        #expect(routine.detachedCopy().allDaySpanDays == 4)
+        #expect(timedRoutine.allDaySpanDays == 1)
+        #expect(todo.allDaySpanDays == 1)
+        #expect(longRoutine.allDaySpanDays == RoutineTask.maximumAllDaySpanDays)
+
+        routine.scheduleMode = .oneOff
+        #expect(routine.allDaySpanDays == 1)
+    }
+
+    @Test
     func routineEvent_sanitizesTextTagsAndCopiesDetached() {
         let startedAt = Date(timeIntervalSince1970: 1_780_000_000)
         let endedAt = startedAt.addingTimeInterval(2 * 60 * 60)

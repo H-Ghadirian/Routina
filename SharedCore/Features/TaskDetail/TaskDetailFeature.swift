@@ -31,6 +31,7 @@ struct TaskDetailFeature: Reducer {
         var editRoutineLink: String = ""
         var editDeadline: Date?
         var editIsAllDay: Bool = false
+        var editAllDaySpanDays: Int = 1
         var editAvailabilityStartDate: Date?
         var editAvailabilityEndDate: Date?
         var editReminderAt: Date?
@@ -223,6 +224,7 @@ struct TaskDetailFeature: Reducer {
         case editDeadlineEnabledChanged(Bool)
         case editDeadlineDateChanged(Date)
         case editAllDayChanged(Bool)
+        case editAllDaySpanDaysChanged(Int)
         case editAvailabilityStartDateChanged(Date?)
         case editAvailabilityEndDateChanged(Date?)
         case editReminderEnabledChanged(Bool)
@@ -910,6 +912,9 @@ struct TaskDetailFeature: Reducer {
 
         case let .editAllDayChanged(isAllDay):
             return recurrenceEditActionHandler().editAllDayChanged(isAllDay, state: &state)
+
+        case let .editAllDaySpanDaysChanged(days):
+            return recurrenceEditActionHandler().editAllDaySpanDaysChanged(days, state: &state)
 
         case let .editAvailabilityStartDateChanged(availabilityStartDate):
             return recurrenceEditActionHandler().editAvailabilityStartDateChanged(
