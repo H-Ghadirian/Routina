@@ -160,6 +160,7 @@ extension HomeTCAView {
                         openDayPlanTaskDetails(taskID)
                     },
                     onEditNote: openEditNote,
+                    onDeleteNote: closeDeletedNote,
                     onToggleBoardInspector: toggleMacBoardTicketInspector,
                     addRoutineStore: self.store.scope(
                         state: \.addRoutineState,

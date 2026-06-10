@@ -855,7 +855,11 @@ NavigationStack {
     @ViewBuilder
     private func deepLinkedNoteDetail(noteID: UUID) -> some View {
         if let note = notes.first(where: { $0.id == noteID }) {
-            RoutineNoteDetailView(note: note, attachments: noteAttachments(for: note))
+            RoutineNoteDetailView(
+                note: note,
+                attachments: noteAttachments(for: note),
+                onDelete: { store.send(.noteDeepLinkPresentationDismissed(noteID)) }
+            )
         } else {
             ContentUnavailableView(
                 "Note not found",
