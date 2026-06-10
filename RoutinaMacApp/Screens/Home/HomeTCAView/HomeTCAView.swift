@@ -102,6 +102,8 @@ struct HomeTCAView: View {
     @State var isFinishedSprintsExpanded = false
     @State var placeCheckInSelectedPlaceID: UUID?
     @State var placeCheckInSelectedHistoryMarkerID: PlaceCheckInHistoryMapMarker.ID?
+    @State var planningDateTaskID: UUID?
+    @State var planningDateDraft = Date()
     @FocusState var isSprintCreationFieldFocused: Bool
     @FocusState var isBacklogCreationFieldFocused: Bool
     @FocusState var isSprintRenameFieldFocused: Bool
@@ -161,6 +163,13 @@ homeContent
             )
                 .sheet(isPresented: isFilterSheetPresentedBinding) {
                     homeFiltersSheet
+                }
+                .sheet(isPresented: planningDatePickerPresentedBinding) {
+                    TaskPlanningDatePickerSheet(
+                        date: $planningDateDraft,
+                        onCancel: dismissPlanningDatePicker,
+                        onSave: savePlanningDatePicker
+                    )
                 }
                 .task {
                     syncFileAttachmentTaskIDs()

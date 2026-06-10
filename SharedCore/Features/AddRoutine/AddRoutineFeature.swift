@@ -17,6 +17,7 @@ struct AddRoutineFeature: Reducer {
         case routineDurationModeChanged(RoutineDurationMode)
         case availabilityStartDateChanged(Date?)
         case availabilityEndDateChanged(Date?)
+        case plannedDateChanged(Date?)
         case reminderEnabledChanged(Bool)
         case reminderDateChanged(Date)
         case priorityChanged(RoutineTaskPriority)
@@ -183,6 +184,14 @@ struct AddRoutineFeature: Reducer {
         case let .availabilityEndDateChanged(availabilityEndDate):
             AddRoutineBasicsEditor.setAvailabilityEndDate(
                 availabilityEndDate,
+                calendar: calendar,
+                basics: &state.basics
+            )
+            return .none
+
+        case let .plannedDateChanged(plannedDate):
+            AddRoutineBasicsEditor.setPlannedDate(
+                plannedDate,
                 calendar: calendar,
                 basics: &state.basics
             )

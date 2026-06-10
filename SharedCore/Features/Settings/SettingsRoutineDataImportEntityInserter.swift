@@ -262,6 +262,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 link: task.link,
                 links: task.links ?? task.link.map { [$0] } ?? [],
                 deadline: task.deadline,
+                plannedDate: task.plannedDate,
                 isAllDay: task.isAllDay ?? false,
                 routineDurationMode: task.scheduleMode == .oneOff
                     ? .oneDay

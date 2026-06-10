@@ -34,6 +34,7 @@ struct TaskDetailFeature: Reducer {
         var editRoutineDurationMode: RoutineDurationMode = .oneDay
         var editAvailabilityStartDate: Date?
         var editAvailabilityEndDate: Date?
+        var editPlannedDate: Date?
         var editReminderAt: Date?
         var editPriority: RoutineTaskPriority = .none
         var editImportance: RoutineTaskImportance = .level2
@@ -227,6 +228,7 @@ struct TaskDetailFeature: Reducer {
         case editRoutineDurationModeChanged(RoutineDurationMode)
         case editAvailabilityStartDateChanged(Date?)
         case editAvailabilityEndDateChanged(Date?)
+        case editPlannedDateChanged(Date?)
         case editReminderEnabledChanged(Bool)
         case editReminderDateChanged(Date)
         case editReminderLeadMinutesChanged(Int?)
@@ -927,6 +929,9 @@ struct TaskDetailFeature: Reducer {
                 availabilityEndDate,
                 state: &state
             )
+
+        case let .editPlannedDateChanged(plannedDate):
+            return recurrenceEditActionHandler().editPlannedDateChanged(plannedDate, state: &state)
 
         case let .editReminderEnabledChanged(isEnabled):
             return recurrenceEditActionHandler().editReminderEnabledChanged(isEnabled, state: &state)

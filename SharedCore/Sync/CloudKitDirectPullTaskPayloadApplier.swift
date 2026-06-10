@@ -36,6 +36,7 @@ enum CloudKitDirectPullTaskPayloadApplier {
             task.scheduleMode = scheduleMode
         }
         task.deadline = task.scheduleMode == .oneOff ? payload.deadline : nil
+        task.plannedDate = RoutineTask.normalizedPlannedDate(payload.plannedDate)
         if let isAllDay = payload.isAllDay {
             task.isAllDay = isAllDay
         }
@@ -102,6 +103,7 @@ enum CloudKitDirectPullTaskPayloadApplier {
             link: payload.link,
             links: payload.links ?? payload.link.map { [$0] } ?? [],
             deadline: payload.deadline,
+            plannedDate: payload.plannedDate,
             isAllDay: payload.isAllDay ?? false,
             routineDurationMode: payload.scheduleMode == .oneOff
                 ? .oneDay

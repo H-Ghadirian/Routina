@@ -72,6 +72,11 @@ struct TaskDetailRecurrenceEditActionHandler {
         return .none
     }
 
+    func editPlannedDateChanged(_ plannedDate: Date?, state: inout State) -> Effect<Action> {
+        state.editPlannedDate = RoutineTask.normalizedPlannedDate(plannedDate, calendar: calendar)
+        return .none
+    }
+
     func editReminderEnabledChanged(_ isEnabled: Bool, state: inout State) -> Effect<Action> {
         state.editReminderAt = isEnabled
             ? (state.editReminderAt ?? editReminderEventDate(for: state) ?? now())

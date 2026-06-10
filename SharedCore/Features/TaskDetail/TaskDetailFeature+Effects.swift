@@ -389,6 +389,7 @@ extension TaskDetailFeature {
             routineDurationMode: request.routineDurationMode,
             availabilityStartDate: request.availabilityStartDate,
             availabilityEndDate: request.availabilityEndDate,
+            plannedDate: request.plannedDate,
             reminderAt: request.reminderAt,
             priority: request.priority,
             importance: request.importance,
@@ -428,6 +429,7 @@ extension TaskDetailFeature {
         routineDurationMode: RoutineDurationMode,
         availabilityStartDate: Date?,
         availabilityEndDate: Date?,
+        plannedDate: Date?,
         reminderAt: Date?,
         priority: RoutineTaskPriority,
         importance: RoutineTaskImportance,
@@ -508,6 +510,7 @@ extension TaskDetailFeature {
                 )
                 task.availabilityStartDate = scheduleMode == .oneOff ? availabilityDateBounds.startDate : nil
                 task.availabilityEndDate = scheduleMode == .oneOff ? availabilityDateBounds.endDate : nil
+                task.plannedDate = RoutineTask.normalizedPlannedDate(plannedDate, calendar: calendar)
                 task.recurrenceRule = recurrenceRule
                 task.replaceChecklistItems(checklistItems)
                 if !task.usesOngoingLifecycle {

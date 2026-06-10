@@ -148,6 +148,51 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func filteredPlannedTodayTasksMatchesReferenceDate() {
+        let referenceDate = Date(timeIntervalSince1970: 1_714_608_000)
+        let tasks = [
+            TestTaskDisplay(name: "Plan today", plannedDate: referenceDate.addingTimeInterval(12 * 60 * 60)),
+            TestTaskDisplay(name: "Plan tomorrow", plannedDate: referenceDate.addingTimeInterval(24 * 60 * 60)),
+            TestTaskDisplay(name: "Unplanned")
+        ]
+
+        let result = makeFiltering()
+            .filteredPlannedTodayTasks(tasks)
+
+        #expect(result.map(\.name) == ["Plan today"])
+    }
+
+    @Test
+    func presentationShowsPlannedTodaySectionWithoutDuplicatingRows() {
+        let referenceDate = Date(timeIntervalSince1970: 1_714_608_000)
+        let plannedID = UUID()
+        let regularID = UUID()
+        let planned = TestTaskDisplay(
+            taskID: plannedID,
+            name: "Plan today",
+            plannedDate: referenceDate
+        )
+        let regular = TestTaskDisplay(
+            taskID: regularID,
+            name: "Regular task"
+        )
+
+        let presentation = HomeTaskListPresentation.iOS(
+            filtering: makeFiltering(routineListSectioningMode: .none),
+            routineDisplays: [planned, regular],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            hideUnavailableRoutines: false,
+            taskListKind: .all
+        )
+
+        #expect(presentation.sections.map(\.kind) == [.plannedToday, .regular])
+        #expect(presentation.sections.first?.title == "Plan to do today")
+        #expect(presentation.sections.first?.tasks.map(\.taskID) == [plannedID])
+        #expect(presentation.sections.flatMap(\.tasks).filter { $0.taskID == plannedID }.count == 1)
+    }
+
+    @Test
     func advancedQueryMatchesFieldedTermsAndExclusions() {
         let tasks = [
             TestTaskDisplay(name: "Draft launch plan", placeName: "Office", tags: ["Work"], isOneOffTask: true, todoState: .ready),
@@ -815,6 +860,7 @@ private struct TestTaskDisplay: HomeRoutineMetadataDisplay, Equatable {
     var lastDone: Date?
     var canceledAt: Date?
     var dueDate: Date?
+    var plannedDate: Date?
     var priority: RoutineTaskPriority = .none
     var importance: RoutineTaskImportance = .level2
     var urgency: RoutineTaskUrgency = .level2

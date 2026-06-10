@@ -24,6 +24,8 @@ struct HomeTCAView: View {
     @State var areTaskListModeActionsExpanded = false
     @State var isRefreshScheduled = false
     @State var relatedFilterTagSuggestionAnchor: String?
+    @State var planningDateTaskID: UUID?
+    @State var planningDateDraft = Date()
 
     init(
         store: StoreOf<HomeFeature>,
@@ -53,6 +55,13 @@ homeContent
             )
                 .sheet(isPresented: isFilterSheetPresentedBinding) {
                     homeFiltersSheet
+                }
+                .sheet(isPresented: planningDatePickerPresentedBinding) {
+                    TaskPlanningDatePickerSheet(
+                        date: $planningDateDraft,
+                        onCancel: dismissPlanningDatePicker,
+                        onSave: savePlanningDatePicker
+                    )
                 }
                 .task {
                     syncFileAttachmentTaskIDs()

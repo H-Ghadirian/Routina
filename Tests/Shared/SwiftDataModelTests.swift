@@ -125,6 +125,20 @@ struct SwiftDataModelTests {
     }
 
     @Test
+    func routineTask_normalizesPlannedDateAndCopiesItDetached() {
+        let plannedDate = makeDate("2026-06-10T15:45:00Z")
+        let expectedDate = Calendar.current.startOfDay(for: plannedDate)
+        let task = RoutineTask(
+            name: "Draft plan",
+            plannedDate: plannedDate
+        )
+
+        #expect(task.plannedDate == expectedDate)
+        #expect(RoutineTask.normalizedPlannedDate(plannedDate) == expectedDate)
+        #expect(task.detachedCopy().plannedDate == expectedDate)
+    }
+
+    @Test
     func routineEvent_sanitizesTextTagsAndCopiesDetached() {
         let startedAt = Date(timeIntervalSince1970: 1_780_000_000)
         let endedAt = startedAt.addingTimeInterval(2 * 60 * 60)

@@ -340,6 +340,33 @@ enum HomeTaskLifecycleExecutionSupport {
         }
     }
 
+    static func planTask<Action>(
+        _ update: HomePlanTaskUpdate,
+        modelContext: @escaping @MainActor @Sendable () -> ModelContext
+    ) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = modelContext()
+                guard let task = try context.fetch(HomeTaskSupport.taskDescriptor(for: update.taskID)).first else {
+                    return
+                }
+                task.plannedDate = update.plannedDate
+                DeviceActivityRecorder.recordAction(
+                    .updated,
+                    entity: .task,
+                    entityID: update.taskID,
+                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                    details: update.plannedDate == nil ? "Cleared task plan" : "Planned task",
+                    in: context
+                )
+                try context.save()
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Failed to plan routine from home list: \(error)")
+            }
+        }
+    }
+
     static func unpinTask<Action>(
         _ update: HomeUnpinTaskUpdate,
         modelContext: @escaping @MainActor @Sendable () -> ModelContext

@@ -78,6 +78,7 @@ struct AddRoutineSaveRequest: Equatable {
     let routineDurationMode: RoutineDurationMode
     let availabilityStartDate: Date?
     let availabilityEndDate: Date?
+    let plannedDate: Date?
     let reminderAt: Date?
     let priority: RoutineTaskPriority
     let importance: RoutineTaskImportance
@@ -114,6 +115,7 @@ struct AddRoutineSaveRequest: Equatable {
         routineDurationMode: RoutineDurationMode = .oneDay,
         availabilityStartDate: Date? = nil,
         availabilityEndDate: Date? = nil,
+        plannedDate: Date? = nil,
         reminderAt: Date? = nil,
         priority: RoutineTaskPriority,
         importance: RoutineTaskImportance,
@@ -150,6 +152,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.routineDurationMode = scheduleMode == .oneOff ? .oneDay : routineDurationMode
         self.availabilityStartDate = availabilityStartDate
         self.availabilityEndDate = availabilityEndDate
+        self.plannedDate = RoutineTask.normalizedPlannedDate(plannedDate)
         self.reminderAt = reminderAt
         self.priority = priority
         self.importance = importance
@@ -211,6 +214,7 @@ struct AddRoutineSaveRequest: Equatable {
         )
         self.availabilityStartDate = schedule.scheduleMode == .oneOff ? availabilityDateBounds.startDate : nil
         self.availabilityEndDate = schedule.scheduleMode == .oneOff ? availabilityDateBounds.endDate : nil
+        self.plannedDate = RoutineTask.normalizedPlannedDate(basics.plannedDate, calendar: calendar)
         self.reminderAt = schedule.scheduleMode == .oneOff ? basics.reminderAt : nil
         self.priority = AddRoutinePriorityMatrix.priority(
             importance: basics.importance,

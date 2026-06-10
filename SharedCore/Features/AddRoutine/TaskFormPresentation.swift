@@ -57,6 +57,7 @@ enum TaskFormCompactSection: Hashable, Sendable {
     case notes
     case voiceNote
     case link
+    case planning
     case deadline
     case reminder
     case importanceUrgency
@@ -83,6 +84,7 @@ enum TaskFormCompactSection: Hashable, Sendable {
         .notes,
         .voiceNote,
         .link,
+        .planning,
         .deadline,
         .reminder,
         .importanceUrgency,

@@ -409,6 +409,7 @@ struct HomeFeature {
         case pauseTask(UUID)
         case resumeTask(UUID)
         case pinTask(UUID)
+        case planTask(UUID, Date?)
         case unpinTask(UUID)
         case moveTaskInSection(taskID: UUID, sectionKey: String, orderedTaskIDs: [UUID], direction: MoveDirection)
 
@@ -650,6 +651,13 @@ struct HomeFeature {
             },
             pin: { id, tasks in
                 taskLifecycleCoordinator().pinTask(taskID: id, tasks: &tasks)
+            },
+            plan: { id, plannedDate, tasks in
+                taskLifecycleCoordinator().planTask(
+                    taskID: id,
+                    plannedDate: plannedDate,
+                    tasks: &tasks
+                )
             },
             unpin: { id, tasks in
                 taskLifecycleCoordinator().unpinTask(taskID: id, tasks: &tasks)
@@ -951,6 +959,9 @@ struct HomeFeature {
 
             case let .pinTask(id):
                 return taskLifecycleCommandRouter().pinTask(id, state: &state)
+
+            case let .planTask(id, plannedDate):
+                return taskLifecycleCommandRouter().planTask(id, plannedDate: plannedDate, state: &state)
 
             case let .unpinTask(id):
                 return taskLifecycleCommandRouter().unpinTask(id, state: &state)

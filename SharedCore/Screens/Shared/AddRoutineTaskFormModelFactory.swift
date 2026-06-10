@@ -35,6 +35,10 @@ struct AddRoutineTaskFormModelFactory {
                 get: { store.basics.availabilityEndDate },
                 send: AddRoutineFeature.Action.availabilityEndDateChanged
             ),
+            plannedDate: binding(
+                get: { store.basics.plannedDate },
+                send: AddRoutineFeature.Action.plannedDateChanged
+            ),
             reminderEnabled: binding(
                 get: { store.basics.reminderAt != nil },
                 send: AddRoutineFeature.Action.reminderEnabledChanged

@@ -43,6 +43,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
     var routineNotes = ""
     var routineLink = ""
     var deadline: Date?
+    var plannedDate: Date?
     var isAllDay = false
     var routineDurationMode: RoutineDurationMode?
     var availabilityStartDate: Date?
@@ -97,6 +98,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
         routineNotes = basics.routineNotes
         routineLink = basics.routineLink
         deadline = basics.deadline
+        plannedDate = RoutineTask.normalizedPlannedDate(basics.plannedDate)
         isAllDay = basics.isAllDay
         routineDurationMode = basics.routineDurationMode
         availabilityStartDate = basics.availabilityStartDate
@@ -147,6 +149,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
             || hasText(routineNotes)
             || hasText(routineLink)
             || deadline != nil
+            || plannedDate != nil
             || isAllDay
             || (routineDurationMode ?? .oneDay) != .oneDay
             || availabilityStartDate != nil
@@ -206,6 +209,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
         state.basics.routineNotes = routineNotes
         state.basics.routineLink = routineLink
         state.basics.deadline = deadline
+        state.basics.plannedDate = RoutineTask.normalizedPlannedDate(plannedDate)
         state.basics.isAllDay = isAllDay
         state.basics.routineDurationMode = scheduleMode == .oneOff
             ? .oneDay

@@ -24,6 +24,7 @@ struct HomeRoutineDisplay: Equatable, Identifiable, HomeTaskListDisplay, HomeTas
     var lastDone: Date?
     var canceledAt: Date?
     var dueDate: Date?
+    var plannedDate: Date? = nil
     var priority: RoutineTaskPriority
     var importance: RoutineTaskImportance
     var urgency: RoutineTaskUrgency

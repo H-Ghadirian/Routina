@@ -52,6 +52,41 @@ struct TaskFormIOSReminderSection: View {
     }
 }
 
+struct TaskFormIOSPlanningSection: View {
+    let model: TaskFormModel
+
+    var body: some View {
+        Section(header: Text("Planning")) {
+            Toggle("Plan to do", isOn: plannedDateEnabled)
+            if model.plannedDate.wrappedValue != nil {
+                DatePicker(
+                    "Date",
+                    selection: plannedDate,
+                    displayedComponents: .date
+                )
+            }
+        }
+    }
+
+    private var plannedDateEnabled: Binding<Bool> {
+        Binding(
+            get: { model.plannedDate.wrappedValue != nil },
+            set: { isEnabled in
+                model.plannedDate.wrappedValue = isEnabled
+                    ? (model.plannedDate.wrappedValue ?? Date())
+                    : nil
+            }
+        )
+    }
+
+    private var plannedDate: Binding<Date> {
+        Binding(
+            get: { model.plannedDate.wrappedValue ?? Date() },
+            set: { model.plannedDate.wrappedValue = $0 }
+        )
+    }
+}
+
 struct TaskFormIOSImportanceUrgencySection: View {
     let model: TaskFormModel
     let presentation: TaskFormPresentation

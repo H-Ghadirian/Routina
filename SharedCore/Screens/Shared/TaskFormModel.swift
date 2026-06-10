@@ -35,6 +35,7 @@ struct TaskFormModel {
     var routineDurationMode: Binding<RoutineDurationMode> = .constant(.oneDay)
     var availabilityStartDate: Binding<Date?> = .constant(nil)
     var availabilityEndDate: Binding<Date?> = .constant(nil)
+    var plannedDate: Binding<Date?> = .constant(nil)
 
     // MARK: Reminder
     var reminderEnabled: Binding<Bool>
@@ -393,6 +394,9 @@ extension TaskFormModel {
         }
         if hasText(link.wrappedValue) {
             sections.insert(.link)
+        }
+        if plannedDate.wrappedValue != nil {
+            sections.insert(.planning)
         }
         if importance.wrappedValue != .level2 || urgency.wrappedValue != .level2 {
             sections.insert(.importanceUrgency)

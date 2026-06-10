@@ -146,4 +146,42 @@ struct HomeTaskLifecycleSupportTests {
         #expect(doneStats.canceledCountsByTaskID[task.id] == 1)
         #expect(doneStats.canceledDatesByTaskID[task.id] == [makeDate("2026-05-07T18:30:00Z")])
     }
+
+    @Test
+    func planTaskStoresDateOnlyAndCanClearPlan() {
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(name: "Draft outline")
+        let plannedDate = makeDate("2026-06-10T16:20:00Z")
+        let normalizedDate = calendar.startOfDay(for: plannedDate)
+        var tasks = [task]
+
+        let update = HomeTaskLifecycleSupport.planTask(
+            taskID: task.id,
+            plannedDate: plannedDate,
+            calendar: calendar,
+            tasks: &tasks
+        )
+
+        #expect(update == HomePlanTaskUpdate(taskID: task.id, plannedDate: normalizedDate))
+        #expect(tasks[0].plannedDate == normalizedDate)
+
+        let unchangedUpdate = HomeTaskLifecycleSupport.planTask(
+            taskID: task.id,
+            plannedDate: normalizedDate,
+            calendar: calendar,
+            tasks: &tasks
+        )
+
+        #expect(unchangedUpdate == nil)
+
+        let clearUpdate = HomeTaskLifecycleSupport.planTask(
+            taskID: task.id,
+            plannedDate: nil,
+            calendar: calendar,
+            tasks: &tasks
+        )
+
+        #expect(clearUpdate == HomePlanTaskUpdate(taskID: task.id, plannedDate: nil))
+        #expect(tasks[0].plannedDate == nil)
+    }
 }

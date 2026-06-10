@@ -59,6 +59,7 @@ extension SettingsRoutineDataPersistence {
             var link: String?
             var links: [String]?
             var deadline: Date?
+            var plannedDate: Date?
             var isAllDay: Bool?
             var routineDurationMode: RoutineDurationMode?
             var availabilityStartDate: Date?
