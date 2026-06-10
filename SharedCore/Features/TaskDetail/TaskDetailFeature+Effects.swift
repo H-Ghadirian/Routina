@@ -503,8 +503,8 @@ extension TaskDetailFeature {
                     endDate: availabilityEndDate,
                     calendar: Calendar.current
                 )
-                task.availabilityStartDate = scheduleMode == .oneOff ? availabilityDateBounds.startDate : nil
-                task.availabilityEndDate = scheduleMode == .oneOff ? availabilityDateBounds.endDate : nil
+                task.availabilityStartDate = availabilityDateBounds.startDate
+                task.availabilityEndDate = availabilityDateBounds.endDate
                 task.recurrenceRule = recurrenceRule
                 task.replaceChecklistItems(checklistItems)
                 if !scheduleMode.isSoftIntervalRoutine {

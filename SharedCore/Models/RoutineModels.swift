@@ -253,8 +253,6 @@ final class RoutineTask {
             scheduleModeRawValue = newValue.rawValue
             if newValue != .oneOff {
                 deadline = nil
-                availabilityStartDate = nil
-                availabilityEndDate = nil
             }
             sanitizeChecklistProgress()
         }
@@ -351,8 +349,8 @@ final class RoutineTask {
         self.linksStorage = RoutineTaskLinkStorage.serialize(sanitizedLinks)
         self.deadline = resolvedScheduleMode == .oneOff ? deadline : nil
         self.isAllDay = isAllDay
-        self.availabilityStartDate = resolvedScheduleMode == .oneOff ? availabilityStartDate : nil
-        self.availabilityEndDate = resolvedScheduleMode == .oneOff ? availabilityEndDate : nil
+        self.availabilityStartDate = availabilityStartDate
+        self.availabilityEndDate = availabilityEndDate
         self.reminderAt = reminderAt
         self.priorityRawValue = priority.rawValue
         self.importanceRawValue = importance.rawValue

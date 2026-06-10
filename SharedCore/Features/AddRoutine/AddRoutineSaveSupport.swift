@@ -205,8 +205,8 @@ struct AddRoutineSaveRequest: Equatable {
             endDate: basics.availabilityEndDate,
             calendar: calendar
         )
-        self.availabilityStartDate = schedule.scheduleMode == .oneOff ? availabilityDateBounds.startDate : nil
-        self.availabilityEndDate = schedule.scheduleMode == .oneOff ? availabilityDateBounds.endDate : nil
+        self.availabilityStartDate = availabilityDateBounds.startDate
+        self.availabilityEndDate = availabilityDateBounds.endDate
         self.reminderAt = schedule.scheduleMode == .oneOff ? basics.reminderAt : nil
         self.priority = AddRoutinePriorityMatrix.priority(
             importance: basics.importance,

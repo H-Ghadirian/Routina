@@ -870,6 +870,71 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func exactDateRoutineCreatesTimedPlannerBlockOnlyOnAvailabilityDate() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let availabilityDate = try #require(date("2026-05-11T09:15:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Morning mobility",
+            emoji: "🧘",
+            availabilityStartDate: availabilityDate,
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 9, minute: 15)),
+            estimatedDurationMinutes: 45
+        )
+        context.insert(task)
+        try context.save()
+        let planner = DayPlanPlannerState(selectedDate: availabilityDate)
+
+        planner.showExactTimedTasks(
+            from: [task],
+            calendar: calendar,
+            context: context
+        )
+
+        let blocks = planner.weekBlocksByDayKey
+            .flatMap { entry in entry.value.map { (entry.key, $0) } }
+            .sorted { lhs, rhs in lhs.0 < rhs.0 }
+        #expect(blocks.map { $0.1.taskID } == [taskID])
+        #expect(blocks.map { $0.1.startMinute } == [9 * 60 + 15])
+        #expect(blocks.map { $0.1.durationMinutes } == [45])
+    }
+
+    @Test
+    func dateWindowAllDayRoutineCreatesBlocksOnlyOnAvailabilityDates() throws {
+        let calendar = gregorianCalendar
+        let availabilityStart = try #require(date("2026-05-10T09:00:00Z"))
+        let availabilityEnd = try #require(date("2026-05-11T18:00:00Z"))
+        let expectedStarts = try [
+            #require(date("2026-05-10T00:00:00Z")),
+            #require(date("2026-05-11T00:00:00Z")),
+        ]
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Workshop days",
+            emoji: "🧰",
+            isAllDay: true,
+            availabilityStartDate: availabilityStart,
+            availabilityEndDate: availabilityEnd,
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 9, minute: 0))
+        )
+
+        let blocks = DayPlanAllDayTasks.blocks(
+            on: try plannerDates(),
+            from: [task],
+            calendar: calendar
+        )
+
+        #expect(blocks.compactMap(\.taskID) == [taskID, taskID])
+        #expect(blocks.map(\.startDate) == expectedStarts)
+        #expect(blocks.allSatisfy { !$0.isLegacyDateOnlyCalendarTask })
+    }
+
+    @Test
     func allDayBlocksIncludeStandaloneEventsWithoutTaskIDs() throws {
         let calendar = gregorianCalendar
         let startDate = try #require(date("2026-05-11T00:00:00Z"))
