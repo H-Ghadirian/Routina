@@ -87,7 +87,9 @@ struct TaskFormContent: View {
             scheduleMode: model.scheduleMode.wrappedValue,
             includesIdentity: false,
             includesDangerZone: model.onDelete != nil || model.pauseResumeAction != nil
-        )
+        ).filter { section in
+            section != .planning || model.supportsPlanning
+        }
     }
 
     private var visibleSections: [FormSection] {
@@ -357,9 +359,12 @@ struct TaskFormContent: View {
 
     // MARK: Planning
 
+    @ViewBuilder
     private var planningCard: some View {
-        TaskFormMacPlanningCard(model: model)
-            .id(FormSection.planning)
+        if model.supportsPlanning {
+            TaskFormMacPlanningCard(model: model)
+                .id(FormSection.planning)
+        }
     }
 
     // MARK: Links

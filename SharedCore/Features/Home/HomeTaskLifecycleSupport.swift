@@ -321,6 +321,7 @@ enum HomeTaskLifecycleSupport {
         tasks: inout [RoutineTask]
     ) -> HomePlanTaskUpdate? {
         guard let index = tasks.firstIndex(where: { $0.id == taskID }) else { return nil }
+        guard tasks[index].isOneOffTask || !tasks[index].isDailyRoutineForTaskList else { return nil }
 
         let normalizedDate = RoutineTask.normalizedPlannedDate(plannedDate, calendar: calendar)
         guard tasks[index].plannedDate != normalizedDate else { return nil }

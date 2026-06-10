@@ -152,7 +152,13 @@ struct AddRoutineSaveRequest: Equatable {
         self.routineDurationMode = scheduleMode == .oneOff ? .oneDay : routineDurationMode
         self.availabilityStartDate = availabilityStartDate
         self.availabilityEndDate = availabilityEndDate
-        self.plannedDate = RoutineTask.normalizedPlannedDate(plannedDate)
+        self.plannedDate = RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+            scheduleMode: scheduleMode,
+            recurrenceRule: recurrenceRule,
+            checklistItems: checklistItems
+        )
+            ? nil
+            : RoutineTask.normalizedPlannedDate(plannedDate)
         self.reminderAt = reminderAt
         self.priority = priority
         self.importance = importance
@@ -207,6 +213,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.deadline = schedule.scheduleMode.taskType == .todo ? basics.deadline : nil
         self.isAllDay = basics.isAllDay
         self.routineDurationMode = schedule.scheduleMode == .oneOff ? .oneDay : basics.routineDurationMode
+        let sanitizedChecklistItems = RoutineChecklistItem.sanitized(checklist.routineChecklistItems)
         let availabilityDateBounds = RoutineTask.normalizedAvailabilityDateBounds(
             startDate: basics.availabilityStartDate,
             endDate: basics.availabilityEndDate,
@@ -214,7 +221,13 @@ struct AddRoutineSaveRequest: Equatable {
         )
         self.availabilityStartDate = schedule.scheduleMode == .oneOff ? availabilityDateBounds.startDate : nil
         self.availabilityEndDate = schedule.scheduleMode == .oneOff ? availabilityDateBounds.endDate : nil
-        self.plannedDate = RoutineTask.normalizedPlannedDate(basics.plannedDate, calendar: calendar)
+        self.plannedDate = RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+            scheduleMode: schedule.scheduleMode,
+            recurrenceRule: self.recurrenceRule,
+            checklistItems: sanitizedChecklistItems
+        )
+            ? nil
+            : RoutineTask.normalizedPlannedDate(basics.plannedDate, calendar: calendar)
         self.reminderAt = schedule.scheduleMode == .oneOff ? basics.reminderAt : nil
         self.priority = AddRoutinePriorityMatrix.priority(
             importance: basics.importance,
@@ -237,7 +250,7 @@ struct AddRoutineSaveRequest: Equatable {
             ? RoutineStep.sanitized(checklist.routineSteps)
             : []
         self.scheduleMode = schedule.scheduleMode
-        self.checklistItems = RoutineChecklistItem.sanitized(checklist.routineChecklistItems)
+        self.checklistItems = sanitizedChecklistItems
         self.attachments = basics.attachments
         self.color = basics.routineColor
         self.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(basics.estimatedDurationMinutes)

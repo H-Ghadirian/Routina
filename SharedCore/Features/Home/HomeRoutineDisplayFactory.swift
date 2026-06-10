@@ -98,6 +98,7 @@ struct HomeRoutineDisplayFactory {
             checklistItemCount: task.checklistItems.count,
             completedChecklistItemCount: task.completedChecklistItemCount,
             dueChecklistItemCount: dueChecklistItems.count,
+            hasDailyRunoutChecklistItem: task.hasDailyRunoutChecklistItem,
             nextPendingChecklistItemTitle: task.nextPendingChecklistItemTitle,
             nextDueChecklistItemTitle: nextDueChecklistItem?.title,
             doneCount: doneStats.countsByTaskID[task.id, default: 0],

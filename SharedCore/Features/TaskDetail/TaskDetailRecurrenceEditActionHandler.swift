@@ -73,7 +73,9 @@ struct TaskDetailRecurrenceEditActionHandler {
     }
 
     func editPlannedDateChanged(_ plannedDate: Date?, state: inout State) -> Effect<Action> {
-        state.editPlannedDate = RoutineTask.normalizedPlannedDate(plannedDate, calendar: calendar)
+        state.editPlannedDate = supportsPlanning(state)
+            ? RoutineTask.normalizedPlannedDate(plannedDate, calendar: calendar)
+            : nil
         return .none
     }
 
@@ -116,6 +118,7 @@ struct TaskDetailRecurrenceEditActionHandler {
             }
         }
         disableAutoAssumeIfNeeded(state: &state)
+        clearPlanningIfDailyRoutine(state: &state)
         return .none
     }
 
@@ -124,6 +127,7 @@ struct TaskDetailRecurrenceEditActionHandler {
             state.editFrequency = frequency
         }
         disableAutoAssumeIfNeeded(state: &state)
+        clearPlanningIfDailyRoutine(state: &state)
         return .none
     }
 
@@ -132,6 +136,7 @@ struct TaskDetailRecurrenceEditActionHandler {
             state.editFrequencyValue = value
         }
         disableAutoAssumeIfNeeded(state: &state)
+        clearPlanningIfDailyRoutine(state: &state)
         return .none
     }
 
@@ -143,6 +148,7 @@ struct TaskDetailRecurrenceEditActionHandler {
             state.editRecurrenceKind = kind
         }
         disableAutoAssumeIfNeeded(state: &state)
+        clearPlanningIfDailyRoutine(state: &state)
         return .none
     }
 
@@ -245,6 +251,32 @@ struct TaskDetailRecurrenceEditActionHandler {
             eventDate: eventDate,
             leadMinutes: leadMinutes
         )
+    }
+
+    private func supportsPlanning(_ state: State) -> Bool {
+        !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+            scheduleMode: state.editScheduleMode,
+            recurrenceRule: state.candidateRecurrenceRule,
+            checklistItems: candidateChecklistItems(for: state)
+        )
+    }
+
+    private func clearPlanningIfDailyRoutine(state: inout State) {
+        if !supportsPlanning(state) {
+            state.editPlannedDate = nil
+        }
+    }
+
+    private func candidateChecklistItems(for state: State) -> [RoutineChecklistItem] {
+        if let pendingTitle = RoutineChecklistItem.normalizedTitle(state.editChecklistItemDraftTitle) {
+            return state.editRoutineChecklistItems + [
+                RoutineChecklistItem(
+                    title: pendingTitle,
+                    intervalDays: state.editChecklistItemDraftInterval
+                )
+            ]
+        }
+        return state.editRoutineChecklistItems
     }
 
     private func editReminderEventDate(for state: State) -> Date? {

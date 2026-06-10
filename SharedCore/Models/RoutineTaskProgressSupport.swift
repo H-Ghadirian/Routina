@@ -1,5 +1,35 @@
 import Foundation
 
+enum RoutineTaskDailyRoutineSupport {
+    static func hasDailyRunoutChecklistItem(_ checklistItems: [RoutineChecklistItem]) -> Bool {
+        checklistItems.contains { $0.intervalDays <= 1 }
+    }
+
+    static func isDailyRoutineForTaskList(
+        scheduleMode: RoutineScheduleMode,
+        recurrenceRule: RoutineRecurrenceRule,
+        checklistItems: [RoutineChecklistItem]
+    ) -> Bool {
+        isDailyRoutineForTaskList(
+            isOneOffTask: scheduleMode == .oneOff,
+            scheduleMode: scheduleMode,
+            recurrenceRule: recurrenceRule,
+            hasDailyRunoutChecklistItem: hasDailyRunoutChecklistItem(checklistItems)
+        )
+    }
+
+    static func isDailyRoutineForTaskList(
+        isOneOffTask: Bool,
+        scheduleMode: RoutineScheduleMode,
+        recurrenceRule: RoutineRecurrenceRule,
+        hasDailyRunoutChecklistItem: Bool
+    ) -> Bool {
+        guard !isOneOffTask, recurrenceRule.isDaily else { return false }
+        guard scheduleMode.isChecklistDrivenMode else { return true }
+        return hasDailyRunoutChecklistItem
+    }
+}
+
 extension RoutineTask {
     var hasSequentialSteps: Bool {
         !steps.isEmpty
@@ -11,6 +41,19 @@ extension RoutineTask {
 
     var isChecklistDriven: Bool {
         scheduleMode.isChecklistDrivenMode && hasChecklistItems
+    }
+
+    var hasDailyRunoutChecklistItem: Bool {
+        scheduleMode.isChecklistDrivenMode
+            && RoutineTaskDailyRoutineSupport.hasDailyRunoutChecklistItem(checklistItems)
+    }
+
+    var isDailyRoutineForTaskList: Bool {
+        RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+            scheduleMode: scheduleMode,
+            recurrenceRule: recurrenceRule,
+            checklistItems: checklistItems
+        )
     }
 
     var isChecklistCompletionRoutine: Bool {

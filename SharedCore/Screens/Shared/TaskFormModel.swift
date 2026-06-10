@@ -340,6 +340,11 @@ extension TaskFormModel {
         taskType.wrappedValue == .todo
     }
 
+    var supportsPlanning: Bool {
+        guard taskType.wrappedValue == .routine else { return true }
+        return !isDailyRoutineDraft
+    }
+
     private var availableCompactSections: [TaskFormCompactSection] {
         TaskFormCompactSection.defaultOrder.filter { section in
             switch section {
@@ -347,10 +352,40 @@ extension TaskFormModel {
                 return shouldShowChecklistSection
             case .reminder:
                 return supportsExactDateReminder
+            case .planning:
+                return supportsPlanning
             default:
                 return true
             }
         }
+    }
+
+    private var isDailyRoutineDraft: Bool {
+        let currentScheduleMode = scheduleMode.wrappedValue
+        guard currentScheduleMode.taskType == .routine else { return false }
+        if currentScheduleMode.isChecklistDrivenMode {
+            return RoutineTaskDailyRoutineSupport.hasDailyRunoutChecklistItem(candidateChecklistItems)
+        }
+        switch recurrenceKind.wrappedValue {
+        case .dailyTime:
+            return true
+        case .intervalDays:
+            return frequencyUnit.wrappedValue == .day && frequencyValue.wrappedValue <= 1
+        case .weekly, .monthlyDay:
+            return false
+        }
+    }
+
+    private var candidateChecklistItems: [RoutineChecklistItem] {
+        if let pendingTitle = RoutineChecklistItem.normalizedTitle(checklistItemDraftTitle.wrappedValue) {
+            return routineChecklistItems + [
+                RoutineChecklistItem(
+                    title: pendingTitle,
+                    intervalDays: checklistItemDraftInterval.wrappedValue
+                )
+            ]
+        }
+        return routineChecklistItems
     }
 
     private var hasChecklistSectionContent: Bool {
@@ -395,7 +430,7 @@ extension TaskFormModel {
         if hasText(link.wrappedValue) {
             sections.insert(.link)
         }
-        if plannedDate.wrappedValue != nil {
+        if supportsPlanning, plannedDate.wrappedValue != nil {
             sections.insert(.planning)
         }
         if importance.wrappedValue != .level2 || urgency.wrappedValue != .level2 {

@@ -103,6 +103,20 @@ struct AddRoutineFeature: Reducer {
         AddRoutineOrganizationMutationHandler()
     }
 
+    private func supportsPlanning(_ state: State) -> Bool {
+        !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+            scheduleMode: state.schedule.scheduleMode,
+            recurrenceRule: state.candidateRecurrenceRule,
+            checklistItems: state.candidateChecklistItems
+        )
+    }
+
+    private func clearPlanningIfDailyRoutine(state: inout State) {
+        if !supportsPlanning(state) {
+            state.basics.plannedDate = nil
+        }
+    }
+
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case let .routineNameChanged(name):
@@ -190,11 +204,15 @@ struct AddRoutineFeature: Reducer {
             return .none
 
         case let .plannedDateChanged(plannedDate):
-            AddRoutineBasicsEditor.setPlannedDate(
-                plannedDate,
-                calendar: calendar,
-                basics: &state.basics
-            )
+            if supportsPlanning(state) {
+                AddRoutineBasicsEditor.setPlannedDate(
+                    plannedDate,
+                    calendar: calendar,
+                    basics: &state.basics
+                )
+            } else {
+                state.basics.plannedDate = nil
+            }
             return .none
 
         case let .reminderEnabledChanged(isEnabled):
@@ -362,6 +380,7 @@ struct AddRoutineFeature: Reducer {
 
         case let .scheduleModeChanged(mode):
             scheduleMutationHandler().setScheduleMode(mode, state: &state)
+            clearPlanningIfDailyRoutine(state: &state)
             return .none
 
         case let .stepDraftChanged(value):
@@ -400,6 +419,7 @@ struct AddRoutineFeature: Reducer {
                 value,
                 checklist: &state.checklist
             )
+            clearPlanningIfDailyRoutine(state: &state)
             return .none
 
         case let .checklistItemDraftIntervalChanged(value):
@@ -407,26 +427,32 @@ struct AddRoutineFeature: Reducer {
                 value,
                 checklist: &state.checklist
             )
+            clearPlanningIfDailyRoutine(state: &state)
             return .none
 
         case .addChecklistItemTapped:
             scheduleMutationHandler().addChecklistItem(state: &state)
+            clearPlanningIfDailyRoutine(state: &state)
             return .none
 
         case let .removeChecklistItem(itemID):
             scheduleMutationHandler().removeChecklistItem(itemID, state: &state)
+            clearPlanningIfDailyRoutine(state: &state)
             return .none
 
         case let .frequencyChanged(freq):
             scheduleMutationHandler().setFrequency(freq, state: &state)
+            clearPlanningIfDailyRoutine(state: &state)
             return .none
 
         case let .frequencyValueChanged(value):
             scheduleMutationHandler().setFrequencyValue(value, state: &state)
+            clearPlanningIfDailyRoutine(state: &state)
             return .none
 
         case let .recurrenceKindChanged(kind):
             scheduleMutationHandler().setRecurrenceKind(kind, state: &state)
+            clearPlanningIfDailyRoutine(state: &state)
             return .none
 
         case let .recurrenceHasExplicitTimeChanged(hasExplicitTime):

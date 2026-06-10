@@ -52,6 +52,7 @@ struct HomeRoutineDisplay: Equatable, Identifiable, HomeTaskListDisplay, HomeTas
     var checklistItemCount: Int
     var completedChecklistItemCount: Int
     var dueChecklistItemCount: Int
+    var hasDailyRunoutChecklistItem: Bool = false
     var nextPendingChecklistItemTitle: String?
     var nextDueChecklistItemTitle: String?
     var doneCount: Int
