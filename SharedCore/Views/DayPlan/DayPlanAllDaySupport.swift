@@ -132,10 +132,16 @@ enum DayPlanAllDayTasks {
 
         if task.isAllDay {
             var spans: [AllDaySpan] = []
-            if task.isOneOffTask,
-               let deadline = task.deadline,
-               let span = oneDaySpan(on: deadline, calendar: calendar) {
-                spans.append(span)
+            if task.isOneOffTask {
+                if task.availabilityStartDate != nil {
+                    spans += availabilityDateStarts(for: task, on: dates, calendar: calendar)
+                        .compactMap { startDate in
+                            oneDaySpan(on: startDate, calendar: calendar)
+                        }
+                } else if let deadline = task.deadline,
+                          let span = oneDaySpan(on: deadline, calendar: calendar) {
+                    spans.append(span)
+                }
             } else {
                 spans += routineAllDayOccurrenceStarts(for: task, on: dates, calendar: calendar)
                     .compactMap { startDate in
@@ -173,6 +179,22 @@ enum DayPlanAllDayTasks {
             return nil
         }
         return (startDate, endDate, false)
+    }
+
+    private static func availabilityDateStarts(
+        for task: RoutineTask,
+        on dates: [Date],
+        calendar: Calendar
+    ) -> [Date] {
+        guard let availabilityStartDate = task.availabilityStartDate else { return [] }
+        let startDay = calendar.startOfDay(for: availabilityStartDate)
+        let endDay = calendar.startOfDay(for: task.availabilityEndDate ?? availabilityStartDate)
+
+        return dates
+            .map { calendar.startOfDay(for: $0) }
+            .filter { day in
+                day >= startDay && day <= endDay
+            }
     }
 
     private static func completedActivityStarts(

@@ -9,6 +9,8 @@ struct TaskDetailEditSaveRequest: Equatable {
     var links: [String]
     var deadline: Date?
     var isAllDay: Bool
+    var availabilityStartDate: Date?
+    var availabilityEndDate: Date?
     var reminderAt: Date?
     var priority: RoutineTaskPriority
     var importance: RoutineTaskImportance
@@ -36,6 +38,7 @@ struct TaskDetailEditSaveRequest: Equatable {
 
 struct TaskDetailEditSaveRequestBuilder {
     let now: () -> Date
+    let calendar: Calendar
     let matrixPriority: (RoutineTaskImportance, RoutineTaskUrgency) -> RoutineTaskPriority
 
     func build(state: inout TaskDetailFeature.State) -> TaskDetailEditSaveRequest? {
@@ -82,6 +85,12 @@ struct TaskDetailEditSaveRequestBuilder {
 
         let sanitizedLinks = RoutineTask.sanitizedLinks(fromEditorText: state.editRoutineLink)
 
+        let availabilityDateBounds = RoutineTask.normalizedAvailabilityDateBounds(
+            startDate: state.editAvailabilityStartDate,
+            endDate: state.editAvailabilityEndDate,
+            calendar: calendar
+        )
+
         return TaskDetailEditSaveRequest(
             taskID: state.task.id,
             name: trimmedName,
@@ -91,6 +100,8 @@ struct TaskDetailEditSaveRequestBuilder {
             links: sanitizedLinks,
             deadline: scheduleMode == .oneOff ? state.editDeadline : nil,
             isAllDay: state.editIsAllDay,
+            availabilityStartDate: scheduleMode == .oneOff ? availabilityDateBounds.startDate : nil,
+            availabilityEndDate: scheduleMode == .oneOff ? availabilityDateBounds.endDate : nil,
             reminderAt: scheduleMode == .oneOff ? state.editReminderAt : nil,
             priority: matrixPriority(state.editImportance, state.editUrgency),
             importance: state.editImportance,

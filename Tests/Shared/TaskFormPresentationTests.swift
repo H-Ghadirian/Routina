@@ -97,6 +97,7 @@ struct TaskFormPresentationTests {
     func availabilityModesMatchPersistedTaskTypeSupport() {
         #expect(TaskFormTimingMode.cases(for: .todo) == [.none, .allDay, .exact, .range])
         #expect(TaskFormTimingMode.cases(for: .routine) == [.none, .allDay, .exact, .range])
+        #expect(TaskFormDateAvailabilityMode.allCases == [.none, .exact, .range])
     }
 
     @Test

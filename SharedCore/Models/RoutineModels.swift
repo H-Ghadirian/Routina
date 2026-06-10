@@ -11,6 +11,8 @@ final class RoutineTask {
     var linksStorage: String = ""
     var deadline: Date?
     var isAllDay: Bool = false
+    var availabilityStartDate: Date?
+    var availabilityEndDate: Date?
     var reminderAt: Date?
     var priorityRawValue: String = RoutineTaskPriority.none.rawValue
     var importanceRawValue: String = RoutineTaskImportance.level2.rawValue
@@ -245,6 +247,8 @@ final class RoutineTask {
             scheduleModeRawValue = newValue.rawValue
             if newValue != .oneOff {
                 deadline = nil
+                availabilityStartDate = nil
+                availabilityEndDate = nil
             }
             sanitizeChecklistProgress()
         }
@@ -279,6 +283,8 @@ final class RoutineTask {
         links: [String] = [],
         deadline: Date? = nil,
         isAllDay: Bool = false,
+        availabilityStartDate: Date? = nil,
+        availabilityEndDate: Date? = nil,
         reminderAt: Date? = nil,
         priority: RoutineTaskPriority = .none,
         importance: RoutineTaskImportance = .level2,
@@ -338,6 +344,8 @@ final class RoutineTask {
         self.linksStorage = RoutineTaskLinkStorage.serialize(sanitizedLinks)
         self.deadline = resolvedScheduleMode == .oneOff ? deadline : nil
         self.isAllDay = isAllDay
+        self.availabilityStartDate = resolvedScheduleMode == .oneOff ? availabilityStartDate : nil
+        self.availabilityEndDate = resolvedScheduleMode == .oneOff ? availabilityEndDate : nil
         self.reminderAt = reminderAt
         self.priorityRawValue = priority.rawValue
         self.importanceRawValue = importance.rawValue
@@ -519,6 +527,25 @@ final class RoutineTask {
         sanitizedLinks(links).joined(separator: "\n")
     }
 
+    static func normalizedAvailabilityDateBounds(
+        startDate: Date?,
+        endDate: Date?,
+        calendar: Calendar = .current
+    ) -> (startDate: Date?, endDate: Date?) {
+        guard let startDate else {
+            return (nil, nil)
+        }
+        let normalizedStartDate = calendar.startOfDay(for: startDate)
+        guard let endDate else {
+            return (normalizedStartDate, nil)
+        }
+        let normalizedEndDate = calendar.startOfDay(for: endDate)
+        return (
+            normalizedStartDate,
+            normalizedEndDate < normalizedStartDate ? normalizedStartDate : normalizedEndDate
+        )
+    }
+
     var resolvedLinkURL: URL? {
         resolvedLinkURLs.first?.url
     }
@@ -558,6 +585,8 @@ final class RoutineTask {
             links: links,
             deadline: deadline,
             isAllDay: isAllDay,
+            availabilityStartDate: availabilityStartDate,
+            availabilityEndDate: availabilityEndDate,
             reminderAt: reminderAt,
             priority: priority,
             importance: importance,

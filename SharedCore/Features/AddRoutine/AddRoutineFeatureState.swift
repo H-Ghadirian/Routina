@@ -8,6 +8,8 @@ struct AddRoutineBasicsState: Equatable {
     var routineLink: String = ""
     var deadline: Date?
     var isAllDay: Bool = false
+    var availabilityStartDate: Date?
+    var availabilityEndDate: Date?
     var reminderAt: Date?
     var priority: RoutineTaskPriority = .medium
     var importance: RoutineTaskImportance = .level2

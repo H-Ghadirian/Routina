@@ -233,7 +233,7 @@ extension TaskDetailFeature.State {
             return nil
         }
         if task.isOneOffTask {
-            return task.deadline
+            return task.deadline ?? task.availabilityStartDate
         }
         return RoutineDateMath.upcomingDueDate(for: task, referenceDate: Date())
     }

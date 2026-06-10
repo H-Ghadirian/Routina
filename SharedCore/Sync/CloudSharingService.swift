@@ -22,6 +22,8 @@ enum CloudSharingService {
         var links: [String]?
         var deadline: Date?
         var isAllDay: Bool?
+        var availabilityStartDate: Date?
+        var availabilityEndDate: Date?
         var reminderAt: Date?
         var priority: RoutineTaskPriority
         var importance: RoutineTaskImportance
@@ -269,6 +271,8 @@ extension CloudSharingService.SharedTaskPayload {
         self.links = task.links.isEmpty ? nil : task.links
         self.deadline = task.deadline
         self.isAllDay = task.isAllDay
+        self.availabilityStartDate = task.availabilityStartDate
+        self.availabilityEndDate = task.availabilityEndDate
         self.reminderAt = task.reminderAt
         self.priority = task.priority
         self.importance = task.importance
@@ -326,6 +330,12 @@ extension CloudSharingService.SharedTaskPayload {
         task.links = links ?? link.map { [$0] } ?? []
         task.deadline = scheduleMode == .oneOff ? deadline : nil
         task.isAllDay = isAllDay ?? false
+        let availabilityDateBounds = RoutineTask.normalizedAvailabilityDateBounds(
+            startDate: availabilityStartDate,
+            endDate: availabilityEndDate
+        )
+        task.availabilityStartDate = scheduleMode == .oneOff ? availabilityDateBounds.startDate : nil
+        task.availabilityEndDate = scheduleMode == .oneOff ? availabilityDateBounds.endDate : nil
         task.reminderAt = reminderAt
         task.priority = priority
         task.importance = importance
@@ -378,6 +388,8 @@ private extension RoutineTask {
             links: payload.links ?? payload.link.map { [$0] } ?? [],
             deadline: payload.deadline,
             isAllDay: payload.isAllDay ?? false,
+            availabilityStartDate: payload.availabilityStartDate,
+            availabilityEndDate: payload.availabilityEndDate,
             reminderAt: payload.reminderAt,
             priority: payload.priority,
             importance: payload.importance,

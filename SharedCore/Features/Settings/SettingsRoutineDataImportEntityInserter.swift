@@ -260,6 +260,8 @@ enum SettingsRoutineDataImportEntityInserter {
                 links: task.links ?? task.link.map { [$0] } ?? [],
                 deadline: task.deadline,
                 isAllDay: task.isAllDay ?? false,
+                availabilityStartDate: task.availabilityStartDate,
+                availabilityEndDate: task.availabilityEndDate,
                 reminderAt: task.reminderAt,
                 pressure: task.pressure ?? .none,
                 pressureUpdatedAt: task.pressureUpdatedAt,

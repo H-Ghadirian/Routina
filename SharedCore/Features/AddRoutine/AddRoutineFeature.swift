@@ -14,6 +14,8 @@ struct AddRoutineFeature: Reducer {
         case deadlineEnabledChanged(Bool)
         case deadlineDateChanged(Date)
         case allDayChanged(Bool)
+        case availabilityStartDateChanged(Date?)
+        case availabilityEndDateChanged(Date?)
         case reminderEnabledChanged(Bool)
         case reminderDateChanged(Date)
         case priorityChanged(RoutineTaskPriority)
@@ -158,6 +160,22 @@ struct AddRoutineFeature: Reducer {
             if !state.canAutoAssumeDailyDone {
                 state.schedule.autoAssumeDailyDone = false
             }
+            return .none
+
+        case let .availabilityStartDateChanged(availabilityStartDate):
+            AddRoutineBasicsEditor.setAvailabilityStartDate(
+                availabilityStartDate,
+                calendar: calendar,
+                basics: &state.basics
+            )
+            return .none
+
+        case let .availabilityEndDateChanged(availabilityEndDate):
+            AddRoutineBasicsEditor.setAvailabilityEndDate(
+                availabilityEndDate,
+                calendar: calendar,
+                basics: &state.basics
+            )
             return .none
 
         case let .reminderEnabledChanged(isEnabled):
@@ -477,7 +495,7 @@ struct AddRoutineFeature: Reducer {
             applyQuickAddDraftFromName(state: &state)
             AddRoutineDraftFinalizer(now: now).apply(to: &state)
             AddRoutineValidationEditor.refreshNameValidation(state: &state)
-            guard let request = AddRoutineSaveRequest(state: state) else { return .none }
+            guard let request = AddRoutineSaveRequest(state: state, calendar: calendar) else { return .none }
             return onSave(request)
 
         case .cancelTapped:

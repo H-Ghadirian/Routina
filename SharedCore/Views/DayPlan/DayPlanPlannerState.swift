@@ -124,18 +124,18 @@ final class DayPlanPlannerState: ObservableObject {
             var didChangeDay = false
 
             for task in availableTasks {
-                guard let scheduledDate = exactScheduledDate(for: task, on: date, calendar: calendar) else {
+                guard let scheduledBlock = exactScheduledBlock(for: task, on: date, calendar: calendar) else {
                     continue
                 }
-                guard !task.isArchived(referenceDate: scheduledDate, calendar: calendar) else {
+                guard !task.isArchived(referenceDate: scheduledBlock.startDate, calendar: calendar) else {
                     continue
                 }
                 guard !dayBlocks.contains(where: { $0.taskID == task.id }) else {
                     continue
                 }
 
-                let startMinute = startMinute(for: scheduledDate, calendar: calendar)
-                let durationMinutes = task.estimatedDurationMinutes ?? 60
+                let startMinute = startMinute(for: scheduledBlock.startDate, calendar: calendar)
+                let durationMinutes = scheduledBlock.durationMinutes ?? task.estimatedDurationMinutes ?? 60
                 guard !isBlocked(
                     dayKey: dayKey,
                     startMinute: startMinute,
@@ -604,23 +604,64 @@ final class DayPlanPlannerState: ObservableObject {
         blocks = weekBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
     }
 
-    private func exactScheduledDate(
+    private struct ExactScheduledBlock {
+        var startDate: Date
+        var durationMinutes: Int?
+    }
+
+    private func exactScheduledBlock(
         for task: RoutineTask,
         on date: Date,
         calendar: Calendar
-    ) -> Date? {
+    ) -> ExactScheduledBlock? {
         guard !task.isAllDay else { return nil }
 
         if task.isOneOffTask {
+            if isDateWithinAvailabilityDateBounds(date, for: task, calendar: calendar) {
+                if let timeRange = task.recurrenceRule.timeRange {
+                    let startDate = timeRange.startDate(on: date, calendar: calendar)
+                    let endDate = timeRange.endDate(on: date, calendar: calendar)
+                    return ExactScheduledBlock(
+                        startDate: startDate,
+                        durationMinutes: availabilityWindowDuration(start: startDate, end: endDate)
+                    )
+                }
+
+                if let timeOfDay = task.recurrenceRule.timeOfDay {
+                    return ExactScheduledBlock(
+                        startDate: timeOfDay.date(on: date, calendar: calendar),
+                        durationMinutes: nil
+                    )
+                }
+            }
+
             guard let deadline = task.deadline,
                   calendar.isDate(deadline, inSameDayAs: date),
                   hasExplicitTime(deadline, calendar: calendar) else {
                 return nil
             }
-            return deadline
+            return ExactScheduledBlock(startDate: deadline, durationMinutes: nil)
         }
 
         return RoutineDateMath.scheduledOccurrence(for: task, on: date, calendar: calendar)
+            .map { ExactScheduledBlock(startDate: $0, durationMinutes: nil) }
+    }
+
+    private func availabilityWindowDuration(start: Date, end: Date) -> Int? {
+        guard end > start else { return nil }
+        return max(Int((end.timeIntervalSince(start) / 60).rounded()), DayPlanBlock.minimumDurationMinutes)
+    }
+
+    private func isDateWithinAvailabilityDateBounds(
+        _ date: Date,
+        for task: RoutineTask,
+        calendar: Calendar
+    ) -> Bool {
+        guard let availabilityStartDate = task.availabilityStartDate else { return false }
+        let day = calendar.startOfDay(for: date)
+        let startDay = calendar.startOfDay(for: availabilityStartDate)
+        let endDay = calendar.startOfDay(for: task.availabilityEndDate ?? availabilityStartDate)
+        return day >= startDay && day <= endDay
     }
 
     private func hasExplicitTime(_ date: Date, calendar: Calendar) -> Bool {

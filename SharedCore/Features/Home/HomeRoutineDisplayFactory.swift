@@ -165,7 +165,7 @@ struct HomeRoutineDisplayFactory {
 
     private func dueDate(for task: RoutineTask, isArchived: Bool) -> Date? {
         if task.isOneOffTask {
-            return task.deadline
+            return task.deadline ?? task.availabilityStartDate
         }
         guard !isArchived,
               !task.isChecklistDriven,

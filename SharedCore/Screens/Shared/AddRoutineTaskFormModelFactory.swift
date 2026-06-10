@@ -23,6 +23,14 @@ struct AddRoutineTaskFormModelFactory {
             deadlineEnabled: binding(get: { store.hasDeadline }, send: AddRoutineFeature.Action.deadlineEnabledChanged),
             deadline: binding(get: { store.basics.deadline ?? Date() }, send: AddRoutineFeature.Action.deadlineDateChanged),
             isAllDay: binding(get: { store.basics.isAllDay }, send: AddRoutineFeature.Action.allDayChanged),
+            availabilityStartDate: binding(
+                get: { store.basics.availabilityStartDate },
+                send: AddRoutineFeature.Action.availabilityStartDateChanged
+            ),
+            availabilityEndDate: binding(
+                get: { store.basics.availabilityEndDate },
+                send: AddRoutineFeature.Action.availabilityEndDateChanged
+            ),
             reminderEnabled: binding(
                 get: { store.basics.reminderAt != nil },
                 send: AddRoutineFeature.Action.reminderEnabledChanged

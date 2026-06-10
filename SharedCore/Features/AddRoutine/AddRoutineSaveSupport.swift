@@ -75,6 +75,8 @@ struct AddRoutineSaveRequest: Equatable {
     let links: [String]
     let deadline: Date?
     let isAllDay: Bool
+    let availabilityStartDate: Date?
+    let availabilityEndDate: Date?
     let reminderAt: Date?
     let priority: RoutineTaskPriority
     let importance: RoutineTaskImportance
@@ -107,6 +109,8 @@ struct AddRoutineSaveRequest: Equatable {
         links: [String] = [],
         deadline: Date? = nil,
         isAllDay: Bool = false,
+        availabilityStartDate: Date? = nil,
+        availabilityEndDate: Date? = nil,
         reminderAt: Date? = nil,
         priority: RoutineTaskPriority,
         importance: RoutineTaskImportance,
@@ -139,6 +143,8 @@ struct AddRoutineSaveRequest: Equatable {
         self.links = sanitizedLinks
         self.deadline = deadline
         self.isAllDay = isAllDay
+        self.availabilityStartDate = availabilityStartDate
+        self.availabilityEndDate = availabilityEndDate
         self.reminderAt = reminderAt
         self.priority = priority
         self.importance = importance
@@ -165,7 +171,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.focusModeEnabled = focusModeEnabled
     }
 
-    init?(state: AddRoutineFeature.State) {
+    init?(state: AddRoutineFeature.State, calendar: Calendar = .current) {
         guard !state.isSaveDisabled else { return nil }
 
         let basics = state.basics
@@ -191,6 +197,13 @@ struct AddRoutineSaveRequest: Equatable {
         self.links = sanitizedLinks
         self.deadline = schedule.scheduleMode.taskType == .todo ? basics.deadline : nil
         self.isAllDay = basics.isAllDay
+        let availabilityDateBounds = RoutineTask.normalizedAvailabilityDateBounds(
+            startDate: basics.availabilityStartDate,
+            endDate: basics.availabilityEndDate,
+            calendar: calendar
+        )
+        self.availabilityStartDate = schedule.scheduleMode == .oneOff ? availabilityDateBounds.startDate : nil
+        self.availabilityEndDate = schedule.scheduleMode == .oneOff ? availabilityDateBounds.endDate : nil
         self.reminderAt = schedule.scheduleMode == .oneOff ? basics.reminderAt : nil
         self.priority = AddRoutinePriorityMatrix.priority(
             importance: basics.importance,

@@ -59,6 +59,8 @@ struct TaskDetailEditRoutineContent: View {
                 get: { store.editIsAllDay },
                 set: { store.send(.editAllDayChanged($0)) }
             ),
+            availabilityStartDate: editAvailabilityStartDateBinding,
+            availabilityEndDate: editAvailabilityEndDateBinding,
             reminderEnabled: editReminderEnabledBinding,
             reminderAt: editReminderBinding,
             reminderEventDate: editReminderEventDate,
@@ -273,6 +275,20 @@ struct TaskDetailEditRoutineContent: View {
         Binding(
             get: { store.editRecurrenceKind },
             set: { store.send(.editRecurrenceKindChanged($0)) }
+        )
+    }
+
+    private var editAvailabilityStartDateBinding: Binding<Date?> {
+        Binding(
+            get: { store.editAvailabilityStartDate },
+            set: { store.send(.editAvailabilityStartDateChanged($0)) }
+        )
+    }
+
+    private var editAvailabilityEndDateBinding: Binding<Date?> {
+        Binding(
+            get: { store.editAvailabilityEndDate },
+            set: { store.send(.editAvailabilityEndDateChanged($0)) }
         )
     }
 
