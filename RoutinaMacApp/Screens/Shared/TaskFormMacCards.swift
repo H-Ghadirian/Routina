@@ -106,6 +106,42 @@ struct TaskFormMacInfoPill: View {
     }
 }
 
+struct TaskFormMacPlanningCard: View {
+    let model: TaskFormModel
+
+    var body: some View {
+        TaskFormMacSectionCard(title: "Planning") {
+            TaskFormMacToggleBlock(title: "Plan to do", isOn: plannedDateEnabled) {
+                DatePicker(
+                    "Date",
+                    selection: plannedDate,
+                    displayedComponents: .date
+                )
+                .labelsHidden()
+                .datePickerStyle(.compact)
+            }
+        }
+    }
+
+    private var plannedDateEnabled: Binding<Bool> {
+        Binding(
+            get: { model.plannedDate.wrappedValue != nil },
+            set: { isEnabled in
+                model.plannedDate.wrappedValue = isEnabled
+                    ? (model.plannedDate.wrappedValue ?? Date())
+                    : nil
+            }
+        )
+    }
+
+    private var plannedDate: Binding<Date> {
+        Binding(
+            get: { model.plannedDate.wrappedValue ?? Date() },
+            set: { model.plannedDate.wrappedValue = $0 }
+        )
+    }
+}
+
 private struct TaskFormMacScheduleBehaviorHint: View {
     let behavior: RoutineScheduleBehavior
     let description: String

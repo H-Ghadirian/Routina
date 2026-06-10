@@ -20,6 +20,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
     case goals              = "Goals"
     case events             = "Events"
     case linkedTasks        = "Linked tasks"
+    case planning           = "Planning"
     case linkURL            = "Link URL"
     case notes              = "Notes"
     case steps              = "Steps"
@@ -64,6 +65,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
         case .goals:             return "target"
         case .events:            return "calendar"
         case .linkedTasks:       return "link"
+        case .planning:          return "calendar.badge.clock"
         case .linkURL:           return "globe"
         case .notes:             return "note.text"
         case .steps:             return "list.number"
@@ -88,7 +90,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
         includesDangerZone: Bool
     ) -> [FormSection] {
         var sections: [FormSection] = includesIdentity ? [.identity] : []
-        sections += [.color, .behavior, .pressure, .estimation, .places, .importanceUrgency, .tags, .goals, .events, .linkedTasks, .linkURL, .notes]
+        sections += [.color, .behavior, .pressure, .estimation, .places, .importanceUrgency, .tags, .goals, .events, .linkedTasks, .planning, .linkURL, .notes]
         if scheduleMode.isTaskFormStepBased {
             sections.append(.steps)
         }
@@ -165,6 +167,9 @@ extension TaskFormModel {
         if !relationships.isEmpty {
             sections.insert(.linkedTasks)
         }
+        if plannedDate.wrappedValue != nil {
+            sections.insert(.planning)
+        }
         if hasText(link.wrappedValue) {
             sections.insert(.linkURL)
         }
@@ -227,6 +232,9 @@ extension AddRoutineFeature.State {
         }
         if !organization.relationships.isEmpty {
             sections.insert(.linkedTasks)
+        }
+        if basics.plannedDate != nil {
+            sections.insert(.planning)
         }
         if hasText(basics.routineLink) {
             sections.insert(.linkURL)

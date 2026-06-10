@@ -18,6 +18,7 @@ protocol HomeTaskListDisplay {
     var createdAt: Date? { get }
     var lastDone: Date? { get }
     var dueDate: Date? { get }
+    var plannedDate: Date? { get }
     var priority: RoutineTaskPriority { get }
     var importance: RoutineTaskImportance { get }
     var urgency: RoutineTaskUrgency { get }
@@ -50,6 +51,10 @@ extension HomeTaskListDisplay {
 
     var hasFileAttachment: Bool {
         false
+    }
+
+    var plannedDate: Date? {
+        nil
     }
 
     var placeIDs: [UUID] {

@@ -60,6 +60,14 @@ enum AddRoutineBasicsEditor {
         basics.availabilityEndDate = bounds.endDate
     }
 
+    static func setPlannedDate(
+        _ plannedDate: Date?,
+        calendar: Calendar,
+        basics: inout AddRoutineBasicsState
+    ) {
+        basics.plannedDate = RoutineTask.normalizedPlannedDate(plannedDate, calendar: calendar)
+    }
+
     static func setPriority(
         _ priority: RoutineTaskPriority,
         basics: inout AddRoutineBasicsState

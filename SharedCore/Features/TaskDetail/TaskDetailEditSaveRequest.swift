@@ -12,6 +12,7 @@ struct TaskDetailEditSaveRequest: Equatable {
     var routineDurationMode: RoutineDurationMode
     var availabilityStartDate: Date?
     var availabilityEndDate: Date?
+    var plannedDate: Date?
     var reminderAt: Date?
     var priority: RoutineTaskPriority
     var importance: RoutineTaskImportance
@@ -105,6 +106,7 @@ struct TaskDetailEditSaveRequestBuilder {
             routineDurationMode: scheduleMode == .oneOff ? .oneDay : state.editRoutineDurationMode,
             availabilityStartDate: scheduleMode == .oneOff ? availabilityDateBounds.startDate : nil,
             availabilityEndDate: scheduleMode == .oneOff ? availabilityDateBounds.endDate : nil,
+            plannedDate: RoutineTask.normalizedPlannedDate(state.editPlannedDate, calendar: calendar),
             reminderAt: scheduleMode == .oneOff ? state.editReminderAt : nil,
             priority: matrixPriority(state.editImportance, state.editUrgency),
             importance: state.editImportance,

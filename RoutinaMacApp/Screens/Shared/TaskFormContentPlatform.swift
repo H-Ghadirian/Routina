@@ -178,6 +178,7 @@ struct TaskFormContent: View {
         case .goals:              goalsCard
         case .events:             eventsCard
         case .linkedTasks:        linkedTasksCard
+        case .planning:           planningCard
         case .linkURL:            linkURLCard
         case .notes:              notesCard
         case .steps:              stepsCard
@@ -352,6 +353,13 @@ struct TaskFormContent: View {
             }
         }
         .id(FormSection.linkedTasks)
+    }
+
+    // MARK: Planning
+
+    private var planningCard: some View {
+        TaskFormMacPlanningCard(model: model)
+            .id(FormSection.planning)
     }
 
     // MARK: Links

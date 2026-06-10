@@ -59,6 +59,7 @@ struct TaskDetailEditRoutineContent: View {
             ),
             availabilityStartDate: editAvailabilityStartDateBinding,
             availabilityEndDate: editAvailabilityEndDateBinding,
+            plannedDate: editPlannedDateBinding,
             reminderEnabled: editReminderEnabledBinding,
             reminderAt: editReminderBinding,
             reminderEventDate: editReminderEventDate,
@@ -282,6 +283,13 @@ struct TaskDetailEditRoutineContent: View {
         Binding(
             get: { store.editAvailabilityEndDate },
             set: { store.send(.editAvailabilityEndDateChanged($0)) }
+        )
+    }
+
+    private var editPlannedDateBinding: Binding<Date?> {
+        Binding(
+            get: { store.editPlannedDate },
+            set: { store.send(.editPlannedDateChanged($0)) }
         )
     }
 

@@ -175,6 +175,26 @@ struct HomeTaskLifecycleCoordinator<Action> {
         )
     }
 
+    func planTask(
+        taskID: UUID,
+        plannedDate: Date?,
+        tasks: inout [RoutineTask]
+    ) -> Effect<Action>? {
+        guard let update = HomeTaskLifecycleSupport.planTask(
+            taskID: taskID,
+            plannedDate: plannedDate,
+            calendar: calendar,
+            tasks: &tasks
+        ) else {
+            return nil
+        }
+
+        return HomeTaskLifecycleExecutionSupport.planTask(
+            update,
+            modelContext: modelContext
+        )
+    }
+
     func unpinTask(
         taskID: UUID,
         tasks: inout [RoutineTask]

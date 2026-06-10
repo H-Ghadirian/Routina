@@ -11,6 +11,7 @@ struct AddRoutineBasicsState: Equatable {
     var routineDurationMode: RoutineDurationMode = .oneDay
     var availabilityStartDate: Date?
     var availabilityEndDate: Date?
+    var plannedDate: Date?
     var reminderAt: Date?
     var priority: RoutineTaskPriority = .medium
     var importance: RoutineTaskImportance = .level2

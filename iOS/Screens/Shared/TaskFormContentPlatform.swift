@@ -122,6 +122,8 @@ struct TaskFormContent: View {
             voiceNoteSection
         case .link:
             linkSection
+        case .planning:
+            planningSection
         case .deadline:
             if model.taskType.wrappedValue == .todo {
                 deadlineSection
@@ -213,6 +215,10 @@ struct TaskFormContent: View {
 
     private var linkSection: some View {
         TaskFormIOSLinkSection(model: model, presentation: presentation)
+    }
+
+    private var planningSection: some View {
+        TaskFormIOSPlanningSection(model: model)
     }
 
     private var deadlineSection: some View {

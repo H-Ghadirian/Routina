@@ -5,6 +5,10 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
         HomeTaskListSorter<Display>.pinnedManualOrderSectionKey
     }
 
+    static var plannedTodayManualOrderSectionKey: String {
+        HomeTaskListSorter<Display>.plannedTodayManualOrderSectionKey
+    }
+
     static var ungroupedManualOrderSectionKey: String {
         HomeTaskListSorter<Display>.ungroupedManualOrderSectionKey
     }
@@ -128,6 +132,19 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
 
     func filteredDailyRoutineTasks(_ displays: [Display]) -> [Display] {
         filteredTasks(displays).filter(\.isDailyRoutine)
+    }
+
+    func filteredPlannedTodayTasks(_ displays: [Display]) -> [Display] {
+        displays
+            .filter { task in
+                guard predicate.matchesVisibleTask(task),
+                      let plannedDate = task.plannedDate else { return false }
+                return metrics.configuration.calendar.isDate(
+                    plannedDate,
+                    inSameDayAs: metrics.configuration.referenceDate
+                )
+            }
+            .sorted(by: sorter.plannedTodayTaskSort)
     }
 
     func deadlineBasedSections(from tasks: [Display]) -> [HomeTaskListSection<Display>] {

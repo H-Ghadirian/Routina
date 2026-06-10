@@ -12,6 +12,7 @@ struct TaskDetailEditChangeRequest {
     let routineDurationMode: RoutineDurationMode
     let availabilityStartDate: Date?
     let availabilityEndDate: Date?
+    let plannedDate: Date?
     let reminderAt: Date?
     let priority: RoutineTaskPriority
     let importance: RoutineTaskImportance
@@ -63,6 +64,7 @@ struct TaskDetailEditChangeRequest {
         self.routineDurationMode = state.editRoutineDurationMode
         self.availabilityStartDate = state.editAvailabilityStartDate
         self.availabilityEndDate = state.editAvailabilityEndDate
+        self.plannedDate = state.editPlannedDate
         self.reminderAt = state.editScheduleMode == .oneOff ? state.editReminderAt : nil
         self.priority = state.editPriority
         self.importance = state.editImportance
@@ -160,6 +162,7 @@ enum TaskDetailEditChangeDetector {
             || normalizedRoutineDurationMode(for: request) != normalizedRoutineDurationMode(for: task)
             || request.availabilityStartDate != task.availabilityStartDate
             || request.availabilityEndDate != task.availabilityEndDate
+            || request.plannedDate != task.plannedDate
             || request.reminderAt != task.reminderAt
             || request.priority != task.priority
             || request.importance != task.importance

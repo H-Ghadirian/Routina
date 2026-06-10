@@ -10,6 +10,7 @@ final class RoutineTask {
     var link: String?
     var linksStorage: String = ""
     var deadline: Date?
+    var plannedDate: Date?
     var isAllDay: Bool = false
     var routineDurationModeRawValue: String = RoutineDurationMode.oneDay.rawValue
     var availabilityStartDate: Date?
@@ -312,6 +313,7 @@ final class RoutineTask {
         link: String? = nil,
         links: [String] = [],
         deadline: Date? = nil,
+        plannedDate: Date? = nil,
         isAllDay: Bool = false,
         routineDurationMode: RoutineDurationMode = .oneDay,
         availabilityStartDate: Date? = nil,
@@ -375,6 +377,7 @@ final class RoutineTask {
         self.link = sanitizedLinks.first
         self.linksStorage = RoutineTaskLinkStorage.serialize(sanitizedLinks)
         self.deadline = resolvedScheduleMode == .oneOff ? deadline : nil
+        self.plannedDate = Self.normalizedPlannedDate(plannedDate)
         self.isAllDay = isAllDay
         self.routineDurationModeRawValue = resolvedScheduleMode == .oneOff
             ? RoutineDurationMode.oneDay.rawValue
@@ -582,6 +585,13 @@ final class RoutineTask {
         )
     }
 
+    static func normalizedPlannedDate(
+        _ plannedDate: Date?,
+        calendar: Calendar = .current
+    ) -> Date? {
+        plannedDate.map { calendar.startOfDay(for: $0) }
+    }
+
     var resolvedLinkURL: URL? {
         resolvedLinkURLs.first?.url
     }
@@ -620,6 +630,7 @@ final class RoutineTask {
             link: link,
             links: links,
             deadline: deadline,
+            plannedDate: plannedDate,
             isAllDay: isAllDay,
             routineDurationMode: routineDurationMode,
             availabilityStartDate: availabilityStartDate,

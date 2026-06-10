@@ -14,6 +14,7 @@ struct HomeFeatureTaskLifecycleCommandRouter<State: HomeFeatureTaskLifecycleComm
     var resume: (UUID, inout [RoutineTask]) -> Effect<Action>?
     var notToday: (UUID, inout [RoutineTask]) -> Effect<Action>?
     var pin: (UUID, inout [RoutineTask]) -> Effect<Action>?
+    var plan: (UUID, Date?, inout [RoutineTask]) -> Effect<Action>?
     var unpin: (UUID, inout [RoutineTask]) -> Effect<Action>?
     var finishMutation: (Effect<Action>, inout State) -> Effect<Action>
 
@@ -60,6 +61,13 @@ struct HomeFeatureTaskLifecycleCommandRouter<State: HomeFeatureTaskLifecycleComm
 
     func pinTask(_ id: UUID, state: inout State) -> Effect<Action> {
         route(id, state: &state, command: pin)
+    }
+
+    func planTask(_ id: UUID, plannedDate: Date?, state: inout State) -> Effect<Action> {
+        guard let effect = plan(id, plannedDate, &state.routineTasks) else {
+            return .none
+        }
+        return finishMutation(effect, &state)
     }
 
     func unpinTask(_ id: UUID, state: inout State) -> Effect<Action> {

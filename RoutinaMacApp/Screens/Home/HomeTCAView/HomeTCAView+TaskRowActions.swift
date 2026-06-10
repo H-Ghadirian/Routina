@@ -81,6 +81,32 @@ extension HomeTCAView {
             }
         }
 
+        Divider()
+
+        Menu {
+            Button {
+                store.send(.planTask(task.taskID, Date()))
+            } label: {
+                Label("Today", systemImage: "calendar")
+            }
+
+            Button {
+                presentPlanningDatePicker(for: task)
+            } label: {
+                Label("Choose Date...", systemImage: "calendar.badge.plus")
+            }
+
+            if task.plannedDate != nil {
+                Button {
+                    store.send(.planTask(task.taskID, nil))
+                } label: {
+                    Label("Clear Plan", systemImage: "xmark.circle")
+                }
+            }
+        } label: {
+            Label("Plan to do", systemImage: "calendar.badge.clock")
+        }
+
         if let pinAction = presentation.pinAction {
             Button {
                 homeTaskRowCommandHandler.handle(pinAction.command)
@@ -94,5 +120,31 @@ extension HomeTCAView {
         } label: {
             Label("Delete", systemImage: "trash")
         }
+    }
+
+    var planningDatePickerPresentedBinding: Binding<Bool> {
+        Binding(
+            get: { planningDateTaskID != nil },
+            set: { isPresented in
+                if !isPresented {
+                    dismissPlanningDatePicker()
+                }
+            }
+        )
+    }
+
+    func presentPlanningDatePicker(for task: HomeFeature.RoutineDisplay) {
+        planningDateTaskID = task.taskID
+        planningDateDraft = task.plannedDate ?? Date()
+    }
+
+    func savePlanningDatePicker() {
+        guard let taskID = planningDateTaskID else { return }
+        store.send(.planTask(taskID, planningDateDraft))
+        dismissPlanningDatePicker()
+    }
+
+    func dismissPlanningDatePicker() {
+        planningDateTaskID = nil
     }
 }

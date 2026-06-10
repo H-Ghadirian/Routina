@@ -12,6 +12,7 @@ extension TaskDetailFeature {
         state.editRoutineDurationMode = state.task.routineDurationMode
         state.editAvailabilityStartDate = state.task.availabilityStartDate
         state.editAvailabilityEndDate = state.task.availabilityEndDate
+        state.editPlannedDate = state.task.plannedDate
         state.editReminderAt = state.task.reminderAt
         if state.task.derivedPriorityFromMatrix == state.task.priority || state.task.priority == .none {
             state.editImportance = state.task.importance
