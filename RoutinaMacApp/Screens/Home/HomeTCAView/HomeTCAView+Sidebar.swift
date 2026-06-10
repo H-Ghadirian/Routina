@@ -554,6 +554,9 @@ extension HomeTCAView {
         }
         .navigationTitle("Routina")
         .routinaHomeSidebarColumnWidth()
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            HomeMacStatusComposerView()
+        }
     }
 
     private var macPlacesSidebarView: some View {
