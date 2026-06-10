@@ -43,8 +43,8 @@ enum CloudKitDirectPullTaskPayloadApplier {
             startDate: payload.availabilityStartDate,
             endDate: payload.availabilityEndDate
         )
-        task.availabilityStartDate = task.scheduleMode == .oneOff ? availabilityDateBounds.startDate : nil
-        task.availabilityEndDate = task.scheduleMode == .oneOff ? availabilityDateBounds.endDate : nil
+        task.availabilityStartDate = availabilityDateBounds.startDate
+        task.availabilityEndDate = availabilityDateBounds.endDate
         task.reminderAt = payload.reminderAt
         if let recurrenceRule = payload.recurrenceRule {
             task.recurrenceRule = recurrenceRule

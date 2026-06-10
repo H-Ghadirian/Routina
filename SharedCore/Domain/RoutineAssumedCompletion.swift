@@ -35,6 +35,9 @@ enum RoutineAssumedCompletion {
         let selectedDay = calendar.startOfDay(for: day)
         let today = calendar.startOfDay(for: referenceDate)
         guard selectedDay <= today else { return false }
+        guard RoutineDateMath.isDateWithinAvailabilityDateBounds(selectedDay, for: task, calendar: calendar) else {
+            return false
+        }
 
         if let createdAt = task.createdAt {
             let createdDay = calendar.startOfDay(for: createdAt)
@@ -89,9 +92,12 @@ enum RoutineAssumedCompletion {
             return []
         }
 
-        let firstCandidate = calendar.startOfDay(
+        var firstCandidate = calendar.startOfDay(
             for: task.createdAt ?? task.scheduleAnchor ?? task.lastDone ?? referenceDate
         )
+        if let availabilityStartDate = task.availabilityStartDate {
+            firstCandidate = max(firstCandidate, calendar.startOfDay(for: availabilityStartDate))
+        }
         guard firstCandidate <= endDay else { return [] }
 
         var dates: [Date] = []

@@ -96,8 +96,6 @@ struct TaskDetailRecurrenceEditActionHandler {
             state.editScheduleMode = mode
             if mode != .oneOff {
                 state.editDeadline = nil
-                state.editAvailabilityStartDate = nil
-                state.editAvailabilityEndDate = nil
             }
         }
         disableAutoAssumeIfNeeded(state: &state)
