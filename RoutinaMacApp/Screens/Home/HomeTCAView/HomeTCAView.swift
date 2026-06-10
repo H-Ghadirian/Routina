@@ -71,6 +71,10 @@ struct HomeTCAView: View {
         store: SharedDefaults.app
     ) var isDailyRoutinesSectionCollapsed = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacPlanTodayDailyRoutinesGroupCollapsed.rawValue,
+        store: SharedDefaults.app
+    ) var isMacPlanTodayDailyRoutinesGroupCollapsed = true
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingArchivedRoutinesSectionCollapsed.rawValue,
         store: SharedDefaults.app
     ) var isArchivedSectionCollapsed = false

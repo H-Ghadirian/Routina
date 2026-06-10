@@ -5,6 +5,17 @@ struct HomeTaskListMoveContext: Equatable {
     let orderedTaskIDs: [UUID]
 }
 
+struct HomeTaskListPresentationTaskGroup<Display: HomeTaskListDisplay>: Identifiable {
+    let title: String?
+    let tasks: [Display]
+    let moveContext: HomeTaskListMoveContext?
+    let isCollapsible: Bool
+
+    var id: String {
+        title ?? "primary"
+    }
+}
+
 enum HomeTaskListPresentationSectionKind: String, Equatable {
     case pinned
     case plannedToday
@@ -30,13 +41,41 @@ extension HomeTaskListPresentationSectionKind {
 struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiable {
     let kind: HomeTaskListPresentationSectionKind
     let title: String
-    var tasks: [Display]
     let rowNumberOffset: Int
     let includeMarkDone: Bool
     let moveContext: HomeTaskListMoveContext?
+    let taskGroups: [HomeTaskListPresentationTaskGroup<Display>]
+
+    init(
+        kind: HomeTaskListPresentationSectionKind,
+        title: String,
+        tasks: [Display],
+        rowNumberOffset: Int,
+        includeMarkDone: Bool,
+        moveContext: HomeTaskListMoveContext?,
+        taskGroups: [HomeTaskListPresentationTaskGroup<Display>]? = nil
+    ) {
+        self.kind = kind
+        self.title = title
+        self.rowNumberOffset = rowNumberOffset
+        self.includeMarkDone = includeMarkDone
+        self.moveContext = moveContext
+        self.taskGroups = taskGroups ?? [
+            HomeTaskListPresentationTaskGroup(
+                title: nil,
+                tasks: tasks,
+                moveContext: moveContext,
+                isCollapsible: false
+            )
+        ]
+    }
 
     var id: String {
         "\(kind.rawValue):\(title)"
+    }
+
+    var tasks: [Display] {
+        taskGroups.flatMap(\.tasks)
     }
 
     func rowNumber(forTaskAt index: Int) -> Int {
@@ -256,38 +295,25 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             offset += pinnedTasks.count
         }
 
-        if !plannedTodayTasks.isEmpty {
+        let planTodayTaskGroups = sidebarPlanTodayTaskGroups(
+            plannedTodayTasks: plannedTodayTasks,
+            dailyTasks: dailyTasks
+        )
+        let planTodayTasks = planTodayTaskGroups.flatMap(\.tasks)
+
+        if !planTodayTasks.isEmpty {
             presentationSections.append(
                 HomeTaskListPresentationSection(
                     kind: .plannedToday,
                     title: "Plan to do today",
-                    tasks: plannedTodayTasks,
+                    tasks: planTodayTasks,
                     rowNumberOffset: offset,
                     includeMarkDone: true,
-                    moveContext: HomeTaskListMoveContext(
-                        sectionKey: HomeTaskListFiltering<Display>.plannedTodayManualOrderSectionKey,
-                        orderedTaskIDs: plannedTodayTasks.map(\.taskID)
-                    )
+                    moveContext: nil,
+                    taskGroups: planTodayTaskGroups
                 )
             )
-            offset += plannedTodayTasks.count
-        }
-
-        if !dailyTasks.isEmpty {
-            presentationSections.append(
-                HomeTaskListPresentationSection(
-                    kind: .daily,
-                    title: "Daily Routines",
-                    tasks: dailyTasks,
-                    rowNumberOffset: offset,
-                    includeMarkDone: true,
-                    moveContext: HomeTaskListMoveContext(
-                        sectionKey: HomeTaskListFiltering<Display>.dailyManualOrderSectionKey,
-                        orderedTaskIDs: dailyTasks.map(\.taskID)
-                    )
-                )
-            )
-            offset += dailyTasks.count
+            offset += planTodayTasks.count
         }
 
         if filtering.usesTagSectioning {
@@ -362,6 +388,43 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             hiddenUnavailableTaskCount: 0,
             emptyState: presentationSections.isEmpty ? emptyState : nil
         )
+    }
+
+    private static func sidebarPlanTodayTaskGroups(
+        plannedTodayTasks: [Display],
+        dailyTasks: [Display]
+    ) -> [HomeTaskListPresentationTaskGroup<Display>] {
+        var groups: [HomeTaskListPresentationTaskGroup<Display>] = []
+
+        if !plannedTodayTasks.isEmpty {
+            groups.append(
+                HomeTaskListPresentationTaskGroup(
+                    title: nil,
+                    tasks: plannedTodayTasks,
+                    moveContext: HomeTaskListMoveContext(
+                        sectionKey: HomeTaskListFiltering<Display>.plannedTodayManualOrderSectionKey,
+                        orderedTaskIDs: plannedTodayTasks.map(\.taskID)
+                    ),
+                    isCollapsible: false
+                )
+            )
+        }
+
+        if !dailyTasks.isEmpty {
+            groups.append(
+                HomeTaskListPresentationTaskGroup(
+                    title: "Daily Routines",
+                    tasks: dailyTasks,
+                    moveContext: HomeTaskListMoveContext(
+                        sectionKey: HomeTaskListFiltering<Display>.dailyManualOrderSectionKey,
+                        orderedTaskIDs: dailyTasks.map(\.taskID)
+                    ),
+                    isCollapsible: true
+                )
+            )
+        }
+
+        return groups
     }
 
     private static func tagPresentationSections(

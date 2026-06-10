@@ -107,7 +107,6 @@ enum HomeTaskRowLifecycleAction: Equatable, Identifiable {
     case markDone(title: String, isDisabled: Bool)
     case markMissed
     case markCanceled
-    case notToday
     case pause
 
     var id: String {
@@ -120,8 +119,6 @@ enum HomeTaskRowLifecycleAction: Equatable, Identifiable {
             return "markMissed"
         case .markCanceled:
             return "markCanceled"
-        case .notToday:
-            return "notToday"
         case .pause:
             return "pause"
         }
@@ -137,8 +134,6 @@ enum HomeTaskRowLifecycleAction: Equatable, Identifiable {
             return "Mark Missed"
         case .markCanceled:
             return "Canceled"
-        case .notToday:
-            return "Not today!"
         case .pause:
             return "Pause"
         }
@@ -154,8 +149,6 @@ enum HomeTaskRowLifecycleAction: Equatable, Identifiable {
             return "exclamationmark.triangle"
         case .markCanceled:
             return "xmark.circle"
-        case .notToday:
-            return "moon.zzz"
         case .pause:
             return "pause.circle"
         }
@@ -176,8 +169,6 @@ enum HomeTaskRowLifecycleAction: Equatable, Identifiable {
             return .markMissed(taskID)
         case .markCanceled:
             return .markCanceled(taskID)
-        case .notToday:
-            return .notToday(taskID)
         case .pause:
             return .pause(taskID)
         }
@@ -220,6 +211,7 @@ struct HomeTaskRowPinActionPresentation: Equatable {
 struct HomeTaskRowActionPresentation: Equatable {
     let taskID: UUID
     let lifecycleActions: [HomeTaskRowLifecycleAction]
+    let notTodayCommand: HomeTaskRowCommand?
     let moveActions: [HomeTaskRowMoveActionPresentation]
     let pinAction: HomeTaskRowPinActionPresentation?
 
@@ -245,6 +237,7 @@ struct HomeTaskRowActionPresentation: Equatable {
                 includeMarkDone: includeMarkDone,
                 referenceDate: referenceDate
             ),
+            notTodayCommand: notTodayCommand(for: task),
             moveActions: moveActions(
                 taskID: task.taskID,
                 moveContext: moveContext
@@ -291,11 +284,24 @@ struct HomeTaskRowActionPresentation: Equatable {
         }
 
         if !task.isOneOffTask {
-            actions.append(.notToday)
             actions.append(.pause)
         }
 
         return actions
+    }
+
+    private static func notTodayCommand<Display: HomeTaskRowDisplay>(
+        for task: Display
+    ) -> HomeTaskRowCommand? {
+        guard !task.isPaused,
+              !task.isCompletedOneOff,
+              !task.isCanceledOneOff,
+              !task.hasMissedExactTimedOccurrence,
+              !task.isOneOffTask else {
+            return nil
+        }
+
+        return .notToday(task.taskID)
     }
 
     private static func moveActions(

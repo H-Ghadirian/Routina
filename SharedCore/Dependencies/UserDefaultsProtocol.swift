@@ -60,6 +60,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingAutomaticPlaceCheckInEnabled
     case appSettingShowTimelineTasksInDayPlanner = "appSettingShowDayPlanUnplannedDoneBadges"
     case appSettingDailyRoutinesSectionCollapsed
+    case appSettingMacPlanTodayDailyRoutinesGroupCollapsed
     case appSettingArchivedRoutinesSectionCollapsed
     case requestNotificationPermission
 }
