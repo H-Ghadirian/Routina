@@ -19,6 +19,7 @@ struct TimelineView: View {
     @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
     @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) private var placeCheckInSessions: [PlaceCheckInSession]
     @State private var relatedFilterTagSuggestionAnchor: String?
+    @State private var timelineScrollPosition: UUID?
 
     var body: some View {
 NavigationStack {
@@ -285,6 +286,10 @@ NavigationStack {
         store.groupedEntries
     }
 
+    private var latestTimelineEntryID: UUID? {
+        groupedByDay.last?.entries.last?.id
+    }
+
     private var availableTags: [String] {
         store.availableTags
     }
@@ -383,18 +388,29 @@ NavigationStack {
     }
 
     private var timelineList: some View {
-        List {
-            ForEach(groupedByDay, id: \.date) { section in
-                Section {
-                    ForEach(section.entries) { entry in
-                        timelineRow(entry)
+        ScrollViewReader { proxy in
+            List {
+                ForEach(groupedByDay, id: \.date) { section in
+                    Section {
+                        ForEach(section.entries) { entry in
+                            timelineRow(entry)
+                                .id(entry.id)
+                        }
+                    } header: {
+                        Text(TimelineLogic.daySectionTitle(for: section.date, calendar: calendar))
                     }
-                } header: {
-                    Text(TimelineLogic.daySectionTitle(for: section.date, calendar: calendar))
                 }
             }
+            .listStyle(.plain)
+            .defaultScrollAnchor(.bottom)
+            .scrollPosition(id: $timelineScrollPosition, anchor: .bottom)
+            .onAppear {
+                scrollTimelineToLatest(using: proxy)
+            }
+            .onChange(of: latestTimelineEntryID) { _, _ in
+                scrollTimelineToLatest(using: proxy)
+            }
         }
-        .listStyle(.plain)
     }
 
     private var filterSheetButton: some View {
@@ -675,6 +691,9 @@ NavigationStack {
         if entry.isEvent {
             return "Event"
         }
+        if entry.isStatusNote {
+            return "Status"
+        }
         if entry.isNote {
             return "Note"
         }
@@ -705,6 +724,9 @@ NavigationStack {
         if entry.isEvent {
             return .teal
         }
+        if entry.isStatusNote {
+            return .mint
+        }
         if entry.isNote {
             return .blue
         }
@@ -722,6 +744,16 @@ NavigationStack {
             return .orange
         case .missed:
             return .yellow
+        }
+    }
+
+    private func scrollTimelineToLatest(using proxy: ScrollViewProxy) {
+        guard let latestTimelineEntryID else { return }
+        timelineScrollPosition = latestTimelineEntryID
+        Task { @MainActor in
+            await Task.yield()
+            proxy.scrollTo(latestTimelineEntryID, anchor: .bottom)
+            timelineScrollPosition = latestTimelineEntryID
         }
     }
 

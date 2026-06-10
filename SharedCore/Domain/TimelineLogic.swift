@@ -143,6 +143,10 @@ struct TimelineEntry: Identifiable, Equatable {
         entryType == .note
     }
 
+    var isStatusNote: Bool {
+        isNote && RoutineTag.contains("Status", in: tags)
+    }
+
     var isFocus: Bool {
         entryType == .focus
     }
@@ -300,12 +304,14 @@ enum TimelineLogic {
                 return nil
             }
 
+            let isStatusNote = RoutineTag.contains("Status", in: note.tags)
+
             return TimelineEntry(
                 id: note.id,
                 taskID: nil,
                 timestamp: timestamp,
                 taskName: note.displayTitle,
-                taskEmoji: "📝",
+                taskEmoji: isStatusNote ? "💬" : "📝",
                 tags: note.tags,
                 hasImage: note.hasImage,
                 hasFileAttachment: hasFileAttachment,
@@ -507,12 +513,12 @@ enum TimelineLogic {
             grouped[day, default: []].append(entry)
         }
         return grouped
-            .sorted { $0.key > $1.key }
+            .sorted { $0.key < $1.key }
             .map {
                 (
                     date: $0.key,
                     entries: $0.value.sorted { lhs, rhs in
-                        lhs.timestamp > rhs.timestamp
+                        lhs.timestamp < rhs.timestamp
                     }
                 )
             }

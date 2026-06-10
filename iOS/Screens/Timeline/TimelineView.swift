@@ -22,6 +22,7 @@ struct TimelineView: View {
     @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) private var placeCheckInSessions: [PlaceCheckInSession]
     @State private var relatedFilterTagSuggestionAnchor: String?
     @State private var selectedTimelineEntryID: UUID?
+    @State private var timelineScrollPosition: UUID?
 
     var body: some View {
 timelineRoot
@@ -140,6 +141,10 @@ timelineRoot
 
     private var visibleTimelineEntryIDs: [UUID] {
         groupedByDay.flatMap { $0.entries.map(\.id) }
+    }
+
+    private var latestTimelineEntryID: UUID? {
+        groupedByDay.last?.entries.last?.id
     }
 
     private var sleepSessionChangeToken: [String] {
@@ -614,18 +619,29 @@ timelineRoot
     }
 
     private var timelineList: some View {
-        List {
-            ForEach(groupedByDay, id: \.date) { section in
-                Section {
-                    ForEach(section.entries) { entry in
-                        timelineRow(entry)
+        ScrollViewReader { proxy in
+            List {
+                ForEach(groupedByDay, id: \.date) { section in
+                    Section {
+                        ForEach(section.entries) { entry in
+                            timelineRow(entry)
+                                .id(entry.id)
+                        }
+                    } header: {
+                        Text(TimelineLogic.daySectionTitle(for: section.date, calendar: calendar))
                     }
-                } header: {
-                    Text(TimelineLogic.daySectionTitle(for: section.date, calendar: calendar))
                 }
             }
+            .listStyle(.plain)
+            .defaultScrollAnchor(.bottom)
+            .scrollPosition(id: $timelineScrollPosition, anchor: .bottom)
+            .onAppear {
+                scrollTimelineToLatest(using: proxy)
+            }
+            .onChange(of: latestTimelineEntryID) { _, _ in
+                scrollTimelineToLatest(using: proxy)
+            }
         }
-        .listStyle(.plain)
     }
 
     @ViewBuilder
@@ -656,19 +672,30 @@ timelineRoot
                     description: Text("Try a different time range or filter.")
                 )
             } else {
-                List(selection: $selectedTimelineEntryID) {
-                    ForEach(groupedByDay, id: \.date) { section in
-                        Section {
-                            ForEach(section.entries) { entry in
-                                timelineRowContent(entry)
-                                    .tag(entry.id)
+                ScrollViewReader { proxy in
+                    List(selection: $selectedTimelineEntryID) {
+                        ForEach(groupedByDay, id: \.date) { section in
+                            Section {
+                                ForEach(section.entries) { entry in
+                                    timelineRowContent(entry)
+                                        .id(entry.id)
+                                        .tag(entry.id)
+                                }
+                            } header: {
+                                Text(TimelineLogic.daySectionTitle(for: section.date, calendar: calendar))
                             }
-                        } header: {
-                            Text(TimelineLogic.daySectionTitle(for: section.date, calendar: calendar))
                         }
                     }
+                    .listStyle(.plain)
+                    .defaultScrollAnchor(.bottom)
+                    .scrollPosition(id: $timelineScrollPosition, anchor: .bottom)
+                    .onAppear {
+                        scrollTimelineToLatest(using: proxy)
+                    }
+                    .onChange(of: latestTimelineEntryID) { _, _ in
+                        scrollTimelineToLatest(using: proxy)
+                    }
                 }
-                .listStyle(.plain)
             }
         }
         .navigationTitle("Timeline")
@@ -910,6 +937,9 @@ timelineRoot
         if entry.isEvent {
             return "Event"
         }
+        if entry.isStatusNote {
+            return "Status"
+        }
         if entry.isNote {
             return "Note"
         }
@@ -940,6 +970,9 @@ timelineRoot
         if entry.isEvent {
             return .teal
         }
+        if entry.isStatusNote {
+            return .mint
+        }
         if entry.isNote {
             return .blue
         }
@@ -957,6 +990,16 @@ timelineRoot
             return .orange
         case .missed:
             return .yellow
+        }
+    }
+
+    private func scrollTimelineToLatest(using proxy: ScrollViewProxy) {
+        guard let latestTimelineEntryID else { return }
+        timelineScrollPosition = latestTimelineEntryID
+        Task { @MainActor in
+            await Task.yield()
+            proxy.scrollTo(latestTimelineEntryID, anchor: .bottom)
+            timelineScrollPosition = latestTimelineEntryID
         }
     }
 
