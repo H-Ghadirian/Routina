@@ -449,6 +449,62 @@ struct TaskDetailEditSaveTests {
     }
 
     @Test
+    func editSaveTapped_multiDayRoutineClampsDailyIntervalToTwoDays() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Travel prep",
+            interval: 1,
+            lastDone: nil,
+            emoji: "✈️",
+            recurrenceRule: .interval(days: 1),
+            scheduleAnchor: makeDate("2026-03-10T06:00:00Z")
+        )
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Travel prep",
+                editRoutineEmoji: "✈️",
+                editRoutineDurationMode: .multiDay,
+                editScheduleMode: .fixedInterval,
+                editFrequency: .day,
+                editFrequencyValue: 1,
+                editRecurrenceKind: .intervalDays
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+        await store.receive(.onAppear)
+
+        let taskID = task.id
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { task in
+                        task.id == taskID
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.routineDurationMode == .multiDay)
+        #expect(persistedTask.recurrenceRule == .interval(days: 2))
+    }
+
+    @Test
     func editSaveTapped_allDayRoutineIgnoresStaleAvailabilityTiming() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()

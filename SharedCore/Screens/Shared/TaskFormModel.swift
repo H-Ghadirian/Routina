@@ -212,7 +212,9 @@ extension TaskFormModel {
         let recurrenceKind = recurrenceKind
         return Binding(
             get: {
-                recurrenceKind.wrappedValue.repeatBasis
+                RoutineRecurrenceRule.Kind.calendarCases.contains(recurrenceKind.wrappedValue)
+                    ? .calendar
+                    : .interval
             },
             set: { basis in
                 recurrenceKind.wrappedValue = recurrenceKind.wrappedValue.replacingRepeatBasis(basis)
@@ -240,12 +242,9 @@ extension TaskFormModel {
                     return .itemRunout
                 }
 
-                switch recurrenceKind.wrappedValue.repeatBasis {
-                case .interval:
-                    return .interval
-                case .calendar:
-                    return .calendar
-                }
+                return RoutineRecurrenceRule.Kind.calendarCases.contains(recurrenceKind.wrappedValue)
+                    ? .calendar
+                    : .interval
             },
             set: { repeatType in
                 switch repeatType {
@@ -280,12 +279,21 @@ extension TaskFormModel {
         return Binding(
             get: {
                 let currentKind = recurrenceKind.wrappedValue
-                return currentKind.repeatBasis == .calendar ? currentKind : .dailyTime
+                return RoutineRecurrenceRule.Kind.calendarCases.contains(currentKind) ? currentKind : .weekly
             },
             set: { kind in
-                guard kind.repeatBasis == .calendar else { return }
+                guard RoutineRecurrenceRule.Kind.calendarCases.contains(kind) else { return }
                 recurrenceKind.wrappedValue = kind
             }
+        )
+    }
+
+    var intervalFrequencyValueBounds: ClosedRange<Int> {
+        TaskFormRecurrenceConstraints.frequencyValueBounds(
+            scheduleMode: scheduleMode.wrappedValue,
+            routineDurationMode: routineDurationMode.wrappedValue,
+            recurrenceKind: recurrenceKind.wrappedValue,
+            frequencyUnit: frequencyUnit.wrappedValue
         )
     }
 

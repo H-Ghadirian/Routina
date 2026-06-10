@@ -117,6 +117,20 @@ struct AddRoutineFeature: Reducer {
         }
     }
 
+    private func enforceRecurrenceConstraints(state: inout State) {
+        if state.basics.routineDurationMode == .multiDay,
+           state.schedule.recurrenceKind == .dailyTime {
+            state.schedule.recurrenceKind = .intervalDays
+        }
+        state.schedule.frequencyValue = TaskFormRecurrenceConstraints.clampedFrequencyValue(
+            state.schedule.frequencyValue,
+            scheduleMode: state.schedule.scheduleMode,
+            routineDurationMode: state.basics.routineDurationMode,
+            recurrenceKind: state.schedule.recurrenceKind,
+            frequencyUnit: state.schedule.frequency
+        )
+    }
+
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case let .routineNameChanged(name):
@@ -185,6 +199,8 @@ struct AddRoutineFeature: Reducer {
                 durationMode,
                 basics: &state.basics
             )
+            enforceRecurrenceConstraints(state: &state)
+            clearPlanningIfDailyRoutine(state: &state)
             return .none
 
         case let .availabilityStartDateChanged(availabilityStartDate):

@@ -7,7 +7,7 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
         case weekly
         case monthlyDay
 
-        static let calendarCases: [Kind] = [.dailyTime, .weekly, .monthlyDay]
+        static let calendarCases: [Kind] = [.weekly, .monthlyDay]
 
         var repeatBasis: RoutineRepeatBasis {
             self == .intervalDays ? .interval : .calendar
@@ -31,7 +31,7 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
             case .interval:
                 return .intervalDays
             case .calendar:
-                return self == .intervalDays ? .dailyTime : self
+                return Self.calendarCases.contains(self) ? self : .weekly
             }
         }
     }

@@ -30,6 +30,7 @@ struct AddRoutineScheduleMutationHandler {
         if mode == .oneOff {
             state.basics.routineDurationMode = .oneDay
         }
+        enforceRecurrenceConstraints(state: &state)
         enforceAutoAssumeEligibility(state: &state)
     }
 
@@ -78,6 +79,7 @@ struct AddRoutineScheduleMutationHandler {
             frequency,
             schedule: &state.schedule
         )
+        enforceRecurrenceConstraints(state: &state)
         enforceAutoAssumeEligibility(state: &state)
     }
 
@@ -89,6 +91,7 @@ struct AddRoutineScheduleMutationHandler {
             value,
             schedule: &state.schedule
         )
+        enforceRecurrenceConstraints(state: &state)
         enforceAutoAssumeEligibility(state: &state)
     }
 
@@ -100,6 +103,7 @@ struct AddRoutineScheduleMutationHandler {
             kind,
             schedule: &state.schedule
         )
+        enforceRecurrenceConstraints(state: &state)
         enforceAutoAssumeEligibility(state: &state)
     }
 
@@ -188,5 +192,19 @@ struct AddRoutineScheduleMutationHandler {
     private func enforceAutoAssumeEligibility(state: inout AddRoutineFeature.State) {
         guard !state.canAutoAssumeDailyDone else { return }
         state.schedule.autoAssumeDailyDone = false
+    }
+
+    private func enforceRecurrenceConstraints(state: inout AddRoutineFeature.State) {
+        if state.basics.routineDurationMode == .multiDay,
+           state.schedule.recurrenceKind == .dailyTime {
+            state.schedule.recurrenceKind = .intervalDays
+        }
+        state.schedule.frequencyValue = TaskFormRecurrenceConstraints.clampedFrequencyValue(
+            state.schedule.frequencyValue,
+            scheduleMode: state.schedule.scheduleMode,
+            routineDurationMode: state.basics.routineDurationMode,
+            recurrenceKind: state.schedule.recurrenceKind,
+            frequencyUnit: state.schedule.frequency
+        )
     }
 }

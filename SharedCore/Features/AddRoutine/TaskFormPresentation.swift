@@ -49,6 +49,58 @@ enum RoutineRepeatType: String, CaseIterable, Equatable, Hashable, Identifiable,
     }
 }
 
+enum TaskFormRecurrenceConstraints {
+    static let defaultFrequencyValueBounds = 1...365
+
+    static func frequencyValueBounds(
+        scheduleMode: RoutineScheduleMode,
+        routineDurationMode: RoutineDurationMode,
+        recurrenceKind: RoutineRecurrenceRule.Kind,
+        frequencyUnit: TaskFormFrequencyUnit
+    ) -> ClosedRange<Int> {
+        let lowerBound = scheduleMode != .oneOff
+            && routineDurationMode == .multiDay
+            && recurrenceKind == .intervalDays
+            && frequencyUnit == .day
+            ? 2
+            : defaultFrequencyValueBounds.lowerBound
+        return lowerBound...defaultFrequencyValueBounds.upperBound
+    }
+
+    static func clampedFrequencyValue(
+        _ value: Int,
+        scheduleMode: RoutineScheduleMode,
+        routineDurationMode: RoutineDurationMode,
+        recurrenceKind: RoutineRecurrenceRule.Kind,
+        frequencyUnit: TaskFormFrequencyUnit
+    ) -> Int {
+        let bounds = frequencyValueBounds(
+            scheduleMode: scheduleMode,
+            routineDurationMode: routineDurationMode,
+            recurrenceKind: recurrenceKind,
+            frequencyUnit: frequencyUnit
+        )
+        return min(max(value, bounds.lowerBound), bounds.upperBound)
+    }
+
+    static func effectiveIntervalDays(
+        value: Int,
+        unit: TaskFormFrequencyUnit,
+        scheduleMode: RoutineScheduleMode,
+        routineDurationMode: RoutineDurationMode,
+        recurrenceKind: RoutineRecurrenceRule.Kind
+    ) -> Int {
+        let value = clampedFrequencyValue(
+            value,
+            scheduleMode: scheduleMode,
+            routineDurationMode: routineDurationMode,
+            recurrenceKind: recurrenceKind,
+            frequencyUnit: unit
+        )
+        return value * unit.daysMultiplier
+    }
+}
+
 enum TaskFormCompactSection: Hashable, Sendable {
     case name
     case taskType

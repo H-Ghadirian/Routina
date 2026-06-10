@@ -123,7 +123,13 @@ struct AddRoutineFeatureState: Equatable {
     var candidateRecurrenceRule: RoutineRecurrenceRule {
         let fallbackInterval = schedule.scheduleMode == .oneOff
             ? 1
-            : schedule.frequencyValue * schedule.frequency.daysMultiplier
+            : TaskFormRecurrenceConstraints.effectiveIntervalDays(
+                value: schedule.frequencyValue,
+                unit: schedule.frequency,
+                scheduleMode: schedule.scheduleMode,
+                routineDurationMode: basics.routineDurationMode,
+                recurrenceKind: schedule.recurrenceKind
+            )
         let usesAvailabilityTiming = !basics.isAllDay
         let timeRange = usesAvailabilityTiming ? schedule.recurrenceTimeRange : nil
 
