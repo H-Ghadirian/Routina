@@ -47,45 +47,27 @@ enum RoutineDateMath {
             return task.deadline ?? task.availabilityStartDate ?? referenceDate
         }
 
-        if isDateAfterAvailabilityDateBounds(referenceDate, for: task, calendar: calendar) {
-            return .distantFuture
-        }
-
         if task.isChecklistDriven,
            let earliestChecklistDueDate = task.nextDueChecklistItem(referenceDate: referenceDate, calendar: calendar)
                 .map({ dueDate(for: $0, referenceDate: referenceDate, calendar: calendar) }) {
-            return dueDateConstrainedToAvailabilityDateBounds(
-                earliestChecklistDueDate,
-                for: task,
-                calendar: calendar
-            )
+            return earliestChecklistDueDate
         }
 
         switch task.recurrenceRule.kind {
         case .intervalDays:
             let anchor = effectiveScheduleAnchor(for: task, referenceDate: referenceDate)
-            let firstDueDate = calendar.date(
+            let dueDate = calendar.date(
                 byAdding: .day,
                 value: max(task.recurrenceRule.interval, 1),
                 to: anchor
             ) ?? anchor
-            let dueDate = intervalDueDate(
-                firstDueDate: firstDueDate,
-                interval: max(task.recurrenceRule.interval, 1),
-                task: task,
-                calendar: calendar
-            )
             if let timeOfDay = scheduledTimeOfDay(for: task.recurrenceRule) {
-                return dueDateConstrainedToAvailabilityDateBounds(
-                    timeOfDay.date(on: dueDate, calendar: calendar),
-                    for: task,
-                    calendar: calendar
-                )
+                return timeOfDay.date(on: dueDate, calendar: calendar)
             }
-            return dueDateConstrainedToAvailabilityDateBounds(dueDate, for: task, calendar: calendar)
+            return dueDate
 
         case .dailyTime:
-            let reference = recurrenceReference(for: task, referenceDate: referenceDate, calendar: calendar)
+            let reference = recurrenceReference(for: task, referenceDate: referenceDate)
             let base: Date
             if task.lastDone == nil, let timeRange = task.recurrenceRule.timeRange {
                 base = timeRange.contains(reference.base, calendar: calendar)
@@ -98,16 +80,15 @@ enum RoutineDateMath {
             } else {
                 base = reference.base
             }
-            let occurrence = nextDailyOccurrence(
+            return nextDailyOccurrence(
                 after: base,
                 timeOfDay: scheduledTimeOfDay(for: task.recurrenceRule) ?? RoutineTimeOfDay(hour: 0, minute: 0),
                 includeCurrentDate: task.lastDone == nil || reference.includeCurrentDate,
                 calendar: calendar
             )
-            return dueDateConstrainedToAvailabilityDateBounds(occurrence, for: task, calendar: calendar)
 
         case .weekly:
-            let reference = recurrenceReference(for: task, referenceDate: referenceDate, calendar: calendar)
+            let reference = recurrenceReference(for: task, referenceDate: referenceDate)
             let timeOfDay = scheduledTimeOfDay(for: task.recurrenceRule)
             let base: Date
             if task.lastDone == nil,
@@ -128,17 +109,16 @@ enum RoutineDateMath {
             } else {
                 base = reference.base
             }
-            let occurrence = nextWeeklyOccurrence(
+            return nextWeeklyOccurrence(
                 after: base,
                 weekday: task.recurrenceRule.weekday ?? calendar.firstWeekday,
                 timeOfDay: timeOfDay,
                 includeCurrentDate: task.lastDone == nil || reference.includeCurrentDate,
                 calendar: calendar
             )
-            return dueDateConstrainedToAvailabilityDateBounds(occurrence, for: task, calendar: calendar)
 
         case .monthlyDay:
-            let reference = recurrenceReference(for: task, referenceDate: referenceDate, calendar: calendar)
+            let reference = recurrenceReference(for: task, referenceDate: referenceDate)
             let timeOfDay = scheduledTimeOfDay(for: task.recurrenceRule)
             let base: Date
             if task.lastDone == nil,
@@ -159,14 +139,13 @@ enum RoutineDateMath {
             } else {
                 base = reference.base
             }
-            let occurrence = nextMonthlyOccurrence(
+            return nextMonthlyOccurrence(
                 after: base,
                 dayOfMonth: task.recurrenceRule.dayOfMonth ?? 1,
                 timeOfDay: timeOfDay,
                 includeCurrentDate: task.lastDone == nil || reference.includeCurrentDate,
                 calendar: calendar
             )
-            return dueDateConstrainedToAvailabilityDateBounds(occurrence, for: task, calendar: calendar)
         }
     }
 
@@ -193,10 +172,6 @@ enum RoutineDateMath {
         if task.isSoftIntervalRoutine {
             return Int.max
         }
-        if !task.isOneOffTask,
-           isDateAfterAvailabilityDateBounds(referenceDate, for: task, calendar: calendar) {
-            return Int.max
-        }
         if task.isOneOffTask {
             guard !task.isCompletedOneOff else { return Int.max }
             guard let targetDate = task.deadline ?? task.availabilityStartDate else { return 0 }
@@ -204,10 +179,8 @@ enum RoutineDateMath {
             let dueStart = calendar.startOfDay(for: targetDate)
             return calendar.dateComponents([.day], from: todayStart, to: dueStart).day ?? 0
         }
-        let upcomingDueDate = upcomingDueDate(for: task, referenceDate: referenceDate, calendar: calendar)
-        guard upcomingDueDate < Date.distantFuture else { return Int.max }
         let todayStart = calendar.startOfDay(for: referenceDate)
-        let dueStart = calendar.startOfDay(for: upcomingDueDate)
+        let dueStart = calendar.startOfDay(for: upcomingDueDate(for: task, referenceDate: referenceDate, calendar: calendar))
         return calendar.dateComponents([.day], from: todayStart, to: dueStart).day ?? 0
     }
 
@@ -234,10 +207,6 @@ enum RoutineDateMath {
 
         if task.isOneOffTask {
             return !task.isCompletedOneOff
-        }
-
-        guard isDateWithinAvailabilityDateBounds(referenceDate, for: task, calendar: calendar) else {
-            return false
         }
 
         if task.isChecklistDriven {
@@ -339,33 +308,30 @@ enum RoutineDateMath {
 
         switch task.recurrenceRule.kind {
         case .dailyTime:
-            let occurrence = nextDailyOccurrence(
+            return nextDailyOccurrence(
                 after: missedDate,
                 timeOfDay: scheduledTimeOfDay(for: task.recurrenceRule) ?? RoutineTimeOfDay(hour: 0, minute: 0),
                 includeCurrentDate: false,
                 calendar: calendar
             )
-            return isDateWithinAvailabilityDateBounds(occurrence, for: task, calendar: calendar) ? occurrence : nil
 
         case .weekly:
-            let occurrence = nextWeeklyOccurrence(
+            return nextWeeklyOccurrence(
                 after: missedDate,
                 weekday: task.recurrenceRule.weekday ?? calendar.firstWeekday,
                 timeOfDay: scheduledTimeOfDay(for: task.recurrenceRule),
                 includeCurrentDate: false,
                 calendar: calendar
             )
-            return isDateWithinAvailabilityDateBounds(occurrence, for: task, calendar: calendar) ? occurrence : nil
 
         case .monthlyDay:
-            let occurrence = nextMonthlyOccurrence(
+            return nextMonthlyOccurrence(
                 after: missedDate,
                 dayOfMonth: task.recurrenceRule.dayOfMonth ?? 1,
                 timeOfDay: scheduledTimeOfDay(for: task.recurrenceRule),
                 includeCurrentDate: false,
                 calendar: calendar
             )
-            return isDateWithinAvailabilityDateBounds(occurrence, for: task, calendar: calendar) ? occurrence : nil
 
         case .intervalDays:
             let nextDate = calendar.date(
@@ -374,10 +340,9 @@ enum RoutineDateMath {
                 to: missedDate
             ) ?? missedDate
             if let timeOfDay = scheduledTimeOfDay(for: task.recurrenceRule) {
-                let occurrence = timeOfDay.date(on: nextDate, calendar: calendar)
-                return isDateWithinAvailabilityDateBounds(occurrence, for: task, calendar: calendar) ? occurrence : nil
+                return timeOfDay.date(on: nextDate, calendar: calendar)
             }
-            return isDateWithinAvailabilityDateBounds(nextDate, for: task, calendar: calendar) ? nextDate : nil
+            return nextDate
         }
     }
 
@@ -390,9 +355,6 @@ enum RoutineDateMath {
         guard let timeOfDay = scheduledTimeOfDay(for: task.recurrenceRule) else { return nil }
 
         let startOfDay = calendar.startOfDay(for: day)
-        guard isDateWithinAvailabilityDateBounds(startOfDay, for: task, calendar: calendar) else {
-            return nil
-        }
 
         switch task.recurrenceRule.kind {
         case .dailyTime:
@@ -532,18 +494,6 @@ enum RoutineDateMath {
         return calendar.startOfDay(for: referenceDate) >= calendar.startOfDay(for: thresholdDate)
     }
 
-    static func isDateWithinAvailabilityDateBounds(
-        _ date: Date,
-        for task: RoutineTask,
-        calendar: Calendar = .current
-    ) -> Bool {
-        guard let availabilityStartDate = task.availabilityStartDate else { return true }
-        let day = calendar.startOfDay(for: date)
-        let startDay = calendar.startOfDay(for: availabilityStartDate)
-        let endDay = calendar.startOfDay(for: task.availabilityEndDate ?? availabilityStartDate)
-        return day >= startDay && day <= endDay
-    }
-
     static func resumedScheduleAnchor(
         for task: RoutineTask,
         resumedAt: Date
@@ -559,101 +509,32 @@ enum RoutineDateMath {
 
     private static func recurrenceReference(
         for task: RoutineTask,
-        referenceDate: Date,
-        calendar: Calendar
+        referenceDate: Date
     ) -> (base: Date, includeCurrentDate: Bool) {
-        func adjustedForAvailabilityStart(
-            _ reference: (base: Date, includeCurrentDate: Bool)
-        ) -> (base: Date, includeCurrentDate: Bool) {
-            guard let availabilityStartDate = task.availabilityStartDate else {
-                return reference
-            }
-            let startDay = calendar.startOfDay(for: availabilityStartDate)
-            guard reference.base < startDay else {
-                return reference
-            }
-            return (startDay, true)
-        }
-
         if let scheduleAnchor = task.scheduleAnchor,
            let lastDone = task.lastDone {
             if scheduleAnchor > lastDone {
-                return adjustedForAvailabilityStart((scheduleAnchor, true))
+                return (scheduleAnchor, true)
             }
-            return adjustedForAvailabilityStart((lastDone, false))
+            return (lastDone, false)
         }
 
         if let lastDone = task.lastDone {
-            return adjustedForAvailabilityStart((lastDone, false))
+            return (lastDone, false)
         }
 
         if let scheduleAnchor = task.scheduleAnchor {
             // Allow marking past occurrences that predate the schedule anchor
             // (e.g. task created on the 28th but scheduled for the 26th)
             let base = referenceDate < scheduleAnchor ? referenceDate : scheduleAnchor
-            return adjustedForAvailabilityStart((base, true))
+            return (base, true)
         }
 
-        return adjustedForAvailabilityStart((referenceDate, true))
+        return (referenceDate, true)
     }
 
     private static func scheduledTimeOfDay(for recurrenceRule: RoutineRecurrenceRule) -> RoutineTimeOfDay? {
         recurrenceRule.timeRange?.start ?? recurrenceRule.timeOfDay
-    }
-
-    private static func isDateAfterAvailabilityDateBounds(
-        _ date: Date,
-        for task: RoutineTask,
-        calendar: Calendar
-    ) -> Bool {
-        guard let availabilityStartDate = task.availabilityStartDate else { return false }
-        let endDay = calendar.startOfDay(for: task.availabilityEndDate ?? availabilityStartDate)
-        return calendar.startOfDay(for: date) > endDay
-    }
-
-    private static func dueDateConstrainedToAvailabilityDateBounds(
-        _ candidate: Date,
-        for task: RoutineTask,
-        calendar: Calendar
-    ) -> Date {
-        guard let availabilityStartDate = task.availabilityStartDate else { return candidate }
-        let candidateDay = calendar.startOfDay(for: candidate)
-        let startDay = calendar.startOfDay(for: availabilityStartDate)
-        let endDay = calendar.startOfDay(for: task.availabilityEndDate ?? availabilityStartDate)
-
-        if candidateDay < startDay {
-            return startDay
-        }
-        if candidateDay > endDay {
-            return .distantFuture
-        }
-        return candidate
-    }
-
-    private static func intervalDueDate(
-        firstDueDate: Date,
-        interval: Int,
-        task: RoutineTask,
-        calendar: Calendar
-    ) -> Date {
-        guard let availabilityStartDate = task.availabilityStartDate else {
-            return firstDueDate
-        }
-        let targetDay = calendar.startOfDay(for: availabilityStartDate)
-        var dueDate = firstDueDate
-        let dueDay = calendar.startOfDay(for: dueDate)
-
-        if dueDay < targetDay {
-            let daysBehind = calendar.dateComponents([.day], from: dueDay, to: targetDay).day ?? 0
-            let jumpCount = max(Int(ceil(Double(daysBehind) / Double(max(interval, 1)))), 0)
-            dueDate = calendar.date(
-                byAdding: .day,
-                value: jumpCount * max(interval, 1),
-                to: dueDate
-            ) ?? targetDay
-        }
-
-        return dueDate
     }
 
     private static func intervalOccurrence(

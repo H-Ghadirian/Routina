@@ -336,8 +336,8 @@ extension CloudSharingService.SharedTaskPayload {
             startDate: availabilityStartDate,
             endDate: availabilityEndDate
         )
-        task.availabilityStartDate = availabilityDateBounds.startDate
-        task.availabilityEndDate = availabilityDateBounds.endDate
+        task.availabilityStartDate = scheduleMode == .oneOff ? availabilityDateBounds.startDate : nil
+        task.availabilityEndDate = scheduleMode == .oneOff ? availabilityDateBounds.endDate : nil
         task.reminderAt = reminderAt
         task.priority = priority
         task.importance = importance
