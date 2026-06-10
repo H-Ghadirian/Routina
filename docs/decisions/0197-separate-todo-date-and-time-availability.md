@@ -6,8 +6,6 @@ Date: 2026-06-10
 
 Refines: [0196 Support Todo Availability Date Bounds](0196-support-todo-availability-date-bounds.md), [0183 Support Todo Availability Time and Windows](0183-support-todo-availability-time-windows.md)
 
-Refined by: [0198 Separate Task Date and Time Availability](0198-separate-task-date-and-time-availability.md)
-
 ## Context
 
 Decision 0196 anchored todo availability by storing optional start and end dates, but the first implementation treated those bounds as full date-time values. That made exact availability work, but it blended two different user decisions: which date or date range a todo is available on, and which time of day it is available during.

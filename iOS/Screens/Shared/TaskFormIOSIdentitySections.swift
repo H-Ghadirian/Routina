@@ -48,7 +48,10 @@ struct TaskFormIOSTaskTypeSection: View {
 
     private var availabilityContent: some View {
         VStack(alignment: .leading, spacing: 8) {
-            dateAvailabilityContent
+            if model.taskType.wrappedValue == .todo {
+                dateAvailabilityContent
+            }
+
             timeAvailabilityContent
         }
     }
@@ -97,9 +100,9 @@ struct TaskFormIOSTaskTypeSection: View {
         case .none:
             EmptyView()
         case .exact:
-            DatePicker("Date", selection: availabilityStartBinding, displayedComponents: .date)
+            DatePicker("Date", selection: todoAvailabilityStartBinding, displayedComponents: .date)
         case .range:
-            dateAvailabilityRangePickers
+            todoDateRangePickers
         }
     }
 
@@ -110,10 +113,10 @@ struct TaskFormIOSTaskTypeSection: View {
         }
     }
 
-    private var dateAvailabilityRangePickers: some View {
+    private var todoDateRangePickers: some View {
         VStack(spacing: 8) {
-            DatePicker("Starts", selection: availabilityStartBinding, displayedComponents: .date)
-            DatePicker("Ends", selection: availabilityEndBinding, displayedComponents: .date)
+            DatePicker("Starts", selection: todoAvailabilityStartBinding, displayedComponents: .date)
+            DatePicker("Ends", selection: todoAvailabilityEndBinding, displayedComponents: .date)
         }
     }
 
@@ -129,7 +132,7 @@ struct TaskFormIOSTaskTypeSection: View {
                 return .exact
             },
             set: { mode in
-                applyDateAvailabilityMode(mode)
+                applyTodoDateAvailabilityMode(mode)
             }
         )
     }
@@ -162,20 +165,20 @@ struct TaskFormIOSTaskTypeSection: View {
         timingModeBinding.wrappedValue
     }
 
-    private var availabilityStartBinding: Binding<Date> {
+    private var todoAvailabilityStartBinding: Binding<Date> {
         Binding(
             get: { model.availabilityStartDate.wrappedValue ?? Date() },
-            set: { setAvailabilityStartDate($0) }
+            set: { setTodoAvailabilityStartDate($0) }
         )
     }
 
-    private var availabilityEndBinding: Binding<Date> {
+    private var todoAvailabilityEndBinding: Binding<Date> {
         Binding(
             get: {
                 let start = model.availabilityStartDate.wrappedValue ?? Date()
                 return model.availabilityEndDate.wrappedValue ?? dateAfter(start)
             },
-            set: { setAvailabilityEndDate($0) }
+            set: { setTodoAvailabilityEndDate($0) }
         )
     }
 
@@ -185,7 +188,7 @@ struct TaskFormIOSTaskTypeSection: View {
         model.recurrenceHasTimeRange.wrappedValue = mode == .range
     }
 
-    private func applyDateAvailabilityMode(_ mode: TaskFormDateAvailabilityMode) {
+    private func applyTodoDateAvailabilityMode(_ mode: TaskFormDateAvailabilityMode) {
         let start = model.availabilityStartDate.wrappedValue ?? Date()
         let end = model.availabilityEndDate.wrappedValue ?? dateAfter(start)
         switch mode {
@@ -203,7 +206,7 @@ struct TaskFormIOSTaskTypeSection: View {
         }
     }
 
-    private func setAvailabilityStartDate(_ date: Date) {
+    private func setTodoAvailabilityStartDate(_ date: Date) {
         let storedDate = calendar.startOfDay(for: date)
         model.availabilityStartDate.wrappedValue = storedDate
 
@@ -214,7 +217,7 @@ struct TaskFormIOSTaskTypeSection: View {
         }
     }
 
-    private func setAvailabilityEndDate(_ date: Date) {
+    private func setTodoAvailabilityEndDate(_ date: Date) {
         let start = calendar.startOfDay(for: model.availabilityStartDate.wrappedValue ?? Date())
         let storedDate = calendar.startOfDay(for: date)
         model.availabilityEndDate.wrappedValue = storedDate < start ? start : storedDate

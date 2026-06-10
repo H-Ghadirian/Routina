@@ -177,51 +177,7 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
-    func saveTapped_preservesSeparateRoutineDateAndTimeAvailabilityWindows() async {
-        let start = makeDate("2026-04-10T09:00:00Z")
-        let end = makeDate("2026-04-12T11:30:00Z")
-        let expectedStartDate = makeDate("2026-04-10T00:00:00Z")
-        let expectedEndDate = makeDate("2026-04-12T00:00:00Z")
-        let store = TestStore(
-            initialState: makeState(
-                basics: AddRoutineBasicsState(
-                    routineName: "Morning mobility",
-                    routineEmoji: "🧘",
-                    availabilityStartDate: start,
-                    availabilityEndDate: end
-                ),
-                schedule: AddRoutineScheduleState(
-                    scheduleMode: .fixedInterval,
-                    recurrenceHasTimeRange: true,
-                    recurrenceTimeRangeStart: RoutineTimeOfDay(hour: 9, minute: 0),
-                    recurrenceTimeRangeEnd: RoutineTimeOfDay(hour: 11, minute: 30)
-                )
-            )
-        ) {
-            makeDelegateEchoFeature()
-        } withDependencies: {
-            setTestDateDependencies(&$0)
-        }
-
-        await store.send(.saveTapped)
-        await store.receive(.delegate(.didSave(makeSaveRequest(
-            name: "Morning mobility",
-            frequencyInDays: 1,
-            recurrenceRule: .interval(
-                days: 1,
-                timeRange: RoutineTimeRange(
-                    start: RoutineTimeOfDay(hour: 9, minute: 0),
-                    end: RoutineTimeOfDay(hour: 11, minute: 30)
-                )
-            ),
-            emoji: "🧘",
-            availabilityStartDate: expectedStartDate,
-            availabilityEndDate: expectedEndDate
-        ))))
-    }
-
-    @Test
-    func taskTypeChanged_toRoutinePreservesAvailabilityDateBounds() async {
+    func taskTypeChanged_toRoutineClearsTodoAvailabilityDateBounds() async {
         let start = makeDate("2026-04-10T09:00:00Z")
         let end = makeDate("2026-04-10T11:30:00Z")
         let store = TestStore(
@@ -238,6 +194,8 @@ struct AddRoutineFeatureTests {
         }
 
         await store.send(.taskTypeChanged(.routine)) {
+            $0.basics.availabilityStartDate = nil
+            $0.basics.availabilityEndDate = nil
             $0.basics.reminderAt = nil
             $0.schedule.scheduleMode = .fixedInterval
         }

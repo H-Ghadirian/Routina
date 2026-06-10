@@ -252,10 +252,6 @@ enum DayPlanAllDayTasks {
         on day: Date,
         calendar: Calendar
     ) -> Bool {
-        guard RoutineDateMath.isDateWithinAvailabilityDateBounds(day, for: task, calendar: calendar) else {
-            return false
-        }
-
         switch task.recurrenceRule.kind {
         case .dailyTime:
             return true
