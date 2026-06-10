@@ -200,7 +200,8 @@ struct AddRoutineFeatureSaveTests {
             initialState: makeState(
                 basics: AddRoutineBasicsState(
                     routineName: "Studio day",
-                    isAllDay: true
+                    isAllDay: true,
+                    allDaySpanDays: 3
                 ),
                 organization: AddRoutineOrganizationState(existingRoutineNames: []),
                 schedule: AddRoutineScheduleState(scheduleMode: .fixedInterval)
@@ -222,6 +223,39 @@ struct AddRoutineFeatureSaveTests {
         #expect(capturedRequest.value?.scheduleMode == .fixedInterval)
         #expect(capturedRequest.value?.deadline == nil)
         #expect(capturedRequest.value?.isAllDay == true)
+        #expect(capturedRequest.value?.allDaySpanDays == 3)
+    }
+
+    @Test
+    func saveTapped_resetsAllDaySpanDaysForTodos() async {
+        let capturedRequest = LockIsolated<AddRoutineSaveRequest?>(nil)
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(
+                    routineName: "Conference",
+                    isAllDay: true,
+                    allDaySpanDays: 3
+                ),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(scheduleMode: .oneOff)
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { request in
+                    capturedRequest.withValue { $0 = request }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.saveTapped)
+
+        #expect(capturedRequest.value?.scheduleMode == .oneOff)
+        #expect(capturedRequest.value?.isAllDay == true)
+        #expect(capturedRequest.value?.allDaySpanDays == 1)
     }
 
     @Test
@@ -314,6 +348,7 @@ struct AddRoutineFeatureSaveTests {
             recurrenceRule: .interval(days: 1),
             emoji: "🎨",
             isAllDay: true,
+            allDaySpanDays: 4,
             scheduleMode: .fixedInterval
         )
 
@@ -327,6 +362,7 @@ struct AddRoutineFeatureSaveTests {
         #expect(task.scheduleMode == .fixedInterval)
         #expect(task.deadline == nil)
         #expect(task.isAllDay)
+        #expect(task.allDaySpanDays == 4)
     }
 
     @Test

@@ -696,6 +696,37 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func allDayBlocksSpanMultiDayRoutineOccurrencesAcrossVisibleRange() throws {
+        let calendar = gregorianCalendar
+        let occurrence = try #require(date("2026-05-08T12:00:00Z"))
+        let expectedStart = try #require(date("2026-05-08T00:00:00Z"))
+        let expectedEnd = try #require(date("2026-05-11T00:00:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Travel",
+            emoji: "✈️",
+            isAllDay: true,
+            allDaySpanDays: 3,
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .weekly(
+                on: calendar.component(.weekday, from: occurrence)
+            )
+        )
+
+        let blocks = DayPlanAllDayTasks.blocks(
+            on: try plannerDates(),
+            from: [task],
+            calendar: calendar
+        )
+
+        #expect(blocks.compactMap(\.taskID) == [taskID])
+        #expect(blocks.first?.startDate == expectedStart)
+        #expect(blocks.first?.endDate == expectedEnd)
+        #expect(blocks.first?.isLegacyDateOnlyCalendarTask == false)
+    }
+
+    @Test
     func allDayBlocksUseCompletedActivityDatesForAllDayRoutines() throws {
         let calendar = gregorianCalendar
         let completedAt = try #require(date("2026-05-11T14:30:00Z"))

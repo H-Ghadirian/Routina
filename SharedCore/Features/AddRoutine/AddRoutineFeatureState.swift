@@ -8,6 +8,7 @@ struct AddRoutineBasicsState: Equatable {
     var routineLink: String = ""
     var deadline: Date?
     var isAllDay: Bool = false
+    var allDaySpanDays: Int = 1
     var availabilityStartDate: Date?
     var availabilityEndDate: Date?
     var reminderAt: Date?

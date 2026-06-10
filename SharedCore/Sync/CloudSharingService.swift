@@ -22,6 +22,7 @@ enum CloudSharingService {
         var links: [String]?
         var deadline: Date?
         var isAllDay: Bool?
+        var allDaySpanDays: Int?
         var availabilityStartDate: Date?
         var availabilityEndDate: Date?
         var reminderAt: Date?
@@ -272,6 +273,7 @@ extension CloudSharingService.SharedTaskPayload {
         self.links = task.links.isEmpty ? nil : task.links
         self.deadline = task.deadline
         self.isAllDay = task.isAllDay
+        self.allDaySpanDays = task.allDaySpanDays
         self.availabilityStartDate = task.availabilityStartDate
         self.availabilityEndDate = task.availabilityEndDate
         self.reminderAt = task.reminderAt
@@ -332,6 +334,9 @@ extension CloudSharingService.SharedTaskPayload {
         task.links = links ?? link.map { [$0] } ?? []
         task.deadline = scheduleMode == .oneOff ? deadline : nil
         task.isAllDay = isAllDay ?? false
+        task.allDaySpanDays = scheduleMode != .oneOff && task.isAllDay
+            ? RoutineTask.sanitizedAllDaySpanDays(allDaySpanDays ?? 1)
+            : 1
         let availabilityDateBounds = RoutineTask.normalizedAvailabilityDateBounds(
             startDate: availabilityStartDate,
             endDate: availabilityEndDate
@@ -391,6 +396,7 @@ private extension RoutineTask {
             links: payload.links ?? payload.link.map { [$0] } ?? [],
             deadline: payload.deadline,
             isAllDay: payload.isAllDay ?? false,
+            allDaySpanDays: payload.allDaySpanDays ?? 1,
             availabilityStartDate: payload.availabilityStartDate,
             availabilityEndDate: payload.availabilityEndDate,
             reminderAt: payload.reminderAt,

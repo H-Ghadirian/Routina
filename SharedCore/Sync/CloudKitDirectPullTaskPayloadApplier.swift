@@ -39,6 +39,9 @@ enum CloudKitDirectPullTaskPayloadApplier {
         if let isAllDay = payload.isAllDay {
             task.isAllDay = isAllDay
         }
+        task.allDaySpanDays = task.scheduleMode != .oneOff && task.isAllDay
+            ? RoutineTask.sanitizedAllDaySpanDays(payload.allDaySpanDays ?? 1)
+            : 1
         let availabilityDateBounds = RoutineTask.normalizedAvailabilityDateBounds(
             startDate: payload.availabilityStartDate,
             endDate: payload.availabilityEndDate
@@ -100,6 +103,7 @@ enum CloudKitDirectPullTaskPayloadApplier {
             links: payload.links ?? payload.link.map { [$0] } ?? [],
             deadline: payload.deadline,
             isAllDay: payload.isAllDay ?? false,
+            allDaySpanDays: payload.allDaySpanDays ?? 1,
             availabilityStartDate: payload.availabilityStartDate,
             availabilityEndDate: payload.availabilityEndDate,
             reminderAt: payload.reminderAt,

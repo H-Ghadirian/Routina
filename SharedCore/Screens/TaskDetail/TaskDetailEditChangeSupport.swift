@@ -9,6 +9,7 @@ struct TaskDetailEditChangeRequest {
     let storyPoints: Int?
     let deadline: Date?
     let isAllDay: Bool
+    let allDaySpanDays: Int
     let availabilityStartDate: Date?
     let availabilityEndDate: Date?
     let reminderAt: Date?
@@ -59,6 +60,7 @@ struct TaskDetailEditChangeRequest {
         self.storyPoints = state.editStoryPoints
         self.deadline = state.editDeadline
         self.isAllDay = state.editIsAllDay
+        self.allDaySpanDays = state.editAllDaySpanDays
         self.availabilityStartDate = state.editAvailabilityStartDate
         self.availabilityEndDate = state.editAvailabilityEndDate
         self.reminderAt = state.editScheduleMode == .oneOff ? state.editReminderAt : nil
@@ -155,6 +157,7 @@ enum TaskDetailEditChangeDetector {
             || request.storyPoints != task.storyPoints
             || request.deadline != currentDeadline
             || request.isAllDay != task.isAllDay
+            || normalizedAllDaySpanDays(for: request) != normalizedAllDaySpanDays(for: task)
             || request.availabilityStartDate != task.availabilityStartDate
             || request.availabilityEndDate != task.availabilityEndDate
             || request.reminderAt != task.reminderAt
@@ -179,6 +182,18 @@ enum TaskDetailEditChangeDetector {
             || request.autoAssumeDailyDone != task.autoAssumeDailyDone
             || request.focusModeEnabled != task.focusModeEnabled
             || request.pressure != task.pressure
+    }
+
+    private static func normalizedAllDaySpanDays(for request: TaskDetailEditChangeRequest) -> Int {
+        request.scheduleMode != .oneOff && request.isAllDay
+            ? RoutineTask.sanitizedAllDaySpanDays(request.allDaySpanDays)
+            : 1
+    }
+
+    private static func normalizedAllDaySpanDays(for task: RoutineTask) -> Int {
+        task.scheduleMode != .oneOff && task.isAllDay
+            ? RoutineTask.sanitizedAllDaySpanDays(task.allDaySpanDays)
+            : 1
     }
 
     private static func recurrenceRule(for request: TaskDetailEditChangeRequest) -> RoutineRecurrenceRule {

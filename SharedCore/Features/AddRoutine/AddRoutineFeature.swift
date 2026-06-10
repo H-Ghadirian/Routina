@@ -14,6 +14,7 @@ struct AddRoutineFeature: Reducer {
         case deadlineEnabledChanged(Bool)
         case deadlineDateChanged(Date)
         case allDayChanged(Bool)
+        case allDaySpanDaysChanged(Int)
         case availabilityStartDateChanged(Date?)
         case availabilityEndDateChanged(Date?)
         case reminderEnabledChanged(Bool)
@@ -162,6 +163,13 @@ struct AddRoutineFeature: Reducer {
             if !state.canAutoAssumeDailyDone {
                 state.schedule.autoAssumeDailyDone = false
             }
+            return .none
+
+        case let .allDaySpanDaysChanged(days):
+            AddRoutineFormEditor.setAllDaySpanDays(
+                days,
+                basics: &state.basics
+            )
             return .none
 
         case let .availabilityStartDateChanged(availabilityStartDate):

@@ -143,9 +143,15 @@ enum DayPlanAllDayTasks {
                     spans.append(span)
                 }
             } else {
-                spans += routineAllDayOccurrenceStarts(for: task, on: dates, calendar: calendar)
+                let spanDays = RoutineTask.sanitizedAllDaySpanDays(task.allDaySpanDays)
+                spans += routineAllDayOccurrenceStarts(
+                    for: task,
+                    on: dates,
+                    spanDays: spanDays,
+                    calendar: calendar
+                )
                     .compactMap { startDate in
-                        oneDaySpan(on: startDate, calendar: calendar)
+                        routineAllDaySpan(on: startDate, spanDays: spanDays, calendar: calendar)
                     }
             }
 
@@ -154,7 +160,7 @@ enum DayPlanAllDayTasks {
                     oneDaySpan(on: startDate, calendar: calendar)
                 }
 
-            return deduplicatedOneDaySpans(spans, calendar: calendar)
+            return deduplicatedAllDaySpans(spans, calendar: calendar)
         }
 
         guard task.isOneOffTask,
@@ -175,6 +181,23 @@ enum DayPlanAllDayTasks {
     ) -> AllDaySpan? {
         let startDate = calendar.startOfDay(for: date)
         guard let endDate = calendar.date(byAdding: .day, value: 1, to: startDate),
+              endDate > startDate else {
+            return nil
+        }
+        return (startDate, endDate, false)
+    }
+
+    private static func routineAllDaySpan(
+        on date: Date,
+        spanDays: Int,
+        calendar: Calendar
+    ) -> AllDaySpan? {
+        let startDate = calendar.startOfDay(for: date)
+        guard let endDate = calendar.date(
+            byAdding: .day,
+            value: RoutineTask.sanitizedAllDaySpanDays(spanDays),
+            to: startDate
+        ),
               endDate > startDate else {
             return nil
         }
@@ -223,28 +246,58 @@ enum DayPlanAllDayTasks {
         return startsByDayKey.values.sorted()
     }
 
-    private static func deduplicatedOneDaySpans(
+    private static func deduplicatedAllDaySpans(
         _ spans: [AllDaySpan],
         calendar: Calendar
     ) -> [AllDaySpan] {
         var seenDayKeys = Set<String>()
-        return spans.filter { span in
-            let dayKey = DayPlanStorage.dayKey(for: span.startDate, calendar: calendar)
-            return seenDayKeys.insert(dayKey).inserted
+        var accepted: [AllDaySpan] = []
+        let sortedSpans = spans.sorted { lhs, rhs in
+            if lhs.startDate != rhs.startDate {
+                return lhs.startDate < rhs.startDate
+            }
+            return lhs.endDate > rhs.endDate
         }
+
+        for span in sortedSpans {
+            let dayKey = DayPlanStorage.dayKey(for: span.startDate, calendar: calendar)
+            guard seenDayKeys.insert(dayKey).inserted else { continue }
+            let isContained = accepted.contains { existing in
+                existing.startDate <= span.startDate && existing.endDate >= span.endDate
+            }
+            guard !isContained else { continue }
+            accepted.append(span)
+        }
+        return accepted
     }
 
     private static func routineAllDayOccurrenceStarts(
         for task: RoutineTask,
         on dates: [Date],
+        spanDays: Int,
         calendar: Calendar
     ) -> [Date] {
-        guard !task.isOneOffTask else { return [] }
+        guard !task.isOneOffTask,
+              let firstDate = dates.first,
+              let lastDate = dates.last else { return [] }
 
-        return dates.compactMap { date in
-            let startOfDay = calendar.startOfDay(for: date)
-            return routineOccurs(task, on: startOfDay, calendar: calendar) ? startOfDay : nil
+        let lookbackDays = max(RoutineTask.sanitizedAllDaySpanDays(spanDays) - 1, 0)
+        let firstVisibleDay = calendar.startOfDay(for: firstDate)
+        let lastVisibleDay = calendar.startOfDay(for: lastDate)
+        var candidateDay = calendar.date(byAdding: .day, value: -lookbackDays, to: firstVisibleDay) ?? firstVisibleDay
+        var starts: [Date] = []
+
+        while candidateDay <= lastVisibleDay {
+            if routineOccurs(task, on: candidateDay, calendar: calendar) {
+                starts.append(candidateDay)
+            }
+            guard let nextDay = calendar.date(byAdding: .day, value: 1, to: candidateDay),
+                  nextDay > candidateDay else {
+                break
+            }
+            candidateDay = nextDay
         }
+        return starts
     }
 
     private static func routineOccurs(

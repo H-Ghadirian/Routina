@@ -24,6 +24,18 @@ enum AddRoutineFormEditor {
         if isAllDay, scheduleMode == .oneOff, let deadline = basics.deadline {
             basics.deadline = calendar.startOfDay(for: deadline)
         }
+        if !isAllDay || scheduleMode == .oneOff {
+            basics.allDaySpanDays = 1
+        } else {
+            basics.allDaySpanDays = RoutineTask.sanitizedAllDaySpanDays(basics.allDaySpanDays)
+        }
+    }
+
+    static func setAllDaySpanDays(
+        _ allDaySpanDays: Int,
+        basics: inout AddRoutineBasicsState
+    ) {
+        basics.allDaySpanDays = RoutineTask.sanitizedAllDaySpanDays(allDaySpanDays)
     }
 
     static func setReminderEnabled(
@@ -50,6 +62,7 @@ enum AddRoutineFormEditor {
             basics.reminderAt = nil
         case .todo:
             schedule.scheduleMode = .oneOff
+            basics.allDaySpanDays = 1
         }
     }
 

@@ -9,6 +9,7 @@ struct TaskDetailEditSaveRequest: Equatable {
     var links: [String]
     var deadline: Date?
     var isAllDay: Bool
+    var allDaySpanDays: Int
     var availabilityStartDate: Date?
     var availabilityEndDate: Date?
     var reminderAt: Date?
@@ -101,6 +102,9 @@ struct TaskDetailEditSaveRequestBuilder {
             links: sanitizedLinks,
             deadline: scheduleMode == .oneOff ? state.editDeadline : nil,
             isAllDay: state.editIsAllDay,
+            allDaySpanDays: scheduleMode != .oneOff && state.editIsAllDay
+                ? RoutineTask.sanitizedAllDaySpanDays(state.editAllDaySpanDays)
+                : 1,
             availabilityStartDate: scheduleMode == .oneOff ? availabilityDateBounds.startDate : nil,
             availabilityEndDate: scheduleMode == .oneOff ? availabilityDateBounds.endDate : nil,
             reminderAt: scheduleMode == .oneOff ? state.editReminderAt : nil,
