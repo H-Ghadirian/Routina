@@ -26,6 +26,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0205](0205-run-plan-focus-from-planner.md) refines [0200](0200-support-task-planned-dates.md) and [0106](0106-support-unassigned-watch-focus-sessions.md) for plan focus:** Plan focus starts from `Plan to do today` when that section has tasks, runs in the Planner top bar as unassigned focus, renders temporary Planner block evidence, and allocates afterward to the tasks currently in `Plan to do today`, including daily routines.
 - **[0204](0204-avoid-duplicate-daily-repeat-choices.md) refines [0177](0177-separate-interval-and-calendar-repeat-controls.md) and [0199](0199-support-multiday-routine-start-flow.md) for routine recurrence forms:** `Calendar` repeat patterns offer `Weekday` and `Month day` only, `Interval -> Every day` is the single daily repeat path, and multi-day routines clamp day-based intervals to at least 2 days.
 - **[0203](0203-place-not-today-in-plan-to-do-menu.md) refines [0200](0200-support-task-planned-dates.md) for task row context menus:** `Not today` lives inside `Plan to do` instead of the top-level lifecycle action list, including daily routines where it is the only planning-adjacent row-menu action.
 - **[0202](0202-nest-daily-routines-under-mac-plan-today.md) refines [0200](0200-support-task-planned-dates.md) for the Mac Home sidebar:** Daily routines render inside the collapsible `Plan to do today` section on Mac, with planned tasks first and an independently collapsible, default-collapsed inner `Daily Routines` group that keeps the `daily` manual ordering bucket.
@@ -321,3 +322,4 @@ These are ordered from newest resolver to oldest resolver.
 | [0202](0202-nest-daily-routines-under-mac-plan-today.md) | Nest Daily Routines Under Mac Plan Today | Accepted | 2026-06-10 |
 | [0203](0203-place-not-today-in-plan-to-do-menu.md) | Place Not Today in Plan To Do Menu | Accepted | 2026-06-10 |
 | [0204](0204-avoid-duplicate-daily-repeat-choices.md) | Avoid Duplicate Daily Repeat Choices | Accepted | 2026-06-10 |
+| [0205](0205-run-plan-focus-from-planner.md) | Run Plan Focus From Planner | Accepted | 2026-06-10 |

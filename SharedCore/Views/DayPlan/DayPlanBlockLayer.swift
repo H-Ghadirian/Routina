@@ -298,7 +298,9 @@ struct DayPlanFocusSessionBlockLayer: View {
                     calendar: calendar,
                     onSelect: {},
                     onOpenDetails: {
-                        onOpenFocusTaskDetails(block.taskID)
+                        if focusBlock.opensTaskDetails {
+                            onOpenFocusTaskDetails(block.taskID)
+                        }
                     },
                     onDelete: {},
                     onResizeStarted: {},

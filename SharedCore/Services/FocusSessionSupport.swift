@@ -193,6 +193,40 @@ enum FocusSessionSupport {
 
     @MainActor
     @discardableResult
+    static func abandonFocus(
+        sessionID: UUID?,
+        kind: FocusSessionKind?,
+        endedAt: Date = Date(),
+        context: ModelContext,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
+    ) throws -> Bool {
+        guard kind != .sprint,
+              let session = try activeTaskFocus(sessionID: sessionID, kind: kind, in: context) else {
+            return false
+        }
+
+        session.closePauseIfNeeded(at: endedAt)
+        session.abandonedAt = endedAt
+        DayPlanFocusSessionPlannerSync.removeFocusBlock(for: session, context: context)
+
+        let title = try taskTitle(for: session, in: context) ?? "Unassigned focus"
+        DeviceActivityRecorder.recordAction(
+            .ended,
+            entity: .focusSession,
+            entityID: session.id,
+            entityTitle: title,
+            details: "Abandoned focus session",
+            sourceDevice: sourceDevice,
+            at: endedAt,
+            in: context
+        )
+        try context.save()
+        notifyFocusChanged(using: context)
+        return true
+    }
+
+    @MainActor
+    @discardableResult
     static func assignUnassignedFocus(
         sessionID: UUID,
         toTask taskID: UUID,

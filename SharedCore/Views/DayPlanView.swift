@@ -482,14 +482,9 @@ private struct DayPlanTimelinePanelView: View {
     @Query(sort: \SprintFocusSessionRecord.startedAt, order: .reverse) private var sprintFocusSessions: [SprintFocusSessionRecord]
     @Query private var sprintFocusAllocations: [SprintFocusAllocationRecord]
     @Query private var boardSprints: [BoardSprintRecord]
-    @Query(
-        filter: #Predicate<FocusSession> { session in
-            session.completedAt == nil && session.abandonedAt == nil
-        },
-        sort: \FocusSession.startedAt,
-        order: .reverse
-    ) private var activeFocusSessions: [FocusSession]
+    @Query(sort: \FocusSession.startedAt, order: .reverse) private var focusSessions: [FocusSession]
     @State private var selectedEventID: UUID?
+    @State private var allocatingPlanFocusSession: DayPlanFocusAllocationPresentation?
     @AppStorage(
         UserDefaultBoolValueKey.appSettingShowTimelineTasksInDayPlanner.rawValue,
         store: SharedDefaults.app
@@ -595,6 +590,8 @@ private struct DayPlanTimelinePanelView: View {
         let tintsByTaskID = tintsByTaskID()
 
         VStack(alignment: .leading, spacing: 12) {
+            planFocusBanner(hasActiveSprintFocus: !activeSprintFocusSessions.isEmpty)
+
             HStack {
                 Text(planner.visibleRangeMode.title)
                     .font(.headline)
@@ -645,7 +642,7 @@ private struct DayPlanTimelinePanelView: View {
                 activeFocusSessionBlocks: { now in
                     DayPlanFocusSessionBlocks.activeBlocks(
                         from: tasks,
-                        sessions: activeFocusSessions,
+                        sessions: focusSessions,
                         now: now,
                         calendar: calendar,
                         excluding: plannedBlocks
@@ -670,7 +667,10 @@ private struct DayPlanTimelinePanelView: View {
                     return timelineBlocksByDayKey[dayKey]?.count ?? 0
                 },
                 taskTint: { block in
-                    tintsByTaskID[block.taskID] ?? .accentColor
+                    if block.taskID == FocusSession.unassignedTaskID {
+                        return .teal
+                    }
+                    return tintsByTaskID[block.taskID] ?? .accentColor
                 },
                 allDayTint: { block in
                     if block.isEvent {
@@ -807,6 +807,188 @@ private struct DayPlanTimelinePanelView: View {
                 DayPlanEventDetail(eventID: presentation.id)
             }
         }
+        .sheet(item: $allocatingPlanFocusSession) { presentation in
+            planFocusAllocationSheet(for: presentation.sessionID)
+        }
+    }
+
+    @ViewBuilder
+    private func planFocusBanner(hasActiveSprintFocus: Bool) -> some View {
+        if let activePlanFocusSession {
+            activePlanFocusBanner(for: activePlanFocusSession)
+        } else if let pendingPlanFocusSession, !planTodayTasks.isEmpty {
+            pendingPlanFocusBanner(for: pendingPlanFocusSession)
+        } else if !planTodayTasks.isEmpty {
+            planFocusStartBanner(hasActiveSprintFocus: hasActiveSprintFocus)
+        }
+    }
+
+    private func planFocusStartBanner(hasActiveSprintFocus: Bool) -> some View {
+        HStack(spacing: 10) {
+            Label("Plan Focus", systemImage: "stopwatch")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.orange)
+
+            Text("\(planTodayTasks.count) planned")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Spacer(minLength: 8)
+
+            planFocusStartMenu
+                .disabled(activeTaskFocusSession != nil || hasActiveSprintFocus)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .routinaGlassCard(cornerRadius: 8, tint: .orange, tintOpacity: 0.07)
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(.orange.opacity(0.20), lineWidth: 1)
+        }
+    }
+
+    private func activePlanFocusBanner(for session: FocusSession) -> some View {
+        SwiftUI.TimelineView(.periodic(from: .now, by: 1)) { context in
+            let isCountUp = session.plannedDurationSeconds <= 0
+            let elapsedSeconds = session.activeDurationSeconds(at: context.date)
+            let displaySeconds = isCountUp
+                ? elapsedSeconds
+                : max(0, session.plannedDurationSeconds - elapsedSeconds)
+            let statusText = session.isPaused
+                ? "paused"
+                : (isCountUp ? "elapsed" : "remaining")
+
+            HStack(spacing: 10) {
+                Label("Plan Focus", systemImage: "stopwatch.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.orange)
+
+                Text(FocusSessionFormatting.durationText(seconds: displaySeconds))
+                    .font(.title3.monospacedDigit().weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .transaction { transaction in
+                        transaction.animation = nil
+                    }
+
+                Text(statusText)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                Spacer(minLength: 8)
+
+                Button {
+                    if session.isPaused {
+                        resumePlanFocus(session)
+                    } else {
+                        pausePlanFocus(session)
+                    }
+                } label: {
+                    Label(session.isPaused ? "Resume" : "Pause", systemImage: session.isPaused ? "play.fill" : "pause.fill")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+
+                Button {
+                    finishPlanFocus(session)
+                } label: {
+                    Label("Finish", systemImage: "checkmark.circle.fill")
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.orange)
+                .controlSize(.small)
+
+                Menu {
+                    Button(role: .destructive) {
+                        abandonPlanFocus(session)
+                    } label: {
+                        Label("Abandon", systemImage: "xmark.circle")
+                    }
+                } label: {
+                    Label("More", systemImage: "ellipsis.circle")
+                        .labelStyle(.iconOnly)
+                }
+                .menuStyle(.button)
+                .controlSize(.small)
+                .accessibilityLabel("More plan focus actions")
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .routinaGlassCard(cornerRadius: 8, tint: .orange, tintOpacity: 0.10)
+            .overlay {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(.orange.opacity(0.24), lineWidth: 1)
+            }
+        }
+    }
+
+    private func pendingPlanFocusBanner(for session: FocusSession) -> some View {
+        HStack(spacing: 10) {
+            Label("Plan Focus", systemImage: "tray.full")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.orange)
+
+            Text("\(FocusSessionFormatting.compactDurationText(seconds: session.actualDurationSeconds)) ready to allocate")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Spacer(minLength: 8)
+
+            Button {
+                allocatingPlanFocusSession = DayPlanFocusAllocationPresentation(sessionID: session.id)
+            } label: {
+                Label("Allocate", systemImage: "arrowshape.turn.up.right")
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.teal)
+            .controlSize(.small)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .routinaGlassCard(cornerRadius: 8, tint: .orange, tintOpacity: 0.08)
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(.orange.opacity(0.22), lineWidth: 1)
+        }
+    }
+
+    private var planFocusStartMenu: some View {
+        Menu {
+            Button {
+                startPlanFocus(duration: 0)
+            } label: {
+                Label("Count up", systemImage: "stopwatch")
+            }
+
+            Divider()
+
+            ForEach(planFocusDurationOptions, id: \.self) { duration in
+                Button(FocusSessionFormatting.compactDurationText(seconds: duration)) {
+                    startPlanFocus(duration: duration)
+                }
+            }
+        } label: {
+            Label("Start", systemImage: "play.fill")
+        }
+        .menuStyle(.button)
+        .buttonStyle(.borderedProminent)
+        .tint(.orange)
+        .controlSize(.small)
+    }
+
+    @ViewBuilder
+    private func planFocusAllocationSheet(for sessionID: UUID) -> some View {
+        if let session = focusSessions.first(where: { $0.id == sessionID && $0.isUnassigned && $0.state == .completed }) {
+            DayPlanFocusAllocationSheet(
+                session: session,
+                planTodayTasks: planTodayTasks,
+                onAssign: { task in
+                    assignPlanFocus(session, to: task)
+                }
+            )
+        } else {
+            ContentUnavailableView("Focus allocated", systemImage: "checkmark.circle")
+                .padding()
+        }
     }
 
     private var selectedEventPresentationBinding: Binding<DayPlanEventPresentation?> {
@@ -822,6 +1004,160 @@ private struct DayPlanTimelinePanelView: View {
 
     private var activeFocusedUnplannedCompletedDate: Date? {
         showsTimelineTasksInDayPlanner ? nil : planner.focusedUnplannedCompletedDate
+    }
+
+    private var activeFocusSessions: [FocusSession] {
+        focusSessions
+            .filter { $0.completedAt == nil && $0.abandonedAt == nil }
+            .sorted { ($0.startedAt ?? .distantPast) > ($1.startedAt ?? .distantPast) }
+    }
+
+    private var activePlanFocusSession: FocusSession? {
+        activeFocusSessions.first(where: \.isUnassigned)
+    }
+
+    private var activeTaskFocusSession: FocusSession? {
+        activeFocusSessions.first { !$0.isUnassigned }
+    }
+
+    private var pendingPlanFocusSession: FocusSession? {
+        FocusSessionSupport.unassignedCompletedSessions(from: focusSessions)
+            .first { session in
+                guard let startedAt = session.startedAt else { return false }
+                return calendar.isDate(startedAt, inSameDayAs: Date())
+            }
+    }
+
+    private var planTodayTasks: [RoutineTask] {
+        let referenceDate = Date()
+        return tasks
+            .filter { task in
+                guard !task.isArchived(referenceDate: referenceDate, calendar: calendar),
+                      !task.isCompletedOneOff,
+                      !task.isCanceledOneOff,
+                      !task.isPinned else {
+                    return false
+                }
+
+                if task.isDailyRoutineForTaskList {
+                    return true
+                }
+
+                guard let plannedDate = task.plannedDate else { return false }
+                return calendar.isDate(plannedDate, inSameDayAs: referenceDate)
+            }
+            .sorted(by: planTodayTaskSort)
+    }
+
+    private var planFocusDurationOptions: [TimeInterval] {
+        [
+            15 * 60,
+            25 * 60,
+            45 * 60,
+            60 * 60,
+            90 * 60,
+        ]
+    }
+
+    private func planTodayTaskSort(_ lhs: RoutineTask, _ rhs: RoutineTask) -> Bool {
+        let lhsIsDaily = lhs.isDailyRoutineForTaskList
+        let rhsIsDaily = rhs.isDailyRoutineForTaskList
+        if lhsIsDaily != rhsIsDaily {
+            return !lhsIsDaily && rhsIsDaily
+        }
+
+        let sectionKey = lhsIsDaily ? "daily" : "plannedToday"
+        let lhsOrder = lhs.manualSectionOrders[sectionKey] ?? Int.max
+        let rhsOrder = rhs.manualSectionOrders[sectionKey] ?? Int.max
+        if lhsOrder != rhsOrder {
+            return lhsOrder < rhsOrder
+        }
+
+        return DayPlanTaskSorting.title(for: lhs).localizedCaseInsensitiveCompare(
+            DayPlanTaskSorting.title(for: rhs)
+        ) == .orderedAscending
+    }
+
+    private func startPlanFocus(duration: TimeInterval) {
+        do {
+            _ = try FocusSessionSupport.startUnassignedFocus(
+                plannedDurationSeconds: duration,
+                context: modelContext
+            )
+        } catch {
+            NSLog("Failed to start plan focus: \(error.localizedDescription)")
+        }
+    }
+
+    private func pausePlanFocus(_ session: FocusSession) {
+        do {
+            _ = try FocusSessionSupport.pauseFocus(
+                sessionID: session.id,
+                kind: .unassigned,
+                context: modelContext
+            )
+        } catch {
+            NSLog("Failed to pause plan focus: \(error.localizedDescription)")
+        }
+    }
+
+    private func resumePlanFocus(_ session: FocusSession) {
+        do {
+            _ = try FocusSessionSupport.resumeFocus(
+                sessionID: session.id,
+                kind: .unassigned,
+                context: modelContext
+            )
+        } catch {
+            NSLog("Failed to resume plan focus: \(error.localizedDescription)")
+        }
+    }
+
+    private func finishPlanFocus(_ session: FocusSession) {
+        do {
+            _ = try FocusSessionSupport.finishFocus(
+                sessionID: session.id,
+                kind: .unassigned,
+                context: modelContext,
+                calendar: calendar
+            )
+        } catch {
+            NSLog("Failed to finish plan focus: \(error.localizedDescription)")
+        }
+    }
+
+    private func abandonPlanFocus(_ session: FocusSession) {
+        do {
+            _ = try FocusSessionSupport.abandonFocus(
+                sessionID: session.id,
+                kind: .unassigned,
+                context: modelContext
+            )
+        } catch {
+            NSLog("Failed to abandon plan focus: \(error.localizedDescription)")
+        }
+    }
+
+    private func assignPlanFocus(_ session: FocusSession, to task: RoutineTask) {
+        do {
+            let didAssign = try FocusSessionSupport.assignUnassignedFocus(
+                sessionID: session.id,
+                toTask: task.id,
+                context: modelContext
+            )
+            if didAssign {
+                _ = DayPlanFocusSessionPlannerSync.saveCompletedFocusBlock(
+                    for: task,
+                    session: session,
+                    calendar: calendar,
+                    context: modelContext
+                )
+                planner.loadBlocks(calendar: calendar, context: modelContext)
+            }
+            allocatingPlanFocusSession = nil
+        } catch {
+            NSLog("Failed to allocate plan focus: \(error.localizedDescription)")
+        }
     }
 
     private func plannedBlocksByDayKey(for dates: [Date]) -> [String: [DayPlanBlock]] {
@@ -977,6 +1313,73 @@ private struct DayPlanTimelinePanelView: View {
 
 private struct DayPlanEventPresentation: Identifiable {
     let id: UUID
+}
+
+private struct DayPlanFocusAllocationPresentation: Identifiable {
+    let sessionID: UUID
+
+    var id: UUID { sessionID }
+}
+
+private struct DayPlanFocusAllocationSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let session: FocusSession
+    let planTodayTasks: [RoutineTask]
+    let onAssign: (RoutineTask) -> Void
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    HStack {
+                        Label("Recorded", systemImage: "stopwatch")
+                        Spacer()
+                        Text(FocusSessionFormatting.compactDurationText(seconds: session.actualDurationSeconds))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Section("Plan to do today") {
+                    if planTodayTasks.isEmpty {
+                        ContentUnavailableView("No planned tasks", systemImage: "tray")
+                    } else {
+                        ForEach(planTodayTasks) { task in
+                            Button {
+                                onAssign(task)
+                                dismiss()
+                            } label: {
+                                HStack(spacing: 10) {
+                                    Text(CalendarTaskImportSupport.displayEmoji(for: task.emoji) ?? "*")
+                                    Text(DayPlanTaskSorting.title(for: task))
+                                        .foregroundStyle(.primary)
+                                    Spacer()
+                                    Image(systemName: "arrowshape.turn.up.right")
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Allocate Plan Focus")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        #if os(macOS)
+        .frame(width: 440, height: 360)
+        #else
+        .presentationDetents([.medium, .large])
+        #endif
+    }
 }
 
 private struct DayPlanEventDetail: View {
