@@ -31,10 +31,12 @@ extension HomeRoutineDisplayMetadataPresenter {
         if case .away = task.locationAvailability {
             return badge("Away", "location.slash.fill", .blue, Color.blue.opacity(0.14))
         }
+        if task.isOngoing {
+            return task.isSoftIntervalRoutine
+                ? badge("Ongoing", "airplane.circle.fill", .teal, Color.teal.opacity(0.16))
+                : badge("In Progress", "play.circle.fill", .orange, Color.orange.opacity(0.16))
+        }
         if task.isSoftIntervalRoutine {
-            if task.isOngoing {
-                return badge("Ongoing", "airplane.circle.fill", .teal, Color.teal.opacity(0.16))
-            }
             if task.isDoneToday {
                 return badge("Done", "checkmark.circle.fill", .green, Color.green.opacity(0.14))
             }

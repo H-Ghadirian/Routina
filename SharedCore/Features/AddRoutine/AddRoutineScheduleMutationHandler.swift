@@ -27,10 +27,8 @@ struct AddRoutineScheduleMutationHandler {
             mode,
             schedule: &state.schedule
         )
-        if mode == .oneOff || !state.basics.isAllDay {
-            state.basics.allDaySpanDays = 1
-        } else {
-            state.basics.allDaySpanDays = RoutineTask.sanitizedAllDaySpanDays(state.basics.allDaySpanDays)
+        if mode == .oneOff {
+            state.basics.routineDurationMode = .oneDay
         }
         enforceAutoAssumeEligibility(state: &state)
     }

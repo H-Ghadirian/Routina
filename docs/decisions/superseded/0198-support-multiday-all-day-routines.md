@@ -1,10 +1,12 @@
 # 0198 Support Multi-Day All-Day Routines
 
-Status: Accepted
+Status: Superseded
 
 Date: 2026-06-10
 
-Refines: [0093 Support All-Day Tasks Across Schedule Types](0093-support-all-day-routines.md), [0179 Make Routine All Day an Availability Choice](0179-make-all-day-an-availability-choice.md), [0197 Separate Todo Date and Time Availability](0197-separate-todo-date-and-time-availability.md)
+Refines: [0093 Support All-Day Tasks Across Schedule Types](../0093-support-all-day-routines.md), [0179 Make Routine All Day an Availability Choice](../0179-make-all-day-an-availability-choice.md), [0197 Separate Todo Date and Time Availability](../0197-separate-todo-date-and-time-availability.md)
+
+Superseded by: [0199 Support Multi-Day Routine Start Flow](../0199-support-multiday-routine-start-flow.md)
 
 ## Context
 

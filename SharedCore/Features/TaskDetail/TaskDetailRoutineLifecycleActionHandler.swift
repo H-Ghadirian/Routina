@@ -65,7 +65,7 @@ struct TaskDetailRoutineLifecycleActionHandler {
     }
 
     func startOngoingTapped(state: inout State) -> Effect<Action> {
-        guard state.task.isSoftIntervalRoutine else { return .none }
+        guard state.task.usesOngoingLifecycle else { return .none }
         guard !state.task.isArchived(referenceDate: now(), calendar: calendar) else { return .none }
         guard !state.task.isOngoing else { return .none }
         let startedAt = now()
@@ -76,7 +76,7 @@ struct TaskDetailRoutineLifecycleActionHandler {
     }
 
     func finishOngoingTapped(state: inout State) -> Effect<Action> {
-        guard state.task.isSoftIntervalRoutine else { return .none }
+        guard state.task.usesOngoingLifecycle else { return .none }
         guard state.task.isOngoing else { return .none }
         let finishedAt = now()
         state.task.finishOngoing(at: finishedAt)

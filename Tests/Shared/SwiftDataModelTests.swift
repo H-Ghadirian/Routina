@@ -90,40 +90,38 @@ struct SwiftDataModelTests {
     }
 
     @Test
-    func routineTask_storesAllDaySpanOnlyForAllDayRoutines() {
+    func routineTask_storesRoutineDurationIndependentFromAllDay() {
         let routine = RoutineTask(
             name: "Travel",
-            isAllDay: true,
-            allDaySpanDays: 4,
+            isAllDay: false,
+            routineDurationMode: .multiDay,
             scheduleMode: .fixedInterval
         )
-        let timedRoutine = RoutineTask(
-            name: "Workout",
-            isAllDay: false,
-            allDaySpanDays: 4,
+        let allDayRoutine = RoutineTask(
+            name: "Retreat",
+            isAllDay: true,
+            routineDurationMode: .multiDay,
             scheduleMode: .fixedInterval
         )
         let todo = RoutineTask(
             name: "Conference",
             isAllDay: true,
-            allDaySpanDays: 4,
+            routineDurationMode: .multiDay,
             scheduleMode: .oneOff
         )
-        let longRoutine = RoutineTask(
-            name: "Retreat",
-            isAllDay: true,
-            allDaySpanDays: 90,
-            scheduleMode: .fixedInterval
-        )
 
-        #expect(routine.allDaySpanDays == 4)
-        #expect(routine.detachedCopy().allDaySpanDays == 4)
-        #expect(timedRoutine.allDaySpanDays == 1)
-        #expect(todo.allDaySpanDays == 1)
-        #expect(longRoutine.allDaySpanDays == RoutineTask.maximumAllDaySpanDays)
+        #expect(routine.routineDurationMode == .multiDay)
+        #expect(routine.isMultiDayRoutine)
+        #expect(routine.usesOngoingLifecycle)
+        #expect(routine.detachedCopy().routineDurationMode == .multiDay)
+        #expect(allDayRoutine.routineDurationMode == .multiDay)
+        #expect(allDayRoutine.isMultiDayRoutine)
+        #expect(todo.routineDurationMode == .oneDay)
+        #expect(!todo.isMultiDayRoutine)
 
         routine.scheduleMode = .oneOff
-        #expect(routine.allDaySpanDays == 1)
+        #expect(routine.routineDurationMode == .oneDay)
+        #expect(!routine.isMultiDayRoutine)
     }
 
     @Test

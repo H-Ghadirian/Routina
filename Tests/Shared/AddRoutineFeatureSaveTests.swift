@@ -194,14 +194,14 @@ struct AddRoutineFeatureSaveTests {
     }
 
     @Test
-    func saveTapped_includesAllDayFlagForRoutines() async {
+    func saveTapped_includesRoutineDurationIndependentOfAllDay() async {
         let capturedRequest = LockIsolated<AddRoutineSaveRequest?>(nil)
         let store = TestStore(
             initialState: makeState(
                 basics: AddRoutineBasicsState(
                     routineName: "Studio day",
-                    isAllDay: true,
-                    allDaySpanDays: 3
+                    isAllDay: false,
+                    routineDurationMode: .multiDay
                 ),
                 organization: AddRoutineOrganizationState(existingRoutineNames: []),
                 schedule: AddRoutineScheduleState(scheduleMode: .fixedInterval)
@@ -222,19 +222,19 @@ struct AddRoutineFeatureSaveTests {
 
         #expect(capturedRequest.value?.scheduleMode == .fixedInterval)
         #expect(capturedRequest.value?.deadline == nil)
-        #expect(capturedRequest.value?.isAllDay == true)
-        #expect(capturedRequest.value?.allDaySpanDays == 3)
+        #expect(capturedRequest.value?.isAllDay == false)
+        #expect(capturedRequest.value?.routineDurationMode == .multiDay)
     }
 
     @Test
-    func saveTapped_resetsAllDaySpanDaysForTodos() async {
+    func saveTapped_resetsRoutineDurationForTodos() async {
         let capturedRequest = LockIsolated<AddRoutineSaveRequest?>(nil)
         let store = TestStore(
             initialState: makeState(
                 basics: AddRoutineBasicsState(
                     routineName: "Conference",
                     isAllDay: true,
-                    allDaySpanDays: 3
+                    routineDurationMode: .multiDay
                 ),
                 organization: AddRoutineOrganizationState(existingRoutineNames: []),
                 schedule: AddRoutineScheduleState(scheduleMode: .oneOff)
@@ -255,7 +255,7 @@ struct AddRoutineFeatureSaveTests {
 
         #expect(capturedRequest.value?.scheduleMode == .oneOff)
         #expect(capturedRequest.value?.isAllDay == true)
-        #expect(capturedRequest.value?.allDaySpanDays == 1)
+        #expect(capturedRequest.value?.routineDurationMode == .oneDay)
     }
 
     @Test
@@ -348,7 +348,7 @@ struct AddRoutineFeatureSaveTests {
             recurrenceRule: .interval(days: 1),
             emoji: "🎨",
             isAllDay: true,
-            allDaySpanDays: 4,
+            routineDurationMode: .multiDay,
             scheduleMode: .fixedInterval
         )
 
@@ -362,7 +362,7 @@ struct AddRoutineFeatureSaveTests {
         #expect(task.scheduleMode == .fixedInterval)
         #expect(task.deadline == nil)
         #expect(task.isAllDay)
-        #expect(task.allDaySpanDays == 4)
+        #expect(task.routineDurationMode == .multiDay)
     }
 
     @Test

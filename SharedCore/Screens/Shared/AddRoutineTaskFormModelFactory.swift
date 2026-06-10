@@ -23,9 +23,9 @@ struct AddRoutineTaskFormModelFactory {
             deadlineEnabled: binding(get: { store.hasDeadline }, send: AddRoutineFeature.Action.deadlineEnabledChanged),
             deadline: binding(get: { store.basics.deadline ?? Date() }, send: AddRoutineFeature.Action.deadlineDateChanged),
             isAllDay: binding(get: { store.basics.isAllDay }, send: AddRoutineFeature.Action.allDayChanged),
-            allDaySpanDays: binding(
-                get: { store.basics.allDaySpanDays },
-                send: AddRoutineFeature.Action.allDaySpanDaysChanged
+            routineDurationMode: binding(
+                get: { store.basics.routineDurationMode },
+                send: AddRoutineFeature.Action.routineDurationModeChanged
             ),
             availabilityStartDate: binding(
                 get: { store.basics.availabilityStartDate },

@@ -73,7 +73,7 @@ struct SettingsRoutineDataBackupMappingTests {
         #expect(inline.imageAttachmentID == nil)
         #expect(inline.deadline == deadline)
         #expect(inline.isAllDay == true)
-        #expect(inline.allDaySpanDays == 1)
+        #expect(inline.routineDurationMode == .oneDay)
         #expect(inline.voiceNoteData == voiceData)
         #expect(inline.voiceNoteAttachmentID == nil)
         #expect(inline.voiceNoteDurationSeconds == 2.5)
@@ -88,11 +88,11 @@ struct SettingsRoutineDataBackupMappingTests {
     }
 
     @Test
-    func taskMappingIncludesAllDaySpanDays() {
+    func taskMappingIncludesRoutineDurationMode() {
         let task = RoutineTask(
             name: "Travel",
-            isAllDay: true,
-            allDaySpanDays: 5,
+            isAllDay: false,
+            routineDurationMode: .multiDay,
             scheduleMode: .fixedInterval
         )
 
@@ -105,7 +105,7 @@ struct SettingsRoutineDataBackupMappingTests {
             includesPressure: false
         )
 
-        #expect(backupTask.allDaySpanDays == 5)
+        #expect(backupTask.routineDurationMode == .multiDay)
     }
 
     @Test

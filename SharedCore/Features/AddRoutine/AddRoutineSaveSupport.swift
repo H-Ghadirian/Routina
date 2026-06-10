@@ -75,7 +75,7 @@ struct AddRoutineSaveRequest: Equatable {
     let links: [String]
     let deadline: Date?
     let isAllDay: Bool
-    let allDaySpanDays: Int
+    let routineDurationMode: RoutineDurationMode
     let availabilityStartDate: Date?
     let availabilityEndDate: Date?
     let reminderAt: Date?
@@ -111,7 +111,7 @@ struct AddRoutineSaveRequest: Equatable {
         links: [String] = [],
         deadline: Date? = nil,
         isAllDay: Bool = false,
-        allDaySpanDays: Int = 1,
+        routineDurationMode: RoutineDurationMode = .oneDay,
         availabilityStartDate: Date? = nil,
         availabilityEndDate: Date? = nil,
         reminderAt: Date? = nil,
@@ -147,9 +147,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.links = sanitizedLinks
         self.deadline = deadline
         self.isAllDay = isAllDay
-        self.allDaySpanDays = scheduleMode != .oneOff && isAllDay
-            ? RoutineTask.sanitizedAllDaySpanDays(allDaySpanDays)
-            : 1
+        self.routineDurationMode = scheduleMode == .oneOff ? .oneDay : routineDurationMode
         self.availabilityStartDate = availabilityStartDate
         self.availabilityEndDate = availabilityEndDate
         self.reminderAt = reminderAt
@@ -205,9 +203,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.links = sanitizedLinks
         self.deadline = schedule.scheduleMode.taskType == .todo ? basics.deadline : nil
         self.isAllDay = basics.isAllDay
-        self.allDaySpanDays = schedule.scheduleMode != .oneOff && basics.isAllDay
-            ? RoutineTask.sanitizedAllDaySpanDays(basics.allDaySpanDays)
-            : 1
+        self.routineDurationMode = schedule.scheduleMode == .oneOff ? .oneDay : basics.routineDurationMode
         let availabilityDateBounds = RoutineTask.normalizedAvailabilityDateBounds(
             startDate: basics.availabilityStartDate,
             endDate: basics.availabilityEndDate,

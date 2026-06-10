@@ -57,6 +57,7 @@ enum TaskDetailPresentation {
     ) -> Color {
         if task.isSnoozed(referenceDate: referenceDate) { return .indigo }
         if pausedAt != nil { return .teal }
+        if task.usesOngoingLifecycle && task.isOngoing { return .orange }
         if task.isOneOffTask {
             if task.isInProgress { return .orange }
             if task.isCompletedOneOff || isDoneToday { return .green }

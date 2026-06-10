@@ -11,7 +11,7 @@ final class RoutineTask {
     var linksStorage: String = ""
     var deadline: Date?
     var isAllDay: Bool = false
-    var allDaySpanDays: Int = 1
+    var routineDurationModeRawValue: String = RoutineDurationMode.oneDay.rawValue
     var availabilityStartDate: Date?
     var availabilityEndDate: Date?
     var reminderAt: Date?
@@ -257,13 +257,31 @@ final class RoutineTask {
                 availabilityStartDate = nil
                 availabilityEndDate = nil
             }
-            if newValue == .oneOff || !isAllDay {
-                allDaySpanDays = 1
-            } else {
-                allDaySpanDays = Self.sanitizedAllDaySpanDays(allDaySpanDays)
+            if newValue == .oneOff {
+                routineDurationMode = .oneDay
             }
             sanitizeChecklistProgress()
         }
+    }
+
+    var routineDurationMode: RoutineDurationMode {
+        get {
+            guard scheduleMode != .oneOff else { return .oneDay }
+            return RoutineDurationMode(rawValue: routineDurationModeRawValue) ?? .oneDay
+        }
+        set {
+            routineDurationModeRawValue = scheduleMode == .oneOff
+                ? RoutineDurationMode.oneDay.rawValue
+                : newValue.rawValue
+        }
+    }
+
+    var isMultiDayRoutine: Bool {
+        scheduleMode != .oneOff && routineDurationMode == .multiDay
+    }
+
+    var usesOngoingLifecycle: Bool {
+        isSoftIntervalRoutine || isMultiDayRoutine
     }
 
     var recurrenceRule: RoutineRecurrenceRule {
@@ -295,7 +313,7 @@ final class RoutineTask {
         links: [String] = [],
         deadline: Date? = nil,
         isAllDay: Bool = false,
-        allDaySpanDays: Int = 1,
+        routineDurationMode: RoutineDurationMode = .oneDay,
         availabilityStartDate: Date? = nil,
         availabilityEndDate: Date? = nil,
         reminderAt: Date? = nil,
@@ -358,9 +376,9 @@ final class RoutineTask {
         self.linksStorage = RoutineTaskLinkStorage.serialize(sanitizedLinks)
         self.deadline = resolvedScheduleMode == .oneOff ? deadline : nil
         self.isAllDay = isAllDay
-        self.allDaySpanDays = resolvedScheduleMode != .oneOff && isAllDay
-            ? Self.sanitizedAllDaySpanDays(allDaySpanDays)
-            : 1
+        self.routineDurationModeRawValue = resolvedScheduleMode == .oneOff
+            ? RoutineDurationMode.oneDay.rawValue
+            : routineDurationMode.rawValue
         self.availabilityStartDate = resolvedScheduleMode == .oneOff ? availabilityStartDate : nil
         self.availabilityEndDate = resolvedScheduleMode == .oneOff ? availabilityEndDate : nil
         self.reminderAt = reminderAt
@@ -564,12 +582,6 @@ final class RoutineTask {
         )
     }
 
-    static let maximumAllDaySpanDays = 30
-
-    static func sanitizedAllDaySpanDays(_ days: Int) -> Int {
-        min(max(days, 1), maximumAllDaySpanDays)
-    }
-
     var resolvedLinkURL: URL? {
         resolvedLinkURLs.first?.url
     }
@@ -609,7 +621,7 @@ final class RoutineTask {
             links: links,
             deadline: deadline,
             isAllDay: isAllDay,
-            allDaySpanDays: allDaySpanDays,
+            routineDurationMode: routineDurationMode,
             availabilityStartDate: availabilityStartDate,
             availabilityEndDate: availabilityEndDate,
             reminderAt: reminderAt,

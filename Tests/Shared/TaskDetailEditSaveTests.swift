@@ -388,13 +388,13 @@ struct TaskDetailEditSaveTests {
     }
 
     @Test
-    func editSaveTapped_persistsAllDaySpanDaysForRoutines() async throws {
+    func editSaveTapped_persistsRoutineDurationIndependentOfAllDay() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-10T09:00:00Z")
         let task = RoutineTask(
             name: "Travel",
-            isAllDay: true,
+            isAllDay: false,
             scheduleMode: .fixedInterval,
             recurrenceRule: .weekly(on: 3)
         )
@@ -407,8 +407,8 @@ struct TaskDetailEditSaveTests {
                 isEditSheetPresented: true,
                 editRoutineName: "Travel",
                 editRoutineEmoji: "✈️",
-                editIsAllDay: true,
-                editAllDaySpanDays: 1,
+                editIsAllDay: false,
+                editRoutineDurationMode: .oneDay,
                 editScheduleMode: .fixedInterval,
                 editFrequency: .day,
                 editFrequencyValue: 1,
@@ -425,8 +425,8 @@ struct TaskDetailEditSaveTests {
         }
         store.exhaustivity = .off
 
-        await store.send(.editAllDaySpanDaysChanged(4)) {
-            $0.editAllDaySpanDays = 4
+        await store.send(.editRoutineDurationModeChanged(.multiDay)) {
+            $0.editRoutineDurationMode = .multiDay
         }
         await store.send(.editSaveTapped) {
             $0.isEditSheetPresented = false
@@ -444,8 +444,8 @@ struct TaskDetailEditSaveTests {
             ).first
         )
         #expect(persistedTask.scheduleMode == .fixedInterval)
-        #expect(persistedTask.isAllDay)
-        #expect(persistedTask.allDaySpanDays == 4)
+        #expect(!persistedTask.isAllDay)
+        #expect(persistedTask.routineDurationMode == .multiDay)
     }
 
     @Test

@@ -14,7 +14,7 @@ struct AddRoutineFeature: Reducer {
         case deadlineEnabledChanged(Bool)
         case deadlineDateChanged(Date)
         case allDayChanged(Bool)
-        case allDaySpanDaysChanged(Int)
+        case routineDurationModeChanged(RoutineDurationMode)
         case availabilityStartDateChanged(Date?)
         case availabilityEndDateChanged(Date?)
         case reminderEnabledChanged(Bool)
@@ -165,9 +165,9 @@ struct AddRoutineFeature: Reducer {
             }
             return .none
 
-        case let .allDaySpanDaysChanged(days):
-            AddRoutineFormEditor.setAllDaySpanDays(
-                days,
+        case let .routineDurationModeChanged(durationMode):
+            AddRoutineFormEditor.setRoutineDurationMode(
+                durationMode,
                 basics: &state.basics
             )
             return .none

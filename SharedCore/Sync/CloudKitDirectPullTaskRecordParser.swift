@@ -28,7 +28,10 @@ enum CloudKitDirectPullTaskRecordParser {
         let linksStorageValue = stringValue(in: record, keys: storageKeys("linksStorage"))
         let deadlineValue = dateValue(in: record, keys: ["deadline", "DEADLINE", "zdeadline", "ZDEADLINE", "cd_deadline"])
         let isAllDayValue = boolValue(in: record, keys: storageKeys("isAllDay"))
-        let allDaySpanDaysValue = intValue(in: record, keys: storageKeys("allDaySpanDays"))
+        let routineDurationModeValue = stringValue(
+            in: record,
+            keys: storageKeys("routineDurationModeRawValue")
+        ).flatMap(RoutineDurationMode.init(rawValue:))
         let availabilityStartDateValue = dateValue(in: record, keys: storageKeys("availabilityStartDate"))
         let availabilityEndDateValue = dateValue(in: record, keys: storageKeys("availabilityEndDate"))
         let reminderAtValue = dateValue(in: record, keys: ["reminderAt", "REMINDERAT", "zreminderat", "ZREMINDERAT", "cd_reminderat"])
@@ -227,7 +230,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 || linksStorageValue != nil
                 || deadlineValue != nil
                 || isAllDayValue != nil
-                || allDaySpanDaysValue != nil
+                || routineDurationModeValue != nil
                 || availabilityStartDateValue != nil
                 || availabilityEndDateValue != nil
                 || placeIDValue != nil
@@ -288,7 +291,7 @@ enum CloudKitDirectPullTaskRecordParser {
             links: linksStorageValue.map(RoutineTaskLinkStorage.deserialize),
             deadline: deadlineValue,
             isAllDay: isAllDayValue,
-            allDaySpanDays: allDaySpanDaysValue,
+            routineDurationMode: routineDurationModeValue,
             availabilityStartDate: availabilityStartDateValue,
             availabilityEndDate: availabilityEndDateValue,
             reminderAt: reminderAtValue,
