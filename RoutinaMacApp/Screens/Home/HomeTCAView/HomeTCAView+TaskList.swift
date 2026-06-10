@@ -316,35 +316,90 @@ extension HomeTCAView {
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     ) -> some View {
         if section.kind.isCollapsible {
-            Button {
-                toggleTaskListSection(section)
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "chevron.right")
-                        .font(.caption2.weight(.semibold))
-                        .rotationEffect(.degrees(taskListSectionIsExpanded(section) ? 90 : 0))
+            HStack(spacing: 6) {
+                Button {
+                    toggleTaskListSection(section)
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "chevron.right")
+                            .font(.caption2.weight(.semibold))
+                            .rotationEffect(.degrees(taskListSectionIsExpanded(section) ? 90 : 0))
 
-                    Text(section.title)
+                        Text(section.title)
 
-                    Text("\(section.tasks.count)")
-                        .font(.caption2.weight(.semibold).monospacedDigit())
-                        .foregroundStyle(.tertiary)
+                        Text("\(section.tasks.count)")
+                            .font(.caption2.weight(.semibold).monospacedDigit())
+                            .foregroundStyle(.tertiary)
 
-                    Spacer(minLength: 0)
+                        Spacer(minLength: 0)
+                    }
+                    .contentShape(Rectangle())
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .contentShape(Rectangle())
+                .buttonStyle(.plain)
+                .accessibilityLabel(section.title)
+                .accessibilityValue(taskListSectionIsExpanded(section) ? "Expanded" : "Collapsed")
+
+                if section.kind == .plannedToday, !section.tasks.isEmpty {
+                    planFocusSectionStartMenu
+                }
             }
-            .buttonStyle(.plain)
             .font(.caption.weight(.semibold))
             .foregroundStyle(.secondary)
             .padding(.horizontal, 10)
-            .accessibilityLabel(section.title)
-            .accessibilityValue(taskListSectionIsExpanded(section) ? "Expanded" : "Collapsed")
         } else {
             Text(section.title)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 10)
+        }
+    }
+
+    private var planFocusSectionStartMenu: some View {
+        Menu {
+            Button {
+                startPlanFocusFromSection(duration: 0)
+            } label: {
+                Label("Count up", systemImage: "stopwatch")
+            }
+
+            Divider()
+
+            ForEach(planFocusDurationOptions, id: \.self) { duration in
+                Button(FocusSessionFormatting.compactDurationText(seconds: duration)) {
+                    startPlanFocusFromSection(duration: duration)
+                }
+            }
+        } label: {
+            Label("Start plan focus", systemImage: "stopwatch")
+                .labelStyle(.iconOnly)
+        }
+        .menuStyle(.button)
+        .buttonStyle(.borderless)
+        .controlSize(.small)
+        .help("Start plan focus")
+        .accessibilityLabel("Start plan focus")
+    }
+
+    private var planFocusDurationOptions: [TimeInterval] {
+        [
+            15 * 60,
+            25 * 60,
+            45 * 60,
+            60 * 60,
+            90 * 60,
+        ]
+    }
+
+    private func startPlanFocusFromSection(duration: TimeInterval) {
+        do {
+            _ = try FocusSessionSupport.startUnassignedFocus(
+                plannedDurationSeconds: duration,
+                context: modelContext
+            )
+            macHomeDetailMode = .planner
+        } catch {
+            NSLog("Failed to start plan focus: \(error.localizedDescription)")
         }
     }
 
