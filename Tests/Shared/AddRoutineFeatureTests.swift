@@ -29,12 +29,84 @@ struct AddRoutineFeatureTests {
         #expect(RoutineRecurrenceRule.Kind.dailyTime.pickerTitle == "Daily")
         #expect(RoutineRecurrenceRule.Kind.weekly.pickerTitle == "Weekday")
         #expect(RoutineRecurrenceRule.Kind.monthlyDay.pickerTitle == "Month day")
-        #expect(RoutineRecurrenceRule.Kind.calendarCases == [.dailyTime, .weekly, .monthlyDay])
+        #expect(RoutineRecurrenceRule.Kind.calendarCases == [.weekly, .monthlyDay])
         #expect(RoutineRecurrenceRule.Kind.intervalDays.repeatBasis == .interval)
         #expect(RoutineRecurrenceRule.Kind.weekly.repeatBasis == .calendar)
-        #expect(RoutineRecurrenceRule.Kind.intervalDays.replacingRepeatBasis(.calendar) == .dailyTime)
+        #expect(RoutineRecurrenceRule.Kind.intervalDays.replacingRepeatBasis(.calendar) == .weekly)
+        #expect(RoutineRecurrenceRule.Kind.dailyTime.replacingRepeatBasis(.calendar) == .weekly)
         #expect(RoutineRecurrenceRule.Kind.weekly.replacingRepeatBasis(.interval) == .intervalDays)
         #expect(RoutineRecurrenceRule.Kind.monthlyDay.replacingRepeatBasis(.calendar) == .monthlyDay)
+    }
+
+    @Test
+    func routineDurationModeChanged_toMultiDayClampsDailyInterval() async {
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(routineDurationMode: .oneDay),
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .fixedInterval,
+                    frequency: .day,
+                    frequencyValue: 1,
+                    recurrenceKind: .intervalDays
+                )
+            )
+        ) {
+            makeFeature()
+        }
+
+        await store.send(.routineDurationModeChanged(.multiDay)) {
+            $0.basics.routineDurationMode = .multiDay
+            $0.schedule.frequencyValue = 2
+        }
+
+        #expect(store.state.candidateRecurrenceRule == .interval(days: 2))
+    }
+
+    @Test
+    func routineDurationModeChanged_toMultiDayConvertsDailyCalendarToInterval() async {
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(routineDurationMode: .oneDay),
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .fixedInterval,
+                    frequency: .day,
+                    frequencyValue: 1,
+                    recurrenceKind: .dailyTime
+                )
+            )
+        ) {
+            makeFeature()
+        }
+
+        await store.send(.routineDurationModeChanged(.multiDay)) {
+            $0.basics.routineDurationMode = .multiDay
+            $0.schedule.frequencyValue = 2
+            $0.schedule.recurrenceKind = .intervalDays
+        }
+    }
+
+    @Test
+    func frequencyChangesKeepMultiDayDailyIntervalAboveOneDay() async {
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(routineDurationMode: .multiDay),
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .fixedInterval,
+                    frequency: .week,
+                    frequencyValue: 1,
+                    recurrenceKind: .intervalDays
+                )
+            )
+        ) {
+            makeFeature()
+        }
+
+        await store.send(.frequencyChanged(.day)) {
+            $0.schedule.frequency = .day
+            $0.schedule.frequencyValue = 2
+        }
+
+        await store.send(.frequencyValueChanged(1))
     }
 
     @Test

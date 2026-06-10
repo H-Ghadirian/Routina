@@ -79,7 +79,13 @@ struct TaskDetailEditSaveRequestBuilder {
 
         let frequencyInterval = scheduleMode == .oneOff
             ? 1
-            : state.editFrequencyValue * state.editFrequency.daysMultiplier
+            : TaskFormRecurrenceConstraints.effectiveIntervalDays(
+                value: state.editFrequencyValue,
+                unit: state.editFrequency,
+                scheduleMode: scheduleMode,
+                routineDurationMode: state.editRoutineDurationMode,
+                recurrenceKind: state.editRecurrenceKind
+            )
         let recurrenceRule = selectedRecurrenceRule(
             for: state,
             scheduleMode: scheduleMode,

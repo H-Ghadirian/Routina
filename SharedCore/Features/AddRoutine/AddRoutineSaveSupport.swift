@@ -196,7 +196,13 @@ struct AddRoutineSaveRequest: Equatable {
 
         let frequencyInDays = schedule.scheduleMode == .oneOff
             ? 1
-            : schedule.frequencyValue * schedule.frequency.daysMultiplier
+            : TaskFormRecurrenceConstraints.effectiveIntervalDays(
+                value: schedule.frequencyValue,
+                unit: schedule.frequency,
+                scheduleMode: schedule.scheduleMode,
+                routineDurationMode: basics.routineDurationMode,
+                recurrenceKind: schedule.recurrenceKind
+            )
 
         self.name = state.trimmedRoutineName
         self.frequencyInDays = frequencyInDays

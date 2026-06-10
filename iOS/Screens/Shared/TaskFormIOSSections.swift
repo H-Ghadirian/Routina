@@ -372,7 +372,7 @@ struct TaskFormIOSRepeatPatternSections: View {
                 frequencyUnitPicker
             }
             Section(header: Text("Repeat")) {
-                Stepper(value: model.frequencyValue, in: 1...365) {
+                Stepper(value: model.frequencyValue, in: model.intervalFrequencyValueBounds) {
                     Text(intervalRepeatLabel)
                 }
             }

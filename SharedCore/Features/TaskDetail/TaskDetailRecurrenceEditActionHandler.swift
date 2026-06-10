@@ -47,6 +47,8 @@ struct TaskDetailRecurrenceEditActionHandler {
         state: inout State
     ) -> Effect<Action> {
         state.editRoutineDurationMode = state.editScheduleMode == .oneOff ? .oneDay : durationMode
+        enforceRecurrenceConstraints(state: &state)
+        clearPlanningIfDailyRoutine(state: &state)
         return .none
     }
 
@@ -116,6 +118,7 @@ struct TaskDetailRecurrenceEditActionHandler {
             } else {
                 state.editRoutineDurationMode = .oneDay
             }
+            enforceRecurrenceConstraints(state: &state)
         }
         disableAutoAssumeIfNeeded(state: &state)
         clearPlanningIfDailyRoutine(state: &state)
@@ -125,6 +128,7 @@ struct TaskDetailRecurrenceEditActionHandler {
     func editFrequencyChanged(_ frequency: TaskDetailFeature.EditFrequency, state: inout State) -> Effect<Action> {
         rebaseEditReminderIfUsingLeadTime(&state) { state in
             state.editFrequency = frequency
+            enforceRecurrenceConstraints(state: &state)
         }
         disableAutoAssumeIfNeeded(state: &state)
         clearPlanningIfDailyRoutine(state: &state)
@@ -134,6 +138,7 @@ struct TaskDetailRecurrenceEditActionHandler {
     func editFrequencyValueChanged(_ value: Int, state: inout State) -> Effect<Action> {
         rebaseEditReminderIfUsingLeadTime(&state) { state in
             state.editFrequencyValue = value
+            enforceRecurrenceConstraints(state: &state)
         }
         disableAutoAssumeIfNeeded(state: &state)
         clearPlanningIfDailyRoutine(state: &state)
@@ -146,6 +151,7 @@ struct TaskDetailRecurrenceEditActionHandler {
     ) -> Effect<Action> {
         rebaseEditReminderIfUsingLeadTime(&state) { state in
             state.editRecurrenceKind = kind
+            enforceRecurrenceConstraints(state: &state)
         }
         disableAutoAssumeIfNeeded(state: &state)
         clearPlanningIfDailyRoutine(state: &state)
@@ -293,5 +299,19 @@ struct TaskDetailRecurrenceEditActionHandler {
         if !state.canAutoAssumeDailyDone {
             state.editAutoAssumeDailyDone = false
         }
+    }
+
+    private func enforceRecurrenceConstraints(state: inout State) {
+        if state.editRoutineDurationMode == .multiDay,
+           state.editRecurrenceKind == .dailyTime {
+            state.editRecurrenceKind = .intervalDays
+        }
+        state.editFrequencyValue = TaskFormRecurrenceConstraints.clampedFrequencyValue(
+            state.editFrequencyValue,
+            scheduleMode: state.editScheduleMode,
+            routineDurationMode: state.editRoutineDurationMode,
+            recurrenceKind: state.editRecurrenceKind,
+            frequencyUnit: state.editFrequency
+        )
     }
 }

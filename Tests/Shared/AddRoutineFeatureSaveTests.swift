@@ -805,6 +805,42 @@ struct AddRoutineFeatureSaveTests {
     }
 
     @Test
+    func saveTapped_multiDayRoutineClampsDailyIntervalToTwoDays() async {
+        let capturedRequest = LockIsolated<AddRoutineSaveRequest?>(nil)
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(
+                    routineName: "Trip packing",
+                    routineDurationMode: .multiDay
+                ),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .fixedInterval,
+                    frequency: .day,
+                    frequencyValue: 1,
+                    recurrenceKind: .intervalDays
+                )
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { request in
+                    capturedRequest.withValue { $0 = request }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.saveTapped)
+
+        #expect(capturedRequest.value?.frequencyInDays == 2)
+        #expect(capturedRequest.value?.recurrenceRule == .interval(days: 2))
+        #expect(capturedRequest.value?.routineDurationMode == .multiDay)
+    }
+
+    @Test
     func saveTapped_allDayIntervalSchedule_ignoresStaleAvailabilityTiming() async {
         let capturedRecurrenceRules = LockIsolated<[RoutineRecurrenceRule]>([])
         let capturedAllDayFlags = LockIsolated<[Bool]>([])

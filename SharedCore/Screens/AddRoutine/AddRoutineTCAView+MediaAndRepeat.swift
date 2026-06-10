@@ -38,7 +38,13 @@ extension AddRoutineTCAView {
             dailyTimeSummary: "Due every day at \(store.schedule.recurrenceTimeOfDay.formatted()).",
             weeklyRecurrenceSummary: formPresentation.weeklyRecurrenceSummary,
             monthlyRecurrenceSummary: formPresentation.monthlyRecurrenceSummary,
-            weekdayOptions: weekdayOptions
+            weekdayOptions: weekdayOptions,
+            frequencyValueBounds: TaskFormRecurrenceConstraints.frequencyValueBounds(
+                scheduleMode: store.schedule.scheduleMode,
+                routineDurationMode: store.basics.routineDurationMode,
+                recurrenceKind: store.schedule.recurrenceKind,
+                frequencyUnit: store.schedule.frequency
+            )
         )
     }
 

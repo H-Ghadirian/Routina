@@ -12,6 +12,7 @@ struct AddRoutineRepeatPatternSections: View {
     let weeklyRecurrenceSummary: String
     let monthlyRecurrenceSummary: String
     let weekdayOptions: [(id: Int, name: String)]
+    var frequencyValueBounds: ClosedRange<Int> = TaskFormRecurrenceConstraints.defaultFrequencyValueBounds
 
     var body: some View {
         Section(header: Text("Repeat Type")) {
@@ -67,10 +68,10 @@ struct AddRoutineRepeatPatternSections: View {
     private var calendarRecurrenceKindBinding: Binding<RoutineRecurrenceRule.Kind> {
         Binding(
             get: {
-                recurrenceKind.repeatBasis == .calendar ? recurrenceKind : .dailyTime
+                RoutineRecurrenceRule.Kind.calendarCases.contains(recurrenceKind) ? recurrenceKind : .weekly
             },
             set: { kind in
-                guard kind.repeatBasis == .calendar else { return }
+                guard RoutineRecurrenceRule.Kind.calendarCases.contains(kind) else { return }
                 recurrenceKind = kind
             }
         )
@@ -88,7 +89,7 @@ struct AddRoutineRepeatPatternSections: View {
             }
 
             Section(header: Text("Repeat")) {
-                Stepper(value: $frequencyValue, in: 1...365) {
+                Stepper(value: $frequencyValue, in: frequencyValueBounds) {
                     Text(stepperLabel)
                 }
             }

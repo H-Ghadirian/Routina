@@ -157,11 +157,58 @@ struct TaskFormPresentationTests {
 
         model.routineRepeatType.wrappedValue = .calendar
         #expect(scheduleMode == .softIntervalChecklist)
-        #expect(recurrenceKind == .dailyTime)
+        #expect(recurrenceKind == .weekly)
 
         taskType = .todo
         model.routineRepeatType.wrappedValue = .itemRunout
         #expect(scheduleMode == .softIntervalChecklist)
+    }
+
+    @Test @MainActor
+    func calendarRecurrenceKindTreatsDailyAsIntervalFallback() {
+        var recurrenceKind = RoutineRecurrenceRule.Kind.dailyTime
+        let model = taskFormModel(
+            recurrenceKindBinding: Binding(
+                get: { recurrenceKind },
+                set: { recurrenceKind = $0 }
+            )
+        )
+
+        #expect(model.routineRepeatType.wrappedValue == .interval)
+        #expect(model.repeatBasis.wrappedValue == .interval)
+        #expect(model.calendarRecurrenceKind.wrappedValue == .weekly)
+
+        model.calendarRecurrenceKind.wrappedValue = .dailyTime
+        #expect(recurrenceKind == .dailyTime)
+
+        model.calendarRecurrenceKind.wrappedValue = .monthlyDay
+        #expect(recurrenceKind == .monthlyDay)
+    }
+
+    @Test
+    func intervalFrequencyBoundsRequireTwoDaysForMultiDayDailyInterval() {
+        let oneDay = taskFormModel(
+            scheduleMode: .fixedInterval,
+            routineDurationMode: .oneDay,
+            frequencyUnit: .day,
+            frequencyValue: 1
+        )
+        let multiDayDailyInterval = taskFormModel(
+            scheduleMode: .fixedInterval,
+            routineDurationMode: .multiDay,
+            frequencyUnit: .day,
+            frequencyValue: 1
+        )
+        let multiDayWeeklyInterval = taskFormModel(
+            scheduleMode: .fixedInterval,
+            routineDurationMode: .multiDay,
+            frequencyUnit: .week,
+            frequencyValue: 1
+        )
+
+        #expect(oneDay.intervalFrequencyValueBounds.lowerBound == 1)
+        #expect(multiDayDailyInterval.intervalFrequencyValueBounds.lowerBound == 2)
+        #expect(multiDayWeeklyInterval.intervalFrequencyValueBounds.lowerBound == 1)
     }
 
     @Test
@@ -288,8 +335,11 @@ struct TaskFormPresentationTests {
     private func taskFormModel(
         taskType: RoutineTaskType = .routine,
         scheduleMode: RoutineScheduleMode = .fixedInterval,
+        routineDurationMode: RoutineDurationMode = .oneDay,
         checklistItems: [RoutineChecklistItem] = [],
         recurrenceKind: RoutineRecurrenceRule.Kind = .intervalDays,
+        frequencyUnit: TaskFormFrequencyUnit = .day,
+        frequencyValue: Int = 1,
         taskTypeBinding: Binding<RoutineTaskType>? = nil,
         scheduleModeBinding: Binding<RoutineScheduleMode>? = nil,
         recurrenceKindBinding: Binding<RoutineRecurrenceRule.Kind>? = nil
@@ -305,6 +355,7 @@ struct TaskFormPresentationTests {
             link: .constant(""),
             deadlineEnabled: .constant(false),
             deadline: .constant(Date()),
+            routineDurationMode: .constant(routineDurationMode),
             reminderEnabled: .constant(false),
             reminderAt: .constant(Date()),
             importance: .constant(.level2),
@@ -355,8 +406,8 @@ struct TaskFormPresentationTests {
             recurrenceTimeOfDay: .constant(Date()),
             recurrenceWeekday: .constant(2),
             recurrenceDayOfMonth: .constant(1),
-            frequencyUnit: .constant(.day),
-            frequencyValue: .constant(1),
+            frequencyUnit: .constant(frequencyUnit),
+            frequencyValue: .constant(frequencyValue),
             color: .constant(.none),
             visibilityMode: .progressiveCreate
         )
