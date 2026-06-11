@@ -212,6 +212,10 @@ struct SettingsMacGeneralDetailView: View {
         BatteryRoutinePreferences.thresholdPercentDefaultsKey,
         store: SharedDefaults.app
     ) private var batteryRoutineThresholdPercent = BatteryRoutinePreferences.defaultThresholdPercent
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isGoalsTabEnabled = false
 
     var body: some View {
 SettingsMacDetailShell(
@@ -252,6 +256,15 @@ SettingsMacDetailShell(
             .toggleStyle(.switch)
 
         Text("Shows GitHub and GitLab contribution activity in Stats.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+    }
+
+    SettingsMacDetailCard(title: "Navigation") {
+        Toggle("Show Goals tab", isOn: $isGoalsTabEnabled)
+            .toggleStyle(.switch)
+
+        Text("Show the Goals tab so goals can be opened from Home.")
             .font(.footnote)
             .foregroundStyle(.secondary)
     }

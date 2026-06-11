@@ -6,11 +6,13 @@ struct AppView: View {
     @State private var searchText = ""
     @AppStorage(UserDefaultStringValueKey.appSettingAppColorScheme.rawValue, store: SharedDefaults.app)
     private var appColorSchemeRawValue = AppColorScheme.system.rawValue
+    @AppStorage(UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue, store: SharedDefaults.app)
+    private var isGoalsTabEnabled = false
 
     var body: some View {
 let tabView = TabView(
     selection: Binding(
-        get: { store.selectedTab == .more ? .settings : store.selectedTab },
+        get: { selectedTabForCurrentLayout },
         set: { store.send(.tabSelected($0)) }
     )
 ) {
@@ -22,10 +24,12 @@ let tabView = TabView(
         platformSearchHomeView(searchText: $searchText)
     }
 
-    SwiftUI.Tab(Tab.goals.rawValue, systemImage: "target", value: Tab.goals) {
-        GoalsTCAView(
-            store: store.scope(state: \.goals, action: \.goals)
-        )
+    if isGoalsTabEnabled {
+        SwiftUI.Tab(Tab.goals.rawValue, systemImage: "target", value: Tab.goals) {
+            GoalsTCAView(
+                store: store.scope(state: \.goals, action: \.goals)
+            )
+        }
     }
 
     SwiftUI.Tab(Tab.timeline.rawValue, systemImage: "clock.arrow.circlepath", value: Tab.timeline) {
@@ -116,5 +120,14 @@ private extension AppColorScheme {
         case .dark:
             return .dark
         }
+    }
+}
+
+private extension AppView {
+    var selectedTabForCurrentLayout: Tab {
+        if store.selectedTab == .goals && !isGoalsTabEnabled {
+            return .home
+        }
+        return store.selectedTab == .more ? .settings : store.selectedTab
     }
 }

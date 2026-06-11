@@ -26,6 +26,10 @@ struct TaskFormContent: View {
         UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
         store: SharedDefaults.app
     ) private var showPersianDates = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isGoalsTabEnabled = false
 
     private var nameFocusBinding: FocusState<Bool>.Binding {
         model.nameFocus ?? $fallbackNameFocused
@@ -88,8 +92,12 @@ struct TaskFormContent: View {
             includesIdentity: false,
             includesDangerZone: model.onDelete != nil || model.pauseResumeAction != nil
         ).filter { section in
-            section != .planning || model.supportsPlanning
+            (section != .planning || model.supportsPlanning) && shouldDisplayFormSection(section)
         }
+    }
+
+    private func shouldDisplayFormSection(_ section: FormSection) -> Bool {
+        section != .goals || isGoalsTabEnabled
     }
 
     private var visibleSections: [FormSection] {

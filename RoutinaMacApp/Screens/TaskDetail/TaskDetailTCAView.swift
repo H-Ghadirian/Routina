@@ -38,6 +38,10 @@ struct TaskDetailTCAView: View {
         UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
         store: SharedDefaults.app
     ) private var showPersianDates = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isGoalsTabEnabled = false
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
 
@@ -518,7 +522,7 @@ detailBody
             actions.append(editSectionAction(title: "Tags", section: .tags))
         }
 
-        if store.taskGoalSummaries.isEmpty {
+        if shouldShowGoalSectionInAddMore && store.taskGoalSummaries.isEmpty {
             actions.append(editSectionAction(title: "Goals", section: .goals))
         }
 
@@ -565,6 +569,10 @@ detailBody
         store.task.estimatedDurationMinutes == nil
             && store.task.storyPoints == nil
             && !store.task.focusModeEnabled
+    }
+
+    private var shouldShowGoalSectionInAddMore: Bool {
+        isGoalsTabEnabled
     }
 
     private func editSectionAction(title: String, section: FormSection) -> TaskDetailOptionalAction {

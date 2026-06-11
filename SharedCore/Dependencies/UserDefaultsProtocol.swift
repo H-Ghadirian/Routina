@@ -50,6 +50,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingHideUnavailableRoutines
     case appSettingAppLockEnabled
     case appSettingGitFeaturesEnabled
+    case appSettingGoalsTabEnabled
     case appSettingShowPersianDates
     case appSettingBatteryRoutineMonitoringEnabled
     case appSettingSleepHomeActionEnabled = "appSettingSleepHomeDockEnabled"
