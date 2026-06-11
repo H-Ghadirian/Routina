@@ -642,7 +642,14 @@ private struct DayPlanTimelinePanelView: View {
                 activeFocusSessionBlocks: { now in
                     DayPlanFocusSessionBlocks.activeBlocks(
                         from: tasks,
-                        sessions: focusSessions,
+                        sessions: focusSessions.filter { session in
+                            guard session.isUnassigned else { return true }
+                            let allocatedMinutes = DayPlanFocusSessionPlannerSync
+                                .planFocusAllocationBlocks(for: session, context: modelContext)
+                                .reduce(0) { $0 + $1.durationMinutes }
+                            let elapsedMinutes = Int(floor(session.activeDurationSeconds(at: now) / 60))
+                            return allocatedMinutes < elapsedMinutes
+                        },
                         now: now,
                         calendar: calendar,
                         excluding: plannedBlocks
@@ -889,12 +896,20 @@ private struct DayPlanTimelinePanelView: View {
                 .controlSize(.small)
 
                 Button {
+                    allocatingPlanFocusSession = DayPlanFocusAllocationPresentation(sessionID: session.id)
+                } label: {
+                    Label("Allocate", systemImage: "slider.horizontal.3")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+
+                Button {
                     finishPlanFocus(session)
                 } label: {
                     Label("Finish", systemImage: "checkmark.circle.fill")
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(.orange)
+                .tint(.teal)
                 .controlSize(.small)
 
                 Menu {
@@ -977,12 +992,20 @@ private struct DayPlanTimelinePanelView: View {
 
     @ViewBuilder
     private func planFocusAllocationSheet(for sessionID: UUID) -> some View {
-        if let session = focusSessions.first(where: { $0.id == sessionID && $0.isUnassigned && $0.state == .completed }) {
+        if let session = focusSessions.first(where: { session in
+            session.id == sessionID
+                && session.isUnassigned
+                && session.abandonedAt == nil
+        }) {
             DayPlanFocusAllocationSheet(
                 session: session,
                 planTodayTasks: planTodayTasks,
-                onAssign: { task in
-                    assignPlanFocus(session, to: task)
+                existingBlocks: DayPlanFocusSessionPlannerSync.planFocusAllocationBlocks(
+                    for: session,
+                    context: modelContext
+                ),
+                onSave: { allocations in
+                    savePlanFocusAllocations(session, allocations: allocations)
                 }
             )
         } else {
@@ -1025,6 +1048,10 @@ private struct DayPlanTimelinePanelView: View {
             .first { session in
                 guard let startedAt = session.startedAt else { return false }
                 return calendar.isDate(startedAt, inSameDayAs: Date())
+                    && !DayPlanFocusSessionPlannerSync.hasPlanFocusAllocations(
+                        for: session,
+                        context: modelContext
+                    )
             }
     }
 
@@ -1138,25 +1165,20 @@ private struct DayPlanTimelinePanelView: View {
         }
     }
 
-    private func assignPlanFocus(_ session: FocusSession, to task: RoutineTask) {
-        do {
-            let didAssign = try FocusSessionSupport.assignUnassignedFocus(
-                sessionID: session.id,
-                toTask: task.id,
-                context: modelContext
-            )
-            if didAssign {
-                _ = DayPlanFocusSessionPlannerSync.saveCompletedFocusBlock(
-                    for: task,
-                    session: session,
-                    calendar: calendar,
-                    context: modelContext
-                )
-                planner.loadBlocks(calendar: calendar, context: modelContext)
-            }
+    private func savePlanFocusAllocations(
+        _ session: FocusSession,
+        allocations: [DayPlanFocusTaskAllocation]
+    ) {
+        let didSave = DayPlanFocusSessionPlannerSync.savePlanFocusAllocations(
+            for: session,
+            allocations: allocations,
+            tasks: planTodayTasks,
+            calendar: calendar,
+            context: modelContext
+        )
+        if didSave {
+            planner.loadBlocks(calendar: calendar, context: modelContext)
             allocatingPlanFocusSession = nil
-        } catch {
-            NSLog("Failed to allocate plan focus: \(error.localizedDescription)")
         }
     }
 
@@ -1326,39 +1348,70 @@ private struct DayPlanFocusAllocationSheet: View {
 
     let session: FocusSession
     let planTodayTasks: [RoutineTask]
-    let onAssign: (RoutineTask) -> Void
+    let existingBlocks: [DayPlanBlock]
+    let onSave: ([DayPlanFocusTaskAllocation]) -> Void
+    @State private var draftMinutesByTaskID: [UUID: Int]
+
+    init(
+        session: FocusSession,
+        planTodayTasks: [RoutineTask],
+        existingBlocks: [DayPlanBlock],
+        onSave: @escaping ([DayPlanFocusTaskAllocation]) -> Void
+    ) {
+        self.session = session
+        self.planTodayTasks = planTodayTasks
+        self.existingBlocks = existingBlocks
+        self.onSave = onSave
+        _draftMinutesByTaskID = State(initialValue: Dictionary(
+            uniqueKeysWithValues: existingBlocks.map { ($0.taskID, max(0, $0.durationMinutes)) }
+        ))
+    }
 
     var body: some View {
         NavigationStack {
-            List {
-                Section {
-                    HStack {
-                        Label("Recorded", systemImage: "stopwatch")
-                        Spacer()
-                        Text(FocusSessionFormatting.compactDurationText(seconds: session.actualDurationSeconds))
-                            .foregroundStyle(.secondary)
-                    }
-                }
+            SwiftUI.TimelineView(.periodic(from: .now, by: 1)) { context in
+                let availableMinutes = allocatableMinutes(at: context.date)
 
-                Section("Plan to do today") {
-                    if planTodayTasks.isEmpty {
-                        ContentUnavailableView("No planned tasks", systemImage: "tray")
-                    } else {
-                        ForEach(planTodayTasks) { task in
-                            Button {
-                                onAssign(task)
-                                dismiss()
-                            } label: {
-                                HStack(spacing: 10) {
-                                    Text(CalendarTaskImportSupport.displayEmoji(for: task.emoji) ?? "*")
-                                    Text(DayPlanTaskSorting.title(for: task))
-                                        .foregroundStyle(.primary)
-                                    Spacer()
-                                    Image(systemName: "arrowshape.turn.up.right")
-                                        .foregroundStyle(.secondary)
-                                }
+                List {
+                    Section {
+                        HStack {
+                            Label(session.state == .completed ? "Recorded" : "Available", systemImage: "stopwatch")
+                            Spacer()
+                            Text(DayPlanFormatting.durationText(availableMinutes))
+                                .foregroundStyle(.secondary)
+                        }
+
+                        HStack {
+                            Label("Allocated", systemImage: "slider.horizontal.3")
+                            Spacer()
+                            Text("\(DayPlanFormatting.durationText(totalDraftMinutes)) of \(DayPlanFormatting.durationText(availableMinutes))")
+                                .foregroundStyle(totalDraftMinutes > availableMinutes ? .red : .secondary)
+                        }
+                    }
+
+                    Section("Plan to do today") {
+                        if planTodayTasks.isEmpty {
+                            ContentUnavailableView("No planned tasks", systemImage: "tray")
+                        } else {
+                            ForEach(planTodayTasks) { task in
+                                allocationRow(task, availableMinutes: availableMinutes)
                             }
                         }
+                    }
+                }
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") {
+                            dismiss()
+                        }
+                    }
+
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Save") {
+                            onSave(allocations)
+                            dismiss()
+                        }
+                        .disabled(totalDraftMinutes <= 0 || totalDraftMinutes > availableMinutes)
                     }
                 }
             }
@@ -1366,19 +1419,67 @@ private struct DayPlanFocusAllocationSheet: View {
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-            }
         }
         #if os(macOS)
-        .frame(width: 440, height: 360)
+        .frame(width: 480, height: 460)
         #else
         .presentationDetents([.medium, .large])
         #endif
+    }
+
+    private var totalDraftMinutes: Int {
+        draftMinutesByTaskID.values.reduce(0) { $0 + max(0, $1) }
+    }
+
+    private var allocations: [DayPlanFocusTaskAllocation] {
+        planTodayTasks.compactMap { task in
+            let minutes = max(0, draftMinutesByTaskID[task.id] ?? 0)
+            guard minutes > 0 else { return nil }
+            return DayPlanFocusTaskAllocation(taskID: task.id, minutes: minutes)
+        }
+    }
+
+    private func allocationRow(_ task: RoutineTask, availableMinutes: Int) -> some View {
+        let taskMinutes = draftMinutesByTaskID[task.id] ?? 0
+        let otherMinutes = totalDraftMinutes - taskMinutes
+        let upperBound = max(0, availableMinutes - otherMinutes)
+
+        return Stepper(
+            value: allocationBinding(for: task.id, upperBound: upperBound),
+            in: 0...upperBound,
+            step: 1
+        ) {
+            HStack(spacing: 10) {
+                Text(CalendarTaskImportSupport.displayEmoji(for: task.emoji) ?? "*")
+                Text(DayPlanTaskSorting.title(for: task))
+                    .foregroundStyle(.primary)
+                Spacer()
+                Text(DayPlanFormatting.durationText(taskMinutes))
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+        }
+    }
+
+    private func allocationBinding(for taskID: UUID, upperBound: Int) -> Binding<Int> {
+        Binding(
+            get: {
+                min(max(0, draftMinutesByTaskID[taskID] ?? 0), upperBound)
+            },
+            set: { value in
+                draftMinutesByTaskID[taskID] = min(max(0, value), upperBound)
+            }
+        )
+    }
+
+    private func allocatableMinutes(at date: Date) -> Int {
+        let seconds: TimeInterval
+        if let completedAt = session.completedAt {
+            seconds = session.activeDurationSeconds(at: completedAt)
+        } else {
+            seconds = session.activeDurationSeconds(at: date)
+        }
+        return max(0, Int(floor(seconds / 60)))
     }
 }
 

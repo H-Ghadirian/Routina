@@ -46,6 +46,11 @@ struct DayPlanBlockedInterval: Equatable, Sendable {
     }
 }
 
+struct DayPlanFocusTaskAllocation: Equatable, Sendable {
+    var taskID: UUID
+    var minutes: Int
+}
+
 enum DayPlanFocusSessionBlocks {
     static func activeBlocksByDayKey(
         on dates: [Date],
@@ -239,6 +244,144 @@ enum DayPlanFocusSessionBlocks {
 }
 
 enum DayPlanFocusSessionPlannerSync {
+    static func allocationBlockID(sessionID: UUID, taskID: UUID) -> UUID {
+        let sessionBytes = sessionID.uuid
+        let taskBytes = taskID.uuid
+        return UUID(uuid: (
+            sessionBytes.0 ^ taskBytes.15,
+            sessionBytes.1 ^ taskBytes.14,
+            sessionBytes.2 ^ taskBytes.13,
+            sessionBytes.3 ^ taskBytes.12,
+            sessionBytes.4 ^ taskBytes.11,
+            sessionBytes.5 ^ taskBytes.10,
+            sessionBytes.6 ^ taskBytes.9,
+            sessionBytes.7 ^ taskBytes.8,
+            sessionBytes.8 ^ taskBytes.7,
+            sessionBytes.9 ^ taskBytes.6,
+            sessionBytes.10 ^ taskBytes.5,
+            sessionBytes.11 ^ taskBytes.4,
+            sessionBytes.12 ^ taskBytes.3,
+            sessionBytes.13 ^ taskBytes.2,
+            sessionBytes.14 ^ taskBytes.1,
+            sessionBytes.15 ^ taskBytes.0
+        ))
+    }
+
+    @discardableResult
+    static func savePlanFocusAllocations(
+        for session: FocusSession,
+        allocations: [DayPlanFocusTaskAllocation],
+        tasks: [RoutineTask],
+        now: Date = Date(),
+        calendar: Calendar,
+        context: ModelContext
+    ) -> Bool {
+        guard session.isUnassigned,
+              session.abandonedAt == nil,
+              let startedAt = session.startedAt else {
+            return false
+        }
+
+        let tasksByID = Dictionary(grouping: tasks, by: \.id).compactMapValues(\.first)
+        let availableMinutes = max(0, Int(floor(session.activeDurationSeconds(at: session.completedAt ?? now) / 60)))
+        var remainingMinutes = availableMinutes
+        let sanitizedAllocations = allocations
+            .map { DayPlanFocusTaskAllocation(taskID: $0.taskID, minutes: max(0, $0.minutes)) }
+            .filter { $0.minutes > 0 && tasksByID[$0.taskID] != nil }
+            .compactMap { allocation -> DayPlanFocusTaskAllocation? in
+                guard remainingMinutes > 0 else { return nil }
+                let minutes = min(allocation.minutes, remainingMinutes)
+                remainingMinutes -= minutes
+                return DayPlanFocusTaskAllocation(taskID: allocation.taskID, minutes: minutes)
+            }
+        let existingBlocks = planFocusAllocationBlocks(for: session, context: context)
+        let previousMinutesByTask = existingBlocks.reduce(into: [UUID: Int]()) { result, block in
+            result[block.taskID, default: 0] += block.durationMinutes
+        }
+        let nextMinutesByTask = sanitizedAllocations.reduce(into: [UUID: Int]()) { result, allocation in
+            result[allocation.taskID, default: 0] += allocation.minutes
+        }
+
+        do {
+            for block in existingBlocks where nextMinutesByTask[block.taskID] == nil {
+                deleteBlock(id: block.id, dayKey: block.dayKey, context: context)
+            }
+
+            var cursorMinutes = 0
+            for allocation in sanitizedAllocations {
+                guard let task = tasksByID[allocation.taskID] else { continue }
+                let blockID = allocationBlockID(sessionID: session.id, taskID: allocation.taskID)
+                let blockStart = calendar.date(byAdding: .minute, value: cursorMinutes, to: startedAt) ?? startedAt
+                let startMinute = startMinute(
+                    for: blockStart,
+                    calendar: calendar,
+                    minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+                )
+                let block = DayPlanBlock(
+                    id: blockID,
+                    taskID: task.id,
+                    dayKey: DayPlanStorage.dayKey(for: blockStart, calendar: calendar),
+                    startMinute: startMinute,
+                    durationMinutes: allocation.minutes,
+                    titleSnapshot: DayPlanTaskSorting.title(for: task),
+                    emojiSnapshot: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
+                    createdAt: startedAt,
+                    updatedAt: now,
+                    minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+                )
+                upsertBlock(block, context: context)
+                cursorMinutes += allocation.minutes
+            }
+
+            for task in tasks {
+                let previousMinutes = previousMinutesByTask[task.id] ?? 0
+                let nextMinutes = nextMinutesByTask[task.id] ?? 0
+                let delta = nextMinutes - previousMinutes
+                guard delta != 0 else { continue }
+                let previousDuration = task.actualDurationMinutes
+                let currentDuration = previousDuration ?? 0
+                let updatedDuration = max(0, currentDuration + delta)
+                task.actualDurationMinutes = updatedDuration > 0 ? updatedDuration : nil
+                task.appendChangeLogEntry(timeSpentChangeEntry(
+                    previousDurationMinutes: previousDuration,
+                    durationMinutes: task.actualDurationMinutes
+                ))
+            }
+
+            try context.save()
+            NotificationCenter.default.postRoutineDidUpdate()
+            return true
+        } catch {
+            NSLog("Failed to save plan focus allocations: \(error.localizedDescription)")
+            return false
+        }
+    }
+
+    static func hasPlanFocusAllocations(for session: FocusSession, context: ModelContext?) -> Bool {
+        guard let context else { return false }
+        return !planFocusAllocationBlocks(for: session, context: context).isEmpty
+    }
+
+    static func planFocusAllocationBlocks(for session: FocusSession, context: ModelContext) -> [DayPlanBlock] {
+        do {
+            let records = try context.fetch(FetchDescriptor<DayPlanBlockRecord>())
+            return records
+                .map(\.detachedBlock)
+                .filter { block in
+                    block.id == allocationBlockID(sessionID: session.id, taskID: block.taskID)
+                }
+                .sorted { lhs, rhs in
+                    if lhs.dayKey != rhs.dayKey {
+                        return lhs.dayKey < rhs.dayKey
+                    }
+                    return lhs.startMinute < rhs.startMinute
+                }
+        } catch {
+            NSLog("Failed to load plan focus allocations: \(error.localizedDescription)")
+            return []
+        }
+    }
+
     @discardableResult
     static func saveStartedFocusBlock(
         for task: RoutineTask,
@@ -439,6 +582,44 @@ enum DayPlanFocusSessionPlannerSync {
 
         return plannedBlock.startMinute < focusBlock.endMinute
             && focusBlock.startMinute < plannedBlock.endMinute
+    }
+
+    private static func upsertBlock(_ block: DayPlanBlock, context: ModelContext) {
+        var blocks = DayPlanStorage.loadBlocks(forDayKey: block.dayKey, context: context)
+        if let index = blocks.firstIndex(where: { $0.id == block.id }) {
+            blocks[index] = block
+        } else {
+            blocks.append(block)
+        }
+        DayPlanStorage.saveBlocks(blocks, forDayKey: block.dayKey, context: context)
+    }
+
+    private static func deleteBlock(id: UUID, dayKey: String, context: ModelContext) {
+        var blocks = DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
+        blocks.removeAll { $0.id == id }
+        DayPlanStorage.saveBlocks(blocks, forDayKey: dayKey, context: context)
+    }
+
+    private static func timeSpentChangeEntry(
+        previousDurationMinutes: Int?,
+        durationMinutes: Int?
+    ) -> RoutineTaskChangeLogEntry {
+        let kind: RoutineTaskChangeKind
+        switch (previousDurationMinutes, durationMinutes) {
+        case (nil, .some):
+            kind = .timeSpentAdded
+        case (.some, nil):
+            kind = .timeSpentRemoved
+        default:
+            kind = .timeSpentChanged
+        }
+
+        return RoutineTaskChangeLogEntry(
+            kind: kind,
+            previousValue: previousDurationMinutes.map(String.init),
+            newValue: durationMinutes.map(String.init),
+            durationMinutes: durationMinutes
+        )
     }
 }
 
