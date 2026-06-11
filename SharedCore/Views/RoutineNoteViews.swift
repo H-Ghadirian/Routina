@@ -1035,7 +1035,7 @@ struct RoutineNoteDetailView: View {
             .frame(maxWidth: 760, alignment: .leading)
             .padding(24)
         }
-        .navigationTitle(note.displayTitle)
+        .navigationTitle(note.detailDisplayTitle)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 Button(role: .destructive) {
@@ -1055,7 +1055,7 @@ struct RoutineNoteDetailView: View {
                 }
 
                 RoutinaDeepLinkShareMenu(
-                    title: note.displayTitle,
+                    title: note.detailDisplayTitle,
                     deepLink: .note(note.id)
                 )
             }
@@ -1087,7 +1087,7 @@ struct RoutineNoteDetailView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(note.displayTitle)
+            Text(note.detailDisplayTitle)
                 .font(.largeTitle.weight(.semibold))
                 .lineLimit(3)
 

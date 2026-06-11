@@ -28,6 +28,18 @@ final class RoutineNote {
         return "Untitled note"
     }
 
+    var isStatusNote: Bool {
+        RoutineTag.contains("Status", in: tags)
+    }
+
+    var detailDisplayTitle: String {
+        if isStatusNote, Self.cleanedText(title) == nil {
+            return "Status update"
+        }
+
+        return displayTitle
+    }
+
     var hasImage: Bool {
         imageData?.isEmpty == false
     }
