@@ -87,6 +87,21 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testPlannerOnlyHidesUnassignedPlanFocusToolbarBadge() throws {
+        let detailSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
+        let badgeSource = try Self.sourceFile("RoutinaMacApp/Screens/Shared/RoutinaMacFocusTimerToolbarBadge.swift")
+
+        XCTAssertTrue(
+            detailSource.contains("hiddenKinds: mainDetailMode == .planner ? [.unassigned] : []"),
+            "Planner should hide only its own unassigned Plan Focus toolbar badge, while still showing active board or task timers."
+        )
+        XCTAssertFalse(
+            detailSource.contains("if mainDetailMode != .planner"),
+            "Do not hide the entire global focus timer toolbar item in Planner; board/sprint focus still needs to be visible there."
+        )
+        XCTAssertTrue(badgeSource.contains("return !hiddenKinds.contains(kind)"))
+    }
+
     func testMacToolbarStatusBadgeKeepsStableTextWidth() throws {
         let source = try Self.sourceFile("RoutinaMacApp/Screens/Shared/MacToolbarComponents.swift")
 

@@ -58,9 +58,9 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
             }
         }
         .toolbar {
-            if mainDetailMode != .planner {
-                RoutinaMacFocusTimerToolbarItem()
-            }
+            RoutinaMacFocusTimerToolbarItem(
+                hiddenKinds: mainDetailMode == .planner ? [.unassigned] : []
+            )
 
             if shouldShowBoardInspectorToolbarButton {
                 ToolbarItem(placement: .primaryAction) {
