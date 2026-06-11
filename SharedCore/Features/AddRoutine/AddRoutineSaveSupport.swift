@@ -73,6 +73,7 @@ struct AddRoutineSaveRequest: Equatable {
     let notes: String?
     let link: String?
     let links: [String]
+    let linkItems: [RoutineTaskLink]
     let deadline: Date?
     let isAllDay: Bool
     let routineDurationMode: RoutineDurationMode
@@ -110,6 +111,7 @@ struct AddRoutineSaveRequest: Equatable {
         notes: String? = nil,
         link: String? = nil,
         links: [String] = [],
+        linkItems: [RoutineTaskLink] = [],
         deadline: Date? = nil,
         isAllDay: Bool = false,
         routineDurationMode: RoutineDurationMode = .oneDay,
@@ -144,9 +146,13 @@ struct AddRoutineSaveRequest: Equatable {
         self.recurrenceRule = recurrenceRule
         self.emoji = emoji
         self.notes = notes
-        let sanitizedLinks = RoutineTask.sanitizedLinks(links.isEmpty ? link.map { [$0] } ?? [] : links)
-        self.link = sanitizedLinks.first
-        self.links = sanitizedLinks
+        let sanitizedLinkItems = RoutineTaskLinkStorage.sanitizedItems(linkItems.isEmpty
+            ? (links.isEmpty ? link.map { [RoutineTaskLink(title: nil, url: $0)] } ?? [] : links.map { RoutineTaskLink(title: nil, url: $0) })
+            : linkItems
+        )
+        self.link = sanitizedLinkItems.first?.url
+        self.links = sanitizedLinkItems.map(\.url)
+        self.linkItems = sanitizedLinkItems
         self.deadline = deadline
         self.isAllDay = isAllDay
         self.routineDurationMode = scheduleMode == .oneOff ? .oneDay : routineDurationMode
@@ -213,9 +219,10 @@ struct AddRoutineSaveRequest: Equatable {
         )
         self.emoji = basics.routineEmoji
         self.notes = RoutineTask.sanitizedNotes(basics.routineNotes)
-        let sanitizedLinks = RoutineTask.sanitizedLinks(fromEditorText: basics.routineLink)
-        self.link = sanitizedLinks.first
-        self.links = sanitizedLinks
+        let sanitizedLinks = RoutineTask.sanitizedLinkItems(fromEditorText: basics.routineLink)
+        self.link = sanitizedLinks.first?.url
+        self.links = sanitizedLinks.map(\.url)
+        self.linkItems = sanitizedLinks
         self.deadline = schedule.scheduleMode.taskType == .todo ? basics.deadline : nil
         self.isAllDay = basics.isAllDay
         self.routineDurationMode = schedule.scheduleMode == .oneOff ? .oneDay : basics.routineDurationMode

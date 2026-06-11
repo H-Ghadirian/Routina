@@ -59,6 +59,7 @@ extension SettingsRoutineDataPersistence {
             var notes: String?
             var link: String?
             var links: [String]?
+            var linkItems: [RoutineTaskLink]?
             var deadline: Date?
             var plannedDate: Date?
             var isAllDay: Bool?

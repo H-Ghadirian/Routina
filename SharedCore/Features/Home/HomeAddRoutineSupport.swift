@@ -44,7 +44,7 @@ enum HomeAddRoutineSupport {
         goalIDs: [UUID],
         scheduleAnchor: Date
     ) -> RoutineTask {
-        RoutineTask(
+        let task = RoutineTask(
             name: name,
             emoji: request.emoji,
             notes: request.notes,
@@ -84,6 +84,8 @@ enum HomeAddRoutineSupport {
             storyPoints: request.storyPoints,
             focusModeEnabled: request.focusModeEnabled
         )
+        task.linkItems = request.linkItems
+        return task
     }
 
     static func makeAttachments(

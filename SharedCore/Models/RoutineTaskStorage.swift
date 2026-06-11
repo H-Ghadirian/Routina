@@ -93,18 +93,28 @@ enum RoutineTaskRelationshipStorage {
 }
 
 enum RoutineTaskLinkStorage {
-    static func sanitized(_ links: [String]) -> [String] {
+    static func sanitizedItems(_ links: [RoutineTaskLink]) -> [RoutineTaskLink] {
         var seenLinks: Set<String> = []
         return links.compactMap { link in
-            guard let sanitizedLink = RoutineModelValueSanitizer.sanitizedLink(link) else { return nil }
+            guard let sanitizedLink = RoutineModelValueSanitizer.sanitizedLink(link.url) else { return nil }
             let dedupeKey = sanitizedLink.lowercased()
             guard seenLinks.insert(dedupeKey).inserted else { return nil }
-            return sanitizedLink
+            let trimmedTitle = link.title?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let title = trimmedTitle?.isEmpty == false ? trimmedTitle : nil
+            return RoutineTaskLink(title: title, url: sanitizedLink)
         }
     }
 
+    static func sanitized(_ links: [String]) -> [String] {
+        sanitizedItems(links.map { RoutineTaskLink(title: nil, url: $0) }).map(\.url)
+    }
+
     static func serialize(_ links: [String]) -> String {
-        let sanitizedLinks = sanitized(links)
+        serializeItems(sanitized(links).map { RoutineTaskLink(title: nil, url: $0) })
+    }
+
+    static func serializeItems(_ links: [RoutineTaskLink]) -> String {
+        let sanitizedLinks = sanitizedItems(links)
         guard !sanitizedLinks.isEmpty else { return "" }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
@@ -116,12 +126,22 @@ enum RoutineTaskLinkStorage {
     }
 
     static func deserialize(_ storage: String) -> [String] {
+        deserializeItems(storage).map(\.url)
+    }
+
+    static func deserializeItems(_ storage: String) -> [RoutineTaskLink] {
         guard !storage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-              let data = storage.data(using: .utf8),
-              let decoded = try? JSONDecoder().decode([String].self, from: data) else {
+              let data = storage.data(using: .utf8) else {
             return []
         }
-        return sanitized(decoded)
+        let decoder = JSONDecoder()
+        if let decoded = try? decoder.decode([RoutineTaskLink].self, from: data) {
+            return sanitizedItems(decoded)
+        }
+        if let decoded = try? decoder.decode([String].self, from: data) {
+            return sanitizedItems(decoded.map { RoutineTaskLink(title: nil, url: $0) })
+        }
+        return []
     }
 }
 

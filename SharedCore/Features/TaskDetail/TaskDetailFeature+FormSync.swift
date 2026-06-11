@@ -6,7 +6,7 @@ extension TaskDetailFeature {
         state.editRoutineName = state.task.name ?? ""
         state.editRoutineEmoji = CalendarTaskImportSupport.displayEmoji(for: state.task.emoji) ?? "✨"
         state.editRoutineNotes = CalendarTaskImportSupport.displayNotes(from: state.task.notes) ?? ""
-        state.editRoutineLink = RoutineTask.linkEditorText(for: state.task.links)
+        state.editRoutineLink = RoutineTask.linkEditorText(for: state.task.linkItems)
         state.editDeadline = state.task.deadline
         state.editIsAllDay = state.task.isAllDay
         state.editRoutineDurationMode = state.task.routineDurationMode

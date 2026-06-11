@@ -20,6 +20,7 @@ enum CloudSharingService {
         var notes: String?
         var link: String?
         var links: [String]?
+        var linkItems: [RoutineTaskLink]?
         var deadline: Date?
         var plannedDate: Date?
         var isAllDay: Bool?
@@ -272,6 +273,7 @@ extension CloudSharingService.SharedTaskPayload {
         self.notes = task.notes
         self.link = task.link
         self.links = task.links.isEmpty ? nil : task.links
+        self.linkItems = task.linkItems.isEmpty ? nil : task.linkItems
         self.deadline = task.deadline
         self.plannedDate = task.plannedDate
         self.isAllDay = task.isAllDay
@@ -333,7 +335,10 @@ extension CloudSharingService.SharedTaskPayload {
         task.name = RoutineTask.trimmedName(name)
         task.emoji = emoji
         task.notes = RoutineTask.sanitizedNotes(notes)
-        task.links = links ?? link.map { [$0] } ?? []
+        task.linkItems = linkItems
+            ?? links?.map { RoutineTaskLink(title: nil, url: $0) }
+            ?? link.map { [RoutineTaskLink(title: nil, url: $0)] }
+            ?? []
         task.deadline = scheduleMode == .oneOff ? deadline : nil
         task.plannedDate = RoutineTask.normalizedPlannedDate(plannedDate)
         task.isAllDay = isAllDay ?? false
@@ -444,5 +449,9 @@ private extension RoutineTask {
             focusModeEnabled: payload.focusModeEnabled,
             comments: payload.comments ?? []
         )
+        self.linkItems = payload.linkItems
+            ?? payload.links?.map { RoutineTaskLink(title: nil, url: $0) }
+            ?? payload.link.map { [RoutineTaskLink(title: nil, url: $0)] }
+            ?? []
     }
 }

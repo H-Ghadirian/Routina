@@ -54,7 +54,7 @@ struct TaskDetailExtrasSectionView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .taskDetailCopyableText(link.text)
+                .taskDetailCopyableText(link.url.absoluteString)
             }
         }
         .padding(12)

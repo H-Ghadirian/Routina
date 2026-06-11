@@ -11,7 +11,10 @@ enum CloudKitDirectPullTaskPayloadApplier {
         }
         task.emoji = payload.emoji
         task.notes = RoutineTask.sanitizedNotes(payload.notes)
-        task.links = payload.links ?? payload.link.map { [$0] } ?? []
+        task.linkItems = payload.linkItems
+            ?? payload.links?.map { RoutineTaskLink(title: nil, url: $0) }
+            ?? payload.link.map { [RoutineTaskLink(title: nil, url: $0)] }
+            ?? []
         task.imageData = payload.imageData
         task.voiceNoteData = payload.voiceNoteData
         task.voiceNoteDurationSeconds = payload.voiceNoteDurationSeconds
@@ -95,7 +98,7 @@ enum CloudKitDirectPullTaskPayloadApplier {
     }
 
     static func makeTask(from payload: CloudKitDirectPullService.TaskPayload) -> RoutineTask {
-        RoutineTask(
+        let task = RoutineTask(
             id: payload.id,
             name: RoutineTask.trimmedName(payload.name),
             emoji: payload.emoji,
@@ -145,5 +148,10 @@ enum CloudKitDirectPullTaskPayloadApplier {
             storyPoints: payload.storyPoints,
             comments: payload.comments ?? []
         )
+        task.linkItems = payload.linkItems
+            ?? payload.links?.map { RoutineTaskLink(title: nil, url: $0) }
+            ?? payload.link.map { [RoutineTaskLink(title: nil, url: $0)] }
+            ?? []
+        return task
     }
 }

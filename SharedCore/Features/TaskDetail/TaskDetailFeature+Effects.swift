@@ -384,6 +384,7 @@ extension TaskDetailFeature {
             notes: request.notes,
             link: request.link,
             links: request.links,
+            linkItems: request.linkItems,
             deadline: request.deadline,
             isAllDay: request.isAllDay,
             routineDurationMode: request.routineDurationMode,
@@ -424,6 +425,7 @@ extension TaskDetailFeature {
         notes: String?,
         link: String?,
         links: [String],
+        linkItems: [RoutineTaskLink],
         deadline: Date?,
         isAllDay: Bool,
         routineDurationMode: RoutineDurationMode,
@@ -473,7 +475,9 @@ extension TaskDetailFeature {
                     visibleNotes: notes,
                     existingNotes: task.notes
                 )
-                task.links = links.isEmpty ? link.map { [$0] } ?? [] : links
+                task.linkItems = linkItems.isEmpty
+                    ? (links.isEmpty ? link.map { [RoutineTaskLink(title: nil, url: $0)] } ?? [] : links.map { RoutineTaskLink(title: nil, url: $0) })
+                    : linkItems
                 task.reminderAt = reminderAt
                 task.priority = priority
                 task.importance = importance
