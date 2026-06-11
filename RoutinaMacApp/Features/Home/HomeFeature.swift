@@ -35,6 +35,15 @@ struct HomeFeature {
 
         var id: Self { self }
 
+        var sidebarStripTitle: String {
+            switch self {
+            case .routines:
+                return "Tasks"
+            default:
+                return rawValue
+            }
+        }
+
         static let sidebarStripModes: [Self] = [
             .routines,
             .goals,

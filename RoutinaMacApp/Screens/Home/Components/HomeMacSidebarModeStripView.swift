@@ -24,8 +24,8 @@ struct HomeMacSidebarModeStripView: View {
                     }
                     .buttonStyle(.plain)
                     .frame(maxWidth: .infinity)
-                    .accessibilityLabel(mode.rawValue)
-                    .help(mode.rawValue)
+                    .accessibilityLabel(mode.sidebarStripTitle)
+                    .help(mode.sidebarStripTitle)
                 }
 
                 if mode == .settings {
