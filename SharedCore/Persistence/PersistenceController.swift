@@ -38,6 +38,7 @@ public struct PersistenceController {
                 BacklogAssignmentRecord.self,
                 SprintFocusSessionRecord.self,
                 SprintFocusAllocationRecord.self,
+                RoutinaUserPreferences.self,
                 configurations: primaryConfiguration
             )
             Self.schedulePostOpenMigrations(in: container)
@@ -89,6 +90,7 @@ public struct PersistenceController {
                         BacklogAssignmentRecord.self,
                         SprintFocusSessionRecord.self,
                         SprintFocusAllocationRecord.self,
+                        RoutinaUserPreferences.self,
                         configurations: retriedConfiguration
                     )
                     Self.schedulePostOpenMigrations(in: container)
@@ -125,6 +127,7 @@ public struct PersistenceController {
                     BacklogAssignmentRecord.self,
                     SprintFocusSessionRecord.self,
                     SprintFocusAllocationRecord.self,
+                    RoutinaUserPreferences.self,
                     configurations: localFallback
                 )
                 Self.schedulePostOpenMigrations(in: container)
@@ -156,6 +159,7 @@ public struct PersistenceController {
                         BacklogAssignmentRecord.self,
                         SprintFocusSessionRecord.self,
                         SprintFocusAllocationRecord.self,
+                        RoutinaUserPreferences.self,
                         configurations: memoryFallback
                     )
                     Self.schedulePostOpenMigrations(in: container)
@@ -200,6 +204,7 @@ public struct PersistenceController {
             BacklogAssignmentRecord.self,
             SprintFocusSessionRecord.self,
             SprintFocusAllocationRecord.self,
+            RoutinaUserPreferences.self,
             configurations: configuration
         )
         Self.schedulePostOpenMigrations(in: container)
@@ -257,6 +262,7 @@ public struct PersistenceController {
     static func runPostOpenMigrations(in container: ModelContainer) {
         do {
             let migratedCount = try migrateLegacyRecurrenceRules(in: container.mainContext)
+            RoutinaUserPreferencesStore.migrateDefaultsIfNeeded(in: container.mainContext)
             if migratedCount > 0 {
                 NSLog("Migrated \(migratedCount) routine recurrence rule(s) from legacy JSON storage.")
             }
