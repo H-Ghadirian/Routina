@@ -51,6 +51,7 @@ enum CloudSyncedSurfaceRefreshCoordinator {
         pendingRefreshTask = Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(350))
             guard !Task.isCancelled else { return }
+            RoutinaUserPreferencesStore.applyToDefaults(from: PersistenceController.shared.container.mainContext)
             NotificationCenter.default.postRoutineDidUpdate()
         }
     }

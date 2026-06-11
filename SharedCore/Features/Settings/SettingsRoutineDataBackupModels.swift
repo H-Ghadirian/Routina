@@ -25,6 +25,7 @@ extension SettingsRoutineDataPersistence {
         var sprintFocusAllocations: [SprintFocusAllocation]? = nil
         var deviceSessions: [DeviceSession]? = nil
         var deviceActionLogs: [DeviceActionLog]? = nil
+        var userPreferences: UserPreferences? = nil
 
         struct Place: Codable {
             var id: UUID
@@ -322,6 +323,51 @@ extension SettingsRoutineDataPersistence {
             var appVersion: String
             var details: String?
         }
+
+        struct UserPreferences: Codable {
+            var id: String
+            var selectedAppIcon: String?
+            var appColorScheme: String?
+            var routineListSectioningMode: String?
+            var tagCounterDisplayMode: String?
+            var homeTaskRowHiddenFields: String?
+            var relatedTagRules: String?
+            var tagColors: String?
+            var fastFilterTags: String?
+            var iOSStatsDashboardHiddenItemIDs: String?
+            var iOSStatsDashboardItemOrderIDs: String?
+            var iOSStatsSummaryDisplayMode: String?
+            var macStatsDashboardHiddenItemIDs: String?
+            var macStatsDashboardItemOrderIDs: String?
+            var macStatsSummaryDisplayMode: String?
+            var hiddenDayPlanTimelineActivityIDs: String?
+            var protectionBlockingEnabledModes: String?
+            var blockingWebsiteDomains: String?
+            var focusShieldSelection: String?
+            var macFocusBlockedApps: String?
+            var macFormSectionOrder: String?
+            var macQuickAddShortcut: String?
+            var macAdventureOwnedItemIDs: String?
+            var macAdventureUnlockedWorldIDs: String?
+            var macAdventureUnlockedStageIDs: String?
+            var notificationsEnabled: Bool?
+            var hideUnavailableRoutines: Bool?
+            var appLockEnabled: Bool?
+            var gitFeaturesEnabled: Bool?
+            var showPersianDates: Bool?
+            var batteryRoutineMonitoringEnabled: Bool?
+            var sleepHomeActionEnabled: Bool?
+            var sleepHomeMenuEnabled: Bool?
+            var shakeToStartSleepEnabled: Bool?
+            var focusShieldEnabled: Bool?
+            var macFocusAppBlockingEnabled: Bool?
+            var automaticPlaceCheckInEnabled: Bool?
+            var showTimelineTasksInDayPlanner: Bool?
+            var notificationReminderHour: Int?
+            var notificationReminderMinute: Int?
+            var batteryRoutineThresholdPercent: Int?
+            var updatedAt: Date?
+        }
     }
 
     struct ImportSummary {
@@ -346,6 +392,7 @@ extension SettingsRoutineDataPersistence {
         var sprintFocusAllocations: Int = 0
         var deviceSessions: Int = 0
         var deviceActionLogs: Int = 0
+        var userPreferences: Int = 0
     }
 
     enum Error: LocalizedError {

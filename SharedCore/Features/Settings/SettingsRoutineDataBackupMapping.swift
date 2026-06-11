@@ -335,4 +335,51 @@ enum SettingsRoutineDataBackupMapping {
             details: log.details
         )
     }
+
+    static func userPreferences(_ preferences: RoutinaUserPreferences) -> Backup.UserPreferences {
+        Backup.UserPreferences(
+            id: preferences.id,
+            selectedAppIcon: preferences.selectedAppIcon,
+            appColorScheme: preferences.appColorScheme,
+            routineListSectioningMode: preferences.routineListSectioningMode,
+            tagCounterDisplayMode: preferences.tagCounterDisplayMode,
+            homeTaskRowHiddenFields: preferences.homeTaskRowHiddenFields,
+            relatedTagRules: preferences.relatedTagRules,
+            tagColors: preferences.tagColors,
+            fastFilterTags: preferences.fastFilterTags,
+            iOSStatsDashboardHiddenItemIDs: preferences.iOSStatsDashboardHiddenItemIDs,
+            iOSStatsDashboardItemOrderIDs: preferences.iOSStatsDashboardItemOrderIDs,
+            iOSStatsSummaryDisplayMode: preferences.iOSStatsSummaryDisplayMode,
+            macStatsDashboardHiddenItemIDs: preferences.macStatsDashboardHiddenItemIDs,
+            macStatsDashboardItemOrderIDs: preferences.macStatsDashboardItemOrderIDs,
+            macStatsSummaryDisplayMode: preferences.macStatsSummaryDisplayMode,
+            hiddenDayPlanTimelineActivityIDs: preferences.hiddenDayPlanTimelineActivityIDs,
+            protectionBlockingEnabledModes: preferences.protectionBlockingEnabledModes,
+            blockingWebsiteDomains: preferences.blockingWebsiteDomains,
+            focusShieldSelection: preferences.focusShieldSelection,
+            macFocusBlockedApps: preferences.macFocusBlockedApps,
+            macFormSectionOrder: preferences.macFormSectionOrder,
+            macQuickAddShortcut: preferences.macQuickAddShortcut,
+            macAdventureOwnedItemIDs: preferences.macAdventureOwnedItemIDs,
+            macAdventureUnlockedWorldIDs: preferences.macAdventureUnlockedWorldIDs,
+            macAdventureUnlockedStageIDs: preferences.macAdventureUnlockedStageIDs,
+            notificationsEnabled: preferences.notificationsEnabled,
+            hideUnavailableRoutines: preferences.hideUnavailableRoutines,
+            appLockEnabled: preferences.appLockEnabled,
+            gitFeaturesEnabled: preferences.gitFeaturesEnabled,
+            showPersianDates: preferences.showPersianDates,
+            batteryRoutineMonitoringEnabled: preferences.batteryRoutineMonitoringEnabled,
+            sleepHomeActionEnabled: preferences.sleepHomeActionEnabled,
+            sleepHomeMenuEnabled: preferences.sleepHomeMenuEnabled,
+            shakeToStartSleepEnabled: preferences.shakeToStartSleepEnabled,
+            focusShieldEnabled: preferences.focusShieldEnabled,
+            macFocusAppBlockingEnabled: preferences.macFocusAppBlockingEnabled,
+            automaticPlaceCheckInEnabled: preferences.automaticPlaceCheckInEnabled,
+            showTimelineTasksInDayPlanner: preferences.showTimelineTasksInDayPlanner,
+            notificationReminderHour: preferences.notificationReminderHour,
+            notificationReminderMinute: preferences.notificationReminderMinute,
+            batteryRoutineThresholdPercent: preferences.batteryRoutineThresholdPercent,
+            updatedAt: preferences.updatedAt
+        )
+    }
 }

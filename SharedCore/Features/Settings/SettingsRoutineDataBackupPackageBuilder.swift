@@ -63,6 +63,8 @@ enum SettingsRoutineDataBackupPackageBuilder {
         let sprintFocusAllocations = try context.fetch(FetchDescriptor<SprintFocusAllocationRecord>())
         let deviceSessions = try context.fetch(FetchDescriptor<RoutinaDeviceSession>())
         let deviceActionLogs = try context.fetch(FetchDescriptor<RoutinaDeviceActionLog>())
+        RoutinaUserPreferencesStore.mirrorDefaultsToStore(in: context)
+        let userPreferences = try context.fetch(FetchDescriptor<RoutinaUserPreferences>()).first
 
         var attachmentManifests: [Backup.Attachment] = []
         var taskImageAttachmentIDs: [UUID: UUID] = [:]
@@ -253,7 +255,8 @@ enum SettingsRoutineDataBackupPackageBuilder {
             sprintFocusSessions: sprintFocusSessions.map(SettingsRoutineDataBackupMapping.sprintFocus),
             sprintFocusAllocations: sprintFocusAllocations.map(SettingsRoutineDataBackupMapping.sprintFocusAllocation),
             deviceSessions: deviceSessions.map(SettingsRoutineDataBackupMapping.deviceSession),
-            deviceActionLogs: deviceActionLogs.map(SettingsRoutineDataBackupMapping.deviceActionLog)
+            deviceActionLogs: deviceActionLogs.map(SettingsRoutineDataBackupMapping.deviceActionLog),
+            userPreferences: userPreferences.map(SettingsRoutineDataBackupMapping.userPreferences)
         )
 
         return try SettingsRoutineDataBackupCoding.encode(backup)

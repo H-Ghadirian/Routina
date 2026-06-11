@@ -77,6 +77,111 @@ struct SettingsRoutineDataPersistenceTests {
     }
 
     @Test
+    func backupPackageAndRestore_preservesUserPreferences() async throws {
+        let context = makeInMemoryContext()
+        let defaults = SharedDefaults.app
+        let keysToRestore = [
+            UserDefaultStringValueKey.selectedMacAppIcon.rawValue,
+            UserDefaultStringValueKey.appSettingAppColorScheme.rawValue,
+            UserDefaultStringValueKey.appSettingRelatedTagRules.rawValue,
+            UserDefaultStringValueKey.appSettingTagColors.rawValue,
+            UserDefaultStringValueKey.appSettingFastFilterTags.rawValue,
+            UserDefaultStringValueKey.appSettingIOSStatsDashboardHiddenItemIDs.rawValue,
+            UserDefaultStringValueKey.appSettingMacStatsDashboardItemOrderIDs.rawValue,
+            UserDefaultStringValueKey.appSettingProtectionBlockingEnabledModes.rawValue,
+            UserDefaultStringValueKey.appSettingBlockingWebsiteDomains.rawValue,
+            UserDefaultStringValueKey.appSettingMacFocusBlockedApps.rawValue,
+            UserDefaultStringValueKey.macFormSectionOrder.rawValue,
+            UserDefaultStringValueKey.macQuickAddShortcut.rawValue,
+            UserDefaultStringValueKey.appSettingMacAdventureOwnedItemIDs.rawValue,
+            UserDefaultBoolValueKey.appSettingNotificationsEnabled.rawValue,
+            UserDefaultBoolValueKey.appSettingAppLockEnabled.rawValue,
+            UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
+            UserDefaultBoolValueKey.appSettingFocusShieldEnabled.rawValue,
+            UserDefaultBoolValueKey.appSettingAutomaticPlaceCheckInEnabled.rawValue,
+            BatteryRoutinePreferences.thresholdPercentDefaultsKey
+        ]
+        let previousValues = Dictionary(uniqueKeysWithValues: keysToRestore.map { ($0, defaults.object(forKey: $0)) })
+        defer {
+            for (key, value) in previousValues {
+                if let value {
+                    defaults.set(value, forKey: key)
+                } else {
+                    defaults.removeObject(forKey: key)
+                }
+            }
+        }
+
+        defaults[.selectedMacAppIcon] = AppIconOption.teal.rawValue
+        defaults[.appSettingAppColorScheme] = AppColorScheme.dark.rawValue
+        defaults[.appSettingRelatedTagRules] = "[{\"tag\":\"Focus\",\"relatedTags\":[\"Deep Work\"]}]"
+        defaults[.appSettingTagColors] = "{\"Focus\":\"#112233\"}"
+        defaults[.appSettingFastFilterTags] = "Focus,Health"
+        defaults[.appSettingIOSStatsDashboardHiddenItemIDs] = "movement"
+        defaults[.appSettingMacStatsDashboardItemOrderIDs] = "done,focus"
+        defaults[.appSettingProtectionBlockingEnabledModes] = ProtectionBlockingMode.encodedSet([.focus])
+        defaults[.appSettingBlockingWebsiteDomains] = "example.com"
+        defaults[.appSettingMacFocusBlockedApps] = "com.example.Blocked"
+        let formOrderData = try JSONEncoder().encode(["schedule", "tags"])
+        defaults.set(formOrderData, forKey: UserDefaultStringValueKey.macFormSectionOrder.rawValue)
+        defaults[.macQuickAddShortcut] = "optionCommandK"
+        defaults[.appSettingMacAdventureOwnedItemIDs] = "map"
+        defaults[.appSettingNotificationsEnabled] = true
+        defaults[.appSettingAppLockEnabled] = true
+        defaults[.appSettingShowPersianDates] = true
+        defaults[.appSettingFocusShieldEnabled] = true
+        defaults[.appSettingAutomaticPlaceCheckInEnabled] = false
+        defaults.set(35, forKey: BatteryRoutinePreferences.thresholdPercentDefaultsKey)
+
+        let package = try SettingsRoutineDataPersistence.buildBackupPackage(from: context)
+        let backup = try SettingsRoutineDataBackupCoding.decodeBackup(from: package.manifestData)
+
+        #expect(backup.userPreferences?.selectedAppIcon == AppIconOption.teal.rawValue)
+        #expect(backup.userPreferences?.tagColors == "{\"Focus\":\"#112233\"}")
+
+        let restoreContext = makeInMemoryContext()
+        let summary = try SettingsRoutineDataPersistence.replaceAllRoutineData(
+            with: package.manifestData,
+            in: restoreContext
+        )
+
+        let restored = try #require(restoreContext.fetch(FetchDescriptor<RoutinaUserPreferences>()).first)
+        #expect(summary.userPreferences == 1)
+        #expect(restored.selectedAppIcon == AppIconOption.teal.rawValue)
+        #expect(restored.appColorScheme == AppColorScheme.dark.rawValue)
+        #expect(restored.relatedTagRules == "[{\"tag\":\"Focus\",\"relatedTags\":[\"Deep Work\"]}]")
+        #expect(restored.tagColors == "{\"Focus\":\"#112233\"}")
+        #expect(restored.fastFilterTags == "Focus,Health")
+        #expect(restored.iOSStatsDashboardHiddenItemIDs == "movement")
+        #expect(restored.macStatsDashboardItemOrderIDs == "done,focus")
+        #expect(restored.protectionBlockingEnabledModes == ProtectionBlockingMode.encodedSet([.focus]))
+        #expect(restored.blockingWebsiteDomains == "example.com")
+        #expect(restored.macFocusBlockedApps == "com.example.Blocked")
+        #expect(restored.macFormSectionOrder == formOrderData.base64EncodedString())
+        #expect(restored.macQuickAddShortcut == "optionCommandK")
+        #expect(restored.macAdventureOwnedItemIDs == "map")
+        #expect(restored.notificationsEnabled)
+        #expect(restored.appLockEnabled)
+        #expect(restored.showPersianDates)
+        #expect(restored.focusShieldEnabled)
+        #expect(!restored.automaticPlaceCheckInEnabled)
+        #expect(restored.batteryRoutineThresholdPercent == 35)
+    }
+
+    @Test
+    func localUserDataReset_deletesUserPreferences() async throws {
+        let context = makeInMemoryContext()
+        let preferences = try RoutinaUserPreferencesStore.fetchOrCreate(in: context)
+        preferences.tagColors = "{\"Focus\":\"#112233\"}"
+        try context.save()
+
+        try LocalUserDataResetService.wipeAllUserData(in: context)
+
+        let remaining = try context.fetch(FetchDescriptor<RoutinaUserPreferences>())
+        #expect(remaining.isEmpty)
+    }
+
+    @Test
     func backupPackageAndRestore_preservesTaskImagesVoiceNotesAndAttachments() async throws {
         let context = makeInMemoryContext()
         let imageData = Data([0x01, 0x02, 0x03])

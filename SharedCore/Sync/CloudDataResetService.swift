@@ -122,6 +122,11 @@ enum LocalUserDataResetService {
             context.delete(session)
         }
 
+        let userPreferences = try context.fetch(FetchDescriptor<RoutinaUserPreferences>())
+        for preferences in userPreferences {
+            context.delete(preferences)
+        }
+
         let dayPlanBlocks = try context.fetch(FetchDescriptor<DayPlanBlockRecord>())
         for block in dayPlanBlocks {
             context.delete(block)

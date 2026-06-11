@@ -26,6 +26,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0210](0210-store-durable-preferences-in-swiftdata.md) refines [0170](0170-treat-backup-reset-as-complete-user-data-operations.md) for durable preferences:** User-owned preferences that should back up, restore, reset, and sync belong in SwiftData, while temporary, diagnostic, cache, migration, permission, and per-device handoff defaults remain in `UserDefaults`.
 - **[0209](0209-allocate-plan-focus-while-running.md) refines [0205](0205-run-plan-focus-from-planner.md) for plan-focus allocation:** Plan focus can be allocated while running or after finish, and the allocation surface can split elapsed/recorded minutes across multiple tasks in `Plan to do today` while preserving the unassigned focus session as focus history.
 - **[0208](0208-delete-standalone-notes.md) refines [0060](0060-support-standalone-notes.md) for note deletion:** Note detail surfaces expose confirmed deletion, remove owned note file attachments with the note, and clear host-owned note selection after successful deletion where needed.
 - **[0207](0207-show-timeline-oldest-to-newest.md) refines [0206](0206-capture-status-from-mac-sidebar.md) for chat-style timeline order:** Timeline derives oldest-to-newest chronology but uses inverted chat-list presentation so the latest entry appears at the bottom on first paint, and split-view timeline selection falls back to the latest visible entry.
@@ -333,3 +334,4 @@ These are ordered from newest resolver to oldest resolver.
 | [0207](0207-show-timeline-oldest-to-newest.md) | Show Timeline Oldest to Newest | Accepted | 2026-06-11 |
 | [0208](0208-delete-standalone-notes.md) | Delete Standalone Notes | Accepted | 2026-06-11 |
 | [0209](0209-allocate-plan-focus-while-running.md) | Allocate Plan Focus While Running | Accepted | 2026-06-11 |
+| [0210](0210-store-durable-preferences-in-swiftdata.md) | Store Durable Preferences in SwiftData | Accepted | 2026-06-11 |

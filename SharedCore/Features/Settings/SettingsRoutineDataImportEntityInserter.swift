@@ -120,6 +120,11 @@ enum SettingsRoutineDataImportEntityInserter {
             from: backup,
             in: context
         )
+        let userPreferenceCount = insertUserPreferences(
+            from: backup,
+            in: context,
+            importDate: importDate
+        )
 
         return ImportSummary(
             places: places.count,
@@ -142,7 +147,8 @@ enum SettingsRoutineDataImportEntityInserter {
             sprintFocusSessions: sprintFocusSessions.count,
             sprintFocusAllocations: sprintFocusAllocationCount,
             deviceSessions: deviceSessionCount,
-            deviceActionLogs: deviceActionLogCount
+            deviceActionLogs: deviceActionLogCount,
+            userPreferences: userPreferenceCount
         )
     }
 
@@ -1018,6 +1024,64 @@ enum SettingsRoutineDataImportEntityInserter {
         }
 
         return importedCount
+    }
+
+    @MainActor
+    private static func insertUserPreferences(
+        from backup: Backup,
+        in context: ModelContext,
+        importDate: Date
+    ) -> Int {
+        guard let backupPreferences = backup.userPreferences else { return 0 }
+
+        let preferences = RoutinaUserPreferences(
+            id: RoutinaUserPreferences.singletonID,
+            updatedAt: backupPreferences.updatedAt ?? importDate
+        )
+        preferences.selectedAppIcon = backupPreferences.selectedAppIcon
+        preferences.appColorScheme = backupPreferences.appColorScheme
+        preferences.routineListSectioningMode = backupPreferences.routineListSectioningMode
+        preferences.tagCounterDisplayMode = backupPreferences.tagCounterDisplayMode
+        preferences.homeTaskRowHiddenFields = backupPreferences.homeTaskRowHiddenFields
+        preferences.relatedTagRules = backupPreferences.relatedTagRules
+        preferences.tagColors = backupPreferences.tagColors
+        preferences.fastFilterTags = backupPreferences.fastFilterTags
+        preferences.iOSStatsDashboardHiddenItemIDs = backupPreferences.iOSStatsDashboardHiddenItemIDs
+        preferences.iOSStatsDashboardItemOrderIDs = backupPreferences.iOSStatsDashboardItemOrderIDs
+        preferences.iOSStatsSummaryDisplayMode = backupPreferences.iOSStatsSummaryDisplayMode
+        preferences.macStatsDashboardHiddenItemIDs = backupPreferences.macStatsDashboardHiddenItemIDs
+        preferences.macStatsDashboardItemOrderIDs = backupPreferences.macStatsDashboardItemOrderIDs
+        preferences.macStatsSummaryDisplayMode = backupPreferences.macStatsSummaryDisplayMode
+        preferences.hiddenDayPlanTimelineActivityIDs = backupPreferences.hiddenDayPlanTimelineActivityIDs
+        preferences.protectionBlockingEnabledModes = backupPreferences.protectionBlockingEnabledModes
+        preferences.blockingWebsiteDomains = backupPreferences.blockingWebsiteDomains
+        preferences.focusShieldSelection = backupPreferences.focusShieldSelection
+        preferences.macFocusBlockedApps = backupPreferences.macFocusBlockedApps
+        preferences.macFormSectionOrder = backupPreferences.macFormSectionOrder
+        preferences.macQuickAddShortcut = backupPreferences.macQuickAddShortcut
+        preferences.macAdventureOwnedItemIDs = backupPreferences.macAdventureOwnedItemIDs
+        preferences.macAdventureUnlockedWorldIDs = backupPreferences.macAdventureUnlockedWorldIDs
+        preferences.macAdventureUnlockedStageIDs = backupPreferences.macAdventureUnlockedStageIDs
+        preferences.notificationsEnabled = backupPreferences.notificationsEnabled ?? false
+        preferences.hideUnavailableRoutines = backupPreferences.hideUnavailableRoutines ?? false
+        preferences.appLockEnabled = backupPreferences.appLockEnabled ?? false
+        preferences.gitFeaturesEnabled = backupPreferences.gitFeaturesEnabled ?? false
+        preferences.showPersianDates = backupPreferences.showPersianDates ?? false
+        preferences.batteryRoutineMonitoringEnabled = backupPreferences.batteryRoutineMonitoringEnabled ?? BatteryRoutinePreferences.defaultMonitoringEnabled
+        preferences.sleepHomeActionEnabled = backupPreferences.sleepHomeActionEnabled ?? true
+        preferences.sleepHomeMenuEnabled = backupPreferences.sleepHomeMenuEnabled ?? true
+        preferences.shakeToStartSleepEnabled = backupPreferences.shakeToStartSleepEnabled ?? true
+        preferences.focusShieldEnabled = backupPreferences.focusShieldEnabled ?? false
+        preferences.macFocusAppBlockingEnabled = backupPreferences.macFocusAppBlockingEnabled ?? true
+        preferences.automaticPlaceCheckInEnabled = backupPreferences.automaticPlaceCheckInEnabled ?? true
+        preferences.showTimelineTasksInDayPlanner = backupPreferences.showTimelineTasksInDayPlanner ?? true
+        preferences.notificationReminderHour = backupPreferences.notificationReminderHour ?? NotificationPreferences.defaultReminderHour
+        preferences.notificationReminderMinute = backupPreferences.notificationReminderMinute ?? NotificationPreferences.defaultReminderMinute
+        preferences.batteryRoutineThresholdPercent = backupPreferences.batteryRoutineThresholdPercent ?? BatteryRoutinePreferences.defaultThresholdPercent
+
+        context.insert(preferences)
+        RoutinaUserPreferencesStore.applyToDefaults(from: context)
+        return 1
     }
 
     private static func clampedInterval(_ interval: Int) -> Int {
