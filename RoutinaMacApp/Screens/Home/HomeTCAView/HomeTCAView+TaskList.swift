@@ -279,8 +279,14 @@ extension HomeTCAView {
             .buttonStyle(.plain)
             .accessibilityLabel(title)
             .accessibilityValue(taskListGroupIsExpanded(group) ? "Expanded" : "Collapsed")
+            .contextMenu {
+                taskListGroupFocusContextMenu(for: group)
+            }
         } else {
             taskListInnerGroupHeaderLabel(title, count: count, isExpanded: nil)
+                .contextMenu {
+                    taskListGroupFocusContextMenu(for: group)
+                }
         }
     }
 
@@ -316,33 +322,30 @@ extension HomeTCAView {
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     ) -> some View {
         if section.kind.isCollapsible {
-            HStack(spacing: 6) {
-                Button {
-                    toggleTaskListSection(section)
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "chevron.right")
-                            .font(.caption2.weight(.semibold))
-                            .rotationEffect(.degrees(taskListSectionIsExpanded(section) ? 90 : 0))
+            Button {
+                toggleTaskListSection(section)
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.semibold))
+                        .rotationEffect(.degrees(taskListSectionIsExpanded(section) ? 90 : 0))
 
-                        Text(section.title)
+                    Text(section.title)
 
-                        Text("\(section.tasks.count)")
-                            .font(.caption2.weight(.semibold).monospacedDigit())
-                            .foregroundStyle(.tertiary)
+                    Text("\(section.tasks.count)")
+                        .font(.caption2.weight(.semibold).monospacedDigit())
+                        .foregroundStyle(.tertiary)
 
-                        Spacer(minLength: 0)
-                    }
-                    .contentShape(Rectangle())
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Spacer(minLength: 0)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(section.title)
-                .accessibilityValue(taskListSectionIsExpanded(section) ? "Expanded" : "Collapsed")
-
-                if section.kind == .plannedToday, !section.tasks.isEmpty {
-                    planFocusSectionStartMenu
-                }
+                .contentShape(Rectangle())
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(section.title)
+            .accessibilityValue(taskListSectionIsExpanded(section) ? "Expanded" : "Collapsed")
+            .contextMenu {
+                taskListSectionFocusContextMenu(for: section)
             }
             .font(.caption.weight(.semibold))
             .foregroundStyle(.secondary)
@@ -355,10 +358,39 @@ extension HomeTCAView {
         }
     }
 
-    private var planFocusSectionStartMenu: some View {
-        Menu {
+    @ViewBuilder
+    private func taskListSectionFocusContextMenu(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+    ) -> some View {
+        if section.canStartFocusTimer {
+            Menu {
+                taskListSectionFocusMenuItems(for: section)
+            } label: {
+                Label("Focus Timer", systemImage: "stopwatch")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func taskListGroupFocusContextMenu(
+        for group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
+    ) -> some View {
+        if group.canStartFocusTimer {
+            Menu {
+                taskListGroupFocusMenuItems(for: group)
+            } label: {
+                Label("Focus Timer", systemImage: "stopwatch")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func taskListSectionFocusMenuItems(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+    ) -> some View {
+        if section.canStartFocusTimer {
             Button {
-                startPlanFocusFromSection(duration: 0)
+                startFocusFromTaskListSection(section, duration: 0)
             } label: {
                 Label("Count up", systemImage: "stopwatch")
             }
@@ -367,18 +399,31 @@ extension HomeTCAView {
 
             ForEach(planFocusDurationOptions, id: \.self) { duration in
                 Button(FocusSessionFormatting.compactDurationText(seconds: duration)) {
-                    startPlanFocusFromSection(duration: duration)
+                    startFocusFromTaskListSection(section, duration: duration)
                 }
             }
-        } label: {
-            Label("Start plan focus", systemImage: "stopwatch")
-                .labelStyle(.iconOnly)
         }
-        .menuStyle(.button)
-        .buttonStyle(.borderless)
-        .controlSize(.small)
-        .help("Start plan focus")
-        .accessibilityLabel("Start plan focus")
+    }
+
+    @ViewBuilder
+    private func taskListGroupFocusMenuItems(
+        for group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
+    ) -> some View {
+        if group.canStartFocusTimer {
+            Button {
+                startFocusFromTaskListGroup(group, duration: 0)
+            } label: {
+                Label("Count up", systemImage: "stopwatch")
+            }
+
+            Divider()
+
+            ForEach(planFocusDurationOptions, id: \.self) { duration in
+                Button(FocusSessionFormatting.compactDurationText(seconds: duration)) {
+                    startFocusFromTaskListGroup(group, duration: duration)
+                }
+            }
+        }
     }
 
     private var planFocusDurationOptions: [TimeInterval] {
@@ -391,7 +436,12 @@ extension HomeTCAView {
         ]
     }
 
-    private func startPlanFocusFromSection(duration: TimeInterval) {
+    private func startFocusFromTaskListSection(
+        _ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        duration: TimeInterval
+    ) {
+        guard section.canStartFocusTimer else { return }
+
         do {
             _ = try FocusSessionSupport.startUnassignedFocus(
                 plannedDurationSeconds: duration,
@@ -399,7 +449,24 @@ extension HomeTCAView {
             )
             macHomeDetailMode = .planner
         } catch {
-            NSLog("Failed to start plan focus: \(error.localizedDescription)")
+            NSLog("Failed to start section focus: \(error.localizedDescription)")
+        }
+    }
+
+    private func startFocusFromTaskListGroup(
+        _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>,
+        duration: TimeInterval
+    ) {
+        guard group.canStartFocusTimer else { return }
+
+        do {
+            _ = try FocusSessionSupport.startUnassignedFocus(
+                plannedDurationSeconds: duration,
+                context: modelContext
+            )
+            macHomeDetailMode = .planner
+        } catch {
+            NSLog("Failed to start group focus: \(error.localizedDescription)")
         }
     }
 
@@ -786,5 +853,23 @@ private extension MacSidebarTaskScrollRequest {
         case .minimalReveal:
             return nil
         }
+    }
+}
+
+private extension HomeTaskListPresentationSection where Display == HomeFeature.RoutineDisplay {
+    var canStartFocusTimer: Bool {
+        guard !tasks.isEmpty else { return false }
+        switch kind {
+        case .plannedToday, .daily, .tag, .untagged, .regular, .pinned:
+            return true
+        case .away, .archived:
+            return false
+        }
+    }
+}
+
+private extension HomeTaskListPresentationTaskGroup where Display == HomeFeature.RoutineDisplay {
+    var canStartFocusTimer: Bool {
+        !tasks.isEmpty
     }
 }
