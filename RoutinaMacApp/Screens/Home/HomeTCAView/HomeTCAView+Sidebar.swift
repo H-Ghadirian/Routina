@@ -50,7 +50,7 @@ extension HomeTCAView {
         case .all:
             return "All"
         case .routines:
-            return "Routines"
+            return "Tasks"
         case .todos:
             return "Todos"
         }
@@ -61,7 +61,7 @@ extension HomeTCAView {
         case .all:
             return "Filter All"
         case .routines:
-            return "Filter Routines"
+            return "Filter Tasks"
         case .todos:
             return "Filter Todos"
         }
