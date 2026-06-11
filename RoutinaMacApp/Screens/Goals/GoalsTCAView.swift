@@ -33,7 +33,20 @@ struct MacGoalsSidebarView: View {
 
     @ViewBuilder
     private var content: some View {
-        if store.goals.isEmpty && !store.isLoading {
+        if store.isEditorPresented && store.goals.isEmpty {
+            ContentUnavailableView {
+                Label("No goals yet", systemImage: "target")
+            } description: {
+                Text("Create a goal to group routines and todos by outcome.")
+            } actions: {
+                Button {
+                    store.send(.addGoalTapped)
+                } label: {
+                    Label("New Goal", systemImage: "plus")
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if store.goals.isEmpty && !store.isLoading {
             ContentUnavailableView {
                 Label("No goals yet", systemImage: "target")
             } description: {
