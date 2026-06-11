@@ -19,7 +19,6 @@ struct TimelineView: View {
     @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
     @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) private var placeCheckInSessions: [PlaceCheckInSession]
     @State private var relatedFilterTagSuggestionAnchor: String?
-    @State private var timelineScrollPosition: UUID?
 
     var body: some View {
 NavigationStack {
@@ -290,6 +289,15 @@ NavigationStack {
         groupedByDay.last?.entries.last?.id
     }
 
+    private var invertedGroupedByDay: [TimelineFeature.TimelineSection] {
+        groupedByDay.reversed().map { section in
+            TimelineFeature.TimelineSection(
+                date: section.date,
+                entries: Array(section.entries.reversed())
+            )
+        }
+    }
+
     private var availableTags: [String] {
         store.availableTags
     }
@@ -388,29 +396,22 @@ NavigationStack {
     }
 
     private var timelineList: some View {
-        ScrollViewReader { proxy in
-            List {
-                ForEach(groupedByDay, id: \.date) { section in
-                    Section {
-                        ForEach(section.entries) { entry in
-                            timelineRow(entry)
-                                .id(entry.id)
-                        }
-                    } header: {
-                        Text(TimelineLogic.daySectionTitle(for: section.date, calendar: calendar))
+        List {
+            ForEach(invertedGroupedByDay, id: \.date) { section in
+                Section {
+                    ForEach(section.entries) { entry in
+                        timelineRow(entry)
+                            .id(entry.id)
+                            .scaleEffect(x: 1, y: -1)
                     }
+                } header: {
+                    Text(TimelineLogic.daySectionTitle(for: section.date, calendar: calendar))
+                        .scaleEffect(x: 1, y: -1)
                 }
             }
-            .listStyle(.plain)
-            .defaultScrollAnchor(.bottom)
-            .scrollPosition(id: $timelineScrollPosition, anchor: .bottom)
-            .onAppear {
-                scrollTimelineToLatest(using: proxy)
-            }
-            .onChange(of: latestTimelineEntryID) { _, _ in
-                scrollTimelineToLatest(using: proxy)
-            }
         }
+        .listStyle(.plain)
+        .scaleEffect(x: 1, y: -1)
     }
 
     private var filterSheetButton: some View {
@@ -630,7 +631,10 @@ NavigationStack {
             }
         } else if entry.isNote, let note = note(for: entry) {
             NavigationLink {
-                RoutineNoteDetailView(note: note, attachments: noteAttachments(for: note))
+                RoutineNoteDetailView(
+                    note: note,
+                    attachments: noteAttachments(for: note)
+                )
             } label: {
                 timelineRowContent(entry)
             }
@@ -744,16 +748,6 @@ NavigationStack {
             return .orange
         case .missed:
             return .yellow
-        }
-    }
-
-    private func scrollTimelineToLatest(using proxy: ScrollViewProxy) {
-        guard let latestTimelineEntryID else { return }
-        timelineScrollPosition = latestTimelineEntryID
-        Task { @MainActor in
-            await Task.yield()
-            proxy.scrollTo(latestTimelineEntryID, anchor: .bottom)
-            timelineScrollPosition = latestTimelineEntryID
         }
     }
 

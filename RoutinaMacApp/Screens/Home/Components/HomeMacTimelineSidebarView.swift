@@ -4,7 +4,6 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
     let timelineEntryCount: Int
     let groupedEntries: [(date: Date, entries: [TimelineEntry])]
     @Binding var selection: HomeFeature.MacSidebarSelection?
-    @State private var timelineScrollPosition: UUID?
     let sectionTitle: (Date) -> String
     @ViewBuilder let rowContent: (TimelineEntry, Int) -> RowContent
 
@@ -25,43 +24,41 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ScrollViewReader { proxy in
-                    List(selection: $selection) {
-                        ForEach(Array(groupedEntries.enumerated()), id: \.element.date) { sectionIndex, section in
-                            let sectionStart = groupedEntries.prefix(sectionIndex).reduce(0) { $0 + $1.entries.count }
-                            Section(sectionTitle(section.date)) {
-                                ForEach(Array(section.entries.enumerated()), id: \.element.id) { index, entry in
-                                    rowContent(entry, sectionStart + index + 1)
-                                        .id(entry.id)
-                                }
+                List(selection: $selection) {
+                    ForEach(invertedGroupedEntries, id: \.date) { section in
+                        Section {
+                            ForEach(section.entries, id: \.id) { entry in
+                                rowContent(entry, rowNumbersByEntryID[entry.id] ?? 1)
+                                    .id(entry.id)
+                                    .scaleEffect(x: 1, y: -1)
                             }
+                        } header: {
+                            Text(sectionTitle(section.date))
+                                .scaleEffect(x: 1, y: -1)
                         }
                     }
-                    .listStyle(.sidebar)
-                    .defaultScrollAnchor(.bottom)
-                    .scrollPosition(id: $timelineScrollPosition, anchor: .bottom)
-                    .onAppear {
-                        scrollToLatestEntry(using: proxy)
-                    }
-                    .onChange(of: latestEntryID) { _, _ in
-                        scrollToLatestEntry(using: proxy)
-                    }
                 }
+                .listStyle(.sidebar)
+                .scaleEffect(x: 1, y: -1)
             }
         }
     }
 
-    private var latestEntryID: UUID? {
-        groupedEntries.last?.entries.last?.id
+    private var invertedGroupedEntries: [(date: Date, entries: [TimelineEntry])] {
+        groupedEntries.reversed().map { section in
+            (date: section.date, entries: Array(section.entries.reversed()))
+        }
     }
 
-    private func scrollToLatestEntry(using proxy: ScrollViewProxy) {
-        guard let latestEntryID else { return }
-        timelineScrollPosition = latestEntryID
-        Task { @MainActor in
-            await Task.yield()
-            proxy.scrollTo(latestEntryID, anchor: .bottom)
-            timelineScrollPosition = latestEntryID
+    private var rowNumbersByEntryID: [UUID: Int] {
+        var result: [UUID: Int] = [:]
+        var rowNumber = 1
+        for section in groupedEntries {
+            for entry in section.entries {
+                result[entry.id] = rowNumber
+                rowNumber += 1
+            }
         }
+        return result
     }
 }
