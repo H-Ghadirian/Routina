@@ -1526,6 +1526,37 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func sprintFocusPlannerBlockDoesNotRoundPastStoppedTime() throws {
+        let calendar = gregorianCalendar
+        let visibleDate = try #require(date("2026-05-07T12:00:00Z"))
+        let startedAt = try #require(date("2026-05-07T10:00:00Z"))
+        let stoppedAt = try #require(date("2026-05-07T10:08:59Z"))
+        let sprint = BoardSprintRecord(title: "HSE")
+        let session = SprintFocusSessionRecord(
+            sprintID: sprint.id,
+            startedAt: startedAt,
+            stoppedAt: stoppedAt
+        )
+
+        let blocksByDayKey = DayPlanSprintFocusBlocks.blocksByDayKey(
+            on: [visibleDate],
+            from: [session],
+            allocations: [],
+            sprints: [sprint],
+            tasks: [],
+            referenceDate: stoppedAt,
+            calendar: calendar
+        )
+
+        let dayKey = DayPlanStorage.dayKey(for: visibleDate, calendar: calendar)
+        let block = try #require(blocksByDayKey[dayKey]?.first)
+        #expect(block.block.startMinute == 10 * 60)
+        #expect(block.block.durationMinutes == 8)
+        #expect(block.block.endMinute == 10 * 60 + 8)
+        #expect(block.interval.endMinute == 10 * 60 + 8)
+    }
+
+    @Test
     func sprintFocusAllocationsSplitPlannerBlocksAndLeaveResidualBoardFocus() throws {
         let calendar = gregorianCalendar
         let visibleDate = try #require(date("2026-05-07T12:00:00Z"))
