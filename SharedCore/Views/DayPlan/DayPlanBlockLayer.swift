@@ -175,7 +175,7 @@ struct DayPlanBlockLayer: View {
 
                 ForEach(sprintFocusBlocksForDate(date)) { sprintFocusBlock in
                     let block = sprintFocusBlock.block
-                    let blockHeight = blockHeight(for: block)
+                    let blockHeight = sprintFocusBlockHeight(for: sprintFocusBlock)
                     DayPlanBlockCard(
                         block: block,
                         tint: sprintFocusBlock.isAllocatedToTask ? taskTint(block) : .teal,
@@ -267,6 +267,14 @@ struct DayPlanBlockLayer: View {
 
     private func blockHeight(for block: DayPlanBlock) -> CGFloat {
         max(CGFloat(block.durationMinutes) / 60 * hourHeight, 18)
+    }
+
+    private func sprintFocusBlockHeight(for sprintFocusBlock: DayPlanSprintFocusBlock) -> CGFloat {
+        if sprintFocusBlock.isActive {
+            return CGFloat(sprintFocusBlock.renderedDurationMinutes) / 60 * hourHeight
+        }
+
+        return blockHeight(for: sprintFocusBlock.block)
     }
 }
 
@@ -383,7 +391,7 @@ struct DayPlanSprintFocusBlockLayer: View {
             ForEach(positionedBlocks) { positionedBlock in
                 let sprintFocusBlock = positionedBlock.sprintFocusBlock
                 let block = sprintFocusBlock.block
-                let blockHeight = blockHeight(for: block)
+                let blockHeight = blockHeight(for: sprintFocusBlock)
                 DayPlanBlockCard(
                     block: block,
                     tint: sprintFocusBlock.isAllocatedToTask ? taskTint(block) : .teal,
@@ -442,8 +450,12 @@ struct DayPlanSprintFocusBlockLayer: View {
         CGFloat(minute) / 60 * hourHeight
     }
 
-    private func blockHeight(for block: DayPlanBlock) -> CGFloat {
-        max(CGFloat(block.durationMinutes) / 60 * hourHeight, 18)
+    private func blockHeight(for sprintFocusBlock: DayPlanSprintFocusBlock) -> CGFloat {
+        if sprintFocusBlock.isActive {
+            return CGFloat(sprintFocusBlock.renderedDurationMinutes) / 60 * hourHeight
+        }
+
+        return max(CGFloat(sprintFocusBlock.block.durationMinutes) / 60 * hourHeight, 18)
     }
 
     private var contentWidth: CGFloat {
