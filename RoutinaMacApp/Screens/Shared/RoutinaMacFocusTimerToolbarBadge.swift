@@ -27,13 +27,15 @@ struct RoutinaMacFocusTimerToolbarBadge: View {
 
     var showsTitle = true
     var maxTitleWidth: CGFloat = 170
+    var hiddenKinds: [RoutinaMacFocusTimerStatus.Kind] = []
 
     var body: some View {
         if let statusStore {
             RoutinaMacFocusTimerToolbarBadgeContent(
                 statusStore: statusStore,
                 showsTitle: showsTitle,
-                maxTitleWidth: maxTitleWidth
+                maxTitleWidth: maxTitleWidth,
+                hiddenKinds: hiddenKinds
             )
         }
     }
@@ -42,12 +44,14 @@ struct RoutinaMacFocusTimerToolbarBadge: View {
 struct RoutinaMacFocusTimerToolbarItem: ToolbarContent {
     var showsTitle = true
     var maxTitleWidth: CGFloat = 170
+    var hiddenKinds: [RoutinaMacFocusTimerStatus.Kind] = []
 
     var body: some ToolbarContent {
         ToolbarItem(placement: .navigation) {
             RoutinaMacFocusTimerToolbarBadge(
                 showsTitle: showsTitle,
-                maxTitleWidth: maxTitleWidth
+                maxTitleWidth: maxTitleWidth,
+                hiddenKinds: hiddenKinds
             )
         }
     }
@@ -59,12 +63,13 @@ private struct RoutinaMacFocusTimerToolbarBadgeContent: View {
 
     let showsTitle: Bool
     let maxTitleWidth: CGFloat
+    let hiddenKinds: [RoutinaMacFocusTimerStatus.Kind]
 
     var body: some View {
         Group {
             let status = statusStore.status
 
-            if status.isActive {
+            if shouldShow(status) {
                 Button {
                     open(status)
                 } label: {
@@ -86,6 +91,12 @@ private struct RoutinaMacFocusTimerToolbarBadgeContent: View {
         .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
             statusStore.refresh()
         }
+    }
+
+    private func shouldShow(_ status: RoutinaMacFocusTimerStatus) -> Bool {
+        guard status.isActive else { return false }
+        guard let kind = status.kind else { return true }
+        return !hiddenKinds.contains(kind)
     }
 
     private func open(_ status: RoutinaMacFocusTimerStatus) {
