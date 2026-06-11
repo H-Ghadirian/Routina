@@ -12,12 +12,14 @@ Status capture makes Timeline feel closer to a chat transcript. Users expect the
 
 ## Decision
 
-Timeline groups and entries render in chronological order: oldest days first, and oldest entries first within each day. Timeline list surfaces use a bottom default scroll anchor so the latest visible entry is near the bottom when the list opens.
+Timeline groups and entries are derived in chronological order: oldest days first, and oldest entries first within each day.
+
+Timeline list surfaces present that chronology with an inverted chat-list layout: the newest section and entry render first in the underlying list, the list is vertically inverted, and each row/header is flipped back upright. This makes the latest visible entry appear at the bottom on first paint without a post-load scroll or jump.
 
 Split-view timeline selection falls back to the latest visible entry instead of the first visible entry.
 
 ## Consequences
 
-Timeline reading order now matches chat-style status capture and still preserves normal accessibility order.
+Timeline visual order now matches chat-style status capture.
 
 Users scroll upward to review older timeline history.
