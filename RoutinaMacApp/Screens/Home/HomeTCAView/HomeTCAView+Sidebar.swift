@@ -2,14 +2,14 @@ import ComposableArchitecture
 import SwiftUI
 
 extension HomeTCAView {
-    var isMacTimelineMode: Bool { store.macSidebarMode == .timeline }
-    var isMacStatsMode: Bool { store.macSidebarMode == .stats || store.macSidebarMode == .adventure }
-    var isMacSettingsMode: Bool { store.macSidebarMode == .settings }
-    var isMacRoutinesMode: Bool { store.macSidebarMode == .routines }
-    var isMacBoardMode: Bool { store.macSidebarMode == .board }
-    var isMacGoalsMode: Bool { store.macSidebarMode == .goals }
-    var isMacAdventureMode: Bool { store.macSidebarMode == .adventure }
-    var isMacAddTaskMode: Bool { store.macSidebarMode == .addTask }
+    var isMacTimelineMode: Bool { visibleMacSidebarMode == .timeline }
+    var isMacStatsMode: Bool { visibleMacSidebarMode == .stats || visibleMacSidebarMode == .adventure }
+    var isMacSettingsMode: Bool { visibleMacSidebarMode == .settings }
+    var isMacRoutinesMode: Bool { visibleMacSidebarMode == .routines }
+    var isMacBoardMode: Bool { visibleMacSidebarMode == .board }
+    var isMacGoalsMode: Bool { visibleMacSidebarMode == .goals }
+    var isMacAdventureMode: Bool { visibleMacSidebarMode == .adventure }
+    var isMacAddTaskMode: Bool { visibleMacSidebarMode == .addTask }
     var isMacSegmentedBoardMode: Bool { isMacRoutinesMode && macHomeDetailMode == .board }
     var isMacBoardSidebarPresented: Bool { isMacBoardMode || isMacSegmentedBoardMode }
     var shouldHideMacSidebarHeaderForDayPlanTimelineFilter: Bool {
@@ -25,7 +25,7 @@ extension HomeTCAView {
             return boardPresentation.scopeTitle
         }
 
-        switch store.macSidebarMode {
+        switch visibleMacSidebarMode {
         case .routines:
             return macTaskListSidebarTitle
         case .board:
@@ -72,7 +72,7 @@ extension HomeTCAView {
             return "Filter Board"
         }
 
-        switch store.macSidebarMode {
+        switch visibleMacSidebarMode {
         case .routines:
             return macTaskListFilterTitle
         case .board:
@@ -103,7 +103,7 @@ extension HomeTCAView {
     }
 
     var macHasCustomFiltersApplied: Bool {
-        switch store.macSidebarMode {
+        switch visibleMacSidebarMode {
         case .timeline:
             return store.selectedTimelineRange != .all
                 || store.selectedTimelineFilterType != .all
@@ -130,7 +130,7 @@ extension HomeTCAView {
     }
 
     var macSidebarSearchFiltersSummary: String? {
-        switch store.macSidebarMode {
+        switch visibleMacSidebarMode {
         case .timeline:
             macActiveTimelineFiltersSummary
         case .routines, .board:
@@ -158,7 +158,7 @@ extension HomeTCAView {
     }
 
     func clearAllMacFilters() {
-        if store.macSidebarMode == .timeline {
+        if visibleMacSidebarMode == .timeline {
             store.send(.selectedTimelineRangeChanged(.all))
             store.send(.selectedTimelineFilterTypeChanged(.all))
             store.send(.selectedTimelineTagsChanged([]))
@@ -175,9 +175,9 @@ extension HomeTCAView {
 
     var macSidebarModeBinding: Binding<MacSidebarMode> {
         Binding(
-            get: { store.macSidebarMode },
+            get: { visibleMacSidebarMode },
             set: { mode in
-                switch mode {
+                switch resolvedMacSidebarMode(mode) {
                 case .routines:  showRoutinesInSidebar()
                 case .board:     openBoardInSidebar()
                 case .goals:     openGoalsInSidebar()
@@ -229,7 +229,7 @@ extension HomeTCAView {
         withAnimation(.easeInOut(duration: 0.18)) {
             store.send(.setMacFilterDetailPresented(false))
             clearDayPlanUnplannedCompletedFilter()
-            if store.macSidebarMode != .routines {
+            if visibleMacSidebarMode != .routines {
                 showRoutinesInSidebar()
             }
             mainDetailModeBinding.wrappedValue = .places
@@ -279,6 +279,7 @@ extension HomeTCAView {
     }
 
     func openGoalsInSidebar() {
+        guard isGoalsTabEnabled else { return }
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
@@ -346,6 +347,7 @@ extension HomeTCAView {
     }
 
     func openAddGoal() {
+        guard isGoalsTabEnabled else { return }
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
@@ -415,7 +417,7 @@ extension HomeTCAView {
         }
         macHomeDetailMode = .details
         macSidebarTaskScrollRequest = MacSidebarTaskScrollRequest(taskID: taskID)
-        if store.macSidebarMode == .board {
+        if visibleMacSidebarMode == .board {
             store.send(.macSidebarModeChanged(.routines))
         }
         store.send(.macSidebarSelectionChanged(.task(taskID)))
@@ -629,7 +631,8 @@ extension HomeTCAView {
             includesIdentity: true,
             includesDangerZone: false
         ).filter { section in
-            section != .planning || addState?.supportsPlanning != false
+            (section != .planning || addState?.supportsPlanning != false)
+            && shouldDisplayFormSection(section)
         }
         return FormSection.visibleTaskFormSections(
             from: sections,
@@ -647,7 +650,8 @@ extension HomeTCAView {
             includesIdentity: true,
             includesDangerZone: true
         ).filter { section in
-            section != .planning || detail.supportsPlanning
+            (section != .planning || detail.supportsPlanning)
+            && shouldDisplayFormSection(section)
         }
         return FormSection.visibleTaskFormSections(
             from: sections,
@@ -656,6 +660,10 @@ extension HomeTCAView {
             populatedSections: detail.populatedMacFormSections,
             allowsOptionalChecklistReveal: detail.editScheduleMode.taskType == .todo
         )
+    }
+
+    private func shouldDisplayFormSection(_ section: FormSection) -> Bool {
+        section != .goals || isGoalsTabEnabled
     }
 
     var macSidebarHeader: some View {
@@ -784,10 +792,20 @@ extension HomeTCAView {
         store.send(.setSelectedTask(nil))
         store.send(.setAddRoutineSheet(false))
         store.send(.setMacFilterDetailPresented(false))
-        if store.macSidebarMode != .routines {
+        if visibleMacSidebarMode != .routines {
             store.send(.macSidebarModeChanged(.routines))
         }
         isAwayStartPresented = true
+    }
+
+    private var visibleMacSidebarMode: MacSidebarMode {
+        guard !isGoalsTabEnabled else { return store.macSidebarMode }
+        return store.macSidebarMode == .goals ? .routines : store.macSidebarMode
+    }
+
+    private func resolvedMacSidebarMode(_ mode: MacSidebarMode) -> MacSidebarMode {
+        guard !isGoalsTabEnabled else { return mode }
+        return mode == .goals ? .routines : mode
     }
 
     func closeAwayStart() {

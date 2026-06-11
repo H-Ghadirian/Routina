@@ -407,6 +407,10 @@ extension TaskFormModel {
             .deadline
         ]
 
+        if visibilityMode == .progressiveCreate {
+            sections.insert(.goals)
+        }
+
         if supportsExactDateReminder {
             sections.insert(.reminder)
         }

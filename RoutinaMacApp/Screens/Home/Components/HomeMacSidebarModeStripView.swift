@@ -10,10 +10,14 @@ struct HomeMacSidebarModeStripView: View {
     let onCheckIn: () -> Void
     let onStartAway: () -> Void
     let onStartSleep: () -> Void
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isGoalsTabEnabled = false
 
     var body: some View {
         HStack(spacing: 0) {
-            ForEach(HomeFeature.MacSidebarMode.sidebarStripModes) { mode in
+            ForEach(displayedSidebarStripModes) { mode in
                 if mode == .addTask {
                     addMenu
                 } else {
@@ -45,6 +49,13 @@ struct HomeMacSidebarModeStripView: View {
         )
     }
 
+    private var displayedSidebarStripModes: [HomeFeature.MacSidebarMode] {
+        if isGoalsTabEnabled {
+            return HomeFeature.MacSidebarMode.sidebarStripModes
+        }
+        return HomeFeature.MacSidebarMode.sidebarStripModes.filter { $0 != .goals }
+    }
+
     private var addMenu: some View {
         Menu {
             Button {
@@ -65,10 +76,12 @@ struct HomeMacSidebarModeStripView: View {
                 Label("Note", systemImage: "note.text")
             }
 
-            Button {
-                onAddGoal()
-            } label: {
-                Label("Goal", systemImage: "target")
+            if isGoalsTabEnabled {
+                Button {
+                    onAddGoal()
+                } label: {
+                    Label("Goal", systemImage: "target")
+                }
             }
 
             Button {
@@ -103,7 +116,7 @@ struct HomeMacSidebarModeStripView: View {
         .buttonStyle(.plain)
         .frame(maxWidth: .infinity)
         .accessibilityLabel("Add")
-        .help("Add event, emotion, note, goal, task, check in, away, or sleep")
+        .help(isGoalsTabEnabled ? "Add event, emotion, note, goal, task, check in, away, or sleep" : "Add event, emotion, note, task, check in, away, or sleep")
     }
 
     private func sidebarModeLabel(for mode: HomeFeature.MacSidebarMode) -> some View {

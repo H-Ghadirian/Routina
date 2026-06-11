@@ -24,6 +24,8 @@ struct AppView: View {
     private var appColorSchemeRawValue = AppColorScheme.system.rawValue
     @AppStorage(UserDefaultBoolValueKey.appSettingSleepHomeMenuEnabled.rawValue, store: SharedDefaults.app)
     private var isSleepNewSheetEnabled = true
+    @AppStorage(UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue, store: SharedDefaults.app)
+    private var isGoalsTabEnabled = false
 
     var body: some View {
 let tabView = TabView(
@@ -37,7 +39,7 @@ let tabView = TabView(
         platformSearchHomeView(searchText: $searchText)
     }
 
-    if !usesCompactMoreTab {
+    if !usesCompactMoreTab && isGoalsTabEnabled {
         SwiftUI.Tab(Tab.goals.rawValue, systemImage: "target", value: AppTabBarItem.goals) {
             GoalsTCAView(
                 store: store.scope(state: \.goals, action: \.goals)
@@ -63,6 +65,7 @@ let tabView = TabView(
                 goalsStore: store.scope(state: \.goals, action: \.goals),
                 statsStore: store.scope(state: \.stats, action: \.stats),
                 settingsStore: store.scope(state: \.settings, action: \.settings),
+                showGoalsTab: isGoalsTabEnabled,
                 onSelectTab: { store.send(.tabSelected($0)) }
             )
         }
@@ -162,6 +165,11 @@ Group {
         if usesCompactMoreTab,
            store.selectedTab == .goals || store.selectedTab == .stats || store.selectedTab == .settings {
             return .more
+        }
+
+        if !usesCompactMoreTab,
+           store.selectedTab == .goals && !isGoalsTabEnabled {
+            return .home
         }
 
         if !usesCompactMoreTab, store.selectedTab == .more {
@@ -602,6 +610,7 @@ private struct AppMoreNavigationView: View {
     let goalsStore: StoreOf<GoalsFeature>
     let statsStore: StoreOf<StatsFeature>
     let settingsStore: StoreOf<SettingsFeature>
+    let showGoalsTab: Bool
     let onSelectTab: (Tab) -> Void
 
     var body: some View {
@@ -615,7 +624,7 @@ private struct AppMoreNavigationView: View {
                 }
                 .navigationDestination(isPresented: isDestinationPresented(.settings)) {
                     destinationView(for: .settings)
-                }
+            }
         }
         .onAppear {
             restoreSelectedMoreDestinationIfNeeded()
@@ -624,7 +633,8 @@ private struct AppMoreNavigationView: View {
             restoreSelectedMoreDestinationIfNeeded(for: tab)
         }
         .onChange(of: destination) { _, destination in
-            if destination == nil, selectedTab == .goals || selectedTab == .stats || selectedTab == .settings {
+            if destination == nil,
+               (showGoalsTab && selectedTab == .goals) || selectedTab == .stats || selectedTab == .settings {
                 onSelectTab(.more)
             }
         }
@@ -633,13 +643,15 @@ private struct AppMoreNavigationView: View {
     private var moreList: some View {
         List {
             Section {
-                moreButton(destination: .goals) {
-                    SettingsNavigationRow(
-                        icon: "target",
-                        tint: .blue,
-                        title: Tab.goals.rawValue,
-                        subtitle: "Outcomes, sub-goals, and linked tasks"
-                    )
+                if showGoalsTab {
+                    moreButton(destination: .goals) {
+                        SettingsNavigationRow(
+                            icon: "target",
+                            tint: .blue,
+                            title: Tab.goals.rawValue,
+                            subtitle: "Outcomes, sub-goals, and linked tasks"
+                        )
+                    }
                 }
 
                 moreButton(destination: .stats) {
@@ -715,7 +727,7 @@ private struct AppMoreNavigationView: View {
         guard destination == nil else { return }
 
         switch tab ?? selectedTab {
-        case .goals:
+        case .goals where showGoalsTab:
             destination = .goals
         case .stats:
             destination = .stats

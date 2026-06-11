@@ -25,6 +25,7 @@ enum RoutinaAppBootstrap {
             .appSettingNotificationsEnabled: false,
             .appSettingHideUnavailableRoutines: false,
             .appSettingAppLockEnabled: false,
+            .appSettingGoalsTabEnabled: false,
             .appSettingShowPersianDates: false,
             .appSettingBatteryRoutineMonitoringEnabled: BatteryRoutinePreferences.defaultMonitoringEnabled,
             .appSettingSleepHomeActionEnabled: true,

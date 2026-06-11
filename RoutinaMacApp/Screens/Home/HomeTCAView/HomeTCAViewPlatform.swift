@@ -267,7 +267,7 @@ extension HomeTCAView {
     func applyPlatformHomeObservers<Content: View>(to view: Content) -> some View {
         HomeMacSidebarCommandRouter(
             content: view,
-            mode: store.macSidebarMode,
+            mode: effectiveMacSidebarMode,
             onOpenRoutines: showRoutinesInSidebar,
             onOpenAddTask: openAddTask,
             onOpenQuickAdd: showQuickAddSpotlight,
@@ -302,7 +302,7 @@ extension HomeTCAView {
         .onChange(of: store.isAddRoutineSheetPresented) { wasPresented, isPresented in
             guard wasPresented,
                   !isPresented,
-                  store.macSidebarMode == .routines,
+                  effectiveMacSidebarMode == .routines,
                   let taskID = store.selectedTaskID else { return }
             searchTextBinding.wrappedValue = ""
             macSidebarTaskScrollRequest = MacSidebarTaskScrollRequest(taskID: taskID)
@@ -333,10 +333,10 @@ extension HomeTCAView {
     }
 
     var searchPlaceholderText: String {
-        if store.macSidebarMode == .goals {
+        if effectiveMacSidebarMode == .goals {
             return "Search goals"
         }
-        if store.macSidebarMode == .timeline {
+        if effectiveMacSidebarMode == .timeline {
             return "Search timeline"
         }
         if isMacBoardSidebarPresented {
@@ -390,6 +390,11 @@ extension HomeTCAView {
                 addEditFormCoordinator.requestNameFocus()
             }
         }
+    }
+
+    private var effectiveMacSidebarMode: HomeFeature.MacSidebarMode {
+        guard !isGoalsTabEnabled else { return store.macSidebarMode }
+        return store.macSidebarMode == .goals ? .routines : store.macSidebarMode
     }
 
     @ViewBuilder

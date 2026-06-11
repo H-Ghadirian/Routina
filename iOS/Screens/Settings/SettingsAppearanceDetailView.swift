@@ -186,6 +186,10 @@ struct SettingsGeneralDetailView: View {
         BatteryRoutinePreferences.thresholdPercentDefaultsKey,
         store: SharedDefaults.app
     ) private var batteryRoutineThresholdPercent = BatteryRoutinePreferences.defaultThresholdPercent
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isGoalsTabEnabled = false
 
     var body: some View {
 List {
@@ -217,6 +221,13 @@ List {
         Toggle("Enable Git features", isOn: gitFeaturesBinding)
 
         Text("Shows GitHub and GitLab contribution activity in Stats.")
+            .foregroundStyle(.secondary)
+    }
+
+    Section("Navigation") {
+        Toggle("Show Goals tab", isOn: $isGoalsTabEnabled)
+
+        Text("Show the Goals tab so goals can be opened from Home.")
             .foregroundStyle(.secondary)
     }
 
