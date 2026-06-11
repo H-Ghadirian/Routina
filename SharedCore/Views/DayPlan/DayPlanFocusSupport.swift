@@ -22,6 +22,10 @@ struct DayPlanSprintFocusBlock: Identifiable, Equatable {
     var id: String {
         "sprint-focus-\(sessionID.uuidString)-\(block.id.uuidString)-\(block.dayKey)"
     }
+
+    var renderedDurationMinutes: Int {
+        isActive ? max(interval.durationMinutes, 1) : block.durationMinutes
+    }
 }
 
 struct DayPlanBlockedInterval: Equatable, Sendable {
