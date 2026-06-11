@@ -30,6 +30,7 @@ final class RoutinaUserPreferences {
     var macAdventureOwnedItemIDs: String?
     var macAdventureUnlockedWorldIDs: String?
     var macAdventureUnlockedStageIDs: String?
+    var showHomeTaskListModeTabsVisible: Bool = false
     var notificationsEnabled: Bool = false
     var hideUnavailableRoutines: Bool = false
     var appLockEnabled: Bool = false
@@ -164,6 +165,7 @@ enum RoutinaUserPreferencesStore {
         preferences.macAdventureUnlockedWorldIDs = defaults[.appSettingMacAdventureUnlockedWorldIDs]
         preferences.macAdventureUnlockedStageIDs = defaults[.appSettingMacAdventureUnlockedStageIDs]
         preferences.notificationsEnabled = defaults[.appSettingNotificationsEnabled]
+        preferences.showHomeTaskListModeTabsVisible = defaults[.appSettingHomeTaskListModeTabsVisible]
         preferences.hideUnavailableRoutines = defaults[.appSettingHideUnavailableRoutines]
         preferences.appLockEnabled = defaults[.appSettingAppLockEnabled]
         preferences.gitFeaturesEnabled = defaults[.appSettingGitFeaturesEnabled]
@@ -212,6 +214,7 @@ enum RoutinaUserPreferencesStore {
         defaults[.appSettingMacAdventureUnlockedWorldIDs] = preferences.macAdventureUnlockedWorldIDs
         defaults[.appSettingMacAdventureUnlockedStageIDs] = preferences.macAdventureUnlockedStageIDs
         defaults[.appSettingNotificationsEnabled] = preferences.notificationsEnabled
+        defaults[.appSettingHomeTaskListModeTabsVisible] = preferences.showHomeTaskListModeTabsVisible
         defaults[.appSettingHideUnavailableRoutines] = preferences.hideUnavailableRoutines
         defaults[.appSettingAppLockEnabled] = preferences.appLockEnabled
         defaults[.appSettingGitFeaturesEnabled] = preferences.gitFeaturesEnabled

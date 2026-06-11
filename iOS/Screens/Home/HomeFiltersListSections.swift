@@ -11,6 +11,25 @@ struct HomeFiltersQuerySection: View {
     }
 }
 
+struct HomeFiltersTaskListModeSection: View {
+    @Binding var taskListMode: HomeFeature.TaskListMode
+
+    var body: some View {
+        Section("Task Type") {
+            Picker("Task type", selection: $taskListMode) {
+                ForEach(HomeFeature.TaskListMode.allCases) { mode in
+                    Label(mode.rawValue, systemImage: mode.systemImage).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            Text("Choose which tasks the Home list should show.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
 struct HomeFiltersViewModeSection: View {
     @Binding var taskListViewMode: HomeTaskListViewMode
 

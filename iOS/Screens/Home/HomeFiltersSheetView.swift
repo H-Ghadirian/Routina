@@ -16,6 +16,7 @@ struct HomeFiltersSheetView: View {
                         places: configuration.place.sortedRoutinePlaces.map(\.displayName)
                     )
                 )
+                HomeFiltersTaskListModeSection(taskListMode: bindings.taskListMode)
                 HomeFiltersViewModeSection(taskListViewMode: bindings.taskListViewMode)
                 HomeFiltersGroupingSection(
                     routineListSectioningMode: bindings.routineListSectioningMode

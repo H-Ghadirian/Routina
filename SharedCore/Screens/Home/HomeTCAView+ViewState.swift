@@ -117,6 +117,10 @@ extension HomeTCAView {
                 get: { store.taskListViewMode },
                 set: { store.send(.taskListViewModeChanged($0)) }
             ),
+            taskListMode: Binding(
+                get: { store.taskListMode },
+                set: { store.send(.taskListModeChanged($0)) }
+            ),
             routineListSectioningMode: Binding(
                 get: { routineListSectioningMode },
                 set: { routineListSectioningMode = $0 }
