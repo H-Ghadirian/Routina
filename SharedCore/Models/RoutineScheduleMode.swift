@@ -122,7 +122,7 @@ enum RoutineScheduleBehavior: String, CaseIterable, Equatable, Hashable, Identif
             ]
         case .soft:
             return [
-                RoutineScheduleBehaviorPreviewBadge(title: "Now", systemImage: "sparkles", style: .now),
+                RoutineScheduleBehaviorPreviewBadge(title: "Ready to Do", systemImage: "circle", style: .ready),
                 RoutineScheduleBehaviorPreviewBadge(title: "Gentle nudge", systemImage: "clock.arrow.circlepath", style: .gentle)
             ]
         }
@@ -133,7 +133,7 @@ enum RoutineScheduleBehavior: String, CaseIterable, Equatable, Hashable, Identif
         case .fixed:
             return "Rows show Today, then Overdue if not completed."
         case .soft:
-            return "Rows show Now or Gentle nudge, never Overdue."
+            return "Rows show Ready to Do or Gentle nudge, never Overdue."
         }
     }
 }
@@ -149,7 +149,7 @@ struct RoutineScheduleBehaviorPreviewBadge: Equatable, Hashable, Identifiable, S
 enum RoutineScheduleBehaviorPreviewBadgeStyle: String, Equatable, Hashable, Sendable {
     case due
     case overdue
-    case now
+    case ready
     case gentle
 }
 

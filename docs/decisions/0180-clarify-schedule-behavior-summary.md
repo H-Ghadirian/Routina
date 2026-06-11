@@ -3,6 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-06-07
 - **Refines:** [0046](0046-label-routine-schedule-behavior-as-due-and-gentle.md)
+- **Refined by:** [0201](0201-use-ready-to-do-for-gentle-ready-badge.md)
 
 ## Context
 

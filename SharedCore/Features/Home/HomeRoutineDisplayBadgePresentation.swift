@@ -44,7 +44,7 @@ extension HomeRoutineDisplayMetadataPresenter {
                 return badge(softElapsedBadgeTitle(for: task), "clock.arrow.circlepath", .teal, Color.teal.opacity(0.12))
             }
             return badgeMode == .complete
-                ? badge("Now", "sparkles", .green, Color.green.opacity(0.14))
+                ? badge("Ready to Do", "circle", .secondary, Color.secondary.opacity(0.12))
                 : nil
         }
         if task.isInProgress {

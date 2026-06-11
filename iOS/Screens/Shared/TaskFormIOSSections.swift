@@ -180,14 +180,14 @@ private struct TaskFormIOSScheduleBehaviorPreviewBadge: View {
         switch badge.style {
         case .due: return .orange
         case .overdue: return .red
-        case .now: return .green
+        case .ready: return .secondary
         case .gentle: return .teal
         }
     }
 
     private var tintOpacity: Double {
         switch badge.style {
-        case .now: return 0.14
+        case .ready: return 0.12
         default: return 0.14
         }
     }
