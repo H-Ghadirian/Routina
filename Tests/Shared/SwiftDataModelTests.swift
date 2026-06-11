@@ -204,9 +204,9 @@ struct SwiftDataModelTests {
         #expect(RoutineScheduleBehavior.fixed.explanation == "Due means this can become due or overdue.")
         #expect(RoutineScheduleBehavior.soft.explanation == "Gentle keeps it visible and nudges you without overdue pressure.")
         #expect(RoutineScheduleBehavior.fixed.rowPreviewBadges.map(\.title) == ["Today", "Overdue 2d"])
-        #expect(RoutineScheduleBehavior.soft.rowPreviewBadges.map(\.title) == ["Now", "Gentle nudge"])
+        #expect(RoutineScheduleBehavior.soft.rowPreviewBadges.map(\.title) == ["Ready to Do", "Gentle nudge"])
         #expect(RoutineScheduleBehavior.fixed.rowPreviewDescription == "Rows show Today, then Overdue if not completed.")
-        #expect(RoutineScheduleBehavior.soft.rowPreviewDescription == "Rows show Now or Gentle nudge, never Overdue.")
+        #expect(RoutineScheduleBehavior.soft.rowPreviewDescription == "Rows show Ready to Do or Gentle nudge, never Overdue.")
     }
 
     @Test
