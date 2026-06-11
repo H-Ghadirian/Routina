@@ -615,6 +615,25 @@ struct SwiftDataModelTests {
     }
 
     @Test
+    func routineTask_preservesTitledLinks() {
+        let task = RoutineTask()
+        task.linkItems = [
+            RoutineTaskLink(title: "Project Brief", url: " example.com/brief "),
+            RoutineTaskLink(title: "Duplicate", url: "https://example.com/brief"),
+            RoutineTaskLink(title: nil, url: "example.com/raw")
+        ]
+
+        #expect(task.link == "https://example.com/brief")
+        #expect(task.links == ["https://example.com/brief", "https://example.com/raw"])
+        #expect(task.linkItems == [
+            RoutineTaskLink(title: "Project Brief", url: "https://example.com/brief"),
+            RoutineTaskLink(title: nil, url: "https://example.com/raw")
+        ])
+        #expect(task.resolvedLinkURLs.map(\.text) == ["Project Brief", "https://example.com/raw"])
+        #expect(RoutineTaskLinkStorage.deserializeItems(task.linksStorage) == task.linkItems)
+    }
+
+    @Test
     func routineTask_sanitizesEventIDsAndCopiesThem() {
         let firstEventID = UUID()
         let secondEventID = UUID()

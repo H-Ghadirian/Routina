@@ -291,6 +291,7 @@ enum CloudKitDirectPullTaskRecordParser {
             notes: notesValue,
             link: linkValue,
             links: linksStorageValue.map(RoutineTaskLinkStorage.deserialize),
+            linkItems: linksStorageValue.map(RoutineTaskLinkStorage.deserializeItems),
             deadline: deadlineValue,
             plannedDate: plannedDateValue,
             isAllDay: isAllDayValue,

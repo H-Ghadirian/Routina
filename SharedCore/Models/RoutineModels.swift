@@ -150,16 +150,27 @@ final class RoutineTask {
 
     var links: [String] {
         get {
-            let storedLinks = RoutineTaskLinkStorage.deserialize(linksStorage)
-            if !storedLinks.isEmpty {
-                return storedLinks
-            }
-            return Self.sanitizedLink(link).map { [$0] } ?? []
+            linkItems.map(\.url)
         }
         set {
             let sanitizedLinks = Self.sanitizedLinks(newValue)
             linksStorage = RoutineTaskLinkStorage.serialize(sanitizedLinks)
             link = sanitizedLinks.first
+        }
+    }
+
+    var linkItems: [RoutineTaskLink] {
+        get {
+            let storedLinks = RoutineTaskLinkStorage.deserializeItems(linksStorage)
+            if !storedLinks.isEmpty {
+                return storedLinks
+            }
+            return Self.sanitizedLink(link).map { [RoutineTaskLink(title: nil, url: $0)] } ?? []
+        }
+        set {
+            let sanitizedLinks = RoutineTaskLinkStorage.sanitizedItems(newValue)
+            linksStorage = RoutineTaskLinkStorage.serializeItems(sanitizedLinks)
+            link = sanitizedLinks.first?.url
         }
     }
 
@@ -373,9 +384,12 @@ final class RoutineTask {
         self.name = name
         self.emoji = emoji
         self.notes = Self.sanitizedNotes(notes)
-        let sanitizedLinks = Self.sanitizedLinks(links.isEmpty ? link.map { [$0] } ?? [] : links)
-        self.link = sanitizedLinks.first
-        self.linksStorage = RoutineTaskLinkStorage.serialize(sanitizedLinks)
+        let sanitizedLinks = RoutineTaskLinkStorage.sanitizedItems(links.isEmpty
+            ? link.map { [RoutineTaskLink(title: nil, url: $0)] } ?? []
+            : links.map { RoutineTaskLink(title: nil, url: $0) }
+        )
+        self.link = sanitizedLinks.first?.url
+        self.linksStorage = RoutineTaskLinkStorage.serializeItems(sanitizedLinks)
         self.deadline = resolvedScheduleMode == .oneOff ? deadline : nil
         self.plannedDate = Self.normalizedPlannedDate(plannedDate)
         self.isAllDay = isAllDay
@@ -559,11 +573,33 @@ final class RoutineTask {
     }
 
     static func sanitizedLinks(fromEditorText text: String) -> [String] {
-        sanitizedLinks(text.components(separatedBy: .newlines))
+        sanitizedLinkItems(fromEditorText: text).map(\.url)
     }
 
     static func linkEditorText(for links: [String]) -> String {
-        sanitizedLinks(links).joined(separator: "\n")
+        linkEditorText(for: links.map { RoutineTaskLink(title: nil, url: $0) })
+    }
+
+    static func sanitizedLinkItems(fromEditorText text: String) -> [RoutineTaskLink] {
+        let items = text.components(separatedBy: .newlines).map { line in
+            let parts = line.components(separatedBy: "\t")
+            if parts.count >= 2 {
+                return RoutineTaskLink(title: parts[0], url: parts.dropFirst().joined(separator: "\t"))
+            }
+            return RoutineTaskLink(title: nil, url: line)
+        }
+        return RoutineTaskLinkStorage.sanitizedItems(items)
+    }
+
+    static func linkEditorText(for links: [RoutineTaskLink]) -> String {
+        RoutineTaskLinkStorage.sanitizedItems(links)
+            .map { link in
+                if let title = link.title, !title.isEmpty {
+                    return "\(title)\t\(link.url)"
+                }
+                return link.url
+            }
+            .joined(separator: "\n")
     }
 
     static func normalizedAvailabilityDateBounds(
@@ -597,9 +633,9 @@ final class RoutineTask {
     }
 
     var resolvedLinkURLs: [RoutineTaskResolvedLink] {
-        links.compactMap { link in
-            guard let url = URL(string: link) else { return nil }
-            return RoutineTaskResolvedLink(text: link, url: url)
+        linkItems.compactMap { link in
+            guard let url = URL(string: link.url) else { return nil }
+            return RoutineTaskResolvedLink(text: link.displayText, url: url)
         }
     }
 
@@ -678,6 +714,7 @@ final class RoutineTask {
         )
         copy.completedChecklistItemIDsStorage = completedChecklistItemIDsStorage
         copy.manualSectionOrderStorage = manualSectionOrderStorage
+        copy.linkItems = linkItems
         copy.commentsStorage = commentsStorage
         copy.changeLogStorage = changeLogStorage
         copy.scheduleAnchor = scheduleAnchor

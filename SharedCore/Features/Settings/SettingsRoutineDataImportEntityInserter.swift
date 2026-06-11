@@ -310,6 +310,9 @@ enum SettingsRoutineDataImportEntityInserter {
                 storyPoints: task.storyPoints,
                 comments: task.comments ?? []
             )
+            if let linkItems = task.linkItems {
+                importedTask.linkItems = linkItems
+            }
             context.insert(importedTask)
             importedCount += 1
         }

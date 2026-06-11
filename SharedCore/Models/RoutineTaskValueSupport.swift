@@ -56,7 +56,19 @@ struct RoutineTaskResolvedLink: Equatable, Identifiable, Sendable {
     var text: String
     var url: URL
 
-    var id: String { text }
+    var id: String { url.absoluteString }
+}
+
+struct RoutineTaskLink: Codable, Equatable, Sendable {
+    var title: String?
+    var url: String
+
+    var displayText: String {
+        if let title = title?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty {
+            return title
+        }
+        return url
+    }
 }
 
 struct RoutineTaskRelationshipResolution {
