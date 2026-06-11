@@ -363,10 +363,8 @@ extension HomeTCAView {
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     ) -> some View {
         if section.canStartFocusTimer {
-            Menu {
-                taskListSectionFocusMenuItems(for: section)
-            } label: {
-                Label("Focus Timer", systemImage: "stopwatch")
+            Section("Focus Timer") {
+                taskListSectionFocusContextMenuItems(for: section)
             }
         }
     }
@@ -376,16 +374,14 @@ extension HomeTCAView {
         for group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
     ) -> some View {
         if group.canStartFocusTimer {
-            Menu {
-                taskListGroupFocusMenuItems(for: group)
-            } label: {
-                Label("Focus Timer", systemImage: "stopwatch")
+            Section("Focus Timer") {
+                taskListGroupFocusContextMenuItems(for: group)
             }
         }
     }
 
     @ViewBuilder
-    private func taskListSectionFocusMenuItems(
+    private func taskListSectionFocusContextMenuItems(
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     ) -> some View {
         if section.canStartFocusTimer {
@@ -406,7 +402,7 @@ extension HomeTCAView {
     }
 
     @ViewBuilder
-    private func taskListGroupFocusMenuItems(
+    private func taskListGroupFocusContextMenuItems(
         for group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
     ) -> some View {
         if group.canStartFocusTimer {
