@@ -830,7 +830,7 @@ enum DayPlanSprintFocusBlocks {
         for session: SprintFocusSessionRecord,
         referenceDate: Date
     ) -> Int {
-        max(1, Int((session.activeDurationSeconds(at: referenceDate) / 60).rounded()))
+        max(1, Int(floor(session.activeDurationSeconds(at: referenceDate) / 60)))
     }
 
     private static func sprintTitle(_ sprint: BoardSprintRecord?) -> String {
