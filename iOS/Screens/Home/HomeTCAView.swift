@@ -16,6 +16,10 @@ struct HomeTCAView: View {
         store: SharedDefaults.app
     ) var showPersianDates = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingHomeTaskListModeTabsVisible.rawValue,
+        store: SharedDefaults.app
+    ) var areHomeTaskListModeTabsVisible = false
+    @AppStorage(
         UserDefaultStringValueKey.appSettingHomeTaskRowHiddenFields.rawValue,
         store: SharedDefaults.app
     ) private var taskRowHiddenFieldsRawValue = ""

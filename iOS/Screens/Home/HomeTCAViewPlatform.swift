@@ -25,6 +25,7 @@ extension HomeTCAView {
         HomeIOSHomeToolbarContent(
             taskListMode: store.taskListMode,
             areTaskListModeActionsExpanded: areTaskListModeActionsExpanded,
+            showTaskListModeActions: areHomeTaskListModeTabsVisible,
             hasActiveOptionalFilters: hasActiveOptionalFilters,
             onSelectTaskListMode: { mode in
                 store.send(.taskListModeChanged(mode))

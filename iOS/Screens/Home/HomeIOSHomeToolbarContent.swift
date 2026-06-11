@@ -3,6 +3,7 @@ import SwiftUI
 struct HomeIOSHomeToolbarContent: ToolbarContent {
     let taskListMode: HomeFeature.TaskListMode
     let areTaskListModeActionsExpanded: Bool
+    let showTaskListModeActions: Bool
     let hasActiveOptionalFilters: Bool
     let onSelectTaskListMode: (HomeFeature.TaskListMode) -> Void
     let onToggleTaskListModeActions: () -> Void
@@ -10,17 +11,19 @@ struct HomeIOSHomeToolbarContent: ToolbarContent {
 
     var body: some ToolbarContent {
         ToolbarItemGroup(placement: .topBarLeading) {
-            if areTaskListModeActionsExpanded {
-                taskListModeButton(.all)
-                taskListModeButton(.routines)
-                taskListModeButton(.todos)
-            }
+            if showTaskListModeActions {
+                if areTaskListModeActionsExpanded {
+                    taskListModeButton(.all)
+                    taskListModeButton(.routines)
+                    taskListModeButton(.todos)
+                }
 
-            Button(action: onToggleTaskListModeActions) {
-                Label(
-                    areTaskListModeActionsExpanded ? "Collapse Task List Modes" : "Expand Task List Modes",
-                    systemImage: areTaskListModeActionsExpanded ? "chevron.left.circle" : taskListMode.systemImage
-                )
+                Button(action: onToggleTaskListModeActions) {
+                    Label(
+                        areTaskListModeActionsExpanded ? "Collapse Task List Modes" : "Expand Task List Modes",
+                        systemImage: areTaskListModeActionsExpanded ? "chevron.left.circle" : taskListMode.systemImage
+                    )
+                }
             }
         }
 

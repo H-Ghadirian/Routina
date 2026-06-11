@@ -190,6 +190,10 @@ struct SettingsGeneralDetailView: View {
         UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isGoalsTabEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingHomeTaskListModeTabsVisible.rawValue,
+        store: SharedDefaults.app
+    ) private var isHomeTaskListModeTabsVisible = false
 
     var body: some View {
 List {
@@ -225,6 +229,11 @@ List {
     }
 
     Section("Navigation") {
+        Toggle("Show Home task-type tabs", isOn: $isHomeTaskListModeTabsVisible)
+
+        Text("Show All / Routines / Todos tabs in the Home toolbar. Turn off to switch task type from Filters instead.")
+            .foregroundStyle(.secondary)
+
         Toggle("Show Goals tab", isOn: $isGoalsTabEnabled)
 
         Text("Show the Goals tab so goals can be opened from Home.")
