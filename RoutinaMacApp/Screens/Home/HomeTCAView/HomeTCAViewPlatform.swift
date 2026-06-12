@@ -285,6 +285,7 @@ extension HomeTCAView {
             }
         }
         .onAppear {
+            settingsStore.send(.onAppear)
             recordMacNavigationSnapshotIfNeeded()
         }
         .onChange(of: macNavigationSnapshot) { _, snapshot in

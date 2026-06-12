@@ -67,10 +67,6 @@ struct HomeTCAView: View {
     @Environment(\.calendar) var calendar
     @Environment(\.modelContext) var modelContext
     @AppStorage(
-        UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue,
-        store: SharedDefaults.app
-    ) private var routineListSectioningModeRawValue: String = RoutineListSectioningMode.defaultValue.rawValue
-    @AppStorage(
         UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
         store: SharedDefaults.app
     ) var showPersianDates = false
@@ -348,10 +344,10 @@ homeContent
 
     var routineListSectioningMode: RoutineListSectioningMode {
         get {
-            RoutineListSectioningMode(rawValue: routineListSectioningModeRawValue) ?? .defaultValue
+            settingsStore.appearance.routineListSectioningMode
         }
         nonmutating set {
-            routineListSectioningModeRawValue = newValue.rawValue
+            settingsStore.send(.routineListSectioningModeChanged(newValue))
         }
     }
 
