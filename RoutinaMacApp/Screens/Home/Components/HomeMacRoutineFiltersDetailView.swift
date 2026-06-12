@@ -67,8 +67,8 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                 mediaPicker
             }
 
-            HomeMacSidebarSectionCard(title: "Importance & Urgency") {
-                HomeMacImportanceUrgencyMatrixView(
+            HomeMacSidebarSectionCard {
+                HomeMacImportanceUrgencyDisclosureSection(
                     selectedFilter: $selectedImportanceUrgencyFilter,
                     summaryText: importanceUrgencySummary
                 )

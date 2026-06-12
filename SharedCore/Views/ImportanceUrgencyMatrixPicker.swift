@@ -14,6 +14,7 @@ struct ImportanceUrgencyMatrixPicker: View {
 
     private let importanceLevels = RoutineTaskImportance.allCases.sorted { $0.sortOrder > $1.sortOrder }
     private let urgencyLevels = RoutineTaskUrgency.allCases.sorted { $0.sortOrder < $1.sortOrder }
+    private let rowHeaderWidth: CGFloat = 86
 
     init(
         importance: Binding<RoutineTaskImportance>,
@@ -48,28 +49,37 @@ struct ImportanceUrgencyMatrixPicker: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 8) {
-                    Text("Importance")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 72, alignment: .leading)
+                HStack(alignment: .bottom, spacing: 8) {
+                    importanceAxisHeader
+                        .padding(6)
+                        .frame(width: rowHeaderWidth, alignment: .leading)
 
-                    HStack(spacing: 8) {
-                        ForEach(urgencyLevels, id: \.self) { level in
-                            Text(level.shortTitle)
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                                .frame(maxWidth: .infinity)
+                    VStack(alignment: .leading, spacing: 4) {
+                        urgencyAxisHeader
+
+                        HStack(spacing: 8) {
+                            ForEach(urgencyLevels, id: \.self) { level in
+                                axisLevelLabel(
+                                    level.shortTitle,
+                                    isSelected: displayedUrgency == level
+                                )
+                                    .frame(maxWidth: .infinity)
+                            }
                         }
+                        .padding(.bottom, 2)
                     }
+                    .padding(6)
+                    .axisLabelBorder()
                 }
 
                 ForEach(importanceLevels, id: \.self) { importanceLevel in
                     HStack(spacing: 8) {
-                        Text(importanceLevel.shortTitle)
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 72, alignment: .leading)
+                        axisLevelLabel(
+                            importanceLevel.shortTitle,
+                            isSelected: displayedImportance == importanceLevel
+                        )
+                            .padding(.horizontal, 6)
+                            .frame(width: rowHeaderWidth, alignment: .center)
 
                         HStack(spacing: 8) {
                             ForEach(urgencyLevels, id: \.self) { urgencyLevel in
@@ -81,15 +91,55 @@ struct ImportanceUrgencyMatrixPicker: View {
                         }
                     }
                 }
-
-                HStack {
-                    Spacer(minLength: 80)
-                    Text("Urgency")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                }
+            }
+            .overlay(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(axisBorderColor, lineWidth: 1)
+                    .frame(width: rowHeaderWidth)
+                    .allowsHitTesting(false)
             }
         }
+    }
+
+    private var axisBorderColor: Color {
+        Color.primary.opacity(0.14)
+    }
+
+    private var importanceAxisHeader: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 4) {
+                Image(systemName: "arrow.up")
+                    .imageScale(.small)
+                Text("Importance")
+            }
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(.secondary)
+        }
+    }
+
+    private var urgencyAxisHeader: some View {
+        HStack(spacing: 4) {
+            Text("Urgency")
+            Image(systemName: "arrow.right")
+                .imageScale(.small)
+        }
+        .font(.caption2.weight(.semibold))
+        .foregroundStyle(.secondary)
+        .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    private func axisLevelLabel(_ title: String, isSelected: Bool) -> some View {
+        Text(title)
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+            .frame(width: 24, height: 24)
+            .overlay {
+                if isSelected {
+                    Circle()
+                        .strokeBorder(Color.accentColor, lineWidth: 1.5)
+                }
+            }
+            .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     private func matrixCell(
@@ -258,6 +308,16 @@ struct ImportanceUrgencyMatrixPicker: View {
             return .high
         default:
             return .urgent
+        }
+    }
+}
+
+private extension View {
+    func axisLabelBorder() -> some View {
+        overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.14), lineWidth: 1)
+                .allowsHitTesting(false)
         }
     }
 }

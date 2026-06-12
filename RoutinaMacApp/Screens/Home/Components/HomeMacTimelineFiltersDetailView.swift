@@ -42,8 +42,8 @@ struct HomeMacTimelineFiltersDetailView: View {
                 }
             }
 
-            HomeMacSidebarSectionCard(title: "Importance & Urgency") {
-                HomeMacImportanceUrgencyMatrixView(
+            HomeMacSidebarSectionCard {
+                HomeMacImportanceUrgencyDisclosureSection(
                     selectedFilter: $selectedImportanceUrgencyFilter,
                     summaryText: importanceUrgencySummary
                 )
