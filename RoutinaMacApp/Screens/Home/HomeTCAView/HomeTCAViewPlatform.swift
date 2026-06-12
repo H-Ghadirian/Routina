@@ -447,11 +447,14 @@ extension HomeTCAView {
         .pickerStyle(.segmented)
     }
 
+    @ViewBuilder
     var platformTimelineTypePicker: some View {
-        TimelinePigmentControl(selection: Binding(
-            get: { store.selectedTimelineFilterType },
-            set: { store.send(.selectedTimelineFilterTypeChanged($0)) }
-        ))
+        if areMacTimelineQuickFiltersVisible {
+            TimelinePigmentControl(selection: Binding(
+                get: { store.selectedTimelineFilterType },
+                set: { store.send(.selectedTimelineFilterTypeChanged($0)) }
+            ))
+        }
     }
 
     @ViewBuilder

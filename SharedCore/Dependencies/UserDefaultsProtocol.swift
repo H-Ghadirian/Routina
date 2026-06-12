@@ -54,6 +54,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingAdventureMapEnabled
     case appSettingBoardScreenEnabled
     case appSettingHomeTaskListModeTabsVisible
+    case appSettingMacTimelineQuickFiltersVisible
     case appSettingShowPersianDates
     case appSettingBatteryRoutineMonitoringEnabled
     case appSettingSleepHomeActionEnabled = "appSettingSleepHomeDockEnabled"

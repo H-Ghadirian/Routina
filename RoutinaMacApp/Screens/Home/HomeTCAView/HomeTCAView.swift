@@ -90,6 +90,10 @@ struct HomeTCAView: View {
         UserDefaultBoolValueKey.appSettingBoardScreenEnabled.rawValue,
         store: SharedDefaults.app
     ) var isBoardScreenEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacTimelineQuickFiltersVisible.rawValue,
+        store: SharedDefaults.app
+    ) var areMacTimelineQuickFiltersVisible = false
     @AppStorage("macTodoBoardCompactCards", store: SharedDefaults.app)
     var isMacTodoBoardCompactCards = false
     @AppStorage("macBoardTicketInspectorPresented", store: SharedDefaults.app)

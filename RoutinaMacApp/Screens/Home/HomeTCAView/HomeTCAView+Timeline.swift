@@ -373,12 +373,14 @@ extension HomeTCAView {
 
     var macTimelineSidebarView: some View {
         VStack(spacing: 0) {
-            TimelinePigmentControl(selection: Binding(
-                get: { store.selectedTimelineFilterType },
-                set: { store.send(.selectedTimelineFilterTypeChanged($0)) }
-            ))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            if areMacTimelineQuickFiltersVisible {
+                TimelinePigmentControl(selection: Binding(
+                    get: { store.selectedTimelineFilterType },
+                    set: { store.send(.selectedTimelineFilterTypeChanged($0)) }
+                ))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+            }
 
             HomeMacTimelineSidebarView(
                 timelineEntryCount: store.timelineLogs.count + events.count + emotionLogs.count + notes.count + focusSessions.count + sprintFocusSessions.count + sleepSessions.count + placeCheckInSessions.count,

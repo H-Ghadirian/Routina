@@ -26,6 +26,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0218](0218-hide-mac-timeline-quick-filters-behind-beta-toggle.md) gates Mac Timeline quick filters:** Mac Timeline quick filter strips are hidden by default and can be re-enabled from Settings -> General -> Beta Experiments while full filter controls remain available.
 - **[0217](0217-hide-board-screen-behind-beta-toggle.md) gates Mac Board access:** Mac Home hides the Board detail mode by default and lets users re-enable it from Settings -> General -> Beta Experiments.
 - **[0216](0216-move-mac-home-task-type-tabs-to-filter-screen.md) refines Mac Home task filtering:** Mac Home defaults to All tasks, moves the All/Todos/Routines selector into the filter detail screen, and keeps the sidebar selector behind an explicit beta setting.
 - **[0215](0215-re-enable-mac-website-blocking-behind-beta-toggle.md) supersedes [0169](0169-hide-mac-website-blocking-for-release-stabilization.md) for settings visibility:** Production Mac builds can enable website blocking from Settings, and release UI now hides it by default when the toggle is off.
@@ -344,3 +345,4 @@ These are ordered from newest resolver to oldest resolver.
 | [0215](0215-re-enable-mac-website-blocking-behind-beta-toggle.md) | Re-enable Mac Website Blocking Behind Beta Toggle | Accepted | 2026-06-12 |
 | [0216](0216-move-mac-home-task-type-tabs-to-filter-screen.md) | Move Mac Home Task Type Tabs to Filter Screen | Accepted | 2026-06-12 |
 | [0217](0217-hide-board-screen-behind-beta-toggle.md) | Hide Board Screen Behind Beta Toggle | Accepted | 2026-06-12 |
+| [0218](0218-hide-mac-timeline-quick-filters-behind-beta-toggle.md) | Hide Mac Timeline Quick Filters Behind Beta Toggle | Accepted | 2026-06-12 |

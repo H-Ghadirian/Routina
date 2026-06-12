@@ -229,6 +229,10 @@ struct SettingsMacGeneralDetailView: View {
         store: SharedDefaults.app
     ) private var areHomeTaskListModeTabsVisible = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacTimelineQuickFiltersVisible.rawValue,
+        store: SharedDefaults.app
+    ) private var areMacTimelineQuickFiltersVisible = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingMacWebsiteBlockingEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isMacWebsiteBlockingEnabled = false
@@ -299,6 +303,13 @@ SettingsMacDetailShell(
             .toggleStyle(.switch)
 
         Text("Show All, Todos, and Routines tabs in the Home sidebar.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+
+        Toggle("Show Timeline quick filters", isOn: $areMacTimelineQuickFiltersVisible)
+            .toggleStyle(.switch)
+
+        Text("Show the All, Routines, Todos, Notes, and other quick filters in Timeline.")
             .font(.footnote)
             .foregroundStyle(.secondary)
 
