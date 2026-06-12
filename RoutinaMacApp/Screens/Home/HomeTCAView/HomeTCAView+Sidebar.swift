@@ -112,7 +112,7 @@ extension HomeTCAView {
                 || store.selectedTimelineMediaFilter != .all
                 || !store.selectedTimelineExcludedTags.isEmpty
         case .routines, .board:
-            return store.selectedFilter != .all || hasActiveOptionalFilters
+            return store.selectedFilter != .all || macHomeFilterPresentation.hasActiveOptionalFilters
         case .goals, .adventure, .stats, .settings, .addTask:
             return false
         }
@@ -126,7 +126,33 @@ extension HomeTCAView {
     }
 
     var macActiveTaskFiltersSummary: String? {
-        homeFilterPresentation.activeTaskFiltersSummary(resultCount: macVisibleTaskResultCount, maxVisibleCount: 4)
+        macHomeFilterPresentation.activeTaskFiltersSummary(resultCount: macVisibleTaskResultCount, maxVisibleCount: 4)
+    }
+
+    var macHomeFilterPresentation: HomeFilterPresentation {
+        HomeFilterPresentation(
+            taskListKind: store.taskListMode.filterTaskListKind,
+            selectedFilter: store.selectedFilter,
+            advancedQuery: store.advancedQuery,
+            taskListViewMode: store.taskListViewMode,
+            taskListSortOrder: store.taskListSortOrder,
+            createdDateFilter: store.createdDateFilter,
+            selectedTodoStateFilter: store.selectedTodoStateFilter,
+            selectedTags: store.selectedTags,
+            includeTagMatchMode: store.includeTagMatchMode,
+            excludedTags: store.excludedTags,
+            selectedPlaceName: selectedPlaceName,
+            hasSelectedPlaceFilter: store.selectedManualPlaceFilterID != nil,
+            selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
+            selectedPressureFilter: store.selectedPressureFilter,
+            selectedGoalFilter: effectiveSelectedGoalFilter,
+            selectedMediaFilter: store.selectedMediaFilter,
+            hideUnavailableRoutines: store.hideUnavailableRoutines,
+            showArchivedTasks: store.showArchivedTasks,
+            hasSavedPlaces: hasSavedPlaces,
+            awayRoutineCount: store.awayRoutineDisplays.count,
+            locationAuthorizationStatus: store.locationSnapshot.authorizationStatus
+        )
     }
 
     var macSidebarSearchFiltersSummary: String? {
@@ -906,11 +932,13 @@ extension HomeTCAView {
                 selectedPressureFilter: homeFilterBindings.selectedPressureFilter,
                 selectedGoalFilter: homeFilterBindings.selectedGoalFilter,
                 selectedMediaFilter: homeFilterBindings.selectedMediaFilter,
+                selectedTodoStateFilter: homeFilterBindings.selectedTodoStateFilter,
                 queryOptions: HomeAdvancedQueryOptions(
                     tags: homeTagFilterData.tagSummaries.map(\.name),
                     places: sortedRoutinePlaces.map(\.displayName)
                 ),
                 importanceUrgencySummary: importanceUrgencyFilterSummary,
+                showsGoalFilter: isGoalsTabEnabled,
                 showsTagSection: homeTagFilterData.hasTags,
                 showsPlaceSection: hasPlaceAwareContent
             ) {
@@ -928,25 +956,7 @@ extension HomeTCAView {
                     onManagePlaces: { openSettingsPlacesInSidebar() }
                 )
             }
-
-            if store.taskListMode == .todos || store.taskListMode == .all {
-                HomeMacSidebarSectionCard(title: "Todo State") {
-                    macTodoStateFilterSection
-                }
-            }
         }
-    }
-
-    private var macTodoStateFilterSection: some View {
-        HomeTodoStateFilterChips(
-            selectedTodoStateFilter: homeFilterBindings.selectedTodoStateFilter,
-            layoutStyle: .adaptiveGrid(minimumWidth: 80, spacing: 8),
-            selectedForegroundColor: .white,
-            unselectedForegroundColor: .primary,
-            selectedBackgroundOpacity: 1,
-            fillsAvailableWidth: true,
-            verticalPadding: 8
-        )
     }
 
     private var macFilterTaskListModeBinding: Binding<HomeFeature.TaskListMode> {

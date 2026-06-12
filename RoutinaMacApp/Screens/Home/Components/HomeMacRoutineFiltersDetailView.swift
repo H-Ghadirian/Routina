@@ -14,8 +14,10 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     @Binding var selectedPressureFilter: RoutineTaskPressure?
     @Binding var selectedGoalFilter: HomeTaskGoalFilter
     @Binding var selectedMediaFilter: TaskMediaFilter
+    @Binding var selectedTodoStateFilter: TodoState?
     let queryOptions: HomeAdvancedQueryOptions
     let importanceUrgencySummary: String
+    let showsGoalFilter: Bool
     let showsTagSection: Bool
     let showsPlaceSection: Bool
     @ViewBuilder let tagSectionContent: () -> TagContent
@@ -23,49 +25,11 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
     var body: some View {
         Group {
-            HomeMacSidebarSectionCard(title: "Task Type") {
-                taskListModePicker
-            }
-
             HomeMacSidebarSectionCard(title: "Query") {
                 queryBuilder
             }
 
-            HomeMacSidebarSectionCard {
-                viewModePicker
-            }
-
-            HomeMacSidebarSectionCard {
-                groupingPicker
-            }
-
-            HomeMacSidebarSectionCard {
-                sortPicker
-            }
-
-            HomeMacSidebarSectionCard {
-                createdDatePicker
-            }
-
-            HomeMacSidebarSectionCard {
-                archivedToggle
-            }
-
-            HomeMacSidebarSectionCard {
-                filterPicker
-            }
-
-            HomeMacSidebarSectionCard(title: "Pressure") {
-                pressurePicker
-            }
-
-            HomeMacSidebarSectionCard(title: "Goal") {
-                goalPicker
-            }
-
-            HomeMacSidebarSectionCard(title: "Media") {
-                mediaPicker
-            }
+            coreFilterCard
 
             HomeMacSidebarSectionCard {
                 HomeMacImportanceUrgencyDisclosureSection(
@@ -98,12 +62,72 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
         }
     }
 
-    private var viewModePicker: some View {
+    private var coreFilterCard: some View {
+        HomeMacSidebarSectionCard {
+            VStack(alignment: .leading, spacing: 18) {
+                filterControlSection("Task type") {
+                    taskListModePicker
+                }
+
+                filterControlSection("View Mode") {
+                    viewModePicker
+                }
+
+                filterControlSection("Group") {
+                    groupingPicker
+                }
+
+                filterControlSection("Sort") {
+                    sortPicker
+                }
+
+                filterControlSection("Created") {
+                    createdDatePicker
+                }
+
+                filterControlSection("Show") {
+                    archivedToggle
+                    filterPicker
+                }
+
+                filterControlSection("Pressure") {
+                    pressurePicker
+                }
+
+                if showsGoalFilter {
+                    filterControlSection("Goal") {
+                        goalPicker
+                    }
+                }
+
+                filterControlSection("Media") {
+                    mediaPicker
+                }
+
+                if taskListMode == .todos || taskListMode == .all {
+                    filterControlSection("Todo State") {
+                        todoStateFilterSection
+                    }
+                }
+            }
+        }
+    }
+
+    private func filterControlSection<Content: View>(
+        _ title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("View Mode")
+            Text(title)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
+            content()
+        }
+    }
+
+    private var viewModePicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
             LazyVGrid(
                 columns: [GridItem(.adaptive(minimum: 112), spacing: 8, alignment: .leading)],
                 alignment: .leading,
@@ -138,10 +162,6 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
     private var filterPicker: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Show")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-
             LazyVGrid(
                 columns: [GridItem(.adaptive(minimum: 92), spacing: 8, alignment: .leading)],
                 alignment: .leading,
@@ -170,10 +190,6 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
     private var groupingPicker: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Group")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-
             LazyVGrid(
                 columns: [GridItem(.adaptive(minimum: 126), spacing: 8, alignment: .leading)],
                 alignment: .leading,
@@ -206,10 +222,6 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
     private var sortPicker: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Sort")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-
             LazyVGrid(
                 columns: [GridItem(.adaptive(minimum: 126), spacing: 8, alignment: .leading)],
                 alignment: .leading,
@@ -305,10 +317,6 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
     private var createdDatePicker: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Created")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-
             LazyVGrid(
                 columns: [GridItem(.adaptive(minimum: 126), spacing: 8, alignment: .leading)],
                 alignment: .leading,
@@ -345,6 +353,18 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private var todoStateFilterSection: some View {
+        HomeTodoStateFilterChips(
+            selectedTodoStateFilter: $selectedTodoStateFilter,
+            layoutStyle: .adaptiveGrid(minimumWidth: 80, spacing: 8),
+            selectedForegroundColor: .white,
+            unselectedForegroundColor: .primary,
+            selectedBackgroundOpacity: 1,
+            fillsAvailableWidth: true,
+            verticalPadding: 8
+        )
     }
 
     private func pressureButton(title: String, pressure: RoutineTaskPressure?) -> some View {
