@@ -5,38 +5,11 @@ import UniformTypeIdentifiers
 
 struct SettingsMacPresentationModifier: ViewModifier {
     let store: StoreOf<SettingsFeature>
-    @Binding var isPlacePickerPresented: Bool
 
     func body(content: Content) -> some View {
         content
             .sheet(isPresented: cloudDataResetConfirmationBinding) {
                 SettingsMacCloudDataResetConfirmationSheet(store: store)
-            }
-            .alert(
-                "Delete Place?",
-                isPresented: deletePlaceConfirmationBinding
-            ) {
-                Button("Delete", role: .destructive) {
-                    store.send(.deletePlaceConfirmed)
-                }
-                Button("Cancel", role: .cancel) {
-                    store.send(.setDeletePlaceConfirmation(false))
-                }
-            } message: {
-                Text(store.places.deleteConfirmationMessage)
-            }
-            .sheet(isPresented: $isPlacePickerPresented) {
-                PlaceLocationPickerSheet(
-                    initialCoordinate: store.places.placeDraftCoordinate,
-                    initialRadiusMeters: store.places.placeDraftRadiusMeters,
-                    fallbackCoordinate: store.places.placeDraftCoordinate ?? store.places.lastKnownLocationCoordinate
-                ) { coordinate, radiusMeters in
-                    store.send(.placeDraftCoordinateChanged(coordinate))
-                    store.send(.placeDraftRadiusChanged(radiusMeters))
-                    isPlacePickerPresented = false
-                } onCancel: {
-                    isPlacePickerPresented = false
-                }
             }
     }
 
@@ -47,12 +20,6 @@ struct SettingsMacPresentationModifier: ViewModifier {
         )
     }
 
-    private var deletePlaceConfirmationBinding: Binding<Bool> {
-        Binding(
-            get: { store.places.isDeletePlaceConfirmationPresented },
-            set: { store.send(.setDeletePlaceConfirmation($0)) }
-        )
-    }
 }
 
 private struct SettingsMacCloudDataResetConfirmationSheet: View {
@@ -246,14 +213,10 @@ private extension UTType {
 
 extension View {
     func settingsMacPresentations(
-        store: StoreOf<SettingsFeature>,
-        isPlacePickerPresented: Binding<Bool>
+        store: StoreOf<SettingsFeature>
     ) -> some View {
         modifier(
-            SettingsMacPresentationModifier(
-                store: store,
-                isPlacePickerPresented: isPlacePickerPresented
-            )
+            SettingsMacPresentationModifier(store: store)
         )
     }
 }
