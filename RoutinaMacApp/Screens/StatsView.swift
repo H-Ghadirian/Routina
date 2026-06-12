@@ -4,11 +4,13 @@ import SwiftUI
 
 struct StatsViewWrapper: View {
     let store: StoreOf<StatsFeature>
+    @Binding var selectedDashboardScope: StatsDashboardScope
     var showsFocusTimerToolbarItem = true
 
     var body: some View {
         StatsView(
             store: store,
+            selectedDashboardScope: $selectedDashboardScope,
             showsFocusTimerToolbarItem: showsFocusTimerToolbarItem
         )
             .background {
@@ -80,12 +82,12 @@ private struct StatsDataObserver: View {
 
 struct StatsView: View {
     let store: StoreOf<StatsFeature>
+    @Binding var selectedDashboardScope: StatsDashboardScope
     var showsFocusTimerToolbarItem = true
     @Environment(\.calendar) private var calendar
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var isActiveItemsInfoPresented = false
-    @State private var selectedDashboardScope = StatsDashboardScope.all
     @State private var isEditingDashboard = false
     @State private var isAddDashboardItemSheetPresented = false
     @State private var draggedDashboardItemID: String?
@@ -243,14 +245,6 @@ struct StatsView: View {
         orderedAvailableDashboardItems.filter { hiddenDashboardItemIDs.contains($0.rawValue) }
     }
 
-    private var availableDashboardScopes: [StatsDashboardScope] {
-        StatsDashboardScope.allCases.filter { scope in
-            (scope != .wins || isStatsWinsEnabled)
-                && (scope != .sleep || isStatsSleepTabEnabled)
-                && (scope != .achievements || isStatsAchievementsEnabled)
-        }
-    }
-
     private var effectiveDashboardScope: StatsDashboardScope {
         if selectedDashboardScope == .wins && !isStatsWinsEnabled {
             return .all
@@ -262,13 +256,6 @@ struct StatsView: View {
             return .all
         }
         return selectedDashboardScope
-    }
-
-    private var dashboardScopeBinding: Binding<StatsDashboardScope> {
-        Binding(
-            get: { effectiveDashboardScope },
-            set: { selectedDashboardScope = $0 }
-        )
     }
 
     private var summaryDisplayMode: StatsSummaryDisplayMode {
@@ -305,8 +292,6 @@ struct StatsView: View {
                 maxContentWidth: nil
             ) {
                 VStack(alignment: .leading, spacing: 24) {
-                    dashboardScopePicker
-
                     if isEditingDashboard {
                         dashboardEditControls
                     }
@@ -596,17 +581,6 @@ struct StatsView: View {
         }
         .help("Change summary card density")
         .accessibilityLabel("Summary card view")
-    }
-
-    private var dashboardScopePicker: some View {
-        Picker("Stats category", selection: dashboardScopeBinding) {
-            ForEach(availableDashboardScopes) { scope in
-                Text(scope.title).tag(scope)
-            }
-        }
-        .pickerStyle(.segmented)
-        .frame(maxWidth: 520)
-        .accessibilityIdentifier("stats.dashboard.scopePicker")
     }
 
     private var dashboardEditControls: some View {

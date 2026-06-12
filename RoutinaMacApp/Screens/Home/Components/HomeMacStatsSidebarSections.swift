@@ -41,6 +41,31 @@ struct HomeMacStatsTaskTypeSection: View {
     }
 }
 
+struct HomeMacStatsDashboardScopeSection: View {
+    let selectedDashboardScope: StatsDashboardScope
+    let availableDashboardScopes: [StatsDashboardScope]
+    let onSelectDashboardScope: (StatsDashboardScope) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HomeMacStatsSectionTitle("Scope")
+
+            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
+                ForEach(availableDashboardScopes) { scope in
+                    HomeMacStatsOptionChip(
+                        title: scope.title,
+                        systemImage: scope.macSidebarIconName,
+                        isSelected: selectedDashboardScope == scope
+                    ) {
+                        onSelectDashboardScope(scope)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+}
+
 struct HomeMacStatsRangeSection: View {
     let selectedRange: DoneChartRange
     let onSelectRange: (DoneChartRange) -> Void
@@ -188,6 +213,23 @@ private extension DoneChartRange {
             return "calendar"
         case .year:
             return "calendar.badge.plus"
+        }
+    }
+}
+
+private extension StatsDashboardScope {
+    var macSidebarIconName: String {
+        switch self {
+        case .all:
+            return "chart.bar"
+        case .focus:
+            return "timer"
+        case .sleep:
+            return "bed.double.fill"
+        case .wins:
+            return "trophy"
+        case .achievements:
+            return "medal"
         }
     }
 }

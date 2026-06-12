@@ -26,6 +26,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0225](0225-remove-place-management-from-settings.md) keeps Settings → Places focused on check-in behavior:** Settings Places now exposes only location diagnostics, automatic saved-place check-in, and status, while place creation and saved-place management happen on the dedicated Places surfaces.
 - **[0224](0224-hide-stats-achievements-behind-beta-toggle.md) refines [0131](0131-show-general-achievement-badges.md) for Stats visibility:** Achievements remain implemented as derived badge progress but are hidden by default and can be re-enabled from Settings -> General -> Beta Experiments.
 - **[0223](0223-support-multi-day-calendar-repeats.md) refines [0177](0177-separate-interval-and-calendar-repeat-controls.md), [0184](0184-label-month-day-fallbacks.md), and [0204](0204-avoid-duplicate-daily-repeat-choices.md) for calendar repeat creation:** Add Routine calendar repeats can select multiple weekdays or multiple month days at once while preserving single-day recurrence compatibility fallbacks.
 - **[0222](0222-configure-timeline-row-fields.md):** Timeline row density is now configurable from `Settings > Appearance`, mirroring task-row visibility controls and storing hidden fields per-row.
@@ -358,3 +359,4 @@ These are ordered from newest resolver to oldest resolver.
 | [0222](0222-configure-timeline-row-fields.md) | Configure Timeline Row Fields | Accepted | 2026-06-12 |
 | [0223](0223-support-multi-day-calendar-repeats.md) | Support Multi-Day Calendar Repeats | Accepted | 2026-06-12 |
 | [0224](0224-hide-stats-achievements-behind-beta-toggle.md) | Hide Stats Achievements Behind Beta Toggle | Accepted | 2026-06-12 |
+| [0225](0225-remove-place-management-from-settings.md) | Remove Place Management Sections from Settings Places | Accepted | 2026-06-12 |

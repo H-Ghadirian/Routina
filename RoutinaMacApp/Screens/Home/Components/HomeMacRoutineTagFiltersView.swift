@@ -20,7 +20,7 @@ struct HomeMacRoutineTagFiltersView: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            Picker("Show tasks with", selection: bindings.includeTagMatchMode) {
+            Picker("Show tasks with", selection: includeTagMatchModeBinding) {
                 ForEach(RoutineTagMatchMode.allCases) { mode in
                     Text(mode.rawValue).tag(mode)
                 }
@@ -53,6 +53,9 @@ struct HomeMacRoutineTagFiltersView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .transaction { transaction in
+                transaction.animation = nil
+            }
         }
     }
 
@@ -80,6 +83,9 @@ struct HomeMacRoutineTagFiltersView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .transaction { transaction in
+                    transaction.animation = nil
+                }
             }
         }
     }
@@ -106,6 +112,9 @@ struct HomeMacRoutineTagFiltersView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .transaction { transaction in
+                transaction.animation = nil
+            }
         }
     }
 
@@ -115,7 +124,7 @@ struct HomeMacRoutineTagFiltersView: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            Picker("Hide tasks with", selection: bindings.excludeTagMatchMode) {
+            Picker("Hide tasks with", selection: excludeTagMatchModeBinding) {
                 ForEach(RoutineTagMatchMode.allCases) { mode in
                     Text(mode.rawValue).tag(mode)
                 }
@@ -149,6 +158,9 @@ struct HomeMacRoutineTagFiltersView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .transaction { transaction in
+            transaction.animation = nil
+        }
     }
 
     @ViewBuilder
@@ -175,6 +187,29 @@ struct HomeMacRoutineTagFiltersView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .transaction { transaction in
+                transaction.animation = nil
+            }
         }
+    }
+
+    private var includeTagMatchModeBinding: Binding<RoutineTagMatchMode> {
+        Binding(
+            get: { bindings.includeTagMatchMode.wrappedValue },
+            set: { newValue in
+                guard bindings.includeTagMatchMode.wrappedValue != newValue else { return }
+                bindings.includeTagMatchMode.wrappedValue = newValue
+            }
+        )
+    }
+
+    private var excludeTagMatchModeBinding: Binding<RoutineTagMatchMode> {
+        Binding(
+            get: { bindings.excludeTagMatchMode.wrappedValue },
+            set: { newValue in
+                guard bindings.excludeTagMatchMode.wrappedValue != newValue else { return }
+                bindings.excludeTagMatchMode.wrappedValue = newValue
+            }
+        )
     }
 }

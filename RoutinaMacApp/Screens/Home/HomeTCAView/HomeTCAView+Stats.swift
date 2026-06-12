@@ -49,6 +49,11 @@ extension HomeTCAView {
             onSelectTaskTypeFilter: { filter in
                 statsStore?.send(.taskTypeFilterChanged(filter))
             },
+            availableDashboardScopes: availableStatsDashboardScopes,
+            selectedDashboardScope: resolvedStatsDashboardScope,
+            onSelectDashboardScope: { selected in
+                selectedStatsDashboardScope = selected
+            },
             selectedRange: statsStore?.selectedRange ?? .week,
             onSelectRange: { range in
                 statsStore?.send(.selectedRangeChanged(range))
@@ -150,6 +155,24 @@ extension HomeTCAView {
 
     private var statsExcludedTagSummary: String {
         statsFilterPresentation.excludedTagSummary
+    }
+
+    private var availableStatsDashboardScopes: [StatsDashboardScope] {
+        StatsDashboardScope.allCases.filter { scope in
+            (scope != .wins || isStatsWinsEnabled)
+                && (scope != .sleep || isStatsSleepTabEnabled)
+                && (scope != .achievements || isStatsAchievementsEnabled)
+        }
+    }
+
+    private var resolvedStatsDashboardScope: StatsDashboardScope {
+        if selectedStatsDashboardScope == .wins && !isStatsWinsEnabled { return .all }
+        if selectedStatsDashboardScope == .sleep && !isStatsSleepTabEnabled { return .all }
+        if selectedStatsDashboardScope == .achievements && !isStatsAchievementsEnabled { return .all }
+        if !availableStatsDashboardScopes.contains(selectedStatsDashboardScope) {
+            return .all
+        }
+        return selectedStatsDashboardScope
     }
 
     private var statsImportanceUrgencySummary: String {
