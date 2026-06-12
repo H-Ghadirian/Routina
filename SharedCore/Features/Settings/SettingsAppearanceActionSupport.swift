@@ -47,6 +47,21 @@ enum SettingsAppearanceActionHandler {
         return .none
     }
 
+    static func timelineRowFieldVisibilityChanged(
+        _ field: HomeTimelineRowField,
+        isVisible: Bool,
+        state: inout SettingsAppearanceState,
+        appSettingsClient: AppSettingsClient
+    ) -> Effect<SettingsFeature.Action> {
+        SettingsAppearanceEditor.updateTimelineRowField(
+            field,
+            isVisible: isVisible,
+            state: &state
+        )
+        appSettingsClient.setTimelineRowVisibility(state.timelineRowVisibility)
+        return .none
+    }
+
     static func appLockToggled(
         _ isEnabled: Bool,
         state: inout SettingsAppearanceState,

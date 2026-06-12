@@ -79,6 +79,10 @@ struct HomeTCAView: View {
         store: SharedDefaults.app
     ) private var taskRowHiddenFieldsRawValue = ""
     @AppStorage(
+        UserDefaultStringValueKey.appSettingHomeTimelineRowHiddenFields.rawValue,
+        store: SharedDefaults.app
+    ) private var timelineRowHiddenFieldsRawValue = ""
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
         store: SharedDefaults.app
     ) var isGoalsTabEnabled = false
@@ -340,6 +344,10 @@ homeContent
 
     var taskRowVisibility: HomeTaskRowVisibility {
         HomeTaskRowVisibility(storageRawValue: taskRowHiddenFieldsRawValue)
+    }
+
+    var timelineRowVisibility: HomeTimelineRowVisibility {
+        HomeTimelineRowVisibility(storageRawValue: timelineRowHiddenFieldsRawValue)
     }
 
     var selectedTaskBinding: Binding<UUID?> {

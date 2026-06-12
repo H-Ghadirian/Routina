@@ -81,6 +81,7 @@ public enum UserDefaultStringValueKey: String, Sendable {
     case appSettingCollapsedTagTaskListSections
     case appSettingTagCounterDisplayMode
     case appSettingHomeTaskRowHiddenFields
+    case appSettingHomeTimelineRowHiddenFields
     case appSettingRelatedTagRules
     case appSettingTagColors
     case appSettingFastFilterTags
@@ -133,6 +134,8 @@ struct AppSettingsClient: Sendable {
     var setTagCounterDisplayMode: @Sendable (TagCounterDisplayMode) -> Void
     var taskRowVisibility: @Sendable () -> HomeTaskRowVisibility
     var setTaskRowVisibility: @Sendable (HomeTaskRowVisibility) -> Void
+    var timelineRowVisibility: @Sendable () -> HomeTimelineRowVisibility
+    var setTimelineRowVisibility: @Sendable (HomeTimelineRowVisibility) -> Void
     var relatedTagRules: @Sendable () -> [RoutineRelatedTagRule]
     var setRelatedTagRules: @Sendable ([RoutineRelatedTagRule]) -> Void
     var tagColors: @Sendable () -> [String: String]
@@ -362,6 +365,24 @@ extension AppSettingsClient {
         },
         setTaskRowVisibility: { visibility in
             SharedDefaults.app[.appSettingHomeTaskRowHiddenFields] = visibility.storageRawValue
+            Task { @MainActor in
+                RoutinaUserPreferencesStore.mirrorDefaultsToStore(
+                    in: PersistenceController.shared.container.mainContext
+                )
+            }
+        },
+        timelineRowVisibility: {
+            HomeTimelineRowVisibility(
+                storageRawValue: SharedDefaults.app[.appSettingHomeTimelineRowHiddenFields]
+            )
+        },
+        setTimelineRowVisibility: { visibility in
+            SharedDefaults.app[.appSettingHomeTimelineRowHiddenFields] = visibility.storageRawValue
+            Task { @MainActor in
+                RoutinaUserPreferencesStore.mirrorDefaultsToStore(
+                    in: PersistenceController.shared.container.mainContext
+                )
+            }
         },
         relatedTagRules: {
             guard let rawValue = CloudSettingsKeyValueSync.string(for: .appSettingRelatedTagRules),
@@ -490,6 +511,8 @@ extension AppSettingsClient {
         setTagCounterDisplayMode: { _ in },
         taskRowVisibility: { .defaultValue },
         setTaskRowVisibility: { _ in },
+        timelineRowVisibility: { .defaultValue },
+        setTimelineRowVisibility: { _ in },
         relatedTagRules: { [] },
         setRelatedTagRules: { _ in },
         tagColors: { [:] },

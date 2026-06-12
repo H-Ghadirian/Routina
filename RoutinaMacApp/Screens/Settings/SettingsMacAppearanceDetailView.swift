@@ -78,6 +78,26 @@ SettingsMacDetailShell(
             .foregroundStyle(.secondary)
     }
 
+    SettingsMacDetailCard(title: "Timeline Row") {
+        SettingsTimelineRowPreviewView(visibility: store.appearance.timelineRowVisibility)
+
+        ForEach(HomeTimelineRowField.allCases) { field in
+            Toggle(isOn: timelineRowFieldVisibilityBinding(field)) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(field.title)
+                    Text(field.subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .toggleStyle(.switch)
+        }
+
+        Text("Shown: \(macTimelineRowSummaryText)")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+    }
+
     SettingsMacDetailCard(title: "Tag Counters") {
         Picker("Display", selection: tagCounterDisplayModeBinding) {
             ForEach(TagCounterDisplayMode.allCases) { mode in
@@ -176,6 +196,13 @@ SettingsMacDetailShell(
         )
     }
 
+    private func timelineRowFieldVisibilityBinding(_ field: HomeTimelineRowField) -> Binding<Bool> {
+        Binding(
+            get: { store.appearance.timelineRowVisibility.shows(field) },
+            set: { store.send(.timelineRowFieldVisibilityChanged(field, $0)) }
+        )
+    }
+
     private var macTaskRowFields: [HomeTaskRowField] {
         HomeTaskRowField.allCases.filter { $0 != .taskTypeBadge }
     }
@@ -186,6 +213,14 @@ SettingsMacDetailShell(
         }.count
         guard hiddenCount > 0 else { return "All fields" }
         return "\(macTaskRowFields.count - hiddenCount) of \(macTaskRowFields.count) fields"
+    }
+
+    private var macTimelineRowSummaryText: String {
+        let hiddenCount = HomeTimelineRowField.allCases.filter {
+            !store.appearance.timelineRowVisibility.shows($0)
+        }.count
+        guard hiddenCount > 0 else { return "All fields" }
+        return "\(HomeTimelineRowField.allCases.count - hiddenCount) of \(HomeTimelineRowField.allCases.count) fields"
     }
 
     private var resetButtonSystemImage: String {

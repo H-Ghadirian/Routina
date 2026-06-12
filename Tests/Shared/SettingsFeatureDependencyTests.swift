@@ -75,6 +75,8 @@ struct SettingsFeatureDependencyTests {
                 setTagCounterDisplayMode: { _ in },
                 taskRowVisibility: { HomeTaskRowVisibility(hiddenFields: [.tags, .goals]) },
                 setTaskRowVisibility: { _ in },
+                timelineRowVisibility: { .defaultValue },
+                setTimelineRowVisibility: { _ in },
                 relatedTagRules: { [] },
                 setRelatedTagRules: { _ in },
                 tagColors: { [:] },
