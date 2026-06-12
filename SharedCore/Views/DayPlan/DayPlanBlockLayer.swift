@@ -205,6 +205,7 @@ struct DayPlanBlockLayer: View {
                         width: max(dayWidth - 10, 90),
                         height: blockHeight
                     )
+                    .clipped(antialiased: true)
                     .offset(
                         x: timeColumnWidth + CGFloat(dayIndex) * dayWidth + 5,
                         y: yOffset(for: block.startMinute)
@@ -421,6 +422,7 @@ struct DayPlanSprintFocusBlockLayer: View {
                     width: max(dayWidth - 10, 90),
                     height: blockHeight
                 )
+                .clipped(antialiased: true)
                 .offset(
                     x: timeColumnWidth + CGFloat(positionedBlock.dayIndex) * dayWidth + 5,
                     y: yOffset(for: block.startMinute)
