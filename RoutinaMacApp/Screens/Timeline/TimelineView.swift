@@ -23,78 +23,89 @@ struct TimelineView: View {
         UserDefaultBoolValueKey.appSettingMacTimelineQuickFiltersVisible.rawValue,
         store: SharedDefaults.app
     ) private var areMacTimelineQuickFiltersVisible = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var areMacEventEmotionActionsEnabled = false
 
     var body: some View {
-NavigationStack {
-    content
-        .navigationTitle("")
-        .routinaTimelineNavigationTitleDisplayMode()
-        .toolbar {
-            RoutinaMacFocusTimerToolbarItem()
+        NavigationStack {
+            content
+                .navigationTitle("")
+                .routinaTimelineNavigationTitleDisplayMode()
+                .toolbar {
+                    RoutinaMacFocusTimerToolbarItem()
 
-            ToolbarItem(placement: .primaryAction) {
-                filterSheetButton
-            }
-        }
-        .navigationDestination(for: UUID.self) { taskID in
-            timelineDetailDestination(taskID: taskID)
-        }
-        .sheet(isPresented: filterSheetBinding) {
-            timelineFiltersSheet
-        }
-        .sheet(item: deepLinkedNotePresentationBinding) { presentation in
-            NavigationStack {
-                deepLinkedNoteDetail(noteID: presentation.id)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Done") {
-                                store.send(.noteDeepLinkPresentationDismissed(presentation.id))
-                            }
-                        }
+                    ToolbarItem(placement: .primaryAction) {
+                        filterSheetButton
                     }
-            }
-            .frame(minWidth: 560, minHeight: 420)
+                }
+                .navigationDestination(for: UUID.self) { taskID in
+                    timelineDetailDestination(taskID: taskID)
+                }
+                .sheet(isPresented: filterSheetBinding) {
+                    timelineFiltersSheet
+                }
+                .sheet(item: deepLinkedNotePresentationBinding) { presentation in
+                    NavigationStack {
+                        deepLinkedNoteDetail(noteID: presentation.id)
+                            .toolbar {
+                                ToolbarItem(placement: .cancellationAction) {
+                                    Button("Done") {
+                                        store.send(.noteDeepLinkPresentationDismissed(presentation.id))
+                                    }
+                                }
+                            }
+                            .frame(minWidth: 560, minHeight: 420)
+                    }
+                }
         }
-}
-.task {
-    syncTimelineData()
-}
-.onChange(of: tasks) { _, _ in
-    syncTimelineData()
-}
-.onChange(of: logs) { _, _ in
-    syncTimelineData()
-}
-.onChange(of: focusSessionChangeToken) { _, _ in
-    syncTimelineData()
-}
-.onChange(of: sprintFocusSessionChangeToken) { _, _ in
-    syncTimelineData()
-}
-.onChange(of: boardSprintChangeToken) { _, _ in
-    syncTimelineData()
-}
-.onChange(of: sleepSessionChangeToken) { _, _ in
-    syncTimelineData()
-}
-.onChange(of: placeCheckInChangeToken) { _, _ in
-    syncTimelineData()
-}
-.onChange(of: fileAttachmentChangeToken) { _, _ in
-    syncTimelineData()
-}
-.onChange(of: eventChangeToken) { _, _ in
-    syncTimelineData()
-}
-.onChange(of: emotionLogChangeToken) { _, _ in
-    syncTimelineData()
-}
-.onChange(of: noteChangeToken) { _, _ in
-    syncTimelineData()
-}
-.onChange(of: noteAttachmentChangeToken) { _, _ in
-    syncTimelineData()
-}
+        .task {
+            syncTimelineData()
+            validateEventEmotionFilterVisibility()
+        }
+        .onChange(of: tasks) { _, _ in
+            syncTimelineData()
+        }
+        .onChange(of: logs) { _, _ in
+            syncTimelineData()
+        }
+        .onChange(of: focusSessionChangeToken) { _, _ in
+            syncTimelineData()
+        }
+        .onChange(of: sprintFocusSessionChangeToken) { _, _ in
+            syncTimelineData()
+        }
+        .onChange(of: boardSprintChangeToken) { _, _ in
+            syncTimelineData()
+        }
+        .onChange(of: sleepSessionChangeToken) { _, _ in
+            syncTimelineData()
+        }
+        .onChange(of: placeCheckInChangeToken) { _, _ in
+            syncTimelineData()
+        }
+        .onChange(of: fileAttachmentChangeToken) { _, _ in
+            syncTimelineData()
+        }
+        .onChange(of: eventChangeToken) { _, _ in
+            syncTimelineData()
+        }
+        .onChange(of: emotionLogChangeToken) { _, _ in
+            syncTimelineData()
+        }
+        .onChange(of: noteChangeToken) { _, _ in
+            syncTimelineData()
+        }
+        .onChange(of: noteAttachmentChangeToken) { _, _ in
+            syncTimelineData()
+        }
+        .onChange(of: areMacEventEmotionActionsEnabled) { _, _ in
+            validateEventEmotionFilterVisibility()
+        }
+        .onChange(of: store.filterType) { _, _ in
+            validateEventEmotionFilterVisibility()
+        }
     }
 
     private var sleepSessionChangeToken: [String] {
@@ -273,8 +284,8 @@ NavigationStack {
 
     private var filterTypeBinding: Binding<TimelineFilterType> {
         Binding(
-            get: { store.filterType },
-            set: { store.send(.filterTypeChanged($0)) }
+            get: { effectiveFilterType },
+            set: { store.send(.filterTypeChanged($0.normalized(includingEventEmotion: areMacEventEmotionActionsEnabled))) }
         )
     }
 
@@ -353,7 +364,16 @@ NavigationStack {
     }
 
     private var hasActiveFilters: Bool {
-        store.hasActiveFilters
+        store.selectedRange != .all
+            || effectiveFilterType != .all
+            || !store.effectiveSelectedTags.isEmpty
+            || !store.excludedTags.isEmpty
+            || store.selectedImportanceUrgencyFilter != nil
+            || store.mediaFilter != .all
+    }
+
+    private var effectiveFilterType: TimelineFilterType {
+        store.filterType.normalized(includingEventEmotion: areMacEventEmotionActionsEnabled)
     }
 
     private var hasAnyTimelineRecords: Bool {
@@ -367,8 +387,27 @@ NavigationStack {
             || !placeCheckInSessions.isEmpty
     }
 
+    private var showsTypeFilterSection: Bool {
+        tasks.contains(where: { $0.isOneOffTask })
+            || (areMacEventEmotionActionsEnabled && (!events.isEmpty || !emotionLogs.isEmpty))
+            || !notes.isEmpty
+            || !focusSessions.isEmpty
+            || !sprintFocusSessions.isEmpty
+            || !sleepSessions.isEmpty
+            || !placeCheckInSessions.isEmpty
+    }
+
+    private func validateEventEmotionFilterVisibility() {
+        if !areMacEventEmotionActionsEnabled, store.filterType.isEventOrEmotion {
+            store.send(.filterTypeChanged(.all))
+        }
+    }
+
     private var timelinePigmentControl: some View {
-        TimelinePigmentControl(selection: filterTypeBinding)
+        TimelinePigmentControl(
+            selection: filterTypeBinding,
+            includesEventEmotion: areMacEventEmotionActionsEnabled
+        )
     }
 
     @ViewBuilder
@@ -447,10 +486,10 @@ NavigationStack {
                     .pickerStyle(.inline)
                 }
 
-                if tasks.contains(where: { $0.isOneOffTask }) || !events.isEmpty || !notes.isEmpty || !focusSessions.isEmpty || !sprintFocusSessions.isEmpty || !sleepSessions.isEmpty || !placeCheckInSessions.isEmpty {
+                if showsTypeFilterSection {
                     Section("Type") {
                         Picker("Type", selection: filterTypeBinding) {
-                            ForEach(TimelineFilterType.allCases) { type in
+                            ForEach(TimelineFilterType.visibleCases(includingEventEmotion: areMacEventEmotionActionsEnabled)) { type in
                                 Text(type.rawValue).tag(type)
                             }
                         }

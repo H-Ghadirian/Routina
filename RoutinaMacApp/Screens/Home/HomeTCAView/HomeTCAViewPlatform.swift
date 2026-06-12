@@ -128,6 +128,7 @@ extension HomeTCAView {
                     presentation: .inline,
                     onCancel: closeAwayStart,
                     onStarted: closeAwayStart,
+                    onStartSleep: startSleepFromAway,
                     dismissOnCompletion: false
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -450,10 +451,21 @@ extension HomeTCAView {
     @ViewBuilder
     var platformTimelineTypePicker: some View {
         if areMacTimelineQuickFiltersVisible {
-            TimelinePigmentControl(selection: Binding(
-                get: { store.selectedTimelineFilterType },
-                set: { store.send(.selectedTimelineFilterTypeChanged($0)) }
-            ))
+            TimelinePigmentControl(
+                selection: Binding(
+                    get: {
+                        store.selectedTimelineFilterType.normalized(
+                            includingEventEmotion: areMacEventEmotionActionsEnabled
+                        )
+                    },
+                    set: {
+                        store.send(.selectedTimelineFilterTypeChanged(
+                            $0.normalized(includingEventEmotion: areMacEventEmotionActionsEnabled)
+                        ))
+                    }
+                ),
+                includesEventEmotion: areMacEventEmotionActionsEnabled
+            )
         }
     }
 

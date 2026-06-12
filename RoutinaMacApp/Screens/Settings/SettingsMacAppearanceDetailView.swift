@@ -237,6 +237,10 @@ struct SettingsMacGeneralDetailView: View {
         store: SharedDefaults.app
     ) private var areMacTimelineQuickFiltersVisible = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var areMacEventEmotionActionsEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingMacWebsiteBlockingEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isMacWebsiteBlockingEnabled = false
@@ -321,6 +325,13 @@ SettingsMacDetailShell(
             .toggleStyle(.switch)
 
         Text("Show the All, Routines, Todos, Notes, and other quick filters in Timeline.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+
+        Toggle("Show Event and Emotion actions", isOn: $areMacEventEmotionActionsEnabled)
+            .toggleStyle(.switch)
+
+        Text("Show Event and Emotion in the Mac Add menu and Timeline type filters.")
             .font(.footnote)
             .foregroundStyle(.secondary)
 

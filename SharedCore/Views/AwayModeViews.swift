@@ -74,6 +74,7 @@ struct AwaySessionStartSheet: View {
     var presentation: AwaySessionStartPresentation = .sheet
     var onCancel: () -> Void = {}
     var onStarted: () -> Void = {}
+    var onStartSleep: (() -> Void)?
     var dismissOnCompletion = true
 
     var body: some View {
@@ -150,6 +151,16 @@ struct AwaySessionStartSheet: View {
                         .foregroundStyle(.red)
                 }
             }
+
+            if let startSleepAction {
+                Section("Sleep") {
+                    Button {
+                        startSleepAction()
+                    } label: {
+                        Label("Start Sleep", systemImage: "bed.double.fill")
+                    }
+                }
+            }
         }
     }
 
@@ -194,7 +205,8 @@ struct AwaySessionStartSheet: View {
                                     timerMode: timerMode,
                                     durationMinutes: durationMinutes,
                                     errorText: errorText,
-                                    onStart: startAway
+                                    onStart: startAway,
+                                    onStartSleep: startSleepAction
                                 )
                             }
                             .frame(width: 330)
@@ -217,7 +229,8 @@ struct AwaySessionStartSheet: View {
                                 timerMode: timerMode,
                                 durationMinutes: durationMinutes,
                                 errorText: errorText,
-                                onStart: startAway
+                                onStart: startAway,
+                                onStartSleep: startSleepAction
                             )
                         }
                     }
@@ -227,6 +240,11 @@ struct AwaySessionStartSheet: View {
                 .frame(maxWidth: .infinity, alignment: .top)
             }
         }
+    }
+
+    private var startSleepAction: (() -> Void)? {
+        guard onStartSleep != nil else { return nil }
+        return startSleep
     }
 
     private var selectedPresetBinding: Binding<AwaySessionPreset> {
@@ -276,6 +294,15 @@ struct AwaySessionStartSheet: View {
         } catch {
             errorText = error.localizedDescription
             NSLog("Failed to start away session: \(error.localizedDescription)")
+        }
+    }
+
+    @MainActor
+    private func startSleep() {
+        errorText = nil
+        onStartSleep?()
+        if dismissOnCompletion {
+            dismiss()
         }
     }
 }
@@ -573,6 +600,7 @@ private struct AwayStartSummaryPanel: View {
     let durationMinutes: Int
     let errorText: String?
     let onStart: () -> Void
+    let onStartSleep: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -617,6 +645,25 @@ private struct AwayStartSummaryPanel: View {
             .buttonStyle(.plain)
             .contentShape(Capsule())
             .keyboardShortcut(.defaultAction)
+
+            if let onStartSleep {
+                Button {
+                    onStartSleep()
+                } label: {
+                    Label("Start Sleep", systemImage: "bed.double.fill")
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(preset.tint)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(preset.tint.opacity(0.11), in: Capsule())
+                        .overlay {
+                            Capsule()
+                                .stroke(preset.tint.opacity(0.24), lineWidth: 1)
+                        }
+                }
+                .buttonStyle(.plain)
+                .contentShape(Capsule())
+            }
 
             if let errorText {
                 Text(errorText)

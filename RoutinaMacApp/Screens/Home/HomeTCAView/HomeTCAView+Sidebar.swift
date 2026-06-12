@@ -607,8 +607,7 @@ extension HomeTCAView {
                 onAddGoal: openAddGoal,
                 onAddTask: openAddTask,
                 onCheckIn: openCheckInFromAddMenu,
-                onStartAway: openAwayFromAddMenu,
-                onStartSleep: startSleepFromAddMenu
+                onStartAway: openAwayFromAddMenu
             )
         }
         .padding(.horizontal, 14)
@@ -689,8 +688,7 @@ extension HomeTCAView {
             onAddGoal: openAddGoal,
             onAddTask: openAddTask,
             onCheckIn: openCheckInFromAddMenu,
-            onStartAway: openAwayFromAddMenu,
-            onStartSleep: startSleepFromAddMenu
+            onStartAway: openAwayFromAddMenu
         ) {
             if isMacGoalsMode {
                 platformSearchField(searchText: goalsSearchTextBinding)
@@ -826,7 +824,7 @@ extension HomeTCAView {
         isAwayStartPresented = false
     }
 
-    func startSleepFromAddMenu() {
+    func startSleepFromAway() {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
