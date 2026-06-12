@@ -7,12 +7,30 @@ struct StatsMacDashboardItemAvailabilityTests {
         #expect(!StatsMacDashboardItem.recentWins.isAvailable(
             selectedRange: .week,
             isGitFeaturesEnabled: true,
-            isStatsWinsEnabled: false
+            isStatsWinsEnabled: false,
+            isStatsAchievementsEnabled: true
         ))
         #expect(StatsMacDashboardItem.recentWins.isAvailable(
             selectedRange: .week,
             isGitFeaturesEnabled: false,
-            isStatsWinsEnabled: true
+            isStatsWinsEnabled: true,
+            isStatsAchievementsEnabled: false
+        ))
+    }
+
+    @Test
+    func achievements_requiresBetaExperiment() {
+        #expect(!StatsMacDashboardItem.focusAchievements.isAvailable(
+            selectedRange: .week,
+            isGitFeaturesEnabled: true,
+            isStatsWinsEnabled: true,
+            isStatsAchievementsEnabled: false
+        ))
+        #expect(StatsMacDashboardItem.focusAchievements.isAvailable(
+            selectedRange: .week,
+            isGitFeaturesEnabled: false,
+            isStatsWinsEnabled: false,
+            isStatsAchievementsEnabled: true
         ))
     }
 
@@ -21,12 +39,14 @@ struct StatsMacDashboardItemAvailabilityTests {
         #expect(!StatsMacDashboardItem.gitHub.isAvailable(
             selectedRange: .week,
             isGitFeaturesEnabled: false,
-            isStatsWinsEnabled: true
+            isStatsWinsEnabled: true,
+            isStatsAchievementsEnabled: true
         ))
         #expect(StatsMacDashboardItem.gitHub.isAvailable(
             selectedRange: .week,
             isGitFeaturesEnabled: true,
-            isStatsWinsEnabled: false
+            isStatsWinsEnabled: false,
+            isStatsAchievementsEnabled: false
         ))
     }
 }

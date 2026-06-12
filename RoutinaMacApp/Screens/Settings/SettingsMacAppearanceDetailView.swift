@@ -268,6 +268,10 @@ struct SettingsMacGeneralDetailView: View {
         store: SharedDefaults.app
     ) private var isStatsSleepTabEnabled = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingStatsAchievementsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isStatsAchievementsEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingHomeTaskListModeTabsVisible.rawValue,
         store: SharedDefaults.app
     ) private var areHomeTaskListModeTabsVisible = false
@@ -357,6 +361,13 @@ SettingsMacDetailShell(
             .toggleStyle(.switch)
 
         Text("Show the Sleep tab for Sleep-specific dashboard scope in Stats.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+
+        Toggle("Show Achievements", isOn: $isStatsAchievementsEnabled)
+            .toggleStyle(.switch)
+
+        Text("Show achievement badges and progress in Stats.")
             .font(.footnote)
             .foregroundStyle(.secondary)
 

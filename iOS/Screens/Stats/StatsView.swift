@@ -47,6 +47,8 @@ struct StatsView: View {
     private var isStatsWinsEnabled = false
     @AppStorage(UserDefaultBoolValueKey.appSettingStatsSleepTabEnabled.rawValue, store: SharedDefaults.app)
     private var isStatsSleepTabEnabled = false
+    @AppStorage(UserDefaultBoolValueKey.appSettingStatsAchievementsEnabled.rawValue, store: SharedDefaults.app)
+    private var isStatsAchievementsEnabled = false
 
     private typealias Metrics = StatsFeature.Metrics
 
@@ -248,7 +250,8 @@ struct StatsView: View {
             item.isAvailable(
                 selectedRange: selectedRange,
                 isGitFeaturesEnabled: store.isGitFeaturesEnabled,
-                isStatsWinsEnabled: isStatsWinsEnabled
+                isStatsWinsEnabled: isStatsWinsEnabled,
+                isStatsAchievementsEnabled: isStatsAchievementsEnabled
             ) && (item != .unassignedFocus || hasUnassignedFocusSessions)
         }
     }
@@ -276,6 +279,7 @@ struct StatsView: View {
         StatsDashboardScope.allCases.filter { scope in
             (scope != .wins || isStatsWinsEnabled)
                 && (scope != .sleep || isStatsSleepTabEnabled)
+                && (scope != .achievements || isStatsAchievementsEnabled)
         }
     }
 
@@ -284,6 +288,9 @@ struct StatsView: View {
             return .all
         }
         if selectedDashboardScope == .sleep && !isStatsSleepTabEnabled {
+            return .all
+        }
+        if selectedDashboardScope == .achievements && !isStatsAchievementsEnabled {
             return .all
         }
         return selectedDashboardScope

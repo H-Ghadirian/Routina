@@ -325,7 +325,8 @@ enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
     func isAvailable(
         selectedRange: DoneChartRange,
         isGitFeaturesEnabled: Bool,
-        isStatsWinsEnabled: Bool
+        isStatsWinsEnabled: Bool,
+        isStatsAchievementsEnabled: Bool
     ) -> Bool {
         switch self {
         case .dailyAverage, .focusAverage, .bestDay, .completionChart, .focusChart, .focusWorkChart:
@@ -334,6 +335,8 @@ enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return isGitFeaturesEnabled
         case .recentWins:
             return isStatsWinsEnabled
+        case .focusAchievements:
+            return isStatsAchievementsEnabled
         default:
             return true
         }
