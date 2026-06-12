@@ -195,6 +195,10 @@ struct SettingsGeneralDetailView: View {
         store: SharedDefaults.app
     ) private var isAdventureMapEnabled = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingStatsWinsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isStatsWinsEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingHomeTaskListModeTabsVisible.rawValue,
         store: SharedDefaults.app
     ) private var isHomeTaskListModeTabsVisible = false
@@ -225,7 +229,7 @@ List {
             .foregroundStyle(.secondary)
     }
 
-    Section("Advanced") {
+    Section("Beta Experiments") {
         Toggle("Enable Git features", isOn: gitFeaturesBinding)
 
         Text("Shows GitHub and GitLab contribution activity in Stats.")
@@ -239,6 +243,11 @@ List {
         Toggle("Show Adventure map", isOn: $isAdventureMapEnabled)
 
         Text("Show the Adventure map in Home.")
+            .foregroundStyle(.secondary)
+
+        Toggle("Show Stats wins", isOn: $isStatsWinsEnabled)
+
+        Text("Show Recent Wins in Stats.")
             .foregroundStyle(.secondary)
     }
 

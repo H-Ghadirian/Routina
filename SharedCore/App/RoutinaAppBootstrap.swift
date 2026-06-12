@@ -30,6 +30,7 @@ enum RoutinaAppBootstrap {
             .appSettingGoalsTabEnabled: false,
             .appSettingAdventureMapEnabled: false,
             .appSettingBoardScreenEnabled: false,
+            .appSettingStatsWinsEnabled: false,
             .appSettingShowPersianDates: false,
             .appSettingBatteryRoutineMonitoringEnabled: BatteryRoutinePreferences.defaultMonitoringEnabled,
             .appSettingSleepHomeActionEnabled: true,

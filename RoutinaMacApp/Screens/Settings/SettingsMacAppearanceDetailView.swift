@@ -225,6 +225,10 @@ struct SettingsMacGeneralDetailView: View {
         store: SharedDefaults.app
     ) private var isBoardScreenEnabled = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingStatsWinsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isStatsWinsEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingHomeTaskListModeTabsVisible.rawValue,
         store: SharedDefaults.app
     ) private var areHomeTaskListModeTabsVisible = false
@@ -296,6 +300,13 @@ SettingsMacDetailShell(
             .toggleStyle(.switch)
 
         Text("Show the Board screen in Home.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+
+        Toggle("Show Stats wins", isOn: $isStatsWinsEnabled)
+            .toggleStyle(.switch)
+
+        Text("Show Recent Wins in Stats.")
             .font(.footnote)
             .foregroundStyle(.secondary)
 
