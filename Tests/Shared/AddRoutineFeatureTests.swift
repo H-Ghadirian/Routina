@@ -703,6 +703,7 @@ struct AddRoutineFeatureTests {
             $0.schedule.recurrenceKind = .weekly
             $0.schedule.recurrenceHasExplicitTime = true
             $0.schedule.recurrenceWeekday = 7
+            $0.schedule.recurrenceWeekdays = [7]
             $0.schedule.recurrenceTimeOfDay = RoutineTimeOfDay(hour: 9, minute: 0)
         }
     }

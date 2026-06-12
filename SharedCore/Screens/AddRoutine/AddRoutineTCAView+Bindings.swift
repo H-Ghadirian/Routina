@@ -113,10 +113,24 @@ extension AddRoutineTCAView {
         )
     }
 
+    var recurrenceWeekdaysBinding: Binding<[Int]> {
+        Binding(
+            get: { store.schedule.effectiveRecurrenceWeekdays },
+            set: { store.send(.recurrenceWeekdaysChanged($0)) }
+        )
+    }
+
     var recurrenceDayOfMonthBinding: Binding<Int> {
         Binding(
             get: { store.schedule.recurrenceDayOfMonth },
             set: { store.send(.recurrenceDayOfMonthChanged($0)) }
+        )
+    }
+
+    var recurrenceDaysOfMonthBinding: Binding<[Int]> {
+        Binding(
+            get: { store.schedule.effectiveRecurrenceDaysOfMonth },
+            set: { store.send(.recurrenceDaysOfMonthChanged($0)) }
         )
     }
 

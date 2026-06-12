@@ -481,6 +481,23 @@ struct SwiftDataModelTests {
         #expect(RoutineRecurrenceRule.monthly(on: 31).displayText() == "Every last day of the month")
         #expect(RoutineRecurrenceRule.monthly(on: 31, at: exactTime).displayText() == "Every last day of the month at \(exactTime.formatted())")
         #expect(RoutineRecurrenceRule.monthly(on: 30).displayText() == "Every 30th; shorter months use last day")
+        #expect(RoutineRecurrenceRule.monthly(on: [1, 15, 31]).displayText() == "Every 1st, 15th, and last day of the month; shorter months use last day")
+    }
+
+    @Test
+    func routineTask_multiDayCalendarRecurrencePreservesSelectionsInStorage() {
+        let weeklyRule = RoutineRecurrenceRule.weekly(on: [2, 4, 6])
+        let monthlyRule = RoutineRecurrenceRule.monthly(on: [1, 15, 31])
+
+        let weeklyTask = RoutineTask(recurrenceRule: weeklyRule)
+        let monthlyTask = RoutineTask(recurrenceRule: monthlyRule)
+
+        #expect(weeklyTask.recurrenceRule == weeklyRule)
+        #expect(monthlyTask.recurrenceRule == monthlyRule)
+        #expect(weeklyTask.recurrenceWeekday == 2)
+        #expect(monthlyTask.recurrenceDayOfMonth == 1)
+        #expect(!weeklyTask.recurrenceRuleStorage.isEmpty)
+        #expect(!monthlyTask.recurrenceRuleStorage.isEmpty)
     }
 
     @Test

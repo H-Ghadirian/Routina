@@ -7,6 +7,8 @@ struct AddRoutineRepeatPatternSections: View {
     @Binding var recurrenceTime: Date
     @Binding var recurrenceWeekday: Int
     @Binding var recurrenceDayOfMonth: Int
+    @Binding var recurrenceWeekdays: [Int]
+    @Binding var recurrenceDaysOfMonth: [Int]
     let recurrencePatternDescription: String
     let dailyTimeSummary: String
     let weeklyRecurrenceSummary: String
@@ -112,9 +114,10 @@ struct AddRoutineRepeatPatternSections: View {
 
     private var weeklySection: some View {
         Section(header: Text("Weekday")) {
-            Picker("Weekday", selection: $recurrenceWeekday) {
+            LazyVGrid(columns: weekdayGridColumns, alignment: .leading, spacing: 8) {
                 ForEach(weekdayOptions, id: \.id) { option in
-                    Text(option.name).tag(option.id)
+                    Toggle(option.name, isOn: weekdaySelectionBinding(for: option.id))
+                        .toggleStyle(.button)
                 }
             }
 
@@ -126,8 +129,15 @@ struct AddRoutineRepeatPatternSections: View {
 
     private var monthlyDaySection: some View {
         Section(header: Text("Day of Month")) {
-            Stepper(value: $recurrenceDayOfMonth, in: 1...31) {
-                Text(TaskFormPresentation.monthDayRepeatLabel(for: recurrenceDayOfMonth))
+            LazyVGrid(columns: monthDayGridColumns, alignment: .leading, spacing: 8) {
+                ForEach(1...31, id: \.self) { day in
+                    Toggle(isOn: monthDaySelectionBinding(for: day)) {
+                        Text("\(day)")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .toggleStyle(.button)
+                    .accessibilityLabel(TaskFormPresentation.monthDayControlLabel(for: day))
+                }
             }
 
             Text(monthlyRecurrenceSummary)
@@ -147,5 +157,56 @@ struct AddRoutineRepeatPatternSections: View {
             unit = .month
         }
         return TaskFormPresentation.stepperLabel(unit: unit, value: frequencyValue)
+    }
+
+    private var weekdayGridColumns: [GridItem] {
+        [GridItem(.adaptive(minimum: 96), spacing: 8)]
+    }
+
+    private var monthDayGridColumns: [GridItem] {
+        [GridItem(.adaptive(minimum: 44), spacing: 8)]
+    }
+
+    private func weekdaySelectionBinding(for weekday: Int) -> Binding<Bool> {
+        Binding(
+            get: { recurrenceWeekdays.contains(weekday) },
+            set: { isSelected in
+                let updatedSelection = updatedSelection(
+                    value: weekday,
+                    isSelected: isSelected,
+                    selection: recurrenceWeekdays
+                )
+                recurrenceWeekdays = updatedSelection
+            }
+        )
+    }
+
+    private func monthDaySelectionBinding(for day: Int) -> Binding<Bool> {
+        Binding(
+            get: { recurrenceDaysOfMonth.contains(day) },
+            set: { isSelected in
+                let updatedSelection = updatedSelection(
+                    value: day,
+                    isSelected: isSelected,
+                    selection: recurrenceDaysOfMonth
+                )
+                recurrenceDaysOfMonth = updatedSelection
+            }
+        )
+    }
+
+    private func updatedSelection(
+        value: Int,
+        isSelected: Bool,
+        selection: [Int]
+    ) -> [Int] {
+        var selectedValues = Set(selection)
+        if isSelected {
+            selectedValues.insert(value)
+        } else {
+            guard selectedValues.count > 1 else { return selection.sorted() }
+            selectedValues.remove(value)
+        }
+        return selectedValues.sorted()
     }
 }

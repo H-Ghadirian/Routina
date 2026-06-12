@@ -736,13 +736,16 @@ struct TaskFormMacBehaviorCard: View {
 
     private var weeklyDayControl: some View {
         TaskFormMacControlBlock(title: "Weekday") {
-            Picker("Weekday", selection: model.recurrenceWeekday) {
+            LazyVGrid(columns: weekdayGridColumns, alignment: .leading, spacing: 8) {
                 ForEach(presentation.weekdayOptions, id: \.id) { option in
-                    Text(option.name).tag(option.id)
+                    Toggle(option.name, isOn: weekdaySelectionBinding(for: option.id))
+                        .toggleStyle(.button)
                 }
             }
-            .labelsHidden()
-            .pickerStyle(.menu)
+
+            Text(presentation.weeklyRecurrenceSummary)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -752,12 +755,72 @@ struct TaskFormMacBehaviorCard: View {
 
     private var monthlyDayControl: some View {
         TaskFormMacControlBlock(title: "Month day") {
-            Stepper(value: model.recurrenceDayOfMonth, in: 1...31) {
-                Text(TaskFormPresentation.monthDayControlLabel(for: model.recurrenceDayOfMonth.wrappedValue))
-                    .frame(minWidth: 180, alignment: .leading)
+            LazyVGrid(columns: monthDayGridColumns, alignment: .leading, spacing: 8) {
+                ForEach(1...31, id: \.self) { day in
+                    Toggle(isOn: monthDaySelectionBinding(for: day)) {
+                        Text("\(day)")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .toggleStyle(.button)
+                    .accessibilityLabel(TaskFormPresentation.monthDayControlLabel(for: day))
+                }
             }
-            .fixedSize()
+
+            Text(presentation.monthlyRecurrenceSummary)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
         }
+    }
+
+    private var weekdayGridColumns: [GridItem] {
+        [GridItem(.adaptive(minimum: 96), spacing: 8)]
+    }
+
+    private var monthDayGridColumns: [GridItem] {
+        [GridItem(.adaptive(minimum: 44), spacing: 8)]
+    }
+
+    private func weekdaySelectionBinding(for weekday: Int) -> Binding<Bool> {
+        Binding(
+            get: { model.effectiveRecurrenceWeekdays.contains(weekday) },
+            set: { isSelected in
+                let updatedWeekdays = updatedSelection(
+                    value: weekday,
+                    isSelected: isSelected,
+                    selection: model.effectiveRecurrenceWeekdays
+                )
+                model.setRecurrenceWeekdays(updatedWeekdays)
+            }
+        )
+    }
+
+    private func monthDaySelectionBinding(for day: Int) -> Binding<Bool> {
+        Binding(
+            get: { model.effectiveRecurrenceDaysOfMonth.contains(day) },
+            set: { isSelected in
+                let updatedDays = updatedSelection(
+                    value: day,
+                    isSelected: isSelected,
+                    selection: model.effectiveRecurrenceDaysOfMonth
+                )
+                model.setRecurrenceDaysOfMonth(updatedDays)
+            }
+        )
+    }
+
+    private func updatedSelection(
+        value: Int,
+        isSelected: Bool,
+        selection: [Int]
+    ) -> [Int] {
+        var selectedValues = Set(selection)
+        if isSelected {
+            selectedValues.insert(value)
+        } else {
+            guard selectedValues.count > 1 else { return selection.sorted() }
+            selectedValues.remove(value)
+        }
+        return selectedValues.sorted()
     }
 
     private var dateAvailabilityControls: some View {

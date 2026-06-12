@@ -26,6 +26,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0223](0223-support-multi-day-calendar-repeats.md) refines [0177](0177-separate-interval-and-calendar-repeat-controls.md), [0184](0184-label-month-day-fallbacks.md), and [0204](0204-avoid-duplicate-daily-repeat-choices.md) for calendar repeat creation:** Add Routine calendar repeats can select multiple weekdays or multiple month days at once while preserving single-day recurrence compatibility fallbacks.
 - **[0222](0222-configure-timeline-row-fields.md):** Timeline row density is now configurable from `Settings > Appearance`, mirroring task-row visibility controls and storing hidden fields per-row.
 - **[0221](0221-hide-stats-sleep-tab-behind-beta-toggle.md) gates Stats Sleep scope:** The Sleep dashboard scope tab is hidden by default and can be re-enabled from Settings -> General -> Beta Experiments.
 - **[0220](0220-nest-sleep-and-gate-mac-event-emotion-actions.md) supersedes [0070](superseded/0070-include-sleep-in-mac-add-menu.md) for Mac Add menu behavior:** Mac Home hides Event and Emotion actions and filters by default behind a Settings -> General -> Beta Experiments toggle, and Sleep moves under the inline Away start surface.
@@ -354,3 +355,4 @@ These are ordered from newest resolver to oldest resolver.
 | [0220](0220-nest-sleep-and-gate-mac-event-emotion-actions.md) | Nest Sleep and Gate Mac Event and Emotion Actions | Accepted | 2026-06-12 |
 | [0221](0221-hide-stats-sleep-tab-behind-beta-toggle.md) | Hide Stats Sleep Tab Behind Beta Toggle | Accepted | 2026-06-12 |
 | [0222](0222-configure-timeline-row-fields.md) | Configure Timeline Row Fields | Accepted | 2026-06-12 |
+| [0223](0223-support-multi-day-calendar-repeats.md) | Support Multi-Day Calendar Repeats | Accepted | 2026-06-12 |

@@ -87,6 +87,8 @@ struct TaskFormContent: View {
             recurrenceHasTimeRange: model.recurrenceHasTimeRange.wrappedValue,
             recurrenceWeekday: model.recurrenceWeekday.wrappedValue,
             recurrenceDayOfMonth: model.recurrenceDayOfMonth.wrappedValue,
+            recurrenceWeekdays: model.effectiveRecurrenceWeekdays,
+            recurrenceDaysOfMonth: model.effectiveRecurrenceDaysOfMonth,
             importance: model.importance.wrappedValue,
             urgency: model.urgency.wrappedValue,
             hasAvailableTags: !model.availableTags.isEmpty,
