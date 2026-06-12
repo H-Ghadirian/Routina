@@ -228,6 +228,10 @@ struct SettingsGeneralDetailView: View {
         store: SharedDefaults.app
     ) private var isStatsSleepTabEnabled = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingStatsAchievementsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isStatsAchievementsEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingHomeTaskListModeTabsVisible.rawValue,
         store: SharedDefaults.app
     ) private var isHomeTaskListModeTabsVisible = false
@@ -282,6 +286,11 @@ List {
         Toggle("Show Sleep tab", isOn: $isStatsSleepTabEnabled)
 
         Text("Show the Sleep tab for Sleep-specific dashboard scope in Stats.")
+            .foregroundStyle(.secondary)
+
+        Toggle("Show Achievements", isOn: $isStatsAchievementsEnabled)
+
+        Text("Show achievement badges and progress in Stats.")
             .foregroundStyle(.secondary)
     }
 
