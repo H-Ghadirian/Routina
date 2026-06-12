@@ -452,7 +452,7 @@ struct AppFeatureTests {
         store.exhaustivity = .off
 
         await store.send(.settings(.resetTemporaryViewStateTapped)) {
-            $0.home.taskListMode = .routines
+            $0.home.taskListMode = .all
             $0.timeline.selectedRange = .all
             $0.timeline.filterType = .all
             $0.timeline.selectedTag = nil

@@ -6,7 +6,7 @@ struct HomeMacTaskListModeStripView: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            ForEach(HomeFeature.TaskListMode.allCases) { mode in
+            ForEach(Self.displayModes) { mode in
                 Button {
                     onSelectMode(mode)
                 } label: {
@@ -32,4 +32,10 @@ struct HomeMacTaskListModeStripView: View {
             }
         }
     }
+
+    private static let displayModes: [HomeFeature.TaskListMode] = [
+        .all,
+        .todos,
+        .routines
+    ]
 }

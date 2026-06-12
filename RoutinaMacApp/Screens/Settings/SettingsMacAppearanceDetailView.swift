@@ -216,6 +216,10 @@ struct SettingsMacGeneralDetailView: View {
         UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isGoalsTabEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingHomeTaskListModeTabsVisible.rawValue,
+        store: SharedDefaults.app
+    ) private var areHomeTaskListModeTabsVisible = false
 
     var body: some View {
 SettingsMacDetailShell(
@@ -251,20 +255,25 @@ SettingsMacDetailShell(
             .foregroundStyle(.secondary)
     }
 
-    SettingsMacDetailCard(title: "Advanced") {
+    SettingsMacDetailCard(title: "Beta Experiments") {
         Toggle("Enable Git features", isOn: gitFeaturesBinding)
             .toggleStyle(.switch)
 
         Text("Shows GitHub and GitLab contribution activity in Stats.")
             .font(.footnote)
             .foregroundStyle(.secondary)
-    }
 
-    SettingsMacDetailCard(title: "Navigation") {
         Toggle("Show Goals tab", isOn: $isGoalsTabEnabled)
             .toggleStyle(.switch)
 
         Text("Show the Goals tab so goals can be opened from Home.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+
+        Toggle("Show Home task type tabs", isOn: $areHomeTaskListModeTabsVisible)
+            .toggleStyle(.switch)
+
+        Text("Show All, Todos, and Routines tabs in the Home sidebar.")
             .font(.footnote)
             .foregroundStyle(.secondary)
     }

@@ -882,6 +882,7 @@ extension HomeTCAView {
         ) {
             HomeMacRoutineFiltersDetailView(
                 availableFilters: macAvailableFilters,
+                taskListMode: homeFilterBindings.taskListMode,
                 selectedFilter: homeFilterBindings.selectedFilter,
                 advancedQuery: homeFilterBindings.advancedQuery,
                 taskListViewMode: homeFilterBindings.taskListViewMode,

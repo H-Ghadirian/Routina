@@ -189,7 +189,7 @@ struct AppFeature {
     }
 
     private func resetTemporaryViewState(_ state: inout State) {
-        AppFeatureTemporaryViewStateSupport.reset(&state, homeTaskListMode: .routines)
+        AppFeatureTemporaryViewStateSupport.reset(&state, homeTaskListMode: .all)
     }
 
     private func persistTemporaryViewState(_ state: State) {
