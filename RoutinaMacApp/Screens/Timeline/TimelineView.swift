@@ -19,6 +19,10 @@ struct TimelineView: View {
     @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
     @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) private var placeCheckInSessions: [PlaceCheckInSession]
     @State private var relatedFilterTagSuggestionAnchor: String?
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacTimelineQuickFiltersVisible.rawValue,
+        store: SharedDefaults.app
+    ) private var areMacTimelineQuickFiltersVisible = false
 
     var body: some View {
 NavigationStack {
@@ -377,10 +381,12 @@ NavigationStack {
             )
         } else {
             VStack(spacing: 0) {
-                timelinePigmentControl
-                    .padding(.horizontal, 20)
-                    .padding(.top, 12)
-                    .padding(.bottom, 8)
+                if areMacTimelineQuickFiltersVisible {
+                    timelinePigmentControl
+                        .padding(.horizontal, 20)
+                        .padding(.top, 12)
+                        .padding(.bottom, 8)
+                }
 
                 if groupedByDay.isEmpty {
                     ContentUnavailableView(
