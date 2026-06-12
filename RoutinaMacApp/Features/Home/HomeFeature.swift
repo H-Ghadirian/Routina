@@ -522,6 +522,7 @@ struct HomeFeature {
         case setDeleteConfirmation(Bool)
         case setMacFilterDetailPresented(Bool)
         case taskListModeChanged(TaskListMode)
+        case taskListModeFilterChanged(TaskListMode)
         case deleteTasksConfirmed
         case deleteTasks([UUID])
         case markTaskDone(UUID)
@@ -1039,6 +1040,10 @@ struct HomeFeature {
 
             case let .taskListModeChanged(mode):
                 taskListModeRouter().changeMode(mode, state: &state)
+                return .none
+
+            case let .taskListModeFilterChanged(mode):
+                taskListModeRouter().changeMode(mode, state: &state, closesFilterDetail: false)
                 return .none
 
             case let .setMacFilterDetailPresented(isPresented):

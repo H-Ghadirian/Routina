@@ -16,7 +16,11 @@ struct HomeFeatureTaskListModeRouter<State: HomeFeatureTaskListModeRoutingState>
     var persistTemporaryViewState: (State) -> Void
     var synchronizePlatformSelectionAfterModeChange: (inout State) -> Void = { _ in }
 
-    func changeMode(_ mode: State.TaskListModeValue, state: inout State) {
+    func changeMode(
+        _ mode: State.TaskListModeValue,
+        state: inout State,
+        closesFilterDetail: Bool = true
+    ) {
         let oldMode = state.taskListMode
         var taskFilters = state.taskFilters
         var hideUnavailableRoutines = state.hideUnavailableRoutines
@@ -32,7 +36,9 @@ struct HomeFeatureTaskListModeRouter<State: HomeFeatureTaskListModeRoutingState>
             setHideUnavailableRoutines(false)
         }
         state.taskListMode = mode
-        state.presentation.isMacFilterDetailPresented = false
+        if closesFilterDetail {
+            state.presentation.isMacFilterDetailPresented = false
+        }
         HomeDetailSelectionSupport.clearSelectionIfNeededForTaskListMode(
             selection: &state.selection,
             tasks: state.routineTasks,

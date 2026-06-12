@@ -882,7 +882,7 @@ extension HomeTCAView {
         ) {
             HomeMacRoutineFiltersDetailView(
                 availableFilters: macAvailableFilters,
-                taskListMode: homeFilterBindings.taskListMode,
+                taskListMode: macFilterTaskListModeBinding,
                 selectedFilter: homeFilterBindings.selectedFilter,
                 advancedQuery: homeFilterBindings.advancedQuery,
                 taskListViewMode: homeFilterBindings.taskListViewMode,
@@ -934,6 +934,13 @@ extension HomeTCAView {
             selectedBackgroundOpacity: 1,
             fillsAvailableWidth: true,
             verticalPadding: 8
+        )
+    }
+
+    private var macFilterTaskListModeBinding: Binding<HomeFeature.TaskListMode> {
+        Binding(
+            get: { store.taskListMode },
+            set: { store.send(.taskListModeFilterChanged($0)) }
         )
     }
 
