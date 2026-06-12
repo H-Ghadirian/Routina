@@ -28,17 +28,25 @@ struct HomeMacTimelineFiltersDetailView: View {
 
     var body: some View {
         Group {
-            HomeMacSidebarSectionCard(title: "Range") {
-                rangePicker
-            }
+            HomeMacSidebarSectionCard {
+                VStack(alignment: .leading, spacing: 18) {
+                    filterControlSection("Range") {
+                        rangePicker
+                    }
 
-            if showsTypeSection {
-                HomeMacSidebarSectionCard(title: "Type") {
-                    typePicker
-                }
+                    if showsTypeSection {
+                        filterControlSection("Type") {
+                            typePicker
+                        }
 
-                HomeMacSidebarSectionCard(title: "Status") {
-                    statusPicker
+                        filterControlSection("Status") {
+                            statusPicker
+                        }
+                    }
+
+                    filterControlSection("Media") {
+                        mediaPicker
+                    }
                 }
             }
 
@@ -47,10 +55,6 @@ struct HomeMacTimelineFiltersDetailView: View {
                     selectedFilter: $selectedImportanceUrgencyFilter,
                     summaryText: importanceUrgencySummary
                 )
-            }
-
-            HomeMacSidebarSectionCard(title: "Media") {
-                mediaPicker
             }
 
             if !availableTags.isEmpty {
@@ -84,6 +88,19 @@ struct HomeMacTimelineFiltersDetailView: View {
         }
     }
 
+    private func filterControlSection<Content: View>(
+        _ title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            content()
+        }
+    }
+
     private var timelineTagsSummary: String {
         if !selectedTags.isEmpty {
             return tagSelectionSummary
@@ -102,6 +119,7 @@ struct HomeMacTimelineFiltersDetailView: View {
                 Text(range.rawValue).tag(range)
             }
         }
+        .labelsHidden()
         .pickerStyle(.segmented)
     }
 
@@ -111,6 +129,7 @@ struct HomeMacTimelineFiltersDetailView: View {
                 Text(type.rawValue).tag(type)
             }
         }
+        .labelsHidden()
         .pickerStyle(.segmented)
     }
 
@@ -120,6 +139,7 @@ struct HomeMacTimelineFiltersDetailView: View {
                 Text(status.rawValue).tag(status)
             }
         }
+        .labelsHidden()
         .pickerStyle(.segmented)
     }
 
@@ -129,6 +149,7 @@ struct HomeMacTimelineFiltersDetailView: View {
                 Label(filter.title, systemImage: filter.systemImage).tag(filter)
             }
         }
+        .labelsHidden()
         .pickerStyle(.segmented)
     }
 
