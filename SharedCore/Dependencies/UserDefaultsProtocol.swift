@@ -52,6 +52,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingGitFeaturesEnabled
     case appSettingGoalsTabEnabled
     case appSettingAdventureMapEnabled
+    case appSettingBoardScreenEnabled
     case appSettingHomeTaskListModeTabsVisible
     case appSettingShowPersianDates
     case appSettingBatteryRoutineMonitoringEnabled

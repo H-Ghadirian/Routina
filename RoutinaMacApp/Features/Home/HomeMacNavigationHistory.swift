@@ -28,7 +28,7 @@ struct HomeMacNavigationSnapshot: Equatable {
             ? selectedSettingsSection ?? .notifications
             : .notifications
         self.selectedBoardScope = selectedBoardScope
-        self.detailMode = detailMode
+        self.detailMode = detailMode.visibleSurfaceMode
         self.progressMode = progressMode.visibleSurfaceMode
     }
 

@@ -10,7 +10,7 @@ extension HomeTCAView {
     var isMacGoalsMode: Bool { visibleMacSidebarMode == .goals }
     var isMacAdventureMode: Bool { visibleMacSidebarMode == .adventure }
     var isMacAddTaskMode: Bool { visibleMacSidebarMode == .addTask }
-    var isMacSegmentedBoardMode: Bool { isMacRoutinesMode && macHomeDetailMode == .board }
+    var isMacSegmentedBoardMode: Bool { isMacRoutinesMode && macHomeDetailMode.visibleSurfaceMode == .board }
     var isMacBoardSidebarPresented: Bool { isMacBoardMode || isMacSegmentedBoardMode }
     var shouldHideMacSidebarHeaderForDayPlanTimelineFilter: Bool {
         dayPlanUnplannedCompletedFilterDate != nil && macHomeDetailMode == .planner
@@ -193,17 +193,18 @@ extension HomeTCAView {
 
     var mainDetailModeBinding: Binding<MacHomeDetailMode> {
         Binding(
-            get: { macHomeDetailMode },
+            get: { macHomeDetailMode.visibleSurfaceMode },
             set: { mode in
-                macHomeDetailMode = mode
-                if mode == .places {
+                let visibleMode = mode.visibleSurfaceMode
+                macHomeDetailMode = visibleMode
+                if visibleMode == .places {
                     clearDayPlanUnplannedCompletedFilter()
                 }
-                if mode != .places {
+                if visibleMode != .places {
                     placeCheckInSelectedPlaceID = nil
                     placeCheckInSelectedHistoryMarkerID = nil
                 }
-                if mode == .board, store.taskListMode != .todos {
+                if visibleMode == .board, store.taskListMode != .todos {
                     store.send(.taskListModeChanged(.todos))
                 }
             }

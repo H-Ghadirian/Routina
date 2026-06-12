@@ -47,7 +47,7 @@ extension HomeTCAView {
         isRestoringMacNavigationHistory = true
 
         withAnimation(.easeInOut(duration: 0.18)) {
-            macHomeDetailMode = snapshot.detailMode
+            macHomeDetailMode = snapshot.detailMode.visibleSurfaceMode
             macHomeProgressMode = snapshot.progressMode.visibleSurfaceMode
         }
 

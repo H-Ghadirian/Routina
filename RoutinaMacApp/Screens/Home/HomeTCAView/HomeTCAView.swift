@@ -9,6 +9,17 @@ enum MacHomeDetailMode: String, CaseIterable, Identifiable {
     case places = "Places"
 
     var id: Self { self }
+
+    static var visibleModes: [Self] {
+        guard SharedDefaults.app[.appSettingBoardScreenEnabled] else {
+            return [.details, .planner, .places]
+        }
+        return allCases
+    }
+
+    var visibleSurfaceMode: Self {
+        Self.visibleModes.contains(self) ? self : .details
+    }
 }
 
 enum MacHomeProgressMode: String, CaseIterable, Identifiable {
@@ -75,6 +86,10 @@ struct HomeTCAView: View {
         UserDefaultBoolValueKey.appSettingAdventureMapEnabled.rawValue,
         store: SharedDefaults.app
     ) var isAdventureMapEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingBoardScreenEnabled.rawValue,
+        store: SharedDefaults.app
+    ) var isBoardScreenEnabled = false
     @AppStorage("macTodoBoardCompactCards", store: SharedDefaults.app)
     var isMacTodoBoardCompactCards = false
     @AppStorage("macBoardTicketInspectorPresented", store: SharedDefaults.app)
@@ -222,7 +237,7 @@ homeContent
         case .task:
             macHomeDetailMode = .details
         case .sprint:
-            macHomeDetailMode = .board
+            macHomeDetailMode = MacHomeDetailMode.board.visibleSurfaceMode
         case .sleep:
             macHomeDetailMode = .planner
         case .goal, .note, .event:

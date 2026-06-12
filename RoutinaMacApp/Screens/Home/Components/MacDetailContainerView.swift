@@ -273,14 +273,14 @@ private struct MacLiquidGlassHomeDetailModePicker: View {
     var body: some View {
         GlassEffectContainer(spacing: 4) {
             HStack(spacing: 4) {
-                ForEach(MacHomeDetailMode.allCases) { mode in
+                ForEach(MacHomeDetailMode.visibleModes) { mode in
                     segmentButton(for: mode)
                 }
             }
             .padding(4)
             .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 14))
         }
-        .frame(width: 420)
+        .frame(width: MacHomeDetailMode.visibleModes.count == 3 ? 330 : 420)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Detail mode")
     }

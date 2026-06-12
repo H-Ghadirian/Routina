@@ -328,7 +328,7 @@ extension HomeTCAView {
         case .goal, .note, .event:
             break
         case .sprint:
-            macHomeDetailMode = .board
+            macHomeDetailMode = MacHomeDetailMode.board.visibleSurfaceMode
         case .sleep:
             macHomeDetailMode = .planner
         }
