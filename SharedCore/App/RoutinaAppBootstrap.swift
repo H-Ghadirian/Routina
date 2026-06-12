@@ -51,6 +51,7 @@ enum RoutinaAppBootstrap {
             UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue: RoutineListSectioningMode.defaultValue.rawValue,
             UserDefaultStringValueKey.appSettingCollapsedTagTaskListSections.rawValue: "",
             UserDefaultStringValueKey.appSettingHomeTaskRowHiddenFields.rawValue: "",
+            UserDefaultStringValueKey.appSettingHomeTimelineRowHiddenFields.rawValue: "",
             UserDefaultStringValueKey.appSettingProtectionBlockingEnabledModes.rawValue: ProtectionBlockingMode.encodedSet(
                 ProtectionBlockingMode.defaultEnabledModes
             ),

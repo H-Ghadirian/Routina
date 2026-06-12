@@ -373,7 +373,7 @@ extension SettingsNotificationsState {
 
 extension SettingsAppearanceState {
     var overviewSubtitle: String {
-        "Theme: \(appColorScheme.title) • Icon: \(selectedAppIcon.title) • List: \(routineListSectioningMode.summaryText) • Rows: \(taskRowVisibility.summaryText)"
+        "Theme: \(appColorScheme.title) • Icon: \(selectedAppIcon.title) • List: \(routineListSectioningMode.summaryText) • Rows: \(taskRowVisibility.summaryText) • Timeline: \(timelineRowVisibility.summaryText)"
     }
 
     var routineListSectioningSubtitle: String {

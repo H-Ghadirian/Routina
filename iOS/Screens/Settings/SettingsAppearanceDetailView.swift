@@ -57,6 +57,24 @@ List {
             .foregroundStyle(.secondary)
     }
 
+    Section("Timeline Row") {
+        SettingsTimelineRowPreviewView(visibility: store.appearance.timelineRowVisibility)
+
+        ForEach(HomeTimelineRowField.allCases) { field in
+            Toggle(isOn: timelineRowFieldVisibilityBinding(field)) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(field.title)
+                    Text(field.subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+
+        Text("Shown: \(store.appearance.timelineRowVisibility.summaryText)")
+            .foregroundStyle(.secondary)
+    }
+
     Section("Tag Counters") {
         Picker("Display", selection: tagCounterDisplayModeBinding) {
             ForEach(TagCounterDisplayMode.allCases) { mode in
@@ -153,6 +171,13 @@ List {
         Binding(
             get: { store.appearance.taskRowVisibility.shows(field) },
             set: { store.send(.taskRowFieldVisibilityChanged(field, $0)) }
+        )
+    }
+
+    private func timelineRowFieldVisibilityBinding(_ field: HomeTimelineRowField) -> Binding<Bool> {
+        Binding(
+            get: { store.appearance.timelineRowVisibility.shows(field) },
+            set: { store.send(.timelineRowFieldVisibilityChanged(field, $0)) }
         )
     }
 

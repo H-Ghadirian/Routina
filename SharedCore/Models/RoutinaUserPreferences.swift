@@ -11,6 +11,7 @@ final class RoutinaUserPreferences {
     var routineListSectioningMode: String?
     var tagCounterDisplayMode: String?
     var homeTaskRowHiddenFields: String?
+    var homeTimelineRowHiddenFields: String?
     var relatedTagRules: String?
     var tagColors: String?
     var fastFilterTags: String?
@@ -145,6 +146,7 @@ enum RoutinaUserPreferencesStore {
         preferences.routineListSectioningMode = defaults[.appSettingRoutineListSectioningMode]
         preferences.tagCounterDisplayMode = defaults[.appSettingTagCounterDisplayMode]
         preferences.homeTaskRowHiddenFields = defaults[.appSettingHomeTaskRowHiddenFields]
+        preferences.homeTimelineRowHiddenFields = defaults[.appSettingHomeTimelineRowHiddenFields]
         preferences.relatedTagRules = defaults[.appSettingRelatedTagRules]
         preferences.tagColors = defaults[.appSettingTagColors]
         preferences.fastFilterTags = defaults[.appSettingFastFilterTags]
@@ -189,6 +191,7 @@ enum RoutinaUserPreferencesStore {
         defaults[.appSettingRoutineListSectioningMode] = preferences.routineListSectioningMode
         defaults[.appSettingTagCounterDisplayMode] = preferences.tagCounterDisplayMode
         defaults[.appSettingHomeTaskRowHiddenFields] = preferences.homeTaskRowHiddenFields
+        defaults[.appSettingHomeTimelineRowHiddenFields] = preferences.homeTimelineRowHiddenFields
         defaults[.appSettingRelatedTagRules] = preferences.relatedTagRules
         defaults[.appSettingTagColors] = preferences.tagColors
         defaults[.appSettingFastFilterTags] = preferences.fastFilterTags

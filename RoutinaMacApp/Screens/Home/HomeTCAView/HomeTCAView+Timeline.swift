@@ -176,40 +176,50 @@ extension HomeTCAView {
     }
 
     func timelineSidebarRow(_ entry: TimelineEntry, rowNumber: Int) -> some View {
-        Button {
+        let rowVisibility = timelineRowVisibility
+
+        return Button {
             openTimelineEntry(entry)
         } label: {
             HStack(spacing: 12) {
-                Text("\(rowNumber)")
-                    .font(.caption2.monospacedDigit())
-                    .foregroundStyle(.tertiary)
-                    .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
-                    .frame(minWidth: sidebarRowNumberMinWidth, alignment: .trailing)
+                if rowVisibility.shows(.rowNumber) {
+                    Text("\(rowNumber)")
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .frame(minWidth: sidebarRowNumberMinWidth, alignment: .trailing)
+                }
 
-                Text(entry.taskEmoji)
-                    .font(.title2)
-                    .frame(width: 36, height: 36)
-                    .routinaGlassCard(cornerRadius: 8, tint: .secondary, tintOpacity: 0.06)
+                if rowVisibility.shows(.icon) {
+                    Text(entry.taskEmoji)
+                        .font(.title2)
+                        .frame(width: 36, height: 36)
+                        .routinaGlassCard(cornerRadius: 8, tint: .secondary, tintOpacity: 0.06)
+                }
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(entry.taskName)
                         .font(.body.weight(.medium))
                         .lineLimit(1)
 
-                    Text(timelineSubtitle(for: entry))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    if rowVisibility.shows(.subtitle) {
+                        Text(timelineSubtitle(for: entry))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 Spacer(minLength: 0)
 
-                Text(timelineKindLabel(for: entry))
-                    .font(.caption2.weight(.semibold))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .routinaGlassPill(tint: timelineKindColor(for: entry), tintOpacity: 0.15)
-                    .foregroundStyle(timelineKindColor(for: entry))
+                if rowVisibility.shows(.kindBadge) {
+                    Text(timelineKindLabel(for: entry))
+                        .font(.caption2.weight(.semibold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .routinaGlassPill(tint: timelineKindColor(for: entry), tintOpacity: 0.15)
+                        .foregroundStyle(timelineKindColor(for: entry))
+                }
             }
             .padding(.vertical, 2)
             .frame(maxWidth: .infinity, alignment: .leading)

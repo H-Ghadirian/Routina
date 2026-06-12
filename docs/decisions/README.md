@@ -26,8 +26,9 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
-- **[0220](0220-nest-sleep-and-gate-mac-event-emotion-actions.md) supersedes [0070](superseded/0070-include-sleep-in-mac-add-menu.md) for Mac Add menu behavior:** Mac Home hides Event and Emotion actions and filters by default behind a Settings -> General -> Beta Experiments toggle, and Sleep moves under the inline Away start surface.
+- **[0222](0222-configure-timeline-row-fields.md):** Timeline row density is now configurable from `Settings > Appearance`, mirroring task-row visibility controls and storing hidden fields per-row.
 - **[0221](0221-hide-stats-sleep-tab-behind-beta-toggle.md) gates Stats Sleep scope:** The Sleep dashboard scope tab is hidden by default and can be re-enabled from Settings -> General -> Beta Experiments.
+- **[0220](0220-nest-sleep-and-gate-mac-event-emotion-actions.md) supersedes [0070](superseded/0070-include-sleep-in-mac-add-menu.md) for Mac Add menu behavior:** Mac Home hides Event and Emotion actions and filters by default behind a Settings -> General -> Beta Experiments toggle, and Sleep moves under the inline Away start surface.
 - **[0219](0219-hide-stats-wins-behind-beta-toggle.md) gates Stats Wins:** Recent Wins and the Wins dashboard scope are hidden by default and can be re-enabled from Settings -> General -> Beta Experiments.
 - **[0218](0218-hide-mac-timeline-quick-filters-behind-beta-toggle.md) gates Mac Timeline quick filters:** Mac Timeline quick filter strips are hidden by default and can be re-enabled from Settings -> General -> Beta Experiments while full filter controls remain available.
 - **[0217](0217-hide-board-screen-behind-beta-toggle.md) gates Mac Board access:** Mac Home hides the Board detail mode by default and lets users re-enable it from Settings -> General -> Beta Experiments.
@@ -352,3 +353,4 @@ These are ordered from newest resolver to oldest resolver.
 | [0219](0219-hide-stats-wins-behind-beta-toggle.md) | Hide Stats Wins Behind Beta Toggle | Accepted | 2026-06-12 |
 | [0220](0220-nest-sleep-and-gate-mac-event-emotion-actions.md) | Nest Sleep and Gate Mac Event and Emotion Actions | Accepted | 2026-06-12 |
 | [0221](0221-hide-stats-sleep-tab-behind-beta-toggle.md) | Hide Stats Sleep Tab Behind Beta Toggle | Accepted | 2026-06-12 |
+| [0222](0222-configure-timeline-row-fields.md) | Configure Timeline Row Fields | Accepted | 2026-06-12 |

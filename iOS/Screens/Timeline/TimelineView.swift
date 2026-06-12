@@ -20,6 +20,10 @@ struct TimelineView: View {
     @Query(sort: \BoardSprintRecord.createdAt, order: .reverse) private var boardSprints: [BoardSprintRecord]
     @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
     @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) private var placeCheckInSessions: [PlaceCheckInSession]
+    @AppStorage(
+        UserDefaultStringValueKey.appSettingHomeTimelineRowHiddenFields.rawValue,
+        store: SharedDefaults.app
+    ) private var timelineRowHiddenFieldsRawValue = ""
     @State private var relatedFilterTagSuggestionAnchor: String?
     @State private var selectedTimelineEntryID: UUID?
 
@@ -905,31 +909,41 @@ timelineRoot
 
     private func timelineRowContent(_ entry: TimelineEntry) -> some View {
         HStack(spacing: 12) {
-            Text(entry.taskEmoji)
-                .font(.title2)
-                .frame(width: 36, height: 36)
-                .routinaGlassCard(cornerRadius: 8, tint: .secondary, tintOpacity: 0.06)
+            if timelineRowVisibility.shows(.icon) {
+                Text(entry.taskEmoji)
+                    .font(.title2)
+                    .frame(width: 36, height: 36)
+                    .routinaGlassCard(cornerRadius: 8, tint: .secondary, tintOpacity: 0.06)
+            }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.taskName)
                     .font(.body.weight(.medium))
                     .lineLimit(1)
 
-                Text(timelineSubtitle(for: entry))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if timelineRowVisibility.shows(.subtitle) {
+                    Text(timelineSubtitle(for: entry))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Spacer(minLength: 0)
 
-            Text(timelineKindLabel(for: entry))
-                .font(.caption2.weight(.semibold))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .routinaGlassPill(tint: timelineKindColor(for: entry), tintOpacity: 0.15)
-                .foregroundStyle(timelineKindColor(for: entry))
+            if timelineRowVisibility.shows(.kindBadge) {
+                Text(timelineKindLabel(for: entry))
+                    .font(.caption2.weight(.semibold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .routinaGlassPill(tint: timelineKindColor(for: entry), tintOpacity: 0.15)
+                    .foregroundStyle(timelineKindColor(for: entry))
+            }
         }
         .padding(.vertical, 2)
+    }
+
+    private var timelineRowVisibility: HomeTimelineRowVisibility {
+        HomeTimelineRowVisibility(storageRawValue: timelineRowHiddenFieldsRawValue)
     }
 
     private func timelineKindLabel(for entry: TimelineEntry) -> String {

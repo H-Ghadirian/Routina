@@ -37,6 +37,21 @@ enum SettingsAppearanceEditor {
         state.taskRowVisibility = state.taskRowVisibility.setting(field, visible: isVisible)
     }
 
+    static func updateTimelineRowVisibility(
+        _ visibility: HomeTimelineRowVisibility,
+        state: inout SettingsAppearanceState
+    ) {
+        state.timelineRowVisibility = visibility
+    }
+
+    static func updateTimelineRowField(
+        _ field: HomeTimelineRowField,
+        isVisible: Bool,
+        state: inout SettingsAppearanceState
+    ) {
+        state.timelineRowVisibility = state.timelineRowVisibility.setting(field, visible: isVisible)
+    }
+
     static func refreshFromSettings(
         appColorScheme: AppColorScheme,
         appLockEnabled: Bool,
@@ -44,6 +59,7 @@ enum SettingsAppearanceEditor {
         showPersianDates: Bool,
         showTimelineTasksInDayPlanner: Bool,
         taskRowVisibility: HomeTaskRowVisibility,
+        timelineRowVisibility: HomeTimelineRowVisibility,
         deviceAuthenticationStatus: DeviceAuthenticationStatus,
         selectedAppIcon: AppIconOption,
         hasTemporaryViewStateToReset: Bool,
@@ -60,6 +76,7 @@ enum SettingsAppearanceEditor {
         state.appLockUnavailableReason = deviceAuthenticationStatus.unavailableReason
         state.appLockStatusMessage = ""
         state.selectedAppIcon = selectedAppIcon
+        state.timelineRowVisibility = timelineRowVisibility
         state.hasTemporaryViewStateToReset = hasTemporaryViewStateToReset
         state.appIconStatusMessage = ""
         state.temporaryViewStateStatusMessage = ""

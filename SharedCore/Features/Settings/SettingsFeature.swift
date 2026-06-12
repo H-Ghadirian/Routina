@@ -14,6 +14,7 @@ struct SettingsFeature {
         case routineListSectioningModeChanged(RoutineListSectioningMode)
         case tagCounterDisplayModeChanged(TagCounterDisplayMode)
         case taskRowFieldVisibilityChanged(HomeTaskRowField, Bool)
+        case timelineRowFieldVisibilityChanged(HomeTimelineRowField, Bool)
         case appLockToggled(Bool)
         case appLockEnableFinished(DeviceAuthenticationResult)
         case gitFeaturesToggled(Bool)
@@ -132,6 +133,14 @@ struct SettingsFeature {
 
             case let .taskRowFieldVisibilityChanged(field, isVisible):
                 return SettingsAppearanceActionHandler.taskRowFieldVisibilityChanged(
+                    field,
+                    isVisible: isVisible,
+                    state: &state.appearance,
+                    appSettingsClient: self.appSettingsClient
+                )
+
+            case let .timelineRowFieldVisibilityChanged(field, isVisible):
+                return SettingsAppearanceActionHandler.timelineRowFieldVisibilityChanged(
                     field,
                     isVisible: isVisible,
                     state: &state.appearance,
