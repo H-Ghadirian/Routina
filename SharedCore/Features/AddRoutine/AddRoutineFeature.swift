@@ -68,7 +68,9 @@ struct AddRoutineFeature: Reducer {
         case recurrenceTimeRangeStartChanged(RoutineTimeOfDay)
         case recurrenceTimeRangeEndChanged(RoutineTimeOfDay)
         case recurrenceWeekdayChanged(Int)
+        case recurrenceWeekdaysChanged([Int])
         case recurrenceDayOfMonthChanged(Int)
+        case recurrenceDaysOfMonthChanged([Int])
         case autoAssumeDailyDoneChanged(Bool)
         case existingRoutineNamesChanged([String])
         case availablePlacesChanged([RoutinePlaceSummary])
@@ -495,8 +497,18 @@ struct AddRoutineFeature: Reducer {
             scheduleMutationHandler().setRecurrenceWeekday(weekday, state: &state)
             return .none
 
+        case let .recurrenceWeekdaysChanged(weekdays):
+            scheduleMutationHandler().setRecurrenceWeekdays(weekdays, state: &state)
+            clearPlanningIfDailyRoutine(state: &state)
+            return .none
+
         case let .recurrenceDayOfMonthChanged(dayOfMonth):
             scheduleMutationHandler().setRecurrenceDayOfMonth(dayOfMonth, state: &state)
+            return .none
+
+        case let .recurrenceDaysOfMonthChanged(daysOfMonth):
+            scheduleMutationHandler().setRecurrenceDaysOfMonth(daysOfMonth, state: &state)
+            clearPlanningIfDailyRoutine(state: &state)
             return .none
 
         case let .autoAssumeDailyDoneChanged(isEnabled):
@@ -642,14 +654,14 @@ struct AddRoutineFeature: Reducer {
         case .dailyTime:
             applyTimeConstraint(from: recurrenceRule, state: &state)
         case .weekly:
-            scheduleMutationHandler().setRecurrenceWeekday(
-                recurrenceRule.weekday ?? calendar.firstWeekday,
+            scheduleMutationHandler().setRecurrenceWeekdays(
+                recurrenceRule.resolvedWeekdays(calendar: calendar),
                 state: &state
             )
             applyTimeConstraint(from: recurrenceRule, state: &state)
         case .monthlyDay:
-            scheduleMutationHandler().setRecurrenceDayOfMonth(
-                recurrenceRule.dayOfMonth ?? 1,
+            scheduleMutationHandler().setRecurrenceDaysOfMonth(
+                recurrenceRule.resolvedDaysOfMonth(calendar: calendar),
                 state: &state
             )
             applyTimeConstraint(from: recurrenceRule, state: &state)

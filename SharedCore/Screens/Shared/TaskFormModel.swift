@@ -129,6 +129,8 @@ struct TaskFormModel {
     var recurrenceTimeRangeEnd: Binding<Date> = .constant(RoutineTimeRange.defaultValue.end.date(on: Date()))
     var recurrenceWeekday: Binding<Int>
     var recurrenceDayOfMonth: Binding<Int>
+    var recurrenceWeekdays: Binding<[Int]> = .constant([])
+    var recurrenceDaysOfMonth: Binding<[Int]> = .constant([])
     var frequencyUnit: Binding<TaskFormFrequencyUnit>
     var frequencyValue: Binding<Int>
     var autoAssumeDailyDone: Binding<Bool> = .constant(false)
@@ -504,6 +506,26 @@ extension TaskFormModel {
 }
 
 extension TaskFormModel {
+    var effectiveRecurrenceWeekdays: [Int] {
+        let selectedWeekdays = Array(Set(recurrenceWeekdays.wrappedValue.map { min(max($0, 1), 7) })).sorted()
+        return selectedWeekdays.isEmpty ? [min(max(recurrenceWeekday.wrappedValue, 1), 7)] : selectedWeekdays
+    }
+
+    var effectiveRecurrenceDaysOfMonth: [Int] {
+        let selectedDays = Array(Set(recurrenceDaysOfMonth.wrappedValue.map { min(max($0, 1), 31) })).sorted()
+        return selectedDays.isEmpty ? [min(max(recurrenceDayOfMonth.wrappedValue, 1), 31)] : selectedDays
+    }
+
+    func setRecurrenceWeekdays(_ weekdays: [Int]) {
+        let selectedWeekdays = Array(Set(weekdays.map { min(max($0, 1), 7) })).sorted()
+        recurrenceWeekdays.wrappedValue = selectedWeekdays
+    }
+
+    func setRecurrenceDaysOfMonth(_ daysOfMonth: [Int]) {
+        let selectedDays = Array(Set(daysOfMonth.map { min(max($0, 1), 31) })).sorted()
+        recurrenceDaysOfMonth.wrappedValue = selectedDays
+    }
+
     var selectedEventCandidates: [RoutineEventLinkCandidate] {
         RoutineEventLinkCandidate.selectedCandidates(
             for: selectedEventIDs,

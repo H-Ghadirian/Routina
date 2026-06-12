@@ -74,6 +74,8 @@ struct TaskFormPresentationTests {
         #expect(TaskFormPresentation.monthDayControlLabel(for: 30) == "Day 30, or last day in shorter months")
         #expect(TaskFormPresentation.monthDayControlLabel(for: 11) == "Day 11 of each month")
         #expect(TaskFormPresentation.monthDayRepeatLabel(for: 31) == "Every last day of the month")
+        #expect(TaskFormPresentation.weekdayListText(for: [2, 4, 6]) == "\(weekdaySymbols[1]), \(weekdaySymbols[3]), and \(weekdaySymbols[5])")
+        #expect(TaskFormPresentation.monthDayRepeatLabel(for: [1, 15, 31]) == "Every 1st, 15th, and last day")
         #expect(weekly.recurrencePatternDescription(includesOptionalExactTimeDetail: false) == "Repeat after a fixed number of days, weeks, or months, with optional timing.")
         #expect(weekly.intervalRecurrenceTimeHelpText(exactTimeText: "8:00 PM", timeRangeText: "7:00 AM to 10:00 AM") == "Available any time once the interval has passed.")
         #expect(presentation(recurrenceKind: .intervalDays, recurrenceHasExplicitTime: true).intervalRecurrenceTimeHelpText(exactTimeText: "8:00 PM", timeRangeText: "7:00 AM to 10:00 AM") == "Available after the interval, at 8:00 PM.")
@@ -91,6 +93,8 @@ struct TaskFormPresentationTests {
         #expect(presentation(recurrenceDayOfMonth: 30).monthlyRecurrenceSummary == "Due on the 30th; shorter months use their last day.")
         #expect(presentation(recurrenceHasExplicitTime: true, recurrenceDayOfMonth: 31).monthlyRecurrenceTimeHelpText(explicitTimeText: "9:30 AM") == "Due on the last day of each month at 9:30 AM.")
         #expect(weeklyWindow.weeklyRecurrenceTimeHelpText(timeRangeText: "7:00 AM to 10:00 AM") == "Due every \(weekdaySymbols[1]) from 7:00 AM to 10:00 AM.")
+        #expect(presentation(recurrenceKind: .weekly, recurrenceWeekdays: [2, 4, 6]).weeklyRecurrenceSummary == "Due every \(weekdaySymbols[1]), \(weekdaySymbols[3]), and \(weekdaySymbols[5]).")
+        #expect(presentation(recurrenceKind: .monthlyDay, recurrenceDaysOfMonth: [1, 15, 31]).monthlyRecurrenceSummary == "Due on the 1st, 15th, and last day of each month; shorter months use their last day.")
     }
 
     @Test
@@ -183,6 +187,40 @@ struct TaskFormPresentationTests {
 
         model.calendarRecurrenceKind.wrappedValue = .monthlyDay
         #expect(recurrenceKind == .monthlyDay)
+    }
+
+    @Test @MainActor
+    func multiCalendarSelectionSettersDoNotCollapseToSingleFallbackValue() {
+        var recurrenceWeekday = 2
+        var recurrenceDayOfMonth = 2
+        var recurrenceWeekdays: [Int] = [2]
+        var recurrenceDaysOfMonth: [Int] = [2]
+        let model = taskFormModel(
+            recurrenceWeekdayBinding: Binding(
+                get: { recurrenceWeekday },
+                set: { recurrenceWeekday = $0 }
+            ),
+            recurrenceDayOfMonthBinding: Binding(
+                get: { recurrenceDayOfMonth },
+                set: { recurrenceDayOfMonth = $0 }
+            ),
+            recurrenceWeekdaysBinding: Binding(
+                get: { recurrenceWeekdays },
+                set: { recurrenceWeekdays = $0 }
+            ),
+            recurrenceDaysOfMonthBinding: Binding(
+                get: { recurrenceDaysOfMonth },
+                set: { recurrenceDaysOfMonth = $0 }
+            )
+        )
+
+        model.setRecurrenceWeekdays([2, 4, 6])
+        model.setRecurrenceDaysOfMonth([2, 12, 24])
+
+        #expect(recurrenceWeekday == 2)
+        #expect(recurrenceDayOfMonth == 2)
+        #expect(recurrenceWeekdays == [2, 4, 6])
+        #expect(recurrenceDaysOfMonth == [2, 12, 24])
     }
 
     @Test
@@ -306,6 +344,8 @@ struct TaskFormPresentationTests {
         recurrenceHasTimeRange: Bool = false,
         recurrenceWeekday: Int = 2,
         recurrenceDayOfMonth: Int = 1,
+        recurrenceWeekdays: [Int] = [],
+        recurrenceDaysOfMonth: [Int] = [],
         importance: RoutineTaskImportance = .level2,
         urgency: RoutineTaskUrgency = .level2,
         hasAvailableTags: Bool = false,
@@ -322,6 +362,8 @@ struct TaskFormPresentationTests {
             recurrenceHasTimeRange: recurrenceHasTimeRange,
             recurrenceWeekday: recurrenceWeekday,
             recurrenceDayOfMonth: recurrenceDayOfMonth,
+            recurrenceWeekdays: recurrenceWeekdays,
+            recurrenceDaysOfMonth: recurrenceDaysOfMonth,
             importance: importance,
             urgency: urgency,
             hasAvailableTags: hasAvailableTags,
@@ -342,7 +384,11 @@ struct TaskFormPresentationTests {
         frequencyValue: Int = 1,
         taskTypeBinding: Binding<RoutineTaskType>? = nil,
         scheduleModeBinding: Binding<RoutineScheduleMode>? = nil,
-        recurrenceKindBinding: Binding<RoutineRecurrenceRule.Kind>? = nil
+        recurrenceKindBinding: Binding<RoutineRecurrenceRule.Kind>? = nil,
+        recurrenceWeekdayBinding: Binding<Int>? = nil,
+        recurrenceDayOfMonthBinding: Binding<Int>? = nil,
+        recurrenceWeekdaysBinding: Binding<[Int]>? = nil,
+        recurrenceDaysOfMonthBinding: Binding<[Int]>? = nil
     ) -> TaskFormModel {
         TaskFormModel(
             name: .constant("Task"),
@@ -404,8 +450,10 @@ struct TaskFormPresentationTests {
             recurrenceKind: recurrenceKindBinding ?? .constant(recurrenceKind),
             recurrenceHasExplicitTime: .constant(false),
             recurrenceTimeOfDay: .constant(Date()),
-            recurrenceWeekday: .constant(2),
-            recurrenceDayOfMonth: .constant(1),
+            recurrenceWeekday: recurrenceWeekdayBinding ?? .constant(2),
+            recurrenceDayOfMonth: recurrenceDayOfMonthBinding ?? .constant(1),
+            recurrenceWeekdays: recurrenceWeekdaysBinding ?? .constant([]),
+            recurrenceDaysOfMonth: recurrenceDaysOfMonthBinding ?? .constant([]),
             frequencyUnit: .constant(frequencyUnit),
             frequencyValue: .constant(frequencyValue),
             color: .constant(.none),

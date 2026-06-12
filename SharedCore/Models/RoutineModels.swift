@@ -298,6 +298,10 @@ final class RoutineTask {
 
     var recurrenceRule: RoutineRecurrenceRule {
         get {
+            if let storedRule = RoutineRecurrenceRuleStorage.deserialize(recurrenceRuleStorage),
+               storedRule.hasMultipleCalendarSelections {
+                return storedRule
+            }
             if recurrenceStorageVersion >= Self.currentRecurrenceStorageVersion {
                 return recurrenceRuleFromColumns
             }
@@ -549,7 +553,9 @@ final class RoutineTask {
         recurrenceTimeRangeEndMinute = recurrenceRule.timeRange?.end.minute
         recurrenceWeekday = recurrenceRule.weekday
         recurrenceDayOfMonth = recurrenceRule.dayOfMonth
-        recurrenceRuleStorage = ""
+        recurrenceRuleStorage = recurrenceRule.hasMultipleCalendarSelections
+            ? RoutineRecurrenceRuleStorage.serialize(recurrenceRule)
+            : ""
     }
 
     static func trimmedName(_ name: String?) -> String? {

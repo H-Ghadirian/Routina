@@ -365,6 +365,25 @@ struct RoutineDateMathTests {
     }
 
     @Test
+    func dueDate_weeklyScheduleWithMultipleWeekdays_usesNextSelectedWeekday() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let task = RoutineTask(
+            recurrenceRule: .weekly(on: [2, 4, 6]),
+            scheduleAnchor: makeDate("2026-03-17T10:00:00Z")
+        )
+
+        let dueDate = RoutineDateMath.dueDate(
+            for: task,
+            referenceDate: makeDate("2026-03-17T10:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(dueDate == makeDate("2026-03-18T00:00:00Z"))
+    }
+
+    @Test
     func dueDate_weeklySchedule_withExactTime_usesConfiguredWeekdayAndTime() {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
@@ -396,6 +415,25 @@ struct RoutineDateMathTests {
         let dueDate = RoutineDateMath.dueDate(
             for: task,
             referenceDate: makeDate("2026-04-01T10:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(dueDate == makeDate("2026-04-30T00:00:00Z"))
+    }
+
+    @Test
+    func dueDate_monthlyScheduleWithMultipleDays_usesNextSelectedMonthDay() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let task = RoutineTask(
+            recurrenceRule: .monthly(on: [1, 15, 31]),
+            scheduleAnchor: makeDate("2026-04-16T10:00:00Z")
+        )
+
+        let dueDate = RoutineDateMath.dueDate(
+            for: task,
+            referenceDate: makeDate("2026-04-16T10:00:00Z"),
             calendar: calendar
         )
 

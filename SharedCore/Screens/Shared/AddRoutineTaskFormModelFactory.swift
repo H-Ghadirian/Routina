@@ -135,6 +135,14 @@ struct AddRoutineTaskFormModelFactory {
                 get: { store.schedule.recurrenceDayOfMonth },
                 send: AddRoutineFeature.Action.recurrenceDayOfMonthChanged
             ),
+            recurrenceWeekdays: binding(
+                get: { store.schedule.effectiveRecurrenceWeekdays },
+                send: AddRoutineFeature.Action.recurrenceWeekdaysChanged
+            ),
+            recurrenceDaysOfMonth: binding(
+                get: { store.schedule.effectiveRecurrenceDaysOfMonth },
+                send: AddRoutineFeature.Action.recurrenceDaysOfMonthChanged
+            ),
             frequencyUnit: binding(get: { store.schedule.frequency }, send: AddRoutineFeature.Action.frequencyChanged),
             frequencyValue: binding(get: { store.schedule.frequencyValue }, send: AddRoutineFeature.Action.frequencyValueChanged),
             autoAssumeDailyDone: binding(

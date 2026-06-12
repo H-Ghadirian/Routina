@@ -94,7 +94,7 @@ enum RoutineDateMath {
             if task.lastDone == nil,
                isWeeklyOccurrenceDay(
                 reference.base,
-                weekday: task.recurrenceRule.weekday ?? calendar.firstWeekday,
+                weekdays: task.recurrenceRule.resolvedWeekdays(calendar: calendar),
                 calendar: calendar
                ) {
                 // If a routine is created on its scheduled weekday, keep that day as
@@ -111,7 +111,7 @@ enum RoutineDateMath {
             }
             return nextWeeklyOccurrence(
                 after: base,
-                weekday: task.recurrenceRule.weekday ?? calendar.firstWeekday,
+                weekdays: task.recurrenceRule.resolvedWeekdays(calendar: calendar),
                 timeOfDay: timeOfDay,
                 includeCurrentDate: task.lastDone == nil || reference.includeCurrentDate,
                 calendar: calendar
@@ -124,7 +124,7 @@ enum RoutineDateMath {
             if task.lastDone == nil,
                isMonthlyOccurrenceDay(
                 reference.base,
-                dayOfMonth: task.recurrenceRule.dayOfMonth ?? 1,
+                daysOfMonth: task.recurrenceRule.resolvedDaysOfMonth(calendar: calendar),
                 calendar: calendar
                ) {
                 // If a routine is created on its scheduled day-of-month, keep that day
@@ -141,7 +141,7 @@ enum RoutineDateMath {
             }
             return nextMonthlyOccurrence(
                 after: base,
-                dayOfMonth: task.recurrenceRule.dayOfMonth ?? 1,
+                daysOfMonth: task.recurrenceRule.resolvedDaysOfMonth(calendar: calendar),
                 timeOfDay: timeOfDay,
                 includeCurrentDate: task.lastDone == nil || reference.includeCurrentDate,
                 calendar: calendar
@@ -318,7 +318,7 @@ enum RoutineDateMath {
         case .weekly:
             return nextWeeklyOccurrence(
                 after: missedDate,
-                weekday: task.recurrenceRule.weekday ?? calendar.firstWeekday,
+                weekdays: task.recurrenceRule.resolvedWeekdays(calendar: calendar),
                 timeOfDay: scheduledTimeOfDay(for: task.recurrenceRule),
                 includeCurrentDate: false,
                 calendar: calendar
@@ -327,7 +327,7 @@ enum RoutineDateMath {
         case .monthlyDay:
             return nextMonthlyOccurrence(
                 after: missedDate,
-                dayOfMonth: task.recurrenceRule.dayOfMonth ?? 1,
+                daysOfMonth: task.recurrenceRule.resolvedDaysOfMonth(calendar: calendar),
                 timeOfDay: scheduledTimeOfDay(for: task.recurrenceRule),
                 includeCurrentDate: false,
                 calendar: calendar
@@ -361,17 +361,15 @@ enum RoutineDateMath {
             return timeOfDay.date(on: startOfDay, calendar: calendar)
 
         case .weekly:
-            let weekday = task.recurrenceRule.weekday ?? calendar.firstWeekday
-            guard calendar.component(.weekday, from: startOfDay) == weekday else { return nil }
+            guard task.recurrenceRule.resolvedWeekdays(calendar: calendar)
+                .contains(calendar.component(.weekday, from: startOfDay)) else { return nil }
             return timeOfDay.date(on: startOfDay, calendar: calendar)
 
         case .monthlyDay:
-            let scheduledDay = clampedDayOfMonth(
-                task.recurrenceRule.dayOfMonth ?? 1,
-                monthContaining: startOfDay,
-                calendar: calendar
-            )
-            guard calendar.component(.day, from: startOfDay) == scheduledDay else { return nil }
+            let scheduledDays = task.recurrenceRule.resolvedDaysOfMonth(calendar: calendar).map {
+                clampedDayOfMonth($0, monthContaining: startOfDay, calendar: calendar)
+            }
+            guard scheduledDays.contains(calendar.component(.day, from: startOfDay)) else { return nil }
             return timeOfDay.date(on: startOfDay, calendar: calendar)
 
         case .intervalDays:
@@ -464,7 +462,7 @@ enum RoutineDateMath {
         case .weekly:
             return nextWeeklyOccurrence(
                 after: nextSearchBase,
-                weekday: task.recurrenceRule.weekday ?? calendar.firstWeekday,
+                weekdays: task.recurrenceRule.resolvedWeekdays(calendar: calendar),
                 timeOfDay: timeOfDay,
                 includeCurrentDate: true,
                 calendar: calendar
@@ -472,7 +470,7 @@ enum RoutineDateMath {
         case .monthlyDay:
             return nextMonthlyOccurrence(
                 after: nextSearchBase,
-                dayOfMonth: task.recurrenceRule.dayOfMonth ?? 1,
+                daysOfMonth: task.recurrenceRule.resolvedDaysOfMonth(calendar: calendar),
                 timeOfDay: timeOfDay,
                 includeCurrentDate: true,
                 calendar: calendar
@@ -590,42 +588,47 @@ enum RoutineDateMath {
 
     private static func nextWeeklyOccurrence(
         after base: Date,
-        weekday: Int,
+        weekdays: [Int],
         timeOfDay: RoutineTimeOfDay?,
         includeCurrentDate: Bool,
         calendar: Calendar
     ) -> Date {
-        var components = DateComponents()
-        components.weekday = min(max(weekday, 1), 7)
-        if let timeOfDay {
-            components.hour = timeOfDay.hour
-            components.minute = timeOfDay.minute
-        } else {
-            components.hour = 0
-            components.minute = 0
-        }
+        let selectedWeekdays = weekdays.isEmpty ? [calendar.firstWeekday] : weekdays
+        return selectedWeekdays
+            .map { weekday in
+                var components = DateComponents()
+                components.weekday = min(max(weekday, 1), 7)
+                if let timeOfDay {
+                    components.hour = timeOfDay.hour
+                    components.minute = timeOfDay.minute
+                } else {
+                    components.hour = 0
+                    components.minute = 0
+                }
 
-        // When no specific time is set, compare by calendar day so the routine is
-        // considered due on the configured weekday regardless of creation time.
-        let searchBase = timeOfDay == nil ? calendar.startOfDay(for: base) : base
-        let searchDate = includeCurrentDate ? searchBase.addingTimeInterval(-1) : searchBase
-        return calendar.nextDate(
-            after: searchDate,
-            matching: components,
-            matchingPolicy: .nextTimePreservingSmallerComponents,
-            repeatedTimePolicy: .first,
-            direction: .forward
-        ) ?? base
+                // When no specific time is set, compare by calendar day so the routine is
+                // considered due on the configured weekday regardless of creation time.
+                let searchBase = timeOfDay == nil ? calendar.startOfDay(for: base) : base
+                let searchDate = includeCurrentDate ? searchBase.addingTimeInterval(-1) : searchBase
+                return calendar.nextDate(
+                    after: searchDate,
+                    matching: components,
+                    matchingPolicy: .nextTimePreservingSmallerComponents,
+                    repeatedTimePolicy: .first,
+                    direction: .forward
+                ) ?? base
+            }
+            .min() ?? base
     }
 
     private static func nextMonthlyOccurrence(
         after base: Date,
-        dayOfMonth: Int,
+        daysOfMonth: [Int],
         timeOfDay: RoutineTimeOfDay?,
         includeCurrentDate: Bool,
         calendar: Calendar
     ) -> Date {
-        let resolvedDay = min(max(dayOfMonth, 1), 31)
+        let selectedDays = daysOfMonth.isEmpty ? [1] : daysOfMonth.map { min(max($0, 1), 31) }
         let monthAnchor = calendar.date(
             from: calendar.dateComponents([.year, .month], from: base)
         ) ?? base
@@ -633,25 +636,28 @@ enum RoutineDateMath {
 
         while true {
             let dayCount = calendar.range(of: .day, in: .month, for: currentMonth)?.count ?? 31
-            let safeDay = min(resolvedDay, dayCount)
-            var components = calendar.dateComponents([.year, .month], from: currentMonth)
-            components.day = safeDay
-            components.hour = timeOfDay?.hour ?? 0
-            components.minute = timeOfDay?.minute ?? 0
+            let candidates = selectedDays.compactMap { selectedDay -> Date? in
+                let safeDay = min(selectedDay, dayCount)
+                var components = calendar.dateComponents([.year, .month], from: currentMonth)
+                components.day = safeDay
+                components.hour = timeOfDay?.hour ?? 0
+                components.minute = timeOfDay?.minute ?? 0
 
-            let candidate = calendar.date(from: components) ?? currentMonth
-            // When no specific time is set, compare by calendar day so the routine is
-            // considered due on the configured day of month regardless of creation time.
-            let isAfterBase: Bool
-            if timeOfDay == nil {
-                let candidateDay = calendar.startOfDay(for: candidate)
-                let baseDay = calendar.startOfDay(for: base)
-                isAfterBase = candidateDay > baseDay || (includeCurrentDate && candidateDay == baseDay)
-            } else {
-                isAfterBase = candidate > base || (includeCurrentDate && candidate == base)
+                let candidate = calendar.date(from: components) ?? currentMonth
+                // When no specific time is set, compare by calendar day so the routine is
+                // considered due on the configured day of month regardless of creation time.
+                let isAfterBase: Bool
+                if timeOfDay == nil {
+                    let candidateDay = calendar.startOfDay(for: candidate)
+                    let baseDay = calendar.startOfDay(for: base)
+                    isAfterBase = candidateDay > baseDay || (includeCurrentDate && candidateDay == baseDay)
+                } else {
+                    isAfterBase = candidate > base || (includeCurrentDate && candidate == base)
+                }
+                return isAfterBase ? candidate : nil
             }
-            if isAfterBase {
-                return candidate
+            if let nextCandidate = candidates.min() {
+                return nextCandidate
             }
 
             currentMonth = calendar.date(byAdding: .month, value: 1, to: currentMonth) ?? currentMonth
@@ -660,19 +666,22 @@ enum RoutineDateMath {
 
     private static func isWeeklyOccurrenceDay(
         _ date: Date,
-        weekday: Int,
+        weekdays: [Int],
         calendar: Calendar
     ) -> Bool {
-        calendar.component(.weekday, from: date) == min(max(weekday, 1), 7)
+        let selectedWeekdays = weekdays.isEmpty ? [calendar.firstWeekday] : weekdays
+        return selectedWeekdays.map { min(max($0, 1), 7) }.contains(calendar.component(.weekday, from: date))
     }
 
     private static func isMonthlyOccurrenceDay(
         _ date: Date,
-        dayOfMonth: Int,
+        daysOfMonth: [Int],
         calendar: Calendar
     ) -> Bool {
         let dayCount = calendar.range(of: .day, in: .month, for: date)?.count ?? 31
-        let safeDay = min(max(dayOfMonth, 1), dayCount)
-        return calendar.component(.day, from: date) == safeDay
+        let selectedDays = daysOfMonth.isEmpty ? [1] : daysOfMonth
+        return selectedDays
+            .map { min(max($0, 1), dayCount) }
+            .contains(calendar.component(.day, from: date))
     }
 }

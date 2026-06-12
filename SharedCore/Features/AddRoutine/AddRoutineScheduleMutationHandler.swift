@@ -172,12 +172,32 @@ struct AddRoutineScheduleMutationHandler {
         )
     }
 
+    func setRecurrenceWeekdays(
+        _ weekdays: [Int],
+        state: inout AddRoutineFeature.State
+    ) {
+        AddRoutineScheduleEditor.setRecurrenceWeekdays(
+            weekdays,
+            schedule: &state.schedule
+        )
+    }
+
     func setRecurrenceDayOfMonth(
         _ dayOfMonth: Int,
         state: inout AddRoutineFeature.State
     ) {
         AddRoutineScheduleEditor.setRecurrenceDayOfMonth(
             dayOfMonth,
+            schedule: &state.schedule
+        )
+    }
+
+    func setRecurrenceDaysOfMonth(
+        _ daysOfMonth: [Int],
+        state: inout AddRoutineFeature.State
+    ) {
+        AddRoutineScheduleEditor.setRecurrenceDaysOfMonth(
+            daysOfMonth,
             schedule: &state.schedule
         )
     }

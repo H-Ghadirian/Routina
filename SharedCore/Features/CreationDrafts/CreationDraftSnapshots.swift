@@ -78,6 +78,8 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
     var recurrenceTimeRangeEnd: RoutineTimeOfDay = RoutineTimeRange.defaultValue.end
     var recurrenceWeekday = 1
     var recurrenceDayOfMonth = 1
+    var recurrenceWeekdays: [Int] = []
+    var recurrenceDaysOfMonth: [Int] = []
     var autoAssumeDailyDone = false
     var routineSteps: [RoutineStep] = []
     var stepDraft = ""
@@ -135,6 +137,8 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
         recurrenceTimeRangeEnd = schedule.recurrenceTimeRangeEnd
         recurrenceWeekday = schedule.recurrenceWeekday
         recurrenceDayOfMonth = schedule.recurrenceDayOfMonth
+        recurrenceWeekdays = schedule.recurrenceWeekdays
+        recurrenceDaysOfMonth = schedule.recurrenceDaysOfMonth
         autoAssumeDailyDone = schedule.autoAssumeDailyDone
         routineSteps = checklist.routineSteps
         stepDraft = checklist.stepDraft
@@ -250,6 +254,14 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
         state.schedule.recurrenceTimeRangeEnd = recurrenceTimeRangeEnd
         state.schedule.recurrenceWeekday = min(max(recurrenceWeekday, 1), 7)
         state.schedule.recurrenceDayOfMonth = min(max(recurrenceDayOfMonth, 1), 31)
+        state.schedule.recurrenceWeekdays = Array(Set(recurrenceWeekdays.map { min(max($0, 1), 7) })).sorted()
+        state.schedule.recurrenceDaysOfMonth = Array(Set(recurrenceDaysOfMonth.map { min(max($0, 1), 31) })).sorted()
+        if state.schedule.recurrenceWeekdays.isEmpty {
+            state.schedule.recurrenceWeekdays = [state.schedule.recurrenceWeekday]
+        }
+        if state.schedule.recurrenceDaysOfMonth.isEmpty {
+            state.schedule.recurrenceDaysOfMonth = [state.schedule.recurrenceDayOfMonth]
+        }
         state.schedule.autoAssumeDailyDone = autoAssumeDailyDone
         state.checklist.routineSteps = RoutineStep.sanitized(routineSteps)
         state.checklist.stepDraft = stepDraft

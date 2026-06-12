@@ -506,6 +506,8 @@ struct TaskFormContent: View {
             recurrenceHasTimeRange: model.recurrenceHasTimeRange.wrappedValue,
             recurrenceWeekday: model.recurrenceWeekday.wrappedValue,
             recurrenceDayOfMonth: model.recurrenceDayOfMonth.wrappedValue,
+            recurrenceWeekdays: model.effectiveRecurrenceWeekdays,
+            recurrenceDaysOfMonth: model.effectiveRecurrenceDaysOfMonth,
             importance: model.importance.wrappedValue,
             urgency: model.urgency.wrappedValue,
             hasAvailableTags: !model.availableTags.isEmpty,
@@ -568,27 +570,28 @@ struct TaskFormContent: View {
             }
             return "Daily at \(model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened))"
         case .weekly:
+            let weekdayText = TaskFormPresentation.weekdayListText(for: model.effectiveRecurrenceWeekdays)
             if model.recurrenceHasTimeRange.wrappedValue {
-                return "Every \(TaskFormPresentation.weekdayName(for: model.recurrenceWeekday.wrappedValue)) \(previewTimeRangeText)"
+                return "Every \(weekdayText) \(previewTimeRangeText)"
             }
             if model.recurrenceHasExplicitTime.wrappedValue {
-                return "Every \(TaskFormPresentation.weekdayName(for: model.recurrenceWeekday.wrappedValue)) at \(model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened))"
+                return "Every \(weekdayText) at \(model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened))"
             }
-            return "Every \(TaskFormPresentation.weekdayName(for: model.recurrenceWeekday.wrappedValue))"
+            return "Every \(weekdayText)"
         case .monthlyDay:
             if model.recurrenceHasTimeRange.wrappedValue {
                 return TaskFormPresentation.monthlyScheduleSummary(
-                    for: model.recurrenceDayOfMonth.wrappedValue,
+                    for: model.effectiveRecurrenceDaysOfMonth,
                     timingText: previewTimeRangeText
                 )
             }
             if model.recurrenceHasExplicitTime.wrappedValue {
                 return TaskFormPresentation.monthlyScheduleSummary(
-                    for: model.recurrenceDayOfMonth.wrappedValue,
+                    for: model.effectiveRecurrenceDaysOfMonth,
                     timingText: "at \(model.recurrenceTimeOfDay.wrappedValue.formatted(date: .omitted, time: .shortened))"
                 )
             }
-            return TaskFormPresentation.monthlyScheduleSummary(for: model.recurrenceDayOfMonth.wrappedValue)
+            return TaskFormPresentation.monthlyScheduleSummary(for: model.effectiveRecurrenceDaysOfMonth)
         }
     }
 

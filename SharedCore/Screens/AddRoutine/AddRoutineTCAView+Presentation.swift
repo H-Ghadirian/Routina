@@ -30,6 +30,8 @@ extension AddRoutineTCAView {
             recurrenceHasTimeRange: store.schedule.recurrenceHasTimeRange,
             recurrenceWeekday: store.schedule.recurrenceWeekday,
             recurrenceDayOfMonth: store.schedule.recurrenceDayOfMonth,
+            recurrenceWeekdays: store.schedule.effectiveRecurrenceWeekdays,
+            recurrenceDaysOfMonth: store.schedule.effectiveRecurrenceDaysOfMonth,
             importance: store.basics.importance,
             urgency: store.basics.urgency,
             hasAvailableTags: !store.organization.availableTags.isEmpty,

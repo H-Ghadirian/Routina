@@ -74,13 +74,39 @@ enum AddRoutineScheduleEditor {
         _ weekday: Int,
         schedule: inout AddRoutineScheduleState
     ) {
-        schedule.recurrenceWeekday = min(max(weekday, 1), 7)
+        let selectedWeekday = min(max(weekday, 1), 7)
+        schedule.recurrenceWeekday = selectedWeekday
+        schedule.recurrenceWeekdays = [selectedWeekday]
+    }
+
+    static func setRecurrenceWeekdays(
+        _ weekdays: [Int],
+        schedule: inout AddRoutineScheduleState
+    ) {
+        let selectedWeekdays = Array(Set(weekdays.map { min(max($0, 1), 7) })).sorted()
+        schedule.recurrenceWeekdays = selectedWeekdays
+        if let firstWeekday = selectedWeekdays.first {
+            schedule.recurrenceWeekday = firstWeekday
+        }
     }
 
     static func setRecurrenceDayOfMonth(
         _ dayOfMonth: Int,
         schedule: inout AddRoutineScheduleState
     ) {
-        schedule.recurrenceDayOfMonth = min(max(dayOfMonth, 1), 31)
+        let selectedDay = min(max(dayOfMonth, 1), 31)
+        schedule.recurrenceDayOfMonth = selectedDay
+        schedule.recurrenceDaysOfMonth = [selectedDay]
+    }
+
+    static func setRecurrenceDaysOfMonth(
+        _ daysOfMonth: [Int],
+        schedule: inout AddRoutineScheduleState
+    ) {
+        let selectedDays = Array(Set(daysOfMonth.map { min(max($0, 1), 31) })).sorted()
+        schedule.recurrenceDaysOfMonth = selectedDays
+        if let firstDay = selectedDays.first {
+            schedule.recurrenceDayOfMonth = firstDay
+        }
     }
 }

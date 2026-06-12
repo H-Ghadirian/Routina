@@ -165,6 +165,8 @@ struct TaskFormPresentation {
     var recurrenceHasTimeRange: Bool = false
     let recurrenceWeekday: Int
     let recurrenceDayOfMonth: Int
+    var recurrenceWeekdays: [Int] = []
+    var recurrenceDaysOfMonth: [Int] = []
     let importance: RoutineTaskImportance
     let urgency: RoutineTaskUrgency
     let hasAvailableTags: Bool
@@ -307,7 +309,9 @@ struct TaskFormPresentation {
     }
 
     var weeklyRecurrenceSummary: String {
-        "Due every \(Self.weekdayName(for: recurrenceWeekday))."
+        let selectedWeekdays = selectedWeekdaysForSummary
+        guard !selectedWeekdays.isEmpty else { return "Choose at least one weekday." }
+        return "Due every \(Self.weekdayListText(for: selectedWeekdays))."
     }
 
     func dailyRecurrenceTimeHelpText(
@@ -342,17 +346,19 @@ struct TaskFormPresentation {
     ) -> String {
         if recurrenceHasTimeRange {
             guard let timeRangeText else { return weeklyRecurrenceSummary }
-            return "Due every \(Self.weekdayName(for: recurrenceWeekday)) from \(timeRangeText)."
+            return "Due every \(Self.weekdayListText(for: selectedWeekdaysForSummary)) from \(timeRangeText)."
         }
         if recurrenceHasExplicitTime {
             guard let explicitTimeText else { return weeklyRecurrenceSummary }
-            return "Due every \(Self.weekdayName(for: recurrenceWeekday)) at \(explicitTimeText)."
+            return "Due every \(Self.weekdayListText(for: selectedWeekdaysForSummary)) at \(explicitTimeText)."
         }
-        return "Optional. Leave this off to keep the routine due any time on \(Self.weekdayName(for: recurrenceWeekday))."
+        return "Optional. Leave this off to keep the routine due any time on \(Self.weekdayListText(for: selectedWeekdaysForSummary))."
     }
 
     var monthlyRecurrenceSummary: String {
-        Self.monthlyDueSentence(for: recurrenceDayOfMonth)
+        let selectedDays = selectedMonthDaysForSummary
+        guard !selectedDays.isEmpty else { return "Choose at least one day of the month." }
+        return Self.monthlyDueSentence(for: selectedDays)
     }
 
     func monthlyRecurrenceTimeHelpText(
@@ -362,23 +368,35 @@ struct TaskFormPresentation {
         if recurrenceHasTimeRange {
             guard let timeRangeText else { return monthlyRecurrenceSummary }
             return Self.monthlyDueSentence(
-                for: recurrenceDayOfMonth,
+                for: selectedMonthDaysForSummary,
                 timingText: "from \(timeRangeText)"
             )
         }
         if recurrenceHasExplicitTime {
             guard let explicitTimeText else { return monthlyRecurrenceSummary }
             return Self.monthlyDueSentence(
-                for: recurrenceDayOfMonth,
+                for: selectedMonthDaysForSummary,
                 timingText: "at \(explicitTimeText)"
             )
         }
-        return Self.monthlyOptionalAnyTimeSentence(for: recurrenceDayOfMonth)
+        return Self.monthlyOptionalAnyTimeSentence(for: selectedMonthDaysForSummary)
+    }
+
+    private var selectedWeekdaysForSummary: [Int] {
+        Self.clampedWeekdays(recurrenceWeekdays.isEmpty ? [recurrenceWeekday] : recurrenceWeekdays)
+    }
+
+    private var selectedMonthDaysForSummary: [Int] {
+        Self.clampedMonthDays(recurrenceDaysOfMonth.isEmpty ? [recurrenceDayOfMonth] : recurrenceDaysOfMonth)
     }
 
     static func weekdayName(for weekday: Int) -> String {
         let symbols = Calendar.current.weekdaySymbols
         return symbols[min(max(weekday - 1, 0), symbols.count - 1)]
+    }
+
+    static func weekdayListText(for weekdays: [Int]) -> String {
+        formattedList(clampedWeekdays(weekdays).map(weekdayName))
     }
 
     static func ordinalDay(_ day: Int) -> String {
@@ -421,6 +439,14 @@ struct TaskFormPresentation {
         }
     }
 
+    static func monthDayRepeatLabel(for days: [Int]) -> String {
+        let selectedDays = clampedMonthDays(days)
+        guard selectedDays.count > 1 else {
+            return monthDayRepeatLabel(for: selectedDays.first ?? 1)
+        }
+        return "Every \(formattedList(selectedDays.map(monthDayListLabel)))"
+    }
+
     static func monthlyScheduleSummary(
         for day: Int,
         timingText: String? = nil
@@ -435,6 +461,19 @@ struct TaskFormPresentation {
         default:
             return "Monthly on the \(ordinalDay(resolvedDay))\(suffix)"
         }
+    }
+
+    static func monthlyScheduleSummary(
+        for days: [Int],
+        timingText: String? = nil
+    ) -> String {
+        let selectedDays = clampedMonthDays(days)
+        guard selectedDays.count > 1 else {
+            return monthlyScheduleSummary(for: selectedDays.first ?? 1, timingText: timingText)
+        }
+        let suffix = timingText.map { " \($0)" } ?? ""
+        let fallback = selectedDays.contains { $0 >= 29 } ? "; shorter months use last day" : ""
+        return "Monthly on the \(formattedList(selectedDays.map(monthDayListLabel)))\(suffix)\(fallback)"
     }
 
     static func stepperLabel(unit: TaskFormFrequencyUnit, value: Int) -> String {
@@ -464,6 +503,19 @@ struct TaskFormPresentation {
         }
     }
 
+    private static func monthlyDueSentence(
+        for days: [Int],
+        timingText: String? = nil
+    ) -> String {
+        let selectedDays = clampedMonthDays(days)
+        guard selectedDays.count > 1 else {
+            return monthlyDueSentence(for: selectedDays.first ?? 1, timingText: timingText)
+        }
+        let suffix = timingText.map { " \($0)" } ?? ""
+        let fallback = selectedDays.contains { $0 >= 29 } ? "; shorter months use their last day" : ""
+        return "Due on the \(formattedList(selectedDays.map(monthDayListLabel))) of each month\(suffix)\(fallback)."
+    }
+
     private static func monthlyOptionalAnyTimeSentence(for day: Int) -> String {
         let resolvedDay = clampedMonthDay(day)
         switch resolvedDay {
@@ -476,8 +528,42 @@ struct TaskFormPresentation {
         }
     }
 
+    private static func monthlyOptionalAnyTimeSentence(for days: [Int]) -> String {
+        let selectedDays = clampedMonthDays(days)
+        guard selectedDays.count > 1 else {
+            return monthlyOptionalAnyTimeSentence(for: selectedDays.first ?? 1)
+        }
+        return "Optional. Leave this off to keep the routine due any time on the \(formattedList(selectedDays.map(monthDayListLabel)))."
+    }
+
     private static func clampedMonthDay(_ day: Int) -> Int {
         min(max(day, 1), 31)
+    }
+
+    private static func clampedWeekdays(_ weekdays: [Int]) -> [Int] {
+        Array(Set(weekdays.map { min(max($0, 1), 7) })).sorted()
+    }
+
+    private static func clampedMonthDays(_ days: [Int]) -> [Int] {
+        Array(Set(days.map(clampedMonthDay))).sorted()
+    }
+
+    private static func monthDayListLabel(for day: Int) -> String {
+        let resolvedDay = clampedMonthDay(day)
+        return resolvedDay == 31 ? "last day" : ordinalDay(resolvedDay)
+    }
+
+    private static func formattedList(_ values: [String]) -> String {
+        switch values.count {
+        case 0:
+            return ""
+        case 1:
+            return values[0]
+        case 2:
+            return "\(values[0]) and \(values[1])"
+        default:
+            return "\(values.dropLast().joined(separator: ", ")), and \(values.last ?? "")"
+        }
     }
 
     static func estimatedDurationLabel(for minutes: Int) -> String {

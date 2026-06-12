@@ -315,13 +315,13 @@ struct AddRoutineSaveRequest: Equatable {
             )
         case .weekly:
             return .weekly(
-                on: schedule.recurrenceWeekday,
+                on: schedule.effectiveRecurrenceWeekdays,
                 at: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
         case .monthlyDay:
             return .monthly(
-                on: schedule.recurrenceDayOfMonth,
+                on: schedule.effectiveRecurrenceDaysOfMonth,
                 at: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )

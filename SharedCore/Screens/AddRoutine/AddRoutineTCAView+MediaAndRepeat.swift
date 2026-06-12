@@ -34,6 +34,8 @@ extension AddRoutineTCAView {
             recurrenceTime: recurrenceTimeBinding,
             recurrenceWeekday: recurrenceWeekdayBinding,
             recurrenceDayOfMonth: recurrenceDayOfMonthBinding,
+            recurrenceWeekdays: recurrenceWeekdaysBinding,
+            recurrenceDaysOfMonth: recurrenceDaysOfMonthBinding,
             recurrencePatternDescription: formPresentation.recurrencePatternDescription(includesOptionalExactTimeDetail: false),
             dailyTimeSummary: "Due every day at \(store.schedule.recurrenceTimeOfDay.formatted()).",
             weeklyRecurrenceSummary: formPresentation.weeklyRecurrenceSummary,

@@ -121,8 +121,10 @@ enum CloudKitDirectPullTaskRecordParser {
             weekday: recurrenceWeekdayValue,
             dayOfMonth: recurrenceDayOfMonthValue
         )
-        let recurrenceRuleValue = recurrenceRuleColumnValue
-            ?? recurrenceRuleStorageValue.flatMap(RoutineRecurrenceRuleStorage.deserialize)
+        let recurrenceRuleStorageRule = recurrenceRuleStorageValue.flatMap(RoutineRecurrenceRuleStorage.deserialize)
+        let recurrenceRuleValue = recurrenceRuleStorageRule?.hasMultipleCalendarSelections == true
+            ? recurrenceRuleStorageRule
+            : (recurrenceRuleColumnValue ?? recurrenceRuleStorageRule)
         let imageDataValue = dataValue(
             in: record,
             keys: ["imageData", "IMAGEDATA", "zimagedata", "ZIMAGEDATA", "cd_imagedata"]

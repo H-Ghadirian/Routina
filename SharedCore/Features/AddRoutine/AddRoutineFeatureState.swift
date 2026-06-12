@@ -59,6 +59,8 @@ struct AddRoutineScheduleState: Equatable {
     var recurrenceTimeRangeEnd: RoutineTimeOfDay = RoutineTimeRange.defaultValue.end
     var recurrenceWeekday: Int = Calendar.current.component(.weekday, from: Date())
     var recurrenceDayOfMonth: Int = Calendar.current.component(.day, from: Date())
+    var recurrenceWeekdays: [Int] = []
+    var recurrenceDaysOfMonth: [Int] = []
     var autoAssumeDailyDone: Bool = false
 }
 
@@ -162,13 +164,13 @@ struct AddRoutineFeatureState: Equatable {
             )
         case .weekly:
             return .weekly(
-                on: schedule.recurrenceWeekday,
+                on: schedule.effectiveRecurrenceWeekdays,
                 at: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
         case .monthlyDay:
             return .monthly(
-                on: schedule.recurrenceDayOfMonth,
+                on: schedule.effectiveRecurrenceDaysOfMonth,
                 at: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
@@ -186,6 +188,14 @@ struct AddRoutineFeatureState: Equatable {
 }
 
 extension AddRoutineScheduleState {
+    var effectiveRecurrenceWeekdays: [Int] {
+        recurrenceWeekdays.isEmpty ? [recurrenceWeekday] : recurrenceWeekdays
+    }
+
+    var effectiveRecurrenceDaysOfMonth: [Int] {
+        recurrenceDaysOfMonth.isEmpty ? [recurrenceDayOfMonth] : recurrenceDaysOfMonth
+    }
+
     var recurrenceTimeRange: RoutineTimeRange? {
         guard recurrenceHasTimeRange else { return nil }
         return RoutineTimeRange(

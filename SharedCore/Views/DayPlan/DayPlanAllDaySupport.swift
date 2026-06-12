@@ -289,16 +289,14 @@ enum DayPlanAllDayTasks {
             return true
 
         case .weekly:
-            let weekday = task.recurrenceRule.weekday ?? calendar.firstWeekday
-            return calendar.component(.weekday, from: day) == weekday
+            return task.recurrenceRule.resolvedWeekdays(calendar: calendar)
+                .contains(calendar.component(.weekday, from: day))
 
         case .monthlyDay:
-            let dayOfMonth = clampedDayOfMonth(
-                task.recurrenceRule.dayOfMonth ?? 1,
-                monthContaining: day,
-                calendar: calendar
-            )
-            return calendar.component(.day, from: day) == dayOfMonth
+            let selectedDays = task.recurrenceRule.resolvedDaysOfMonth(calendar: calendar).map {
+                clampedDayOfMonth($0, monthContaining: day, calendar: calendar)
+            }
+            return selectedDays.contains(calendar.component(.day, from: day))
 
         case .intervalDays:
             let dueDate = RoutineDateMath.upcomingDueDate(
