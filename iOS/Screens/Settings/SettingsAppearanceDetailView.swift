@@ -23,18 +23,6 @@ List {
             .foregroundStyle(.secondary)
     }
 
-    Section("Routine List") {
-        Picker("Grouping", selection: routineListSectioningModeBinding) {
-            ForEach(RoutineListSectioningMode.allCases) { mode in
-                Text(mode.title).tag(mode)
-            }
-        }
-        .pickerStyle(.segmented)
-
-        Text(store.appearance.routineListSectioningSubtitle)
-            .foregroundStyle(.secondary)
-    }
-
     Section("Task Row") {
         SettingsTaskRowPreviewView(
             visibility: store.appearance.taskRowVisibility,
@@ -138,13 +126,6 @@ List {
 .navigationTitle("Appearance")
 .navigationBarTitleDisplayMode(.inline)
 .sensoryFeedback(.success, trigger: resetFeedbackTrigger)
-    }
-
-    private var routineListSectioningModeBinding: Binding<RoutineListSectioningMode> {
-        Binding(
-            get: { store.appearance.routineListSectioningMode },
-            set: { store.send(.routineListSectioningModeChanged($0)) }
-        )
     }
 
     private var appColorSchemeBinding: Binding<AppColorScheme> {

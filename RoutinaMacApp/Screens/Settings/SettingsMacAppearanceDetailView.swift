@@ -14,7 +14,7 @@ struct SettingsMacAppearanceDetailView: View {
     var body: some View {
 SettingsMacDetailShell(
     title: "Appearance",
-    subtitle: "Choose the app theme, pick the Dock icon, and decide what the home list shows."
+    subtitle: "Choose the app theme and pick the Dock icon."
 ) {
     SettingsMacDetailCard(title: "App Theme") {
         Picker("Theme", selection: appColorSchemeBinding) {
@@ -25,19 +25,6 @@ SettingsMacDetailShell(
         .pickerStyle(.segmented)
 
         Text(store.appearance.appColorScheme.subtitle)
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-    }
-
-    SettingsMacDetailCard(title: "Routine List") {
-        Picker("Grouping", selection: routineListSectioningModeBinding) {
-            ForEach(RoutineListSectioningMode.allCases) { mode in
-                Text(mode.title).tag(mode)
-            }
-        }
-        .pickerStyle(.segmented)
-
-        Text(store.appearance.routineListSectioningSubtitle)
             .font(.footnote)
             .foregroundStyle(.secondary)
     }
@@ -160,13 +147,6 @@ SettingsMacDetailShell(
         }
     }
 }
-    }
-
-    private var routineListSectioningModeBinding: Binding<RoutineListSectioningMode> {
-        Binding(
-            get: { store.appearance.routineListSectioningMode },
-            set: { store.send(.routineListSectioningModeChanged($0)) }
-        )
     }
 
     private var appColorSchemeBinding: Binding<AppColorScheme> {
