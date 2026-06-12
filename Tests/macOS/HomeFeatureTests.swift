@@ -29,6 +29,27 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func macDetailModes_hideBoardUntilBetaExperimentIsEnabled() {
+        let key = UserDefaultBoolValueKey.appSettingBoardScreenEnabled.rawValue
+        let previousValue = SharedDefaults.app.object(forKey: key)
+        defer {
+            if let previousValue {
+                SharedDefaults.app.set(previousValue, forKey: key)
+            } else {
+                SharedDefaults.app.removeObject(forKey: key)
+            }
+        }
+
+        SharedDefaults.app[.appSettingBoardScreenEnabled] = false
+        #expect(MacHomeDetailMode.visibleModes == [.details, .planner, .places])
+        #expect(MacHomeDetailMode.board.visibleSurfaceMode == .details)
+
+        SharedDefaults.app[.appSettingBoardScreenEnabled] = true
+        #expect(MacHomeDetailMode.visibleModes == [.details, .planner, .board, .places])
+        #expect(MacHomeDetailMode.board.visibleSurfaceMode == .board)
+    }
+
+    @Test
     func openNoteDeepLink_selectsTimelineSidebarEntryAndClearsTimelineFilters() async {
         let noteID = UUID()
         let selectedTaskID = UUID()

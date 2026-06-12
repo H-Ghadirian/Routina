@@ -221,6 +221,10 @@ struct SettingsMacGeneralDetailView: View {
         store: SharedDefaults.app
     ) private var isAdventureMapEnabled = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingBoardScreenEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isBoardScreenEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingHomeTaskListModeTabsVisible.rawValue,
         store: SharedDefaults.app
     ) private var areHomeTaskListModeTabsVisible = false
@@ -281,6 +285,13 @@ SettingsMacDetailShell(
             .toggleStyle(.switch)
 
         Text("Show the Adventure map in Home.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+
+        Toggle("Show Board screen", isOn: $isBoardScreenEnabled)
+            .toggleStyle(.switch)
+
+        Text("Show the Board screen in Home.")
             .font(.footnote)
             .foregroundStyle(.secondary)
 

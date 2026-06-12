@@ -86,6 +86,24 @@ struct HomeMacNavigationHistoryTests {
         #expect(adventure.progressMode == .stats)
     }
 
+    @Test
+    func hiddenBoardDetailModeNormalizesToDetailsInHistorySnapshots() {
+        let key = UserDefaultBoolValueKey.appSettingBoardScreenEnabled.rawValue
+        let previousValue = SharedDefaults.app.object(forKey: key)
+        defer {
+            if let previousValue {
+                SharedDefaults.app.set(previousValue, forKey: key)
+            } else {
+                SharedDefaults.app.removeObject(forKey: key)
+            }
+        }
+
+        SharedDefaults.app[.appSettingBoardScreenEnabled] = false
+        let board = snapshot(detailMode: .board)
+
+        #expect(board.detailMode == .details)
+    }
+
     private func snapshot(
         sidebarMode: HomeFeature.MacSidebarMode = .routines,
         sidebarSelection: HomeFeature.MacSidebarSelection? = nil,
