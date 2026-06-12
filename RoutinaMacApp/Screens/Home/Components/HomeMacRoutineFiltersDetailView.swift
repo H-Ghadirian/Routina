@@ -40,13 +40,17 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
             if showsTagSection {
                 HomeMacSidebarSectionCard {
-                    tagSectionContent()
+                    HomeMacCollapsibleFilterSection(title: "Tags") {
+                        tagSectionContent()
+                    }
                 }
             }
 
             if showsPlaceSection {
                 HomeMacSidebarSectionCard {
-                    placeSectionContent()
+                    HomeMacCollapsibleFilterSection(title: "Places") {
+                        placeSectionContent()
+                    }
                 }
             }
         }
@@ -57,9 +61,37 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     }
 
     private var taskListModePicker: some View {
-        HomeMacTaskListModeStripView(selectedMode: taskListMode) { mode in
-            taskListMode = mode
+        LazyVGrid(
+            columns: [GridItem(.adaptive(minimum: 112), spacing: 8, alignment: .leading)],
+            alignment: .leading,
+            spacing: 8
+        ) {
+            ForEach(taskListModeOptions, id: \.title) { option in
+                Button {
+                    taskListMode = option.mode
+                } label: {
+                    Label(option.title, systemImage: option.systemImage)
+                        .font(.caption.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .foregroundStyle(taskListMode == option.mode ? Color.white : Color.primary)
+                        .background(
+                            Capsule()
+                                .fill(taskListMode == option.mode ? Color.accentColor : Color.secondary.opacity(0.10))
+                        )
+                }
+                .buttonStyle(.plain)
+            }
         }
+    }
+
+    private var taskListModeOptions: [(mode: HomeTaskListMode, title: String, systemImage: String)] {
+        [
+            (.all, "All", "tray.full"),
+            (.todos, "Todos", "checklist"),
+            (.routines, "Routines", "repeat")
+        ]
     }
 
     private var coreFilterCard: some View {
