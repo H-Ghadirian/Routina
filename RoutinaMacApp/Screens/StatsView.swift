@@ -97,6 +97,8 @@ struct StatsView: View {
     private var summaryDisplayModeRaw = StatsSummaryDisplayMode.cards.rawValue
     @AppStorage(UserDefaultBoolValueKey.appSettingStatsWinsEnabled.rawValue, store: SharedDefaults.app)
     private var isStatsWinsEnabled = false
+    @AppStorage(UserDefaultBoolValueKey.appSettingStatsSleepTabEnabled.rawValue, store: SharedDefaults.app)
+    private var isStatsSleepTabEnabled = false
 
     private typealias Metrics = StatsFeature.Metrics
 
@@ -240,12 +242,19 @@ struct StatsView: View {
 
     private var availableDashboardScopes: [StatsDashboardScope] {
         StatsDashboardScope.allCases.filter { scope in
-            scope != .wins || isStatsWinsEnabled
+            (scope != .wins || isStatsWinsEnabled)
+                && (scope != .sleep || isStatsSleepTabEnabled)
         }
     }
 
     private var effectiveDashboardScope: StatsDashboardScope {
-        selectedDashboardScope == .wins && !isStatsWinsEnabled ? .all : selectedDashboardScope
+        if selectedDashboardScope == .wins && !isStatsWinsEnabled {
+            return .all
+        }
+        if selectedDashboardScope == .sleep && !isStatsSleepTabEnabled {
+            return .all
+        }
+        return selectedDashboardScope
     }
 
     private var dashboardScopeBinding: Binding<StatsDashboardScope> {

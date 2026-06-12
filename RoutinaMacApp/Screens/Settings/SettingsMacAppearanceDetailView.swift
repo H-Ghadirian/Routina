@@ -229,6 +229,10 @@ struct SettingsMacGeneralDetailView: View {
         store: SharedDefaults.app
     ) private var isStatsWinsEnabled = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingStatsSleepTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isStatsSleepTabEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingHomeTaskListModeTabsVisible.rawValue,
         store: SharedDefaults.app
     ) private var areHomeTaskListModeTabsVisible = false
@@ -311,6 +315,13 @@ SettingsMacDetailShell(
             .toggleStyle(.switch)
 
         Text("Show Recent Wins in Stats.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+
+        Toggle("Show Sleep tab", isOn: $isStatsSleepTabEnabled)
+            .toggleStyle(.switch)
+
+        Text("Show the Sleep tab for Sleep-specific dashboard scope in Stats.")
             .font(.footnote)
             .foregroundStyle(.secondary)
 

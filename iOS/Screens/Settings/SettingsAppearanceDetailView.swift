@@ -199,6 +199,10 @@ struct SettingsGeneralDetailView: View {
         store: SharedDefaults.app
     ) private var isStatsWinsEnabled = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingStatsSleepTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isStatsSleepTabEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingHomeTaskListModeTabsVisible.rawValue,
         store: SharedDefaults.app
     ) private var isHomeTaskListModeTabsVisible = false
@@ -248,6 +252,11 @@ List {
         Toggle("Show Stats wins", isOn: $isStatsWinsEnabled)
 
         Text("Show Recent Wins in Stats.")
+            .foregroundStyle(.secondary)
+
+        Toggle("Show Sleep tab", isOn: $isStatsSleepTabEnabled)
+
+        Text("Show the Sleep tab for Sleep-specific dashboard scope in Stats.")
             .foregroundStyle(.secondary)
     }
 
