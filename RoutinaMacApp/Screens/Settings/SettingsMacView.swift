@@ -11,7 +11,6 @@ private enum SettingsMacLayout {
 struct SettingsMacView: View {
     let store: StoreOf<SettingsFeature>
     @State private var selectedSection: SettingsMacSection? = .notifications
-    @State private var isPlacePickerPresented = false
 
     var body: some View {
 NavigationSplitView {
@@ -41,7 +40,6 @@ NavigationSplitView {
     SettingsMacDetailView(
         section: selectedDetailSection,
         store: store,
-        isPlacePickerPresented: $isPlacePickerPresented
     )
     .toolbar {
         RoutinaMacFocusTimerToolbarItem()
@@ -49,8 +47,7 @@ NavigationSplitView {
 }
 .navigationSplitViewStyle(.balanced)
 .settingsMacPresentations(
-    store: store,
-    isPlacePickerPresented: $isPlacePickerPresented
+    store: store
 )
     }
 
@@ -71,7 +68,6 @@ NavigationSplitView {
 struct SettingsMacDetailView: View {
     let section: SettingsMacSection
     let store: StoreOf<SettingsFeature>
-    @Binding var isPlacePickerPresented: Bool
 
     var body: some View {
         switch section {
@@ -87,8 +83,7 @@ struct SettingsMacDetailView: View {
             SettingsMacCalendarDetailView(store: store)
         case .places:
             SettingsMacPlacesDetailView(
-                store: store,
-                isPlacePickerPresented: $isPlacePickerPresented
+                store: store
             )
         case .tags:
             SettingsMacTagsDetailView(store: store)
@@ -111,17 +106,14 @@ struct SettingsMacDetailView: View {
 struct EmbeddedSettingsMacDetailView: View {
     let store: StoreOf<SettingsFeature>
     let section: SettingsMacSection
-    @State private var isPlacePickerPresented = false
 
     var body: some View {
 SettingsMacDetailView(
     section: section,
     store: store,
-    isPlacePickerPresented: $isPlacePickerPresented
 )
 .settingsMacPresentations(
-    store: store,
-    isPlacePickerPresented: $isPlacePickerPresented
+    store: store
 )
     }
 }

@@ -4,13 +4,11 @@ import SwiftUI
 struct SettingsPlaceManagerPresentationView: View {
     let store: StoreOf<SettingsFeature>
     @Environment(\.dismiss) var dismiss
-    @State private var isPlacePickerPresented = false
 
     var body: some View {
         NavigationStack {
             SettingsMacPlacesDetailView(
-                store: store,
-                isPlacePickerPresented: $isPlacePickerPresented
+                store: store
             )
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -20,41 +18,8 @@ struct SettingsPlaceManagerPresentationView: View {
                 }
             }
         }
-        .sheet(isPresented: $isPlacePickerPresented) {
-            PlaceLocationPickerSheet(
-                initialCoordinate: store.places.placeDraftCoordinate,
-                initialRadiusMeters: store.places.placeDraftRadiusMeters,
-                fallbackCoordinate: store.places.placeDraftCoordinate ?? store.places.lastKnownLocationCoordinate
-            ) { coordinate, radiusMeters in
-                store.send(.placeDraftCoordinateChanged(coordinate))
-                store.send(.placeDraftRadiusChanged(radiusMeters))
-                isPlacePickerPresented = false
-            } onCancel: {
-                isPlacePickerPresented = false
-            }
-        }
-        .alert(
-            "Delete Place?",
-            isPresented: deletePlaceConfirmationBinding
-        ) {
-            Button("Delete", role: .destructive) {
-                store.send(.deletePlaceConfirmed)
-            }
-            Button("Cancel", role: .cancel) {
-                store.send(.setDeletePlaceConfirmation(false))
-            }
-        } message: {
-            Text(store.places.deleteConfirmationMessage)
-        }
         .onAppear {
             store.send(.onAppear)
         }
-    }
-
-    private var deletePlaceConfirmationBinding: Binding<Bool> {
-        Binding(
-            get: { store.places.isDeletePlaceConfirmationPresented },
-            set: { store.send(.setDeletePlaceConfirmation($0)) }
-        )
     }
 }
