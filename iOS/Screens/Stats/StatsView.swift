@@ -43,6 +43,8 @@ struct StatsView: View {
     private var dashboardItemOrderIDsRaw = ""
     @AppStorage(UserDefaultStringValueKey.appSettingIOSStatsSummaryDisplayMode.rawValue, store: SharedDefaults.app)
     private var summaryDisplayModeRaw = StatsSummaryDisplayMode.cards.rawValue
+    @AppStorage(UserDefaultBoolValueKey.appSettingStatsWinsEnabled.rawValue, store: SharedDefaults.app)
+    private var isStatsWinsEnabled = false
 
     private typealias Metrics = StatsFeature.Metrics
 
@@ -243,7 +245,8 @@ struct StatsView: View {
         StatsDashboardItem.allCases.filter { item in
             item.isAvailable(
                 selectedRange: selectedRange,
-                isGitFeaturesEnabled: store.isGitFeaturesEnabled
+                isGitFeaturesEnabled: store.isGitFeaturesEnabled,
+                isStatsWinsEnabled: isStatsWinsEnabled
             ) && (item != .unassignedFocus || hasUnassignedFocusSessions)
         }
     }
@@ -260,11 +263,28 @@ struct StatsView: View {
     }
 
     private var scopedVisibleOrderedDashboardItems: [StatsDashboardItem] {
-        visibleOrderedDashboardItems.filter { $0.isIncluded(in: selectedDashboardScope) }
+        visibleOrderedDashboardItems.filter { $0.isIncluded(in: effectiveDashboardScope) }
     }
 
     private var hiddenAvailableDashboardItems: [StatsDashboardItem] {
         orderedAvailableDashboardItems.filter { hiddenDashboardItemIDs.contains($0.rawValue) }
+    }
+
+    private var availableDashboardScopes: [StatsDashboardScope] {
+        StatsDashboardScope.allCases.filter { scope in
+            scope != .wins || isStatsWinsEnabled
+        }
+    }
+
+    private var effectiveDashboardScope: StatsDashboardScope {
+        selectedDashboardScope == .wins && !isStatsWinsEnabled ? .all : selectedDashboardScope
+    }
+
+    private var dashboardScopeBinding: Binding<StatsDashboardScope> {
+        Binding(
+            get: { effectiveDashboardScope },
+            set: { selectedDashboardScope = $0 }
+        )
     }
 
     private var summaryDisplayMode: StatsSummaryDisplayMode {
@@ -641,8 +661,8 @@ struct StatsView: View {
     }
 
     private var dashboardScopePicker: some View {
-        Picker("Stats category", selection: $selectedDashboardScope) {
-            ForEach(StatsDashboardScope.allCases) { scope in
+        Picker("Stats category", selection: dashboardScopeBinding) {
+            ForEach(availableDashboardScopes) { scope in
                 Text(scope.title).tag(scope)
             }
         }
