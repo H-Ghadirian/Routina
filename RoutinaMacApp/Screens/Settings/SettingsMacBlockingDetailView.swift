@@ -21,6 +21,10 @@ struct SettingsMacBlockingDetailView: View {
     @State private var statusMessage: String?
     @State private var websiteStatusMessage: String?
     @State private var websiteBlockingStatus = FocusShieldSupport.macWebsiteBlockingStatus()
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacWebsiteBlockingEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isMacWebsiteBlockingEnabled = false
     #endif
 
     var body: some View {
@@ -100,7 +104,7 @@ struct SettingsMacBlockingDetailView: View {
                     .foregroundStyle(.secondary)
             }
 
-            if FocusShieldSupport.isMacWebsiteBlockingAvailable {
+            if isMacWebsiteBlockingEnabled && FocusShieldSupport.isMacWebsiteBlockingAvailable {
                 SettingsMacDetailCard(title: "Websites") {
                     HStack(spacing: 10) {
                         TextField("example.com", text: $websiteDraft)

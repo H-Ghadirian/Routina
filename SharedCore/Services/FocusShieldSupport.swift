@@ -191,7 +191,7 @@ enum FocusShieldSupport {
 
     #if os(macOS)
     static var isMacWebsiteBlockingAvailable: Bool {
-        AppEnvironment.isSandboxDataMode
+        AppEnvironment.isSandboxDataMode || SharedDefaults.app[.appSettingMacWebsiteBlockingEnabled]
     }
 
     @MainActor

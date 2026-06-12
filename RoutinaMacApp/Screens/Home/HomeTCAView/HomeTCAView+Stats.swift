@@ -3,7 +3,30 @@ import SwiftUI
 extension HomeTCAView {
     @ViewBuilder
     var macProgressSidebarView: some View {
-        macStatsSidebarView
+        if isMacAdventureMode {
+            HomeMacAdventureSidebarView(progression: homeAdventureProgression)
+        } else {
+            macStatsSidebarView
+        }
+    }
+
+    var homeAdventureProgression: HomeAdventureProgression {
+        HomeAdventureProgressionBuilder.build(
+            tasks: store.routineTasks,
+            logs: store.timelineLogs,
+            focusSessions: focusSessions,
+            sprintFocusSessions: sprintFocusSessions,
+            sleepSessions: sleepSessions,
+            awaySessions: awaySessions,
+            dayPlanBlocks: dayPlanBlocks,
+            emotionLogs: emotionLogs,
+            notes: notes,
+            events: events,
+            goals: store.routineGoals,
+            placeCheckInSessions: placeCheckInSessions,
+            referenceDate: Date(),
+            calendar: calendar
+        )
     }
 
     var macStatsSidebarView: some View {

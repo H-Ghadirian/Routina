@@ -17,7 +17,12 @@ enum MacHomeProgressMode: String, CaseIterable, Identifiable {
 
     var id: Self { self }
 
-    static let visibleModes: [Self] = [.stats]
+    static var visibleModes: [Self] {
+        guard SharedDefaults.app[.appSettingAdventureMapEnabled] else {
+            return [.stats]
+        }
+        return [.stats, .adventure]
+    }
 
     var visibleSurfaceMode: Self {
         Self.visibleModes.contains(self) ? self : .stats
@@ -66,6 +71,10 @@ struct HomeTCAView: View {
         UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
         store: SharedDefaults.app
     ) var isGoalsTabEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingAdventureMapEnabled.rawValue,
+        store: SharedDefaults.app
+    ) var isAdventureMapEnabled = false
     @AppStorage("macTodoBoardCompactCards", store: SharedDefaults.app)
     var isMacTodoBoardCompactCards = false
     @AppStorage("macBoardTicketInspectorPresented", store: SharedDefaults.app)

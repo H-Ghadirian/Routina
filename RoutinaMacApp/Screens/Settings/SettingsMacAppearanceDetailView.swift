@@ -217,9 +217,17 @@ struct SettingsMacGeneralDetailView: View {
         store: SharedDefaults.app
     ) private var isGoalsTabEnabled = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingAdventureMapEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isAdventureMapEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingHomeTaskListModeTabsVisible.rawValue,
         store: SharedDefaults.app
     ) private var areHomeTaskListModeTabsVisible = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacWebsiteBlockingEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isMacWebsiteBlockingEnabled = false
 
     var body: some View {
 SettingsMacDetailShell(
@@ -262,7 +270,6 @@ SettingsMacDetailShell(
         Text("Shows GitHub and GitLab contribution activity in Stats.")
             .font(.footnote)
             .foregroundStyle(.secondary)
-
         Toggle("Show Goals tab", isOn: $isGoalsTabEnabled)
             .toggleStyle(.switch)
 
@@ -270,10 +277,24 @@ SettingsMacDetailShell(
             .font(.footnote)
             .foregroundStyle(.secondary)
 
+        Toggle("Show Adventure map", isOn: $isAdventureMapEnabled)
+            .toggleStyle(.switch)
+
+        Text("Show the Adventure map in Home.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+
         Toggle("Show Home task type tabs", isOn: $areHomeTaskListModeTabsVisible)
             .toggleStyle(.switch)
 
         Text("Show All, Todos, and Routines tabs in the Home sidebar.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+
+        Toggle("Show Mac website blocking", isOn: $isMacWebsiteBlockingEnabled)
+            .toggleStyle(.switch)
+
+        Text("Show the website blocking controls in Blocking settings.")
             .font(.footnote)
             .foregroundStyle(.secondary)
     }

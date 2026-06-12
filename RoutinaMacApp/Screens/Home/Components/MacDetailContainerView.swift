@@ -10,11 +10,13 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     let isBoardPresented: Bool
     let isTimelinePresented: Bool
     let isStatsPresented: Bool
+    let currentProgressMode: MacHomeProgressMode
     let isSettingsPresented: Bool
     let settingsStore: StoreOf<SettingsFeature>
     let statsStore: StoreOf<StatsFeature>?
     let selectedSettingsSection: SettingsMacSection
     let dayPlanPlanner: DayPlanPlannerState
+    let adventureProgression: HomeAdventureProgression
     @Binding var mainDetailMode: MacHomeDetailMode
     @Binding var isBoardInspectorPresented: Bool
     @Binding var placeCheckInSelectedPlaceID: UUID?
@@ -145,7 +147,11 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
 
     @ViewBuilder
     private var progressDetailContent: some View {
-        if let statsStore {
+        switch currentProgressMode {
+        case .adventure:
+            HomeMacAdventureView(progression: adventureProgression)
+        case .stats:
+            if let statsStore {
             StatsViewWrapper(
                 store: statsStore,
                 showsFocusTimerToolbarItem: false
@@ -156,6 +162,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
                 systemImage: "chart.bar.xaxis",
                 description: Text("The stats store is not currently connected for this view.")
             )
+        }
         }
     }
 

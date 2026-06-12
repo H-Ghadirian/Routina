@@ -9,7 +9,7 @@ struct HomeFeatureMacNavigationRouter {
         _ mode: HomeFeature.MacSidebarMode,
         state: inout HomeFeature.State
     ) -> Effect<HomeFeature.Action> {
-        let resolvedMode: HomeFeature.MacSidebarMode = mode == .adventure ? .stats : mode
+        let resolvedMode: HomeFeature.MacSidebarMode = mode
         state.macSidebarMode = resolvedMode
         state.presentation.isMacFilterDetailPresented = false
         switch resolvedMode {
