@@ -102,6 +102,18 @@ struct HomeTCAView: View {
         UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
         store: SharedDefaults.app
     ) var areMacEventEmotionActionsEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingStatsWinsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) var isStatsWinsEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingStatsSleepTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) var isStatsSleepTabEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingStatsAchievementsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) var isStatsAchievementsEnabled = false
     @AppStorage("macTodoBoardCompactCards", store: SharedDefaults.app)
     var isMacTodoBoardCompactCards = false
     @AppStorage("macBoardTicketInspectorPresented", store: SharedDefaults.app)
@@ -138,6 +150,7 @@ struct HomeTCAView: View {
     @State var draggedSection: FormSection?
     @State var macHomeDetailMode: MacHomeDetailMode = .details
     @State var macHomeProgressMode: MacHomeProgressMode = .stats
+    @State var selectedStatsDashboardScope: StatsDashboardScope = .all
     @State var macNavigationHistory = HomeMacNavigationHistory()
     @State var isRestoringMacNavigationHistory = false
     @StateObject var dayPlanPlanner = DayPlanPlannerState()

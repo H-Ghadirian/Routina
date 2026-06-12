@@ -3,6 +3,9 @@ import SwiftUI
 struct HomeMacStatsSidebarView: View {
     let selectedTaskTypeFilter: StatsTaskTypeFilter
     let onSelectTaskTypeFilter: (StatsTaskTypeFilter) -> Void
+    let availableDashboardScopes: [StatsDashboardScope]
+    let selectedDashboardScope: StatsDashboardScope
+    let onSelectDashboardScope: (StatsDashboardScope) -> Void
     let selectedRange: DoneChartRange
     let onSelectRange: (DoneChartRange) -> Void
     @Binding var advancedQuery: String
@@ -30,6 +33,12 @@ struct HomeMacStatsSidebarView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                HomeMacStatsDashboardScopeSection(
+                    selectedDashboardScope: selectedDashboardScope,
+                    availableDashboardScopes: availableDashboardScopes,
+                    onSelectDashboardScope: onSelectDashboardScope
+                )
+
                 HomeMacStatsQuerySection(
                     advancedQuery: $advancedQuery,
                     queryOptions: queryOptions

@@ -142,6 +142,7 @@ extension HomeTCAView {
                     isSettingsPresented: isMacSettingsMode,
                     settingsStore: settingsStore,
                     statsStore: statsStore,
+                    selectedStatsDashboardScope: $selectedStatsDashboardScope,
                     selectedSettingsSection: currentSelectedSettingsSection,
                     dayPlanPlanner: dayPlanPlanner,
                     adventureProgression: homeAdventureProgression,

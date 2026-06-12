@@ -40,7 +40,8 @@ let tabView = TabView(
 
     SwiftUI.Tab(Tab.stats.rawValue, systemImage: "chart.bar.xaxis", value: Tab.stats) {
         StatsViewWrapper(
-            store: store.scope(state: \.stats, action: \.stats)
+            store: store.scope(state: \.stats, action: \.stats),
+            selectedDashboardScope: .constant(.all)
         )
     }
 

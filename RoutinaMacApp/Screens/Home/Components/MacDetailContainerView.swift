@@ -14,6 +14,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     let isSettingsPresented: Bool
     let settingsStore: StoreOf<SettingsFeature>
     let statsStore: StoreOf<StatsFeature>?
+    @Binding var selectedStatsDashboardScope: StatsDashboardScope
     let selectedSettingsSection: SettingsMacSection
     let dayPlanPlanner: DayPlanPlannerState
     let adventureProgression: HomeAdventureProgression
@@ -154,6 +155,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
             if let statsStore {
             StatsViewWrapper(
                 store: statsStore,
+                selectedDashboardScope: $selectedStatsDashboardScope,
                 showsFocusTimerToolbarItem: false
             )
         } else {
