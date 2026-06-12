@@ -1,9 +1,20 @@
 import SwiftUI
 
-struct HomeMacImportanceUrgencyDisclosureSection: View {
-    @Binding var selectedFilter: ImportanceUrgencyFilterCell?
+struct HomeMacCollapsibleFilterSection<Content: View>: View {
+    let title: String
     let summaryText: String
+    @ViewBuilder let content: () -> Content
     @State private var isExpanded = false
+
+    init(
+        title: String,
+        summaryText: String = "",
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.title = title
+        self.summaryText = summaryText
+        self.content = content
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -13,14 +24,11 @@ struct HomeMacImportanceUrgencyDisclosureSection: View {
                 disclosureHeader
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Importance & Urgency")
+            .accessibilityLabel(title)
             .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
 
             if isExpanded {
-                HomeMacImportanceUrgencyMatrixView(
-                    selectedFilter: $selectedFilter,
-                    summaryText: summaryText
-                )
+                content()
                 .padding(.top, 12)
                 .padding(.horizontal, 4)
                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -40,11 +48,11 @@ struct HomeMacImportanceUrgencyDisclosureSection: View {
                 .frame(width: 12)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text("Importance & Urgency")
+                Text(title)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
 
-                if !isExpanded {
+                if !isExpanded && !summaryText.isEmpty {
                     Text(summaryText)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
@@ -63,6 +71,23 @@ struct HomeMacImportanceUrgencyDisclosureSection: View {
     private func toggleExpanded() {
         withAnimation(.snappy(duration: 0.22)) {
             isExpanded.toggle()
+        }
+    }
+}
+
+struct HomeMacImportanceUrgencyDisclosureSection: View {
+    @Binding var selectedFilter: ImportanceUrgencyFilterCell?
+    let summaryText: String
+
+    var body: some View {
+        HomeMacCollapsibleFilterSection(
+            title: "Importance & Urgency",
+            summaryText: summaryText
+        ) {
+            HomeMacImportanceUrgencyMatrixView(
+                selectedFilter: $selectedFilter,
+                summaryText: summaryText
+            )
         }
     }
 }

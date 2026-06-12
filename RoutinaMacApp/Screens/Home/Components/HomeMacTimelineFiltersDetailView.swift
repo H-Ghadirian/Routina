@@ -54,29 +54,46 @@ struct HomeMacTimelineFiltersDetailView: View {
             }
 
             if !availableTags.isEmpty {
-                HomeMacSidebarSectionCard(title: "Tags") {
-                    HomeMacTimelineTagFiltersView(
-                        allTagsCount: allTagsCount,
-                        availableTags: availableTags,
-                        suggestedRelatedTags: suggestedRelatedTags,
-                        availableExcludeTags: availableExcludeTags,
-                        selectedTags: selectedTags,
-                        includeTagMatchMode: includeTagMatchMode,
-                        excludeTagMatchMode: excludeTagMatchMode,
-                        selectedExcludedTags: selectedExcludedTags,
-                        tagSelectionSummary: tagSelectionSummary,
-                        excludedTagSummary: excludedTagSummary,
-                        tagCount: tagCount,
-                        tagColor: tagColor,
-                        onSelectTags: onSelectTags,
-                        onIncludeTagMatchModeChange: onIncludeTagMatchModeChange,
-                        onSelectSuggestedTag: onSelectSuggestedTag,
-                        onExcludeTagMatchModeChange: onExcludeTagMatchModeChange,
-                        onToggleExcludedTag: onToggleExcludedTag
-                    )
+                HomeMacSidebarSectionCard {
+                    HomeMacCollapsibleFilterSection(
+                        title: "Tags",
+                        summaryText: timelineTagsSummary
+                    ) {
+                        HomeMacTimelineTagFiltersView(
+                            allTagsCount: allTagsCount,
+                            availableTags: availableTags,
+                            suggestedRelatedTags: suggestedRelatedTags,
+                            availableExcludeTags: availableExcludeTags,
+                            selectedTags: selectedTags,
+                            includeTagMatchMode: includeTagMatchMode,
+                            excludeTagMatchMode: excludeTagMatchMode,
+                            selectedExcludedTags: selectedExcludedTags,
+                            tagSelectionSummary: tagSelectionSummary,
+                            excludedTagSummary: excludedTagSummary,
+                            tagCount: tagCount,
+                            tagColor: tagColor,
+                            onSelectTags: onSelectTags,
+                            onIncludeTagMatchModeChange: onIncludeTagMatchModeChange,
+                            onSelectSuggestedTag: onSelectSuggestedTag,
+                            onExcludeTagMatchModeChange: onExcludeTagMatchModeChange,
+                            onToggleExcludedTag: onToggleExcludedTag
+                        )
+                    }
                 }
             }
         }
+    }
+
+    private var timelineTagsSummary: String {
+        if !selectedTags.isEmpty {
+            return tagSelectionSummary
+        }
+
+        if !selectedExcludedTags.isEmpty {
+            return excludedTagSummary
+        }
+
+        return "\(availableTags.count) available tags"
     }
 
     private var rangePicker: some View {
