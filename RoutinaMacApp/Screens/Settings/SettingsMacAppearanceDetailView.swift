@@ -14,8 +14,25 @@ struct SettingsMacAppearanceDetailView: View {
     var body: some View {
 SettingsMacDetailShell(
     title: "Appearance",
-    subtitle: "Choose the app theme and pick the Dock icon."
+    subtitle: "Pick the Dock icon, then choose the app theme."
 ) {
+    SettingsMacDetailCard(title: "App Icon") {
+        LazyVGrid(columns: columns, spacing: 12) {
+            ForEach(AppIconOption.allCases) { option in
+                SettingsMacAppIconButton(
+                    option: option,
+                    isSelected: store.appearance.selectedAppIcon == option
+                ) {
+                    store.send(.appIconSelected(option))
+                }
+            }
+        }
+
+        Text("Changes the Dock and app switcher icon immediately. Finder keeps the bundled app icon.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+    }
+
     SettingsMacDetailCard(title: "App Theme") {
         Picker("Theme", selection: appColorSchemeBinding) {
             ForEach(AppColorScheme.allCases) { scheme in
@@ -110,23 +127,6 @@ SettingsMacDetailShell(
         .disabled(!store.appearance.hasTemporaryViewStateToReset)
 
         Text(resetButtonDescription)
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-    }
-
-    SettingsMacDetailCard(title: "App Icon") {
-        LazyVGrid(columns: columns, spacing: 12) {
-            ForEach(AppIconOption.allCases) { option in
-                SettingsMacAppIconButton(
-                    option: option,
-                    isSelected: store.appearance.selectedAppIcon == option
-                ) {
-                    store.send(.appIconSelected(option))
-                }
-            }
-        }
-
-        Text("Changes the Dock and app switcher icon immediately. Finder keeps the bundled app icon.")
             .font(.footnote)
             .foregroundStyle(.secondary)
     }

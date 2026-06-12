@@ -11,6 +11,24 @@ struct SettingsAppearanceDetailView: View {
 
     var body: some View {
 List {
+    Section("App Icon") {
+        LazyVGrid(columns: columns, spacing: 12) {
+            ForEach(AppIconOption.allCases) { option in
+                SettingsAppIconButton(
+                    option: option,
+                    isSelected: store.appearance.selectedAppIcon == option
+                ) {
+                    store.send(.appIconSelected(option))
+                }
+            }
+        }
+        .padding(.vertical, 4)
+        .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+
+        Text("iOS confirms icon changes before applying them.")
+            .foregroundStyle(.secondary)
+    }
+
     Section("App Theme") {
         Picker("Theme", selection: appColorSchemeBinding) {
             ForEach(AppColorScheme.allCases) { scheme in
@@ -87,24 +105,6 @@ List {
         .disabled(!store.appearance.hasTemporaryViewStateToReset)
 
         Text(resetButtonDescription)
-            .foregroundStyle(.secondary)
-    }
-
-    Section("App Icon") {
-        LazyVGrid(columns: columns, spacing: 12) {
-            ForEach(AppIconOption.allCases) { option in
-                SettingsAppIconButton(
-                    option: option,
-                    isSelected: store.appearance.selectedAppIcon == option
-                ) {
-                    store.send(.appIconSelected(option))
-                }
-            }
-        }
-        .padding(.vertical, 4)
-        .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
-
-        Text("iOS confirms icon changes before applying them.")
             .foregroundStyle(.secondary)
     }
 
