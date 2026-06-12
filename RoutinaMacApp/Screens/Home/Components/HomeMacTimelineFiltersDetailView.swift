@@ -35,6 +35,10 @@ struct HomeMacTimelineFiltersDetailView: View {
                 HomeMacSidebarSectionCard(title: "Type") {
                     typePicker
                 }
+
+                HomeMacSidebarSectionCard(title: "Status") {
+                    statusPicker
+                }
             }
 
             HomeMacSidebarSectionCard(title: "Importance & Urgency") {
@@ -84,9 +88,18 @@ struct HomeMacTimelineFiltersDetailView: View {
     }
 
     private var typePicker: some View {
-        Picker("Type", selection: $selectedType) {
-            ForEach(TimelineFilterType.allCases) { type in
+        Picker("Type", selection: contentTypeBinding) {
+            ForEach(TimelineFilterType.contentTypeCases) { type in
                 Text(type.rawValue).tag(type)
+            }
+        }
+        .pickerStyle(.segmented)
+    }
+
+    private var statusPicker: some View {
+        Picker("Status", selection: statusBinding) {
+            ForEach(TimelineFilterType.statusCases) { status in
+                Text(status.rawValue).tag(status)
             }
         }
         .pickerStyle(.segmented)
@@ -99,5 +112,48 @@ struct HomeMacTimelineFiltersDetailView: View {
             }
         }
         .pickerStyle(.segmented)
+    }
+
+    private var contentTypeBinding: Binding<TimelineFilterType> {
+        Binding(
+            get: {
+                selectedType.isStatusCase ? .all : selectedType
+            },
+            set: { selectedType = $0 }
+        )
+    }
+
+    private var statusBinding: Binding<TimelineFilterType> {
+        Binding(
+            get: {
+                selectedType.isStatusCase ? selectedType : .all
+            },
+            set: { selectedType = $0 }
+        )
+    }
+}
+
+private extension TimelineFilterType {
+    static let contentTypeCases: [TimelineFilterType] = [
+        .all,
+        .routines,
+        .todos,
+        .focus,
+        .events,
+        .emotions,
+        .notes,
+        .places,
+        .sleep,
+    ]
+
+    static let statusCases: [TimelineFilterType] = [
+        .all,
+        .done,
+        .missed,
+        .canceled,
+    ]
+
+    var isStatusCase: Bool {
+        Self.statusCases.contains(self) && self != .all
     }
 }
