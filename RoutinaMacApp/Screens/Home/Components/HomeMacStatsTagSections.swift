@@ -9,31 +9,48 @@ struct HomeMacStatsIncludedTagSection: View {
     let tagCount: (String) -> Int
     let onSelectTags: (Set<String>) -> Void
     let onIncludeTagMatchModeChange: (RoutineTagMatchMode) -> Void
+    @State private var isExpanded = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HomeMacStatsSectionTitle("Show stats with")
-
-            Text(tagSelectionSummary)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 4)
-
-            Picker("Show stats with", selection: Binding(
-                get: { includeTagMatchMode },
-                set: { onIncludeTagMatchModeChange($0) }
-            )) {
-                ForEach(RoutineTagMatchMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
+        DisclosureGroup(isExpanded: isExpandedBinding) {
+            VStack(alignment: .leading, spacing: 12) {
+                Picker("Show stats with", selection: Binding(
+                    get: { includeTagMatchMode },
+                    set: { onIncludeTagMatchModeChange($0) }
+                )) {
+                    ForEach(RoutineTagMatchMode.allCases) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
                 }
+                .pickerStyle(.segmented)
+
+                selectedTagsView
+
+                HomeMacStatsSectionTitle("Add more")
+
+                availableTagsView
             }
-            .pickerStyle(.segmented)
+            .padding(.top, 12)
+        } label: {
+            HomeMacStatsTagDisclosureLabel(
+                title: "Show stats with",
+                summaryText: tagSelectionSummary,
+                isExpanded: isExpanded
+            )
+        }
+        .font(.caption)
+        .accentColor(.secondary)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 4)
+    }
 
-            selectedTagsView
-
-            HomeMacStatsSectionTitle("Add more")
-
-            availableTagsView
+    private var isExpandedBinding: Binding<Bool> {
+        Binding {
+            isExpanded
+        } set: { newValue in
+            withAnimation(.snappy(duration: 0.22)) {
+                isExpanded = newValue
+            }
         }
     }
 
@@ -146,31 +163,48 @@ struct HomeMacStatsExcludedTagSection: View {
     let tagCount: (String) -> Int
     let onToggleExcludedTag: (String) -> Void
     let onExcludeTagMatchModeChange: (RoutineTagMatchMode) -> Void
+    @State private var isExpanded = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HomeMacStatsSectionTitle("Hide stats with")
-
-            Text(excludedTagSummary)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 4)
-
-            Picker("Hide stats with", selection: Binding(
-                get: { excludeTagMatchMode },
-                set: { onExcludeTagMatchModeChange($0) }
-            )) {
-                ForEach(RoutineTagMatchMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
+        DisclosureGroup(isExpanded: isExpandedBinding) {
+            VStack(alignment: .leading, spacing: 12) {
+                Picker("Hide stats with", selection: Binding(
+                    get: { excludeTagMatchMode },
+                    set: { onExcludeTagMatchModeChange($0) }
+                )) {
+                    ForEach(RoutineTagMatchMode.allCases) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
                 }
+                .pickerStyle(.segmented)
+
+                selectedExcludedTagsView
+
+                HomeMacStatsSectionTitle("Add tags to hide")
+
+                availableExcludedTagsView
             }
-            .pickerStyle(.segmented)
+            .padding(.top, 12)
+        } label: {
+            HomeMacStatsTagDisclosureLabel(
+                title: "Hide stats with",
+                summaryText: excludedTagSummary,
+                isExpanded: isExpanded
+            )
+        }
+        .font(.caption)
+        .accentColor(.secondary)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 4)
+    }
 
-            selectedExcludedTagsView
-
-            HomeMacStatsSectionTitle("Add tags to hide")
-
-            availableExcludedTagsView
+    private var isExpandedBinding: Binding<Bool> {
+        Binding {
+            isExpanded
+        } set: { newValue in
+            withAnimation(.snappy(duration: 0.22)) {
+                isExpanded = newValue
+            }
         }
     }
 
@@ -252,4 +286,33 @@ private func macStatsNormalizedTagSet<Tags: Sequence>(
     _ tags: Tags
 ) -> Set<String> where Tags.Element == String {
     Set(tags.compactMap(RoutineTag.normalized))
+}
+
+private struct HomeMacStatsTagDisclosureLabel: View {
+    let title: String
+    let summaryText: String
+    let isExpanded: Bool
+
+    var body: some View {
+        HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                if !isExpanded {
+                    Text(summaryText)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 4)
+        .contentShape(Rectangle())
+    }
 }
