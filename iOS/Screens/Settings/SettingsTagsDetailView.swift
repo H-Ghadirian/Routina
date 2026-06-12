@@ -3,6 +3,10 @@ import SwiftUI
 
 struct SettingsTagsDetailView: View {
     let store: StoreOf<SettingsFeature>
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingRelatedTagRulesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isRelatedTagRulesEnabled = false
 
     var body: some View {
 List {
@@ -17,7 +21,7 @@ List {
                 .foregroundStyle(.secondary)
         } else {
             ForEach(store.tags.savedTags) { tag in
-                SettingsTagRow(store: store, tag: tag)
+                SettingsTagRow(store: store, tag: tag, isRelatedTagRulesEnabled: isRelatedTagRulesEnabled)
             }
         }
     }
@@ -69,6 +73,7 @@ List {
 private struct SettingsTagRow: View {
     let store: StoreOf<SettingsFeature>
     let tag: RoutineTagSummary
+    let isRelatedTagRulesEnabled: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -86,7 +91,9 @@ private struct SettingsTagRow: View {
                 tagActionsMenu
             }
 
-            relatedTagsEditor
+            if isRelatedTagRulesEnabled {
+                relatedTagsEditor
+            }
             tagColorEditor
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {

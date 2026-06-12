@@ -12,6 +12,7 @@ private enum SettingsMacTagPalette {
 struct SettingsMacTagRow: View {
     let store: StoreOf<SettingsFeature>
     let tag: RoutineTagSummary
+    let isRelatedTagRulesEnabled: Bool
     @State private var isExpanded = false
     @State private var isColorPopoverPresented = false
     @State private var relatedTagEntry = ""
@@ -83,14 +84,6 @@ VStack(alignment: .leading, spacing: 10) {
             }
             .disabled(store.tags.isTagOperationInProgress)
 
-            Button {
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    isExpanded = true
-                }
-            } label: {
-                Label("Edit color & related…", systemImage: "slider.horizontal.3")
-            }
-
             if tag.colorHex != nil {
                 Button {
                     store.send(.tagColorChanged(tagName: tag.name, colorHex: nil))
@@ -124,12 +117,14 @@ VStack(alignment: .leading, spacing: 10) {
         VStack(alignment: .leading, spacing: 10) {
             colorEditorRow
 
-            let suggestions = store.tags.suggestedRelatedTags(for: tag.name)
-            if !suggestions.isEmpty {
-                relatedSuggestionSection(suggestions)
-            }
+            if isRelatedTagRulesEnabled {
+                let suggestions = store.tags.suggestedRelatedTags(for: tag.name)
+                if !suggestions.isEmpty {
+                    relatedSuggestionSection(suggestions)
+                }
 
-            relatedTagsEditor
+                relatedTagsEditor
+            }
         }
         .padding(.leading, 4)
     }

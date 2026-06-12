@@ -3,6 +3,10 @@ import SwiftUI
 
 struct SettingsMacTagsListContent: View {
     let store: StoreOf<SettingsFeature>
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingRelatedTagRulesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isRelatedTagRulesEnabled = false
 
     var body: some View {
 if store.tags.savedTags.isEmpty {
@@ -28,7 +32,11 @@ if store.tags.savedTags.isEmpty {
         } else {
             VStack(spacing: 0) {
                 ForEach(Array(filtered.enumerated()), id: \.element.id) { index, tag in
-                    SettingsMacTagRow(store: store, tag: tag)
+                    SettingsMacTagRow(
+                        store: store,
+                        tag: tag,
+                        isRelatedTagRulesEnabled: isRelatedTagRulesEnabled
+                    )
 
                     if index < filtered.count - 1 {
                         Divider()
