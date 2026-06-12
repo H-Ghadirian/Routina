@@ -33,15 +33,15 @@ struct HomeMacStatsSidebarView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                HomeMacStatsQuerySection(
+                    advancedQuery: $advancedQuery,
+                    queryOptions: queryOptions
+                )
+
                 HomeMacStatsDashboardScopeSection(
                     selectedDashboardScope: selectedDashboardScope,
                     availableDashboardScopes: availableDashboardScopes,
                     onSelectDashboardScope: onSelectDashboardScope
-                )
-
-                HomeMacStatsQuerySection(
-                    advancedQuery: $advancedQuery,
-                    queryOptions: queryOptions
                 )
 
                 HomeMacStatsTaskTypeSection(
