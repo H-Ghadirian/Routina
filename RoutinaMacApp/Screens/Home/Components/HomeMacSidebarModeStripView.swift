@@ -14,6 +14,10 @@ struct HomeMacSidebarModeStripView: View {
         UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isGoalsTabEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingAdventureMapEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isAdventureMapEnabled = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -50,10 +54,16 @@ struct HomeMacSidebarModeStripView: View {
     }
 
     private var displayedSidebarStripModes: [HomeFeature.MacSidebarMode] {
-        if isGoalsTabEnabled {
+        if isGoalsTabEnabled && isAdventureMapEnabled {
             return HomeFeature.MacSidebarMode.sidebarStripModes
         }
-        return HomeFeature.MacSidebarMode.sidebarStripModes.filter { $0 != .goals }
+        if isGoalsTabEnabled {
+            return HomeFeature.MacSidebarMode.sidebarStripModes.filter { $0 != .adventure }
+        }
+        if isAdventureMapEnabled {
+            return HomeFeature.MacSidebarMode.sidebarStripModes.filter { $0 != .goals }
+        }
+        return HomeFeature.MacSidebarMode.sidebarStripModes.filter { $0 != .goals && $0 != .adventure }
     }
 
     private var addMenu: some View {
@@ -83,7 +93,6 @@ struct HomeMacSidebarModeStripView: View {
                     Label("Goal", systemImage: "target")
                 }
             }
-
             Button {
                 onAddTask()
             } label: {
@@ -116,7 +125,16 @@ struct HomeMacSidebarModeStripView: View {
         .buttonStyle(.plain)
         .frame(maxWidth: .infinity)
         .accessibilityLabel("Add")
-        .help(isGoalsTabEnabled ? "Add event, emotion, note, goal, task, check in, away, or sleep" : "Add event, emotion, note, task, check in, away, or sleep")
+            .help(
+                helpLabelForAddMenu
+            )
+    }
+
+    private var helpLabelForAddMenu: String {
+        if isGoalsTabEnabled {
+            return "Add event, emotion, note, goal, task, check in, away, or sleep"
+        }
+        return "Add event, emotion, note, task, check in, away, or sleep"
     }
 
     private func sidebarModeLabel(for mode: HomeFeature.MacSidebarMode) -> some View {

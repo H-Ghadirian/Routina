@@ -288,7 +288,12 @@ extension HomeTCAView {
     }
 
     func openAdventureInSidebar() {
-        openStatsInSidebar()
+        isEventEditorPresented = false
+        isEmotionLogEditorPresented = false
+        isNoteEditorPresented = false
+        isAwayStartPresented = false
+        store.send(.macSidebarModeChanged(.adventure))
+        macHomeProgressMode = .adventure
     }
 
     func openAddNote() {
@@ -800,12 +805,20 @@ extension HomeTCAView {
 
     private var visibleMacSidebarMode: MacSidebarMode {
         guard !isGoalsTabEnabled else { return store.macSidebarMode }
-        return store.macSidebarMode == .goals ? .routines : store.macSidebarMode
+        if store.macSidebarMode == .goals {
+            return .routines
+        }
+        guard !isAdventureMapEnabled else { return store.macSidebarMode }
+        return store.macSidebarMode == .adventure ? .stats : store.macSidebarMode
     }
 
     private func resolvedMacSidebarMode(_ mode: MacSidebarMode) -> MacSidebarMode {
         guard !isGoalsTabEnabled else { return mode }
-        return mode == .goals ? .routines : mode
+        if mode == .goals {
+            return .routines
+        }
+        guard !isAdventureMapEnabled else { return mode }
+        return mode == .adventure ? .stats : mode
     }
 
     func closeAwayStart() {

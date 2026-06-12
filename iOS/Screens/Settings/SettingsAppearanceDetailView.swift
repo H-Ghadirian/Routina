@@ -191,6 +191,10 @@ struct SettingsGeneralDetailView: View {
         store: SharedDefaults.app
     ) private var isGoalsTabEnabled = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingAdventureMapEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isAdventureMapEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingHomeTaskListModeTabsVisible.rawValue,
         store: SharedDefaults.app
     ) private var isHomeTaskListModeTabsVisible = false
@@ -226,17 +230,22 @@ List {
 
         Text("Shows GitHub and GitLab contribution activity in Stats.")
             .foregroundStyle(.secondary)
+
+        Toggle("Show Goals tab", isOn: $isGoalsTabEnabled)
+
+        Text("Show the Goals tab so goals can be opened from Home.")
+            .foregroundStyle(.secondary)
+
+        Toggle("Show Adventure map", isOn: $isAdventureMapEnabled)
+
+        Text("Show the Adventure map in Home.")
+            .foregroundStyle(.secondary)
     }
 
     Section("Navigation") {
         Toggle("Show Home task-type tabs", isOn: $isHomeTaskListModeTabsVisible)
 
         Text("Show All / Routines / Todos tabs in the Home toolbar. Turn off to switch task type from Filters instead.")
-            .foregroundStyle(.secondary)
-
-        Toggle("Show Goals tab", isOn: $isGoalsTabEnabled)
-
-        Text("Show the Goals tab so goals can be opened from Home.")
             .foregroundStyle(.secondary)
     }
 

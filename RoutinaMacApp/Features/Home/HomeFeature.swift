@@ -48,6 +48,7 @@ struct HomeFeature {
             .routines,
             .timeline,
             .goals,
+            .adventure,
             .stats,
             .settings,
             .addTask
@@ -1585,7 +1586,7 @@ struct HomeFeature {
         case .board, .addTask:
             return .routines
         case .adventure:
-            return .stats
+            return .adventure
         case .routines, .goals, .timeline, .stats, .settings:
             return mode
         }
