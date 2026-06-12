@@ -5,6 +5,7 @@ struct HomeMacCollapsibleFilterSection<Content: View>: View {
     let summaryText: String
     @ViewBuilder let content: () -> Content
     @State private var isExpanded = false
+    @State private var contentHeight: CGFloat = 0
 
     init(
         title: String,
@@ -27,16 +28,38 @@ struct HomeMacCollapsibleFilterSection<Content: View>: View {
             .accessibilityLabel(title)
             .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
 
-            if isExpanded {
-                content()
-                .padding(.top, 12)
-                .padding(.horizontal, 4)
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
+            collapsibleContent
         }
         .font(.caption)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 4)
+    }
+
+    private var collapsibleContent: some View {
+        content()
+            .padding(.top, 12)
+            .padding(.horizontal, 4)
+            .fixedSize(horizontal: false, vertical: true)
+            .background(contentHeightReader)
+            .frame(height: isExpanded ? contentHeight : 0, alignment: .top)
+            .opacity(isExpanded ? 1 : 0)
+            .clipped()
+            .accessibilityHidden(!isExpanded)
+            .animation(.snappy(duration: 0.22), value: isExpanded)
+    }
+
+    private var contentHeightReader: some View {
+        GeometryReader { proxy in
+            Color.clear
+                .preference(
+                    key: HomeMacCollapsibleFilterSectionHeightPreferenceKey.self,
+                    value: proxy.size.height
+                )
+        }
+        .onPreferenceChange(HomeMacCollapsibleFilterSectionHeightPreferenceKey.self) { height in
+            guard abs(height - contentHeight) > 0.5 else { return }
+            contentHeight = height
+        }
     }
 
     private var disclosureHeader: some View {
@@ -72,6 +95,14 @@ struct HomeMacCollapsibleFilterSection<Content: View>: View {
         withAnimation(.snappy(duration: 0.22)) {
             isExpanded.toggle()
         }
+    }
+}
+
+private struct HomeMacCollapsibleFilterSectionHeightPreferenceKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
 
