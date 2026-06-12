@@ -16,6 +16,10 @@ struct HomeMacSidebarHeaderView<SearchPanel: View>: View {
     let onCheckIn: () -> Void
     let onStartAway: () -> Void
     let onStartSleep: () -> Void
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingHomeTaskListModeTabsVisible.rawValue,
+        store: SharedDefaults.app
+    ) private var isTaskListModeStripVisible = false
     @ViewBuilder let searchPanel: () -> SearchPanel
 
     var body: some View {
@@ -32,7 +36,7 @@ struct HomeMacSidebarHeaderView<SearchPanel: View>: View {
                 onStartSleep: onStartSleep
             )
 
-            if isRoutinesMode {
+            if isRoutinesMode && isTaskListModeStripVisible {
                 HomeMacTaskListModeStripView(selectedMode: selectedTaskListMode) { mode in
                     onSelectTaskListMode(mode)
                 }

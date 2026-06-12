@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: View {
     let availableFilters: [RoutineListFilter]
+    @Binding var taskListMode: HomeTaskListMode
     @Binding var selectedFilter: RoutineListFilter
     @Binding var advancedQuery: String
     @Binding var taskListViewMode: HomeTaskListViewMode
@@ -22,6 +23,10 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
     var body: some View {
         Group {
+            HomeMacSidebarSectionCard(title: "Task Type") {
+                taskListModePicker
+            }
+
             HomeMacSidebarSectionCard(title: "Query") {
                 queryBuilder
             }
@@ -85,6 +90,12 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
     private var queryBuilder: some View {
         HomeAdvancedQueryBuilder(query: $advancedQuery, usesFlowLayout: true, options: queryOptions)
+    }
+
+    private var taskListModePicker: some View {
+        HomeMacTaskListModeStripView(selectedMode: taskListMode) { mode in
+            taskListMode = mode
+        }
     }
 
     private var viewModePicker: some View {

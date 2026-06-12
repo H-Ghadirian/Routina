@@ -7,9 +7,9 @@ import Testing
 @MainActor
 struct HomeFeatureTaskListModeTests {
     @Test
-    func taskListMode_defaultsToTodos() {
+    func taskListMode_defaultsToAll() {
         let state = HomeFeature.State()
-        #expect(state.taskListMode == .todos)
+        #expect(state.taskListMode == .all)
     }
 
     @Test

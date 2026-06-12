@@ -79,7 +79,7 @@ struct HomeFeature {
             timestamp: nil
         )
         var hideUnavailableRoutines: Bool = false
-        var taskListMode: TaskListMode = .todos
+        var taskListMode: TaskListMode = .all
         var taskFilters = HomeTaskFiltersState()
         var timelineFilters = HomeTimelineFiltersState()
         var statsFilters = HomeStatsFiltersState()
@@ -118,7 +118,7 @@ struct HomeFeature {
             pendingDeleteTaskIDs: [UUID] = [],
             isDeleteConfirmationPresented: Bool = false,
             isMacFilterDetailPresented: Bool = false,
-            taskListMode: TaskListMode = .todos,
+            taskListMode: TaskListMode = .all,
             selectedFilter: RoutineListFilter = .all,
             selectedTag: String? = nil,
             selectedTags: Set<String> = [],
