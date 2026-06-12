@@ -256,6 +256,10 @@ struct SettingsMacGeneralDetailView: View {
         store: SharedDefaults.app
     ) private var areHomeTaskListModeTabsVisible = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingRelatedTagRulesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isRelatedTagRulesEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingMacTimelineQuickFiltersVisible.rawValue,
         store: SharedDefaults.app
     ) private var areMacTimelineQuickFiltersVisible = false
@@ -348,6 +352,13 @@ SettingsMacDetailShell(
             .toggleStyle(.switch)
 
         Text("Show achievement badges and progress in Stats.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+
+        Toggle("Show related tags options", isOn: $isRelatedTagRulesEnabled)
+            .toggleStyle(.switch)
+
+        Text("Show tag-related rules controls in Settings > Tags.")
             .font(.footnote)
             .foregroundStyle(.secondary)
 

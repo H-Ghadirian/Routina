@@ -28,6 +28,7 @@ enum RoutinaAppBootstrap {
             .appSettingHomeTaskListModeTabsVisible: false,
             .appSettingMacTimelineQuickFiltersVisible: false,
             .appSettingMacEventEmotionActionsEnabled: false,
+            .appSettingRelatedTagRulesEnabled: false,
             .appSettingGoalsTabEnabled: false,
             .appSettingAdventureMapEnabled: false,
             .appSettingBoardScreenEnabled: false,

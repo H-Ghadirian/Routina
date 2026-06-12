@@ -216,6 +216,10 @@ struct SettingsGeneralDetailView: View {
         UserDefaultBoolValueKey.appSettingHomeTaskListModeTabsVisible.rawValue,
         store: SharedDefaults.app
     ) private var isHomeTaskListModeTabsVisible = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingRelatedTagRulesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isRelatedTagRulesEnabled = false
 
     var body: some View {
 List {
@@ -272,6 +276,11 @@ List {
         Toggle("Show Achievements", isOn: $isStatsAchievementsEnabled)
 
         Text("Show achievement badges and progress in Stats.")
+            .foregroundStyle(.secondary)
+
+        Toggle("Show related tags options", isOn: $isRelatedTagRulesEnabled)
+
+        Text("Show tag-related rules controls in Settings > Tags.")
             .foregroundStyle(.secondary)
     }
 
