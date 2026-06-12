@@ -2,6 +2,10 @@ import Foundation
 import SwiftUI
 
 extension HomeTCAView {
+    var effectiveSelectedGoalFilter: HomeTaskGoalFilter {
+        isGoalsTabEnabled ? store.selectedGoalFilter : .all
+    }
+
     func taskListFiltering(
         referenceDate: Date = Date()
     ) -> HomeTaskListFiltering<HomeFeature.RoutineDisplay> {
@@ -13,7 +17,7 @@ extension HomeTCAView {
                 selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
                 selectedTodoStateFilter: store.selectedTodoStateFilter,
                 selectedPressureFilter: store.selectedPressureFilter,
-                selectedGoalFilter: store.selectedGoalFilter,
+                selectedGoalFilter: effectiveSelectedGoalFilter,
                 selectedMediaFilter: store.selectedMediaFilter,
                 taskListViewMode: store.taskListViewMode,
                 taskListSortOrder: store.taskListSortOrder,
