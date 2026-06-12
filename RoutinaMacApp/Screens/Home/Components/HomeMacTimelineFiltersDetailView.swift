@@ -24,6 +24,7 @@ struct HomeMacTimelineFiltersDetailView: View {
     let onSelectSuggestedTag: (String) -> Void
     let onExcludeTagMatchModeChange: (RoutineTagMatchMode) -> Void
     let onToggleExcludedTag: (String) -> Void
+    let includesEventEmotionFilters: Bool
 
     var body: some View {
         Group {
@@ -89,7 +90,7 @@ struct HomeMacTimelineFiltersDetailView: View {
 
     private var typePicker: some View {
         Picker("Type", selection: contentTypeBinding) {
-            ForEach(TimelineFilterType.contentTypeCases) { type in
+            ForEach(TimelineFilterType.visibleContentTypeCases(includingEventEmotion: includesEventEmotionFilters)) { type in
                 Text(type.rawValue).tag(type)
             }
         }
@@ -117,7 +118,9 @@ struct HomeMacTimelineFiltersDetailView: View {
     private var contentTypeBinding: Binding<TimelineFilterType> {
         Binding(
             get: {
-                selectedType.isStatusCase ? .all : selectedType
+                selectedType.isStatusCase
+                    ? .all
+                    : selectedType.normalized(includingEventEmotion: includesEventEmotionFilters)
             },
             set: { selectedType = $0 }
         )
@@ -130,30 +133,5 @@ struct HomeMacTimelineFiltersDetailView: View {
             },
             set: { selectedType = $0 }
         )
-    }
-}
-
-private extension TimelineFilterType {
-    static let contentTypeCases: [TimelineFilterType] = [
-        .all,
-        .routines,
-        .todos,
-        .focus,
-        .events,
-        .emotions,
-        .notes,
-        .places,
-        .sleep,
-    ]
-
-    static let statusCases: [TimelineFilterType] = [
-        .all,
-        .done,
-        .missed,
-        .canceled,
-    ]
-
-    var isStatusCase: Bool {
-        Self.statusCases.contains(self) && self != .all
     }
 }

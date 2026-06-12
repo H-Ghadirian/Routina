@@ -37,6 +37,56 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
     var isTimelinePigmentCase: Bool {
         Self.timelinePigmentCases.contains(self)
     }
+
+    static let contentTypeCases: [TimelineFilterType] = [
+        .all,
+        .routines,
+        .todos,
+        .focus,
+        .events,
+        .emotions,
+        .notes,
+        .places,
+        .sleep,
+    ]
+
+    static let statusCases: [TimelineFilterType] = [
+        .all,
+        .done,
+        .missed,
+        .canceled,
+    ]
+
+    static func visibleCases(includingEventEmotion includeEventEmotion: Bool) -> [TimelineFilterType] {
+        visibleCases(from: allCases, includingEventEmotion: includeEventEmotion)
+    }
+
+    static func visibleContentTypeCases(includingEventEmotion includeEventEmotion: Bool) -> [TimelineFilterType] {
+        visibleCases(from: contentTypeCases, includingEventEmotion: includeEventEmotion)
+    }
+
+    static func visibleTimelinePigmentCases(includingEventEmotion includeEventEmotion: Bool) -> [TimelineFilterType] {
+        visibleCases(from: timelinePigmentCases, includingEventEmotion: includeEventEmotion)
+    }
+
+    static func visibleCases(
+        from cases: [TimelineFilterType],
+        includingEventEmotion includeEventEmotion: Bool
+    ) -> [TimelineFilterType] {
+        includeEventEmotion ? cases : cases.filter { !$0.isEventOrEmotion }
+    }
+
+    var isEventOrEmotion: Bool {
+        self == .events || self == .emotions
+    }
+
+    var isStatusCase: Bool {
+        Self.statusCases.contains(self) && self != .all
+    }
+
+    func normalized(includingEventEmotion includeEventEmotion: Bool) -> TimelineFilterType {
+        includeEventEmotion || !isEventOrEmotion ? self : .all
+    }
 }
 
 enum TimelineEntryType: Equatable {

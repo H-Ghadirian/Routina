@@ -15,7 +15,6 @@ struct HomeMacSidebarHeaderView<SearchPanel: View>: View {
     let onAddTask: () -> Void
     let onCheckIn: () -> Void
     let onStartAway: () -> Void
-    let onStartSleep: () -> Void
     @AppStorage(
         UserDefaultBoolValueKey.appSettingHomeTaskListModeTabsVisible.rawValue,
         store: SharedDefaults.app
@@ -32,8 +31,7 @@ struct HomeMacSidebarHeaderView<SearchPanel: View>: View {
                 onAddGoal: onAddGoal,
                 onAddTask: onAddTask,
                 onCheckIn: onCheckIn,
-                onStartAway: onStartAway,
-                onStartSleep: onStartSleep
+                onStartAway: onStartAway
             )
 
             if isRoutinesMode && isTaskListModeStripVisible {

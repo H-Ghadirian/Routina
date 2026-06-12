@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted
+Superseded
+
+## Superseded By
+
+- [0220: Nest Sleep and Gate Mac Event and Emotion Actions](../0220-nest-sleep-and-gate-mac-event-emotion-actions.md)
 
 ## Date
 

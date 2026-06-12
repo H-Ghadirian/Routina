@@ -4,7 +4,7 @@ Status: Accepted
 
 Date: 2026-06-09
 
-Refines: [0092 Support Standalone Events](0092-support-standalone-events.md), [0173 Use iOS New Tab Sheet](0173-use-ios-new-tab-sheet.md), [0070 Include Sleep in Mac Add Menu](0070-include-sleep-in-mac-add-menu.md)
+Refines: [0092 Support Standalone Events](0092-support-standalone-events.md), [0173 Use iOS New Tab Sheet](0173-use-ios-new-tab-sheet.md), [0070 Include Sleep in Mac Add Menu](superseded/0070-include-sleep-in-mac-add-menu.md)
 
 ## Context
 

@@ -11,7 +11,7 @@ Accepted
 ## Refines
 
 - [0125: Support Away Sessions](0125-support-away-sessions.md)
-- [0070: Include Sleep in Mac Add Menu](0070-include-sleep-in-mac-add-menu.md)
+- [0070: Include Sleep in Mac Add Menu](superseded/0070-include-sleep-in-mac-add-menu.md)
 
 ## Context
 

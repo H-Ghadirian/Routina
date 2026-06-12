@@ -94,6 +94,10 @@ struct HomeTCAView: View {
         UserDefaultBoolValueKey.appSettingMacTimelineQuickFiltersVisible.rawValue,
         store: SharedDefaults.app
     ) var areMacTimelineQuickFiltersVisible = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) var areMacEventEmotionActionsEnabled = false
     @AppStorage("macTodoBoardCompactCards", store: SharedDefaults.app)
     var isMacTodoBoardCompactCards = false
     @AppStorage("macBoardTicketInspectorPresented", store: SharedDefaults.app)
@@ -214,7 +218,14 @@ homeContent
                     syncFileAttachmentTaskIDs()
                 }
                 .onAppear {
+                    validateMacEventEmotionFilterVisibility()
                     handlePendingSleepPlannerDeepLink(store.pendingSleepPlannerSessionID)
+                }
+                .onChange(of: areMacEventEmotionActionsEnabled) { _, _ in
+                    validateMacEventEmotionFilterVisibility()
+                }
+                .onChange(of: store.selectedTimelineFilterType) { _, _ in
+                    validateMacEventEmotionFilterVisibility()
                 }
                 .onChange(of: store.pendingSleepPlannerSessionID) { _, sleepID in
                     handlePendingSleepPlannerDeepLink(sleepID)
@@ -229,6 +240,12 @@ homeContent
 
     private func syncFileAttachmentTaskIDs() {
         store.send(.fileAttachmentTaskIDsChanged(Set(fileAttachments.map(\.taskID))))
+    }
+
+    private func validateMacEventEmotionFilterVisibility() {
+        if !areMacEventEmotionActionsEnabled, store.selectedTimelineFilterType.isEventOrEmotion {
+            store.send(.selectedTimelineFilterTypeChanged(.all))
+        }
     }
 
     private func openFocusTimerTarget(_ deepLink: RoutinaDeepLink?) {

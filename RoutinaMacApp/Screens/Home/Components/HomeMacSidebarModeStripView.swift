@@ -9,7 +9,6 @@ struct HomeMacSidebarModeStripView: View {
     let onAddTask: () -> Void
     let onCheckIn: () -> Void
     let onStartAway: () -> Void
-    let onStartSleep: () -> Void
     @AppStorage(
         UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
         store: SharedDefaults.app
@@ -18,6 +17,10 @@ struct HomeMacSidebarModeStripView: View {
         UserDefaultBoolValueKey.appSettingAdventureMapEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isAdventureMapEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var areMacEventEmotionActionsEnabled = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -68,16 +71,18 @@ struct HomeMacSidebarModeStripView: View {
 
     private var addMenu: some View {
         Menu {
-            Button {
-                onAddEvent()
-            } label: {
-                Label("Event", systemImage: "calendar.badge.plus")
-            }
+            if areMacEventEmotionActionsEnabled {
+                Button {
+                    onAddEvent()
+                } label: {
+                    Label("Event", systemImage: "calendar.badge.plus")
+                }
 
-            Button {
-                onAddEmotion()
-            } label: {
-                Label("Emotion", systemImage: "face.smiling")
+                Button {
+                    onAddEmotion()
+                } label: {
+                    Label("Emotion", systemImage: "face.smiling")
+                }
             }
 
             Button {
@@ -112,12 +117,6 @@ struct HomeMacSidebarModeStripView: View {
             } label: {
                 Label("Away", systemImage: "lock.shield.fill")
             }
-
-            Button {
-                onStartSleep()
-            } label: {
-                Label("Sleep", systemImage: "bed.double.fill")
-            }
         } label: {
             sidebarModeLabel(for: .addTask)
         }
@@ -131,10 +130,11 @@ struct HomeMacSidebarModeStripView: View {
     }
 
     private var helpLabelForAddMenu: String {
+        let personalActions = areMacEventEmotionActionsEnabled ? "event, emotion, note" : "note"
         if isGoalsTabEnabled {
-            return "Add event, emotion, note, goal, task, check in, away, or sleep"
+            return "Add \(personalActions), goal, task, check in, or away"
         }
-        return "Add event, emotion, note, task, check in, away, or sleep"
+        return "Add \(personalActions), task, check in, or away"
     }
 
     private func sidebarModeLabel(for mode: HomeFeature.MacSidebarMode) -> some View {

@@ -38,11 +38,15 @@ extension HomeTCAView {
             fileAttachmentTaskIDs: store.fileAttachmentTaskIDs,
             noteAttachmentNoteIDs: noteAttachmentNoteIDs,
             range: store.selectedTimelineRange,
-            filterType: store.selectedTimelineFilterType,
+            filterType: effectiveMacTimelineFilterType,
             mediaFilter: store.selectedTimelineMediaFilter,
             now: Date(),
             calendar: calendar
         )
+    }
+
+    private var effectiveMacTimelineFilterType: TimelineFilterType {
+        store.selectedTimelineFilterType.normalized(includingEventEmotion: areMacEventEmotionActionsEnabled)
     }
 
     var availableTimelineTags: [String] {
@@ -263,8 +267,8 @@ extension HomeTCAView {
             labels.append(store.selectedTimelineRange.rawValue)
         }
 
-        if store.selectedTimelineFilterType != .all {
-            labels.append(store.selectedTimelineFilterType.rawValue)
+        if effectiveMacTimelineFilterType != .all {
+            labels.append(effectiveMacTimelineFilterType.rawValue)
         }
 
         if let filter = store.selectedTimelineImportanceUrgencyFilter {
@@ -313,8 +317,12 @@ extension HomeTCAView {
                     set: { store.send(.selectedTimelineRangeChanged($0)) }
                 ),
                 selectedType: Binding(
-                    get: { store.selectedTimelineFilterType },
-                    set: { store.send(.selectedTimelineFilterTypeChanged($0)) }
+                    get: { effectiveMacTimelineFilterType },
+                    set: {
+                        store.send(.selectedTimelineFilterTypeChanged(
+                            $0.normalized(includingEventEmotion: areMacEventEmotionActionsEnabled)
+                        ))
+                    }
                 ),
                 selectedImportanceUrgencyFilter: Binding(
                     get: { store.selectedTimelineImportanceUrgencyFilter },
@@ -324,7 +332,7 @@ extension HomeTCAView {
                     get: { store.selectedTimelineMediaFilter },
                     set: { store.send(.selectedTimelineMediaFilterChanged($0)) }
                 ),
-                showsTypeSection: store.routineTasks.contains(where: \.isOneOffTask) || !events.isEmpty || !notes.isEmpty || !focusSessions.isEmpty || !sprintFocusSessions.isEmpty || !sleepSessions.isEmpty || !placeCheckInSessions.isEmpty,
+                showsTypeSection: showsMacTimelineTypeFilterSection,
                 importanceUrgencySummary: timelineImportanceUrgencySummary,
                 allTagsCount: filteredTimelineEntriesForTagging.count,
                 availableTags: availableTimelineTags,
@@ -366,18 +374,36 @@ extension HomeTCAView {
                         store.send(.selectedTimelineExcludedTagsChanged(newTags))
                         store.send(.selectedTimelineTagsChanged(store.selectedTimelineTags.filter { !RoutineTag.contains($0, in: [tag]) }))
                     }
-                }
+                },
+                includesEventEmotionFilters: areMacEventEmotionActionsEnabled
             )
         }
+    }
+
+    private var showsMacTimelineTypeFilterSection: Bool {
+        store.routineTasks.contains(where: \.isOneOffTask)
+            || (areMacEventEmotionActionsEnabled && (!events.isEmpty || !emotionLogs.isEmpty))
+            || !notes.isEmpty
+            || !focusSessions.isEmpty
+            || !sprintFocusSessions.isEmpty
+            || !sleepSessions.isEmpty
+            || !placeCheckInSessions.isEmpty
     }
 
     var macTimelineSidebarView: some View {
         VStack(spacing: 0) {
             if areMacTimelineQuickFiltersVisible {
-                TimelinePigmentControl(selection: Binding(
-                    get: { store.selectedTimelineFilterType },
-                    set: { store.send(.selectedTimelineFilterTypeChanged($0)) }
-                ))
+                TimelinePigmentControl(
+                    selection: Binding(
+                        get: { effectiveMacTimelineFilterType },
+                        set: {
+                            store.send(.selectedTimelineFilterTypeChanged(
+                                $0.normalized(includingEventEmotion: areMacEventEmotionActionsEnabled)
+                            ))
+                        }
+                    ),
+                    includesEventEmotion: areMacEventEmotionActionsEnabled
+                )
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
             }
