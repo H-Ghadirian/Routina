@@ -465,6 +465,26 @@ struct HomeFeatureTaskListModeTests {
             $0.isMacFilterDetailPresented = false
         }
     }
+
+    @Test
+    func taskListModeFilterChanged_keepsMacFilterDetailPresented() async {
+        let context = makeInMemoryContext()
+        let store = TestStore(
+            initialState: HomeFeature.State(isMacFilterDetailPresented: true)
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.taskListModeFilterChanged(.routines)) {
+            $0.taskListMode = .routines
+        }
+
+        #expect(store.state.isMacFilterDetailPresented)
+    }
 }
 
 private final class MacBoardCommandRouterRecorder {

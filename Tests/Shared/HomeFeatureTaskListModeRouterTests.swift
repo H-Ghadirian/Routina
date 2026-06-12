@@ -67,6 +67,22 @@ struct HomeFeatureTaskListModeRouterTests {
         #expect(recorder.persistedStates.map(\.taskListMode) == [.todos])
     }
 
+    @Test
+    func changeModeCanPreserveFilterDetailPresentation() {
+        var state = TestTaskListModeRoutingState(
+            presentation: HomePresentationState(isMacFilterDetailPresented: true),
+            taskListMode: .all
+        )
+        let recorder = TestTaskListModeRouterRecorder()
+        let router = makeRouter(recorder)
+
+        router.changeMode(.routines, state: &state, closesFilterDetail: false)
+
+        #expect(state.taskListMode == .routines)
+        #expect(state.presentation.isMacFilterDetailPresented)
+        #expect(recorder.persistedStates.map(\.taskListMode) == [.routines])
+    }
+
     private func makeRouter(_ recorder: TestTaskListModeRouterRecorder) -> HomeFeatureTaskListModeRouter<TestTaskListModeRoutingState> {
         HomeFeatureTaskListModeRouter(
             setHideUnavailableRoutines: { value in
