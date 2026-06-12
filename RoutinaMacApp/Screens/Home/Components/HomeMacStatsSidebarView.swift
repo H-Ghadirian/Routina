@@ -54,7 +54,7 @@ struct HomeMacStatsSidebarView: View {
                     onSelectRange: onSelectRange
                 )
 
-                HomeMacStatsImportanceUrgencySection(
+                HomeMacImportanceUrgencyDisclosureSection(
                     selectedFilter: $selectedImportanceUrgencyFilter,
                     summaryText: importanceUrgencySummary
                 )

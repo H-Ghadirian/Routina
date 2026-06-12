@@ -90,58 +90,6 @@ struct HomeMacStatsRangeSection: View {
     }
 }
 
-struct HomeMacStatsImportanceUrgencySection: View {
-    @Binding var selectedFilter: ImportanceUrgencyFilterCell?
-    let summaryText: String
-    @State private var isExpanded = false
-
-    var body: some View {
-        DisclosureGroup(isExpanded: isExpandedBinding) {
-            HomeMacImportanceUrgencyMatrixView(
-                selectedFilter: $selectedFilter,
-                summaryText: summaryText
-            )
-            .padding(.top, 12)
-            .padding(.horizontal, 4)
-        } label: {
-            HStack(spacing: 8) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Importance & Urgency")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-
-                    if !isExpanded {
-                        Text(summaryText)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-
-                Spacer(minLength: 0)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 4)
-            .contentShape(Rectangle())
-        }
-        .font(.caption)
-        .accentColor(.secondary)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 4)
-    }
-
-    private var isExpandedBinding: Binding<Bool> {
-        Binding {
-            isExpanded
-        } set: { newValue in
-            withAnimation(.snappy(duration: 0.22)) {
-                isExpanded = newValue
-            }
-        }
-    }
-}
-
 struct HomeMacStatsSectionTitle: View {
     private let title: String
 
