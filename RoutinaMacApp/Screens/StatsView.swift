@@ -299,13 +299,21 @@ struct StatsView: View {
                 bottomPadding: contentBottomPadding,
                 maxContentWidth: nil
             ) {
+                let blocks = dashboardBlocks(snapshot: snapshot)
                 VStack(alignment: .leading, spacing: 24) {
                     if isEditingDashboard {
                         dashboardEditControls
                     }
 
-                    ForEach(dashboardBlocks(snapshot: snapshot)) { block in
-                        dashboardBlockView(block, snapshot: snapshot)
+                    if blocks.isEmpty {
+                        StatsEmptyDashboardStateView(
+                            hasActiveFilters: store.hasActiveFilters,
+                            colorScheme: colorScheme
+                        )
+                    } else {
+                        ForEach(blocks) { block in
+                            dashboardBlockView(block, snapshot: snapshot)
+                        }
                     }
                 }
             }

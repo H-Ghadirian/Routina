@@ -415,6 +415,7 @@ struct StatsView: View {
             maxContentWidth: nil
         ) {
             let currentMetrics = metrics
+            let blocks = dashboardBlocks(metrics: currentMetrics)
             VStack(alignment: .leading, spacing: 24) {
                 AnyView(rangeSection)
                 AnyView(dashboardScopePicker)
@@ -431,8 +432,15 @@ struct StatsView: View {
                     AnyView(healthAccessCard)
                 }
 
-                ForEach(dashboardBlocks(metrics: currentMetrics)) { block in
-                    dashboardBlockView(block, metrics: currentMetrics)
+                if blocks.isEmpty {
+                    StatsEmptyDashboardStateView(
+                        hasActiveFilters: hasActiveFilters,
+                        colorScheme: colorScheme
+                    )
+                } else {
+                    ForEach(blocks) { block in
+                        dashboardBlockView(block, metrics: currentMetrics)
+                    }
                 }
             }
         }

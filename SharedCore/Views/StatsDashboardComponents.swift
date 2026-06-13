@@ -479,6 +479,48 @@ struct StatsEmptyChartStateView: View {
     }
 }
 
+struct StatsEmptyDashboardStateView: View {
+    let hasActiveFilters: Bool
+    let colorScheme: ColorScheme
+
+    private var message: String {
+        if hasActiveFilters {
+            return "No reports match this time range and filters yet. Try a wider range or clear filters to see more activity."
+        }
+
+        return "Reports appear after you complete tasks, focus, sleep, or log activity in this period."
+    }
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "chart.bar.doc.horizontal")
+                .font(.system(size: 34, weight: .semibold))
+                .foregroundStyle(.secondary)
+
+            VStack(spacing: 6) {
+                Text("No stats to show yet")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.primary)
+
+                Text(message)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: 420)
+        }
+        .frame(maxWidth: .infinity, minHeight: 320)
+        .padding(24)
+        .routinaGlassPanel(cornerRadius: 28, tint: .accentColor, tintOpacity: 0.06)
+        .overlay(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.45), lineWidth: 1)
+        )
+        .accessibilityElement(children: .combine)
+    }
+}
+
 extension View {
     func statsChartCard(
         surfaceGradient: LinearGradient,
