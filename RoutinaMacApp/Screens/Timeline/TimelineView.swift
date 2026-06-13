@@ -32,6 +32,7 @@ struct TimelineView: View {
         UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
         store: SharedDefaults.app
     ) private var areMacEventEmotionActionsEnabled = false
+    @State private var editingAwaySession: AwaySession?
 
     var body: some View {
         NavigationStack {
@@ -63,6 +64,11 @@ struct TimelineView: View {
                             }
                             .frame(minWidth: 560, minHeight: 420)
                     }
+                }
+                .sheet(item: $editingAwaySession) { session in
+                    AwaySessionEditSheet(session: session)
+                        .id(session.id)
+                        .frame(minWidth: 460, minHeight: 440)
                 }
         }
         .task {
@@ -133,6 +139,9 @@ struct TimelineView: View {
                 session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
                 session.finishedAt?.timeIntervalSinceReferenceDate.description ?? "",
                 session.state.rawValue,
+                session.linkedTaskID?.uuidString ?? "",
+                session.title,
+                session.presetRawValue,
             ].joined(separator: ":")
         }
     }
@@ -717,6 +726,13 @@ struct TimelineView: View {
                 timelineRowContent(entry)
             }
             .buttonStyle(.plain)
+        } else if entry.isAway, let session = awaySession(for: entry) {
+            Button {
+                editingAwaySession = session
+            } label: {
+                timelineRowContent(entry)
+            }
+            .buttonStyle(.plain)
         } else {
             timelineRowContent(entry)
         }
@@ -932,6 +948,10 @@ struct TimelineView: View {
 
     private func placeCheckInSession(for entry: TimelineEntry) -> PlaceCheckInSession? {
         placeCheckInSessions.first { $0.id == entry.id }
+    }
+
+    private func awaySession(for entry: TimelineEntry) -> AwaySession? {
+        awaySessions.first { $0.id == entry.id }
     }
 
     private func noteAttachments(for note: RoutineNote) -> [RoutineNoteAttachment] {

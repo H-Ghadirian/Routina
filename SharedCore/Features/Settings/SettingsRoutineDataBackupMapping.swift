@@ -132,6 +132,7 @@ enum SettingsRoutineDataBackupMapping {
             id: session.id,
             preset: session.preset,
             title: session.title,
+            linkedTaskID: session.linkedTaskID,
             startedAt: session.startedAt,
             plannedDurationSeconds: session.plannedDurationSeconds,
             completedAt: session.completedAt,

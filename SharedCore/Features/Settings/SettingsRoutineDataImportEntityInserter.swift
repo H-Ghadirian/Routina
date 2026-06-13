@@ -480,6 +480,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 id: awaySession.id,
                 preset: awaySession.preset ?? .custom,
                 title: awaySession.title,
+                linkedTaskID: awaySession.linkedTaskID,
                 startedAt: awaySession.startedAt,
                 plannedDurationSeconds: awaySession.plannedDurationSeconds ?? 20 * 60,
                 completedAt: awaySession.completedAt,

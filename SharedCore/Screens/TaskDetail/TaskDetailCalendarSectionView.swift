@@ -110,6 +110,23 @@ private struct TaskDetailCalendarSectionLegendView: View {
     let showsCreatedLegend: Bool
 
     var body: some View {
+        ViewThatFits(in: .horizontal) {
+            horizontalLegend
+            wrappingLegend
+        }
+        .padding(.top, 2)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var horizontalLegend: some View {
+        HStack(spacing: 24) {
+            ForEach(legendItems) { item in
+                TaskDetailCalendarSectionLegendItemView(item: item)
+            }
+        }
+    }
+
+    private var wrappingLegend: some View {
         LazyVGrid(
             columns: [
                 GridItem(.adaptive(minimum: 72), spacing: 10, alignment: .leading)
@@ -117,65 +134,76 @@ private struct TaskDetailCalendarSectionLegendView: View {
             alignment: .leading,
             spacing: 8
         ) {
-            if showsCreatedLegend {
-                TaskDetailCalendarSectionLegendItemView(color: TaskDetailStatusPalette.created, label: "Created")
+            ForEach(legendItems) { item in
+                TaskDetailCalendarSectionLegendItemView(item: item)
             }
-            TaskDetailCalendarSectionLegendItemView(color: TaskDetailStatusPalette.done, label: "Done")
-            if showsAssumedLegend {
-                TaskDetailCalendarSectionLegendItemView(color: TaskDetailStatusPalette.assumed, label: "Assumed")
-            }
-            if showsMissedLegend {
-                TaskDetailCalendarSectionLegendItemView(color: TaskDetailStatusPalette.missed, label: "Missed")
-            }
-            if showsCanceledLegend {
-                TaskDetailCalendarSectionLegendItemView(color: TaskDetailStatusPalette.canceled, label: "Canceled")
-            }
-            if showsDueLegend {
-                TaskDetailCalendarSectionLegendItemView(color: TaskDetailStatusPalette.due, label: "Due")
-            }
-            if showsOverdueLegend {
-                TaskDetailCalendarSectionLegendItemView(color: TaskDetailStatusPalette.overdue, label: "Overdue")
-            }
-            if showsSoftDueLegend {
-                TaskDetailCalendarSectionLegendItemView(color: TaskDetailStatusPalette.due, label: "Gentle nudge")
-            }
-            if showsPausedLegend {
-                TaskDetailCalendarSectionLegendItemView(color: TaskDetailStatusPalette.paused, label: "Paused")
-            }
-            TaskDetailCalendarSectionTodayLegendItemView()
         }
-        .padding(.top, 2)
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
+
+    private var legendItems: [TaskDetailCalendarSectionLegendItem] {
+        var items: [TaskDetailCalendarSectionLegendItem] = []
+
+        if showsCreatedLegend {
+            items.append(TaskDetailCalendarSectionLegendItem(color: TaskDetailStatusPalette.created, label: "Created"))
+        }
+        items.append(TaskDetailCalendarSectionLegendItem(color: TaskDetailStatusPalette.done, label: "Done"))
+        if showsAssumedLegend {
+            items.append(TaskDetailCalendarSectionLegendItem(color: TaskDetailStatusPalette.assumed, label: "Assumed"))
+        }
+        if showsMissedLegend {
+            items.append(TaskDetailCalendarSectionLegendItem(color: TaskDetailStatusPalette.missed, label: "Missed"))
+        }
+        if showsCanceledLegend {
+            items.append(TaskDetailCalendarSectionLegendItem(color: TaskDetailStatusPalette.canceled, label: "Canceled"))
+        }
+        if showsDueLegend {
+            items.append(TaskDetailCalendarSectionLegendItem(color: TaskDetailStatusPalette.due, label: "Due"))
+        }
+        if showsOverdueLegend {
+            items.append(TaskDetailCalendarSectionLegendItem(color: TaskDetailStatusPalette.overdue, label: "Overdue"))
+        }
+        if showsSoftDueLegend {
+            items.append(TaskDetailCalendarSectionLegendItem(color: TaskDetailStatusPalette.due, label: "Gentle nudge"))
+        }
+        if showsPausedLegend {
+            items.append(TaskDetailCalendarSectionLegendItem(color: TaskDetailStatusPalette.paused, label: "Paused"))
+        }
+        items.append(TaskDetailCalendarSectionLegendItem(color: TaskDetailStatusPalette.today, label: "Today", isStroked: true))
+
+        return items
+    }
+}
+
+private struct TaskDetailCalendarSectionLegendItem: Identifiable {
+    let color: Color
+    let label: String
+    var isStroked = false
+
+    var id: String { label }
 }
 
 private struct TaskDetailCalendarSectionLegendItemView: View {
-    let color: Color
-    let label: String
+    let item: TaskDetailCalendarSectionLegendItem
 
     var body: some View {
         HStack(spacing: 4) {
-            Circle()
-                .fill(color)
+            marker
                 .frame(width: 10, height: 10)
-            Text(label)
+            Text(item.label)
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
         .fixedSize(horizontal: true, vertical: false)
     }
-}
 
-private struct TaskDetailCalendarSectionTodayLegendItemView: View {
-    var body: some View {
-        HStack(spacing: 4) {
+    @ViewBuilder
+    private var marker: some View {
+        if item.isStroked {
             Circle()
-                .stroke(TaskDetailStatusPalette.today, lineWidth: 2)
-                .frame(width: 10, height: 10)
-            Text("Today")
-                .font(.caption2)
-                .foregroundColor(.secondary)
+                .stroke(item.color, lineWidth: 2)
+        } else {
+            Circle()
+                .fill(item.color)
         }
-        .fixedSize(horizontal: true, vertical: false)
     }
 }

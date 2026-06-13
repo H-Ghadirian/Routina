@@ -6,6 +6,7 @@ enum AwaySessionSupportError: LocalizedError, Equatable {
     case activeAwaySession
     case activeFocusSession
     case invalidDuration
+    case invalidTimeline
 
     var errorDescription: String? {
         switch self {
@@ -17,6 +18,8 @@ enum AwaySessionSupportError: LocalizedError, Equatable {
             return "A focus timer is already active. Finish it before starting away time."
         case .invalidDuration:
             return "Choose an away duration from 1 to 720 minutes."
+        case .invalidTimeline:
+            return "Choose an end time after the start time."
         }
     }
 }
@@ -53,6 +56,7 @@ enum AwaySessionSupport {
         durationMinutes: Int? = nil,
         countsUp: Bool = false,
         title: String? = nil,
+        linkedTaskID: UUID? = nil,
         startedAt: Date = Date(),
         context: ModelContext,
         sourceDevice: RoutinaDeviceActivitySource? = nil
@@ -89,6 +93,7 @@ enum AwaySessionSupport {
             id: id,
             preset: preset,
             title: title,
+            linkedTaskID: linkedTaskID,
             startedAt: startedAt,
             plannedDurationSeconds: plannedDurationSeconds,
             createdAt: startedAt,
@@ -102,6 +107,63 @@ enum AwaySessionSupport {
             entityTitle: session.displayTitle,
             sourceDevice: sourceDevice,
             at: startedAt,
+            in: context
+        )
+        try context.save()
+        notifyAwayChanged(using: context)
+        return session
+    }
+
+    @discardableResult
+    @MainActor
+    static func update(
+        _ session: AwaySession,
+        preset: AwaySessionPreset,
+        title: String?,
+        linkedTaskID: UUID?,
+        startedAt: Date,
+        plannedDurationSeconds: TimeInterval,
+        finishedAt: Date?,
+        in context: ModelContext,
+        at updatedAt: Date = Date(),
+        sourceDevice: RoutinaDeviceActivitySource? = nil
+    ) throws -> AwaySession {
+        guard plannedDurationSeconds == 0
+            || (TimeInterval(60)...TimeInterval(720 * 60)).contains(plannedDurationSeconds)
+        else {
+            throw AwaySessionSupportError.invalidDuration
+        }
+        if let finishedAt, finishedAt <= startedAt {
+            throw AwaySessionSupportError.invalidTimeline
+        }
+
+        let oldState = session.state
+        session.preset = preset
+        session.title = AwaySession.cleanedDisplayTitle(title, fallback: preset.title)
+        session.linkedTaskID = linkedTaskID
+        session.startedAt = startedAt
+        session.plannedDurationSeconds = plannedDurationSeconds
+
+        switch oldState {
+        case .active:
+            session.completedAt = nil
+            session.endedEarlyAt = nil
+        case .completed:
+            session.completedAt = finishedAt ?? session.finishedAt ?? startedAt
+            session.endedEarlyAt = nil
+        case .endedEarly:
+            session.endedEarlyAt = finishedAt ?? session.finishedAt ?? startedAt
+            session.completedAt = nil
+        }
+
+        session.updatedAt = updatedAt
+        DeviceActivityRecorder.recordAction(
+            .updated,
+            entity: .awaySession,
+            entityID: session.id,
+            entityTitle: session.displayTitle,
+            sourceDevice: sourceDevice,
+            at: updatedAt,
             in: context
         )
         try context.save()
@@ -267,5 +329,12 @@ enum AwaySessionSupport {
         FocusShieldSupport.syncFocusShield(using: context)
         #endif
         NotificationCenter.default.postRoutineDidUpdate()
+    }
+}
+
+extension AwaySession {
+    static func cleanedDisplayTitle(_ title: String?, fallback: String) -> String {
+        let trimmed = title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? fallback : trimmed
     }
 }

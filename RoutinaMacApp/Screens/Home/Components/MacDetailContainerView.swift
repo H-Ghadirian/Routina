@@ -29,6 +29,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     let selectedTimelineNote: RoutineNote?
     let selectedTimelineNoteAttachments: [RoutineNoteAttachment]
     let selectedTimelinePlaceCheckInSession: PlaceCheckInSession?
+    let selectedTimelineAwaySession: AwaySession?
     let onSelectDayPlanUnplannedCompletedDate: (Date) -> Void
     let onOpenDayPlanTaskDetails: (UUID) -> Void
     let onEditNote: (UUID) -> Void
@@ -191,6 +192,10 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
             )
         } else if let selectedTimelinePlaceCheckInSession {
             PlaceCheckInSessionDetailView(session: selectedTimelinePlaceCheckInSession)
+        } else if let selectedTimelineAwaySession {
+            AwaySessionEditSheet(session: selectedTimelineAwaySession)
+                .id(selectedTimelineAwaySession.id)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let selectedTimelineEntry, selectedTimelineEntry.isSleep {
             ContentUnavailableView(
                 "Sleep record",

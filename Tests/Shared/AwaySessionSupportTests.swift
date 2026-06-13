@@ -107,6 +107,48 @@ struct AwaySessionSupportTests {
 
     @MainActor
     @Test
+    func updateAway_linksTaskAndEditsActiveSession() throws {
+        let context = makeInMemoryContext()
+        let task = makeTask(
+            in: context,
+            name: "Morning walk",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🚶"
+        )
+        let startedAt = makeDate("2026-06-01T07:00:00Z")
+        let editedStart = makeDate("2026-06-01T07:05:00Z")
+        let editedAt = makeDate("2026-06-01T07:06:00Z")
+        let session = try AwaySessionSupport.startAway(
+            preset: .outside,
+            durationMinutes: 30,
+            startedAt: startedAt,
+            context: context
+        )
+
+        let updated = try AwaySessionSupport.update(
+            session,
+            preset: .custom,
+            title: "Walk outside",
+            linkedTaskID: task.id,
+            startedAt: editedStart,
+            plannedDurationSeconds: 45 * 60,
+            finishedAt: nil,
+            in: context,
+            at: editedAt
+        )
+
+        #expect(updated.id == session.id)
+        #expect(updated.displayTitle == "Walk outside")
+        #expect(updated.linkedTaskID == task.id)
+        #expect(updated.startedAt == editedStart)
+        #expect(updated.plannedDurationSeconds == 45 * 60)
+        #expect(updated.state == .active)
+        #expect(updated.updatedAt == editedAt)
+    }
+
+    @MainActor
+    @Test
     func endActiveAwayEarly_completesCountUpAway() throws {
         let context = makeInMemoryContext()
         let startedAt = makeDate("2026-06-01T09:00:00Z")
@@ -254,6 +296,42 @@ struct AwaySessionSupportTests {
         #expect(block.block.startMinute == 10 * 60 + 10)
         #expect(block.block.durationMinutes == 23)
         #expect(block.interval.durationMinutes == 23)
+    }
+
+    @MainActor
+    @Test
+    func awayBlockUsesLinkedTaskTitleAndEmoji() throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let day = makeDate("2026-06-01T12:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Gym",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🏋️"
+        )
+        let session = AwaySession(
+            preset: .outside,
+            linkedTaskID: task.id,
+            startedAt: makeDate("2026-06-01T10:10:00Z"),
+            plannedDurationSeconds: 30 * 60,
+            completedAt: makeDate("2026-06-01T10:40:00Z")
+        )
+
+        let awayBlocksByDayKey = DayPlanAwayBlocks.blocksByDayKey(
+            on: [day],
+            from: [session],
+            tasks: [task],
+            referenceDate: makeDate("2026-06-01T10:40:00Z"),
+            calendar: calendar
+        )
+
+        let dayKey = DayPlanStorage.dayKey(for: day, calendar: calendar)
+        let block = try #require(awayBlocksByDayKey[dayKey]?.first)
+        #expect(block.block.titleSnapshot == "Outside · Gym")
+        #expect(block.block.emojiSnapshot == "🏋️")
+        #expect(block.interval.title == "Outside · Gym")
     }
 
     @Test

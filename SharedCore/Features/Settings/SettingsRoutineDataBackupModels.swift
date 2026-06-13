@@ -125,6 +125,7 @@ extension SettingsRoutineDataPersistence {
             var id: UUID
             var preset: AwaySessionPreset?
             var title: String?
+            var linkedTaskID: UUID?
             var startedAt: Date?
             var plannedDurationSeconds: TimeInterval?
             var completedAt: Date?

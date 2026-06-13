@@ -157,6 +157,7 @@ extension HomeTCAView {
                     selectedTimelineNote: selectedMacTimelineNote,
                     selectedTimelineNoteAttachments: selectedMacTimelineNoteAttachments,
                     selectedTimelinePlaceCheckInSession: selectedMacTimelinePlaceCheckInSession,
+                    selectedTimelineAwaySession: selectedMacTimelineAwaySession,
                     onSelectDayPlanUnplannedCompletedDate: { date in
                         focusMacSidebarOnDayPlanUnplannedCompletedTasks(on: date)
                     },

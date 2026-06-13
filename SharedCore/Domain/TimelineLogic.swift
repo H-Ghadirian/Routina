@@ -567,6 +567,12 @@ enum TimelineLogic {
                 statusTitle = "Ended early away"
             }
 
+            let linkedTask = session.linkedTaskID.flatMap { lookup[$0] }
+            let linkedTaskTitle = linkedTask?.name?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let activityTitle = [statusTitle, linkedTaskTitle.map { "Linked to \($0)" }]
+                .compactMap { $0 }
+                .joined(separator: " · ")
+
             return TimelineEntry(
                 id: session.id,
                 taskID: nil,
@@ -574,14 +580,14 @@ enum TimelineLogic {
                 startTimestamp: startedAt,
                 endTimestamp: endedAt,
                 taskName: session.displayTitle,
-                taskEmoji: "🕒",
-                tags: [],
+                taskEmoji: linkedTask?.emoji ?? "🕒",
+                tags: linkedTask?.tags ?? [],
                 isOneOff: false,
                 kind: .completed,
                 entryType: .away,
                 durationSeconds: session.durationSeconds(referenceDate: now),
-                activityTitle: statusTitle,
-                searchableText: searchableText(for: session)
+                activityTitle: activityTitle,
+                searchableText: searchableText(for: session, linkedTask: linkedTask)
             )
         }
 
@@ -596,12 +602,14 @@ enum TimelineLogic {
             + awayEntries
     }
 
-    private static func searchableText(for awaySession: AwaySession) -> String {
+    private static func searchableText(for awaySession: AwaySession, linkedTask: RoutineTask?) -> String {
         [
             awaySession.displayTitle,
             awaySession.state == .active ? "Active away" : awaySession.state == .completed ? "Completed away" : "Ended early away",
+            linkedTask?.name,
+            linkedTask?.emoji,
         ]
-        .compactMap { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
         .filter { !$0.isEmpty }
         .joined(separator: "\n")
     }

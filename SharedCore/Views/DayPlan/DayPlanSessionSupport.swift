@@ -235,16 +235,19 @@ enum DayPlanAwayBlocks {
     static func blocksByDayKey(
         on dates: [Date],
         from sessions: [AwaySession],
+        tasks: [RoutineTask] = [],
         referenceDate: Date = Date(),
         calendar: Calendar
     ) -> [String: [DayPlanAwayBlock]] {
         let visibleDates = dates.map { calendar.startOfDay(for: $0) }
         guard !visibleDates.isEmpty else { return [:] }
 
+        let taskLookup = Dictionary(tasks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let blocks = sessions.flatMap { session in
             blocksForSession(
                 for: session,
                 on: visibleDates,
+                linkedTask: session.linkedTaskID.flatMap { taskLookup[$0] },
                 referenceDate: referenceDate,
                 calendar: calendar
             )
@@ -264,12 +267,14 @@ enum DayPlanAwayBlocks {
     static func blockedIntervalsByDayKey(
         on dates: [Date],
         from sessions: [AwaySession],
+        tasks: [RoutineTask] = [],
         referenceDate: Date = Date(),
         calendar: Calendar
     ) -> [String: [DayPlanBlockedInterval]] {
         blocksByDayKey(
             on: dates,
             from: sessions,
+            tasks: tasks,
             referenceDate: referenceDate,
             calendar: calendar
         )
@@ -281,6 +286,7 @@ enum DayPlanAwayBlocks {
     static func blockedIntervals(
         on date: Date,
         from sessions: [AwaySession],
+        tasks: [RoutineTask] = [],
         referenceDate: Date = Date(),
         calendar: Calendar
     ) -> [DayPlanBlockedInterval] {
@@ -288,6 +294,7 @@ enum DayPlanAwayBlocks {
         return blockedIntervalsByDayKey(
             on: [date],
             from: sessions,
+            tasks: tasks,
             referenceDate: referenceDate,
             calendar: calendar
         )[dayKey] ?? []
@@ -296,6 +303,7 @@ enum DayPlanAwayBlocks {
     static func conflictingInterval(
         on date: Date,
         from sessions: [AwaySession],
+        tasks: [RoutineTask] = [],
         startMinute: Int,
         durationMinutes: Int,
         referenceDate: Date = Date(),
@@ -304,6 +312,7 @@ enum DayPlanAwayBlocks {
         blockedIntervals(
             on: date,
             from: sessions,
+            tasks: tasks,
             referenceDate: referenceDate,
             calendar: calendar
         )
@@ -315,6 +324,7 @@ enum DayPlanAwayBlocks {
     private static func blocksForSession(
         for session: AwaySession,
         on visibleDates: [Date],
+        linkedTask: RoutineTask?,
         referenceDate: Date,
         calendar: Calendar
     ) -> [DayPlanAwayBlock] {
@@ -347,8 +357,8 @@ enum DayPlanAwayBlocks {
                 dayKey: dayKey,
                 startMinute: startMinute,
                 durationMinutes: durationMinutes,
-                titleSnapshot: session.displayTitle,
-                emojiSnapshot: nil,
+                titleSnapshot: blockTitle(for: session, linkedTask: linkedTask),
+                emojiSnapshot: linkedTask?.emoji,
                 createdAt: startedAt,
                 updatedAt: endedAt,
                 minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
@@ -357,7 +367,7 @@ enum DayPlanAwayBlocks {
                 dayKey: dayKey,
                 startMinute: block.startMinute,
                 endMinute: block.endMinute,
-                title: session.displayTitle
+                title: block.titleSnapshot
             )
 
             return DayPlanAwayBlock(
@@ -438,6 +448,15 @@ enum DayPlanAwayBlocks {
             return "\(awayTitle) · \(firstTitle)"
         }
         return "\(awayTitle) · \(firstTitle) +\(linkedTitles.count - 1)"
+    }
+
+    private static func blockTitle(for session: AwaySession, linkedTask: RoutineTask?) -> String {
+        guard let taskName = linkedTask?.name?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !taskName.isEmpty
+        else {
+            return session.displayTitle
+        }
+        return "\(session.displayTitle) · \(taskName)"
     }
 
     private static func normalizedTitle(_ title: String) -> String {

@@ -131,9 +131,25 @@ extension HomeTCAView {
         return placeCheckInSessions.first { $0.id == selectedMacTimelineEntry.id }
     }
 
+    var selectedMacTimelineAwaySession: AwaySession? {
+        guard let selectedMacTimelineEntry, selectedMacTimelineEntry.isAway else {
+            return nil
+        }
+        return awaySessions.first { $0.id == selectedMacTimelineEntry.id }
+    }
+
     private func openTimelineEntry(_ entry: TimelineEntry) {
         if entry.isSleep {
             openSleepInPlanner(entry.id)
+            return
+        }
+        if entry.isAway, awaySessions.contains(where: { $0.id == entry.id }) {
+            isEventEditorPresented = false
+            isEmotionLogEditorPresented = false
+            isNoteEditorPresented = false
+            selectedNoteID = nil
+            store.send(.macSidebarSelectionChanged(.timelineEntry(entry.id)))
+            store.send(.setSelectedTask(nil))
             return
         }
 

@@ -277,6 +277,7 @@ struct DayPlanSidebarView: View {
             in: DayPlanAwayBlocks.blockedIntervals(
                 on: planner.selectedDate,
                 from: awaySessions,
+                tasks: tasks,
                 referenceDate: Date(),
                 calendar: calendar
             ),
@@ -508,6 +509,7 @@ private struct DayPlanTimelinePanelView: View {
         let awayBlocksByDayKey = DayPlanAwayBlocks.blocksByDayKey(
             on: visibleDates,
             from: awaySessions,
+            tasks: tasks,
             referenceDate: referenceDate,
             calendar: calendar
         )
@@ -1560,6 +1562,9 @@ private struct DayPlanLifecycleModifier: ViewModifier {
                 session.finishedAt?.timeIntervalSinceReferenceDate.description ?? "",
                 session.plannedDurationSeconds.description,
                 session.plannedEndAt?.timeIntervalSinceReferenceDate.description ?? "",
+                session.linkedTaskID?.uuidString ?? "",
+                session.title,
+                session.presetRawValue,
             ].joined(separator: ":")
         }
     }
@@ -1575,6 +1580,7 @@ private struct DayPlanLifecycleModifier: ViewModifier {
         let awayBlockedIntervalsByDayKey = DayPlanAwayBlocks.blockedIntervalsByDayKey(
             on: dates,
             from: awaySessions,
+            tasks: tasks,
             referenceDate: Date(),
             calendar: calendar
         )

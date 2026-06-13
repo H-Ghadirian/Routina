@@ -72,6 +72,7 @@ final class AwaySession {
     var id: UUID = UUID()
     var presetRawValue: String = AwaySessionPreset.custom.rawValue
     var title: String = AwaySessionPreset.custom.title
+    var linkedTaskID: UUID?
     var startedAt: Date?
     var plannedDurationSeconds: TimeInterval = 20 * 60
     var completedAt: Date?
@@ -122,6 +123,7 @@ final class AwaySession {
         id: UUID = UUID(),
         preset: AwaySessionPreset = .custom,
         title: String? = nil,
+        linkedTaskID: UUID? = nil,
         startedAt: Date? = Date(),
         plannedDurationSeconds: TimeInterval = 20 * 60,
         completedAt: Date? = nil,
@@ -133,6 +135,7 @@ final class AwaySession {
         self.id = id
         self.presetRawValue = preset.rawValue
         self.title = Self.cleanedTitle(title) ?? preset.title
+        self.linkedTaskID = linkedTaskID
         self.startedAt = startedAt
         self.plannedDurationSeconds = max(0, plannedDurationSeconds)
         self.completedAt = completedAt
@@ -192,6 +195,7 @@ final class AwaySession {
             id: id,
             preset: preset,
             title: title,
+            linkedTaskID: linkedTaskID,
             startedAt: startedAt,
             plannedDurationSeconds: plannedDurationSeconds,
             completedAt: completedAt,

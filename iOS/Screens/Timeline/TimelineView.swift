@@ -27,92 +27,35 @@ struct TimelineView: View {
     ) private var timelineRowHiddenFieldsRawValue = ""
     @State private var relatedFilterTagSuggestionAnchor: String?
     @State private var selectedTimelineEntryID: UUID?
+    @State private var editingAwaySession: AwaySession?
 
     var body: some View {
-timelineRoot
-    .sheet(isPresented: filterSheetBinding) {
-        timelineFiltersSheet
+        timelineRootWithSheets
+            .task(timelineTask)
+            .onChange(of: tasks) { _, _ in refreshTimelineData() }
+            .onChange(of: logs) { _, _ in refreshTimelineData() }
+            .onChange(of: focusSessionChangeToken) { _, _ in refreshTimelineData() }
+            .onChange(of: sprintFocusSessionChangeToken) { _, _ in refreshTimelineData() }
+            .onChange(of: boardSprintChangeToken) { _, _ in refreshTimelineData() }
+            .onChange(of: sleepSessionChangeToken) { _, _ in refreshTimelineData() }
+            .onChange(of: awaySessionChangeToken) { _, _ in refreshTimelineData() }
+            .onChange(of: placeCheckInChangeToken) { _, _ in refreshTimelineData() }
+            .onChange(of: fileAttachmentChangeToken) { _, _ in refreshTimelineData() }
+            .onChange(of: eventChangeToken) { _, _ in refreshTimelineData() }
+            .onChange(of: emotionLogChangeToken) { _, _ in refreshTimelineData() }
+            .onChange(of: noteChangeToken) { _, _ in refreshTimelineData() }
+            .onChange(of: noteAttachmentChangeToken) { _, _ in refreshTimelineData() }
+            .onChange(of: visibleTimelineEntryIDs) { _, _ in resolveTimelineRouting() }
+            .onChange(of: store.deepLinkedNoteID) { _, _ in routePendingDeepLinkedNote() }
+            .onChange(of: store.deepLinkedEventID) { _, _ in routePendingDeepLinkedEvent() }
     }
-    .sheet(item: deepLinkedNotePresentationBinding) { presentation in
-        NavigationStack {
-            deepLinkedNoteDetail(noteID: presentation.id)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Done") {
-                            store.send(.noteDeepLinkPresentationDismissed(presentation.id))
-                        }
-                    }
-                }
-        }
-    }
-    .sheet(item: deepLinkedEventPresentationBinding) { presentation in
-        NavigationStack {
-            deepLinkedEventDetail(eventID: presentation.id)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Done") {
-                            store.send(.eventDeepLinkPresentationDismissed(presentation.id))
-                        }
-                    }
-                }
-        }
-    }
-.task {
-    syncTimelineData()
-    ensureTimelineSelection()
-    routePendingDeepLinkedNote()
-    routePendingDeepLinkedEvent()
-}
-.onChange(of: tasks) { _, _ in
-    syncTimelineData()
-}
-.onChange(of: logs) { _, _ in
-    syncTimelineData()
-}
-.onChange(of: focusSessionChangeToken) { _, _ in
-    syncTimelineData()
-}
-.onChange(of: sprintFocusSessionChangeToken) { _, _ in
-    syncTimelineData()
-}
-.onChange(of: boardSprintChangeToken) { _, _ in
-    syncTimelineData()
-}
-    .onChange(of: sleepSessionChangeToken) { _, _ in
-        syncTimelineData()
-    }
-    .onChange(of: awaySessionChangeToken) { _, _ in
-        syncTimelineData()
-    }
-    .onChange(of: placeCheckInChangeToken) { _, _ in
-        syncTimelineData()
-    }
-.onChange(of: fileAttachmentChangeToken) { _, _ in
-    syncTimelineData()
-}
-.onChange(of: eventChangeToken) { _, _ in
-    syncTimelineData()
-}
-.onChange(of: emotionLogChangeToken) { _, _ in
-    syncTimelineData()
-}
-.onChange(of: noteChangeToken) { _, _ in
-    syncTimelineData()
-}
-.onChange(of: noteAttachmentChangeToken) { _, _ in
-    syncTimelineData()
-}
-.onChange(of: visibleTimelineEntryIDs) { _, _ in
-    ensureTimelineSelection()
-    routePendingDeepLinkedNote()
-    routePendingDeepLinkedEvent()
-}
-.onChange(of: store.deepLinkedNoteID) { _, _ in
-    routePendingDeepLinkedNote()
-}
-.onChange(of: store.deepLinkedEventID) { _, _ in
-    routePendingDeepLinkedEvent()
-}
+
+    private var timelineRootWithSheets: some View {
+        AnyView(timelineRoot)
+            .sheet(isPresented: filterSheetBinding, content: filterSheetContent)
+            .sheet(item: deepLinkedNotePresentationBinding, content: deepLinkedNoteSheet)
+            .sheet(item: deepLinkedEventPresentationBinding, content: deepLinkedEventSheet)
+            .awaySessionEditorSheet(session: $editingAwaySession)
     }
 
     @ViewBuilder
@@ -220,6 +163,9 @@ timelineRoot
                 session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
                 session.finishedAt?.timeIntervalSinceReferenceDate.description ?? "",
                 session.state.rawValue,
+                session.linkedTaskID?.uuidString ?? "",
+                session.title,
+                session.presetRawValue,
             ].joined(separator: ":")
         }
     }
@@ -308,6 +254,21 @@ timelineRoot
         ))
     }
 
+    private func refreshTimelineData() {
+        syncTimelineData()
+    }
+
+    private func timelineTask() async {
+        syncTimelineData()
+        resolveTimelineRouting()
+    }
+
+    private func resolveTimelineRouting() {
+        ensureTimelineSelection()
+        routePendingDeepLinkedNote()
+        routePendingDeepLinkedEvent()
+    }
+
     private var placeCheckInChangeToken: [String] {
         placeCheckInSessions.map { session in
             [
@@ -353,6 +314,36 @@ timelineRoot
                 }
             }
         )
+    }
+
+    private func filterSheetContent() -> AnyView {
+        AnyView(timelineFiltersSheet)
+    }
+
+    private func deepLinkedNoteSheet(_ presentation: TimelineNoteDeepLinkPresentation) -> AnyView {
+        AnyView(NavigationStack {
+            deepLinkedNoteDetail(noteID: presentation.id)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Done") {
+                            store.send(.noteDeepLinkPresentationDismissed(presentation.id))
+                        }
+                    }
+                }
+        })
+    }
+
+    private func deepLinkedEventSheet(_ presentation: TimelineEventDeepLinkPresentation) -> AnyView {
+        AnyView(NavigationStack {
+            deepLinkedEventDetail(eventID: presentation.id)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Done") {
+                            store.send(.eventDeepLinkPresentationDismissed(presentation.id))
+                        }
+                    }
+                }
+        })
     }
 
     private func ensureTimelineSelection() {
@@ -438,8 +429,8 @@ timelineRoot
             sprintFocusSessions: store.sprintFocusSessions,
             boardSprints: store.boardSprints,
             sleepSessions: store.sleepSessions,
-            awaySessions: store.awaySessions,
             placeCheckInSessions: store.placeCheckInSessions,
+            awaySessions: store.awaySessions,
             fileAttachmentTaskIDs: store.fileAttachmentTaskIDs,
             noteAttachmentNoteIDs: store.noteAttachmentNoteIDs,
             range: store.selectedRange,
@@ -920,6 +911,13 @@ timelineRoot
                 timelineRowContent(entry)
             }
             .buttonStyle(.plain)
+        } else if entry.isAway, let session = awaySession(for: entry) {
+            Button {
+                editingAwaySession = session
+            } label: {
+                timelineRowContent(entry)
+            }
+            .buttonStyle(.plain)
         } else {
             timelineRowContent(entry)
         }
@@ -1135,6 +1133,10 @@ timelineRoot
 
     private func placeCheckInSession(for entry: TimelineEntry) -> PlaceCheckInSession? {
         placeCheckInSessions.first { $0.id == entry.id }
+    }
+
+    private func awaySession(for entry: TimelineEntry) -> AwaySession? {
+        awaySessions.first { $0.id == entry.id }
     }
 
     private func noteAttachments(for note: RoutineNote) -> [RoutineNoteAttachment] {
