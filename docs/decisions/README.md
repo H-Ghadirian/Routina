@@ -26,6 +26,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0238](0238-use-project-local-mac-dev-run-entrypoint.md) sets the Mac dev build/run entrypoint:** macOS development runs use `script/build_and_run.sh`, which builds `RoutinaMacOSDev` into project-local derived data and launches it through the Codex Run action.
 - **[0237](0237-hide-settings-devices-behind-beta-toggle.md) gates Settings Devices visibility:** The Devices settings section remains implemented but is hidden by default behind Settings -> General -> Beta Experiments.
 - **[0236](0236-hide-empty-stats-reports.md) refines [0228](0228-place-sleep-stats-with-summary-reports.md) and [0229](0229-hide-secondary-mac-stats-charts-by-default.md) for Stats visibility:** Dashboard reports are shown only when their backing metric has data, while saved order and hidden-item preferences remain intact for when data appears later.
 - **[0235](0235-require-authentication-to-disable-app-lock.md) refines [0166](0166-use-app-lock-for-cloud-data-reset.md) for App Lock protection:** Turning App Lock off requires a fresh device owner authentication pass; failed or unavailable authentication leaves App Lock enabled and no locked-screen unauthenticated fallback is offered.
@@ -149,6 +150,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0238](0238-use-project-local-mac-dev-run-entrypoint.md) | Use Project-Local Mac Dev Run Entrypoint | Accepted | 2026-06-13 |
 | [0001](0001-maintain-project-decision-log.md) | Maintain a Project Decision Log | Accepted | 2026-05-08 |
 | [0002](0002-exact-time-routines-miss-after-day.md) | Treat Exact-Time Routines as Missed After Their Scheduled Day | Accepted | 2026-05-08 |
 | [0003](0003-resolve-exact-time-missed-assumptions.md) | Resolve Exact-Time Missed Assumptions as Done, Missed, or Canceled | Accepted | 2026-05-09 |
