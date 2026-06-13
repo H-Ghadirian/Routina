@@ -497,22 +497,7 @@ private struct PlaceCheckInDayTimelineRow: View {
             return "Time unavailable"
         }
 
-        let referenceDate = Date()
-        let rawFinish = session.endedAt ?? referenceDate
-        let normalizedFinish = rawFinish > start ? rawFinish : start
-        let startText = start.formatted(.dateTime.hour().minute())
-        let finishText: String
-        if session.endedAt == nil {
-            finishText = "Now"
-        } else {
-            finishText = normalizedFinish.formatted(.dateTime.hour().minute())
-        }
-
-        let range = "\(startText)-\(finishText)"
-        let duration = PlaceCheckInFormatting.durationText(
-            seconds: session.durationSeconds(referenceDate: referenceDate)
-        )
-        return "\(range) · \(duration)"
+        return start.formatted(date: .omitted, time: .shortened)
     }
 }
 

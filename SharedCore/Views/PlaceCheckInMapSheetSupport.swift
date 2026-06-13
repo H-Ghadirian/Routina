@@ -96,6 +96,7 @@ struct PlaceCheckInNewPlaceDraft: Identifiable, Equatable {
     var radiusMeters = defaultRadiusMeters
     var statusMessage = ""
     var sourceSessionID: UUID?
+    var isCurrentLocationDraft = false
 }
 
 struct PlaceCheckInPlaceEditDraft: Identifiable, Equatable {
@@ -649,8 +650,10 @@ struct PlaceCheckInSessionDetailView: View {
                 }
 
                 PlaceCheckInDetailCard(title: "Time", systemImage: "clock") {
-                    detailRow(title: "Range", value: timeRangeText)
-                    detailRow(title: "Duration", value: durationText)
+                    detailRow(title: "Check-in", value: checkInTimeText)
+                    if let endedAt = session.endedAt {
+                        detailRow(title: "End", value: endedAt.formatted(date: .abbreviated, time: .shortened))
+                    }
                     if session.isActive {
                         detailRow(title: "Status", value: "Active")
                     }
@@ -713,7 +716,7 @@ struct PlaceCheckInSessionDetailView: View {
                     .font(.largeTitle.weight(.semibold))
                     .lineLimit(3)
 
-                Text(timeRangeText)
+                Text(checkInTimeText)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
@@ -748,20 +751,12 @@ struct PlaceCheckInSessionDetailView: View {
             .routinaGlassPill(tint: tint, tintOpacity: 0.12)
     }
 
-    private var timeRangeText: String {
+    private var checkInTimeText: String {
         guard let startedAt = session.startedAt ?? session.createdAt else {
             return "Time unavailable"
         }
 
-        if let endedAt = session.endedAt {
-            return "\(startedAt.formatted(date: .abbreviated, time: .shortened)) - \(endedAt.formatted(date: .abbreviated, time: .shortened))"
-        }
-
-        return "Since \(startedAt.formatted(date: .abbreviated, time: .shortened))"
-    }
-
-    private var durationText: String {
-        PlaceCheckInFormatting.durationText(seconds: session.durationSeconds(referenceDate: Date()))
+        return startedAt.formatted(date: .abbreviated, time: .shortened)
     }
 
     private func detailRow(title: String, value: String) -> some View {

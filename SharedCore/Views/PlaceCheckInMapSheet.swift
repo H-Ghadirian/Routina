@@ -530,7 +530,7 @@ struct PlaceCheckInMapSheet: View {
     private var newPlaceDraftPanel: some View {
         if let draft = newPlaceDraft {
             mapLocationActionPanel(
-                title: "Pinned Location",
+                title: mapLocationPanelTitle(for: draft),
                 coordinateText: draft.coordinate.formattedForPlaceSelection,
                 draft: draft,
                 selectedPlace: nil,
@@ -544,7 +544,7 @@ struct PlaceCheckInMapSheet: View {
     private var mapLocationActionPanel: some View {
         if let draft = newPlaceDraft {
             mapLocationActionPanel(
-                title: "Pinned Location",
+                title: mapLocationPanelTitle(for: draft),
                 coordinateText: draft.coordinate.formattedForPlaceSelection,
                 draft: draft,
                 selectedPlace: nil,
@@ -559,6 +559,10 @@ struct PlaceCheckInMapSheet: View {
                 showsLocationSettingsButton: selectedPlace == nil && showsLocationSettingsButton
             )
         }
+    }
+
+    private func mapLocationPanelTitle(for draft: PlaceCheckInNewPlaceDraft) -> String {
+        draft.isCurrentLocationDraft ? "Current location" : "Pinned Location"
     }
 
     private func mapLocationActionPanel(
@@ -936,6 +940,7 @@ struct PlaceCheckInMapSheet: View {
 
         let snapshot = await locationClient.snapshot(requestAuthorizationIfNeeded)
         locationSnapshot = snapshot
+        prepareCurrentLocationDraftIfNeeded(for: snapshot)
         if newPlaceDraft == nil,
            selectedPlaceID == nil,
            selectedHistoryMarkerID == nil,
@@ -945,6 +950,22 @@ struct PlaceCheckInMapSheet: View {
         }
         reconcileAutomaticCheckIn(for: snapshot)
         syncMapPositionIfAllowed()
+    }
+
+    private func prepareCurrentLocationDraftIfNeeded(for snapshot: LocationSnapshot) {
+        guard layout == .mapOnly,
+              newPlaceDraft == nil,
+              selectedPlaceID == nil,
+              selectedHistoryMarkerID == nil,
+              let coordinate = snapshot.coordinate,
+              PlaceCheckInSupport.nearestContainingPlace(to: coordinate, places: places) == nil
+        else {
+            return
+        }
+
+        var draft = PlaceCheckInNewPlaceDraft(coordinate: coordinate)
+        draft.isCurrentLocationDraft = true
+        newPlaceDraft = draft
     }
 
     @MainActor
@@ -1113,7 +1134,9 @@ struct PlaceCheckInMapSheet: View {
             return
         }
 
-        newPlaceDraft = PlaceCheckInNewPlaceDraft(coordinate: currentLocation)
+        var draft = PlaceCheckInNewPlaceDraft(coordinate: currentLocation)
+        draft.isCurrentLocationDraft = true
+        newPlaceDraft = draft
         selectedHistoryMarkerID = nil
         selectedPlaceID = currentMatchedPlace?.id
         errorText = nil

@@ -564,6 +564,48 @@ struct PlaceCheckInSupportTests {
 
     @MainActor
     @Test
+    func updateSession_reordersGroupedCheckInsByEditedStartTime() throws {
+        let context = makeInMemoryContext()
+        let cafe = PlaceCheckInSession(
+            placeID: nil,
+            placeName: "Cafe",
+            startedAt: makeDate("2026-05-11T09:00:00Z"),
+            endedAt: makeDate("2026-05-11T10:00:00Z")
+        )
+        let office = PlaceCheckInSession(
+            placeID: nil,
+            placeName: "Office",
+            startedAt: makeDate("2026-05-11T12:00:00Z"),
+            endedAt: makeDate("2026-05-11T17:00:00Z")
+        )
+        context.insert(cafe)
+        context.insert(office)
+        try context.save()
+
+        _ = try PlaceCheckInSupport.updateSession(
+            id: cafe.id,
+            placeName: "Cafe",
+            activity: nil,
+            note: nil,
+            imageData: nil,
+            startedAt: makeDate("2026-05-11T14:00:00Z"),
+            endedAt: makeDate("2026-05-11T15:00:00Z"),
+            in: context
+        )
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let sessions = try context.fetch(FetchDescriptor<PlaceCheckInSession>())
+
+        let sections = PlaceCheckInSupport.groupedSessionsByDay(
+            sessions,
+            calendar: calendar
+        )
+
+        #expect(sections.first?.sessions.map(\.displayPlaceName) == ["Cafe", "Office"])
+    }
+
+    @MainActor
+    @Test
     func sessionsOnDay_includesSessionsThatOverlapSelectedDay() throws {
         let home = PlaceCheckInSession(
             placeID: nil,
