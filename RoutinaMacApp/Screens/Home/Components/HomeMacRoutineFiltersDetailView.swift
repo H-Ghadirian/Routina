@@ -97,42 +97,44 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     }
 
     private var coreFilterCard: some View {
-        HomeMacSidebarSectionCard(title: "Filters") {
-            VStack(alignment: .leading, spacing: 18) {
-                filterControlSection("Task type") {
-                    taskListModePicker
-                }
-
-                filterControlSection("View Mode") {
-                    viewModePicker
-                }
-
-                filterControlSection("Created") {
-                    createdDatePicker
-                }
-
-                filterControlSection("Show") {
-                    archivedToggle
-                    filterPicker
-                }
-
-                filterControlSection("Pressure") {
-                    pressurePicker
-                }
-
-                if showsGoalFilter {
-                    filterControlSection("Goal") {
-                        goalPicker
+        HomeMacSidebarSectionCard {
+            HomeMacCollapsibleFilterSection(title: "Filters") {
+                VStack(alignment: .leading, spacing: 18) {
+                    filterControlSection("Task type") {
+                        taskListModePicker
                     }
-                }
 
-                filterControlSection("Media") {
-                    mediaPicker
-                }
+                    filterControlSection("View Mode") {
+                        viewModePicker
+                    }
 
-                if taskListMode == .todos || taskListMode == .all {
-                    filterControlSection("Todo State") {
-                        todoStateFilterSection
+                    filterControlSection("Created") {
+                        createdDatePicker
+                    }
+
+                    filterControlSection("Show") {
+                        archivedToggle
+                        filterPicker
+                    }
+
+                    filterControlSection("Pressure") {
+                        pressurePicker
+                    }
+
+                    if showsGoalFilter {
+                        filterControlSection("Goal") {
+                            goalPicker
+                        }
+                    }
+
+                    filterControlSection("Media") {
+                        mediaPicker
+                    }
+
+                    if taskListMode == .todos || taskListMode == .all {
+                        filterControlSection("Todo State") {
+                            todoStateFilterSection
+                        }
                     }
                 }
             }
@@ -140,14 +142,16 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     }
 
     private var sortFilterCard: some View {
-        HomeMacSidebarSectionCard(title: "Sort") {
-            VStack(alignment: .leading, spacing: 18) {
-                filterControlSection("Grouping") {
-                    groupingPicker
-                }
+        HomeMacSidebarSectionCard {
+            HomeMacCollapsibleFilterSection(title: "Sorting") {
+                VStack(alignment: .leading, spacing: 18) {
+                    filterControlSection("Grouping") {
+                        groupingPicker
+                    }
 
-                filterControlSection("Sort") {
-                    sortPicker
+                    filterControlSection("Sort") {
+                        sortPicker
+                    }
                 }
             }
         }
