@@ -1022,6 +1022,11 @@ struct PlaceCheckInMapSheet: View {
 
     private func focusOnCurrentLocation() {
         guard let currentLocation else { return }
+        if layout == .mapOnly, currentMatchedPlace == nil {
+            beginNewPlaceDraftFromCurrentLocation()
+            return
+        }
+
         newPlaceDraft = nil
         selectedHistoryMarkerID = nil
         selectedPlaceID = currentMatchedPlace?.id
@@ -1138,7 +1143,7 @@ struct PlaceCheckInMapSheet: View {
         draft.isCurrentLocationDraft = true
         newPlaceDraft = draft
         selectedHistoryMarkerID = nil
-        selectedPlaceID = currentMatchedPlace?.id
+        selectedPlaceID = nil
         errorText = nil
         focus(on: currentLocation)
     }
@@ -1399,7 +1404,9 @@ struct PlaceCheckInMapSheet: View {
 
     private func syncMapPosition() {
         let region: MKCoordinateRegion
-        if let selectedHistoryMarker {
+        if let newPlaceDraft {
+            region = PlaceCheckInMapCamera.region(focusingOn: newPlaceDraft.coordinate)
+        } else if let selectedHistoryMarker {
             region = PlaceCheckInMapCamera.region(focusingOn: selectedHistoryMarker.coordinate)
         } else {
             region = PlaceCheckInMapCamera.region(
@@ -1414,7 +1421,7 @@ struct PlaceCheckInMapSheet: View {
     }
 
     private func syncMapPositionIfAllowed() {
-        guard newPlaceDraft == nil else {
+        guard newPlaceDraft == nil || newPlaceDraft?.isCurrentLocationDraft == true else {
             return
         }
 
