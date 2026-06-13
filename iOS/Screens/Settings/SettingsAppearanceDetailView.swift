@@ -255,7 +255,7 @@ List {
 
         Toggle("Show Goals tab", isOn: $isGoalsTabEnabled)
 
-        Text("Show the Goals tab so goals can be opened from Home.")
+        Text("Show Goal navigation, controls, and Stats reports.")
             .foregroundStyle(.secondary)
 
         Toggle("Show Adventure map", isOn: $isAdventureMapEnabled)

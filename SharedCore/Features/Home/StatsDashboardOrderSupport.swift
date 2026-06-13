@@ -26,8 +26,14 @@ enum StatsDashboardOrderSupport {
             seenIDs.insert(itemID)
         }
 
-        for itemID in defaultItemIDs where !seenIDs.contains(itemID) {
-            normalizedIDs.append(itemID)
+        for (defaultIndex, itemID) in defaultItemIDs.enumerated() where !seenIDs.contains(itemID) {
+            let insertionIndex = insertionIndex(
+                forMissingDefaultAt: defaultIndex,
+                defaultItemIDs: defaultItemIDs,
+                normalizedIDs: normalizedIDs
+            )
+            normalizedIDs.insert(itemID, at: insertionIndex)
+            seenIDs.insert(itemID)
         }
 
         return normalizedIDs
@@ -67,5 +73,29 @@ enum StatsDashboardOrderSupport {
         rawValue?
             .split(separator: ",")
             .map(String.init) ?? []
+    }
+
+    private static func insertionIndex(
+        forMissingDefaultAt defaultIndex: Int,
+        defaultItemIDs: [String],
+        normalizedIDs: [String]
+    ) -> Int {
+        if defaultIndex > defaultItemIDs.startIndex {
+            for predecessorIndex in stride(from: defaultIndex - 1, through: defaultItemIDs.startIndex, by: -1) {
+                let predecessorID = defaultItemIDs[predecessorIndex]
+                if let index = normalizedIDs.firstIndex(of: predecessorID) {
+                    return normalizedIDs.index(after: index)
+                }
+            }
+        }
+
+        for successorIndex in defaultItemIDs.index(after: defaultIndex)..<defaultItemIDs.endIndex {
+            let successorID = defaultItemIDs[successorIndex]
+            if let index = normalizedIDs.firstIndex(of: successorID) {
+                return index
+            }
+        }
+
+        return normalizedIDs.endIndex
     }
 }

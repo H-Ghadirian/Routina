@@ -64,6 +64,14 @@ struct StatsMacDashboardItemAvailabilityTests {
 
     @Test
     func goalProgress_requiresGoalsBetaExperiment() {
+        #expect(!StatsMacDashboardItem.goals.isAvailable(
+            selectedRange: .week,
+            isGitFeaturesEnabled: true,
+            isGoalsTabEnabled: false,
+            areMacEventEmotionActionsEnabled: true,
+            isStatsWinsEnabled: true,
+            isStatsAchievementsEnabled: true
+        ))
         #expect(!StatsMacDashboardItem.goalProgress.isAvailable(
             selectedRange: .week,
             isGitFeaturesEnabled: true,
@@ -84,6 +92,22 @@ struct StatsMacDashboardItemAvailabilityTests {
 
     @Test
     func emotionTrend_requiresEventEmotionBetaExperiment() {
+        #expect(!StatsMacDashboardItem.events.isAvailable(
+            selectedRange: .week,
+            isGitFeaturesEnabled: true,
+            isGoalsTabEnabled: true,
+            areMacEventEmotionActionsEnabled: false,
+            isStatsWinsEnabled: true,
+            isStatsAchievementsEnabled: true
+        ))
+        #expect(!StatsMacDashboardItem.emotions.isAvailable(
+            selectedRange: .week,
+            isGitFeaturesEnabled: true,
+            isGoalsTabEnabled: true,
+            areMacEventEmotionActionsEnabled: false,
+            isStatsWinsEnabled: true,
+            isStatsAchievementsEnabled: true
+        ))
         #expect(!StatsMacDashboardItem.emotionTrend.isAvailable(
             selectedRange: .week,
             isGitFeaturesEnabled: true,

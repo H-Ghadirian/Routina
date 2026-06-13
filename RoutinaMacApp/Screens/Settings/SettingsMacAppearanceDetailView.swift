@@ -320,7 +320,7 @@ SettingsMacDetailShell(
         Toggle("Show Goals tab", isOn: $isGoalsTabEnabled)
             .toggleStyle(.switch)
 
-        Text("Show the Goals tab so goals can be opened from Home.")
+        Text("Show Goal navigation, controls, and Stats reports.")
             .font(.footnote)
             .foregroundStyle(.secondary)
 
@@ -390,7 +390,7 @@ SettingsMacDetailShell(
         Toggle("Show Event and Emotion actions", isOn: $areMacEventEmotionActionsEnabled)
             .toggleStyle(.switch)
 
-        Text("Show Event and Emotion in the Mac Add menu and Timeline type filters.")
+        Text("Show Event and Emotion in the Mac Add menu, Timeline type filters, and Stats reports.")
             .font(.footnote)
             .foregroundStyle(.secondary)
 

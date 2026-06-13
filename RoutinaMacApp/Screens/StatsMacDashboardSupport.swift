@@ -335,9 +335,9 @@ enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return selectedRange != .today
         case .gitHub:
             return isGitFeaturesEnabled
-        case .goalProgress:
+        case .goals, .goalProgress:
             return isGoalsTabEnabled
-        case .emotionTrend:
+        case .events, .emotions, .emotionTrend:
             return areMacEventEmotionActionsEnabled
         case .recentWins:
             return isStatsWinsEnabled

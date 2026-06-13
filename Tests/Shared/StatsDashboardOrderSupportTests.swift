@@ -9,13 +9,39 @@ import Testing
 
 struct StatsDashboardOrderSupportTests {
     @Test
-    func orderedItems_preservesStoredOrderAndAppendsNewDefaults() {
+    func orderedItems_preservesStoredOrderAndPlacesNewDefaultsNearDefaultNeighbors() {
         let ordered = StatsDashboardOrderSupport.normalizedItemIDs(
             defaultItemIDs: ["hero", "average", "chart", "focus"],
             storedRawValue: "chart,hero,unknown,chart"
         )
 
-        #expect(ordered == ["chart", "hero", "average", "focus"])
+        #expect(ordered == ["chart", "focus", "hero", "average"])
+    }
+
+    @Test
+    func orderedItems_placesMissingSleepReportsBesideMatchingSummaryReports() {
+        let ordered = StatsDashboardOrderSupport.normalizedItemIDs(
+            defaultItemIDs: [
+                "dailyAverage",
+                "focusTime",
+                "sleepTime",
+                "sleepSessions",
+                "awayTime",
+                "emotions",
+                "completionChart"
+            ],
+            storedRawValue: "dailyAverage,focusTime,awayTime,emotions,completionChart"
+        )
+
+        #expect(ordered == [
+            "dailyAverage",
+            "focusTime",
+            "sleepTime",
+            "sleepSessions",
+            "awayTime",
+            "emotions",
+            "completionChart"
+        ])
     }
 
     @Test

@@ -7,12 +7,14 @@ struct StatsDashboardItemAvailabilityTests {
         #expect(!StatsDashboardItem.recentWins.isAvailable(
             selectedRange: .week,
             isGitFeaturesEnabled: true,
+            isGoalsTabEnabled: true,
             isStatsWinsEnabled: false,
             isStatsAchievementsEnabled: true
         ))
         #expect(StatsDashboardItem.recentWins.isAvailable(
             selectedRange: .week,
             isGitFeaturesEnabled: false,
+            isGoalsTabEnabled: true,
             isStatsWinsEnabled: true,
             isStatsAchievementsEnabled: false
         ))
@@ -23,12 +25,14 @@ struct StatsDashboardItemAvailabilityTests {
         #expect(!StatsDashboardItem.focusAchievements.isAvailable(
             selectedRange: .week,
             isGitFeaturesEnabled: true,
+            isGoalsTabEnabled: true,
             isStatsWinsEnabled: true,
             isStatsAchievementsEnabled: false
         ))
         #expect(StatsDashboardItem.focusAchievements.isAvailable(
             selectedRange: .week,
             isGitFeaturesEnabled: false,
+            isGoalsTabEnabled: true,
             isStatsWinsEnabled: false,
             isStatsAchievementsEnabled: true
         ))
@@ -39,12 +43,46 @@ struct StatsDashboardItemAvailabilityTests {
         #expect(!StatsDashboardItem.gitHub.isAvailable(
             selectedRange: .week,
             isGitFeaturesEnabled: false,
+            isGoalsTabEnabled: true,
             isStatsWinsEnabled: true,
             isStatsAchievementsEnabled: true
         ))
         #expect(StatsDashboardItem.gitHub.isAvailable(
             selectedRange: .week,
             isGitFeaturesEnabled: true,
+            isGoalsTabEnabled: true,
+            isStatsWinsEnabled: false,
+            isStatsAchievementsEnabled: false
+        ))
+    }
+
+    @Test
+    func goalReports_requireGoalsBetaExperiment() {
+        #expect(!StatsDashboardItem.goals.isAvailable(
+            selectedRange: .week,
+            isGitFeaturesEnabled: true,
+            isGoalsTabEnabled: false,
+            isStatsWinsEnabled: true,
+            isStatsAchievementsEnabled: true
+        ))
+        #expect(!StatsDashboardItem.goalProgress.isAvailable(
+            selectedRange: .week,
+            isGitFeaturesEnabled: true,
+            isGoalsTabEnabled: false,
+            isStatsWinsEnabled: true,
+            isStatsAchievementsEnabled: true
+        ))
+        #expect(StatsDashboardItem.goals.isAvailable(
+            selectedRange: .week,
+            isGitFeaturesEnabled: false,
+            isGoalsTabEnabled: true,
+            isStatsWinsEnabled: false,
+            isStatsAchievementsEnabled: false
+        ))
+        #expect(StatsDashboardItem.goalProgress.isAvailable(
+            selectedRange: .week,
+            isGitFeaturesEnabled: false,
+            isGoalsTabEnabled: true,
             isStatsWinsEnabled: false,
             isStatsAchievementsEnabled: false
         ))
