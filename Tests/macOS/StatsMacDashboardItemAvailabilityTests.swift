@@ -3,6 +3,32 @@ import Testing
 
 struct StatsMacDashboardItemAvailabilityTests {
     @Test
+    func focusWorkAndEstimateActual_areDefaultHiddenButAvailableToAdd() {
+        #expect(StatsMacDashboardItem.defaultHiddenItemIDs == [
+            StatsMacDashboardItem.focusWorkChart.rawValue,
+            StatsMacDashboardItem.estimateActual.rawValue
+        ])
+        #expect(StatsMacDashboardItem.defaultHiddenItemIDsRawValue == "estimateActual,focusWorkChart")
+
+        #expect(StatsMacDashboardItem.focusWorkChart.isAvailable(
+            selectedRange: .week,
+            isGitFeaturesEnabled: false,
+            isGoalsTabEnabled: false,
+            areMacEventEmotionActionsEnabled: false,
+            isStatsWinsEnabled: false,
+            isStatsAchievementsEnabled: false
+        ))
+        #expect(StatsMacDashboardItem.estimateActual.isAvailable(
+            selectedRange: .week,
+            isGitFeaturesEnabled: false,
+            isGoalsTabEnabled: false,
+            areMacEventEmotionActionsEnabled: false,
+            isStatsWinsEnabled: false,
+            isStatsAchievementsEnabled: false
+        ))
+    }
+
+    @Test
     func recentWins_requiresBetaExperiment() {
         #expect(!StatsMacDashboardItem.recentWins.isAvailable(
             selectedRange: .week,

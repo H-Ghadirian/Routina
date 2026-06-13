@@ -51,6 +51,15 @@ enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    static let defaultHiddenItemIDs: Set<String> = [
+        StatsMacDashboardItem.focusWorkChart.rawValue,
+        StatsMacDashboardItem.estimateActual.rawValue
+    ]
+
+    static let defaultHiddenItemIDsRawValue = defaultHiddenItemIDs
+        .sorted()
+        .joined(separator: ",")
+
     init(summaryAccessibilityIdentifier: String) {
         switch summaryAccessibilityIdentifier {
         case "stats.summary.dailyAverage":

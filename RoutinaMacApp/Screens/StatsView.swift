@@ -92,7 +92,7 @@ struct StatsView: View {
     @State private var isAddDashboardItemSheetPresented = false
     @State private var draggedDashboardItemID: String?
     @AppStorage(UserDefaultStringValueKey.appSettingMacStatsDashboardHiddenItemIDs.rawValue, store: SharedDefaults.app)
-    private var hiddenDashboardItemIDsRaw = ""
+    private var hiddenDashboardItemIDsRaw = StatsMacDashboardItem.defaultHiddenItemIDsRawValue
     @AppStorage(UserDefaultStringValueKey.appSettingMacStatsDashboardItemOrderIDs.rawValue, store: SharedDefaults.app)
     private var dashboardItemOrderIDsRaw = ""
     @AppStorage(UserDefaultStringValueKey.appSettingMacStatsSummaryDisplayMode.rawValue, store: SharedDefaults.app)
@@ -944,7 +944,7 @@ struct StatsView: View {
     private func setHiddenDashboardItemIDs(_ itemIDs: Set<String>) {
         let rawValue = itemIDs.sorted().joined(separator: ",")
         CloudSettingsKeyValueSync.setString(
-            rawValue.isEmpty ? nil : rawValue,
+            rawValue,
             for: .appSettingMacStatsDashboardHiddenItemIDs
         )
     }
