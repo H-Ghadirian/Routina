@@ -107,6 +107,7 @@ struct AppFeature {
                 let timelineFocusSessions = state.timeline.focusSessions
                 let timelineSprintFocusSessions = state.timeline.sprintFocusSessions
                 let timelineBoardSprints = state.timeline.boardSprints
+                let timelineAwaySessions = state.timeline.awaySessions
                 let timelineFileAttachmentTaskIDs = state.timeline.fileAttachmentTaskIDs
                 let timelineNoteAttachmentNoteIDs = state.timeline.noteAttachmentNoteIDs
                 let statsTasks = state.stats.tasks
@@ -134,6 +135,7 @@ struct AppFeature {
                         focusSessions: timelineFocusSessions,
                         sprintFocusSessions: timelineSprintFocusSessions,
                         boardSprints: timelineBoardSprints,
+                        awaySessions: timelineAwaySessions,
                         fileAttachmentTaskIDs: timelineFileAttachmentTaskIDs,
                         noteAttachmentNoteIDs: timelineNoteAttachmentNoteIDs
                     ))),

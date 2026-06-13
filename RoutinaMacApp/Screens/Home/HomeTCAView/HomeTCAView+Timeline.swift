@@ -35,6 +35,7 @@ extension HomeTCAView {
             boardSprints: boardSprints,
             sleepSessions: sleepSessions,
             placeCheckInSessions: placeCheckInSessions,
+            awaySessions: awaySessions,
             fileAttachmentTaskIDs: store.fileAttachmentTaskIDs,
             noteAttachmentNoteIDs: noteAttachmentNoteIDs,
             range: store.selectedTimelineRange,
@@ -397,6 +398,7 @@ extension HomeTCAView {
             || !focusSessions.isEmpty
             || !sprintFocusSessions.isEmpty
             || !sleepSessions.isEmpty
+            || !awaySessions.isEmpty
             || !placeCheckInSessions.isEmpty
     }
 
@@ -419,7 +421,7 @@ extension HomeTCAView {
             }
 
             HomeMacTimelineSidebarView(
-                timelineEntryCount: store.timelineLogs.count + events.count + emotionLogs.count + notes.count + focusSessions.count + sprintFocusSessions.count + sleepSessions.count + placeCheckInSessions.count,
+                timelineEntryCount: store.timelineLogs.count + events.count + emotionLogs.count + notes.count + focusSessions.count + sprintFocusSessions.count + sleepSessions.count + awaySessions.count + placeCheckInSessions.count,
                 groupedEntries: groupedTimelineEntries,
                 selection: macSidebarSelectionBinding,
                 sectionTitle: { date in
@@ -434,6 +436,9 @@ extension HomeTCAView {
     private func timelineKindLabel(for entry: TimelineEntry) -> String {
         if entry.isSleep {
             return "Sleep"
+        }
+        if entry.isAway {
+            return "Away"
         }
         if entry.isEmotion {
             return "Emotion"
@@ -467,6 +472,9 @@ extension HomeTCAView {
     private func timelineKindColor(for entry: TimelineEntry) -> Color {
         if entry.isSleep {
             return .indigo
+        }
+        if entry.isAway {
+            return .mint
         }
         if entry.isEmotion {
             return .pink
@@ -506,6 +514,18 @@ extension HomeTCAView {
                 return "\(range) · \(SleepSessionFormatting.durationText(seconds: durationSeconds))"
             }
             return range
+        }
+
+        if entry.isAway {
+            let startedAt = entry.startTimestamp ?? entry.timestamp
+            let range: String
+            if let endedAt = entry.endTimestamp {
+                range = "\(startedAt.formatted(date: .omitted, time: .shortened)) - \(endedAt.formatted(date: .omitted, time: .shortened))"
+            } else {
+                range = "Since \(startedAt.formatted(date: .omitted, time: .shortened))"
+            }
+            let duration = entry.durationSeconds.map { AwaySessionFormatting.durationText(seconds: $0) }
+            return [range, duration, entry.activityTitle].compactMap(\.self).joined(separator: " · ")
         }
 
         if entry.isPlaceCheckIn {

@@ -24,6 +24,7 @@ struct TimelineFeature {
         var noteAttachmentNoteIDs: Set<UUID> = []
         var sleepSessions: [SleepSession] = []
         var placeCheckInSessions: [PlaceCheckInSession] = []
+        var awaySessions: [AwaySession] = []
         var selectedRange: TimelineRange = .all
         var filterType: TimelineFilterType = .all
         var selectedTag: String?
@@ -77,6 +78,7 @@ struct TimelineFeature {
             boardSprints: [BoardSprintRecord] = [],
             sleepSessions: [SleepSession] = [],
             placeCheckInSessions: [PlaceCheckInSession] = [],
+            awaySessions: [AwaySession] = [],
             fileAttachmentTaskIDs: Set<UUID> = [],
             noteAttachmentNoteIDs: Set<UUID> = []
         )
@@ -104,7 +106,7 @@ struct TimelineFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case let .setData(tasks, logs, events, emotionLogs, notes, focusSessions, sprintFocusSessions, boardSprints, sleepSessions, placeCheckInSessions, fileAttachmentTaskIDs, noteAttachmentNoteIDs):
+            case let .setData(tasks, logs, events, emotionLogs, notes, focusSessions, sprintFocusSessions, boardSprints, sleepSessions, placeCheckInSessions, awaySessions, fileAttachmentTaskIDs, noteAttachmentNoteIDs):
                 state.tasks = tasks
                 state.logs = logs
                 state.events = events
@@ -115,6 +117,7 @@ struct TimelineFeature {
                 state.boardSprints = boardSprints
                 state.sleepSessions = sleepSessions
                 state.placeCheckInSessions = placeCheckInSessions
+                state.awaySessions = awaySessions
                 state.fileAttachmentTaskIDs = fileAttachmentTaskIDs
                 state.noteAttachmentNoteIDs = noteAttachmentNoteIDs
                 state.relatedTagRules = RoutineTagRelations.sanitized(
@@ -242,6 +245,7 @@ struct TimelineFeature {
             boardSprints: state.boardSprints,
             sleepSessions: state.sleepSessions,
             placeCheckInSessions: state.placeCheckInSessions,
+            awaySessions: state.awaySessions,
             fileAttachmentTaskIDs: state.fileAttachmentTaskIDs,
             noteAttachmentNoteIDs: state.noteAttachmentNoteIDs,
             range: state.selectedRange,

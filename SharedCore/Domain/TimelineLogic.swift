@@ -18,6 +18,7 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
     case notes = "Notes"
     case places = "Places"
     case sleep = "Sleep"
+    case away = "Away"
     case done = "Done"
     case missed = "Missed"
     case canceled = "Canceled"
@@ -32,6 +33,7 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
         .places,
         .emotions,
         .sleep,
+        .away,
     ]
 
     var isTimelinePigmentCase: Bool {
@@ -48,6 +50,7 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
         .notes,
         .places,
         .sleep,
+        .away,
     ]
 
     static let statusCases: [TimelineFilterType] = [
@@ -97,6 +100,7 @@ enum TimelineEntryType: Equatable {
     case focus
     case sleep
     case placeCheckIn
+    case away
 }
 
 struct TimelineEntry: Identifiable, Equatable {
@@ -204,6 +208,10 @@ struct TimelineEntry: Identifiable, Equatable {
     var isPlaceCheckIn: Bool {
         entryType == .placeCheckIn
     }
+
+    var isAway: Bool {
+        entryType == .away
+    }
 }
 
 enum TimelineLogic {
@@ -218,6 +226,7 @@ enum TimelineLogic {
         boardSprints: [BoardSprintRecord] = [],
         sleepSessions: [SleepSession] = [],
         placeCheckInSessions: [PlaceCheckInSession] = [],
+        awaySessions: [AwaySession] = [],
         fileAttachmentTaskIDs: Set<UUID> = [],
         noteAttachmentNoteIDs: Set<UUID> = [],
         range: TimelineRange,
@@ -225,7 +234,7 @@ enum TimelineLogic {
         mediaFilter: TaskMediaFilter = .all,
         now: Date,
         calendar: Calendar
-    ) -> [TimelineEntry] {
+        ) -> [TimelineEntry] {
         let lookup = Dictionary(tasks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let cutoff: Date? = {
             switch range {
@@ -265,6 +274,7 @@ enum TimelineLogic {
             case .focus: return nil
             case .places: return nil
             case .sleep: return nil
+            case .away: return nil
             case .done: if log.kind != .completed { return nil }
             case .missed: if log.kind != .missed { return nil }
             case .canceled: if log.kind != .canceled { return nil }
@@ -534,6 +544,47 @@ enum TimelineLogic {
             )
         }
 
+        let awayEntries = awaySessions.compactMap { session -> TimelineEntry? in
+            guard filterType == .all || filterType == .away else {
+                return nil
+            }
+
+            let startedAt = session.startedAt ?? session.createdAt ?? Date()
+            let endedAt = session.finishedAt
+            let timestamp = endedAt ?? startedAt
+
+            if let cutoff, timestamp < cutoff {
+                return nil
+            }
+
+            let statusTitle: String
+            switch session.state {
+            case .active:
+                statusTitle = session.isCountUp ? "Active count-up away" : "Active away"
+            case .completed:
+                statusTitle = session.isCountUp ? "Completed count-up away" : "Completed away"
+            case .endedEarly:
+                statusTitle = "Ended early away"
+            }
+
+            return TimelineEntry(
+                id: session.id,
+                taskID: nil,
+                timestamp: timestamp,
+                startTimestamp: startedAt,
+                endTimestamp: endedAt,
+                taskName: session.displayTitle,
+                taskEmoji: "🕒",
+                tags: [],
+                isOneOff: false,
+                kind: .completed,
+                entryType: .away,
+                durationSeconds: session.durationSeconds(referenceDate: now),
+                activityTitle: statusTitle,
+                searchableText: searchableText(for: session)
+            )
+        }
+
         return logEntries
             + eventEntries
             + emotionEntries
@@ -542,6 +593,17 @@ enum TimelineLogic {
             + sprintFocusEntries
             + sleepEntries
             + placeEntries
+            + awayEntries
+    }
+
+    private static func searchableText(for awaySession: AwaySession) -> String {
+        [
+            awaySession.displayTitle,
+            awaySession.state == .active ? "Active away" : awaySession.state == .completed ? "Completed away" : "Ended early away",
+        ]
+        .compactMap { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .filter { !$0.isEmpty }
+        .joined(separator: "\n")
     }
 
     static func availableTags(from entries: [TimelineEntry]) -> [String] {

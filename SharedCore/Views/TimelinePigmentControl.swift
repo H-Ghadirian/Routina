@@ -67,6 +67,8 @@ private extension TimelineFilterType {
             return "face.smiling"
         case .sleep:
             return "bed.double.fill"
+        case .away:
+            return "pause.circle.fill"
         case .events:
             return "calendar"
         case .done:
@@ -96,6 +98,8 @@ private extension TimelineFilterType {
             return .pink
         case .sleep:
             return .blue
+        case .away:
+            return .mint
         case .events:
             return .purple
         case .done:

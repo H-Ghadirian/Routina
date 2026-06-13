@@ -17,6 +17,7 @@ struct TimelineView: View {
     @Query(sort: \SprintFocusSessionRecord.startedAt, order: .reverse) private var sprintFocusSessions: [SprintFocusSessionRecord]
     @Query(sort: \BoardSprintRecord.createdAt, order: .reverse) private var boardSprints: [BoardSprintRecord]
     @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
+    @Query(sort: \AwaySession.startedAt, order: .reverse) private var awaySessions: [AwaySession]
     @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) private var placeCheckInSessions: [PlaceCheckInSession]
     @State private var relatedFilterTagSuggestionAnchor: String?
     @AppStorage(
@@ -86,6 +87,9 @@ struct TimelineView: View {
         .onChange(of: sleepSessionChangeToken) { _, _ in
             syncTimelineData()
         }
+        .onChange(of: awaySessionChangeToken) { _, _ in
+            syncTimelineData()
+        }
         .onChange(of: placeCheckInChangeToken) { _, _ in
             syncTimelineData()
         }
@@ -118,6 +122,17 @@ struct TimelineView: View {
                 session.id.uuidString,
                 session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
                 session.endedAt?.timeIntervalSinceReferenceDate.description ?? "",
+            ].joined(separator: ":")
+        }
+    }
+
+    private var awaySessionChangeToken: [String] {
+        awaySessions.map { session in
+            [
+                session.id.uuidString,
+                session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                session.finishedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                session.state.rawValue,
             ].joined(separator: ":")
         }
     }
@@ -254,6 +269,7 @@ struct TimelineView: View {
             boardSprints: boardSprints,
             sleepSessions: sleepSessions,
             placeCheckInSessions: placeCheckInSessions,
+            awaySessions: awaySessions,
             fileAttachmentTaskIDs: fileAttachmentTaskIDs,
             noteAttachmentNoteIDs: noteAttachmentNoteIDs
         ))
@@ -388,6 +404,7 @@ struct TimelineView: View {
             || !focusSessions.isEmpty
             || !sprintFocusSessions.isEmpty
             || !sleepSessions.isEmpty
+            || !awaySessions.isEmpty
             || !placeCheckInSessions.isEmpty
     }
 
@@ -417,12 +434,12 @@ struct TimelineView: View {
     @ViewBuilder
     private var content: some View {
         if !hasAnyTimelineRecords {
-            ContentUnavailableView(
-                "No timeline entries yet",
-                systemImage: "clock.arrow.circlepath",
-                description: Text("Completed items, focus sessions, notes, place check-ins, emotions, and sleep records will appear here in chronological order.")
-            )
-        } else {
+                ContentUnavailableView(
+                    "No timeline entries yet",
+                    systemImage: "clock.arrow.circlepath",
+                    description: Text("Completed items, focus sessions, notes, place check-ins, emotions, away sessions, and sleep records will appear here in chronological order.")
+                )
+            } else {
             VStack(spacing: 0) {
                 if areMacTimelineQuickFiltersVisible {
                     timelinePigmentControl
@@ -766,6 +783,9 @@ struct TimelineView: View {
         if entry.isPlaceCheckIn {
             return "Place"
         }
+        if entry.isAway {
+            return "Away"
+        }
 
         switch entry.kind {
         case .completed:
@@ -798,6 +818,9 @@ struct TimelineView: View {
         }
         if entry.isPlaceCheckIn {
             return .teal
+        }
+        if entry.isAway {
+            return .mint
         }
 
         switch entry.kind {
@@ -877,6 +900,18 @@ struct TimelineView: View {
                 range = "Since \(startedAt.formatted(date: .omitted, time: .shortened))"
             }
             let duration = entry.durationSeconds.map { FocusSessionFormatting.compactDurationText(seconds: $0) }
+            return [range, duration, entry.activityTitle].compactMap(\.self).joined(separator: " · ")
+        }
+
+        if entry.isAway {
+            let startedAt = entry.startTimestamp ?? entry.timestamp
+            let range: String
+            if let endedAt = entry.endTimestamp {
+                range = "\(startedAt.formatted(date: .omitted, time: .shortened)) - \(endedAt.formatted(date: .omitted, time: .shortened))"
+            } else {
+                range = "Since \(startedAt.formatted(date: .omitted, time: .shortened))"
+            }
+            let duration = entry.durationSeconds.map { AwaySessionFormatting.durationText(seconds: $0) }
             return [range, duration, entry.activityTitle].compactMap(\.self).joined(separator: " · ")
         }
 

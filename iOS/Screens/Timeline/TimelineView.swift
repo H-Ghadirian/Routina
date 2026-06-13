@@ -19,6 +19,7 @@ struct TimelineView: View {
     @Query(sort: \SprintFocusSessionRecord.startedAt, order: .reverse) private var sprintFocusSessions: [SprintFocusSessionRecord]
     @Query(sort: \BoardSprintRecord.createdAt, order: .reverse) private var boardSprints: [BoardSprintRecord]
     @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
+    @Query(sort: \AwaySession.startedAt, order: .reverse) private var awaySessions: [AwaySession]
     @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) private var placeCheckInSessions: [PlaceCheckInSession]
     @AppStorage(
         UserDefaultStringValueKey.appSettingHomeTimelineRowHiddenFields.rawValue,
@@ -77,12 +78,15 @@ timelineRoot
 .onChange(of: boardSprintChangeToken) { _, _ in
     syncTimelineData()
 }
-.onChange(of: sleepSessionChangeToken) { _, _ in
-    syncTimelineData()
-}
-.onChange(of: placeCheckInChangeToken) { _, _ in
-    syncTimelineData()
-}
+    .onChange(of: sleepSessionChangeToken) { _, _ in
+        syncTimelineData()
+    }
+    .onChange(of: awaySessionChangeToken) { _, _ in
+        syncTimelineData()
+    }
+    .onChange(of: placeCheckInChangeToken) { _, _ in
+        syncTimelineData()
+    }
 .onChange(of: fileAttachmentChangeToken) { _, _ in
     syncTimelineData()
 }
@@ -209,6 +213,17 @@ timelineRoot
         }
     }
 
+    private var awaySessionChangeToken: [String] {
+        awaySessions.map { session in
+            [
+                session.id.uuidString,
+                session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                session.finishedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                session.state.rawValue,
+            ].joined(separator: ":")
+        }
+    }
+
     private var fileAttachmentTaskIDs: Set<UUID> {
         Set(fileAttachments.map(\.taskID))
     }
@@ -287,6 +302,7 @@ timelineRoot
             boardSprints: boardSprints,
             sleepSessions: sleepSessions,
             placeCheckInSessions: placeCheckInSessions,
+            awaySessions: awaySessions,
             fileAttachmentTaskIDs: fileAttachmentTaskIDs,
             noteAttachmentNoteIDs: noteAttachmentNoteIDs
         ))
@@ -422,6 +438,7 @@ timelineRoot
             sprintFocusSessions: store.sprintFocusSessions,
             boardSprints: store.boardSprints,
             sleepSessions: store.sleepSessions,
+            awaySessions: store.awaySessions,
             placeCheckInSessions: store.placeCheckInSessions,
             fileAttachmentTaskIDs: store.fileAttachmentTaskIDs,
             noteAttachmentNoteIDs: store.noteAttachmentNoteIDs,
@@ -512,6 +529,7 @@ timelineRoot
             || !notes.isEmpty
             || !focusSessions.isEmpty
             || !sprintFocusSessions.isEmpty
+            || !awaySessions.isEmpty
             || !sleepSessions.isEmpty
             || !placeCheckInSessions.isEmpty
     }
@@ -535,7 +553,7 @@ timelineRoot
             ContentUnavailableView(
                 "No timeline entries yet",
                 systemImage: "clock.arrow.circlepath",
-                description: Text("Completed items, focus sessions, notes, place check-ins, emotions, and sleep records will appear here in chronological order.")
+                description: Text("Completed items, focus sessions, notes, place check-ins, emotions, away sessions, and sleep records will appear here in chronological order.")
             )
         } else {
             VStack(spacing: 0) {
@@ -664,13 +682,13 @@ timelineRoot
                     .padding(.bottom, 10)
             }
 
-            if !hasAnyTimelineRecords {
-                ContentUnavailableView(
-                    "No timeline entries yet",
-                    systemImage: "clock.arrow.circlepath",
-                    description: Text("Completed items, focus sessions, notes, place check-ins, emotions, and sleep records will appear here in chronological order.")
-                )
-            } else if groupedByDay.isEmpty {
+                if !hasAnyTimelineRecords {
+                    ContentUnavailableView(
+                        "No timeline entries yet",
+                        systemImage: "clock.arrow.circlepath",
+                        description: Text("Completed items, focus sessions, notes, place check-ins, emotions, away sessions, and sleep records will appear here in chronological order.")
+                    )
+                } else if groupedByDay.isEmpty {
                 ContentUnavailableView(
                     "No matches",
                     systemImage: "line.3.horizontal.decrease.circle",
@@ -785,7 +803,7 @@ timelineRoot
                     .pickerStyle(.inline)
                 }
 
-                if tasks.contains(where: { $0.isOneOffTask }) || !events.isEmpty || !notes.isEmpty || !focusSessions.isEmpty || !sprintFocusSessions.isEmpty || !sleepSessions.isEmpty || !placeCheckInSessions.isEmpty {
+                if tasks.contains(where: { $0.isOneOffTask }) || !events.isEmpty || !notes.isEmpty || !focusSessions.isEmpty || !sprintFocusSessions.isEmpty || !sleepSessions.isEmpty || !awaySessions.isEmpty || !placeCheckInSessions.isEmpty {
                     Section("Type") {
                         Picker("Type", selection: filterTypeBinding) {
                             ForEach(TimelineFilterType.allCases) { type in
@@ -950,6 +968,9 @@ timelineRoot
         if entry.isSleep {
             return "Sleep"
         }
+        if entry.isAway {
+            return "Away"
+        }
         if entry.isEmotion {
             return "Emotion"
         }
@@ -982,6 +1003,9 @@ timelineRoot
     private func timelineKindColor(for entry: TimelineEntry) -> Color {
         if entry.isSleep {
             return .indigo
+        }
+        if entry.isAway {
+            return .mint
         }
         if entry.isEmotion {
             return .pink
@@ -1021,6 +1045,18 @@ timelineRoot
                 return "\(range) · \(SleepSessionFormatting.durationText(seconds: durationSeconds))"
             }
             return range
+        }
+
+        if entry.isAway {
+            let startedAt = entry.startTimestamp ?? entry.timestamp
+            let range: String
+            if let endedAt = entry.endTimestamp {
+                range = "\(startedAt.formatted(date: .omitted, time: .shortened)) - \(endedAt.formatted(date: .omitted, time: .shortened))"
+            } else {
+                range = "Since \(startedAt.formatted(date: .omitted, time: .shortened))"
+            }
+            let duration = entry.durationSeconds.map { AwaySessionFormatting.durationText(seconds: $0) }
+            return [range, duration, entry.activityTitle].compactMap(\.self).joined(separator: " · ")
         }
 
         if entry.isPlaceCheckIn {
