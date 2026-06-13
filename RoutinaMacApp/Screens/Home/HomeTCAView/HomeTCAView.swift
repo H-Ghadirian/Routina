@@ -95,6 +95,10 @@ struct HomeTCAView: View {
         store: SharedDefaults.app
     ) var areMacTimelineQuickFiltersVisible = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacStatusComposerEnabled.rawValue,
+        store: SharedDefaults.app
+    ) var isMacStatusComposerEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
         store: SharedDefaults.app
     ) var areMacEventEmotionActionsEnabled = false

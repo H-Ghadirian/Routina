@@ -264,6 +264,10 @@ struct SettingsMacGeneralDetailView: View {
         store: SharedDefaults.app
     ) private var areMacTimelineQuickFiltersVisible = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacStatusComposerEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isMacStatusComposerEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
         store: SharedDefaults.app
     ) private var areMacEventEmotionActionsEnabled = false
@@ -373,6 +377,13 @@ SettingsMacDetailShell(
             .toggleStyle(.switch)
 
         Text("Show the All, Routines, Todos, Notes, and other quick filters in Timeline.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+
+        Toggle("Show Status note section", isOn: $isMacStatusComposerEnabled)
+            .toggleStyle(.switch)
+
+        Text("Show the bottom sidebar composer for adding Status notes from Home.")
             .font(.footnote)
             .foregroundStyle(.secondary)
 
