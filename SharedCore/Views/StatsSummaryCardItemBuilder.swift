@@ -228,7 +228,13 @@ enum StatsSummaryCardItemBuilder {
             )
         )
 
-        return items
+        return items.filter {
+            StatsDashboardReportAvailability.isReportable(
+                summaryAccessibilityIdentifier: $0.accessibilityIdentifier,
+                metrics: metrics,
+                healthSummary: healthSummary
+            )
+        }
     }
 
     private static func healthItems(
@@ -347,5 +353,152 @@ enum StatsSummaryCardItemBuilder {
         formatter.unitStyle = .short
         formatter.numberFormatter.maximumFractionDigits = meters >= 1000 ? 1 : 0
         return formatter.string(from: Measurement(value: meters, unit: UnitLength.meters))
+    }
+}
+
+enum StatsDashboardReportAvailability {
+    static func isReportable(
+        itemID: String,
+        metrics: StatsFeatureMetrics,
+        healthSummary: HealthStatsSummary? = nil
+    ) -> Bool {
+        switch itemID {
+        case "hero",
+             "dailyAverage",
+             "bestDay",
+             "totalDones",
+             "totalCancels",
+             "totalMissed",
+             "completionChart":
+            return metrics.totalCount > 0
+        case "healthSteps":
+            return (healthSummary?.steps ?? 0) > 0
+        case "healthActiveCalories":
+            return (healthSummary?.activeEnergyKilocalories ?? 0) > 0
+        case "healthDistance":
+            return (healthSummary?.walkingRunningDistanceMeters ?? 0) > 0
+        case "healthExercise":
+            return (healthSummary?.exerciseMinutes ?? 0) > 0
+        case "focusTime",
+             "focusAverage",
+             "focusChart",
+             "focus2048":
+            return metrics.totalFocusSeconds > 0
+        case "sleepTime":
+            return metrics.totalSleepSeconds > 0
+        case "sleepSessions":
+            return metrics.sleepSessionCount > 0
+        case "awayTime":
+            return metrics.totalAwaySeconds > 0
+        case "emotions",
+             "emotionTrend":
+            return metrics.emotionLogCount > 0
+        case "notes":
+            return metrics.noteCount > 0
+        case "events":
+            return metrics.eventCount > 0
+        case "goals":
+            return metrics.activeGoalCount > 0
+                || metrics.archivedGoalCount > 0
+                || metrics.goalsCreatedCount > 0
+        case "goalProgress":
+            return !metrics.goalProgressChartPoints.isEmpty
+        case "routineCount":
+            return metrics.routineCount > 0
+        case "todoCount":
+            return metrics.openTodoCount > 0
+        case "activeItems":
+            return metrics.activeRoutineCount > 0
+        case "archivedItems":
+            return metrics.archivedRoutineCount > 0
+        case "createdTasksChart":
+            return metrics.createdTotalCount > 0
+        case "hourlyActivity":
+            return metrics.hourlyActivityChartPoints.contains(where: \.hasActivity)
+        case "tagUsage":
+            return metrics.tagUsagePoints.contains {
+                $0.completionCount > 0 || $0.linkedRoutineCount > 0 || $0.linkedTodoCount > 0
+            }
+        case "focusWorkChart":
+            return metrics.focusWorkChartPoints.contains(where: \.hasActivity)
+        case "estimateActual":
+            return metrics.estimateActualChartPoints.contains(where: \.hasTrackedTime)
+        case "recentWins":
+            return hasAnyCurrentPeriodActivity(metrics)
+        case "focusAchievements":
+            return hasAnyCurrentPeriodActivity(metrics)
+        case "unassignedFocus",
+             "gitHub":
+            return true
+        default:
+            return true
+        }
+    }
+
+    static func isReportable(
+        summaryAccessibilityIdentifier: String,
+        metrics: StatsFeatureMetrics,
+        healthSummary: HealthStatsSummary? = nil
+    ) -> Bool {
+        switch summaryAccessibilityIdentifier {
+        case "stats.summary.dailyAverage":
+            return isReportable(itemID: "dailyAverage", metrics: metrics, healthSummary: healthSummary)
+        case "stats.summary.health.steps":
+            return isReportable(itemID: "healthSteps", metrics: metrics, healthSummary: healthSummary)
+        case "stats.summary.health.activeCalories":
+            return isReportable(itemID: "healthActiveCalories", metrics: metrics, healthSummary: healthSummary)
+        case "stats.summary.health.distance":
+            return isReportable(itemID: "healthDistance", metrics: metrics, healthSummary: healthSummary)
+        case "stats.summary.health.exercise":
+            return isReportable(itemID: "healthExercise", metrics: metrics, healthSummary: healthSummary)
+        case "stats.summary.focusTime":
+            return isReportable(itemID: "focusTime", metrics: metrics, healthSummary: healthSummary)
+        case "stats.summary.sleepTime":
+            return isReportable(itemID: "sleepTime", metrics: metrics, healthSummary: healthSummary)
+        case "stats.summary.sleepSessions":
+            return isReportable(itemID: "sleepSessions", metrics: metrics, healthSummary: healthSummary)
+        case "stats.summary.awayTime":
+            return isReportable(itemID: "awayTime", metrics: metrics, healthSummary: healthSummary)
+        case "stats.summary.emotions":
+            return isReportable(itemID: "emotions", metrics: metrics, healthSummary: healthSummary)
+        case "stats.summary.notes":
+            return isReportable(itemID: "notes", metrics: metrics, healthSummary: healthSummary)
+        case "stats.summary.events":
+            return isReportable(itemID: "events", metrics: metrics, healthSummary: healthSummary)
+        case "stats.summary.goals":
+            return isReportable(itemID: "goals", metrics: metrics, healthSummary: healthSummary)
+        case "stats.summary.focusAverage":
+            return isReportable(itemID: "focusAverage", metrics: metrics, healthSummary: healthSummary)
+        case "stats.summary.bestDay":
+            return isReportable(itemID: "bestDay", metrics: metrics, healthSummary: healthSummary)
+        case "stats.summary.totalDones":
+            return metrics.totalDoneCount > 0
+        case "stats.summary.totalCancels":
+            return metrics.totalCanceledCount > 0
+        case "stats.summary.totalMissed":
+            return metrics.totalMissedCount > 0
+        case "stats.summary.routineCount":
+            return isReportable(itemID: "routineCount", metrics: metrics, healthSummary: healthSummary)
+        case "stats.summary.todoCount":
+            return isReportable(itemID: "todoCount", metrics: metrics, healthSummary: healthSummary)
+        case "stats.summary.activeRoutines":
+            return isReportable(itemID: "activeItems", metrics: metrics, healthSummary: healthSummary)
+        case "stats.summary.archivedRoutines":
+            return isReportable(itemID: "archivedItems", metrics: metrics, healthSummary: healthSummary)
+        default:
+            return true
+        }
+    }
+
+    private static func hasAnyCurrentPeriodActivity(_ metrics: StatsFeatureMetrics) -> Bool {
+        metrics.totalCount > 0
+            || metrics.createdTotalCount > 0
+            || metrics.totalFocusSeconds > 0
+            || metrics.totalSleepSeconds > 0
+            || metrics.totalAwaySeconds > 0
+            || metrics.emotionLogCount > 0
+            || metrics.noteCount > 0
+            || metrics.eventCount > 0
+            || metrics.goalsCreatedCount > 0
     }
 }

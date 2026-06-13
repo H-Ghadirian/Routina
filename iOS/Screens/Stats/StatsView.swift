@@ -255,7 +255,9 @@ struct StatsView: View {
                 isGoalsTabEnabled: isGoalsTabEnabled,
                 isStatsWinsEnabled: isStatsWinsEnabled,
                 isStatsAchievementsEnabled: isStatsAchievementsEnabled
-            ) && (item != .unassignedFocus || hasUnassignedFocusSessions)
+            )
+                && item.isReportable(metrics: metrics, healthSummary: store.healthSummary)
+                && (item != .unassignedFocus || hasUnassignedFocusSessions)
         }
     }
 

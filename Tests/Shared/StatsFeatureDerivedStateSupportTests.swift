@@ -568,4 +568,57 @@ struct StatsFeatureDerivedStateSupportTests {
             "stats.summary.health.exercise"
         ])
     }
+
+    @Test
+    func summaryItemsOmitReportsWhenMetricsAreEmpty() {
+        let items = StatsSummaryCardItemBuilder.items(
+            metrics: StatsFeatureMetrics(),
+            selectedRange: .week,
+            chartPresentation: StatsChartPresentation(selectedRange: .week, isCompact: false),
+            taskTypeFilter: .all,
+            filteredTaskCount: 0
+        )
+
+        #expect(items.isEmpty)
+    }
+
+    @Test
+    func summaryItemsOnlyIncludeSleepReportsWhenSleepHasData() {
+        var metrics = StatsFeatureMetrics()
+        metrics.sleepSessionCount = 1
+        metrics.completedSleepSessionCount = 1
+        metrics.totalSleepSeconds = 7 * 60 * 60
+        metrics.sleepActiveDayCount = 1
+
+        let items = StatsSummaryCardItemBuilder.items(
+            metrics: metrics,
+            selectedRange: .week,
+            chartPresentation: StatsChartPresentation(selectedRange: .week, isCompact: false),
+            taskTypeFilter: .all,
+            filteredTaskCount: 0
+        )
+
+        #expect(items.map(\.accessibilityIdentifier) == [
+            "stats.summary.sleepTime",
+            "stats.summary.sleepSessions"
+        ])
+    }
+
+    @Test
+    func summaryItemsOmitSleepTimeWhenSleepDurationIsZero() {
+        var metrics = StatsFeatureMetrics()
+        metrics.sleepSessionCount = 1
+
+        let items = StatsSummaryCardItemBuilder.items(
+            metrics: metrics,
+            selectedRange: .week,
+            chartPresentation: StatsChartPresentation(selectedRange: .week, isCompact: false),
+            taskTypeFilter: .all,
+            filteredTaskCount: 0
+        )
+
+        #expect(items.map(\.accessibilityIdentifier) == [
+            "stats.summary.sleepSessions"
+        ])
+    }
 }

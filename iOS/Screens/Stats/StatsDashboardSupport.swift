@@ -365,6 +365,17 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return true
         }
     }
+
+    func isReportable(
+        metrics: StatsFeatureMetrics,
+        healthSummary: HealthStatsSummary?
+    ) -> Bool {
+        StatsDashboardReportAvailability.isReportable(
+            itemID: rawValue,
+            metrics: metrics,
+            healthSummary: healthSummary
+        )
+    }
 }
 
 struct StatsHealthAccessCard: View {

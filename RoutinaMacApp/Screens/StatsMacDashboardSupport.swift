@@ -356,4 +356,11 @@ enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return true
         }
     }
+
+    func isReportable(metrics: StatsFeatureMetrics) -> Bool {
+        StatsDashboardReportAvailability.isReportable(
+            itemID: rawValue,
+            metrics: metrics
+        )
+    }
 }

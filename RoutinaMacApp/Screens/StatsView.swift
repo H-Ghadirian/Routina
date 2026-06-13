@@ -228,7 +228,9 @@ struct StatsView: View {
                 areMacEventEmotionActionsEnabled: areMacEventEmotionActionsEnabled,
                 isStatsWinsEnabled: isStatsWinsEnabled,
                 isStatsAchievementsEnabled: isStatsAchievementsEnabled
-            ) && (item != .unassignedFocus || hasUnassignedFocusSessions)
+            )
+                && item.isReportable(metrics: store.metrics)
+                && (item != .unassignedFocus || hasUnassignedFocusSessions)
         }
     }
 
