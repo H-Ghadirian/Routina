@@ -1708,6 +1708,106 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func activePlanFocusSessionBlocksStartAfterAllocatedPlannerBlocks() throws {
+        let calendar = gregorianCalendar
+        let visibleDate = try #require(date("2026-05-07T12:00:00Z"))
+        let startedAt = try #require(date("2026-05-07T09:30:00Z"))
+        let now = try #require(date("2026-05-07T10:05:00Z"))
+        let taskID = UUID()
+        let sessionID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Home chores",
+            scheduleMode: .fixedInterval
+        )
+        let session = FocusSession(
+            id: sessionID,
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0
+        )
+        let allocationBlock = DayPlanBlock(
+            id: DayPlanFocusSessionPlannerSync.allocationBlockID(
+                sessionID: sessionID,
+                taskID: taskID
+            ),
+            taskID: taskID,
+            dayKey: DayPlanStorage.dayKey(for: visibleDate, calendar: calendar),
+            startMinute: 9 * 60 + 30,
+            durationMinutes: 15,
+            titleSnapshot: "Home chores",
+            createdAt: startedAt,
+            updatedAt: now,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
+
+        let focusBlocksByDayKey = DayPlanFocusSessionBlocks.activeBlocksByDayKey(
+            on: [visibleDate],
+            from: [task],
+            sessions: [session],
+            now: now,
+            calendar: calendar,
+            excluding: [allocationBlock]
+        )
+
+        let dayKey = DayPlanStorage.dayKey(for: visibleDate, calendar: calendar)
+        let focusBlock = try #require(focusBlocksByDayKey[dayKey]?.first)
+        #expect(focusBlock.sessionID == sessionID)
+        #expect(focusBlock.block.id == sessionID)
+        #expect(focusBlock.block.taskID == FocusSession.unassignedTaskID)
+        #expect(focusBlock.block.titleSnapshot == "Plan Focus")
+        #expect(focusBlock.block.startMinute == 9 * 60 + 45)
+        #expect(focusBlock.durationMinutes == 20)
+        #expect(focusBlock.block.durationMinutes == 20)
+    }
+
+    @Test
+    func activePlanFocusSessionBlocksExcludeFullyAllocatedPlannerBlocks() throws {
+        let calendar = gregorianCalendar
+        let visibleDate = try #require(date("2026-05-07T12:00:00Z"))
+        let startedAt = try #require(date("2026-05-07T09:30:00Z"))
+        let now = try #require(date("2026-05-07T10:05:00Z"))
+        let taskID = UUID()
+        let sessionID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Home chores",
+            scheduleMode: .fixedInterval
+        )
+        let session = FocusSession(
+            id: sessionID,
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0
+        )
+        let allocationBlock = DayPlanBlock(
+            id: DayPlanFocusSessionPlannerSync.allocationBlockID(
+                sessionID: sessionID,
+                taskID: taskID
+            ),
+            taskID: taskID,
+            dayKey: DayPlanStorage.dayKey(for: visibleDate, calendar: calendar),
+            startMinute: 9 * 60 + 30,
+            durationMinutes: 35,
+            titleSnapshot: "Home chores",
+            createdAt: startedAt,
+            updatedAt: now,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
+
+        let focusBlocksByDayKey = DayPlanFocusSessionBlocks.activeBlocksByDayKey(
+            on: [visibleDate],
+            from: [task],
+            sessions: [session],
+            now: now,
+            calendar: calendar,
+            excluding: [allocationBlock]
+        )
+
+        #expect(focusBlocksByDayKey.isEmpty)
+    }
+
+    @Test
     func activeCountUpFocusSessionBlocksIgnorePersistedStarterBlock() throws {
         let calendar = gregorianCalendar
         let visibleDate = try #require(date("2026-05-07T12:00:00Z"))

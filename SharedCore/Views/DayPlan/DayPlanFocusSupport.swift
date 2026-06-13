@@ -97,7 +97,12 @@ enum DayPlanFocusSessionBlocks {
         let tasksByID = Dictionary(grouping: tasks, by: \.id).compactMapValues(\.first)
         let blocks = sessions.compactMap { session -> DayPlanFocusSessionBlock? in
             if session.isUnassigned {
-                return planFocusBlock(for: session, now: now, calendar: calendar)
+                return planFocusBlock(
+                    for: session,
+                    now: now,
+                    calendar: calendar,
+                    excluding: plannedBlocks
+                )
             }
 
             guard session.completedAt == nil,
@@ -154,7 +159,8 @@ enum DayPlanFocusSessionBlocks {
     private static func planFocusBlock(
         for session: FocusSession,
         now: Date,
-        calendar: Calendar
+        calendar: Calendar,
+        excluding plannedBlocks: [DayPlanBlock] = []
     ) -> DayPlanFocusSessionBlock? {
         guard session.abandonedAt == nil,
               let startedAt = session.startedAt,
@@ -165,10 +171,27 @@ enum DayPlanFocusSessionBlocks {
         let renderEnd = session.finishedAt ?? now
         guard renderEnd >= startedAt else { return nil }
 
-        let dayKey = DayPlanStorage.dayKey(for: startedAt, calendar: calendar)
-        let startMinute = startMinute(for: startedAt, calendar: calendar)
-        let elapsedSeconds = max(60, session.activeDurationSeconds(at: renderEnd))
-        let elapsedMinutes = max(1, Int(ceil(elapsedSeconds / 60)))
+        let allocatedMinutes = planFocusAllocatedMinutes(
+            for: session,
+            plannedBlocks: plannedBlocks
+        )
+        let elapsedSeconds = session.activeDurationSeconds(at: renderEnd)
+        let allocatedSeconds = TimeInterval(max(0, allocatedMinutes) * 60)
+        let remainingSeconds = elapsedSeconds - allocatedSeconds
+        guard remainingSeconds > 0 else { return nil }
+
+        let renderStart = calendar.date(
+            byAdding: .minute,
+            value: allocatedMinutes,
+            to: startedAt
+        ) ?? startedAt
+        guard calendar.isDate(renderStart, inSameDayAs: startedAt) else {
+            return nil
+        }
+
+        let dayKey = DayPlanStorage.dayKey(for: renderStart, calendar: calendar)
+        let startMinute = startMinute(for: renderStart, calendar: calendar)
+        let elapsedMinutes = max(1, Int(ceil(remainingSeconds / 60)))
         let remainingMinutes = max(1, DayPlanBlock.minutesPerDay - startMinute)
         let durationMinutes = min(elapsedMinutes, remainingMinutes)
         let block = DayPlanBlock(
@@ -183,7 +206,7 @@ enum DayPlanFocusSessionBlocks {
             ),
             titleSnapshot: "Plan Focus",
             emojiSnapshot: nil,
-            createdAt: startedAt,
+            createdAt: renderStart,
             updatedAt: renderEnd,
             minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
         )
@@ -194,6 +217,21 @@ enum DayPlanFocusSessionBlocks {
             durationMinutes: durationMinutes,
             opensTaskDetails: false
         )
+    }
+
+    private static func planFocusAllocatedMinutes(
+        for session: FocusSession,
+        plannedBlocks: [DayPlanBlock]
+    ) -> Int {
+        plannedBlocks.reduce(0) { total, block in
+            guard block.id == DayPlanFocusSessionPlannerSync.allocationBlockID(
+                sessionID: session.id,
+                taskID: block.taskID
+            ) else {
+                return total
+            }
+            return total + max(0, block.durationMinutes)
+        }
     }
 
     private static func startMinute(for timestamp: Date, calendar: Calendar) -> Int {
