@@ -311,14 +311,6 @@ struct PlaceCheckInMapSheet: View {
     private var macControlsContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                currentLocationPanel
-
-                if newPlaceDraft != nil {
-                    newPlaceDraftPanel
-                }
-
-                Divider()
-
                 mapDetailPicker
                 mapDetailContent
                 errorMessageView
@@ -465,18 +457,25 @@ struct PlaceCheckInMapSheet: View {
                 .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
         )
         .overlay(alignment: .topLeading) {
-            Text(mapTitle)
-                .font(.caption.weight(.semibold))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .routinaGlassPill()
-                .padding(10)
+            if layout == .mapOnly {
+                mapLocationActionPanel
+                    .padding(10)
+            } else {
+                Text(mapTitle)
+                    .font(.caption.weight(.semibold))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .routinaGlassPill()
+                    .padding(10)
+            }
         }
         .overlay(alignment: .trailing) {
             mapControls
         }
         .overlay(alignment: .bottom) {
-            newPlaceDraftPanel
+            if layout != .mapOnly {
+                newPlaceDraftPanel
+            }
         }
         .accessibilityLabel("Place check-in map")
     }
@@ -530,23 +529,46 @@ struct PlaceCheckInMapSheet: View {
     @ViewBuilder
     private var newPlaceDraftPanel: some View {
         if let draft = newPlaceDraft {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 8) {
-                    Label("Add New Place", systemImage: "mappin.and.ellipse")
-                        .font(.headline.weight(.semibold))
+            mapLocationActionPanel(
+                title: "Pinned Location",
+                coordinateText: draft.coordinate.formattedForPlaceSelection,
+                draft: draft,
+                showsLocationSettingsButton: false
+            )
+            .padding(12)
+        }
+    }
 
-                    Spacer(minLength: 8)
+    @ViewBuilder
+    private var mapLocationActionPanel: some View {
+        if let draft = newPlaceDraft {
+            mapLocationActionPanel(
+                title: "Pinned Location",
+                coordinateText: draft.coordinate.formattedForPlaceSelection,
+                draft: draft,
+                showsLocationSettingsButton: false
+            )
+        } else {
+            mapLocationActionPanel(
+                title: mapTitle,
+                coordinateText: locationStatusText,
+                draft: nil,
+                showsLocationSettingsButton: showsLocationSettingsButton
+            )
+        }
+    }
 
-                    Button {
-                        cancelNewPlaceDraft()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .frame(width: 18, height: 18)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Cancel new place")
-                }
+    private func mapLocationActionPanel(
+        title: String,
+        coordinateText: String,
+        draft: PlaceCheckInNewPlaceDraft?,
+        showsLocationSettingsButton: Bool
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label(title, systemImage: draft == nil ? "location" : "mappin.and.ellipse")
+                .font(.headline.weight(.semibold))
 
+            if draft != nil {
                 TextField("Place name", text: newPlaceNameBinding)
                     .textFieldStyle(.roundedBorder)
 
@@ -554,45 +576,92 @@ struct PlaceCheckInMapSheet: View {
                     HStack {
                         Text("Radius")
                         Spacer()
-                        Text("\(Int(draft.radiusMeters)) m")
+                        Text("\(Int(draft?.radiusMeters ?? PlaceCheckInNewPlaceDraft.defaultRadiusMeters)) m")
                             .foregroundStyle(.secondary)
                     }
                     .font(.caption.weight(.semibold))
 
                     Slider(value: newPlaceRadiusBinding, in: 25...2_000, step: 25)
                 }
+            }
 
-                if !draft.statusMessage.isEmpty {
-                    Text(draft.statusMessage)
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                        .fixedSize(horizontal: false, vertical: true)
+            Text(coordinateText)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if showsLocationSettingsButton {
+                Button {
+                    openLocationSettings()
+                } label: {
+                    Label("Open Location Settings", systemImage: "gearshape")
                 }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
 
-                HStack {
-                    Text(draft.coordinate.formattedForPlaceSelection)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+            if let locationActionErrorText {
+                Text(locationActionErrorText)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
-                    Spacer(minLength: 8)
-
-                    Button("Cancel") {
-                        cancelNewPlaceDraft()
-                    }
-
-                    Button("Save") {
-                        saveNewPlaceDraft()
+            if !isKnownPlaceLocation(for: draft) {
+                HStack(spacing: 10) {
+                    Button {
+                        if draft != nil {
+                            saveNewPlaceDraft()
+                        } else {
+                            beginNewPlaceDraftFromCurrentLocation()
+                        }
+                    } label: {
+                        Label("Add Place", systemImage: "mappin.and.ellipse")
+                            .lineLimit(1)
                     }
                     .buttonStyle(.borderedProminent)
-                    .disabled(!canSaveNewPlaceDraft)
+                    .disabled(isAddPlaceButtonDisabled(for: draft))
+
+                    Button {
+                        if let draft {
+                            checkInAtPinnedLocation(draft)
+                        } else {
+                            checkInAtCurrentLocation()
+                        }
+                    } label: {
+                        Label("Check In Here", systemImage: "location.fill")
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(draft == nil && (currentLocation == nil || isLoadingLocation))
                 }
             }
-            .padding(12)
-            .frame(maxWidth: 360)
-            .routinaGlassPanel(cornerRadius: 12, tint: .accentColor, tintOpacity: 0.08, interactive: true)
-            .padding(12)
         }
+        .padding(12)
+        .frame(maxWidth: 360, alignment: .leading)
+        .routinaGlassPanel(cornerRadius: 12, tint: .teal, tintOpacity: 0.08, interactive: true)
+    }
+
+    private var locationActionErrorText: String? {
+        if let draftMessage = newPlaceDraft?.statusMessage, !draftMessage.isEmpty {
+            return draftMessage
+        }
+        return errorText
+    }
+
+    private func isAddPlaceButtonDisabled(for draft: PlaceCheckInNewPlaceDraft?) -> Bool {
+        if draft != nil {
+            return !canSaveNewPlaceDraft
+        }
+        return currentLocation == nil || isLoadingLocation
+    }
+
+    private func isKnownPlaceLocation(for draft: PlaceCheckInNewPlaceDraft?) -> Bool {
+        if let draft {
+            return PlaceCheckInSupport.nearestContainingPlace(to: draft.coordinate, places: places) != nil
+        }
+        return currentMatchedPlace != nil
     }
 
     private var mapControls: some View {
@@ -971,6 +1040,20 @@ struct PlaceCheckInMapSheet: View {
 
     private func cancelNewPlaceDraft() {
         newPlaceDraft = nil
+        errorText = nil
+    }
+
+    private func beginNewPlaceDraftFromCurrentLocation() {
+        guard let currentLocation else {
+            errorText = "Current location is unavailable."
+            return
+        }
+
+        newPlaceDraft = PlaceCheckInNewPlaceDraft(coordinate: currentLocation)
+        selectedHistoryMarkerID = nil
+        selectedPlaceID = currentMatchedPlace?.id
+        errorText = nil
+        focus(on: currentLocation)
     }
 
     private func isMapTapOnExistingMapFeature(at coordinate: LocationCoordinate) -> Bool {
@@ -1195,6 +1278,34 @@ struct PlaceCheckInMapSheet: View {
         } catch {
             errorText = "Could not check in at \(place.displayName)."
             NSLog("Failed to check in at place from map: \(error.localizedDescription)")
+        }
+    }
+
+    @MainActor
+    private func checkInAtPinnedLocation(_ draft: PlaceCheckInNewPlaceDraft) {
+        do {
+            let session = try PlaceCheckInSupport.checkInAtCurrentLocation(
+                coordinate: draft.coordinate,
+                horizontalAccuracyMeters: nil,
+                activity: nil,
+                in: modelContext
+            )
+            newPlaceDraft = nil
+            selectedPlaceID = session.placeID
+            if let coordinate = session.coordinate {
+                selectedHistoryMarkerID = PlaceCheckInSupport.historyMapMarkerID(for: coordinate)
+                focus(on: coordinate)
+            } else {
+                selectedHistoryMarkerID = nil
+            }
+            selectedMode = .checkIns
+            errorText = nil
+            finishSuccessfulCheckIn()
+        } catch {
+            var updatedDraft = draft
+            updatedDraft.statusMessage = "Could not check in here."
+            newPlaceDraft = updatedDraft
+            NSLog("Failed to check in at pinned map location: \(error.localizedDescription)")
         }
     }
 
