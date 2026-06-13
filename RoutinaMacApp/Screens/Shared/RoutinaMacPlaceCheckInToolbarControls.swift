@@ -14,82 +14,25 @@ struct RoutinaMacPlaceCheckInToolbarItem: ToolbarContent {
 private struct RoutinaMacPlaceCheckInToolbarButton: View {
     let onMapRequested: () -> Void
 
-    @Environment(\.modelContext) private var modelContext
-    @Query(sort: \RoutinePlace.name) private var places: [RoutinePlace]
     @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) private var sessions: [PlaceCheckInSession]
-    @State private var errorText: String?
 
     var body: some View {
         SwiftUI.TimelineView(.periodic(from: .now, by: 60)) { timeline in
-            Menu {
-                statusContent(now: timeline.date)
-
-                Divider()
-
-                Button {
-                    onMapRequested()
-                } label: {
-                    Label("Open Places", systemImage: "map")
-                }
-
-                if !suggestedPlaces.isEmpty {
-                    Divider()
-
-                    Section("Check in") {
-                        ForEach(suggestedPlaces) { place in
-                            Button {
-                                checkIn(at: place)
-                            } label: {
-                                Label(place.displayName, systemImage: placeSystemImage(for: place))
-                            }
-                        }
-                    }
-                }
-
-                if activeSession != nil {
-                    Divider()
-
-                    Button(role: .destructive) {
-                        endActiveSession()
-                    } label: {
-                        Label("End Check-In", systemImage: "stop.circle")
-                    }
-                }
-
-                if let errorText {
-                    Divider()
-                    Text(errorText)
-                }
+            Button {
+                onMapRequested()
             } label: {
                 toolbarLabel
             }
-            .menuStyle(.button)
+            .buttonStyle(.plain)
             .controlSize(.small)
-            .tint(.teal)
             .help(helpText(now: timeline.date))
             .accessibilityLabel(accessibilityLabel(now: timeline.date))
+            .padding(.trailing, 8)
         }
     }
 
     private var activeSession: PlaceCheckInSession? {
         sessions.first { $0.endedAt == nil }
-    }
-
-    private var suggestedPlaces: [RoutinePlace] {
-        PlaceCheckInSupport.suggestedPlaces(
-            places: places,
-            sessions: sessions,
-            limit: 5
-        )
-    }
-
-    @ViewBuilder
-    private func statusContent(now: Date) -> some View {
-        if let activeSession {
-            Text(activeStatusText(for: activeSession, now: now))
-        } else {
-            Text("Check in")
-        }
     }
 
     private var labelSystemImage: String {
@@ -99,18 +42,18 @@ private struct RoutinaMacPlaceCheckInToolbarButton: View {
     private var toolbarLabel: some View {
         HStack(spacing: 7) {
             Image(systemName: labelSystemImage)
-                .font(.system(size: 16, weight: .semibold))
+                .font(.caption.weight(.semibold))
                 .symbolRenderingMode(.hierarchical)
 
             Text(labelTitle)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.caption.weight(.semibold))
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .frame(maxWidth: labelMaxWidth, alignment: .leading)
         }
         .foregroundStyle(toolbarForegroundStyle)
         .padding(.horizontal, 12)
-        .frame(minWidth: activeSession == nil ? 98 : 132, minHeight: 34)
+        .frame(height: 28)
         .background(
             Capsule(style: .continuous)
                 .fill(Color.teal.opacity(activeSession == nil ? 0.12 : 0.18))
@@ -139,16 +82,16 @@ private struct RoutinaMacPlaceCheckInToolbarButton: View {
 
     private func helpText(now: Date) -> String {
         if let activeSession {
-            return activeStatusText(for: activeSession, now: now)
+            return "Open Places, \(activeStatusText(for: activeSession, now: now))"
         }
-        return "Start a place check-in"
+        return "Open Places"
     }
 
     private func accessibilityLabel(now: Date) -> String {
         if let activeSession {
-            return "Place check-in, \(activeStatusText(for: activeSession, now: now))"
+            return "Open Places, current check-in: \(activeStatusText(for: activeSession, now: now))"
         }
-        return "Place check-in"
+        return "Open Places"
     }
 
     private func activeStatusText(for session: PlaceCheckInSession, now: Date) -> String {
@@ -160,35 +103,5 @@ private struct RoutinaMacPlaceCheckInToolbarButton: View {
             return "\(session.displayPlaceName), \(duration) here, \(activity.title)"
         }
         return "\(session.displayPlaceName), \(duration) here"
-    }
-
-    private func placeSystemImage(for place: RoutinePlace) -> String {
-        activeSession?.placeID == place.id ? "location.fill" : "mappin"
-    }
-
-    @MainActor
-    private func checkIn(at place: RoutinePlace) {
-        do {
-            _ = try PlaceCheckInSupport.checkIn(
-                at: place,
-                activity: nil,
-                in: modelContext
-            )
-            errorText = nil
-        } catch {
-            errorText = "Could not check in."
-            NSLog("Failed to check in at place from toolbar: \(error.localizedDescription)")
-        }
-    }
-
-    @MainActor
-    private func endActiveSession() {
-        do {
-            _ = try PlaceCheckInSupport.endActiveSession(in: modelContext)
-            errorText = nil
-        } catch {
-            errorText = "Could not end check-in."
-            NSLog("Failed to end place check-in from toolbar: \(error.localizedDescription)")
-        }
     }
 }

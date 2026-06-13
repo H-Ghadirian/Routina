@@ -533,6 +533,7 @@ struct PlaceCheckInMapSheet: View {
                 title: "Pinned Location",
                 coordinateText: draft.coordinate.formattedForPlaceSelection,
                 draft: draft,
+                selectedPlace: nil,
                 showsLocationSettingsButton: false
             )
             .padding(12)
@@ -546,14 +547,16 @@ struct PlaceCheckInMapSheet: View {
                 title: "Pinned Location",
                 coordinateText: draft.coordinate.formattedForPlaceSelection,
                 draft: draft,
+                selectedPlace: nil,
                 showsLocationSettingsButton: false
             )
         } else {
             mapLocationActionPanel(
                 title: mapTitle,
-                coordinateText: locationStatusText,
+                coordinateText: selectedPlaceCoordinateText ?? locationStatusText,
                 draft: nil,
-                showsLocationSettingsButton: showsLocationSettingsButton
+                selectedPlace: selectedPlace,
+                showsLocationSettingsButton: selectedPlace == nil && showsLocationSettingsButton
             )
         }
     }
@@ -562,6 +565,7 @@ struct PlaceCheckInMapSheet: View {
         title: String,
         coordinateText: String,
         draft: PlaceCheckInNewPlaceDraft?,
+        selectedPlace: RoutinePlace?,
         showsLocationSettingsButton: Bool
     ) -> some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -607,34 +611,41 @@ struct PlaceCheckInMapSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            if !isKnownPlaceLocation(for: draft) {
+            if showsAddPlaceButton(for: draft, selectedPlace: selectedPlace)
+                || showsCheckInButton(for: draft, selectedPlace: selectedPlace) {
                 HStack(spacing: 10) {
-                    Button {
-                        if draft != nil {
-                            saveNewPlaceDraft()
-                        } else {
-                            beginNewPlaceDraftFromCurrentLocation()
+                    if showsAddPlaceButton(for: draft, selectedPlace: selectedPlace) {
+                        Button {
+                            if draft != nil {
+                                saveNewPlaceDraft()
+                            } else {
+                                beginNewPlaceDraftFromCurrentLocation()
+                            }
+                        } label: {
+                            Label("Add Place", systemImage: "mappin.and.ellipse")
+                                .lineLimit(1)
                         }
-                    } label: {
-                        Label("Add Place", systemImage: "mappin.and.ellipse")
-                            .lineLimit(1)
+                        .buttonStyle(.borderedProminent)
+                        .disabled(isAddPlaceButtonDisabled(for: draft))
                     }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(isAddPlaceButtonDisabled(for: draft))
 
-                    Button {
-                        if let draft {
-                            checkInAtPinnedLocation(draft)
-                        } else {
-                            checkInAtCurrentLocation()
+                    if showsCheckInButton(for: draft, selectedPlace: selectedPlace) {
+                        Button {
+                            if let draft {
+                                checkInAtPinnedLocation(draft)
+                            } else if let selectedPlace {
+                                checkIn(at: selectedPlace)
+                            } else {
+                                checkInAtCurrentLocation()
+                            }
+                        } label: {
+                            Label(checkInButtonTitle(for: draft, selectedPlace: selectedPlace), systemImage: "location.fill")
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
                         }
-                    } label: {
-                        Label("Check In Here", systemImage: "location.fill")
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
+                        .buttonStyle(.borderedProminent)
+                        .disabled(draft == nil && (currentLocation == nil || isLoadingLocation))
                     }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(draft == nil && (currentLocation == nil || isLoadingLocation))
                 }
             }
         }
@@ -655,6 +666,59 @@ struct PlaceCheckInMapSheet: View {
             return !canSaveNewPlaceDraft
         }
         return currentLocation == nil || isLoadingLocation
+    }
+
+    private func showsAddPlaceButton(
+        for draft: PlaceCheckInNewPlaceDraft?,
+        selectedPlace: RoutinePlace?
+    ) -> Bool {
+        if selectedPlace != nil {
+            return false
+        }
+        return !isKnownPlaceLocation(for: draft)
+    }
+
+    private func showsCheckInButton(
+        for draft: PlaceCheckInNewPlaceDraft?,
+        selectedPlace: RoutinePlace?
+    ) -> Bool {
+        if let selectedPlace {
+            return !isCurrentMatchedPlace(selectedPlace)
+        }
+        if let draft {
+            guard let containingPlace = PlaceCheckInSupport.nearestContainingPlace(to: draft.coordinate, places: places) else {
+                return true
+            }
+            return !isCurrentMatchedPlace(containingPlace)
+        }
+        return !isKnownPlaceLocation(for: draft)
+    }
+
+    private func checkInButtonTitle(
+        for draft: PlaceCheckInNewPlaceDraft?,
+        selectedPlace: RoutinePlace?
+    ) -> String {
+        if let selectedPlace {
+            return "Check In at \(selectedPlace.displayName)"
+        }
+        if let draft,
+           let place = PlaceCheckInSupport.nearestContainingPlace(to: draft.coordinate, places: places) {
+            return "Check In at \(place.displayName)"
+        }
+        return "Check In Here"
+    }
+
+    private func isCurrentMatchedPlace(_ place: RoutinePlace) -> Bool {
+        currentMatchedPlace?.id == place.id
+    }
+
+    private var selectedPlaceCoordinateText: String? {
+        guard let selectedPlace else { return nil }
+        let coordinate = LocationCoordinate(
+            latitude: selectedPlace.latitude,
+            longitude: selectedPlace.longitude
+        )
+        return "\(coordinate.formattedForPlaceSelection) · \(Int(selectedPlace.radiusMeters.rounded())) m radius"
     }
 
     private func isKnownPlaceLocation(for draft: PlaceCheckInNewPlaceDraft?) -> Bool {
@@ -1057,7 +1121,7 @@ struct PlaceCheckInMapSheet: View {
     }
 
     private func isMapTapOnExistingMapFeature(at coordinate: LocationCoordinate) -> Bool {
-        if places.contains(where: { $0.distance(to: coordinate) <= 75 }) {
+        if places.contains(where: { $0.distance(to: coordinate) <= 18 }) {
             return true
         }
         if historyMapMarkers.contains(where: { $0.coordinate.distance(to: coordinate) <= 75 }) {
@@ -1287,6 +1351,7 @@ struct PlaceCheckInMapSheet: View {
             let session = try PlaceCheckInSupport.checkInAtCurrentLocation(
                 coordinate: draft.coordinate,
                 horizontalAccuracyMeters: nil,
+                rawPlaceName: draft.name,
                 activity: nil,
                 in: modelContext
             )

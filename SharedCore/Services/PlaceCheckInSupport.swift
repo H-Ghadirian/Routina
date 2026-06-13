@@ -156,6 +156,7 @@ enum PlaceCheckInSupport {
     static func checkInAtCurrentLocation(
         coordinate: LocationCoordinate,
         horizontalAccuracyMeters: Double? = nil,
+        rawPlaceName: String? = nil,
         activity: PlaceCheckInActivity? = nil,
         date: Date = Date(),
         in context: ModelContext,
@@ -167,12 +168,14 @@ enum PlaceCheckInSupport {
             return try checkIn(at: place, activity: activity, date: date, in: context, sourceDevice: sourceDevice)
         }
 
-        let rawPlaceName = suggestedRawCurrentLocationName(
-            coordinate: coordinate,
-            places: places,
-            sessions: sessions,
-            date: date
-        )
+        let cleanedRawPlaceName = RoutinePlace.cleanedName(rawPlaceName)
+        let resolvedRawPlaceName = cleanedRawPlaceName
+            ?? suggestedRawCurrentLocationName(
+                coordinate: coordinate,
+                places: places,
+                sessions: sessions,
+                date: date
+            )
 
         if
             let active = try activeSession(in: context),
@@ -182,8 +185,8 @@ enum PlaceCheckInSupport {
                 horizontalAccuracyMeters: horizontalAccuracyMeters
             )
         {
-            if isGeneratedRawCurrentLocationName(active.placeName) {
-                active.placeName = rawPlaceName
+            if cleanedRawPlaceName != nil || isGeneratedRawCurrentLocationName(active.placeName) {
+                active.placeName = resolvedRawPlaceName
             }
             active.latitude = coordinate.latitude
             active.longitude = coordinate.longitude
@@ -208,7 +211,7 @@ enum PlaceCheckInSupport {
         try endActiveSessions(at: date, in: context, saves: false, sourceDevice: sourceDevice)
         let session = PlaceCheckInSession(
             placeID: nil,
-            placeName: rawPlaceName,
+            placeName: resolvedRawPlaceName,
             latitude: coordinate.latitude,
             longitude: coordinate.longitude,
             horizontalAccuracyMeters: horizontalAccuracyMeters,

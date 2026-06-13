@@ -149,6 +149,47 @@ struct PlaceCheckInSupportTests {
 
     @MainActor
     @Test
+    func checkInAtCurrentLocation_usesProvidedRawPlaceName() throws {
+        let context = makeInMemoryContext()
+        let coordinate = LocationCoordinate(latitude: 48.8566, longitude: 2.3522)
+
+        let session = try PlaceCheckInSupport.checkInAtCurrentLocation(
+            coordinate: coordinate,
+            rawPlaceName: "  Corner Bakery  ",
+            date: makeDate("2026-05-10T11:00:00Z"),
+            in: context
+        )
+
+        #expect(session.placeID == nil)
+        #expect(session.displayPlaceName == "Corner Bakery")
+        #expect(session.coordinate == coordinate)
+    }
+
+    @MainActor
+    @Test
+    func checkInAtCurrentLocation_updatesActiveRawSessionWithProvidedName() throws {
+        let context = makeInMemoryContext()
+        let coordinate = LocationCoordinate(latitude: 48.8566, longitude: 2.3522)
+        let first = try PlaceCheckInSupport.checkInAtCurrentLocation(
+            coordinate: coordinate,
+            date: makeDate("2026-05-10T11:00:00Z"),
+            in: context
+        )
+
+        let second = try PlaceCheckInSupport.checkInAtCurrentLocation(
+            coordinate: LocationCoordinate(latitude: 48.8567, longitude: 2.3521),
+            rawPlaceName: "Corner Bakery",
+            date: makeDate("2026-05-10T11:05:00Z"),
+            in: context
+        )
+
+        #expect(first.id == second.id)
+        #expect(second.displayPlaceName == "Corner Bakery")
+        #expect(try context.fetch(FetchDescriptor<PlaceCheckInSession>()).count == 1)
+    }
+
+    @MainActor
+    @Test
     func checkInAtCurrentLocation_namesRawCoordinateNearSavedPlace() throws {
         let context = makeInMemoryContext()
         _ = makePlace(in: context, name: "Office", latitude: 52.5200, longitude: 13.4050, radiusMeters: 100)
