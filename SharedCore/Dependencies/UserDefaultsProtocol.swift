@@ -59,6 +59,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingHomeTaskListModeTabsVisible
     case appSettingMacTimelineQuickFiltersVisible
     case appSettingMacStatusComposerEnabled
+    case appSettingSettingsDevicesSectionEnabled
     case appSettingRelatedTagRulesEnabled
     case appSettingMacEventEmotionActionsEnabled
     case appSettingShowPersianDates

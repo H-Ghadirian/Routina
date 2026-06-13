@@ -220,6 +220,10 @@ struct SettingsGeneralDetailView: View {
         UserDefaultBoolValueKey.appSettingRelatedTagRulesEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isRelatedTagRulesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingSettingsDevicesSectionEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isSettingsDevicesSectionEnabled = false
 
     var body: some View {
 List {
@@ -282,6 +286,8 @@ List {
 
         Text("Show tag-related rules controls in Settings > Tags.")
             .foregroundStyle(.secondary)
+
+        Toggle("Show Devices section", isOn: $isSettingsDevicesSectionEnabled)
     }
 
     Section("Navigation") {

@@ -6,8 +6,7 @@ struct SettingsMacTagsDetailView: View {
 
     var body: some View {
 SettingsMacDetailShell(
-    title: "Tags",
-    subtitle: "Review every tag in Routina and rename or remove them globally."
+    title: "Tags"
 ) {
     SettingsMacDetailCard(title: "All Tags") {
         SettingsMacTagsListContent(store: store)

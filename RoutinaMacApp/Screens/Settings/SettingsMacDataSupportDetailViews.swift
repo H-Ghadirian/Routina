@@ -36,6 +36,10 @@ SettingsMacDetailShell(
                     .controlSize(.small)
             }
         }
+
+        Text(store.cloud.syncStatusText)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
     }
 
     SettingsMacDetailCard(title: "Data Backup") {
@@ -71,12 +75,6 @@ SettingsMacDetailShell(
             .foregroundStyle(
                 store.dataTransfer.hasRecentSuccessfulBackup() ? Color.secondary : Color.red
             )
-    }
-
-    SettingsMacDetailCard(title: "iCloud Status") {
-        Text(store.cloud.syncStatusText)
-            .font(.footnote)
-            .foregroundStyle(.secondary)
     }
 
     SettingsMacDetailCard(title: "Estimated Usage") {

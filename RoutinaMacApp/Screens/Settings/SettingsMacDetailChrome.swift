@@ -2,12 +2,12 @@ import SwiftUI
 
 struct SettingsMacDetailShell<Content: View>: View {
     let title: String
-    let subtitle: String
+    let subtitle: String?
     let content: Content
 
     init(
         title: String,
-        subtitle: String,
+        subtitle: String? = nil,
         @ViewBuilder content: () -> Content
     ) {
         self.title = title
@@ -22,9 +22,11 @@ struct SettingsMacDetailShell<Content: View>: View {
                     Text(title)
                         .font(.largeTitle.weight(.semibold))
 
-                    Text(subtitle)
-                        .font(.body)
-                        .foregroundStyle(.secondary)
+                    if let subtitle, !subtitle.isEmpty {
+                        Text(subtitle)
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 content

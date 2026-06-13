@@ -501,6 +501,12 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func defaultSettingsKeepPersianDatesOff() {
+        #expect(!SettingsFeature.State().appearance.showPersianDates)
+        #expect(!RoutinaUserPreferences().showPersianDates)
+    }
+
+    @Test
     func showTimelineTasksInDayPlannerToggled_persistsSelection() async {
         let persistedValue = LockIsolated<Bool?>(nil)
 

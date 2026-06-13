@@ -24,6 +24,19 @@ List {
             Label("Delete iCloud Data", systemImage: "trash")
         }
         .disabled(actionsDisabled)
+
+        if store.cloud.isCloudSyncInProgress ||
+            store.cloud.isCloudDataResetAuthenticationInProgress ||
+            store.cloud.isCloudDataResetInProgress {
+            HStack(spacing: 10) {
+                ProgressView()
+                Text(store.cloud.syncStatusText)
+                    .foregroundStyle(.secondary)
+            }
+        } else {
+            Text(store.cloud.syncStatusText)
+                .foregroundStyle(.secondary)
+        }
     }
 
     Section("Data Backup") {
@@ -40,21 +53,6 @@ List {
             Label("Import Routine Data", systemImage: "square.and.arrow.up")
         }
         .disabled(store.dataTransfer.isDataTransferInProgress)
-    }
-
-    Section("iCloud Status") {
-        if store.cloud.isCloudSyncInProgress ||
-            store.cloud.isCloudDataResetAuthenticationInProgress ||
-            store.cloud.isCloudDataResetInProgress {
-            HStack(spacing: 10) {
-                ProgressView()
-                Text(store.cloud.syncStatusText)
-                    .foregroundStyle(.secondary)
-            }
-        } else {
-            Text(store.cloud.syncStatusText)
-                .foregroundStyle(.secondary)
-        }
     }
 
     Section("Backup Status") {

@@ -99,6 +99,10 @@ struct HomeTCAView: View {
         store: SharedDefaults.app
     ) var isMacStatusComposerEnabled = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingSettingsDevicesSectionEnabled.rawValue,
+        store: SharedDefaults.app
+    ) var isSettingsDevicesSectionEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
         store: SharedDefaults.app
     ) var areMacEventEmotionActionsEnabled = false

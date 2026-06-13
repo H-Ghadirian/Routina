@@ -94,7 +94,8 @@ extension HomeTCAView {
 
     var currentSelectedSettingsSection: SettingsMacSection {
         let visibleSections = SettingsMacSection.visibleSections(
-            isGitFeaturesEnabled: settingsStore.appearance.isGitFeaturesEnabled
+            isGitFeaturesEnabled: settingsStore.appearance.isGitFeaturesEnabled,
+            isDevicesSectionEnabled: isSettingsDevicesSectionEnabled
         )
         let candidate = store.selectedSettingsSection ?? .notifications
         let resolvedSection = candidate.resolvedNavigationSection
@@ -972,6 +973,7 @@ extension HomeTCAView {
         HomeMacSettingsSidebarView(
             store: settingsStore,
             selectedSection: currentSelectedSettingsSection,
+            isDevicesSectionEnabled: isSettingsDevicesSectionEnabled,
             onSelectSection: { section in
                 store.send(.selectedSettingsSectionChanged(section))
             }

@@ -19,13 +19,23 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
 
     var id: String { rawValue }
 
-    static func visibleSections(isGitFeaturesEnabled: Bool) -> [SettingsSectionID] {
+    static func visibleSections(
+        isGitFeaturesEnabled: Bool,
+        isDevicesSectionEnabled: Bool = false
+    ) -> [SettingsSectionID] {
         allCases.filter {
-            isSectionVisible($0, isGitFeaturesEnabled: isGitFeaturesEnabled)
+            isSectionVisible(
+                $0,
+                isGitFeaturesEnabled: isGitFeaturesEnabled,
+                isDevicesSectionEnabled: isDevicesSectionEnabled
+            )
         }
     }
 
-    static func compactSectionGroups(isGitFeaturesEnabled: Bool) -> [[SettingsSectionID]] {
+    static func compactSectionGroups(
+        isGitFeaturesEnabled: Bool,
+        isDevicesSectionEnabled: Bool = false
+    ) -> [[SettingsSectionID]] {
         let groupedSections: [[SettingsSectionID]] = [
             [
                 .general,
@@ -49,7 +59,11 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         return groupedSections
             .map {
                 $0.filter {
-                    isSectionVisible($0, isGitFeaturesEnabled: isGitFeaturesEnabled)
+                    isSectionVisible(
+                        $0,
+                        isGitFeaturesEnabled: isGitFeaturesEnabled,
+                        isDevicesSectionEnabled: isDevicesSectionEnabled
+                    )
                 }
             }
             .filter { !$0.isEmpty }
@@ -57,8 +71,12 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
 
     private static func isSectionVisible(
         _ section: SettingsSectionID,
-        isGitFeaturesEnabled: Bool
+        isGitFeaturesEnabled: Bool,
+        isDevicesSectionEnabled: Bool
     ) -> Bool {
+        if section == .devices && !isDevicesSectionEnabled {
+            return false
+        }
         if section == .git && !isGitFeaturesEnabled {
             return false
         }
@@ -155,10 +173,10 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
             )
 
         case .places:
-            return SettingsSectionRowPresentation(subtitle: state.places.overviewSubtitle)
+            return SettingsSectionRowPresentation()
 
         case .tags:
-            return SettingsSectionRowPresentation(subtitle: state.tags.overviewSubtitle)
+            return SettingsSectionRowPresentation()
 
         case .appearance:
             return SettingsSectionRowPresentation(subtitle: state.appearance.overviewSubtitle)
@@ -253,10 +271,10 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
 }
 
 struct SettingsSectionRowPresentation: Equatable {
-    var subtitle: String
+    var subtitle: String?
     var value: String?
 
-    init(subtitle: String, value: String? = nil) {
+    init(subtitle: String? = nil, value: String? = nil) {
         self.subtitle = subtitle
         self.value = value
     }

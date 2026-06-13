@@ -11,6 +11,10 @@ private enum SettingsMacLayout {
 struct SettingsMacView: View {
     let store: StoreOf<SettingsFeature>
     @State private var selectedSection: SettingsMacSection? = .notifications
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingSettingsDevicesSectionEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isDevicesSectionEnabled = false
 
     var body: some View {
 NavigationSplitView {
@@ -60,7 +64,8 @@ NavigationSplitView {
 
     private var visibleSections: [SettingsMacSection] {
         SettingsMacSection.visibleSections(
-            isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled
+            isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled,
+            isDevicesSectionEnabled: isDevicesSectionEnabled
         )
     }
 }

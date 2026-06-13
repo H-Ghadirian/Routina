@@ -31,6 +31,32 @@ struct SettingsSectionViewSupportTests {
     }
 
     @Test
+    func visibleSectionsHideDevicesWhenFeatureIsDisabled() {
+        #expect(!SettingsSectionID.visibleSections(
+            isGitFeaturesEnabled: false
+        ).contains(.devices))
+        #expect(SettingsSectionID.visibleSections(
+            isGitFeaturesEnabled: false,
+            isDevicesSectionEnabled: true
+        ).contains(.devices))
+        #expect(!SettingsSectionID.compactSectionGroups(
+            isGitFeaturesEnabled: false
+        ).flatMap { $0 }.contains(.devices))
+        #expect(SettingsSectionID.compactSectionGroups(
+            isGitFeaturesEnabled: false,
+            isDevicesSectionEnabled: true
+        ).flatMap { $0 }.contains(.devices))
+    }
+
+    @Test
+    func placesAndTagsRowsDoNotShowSubtitles() {
+        let state = SettingsFeatureState()
+
+        #expect(SettingsSectionID.places.rowPresentation(in: state).subtitle == nil)
+        #expect(SettingsSectionID.tags.rowPresentation(in: state).subtitle == nil)
+    }
+
+    @Test
     func visibleSectionsHideMergedSupportSection() {
         let sections = SettingsSectionID.visibleSections(isGitFeaturesEnabled: false)
         let compactSections = SettingsSectionID.compactSectionGroups(isGitFeaturesEnabled: false).flatMap { $0 }
@@ -84,7 +110,7 @@ struct SettingsSectionViewSupportTests {
 
         let presentation = SettingsSectionID.notifications.rowPresentation(in: state)
 
-        #expect(presentation.subtitle.contains("Daily reminder"))
+        #expect(presentation.subtitle?.contains("Daily reminder") == true)
         #expect(presentation.value == "On")
     }
 
@@ -129,8 +155,8 @@ struct SettingsSectionViewSupportTests {
 
         let presentation = SettingsSectionID.about.rowPresentation(in: state)
 
-        #expect(presentation.subtitle.contains("Email support"))
-        #expect(presentation.subtitle.contains("Version 1.2.3"))
+        #expect(presentation.subtitle?.contains("Email support") == true)
+        #expect(presentation.subtitle?.contains("Version 1.2.3") == true)
     }
 
     @Test

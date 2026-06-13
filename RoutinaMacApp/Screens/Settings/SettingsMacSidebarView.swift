@@ -14,10 +14,12 @@ HStack(spacing: 12) {
         Text(section.title)
             .foregroundStyle(.primary)
 
-        Text(presentation.subtitle)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .lineLimit(2)
+        if let subtitle = presentation.subtitle, !subtitle.isEmpty {
+            Text(subtitle)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+        }
     }
 
     Spacer(minLength: 8)

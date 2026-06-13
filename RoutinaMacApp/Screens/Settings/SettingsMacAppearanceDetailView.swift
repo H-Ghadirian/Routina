@@ -268,6 +268,10 @@ struct SettingsMacGeneralDetailView: View {
         store: SharedDefaults.app
     ) private var isMacStatusComposerEnabled = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingSettingsDevicesSectionEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isSettingsDevicesSectionEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
         store: SharedDefaults.app
     ) private var areMacEventEmotionActionsEnabled = false
@@ -365,6 +369,9 @@ SettingsMacDetailShell(
         Text("Show tag-related rules controls in Settings > Tags.")
             .font(.footnote)
             .foregroundStyle(.secondary)
+
+        Toggle("Show Devices section", isOn: $isSettingsDevicesSectionEnabled)
+            .toggleStyle(.switch)
 
         Toggle("Show Home task type tabs", isOn: $areHomeTaskListModeTabsVisible)
             .toggleStyle(.switch)

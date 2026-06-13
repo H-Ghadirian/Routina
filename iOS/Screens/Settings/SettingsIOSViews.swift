@@ -27,12 +27,17 @@ struct SettingsPlatformRootView: View {
 
 struct SettingsIOSRootView: View {
     let store: StoreOf<SettingsFeature>
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingSettingsDevicesSectionEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isDevicesSectionEnabled = false
 
     var body: some View {
 List {
     ForEach(
         SettingsIOSSection.compactSectionGroups(
-            isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled
+            isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled,
+            isDevicesSectionEnabled: isDevicesSectionEnabled
         ),
         id: \.self
     ) { sections in
@@ -56,6 +61,10 @@ List {
 private struct SettingsIPadSplitView: View {
     let store: StoreOf<SettingsFeature>
     @State private var selectedSection: SettingsIOSSection? = .notifications
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingSettingsDevicesSectionEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isDevicesSectionEnabled = false
 
     var body: some View {
 NavigationSplitView {
@@ -86,7 +95,8 @@ NavigationSplitView {
 
     private var visibleSections: [SettingsIOSSection] {
         SettingsIOSSection.visibleSections(
-            isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled
+            isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled,
+            isDevicesSectionEnabled: isDevicesSectionEnabled
         )
     }
 }
