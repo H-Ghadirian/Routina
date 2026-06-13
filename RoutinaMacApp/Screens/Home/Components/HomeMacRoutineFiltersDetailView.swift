@@ -31,6 +31,8 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
             coreFilterCard
 
+            sortFilterCard
+
             HomeMacSidebarSectionCard {
                 HomeMacImportanceUrgencyDisclosureSection(
                     selectedFilter: $selectedImportanceUrgencyFilter,
@@ -95,7 +97,7 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     }
 
     private var coreFilterCard: some View {
-        HomeMacSidebarSectionCard {
+        HomeMacSidebarSectionCard(title: "Filters") {
             VStack(alignment: .leading, spacing: 18) {
                 filterControlSection("Task type") {
                     taskListModePicker
@@ -103,14 +105,6 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
                 filterControlSection("View Mode") {
                     viewModePicker
-                }
-
-                filterControlSection("Group") {
-                    groupingPicker
-                }
-
-                filterControlSection("Sort") {
-                    sortPicker
                 }
 
                 filterControlSection("Created") {
@@ -140,6 +134,20 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                     filterControlSection("Todo State") {
                         todoStateFilterSection
                     }
+                }
+            }
+        }
+    }
+
+    private var sortFilterCard: some View {
+        HomeMacSidebarSectionCard(title: "Sort") {
+            VStack(alignment: .leading, spacing: 18) {
+                filterControlSection("Grouping") {
+                    groupingPicker
+                }
+
+                filterControlSection("Sort") {
+                    sortPicker
                 }
             }
         }
