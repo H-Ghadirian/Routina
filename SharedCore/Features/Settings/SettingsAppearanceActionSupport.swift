@@ -70,27 +70,19 @@ enum SettingsAppearanceActionHandler {
     ) -> Effect<SettingsFeature.Action> {
         let authenticationStatus = deviceAuthenticationClient.status()
         SettingsAppearanceEditor.beginAppLockToggle(
-            enabling: isEnabled,
+            requiresAuthentication: true,
             deviceAuthenticationStatus: authenticationStatus,
             state: &state
         )
 
-        guard isEnabled else {
-            appSettingsClient.setAppLockEnabled(false)
-            SettingsAppearanceEditor.finishAppLockToggle(
-                enabled: false,
-                message: "",
-                deviceAuthenticationStatus: authenticationStatus,
-                state: &state
-            )
-            return .none
-        }
+        let unavailableMessage = isEnabled
+            ? authenticationStatus.unavailableReason ?? "Device authentication is unavailable."
+            : "Device authentication is unavailable, so App Lock stays on."
 
         guard authenticationStatus.isAvailable else {
             SettingsAppearanceEditor.finishAppLockToggle(
-                enabled: false,
-                message: authenticationStatus.unavailableReason
-                    ?? "Device authentication is unavailable.",
+                enabled: state.isAppLockEnabled,
+                message: unavailableMessage,
                 deviceAuthenticationStatus: authenticationStatus,
                 state: &state
             )
@@ -98,8 +90,14 @@ enum SettingsAppearanceActionHandler {
         }
 
         return .run { send in
-            let result = await deviceAuthenticationClient.authenticate("Enable app lock for Routina")
-            await send(.appLockEnableFinished(result))
+            let reason = isEnabled
+                ? "Enable app lock for Routina"
+                : "Disable app lock for Routina"
+            let result = await deviceAuthenticationClient.authenticate(reason)
+            let action: SettingsFeature.Action = isEnabled
+                ? .appLockEnableFinished(result)
+                : .appLockDisableFinished(result)
+            await send(action)
         }
     }
 
@@ -122,6 +120,33 @@ enum SettingsAppearanceActionHandler {
         case .failure(let message):
             SettingsAppearanceEditor.finishAppLockToggle(
                 enabled: false,
+                message: message,
+                deviceAuthenticationStatus: authenticationStatus,
+                state: &state
+            )
+        }
+        return .none
+    }
+
+    static func appLockDisableFinished(
+        _ result: DeviceAuthenticationResult,
+        state: inout SettingsAppearanceState,
+        appSettingsClient: AppSettingsClient,
+        deviceAuthenticationClient: DeviceAuthenticationClient
+    ) -> Effect<SettingsFeature.Action> {
+        let authenticationStatus = deviceAuthenticationClient.status()
+        switch result {
+        case .success:
+            appSettingsClient.setAppLockEnabled(false)
+            SettingsAppearanceEditor.finishAppLockToggle(
+                enabled: false,
+                message: "App lock is off.",
+                deviceAuthenticationStatus: authenticationStatus,
+                state: &state
+            )
+        case .failure(let message):
+            SettingsAppearanceEditor.finishAppLockToggle(
+                enabled: true,
                 message: message,
                 deviceAuthenticationStatus: authenticationStatus,
                 state: &state

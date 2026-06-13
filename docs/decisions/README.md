@@ -26,6 +26,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0235](0235-require-authentication-to-disable-app-lock.md) refines [0166](0166-use-app-lock-for-cloud-data-reset.md) for App Lock protection:** Turning App Lock off requires a fresh device owner authentication pass; failed or unavailable authentication leaves App Lock enabled and no locked-screen unauthenticated fallback is offered.
 - **[0234](0234-hide-current-place-map-check-in.md) refines [0233](0233-allow-selected-saved-place-check-in.md) for current-place map actions:** Selected or pinned saved places hide Check In when they match the user's current resolved place, while away saved places still offer Check In.
 - **[0233](0233-allow-selected-saved-place-check-in.md) refines [0232](0232-allow-known-pin-check-in.md) for selected saved-place map markers:** Selecting a saved-place marker offers Check In for that place, while Add Place remains unavailable.
 - **[0232](0232-allow-known-pin-check-in.md) refines [0230](0230-unify-map-pin-place-and-check-in-actions.md) for known saved-place map pins:** Pinned locations inside saved places offer Check In but not Add Place, while current-location known-place panels can remain passive.
@@ -378,3 +379,4 @@ These are ordered from newest resolver to oldest resolver.
 | [0232](0232-allow-known-pin-check-in.md) | Allow Known Pin Check-In | Accepted | 2026-06-13 |
 | [0233](0233-allow-selected-saved-place-check-in.md) | Allow Selected Saved-Place Check-In | Accepted | 2026-06-13 |
 | [0234](0234-hide-current-place-map-check-in.md) | Hide Current Place Map Check-In | Accepted | 2026-06-13 |
+| [0235](0235-require-authentication-to-disable-app-lock.md) | Require Authentication to Disable App Lock | Accepted | 2026-06-13 |

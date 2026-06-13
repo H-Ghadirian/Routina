@@ -96,14 +96,14 @@ enum SettingsAppearanceEditor {
     }
 
     static func beginAppLockToggle(
-        enabling: Bool,
+        requiresAuthentication: Bool,
         deviceAuthenticationStatus: DeviceAuthenticationStatus,
         state: inout SettingsAppearanceState
     ) {
         state.appLockMethodDescription = deviceAuthenticationStatus.methodDescription
         state.appLockUnavailableReason = deviceAuthenticationStatus.unavailableReason
         state.appLockStatusMessage = ""
-        state.isAppLockToggleInProgress = enabling && deviceAuthenticationStatus.isAvailable
+        state.isAppLockToggleInProgress = requiresAuthentication && deviceAuthenticationStatus.isAvailable
     }
 
     static func finishAppLockToggle(

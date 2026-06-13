@@ -73,11 +73,6 @@ final class AppLockCoordinator: ObservableObject {
         }
     }
 
-    func disableAppLock(settings: AppSettingsClient) {
-        settings.setAppLockEnabled(false)
-        isLocked = false
-        statusMessage = ""
-    }
 }
 
 struct AppLockGate<Content: View>: View {
@@ -179,12 +174,6 @@ struct AppLockGate<Content: View>: View {
                 .controlSize(.large)
                 .disabled(coordinator.isAuthenticating)
 
-                if coordinator.authenticationStatus.isAvailable == false {
-                    Button("Turn Off App Lock") {
-                        coordinator.disableAppLock(settings: appSettingsClient)
-                    }
-                    .buttonStyle(.bordered)
-                }
             }
             .padding(28)
             .frame(maxWidth: 360)

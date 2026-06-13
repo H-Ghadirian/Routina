@@ -17,6 +17,7 @@ struct SettingsFeature {
         case timelineRowFieldVisibilityChanged(HomeTimelineRowField, Bool)
         case appLockToggled(Bool)
         case appLockEnableFinished(DeviceAuthenticationResult)
+        case appLockDisableFinished(DeviceAuthenticationResult)
         case gitFeaturesToggled(Bool)
         case showPersianDatesToggled(Bool)
         case automaticPlaceCheckInToggled(Bool)
@@ -157,6 +158,14 @@ struct SettingsFeature {
 
             case let .appLockEnableFinished(result):
                 return SettingsAppearanceActionHandler.appLockEnableFinished(
+                    result,
+                    state: &state.appearance,
+                    appSettingsClient: self.appSettingsClient,
+                    deviceAuthenticationClient: self.deviceAuthenticationClient
+                )
+
+            case let .appLockDisableFinished(result):
+                return SettingsAppearanceActionHandler.appLockDisableFinished(
                     result,
                     state: &state.appearance,
                     appSettingsClient: self.appSettingsClient,

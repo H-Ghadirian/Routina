@@ -602,6 +602,126 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func appLockToggled_offAuthenticatesThenPersistsSetting() async {
+        let persistedValue = LockIsolated<Bool?>(nil)
+
+        let store = TestStore(
+            initialState: SettingsFeature.State(
+                appearance: .init(isAppLockEnabled: true)
+            )
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setAppLockEnabled = { persistedValue.setValue($0) }
+            $0.deviceAuthenticationClient.status = {
+                DeviceAuthenticationStatus(
+                    isAvailable: true,
+                    methodDescription: "Touch ID or your Mac password",
+                    unavailableReason: nil
+                )
+            }
+            $0.deviceAuthenticationClient.authenticate = { reason in
+                #expect(reason == "Disable app lock for Routina")
+                return .success
+            }
+        }
+
+        await store.send(.appLockToggled(false)) {
+            $0.appearance.isAppLockToggleInProgress = true
+            $0.appearance.appLockMethodDescription = "Touch ID or your Mac password"
+        }
+
+        await store.receive(.appLockDisableFinished(.success)) {
+            $0.appearance.isAppLockEnabled = false
+            $0.appearance.isAppLockToggleInProgress = false
+            $0.appearance.appLockMethodDescription = "Touch ID or your Mac password"
+            $0.appearance.appLockStatusMessage = "App lock is off."
+        }
+
+        #expect(persistedValue.value == false)
+    }
+
+    @Test
+    func appLockToggled_offAuthenticationFailureKeepsAppLockOn() async {
+        let persistedValue = LockIsolated<Bool?>(nil)
+
+        let store = TestStore(
+            initialState: SettingsFeature.State(
+                appearance: .init(isAppLockEnabled: true)
+            )
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setAppLockEnabled = { persistedValue.setValue($0) }
+            $0.deviceAuthenticationClient.status = {
+                DeviceAuthenticationStatus(
+                    isAvailable: true,
+                    methodDescription: "Touch ID or your Mac password",
+                    unavailableReason: nil
+                )
+            }
+            $0.deviceAuthenticationClient.authenticate = { reason in
+                #expect(reason == "Disable app lock for Routina")
+                return .failure("Authentication was canceled.")
+            }
+        }
+
+        await store.send(.appLockToggled(false)) {
+            $0.appearance.isAppLockToggleInProgress = true
+            $0.appearance.appLockMethodDescription = "Touch ID or your Mac password"
+        }
+
+        await store.receive(.appLockDisableFinished(.failure("Authentication was canceled."))) {
+            $0.appearance.isAppLockEnabled = true
+            $0.appearance.isAppLockToggleInProgress = false
+            $0.appearance.appLockMethodDescription = "Touch ID or your Mac password"
+            $0.appearance.appLockStatusMessage = "Authentication was canceled."
+        }
+
+        #expect(persistedValue.value == nil)
+    }
+
+    @Test
+    func appLockToggled_offWithoutAvailableAuthenticationKeepsAppLockOn() async {
+        let persistedValue = LockIsolated<Bool?>(nil)
+        let authenticateCallCount = LockIsolated(0)
+
+        let store = TestStore(
+            initialState: SettingsFeature.State(
+                appearance: .init(isAppLockEnabled: true)
+            )
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setAppLockEnabled = { persistedValue.setValue($0) }
+            $0.deviceAuthenticationClient.status = {
+                DeviceAuthenticationStatus(
+                    isAvailable: false,
+                    methodDescription: "Touch ID or your Mac password",
+                    unavailableReason: "Set up Touch ID or use your Mac password to enable app lock."
+                )
+            }
+            $0.deviceAuthenticationClient.authenticate = { _ in
+                authenticateCallCount.withValue { $0 += 1 }
+                return .success
+            }
+        }
+
+        await store.send(.appLockToggled(false)) {
+            $0.appearance.appLockMethodDescription = "Touch ID or your Mac password"
+            $0.appearance.appLockUnavailableReason = "Set up Touch ID or use your Mac password to enable app lock."
+            $0.appearance.appLockStatusMessage = "Device authentication is unavailable, so App Lock stays on."
+        }
+
+        #expect(store.state.appearance.isAppLockEnabled)
+        #expect(persistedValue.value == nil)
+        #expect(authenticateCallCount.value == 0)
+    }
+
+    @Test
     func resetCloudDataConfirmed_authenticatesWithAppLockBeforeDeleting() async {
         let context = makeInMemoryContext()
         let now = makeDate("2026-06-06T12:00:00Z")
