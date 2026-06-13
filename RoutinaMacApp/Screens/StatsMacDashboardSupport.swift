@@ -325,6 +325,8 @@ enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
     func isAvailable(
         selectedRange: DoneChartRange,
         isGitFeaturesEnabled: Bool,
+        isGoalsTabEnabled: Bool,
+        areMacEventEmotionActionsEnabled: Bool,
         isStatsWinsEnabled: Bool,
         isStatsAchievementsEnabled: Bool
     ) -> Bool {
@@ -333,6 +335,10 @@ enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
             return selectedRange != .today
         case .gitHub:
             return isGitFeaturesEnabled
+        case .goalProgress:
+            return isGoalsTabEnabled
+        case .emotionTrend:
+            return areMacEventEmotionActionsEnabled
         case .recentWins:
             return isStatsWinsEnabled
         case .focusAchievements:

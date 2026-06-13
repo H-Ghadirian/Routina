@@ -103,6 +103,10 @@ struct StatsView: View {
     private var isStatsSleepTabEnabled = false
     @AppStorage(UserDefaultBoolValueKey.appSettingStatsAchievementsEnabled.rawValue, store: SharedDefaults.app)
     private var isStatsAchievementsEnabled = false
+    @AppStorage(UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue, store: SharedDefaults.app)
+    private var isGoalsTabEnabled = false
+    @AppStorage(UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue, store: SharedDefaults.app)
+    private var areMacEventEmotionActionsEnabled = false
 
     private typealias Metrics = StatsFeature.Metrics
 
@@ -220,6 +224,8 @@ struct StatsView: View {
             item.isAvailable(
                 selectedRange: selectedRange,
                 isGitFeaturesEnabled: store.isGitFeaturesEnabled,
+                isGoalsTabEnabled: isGoalsTabEnabled,
+                areMacEventEmotionActionsEnabled: areMacEventEmotionActionsEnabled,
                 isStatsWinsEnabled: isStatsWinsEnabled,
                 isStatsAchievementsEnabled: isStatsAchievementsEnabled
             ) && (item != .unassignedFocus || hasUnassignedFocusSessions)
