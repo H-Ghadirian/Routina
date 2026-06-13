@@ -816,6 +816,47 @@ struct TaskDetailEditSaveTests {
     }
 
     @Test
+    func editSaveTapped_switchingToChecklistWithoutItemsShowsValidation() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Restock pantry",
+            interval: 7,
+            lastDone: nil,
+            emoji: "✨",
+            scheduleMode: .fixedInterval
+        )
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Restock pantry",
+                editRoutineEmoji: "✨",
+                editScheduleMode: .fixedIntervalChecklist,
+                editRoutineChecklistItems: [],
+                editFrequency: .week,
+                editFrequencyValue: 1
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+
+        await store.send(.editSaveTapped) {
+            $0.editChecklistValidationMessage = AddRoutineChecklistValidator.missingRequiredChecklistItemMessage
+        }
+
+        #expect(store.state.isEditSheetPresented)
+    }
+
+    @Test
     func editSaveTapped_persistsChecklistItemsForStandardRoutine() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()

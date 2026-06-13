@@ -140,16 +140,6 @@ enum TaskDetailEditChangeDetector {
             ]
         } ?? request.checklistItems
         let sanitizedCandidateChecklistItems = RoutineChecklistItem.sanitized(candidateChecklistItems)
-        let removesExistingChecklist = sanitizedCandidateChecklistItems.isEmpty
-            && !currentChecklistItems.isEmpty
-
-        guard request.scheduleMode.isStandardRoutineMode
-            || request.scheduleMode == .oneOff
-            || !sanitizedCandidateChecklistItems.isEmpty
-            || removesExistingChecklist
-        else {
-            return false
-        }
 
         return trimmedName != currentName
             || request.emoji != currentEmoji

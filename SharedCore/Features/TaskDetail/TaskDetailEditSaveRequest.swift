@@ -72,7 +72,12 @@ struct TaskDetailEditSaveRequestBuilder {
         let trimmedName = state.editRoutineName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else { return nil }
         let scheduleMode = effectiveScheduleMode(for: state)
-        guard !scheduleModeRequiresChecklistItems(scheduleMode) || !state.editRoutineChecklistItems.isEmpty else {
+        state.editChecklistValidationMessage = AddRoutineChecklistValidator.validationMessage(
+            scheduleMode: scheduleMode,
+            checklistItems: state.editRoutineChecklistItems,
+            checklistItemDraftTitle: state.editChecklistItemDraftTitle
+        )
+        guard state.editChecklistValidationMessage == nil else {
             return nil
         }
 

@@ -120,6 +120,13 @@ struct TaskDetailRecurrenceEditActionHandler {
             }
             enforceRecurrenceConstraints(state: &state)
         }
+        if state.editChecklistValidationMessage != nil {
+            state.editChecklistValidationMessage = AddRoutineChecklistValidator.validationMessage(
+                scheduleMode: state.editScheduleMode,
+                checklistItems: state.editRoutineChecklistItems,
+                checklistItemDraftTitle: state.editChecklistItemDraftTitle
+            )
+        }
         disableAutoAssumeIfNeeded(state: &state)
         clearPlanningIfDailyRoutine(state: &state)
         return .none

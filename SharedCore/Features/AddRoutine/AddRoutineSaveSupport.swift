@@ -227,6 +227,9 @@ struct AddRoutineSaveRequest: Equatable {
         self.isAllDay = basics.isAllDay
         self.routineDurationMode = schedule.scheduleMode == .oneOff ? .oneDay : basics.routineDurationMode
         let sanitizedChecklistItems = RoutineChecklistItem.sanitized(checklist.routineChecklistItems)
+        guard !schedule.scheduleMode.isRoutineModeRequiringChecklistItems
+            || !sanitizedChecklistItems.isEmpty
+        else { return nil }
         let availabilityDateBounds = RoutineTask.normalizedAvailabilityDateBounds(
             startDate: basics.availabilityStartDate,
             endDate: basics.availabilityEndDate,

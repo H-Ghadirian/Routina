@@ -112,6 +112,7 @@ struct TaskFormModel {
     var checklistItemDraftTitle: Binding<String>
     var checklistItemDraftInterval: Binding<Int>
     var routineChecklistItems: [RoutineChecklistItem]
+    var checklistValidationMessage: String? = nil
     var onAddChecklistItem: () -> Void
     var onRemoveChecklistItem: (UUID) -> Void
 

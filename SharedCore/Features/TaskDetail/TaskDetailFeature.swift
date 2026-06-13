@@ -56,6 +56,7 @@ struct TaskDetailFeature: Reducer {
         var editRoutineChecklistItems: [RoutineChecklistItem] = []
         var editChecklistItemDraftTitle: String = ""
         var editChecklistItemDraftInterval: Int = 3
+        var editChecklistValidationMessage: String?
         var availablePlaces: [RoutinePlaceSummary] = []
         var availableTags: [String] = []
         var availableGoals: [RoutineGoalSummary] = []

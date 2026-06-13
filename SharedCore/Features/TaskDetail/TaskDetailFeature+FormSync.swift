@@ -42,6 +42,7 @@ extension TaskDetailFeature {
         state.editRoutineChecklistItems = state.task.checklistItems
         state.editChecklistItemDraftTitle = ""
         state.editChecklistItemDraftInterval = 3
+        state.editChecklistValidationMessage = nil
         state.editSelectedPlaceIDs = state.task.placeIDs
         state.editSelectedPlaceID = state.editSelectedPlaceIDs.first
         state.editColor = state.task.color

@@ -583,6 +583,69 @@ struct AddRoutineFeatureSaveTests {
     }
 
     @Test
+    func saveTapped_inChecklistModeWithoutItemsShowsValidationAndDoesNotSave() async {
+        let didSave = LockIsolated(false)
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(routineName: "Pack gym bag"),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(scheduleMode: .fixedIntervalChecklist)
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { _ in
+                    didSave.withValue { $0 = true }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.saveTapped) {
+            $0.checklist.checklistValidationMessage = AddRoutineChecklistValidator.missingRequiredChecklistItemMessage
+        }
+
+        #expect(didSave.value == false)
+    }
+
+    @Test
+    func saveTapped_inChecklistModeCommitsDraftItemBeforeValidation() async {
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let capturedChecklistTitles = LockIsolated<[String]>([])
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(routineName: "Pack gym bag"),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(scheduleMode: .fixedIntervalChecklist),
+                checklist: AddRoutineChecklistState(checklistItemDraftTitle: "Shoes")
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { request in
+                    capturedChecklistTitles.withValue { $0 = request.checklistItems.map(\.title) }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now)
+            $0.date.now = now
+        }
+
+        _ = await store.withExhaustivity(.off) {
+            await store.send(.saveTapped) {
+                $0.checklist.checklistItemDraftTitle = ""
+                $0.checklist.checklistItemDraftInterval = 3
+            }
+        }
+
+        #expect(capturedChecklistTitles.value == ["Shoes"])
+        #expect(store.state.checklist.checklistValidationMessage == nil)
+    }
+
+    @Test
     func saveTapped_inChecklistMode_sendsChecklistItemsAndMode() async {
         let now = makeDate("2026-03-20T10:00:00Z")
         let capturedChecklistTitles = LockIsolated<[String]>([])

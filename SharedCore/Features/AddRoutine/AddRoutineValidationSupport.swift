@@ -19,6 +19,25 @@ enum AddRoutineNameValidator {
     }
 }
 
+enum AddRoutineChecklistValidator {
+    static let missingRequiredChecklistItemMessage = "Enter at least one checklist item."
+
+    static func validationMessage(
+        scheduleMode: RoutineScheduleMode,
+        checklistItems: [RoutineChecklistItem],
+        checklistItemDraftTitle: String
+    ) -> String? {
+        guard scheduleMode.isRoutineModeRequiringChecklistItems else { return nil }
+        if !RoutineChecklistItem.sanitized(checklistItems).isEmpty {
+            return nil
+        }
+        if RoutineChecklistItem.normalizedTitle(checklistItemDraftTitle) != nil {
+            return nil
+        }
+        return missingRequiredChecklistItemMessage
+    }
+}
+
 enum AddRoutineValidationEditor {
     static func setRoutineName(
         _ name: String,
@@ -46,4 +65,13 @@ enum AddRoutineValidationEditor {
             existingRoutineNames: state.organization.existingRoutineNames
         )
     }
+
+    static func refreshChecklistValidation(state: inout AddRoutineFeatureState) {
+        state.checklist.checklistValidationMessage = AddRoutineChecklistValidator.validationMessage(
+            scheduleMode: state.schedule.scheduleMode,
+            checklistItems: state.checklist.routineChecklistItems,
+            checklistItemDraftTitle: state.checklist.checklistItemDraftTitle
+        )
+    }
+
 }

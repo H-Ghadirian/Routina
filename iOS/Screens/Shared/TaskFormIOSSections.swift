@@ -262,6 +262,11 @@ struct TaskFormIOSChecklistSection: View {
                 Button("Add Item") { model.onAddChecklistItem() }
                     .disabled(RoutineChecklistItem.normalizedTitle(model.checklistItemDraftTitle.wrappedValue) == nil)
             }
+            if let message = model.checklistValidationMessage {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
             if model.routineChecklistItems.isEmpty {
                 Label("No checklist items yet", systemImage: "checklist")
                     .font(.caption).foregroundStyle(.secondary)

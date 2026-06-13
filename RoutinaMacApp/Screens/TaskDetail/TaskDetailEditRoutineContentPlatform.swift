@@ -141,6 +141,7 @@ struct TaskDetailEditRoutineContent: View {
                 set: { store.send(.editChecklistItemDraftIntervalChanged($0)) }
             ),
             routineChecklistItems: store.editRoutineChecklistItems,
+            checklistValidationMessage: store.editChecklistValidationMessage,
             onAddChecklistItem: { store.send(.editAddChecklistItemTapped) },
             onRemoveChecklistItem: { store.send(.editRemoveChecklistItem($0)) },
             availablePlaces: store.availablePlaces,

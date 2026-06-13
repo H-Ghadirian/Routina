@@ -398,6 +398,9 @@ struct AddRoutineFeature: Reducer {
 
         case let .scheduleModeChanged(mode):
             scheduleMutationHandler().setScheduleMode(mode, state: &state)
+            if state.checklist.checklistValidationMessage != nil {
+                AddRoutineValidationEditor.refreshChecklistValidation(state: &state)
+            }
             clearPlanningIfDailyRoutine(state: &state)
             return .none
 
@@ -437,6 +440,9 @@ struct AddRoutineFeature: Reducer {
                 value,
                 checklist: &state.checklist
             )
+            if state.checklist.checklistValidationMessage != nil {
+                AddRoutineValidationEditor.refreshChecklistValidation(state: &state)
+            }
             clearPlanningIfDailyRoutine(state: &state)
             return .none
 
@@ -445,16 +451,23 @@ struct AddRoutineFeature: Reducer {
                 value,
                 checklist: &state.checklist
             )
+            if state.checklist.checklistValidationMessage != nil {
+                AddRoutineValidationEditor.refreshChecklistValidation(state: &state)
+            }
             clearPlanningIfDailyRoutine(state: &state)
             return .none
 
         case .addChecklistItemTapped:
             scheduleMutationHandler().addChecklistItem(state: &state)
+            AddRoutineValidationEditor.refreshChecklistValidation(state: &state)
             clearPlanningIfDailyRoutine(state: &state)
             return .none
 
         case let .removeChecklistItem(itemID):
             scheduleMutationHandler().removeChecklistItem(itemID, state: &state)
+            if state.checklist.checklistValidationMessage != nil {
+                AddRoutineValidationEditor.refreshChecklistValidation(state: &state)
+            }
             clearPlanningIfDailyRoutine(state: &state)
             return .none
 
@@ -576,6 +589,8 @@ struct AddRoutineFeature: Reducer {
             applyQuickAddDraftFromName(state: &state)
             AddRoutineDraftFinalizer(now: now).apply(to: &state)
             AddRoutineValidationEditor.refreshNameValidation(state: &state)
+            AddRoutineValidationEditor.refreshChecklistValidation(state: &state)
+            guard state.checklist.checklistValidationMessage == nil else { return .none }
             guard let request = AddRoutineSaveRequest(state: state, calendar: calendar) else { return .none }
             return onSave(request)
 

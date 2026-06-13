@@ -98,6 +98,7 @@ struct AddRoutineTaskFormModelFactory {
                 send: AddRoutineFeature.Action.checklistItemDraftIntervalChanged
             ),
             routineChecklistItems: store.checklist.routineChecklistItems,
+            checklistValidationMessage: store.checklist.checklistValidationMessage,
             onAddChecklistItem: { store.send(.addChecklistItemTapped) },
             onRemoveChecklistItem: { store.send(.removeChecklistItem($0)) },
             availablePlaces: store.organization.availablePlaces,

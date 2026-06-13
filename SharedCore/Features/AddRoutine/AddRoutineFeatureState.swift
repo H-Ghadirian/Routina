@@ -70,6 +70,7 @@ struct AddRoutineChecklistState: Equatable {
     var routineChecklistItems: [RoutineChecklistItem] = []
     var checklistItemDraftTitle: String = ""
     var checklistItemDraftInterval: Int = 3
+    var checklistValidationMessage: String?
 }
 
 @ObservableState
@@ -115,7 +116,6 @@ struct AddRoutineFeatureState: Equatable {
     var isSaveDisabled: Bool {
         trimmedRoutineName.isEmpty
             || organization.nameValidationMessage != nil
-            || (requiresChecklistItems && candidateChecklistItems.isEmpty)
     }
 
     var requiresChecklistItems: Bool {

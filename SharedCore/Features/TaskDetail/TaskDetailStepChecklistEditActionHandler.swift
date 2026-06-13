@@ -40,6 +40,7 @@ struct TaskDetailStepChecklistEditActionHandler {
         state: inout State
     ) -> Effect<Action> {
         state.editChecklistItemDraftTitle = value
+        refreshChecklistValidationIfNeeded(state: &state)
         clearPlanningIfDailyRoutine(state: &state)
         return .none
     }
@@ -49,6 +50,7 @@ struct TaskDetailStepChecklistEditActionHandler {
         state: inout State
     ) -> Effect<Action> {
         state.editChecklistItemDraftInterval = RoutineChecklistItem.clampedIntervalDays(value)
+        refreshChecklistValidationIfNeeded(state: &state)
         clearPlanningIfDailyRoutine(state: &state)
         return .none
     }
@@ -62,6 +64,7 @@ struct TaskDetailStepChecklistEditActionHandler {
         )
         state.editChecklistItemDraftTitle = ""
         state.editChecklistItemDraftInterval = 3
+        refreshChecklistValidation(state: &state)
         disableAutoAssumeIfNeeded(state: &state)
         clearPlanningIfDailyRoutine(state: &state)
         return .none
@@ -69,6 +72,7 @@ struct TaskDetailStepChecklistEditActionHandler {
 
     func editRemoveChecklistItem(_ itemID: UUID, state: inout State) -> Effect<Action> {
         state.editRoutineChecklistItems.removeAll { $0.id == itemID }
+        refreshChecklistValidationIfNeeded(state: &state)
         disableAutoAssumeIfNeeded(state: &state)
         clearPlanningIfDailyRoutine(state: &state)
         return .none
@@ -129,5 +133,19 @@ struct TaskDetailStepChecklistEditActionHandler {
         if !state.canAutoAssumeDailyDone {
             state.editAutoAssumeDailyDone = false
         }
+    }
+
+    private func refreshChecklistValidationIfNeeded(state: inout State) {
+        if state.editChecklistValidationMessage != nil {
+            refreshChecklistValidation(state: &state)
+        }
+    }
+
+    private func refreshChecklistValidation(state: inout State) {
+        state.editChecklistValidationMessage = AddRoutineChecklistValidator.validationMessage(
+            scheduleMode: state.editScheduleMode,
+            checklistItems: state.editRoutineChecklistItems,
+            checklistItemDraftTitle: state.editChecklistItemDraftTitle
+        )
     }
 }

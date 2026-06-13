@@ -407,6 +407,11 @@ struct TaskFormContent: View {
         ) {
             VStack(alignment: .leading, spacing: 12) {
                 TaskFormMacChecklistComposer(model: model)
+                if let message = model.checklistValidationMessage {
+                    Text(message)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                }
                 TaskFormMacChecklistItemsContent(model: model)
             }
         }
