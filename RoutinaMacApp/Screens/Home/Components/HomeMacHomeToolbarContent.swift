@@ -13,6 +13,7 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     let showsProgressModePicker: Bool
     @Binding var detailMode: MacHomeDetailMode
     @Binding var progressMode: MacHomeProgressMode
+    let locationSnapshot: LocationSnapshot
     let onPlaceCheckInMapRequested: () -> Void
 
     var body: some ToolbarContent {
@@ -45,7 +46,10 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
 
     @ToolbarContentBuilder
     private var navigationToolbarItems: some ToolbarContent {
-        RoutinaMacPlaceCheckInToolbarItem(onMapRequested: onPlaceCheckInMapRequested)
+        RoutinaMacPlaceCheckInToolbarItem(
+            locationSnapshot: locationSnapshot,
+            onMapRequested: onPlaceCheckInMapRequested
+        )
     }
 
     @ToolbarContentBuilder

@@ -558,6 +558,21 @@ enum PlaceCheckInSupport {
         return fallbackRawCurrentLocationName(date: date, calendar: calendar)
     }
 
+    static func currentLocationDisplayName(
+        coordinate: LocationCoordinate,
+        places: [RoutinePlace],
+        sessions: [PlaceCheckInSession]
+    ) -> String? {
+        if let place = nearestContainingPlace(to: coordinate, places: places) {
+            return place.displayName
+        }
+
+        return previousNamedRawLocationName(
+            coordinate: coordinate,
+            sessions: sessions
+        )
+    }
+
     static func isGeneratedRawCurrentLocationName(_ name: String?) -> Bool {
         guard let cleanedName = RoutinePlace.cleanedName(name) else {
             return true

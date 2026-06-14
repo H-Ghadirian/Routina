@@ -31,6 +31,7 @@ extension HomeTCAView {
             showsProgressModePicker: showsProgressModePickerInToolbar,
             detailMode: mainDetailModeBinding,
             progressMode: macHomeProgressModeBinding,
+            locationSnapshot: store.locationSnapshot,
             onPlaceCheckInMapRequested: {
                 openMacPlacesWorkspace()
             }

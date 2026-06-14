@@ -1,20 +1,30 @@
+import ComposableArchitecture
 import SwiftData
 import SwiftUI
 
 struct RoutinaMacPlaceCheckInToolbarItem: ToolbarContent {
+    let locationSnapshot: LocationSnapshot
     let onMapRequested: () -> Void
 
     var body: some ToolbarContent {
         ToolbarItem(placement: .navigation) {
-            RoutinaMacPlaceCheckInToolbarButton(onMapRequested: onMapRequested)
+            RoutinaMacPlaceCheckInToolbarButton(
+                locationSnapshot: locationSnapshot,
+                onMapRequested: onMapRequested
+            )
         }
     }
 }
 
 private struct RoutinaMacPlaceCheckInToolbarButton: View {
+    let locationSnapshot: LocationSnapshot
     let onMapRequested: () -> Void
 
+    @Dependency(\.locationClient) private var locationClient
+    @Environment(\.scenePhase) private var scenePhase
+    @Query(sort: \RoutinePlace.name) private var places: [RoutinePlace]
     @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) private var sessions: [PlaceCheckInSession]
+    @State private var refreshedLocationSnapshot: LocationSnapshot?
 
     var body: some View {
         SwiftUI.TimelineView(.periodic(from: .now, by: 60)) { timeline in
@@ -29,14 +39,60 @@ private struct RoutinaMacPlaceCheckInToolbarButton: View {
             .accessibilityLabel(accessibilityLabel(now: timeline.date))
             .padding(.trailing, 8)
         }
+        .task {
+            await refreshLocationSnapshot()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else { return }
+            Task {
+                await refreshLocationSnapshot()
+            }
+        }
     }
 
-    private var activeSession: PlaceCheckInSession? {
-        sessions.first { $0.endedAt == nil }
+    private var effectiveLocationSnapshot: LocationSnapshot {
+        guard let refreshedLocationSnapshot else {
+            return locationSnapshot
+        }
+
+        return refreshedLocationSnapshot.retainingLastKnownCoordinate(from: locationSnapshot)
+    }
+
+    private var currentLocationName: String? {
+        guard effectiveLocationSnapshot.canDeterminePresence,
+              let coordinate = effectiveLocationSnapshot.coordinate
+        else { return nil }
+
+        return PlaceCheckInSupport.currentLocationDisplayName(
+            coordinate: coordinate,
+            places: places,
+            sessions: sessions
+        )
+    }
+
+    private var activeAutomaticSession: PlaceCheckInSession? {
+        sessions.first { session in
+            session.endedAt == nil && session.isAutomatic
+        }
+    }
+
+    private var titleState: TitleState {
+        if let currentLocationName {
+            return .currentLocation(currentLocationName)
+        }
+        if let activeAutomaticSession {
+            return .currentLocation(activeAutomaticSession.displayPlaceName)
+        }
+        return .checkIn
     }
 
     private var labelSystemImage: String {
-        activeSession == nil ? "mappin.and.ellipse" : "location.fill"
+        switch titleState {
+        case .currentLocation:
+            return "location.fill"
+        case .checkIn:
+            return "mappin.and.ellipse"
+        }
     }
 
     private var toolbarLabel: some View {
@@ -56,52 +112,66 @@ private struct RoutinaMacPlaceCheckInToolbarButton: View {
         .frame(height: 28)
         .background(
             Capsule(style: .continuous)
-                .fill(Color.teal.opacity(activeSession == nil ? 0.12 : 0.18))
+                .fill(Color.teal.opacity(isNamedLocation ? 0.18 : 0.12))
         )
         .overlay(
             Capsule(style: .continuous)
-                .stroke(Color.teal.opacity(activeSession == nil ? 0.24 : 0.38), lineWidth: 1)
+                .stroke(Color.teal.opacity(isNamedLocation ? 0.38 : 0.24), lineWidth: 1)
         )
         .fixedSize(horizontal: true, vertical: false)
     }
 
     private var toolbarForegroundStyle: Color {
-        activeSession == nil ? .primary : .teal
+        isNamedLocation ? .teal : .primary
     }
 
     private var labelMaxWidth: CGFloat? {
-        activeSession == nil ? nil : 160
+        isNamedLocation ? 160 : nil
     }
 
     private var labelTitle: String {
-        if let activeSession {
-            return activeSession.displayPlaceName
+        switch titleState {
+        case let .currentLocation(name):
+            return name
+        case .checkIn:
+            return "Check In"
         }
-        return "Check In"
+    }
+
+    private var isNamedLocation: Bool {
+        switch titleState {
+        case .currentLocation:
+            return true
+        case .checkIn:
+            return false
+        }
     }
 
     private func helpText(now: Date) -> String {
-        if let activeSession {
-            return "Open Places, \(activeStatusText(for: activeSession, now: now))"
+        switch titleState {
+        case let .currentLocation(name):
+            return "Open Places, current location: \(name)"
+        case .checkIn:
+            return "Open Places"
         }
-        return "Open Places"
     }
 
     private func accessibilityLabel(now: Date) -> String {
-        if let activeSession {
-            return "Open Places, current check-in: \(activeStatusText(for: activeSession, now: now))"
+        switch titleState {
+        case let .currentLocation(name):
+            return "Open Places, current location: \(name)"
+        case .checkIn:
+            return "Open Places"
         }
-        return "Open Places"
     }
 
-    private func activeStatusText(for session: PlaceCheckInSession, now: Date) -> String {
-        let duration = PlaceCheckInFormatting.durationText(
-            seconds: session.durationSeconds(referenceDate: now)
-        )
+    private enum TitleState {
+        case checkIn
+        case currentLocation(String)
+    }
 
-        if let activity = session.activity {
-            return "\(session.displayPlaceName), \(duration) here, \(activity.title)"
-        }
-        return "\(session.displayPlaceName), \(duration) here"
+    @MainActor
+    private func refreshLocationSnapshot() async {
+        refreshedLocationSnapshot = await locationClient.snapshot(false)
     }
 }

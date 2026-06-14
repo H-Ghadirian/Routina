@@ -233,6 +233,74 @@ struct PlaceCheckInSupportTests {
 
     @MainActor
     @Test
+    func currentLocationDisplayName_usesContainingSavedPlace() throws {
+        let context = makeInMemoryContext()
+        _ = makePlace(in: context, name: "English Garden", latitude: 48.1569, longitude: 11.5920, radiusMeters: 200)
+        let coordinate = LocationCoordinate(latitude: 48.1570, longitude: 11.5921)
+
+        let name = PlaceCheckInSupport.currentLocationDisplayName(
+            coordinate: coordinate,
+            places: try context.fetch(FetchDescriptor<RoutinePlace>()),
+            sessions: []
+        )
+
+        #expect(name == "English Garden")
+    }
+
+    @MainActor
+    @Test
+    func currentLocationDisplayName_reusesPreviouslyNamedRawLocation() throws {
+        let context = makeInMemoryContext()
+        let coordinate = LocationCoordinate(latitude: 48.1001, longitude: 11.5024)
+        context.insert(
+            PlaceCheckInSession(
+                placeID: nil,
+                placeName: "Quiet Bench",
+                latitude: coordinate.latitude,
+                longitude: coordinate.longitude,
+                startedAt: makeDate("2026-05-09T19:00:00Z"),
+                endedAt: makeDate("2026-05-09T20:00:00Z")
+            )
+        )
+        try context.save()
+
+        let name = PlaceCheckInSupport.currentLocationDisplayName(
+            coordinate: LocationCoordinate(latitude: 48.1002, longitude: 11.5025),
+            places: [],
+            sessions: try context.fetch(FetchDescriptor<PlaceCheckInSession>())
+        )
+
+        #expect(name == "Quiet Bench")
+    }
+
+    @MainActor
+    @Test
+    func currentLocationDisplayName_ignoresGeneratedRawNames() throws {
+        let context = makeInMemoryContext()
+        let coordinate = LocationCoordinate(latitude: 48.1001, longitude: 11.5024)
+        context.insert(
+            PlaceCheckInSession(
+                placeID: nil,
+                placeName: "Check-in at 19:00",
+                latitude: coordinate.latitude,
+                longitude: coordinate.longitude,
+                startedAt: makeDate("2026-05-09T19:00:00Z"),
+                endedAt: makeDate("2026-05-09T20:00:00Z")
+            )
+        )
+        try context.save()
+
+        let name = PlaceCheckInSupport.currentLocationDisplayName(
+            coordinate: LocationCoordinate(latitude: 48.1002, longitude: 11.5025),
+            places: [],
+            sessions: try context.fetch(FetchDescriptor<PlaceCheckInSession>())
+        )
+
+        #expect(name == nil)
+    }
+
+    @MainActor
+    @Test
     func linkSessionToPlace_promotesRawCheckInToSavedPlace() throws {
         let context = makeInMemoryContext()
         let coordinate = LocationCoordinate(latitude: 48.8566, longitude: 2.3522)
