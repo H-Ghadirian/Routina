@@ -37,6 +37,7 @@ private struct RoutinaMacPlaceCheckInToolbarButton: View {
             .controlSize(.small)
             .help(helpText(now: timeline.date))
             .accessibilityLabel(accessibilityLabel(now: timeline.date))
+            .padding(.leading, 8)
             .padding(.trailing, 8)
         }
         .task {
@@ -110,15 +111,18 @@ private struct RoutinaMacPlaceCheckInToolbarButton: View {
         .foregroundStyle(toolbarForegroundStyle)
         .padding(.horizontal, 12)
         .frame(height: 28)
-        .background(
-            Capsule(style: .continuous)
-                .fill(Color.teal.opacity(isNamedLocation ? 0.18 : 0.12))
+        .routinaGlassPill(
+            tint: .teal,
+            tintOpacity: isNamedLocation ? 0.18 : 0.12,
+            interactive: true
         )
-        .overlay(
-            Capsule(style: .continuous)
-                .stroke(Color.teal.opacity(isNamedLocation ? 0.38 : 0.24), lineWidth: 1)
-        )
+        .overlay(toolbarBorder)
         .fixedSize(horizontal: true, vertical: false)
+    }
+
+    private var toolbarBorder: some View {
+        Capsule(style: .continuous)
+            .stroke(Color.teal.opacity(isNamedLocation ? 0.38 : 0.24), lineWidth: 1)
     }
 
     private var toolbarForegroundStyle: Color {

@@ -130,7 +130,7 @@ private struct HomeMacActivePlanFocusToolbarButton: View {
             }
         } label: {
             SwiftUI.TimelineView(.periodic(from: .now, by: 1)) { context in
-                HStack(spacing: 6) {
+                planFocusToolbarLabel {
                     Image(systemName: session.isPaused ? "pause.fill" : "stopwatch.fill")
                         .font(.caption.weight(.semibold))
 
@@ -148,10 +148,10 @@ private struct HomeMacActivePlanFocusToolbarButton: View {
             }
         }
         .menuStyle(.button)
-        .buttonStyle(.borderedProminent)
-        .tint(.orange)
+        .buttonStyle(.plain)
         .controlSize(.small)
         .help("Start Focus Timer running")
+        .padding(.trailing, 8)
     }
 
     private func activeTimeText(at date: Date) -> String {
@@ -205,31 +205,45 @@ private struct HomeMacPlanFocusToolbarButton: View {
                 }
             }
         } label: {
-            HStack(spacing: 6) {
+            planFocusToolbarLabel {
                 Image(systemName: "play.fill")
                     .font(.caption.weight(.semibold))
 
                 Text("Start Focus Timer")
                     .font(.caption.weight(.semibold))
-
-                Text("\(plannedTaskCount)")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
             }
-            .fixedSize(horizontal: true, vertical: false)
         }
         .menuStyle(.button)
-        .buttonStyle(.borderedProminent)
-        .tint(.orange)
+        .buttonStyle(.plain)
         .controlSize(.small)
         .disabled(isDisabled)
         .help(planFocusHelpTitle)
+        .padding(.trailing, 8)
     }
 
     private var planFocusHelpTitle: String {
         let taskText = plannedTaskCount == 1 ? "1 planned task" : "\(plannedTaskCount) planned tasks"
         return isDisabled ? "Stop the active focus timer before starting another focus timer" : "Start Focus Timer for \(taskText)"
     }
+}
+
+@MainActor
+private func planFocusToolbarLabel<Content: View>(
+    @ViewBuilder content: () -> Content
+) -> some View {
+    HStack(spacing: 6) {
+        content()
+    }
+    .foregroundStyle(.orange)
+    .padding(.horizontal, 12)
+    .frame(height: 28)
+    .routinaGlassPill(tint: .orange, tintOpacity: 0.12, interactive: true)
+    .overlay(
+        Capsule(style: .continuous)
+            .stroke(Color.orange.opacity(0.22), lineWidth: 0.75)
+    )
+    .contentShape(Capsule(style: .continuous))
+    .fixedSize(horizontal: true, vertical: false)
 }
 
 struct HomeMacBoardInspectorToolbarButton: View {
