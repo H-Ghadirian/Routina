@@ -193,37 +193,9 @@ struct SettingsGeneralDetailView: View {
         store: SharedDefaults.app
     ) private var batteryRoutineThresholdPercent = BatteryRoutinePreferences.defaultThresholdPercent
     @AppStorage(
-        UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
-        store: SharedDefaults.app
-    ) private var isGoalsTabEnabled = false
-    @AppStorage(
-        UserDefaultBoolValueKey.appSettingAdventureMapEnabled.rawValue,
-        store: SharedDefaults.app
-    ) private var isAdventureMapEnabled = false
-    @AppStorage(
-        UserDefaultBoolValueKey.appSettingStatsWinsEnabled.rawValue,
-        store: SharedDefaults.app
-    ) private var isStatsWinsEnabled = false
-    @AppStorage(
-        UserDefaultBoolValueKey.appSettingStatsSleepTabEnabled.rawValue,
-        store: SharedDefaults.app
-    ) private var isStatsSleepTabEnabled = false
-    @AppStorage(
-        UserDefaultBoolValueKey.appSettingStatsAchievementsEnabled.rawValue,
-        store: SharedDefaults.app
-    ) private var isStatsAchievementsEnabled = false
-    @AppStorage(
         UserDefaultBoolValueKey.appSettingHomeTaskListModeTabsVisible.rawValue,
         store: SharedDefaults.app
     ) private var isHomeTaskListModeTabsVisible = false
-    @AppStorage(
-        UserDefaultBoolValueKey.appSettingRelatedTagRulesEnabled.rawValue,
-        store: SharedDefaults.app
-    ) private var isRelatedTagRulesEnabled = false
-    @AppStorage(
-        UserDefaultBoolValueKey.appSettingSettingsDevicesSectionEnabled.rawValue,
-        store: SharedDefaults.app
-    ) private var isSettingsDevicesSectionEnabled = false
 
     var body: some View {
 List {
@@ -249,45 +221,6 @@ List {
 
         Text("When enabled, Routina creates one charge routine for this device and turns it red, urgent, and pinned when the battery is below the threshold.")
             .foregroundStyle(.secondary)
-    }
-
-    Section("Beta Experiments") {
-        Toggle("Enable Git features", isOn: gitFeaturesBinding)
-
-        Text("Shows GitHub and GitLab contribution activity in Stats.")
-            .foregroundStyle(.secondary)
-
-        Toggle("Show Goals tab", isOn: $isGoalsTabEnabled)
-
-        Text("Show Goal navigation, controls, and Stats reports.")
-            .foregroundStyle(.secondary)
-
-        Toggle("Show Adventure map", isOn: $isAdventureMapEnabled)
-
-        Text("Show the Adventure map in Home.")
-            .foregroundStyle(.secondary)
-
-        Toggle("Show Stats wins", isOn: $isStatsWinsEnabled)
-
-        Text("Show Recent Wins in Stats.")
-            .foregroundStyle(.secondary)
-
-        Toggle("Show Sleep tab", isOn: $isStatsSleepTabEnabled)
-
-        Text("Show the Sleep tab for Sleep-specific dashboard scope in Stats.")
-            .foregroundStyle(.secondary)
-
-        Toggle("Show Achievements", isOn: $isStatsAchievementsEnabled)
-
-        Text("Show achievement badges and progress in Stats.")
-            .foregroundStyle(.secondary)
-
-        Toggle("Show related tags options", isOn: $isRelatedTagRulesEnabled)
-
-        Text("Show tag-related rules controls in Settings > Tags.")
-            .foregroundStyle(.secondary)
-
-        Toggle("Show Devices section", isOn: $isSettingsDevicesSectionEnabled)
     }
 
     Section("Navigation") {
@@ -349,13 +282,6 @@ List {
                 batteryRoutineThresholdPercent = BatteryRoutinePreferences.clampedThresholdPercent($0)
                 BatteryRoutinePreferences.notifyChanged()
             }
-        )
-    }
-
-    private var gitFeaturesBinding: Binding<Bool> {
-        Binding(
-            get: { store.appearance.isGitFeaturesEnabled },
-            set: { store.send(.gitFeaturesToggled($0)) }
         )
     }
 

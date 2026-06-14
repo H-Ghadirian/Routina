@@ -355,6 +355,8 @@ SettingsMacDetailShell(
     }
 
     if store.diagnostics.isDebugSectionVisible {
+        SettingsMacBetaExperimentsCard(store: store)
+
         SettingsMacDetailCard(title: "Diagnostics") {
             settingsInfoRow(title: "Data Mode", value: store.diagnostics.dataModeDescription)
             settingsInfoRow(title: "iCloud Container", value: store.diagnostics.iCloudContainerDescription)
@@ -371,5 +373,166 @@ SettingsMacDetailShell(
         }
     }
 }
+    }
+}
+
+private struct SettingsMacBetaExperimentsCard: View {
+    let store: StoreOf<SettingsFeature>
+
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isGoalsTabEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingAdventureMapEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isAdventureMapEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingBoardScreenEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isBoardScreenEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingStatsWinsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isStatsWinsEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingStatsSleepTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isStatsSleepTabEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingStatsAchievementsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isStatsAchievementsEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingHomeTaskListModeTabsVisible.rawValue,
+        store: SharedDefaults.app
+    ) private var areHomeTaskListModeTabsVisible = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingRelatedTagRulesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isRelatedTagRulesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacTimelineQuickFiltersVisible.rawValue,
+        store: SharedDefaults.app
+    ) private var areMacTimelineQuickFiltersVisible = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacStatusComposerEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isMacStatusComposerEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingSettingsDevicesSectionEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isSettingsDevicesSectionEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var areMacEventEmotionActionsEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacWebsiteBlockingEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isMacWebsiteBlockingEnabled = false
+
+    var body: some View {
+        SettingsMacDetailCard(title: "Beta Experiments") {
+            Toggle("Enable Git features", isOn: gitFeaturesBinding)
+                .toggleStyle(.switch)
+
+            Text("Shows GitHub and GitLab contribution activity in Stats.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            Toggle("Show Goals tab", isOn: $isGoalsTabEnabled)
+                .toggleStyle(.switch)
+
+            Text("Show Goal navigation, controls, and Stats reports.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Toggle("Show Adventure map", isOn: $isAdventureMapEnabled)
+                .toggleStyle(.switch)
+
+            Text("Show the Adventure map in Home.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Toggle("Show Board screen", isOn: $isBoardScreenEnabled)
+                .toggleStyle(.switch)
+
+            Text("Show the Board screen in Home.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Toggle("Show Stats wins", isOn: $isStatsWinsEnabled)
+                .toggleStyle(.switch)
+
+            Text("Show Recent Wins in Stats.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Toggle("Show Sleep tab", isOn: $isStatsSleepTabEnabled)
+                .toggleStyle(.switch)
+
+            Text("Show the Sleep tab for Sleep-specific dashboard scope in Stats.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Toggle("Show Achievements", isOn: $isStatsAchievementsEnabled)
+                .toggleStyle(.switch)
+
+            Text("Show achievement badges and progress in Stats.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Toggle("Show related tags options", isOn: $isRelatedTagRulesEnabled)
+                .toggleStyle(.switch)
+
+            Text("Show tag-related rules controls in Settings > Tags.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Toggle("Show Devices section", isOn: $isSettingsDevicesSectionEnabled)
+                .toggleStyle(.switch)
+
+            Toggle("Show Home task type tabs", isOn: $areHomeTaskListModeTabsVisible)
+                .toggleStyle(.switch)
+
+            Text("Show All, Todos, and Routines tabs in the Home sidebar.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Toggle("Show Timeline quick filters", isOn: $areMacTimelineQuickFiltersVisible)
+                .toggleStyle(.switch)
+
+            Text("Show the All, Routines, Todos, Notes, and other quick filters in Timeline.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Toggle("Show Status note section", isOn: $isMacStatusComposerEnabled)
+                .toggleStyle(.switch)
+
+            Text("Show the bottom sidebar composer for adding Status notes from Home.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Toggle("Show Event and Emotion actions", isOn: $areMacEventEmotionActionsEnabled)
+                .toggleStyle(.switch)
+
+            Text("Show Event and Emotion in the Mac Add menu, Timeline type filters, and Stats reports.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Toggle("Show Mac website blocking", isOn: $isMacWebsiteBlockingEnabled)
+                .toggleStyle(.switch)
+
+            Text("Show the website blocking controls in Blocking settings.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var gitFeaturesBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.isGitFeaturesEnabled },
+            set: { store.send(.gitFeaturesToggled($0)) }
+        )
     }
 }
