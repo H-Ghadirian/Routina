@@ -3,6 +3,17 @@ import Testing
 
 struct StatsDashboardItemAvailabilityTests {
     @Test
+    func unassignedFocus_isRetiredFromDashboardAvailability() {
+        #expect(!StatsDashboardItem.unassignedFocus.isAvailable(
+            selectedRange: .week,
+            isGitFeaturesEnabled: true,
+            isGoalsTabEnabled: true,
+            isStatsWinsEnabled: true,
+            isStatsAchievementsEnabled: true
+        ))
+    }
+
+    @Test
     func recentWins_requiresBetaExperiment() {
         #expect(!StatsDashboardItem.recentWins.isAvailable(
             selectedRange: .week,

@@ -401,7 +401,7 @@ detailBody
             LazyVStack(alignment: .leading, spacing: 16) {
                 routineHeaderSection
                 notificationDisabledWarningSection
-                if store.task.focusModeEnabled {
+                if shouldShowFocusSessionSection {
                     focusSessionSection
                 }
                 if shouldShowCommentsSection {
@@ -434,6 +434,13 @@ detailBody
             allTasks: focusSessionTaskCandidates,
             blockingFocusTitle: blockingFocusTitle,
             onCompletedDuration: addCompletedFocusToTimeSpent
+        )
+    }
+
+    private var shouldShowFocusSessionSection: Bool {
+        TaskDetailFocusSessionSectionVisibility.shouldShow(
+            for: store.task,
+            sessions: focusSessions
         )
     }
 

@@ -3,6 +3,18 @@ import Testing
 
 struct StatsMacDashboardItemAvailabilityTests {
     @Test
+    func unassignedFocus_isRetiredFromDashboardAvailability() {
+        #expect(!StatsMacDashboardItem.unassignedFocus.isAvailable(
+            selectedRange: .week,
+            isGitFeaturesEnabled: true,
+            isGoalsTabEnabled: true,
+            areMacEventEmotionActionsEnabled: true,
+            isStatsWinsEnabled: true,
+            isStatsAchievementsEnabled: true
+        ))
+    }
+
+    @Test
     func focusWorkAndEstimateActual_areDefaultHiddenButAvailableToAdd() {
         #expect(StatsMacDashboardItem.defaultHiddenItemIDs == [
             StatsMacDashboardItem.focusWorkChart.rawValue,

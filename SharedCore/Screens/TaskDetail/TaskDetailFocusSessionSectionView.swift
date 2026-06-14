@@ -1,5 +1,16 @@
 import SwiftUI
 
+enum TaskDetailFocusSessionSectionVisibility {
+    static func shouldShow(
+        for task: RoutineTask,
+        sessions: [FocusSession]
+    ) -> Bool {
+        task.focusModeEnabled || sessions.contains { session in
+            session.taskID == task.id && session.state == .active
+        }
+    }
+}
+
 struct TaskDetailFocusSessionSectionView: View {
     let task: RoutineTask
     let sessions: [FocusSession]

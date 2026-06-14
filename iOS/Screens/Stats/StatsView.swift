@@ -257,7 +257,6 @@ struct StatsView: View {
                 isStatsAchievementsEnabled: isStatsAchievementsEnabled
             )
                 && item.isReportable(metrics: metrics, healthSummary: store.healthSummary)
-                && (item != .unassignedFocus || hasUnassignedFocusSessions)
         }
     }
 
@@ -324,10 +323,6 @@ struct StatsView: View {
                 }
             }
         )
-    }
-
-    private var hasUnassignedFocusSessions: Bool {
-        !FocusSessionSupport.unassignedCompletedSessions(from: focusSessions).isEmpty
     }
 
     private var shouldShowHealthAccessCard: Bool {

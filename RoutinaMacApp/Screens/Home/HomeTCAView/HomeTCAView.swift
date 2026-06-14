@@ -170,7 +170,6 @@ struct HomeTCAView: View {
     @State var planningDateTaskID: UUID?
     @State var planningDateDraft = Date()
     @State var homeToolbarFocusPickerDuration: TimeInterval?
-    @State var isHomeToolbarPendingFocusAssignmentPresented = false
     @FocusState var isSprintCreationFieldFocused: Bool
     @FocusState var isBacklogCreationFieldFocused: Bool
     @FocusState var isSprintRenameFieldFocused: Bool
@@ -243,9 +242,6 @@ homeContent
                         duration: homeToolbarFocusPickerDuration ?? 0,
                         tasks: homeToolbarFocusStartTasks
                     )
-                }
-                .sheet(isPresented: $isHomeToolbarPendingFocusAssignmentPresented) {
-                    HomeMacUnassignedFocusAssignmentPopover()
                 }
                 .task {
                     syncFileAttachmentTaskIDs()

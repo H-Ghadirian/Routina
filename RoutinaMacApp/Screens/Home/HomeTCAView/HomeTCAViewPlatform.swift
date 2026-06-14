@@ -33,7 +33,6 @@ extension HomeTCAView {
             progressMode: macHomeProgressModeBinding,
             locationSnapshot: store.locationSnapshot,
             focusStartTaskCount: homeToolbarFocusStartTaskCount,
-            hasPendingUnassignedFocus: homeToolbarHasPendingUnassignedFocus,
             activePlanFocusSession: homeToolbarActivePlanFocusSession,
             isPlanFocusStartDisabled: homeToolbarIsPlanFocusStartDisabled,
             onPlaceCheckInMapRequested: {
@@ -41,9 +40,6 @@ extension HomeTCAView {
             },
             onTaskFocusDurationSelected: { duration in
                 presentHomeToolbarFocusPicker(duration: duration)
-            },
-            onAssignPendingFocusRequested: {
-                isHomeToolbarPendingFocusAssignmentPresented = true
             },
             onPausePlanFocus: { session in
                 pauseHomeToolbarPlanFocus(session)
@@ -109,10 +105,6 @@ extension HomeTCAView {
 
     private var homeToolbarActivePlanFocusSession: FocusSession? {
         homeToolbarActiveFocusSessions.first(where: \.isUnassigned)
-    }
-
-    private var homeToolbarHasPendingUnassignedFocus: Bool {
-        !FocusSessionSupport.unassignedCompletedSessions(from: focusSessions).isEmpty
     }
 
     private var homeToolbarFocusStartTaskCount: Int {

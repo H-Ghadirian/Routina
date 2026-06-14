@@ -102,6 +102,24 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(badgeSource.contains("return !hiddenKinds.contains(kind)"))
     }
 
+    func testMacHomeFocusToolbarUsesSingleTimerSlot() throws {
+        let source = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacHomeToolbarContent.swift")
+
+        XCTAssertTrue(
+            source.contains("} else if isPlanFocusStartDisabled {\n            RoutinaMacFocusTimerToolbarItem(hiddenKinds: [.unassigned])\n        } else if focusStartTaskCount > 0 {"),
+            "Home should swap Start Focus Timer for the active timer badge instead of showing a disabled starter beside the running timer."
+        )
+        XCTAssertEqual(
+            source.components(separatedBy: "RoutinaMacFocusTimerToolbarItem(hiddenKinds: [.unassigned])").count - 1,
+            1,
+            "The active timer badge should live in the same toolbar branch as Start Focus Timer, not as an extra unconditional item."
+        )
+        XCTAssertFalse(
+            source.contains("Assign Pending Focus"),
+            "The toolbar focus menu should only start task-backed timers; pending unassigned focus assignment is no longer a toolbar action."
+        )
+    }
+
     func testMacToolbarStatusBadgeKeepsStableTextWidth() throws {
         let source = try Self.sourceFile("RoutinaMacApp/Screens/Shared/MacToolbarComponents.swift")
 

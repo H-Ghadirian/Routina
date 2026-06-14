@@ -230,7 +230,6 @@ struct StatsView: View {
                 isStatsAchievementsEnabled: isStatsAchievementsEnabled
             )
                 && item.isReportable(metrics: store.metrics)
-                && (item != .unassignedFocus || hasUnassignedFocusSessions)
         }
     }
 
@@ -282,10 +281,6 @@ struct StatsView: View {
                 }
             }
         )
-    }
-
-    private var hasUnassignedFocusSessions: Bool {
-        !FocusSessionSupport.unassignedCompletedSessions(from: store.focusSessions).isEmpty
     }
 
     var body: some View {

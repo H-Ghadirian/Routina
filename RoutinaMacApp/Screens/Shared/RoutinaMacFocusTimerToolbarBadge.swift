@@ -59,6 +59,8 @@ struct RoutinaMacFocusTimerToolbarItem: ToolbarContent {
 
 private struct RoutinaMacFocusTimerToolbarBadgeContent: View {
     @ObservedObject var statusStore: RoutinaMacFocusTimerStatusStore
+    @Environment(\.calendar) private var calendar
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.routinaMacOpenFocusTimerTarget) private var openFocusTimerTarget
 
     let showsTitle: Bool
@@ -70,15 +72,49 @@ private struct RoutinaMacFocusTimerToolbarBadgeContent: View {
             let status = statusStore.status
 
             if shouldShow(status) {
-                Button {
-                    open(status)
+                Menu {
+                    if status.deepLink != nil {
+                        Button {
+                            open(status)
+                        } label: {
+                            Label("Open \(status.targetDisplayTitle)", systemImage: "arrow.up.forward.app")
+                        }
+
+                        Divider()
+                    }
+
+                    if status.supportsPauseResume {
+                        Button {
+                            togglePause(status)
+                        } label: {
+                            Label(status.isPaused ? "Resume" : "Pause", systemImage: status.isPaused ? "play.fill" : "pause.fill")
+                        }
+                    }
+
+                    Button {
+                        finish(status)
+                    } label: {
+                        Label("Finish", systemImage: "checkmark.circle.fill")
+                    }
+
+                    if status.supportsAbandon {
+                        Divider()
+
+                        Button(role: .destructive) {
+                            abandon(status)
+                        } label: {
+                            Label("Abandon", systemImage: "xmark.circle")
+                        }
+                    }
                 } label: {
                     RoutinaMacFocusTimerToolbarLabel(
                         status: status,
                         title: showsTitle ? status.toolbarTitle(fitting: maxTitleWidth) : nil
                     )
                 }
+                .menuStyle(.button)
                 .buttonStyle(.plain)
+                .controlSize(.small)
                 .help(status.toolbarHelpTitle)
             }
         }
@@ -112,6 +148,60 @@ private struct RoutinaMacFocusTimerToolbarBadgeContent: View {
 
         RoutinaMacWindowRouter.shared.openHomeAndActivate()
         RoutinaDeepLinkDispatcher.open(deepLink)
+    }
+
+    private func togglePause(_ status: RoutinaMacFocusTimerStatus) {
+        guard let sessionID = status.id else { return }
+
+        do {
+            if status.isPaused {
+                _ = try FocusSessionSupport.resumeFocus(
+                    sessionID: sessionID,
+                    kind: status.focusSessionKind,
+                    context: modelContext
+                )
+            } else {
+                _ = try FocusSessionSupport.pauseFocus(
+                    sessionID: sessionID,
+                    kind: status.focusSessionKind,
+                    context: modelContext
+                )
+            }
+            statusStore.refresh()
+        } catch {
+            NSLog("Failed to toggle focus timer pause state from toolbar: \(error.localizedDescription)")
+        }
+    }
+
+    private func finish(_ status: RoutinaMacFocusTimerStatus) {
+        guard let sessionID = status.id else { return }
+
+        do {
+            _ = try FocusSessionSupport.finishFocus(
+                sessionID: sessionID,
+                kind: status.focusSessionKind,
+                context: modelContext,
+                calendar: calendar
+            )
+            statusStore.refresh()
+        } catch {
+            NSLog("Failed to finish focus timer from toolbar: \(error.localizedDescription)")
+        }
+    }
+
+    private func abandon(_ status: RoutinaMacFocusTimerStatus) {
+        guard let sessionID = status.id else { return }
+
+        do {
+            _ = try FocusSessionSupport.abandonFocus(
+                sessionID: sessionID,
+                kind: status.focusSessionKind,
+                context: modelContext
+            )
+            statusStore.refresh()
+        } catch {
+            NSLog("Failed to abandon focus timer from toolbar: \(error.localizedDescription)")
+        }
     }
 }
 
@@ -153,10 +243,16 @@ private struct RoutinaMacFocusTimerToolbarTimeText: View {
         SwiftUI.TimelineView(.periodic(from: .now, by: 1)) { context in
             let timeText = status.menuBarTimeText(at: context.date)
 
-            Text(timeText)
-            .font(.caption.monospacedDigit().weight(.semibold))
-            .lineLimit(1)
-            .fixedSize(horizontal: true, vertical: false)
+            ZStack(alignment: .leading) {
+                Text("+00:00:00")
+                    .font(.caption.monospacedDigit().weight(.semibold))
+                    .hidden()
+
+                Text(timeText)
+                    .font(.caption.monospacedDigit().weight(.semibold))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
             .transaction { transaction in
                 transaction.animation = nil
             }
@@ -165,6 +261,50 @@ private struct RoutinaMacFocusTimerToolbarTimeText: View {
 }
 
 private extension RoutinaMacFocusTimerStatus {
+    var focusSessionKind: FocusSessionKind? {
+        switch kind {
+        case .task:
+            return .task
+        case .sprint:
+            return .sprint
+        case .unassigned:
+            return .unassigned
+        case nil:
+            return nil
+        }
+    }
+
+    var supportsPauseResume: Bool {
+        switch kind {
+        case .task, .unassigned:
+            return true
+        case .sprint, nil:
+            return false
+        }
+    }
+
+    var supportsAbandon: Bool {
+        switch kind {
+        case .task, .unassigned:
+            return true
+        case .sprint, nil:
+            return false
+        }
+    }
+
+    var targetDisplayTitle: String {
+        switch kind {
+        case .task:
+            return "Task"
+        case .sprint:
+            return "Board"
+        case .unassigned:
+            return "Focus"
+        case nil:
+            return "Timer"
+        }
+    }
+
     var tint: Color {
         switch kind {
         case .sprint:
@@ -189,6 +329,9 @@ private extension RoutinaMacFocusTimerStatus {
             target = "focus"
         case nil:
             target = "timer"
+        }
+        if supportsPauseResume || supportsAbandon {
+            return "Manage active \(target): \(title)"
         }
         return "Open active \(target): \(title)"
     }

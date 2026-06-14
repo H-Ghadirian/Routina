@@ -204,6 +204,27 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func focusSectionShowsForEnabledTaskOrActiveTaskFocus() {
+        let task = RoutineTask(name: "Book flights", scheduleMode: .oneOff)
+        let otherTask = RoutineTask(name: "Pay rent", scheduleMode: .oneOff)
+
+        #expect(!TaskDetailFocusSessionSectionVisibility.shouldShow(for: task, sessions: []))
+
+        task.focusModeEnabled = true
+        #expect(TaskDetailFocusSessionSectionVisibility.shouldShow(for: task, sessions: []))
+
+        task.focusModeEnabled = false
+        let activeFocus = FocusSession(taskID: task.id, startedAt: makeDate("2026-06-15T08:00:00Z"))
+        #expect(TaskDetailFocusSessionSectionVisibility.shouldShow(for: task, sessions: [activeFocus]))
+
+        let otherActiveFocus = FocusSession(taskID: otherTask.id, startedAt: makeDate("2026-06-15T08:00:00Z"))
+        #expect(!TaskDetailFocusSessionSectionVisibility.shouldShow(for: task, sessions: [otherActiveFocus]))
+
+        activeFocus.completedAt = makeDate("2026-06-15T08:25:00Z")
+        #expect(!TaskDetailFocusSessionSectionVisibility.shouldShow(for: task, sessions: [activeFocus]))
+    }
+
+    @Test
     func statusContextCopyPreservesPlatformDifferences() {
         let completedTodo = RoutineTask(
             name: "Submit report",

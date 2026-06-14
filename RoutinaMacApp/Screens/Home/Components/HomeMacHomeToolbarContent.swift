@@ -15,12 +15,10 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     @Binding var progressMode: MacHomeProgressMode
     let locationSnapshot: LocationSnapshot
     let focusStartTaskCount: Int
-    let hasPendingUnassignedFocus: Bool
     let activePlanFocusSession: FocusSession?
     let isPlanFocusStartDisabled: Bool
     let onPlaceCheckInMapRequested: () -> Void
     let onTaskFocusDurationSelected: (TimeInterval) -> Void
-    let onAssignPendingFocusRequested: () -> Void
     let onPausePlanFocus: (FocusSession) -> Void
     let onResumePlanFocus: (FocusSession) -> Void
     let onFinishPlanFocus: (FocusSession) -> Void
@@ -71,19 +69,17 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
                     onAbandon: onAbandonPlanFocus
                 )
             }
+        } else if isPlanFocusStartDisabled {
+            RoutinaMacFocusTimerToolbarItem(hiddenKinds: [.unassigned])
         } else if focusStartTaskCount > 0 {
             ToolbarItem(placement: .navigation) {
                 HomeMacPlanFocusToolbarButton(
                     focusStartTaskCount: focusStartTaskCount,
-                    hasPendingUnassignedFocus: hasPendingUnassignedFocus,
                     isDisabled: isPlanFocusStartDisabled,
-                    onTaskFocusDurationSelected: onTaskFocusDurationSelected,
-                    onAssignPendingFocusRequested: onAssignPendingFocusRequested
+                    onTaskFocusDurationSelected: onTaskFocusDurationSelected
                 )
             }
         }
-
-        RoutinaMacFocusTimerToolbarItem(hiddenKinds: [.unassigned])
     }
 
     @ToolbarContentBuilder
@@ -182,10 +178,8 @@ private struct HomeMacActivePlanFocusToolbarButton: View {
 
 private struct HomeMacPlanFocusToolbarButton: View {
     let focusStartTaskCount: Int
-    let hasPendingUnassignedFocus: Bool
     let isDisabled: Bool
     let onTaskFocusDurationSelected: (TimeInterval) -> Void
-    let onAssignPendingFocusRequested: () -> Void
 
     private let durationOptions: [TimeInterval] = [
         15 * 60,
@@ -197,16 +191,6 @@ private struct HomeMacPlanFocusToolbarButton: View {
 
     var body: some View {
         Menu {
-            if hasPendingUnassignedFocus {
-                Button {
-                    onAssignPendingFocusRequested()
-                } label: {
-                    Label("Assign Pending Focus", systemImage: "tray.full")
-                }
-
-                Divider()
-            }
-
             Button {
                 onTaskFocusDurationSelected(0)
             } label: {
