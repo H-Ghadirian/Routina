@@ -32,14 +32,18 @@ extension HomeTCAView {
             detailMode: mainDetailModeBinding,
             progressMode: macHomeProgressModeBinding,
             locationSnapshot: store.locationSnapshot,
-            planTodayTaskCount: homeToolbarPlanTodayTaskCount,
+            focusStartTaskCount: homeToolbarFocusStartTaskCount,
+            hasPendingUnassignedFocus: homeToolbarHasPendingUnassignedFocus,
             activePlanFocusSession: homeToolbarActivePlanFocusSession,
             isPlanFocusStartDisabled: homeToolbarIsPlanFocusStartDisabled,
             onPlaceCheckInMapRequested: {
                 openMacPlacesWorkspace()
             },
-            onStartPlanFocus: { duration in
-                startHomeToolbarPlanFocus(duration: duration)
+            onTaskFocusDurationSelected: { duration in
+                presentHomeToolbarFocusPicker(duration: duration)
+            },
+            onAssignPendingFocusRequested: {
+                isHomeToolbarPendingFocusAssignmentPresented = true
             },
             onPausePlanFocus: { session in
                 pauseHomeToolbarPlanFocus(session)
@@ -107,41 +111,43 @@ extension HomeTCAView {
         homeToolbarActiveFocusSessions.first(where: \.isUnassigned)
     }
 
-    private var homeToolbarPlanTodayTaskCount: Int {
+    private var homeToolbarHasPendingUnassignedFocus: Bool {
+        !FocusSessionSupport.unassignedCompletedSessions(from: focusSessions).isEmpty
+    }
+
+    private var homeToolbarFocusStartTaskCount: Int {
         guard homeToolbarActivePlanFocusSession == nil else {
             return 0
         }
-        return homeToolbarPlanTodayTasks.count
+        return homeToolbarFocusStartTasks.count
     }
 
-    private var homeToolbarPlanTodayTasks: [RoutineTask] {
+    var homeToolbarFocusStartTasks: [RoutineTask] {
         let referenceDate = Date()
         return store.routineTasks.filter { task in
             guard !task.isArchived(referenceDate: referenceDate, calendar: calendar),
                   !task.isCompletedOneOff,
-                  !task.isCanceledOneOff,
-                  !task.isPinned else {
+                  !task.isCanceledOneOff else {
                 return false
             }
 
-            if task.isDailyRoutineForTaskList {
-                return true
-            }
-
-            guard let plannedDate = task.plannedDate else { return false }
-            return calendar.isDate(plannedDate, inSameDayAs: referenceDate)
+            return true
         }
     }
 
-    private func startHomeToolbarPlanFocus(duration: TimeInterval) {
-        do {
-            _ = try FocusSessionSupport.startUnassignedFocus(
-                plannedDurationSeconds: duration,
-                context: modelContext
-            )
-        } catch {
-            NSLog("Failed to start plan focus from toolbar: \(error.localizedDescription)")
-        }
+    var homeToolbarFocusPickerPresentedBinding: Binding<Bool> {
+        Binding(
+            get: { homeToolbarFocusPickerDuration != nil },
+            set: { isPresented in
+                if !isPresented {
+                    homeToolbarFocusPickerDuration = nil
+                }
+            }
+        )
+    }
+
+    private func presentHomeToolbarFocusPicker(duration: TimeInterval) {
+        homeToolbarFocusPickerDuration = duration
     }
 
     private func pauseHomeToolbarPlanFocus(_ session: FocusSession) {

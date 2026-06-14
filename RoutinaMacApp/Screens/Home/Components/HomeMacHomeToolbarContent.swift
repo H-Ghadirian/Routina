@@ -14,11 +14,13 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     @Binding var detailMode: MacHomeDetailMode
     @Binding var progressMode: MacHomeProgressMode
     let locationSnapshot: LocationSnapshot
-    let planTodayTaskCount: Int
+    let focusStartTaskCount: Int
+    let hasPendingUnassignedFocus: Bool
     let activePlanFocusSession: FocusSession?
     let isPlanFocusStartDisabled: Bool
     let onPlaceCheckInMapRequested: () -> Void
-    let onStartPlanFocus: (TimeInterval) -> Void
+    let onTaskFocusDurationSelected: (TimeInterval) -> Void
+    let onAssignPendingFocusRequested: () -> Void
     let onPausePlanFocus: (FocusSession) -> Void
     let onResumePlanFocus: (FocusSession) -> Void
     let onFinishPlanFocus: (FocusSession) -> Void
@@ -69,12 +71,14 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
                     onAbandon: onAbandonPlanFocus
                 )
             }
-        } else if planTodayTaskCount > 0 {
+        } else if focusStartTaskCount > 0 {
             ToolbarItem(placement: .navigation) {
                 HomeMacPlanFocusToolbarButton(
-                    plannedTaskCount: planTodayTaskCount,
+                    focusStartTaskCount: focusStartTaskCount,
+                    hasPendingUnassignedFocus: hasPendingUnassignedFocus,
                     isDisabled: isPlanFocusStartDisabled,
-                    onStart: onStartPlanFocus
+                    onTaskFocusDurationSelected: onTaskFocusDurationSelected,
+                    onAssignPendingFocusRequested: onAssignPendingFocusRequested
                 )
             }
         }
@@ -177,9 +181,11 @@ private struct HomeMacActivePlanFocusToolbarButton: View {
 }
 
 private struct HomeMacPlanFocusToolbarButton: View {
-    let plannedTaskCount: Int
+    let focusStartTaskCount: Int
+    let hasPendingUnassignedFocus: Bool
     let isDisabled: Bool
-    let onStart: (TimeInterval) -> Void
+    let onTaskFocusDurationSelected: (TimeInterval) -> Void
+    let onAssignPendingFocusRequested: () -> Void
 
     private let durationOptions: [TimeInterval] = [
         15 * 60,
@@ -191,8 +197,18 @@ private struct HomeMacPlanFocusToolbarButton: View {
 
     var body: some View {
         Menu {
+            if hasPendingUnassignedFocus {
+                Button {
+                    onAssignPendingFocusRequested()
+                } label: {
+                    Label("Assign Pending Focus", systemImage: "tray.full")
+                }
+
+                Divider()
+            }
+
             Button {
-                onStart(0)
+                onTaskFocusDurationSelected(0)
             } label: {
                 Label("Count up", systemImage: "stopwatch")
             }
@@ -201,7 +217,7 @@ private struct HomeMacPlanFocusToolbarButton: View {
 
             ForEach(durationOptions, id: \.self) { duration in
                 Button(FocusSessionFormatting.compactDurationText(seconds: duration)) {
-                    onStart(duration)
+                    onTaskFocusDurationSelected(duration)
                 }
             }
         } label: {
@@ -222,7 +238,7 @@ private struct HomeMacPlanFocusToolbarButton: View {
     }
 
     private var planFocusHelpTitle: String {
-        let taskText = plannedTaskCount == 1 ? "1 planned task" : "\(plannedTaskCount) planned tasks"
+        let taskText = focusStartTaskCount == 1 ? "1 task" : "\(focusStartTaskCount) tasks"
         return isDisabled ? "Stop the active focus timer before starting another focus timer" : "Start Focus Timer for \(taskText)"
     }
 }
