@@ -25,28 +25,19 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List(selection: $selection) {
-                    ForEach(invertedGroupedEntries, id: \.date) { section in
+                    ForEach(groupedEntries, id: \.date) { section in
                         Section {
                             ForEach(section.entries, id: \.id) { entry in
                                 rowContent(entry, rowNumbersByEntryID[entry.id] ?? 1)
                                     .id(entry.id)
-                                    .scaleEffect(x: 1, y: -1)
                             }
                         } header: {
                             Text(sectionTitle(section.date))
-                                .scaleEffect(x: 1, y: -1)
                         }
                     }
                 }
                 .listStyle(.sidebar)
-                .scaleEffect(x: 1, y: -1)
             }
-        }
-    }
-
-    private var invertedGroupedEntries: [(date: Date, entries: [TimelineEntry])] {
-        groupedEntries.reversed().map { section in
-            (date: section.date, entries: Array(section.entries.reversed()))
         }
     }
 

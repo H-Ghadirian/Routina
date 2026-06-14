@@ -333,15 +333,6 @@ struct TimelineView: View {
         groupedByDay.last?.entries.last?.id
     }
 
-    private var invertedGroupedByDay: [TimelineFeature.TimelineSection] {
-        groupedByDay.reversed().map { section in
-            TimelineFeature.TimelineSection(
-                date: section.date,
-                entries: Array(section.entries.reversed())
-            )
-        }
-    }
-
     private var availableTags: [String] {
         store.availableTags
     }
@@ -472,21 +463,18 @@ struct TimelineView: View {
 
     private var timelineList: some View {
         List {
-            ForEach(invertedGroupedByDay, id: \.date) { section in
+            ForEach(groupedByDay, id: \.date) { section in
                 Section {
                     ForEach(section.entries) { entry in
                         timelineRow(entry)
                             .id(entry.id)
-                            .scaleEffect(x: 1, y: -1)
                     }
                 } header: {
                     Text(TimelineLogic.daySectionTitle(for: section.date, calendar: calendar))
-                        .scaleEffect(x: 1, y: -1)
                 }
             }
         }
         .listStyle(.plain)
-        .scaleEffect(x: 1, y: -1)
     }
 
     private var filterSheetButton: some View {

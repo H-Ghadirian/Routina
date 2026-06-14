@@ -1,6 +1,8 @@
 # 0207 Show Timeline Oldest to Newest
 
-Status: Accepted
+Status: Superseded
+
+Superseded by: [0242 Show Timeline Sections Top-Down](../0242-show-timeline-sections-top-down.md)
 
 Date: 2026-06-11
 
