@@ -229,9 +229,11 @@ struct PlaceCheckInMapSheet: View {
             syncMapPositionIfAllowed()
         }
         .onChange(of: selectedPlaceID) { _, _ in
+            clearCurrentLocationDraftForExplicitSelection()
             syncMapPositionIfAllowed()
         }
         .onChange(of: selectedHistoryMarkerID) { _, _ in
+            clearCurrentLocationDraftForExplicitSelection()
             syncMapPositionIfAllowed()
         }
         .sheet(item: $editingSessionDraft) { draft in
@@ -1404,10 +1406,10 @@ struct PlaceCheckInMapSheet: View {
 
     private func syncMapPosition() {
         let region: MKCoordinateRegion
-        if let newPlaceDraft {
-            region = PlaceCheckInMapCamera.region(focusingOn: newPlaceDraft.coordinate)
-        } else if let selectedHistoryMarker {
+        if let selectedHistoryMarker {
             region = PlaceCheckInMapCamera.region(focusingOn: selectedHistoryMarker.coordinate)
+        } else if let newPlaceDraft, shouldFocusNewPlaceDraft(newPlaceDraft) {
+            region = PlaceCheckInMapCamera.region(focusingOn: newPlaceDraft.coordinate)
         } else {
             region = PlaceCheckInMapCamera.region(
                 places: places,
@@ -1426,6 +1428,20 @@ struct PlaceCheckInMapSheet: View {
         }
 
         syncMapPosition()
+    }
+
+    private func clearCurrentLocationDraftForExplicitSelection() {
+        guard selectedPlaceID != nil || selectedHistoryMarkerID != nil else {
+            return
+        }
+
+        if newPlaceDraft?.isCurrentLocationDraft == true {
+            newPlaceDraft = nil
+        }
+    }
+
+    private func shouldFocusNewPlaceDraft(_ draft: PlaceCheckInNewPlaceDraft) -> Bool {
+        !draft.isCurrentLocationDraft || (selectedPlaceID == nil && selectedHistoryMarkerID == nil)
     }
 
     private func close() {
