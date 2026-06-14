@@ -193,4 +193,52 @@ enum SettingsAppearanceActionHandler {
         SettingsAppearanceEditor.resetTemporaryViewState(state: &state)
         return .none
     }
+
+    static func resetAllSettingsToDefaultsTapped(
+        state: inout SettingsAppearanceState,
+        appSettingsClient: AppSettingsClient,
+        deviceAuthenticationClient: DeviceAuthenticationClient
+    ) -> Effect<SettingsFeature.Action> {
+        let authenticationStatus = deviceAuthenticationClient.status()
+        guard SettingsAppearanceEditor.beginSettingsResetAuthentication(
+            appLockEnabled: appSettingsClient.appLockEnabled(),
+            deviceAuthenticationStatus: authenticationStatus,
+            state: &state
+        ) else {
+            return .none
+        }
+
+        return .run { send in
+            let result = await deviceAuthenticationClient.authenticate("Reset Routina settings to defaults")
+            await send(.settingsDefaultsResetAuthenticationFinished(result))
+        }
+    }
+
+    static func settingsDefaultsResetAuthenticationFinished(
+        _ result: DeviceAuthenticationResult,
+        state: inout SettingsFeatureState,
+        appSettingsClient: AppSettingsClient,
+        deviceAuthenticationClient: DeviceAuthenticationClient,
+        notificationClient: NotificationClient,
+        referenceDate: Date
+    ) -> Effect<SettingsFeature.Action> {
+        guard SettingsAppearanceEditor.finishSettingsResetAuthentication(
+            result,
+            state: &state.appearance
+        ) else {
+            return .none
+        }
+
+        appSettingsClient.resetAllSettingsToDefaults()
+        SettingsAppearanceEditor.resetAllSettingsToDefaults(
+            deviceAuthenticationStatus: deviceAuthenticationClient.status(),
+            notificationReminderTime: NotificationPreferences.defaultReminderDate(on: referenceDate),
+            state: &state
+        )
+        return .run { _ in
+            await SettingsNotificationsExecution.disableNotifications(
+                notificationClient: notificationClient
+            )
+        }
+    }
 }

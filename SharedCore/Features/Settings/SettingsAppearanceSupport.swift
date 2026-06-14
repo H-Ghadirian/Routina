@@ -80,6 +80,7 @@ enum SettingsAppearanceEditor {
         state.hasTemporaryViewStateToReset = hasTemporaryViewStateToReset
         state.appIconStatusMessage = ""
         state.temporaryViewStateStatusMessage = ""
+        state.isSettingsResetAuthenticationInProgress = false
     }
 
     static func resetTemporaryViewState(
@@ -87,6 +88,65 @@ enum SettingsAppearanceEditor {
     ) {
         state.hasTemporaryViewStateToReset = false
         state.temporaryViewStateStatusMessage = "Saved filters and temporary selections were reset."
+    }
+
+    static func beginSettingsResetAuthentication(
+        appLockEnabled: Bool,
+        deviceAuthenticationStatus: DeviceAuthenticationStatus,
+        state: inout SettingsAppearanceState
+    ) -> Bool {
+        state.appLockMethodDescription = deviceAuthenticationStatus.methodDescription
+        state.appLockUnavailableReason = deviceAuthenticationStatus.unavailableReason
+        state.settingsResetStatusMessage = ""
+
+        guard appLockEnabled else {
+            state.settingsResetStatusMessage = "Turn on App Lock before resetting settings."
+            state.isSettingsResetAuthenticationInProgress = false
+            return false
+        }
+
+        guard deviceAuthenticationStatus.isAvailable else {
+            state.settingsResetStatusMessage = deviceAuthenticationStatus.unavailableReason
+                ?? "Device authentication is unavailable."
+            state.isSettingsResetAuthenticationInProgress = false
+            return false
+        }
+
+        state.isSettingsResetAuthenticationInProgress = true
+        return true
+    }
+
+    static func finishSettingsResetAuthentication(
+        _ result: DeviceAuthenticationResult,
+        state: inout SettingsAppearanceState
+    ) -> Bool {
+        state.isSettingsResetAuthenticationInProgress = false
+        switch result {
+        case .success:
+            return true
+        case .failure(let message):
+            state.settingsResetStatusMessage = message
+            return false
+        }
+    }
+
+    static func resetAllSettingsToDefaults(
+        deviceAuthenticationStatus: DeviceAuthenticationStatus,
+        notificationReminderTime: Date,
+        state: inout SettingsFeatureState
+    ) {
+        state.notifications = SettingsNotificationsState(notificationReminderTime: notificationReminderTime)
+        state.appearance = SettingsAppearanceState(
+            appLockMethodDescription: deviceAuthenticationStatus.methodDescription,
+            appLockUnavailableReason: deviceAuthenticationStatus.unavailableReason,
+            settingsResetStatusMessage: "Settings were reset to defaults."
+        )
+        state.places.isAutomaticCheckInEnabled = true
+        state.tags.fastFilterTags = []
+        state.tags.tagColors = [:]
+        state.tags.relatedTagRules = []
+        state.tags.relatedTagDrafts = [:]
+        state.dataTransfer.dataTransferStatusMessage = ""
     }
 
     static func beginAppIconChange(

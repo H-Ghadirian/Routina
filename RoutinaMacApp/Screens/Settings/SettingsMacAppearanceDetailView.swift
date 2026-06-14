@@ -300,6 +300,33 @@ SettingsMacDetailShell(
             .foregroundStyle(.secondary)
     }
 
+    SettingsMacDetailCard(title: "Reset Settings") {
+        Button(role: .destructive) {
+            store.send(.resetAllSettingsToDefaultsTapped)
+        } label: {
+            Label("Reset Settings to Defaults", systemImage: "arrow.counterclockwise")
+                .foregroundStyle(settingsResetButtonForegroundStyle)
+        }
+        .buttonStyle(.bordered)
+        .tint(isSettingsResetButtonDisabled ? .gray : .red)
+        .disabled(isSettingsResetButtonDisabled)
+
+        if store.appearance.isSettingsResetAuthenticationInProgress {
+            ProgressView("Verifying device authentication…")
+                .controlSize(.small)
+        }
+
+        Text(settingsResetDescription)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+
+        if !store.appearance.settingsResetStatusMessage.isEmpty {
+            Text(store.appearance.settingsResetStatusMessage)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+    }
+
     SettingsMacDetailCard(title: "Battery Routines") {
         Toggle("Create charge routines", isOn: batteryRoutineMonitoringBinding)
             .toggleStyle(.switch)
@@ -444,5 +471,24 @@ SettingsMacDetailShell(
             get: { store.appearance.isGitFeaturesEnabled },
             set: { store.send(.gitFeaturesToggled($0)) }
         )
+    }
+
+    private var isSettingsResetButtonDisabled: Bool {
+        !store.appearance.isAppLockEnabled ||
+            store.appearance.isAppLockToggleInProgress ||
+            store.appearance.isSettingsResetAuthenticationInProgress
+    }
+
+    private var settingsResetButtonForegroundStyle: AnyShapeStyle {
+        isSettingsResetButtonDisabled
+            ? AnyShapeStyle(Color.secondary)
+            : AnyShapeStyle(Color.red)
+    }
+
+    private var settingsResetDescription: String {
+        if store.appearance.isAppLockEnabled {
+            return "Restores settings preferences to their defaults after confirming App Lock."
+        }
+        return "Turn on App Lock before resetting settings to their defaults."
     }
 }

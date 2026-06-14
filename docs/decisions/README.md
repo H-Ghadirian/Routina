@@ -26,6 +26,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0242](0242-show-timeline-sections-top-down.md) supersedes [0207](superseded/0207-show-timeline-oldest-to-newest.md) for timeline section layout:** Timeline lists render top-down in chronological order with each date header above its rows, leaving unused short-list space below the content while preserving latest-entry fallback selection.
+- **[0241](0241-gate-settings-reset-with-app-lock.md) refines [0166](0166-use-app-lock-for-cloud-data-reset.md) and [0235](0235-require-authentication-to-disable-app-lock.md) for settings reset:** Settings -> General can restore settings preferences to defaults only when App Lock is already on and a fresh device owner authentication succeeds, while user content remains untouched.
 - **[0240](0240-keep-checklist-runout-item-actions-item-scoped.md) refines [0186](0186-put-item-runout-in-repeat-type.md) for checklist runout item actions:** Runout checkbox and `Extend` are item-scoped, checklist rows keep stored order, and a runout routine records completion only after all currently due items are reset.
 - **[0239](0239-link-and-edit-away-sessions.md) refines [0125](0125-support-away-sessions.md), [0148](0148-support-count-up-away-sessions.md), and [0155](0155-link-away-activity-in-planner.md) for Away attribution:** Away sessions can store an optional linked task and can be edited while active or after finishing, while task history remains separate from Away history.
 - **[0238](0238-use-project-local-mac-dev-run-entrypoint.md) sets the Mac dev build/run entrypoint:** macOS development runs use `script/build_and_run.sh`, which builds `RoutinaMacOSDev` into project-local derived data and launches it through the Codex Run action.
@@ -56,7 +58,7 @@ These are ordered from newest resolver to oldest resolver.
 - **[0210](0210-store-durable-preferences-in-swiftdata.md) refines [0170](0170-treat-backup-reset-as-complete-user-data-operations.md) for durable preferences:** User-owned preferences that should back up, restore, reset, and sync belong in SwiftData, while temporary, diagnostic, cache, migration, permission, and per-device handoff defaults remain in `UserDefaults`.
 - **[0209](0209-allocate-plan-focus-while-running.md) refines [0205](0205-run-plan-focus-from-planner.md) for plan-focus allocation:** Plan focus can be allocated while running or after finish, and the allocation surface can split elapsed/recorded minutes across multiple tasks in `Plan to do today` while preserving the unassigned focus session as focus history.
 - **[0208](0208-delete-standalone-notes.md) refines [0060](0060-support-standalone-notes.md) for note deletion:** Note detail surfaces expose confirmed deletion, remove owned note file attachments with the note, and clear host-owned note selection after successful deletion where needed.
-- **[0207](0207-show-timeline-oldest-to-newest.md) refines [0206](0206-capture-status-from-mac-sidebar.md) for chat-style timeline order:** Timeline derives oldest-to-newest chronology but uses inverted chat-list presentation so the latest entry appears at the bottom on first paint, and split-view timeline selection falls back to the latest visible entry.
+- **[0207](superseded/0207-show-timeline-oldest-to-newest.md) is superseded by [0242](0242-show-timeline-sections-top-down.md) for timeline section layout:** Timeline no longer uses inverted chat-list presentation.
 - **[0206](0206-capture-status-from-mac-sidebar.md) refines [0060](0060-support-standalone-notes.md) for status capture:** Mac Home shows an always-visible bottom sidebar composer, and submitted status text is stored as a standalone note tagged `Status` so it appears in Timeline without a new data model.
 - **[0205](0205-run-plan-focus-from-planner.md) refines [0200](0200-support-task-planned-dates.md) and [0106](0106-support-unassigned-watch-focus-sessions.md) for plan focus:** Plan focus starts from `Plan to do today` when that section has tasks, runs in the Planner top bar as unassigned focus, renders temporary Planner block evidence, and allocates afterward to the tasks currently in `Plan to do today`, including daily routines.
 - **[0204](0204-avoid-duplicate-daily-repeat-choices.md) refines [0177](0177-separate-interval-and-calendar-repeat-controls.md) and [0199](0199-support-multiday-routine-start-flow.md) for routine recurrence forms:** `Calendar` repeat patterns offer `Weekday` and `Month day` only, `Interval -> Every day` is the single daily repeat path, and multi-day routines clamp day-based intervals to at least 2 days.
@@ -152,6 +154,8 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0242](0242-show-timeline-sections-top-down.md) | Show Timeline Sections Top-Down | Accepted | 2026-06-25 |
+| [0241](0241-gate-settings-reset-with-app-lock.md) | Gate Settings Reset With App Lock | Accepted | 2026-06-25 |
 | [0240](0240-keep-checklist-runout-item-actions-item-scoped.md) | Keep Checklist Runout Item Actions Item-Scoped | Accepted | 2026-06-22 |
 | [0239](0239-link-and-edit-away-sessions.md) | Link and Edit Away Sessions | Accepted | 2026-06-13 |
 | [0238](0238-use-project-local-mac-dev-run-entrypoint.md) | Use Project-Local Mac Dev Run Entrypoint | Accepted | 2026-06-13 |
@@ -361,7 +365,7 @@ These are ordered from newest resolver to oldest resolver.
 | [0204](0204-avoid-duplicate-daily-repeat-choices.md) | Avoid Duplicate Daily Repeat Choices | Accepted | 2026-06-10 |
 | [0205](0205-run-plan-focus-from-planner.md) | Run Plan Focus From Planner | Accepted | 2026-06-10 |
 | [0206](0206-capture-status-from-mac-sidebar.md) | Capture Status From Mac Sidebar | Accepted | 2026-06-11 |
-| [0207](0207-show-timeline-oldest-to-newest.md) | Show Timeline Oldest to Newest | Accepted | 2026-06-11 |
+| [0207](superseded/0207-show-timeline-oldest-to-newest.md) | Show Timeline Oldest to Newest | Superseded | 2026-06-11 |
 | [0208](0208-delete-standalone-notes.md) | Delete Standalone Notes | Accepted | 2026-06-11 |
 | [0209](0209-allocate-plan-focus-while-running.md) | Allocate Plan Focus While Running | Accepted | 2026-06-11 |
 | [0210](0210-store-durable-preferences-in-swiftdata.md) | Store Durable Preferences in SwiftData | Accepted | 2026-06-11 |

@@ -21,51 +21,9 @@ enum RoutinaAppBootstrap {
             }
             CloudSettingsKeyValueSync.startIfNeeded()
         }
-        SharedDefaults.app.register(defaults: [
-            .appSettingNotificationsEnabled: false,
-            .appSettingHideUnavailableRoutines: false,
-            .appSettingAppLockEnabled: false,
-            .appSettingHomeTaskListModeTabsVisible: false,
-            .appSettingMacTimelineQuickFiltersVisible: false,
-            .appSettingMacStatusComposerEnabled: false,
-            .appSettingSettingsDevicesSectionEnabled: false,
-            .appSettingMacEventEmotionActionsEnabled: false,
-            .appSettingRelatedTagRulesEnabled: false,
-            .appSettingGoalsTabEnabled: false,
-            .appSettingAdventureMapEnabled: false,
-            .appSettingBoardScreenEnabled: false,
-            .appSettingStatsWinsEnabled: false,
-            .appSettingStatsSleepTabEnabled: false,
-            .appSettingStatsAchievementsEnabled: false,
-            .appSettingShowPersianDates: false,
-            .appSettingBatteryRoutineMonitoringEnabled: BatteryRoutinePreferences.defaultMonitoringEnabled,
-            .appSettingSleepHomeActionEnabled: true,
-            .appSettingSleepHomeMenuEnabled: true,
-            .appSettingShakeToStartSleepEnabled: true,
-            .appSettingFocusShieldEnabled: false,
-            .appSettingMacFocusAppBlockingEnabled: true,
-            .appSettingMacWebsiteBlockingEnabled: false,
-            .appSettingAutomaticPlaceCheckInEnabled: true,
-            .appSettingShowTimelineTasksInDayPlanner: true,
-            .appSettingDailyRoutinesSectionCollapsed: false,
-            .appSettingMacPlanTodayDailyRoutinesGroupCollapsed: true,
-            .appSettingArchivedRoutinesSectionCollapsed: false
-        ])
-        SharedDefaults.app.register(defaults: [
-            UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue: RoutineListSectioningMode.defaultValue.rawValue,
-            UserDefaultStringValueKey.appSettingCollapsedTagTaskListSections.rawValue: "",
-            UserDefaultStringValueKey.appSettingHomeTaskRowHiddenFields.rawValue: "",
-            UserDefaultStringValueKey.appSettingHomeTimelineRowHiddenFields.rawValue: "",
-            UserDefaultStringValueKey.appSettingProtectionBlockingEnabledModes.rawValue: ProtectionBlockingMode.encodedSet(
-                ProtectionBlockingMode.defaultEnabledModes
-            ),
-            UserDefaultStringValueKey.macQuickAddShortcut.rawValue: "optionCommandN",
-            BatteryRoutinePreferences.thresholdPercentDefaultsKey: BatteryRoutinePreferences.defaultThresholdPercent
-        ])
-        SharedDefaults.app.register(defaults: [
-            NotificationPreferences.reminderHourDefaultsKey: NotificationPreferences.defaultReminderHour,
-            NotificationPreferences.reminderMinuteDefaultsKey: NotificationPreferences.defaultReminderMinute
-        ])
+        SharedDefaults.app.register(defaults: AppSettingsDefaults.boolValues)
+        SharedDefaults.app.register(defaults: AppSettingsDefaults.stringValues)
+        SharedDefaults.app.register(defaults: AppSettingsDefaults.intValues)
     }
 
     @MainActor

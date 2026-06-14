@@ -30,13 +30,39 @@ enum NotificationPreferences {
         on date: Date,
         calendar: Calendar = .current
     ) -> Date {
+        reminderDate(
+            on: date,
+            hour: reminderHour(),
+            minute: reminderMinute(),
+            calendar: calendar
+        )
+    }
+
+    static func defaultReminderDate(
+        on date: Date,
+        calendar: Calendar = .current
+    ) -> Date {
+        reminderDate(
+            on: date,
+            hour: defaultReminderHour,
+            minute: defaultReminderMinute,
+            calendar: calendar
+        )
+    }
+
+    private static func reminderDate(
+        on date: Date,
+        hour: Int,
+        minute: Int,
+        calendar: Calendar
+    ) -> Date {
         let dayComponents = calendar.dateComponents([.year, .month, .day], from: date)
         let components = DateComponents(
             year: dayComponents.year,
             month: dayComponents.month,
             day: dayComponents.day,
-            hour: reminderHour(),
-            minute: reminderMinute()
+            hour: hour,
+            minute: minute
         )
         return calendar.date(from: components) ?? date
     }

@@ -78,6 +78,8 @@ struct SettingsAppearanceState: Equatable {
     var selectedAppIcon: AppIconOption = .orange
     var hasTemporaryViewStateToReset: Bool = false
     var temporaryViewStateStatusMessage: String = ""
+    var isSettingsResetAuthenticationInProgress: Bool = false
+    var settingsResetStatusMessage: String = ""
 }
 
 struct SettingsCloudState: Equatable {

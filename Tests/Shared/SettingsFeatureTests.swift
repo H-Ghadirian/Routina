@@ -728,6 +728,102 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func resetAllSettings_requiresAppLockBeforeAuthentication() async {
+        let resetCallCount = LockIsolated(0)
+        let authenticateCallCount = LockIsolated(0)
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.appLockEnabled = { false }
+            $0.appSettingsClient.resetAllSettingsToDefaults = {
+                resetCallCount.withValue { $0 += 1 }
+            }
+            $0.deviceAuthenticationClient.status = {
+                DeviceAuthenticationStatus(
+                    isAvailable: true,
+                    methodDescription: "Face ID or your device passcode",
+                    unavailableReason: nil
+                )
+            }
+            $0.deviceAuthenticationClient.authenticate = { _ in
+                authenticateCallCount.withValue { $0 += 1 }
+                return .success
+            }
+        }
+
+        await store.send(.resetAllSettingsToDefaultsTapped) {
+            $0.appearance.appLockMethodDescription = "Face ID or your device passcode"
+            $0.appearance.settingsResetStatusMessage = "Turn on App Lock before resetting settings."
+        }
+
+        #expect(resetCallCount.value == 0)
+        #expect(authenticateCallCount.value == 0)
+    }
+
+    @Test
+    func resetAllSettings_authenticatesThenRestoresDefaultSettingsState() async {
+        let resetCallCount = LockIsolated(0)
+        let now = makeDate("2026-06-25T09:00:00Z")
+        let defaultReminderTime = NotificationPreferences.defaultReminderDate(on: now)
+
+        let store = TestStore(
+            initialState: SettingsFeature.State(
+                notifications: .init(notificationsEnabled: true),
+                appearance: .init(
+                    appColorScheme: .dark,
+                    tagCounterDisplayMode: .doneOnly,
+                    taskRowVisibility: HomeTaskRowVisibility(hiddenFields: [.statusBadge]),
+                    timelineRowVisibility: HomeTimelineRowVisibility(hiddenFields: [.subtitle]),
+                    isAppLockEnabled: true,
+                    isGitFeaturesEnabled: true,
+                    selectedAppIcon: .teal,
+                    hasTemporaryViewStateToReset: true
+                ),
+                places: .init(isAutomaticCheckInEnabled: false)
+            )
+        ) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.date.now = now
+            $0.notificationClient = .noop
+            $0.appSettingsClient.appLockEnabled = { true }
+            $0.appSettingsClient.resetAllSettingsToDefaults = {
+                resetCallCount.withValue { $0 += 1 }
+            }
+            $0.deviceAuthenticationClient.status = {
+                DeviceAuthenticationStatus(
+                    isAvailable: true,
+                    methodDescription: "Touch ID or your Mac password",
+                    unavailableReason: nil
+                )
+            }
+            $0.deviceAuthenticationClient.authenticate = { reason in
+                #expect(reason == "Reset Routina settings to defaults")
+                return .success
+            }
+        }
+
+        await store.send(.resetAllSettingsToDefaultsTapped) {
+            $0.appearance.isSettingsResetAuthenticationInProgress = true
+            $0.appearance.appLockMethodDescription = "Touch ID or your Mac password"
+        }
+
+        await store.receive(.settingsDefaultsResetAuthenticationFinished(.success)) {
+            $0.notifications = SettingsNotificationsState(notificationReminderTime: defaultReminderTime)
+            $0.appearance = SettingsAppearanceState(
+                appLockMethodDescription: "Touch ID or your Mac password",
+                settingsResetStatusMessage: "Settings were reset to defaults."
+            )
+            $0.places.isAutomaticCheckInEnabled = true
+        }
+
+        #expect(resetCallCount.value == 1)
+    }
+
+    @Test
     func resetCloudDataConfirmed_authenticatesWithAppLockBeforeDeleting() async {
         let context = makeInMemoryContext()
         let now = makeDate("2026-06-06T12:00:00Z")

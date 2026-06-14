@@ -45,6 +45,77 @@ enum SharedDefaults: SharedDefaultsProtocol {
     }()
 }
 
+enum AppSettingsDefaults {
+    static let boolValues: [UserDefaultBoolValueKey: Bool] = [
+        .appSettingNotificationsEnabled: false,
+        .appSettingHideUnavailableRoutines: false,
+        .appSettingAppLockEnabled: false,
+        .appSettingHomeTaskListModeTabsVisible: false,
+        .appSettingMacTimelineQuickFiltersVisible: false,
+        .appSettingMacStatusComposerEnabled: false,
+        .appSettingSettingsDevicesSectionEnabled: false,
+        .appSettingMacEventEmotionActionsEnabled: false,
+        .appSettingRelatedTagRulesEnabled: false,
+        .appSettingGoalsTabEnabled: false,
+        .appSettingAdventureMapEnabled: false,
+        .appSettingBoardScreenEnabled: false,
+        .appSettingStatsWinsEnabled: false,
+        .appSettingStatsSleepTabEnabled: false,
+        .appSettingStatsAchievementsEnabled: false,
+        .appSettingShowPersianDates: false,
+        .appSettingBatteryRoutineMonitoringEnabled: BatteryRoutinePreferences.defaultMonitoringEnabled,
+        .appSettingSleepHomeActionEnabled: true,
+        .appSettingSleepHomeMenuEnabled: true,
+        .appSettingShakeToStartSleepEnabled: true,
+        .appSettingFocusShieldEnabled: false,
+        .appSettingMacFocusAppBlockingEnabled: true,
+        .appSettingMacWebsiteBlockingEnabled: false,
+        .appSettingAutomaticPlaceCheckInEnabled: true,
+        .appSettingShowTimelineTasksInDayPlanner: true,
+        .appSettingDailyRoutinesSectionCollapsed: false,
+        .appSettingMacPlanTodayDailyRoutinesGroupCollapsed: true,
+        .appSettingArchivedRoutinesSectionCollapsed: false
+    ]
+
+    static let stringValues: [String: String] = [
+        UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue: RoutineListSectioningMode.defaultValue.rawValue,
+        UserDefaultStringValueKey.appSettingCollapsedTagTaskListSections.rawValue: "",
+        UserDefaultStringValueKey.appSettingHomeTaskRowHiddenFields.rawValue: "",
+        UserDefaultStringValueKey.appSettingHomeTimelineRowHiddenFields.rawValue: "",
+        UserDefaultStringValueKey.appSettingProtectionBlockingEnabledModes.rawValue: ProtectionBlockingMode.encodedSet(
+            ProtectionBlockingMode.defaultEnabledModes
+        ),
+        UserDefaultStringValueKey.macQuickAddShortcut.rawValue: "optionCommandN"
+    ]
+
+    static let intValues: [String: Int] = [
+        BatteryRoutinePreferences.thresholdPercentDefaultsKey: BatteryRoutinePreferences.defaultThresholdPercent,
+        NotificationPreferences.reminderHourDefaultsKey: NotificationPreferences.defaultReminderHour,
+        NotificationPreferences.reminderMinuteDefaultsKey: NotificationPreferences.defaultReminderMinute
+    ]
+
+    static let resetOnlyStringKeys: [UserDefaultStringValueKey] = [
+        .selectedMacAppIcon,
+        .appSettingAppColorScheme,
+        .appSettingTagCounterDisplayMode,
+        .appSettingRelatedTagRules,
+        .appSettingTagColors,
+        .appSettingFastFilterTags,
+        .appSettingIOSStatsDashboardHiddenItemIDs,
+        .appSettingIOSStatsDashboardItemOrderIDs,
+        .appSettingIOSStatsSummaryDisplayMode,
+        .appSettingMacStatsDashboardHiddenItemIDs,
+        .appSettingMacStatsDashboardItemOrderIDs,
+        .appSettingMacStatsSummaryDisplayMode,
+        .appSettingHiddenDayPlanTimelineActivityIDs,
+        .appSettingTemporaryViewState,
+        .appSettingBlockingWebsiteDomains,
+        .appSettingFocusShieldSelection,
+        .appSettingMacFocusBlockedApps,
+        .macFormSectionOrder
+    ]
+}
+
 public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingNotificationsEnabled
     case appSettingHideUnavailableRoutines
@@ -154,6 +225,7 @@ struct AppSettingsClient: Sendable {
     var temporaryViewState: @Sendable () -> TemporaryViewState?
     var setTemporaryViewState: @Sendable (TemporaryViewState?) -> Void
     var resetTemporaryViewState: @Sendable () -> Void
+    var resetAllSettingsToDefaults: @Sendable () -> Void = {}
 }
 
 enum CloudSettingsKeyValueSync {
@@ -489,6 +561,26 @@ extension AppSettingsClient {
         resetTemporaryViewState: {
             SharedDefaults.app[.appSettingHideUnavailableRoutines] = false
             SharedDefaults.app[.appSettingTemporaryViewState] = nil
+        },
+        resetAllSettingsToDefaults: {
+            for (key, value) in AppSettingsDefaults.boolValues {
+                SharedDefaults.app[key] = value
+            }
+            for key in AppSettingsDefaults.resetOnlyStringKeys {
+                CloudSettingsKeyValueSync.setString(nil, for: key)
+            }
+            for (key, value) in AppSettingsDefaults.stringValues {
+                SharedDefaults.app.set(value, forKey: key)
+            }
+            for (key, value) in AppSettingsDefaults.intValues {
+                SharedDefaults.app.set(value, forKey: key)
+            }
+            BatteryRoutinePreferences.notifyChanged()
+            Task { @MainActor in
+                RoutinaUserPreferencesStore.mirrorDefaultsToStore(
+                    in: PersistenceController.shared.container.mainContext
+                )
+            }
         }
     )
 
@@ -530,6 +622,7 @@ extension AppSettingsClient {
         selectedAppIcon: { .orange },
         temporaryViewState: { nil },
         setTemporaryViewState: { _ in },
-        resetTemporaryViewState: { }
+        resetTemporaryViewState: { },
+        resetAllSettingsToDefaults: { }
     )
 }

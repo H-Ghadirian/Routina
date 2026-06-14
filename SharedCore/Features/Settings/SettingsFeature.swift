@@ -18,6 +18,8 @@ struct SettingsFeature {
         case appLockToggled(Bool)
         case appLockEnableFinished(DeviceAuthenticationResult)
         case appLockDisableFinished(DeviceAuthenticationResult)
+        case resetAllSettingsToDefaultsTapped
+        case settingsDefaultsResetAuthenticationFinished(DeviceAuthenticationResult)
         case gitFeaturesToggled(Bool)
         case showPersianDatesToggled(Bool)
         case automaticPlaceCheckInToggled(Bool)
@@ -170,6 +172,23 @@ struct SettingsFeature {
                     state: &state.appearance,
                     appSettingsClient: self.appSettingsClient,
                     deviceAuthenticationClient: self.deviceAuthenticationClient
+                )
+
+            case .resetAllSettingsToDefaultsTapped:
+                return SettingsAppearanceActionHandler.resetAllSettingsToDefaultsTapped(
+                    state: &state.appearance,
+                    appSettingsClient: self.appSettingsClient,
+                    deviceAuthenticationClient: self.deviceAuthenticationClient
+                )
+
+            case let .settingsDefaultsResetAuthenticationFinished(result):
+                return SettingsAppearanceActionHandler.settingsDefaultsResetAuthenticationFinished(
+                    result,
+                    state: &state,
+                    appSettingsClient: self.appSettingsClient,
+                    deviceAuthenticationClient: self.deviceAuthenticationClient,
+                    notificationClient: self.notificationClient,
+                    referenceDate: now
                 )
 
             case let .gitFeaturesToggled(isEnabled):
