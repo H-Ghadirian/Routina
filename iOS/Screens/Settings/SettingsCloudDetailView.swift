@@ -21,7 +21,7 @@ List {
         Button(role: .destructive) {
             store.send(.setCloudDataResetConfirmation(true))
         } label: {
-            Label("Delete iCloud Data", systemImage: "trash")
+            Label("Delete App & iCloud Data", systemImage: "trash")
         }
         .disabled(actionsDisabled)
 
