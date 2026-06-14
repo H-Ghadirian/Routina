@@ -95,6 +95,10 @@ struct HomeTCAView: View {
         store: SharedDefaults.app
     ) var areMacTimelineQuickFiltersVisible = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacHomeSectionFocusTimersEnabled.rawValue,
+        store: SharedDefaults.app
+    ) var areMacHomeSectionFocusTimersEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingMacStatusComposerEnabled.rawValue,
         store: SharedDefaults.app
     ) var isMacStatusComposerEnabled = false

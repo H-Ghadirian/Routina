@@ -51,6 +51,7 @@ enum AppSettingsDefaults {
         .appSettingHideUnavailableRoutines: false,
         .appSettingAppLockEnabled: false,
         .appSettingHomeTaskListModeTabsVisible: false,
+        .appSettingMacHomeSectionFocusTimersEnabled: false,
         .appSettingMacTimelineQuickFiltersVisible: false,
         .appSettingMacStatusComposerEnabled: false,
         .appSettingSettingsDevicesSectionEnabled: false,
@@ -128,6 +129,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingStatsSleepTabEnabled
     case appSettingStatsAchievementsEnabled
     case appSettingHomeTaskListModeTabsVisible
+    case appSettingMacHomeSectionFocusTimersEnabled
     case appSettingMacTimelineQuickFiltersVisible
     case appSettingMacStatusComposerEnabled
     case appSettingSettingsDevicesSectionEnabled

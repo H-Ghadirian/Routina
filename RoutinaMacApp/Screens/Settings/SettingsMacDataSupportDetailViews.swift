@@ -416,6 +416,10 @@ private struct SettingsMacBetaExperimentsCard: View {
         store: SharedDefaults.app
     ) private var areMacTimelineQuickFiltersVisible = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacHomeSectionFocusTimersEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var areMacHomeSectionFocusTimersEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingMacStatusComposerEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isMacStatusComposerEnabled = false
@@ -496,6 +500,13 @@ private struct SettingsMacBetaExperimentsCard: View {
                 .toggleStyle(.switch)
 
             Text("Show All, Todos, and Routines tabs in the Home sidebar.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Toggle("Show Home section focus timers", isOn: $areMacHomeSectionFocusTimersEnabled)
+                .toggleStyle(.switch)
+
+            Text("Show Focus Timer actions on Home sidebar section and group titles.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 

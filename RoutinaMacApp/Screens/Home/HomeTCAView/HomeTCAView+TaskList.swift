@@ -362,7 +362,7 @@ extension HomeTCAView {
     private func taskListSectionFocusContextMenu(
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     ) -> some View {
-        if section.canStartFocusTimer {
+        if areMacHomeSectionFocusTimersEnabled, section.canStartFocusTimer {
             Section("Focus Timer") {
                 taskListSectionFocusContextMenuItems(for: section)
             }
@@ -373,7 +373,7 @@ extension HomeTCAView {
     private func taskListGroupFocusContextMenu(
         for group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
     ) -> some View {
-        if group.canStartFocusTimer {
+        if areMacHomeSectionFocusTimersEnabled, group.canStartFocusTimer {
             Section("Focus Timer") {
                 taskListGroupFocusContextMenuItems(for: group)
             }
@@ -436,7 +436,7 @@ extension HomeTCAView {
         _ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
         duration: TimeInterval
     ) {
-        guard section.canStartFocusTimer else { return }
+        guard areMacHomeSectionFocusTimersEnabled, section.canStartFocusTimer else { return }
 
         do {
             _ = try FocusSessionSupport.startUnassignedFocus(
@@ -453,7 +453,7 @@ extension HomeTCAView {
         _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>,
         duration: TimeInterval
     ) {
-        guard group.canStartFocusTimer else { return }
+        guard areMacHomeSectionFocusTimersEnabled, group.canStartFocusTimer else { return }
 
         do {
             _ = try FocusSessionSupport.startUnassignedFocus(
