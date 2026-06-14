@@ -65,6 +65,7 @@ struct TimelineLogicTests {
             .places,
             .emotions,
             .sleep,
+            .away,
         ])
         #expect(TimelineFilterType.timelinePigmentCases.allSatisfy { $0.isTimelinePigmentCase })
         #expect(TimelineFilterType.events.isTimelinePigmentCase == false)
@@ -81,6 +82,7 @@ struct TimelineLogicTests {
             .notes,
             .places,
             .sleep,
+            .away,
         ])
         #expect(TimelineFilterType.visibleTimelinePigmentCases(includingEventEmotion: false) == [
             .all,
@@ -90,6 +92,7 @@ struct TimelineLogicTests {
             .notes,
             .places,
             .sleep,
+            .away,
         ])
         #expect(TimelineFilterType.visibleCases(includingEventEmotion: false).contains(.events) == false)
         #expect(TimelineFilterType.visibleCases(includingEventEmotion: false).contains(.emotions) == false)
