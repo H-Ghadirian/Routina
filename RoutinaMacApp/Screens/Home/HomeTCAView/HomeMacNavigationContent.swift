@@ -82,7 +82,6 @@ struct HomeMacNavigationContent<
             }
             .navigationTitle("")
             .toolbar {
-                RoutinaMacFocusTimerToolbarItem()
                 boardToolbarContent()
             }
             .animation(.easeInOut(duration: 0.22), value: isBoardInspectorPresented)

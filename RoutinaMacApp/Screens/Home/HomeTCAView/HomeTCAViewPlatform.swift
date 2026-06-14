@@ -32,8 +32,26 @@ extension HomeTCAView {
             detailMode: mainDetailModeBinding,
             progressMode: macHomeProgressModeBinding,
             locationSnapshot: store.locationSnapshot,
+            planTodayTaskCount: homeToolbarPlanTodayTaskCount,
+            activePlanFocusSession: homeToolbarActivePlanFocusSession,
+            isPlanFocusStartDisabled: homeToolbarIsPlanFocusStartDisabled,
             onPlaceCheckInMapRequested: {
                 openMacPlacesWorkspace()
+            },
+            onStartPlanFocus: { duration in
+                startHomeToolbarPlanFocus(duration: duration)
+            },
+            onPausePlanFocus: { session in
+                pauseHomeToolbarPlanFocus(session)
+            },
+            onResumePlanFocus: { session in
+                resumeHomeToolbarPlanFocus(session)
+            },
+            onFinishPlanFocus: { session in
+                finishHomeToolbarPlanFocus(session)
+            },
+            onAbandonPlanFocus: { session in
+                abandonHomeToolbarPlanFocus(session)
             }
         )
     }
@@ -71,6 +89,108 @@ extension HomeTCAView {
             return .goals
         }
         return .standard
+    }
+
+    private var homeToolbarActiveFocusSessions: [FocusSession] {
+        focusSessions
+            .filter { $0.completedAt == nil && $0.abandonedAt == nil }
+            .sorted { ($0.startedAt ?? .distantPast) > ($1.startedAt ?? .distantPast) }
+    }
+
+    private var homeToolbarIsPlanFocusStartDisabled: Bool {
+        homeToolbarActiveFocusSessions.contains { !$0.isUnassigned }
+            || sprintFocusSessions.contains(where: \.isActive)
+            || homeToolbarActiveFocusSessions.contains(where: \.isUnassigned)
+    }
+
+    private var homeToolbarActivePlanFocusSession: FocusSession? {
+        homeToolbarActiveFocusSessions.first(where: \.isUnassigned)
+    }
+
+    private var homeToolbarPlanTodayTaskCount: Int {
+        guard homeToolbarActivePlanFocusSession == nil else {
+            return 0
+        }
+        return homeToolbarPlanTodayTasks.count
+    }
+
+    private var homeToolbarPlanTodayTasks: [RoutineTask] {
+        let referenceDate = Date()
+        return store.routineTasks.filter { task in
+            guard !task.isArchived(referenceDate: referenceDate, calendar: calendar),
+                  !task.isCompletedOneOff,
+                  !task.isCanceledOneOff,
+                  !task.isPinned else {
+                return false
+            }
+
+            if task.isDailyRoutineForTaskList {
+                return true
+            }
+
+            guard let plannedDate = task.plannedDate else { return false }
+            return calendar.isDate(plannedDate, inSameDayAs: referenceDate)
+        }
+    }
+
+    private func startHomeToolbarPlanFocus(duration: TimeInterval) {
+        do {
+            _ = try FocusSessionSupport.startUnassignedFocus(
+                plannedDurationSeconds: duration,
+                context: modelContext
+            )
+        } catch {
+            NSLog("Failed to start plan focus from toolbar: \(error.localizedDescription)")
+        }
+    }
+
+    private func pauseHomeToolbarPlanFocus(_ session: FocusSession) {
+        do {
+            _ = try FocusSessionSupport.pauseFocus(
+                sessionID: session.id,
+                kind: .unassigned,
+                context: modelContext
+            )
+        } catch {
+            NSLog("Failed to pause plan focus from toolbar: \(error.localizedDescription)")
+        }
+    }
+
+    private func resumeHomeToolbarPlanFocus(_ session: FocusSession) {
+        do {
+            _ = try FocusSessionSupport.resumeFocus(
+                sessionID: session.id,
+                kind: .unassigned,
+                context: modelContext
+            )
+        } catch {
+            NSLog("Failed to resume plan focus from toolbar: \(error.localizedDescription)")
+        }
+    }
+
+    private func finishHomeToolbarPlanFocus(_ session: FocusSession) {
+        do {
+            _ = try FocusSessionSupport.finishFocus(
+                sessionID: session.id,
+                kind: .unassigned,
+                context: modelContext,
+                calendar: calendar
+            )
+        } catch {
+            NSLog("Failed to finish plan focus from toolbar: \(error.localizedDescription)")
+        }
+    }
+
+    private func abandonHomeToolbarPlanFocus(_ session: FocusSession) {
+        do {
+            _ = try FocusSessionSupport.abandonFocus(
+                sessionID: session.id,
+                kind: .unassigned,
+                context: modelContext
+            )
+        } catch {
+            NSLog("Failed to abandon plan focus from toolbar: \(error.localizedDescription)")
+        }
     }
 
     @ViewBuilder

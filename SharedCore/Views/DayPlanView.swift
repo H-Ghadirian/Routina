@@ -592,8 +592,6 @@ private struct DayPlanTimelinePanelView: View {
         let tintsByTaskID = tintsByTaskID()
 
         VStack(alignment: .leading, spacing: 12) {
-            planFocusBanner(hasActiveSprintFocus: !activeSprintFocusSessions.isEmpty)
-
             HStack {
                 Text(planner.visibleRangeMode.title)
                     .font(.headline)
@@ -823,11 +821,9 @@ private struct DayPlanTimelinePanelView: View {
 
     @ViewBuilder
     private func planFocusBanner(hasActiveSprintFocus: Bool) -> some View {
-        if let activePlanFocusSession {
-            activePlanFocusBanner(for: activePlanFocusSession)
-        } else if let pendingPlanFocusSession, !planTodayTasks.isEmpty {
+        if let pendingPlanFocusSession, !planTodayTasks.isEmpty {
             pendingPlanFocusBanner(for: pendingPlanFocusSession)
-        } else if !planTodayTasks.isEmpty {
+        } else if activePlanFocusSession == nil, !planTodayTasks.isEmpty {
             planFocusStartBanner(hasActiveSprintFocus: hasActiveSprintFocus)
         }
     }
