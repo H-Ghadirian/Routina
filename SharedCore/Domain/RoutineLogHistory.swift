@@ -847,6 +847,7 @@ enum RoutineLogHistory {
             )
         }
 
+        task.removeMultiDaySpan(containing: completedDay, calendar: calendar)
         task.resetStepProgress()
         task.resetChecklistProgress()
 
@@ -868,6 +869,7 @@ enum RoutineLogHistory {
         taskID: UUID,
         timestamp: Date,
         context: ModelContext,
+        calendar: Calendar = .current,
         sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> RoutineTask? {
         let taskDescriptor = FetchDescriptor<RoutineTask>(
@@ -912,6 +914,7 @@ enum RoutineLogHistory {
             task.removeCanceledState()
         }
 
+        task.removeMultiDaySpan(containing: timestamp, calendar: calendar)
         task.resetStepProgress()
         task.resetChecklistProgress()
 

@@ -199,6 +199,7 @@ extension TaskDetailFeature.State {
 
     var completionButtonSystemImage: String? {
         if canUndoSelectedDate { return "arrow.uturn.backward" }
+        if task.isMultiDayRoutine && task.isOngoing { return "stop.circle.fill" }
         if task.isMultiDayRoutine && !task.isOngoing { return "play.circle.fill" }
         return nil
     }
@@ -206,6 +207,10 @@ extension TaskDetailFeature.State {
     var isCompletionButtonDisabled: Bool {
         guard !canUndoSelectedDate else { return false }
         if task.usesOngoingLifecycle && task.isOngoing {
+            if task.isMultiDayRoutine,
+               let ongoingSince = task.ongoingSince {
+                return Calendar.current.startOfDay(for: resolvedSelectedDate) < Calendar.current.startOfDay(for: ongoingSince)
+            }
             return false
         }
         if task.isMultiDayRoutine {

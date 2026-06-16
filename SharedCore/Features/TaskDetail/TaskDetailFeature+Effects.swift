@@ -7,6 +7,11 @@ extension TaskDetailFeature {
         .run { @MainActor send in
             do {
                 let context = modelContext()
+                if let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first,
+                   task.clearStoppedOngoingStateIfNeeded(calendar: calendar) {
+                    try context.save()
+                    NotificationCenter.default.postRoutineDidUpdate()
+                }
                 _ = try RoutineLogHistory.backfillMissingLastDoneLog(for: taskID, in: context)
                 let logs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
                 send(.logsLoaded(logs))
@@ -208,7 +213,8 @@ extension TaskDetailFeature {
                 guard let updatedTask = try RoutineLogHistory.removeLogEntry(
                     taskID: taskID,
                     timestamp: timestamp,
-                    context: context
+                    context: context,
+                    calendar: calendar
                 ) else {
                     return
                 }
@@ -636,6 +642,13 @@ extension TaskDetailFeature {
                 guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
                 guard task.usesOngoingLifecycle else { return }
                 task.startOngoing(at: startedAt)
+                task.appendChangeLogEntry(
+                    RoutineTaskChangeLogEntry(
+                        timestamp: startedAt,
+                        kind: .ongoingStarted,
+                        newValue: RoutineTaskMultiDaySpanDateStorage.encode(startedAt)
+                    )
+                )
                 DeviceActivityRecorder.recordAction(
                     .started,
                     entity: .task,
@@ -663,7 +676,16 @@ extension TaskDetailFeature {
                 guard task.usesOngoingLifecycle else { return }
                 guard task.isOngoing else { return }
 
+                let ongoingStartedAt = task.ongoingSince
                 task.finishOngoing(at: finishedAt)
+                task.appendChangeLogEntry(
+                    RoutineTaskChangeLogEntry(
+                        timestamp: finishedAt,
+                        kind: .ongoingStopped,
+                        previousValue: ongoingStartedAt.map(RoutineTaskMultiDaySpanDateStorage.encode),
+                        newValue: RoutineTaskMultiDaySpanDateStorage.encode(finishedAt)
+                    )
+                )
 
                 let existingLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
                 if let existingLog = existingLogs.first(where: { log in

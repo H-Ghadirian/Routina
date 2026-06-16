@@ -69,6 +69,10 @@ enum TaskDetailLogPresentation {
             return "Changed time spent to \(compactDurationText(for: change.durationMinutes ?? change.newValue.flatMap(Int.init)))"
         case .timeSpentRemoved:
             return "Removed time spent"
+        case .ongoingStarted:
+            return "Started multi-day routine"
+        case .ongoingStopped:
+            return "Stopped multi-day routine"
         }
     }
 
@@ -84,6 +88,10 @@ enum TaskDetailLogPresentation {
             return "link.badge.minus"
         case .timeSpentAdded, .timeSpentChanged, .timeSpentRemoved:
             return "clock"
+        case .ongoingStarted:
+            return "play.circle"
+        case .ongoingStopped:
+            return "stop.circle"
         }
     }
 

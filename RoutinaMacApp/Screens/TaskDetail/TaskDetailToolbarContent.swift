@@ -72,10 +72,14 @@ struct TaskDetailToolbarContent: ToolbarContent {
         Button {
             store.send(store.completionButtonAction)
         } label: {
-            TaskDetailCompletionButtonLabel(
-                title: store.completionButtonTitle,
-                systemImage: store.completionButtonSystemImage
-            )
+            HStack(spacing: 6) {
+                if let systemImage = store.completionButtonSystemImage {
+                    Image(systemName: systemImage)
+                }
+                Text(store.completionButtonTitle)
+            }
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
         }
         .buttonStyle(.borderedProminent)
         .tint(completionTint)
@@ -105,7 +109,10 @@ struct TaskDetailToolbarContent: ToolbarContent {
     }
 
     private var completionTint: Color {
-        store.canUndoSelectedDate ? .orange : .green
+        if store.task.isMultiDayRoutine && store.task.isOngoing {
+            return Color.orange
+        }
+        return store.canUndoSelectedDate ? Color.orange : Color.green
     }
 
     private var pauseActionTitle: String {

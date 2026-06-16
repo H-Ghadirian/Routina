@@ -488,6 +488,8 @@ extension RoutineTask {
 
     func finishOngoing(at finishedAt: Date) {
         recordCompletion(at: finishedAt)
+        activityState = .idle
+        ongoingSince = nil
     }
 
     func sanitizeChecklistProgress() {

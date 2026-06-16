@@ -13,6 +13,8 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
     let showsOverdueLegend: Bool
     let showsSoftDueLegend: Bool
     let showsPausedLegend: Bool
+    let showsOngoingLegend: Bool
+    let showsCompletedMultiDaySpanLegend: Bool
     let showsCreatedLegend: Bool
     let calendarContent: CalendarContent
 
@@ -29,6 +31,8 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
         showsOverdueLegend: Bool = true,
         showsSoftDueLegend: Bool,
         showsPausedLegend: Bool,
+        showsOngoingLegend: Bool,
+        showsCompletedMultiDaySpanLegend: Bool,
         showsCreatedLegend: Bool,
         @ViewBuilder calendarContent: () -> CalendarContent
     ) {
@@ -44,6 +48,8 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
         self.showsOverdueLegend = showsOverdueLegend
         self.showsSoftDueLegend = showsSoftDueLegend
         self.showsPausedLegend = showsPausedLegend
+        self.showsOngoingLegend = showsOngoingLegend
+        self.showsCompletedMultiDaySpanLegend = showsCompletedMultiDaySpanLegend
         self.showsCreatedLegend = showsCreatedLegend
         self.calendarContent = calendarContent()
     }
@@ -75,6 +81,8 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
                 showsOverdueLegend: showsOverdueLegend,
                 showsSoftDueLegend: showsSoftDueLegend,
                 showsPausedLegend: showsPausedLegend,
+                showsOngoingLegend: showsOngoingLegend,
+                showsCompletedMultiDaySpanLegend: showsCompletedMultiDaySpanLegend,
                 showsCreatedLegend: showsCreatedLegend
             )
         }
@@ -122,6 +130,8 @@ private struct TaskDetailCalendarSectionLegendView: View {
     let showsOverdueLegend: Bool
     let showsSoftDueLegend: Bool
     let showsPausedLegend: Bool
+    let showsOngoingLegend: Bool
+    let showsCompletedMultiDaySpanLegend: Bool
     let showsCreatedLegend: Bool
 
     var body: some View {
@@ -182,6 +192,12 @@ private struct TaskDetailCalendarSectionLegendView: View {
         }
         if showsPausedLegend {
             items.append(TaskDetailCalendarSectionLegendItem(color: TaskDetailStatusPalette.paused, label: "Paused"))
+        }
+        if showsOngoingLegend {
+            items.append(TaskDetailCalendarSectionLegendItem(color: TaskDetailStatusPalette.ongoing, label: "Ongoing"))
+        }
+        if showsCompletedMultiDaySpanLegend {
+            items.append(TaskDetailCalendarSectionLegendItem(color: TaskDetailStatusPalette.ongoing, label: "Multi-day"))
         }
         items.append(TaskDetailCalendarSectionLegendItem(color: TaskDetailStatusPalette.today, label: "Today", isUnderlined: true))
 

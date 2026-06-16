@@ -10,6 +10,7 @@ enum TaskDetailStatusPalette {
     static let due: Color = .orange
     static let overdue: Color = .red
     static let paused: Color = .teal
+    static let ongoing: Color = .cyan
     static let today: Color = .blue
 }
 
@@ -21,21 +22,25 @@ struct TaskDetailCalendarDayPresentation: Equatable {
     let isAssumedDate: Bool
     let isMissedDate: Bool
     let isCanceledDate: Bool
+    let isCompletedMultiDaySpanDate: Bool
     let isToday: Bool
     let isDueToTodayRangeDate: Bool
     let isPausedDate: Bool
+    let isOngoingDate: Bool
     let isOrangeUrgencyToday: Bool
 
     var isHighlightedDay: Bool {
-        isDoneDate || isAssumedDate || isMissedDate || isCanceledDate || isDueToTodayRangeDate || isDueDate || isSoftDueDate || isPausedDate || isCreatedDate
+        isDoneDate || isAssumedDate || isMissedDate || isCanceledDate || isCompletedMultiDaySpanDate || isDueToTodayRangeDate || isDueDate || isSoftDueDate || isPausedDate || isOngoingDate || isCreatedDate
     }
 
     var backgroundColor: Color {
         if isDoneDate { return TaskDetailStatusPalette.done }
+        if isCompletedMultiDaySpanDate { return TaskDetailStatusPalette.ongoing }
         if isAssumedDate { return TaskDetailStatusPalette.assumed }
         if isCanceledDate { return TaskDetailStatusPalette.canceled }
         if isMissedDate { return TaskDetailStatusPalette.missed }
         if isPausedDate { return TaskDetailStatusPalette.paused }
+        if isOngoingDate { return TaskDetailStatusPalette.ongoing }
         if isDueToTodayRangeDate { return TaskDetailStatusPalette.overdue }
         if isDueDate { return TaskDetailStatusPalette.due }
         if isSoftDueDate { return TaskDetailStatusPalette.due }
@@ -47,7 +52,7 @@ struct TaskDetailCalendarDayPresentation: Equatable {
 
     var foregroundColor: Color {
         if isMissedDate { return .black }
-        return isDueDate || isSoftDueDate || isDoneDate || isAssumedDate || isCanceledDate || isDueToTodayRangeDate || isPausedDate || isCreatedDate || isToday
+        return isDueDate || isSoftDueDate || isDoneDate || isAssumedDate || isCanceledDate || isCompletedMultiDaySpanDate || isDueToTodayRangeDate || isPausedDate || isOngoingDate || isCreatedDate || isToday
             ? .white
             : .primary
     }
@@ -105,6 +110,20 @@ enum TaskDetailCalendarPresentation {
         )
     }
 
+    static func completedMultiDaySpanDates(
+        from changes: [RoutineTaskChangeLogEntry],
+        calendar: Calendar = .current
+    ) -> Set<Date> {
+        changes.reduce(into: Set<Date>()) { dates, change in
+            guard change.kind == .ongoingStopped else { return }
+            guard let startedAt = RoutineTaskMultiDaySpanDateStorage.decode(change.previousValue) else { return }
+            let finishedAt = RoutineTaskMultiDaySpanDateStorage.decode(change.newValue) ?? change.timestamp
+            for day in daysInClosedRange(from: startedAt, through: finishedAt, calendar: calendar) {
+                dates.insert(day)
+            }
+        }
+    }
+
     static func dayPresentation(
         day: Date,
         doneDates: Set<Date>,
@@ -113,8 +132,10 @@ enum TaskDetailCalendarPresentation {
         softDueDate: Date? = nil,
         missedDates: Set<Date> = [],
         canceledDates: Set<Date> = [],
+        completedMultiDaySpanDates: Set<Date> = [],
         createdAt: Date?,
         pausedAt: Date?,
+        ongoingSince: Date? = nil,
         isOrangeUrgencyToday: Bool,
         referenceDate: Date = Date(),
         calendar: Calendar = .current
@@ -123,6 +144,9 @@ enum TaskDetailCalendarPresentation {
         let isSoftDueDate = softDueDate.map { calendar.isDate($0, inSameDayAs: day) } ?? false
         let isCreatedDate = createdAt.map { calendar.isDate($0, inSameDayAs: day) } ?? false
         let isDoneDate = doneDates.contains { calendar.isDate($0, inSameDayAs: day) }
+        let isCompletedMultiDaySpanDate = !isDoneDate && completedMultiDaySpanDates.contains {
+            calendar.isDate($0, inSameDayAs: day)
+        }
         let isAssumedDate = !isDoneDate && assumedDates.contains { calendar.isDate($0, inSameDayAs: day) }
         let isCanceledDate = !isDoneDate && canceledDates.contains { calendar.isDate($0, inSameDayAs: day) }
         let isMissedDate = !isDoneDate && !isCanceledDate && missedDates.contains { calendar.isDate($0, inSameDayAs: day) }
@@ -139,6 +163,12 @@ enum TaskDetailCalendarPresentation {
             referenceDate: referenceDate,
             calendar: calendar
         )
+        let isOngoingDate = !isDoneDate && !isCompletedMultiDaySpanDate && !isAssumedDate && !isCanceledDate && !isMissedDate && !isPausedDate && isInOngoingRange(
+            day: day,
+            ongoingSince: ongoingSince,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
 
         return TaskDetailCalendarDayPresentation(
             isDueDate: isDueDate,
@@ -148,9 +178,11 @@ enum TaskDetailCalendarPresentation {
             isAssumedDate: isAssumedDate,
             isMissedDate: isMissedDate,
             isCanceledDate: isCanceledDate,
+            isCompletedMultiDaySpanDate: isCompletedMultiDaySpanDate,
             isToday: isToday,
             isDueToTodayRangeDate: isDueToTodayRangeDate,
             isPausedDate: isPausedDate,
+            isOngoingDate: isOngoingDate,
             isOrangeUrgencyToday: isOrangeUrgencyToday
         )
     }
@@ -181,5 +213,35 @@ enum TaskDetailCalendarPresentation {
         let pausedStart = calendar.startOfDay(for: pausedAt)
         let referenceStart = calendar.startOfDay(for: referenceDate)
         return dayStart >= pausedStart && dayStart <= referenceStart
+    }
+
+    static func isInOngoingRange(
+        day: Date,
+        ongoingSince: Date?,
+        referenceDate: Date = Date(),
+        calendar: Calendar = .current
+    ) -> Bool {
+        guard let ongoingSince else { return false }
+        let dayStart = calendar.startOfDay(for: day)
+        let ongoingStart = calendar.startOfDay(for: ongoingSince)
+        let referenceStart = calendar.startOfDay(for: referenceDate)
+        return dayStart >= ongoingStart && dayStart <= referenceStart
+    }
+
+    private static func daysInClosedRange(
+        from startDate: Date,
+        through endDate: Date,
+        calendar: Calendar
+    ) -> [Date] {
+        let startDay = calendar.startOfDay(for: min(startDate, endDate))
+        let endDay = calendar.startOfDay(for: max(startDate, endDate))
+        var days: [Date] = []
+        var currentDay = startDay
+        while currentDay <= endDay {
+            days.append(currentDay)
+            guard let nextDay = calendar.date(byAdding: .day, value: 1, to: currentDay) else { break }
+            currentDay = nextDay
+        }
+        return days
     }
 }

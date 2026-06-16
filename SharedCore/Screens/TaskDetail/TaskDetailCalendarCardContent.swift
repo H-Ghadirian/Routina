@@ -27,6 +27,8 @@ struct TaskDetailCalendarCardContent: View {
             showsOverdueLegend: isOverdueRangeVisible,
             showsSoftDueLegend: softDueDate != nil,
             showsPausedLegend: task.pausedAt != nil,
+            showsOngoingLegend: task.ongoingSince != nil,
+            showsCompletedMultiDaySpanLegend: !completedMultiDaySpanDates.isEmpty,
             showsCreatedLegend: task.createdAt != nil
         ) {
             TaskDetailCalendarGridView(
@@ -37,8 +39,10 @@ struct TaskDetailCalendarCardContent: View {
                 softDueDate: softDueDate,
                 missedDates: missedDates,
                 canceledDates: canceledDates,
+                completedMultiDaySpanDates: completedMultiDaySpanDates,
                 createdAt: task.createdAt,
                 pausedAt: task.pausedAt,
+                ongoingSince: task.ongoingSince,
                 isOrangeUrgencyToday: isOrangeUrgencyToday,
                 selectedDate: selectedDate,
                 onSelectDate: onSelectDate
@@ -72,6 +76,10 @@ struct TaskDetailCalendarCardContent: View {
             dates.insert(Calendar.current.startOfDay(for: canceledAt))
         }
         return dates
+    }
+
+    private var completedMultiDaySpanDates: Set<Date> {
+        TaskDetailCalendarPresentation.completedMultiDaySpanDates(from: task.changeLogEntries)
     }
 
     private var isOverdueRangeVisible: Bool {

@@ -68,8 +68,15 @@ struct TaskDetailRoutineLifecycleActionHandler {
         guard state.task.usesOngoingLifecycle else { return .none }
         guard !state.task.isArchived(referenceDate: now(), calendar: calendar) else { return .none }
         guard !state.task.isOngoing else { return .none }
-        let startedAt = now()
+        let startedAt = lifecycleActionDate(for: state)
         state.task.startOngoing(at: startedAt)
+        state.task.appendChangeLogEntry(
+            RoutineTaskChangeLogEntry(
+                timestamp: startedAt,
+                kind: .ongoingStarted,
+                newValue: RoutineTaskMultiDaySpanDateStorage.encode(startedAt)
+            )
+        )
         refreshTaskView(&state)
         updateDerivedState(&state)
         return persistStartOngoing(state.task.id, startedAt)
@@ -78,11 +85,31 @@ struct TaskDetailRoutineLifecycleActionHandler {
     func finishOngoingTapped(state: inout State) -> Effect<Action> {
         guard state.task.usesOngoingLifecycle else { return .none }
         guard state.task.isOngoing else { return .none }
-        let finishedAt = now()
+        let finishedAt = lifecycleActionDate(for: state)
+        let startedAt = state.task.ongoingSince
+        guard canFinishOngoing(startedAt: startedAt, finishedAt: finishedAt) else { return .none }
         state.task.finishOngoing(at: finishedAt)
+        state.task.appendChangeLogEntry(
+            RoutineTaskChangeLogEntry(
+                timestamp: finishedAt,
+                kind: .ongoingStopped,
+                previousValue: startedAt.map(RoutineTaskMultiDaySpanDateStorage.encode),
+                newValue: RoutineTaskMultiDaySpanDateStorage.encode(finishedAt)
+            )
+        )
         refreshTaskView(&state)
         upsertLocalLog(finishedAt, &state)
         updateDerivedState(&state)
         return persistFinishOngoing(state.task.id, finishedAt)
+    }
+
+    private func lifecycleActionDate(for state: State) -> Date {
+        guard let selectedDate = state.selectedDate else { return now() }
+        return calendar.startOfDay(for: selectedDate)
+    }
+
+    private func canFinishOngoing(startedAt: Date?, finishedAt: Date) -> Bool {
+        guard let startedAt else { return true }
+        return calendar.startOfDay(for: finishedAt) >= calendar.startOfDay(for: startedAt)
     }
 }

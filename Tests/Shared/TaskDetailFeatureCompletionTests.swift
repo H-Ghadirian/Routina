@@ -150,16 +150,230 @@ struct TaskDetailFeatureCompletionTests {
 
         #expect(state.task.isOngoing)
         #expect(state.task.ongoingSince == now)
+        #expect(state.task.changeLogEntries.contains { $0.kind == .ongoingStarted })
         #expect(state.summaryStatusTitle.hasPrefix("In progress since"))
-        #expect(state.completionButtonTitle == "Done")
+        #expect(state.completionButtonTitle == "Stop")
         #expect(state.completionButtonAction == .finishOngoingTapped)
+        #expect(state.completionButtonSystemImage == "stop.circle.fill")
 
         _ = handler.finishOngoingTapped(state: &state)
 
         #expect(!state.task.isOngoing)
         #expect(state.task.ongoingSince == nil)
         #expect(state.task.lastDone == now)
+        #expect(state.task.changeLogEntries.contains { $0.kind == .ongoingStopped })
         #expect(state.logs.count == 1)
+    }
+
+    @Test
+    func multiDayRoutineUsesSelectedCalendarDatesForStartAndStop() {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-06-20T10:00:00Z")
+        let startDay = makeDate("2026-06-13T12:00:00Z")
+        let stopDay = makeDate("2026-06-15T12:00:00Z")
+        let task = RoutineTask(
+            name: "Travel",
+            routineDurationMode: .multiDay,
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 180),
+            scheduleAnchor: makeDate("2026-04-01T10:00:00Z")
+        )
+        var state = TaskDetailFeature.State(
+            task: task,
+            selectedDate: calendar.startOfDay(for: startDay)
+        )
+        let handler = TaskDetailRoutineLifecycleActionHandler(
+            now: { now },
+            calendar: calendar,
+            refreshTaskView: { $0.taskRefreshID &+= 1 },
+            updateDerivedState: { _ in },
+            upsertLocalLog: { date, state in
+                state.logs.append(RoutineLog(timestamp: date, taskID: state.task.id, kind: .completed))
+            },
+            persistPause: { _, _ in .none },
+            persistNotToday: { _, _ in .none },
+            persistResume: { _, _ in .none },
+            persistStartOngoing: { _, _ in .none },
+            persistFinishOngoing: { _, _ in .none }
+        )
+
+        _ = handler.startOngoingTapped(state: &state)
+
+        #expect(state.task.ongoingSince == calendar.startOfDay(for: startDay))
+
+        state.selectedDate = calendar.date(byAdding: .day, value: -1, to: startDay)
+        #expect(state.completionButtonTitle == "Select a stop date after start")
+        #expect(state.isCompletionButtonDisabled)
+
+        state.selectedDate = calendar.startOfDay(for: stopDay)
+        _ = handler.finishOngoingTapped(state: &state)
+
+        #expect(state.task.lastDone == calendar.startOfDay(for: stopDay))
+        #expect(state.logs.first?.timestamp == calendar.startOfDay(for: stopDay))
+        let spanDates = TaskDetailCalendarPresentation.completedMultiDaySpanDates(
+            from: state.task.changeLogEntries,
+            calendar: calendar
+        )
+        #expect(spanDates.contains(calendar.startOfDay(for: startDay)))
+        #expect(spanDates.contains(calendar.startOfDay(for: stopDay)))
+    }
+
+    @Test
+    func multiDayRoutineCanBackfillOlderSpanAfterNewerSpanWithoutStayingOngoing() {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-06-15T10:00:00Z")
+        let firstStartDay = makeDate("2026-05-20T12:00:00Z")
+        let firstStopDay = makeDate("2026-05-24T12:00:00Z")
+        let secondStartDay = makeDate("2026-05-07T12:00:00Z")
+        let secondStopDay = makeDate("2026-05-09T12:00:00Z")
+        let task = RoutineTask(
+            name: "Travel",
+            routineDurationMode: .multiDay,
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 180),
+            scheduleAnchor: makeDate("2026-04-01T10:00:00Z")
+        )
+        var state = TaskDetailFeature.State(
+            task: task,
+            selectedDate: calendar.startOfDay(for: firstStartDay)
+        )
+        let handler = TaskDetailRoutineLifecycleActionHandler(
+            now: { now },
+            calendar: calendar,
+            refreshTaskView: { $0.taskRefreshID &+= 1 },
+            updateDerivedState: { _ in },
+            upsertLocalLog: { date, state in
+                state.logs.append(RoutineLog(timestamp: date, taskID: state.task.id, kind: .completed))
+            },
+            persistPause: { _, _ in .none },
+            persistNotToday: { _, _ in .none },
+            persistResume: { _, _ in .none },
+            persistStartOngoing: { _, _ in .none },
+            persistFinishOngoing: { _, _ in .none }
+        )
+
+        _ = handler.startOngoingTapped(state: &state)
+        state.selectedDate = calendar.startOfDay(for: firstStopDay)
+        _ = handler.finishOngoingTapped(state: &state)
+
+        #expect(state.task.lastDone == calendar.startOfDay(for: firstStopDay))
+        #expect(!state.task.isOngoing)
+
+        state.selectedDate = calendar.startOfDay(for: secondStartDay)
+        _ = handler.startOngoingTapped(state: &state)
+        state.selectedDate = calendar.startOfDay(for: secondStopDay)
+        _ = handler.finishOngoingTapped(state: &state)
+
+        #expect(!state.task.isOngoing)
+        #expect(state.task.ongoingSince == nil)
+        #expect(state.task.lastDone == calendar.startOfDay(for: firstStopDay))
+        #expect(state.logs.map { $0.timestamp }.contains(calendar.startOfDay(for: secondStopDay)))
+
+        let spanDates = TaskDetailCalendarPresentation.completedMultiDaySpanDates(
+            from: state.task.changeLogEntries,
+            calendar: calendar
+        )
+        for day in 7...9 {
+            let date = makeDate("2026-05-\(String(format: "%02d", day))T12:00:00Z")
+            #expect(spanDates.contains(calendar.startOfDay(for: date)))
+        }
+        for day in 20...24 {
+            let date = makeDate("2026-05-\(String(format: "%02d", day))T12:00:00Z")
+            #expect(spanDates.contains(calendar.startOfDay(for: date)))
+        }
+        #expect(!spanDates.contains(calendar.startOfDay(for: makeDate("2026-05-10T12:00:00Z"))))
+        #expect(!spanDates.contains(calendar.startOfDay(for: makeDate("2026-05-19T12:00:00Z"))))
+        #expect(!spanDates.contains(calendar.startOfDay(for: makeDate("2026-05-25T12:00:00Z"))))
+    }
+
+    @Test
+    func multiDayRoutineRepairsStoppedSpanThatWasLeftOngoing() {
+        let calendar = makeTestCalendar()
+        let startDay = calendar.startOfDay(for: makeDate("2026-05-07T12:00:00Z"))
+        let stopDay = calendar.startOfDay(for: makeDate("2026-05-09T12:00:00Z"))
+        let task = RoutineTask(
+            name: "Travel",
+            routineDurationMode: .multiDay,
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 180),
+            lastDone: calendar.startOfDay(for: makeDate("2026-05-24T12:00:00Z"))
+        )
+        task.activityState = .ongoing
+        task.ongoingSince = startDay
+        task.appendChangeLogEntry(
+            RoutineTaskChangeLogEntry(
+                timestamp: startDay,
+                kind: .ongoingStarted,
+                newValue: RoutineTaskMultiDaySpanDateStorage.encode(startDay)
+            )
+        )
+        task.appendChangeLogEntry(
+            RoutineTaskChangeLogEntry(
+                timestamp: stopDay,
+                kind: .ongoingStopped,
+                previousValue: RoutineTaskMultiDaySpanDateStorage.encode(startDay),
+                newValue: RoutineTaskMultiDaySpanDateStorage.encode(stopDay)
+            )
+        )
+
+        #expect(task.clearStoppedOngoingStateIfNeeded(calendar: calendar))
+        #expect(!task.isOngoing)
+        #expect(task.ongoingSince == nil)
+    }
+
+    @Test
+    func undoSelectedDateCompletionRemovesMultiDayCalendarSpan() {
+        let calendar = makeTestCalendar()
+        let startDay = makeDate("2026-06-13T12:00:00Z")
+        let stopDay = makeDate("2026-06-15T12:00:00Z")
+        let task = RoutineTask(
+            name: "Travel",
+            routineDurationMode: .multiDay,
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 180),
+            lastDone: calendar.startOfDay(for: stopDay),
+            scheduleAnchor: calendar.startOfDay(for: stopDay)
+        )
+        task.appendChangeLogEntry(
+            RoutineTaskChangeLogEntry(
+                timestamp: calendar.startOfDay(for: startDay),
+                kind: .ongoingStarted,
+                newValue: RoutineTaskMultiDaySpanDateStorage.encode(calendar.startOfDay(for: startDay))
+            )
+        )
+        task.appendChangeLogEntry(
+            RoutineTaskChangeLogEntry(
+                timestamp: calendar.startOfDay(for: stopDay),
+                kind: .ongoingStopped,
+                previousValue: RoutineTaskMultiDaySpanDateStorage.encode(calendar.startOfDay(for: startDay)),
+                newValue: RoutineTaskMultiDaySpanDateStorage.encode(calendar.startOfDay(for: stopDay))
+            )
+        )
+        var state = TaskDetailFeature.State(
+            task: task,
+            logs: [
+                RoutineLog(timestamp: calendar.startOfDay(for: stopDay), taskID: task.id, kind: .completed)
+            ],
+            selectedDate: calendar.startOfDay(for: stopDay)
+        )
+
+        #expect(!TaskDetailCalendarPresentation.completedMultiDaySpanDates(
+            from: state.task.changeLogEntries,
+            calendar: calendar
+        ).isEmpty)
+
+        withDependencies {
+            $0.calendar = calendar
+        } operation: {
+            TaskDetailFeature().removeCompletion(on: calendar.startOfDay(for: stopDay), from: &state)
+        }
+
+        #expect(state.task.lastDone == nil)
+        #expect(state.logs.isEmpty)
+        #expect(TaskDetailCalendarPresentation.completedMultiDaySpanDates(
+            from: state.task.changeLogEntries,
+            calendar: calendar
+        ).isEmpty)
     }
 
     @Test

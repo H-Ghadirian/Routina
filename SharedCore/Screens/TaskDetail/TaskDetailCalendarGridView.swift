@@ -8,8 +8,10 @@ struct TaskDetailCalendarGridView: View {
     let softDueDate: Date?
     let missedDates: Set<Date>
     let canceledDates: Set<Date>
+    let completedMultiDaySpanDates: Set<Date>
     let createdAt: Date?
     let pausedAt: Date?
+    let ongoingSince: Date?
     let isOrangeUrgencyToday: Bool
     let selectedDate: Date
     let onSelectDate: (Date) -> Void
@@ -54,8 +56,10 @@ struct TaskDetailCalendarGridView: View {
             softDueDate: softDueDate,
             missedDates: missedDates,
             canceledDates: canceledDates,
+            completedMultiDaySpanDates: completedMultiDaySpanDates,
             createdAt: createdAt,
             pausedAt: pausedAt,
+            ongoingSince: ongoingSince,
             isOrangeUrgencyToday: isOrangeUrgencyToday,
             calendar: calendar
         )

@@ -14,6 +14,8 @@ enum RoutineTaskChangeKind: String, Codable, Equatable, Sendable {
     case timeSpentAdded
     case timeSpentChanged
     case timeSpentRemoved
+    case ongoingStarted
+    case ongoingStopped
 }
 
 struct RoutineTaskChangeLogEntry: Codable, Equatable, Identifiable, Sendable {
@@ -67,5 +69,75 @@ enum RoutineTaskChangeLogStorage {
             return []
         }
         return decoded.sorted { $0.timestamp > $1.timestamp }
+    }
+}
+
+enum RoutineTaskMultiDaySpanDateStorage {
+    static func encode(_ date: Date) -> String {
+        String(date.timeIntervalSince1970)
+    }
+
+    static func decode(_ value: String?) -> Date? {
+        guard let value, let interval = TimeInterval(value) else { return nil }
+        return Date(timeIntervalSince1970: interval)
+    }
+}
+
+extension RoutineTask {
+    @discardableResult
+    func clearStoppedOngoingStateIfNeeded(calendar: Calendar = .current) -> Bool {
+        if activityState == .ongoing, ongoingSince == nil {
+            activityState = .idle
+            return true
+        }
+
+        guard activityState == .ongoing,
+              let ongoingSince,
+              hasStoppedMultiDaySpan(startingAt: ongoingSince, calendar: calendar) else {
+            return false
+        }
+        activityState = .idle
+        self.ongoingSince = nil
+        return true
+    }
+
+    func removeMultiDaySpan(containing day: Date, calendar: Calendar = .current) {
+        let dayStart = calendar.startOfDay(for: day)
+        var removedStartedAt: Date?
+        let remainingEntries = changeLogEntries.filter { entry in
+            guard entry.kind == .ongoingStopped,
+                  let startedAt = RoutineTaskMultiDaySpanDateStorage.decode(entry.previousValue) else {
+                return true
+            }
+            let finishedAt = RoutineTaskMultiDaySpanDateStorage.decode(entry.newValue) ?? entry.timestamp
+            let startDay = calendar.startOfDay(for: min(startedAt, finishedAt))
+            let finishDay = calendar.startOfDay(for: max(startedAt, finishedAt))
+            let shouldRemove = dayStart >= startDay && dayStart <= finishDay
+            if shouldRemove {
+                removedStartedAt = startedAt
+            }
+            return !shouldRemove
+        }
+
+        guard let removedStartedAt else {
+            changeLogEntries = remainingEntries
+            return
+        }
+
+        changeLogEntries = remainingEntries.filter { entry in
+            guard entry.kind == .ongoingStarted else { return true }
+            guard let entryStartedAt = RoutineTaskMultiDaySpanDateStorage.decode(entry.newValue) else { return true }
+            return !calendar.isDate(entryStartedAt, inSameDayAs: removedStartedAt)
+        }
+    }
+
+    private func hasStoppedMultiDaySpan(startingAt startedAt: Date, calendar: Calendar) -> Bool {
+        changeLogEntries.contains { entry in
+            guard entry.kind == .ongoingStopped,
+                  let entryStartedAt = RoutineTaskMultiDaySpanDateStorage.decode(entry.previousValue) else {
+                return false
+            }
+            return calendar.isDate(entryStartedAt, inSameDayAs: startedAt)
+        }
     }
 }

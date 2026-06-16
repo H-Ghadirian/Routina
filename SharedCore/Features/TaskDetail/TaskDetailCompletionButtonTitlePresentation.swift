@@ -27,7 +27,10 @@ struct TaskDetailCompletionButtonTitlePresentation {
             return "Resume the routine to mark dates done"
         }
         if task.usesOngoingLifecycle && task.isOngoing {
-            return task.isMultiDayRoutine ? "Done" : "Finish ongoing"
+            if task.isMultiDayRoutine, isSelectedDateBeforeOngoingStart {
+                return "Select a stop date after start"
+            }
+            return task.isMultiDayRoutine ? "Stop" : "Finish ongoing"
         }
         if task.isMultiDayRoutine {
             return "Start"
@@ -85,6 +88,11 @@ struct TaskDetailCompletionButtonTitlePresentation {
             return "Done"
         }
         return "Done for \(selectedDate.formatted(date: .abbreviated, time: .omitted))"
+    }
+
+    private var isSelectedDateBeforeOngoingStart: Bool {
+        guard let ongoingSince = task.ongoingSince else { return false }
+        return calendar.startOfDay(for: selectedDate) < calendar.startOfDay(for: ongoingSince)
     }
 
     private var exactTimedOccurrenceTitle: String {

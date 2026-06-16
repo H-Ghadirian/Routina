@@ -512,6 +512,97 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func calendarPresentationHighlightsOngoingRangeFromStartedDayThroughToday() {
+        let calendar = makeTestCalendar()
+        let ongoingSince = makeDate("2026-06-13T09:00:00Z")
+        let referenceDate = makeDate("2026-06-15T10:00:00Z")
+        let startedDayPresentation = TaskDetailCalendarPresentation.dayPresentation(
+            day: makeDate("2026-06-13T12:00:00Z"),
+            doneDates: [],
+            assumedDates: [],
+            dueDate: nil,
+            createdAt: nil,
+            pausedAt: nil,
+            ongoingSince: ongoingSince,
+            isOrangeUrgencyToday: false,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let todayPresentation = TaskDetailCalendarPresentation.dayPresentation(
+            day: referenceDate,
+            doneDates: [],
+            assumedDates: [],
+            dueDate: nil,
+            createdAt: nil,
+            pausedAt: nil,
+            ongoingSince: ongoingSince,
+            isOrangeUrgencyToday: false,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let beforeStartedPresentation = TaskDetailCalendarPresentation.dayPresentation(
+            day: makeDate("2026-06-12T12:00:00Z"),
+            doneDates: [],
+            assumedDates: [],
+            dueDate: nil,
+            createdAt: nil,
+            pausedAt: nil,
+            ongoingSince: ongoingSince,
+            isOrangeUrgencyToday: false,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(startedDayPresentation.isOngoingDate)
+        #expect(startedDayPresentation.isHighlightedDay)
+        #expect(todayPresentation.isOngoingDate)
+        #expect(todayPresentation.isToday)
+        #expect(!beforeStartedPresentation.isOngoingDate)
+    }
+
+    @Test
+    func calendarPresentationKeepsCompletedMultiDaySpanAfterStop() {
+        let calendar = makeTestCalendar()
+        let startedAt = makeDate("2026-06-13T09:00:00Z")
+        let stoppedAt = makeDate("2026-06-15T18:00:00Z")
+        let changes = [
+            RoutineTaskChangeLogEntry(
+                timestamp: stoppedAt,
+                kind: .ongoingStopped,
+                previousValue: RoutineTaskMultiDaySpanDateStorage.encode(startedAt),
+                newValue: RoutineTaskMultiDaySpanDateStorage.encode(stoppedAt)
+            )
+        ]
+        let spanDates = TaskDetailCalendarPresentation.completedMultiDaySpanDates(
+            from: changes,
+            calendar: calendar
+        )
+        let startedDay = makeDate("2026-06-13T12:00:00Z")
+        let middleDay = makeDate("2026-06-14T12:00:00Z")
+        let stoppedDay = makeDate("2026-06-15T12:00:00Z")
+        let beforeStartedDay = makeDate("2026-06-12T12:00:00Z")
+        let middlePresentation = TaskDetailCalendarPresentation.dayPresentation(
+            day: middleDay,
+            doneDates: [],
+            assumedDates: [],
+            dueDate: nil,
+            completedMultiDaySpanDates: spanDates,
+            createdAt: nil,
+            pausedAt: nil,
+            isOrangeUrgencyToday: false,
+            referenceDate: stoppedAt,
+            calendar: calendar
+        )
+
+        #expect(spanDates.contains(calendar.startOfDay(for: startedDay)))
+        #expect(spanDates.contains(calendar.startOfDay(for: middleDay)))
+        #expect(spanDates.contains(calendar.startOfDay(for: stoppedDay)))
+        #expect(!spanDates.contains(calendar.startOfDay(for: beforeStartedDay)))
+        #expect(middlePresentation.isCompletedMultiDaySpanDate)
+        #expect(middlePresentation.isHighlightedDay)
+    }
+
+    @Test
     func calendarPresentationMarksExactTimedMissedDateWithoutOverdueRange() {
         let calendar = makeTestCalendar()
         let missedDate = makeDate("2026-05-07T18:30:00Z")

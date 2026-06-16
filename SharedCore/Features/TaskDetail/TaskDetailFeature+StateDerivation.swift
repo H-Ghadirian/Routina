@@ -120,6 +120,7 @@ extension TaskDetailFeature {
             )
         }
 
+        state.task.removeMultiDaySpan(containing: completedDay, calendar: calendar)
         state.task.resetStepProgress()
         state.task.resetChecklistProgress()
     }
@@ -146,6 +147,7 @@ extension TaskDetailFeature {
             state.task.removeCanceledState()
         }
 
+        state.task.removeMultiDaySpan(containing: timestamp, calendar: calendar)
         state.task.resetStepProgress()
         state.task.resetChecklistProgress()
     }
