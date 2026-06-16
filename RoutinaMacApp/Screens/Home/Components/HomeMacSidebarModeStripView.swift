@@ -130,7 +130,18 @@ struct HomeMacSidebarModeStripView: View {
     }
 
     private func addMenuLabel(for shortcut: MacAddMenuShortcut) -> some View {
-        Label(shortcut.titleWithShortcut, systemImage: shortcut.systemImage)
+        Label {
+            HStack(spacing: 22) {
+                Text(shortcut.title)
+                    .frame(minWidth: 68, alignment: .leading)
+
+                Text(shortcut.shortcutTitle)
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.tertiary)
+            }
+        } icon: {
+            Image(systemName: shortcut.systemImage)
+        }
     }
 
     private var helpLabelForAddMenu: String {
