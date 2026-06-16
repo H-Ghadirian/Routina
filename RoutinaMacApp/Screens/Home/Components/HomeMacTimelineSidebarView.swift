@@ -4,6 +4,7 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
     let timelineEntryCount: Int
     let groupedEntries: [(date: Date, entries: [TimelineEntry])]
     @Binding var selection: HomeFeature.MacSidebarSelection?
+    @Binding var scrollRequest: MacTimelineSidebarScrollRequest?
     let sectionTitle: (Date) -> String
     @ViewBuilder let rowContent: (TimelineEntry, Int) -> RowContent
 
@@ -24,21 +25,43 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List(selection: $selection) {
-                    ForEach(groupedEntries, id: \.date) { section in
-                        Section {
-                            ForEach(section.entries, id: \.id) { entry in
-                                rowContent(entry, rowNumbersByEntryID[entry.id] ?? 1)
-                                    .id(entry.id)
+                ScrollViewReader { scrollProxy in
+                    List(selection: $selection) {
+                        ForEach(groupedEntries, id: \.date) { section in
+                            Section {
+                                ForEach(section.entries, id: \.id) { entry in
+                                    rowContent(entry, rowNumbersByEntryID[entry.id] ?? 1)
+                                        .id(entry.id)
+                                }
+                            } header: {
+                                Text(sectionTitle(section.date))
                             }
-                        } header: {
-                            Text(sectionTitle(section.date))
                         }
                     }
+                    .listStyle(.sidebar)
+                    .onAppear {
+                        selectAndScrollToResolvedTimelineEntry(with: scrollProxy)
+                    }
+                    .onChange(of: visibleEntryIDs) { _, _ in
+                        selectAndScrollToResolvedTimelineEntry(with: scrollProxy)
+                    }
+                    .onChange(of: scrollRequest) { _, _ in
+                        scrollToPendingTimelineEntry(with: scrollProxy)
+                    }
                 }
-                .listStyle(.sidebar)
             }
         }
+    }
+
+    private var visibleEntryIDs: [UUID] {
+        groupedEntries.flatMap { section in
+            section.entries.map(\.id)
+        }
+    }
+
+    private var selectedEntryID: UUID? {
+        guard case let .timelineEntry(entryID) = selection else { return nil }
+        return entryID
     }
 
     private var rowNumbersByEntryID: [UUID: Int] {
@@ -51,5 +74,36 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
             }
         }
         return result
+    }
+
+    private func selectAndScrollToResolvedTimelineEntry(with proxy: ScrollViewProxy) {
+        guard let entryID = TimelineSelectionSupport.resolvedSelection(
+            currentSelection: selectedEntryID,
+            visibleEntryIDs: visibleEntryIDs,
+            usesSidebarLayout: true
+        ) else { return }
+
+        if selectedEntryID != entryID {
+            selection = .timelineEntry(entryID)
+        }
+        scrollTimelineList(to: entryID, with: proxy)
+    }
+
+    private func scrollToPendingTimelineEntry(with proxy: ScrollViewProxy) {
+        guard
+            let entryID = scrollRequest?.entryID,
+            visibleEntryIDs.contains(entryID)
+        else { return }
+
+        scrollTimelineList(to: entryID, with: proxy)
+        scrollRequest = nil
+    }
+
+    private func scrollTimelineList(to entryID: UUID, with proxy: ScrollViewProxy) {
+        DispatchQueue.main.async {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                proxy.scrollTo(entryID, anchor: .bottom)
+            }
+        }
     }
 }

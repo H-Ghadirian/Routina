@@ -56,6 +56,11 @@ struct MacSidebarTaskScrollRequest: Equatable {
     }
 }
 
+struct MacTimelineSidebarScrollRequest: Equatable {
+    let entryID: UUID
+    private let token = UUID()
+}
+
 struct HomeTCAView: View {
     let store: StoreOf<HomeFeature>
     let settingsStore: StoreOf<SettingsFeature>
@@ -169,6 +174,7 @@ struct HomeTCAView: View {
     @StateObject var dayPlanPlanner = DayPlanPlannerState()
     @State var dayPlanUnplannedCompletedFilterDate: Date?
     @State var macSidebarTaskScrollRequest: MacSidebarTaskScrollRequest?
+    @State var macTimelineSidebarScrollRequest: MacTimelineSidebarScrollRequest?
     @State var isFinishedSprintsExpanded = false
     @State var placeCheckInSelectedPlaceID: UUID?
     @State var placeCheckInSelectedHistoryMarkerID: PlaceCheckInHistoryMapMarker.ID?
