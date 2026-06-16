@@ -10,7 +10,7 @@ struct MacQuickAddSpotlightOverlay: View {
     @State private var isSaving = false
     @State private var errorMessage: String?
 
-    let onCreated: () -> Void
+    let onCreated: (RoutinaQuickAddCreateResult) -> Void
 
     private var draft: RoutinaQuickAddDraft? {
         RoutinaQuickAddParser.parse(text, calendar: calendar)
@@ -151,12 +151,13 @@ struct MacQuickAddSpotlightOverlay: View {
         Task { @MainActor in
             defer { isSaving = false }
             do {
-                _ = try await RoutinaQuickAddService.createTask(
+                let result = try await RoutinaQuickAddService.createTask(
                     from: text,
                     context: modelContext,
                     calendar: calendar
                 )
-                onCreated()
+                text = ""
+                onCreated(result)
                 dismiss()
             } catch {
                 errorMessage = error.localizedDescription

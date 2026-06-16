@@ -394,6 +394,12 @@ extension HomeTCAView {
             mode: effectiveMacSidebarMode,
             onOpenRoutines: showRoutinesInSidebar,
             onOpenAddTask: openAddTask,
+            onOpenAddEvent: openAddEvent,
+            onOpenAddEmotion: openAddEmotion,
+            onOpenAddNote: openAddNote,
+            onOpenAddGoal: openAddGoal,
+            onOpenCheckIn: openCheckInFromAddMenu,
+            onOpenAway: openAwayFromAddMenu,
             onOpenQuickAdd: showQuickAddSpotlight,
             onOpenTimeline: openTimelineInSidebar,
             onOpenStats: openStatsInSidebar
@@ -479,14 +485,56 @@ extension HomeTCAView {
 
     func applyAddRoutinePresentation<Content: View>(to content: Content) -> some View {
         content
+            .overlay(alignment: .topTrailing) {
+                if let quickAddCreatedToast {
+                    MacQuickAddCreatedToastView(
+                        toast: quickAddCreatedToast,
+                        onOpen: {
+                            openQuickAddCreatedTask(quickAddCreatedToast)
+                        },
+                        onClose: {
+                            self.quickAddCreatedToast = nil
+                        }
+                    )
+                    .padding(.top, 18)
+                    .padding(.trailing, 22)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .task(id: quickAddCreatedToast.id) {
+                        do {
+                            try await Task.sleep(for: .seconds(10))
+                            await MainActor.run {
+                                if self.quickAddCreatedToast?.id == quickAddCreatedToast.id {
+                                    self.quickAddCreatedToast = nil
+                                }
+                            }
+                        } catch {}
+                    }
+                }
+            }
             .overlay {
                 if isQuickAddSheetPresented {
                     MacQuickAddSpotlightOverlay(
                         isPresented: $isQuickAddSheetPresented,
-                        onCreated: requestRefresh
+                        onCreated: handleQuickAddCreated
                     )
                 }
             }
+    }
+
+    private func handleQuickAddCreated(_ result: RoutinaQuickAddCreateResult) {
+        requestRefresh()
+        withAnimation(.easeOut(duration: 0.18)) {
+            quickAddCreatedToast = MacQuickAddCreatedToast(
+                taskID: result.taskID,
+                taskName: result.taskName
+            )
+        }
+    }
+
+    private func openQuickAddCreatedTask(_ toast: MacQuickAddCreatedToast) {
+        quickAddCreatedToast = nil
+        macHomeDetailMode = .details
+        RoutinaDeepLinkDispatcher.open(.task(toast.taskID))
     }
 
     func showQuickAddSpotlight() {

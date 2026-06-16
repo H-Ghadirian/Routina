@@ -75,33 +75,33 @@ struct HomeMacSidebarModeStripView: View {
                 Button {
                     onAddEvent()
                 } label: {
-                    Label("Event", systemImage: "calendar.badge.plus")
+                    addMenuLabel(for: .event)
                 }
 
                 Button {
                     onAddEmotion()
                 } label: {
-                    Label("Emotion", systemImage: "face.smiling")
+                    addMenuLabel(for: .emotion)
                 }
             }
 
             Button {
                 onAddNote()
             } label: {
-                Label("Note", systemImage: "note.text")
+                addMenuLabel(for: .note)
             }
 
             if isGoalsTabEnabled {
                 Button {
                     onAddGoal()
                 } label: {
-                    Label("Goal", systemImage: "target")
+                    addMenuLabel(for: .goal)
                 }
             }
             Button {
                 onAddTask()
             } label: {
-                Label("Task", systemImage: "checklist")
+                addMenuLabel(for: .task)
             }
 
             Divider()
@@ -109,13 +109,13 @@ struct HomeMacSidebarModeStripView: View {
             Button {
                 onCheckIn()
             } label: {
-                Label("Check In", systemImage: "mappin.and.ellipse")
+                addMenuLabel(for: .checkIn)
             }
 
             Button {
                 onStartAway()
             } label: {
-                Label("Away", systemImage: "lock.shield.fill")
+                addMenuLabel(for: .away)
             }
         } label: {
             sidebarModeLabel(for: .addTask)
@@ -127,6 +127,10 @@ struct HomeMacSidebarModeStripView: View {
             .help(
                 helpLabelForAddMenu
             )
+    }
+
+    private func addMenuLabel(for shortcut: MacAddMenuShortcut) -> some View {
+        Label(shortcut.titleWithShortcut, systemImage: shortcut.systemImage)
     }
 
     private var helpLabelForAddMenu: String {

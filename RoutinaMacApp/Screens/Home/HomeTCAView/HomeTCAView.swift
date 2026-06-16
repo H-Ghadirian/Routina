@@ -145,6 +145,7 @@ struct HomeTCAView: View {
     @State private var localSearchText = ""
     @State var isCompactHeaderHidden = false
     @State var isQuickAddSheetPresented = false
+    @State var quickAddCreatedToast: MacQuickAddCreatedToast?
     @State var isEventEditorPresented = false
     @State var isEmotionLogEditorPresented = false
     @State var isNoteEditorPresented = false

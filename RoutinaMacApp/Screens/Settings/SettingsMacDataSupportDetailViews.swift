@@ -148,6 +148,14 @@ struct SettingsMacShortcutsDetailView: View {
         UserDefaultStringValueKey.macQuickAddShortcut.rawValue,
         store: SharedDefaults.app
     ) private var quickAddShortcutRawValue = MacQuickAddShortcut.defaultValue.rawValue
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isGoalsTabEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var areMacEventEmotionActionsEnabled = false
 
     private let appShortcuts: [SettingsMacShortcutRowModel] = [
         SettingsMacShortcutRowModel(title: "Quick Add", detail: "“Quick add in Routina” or “Add a task in Routina”"),
@@ -180,6 +188,18 @@ struct SettingsMacShortcutsDetailView: View {
             SettingsMacDetailCard(title: "Keyboard") {
                 ForEach(keyboardShortcuts) { shortcut in
                     SettingsMacShortcutRow(shortcut: shortcut)
+                }
+            }
+
+            SettingsMacDetailCard(title: "Add Menu") {
+                ForEach(addMenuShortcuts) { shortcut in
+                    SettingsMacShortcutRow(
+                        shortcut: SettingsMacShortcutRowModel(
+                            title: shortcut.commandTitle,
+                            detail: shortcut.detail,
+                            shortcut: shortcut.shortcutTitle
+                        )
+                    )
                 }
             }
 
@@ -217,6 +237,19 @@ struct SettingsMacShortcutsDetailView: View {
             SettingsMacShortcutRowModel(title: "Cancel", detail: "Dismiss supported edit sheets and dialogs.", shortcut: "Esc"),
             SettingsMacShortcutRowModel(title: "Quit", detail: "Quit Routina from the menu bar extra or app menu.", shortcut: "⌘Q")
         ]
+    }
+
+    private var addMenuShortcuts: [MacAddMenuShortcut] {
+        MacAddMenuShortcut.allCases.filter { shortcut in
+            switch shortcut {
+            case .event, .emotion:
+                return areMacEventEmotionActionsEnabled
+            case .goal:
+                return isGoalsTabEnabled
+            case .note, .task, .checkIn, .away:
+                return true
+            }
+        }
     }
 }
 

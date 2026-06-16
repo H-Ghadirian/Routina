@@ -6,6 +6,12 @@ extension Notification.Name {
     static let routinaMacOpenTimelineInSidebar = Notification.Name("routina.mac.openTimelineInSidebar")
     static let routinaMacOpenStatsInSidebar = Notification.Name("routina.mac.openStatsInSidebar")
     static let routinaMacOpenAddTask = Notification.Name("routina.mac.openAddTask")
+    static let routinaMacOpenAddEvent = Notification.Name("routina.mac.openAddEvent")
+    static let routinaMacOpenAddEmotion = Notification.Name("routina.mac.openAddEmotion")
+    static let routinaMacOpenAddNote = Notification.Name("routina.mac.openAddNote")
+    static let routinaMacOpenAddGoal = Notification.Name("routina.mac.openAddGoal")
+    static let routinaMacOpenCheckIn = Notification.Name("routina.mac.openCheckIn")
+    static let routinaMacOpenAway = Notification.Name("routina.mac.openAway")
     static let routinaMacOpenQuickAdd = Notification.Name("routina.mac.openQuickAdd")
     static let routinaMacNavigateBack = Notification.Name("routina.mac.navigateBack")
     static let routinaMacNavigateForward = Notification.Name("routina.mac.navigateForward")
@@ -19,6 +25,14 @@ struct RoutineCommands: Commands {
         UserDefaultStringValueKey.macQuickAddShortcut.rawValue,
         store: SharedDefaults.app
     ) private var quickAddShortcutRawValue = MacQuickAddShortcut.defaultValue.rawValue
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isGoalsTabEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var areMacEventEmotionActionsEnabled = false
     #endif
 
     var body: some Commands {
@@ -36,6 +50,29 @@ struct RoutineCommands: Commands {
                 NotificationCenter.default.post(name: .routinaMacOpenQuickAdd, object: nil)
             }
             .keyboardShortcut(quickAddShortcut.keyEquivalent, modifiers: quickAddShortcut.modifiers)
+
+            Divider()
+
+            #if !SWIFT_PACKAGE
+            if areMacEventEmotionActionsEnabled {
+                addMenuCommand(.event, notificationName: .routinaMacOpenAddEvent)
+                addMenuCommand(.emotion, notificationName: .routinaMacOpenAddEmotion)
+            }
+            #endif
+
+            addMenuCommand(.note, notificationName: .routinaMacOpenAddNote)
+
+            #if !SWIFT_PACKAGE
+            if isGoalsTabEnabled {
+                addMenuCommand(.goal, notificationName: .routinaMacOpenAddGoal)
+            }
+            #endif
+
+            addMenuCommand(.task, notificationName: .routinaMacOpenAddTask)
+            addMenuCommand(.checkIn, notificationName: .routinaMacOpenCheckIn)
+            addMenuCommand(.away, notificationName: .routinaMacOpenAway)
+
+            Divider()
 
             Button("Back") {
                 NotificationCenter.default.post(name: .routinaMacNavigateBack, object: nil)
@@ -66,6 +103,16 @@ struct RoutineCommands: Commands {
             }
             .keyboardShortcut("3", modifiers: [.command, .option])
         }
+    }
+
+    private func addMenuCommand(
+        _ shortcut: MacAddMenuShortcut,
+        notificationName: Notification.Name
+    ) -> some View {
+        Button(shortcut.commandTitle) {
+            NotificationCenter.default.post(name: notificationName, object: nil)
+        }
+        .keyboardShortcut(shortcut.keyEquivalent, modifiers: shortcut.modifiers)
     }
 
     private var quickAddShortcut: (keyEquivalent: KeyEquivalent, modifiers: EventModifiers) {

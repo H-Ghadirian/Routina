@@ -5,6 +5,12 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
     let mode: HomeFeature.MacSidebarMode
     let onOpenRoutines: () -> Void
     let onOpenAddTask: () -> Void
+    let onOpenAddEvent: () -> Void
+    let onOpenAddEmotion: () -> Void
+    let onOpenAddNote: () -> Void
+    let onOpenAddGoal: () -> Void
+    let onOpenCheckIn: () -> Void
+    let onOpenAway: () -> Void
     let onOpenQuickAdd: () -> Void
     let onOpenTimeline: () -> Void
     let onOpenStats: () -> Void
@@ -15,6 +21,12 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
         mode: HomeFeature.MacSidebarMode,
         onOpenRoutines: @escaping () -> Void,
         onOpenAddTask: @escaping () -> Void,
+        onOpenAddEvent: @escaping () -> Void,
+        onOpenAddEmotion: @escaping () -> Void,
+        onOpenAddNote: @escaping () -> Void,
+        onOpenAddGoal: @escaping () -> Void,
+        onOpenCheckIn: @escaping () -> Void,
+        onOpenAway: @escaping () -> Void,
         onOpenQuickAdd: @escaping () -> Void,
         onOpenTimeline: @escaping () -> Void,
         onOpenStats: @escaping () -> Void,
@@ -24,6 +36,12 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
         self.mode = mode
         self.onOpenRoutines = onOpenRoutines
         self.onOpenAddTask = onOpenAddTask
+        self.onOpenAddEvent = onOpenAddEvent
+        self.onOpenAddEmotion = onOpenAddEmotion
+        self.onOpenAddNote = onOpenAddNote
+        self.onOpenAddGoal = onOpenAddGoal
+        self.onOpenCheckIn = onOpenCheckIn
+        self.onOpenAway = onOpenAway
         self.onOpenQuickAdd = onOpenQuickAdd
         self.onOpenTimeline = onOpenTimeline
         self.onOpenStats = onOpenStats
@@ -37,6 +55,24 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenAddTask)) { _ in
                 onOpenAddTask()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenAddEvent)) { _ in
+                onOpenAddEvent()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenAddEmotion)) { _ in
+                onOpenAddEmotion()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenAddNote)) { _ in
+                onOpenAddNote()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenAddGoal)) { _ in
+                onOpenAddGoal()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenCheckIn)) { _ in
+                onOpenCheckIn()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenAway)) { _ in
+                onOpenAway()
             }
             .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenQuickAdd)) { _ in
                 onOpenQuickAdd()
