@@ -722,6 +722,42 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func sidebarPresentationKeepsInProgressPlannedTaskInPlanToday() {
+        let referenceDate = Date(timeIntervalSince1970: 1_714_608_000)
+        let plannedID = UUID()
+        let tagID = UUID()
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(routineListSectioningMode: .tags),
+            routineDisplays: [
+                TestTaskDisplay(
+                    taskID: plannedID,
+                    name: "Fix livestream preview alignment",
+                    tags: ["HSE"],
+                    plannedDate: referenceDate,
+                    isInProgress: true
+                ),
+                TestTaskDisplay(
+                    taskID: tagID,
+                    name: "Join HSE AI data protection",
+                    tags: ["HSE"]
+                )
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(presentation.sections.map(\.kind) == [.plannedToday, .tag])
+        #expect(presentation.sections.map(\.title) == ["Plan to do today", "#HSE"])
+        #expect(presentation.sections.first?.tasks.map(\.taskID) == [plannedID])
+        #expect(presentation.sections.last?.tasks.map(\.taskID) == [tagID])
+    }
+
+    @Test
     func sidebarPresentationTagGroupingBuildsTagMoveContexts() {
         let adminID = UUID()
         let focusID = UUID()

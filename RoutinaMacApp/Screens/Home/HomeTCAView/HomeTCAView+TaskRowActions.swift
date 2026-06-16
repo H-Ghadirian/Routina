@@ -171,6 +171,19 @@ private extension NSMenu {
         return item
     }
 
+    var routinaActionTargets: [RoutinaMacMenuActionTarget] {
+        items.flatMap { item -> [RoutinaMacMenuActionTarget] in
+            var targets: [RoutinaMacMenuActionTarget] = []
+            if let target = item.target as? RoutinaMacMenuActionTarget {
+                targets.append(target)
+            }
+            if let submenu = item.submenu {
+                targets.append(contentsOf: submenu.routinaActionTargets)
+            }
+            return targets
+        }
+    }
+
     func addPlanToDoSubmenu(
         for task: HomeFeature.RoutineDisplay,
         notTodayCommand: HomeTaskRowCommand?,
@@ -255,6 +268,7 @@ private struct RoutinaMacContextMenuOverlay: NSViewRepresentable {
 
 private final class RoutinaMacContextMenuView: NSView {
     var makeMenu: () -> NSMenu
+    private var activeMenuActionTargets: [RoutinaMacMenuActionTarget] = []
 
     init(makeMenu: @escaping () -> NSMenu) {
         self.makeMenu = makeMenu
@@ -290,7 +304,10 @@ private final class RoutinaMacContextMenuView: NSView {
     }
 
     private func showMenu(with event: NSEvent) {
-        NSMenu.popUpContextMenu(makeMenu(), with: event, for: self)
+        let menu = makeMenu()
+        activeMenuActionTargets = menu.routinaActionTargets
+        NSMenu.popUpContextMenu(menu, with: event, for: self)
+        activeMenuActionTargets = []
     }
 }
 
