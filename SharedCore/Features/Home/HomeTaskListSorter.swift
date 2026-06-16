@@ -153,6 +153,10 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
     }
 
     func regularManualOrderSectionKey(for task: Display) -> String {
+        if task.isDailyRoutine {
+            return Self.dailyManualOrderSectionKey
+        }
+
         if configuration.routineListSectioningMode == .none {
             return Self.ungroupedManualOrderSectionKey
         }
@@ -161,9 +165,6 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
             return task.taskListTagManualOrderSectionKey
         }
 
-        if task.isDailyRoutine {
-            return Self.dailyManualOrderSectionKey
-        }
         if task.isDoneToday {
             return "doneToday"
         }

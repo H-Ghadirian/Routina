@@ -624,6 +624,39 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func sidebarPresentationMergesDailyRoutinesIntoPlanTodayByDefault() {
+        let referenceDate = Date(timeIntervalSince1970: 1_714_608_000)
+        let plannedID = UUID()
+        let dailyID = UUID()
+        let regularID = UUID()
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(),
+            routineDisplays: [
+                TestTaskDisplay(taskID: regularID, name: "Weekly", recurrenceRule: .interval(days: 7), daysUntilDue: 4),
+                TestTaskDisplay(taskID: dailyID, name: "Daily", recurrenceRule: .interval(days: 1), daysUntilDue: 0),
+                TestTaskDisplay(taskID: plannedID, name: "Plan today", plannedDate: referenceDate)
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        let planSection = presentation.sections.first
+        #expect(presentation.sections.map(\.kind) == [.plannedToday, .regular])
+        #expect(presentation.sections.map(\.title) == ["Plan to do today", "On Track"])
+        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 2])
+        #expect(planSection?.tasks.map(\.taskID) == [plannedID, dailyID])
+        #expect(planSection?.taskGroups.map(\.title) == [nil, nil])
+        #expect(planSection?.taskGroups.map(\.isCollapsible) == [false, false])
+        #expect(planSection?.taskGroups.compactMap(\.moveContext?.sectionKey) == ["plannedToday", "daily"])
+        #expect(planSection?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs) == [[plannedID], [dailyID]])
+    }
+
+    @Test
     func sidebarPresentationNestsDailyRoutinesUnderPlanTodayAndBuildsMoveContext() {
         let dailyID = UUID()
         let regularID = UUID()
@@ -635,6 +668,7 @@ struct HomeTaskListFilteringTests {
             ],
             awayRoutineDisplays: [],
             archivedRoutineDisplays: [],
+            separateDailyRoutinesInTaskList: true,
             emptyState: HomeTaskListEmptyState(
                 title: "No matching tasks",
                 message: "Try a different place or clear a few filters.",
@@ -668,6 +702,7 @@ struct HomeTaskListFilteringTests {
             ],
             awayRoutineDisplays: [],
             archivedRoutineDisplays: [],
+            separateDailyRoutinesInTaskList: true,
             emptyState: HomeTaskListEmptyState(
                 title: "No matching tasks",
                 message: "Try a different place or clear a few filters.",
@@ -698,6 +733,7 @@ struct HomeTaskListFilteringTests {
             ],
             awayRoutineDisplays: [],
             archivedRoutineDisplays: [],
+            separateDailyRoutinesInTaskList: true,
             emptyState: HomeTaskListEmptyState(
                 title: "No matching tasks",
                 message: "Try a different place or clear a few filters.",
@@ -727,6 +763,7 @@ struct HomeTaskListFilteringTests {
             ],
             awayRoutineDisplays: [],
             archivedRoutineDisplays: [],
+            separateDailyRoutinesInTaskList: true,
             emptyState: HomeTaskListEmptyState(
                 title: "No matching tasks",
                 message: "Try a different place or clear a few filters.",
@@ -742,6 +779,118 @@ struct HomeTaskListFilteringTests {
         #expect(presentation.sections.first?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs) == [[dailyID]])
         #expect(presentation.sections.dropFirst().compactMap(\.moveContext?.sectionKey) == ["tasks"])
         #expect(presentation.sections.dropFirst().compactMap(\.moveContext?.orderedTaskIDs) == [[weeklyID]])
+    }
+
+    @Test
+    func sidebarPresentationOrdersPlannedTodayTasksByPlannedManualOrder() {
+        let referenceDate = Date(timeIntervalSince1970: 1_714_608_000)
+        let firstID = UUID()
+        let secondID = UUID()
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(routineListSectioningMode: .none),
+            routineDisplays: [
+                TestTaskDisplay(
+                    taskID: firstID,
+                    name: "First",
+                    plannedDate: referenceDate,
+                    manualSectionOrders: ["plannedToday": 1]
+                ),
+                TestTaskDisplay(
+                    taskID: secondID,
+                    name: "Second",
+                    plannedDate: referenceDate,
+                    manualSectionOrders: ["plannedToday": 0]
+                )
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(presentation.sections.map(\.title) == ["Plan to do today"])
+        #expect(presentation.sections.first?.tasks.map(\.taskID) == [secondID, firstID])
+        #expect(presentation.sections.first?.taskGroups.first?.moveContext?.sectionKey == "plannedToday")
+        #expect(presentation.sections.first?.taskGroups.first?.moveContext?.orderedTaskIDs == [secondID, firstID])
+    }
+
+    @Test
+    func sidebarPresentationNoneGroupingOrdersDailyRoutinesByDailyManualOrder() {
+        let firstID = UUID()
+        let secondID = UUID()
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(routineListSectioningMode: .none),
+            routineDisplays: [
+                TestTaskDisplay(
+                    taskID: firstID,
+                    name: "First",
+                    recurrenceRule: .interval(days: 1),
+                    daysUntilDue: 4,
+                    manualSectionOrders: ["daily": 1]
+                ),
+                TestTaskDisplay(
+                    taskID: secondID,
+                    name: "Second",
+                    recurrenceRule: .interval(days: 1),
+                    daysUntilDue: 4,
+                    manualSectionOrders: ["daily": 0]
+                )
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(presentation.sections.map(\.title) == ["Plan to do today"])
+        #expect(presentation.sections.first?.tasks.map(\.taskID) == [secondID, firstID])
+        #expect(presentation.sections.first?.taskGroups.first?.moveContext?.sectionKey == "daily")
+        #expect(presentation.sections.first?.taskGroups.first?.moveContext?.orderedTaskIDs == [secondID, firstID])
+    }
+
+    @Test
+    func sidebarPresentationTagGroupingOrdersDailyRoutinesByDailyManualOrder() {
+        let firstID = UUID()
+        let secondID = UUID()
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(routineListSectioningMode: .tags),
+            routineDisplays: [
+                TestTaskDisplay(
+                    taskID: firstID,
+                    name: "First",
+                    tags: ["Focus"],
+                    recurrenceRule: .interval(days: 1),
+                    daysUntilDue: 4,
+                    manualSectionOrders: ["daily": 1, "tag:focus": 0]
+                ),
+                TestTaskDisplay(
+                    taskID: secondID,
+                    name: "Second",
+                    tags: ["Focus"],
+                    recurrenceRule: .interval(days: 1),
+                    daysUntilDue: 4,
+                    manualSectionOrders: ["daily": 0, "tag:focus": 1]
+                )
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(presentation.sections.map(\.title) == ["Plan to do today"])
+        #expect(presentation.sections.first?.tasks.map(\.taskID) == [secondID, firstID])
+        #expect(presentation.sections.first?.taskGroups.first?.moveContext?.sectionKey == "daily")
+        #expect(presentation.sections.first?.taskGroups.first?.moveContext?.orderedTaskIDs == [secondID, firstID])
     }
 
     @Test
