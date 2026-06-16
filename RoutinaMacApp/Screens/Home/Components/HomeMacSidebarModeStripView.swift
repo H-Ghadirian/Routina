@@ -77,12 +77,20 @@ struct HomeMacSidebarModeStripView: View {
                 } label: {
                     addMenuLabel(for: .event)
                 }
+                .keyboardShortcut(
+                    MacAddMenuShortcut.event.keyEquivalent,
+                    modifiers: MacAddMenuShortcut.event.modifiers
+                )
 
                 Button {
                     onAddEmotion()
                 } label: {
                     addMenuLabel(for: .emotion)
                 }
+                .keyboardShortcut(
+                    MacAddMenuShortcut.emotion.keyEquivalent,
+                    modifiers: MacAddMenuShortcut.emotion.modifiers
+                )
             }
 
             Button {
@@ -90,6 +98,10 @@ struct HomeMacSidebarModeStripView: View {
             } label: {
                 addMenuLabel(for: .note)
             }
+            .keyboardShortcut(
+                MacAddMenuShortcut.note.keyEquivalent,
+                modifiers: MacAddMenuShortcut.note.modifiers
+            )
 
             if isGoalsTabEnabled {
                 Button {
@@ -97,12 +109,20 @@ struct HomeMacSidebarModeStripView: View {
                 } label: {
                     addMenuLabel(for: .goal)
                 }
+                .keyboardShortcut(
+                    MacAddMenuShortcut.goal.keyEquivalent,
+                    modifiers: MacAddMenuShortcut.goal.modifiers
+                )
             }
             Button {
                 onAddTask()
             } label: {
                 addMenuLabel(for: .task)
             }
+            .keyboardShortcut(
+                MacAddMenuShortcut.task.keyEquivalent,
+                modifiers: MacAddMenuShortcut.task.modifiers
+            )
 
             Divider()
 
@@ -111,12 +131,20 @@ struct HomeMacSidebarModeStripView: View {
             } label: {
                 addMenuLabel(for: .checkIn)
             }
+            .keyboardShortcut(
+                MacAddMenuShortcut.checkIn.keyEquivalent,
+                modifiers: MacAddMenuShortcut.checkIn.modifiers
+            )
 
             Button {
                 onStartAway()
             } label: {
                 addMenuLabel(for: .away)
             }
+            .keyboardShortcut(
+                MacAddMenuShortcut.away.keyEquivalent,
+                modifiers: MacAddMenuShortcut.away.modifiers
+            )
         } label: {
             sidebarModeLabel(for: .addTask)
         }
@@ -130,18 +158,7 @@ struct HomeMacSidebarModeStripView: View {
     }
 
     private func addMenuLabel(for shortcut: MacAddMenuShortcut) -> some View {
-        Label {
-            HStack(spacing: 22) {
-                Text(shortcut.title)
-                    .frame(minWidth: 68, alignment: .leading)
-
-                Text(shortcut.shortcutTitle)
-                    .font(.caption.monospaced())
-                    .foregroundStyle(.tertiary)
-            }
-        } icon: {
-            Image(systemName: shortcut.systemImage)
-        }
+        Label(shortcut.title, systemImage: shortcut.systemImage)
     }
 
     private var helpLabelForAddMenu: String {
