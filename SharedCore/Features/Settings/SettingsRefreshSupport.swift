@@ -19,6 +19,7 @@ struct SettingsOnAppearSnapshot: Equatable {
     var showPersianDates: Bool
     var automaticPlaceCheckInEnabled: Bool
     var showTimelineTasksInDayPlanner: Bool
+    var separateDailyRoutinesInTaskList: Bool
     var deviceAuthenticationStatus: DeviceAuthenticationStatus
     var selectedAppIcon: AppIconOption
     var hasTemporaryViewStateToReset: Bool
@@ -86,6 +87,7 @@ enum SettingsRefreshEditor {
             gitFeaturesEnabled: snapshot.gitFeaturesEnabled,
             showPersianDates: snapshot.showPersianDates,
             showTimelineTasksInDayPlanner: snapshot.showTimelineTasksInDayPlanner,
+            separateDailyRoutinesInTaskList: snapshot.separateDailyRoutinesInTaskList,
             taskRowVisibility: snapshot.taskRowVisibility,
             timelineRowVisibility: snapshot.timelineRowVisibility,
             deviceAuthenticationStatus: snapshot.deviceAuthenticationStatus,

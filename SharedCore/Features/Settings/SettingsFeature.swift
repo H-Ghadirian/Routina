@@ -24,6 +24,7 @@ struct SettingsFeature {
         case showPersianDatesToggled(Bool)
         case automaticPlaceCheckInToggled(Bool)
         case showTimelineTasksInDayPlannerToggled(Bool)
+        case separateDailyRoutinesInTaskListToggled(Bool)
         case notificationAuthorizationFinished(Bool)
         case notificationReminderTimeChanged(Date)
         case openAppSettingsTapped
@@ -215,6 +216,13 @@ struct SettingsFeature {
 
             case let .showTimelineTasksInDayPlannerToggled(isEnabled):
                 return SettingsAppearanceActionHandler.showTimelineTasksInDayPlannerToggled(
+                    isEnabled,
+                    state: &state.appearance,
+                    appSettingsClient: self.appSettingsClient
+                )
+
+            case let .separateDailyRoutinesInTaskListToggled(isEnabled):
+                return SettingsAppearanceActionHandler.separateDailyRoutinesInTaskListToggled(
                     isEnabled,
                     state: &state.appearance,
                     appSettingsClient: self.appSettingsClient

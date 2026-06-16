@@ -275,6 +275,11 @@ SettingsMacDetailShell(
         }
     }
 
+    SettingsMacDetailCard(title: "Task List") {
+        Toggle("Separate daily routines in task list", isOn: separateDailyRoutinesInTaskListBinding)
+            .toggleStyle(.switch)
+    }
+
     SettingsMacDetailCard(title: "Battery Routines") {
         Toggle("Create charge routines", isOn: batteryRoutineMonitoringBinding)
             .toggleStyle(.switch)
@@ -296,6 +301,13 @@ SettingsMacDetailShell(
         Binding(
             get: { store.appearance.isAppLockEnabled },
             set: { store.send(.appLockToggled($0)) }
+        )
+    }
+
+    private var separateDailyRoutinesInTaskListBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.separatesDailyRoutinesInTaskList },
+            set: { store.send(.separateDailyRoutinesInTaskListToggled($0)) }
         )
     }
 

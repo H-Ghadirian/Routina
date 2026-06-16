@@ -185,6 +185,16 @@ enum SettingsAppearanceActionHandler {
         return .none
     }
 
+    static func separateDailyRoutinesInTaskListToggled(
+        _ isEnabled: Bool,
+        state: inout SettingsAppearanceState,
+        appSettingsClient: AppSettingsClient
+    ) -> Effect<SettingsFeature.Action> {
+        state.separatesDailyRoutinesInTaskList = isEnabled
+        appSettingsClient.setSeparateDailyRoutinesInTaskList(isEnabled)
+        return .none
+    }
+
     static func resetTemporaryViewStateTapped(
         state: inout SettingsAppearanceState,
         appSettingsClient: AppSettingsClient

@@ -58,6 +58,7 @@ enum SettingsAppearanceEditor {
         gitFeaturesEnabled: Bool,
         showPersianDates: Bool,
         showTimelineTasksInDayPlanner: Bool,
+        separateDailyRoutinesInTaskList: Bool,
         taskRowVisibility: HomeTaskRowVisibility,
         timelineRowVisibility: HomeTimelineRowVisibility,
         deviceAuthenticationStatus: DeviceAuthenticationStatus,
@@ -70,6 +71,7 @@ enum SettingsAppearanceEditor {
         state.isGitFeaturesEnabled = gitFeaturesEnabled
         state.showPersianDates = showPersianDates
         state.showsTimelineTasksInDayPlanner = showTimelineTasksInDayPlanner
+        state.separatesDailyRoutinesInTaskList = separateDailyRoutinesInTaskList
         state.taskRowVisibility = taskRowVisibility
         state.isAppLockToggleInProgress = false
         state.appLockMethodDescription = deviceAuthenticationStatus.methodDescription

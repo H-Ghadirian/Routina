@@ -74,6 +74,7 @@ struct SettingsAppearanceState: Equatable {
     var isGitFeaturesEnabled: Bool = false
     var showPersianDates: Bool = false
     var showsTimelineTasksInDayPlanner: Bool = true
+    var separatesDailyRoutinesInTaskList: Bool = false
     var appIconStatusMessage: String = ""
     var selectedAppIcon: AppIconOption = .orange
     var hasTemporaryViewStateToReset: Bool = false

@@ -29,6 +29,7 @@ enum BatteryRoutinePreferences {
     }
 
     static func notifyChanged() {
+        AppSettingsPersistenceMirror.schedule()
         NotificationCenter.default.post(name: didChangeNotification, object: nil)
     }
 }

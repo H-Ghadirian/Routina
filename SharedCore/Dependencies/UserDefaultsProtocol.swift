@@ -73,6 +73,7 @@ enum AppSettingsDefaults {
         .appSettingMacWebsiteBlockingEnabled: false,
         .appSettingAutomaticPlaceCheckInEnabled: true,
         .appSettingShowTimelineTasksInDayPlanner: true,
+        .appSettingSeparateDailyRoutinesInTaskList: false,
         .appSettingDailyRoutinesSectionCollapsed: false,
         .appSettingMacPlanTodayDailyRoutinesGroupCollapsed: true,
         .appSettingArchivedRoutinesSectionCollapsed: false
@@ -117,6 +118,16 @@ enum AppSettingsDefaults {
     ]
 }
 
+enum AppSettingsPersistenceMirror {
+    static func schedule() {
+        Task { @MainActor in
+            RoutinaUserPreferencesStore.mirrorDefaultsToStore(
+                in: PersistenceController.shared.container.mainContext
+            )
+        }
+    }
+}
+
 public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingNotificationsEnabled
     case appSettingHideUnavailableRoutines
@@ -145,6 +156,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingMacWebsiteBlockingEnabled
     case appSettingAutomaticPlaceCheckInEnabled
     case appSettingShowTimelineTasksInDayPlanner = "appSettingShowDayPlanUnplannedDoneBadges"
+    case appSettingSeparateDailyRoutinesInTaskList
     case appSettingDailyRoutinesSectionCollapsed
     case appSettingMacPlanTodayDailyRoutinesGroupCollapsed
     case appSettingArchivedRoutinesSectionCollapsed
@@ -203,6 +215,8 @@ struct AppSettingsClient: Sendable {
     var setAutomaticPlaceCheckInEnabled: @Sendable (Bool) -> Void
     var showTimelineTasksInDayPlanner: @Sendable () -> Bool
     var setShowTimelineTasksInDayPlanner: @Sendable (Bool) -> Void
+    var separateDailyRoutinesInTaskList: @Sendable () -> Bool
+    var setSeparateDailyRoutinesInTaskList: @Sendable (Bool) -> Void
     var appColorScheme: @Sendable () -> AppColorScheme
     var setAppColorScheme: @Sendable (AppColorScheme) -> Void
     var routineListSectioningMode: @Sendable () -> RoutineListSectioningMode
@@ -291,6 +305,7 @@ enum CloudSettingsKeyValueSync {
 
     static func setString(_ value: String?, for key: UserDefaultStringValueKey) {
         SharedDefaults.app[key] = value
+        AppSettingsPersistenceMirror.schedule()
 
         guard syncedStringKeys.contains(key),
               AppEnvironment.isCloudSyncEnabled,
@@ -375,42 +390,56 @@ extension AppSettingsClient {
         },
         setNotificationsEnabled: { isEnabled in
             SharedDefaults.app[.appSettingNotificationsEnabled] = isEnabled
+            AppSettingsPersistenceMirror.schedule()
         },
         hideUnavailableRoutines: {
             SharedDefaults.app[.appSettingHideUnavailableRoutines]
         },
         setHideUnavailableRoutines: { isHidden in
             SharedDefaults.app[.appSettingHideUnavailableRoutines] = isHidden
+            AppSettingsPersistenceMirror.schedule()
         },
         appLockEnabled: {
             SharedDefaults.app[.appSettingAppLockEnabled]
         },
         setAppLockEnabled: { isEnabled in
             SharedDefaults.app[.appSettingAppLockEnabled] = isEnabled
+            AppSettingsPersistenceMirror.schedule()
         },
         gitFeaturesEnabled: {
             SharedDefaults.app[.appSettingGitFeaturesEnabled]
         },
         setGitFeaturesEnabled: { isEnabled in
             SharedDefaults.app[.appSettingGitFeaturesEnabled] = isEnabled
+            AppSettingsPersistenceMirror.schedule()
         },
         showPersianDates: {
             SharedDefaults.app[.appSettingShowPersianDates]
         },
         setShowPersianDates: { isEnabled in
             SharedDefaults.app[.appSettingShowPersianDates] = isEnabled
+            AppSettingsPersistenceMirror.schedule()
         },
         automaticPlaceCheckInEnabled: {
             SharedDefaults.app[.appSettingAutomaticPlaceCheckInEnabled]
         },
         setAutomaticPlaceCheckInEnabled: { isEnabled in
             SharedDefaults.app[.appSettingAutomaticPlaceCheckInEnabled] = isEnabled
+            AppSettingsPersistenceMirror.schedule()
         },
         showTimelineTasksInDayPlanner: {
             SharedDefaults.app[.appSettingShowTimelineTasksInDayPlanner]
         },
         setShowTimelineTasksInDayPlanner: { isEnabled in
             SharedDefaults.app[.appSettingShowTimelineTasksInDayPlanner] = isEnabled
+            AppSettingsPersistenceMirror.schedule()
+        },
+        separateDailyRoutinesInTaskList: {
+            SharedDefaults.app[.appSettingSeparateDailyRoutinesInTaskList]
+        },
+        setSeparateDailyRoutinesInTaskList: { isEnabled in
+            SharedDefaults.app[.appSettingSeparateDailyRoutinesInTaskList] = isEnabled
+            AppSettingsPersistenceMirror.schedule()
         },
         appColorScheme: {
             AppColorScheme(
@@ -419,6 +448,7 @@ extension AppSettingsClient {
         },
         setAppColorScheme: { scheme in
             SharedDefaults.app[.appSettingAppColorScheme] = scheme.rawValue
+            AppSettingsPersistenceMirror.schedule()
         },
         routineListSectioningMode: {
             RoutineListSectioningMode(
@@ -427,6 +457,7 @@ extension AppSettingsClient {
         },
         setRoutineListSectioningMode: { mode in
             SharedDefaults.app[.appSettingRoutineListSectioningMode] = mode.rawValue
+            AppSettingsPersistenceMirror.schedule()
         },
         tagCounterDisplayMode: {
             TagCounterDisplayMode(
@@ -435,6 +466,7 @@ extension AppSettingsClient {
         },
         setTagCounterDisplayMode: { mode in
             SharedDefaults.app[.appSettingTagCounterDisplayMode] = mode.rawValue
+            AppSettingsPersistenceMirror.schedule()
         },
         taskRowVisibility: {
             HomeTaskRowVisibility(
@@ -443,11 +475,7 @@ extension AppSettingsClient {
         },
         setTaskRowVisibility: { visibility in
             SharedDefaults.app[.appSettingHomeTaskRowHiddenFields] = visibility.storageRawValue
-            Task { @MainActor in
-                RoutinaUserPreferencesStore.mirrorDefaultsToStore(
-                    in: PersistenceController.shared.container.mainContext
-                )
-            }
+            AppSettingsPersistenceMirror.schedule()
         },
         timelineRowVisibility: {
             HomeTimelineRowVisibility(
@@ -456,11 +484,7 @@ extension AppSettingsClient {
         },
         setTimelineRowVisibility: { visibility in
             SharedDefaults.app[.appSettingHomeTimelineRowHiddenFields] = visibility.storageRawValue
-            Task { @MainActor in
-                RoutinaUserPreferencesStore.mirrorDefaultsToStore(
-                    in: PersistenceController.shared.container.mainContext
-                )
-            }
+            AppSettingsPersistenceMirror.schedule()
         },
         relatedTagRules: {
             guard let rawValue = CloudSettingsKeyValueSync.string(for: .appSettingRelatedTagRules),
@@ -520,6 +544,7 @@ extension AppSettingsClient {
         },
         setNotificationReminderTime: { date in
             NotificationPreferences.storeReminderTime(date)
+            AppSettingsPersistenceMirror.schedule()
         },
         lastRoutineDataBackupDate: {
             guard let rawValue = SharedDefaults.app[.appSettingLastRoutineDataBackupDate],
@@ -533,6 +558,7 @@ extension AppSettingsClient {
             SharedDefaults.app[.appSettingLastRoutineDataBackupDate] = date.map {
                 String($0.timeIntervalSince1970)
             }
+            AppSettingsPersistenceMirror.schedule()
         },
         selectedAppIcon: {
             .persistedSelection
@@ -549,6 +575,7 @@ extension AppSettingsClient {
         setTemporaryViewState: { state in
             guard let state else {
                 SharedDefaults.app[.appSettingTemporaryViewState] = nil
+                AppSettingsPersistenceMirror.schedule()
                 return
             }
 
@@ -559,10 +586,12 @@ extension AppSettingsClient {
             }
 
             SharedDefaults.app[.appSettingTemporaryViewState] = rawValue
+            AppSettingsPersistenceMirror.schedule()
         },
         resetTemporaryViewState: {
             SharedDefaults.app[.appSettingHideUnavailableRoutines] = false
             SharedDefaults.app[.appSettingTemporaryViewState] = nil
+            AppSettingsPersistenceMirror.schedule()
         },
         resetAllSettingsToDefaults: {
             for (key, value) in AppSettingsDefaults.boolValues {
@@ -578,11 +607,7 @@ extension AppSettingsClient {
                 SharedDefaults.app.set(value, forKey: key)
             }
             BatteryRoutinePreferences.notifyChanged()
-            Task { @MainActor in
-                RoutinaUserPreferencesStore.mirrorDefaultsToStore(
-                    in: PersistenceController.shared.container.mainContext
-                )
-            }
+            AppSettingsPersistenceMirror.schedule()
         }
     )
 
@@ -601,6 +626,8 @@ extension AppSettingsClient {
         setAutomaticPlaceCheckInEnabled: { _ in },
         showTimelineTasksInDayPlanner: { true },
         setShowTimelineTasksInDayPlanner: { _ in },
+        separateDailyRoutinesInTaskList: { false },
+        setSeparateDailyRoutinesInTaskList: { _ in },
         appColorScheme: { .system },
         setAppColorScheme: { _ in },
         routineListSectioningMode: { .defaultValue },

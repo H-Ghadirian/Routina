@@ -378,6 +378,7 @@ enum SettingsRoutineDataBackupMapping {
             macFocusAppBlockingEnabled: preferences.macFocusAppBlockingEnabled,
             automaticPlaceCheckInEnabled: preferences.automaticPlaceCheckInEnabled,
             showTimelineTasksInDayPlanner: preferences.showTimelineTasksInDayPlanner,
+            separateDailyRoutinesInTaskList: preferences.separateDailyRoutinesInTaskList,
             notificationReminderHour: preferences.notificationReminderHour,
             notificationReminderMinute: preferences.notificationReminderMinute,
             batteryRoutineThresholdPercent: preferences.batteryRoutineThresholdPercent,

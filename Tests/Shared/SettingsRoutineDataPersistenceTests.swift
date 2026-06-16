@@ -99,6 +99,7 @@ struct SettingsRoutineDataPersistenceTests {
             UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
             UserDefaultBoolValueKey.appSettingFocusShieldEnabled.rawValue,
             UserDefaultBoolValueKey.appSettingAutomaticPlaceCheckInEnabled.rawValue,
+            UserDefaultBoolValueKey.appSettingSeparateDailyRoutinesInTaskList.rawValue,
             BatteryRoutinePreferences.thresholdPercentDefaultsKey
         ]
         let previousValues = Dictionary(uniqueKeysWithValues: keysToRestore.map { ($0, defaults.object(forKey: $0)) })
@@ -131,6 +132,7 @@ struct SettingsRoutineDataPersistenceTests {
         defaults[.appSettingShowPersianDates] = true
         defaults[.appSettingFocusShieldEnabled] = true
         defaults[.appSettingAutomaticPlaceCheckInEnabled] = false
+        defaults[.appSettingSeparateDailyRoutinesInTaskList] = true
         defaults.set(35, forKey: BatteryRoutinePreferences.thresholdPercentDefaultsKey)
 
         let package = try SettingsRoutineDataPersistence.buildBackupPackage(from: context)
@@ -165,6 +167,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(restored.showPersianDates)
         #expect(restored.focusShieldEnabled)
         #expect(!restored.automaticPlaceCheckInEnabled)
+        #expect(restored.separateDailyRoutinesInTaskList)
         #expect(restored.batteryRoutineThresholdPercent == 35)
     }
 

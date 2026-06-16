@@ -45,6 +45,7 @@ final class RoutinaUserPreferences {
     var macFocusAppBlockingEnabled: Bool = true
     var automaticPlaceCheckInEnabled: Bool = true
     var showTimelineTasksInDayPlanner: Bool = true
+    var separateDailyRoutinesInTaskList: Bool = false
     var notificationReminderHour: Int = NotificationPreferences.defaultReminderHour
     var notificationReminderMinute: Int = NotificationPreferences.defaultReminderMinute
     var batteryRoutineThresholdPercent: Int = BatteryRoutinePreferences.defaultThresholdPercent
@@ -180,6 +181,7 @@ enum RoutinaUserPreferencesStore {
         preferences.macFocusAppBlockingEnabled = defaults[.appSettingMacFocusAppBlockingEnabled]
         preferences.automaticPlaceCheckInEnabled = defaults[.appSettingAutomaticPlaceCheckInEnabled]
         preferences.showTimelineTasksInDayPlanner = defaults[.appSettingShowTimelineTasksInDayPlanner]
+        preferences.separateDailyRoutinesInTaskList = defaults[.appSettingSeparateDailyRoutinesInTaskList]
         preferences.notificationReminderHour = defaults.integer(forKey: NotificationPreferences.reminderHourDefaultsKey)
         preferences.notificationReminderMinute = defaults.integer(forKey: NotificationPreferences.reminderMinuteDefaultsKey)
         preferences.batteryRoutineThresholdPercent = BatteryRoutinePreferences.thresholdPercent
@@ -230,6 +232,7 @@ enum RoutinaUserPreferencesStore {
         defaults[.appSettingMacFocusAppBlockingEnabled] = preferences.macFocusAppBlockingEnabled
         defaults[.appSettingAutomaticPlaceCheckInEnabled] = preferences.automaticPlaceCheckInEnabled
         defaults[.appSettingShowTimelineTasksInDayPlanner] = preferences.showTimelineTasksInDayPlanner
+        defaults[.appSettingSeparateDailyRoutinesInTaskList] = preferences.separateDailyRoutinesInTaskList
         defaults.set(preferences.notificationReminderHour, forKey: NotificationPreferences.reminderHourDefaultsKey)
         defaults.set(preferences.notificationReminderMinute, forKey: NotificationPreferences.reminderMinuteDefaultsKey)
         defaults.set(preferences.batteryRoutineThresholdPercent, forKey: BatteryRoutinePreferences.thresholdPercentDefaultsKey)

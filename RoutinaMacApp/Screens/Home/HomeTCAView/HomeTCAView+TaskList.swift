@@ -77,13 +77,8 @@ extension HomeTCAView {
                         .lineLimit(1)
                 }
 
-                if rowVisibility.shows(.tags), !task.tags.isEmpty {
-                    HStack(spacing: 6) {
-                        ForEach(task.tags, id: \.self) { tag in
-                            sidebarTagChip(tag)
-                        }
-                    }
-                    .lineLimit(1)
+                if rowVisibility.shows(.tags) {
+                    tagRow(for: task)
                 }
 
                 if rowVisibility.shows(.goals), !task.goalTitles.isEmpty {
@@ -154,6 +149,17 @@ extension HomeTCAView {
                 Capsule(style: .continuous)
                     .stroke(tint.opacity(0.28), lineWidth: 0.5)
             )
+    }
+
+    private func tagRow(for task: HomeFeature.RoutineDisplay) -> some View {
+        HStack(spacing: 6) {
+            ForEach(task.tags, id: \.self) { tag in
+                sidebarTagChip(tag)
+            }
+        }
+        .lineLimit(1)
+        .frame(minHeight: 20, alignment: .leading)
+        .accessibilityHidden(task.tags.isEmpty)
     }
 
     private func taskDragPreview(for task: HomeFeature.RoutineDisplay, rowNumber: Int) -> some View {

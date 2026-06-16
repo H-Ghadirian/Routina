@@ -1079,6 +1079,7 @@ enum SettingsRoutineDataImportEntityInserter {
         preferences.macFocusAppBlockingEnabled = backupPreferences.macFocusAppBlockingEnabled ?? true
         preferences.automaticPlaceCheckInEnabled = backupPreferences.automaticPlaceCheckInEnabled ?? true
         preferences.showTimelineTasksInDayPlanner = backupPreferences.showTimelineTasksInDayPlanner ?? true
+        preferences.separateDailyRoutinesInTaskList = backupPreferences.separateDailyRoutinesInTaskList ?? false
         preferences.notificationReminderHour = backupPreferences.notificationReminderHour ?? NotificationPreferences.defaultReminderHour
         preferences.notificationReminderMinute = backupPreferences.notificationReminderMinute ?? NotificationPreferences.defaultReminderMinute
         preferences.batteryRoutineThresholdPercent = backupPreferences.batteryRoutineThresholdPercent ?? BatteryRoutinePreferences.defaultThresholdPercent

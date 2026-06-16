@@ -12,7 +12,7 @@ struct HomeTaskListPresentationTaskGroup<Display: HomeTaskListDisplay>: Identifi
     let isCollapsible: Bool
 
     var id: String {
-        title ?? "primary"
+        title ?? moveContext?.sectionKey ?? "primary"
     }
 }
 
@@ -259,6 +259,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         awayRoutineDisplays: [Display],
         archivedRoutineDisplays: [Display],
         showArchivedTasks: Bool = true,
+        separateDailyRoutinesInTaskList: Bool = false,
         emptyState: HomeTaskListEmptyState
     ) -> Self {
         let visibleArchivedDisplays = showArchivedTasks ? archivedRoutineDisplays : []
@@ -297,7 +298,8 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
 
         let planTodayTaskGroups = sidebarPlanTodayTaskGroups(
             plannedTodayTasks: plannedTodayTasks,
-            dailyTasks: dailyTasks
+            dailyTasks: dailyTasks,
+            separateDailyRoutinesInTaskList: separateDailyRoutinesInTaskList
         )
         let planTodayTasks = planTodayTaskGroups.flatMap(\.tasks)
 
@@ -392,7 +394,8 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
 
     private static func sidebarPlanTodayTaskGroups(
         plannedTodayTasks: [Display],
-        dailyTasks: [Display]
+        dailyTasks: [Display],
+        separateDailyRoutinesInTaskList: Bool
     ) -> [HomeTaskListPresentationTaskGroup<Display>] {
         var groups: [HomeTaskListPresentationTaskGroup<Display>] = []
 
@@ -413,13 +416,13 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         if !dailyTasks.isEmpty {
             groups.append(
                 HomeTaskListPresentationTaskGroup(
-                    title: "Daily Routines",
+                    title: separateDailyRoutinesInTaskList ? "Daily Routines" : nil,
                     tasks: dailyTasks,
                     moveContext: HomeTaskListMoveContext(
                         sectionKey: HomeTaskListFiltering<Display>.dailyManualOrderSectionKey,
                         orderedTaskIDs: dailyTasks.map(\.taskID)
                     ),
-                    isCollapsible: true
+                    isCollapsible: separateDailyRoutinesInTaskList
                 )
             )
         }

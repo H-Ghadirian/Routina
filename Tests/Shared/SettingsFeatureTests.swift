@@ -525,6 +525,30 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func separateDailyRoutinesInTaskListToggled_persistsSelection() async {
+        let persistedValue = LockIsolated<Bool?>(nil)
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setSeparateDailyRoutinesInTaskList = { persistedValue.setValue($0) }
+        }
+
+        await store.send(.separateDailyRoutinesInTaskListToggled(true)) {
+            $0.appearance.separatesDailyRoutinesInTaskList = true
+        }
+
+        #expect(persistedValue.value == true)
+    }
+
+    @Test
+    func defaultSettingsKeepDailyRoutinesMergedInTaskList() {
+        #expect(!SettingsFeature.State().appearance.separatesDailyRoutinesInTaskList)
+        #expect(!RoutinaUserPreferences().separateDailyRoutinesInTaskList)
+    }
+
+    @Test
     func automaticPlaceCheckInToggled_persistsSelection() async {
         let persistedValue = LockIsolated<Bool?>(nil)
 

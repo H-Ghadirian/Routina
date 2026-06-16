@@ -67,6 +67,8 @@ struct SettingsFeatureDependencyTests {
                 setAutomaticPlaceCheckInEnabled: { _ in },
                 showTimelineTasksInDayPlanner: { false },
                 setShowTimelineTasksInDayPlanner: { _ in },
+                separateDailyRoutinesInTaskList: { true },
+                setSeparateDailyRoutinesInTaskList: { _ in },
                 appColorScheme: { .dark },
                 setAppColorScheme: { _ in },
                 routineListSectioningMode: { .deadlineDate },
@@ -121,6 +123,7 @@ struct SettingsFeatureDependencyTests {
             $0.appearance.isGitFeaturesEnabled = true
             $0.appearance.showPersianDates = true
             $0.appearance.showsTimelineTasksInDayPlanner = false
+            $0.appearance.separatesDailyRoutinesInTaskList = true
             $0.places.isAutomaticCheckInEnabled = false
             $0.appearance.appLockMethodDescription = "Face ID or your device passcode"
             $0.appearance.selectedAppIcon = .teal

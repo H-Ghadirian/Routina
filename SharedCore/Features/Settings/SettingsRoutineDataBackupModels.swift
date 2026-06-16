@@ -365,6 +365,7 @@ extension SettingsRoutineDataPersistence {
             var macFocusAppBlockingEnabled: Bool?
             var automaticPlaceCheckInEnabled: Bool?
             var showTimelineTasksInDayPlanner: Bool?
+            var separateDailyRoutinesInTaskList: Bool?
             var notificationReminderHour: Int?
             var notificationReminderMinute: Int?
             var batteryRoutineThresholdPercent: Int?

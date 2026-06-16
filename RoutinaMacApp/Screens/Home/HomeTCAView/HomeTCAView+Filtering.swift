@@ -49,6 +49,7 @@ extension HomeTCAView {
             awayRoutineDisplays: awayRoutineDisplays,
             archivedRoutineDisplays: archivedRoutineDisplays,
             showArchivedTasks: store.showArchivedTasks,
+            separateDailyRoutinesInTaskList: separatesDailyRoutinesInTaskList,
             emptyState: HomeTaskListEmptyState(
                 title: emptyTaskListTitle,
                 message: emptyTaskListMessage,
