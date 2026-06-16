@@ -641,6 +641,16 @@ enum PlaceCheckInSupport {
             }
     }
 
+    static func currentActiveSessionID(
+        in sessions: [PlaceCheckInSession]
+    ) -> UUID? {
+        sessions
+            .filter(\.isActive)
+            .sorted(by: compareSessionsByActivePriority)
+            .first?
+            .id
+    }
+
     static func totalDurationSeconds(
         for sessions: [PlaceCheckInSession],
         referenceDate: Date = Date()
@@ -730,6 +740,25 @@ enum PlaceCheckInSupport {
         let lhsDate = lhs.endedAt ?? lhs.startedAt ?? lhs.createdAt ?? .distantPast
         let rhsDate = rhs.endedAt ?? rhs.startedAt ?? rhs.createdAt ?? .distantPast
         return lhsDate > rhsDate
+    }
+
+    private static func compareSessionsByActivePriority(
+        _ lhs: PlaceCheckInSession,
+        _ rhs: PlaceCheckInSession
+    ) -> Bool {
+        let lhsDate = lhs.startedAt ?? lhs.createdAt ?? .distantPast
+        let rhsDate = rhs.startedAt ?? rhs.createdAt ?? .distantPast
+        if lhsDate != rhsDate {
+            return lhsDate > rhsDate
+        }
+
+        let lhsUpdatedAt = lhs.updatedAt ?? .distantPast
+        let rhsUpdatedAt = rhs.updatedAt ?? .distantPast
+        if lhsUpdatedAt != rhsUpdatedAt {
+            return lhsUpdatedAt > rhsUpdatedAt
+        }
+
+        return lhs.id.uuidString < rhs.id.uuidString
     }
 
     private static func isSameCurrentLocationSession(

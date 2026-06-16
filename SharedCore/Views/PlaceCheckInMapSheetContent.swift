@@ -253,6 +253,7 @@ struct PlaceCheckInDayTimelineList: View {
                             PlaceCheckInDayTimelineSectionView(
                                 section: section,
                                 calendar: calendar,
+                                currentActiveSessionID: currentActiveSessionID,
                                 canFocusOnSession: canFocusOnSession,
                                 canSaveSessionAsPlace: canSaveSessionAsPlace,
                                 onFocusSession: onFocusSession,
@@ -266,6 +267,12 @@ struct PlaceCheckInDayTimelineList: View {
                 }
             }
         }
+    }
+
+    private var currentActiveSessionID: UUID? {
+        PlaceCheckInSupport.currentActiveSessionID(
+            in: sections.flatMap(\.sessions)
+        )
     }
 
     private var emptyState: some View {
@@ -285,6 +292,7 @@ struct PlaceCheckInDayTimelineList: View {
 private struct PlaceCheckInDayTimelineSectionView: View {
     let section: PlaceCheckInDaySection
     let calendar: Calendar
+    let currentActiveSessionID: UUID?
     let canFocusOnSession: (PlaceCheckInSession) -> Bool
     let canSaveSessionAsPlace: (PlaceCheckInSession) -> Bool
     let onFocusSession: (PlaceCheckInSession) -> Void
@@ -305,6 +313,7 @@ private struct PlaceCheckInDayTimelineSectionView: View {
                 ForEach(section.sessions) { session in
                     PlaceCheckInDayTimelineRow(
                         session: session,
+                        isCurrent: session.id == currentActiveSessionID,
                         canFocus: canFocusOnSession(session),
                         canSaveAsPlace: canSaveSessionAsPlace(session),
                         onFocus: { onFocusSession(session) },
@@ -321,6 +330,7 @@ private struct PlaceCheckInDayTimelineSectionView: View {
 
 private struct PlaceCheckInDayTimelineRow: View {
     let session: PlaceCheckInSession
+    let isCurrent: Bool
     let canFocus: Bool
     let canSaveAsPlace: Bool
     let onFocus: () -> Void
@@ -414,7 +424,7 @@ private struct PlaceCheckInDayTimelineRow: View {
     private var timelineMarker: some View {
         VStack(spacing: 4) {
             Circle()
-                .fill(session.isActive ? Color.teal : Color.accentColor)
+                .fill(isCurrent ? Color.teal : Color.accentColor)
                 .frame(width: 10, height: 10)
             Rectangle()
                 .fill(Color.secondary.opacity(0.22))
@@ -431,7 +441,7 @@ private struct PlaceCheckInDayTimelineRow: View {
                     .foregroundStyle(.primary)
                     .lineLimit(1)
 
-                if session.isActive {
+                if isCurrent {
                     Text("Now")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.teal)

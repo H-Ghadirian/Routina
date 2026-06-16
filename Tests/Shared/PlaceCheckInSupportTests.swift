@@ -632,6 +632,38 @@ struct PlaceCheckInSupportTests {
 
     @MainActor
     @Test
+    func currentActiveSessionID_returnsLatestOpenSessionWhenDuplicateOpenSessionsExist() throws {
+        let olderOpenSession = PlaceCheckInSession(
+            placeID: nil,
+            placeName: "Home",
+            startedAt: makeDate("2026-06-13T18:06:00Z"),
+            endedAt: nil,
+            updatedAt: makeDate("2026-06-13T18:06:00Z")
+        )
+        let latestOpenSession = PlaceCheckInSession(
+            placeID: nil,
+            placeName: "Home",
+            startedAt: makeDate("2026-06-13T20:56:00Z"),
+            endedAt: nil,
+            updatedAt: makeDate("2026-06-13T20:56:00Z")
+        )
+        let endedSession = PlaceCheckInSession(
+            placeID: nil,
+            placeName: "Office",
+            startedAt: makeDate("2026-06-13T21:10:00Z"),
+            endedAt: makeDate("2026-06-13T21:20:00Z"),
+            updatedAt: makeDate("2026-06-13T21:20:00Z")
+        )
+
+        let currentID = PlaceCheckInSupport.currentActiveSessionID(
+            in: [endedSession, olderOpenSession, latestOpenSession]
+        )
+
+        #expect(currentID == latestOpenSession.id)
+    }
+
+    @MainActor
+    @Test
     func updateSession_reordersGroupedCheckInsByEditedStartTime() throws {
         let context = makeInMemoryContext()
         let cafe = PlaceCheckInSession(

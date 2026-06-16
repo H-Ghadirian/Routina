@@ -110,7 +110,10 @@ struct PlaceCheckInMapSheet: View {
     }
 
     private var activeSession: PlaceCheckInSession? {
-        sessions.first { $0.endedAt == nil }
+        guard let activeSessionID = PlaceCheckInSupport.currentActiveSessionID(in: sessions) else {
+            return nil
+        }
+        return sessions.first { $0.id == activeSessionID }
     }
 
     private var orderedPlaces: [RoutinePlace] {
