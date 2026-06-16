@@ -101,9 +101,7 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
 
     private func scrollTimelineList(to entryID: UUID, with proxy: ScrollViewProxy) {
         DispatchQueue.main.async {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                proxy.scrollTo(entryID, anchor: .bottom)
-            }
+            proxy.scrollTo(entryID, anchor: .bottom)
         }
     }
 }
