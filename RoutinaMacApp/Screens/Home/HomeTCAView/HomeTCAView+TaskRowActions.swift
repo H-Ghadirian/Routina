@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 extension HomeTCAView {
@@ -40,104 +41,6 @@ extension HomeTCAView {
         )
     }
 
-    @ViewBuilder
-    func routineContextMenu(
-        for task: HomeFeature.RoutineDisplay,
-        includeMarkDone: Bool,
-        moveContext: HomeTaskListMoveContext? = nil
-    ) -> some View {
-        let presentation = HomeTaskRowActionPresentation.make(
-            for: task,
-            includeMarkDone: includeMarkDone,
-            moveContext: moveContext,
-            allowsPinning: true
-        )
-
-        Button {
-            homeTaskRowCommandHandler.handle(presentation.openCommand)
-        } label: {
-            Label("Open", systemImage: "arrow.right.circle")
-        }
-
-        ForEach(presentation.lifecycleActions) { action in
-            Button {
-                homeTaskRowCommandHandler.handle(action.command(taskID: task.taskID))
-            } label: {
-                Label(action.title, systemImage: action.systemImage)
-            }
-            .disabled(action.isDisabled)
-        }
-
-        if !presentation.moveActions.isEmpty {
-            Divider()
-
-            ForEach(presentation.moveActions) { action in
-                Button {
-                    homeTaskRowCommandHandler.handle(action.command(taskID: task.taskID))
-                } label: {
-                    Label(action.title, systemImage: action.systemImage)
-                }
-                .disabled(action.isDisabled)
-            }
-        }
-
-        if !task.isDailyRoutine || presentation.notTodayCommand != nil {
-            Divider()
-
-            Menu {
-                if !task.isDailyRoutine {
-                    Button {
-                        store.send(.planTask(task.taskID, Date()))
-                    } label: {
-                        Label("Today", systemImage: "calendar")
-                    }
-
-                    Button {
-                        presentPlanningDatePicker(for: task)
-                    } label: {
-                        Label("Choose Date...", systemImage: "calendar.badge.plus")
-                    }
-
-                    if task.plannedDate != nil {
-                        Button {
-                            store.send(.planTask(task.taskID, nil))
-                        } label: {
-                            Label("Clear Plan", systemImage: "xmark.circle")
-                        }
-                    }
-                }
-
-                if !task.isDailyRoutine, presentation.notTodayCommand != nil {
-                    Divider()
-                }
-
-                if let notTodayCommand = presentation.notTodayCommand {
-                    Button {
-                        homeTaskRowCommandHandler.handle(notTodayCommand)
-                    } label: {
-                        Label("Not today", systemImage: "moon.zzz")
-                    }
-                }
-            } label: {
-                Label("Plan to do", systemImage: "calendar.badge.clock")
-            }
-        }
-
-        if let pinAction = presentation.pinAction {
-            Button {
-                homeTaskRowCommandHandler.handle(pinAction.command)
-            } label: {
-                Label(pinAction.title, systemImage: pinAction.systemImage)
-            }
-        }
-
-        Button(role: .destructive) {
-            homeTaskRowCommandHandler.handle(presentation.deleteCommand)
-        } label: {
-            Label("Delete", systemImage: "trash")
-        }
-    }
-
     var planningDatePickerPresentedBinding: Binding<Bool> {
         Binding(
             get: { planningDateTaskID != nil },
@@ -162,5 +65,237 @@ extension HomeTCAView {
 
     func dismissPlanningDatePicker() {
         planningDateTaskID = nil
+    }
+
+    func routineNativeContextMenu(
+        for task: HomeFeature.RoutineDisplay,
+        includeMarkDone: Bool,
+        moveContext: HomeTaskListMoveContext? = nil
+    ) -> NSMenu {
+        let presentation = HomeTaskRowActionPresentation.make(
+            for: task,
+            includeMarkDone: includeMarkDone,
+            moveContext: moveContext,
+            allowsPinning: true
+        )
+        let menu = NSMenu()
+
+        menu.addActionItem(
+            title: "Open",
+            systemImage: "arrow.right.circle"
+        ) {
+            homeTaskRowCommandHandler.handle(presentation.openCommand)
+        }
+
+        for action in presentation.lifecycleActions {
+            menu.addActionItem(
+                title: action.title,
+                systemImage: action.systemImage,
+                isEnabled: !action.isDisabled
+            ) {
+                homeTaskRowCommandHandler.handle(action.command(taskID: task.taskID))
+            }
+        }
+
+        if !presentation.moveActions.isEmpty {
+            menu.addItem(.separator())
+
+            for action in presentation.moveActions {
+                menu.addActionItem(
+                    title: action.title,
+                    systemImage: action.systemImage,
+                    isEnabled: !action.isDisabled
+                ) {
+                    homeTaskRowCommandHandler.handle(action.command(taskID: task.taskID))
+                }
+            }
+        }
+
+        if !task.isDailyRoutine || presentation.notTodayCommand != nil {
+            menu.addItem(.separator())
+            menu.addPlanToDoSubmenu(
+                for: task,
+                notTodayCommand: presentation.notTodayCommand,
+                commandHandler: homeTaskRowCommandHandler,
+                planToday: {
+                    store.send(.planTask(task.taskID, Date()))
+                },
+                chooseDate: {
+                    presentPlanningDatePicker(for: task)
+                },
+                clearPlan: {
+                    store.send(.planTask(task.taskID, nil))
+                }
+            )
+        }
+
+        if let pinAction = presentation.pinAction {
+            menu.addActionItem(
+                title: pinAction.title,
+                systemImage: pinAction.systemImage
+            ) {
+                homeTaskRowCommandHandler.handle(pinAction.command)
+            }
+        }
+
+        menu.addActionItem(
+            title: "Delete",
+            systemImage: "trash"
+        ) {
+            homeTaskRowCommandHandler.handle(presentation.deleteCommand)
+        }
+
+        return menu
+    }
+}
+
+private extension NSMenu {
+    @discardableResult
+    func addActionItem(
+        title: String,
+        systemImage: String,
+        isEnabled: Bool = true,
+        action: @escaping () -> Void
+    ) -> NSMenuItem {
+        let item = NSMenuItem(
+            title: title,
+            action: #selector(RoutinaMacMenuActionTarget.perform(_:)),
+            keyEquivalent: ""
+        )
+        let target = RoutinaMacMenuActionTarget(action: action)
+        item.target = target
+        item.representedObject = target
+        item.isEnabled = isEnabled
+        item.image = NSImage(systemSymbolName: systemImage, accessibilityDescription: title)
+        addItem(item)
+        return item
+    }
+
+    func addPlanToDoSubmenu(
+        for task: HomeFeature.RoutineDisplay,
+        notTodayCommand: HomeTaskRowCommand?,
+        commandHandler: HomeTaskRowCommandHandler,
+        planToday: @escaping () -> Void,
+        chooseDate: @escaping () -> Void,
+        clearPlan: @escaping () -> Void
+    ) {
+        let item = NSMenuItem(title: "Plan to do", action: nil, keyEquivalent: "")
+        item.image = NSImage(
+            systemSymbolName: "calendar.badge.clock",
+            accessibilityDescription: "Plan to do"
+        )
+
+        let submenu = NSMenu(title: "Plan to do")
+
+        if !task.isDailyRoutine {
+            submenu.addActionItem(title: "Today", systemImage: "calendar", action: planToday)
+            submenu.addActionItem(
+                title: "Choose Date...",
+                systemImage: "calendar.badge.plus",
+                action: chooseDate
+            )
+
+            if task.plannedDate != nil {
+                submenu.addActionItem(
+                    title: "Clear Plan",
+                    systemImage: "xmark.circle",
+                    action: clearPlan
+                )
+            }
+        }
+
+        if !task.isDailyRoutine, notTodayCommand != nil {
+            submenu.addItem(.separator())
+        }
+
+        if let notTodayCommand {
+            submenu.addActionItem(title: "Not today", systemImage: "moon.zzz") {
+                commandHandler.handle(notTodayCommand)
+            }
+        }
+
+        item.submenu = submenu
+        addItem(item)
+    }
+}
+
+private final class RoutinaMacMenuActionTarget: NSObject {
+    private let action: () -> Void
+
+    init(action: @escaping () -> Void) {
+        self.action = action
+    }
+
+    @objc func perform(_ sender: NSMenuItem) {
+        action()
+    }
+}
+
+private struct RoutinaMacContextMenuModifier: ViewModifier {
+    let makeMenu: () -> NSMenu
+
+    func body(content: Content) -> some View {
+        content.overlay {
+            RoutinaMacContextMenuOverlay(makeMenu: makeMenu)
+        }
+    }
+}
+
+private struct RoutinaMacContextMenuOverlay: NSViewRepresentable {
+    let makeMenu: () -> NSMenu
+
+    func makeNSView(context: Context) -> RoutinaMacContextMenuView {
+        RoutinaMacContextMenuView(makeMenu: makeMenu)
+    }
+
+    func updateNSView(_ nsView: RoutinaMacContextMenuView, context: Context) {
+        nsView.makeMenu = makeMenu
+    }
+}
+
+private final class RoutinaMacContextMenuView: NSView {
+    var makeMenu: () -> NSMenu
+
+    init(makeMenu: @escaping () -> NSMenu) {
+        self.makeMenu = makeMenu
+        super.init(frame: .zero)
+    }
+
+    required init?(coder: NSCoder) {
+        nil
+    }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        guard let event = window?.currentEvent else { return nil }
+        switch event.type {
+        case .rightMouseDown:
+            return self
+        case .leftMouseDown where event.modifierFlags.contains(.control):
+            return self
+        default:
+            return nil
+        }
+    }
+
+    override func rightMouseDown(with event: NSEvent) {
+        showMenu(with: event)
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        if event.modifierFlags.contains(.control) {
+            showMenu(with: event)
+        } else {
+            super.mouseDown(with: event)
+        }
+    }
+
+    private func showMenu(with event: NSEvent) {
+        NSMenu.popUpContextMenu(makeMenu(), with: event, for: self)
+    }
+}
+
+extension View {
+    func routinaMacContextMenu(makeMenu: @escaping () -> NSMenu) -> some View {
+        modifier(RoutinaMacContextMenuModifier(makeMenu: makeMenu))
     }
 }

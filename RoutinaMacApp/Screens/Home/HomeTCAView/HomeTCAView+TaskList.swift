@@ -660,8 +660,8 @@ extension HomeTCAView {
             .onMacDoubleClick(enabled: allowsPlannerDrag) {
                 openDayPlanTaskDetails(task.taskID)
             }
-            .contextMenu {
-                routineContextMenu(
+            .routinaMacContextMenu {
+                routineNativeContextMenu(
                     for: task,
                     includeMarkDone: includeMarkDone,
                     moveContext: moveContext
@@ -836,8 +836,8 @@ extension HomeTCAView {
         routineRow(for: task, rowNumber: rowNumber)
             .tag(MacSidebarSelection.task(task.taskID))
             .contentShape(Rectangle())
-            .contextMenu {
-                routineContextMenu(
+            .routinaMacContextMenu {
+                routineNativeContextMenu(
                     for: task,
                     includeMarkDone: includeMarkDone,
                     moveContext: moveContext
