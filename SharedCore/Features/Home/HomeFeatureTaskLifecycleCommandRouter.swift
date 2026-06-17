@@ -65,7 +65,7 @@ struct HomeFeatureTaskLifecycleCommandRouter<State: HomeFeatureTaskLifecycleComm
 
     func planTask(_ id: UUID, plannedDate: Date?, state: inout State) -> Effect<Action> {
         guard let effect = plan(id, plannedDate, &state.routineTasks) else {
-            return .none
+            return finishMutation(.none, &state)
         }
         return finishMutation(effect, &state)
     }

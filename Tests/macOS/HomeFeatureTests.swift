@@ -2740,6 +2740,56 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func planTask_refreshesDisplayPlannedDateAndPersists() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let plannedDate = makeDate("2026-06-16T15:30:00Z")
+        let normalizedPlannedDate = calendar.startOfDay(for: plannedDate)
+        let task = makeTask(in: context, name: "Read", interval: 3, lastDone: nil, emoji: "📚")
+        try context.save()
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                routineTasks: [task],
+                routineDisplays: [
+                    makeDisplay(
+                        taskID: task.id,
+                        name: "Read",
+                        emoji: "📚",
+                        interval: 3,
+                        lastDone: nil,
+                        isDoneToday: false
+                    )
+                ]
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: plannedDate, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.planTask(task.id, plannedDate)) {
+            $0.routineTasks[0].plannedDate = normalizedPlannedDate
+            $0.routineDisplays = [
+                makeDisplay(
+                    taskID: task.id,
+                    name: "Read",
+                    emoji: "📚",
+                    interval: 3,
+                    lastDone: nil,
+                    plannedDate: normalizedPlannedDate,
+                    isDoneToday: false
+                )
+            ]
+        }
+
+        let savedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(savedTask.plannedDate == normalizedPlannedDate)
+    }
+
+    @Test
     func unpinTask_clearsPinnedStateAndPersists() async throws {
         let context = makeInMemoryContext()
         let pinDate = makeDate("2026-03-15T10:00:00Z")

@@ -788,6 +788,36 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func sidebarPresentationTagGroupingMovesPlannedTodayTaskAheadOfMergedDailyRoutines() {
+        let referenceDate = Date(timeIntervalSince1970: 1_714_608_000)
+        let plannedID = UUID()
+        let dailyID = UUID()
+        let tagID = UUID()
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(routineListSectioningMode: .tags),
+            routineDisplays: [
+                TestTaskDisplay(taskID: dailyID, name: "Daily", tags: ["Health"], recurrenceRule: .interval(days: 1), daysUntilDue: 0),
+                TestTaskDisplay(taskID: plannedID, name: "Join HSE AI data protection", tags: ["HSE"], plannedDate: referenceDate),
+                TestTaskDisplay(taskID: tagID, name: "Working Hours", tags: ["HSE"])
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            separateDailyRoutinesInTaskList: false,
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(presentation.sections.map(\.kind) == [.plannedToday, .tag])
+        #expect(presentation.sections.map(\.title) == ["Plan to do today", "#HSE"])
+        #expect(presentation.sections.first?.taskGroups.compactMap(\.moveContext?.sectionKey) == ["plannedToday", "daily"])
+        #expect(presentation.sections.first?.tasks.map(\.taskID) == [plannedID, dailyID])
+        #expect(presentation.sections.last?.tasks.map(\.taskID) == [tagID])
+    }
+
+    @Test
     func sidebarPresentationNoneGroupingNestsDailyRoutinesUnderPlanToday() {
         let dailyID = UUID()
         let weeklyID = UUID()

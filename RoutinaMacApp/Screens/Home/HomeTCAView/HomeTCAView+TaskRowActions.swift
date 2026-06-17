@@ -63,6 +63,11 @@ extension HomeTCAView {
         dismissPlanningDatePicker()
     }
 
+    func planTaskForTodayFromContextMenu(_ taskID: UUID) {
+        revealPlannedTodaySection(for: taskID)
+        store.send(.planTask(taskID, calendar.startOfDay(for: Date())))
+    }
+
     func dismissPlanningDatePicker() {
         planningDateTaskID = nil
     }
@@ -118,7 +123,7 @@ extension HomeTCAView {
                 notTodayCommand: presentation.notTodayCommand,
                 commandHandler: homeTaskRowCommandHandler,
                 planToday: {
-                    store.send(.planTask(task.taskID, Date()))
+                    planTaskForTodayFromContextMenu(task.taskID)
                 },
                 chooseDate: {
                     presentPlanningDatePicker(for: task)
@@ -147,6 +152,18 @@ extension HomeTCAView {
 
         return menu
     }
+
+    private func revealPlannedTodaySection(for taskID: UUID) {
+        let sectionID = "\(HomeTaskListPresentationSectionKind.plannedToday.rawValue):Plan to do today"
+        var collapsedSectionIDs = Set(
+            collapsedTagTaskListSectionIDsStorage
+                .split(separator: "\n")
+                .map(String.init)
+        )
+        collapsedSectionIDs.remove(sectionID)
+        collapsedTagTaskListSectionIDsStorage = collapsedSectionIDs.sorted().joined(separator: "\n")
+        macSidebarTaskScrollRequest = MacSidebarTaskScrollRequest(taskID: taskID, anchor: .center)
+    }
 }
 
 private extension NSMenu {
@@ -159,28 +176,24 @@ private extension NSMenu {
     ) -> NSMenuItem {
         let item = NSMenuItem(
             title: title,
-            action: #selector(RoutinaMacMenuActionTarget.perform(_:)),
+            action: #selector(RoutinaMacContextMenuView.performMenuAction(_:)),
             keyEquivalent: ""
         )
-        let target = RoutinaMacMenuActionTarget(action: action)
-        item.target = target
-        item.representedObject = target
+        item.representedObject = RoutinaMacMenuAction(action: action)
         item.isEnabled = isEnabled
         item.image = NSImage(systemSymbolName: systemImage, accessibilityDescription: title)
         addItem(item)
         return item
     }
 
-    var routinaActionTargets: [RoutinaMacMenuActionTarget] {
-        items.flatMap { item -> [RoutinaMacMenuActionTarget] in
-            var targets: [RoutinaMacMenuActionTarget] = []
-            if let target = item.target as? RoutinaMacMenuActionTarget {
-                targets.append(target)
+    func assignRoutinaActionTarget(_ target: RoutinaMacContextMenuView) {
+        for item in items {
+            if item.representedObject is RoutinaMacMenuAction {
+                item.target = target
             }
             if let submenu = item.submenu {
-                targets.append(contentsOf: submenu.routinaActionTargets)
+                submenu.assignRoutinaActionTarget(target)
             }
-            return targets
         }
     }
 
@@ -232,14 +245,14 @@ private extension NSMenu {
     }
 }
 
-private final class RoutinaMacMenuActionTarget: NSObject {
+private final class RoutinaMacMenuAction: NSObject {
     private let action: () -> Void
 
     init(action: @escaping () -> Void) {
         self.action = action
     }
 
-    @objc func perform(_ sender: NSMenuItem) {
+    func perform() {
         action()
     }
 }
@@ -268,7 +281,6 @@ private struct RoutinaMacContextMenuOverlay: NSViewRepresentable {
 
 private final class RoutinaMacContextMenuView: NSView {
     var makeMenu: () -> NSMenu
-    private var activeMenuActionTargets: [RoutinaMacMenuActionTarget] = []
 
     init(makeMenu: @escaping () -> NSMenu) {
         self.makeMenu = makeMenu
@@ -305,9 +317,13 @@ private final class RoutinaMacContextMenuView: NSView {
 
     private func showMenu(with event: NSEvent) {
         let menu = makeMenu()
-        activeMenuActionTargets = menu.routinaActionTargets
+        menu.assignRoutinaActionTarget(self)
         NSMenu.popUpContextMenu(menu, with: event, for: self)
-        activeMenuActionTargets = []
+    }
+
+    @objc func performMenuAction(_ sender: NSMenuItem) {
+        guard let action = sender.representedObject as? RoutinaMacMenuAction else { return }
+        action.perform()
     }
 }
 
