@@ -34,6 +34,9 @@ final class RoutinaMacWindowRouter {
     func requestHomeOpenAndActivate() {
         if openHomeWindow == nil {
             isHomeOpenPending = true
+            routinaMacWindowLogger.info("Requested home open before SwiftUI opener was ready; app windows: \(NSApplication.shared.windows.count, privacy: .public)")
+            activateHomeWindow()
+            return
         }
         routinaMacWindowLogger.info("Requested home open; app windows: \(NSApplication.shared.windows.count, privacy: .public)")
         openHomeAndActivate()
@@ -44,19 +47,19 @@ final class RoutinaMacWindowRouter {
 
         let shouldRequestSwiftUIWindow = !hasVisibleAppWindow
         if shouldRequestSwiftUIWindow {
-            routinaMacWindowLogger.info("Requesting SwiftUI home window")
-            openHomeWindow?()
-        }
-
-        if openHomeWindow == nil {
-            routinaMacWindowLogger.info("Using immediate AppKit fallback because SwiftUI opener is not ready")
-            openFallbackHomeWindow?()
+            if let openHomeWindow {
+                routinaMacWindowLogger.info("Requesting SwiftUI home window")
+                openHomeWindow()
+            } else {
+                routinaMacWindowLogger.info("Using immediate AppKit fallback because SwiftUI opener is not ready")
+                openFallbackHomeWindow?()
+            }
         }
 
         activateHomeWindow()
 
         DispatchQueue.main.async {
-            if !self.hasVisibleAppWindow {
+            if self.openHomeWindow == nil && !self.isHomeOpenPending && !self.hasVisibleAppWindow {
                 routinaMacWindowLogger.info("Using next-run-loop AppKit fallback because no visible app window exists")
                 self.openFallbackHomeWindow?()
             }
@@ -64,7 +67,7 @@ final class RoutinaMacWindowRouter {
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            if !self.hasVisibleAppWindow {
+            if self.openHomeWindow == nil && !self.isHomeOpenPending && !self.hasVisibleAppWindow {
                 routinaMacWindowLogger.info("Using delayed AppKit fallback because no visible app window exists")
                 self.openFallbackHomeWindow?()
             }

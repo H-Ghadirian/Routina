@@ -27,6 +27,7 @@ public final class RemoteNotificationMacDelegate: NSObject, NSApplicationDelegat
     ) -> Bool {
         if !flag {
             RoutinaMacWindowRouter.shared.requestHomeOpenAndActivate()
+            return false
         }
         return true
     }
