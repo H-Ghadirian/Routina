@@ -19,7 +19,15 @@ enum HomeDetailSelectionSupport {
         }
 
         if var detailState = selection.taskDetailState {
-            updateDerivedDetailState(&detailState, task: task, now: now, calendar: calendar)
+            let reconciliation = HomeReloadGuardSupport.reconcileSelectedDetailTask(
+                [task],
+                selectedTaskID: selectedTaskID,
+                detailTask: detailState.task,
+                selectedTaskReloadGuard: selection.selectedTaskReloadGuard
+            )
+            selection.selectedTaskReloadGuard = reconciliation.selectedTaskReloadGuard
+            let refreshedTask = reconciliation.tasks.first ?? task
+            updateDerivedDetailState(&detailState, task: refreshedTask, now: now, calendar: calendar)
             selection.taskDetailState = detailState
         } else {
             selection.taskDetailState = makeTaskDetailState(task)
@@ -36,7 +44,7 @@ enum HomeDetailSelectionSupport {
         let syncedTask = detailTask.detachedCopy()
         tasks[index] = syncedTask
         if selection.pendingSelectedChecklistReloadGuardTaskID == syncedTask.id,
-           syncedTask.isChecklistCompletionRoutine,
+           (syncedTask.isChecklistCompletionRoutine || syncedTask.isChecklistDriven),
            selection.selectedTaskID == detailTask.id {
             selection.selectedTaskReloadGuard = HomeReloadGuardSupport.makeSelectedTaskReloadGuard(for: syncedTask)
         }

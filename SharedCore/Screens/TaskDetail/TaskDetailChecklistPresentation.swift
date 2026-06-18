@@ -80,7 +80,7 @@ enum TaskDetailChecklistPresentation {
         }
 
         if isDoneToday && !task.isChecklistInProgress {
-            return false
+            return true
         }
 
         if task.isChecklistItemCompleted(item.id) {

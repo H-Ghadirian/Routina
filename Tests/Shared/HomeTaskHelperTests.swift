@@ -422,6 +422,87 @@ struct HomeTaskHelperTests {
     }
 
     @Test
+    func selectedDetailRefreshPreservesCheckedChecklistDuringStaleListRefresh() {
+        let now = makeDate("2026-06-17T10:00:00Z")
+        let taskID = UUID()
+        let sciformaID = UUID()
+        let excelID = UUID()
+        let staleTask = RoutineTask(
+            id: taskID,
+            name: "Working Hours",
+            checklistItems: [
+                RoutineChecklistItem(id: sciformaID, title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: excelID, title: "Excel", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist
+        )
+        let checkedDetailTask = staleTask.detachedCopy()
+        _ = checkedDetailTask.markChecklistItemCompleted(sciformaID, completedAt: now)
+        var selection = HomeSelectionState(
+            selectedTaskID: taskID,
+            taskDetailState: TaskDetailFeature.State(task: checkedDetailTask, selectedDate: now)
+        )
+
+        HomeDetailSelectionSupport.updatePendingChecklistReloadGuard(
+            for: sciformaID,
+            selection: &selection,
+            now: now,
+            calendar: .current
+        )
+        HomeDetailSelectionSupport.refreshSelectedTaskDetailState(
+            selection: &selection,
+            tasks: [staleTask],
+            now: now,
+            calendar: .current,
+            makeTaskDetailState: { TaskDetailFeature.State(task: $0) }
+        )
+
+        #expect(selection.taskDetailState?.task.isChecklistItemCompleted(sciformaID) == true)
+        #expect(selection.selectedTaskReloadGuard?.completedChecklistItemIDsStorage == checkedDetailTask.completedChecklistItemIDsStorage)
+    }
+
+    @Test
+    func selectedDetailRefreshPreservesRunoutItemDuringStaleListRefresh() {
+        let now = makeDate("2026-06-17T10:00:00Z")
+        let taskID = UUID()
+        let breadID = UUID()
+        let milkID = UUID()
+        let staleTask = RoutineTask(
+            id: taskID,
+            name: "Groceries",
+            checklistItems: [
+                RoutineChecklistItem(id: breadID, title: "Bread", intervalDays: 3, createdAt: now),
+                RoutineChecklistItem(id: milkID, title: "Milk", intervalDays: 3, createdAt: now)
+            ],
+            scheduleMode: .derivedFromChecklist
+        )
+        let checkedDetailTask = staleTask.detachedCopy()
+        _ = checkedDetailTask.markChecklistItemsDone([breadID], doneAt: now)
+        var selection = HomeSelectionState(
+            selectedTaskID: taskID,
+            taskDetailState: TaskDetailFeature.State(task: checkedDetailTask, selectedDate: now)
+        )
+
+        HomeDetailSelectionSupport.updatePendingChecklistReloadGuard(
+            for: breadID,
+            selection: &selection,
+            now: now,
+            calendar: .current
+        )
+        HomeDetailSelectionSupport.refreshSelectedTaskDetailState(
+            selection: &selection,
+            tasks: [staleTask],
+            now: now,
+            calendar: .current,
+            makeTaskDetailState: { TaskDetailFeature.State(task: $0) }
+        )
+
+        let item = selection.taskDetailState?.task.checklistItems.first { $0.id == breadID }
+        #expect(item?.lastPurchasedAt == now)
+        #expect(selection.selectedTaskReloadGuard?.checklistItems.first { $0.id == breadID }?.lastPurchasedAt == now)
+    }
+
+    @Test
     func pendingChecklistReloadGuardPreservesUncheckedDetailDuringStaleReload() {
         let now = makeDate("2026-06-17T10:00:00Z")
         let taskID = UUID()

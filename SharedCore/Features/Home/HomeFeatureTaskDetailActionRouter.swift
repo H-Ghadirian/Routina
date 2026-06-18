@@ -18,7 +18,9 @@ struct HomeFeatureTaskDetailActionRouter<State, Action> {
             clearTaskSelection(&state)
             return .none
 
-        case let .toggleChecklistItemCompletion(itemID),
+        case let .toggleChecklistRunoutItemDone(itemID),
+             let .extendChecklistItemRunout(itemID),
+             let .toggleChecklistItemCompletion(itemID),
              let .markChecklistItemCompleted(itemID):
             updatePendingChecklistReloadGuard(itemID, &state)
             return .none

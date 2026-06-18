@@ -889,6 +889,28 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func checklistPresentationAllowsUndoFromCompletedChecklistRoutine() {
+        let now = Date()
+        let itemID = UUID()
+        let task = RoutineTask(
+            name: "Working Hours",
+            checklistItems: [
+                RoutineChecklistItem(id: itemID, title: "Sciforma", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            lastDone: now
+        )
+
+        #expect(TaskDetailChecklistPresentation.canToggleItem(
+            task.checklistItems[0],
+            task: task,
+            selectedDate: now,
+            isDoneToday: true,
+            calendar: .current
+        ))
+    }
+
+    @Test
     func attachmentPresentationSanitizesImageFileNamesAndDetectsTypes() {
         let task = RoutineTask(name: "Routine Image?!")
 

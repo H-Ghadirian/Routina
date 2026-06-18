@@ -2,6 +2,7 @@ import Foundation
 
 struct HomeSelectedTaskReloadGuard: Equatable {
     var taskID: UUID
+    var checklistItems: [RoutineChecklistItem] = []
     var completedChecklistItemIDsStorage: String
     var lastDone: Date?
     var scheduleAnchor: Date?
@@ -16,6 +17,7 @@ enum HomeReloadGuardSupport {
     static func makeSelectedTaskReloadGuard(for task: RoutineTask) -> HomeSelectedTaskReloadGuard {
         HomeSelectedTaskReloadGuard(
             taskID: task.id,
+            checklistItems: task.checklistItems,
             completedChecklistItemIDsStorage: task.completedChecklistItemIDsStorage,
             lastDone: task.lastDone,
             scheduleAnchor: task.scheduleAnchor
@@ -32,7 +34,6 @@ enum HomeReloadGuardSupport {
         guard let selectedTaskID,
               let detailState,
               detailState.task.id == selectedTaskID,
-              detailState.task.isChecklistCompletionRoutine,
               !detailState.task.isArchived(),
               detailState.task.checklistItems.contains(where: { $0.id == itemID }),
               calendar.isDate(detailState.selectedDate ?? now, inSameDayAs: now) else {
@@ -40,6 +41,14 @@ enum HomeReloadGuardSupport {
         }
 
         let task = detailState.task
+        if task.isChecklistDriven {
+            return task.id
+        }
+
+        guard task.isChecklistCompletionRoutine else {
+            return nil
+        }
+
         if task.isChecklistItemCompleted(itemID) {
             return task.isChecklistInProgress ? task.id : nil
         }
@@ -125,6 +134,7 @@ enum HomeReloadGuardSupport {
         guard reloadGuard: HomeSelectedTaskReloadGuard
     ) -> Bool {
         task.id == reloadGuard.taskID
+            && (reloadGuard.checklistItems.isEmpty || task.checklistItems == reloadGuard.checklistItems)
             && task.completedChecklistItemIDsStorage == reloadGuard.completedChecklistItemIDsStorage
             && task.lastDone == reloadGuard.lastDone
             && task.scheduleAnchor == reloadGuard.scheduleAnchor
@@ -137,10 +147,13 @@ enum HomeReloadGuardSupport {
     ) -> Bool {
         guard current.id == incoming.id,
               current.id == reloadGuard.taskID,
-              current.isChecklistCompletionRoutine,
-              incoming.isChecklistCompletionRoutine else {
+              current.scheduleMode == incoming.scheduleMode else {
             return false
         }
+
+        let isChecklistProgressMutation = current.isChecklistCompletionRoutine && incoming.isChecklistCompletionRoutine
+            || current.isChecklistDriven && incoming.isChecklistDriven
+        guard isChecklistProgressMutation else { return false }
 
         return current.name == incoming.name
             && current.emoji == incoming.emoji
@@ -149,12 +162,26 @@ enum HomeReloadGuardSupport {
             && current.goalIDs == incoming.goalIDs
             && current.eventIDs == incoming.eventIDs
             && current.steps == incoming.steps
-            && current.checklistItems == incoming.checklistItems
+            && checklistItemStructuresMatch(current.checklistItems, incoming.checklistItems)
             && current.scheduleMode == incoming.scheduleMode
             && current.recurrenceRule == incoming.recurrenceRule
             && current.interval == incoming.interval
             && current.pausedAt == incoming.pausedAt
             && current.completedStepCount == incoming.completedStepCount
             && current.sequenceStartedAt == incoming.sequenceStartedAt
+    }
+
+    private static func checklistItemStructuresMatch(
+        _ currentItems: [RoutineChecklistItem],
+        _ incomingItems: [RoutineChecklistItem]
+    ) -> Bool {
+        guard currentItems.count == incomingItems.count else { return false }
+
+        return zip(currentItems, incomingItems).allSatisfy { current, incoming in
+            current.id == incoming.id
+                && current.title == incoming.title
+                && current.intervalDays == incoming.intervalDays
+                && current.createdAt == incoming.createdAt
+        }
     }
 }
