@@ -50,7 +50,7 @@ enum HomeDetailSelectionSupport {
         now: Date,
         calendar: Calendar
     ) {
-        selection.pendingSelectedChecklistReloadGuardTaskID = HomeReloadGuardSupport
+        let pendingTaskID = HomeReloadGuardSupport
             .pendingChecklistReloadGuardTaskID(
                 for: itemID,
                 selectedTaskID: selection.selectedTaskID,
@@ -58,6 +58,13 @@ enum HomeDetailSelectionSupport {
                 now: now,
                 calendar: calendar
             )
+        selection.pendingSelectedChecklistReloadGuardTaskID = pendingTaskID
+
+        if let pendingTaskID,
+           let detailTask = selection.taskDetailState?.task,
+           detailTask.id == pendingTaskID {
+            selection.selectedTaskReloadGuard = HomeReloadGuardSupport.makeSelectedTaskReloadGuard(for: detailTask)
+        }
     }
 
     static func updatePendingChecklistUndoReloadGuard(selection: inout HomeSelectionState) {

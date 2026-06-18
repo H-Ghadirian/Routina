@@ -27,7 +27,7 @@ struct TaskDetailChecklistSectionView: View {
     }
 
     private var visibleItems: [RoutineChecklistItem] {
-        if task.isChecklistDriven {
+        if !TaskDetailChecklistPresentation.usesDoneVisibilityFilter(for: task) {
             return sortedItems
         }
         return TaskDetailChecklistPresentation.visibleItems(
@@ -38,7 +38,7 @@ struct TaskDetailChecklistSectionView: View {
     }
 
     private var doneItemCount: Int {
-        guard !task.isChecklistDriven else { return 0 }
+        guard TaskDetailChecklistPresentation.usesDoneVisibilityFilter(for: task) else { return 0 }
         return sortedItems.filter(isMarkedDone).count
     }
 
@@ -236,21 +236,24 @@ struct TaskDetailChecklistSectionView: View {
             Button {
                 onToggleCompletion(item.id)
             } label: {
-                Image(systemName: isDone ? "checkmark.circle.fill" : "circle")
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(isDone ? .green : TaskDetailChecklistPresentation.completionControlColor(isInteractive: isInteractive))
-                    .frame(width: 24, height: 24)
+                HStack(alignment: .center, spacing: 12) {
+                    Image(systemName: isDone ? "checkmark.circle.fill" : "circle")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(isDone ? .green : TaskDetailChecklistPresentation.completionControlColor(isInteractive: isInteractive))
+                        .frame(width: 24, height: 24)
+
+                    Text(item.title)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(isDone ? .secondary : .primary)
+                        .strikethrough(isDone, color: .secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .disabled(!isInteractive)
             .accessibilityLabel(item.title)
             .accessibilityValue(isDone ? "Completed" : "Not completed")
-
-            Text(item.title)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(isDone ? .secondary : .primary)
-                .strikethrough(isDone, color: .secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
 
             editChecklistItemButton(for: item)
         }
@@ -263,30 +266,33 @@ struct TaskDetailChecklistSectionView: View {
             Button {
                 onToggleRunoutDone(item.id)
             } label: {
-                Image(systemName: isDone ? "checkmark.square.fill" : "square")
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(isDone ? .green : TaskDetailChecklistPresentation.completionControlColor(isInteractive: isRunoutCheckboxInteractive))
-                    .frame(width: 24, height: 24)
+                HStack(alignment: .center, spacing: 12) {
+                    Image(systemName: isDone ? "checkmark.square.fill" : "square")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(isDone ? .green : TaskDetailChecklistPresentation.completionControlColor(isInteractive: isRunoutCheckboxInteractive))
+                        .frame(width: 24, height: 24)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(item.title)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(isDone ? .secondary : .primary)
+                            .strikethrough(isDone, color: .secondary)
+                        Text(TaskDetailChecklistPresentation.statusText(
+                            for: item,
+                            task: task,
+                            isMarkedDone: isDone
+                        ))
+                        .font(.caption)
+                        .foregroundStyle(TaskDetailChecklistPresentation.statusColor(for: item, task: task, isMarkedDone: isDone))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .disabled(!isRunoutCheckboxInteractive && !isDone)
             .accessibilityLabel(item.title)
             .accessibilityValue(isDone ? "Done today" : "Not done today")
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(item.title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(isDone ? .secondary : .primary)
-                    .strikethrough(isDone, color: .secondary)
-                Text(TaskDetailChecklistPresentation.statusText(
-                    for: item,
-                    task: task,
-                    isMarkedDone: isDone
-                ))
-                .font(.caption)
-                .foregroundStyle(TaskDetailChecklistPresentation.statusColor(for: item, task: task, isMarkedDone: isDone))
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
 
             Spacer(minLength: 0)
 

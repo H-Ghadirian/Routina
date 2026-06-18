@@ -14,6 +14,117 @@ import Testing
 @MainActor
 struct TaskDetailFeatureCompletionTests {
     @Test
+    func toggleChecklistItemCompletion_allowsProgressBeforeScheduledDay() async throws {
+        let context = makeInMemoryContext()
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let now = makeDate("2026-06-17T10:00:00Z")
+        let sciformaID = UUID()
+        let excelID = UUID()
+        let task = RoutineTask(
+            name: "Working Hours",
+            checklistItems: [
+                RoutineChecklistItem(id: sciformaID, title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: excelID, title: "Excel", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            recurrenceRule: .monthly(on: 25),
+            scheduleAnchor: now
+        )
+        context.insert(task)
+        try context.save()
+
+        #expect(!RoutineDateMath.canMarkDone(for: task, referenceDate: now, calendar: calendar))
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                selectedDate: calendar.startOfDay(for: now)
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.toggleChecklistItemCompletion(sciformaID)) {
+            $0.taskRefreshID = 1
+        }
+        #expect(store.state.task.isChecklistItemCompleted(sciformaID))
+        #expect(!store.state.task.isChecklistItemCompleted(excelID))
+        #expect(!store.state.isDoneToday)
+
+        await store.receive(.logsLoaded([]))
+
+        let persistedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(persistedTask.isChecklistItemCompleted(sciformaID))
+        #expect(!persistedTask.isChecklistItemCompleted(excelID))
+
+        await store.send(.toggleChecklistItemCompletion(sciformaID)) {
+            $0.taskRefreshID = 2
+            $0.task.completedChecklistItemIDs = []
+            $0.daysSinceLastRoutine = 0
+            $0.overdueDays = 0
+        }
+        #expect(!store.state.task.isChecklistItemCompleted(sciformaID))
+
+        await store.receive(.logsLoaded([]))
+
+        let persistedUncheckedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(!persistedUncheckedTask.isChecklistItemCompleted(sciformaID))
+        #expect(!persistedUncheckedTask.isChecklistItemCompleted(excelID))
+
+        _ = await store.withExhaustivity(.off) {
+            await store.send(.toggleChecklistItemCompletion(sciformaID)) {
+                $0.taskRefreshID = 3
+            }
+            await store.receive(.logsLoaded([]))
+
+            await store.send(.toggleChecklistItemCompletion(excelID)) {
+                $0.taskRefreshID = 4
+                $0.isDoneToday = true
+                $0.daysSinceLastRoutine = 0
+                $0.overdueDays = 0
+                #expect($0.logs.count == 1)
+            }
+            await store.receive {
+                guard case let .logsLoaded(logs) = $0 else { return false }
+                return logs.count == 1
+            } assert: {
+                #expect($0.logs.count == 1)
+                $0.isDoneToday = true
+                $0.daysSinceLastRoutine = 0
+                $0.overdueDays = 0
+            }
+        }
+
+        await store.send(.toggleChecklistItemCompletion(excelID)) {
+            $0.taskRefreshID = 5
+            $0.task.lastDone = nil
+            $0.task.scheduleAnchor = nil
+            $0.task.completedChecklistItemIDs = [sciformaID]
+            $0.logs = []
+            $0.isDoneToday = false
+            $0.daysSinceLastRoutine = 0
+            $0.overdueDays = 0
+        }
+        #expect(store.state.task.isChecklistItemCompleted(sciformaID))
+        #expect(!store.state.task.isChecklistItemCompleted(excelID))
+
+        await store.receive(.logsLoaded([]))
+
+        let persistedReopenedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+        #expect(persistedReopenedTask.lastDone == nil)
+        #expect(persistedReopenedTask.isChecklistItemCompleted(sciformaID))
+        #expect(!persistedReopenedTask.isChecklistItemCompleted(excelID))
+        #expect(persistedLogs.isEmpty)
+    }
+
+    @Test
     func dueDateMetadataText_includesTimeForTodoDeadline() {
         let deadline = makeDate("2026-04-25T13:00:00Z")
         let task = RoutineTask(

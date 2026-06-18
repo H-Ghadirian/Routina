@@ -1052,6 +1052,43 @@ extension TaskDetailFeature {
         }
     }
 
+    func handleCompletedChecklistItemUnmarked(
+        taskID: UUID,
+        itemID: UUID,
+        completedDay: Date,
+        referenceDate: Date
+    ) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
+                guard let updatedTask = try RoutineLogHistory.removeCompletion(
+                    taskID: taskID,
+                    on: completedDay,
+                    context: context,
+                    calendar: calendar
+                ) else {
+                    return
+                }
+                updatedTask.completedChecklistItemIDs = Set(
+                    updatedTask.checklistItems.map(\.id).filter { $0 != itemID }
+                )
+                try context.save()
+                let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+                send(.logsLoaded(updatedLogs))
+                await notificationClient.schedule(
+                    NotificationCoordinator.notificationPayload(
+                        for: updatedTask,
+                        referenceDate: referenceDate,
+                        calendar: calendar
+                    )
+                )
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error reopening completed checklist progress: \(error)")
+            }
+        }
+    }
+
     func handleOptionalChecklistItemCompleted(
         taskID: UUID,
         itemID: UUID,

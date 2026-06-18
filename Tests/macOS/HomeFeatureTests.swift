@@ -1150,6 +1150,12 @@ struct HomeFeatureTests {
         await store.send(.taskDetail(.toggleChecklistItemCompletion(completedItemID))) {
             $0.pendingSelectedChecklistReloadGuardTaskID = taskID
             $0.taskDetailState?.taskRefreshID = 1
+            $0.selectedTaskReloadGuard = HomeFeature.SelectedTaskReloadGuard(
+                taskID: taskID,
+                completedChecklistItemIDsStorage: sharedTask.completedChecklistItemIDsStorage,
+                lastDone: nil,
+                scheduleAnchor: nil
+            )
         }
 
         await store.receive(.taskDetail(.logsLoaded([]))) {
@@ -1172,12 +1178,6 @@ struct HomeFeatureTests {
             $0.taskDetailState?.daysSinceLastRoutine = 0
             $0.taskDetailState?.overdueDays = 0
             $0.taskDetailState?.isDoneToday = false
-            $0.selectedTaskReloadGuard = HomeFeature.SelectedTaskReloadGuard(
-                taskID: taskID,
-                completedChecklistItemIDsStorage: sharedTask.completedChecklistItemIDsStorage,
-                lastDone: nil,
-                scheduleAnchor: nil
-            )
             $0.pendingSelectedChecklistReloadGuardTaskID = nil
         }
 

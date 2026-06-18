@@ -19,6 +19,10 @@ enum TaskDetailChecklistPresentation {
         return items.filter { !isMarkedDone($0) }
     }
 
+    static func usesDoneVisibilityFilter(for task: RoutineTask) -> Bool {
+        task.supportsOptionalChecklistProgress
+    }
+
     static func isRunoutItemMarkedDone(
         _ item: RoutineChecklistItem,
         referenceDate: Date = Date(),

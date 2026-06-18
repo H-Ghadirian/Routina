@@ -380,6 +380,88 @@ struct HomeTaskHelperTests {
             RoutineRelatedTagRule(tag: "Focus", relatedTags: ["Health", "Writing"])
         ))
     }
+
+    @Test
+    func pendingChecklistReloadGuardPreservesCheckedDetailDuringStaleReload() {
+        let now = makeDate("2026-06-17T10:00:00Z")
+        let taskID = UUID()
+        let sciformaID = UUID()
+        let excelID = UUID()
+        let staleTask = RoutineTask(
+            id: taskID,
+            name: "Working Hours",
+            checklistItems: [
+                RoutineChecklistItem(id: sciformaID, title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: excelID, title: "Excel", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist
+        )
+        let checkedDetailTask = staleTask.detachedCopy()
+        _ = checkedDetailTask.markChecklistItemCompleted(sciformaID, completedAt: now)
+        var selection = HomeSelectionState(
+            selectedTaskID: taskID,
+            taskDetailState: TaskDetailFeature.State(task: checkedDetailTask, selectedDate: now)
+        )
+
+        HomeDetailSelectionSupport.updatePendingChecklistReloadGuard(
+            for: sciformaID,
+            selection: &selection,
+            now: now,
+            calendar: .current
+        )
+
+        let reconciliation = HomeReloadGuardSupport.reconcileSelectedDetailTask(
+            [staleTask],
+            selectedTaskID: taskID,
+            detailTask: checkedDetailTask,
+            selectedTaskReloadGuard: selection.selectedTaskReloadGuard
+        )
+
+        #expect(reconciliation.tasks.first?.isChecklistItemCompleted(sciformaID) == true)
+        #expect(reconciliation.selectedTaskReloadGuard?.completedChecklistItemIDsStorage == checkedDetailTask.completedChecklistItemIDsStorage)
+    }
+
+    @Test
+    func pendingChecklistReloadGuardPreservesUncheckedDetailDuringStaleReload() {
+        let now = makeDate("2026-06-17T10:00:00Z")
+        let taskID = UUID()
+        let sciformaID = UUID()
+        let excelID = UUID()
+        let staleCheckedTask = RoutineTask(
+            id: taskID,
+            name: "Working Hours",
+            checklistItems: [
+                RoutineChecklistItem(id: sciformaID, title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: excelID, title: "Excel", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist
+        )
+        _ = staleCheckedTask.markChecklistItemCompleted(sciformaID, completedAt: now)
+        let uncheckedDetailTask = staleCheckedTask.detachedCopy()
+        _ = uncheckedDetailTask.unmarkChecklistItemCompleted(sciformaID)
+        var selection = HomeSelectionState(
+            selectedTaskID: taskID,
+            taskDetailState: TaskDetailFeature.State(task: uncheckedDetailTask, selectedDate: now),
+            selectedTaskReloadGuard: HomeReloadGuardSupport.makeSelectedTaskReloadGuard(for: staleCheckedTask)
+        )
+
+        HomeDetailSelectionSupport.updatePendingChecklistReloadGuard(
+            for: sciformaID,
+            selection: &selection,
+            now: now,
+            calendar: .current
+        )
+
+        let reconciliation = HomeReloadGuardSupport.reconcileSelectedDetailTask(
+            [staleCheckedTask],
+            selectedTaskID: taskID,
+            detailTask: uncheckedDetailTask,
+            selectedTaskReloadGuard: selection.selectedTaskReloadGuard
+        )
+
+        #expect(reconciliation.tasks.first?.isChecklistItemCompleted(sciformaID) == false)
+        #expect(reconciliation.selectedTaskReloadGuard?.completedChecklistItemIDsStorage == uncheckedDetailTask.completedChecklistItemIDsStorage)
+    }
 }
 
 private func makeHomeRoutineDisplay(

@@ -867,6 +867,28 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func checklistPresentationKeepsCompletionChecklistRowsVisible() {
+        let completionChecklist = RoutineTask(
+            name: "Working Hours",
+            checklistItems: [
+                RoutineChecklistItem(title: "Sciforma", intervalDays: 30),
+                RoutineChecklistItem(title: "Excel", intervalDays: 30)
+            ],
+            scheduleMode: .fixedIntervalChecklist
+        )
+        let optionalChecklist = RoutineTask(
+            name: "Read",
+            checklistItems: [
+                RoutineChecklistItem(title: "Desk", intervalDays: 1)
+            ],
+            scheduleMode: .fixedInterval
+        )
+
+        #expect(!TaskDetailChecklistPresentation.usesDoneVisibilityFilter(for: completionChecklist))
+        #expect(TaskDetailChecklistPresentation.usesDoneVisibilityFilter(for: optionalChecklist))
+    }
+
+    @Test
     func attachmentPresentationSanitizesImageFileNamesAndDetectsTypes() {
         let task = RoutineTask(name: "Routine Image?!")
 
