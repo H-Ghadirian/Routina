@@ -307,7 +307,16 @@ extension HomeTCAView {
 
     @ToolbarContentBuilder
     private var macSidebarDoneToolbarContent: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) {
+        ToolbarItemGroup(placement: .primaryAction) {
+            if isDevelopmentAppVariant {
+                MacToolbarStatusBadge(
+                    title: "Dev Version",
+                    systemImage: "hammer.fill",
+                    tintColor: .systemOrange
+                )
+                .help("Development version")
+            }
+
             MacToolbarStatusBadge(
                 title: "\(store.doneStats.totalCount) done",
                 systemImage: "checkmark.seal.fill",
@@ -315,6 +324,10 @@ extension HomeTCAView {
             )
             .help("\(store.doneStats.totalCount) total done")
         }
+    }
+
+    private var isDevelopmentAppVariant: Bool {
+        Bundle.main.object(forInfoDictionaryKey: "RoutinaSandboxDataMode") as? Bool == true
     }
 
     @ToolbarContentBuilder
