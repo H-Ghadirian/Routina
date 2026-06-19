@@ -367,6 +367,7 @@ extension HomeTCAView {
                     get: { store.selectedTimelineMediaFilter },
                     set: { store.send(.selectedTimelineMediaFilterChanged($0)) }
                 ),
+                timelineRowVisibility: timelineRowVisibility,
                 showsTypeSection: showsMacTimelineTypeFilterSection,
                 importanceUrgencySummary: timelineImportanceUrgencySummary,
                 allTagsCount: filteredTimelineEntriesForTagging.count,
@@ -409,6 +410,9 @@ extension HomeTCAView {
                         store.send(.selectedTimelineExcludedTagsChanged(newTags))
                         store.send(.selectedTimelineTagsChanged(store.selectedTimelineTags.filter { !RoutineTag.contains($0, in: [tag]) }))
                     }
+                },
+                onTimelineRowFieldVisibilityChanged: { field, isVisible in
+                    settingsStore.send(.timelineRowFieldVisibilityChanged(field, isVisible))
                 },
                 includesEventEmotionFilters: areMacEventEmotionActionsEnabled
             )

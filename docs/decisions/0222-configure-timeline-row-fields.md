@@ -4,6 +4,8 @@
 
 Accepted
 
+Refined by [0256](0256-move-mac-timeline-row-appearance-to-timeline-filter-detail.md)
+
 ## Date
 
 2026-06-12

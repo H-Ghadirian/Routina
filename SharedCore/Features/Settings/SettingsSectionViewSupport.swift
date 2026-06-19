@@ -392,7 +392,7 @@ extension SettingsNotificationsState {
 extension SettingsAppearanceState {
     var overviewSubtitle: String {
         #if os(macOS)
-        "Theme: \(appColorScheme.title) • Icon: \(selectedAppIcon.title) • List: \(routineListSectioningMode.summaryText) • Timeline: \(timelineRowVisibility.summaryText)"
+        "Theme: \(appColorScheme.title) • Icon: \(selectedAppIcon.title) • List: \(routineListSectioningMode.summaryText)"
         #else
         "Theme: \(appColorScheme.title) • Icon: \(selectedAppIcon.title) • List: \(routineListSectioningMode.summaryText) • Rows: \(taskRowVisibility.summaryText) • Timeline: \(timelineRowVisibility.summaryText)"
         #endif

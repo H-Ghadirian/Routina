@@ -30,8 +30,7 @@ The setting continues to use the existing `appSettingHomeTaskRowHiddenFields`
 preference and the existing Settings appearance mutation path. No data migration
 is needed.
 
-`Settings > Appearance` on macOS no longer shows the `Task Row` card. Timeline
-row visibility remains in `Settings > Appearance > Timeline Row`.
+`Settings > Appearance` on macOS no longer shows the `Task Row` card.
 
 ## Consequences
 
