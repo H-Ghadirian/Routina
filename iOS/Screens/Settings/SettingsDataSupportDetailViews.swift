@@ -95,6 +95,11 @@ private struct SettingsBetaExperimentsSection: View {
             Text("Shows GitHub and GitLab contribution activity in Stats.")
                 .foregroundStyle(.secondary)
 
+            Toggle("Enable task sharing", isOn: taskSharingBinding)
+
+            Text("Show task sharing in task details.")
+                .foregroundStyle(.secondary)
+
             Toggle("Show Goals tab", isOn: $isGoalsTabEnabled)
 
             Text("Show Goal navigation, controls, and Stats reports.")
@@ -133,6 +138,13 @@ private struct SettingsBetaExperimentsSection: View {
         Binding(
             get: { store.appearance.isGitFeaturesEnabled },
             set: { store.send(.gitFeaturesToggled($0)) }
+        )
+    }
+
+    private var taskSharingBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.isTaskSharingEnabled },
+            set: { store.send(.taskSharingToggled($0)) }
         )
     }
 }

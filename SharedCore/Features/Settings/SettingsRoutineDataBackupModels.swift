@@ -356,6 +356,7 @@ extension SettingsRoutineDataPersistence {
             var hideUnavailableRoutines: Bool?
             var appLockEnabled: Bool?
             var gitFeaturesEnabled: Bool?
+            var taskSharingEnabled: Bool?
             var showPersianDates: Bool?
             var batteryRoutineMonitoringEnabled: Bool?
             var sleepHomeActionEnabled: Bool?

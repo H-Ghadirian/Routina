@@ -477,6 +477,14 @@ private struct SettingsMacBetaExperimentsCard: View {
             Text("Shows GitHub and GitLab contribution activity in Stats.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
+
+            Toggle("Enable task sharing", isOn: taskSharingBinding)
+                .toggleStyle(.switch)
+
+            Text("Show task sharing in task details.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
             Toggle("Show Goals tab", isOn: $isGoalsTabEnabled)
                 .toggleStyle(.switch)
 
@@ -577,6 +585,13 @@ private struct SettingsMacBetaExperimentsCard: View {
         Binding(
             get: { store.appearance.isGitFeaturesEnabled },
             set: { store.send(.gitFeaturesToggled($0)) }
+        )
+    }
+
+    private var taskSharingBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.isTaskSharingEnabled },
+            set: { store.send(.taskSharingToggled($0)) }
         )
     }
 }

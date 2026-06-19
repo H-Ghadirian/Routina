@@ -42,6 +42,10 @@ struct TaskDetailTCAView: View {
         UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isGoalsTabEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingTaskSharingEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isTaskSharingEnabled = false
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
 
@@ -73,7 +77,8 @@ detailBody
         store: store,
         showsPrincipalToolbarTitle: showsPrincipalToolbarTitle,
         isInlineEditPresented: isInlineEditPresented,
-        canSaveCurrentEdit: canSaveCurrentEdit
+        canSaveCurrentEdit: canSaveCurrentEdit,
+        isTaskSharingEnabled: isTaskSharingEnabled
     )
 }
 .routinaPlatformEditPresentation(

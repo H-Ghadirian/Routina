@@ -6,6 +6,7 @@ struct TaskDetailToolbarContent: ToolbarContent {
     let showsPrincipalToolbarTitle: Bool
     let isInlineEditPresented: Bool
     let canSaveCurrentEdit: Bool
+    let isTaskSharingEnabled: Bool
 
     var body: some ToolbarContent {
         if showsPrincipalToolbarTitle {
@@ -41,7 +42,9 @@ struct TaskDetailToolbarContent: ToolbarContent {
                     title: RoutineTask.trimmedName(store.task.name) ?? "Untitled task",
                     deepLink: .task(store.task.id)
                 )
-                CloudSharingToolbarButton(task: store.task)
+                if isTaskSharingEnabled {
+                    CloudSharingToolbarButton(task: store.task)
+                }
                 Button {
                     store.send(.setEditSheet(true))
                 } label: {

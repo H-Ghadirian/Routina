@@ -165,6 +165,16 @@ enum SettingsAppearanceActionHandler {
         return .none
     }
 
+    static func taskSharingToggled(
+        _ isEnabled: Bool,
+        state: inout SettingsAppearanceState,
+        appSettingsClient: AppSettingsClient
+    ) -> Effect<SettingsFeature.Action> {
+        state.isTaskSharingEnabled = isEnabled
+        appSettingsClient.setTaskSharingEnabled(isEnabled)
+        return .none
+    }
+
     static func showPersianDatesToggled(
         _ isEnabled: Bool,
         state: inout SettingsAppearanceState,

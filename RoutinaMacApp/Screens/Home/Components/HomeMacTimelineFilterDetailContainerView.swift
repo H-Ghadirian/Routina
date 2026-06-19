@@ -2,14 +2,31 @@ import SwiftUI
 
 struct HomeMacTimelineFilterDetailContainerView<Content: View>: View {
     let title: String
+    let showsTitle: Bool
     let onAvailableTagsChange: () -> Void
     let availableTags: [String]
     @ViewBuilder let content: () -> Content
 
+    init(
+        title: String,
+        showsTitle: Bool = true,
+        onAvailableTagsChange: @escaping () -> Void,
+        availableTags: [String],
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.title = title
+        self.showsTitle = showsTitle
+        self.onAvailableTagsChange = onAvailableTagsChange
+        self.availableTags = availableTags
+        self.content = content
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                HomeMacFilterDetailTitleView(title: title)
+                if showsTitle {
+                    HomeMacFilterDetailTitleView(title: title)
+                }
                 content()
             }
             .onChange(of: availableTags) { _, _ in

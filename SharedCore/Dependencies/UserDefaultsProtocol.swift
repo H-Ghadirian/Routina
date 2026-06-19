@@ -50,6 +50,7 @@ enum AppSettingsDefaults {
         .appSettingNotificationsEnabled: false,
         .appSettingHideUnavailableRoutines: false,
         .appSettingAppLockEnabled: false,
+        .appSettingTaskSharingEnabled: false,
         .appSettingHomeTaskListModeTabsVisible: false,
         .appSettingMacHomeSectionFocusTimersEnabled: false,
         .appSettingMacTimelineQuickFiltersVisible: false,
@@ -133,6 +134,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingHideUnavailableRoutines
     case appSettingAppLockEnabled
     case appSettingGitFeaturesEnabled
+    case appSettingTaskSharingEnabled
     case appSettingGoalsTabEnabled
     case appSettingAdventureMapEnabled
     case appSettingBoardScreenEnabled
@@ -209,6 +211,8 @@ struct AppSettingsClient: Sendable {
     var setAppLockEnabled: @Sendable (Bool) -> Void
     var gitFeaturesEnabled: @Sendable () -> Bool
     var setGitFeaturesEnabled: @Sendable (Bool) -> Void
+    var taskSharingEnabled: @Sendable () -> Bool = { false }
+    var setTaskSharingEnabled: @Sendable (Bool) -> Void = { _ in }
     var showPersianDates: @Sendable () -> Bool
     var setShowPersianDates: @Sendable (Bool) -> Void
     var automaticPlaceCheckInEnabled: @Sendable () -> Bool
@@ -411,6 +415,13 @@ extension AppSettingsClient {
         },
         setGitFeaturesEnabled: { isEnabled in
             SharedDefaults.app[.appSettingGitFeaturesEnabled] = isEnabled
+            AppSettingsPersistenceMirror.schedule()
+        },
+        taskSharingEnabled: {
+            SharedDefaults.app[.appSettingTaskSharingEnabled]
+        },
+        setTaskSharingEnabled: { isEnabled in
+            SharedDefaults.app[.appSettingTaskSharingEnabled] = isEnabled
             AppSettingsPersistenceMirror.schedule()
         },
         showPersianDates: {
@@ -620,6 +631,8 @@ extension AppSettingsClient {
         setAppLockEnabled: { _ in },
         gitFeaturesEnabled: { false },
         setGitFeaturesEnabled: { _ in },
+        taskSharingEnabled: { false },
+        setTaskSharingEnabled: { _ in },
         showPersianDates: { false },
         setShowPersianDates: { _ in },
         automaticPlaceCheckInEnabled: { true },

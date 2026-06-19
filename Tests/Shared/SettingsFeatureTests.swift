@@ -507,6 +507,31 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func taskSharingToggled_persistsSelection() async {
+        let persistedValue = LockIsolated<Bool?>(nil)
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setTaskSharingEnabled = { persistedValue.setValue($0) }
+        }
+
+        await store.send(.taskSharingToggled(true)) {
+            $0.appearance.isTaskSharingEnabled = true
+        }
+
+        #expect(persistedValue.value == true)
+    }
+
+    @Test
+    func defaultSettingsKeepTaskSharingOff() {
+        #expect(AppSettingsDefaults.boolValues[.appSettingTaskSharingEnabled] == .some(false))
+        #expect(!SettingsFeature.State().appearance.isTaskSharingEnabled)
+        #expect(!RoutinaUserPreferences().taskSharingEnabled)
+    }
+
+    @Test
     func showTimelineTasksInDayPlannerToggled_persistsSelection() async {
         let persistedValue = LockIsolated<Bool?>(nil)
 

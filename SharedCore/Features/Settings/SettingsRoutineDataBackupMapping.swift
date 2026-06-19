@@ -369,6 +369,7 @@ enum SettingsRoutineDataBackupMapping {
             hideUnavailableRoutines: preferences.hideUnavailableRoutines,
             appLockEnabled: preferences.appLockEnabled,
             gitFeaturesEnabled: preferences.gitFeaturesEnabled,
+            taskSharingEnabled: preferences.taskSharingEnabled,
             showPersianDates: preferences.showPersianDates,
             batteryRoutineMonitoringEnabled: preferences.batteryRoutineMonitoringEnabled,
             sleepHomeActionEnabled: preferences.sleepHomeActionEnabled,

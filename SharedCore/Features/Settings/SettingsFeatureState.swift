@@ -72,6 +72,7 @@ struct SettingsAppearanceState: Equatable {
     var appLockUnavailableReason: String?
     var appLockStatusMessage: String = ""
     var isGitFeaturesEnabled: Bool = false
+    var isTaskSharingEnabled: Bool = false
     var showPersianDates: Bool = false
     var showsTimelineTasksInDayPlanner: Bool = true
     var separatesDailyRoutinesInTaskList: Bool = false

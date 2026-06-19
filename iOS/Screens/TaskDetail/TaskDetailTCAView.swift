@@ -32,6 +32,10 @@ struct TaskDetailTCAView: View {
         UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
         store: SharedDefaults.app
     ) private var showPersianDates = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingTaskSharingEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isTaskSharingEnabled = false
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
 
@@ -61,6 +65,7 @@ detailBody
         store: store,
         isInlineEditPresented: isInlineEditPresented,
         canSaveCurrentEdit: canSaveCurrentEdit,
+        isTaskSharingEnabled: isTaskSharingEnabled,
         onShare: { isCloudSharingPresented = true }
     )
 }

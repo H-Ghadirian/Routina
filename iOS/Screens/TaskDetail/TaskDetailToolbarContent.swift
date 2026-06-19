@@ -5,6 +5,7 @@ struct TaskDetailToolbarContent: ToolbarContent {
     let store: StoreOf<TaskDetailFeature>
     let isInlineEditPresented: Bool
     let canSaveCurrentEdit: Bool
+    let isTaskSharingEnabled: Bool
     let onShare: () -> Void
 
     var body: some ToolbarContent {
@@ -44,8 +45,10 @@ struct TaskDetailToolbarContent: ToolbarContent {
             }
         } else {
             ToolbarItemGroup(placement: .primaryAction) {
-                Button(action: onShare) {
-                    Label("Share", systemImage: "person.crop.circle.badge.plus")
+                if isTaskSharingEnabled {
+                    Button(action: onShare) {
+                        Label("Share", systemImage: "person.crop.circle.badge.plus")
+                    }
                 }
 
                 RoutinaDeepLinkShareMenu(
