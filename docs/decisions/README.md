@@ -26,6 +26,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0249](0249-reset-daily-checklist-progress.md) scopes daily checklist-completion progress to one day:** Daily checklist routines keep partial checked items during the current day, then stale partial checklist progress is ignored and cleared so the next day starts with every item unchecked.
 - **[0247](0247-make-mac-daily-routine-grouping-optional.md) refines [0202](0202-nest-daily-routines-under-mac-plan-today.md) and [0210](0210-store-durable-preferences-in-swiftdata.md) for Mac daily routine grouping:** Settings -> General exposes `Separate daily routines in task list`, defaulting off; Mac Home merges daily routines visually into `Plan to do today` by default, while enabling the setting restores the nested collapsible `Daily Routines` group and keeps daily/planned ordering buckets separate.
 - **[0248](0248-add-explicit-mac-prod-run-entrypoint.md) refines [0238](0238-use-project-local-mac-dev-run-entrypoint.md) for Mac production launches:** `script/build_and_run.sh` keeps dev as the default run path but accepts `--prod` for `RoutinaMacOSProd` / `Routinam.app`, with a separate Codex `Run Prod` action for intentional production launches.
 - **[0246](0246-show-multiday-ongoing-range.md) refines [0199](0199-support-multiday-routine-start-flow.md) and [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md) for multi-day routine state:** Task detail calendars show an `Ongoing` range from the selected start day through today while a multi-day routine is in progress, keep a multi-day span marker from selected start day through selected stop day after completion, remove that span on undo, and the primary action reads `Start` before starting and `Stop` while active with visible toolbar text on macOS.
@@ -160,6 +161,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0249](0249-reset-daily-checklist-progress.md) | Reset Daily Checklist Progress Each Day | Accepted | 2026-06-19 |
 | [0248](0248-add-explicit-mac-prod-run-entrypoint.md) | Add Explicit Mac Prod Run Entrypoint | Accepted | 2026-06-16 |
 | [0247](0247-make-mac-daily-routine-grouping-optional.md) | Make Mac Daily Routine Grouping Optional | Accepted | 2026-06-16 |
 | [0246](0246-show-multiday-ongoing-range.md) | Show Multi-Day Ongoing Range | Accepted | 2026-06-15 |

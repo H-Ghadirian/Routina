@@ -172,6 +172,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var stepsStorage: String
         var checklistItemsStorage: String
         var completedChecklistItemIDsStorage: String
+        var completedChecklistProgressStartedAt: Date?
         var relationshipsStorage: String
         var scheduleModeRawValue: String
         var recurrenceStorageVersion: Int16
@@ -223,6 +224,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             stepsStorage = task.stepsStorage
             checklistItemsStorage = task.checklistItemsStorage
             completedChecklistItemIDsStorage = task.completedChecklistItemIDsStorage
+            completedChecklistProgressStartedAt = task.completedChecklistProgressStartedAt
             relationshipsStorage = task.relationshipsStorage
             scheduleModeRawValue = task.scheduleModeRawValue
             recurrenceStorageVersion = task.recurrenceStorageVersion

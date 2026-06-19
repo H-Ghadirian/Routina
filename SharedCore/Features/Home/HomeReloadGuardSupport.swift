@@ -4,6 +4,7 @@ struct HomeSelectedTaskReloadGuard: Equatable {
     var taskID: UUID
     var checklistItems: [RoutineChecklistItem] = []
     var completedChecklistItemIDsStorage: String
+    var completedChecklistProgressStartedAt: Date?
     var lastDone: Date?
     var scheduleAnchor: Date?
 }
@@ -19,6 +20,7 @@ enum HomeReloadGuardSupport {
             taskID: task.id,
             checklistItems: task.checklistItems,
             completedChecklistItemIDsStorage: task.completedChecklistItemIDsStorage,
+            completedChecklistProgressStartedAt: task.completedChecklistProgressStartedAt,
             lastDone: task.lastDone,
             scheduleAnchor: task.scheduleAnchor
         )
@@ -49,8 +51,8 @@ enum HomeReloadGuardSupport {
             return nil
         }
 
-        if task.isChecklistItemCompleted(itemID) {
-            return task.isChecklistInProgress ? task.id : nil
+        if task.isChecklistItemCompleted(itemID, referenceDate: now, calendar: calendar) {
+            return task.isChecklistInProgress(referenceDate: now, calendar: calendar) ? task.id : nil
         }
 
         let alreadyCompletedToday = task.completedChecklistItemIDs.isEmpty
@@ -136,6 +138,7 @@ enum HomeReloadGuardSupport {
         task.id == reloadGuard.taskID
             && (reloadGuard.checklistItems.isEmpty || task.checklistItems == reloadGuard.checklistItems)
             && task.completedChecklistItemIDsStorage == reloadGuard.completedChecklistItemIDsStorage
+            && task.completedChecklistProgressStartedAt == reloadGuard.completedChecklistProgressStartedAt
             && task.lastDone == reloadGuard.lastDone
             && task.scheduleAnchor == reloadGuard.scheduleAnchor
     }

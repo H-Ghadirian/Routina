@@ -417,7 +417,7 @@ struct HomeTaskHelperTests {
             selectedTaskReloadGuard: selection.selectedTaskReloadGuard
         )
 
-        #expect(reconciliation.tasks.first?.isChecklistItemCompleted(sciformaID) == true)
+        #expect(reconciliation.tasks.first?.isChecklistItemCompleted(sciformaID, referenceDate: now) == true)
         #expect(reconciliation.selectedTaskReloadGuard?.completedChecklistItemIDsStorage == checkedDetailTask.completedChecklistItemIDsStorage)
     }
 
@@ -457,7 +457,7 @@ struct HomeTaskHelperTests {
             makeTaskDetailState: { TaskDetailFeature.State(task: $0) }
         )
 
-        #expect(selection.taskDetailState?.task.isChecklistItemCompleted(sciformaID) == true)
+        #expect(selection.taskDetailState?.task.isChecklistItemCompleted(sciformaID, referenceDate: now) == true)
         #expect(selection.selectedTaskReloadGuard?.completedChecklistItemIDsStorage == checkedDetailTask.completedChecklistItemIDsStorage)
     }
 
@@ -540,7 +540,7 @@ struct HomeTaskHelperTests {
             selectedTaskReloadGuard: selection.selectedTaskReloadGuard
         )
 
-        #expect(reconciliation.tasks.first?.isChecklistItemCompleted(sciformaID) == false)
+        #expect(reconciliation.tasks.first?.isChecklistItemCompleted(sciformaID, referenceDate: now) == false)
         #expect(reconciliation.selectedTaskReloadGuard?.completedChecklistItemIDsStorage == uncheckedDetailTask.completedChecklistItemIDsStorage)
     }
 }

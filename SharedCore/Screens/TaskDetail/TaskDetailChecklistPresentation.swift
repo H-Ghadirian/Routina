@@ -79,12 +79,13 @@ enum TaskDetailChecklistPresentation {
                 && !task.isCanceledOneOff
         }
 
-        if isDoneToday && !task.isChecklistInProgress {
+        let isChecklistInProgress = task.isChecklistInProgress(referenceDate: selectedDate, calendar: calendar)
+        if isDoneToday && !isChecklistInProgress {
             return true
         }
 
-        if task.isChecklistItemCompleted(item.id) {
-            return task.isChecklistInProgress
+        if task.isChecklistItemCompleted(item.id, referenceDate: selectedDate, calendar: calendar) {
+            return isChecklistInProgress
         }
 
         return true

@@ -107,8 +107,17 @@ extension RoutineTask {
     }
 
     var completedChecklistItemCount: Int {
+        completedChecklistItemCount(referenceDate: Date(), calendar: .current)
+    }
+
+    func completedChecklistItemCount(
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> Int {
         let validIDs = Set(checklistItems.map(\.id))
-        return completedChecklistItemIDs.intersection(validIDs).count
+        return currentCompletedChecklistItemIDs(referenceDate: referenceDate, calendar: calendar)
+            .intersection(validIDs)
+            .count
     }
 
     var totalChecklistItemCount: Int {
@@ -125,14 +134,30 @@ extension RoutineTask {
     }
 
     var isChecklistInProgress: Bool {
-        isChecklistCompletionRoutine
-            && completedChecklistItemCount > 0
-            && completedChecklistItemCount < totalChecklistItemCount
+        isChecklistInProgress(referenceDate: Date(), calendar: .current)
+    }
+
+    func isChecklistInProgress(
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> Bool {
+        let completedCount = completedChecklistItemCount(referenceDate: referenceDate, calendar: calendar)
+        return isChecklistCompletionRoutine
+            && completedCount > 0
+            && completedCount < totalChecklistItemCount
     }
 
     var nextPendingChecklistItemTitle: String? {
+        nextPendingChecklistItemTitle(referenceDate: Date(), calendar: .current)
+    }
+
+    func nextPendingChecklistItemTitle(
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> String? {
         guard isChecklistCompletionRoutine else { return nil }
-        return checklistItems.first(where: { !completedChecklistItemIDs.contains($0.id) })?.title
+        let completedIDs = currentCompletedChecklistItemIDs(referenceDate: referenceDate, calendar: calendar)
+        return checklistItems.first(where: { !completedIDs.contains($0.id) })?.title
     }
 
     func nextDueChecklistItem(
@@ -206,10 +231,33 @@ extension RoutineTask {
 
     func resetChecklistProgress() {
         completedChecklistItemIDsStorage = ""
+        completedChecklistProgressStartedAt = nil
     }
 
     func isChecklistItemCompleted(_ itemID: UUID) -> Bool {
-        completedChecklistItemIDs.contains(itemID)
+        isChecklistItemCompleted(itemID, referenceDate: Date(), calendar: .current)
+    }
+
+    func isChecklistItemCompleted(
+        _ itemID: UUID,
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> Bool {
+        currentCompletedChecklistItemIDs(referenceDate: referenceDate, calendar: calendar).contains(itemID)
+    }
+
+    func resetStaleDailyChecklistProgressIfNeeded(
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) {
+        guard usesDailyChecklistCompletionProgress,
+              !completedChecklistItemIDs.isEmpty,
+              !hasCurrentDailyChecklistProgress(referenceDate: referenceDate, calendar: calendar)
+        else {
+            return
+        }
+
+        resetChecklistProgress()
     }
 
     @discardableResult
@@ -364,6 +412,8 @@ extension RoutineTask {
             return .ignoredAlreadyCompletedToday
         }
 
+        resetStaleDailyChecklistProgressIfNeeded(referenceDate: completedAt, calendar: calendar)
+
         if completedChecklistItemIDs.isEmpty,
            let lastDone,
            calendar.isDate(lastDone, inSameDayAs: completedAt) {
@@ -380,6 +430,9 @@ extension RoutineTask {
         }
 
         completedChecklistItemIDs = updatedIDs
+        if usesDailyChecklistCompletionProgress {
+            completedChecklistProgressStartedAt = completedAt
+        }
         let completedCount = updatedIDs.count
         let totalCount = totalChecklistItemCount
 
@@ -495,12 +548,44 @@ extension RoutineTask {
     func sanitizeChecklistProgress() {
         guard isChecklistCompletionRoutine || supportsOptionalChecklistProgress else {
             completedChecklistItemIDsStorage = ""
+            completedChecklistProgressStartedAt = nil
             return
         }
 
         let validIDs = Set(checklistItems.map(\.id))
         let sanitizedIDs = completedChecklistItemIDs.intersection(validIDs)
         completedChecklistItemIDsStorage = RoutineChecklistProgressStorage.serialize(sanitizedIDs)
+        if sanitizedIDs.isEmpty || !isChecklistCompletionRoutine {
+            completedChecklistProgressStartedAt = nil
+        }
+    }
+
+    private var usesDailyChecklistCompletionProgress: Bool {
+        isChecklistCompletionRoutine && recurrenceRule.isDaily
+    }
+
+    private func currentCompletedChecklistItemIDs(
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> Set<UUID> {
+        guard usesDailyChecklistCompletionProgress,
+              !completedChecklistItemIDs.isEmpty
+        else {
+            return completedChecklistItemIDs
+        }
+
+        guard hasCurrentDailyChecklistProgress(referenceDate: referenceDate, calendar: calendar) else {
+            return []
+        }
+        return completedChecklistItemIDs
+    }
+
+    private func hasCurrentDailyChecklistProgress(
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> Bool {
+        guard let completedChecklistProgressStartedAt else { return false }
+        return calendar.isDate(completedChecklistProgressStartedAt, inSameDayAs: referenceDate)
     }
 
     private func resetOptionalRoutineChecklistProgressIfNeeded() {

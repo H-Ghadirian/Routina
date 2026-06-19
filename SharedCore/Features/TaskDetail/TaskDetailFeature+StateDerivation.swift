@@ -4,6 +4,7 @@ import Foundation
 extension TaskDetailFeature {
     func updateDerivedState(_ state: inout State) {
         let nowStart = calendar.startOfDay(for: now)
+        state.task.resetStaleDailyChecklistProgressIfNeeded(referenceDate: now, calendar: calendar)
 
         if let lastDone = state.task.lastDone {
             let lastDoneStart = calendar.startOfDay(for: lastDone)

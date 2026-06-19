@@ -502,6 +502,47 @@ struct SwiftDataModelTests {
     }
 
     @Test
+    func routineTask_dailyChecklistProgressResetsOnNextDay() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let sciformaID = UUID()
+        let excelID = UUID()
+        let firstDay = makeDate("2026-06-18T12:00:00Z")
+        let nextDay = makeDate("2026-06-19T09:00:00Z")
+        let task = RoutineTask(
+            checklistItems: [
+                RoutineChecklistItem(id: sciformaID, title: "Sciforma", intervalDays: 1),
+                RoutineChecklistItem(id: excelID, title: "Excel", intervalDays: 1)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 9, minute: 0))
+        )
+
+        let firstCompletion = task.markChecklistItemCompleted(
+            sciformaID,
+            completedAt: firstDay,
+            calendar: calendar
+        )
+
+        #expect(firstCompletion == .advancedChecklist(completedItems: 1, totalItems: 2))
+        #expect(task.isChecklistItemCompleted(sciformaID, referenceDate: firstDay, calendar: calendar))
+        #expect(task.completedChecklistItemCount(referenceDate: firstDay, calendar: calendar) == 1)
+        #expect(!task.isChecklistItemCompleted(sciformaID, referenceDate: nextDay, calendar: calendar))
+        #expect(task.completedChecklistItemCount(referenceDate: nextDay, calendar: calendar) == 0)
+
+        let nextDayCompletion = task.markChecklistItemCompleted(
+            excelID,
+            completedAt: nextDay,
+            calendar: calendar
+        )
+
+        #expect(nextDayCompletion == .advancedChecklist(completedItems: 1, totalItems: 2))
+        #expect(!task.isChecklistItemCompleted(sciformaID, referenceDate: nextDay, calendar: calendar))
+        #expect(task.isChecklistItemCompleted(excelID, referenceDate: nextDay, calendar: calendar))
+        #expect(task.completedChecklistItemCount(referenceDate: nextDay, calendar: calendar) == 1)
+    }
+
+    @Test
     func routineTask_dailyTimeRecurrencePreservesExplicitScheduleRule() {
         let task = RoutineTask(
             name: "Stretch",

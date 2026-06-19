@@ -724,13 +724,14 @@ struct TaskDetailFeature: Reducer {
             let referenceDate = now
             if state.task.isChecklistCompletionRoutine,
                state.isDoneToday,
-               !state.task.isChecklistInProgress,
+               !state.task.isChecklistInProgress(referenceDate: referenceDate, calendar: calendar),
                state.task.checklistItems.contains(where: { $0.id == itemID }) {
                 let selectedDay = resolvedSelectedDay(for: state.selectedDate)
                 removeCompletion(on: selectedDay, from: &state)
                 state.task.completedChecklistItemIDs = Set(
                     state.task.checklistItems.map(\.id).filter { $0 != itemID }
                 )
+                state.task.completedChecklistProgressStartedAt = referenceDate
                 refreshTaskView(&state)
                 updateDerivedState(&state)
                 return handleCompletedChecklistItemUnmarked(
@@ -740,8 +741,8 @@ struct TaskDetailFeature: Reducer {
                     referenceDate: referenceDate
                 )
             }
-            if state.task.isChecklistItemCompleted(itemID) {
-                guard state.task.isChecklistInProgress else { return .none }
+            if state.task.isChecklistItemCompleted(itemID, referenceDate: referenceDate, calendar: calendar) {
+                guard state.task.isChecklistInProgress(referenceDate: referenceDate, calendar: calendar) else { return .none }
                 guard state.task.unmarkChecklistItemCompleted(itemID) else { return .none }
                 refreshTaskView(&state)
                 updateDerivedState(&state)

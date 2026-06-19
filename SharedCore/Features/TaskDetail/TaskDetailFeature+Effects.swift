@@ -1072,6 +1072,7 @@ extension TaskDetailFeature {
                 updatedTask.completedChecklistItemIDs = Set(
                     updatedTask.checklistItems.map(\.id).filter { $0 != itemID }
                 )
+                updatedTask.completedChecklistProgressStartedAt = referenceDate
                 try context.save()
                 let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
                 send(.logsLoaded(updatedLogs))

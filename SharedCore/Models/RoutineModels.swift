@@ -31,6 +31,7 @@ final class RoutineTask {
     var stepsStorage: String = ""
     var checklistItemsStorage: String = ""
     var completedChecklistItemIDsStorage: String = ""
+    var completedChecklistProgressStartedAt: Date?
     var relationshipsStorage: String = ""
     var goalIDsStorage: String = ""
     var eventIDsStorage: String = ""
@@ -211,7 +212,12 @@ final class RoutineTask {
 
     var completedChecklistItemIDs: Set<UUID> {
         get { RoutineChecklistProgressStorage.deserialize(completedChecklistItemIDsStorage) }
-        set { completedChecklistItemIDsStorage = RoutineChecklistProgressStorage.serialize(newValue) }
+        set {
+            completedChecklistItemIDsStorage = RoutineChecklistProgressStorage.serialize(newValue)
+            if newValue.isEmpty {
+                completedChecklistProgressStartedAt = nil
+            }
+        }
     }
 
     var manualSectionOrders: [String: Int] {
@@ -719,6 +725,7 @@ final class RoutineTask {
             comments: comments
         )
         copy.completedChecklistItemIDsStorage = completedChecklistItemIDsStorage
+        copy.completedChecklistProgressStartedAt = completedChecklistProgressStartedAt
         copy.manualSectionOrderStorage = manualSectionOrderStorage
         copy.linkItems = linkItems
         copy.commentsStorage = commentsStorage

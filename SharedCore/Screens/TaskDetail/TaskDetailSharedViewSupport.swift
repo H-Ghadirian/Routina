@@ -500,7 +500,7 @@ enum TaskDetailStatusMetadataPresentation {
             )
             items.append(.init(id: "checklistProgress", label: "Progress", value: state.checklistProgressText))
             if state.task.isChecklistCompletionRoutine,
-               let nextPendingChecklistItemTitle = state.task.nextPendingChecklistItemTitle {
+               let nextPendingChecklistItemTitle = state.task.nextPendingChecklistItemTitle(referenceDate: referenceDate) {
                 items.append(.init(id: "nextChecklistItem", label: "Next Item", value: nextPendingChecklistItemTitle))
             }
         } else if state.task.hasSequentialSteps {
