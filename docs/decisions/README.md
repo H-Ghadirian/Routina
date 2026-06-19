@@ -5,12 +5,17 @@ This directory contains Routina's project decision records. These records are th
 ## How to Use This Log
 
 - Read this index and relevant decision records before making meaningful project changes.
+- For a faster summary of active product behavior, read the relevant page in `docs/current-behavior/` first, then follow decision links when rationale or tradeoffs matter.
+- If a requested change contradicts current behavior or an existing decision, pause before implementation, explain the conflict briefly, and get explicit user permission before proceeding.
+- For recurring bugs or behaviors that must not regress, add or update a scenario in `docs/scenarios/` and cover it with an automated test whenever practical.
 - Add a new decision record when a change introduces or revises a long-term project decision.
 - Prefer creating a new record that supersedes an older one instead of rewriting history.
 - Move superseded records into `docs/decisions/superseded/` and update links so active records stay in the top-level decision directory.
 - Keep records focused on the reason for a decision, the choice made, and the consequences.
 
 Use decision records for architecture, conventions, data model, dependencies, product behavior, build setup, and other choices future contributors should preserve or understand. Tiny fixes, copy edits, and purely mechanical cleanup usually do not need a decision record.
+
+Decision records explain why. Current-behavior pages state what is true now. Regression scenarios define concrete Given/When/Then expectations that should be protected by tests.
 
 ## Merged Active Decision State
 
@@ -161,6 +166,8 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0251](0251-require-decision-conflict-check-before-implementation.md) | Require Decision Conflict Check Before Implementation | Accepted | 2026-06-19 |
+| [0250](0250-split-current-behavior-and-regression-scenarios.md) | Split Current Behavior and Regression Scenarios From Decision History | Accepted | 2026-06-19 |
 | [0249](0249-reset-daily-checklist-progress.md) | Reset Daily Checklist Progress Each Day | Accepted | 2026-06-19 |
 | [0248](0248-add-explicit-mac-prod-run-entrypoint.md) | Add Explicit Mac Prod Run Entrypoint | Accepted | 2026-06-16 |
 | [0247](0247-make-mac-daily-routine-grouping-optional.md) | Make Mac Daily Routine Grouping Optional | Accepted | 2026-06-16 |
