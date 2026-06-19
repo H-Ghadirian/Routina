@@ -1095,7 +1095,7 @@ detailBody
         TaskDetailChecklistSectionView(
             task: store.task,
             selectedDate: store.resolvedSelectedDate,
-            isDoneToday: store.isDoneToday,
+            isSelectedDateDone: store.isSelectedDateDone,
             background: routineLogsBackground,
             stroke: TaskDetailPlatformStyle.sectionCardStroke,
             newItemTitle: Binding(

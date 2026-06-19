@@ -472,6 +472,90 @@ struct HomeTaskHelperTests {
     }
 
     @Test
+    func selectedDetailRefreshPreservesCompletedChecklistDuringStaleListRefresh() {
+        let now = makeDate("2026-06-17T10:00:00Z")
+        let taskID = UUID()
+        let sciformaID = UUID()
+        let excelID = UUID()
+        let staleTask = RoutineTask(
+            id: taskID,
+            name: "Working Hours",
+            checklistItems: [
+                RoutineChecklistItem(id: sciformaID, title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: excelID, title: "Excel", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist
+        )
+        let completedDetailTask = staleTask.detachedCopy()
+        _ = completedDetailTask.markChecklistItemCompleted(sciformaID, completedAt: now)
+        _ = completedDetailTask.markChecklistItemCompleted(excelID, completedAt: now)
+        var selection = HomeSelectionState(
+            selectedTaskID: taskID,
+            taskDetailState: TaskDetailFeature.State(task: completedDetailTask, selectedDate: now)
+        )
+
+        HomeDetailSelectionSupport.updatePendingChecklistReloadGuard(
+            for: excelID,
+            selection: &selection,
+            now: now,
+            calendar: .current
+        )
+        HomeDetailSelectionSupport.refreshSelectedTaskDetailState(
+            selection: &selection,
+            tasks: [staleTask],
+            now: now,
+            calendar: .current,
+            makeTaskDetailState: { TaskDetailFeature.State(task: $0) }
+        )
+
+        #expect(selection.taskDetailState?.task.lastDone == now)
+        #expect(selection.taskDetailState?.task.completedChecklistItemIDsStorage.isEmpty == true)
+        #expect(selection.taskDetailState?.isDoneToday == true)
+        #expect(selection.selectedTaskReloadGuard?.lastDone == now)
+    }
+
+    @Test
+    func selectedDetailRefreshPreservesChecklistUndoDuringStaleCompletedReload() {
+        let now = makeDate("2026-06-17T10:00:00Z")
+        let taskID = UUID()
+        let sciformaID = UUID()
+        let excelID = UUID()
+        let completedReloadTask = RoutineTask(
+            id: taskID,
+            name: "Working Hours",
+            checklistItems: [
+                RoutineChecklistItem(id: sciformaID, title: "Sciforma", intervalDays: 30, createdAt: now),
+                RoutineChecklistItem(id: excelID, title: "Excel", intervalDays: 30, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            lastDone: now,
+            scheduleAnchor: now
+        )
+        let uncheckedDetailTask = completedReloadTask.detachedCopy()
+        uncheckedDetailTask.lastDone = nil
+        uncheckedDetailTask.scheduleAnchor = nil
+        uncheckedDetailTask.resetChecklistProgress()
+        var selection = HomeSelectionState(
+            selectedTaskID: taskID,
+            taskDetailState: TaskDetailFeature.State(task: uncheckedDetailTask, selectedDate: now),
+            selectedTaskReloadGuard: HomeReloadGuardSupport.makeSelectedTaskReloadGuard(for: completedReloadTask)
+        )
+
+        HomeDetailSelectionSupport.updatePendingChecklistUndoReloadGuard(selection: &selection)
+        HomeDetailSelectionSupport.refreshSelectedTaskDetailState(
+            selection: &selection,
+            tasks: [completedReloadTask],
+            now: now,
+            calendar: .current,
+            makeTaskDetailState: { TaskDetailFeature.State(task: $0) }
+        )
+
+        #expect(selection.taskDetailState?.task.lastDone == nil)
+        #expect(selection.taskDetailState?.isDoneToday == false)
+        #expect(selection.selectedTaskReloadGuard?.lastDone == nil)
+    }
+
+    @Test
     func selectedDetailRefreshPreservesRunoutItemDuringStaleListRefresh() {
         let now = makeDate("2026-06-17T10:00:00Z")
         let taskID = UUID()

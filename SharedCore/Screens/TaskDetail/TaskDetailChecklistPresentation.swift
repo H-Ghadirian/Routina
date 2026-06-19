@@ -65,7 +65,7 @@ enum TaskDetailChecklistPresentation {
         _ item: RoutineChecklistItem,
         task: RoutineTask,
         selectedDate: Date,
-        isDoneToday: Bool,
+        isSelectedDateCompleted: Bool,
         calendar: Calendar = .current
     ) -> Bool {
         guard !task.isArchived(),
@@ -79,7 +79,7 @@ enum TaskDetailChecklistPresentation {
                 && !task.isCanceledOneOff
         }
 
-        if isDoneToday {
+        if isSelectedDateCompleted {
             return false
         }
 

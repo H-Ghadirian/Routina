@@ -40,12 +40,14 @@ extension TaskDetailFeature.State {
         let day = resolvedSelectedDate
         if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
             guard let occurrence = selectedScheduledOccurrenceDate else { return false }
+            guard !hasPendingLocalRemoval(on: occurrence, calendar: calendar) else { return false }
             return logs.contains {
                 guard let timestamp = $0.timestamp else { return false }
                 return $0.kind == .completed && calendar.isDate(timestamp, inSameDayAs: occurrence)
             }
             || task.lastDone.map { calendar.isDate($0, inSameDayAs: occurrence) } == true
         }
+        guard !hasPendingLocalRemoval(on: day, calendar: calendar) else { return false }
         return logs.contains {
             guard let timestamp = $0.timestamp else { return false }
             return $0.kind == .completed && calendar.isDate(timestamp, inSameDayAs: day)
@@ -338,12 +340,19 @@ extension TaskDetailFeature.State {
     }
 
     var checklistProgressText: String {
-        if task.isChecklistCompletionRoutine && isDoneToday {
-            return "All items completed today"
+        if isSelectedChecklistCompletionDateDone {
+            if Calendar.current.isDateInToday(resolvedSelectedDate) {
+                return "All items completed today"
+            }
+            return "All items completed on selected day"
         }
         let completed = task.completedChecklistItemCount(referenceDate: resolvedSelectedDate)
         let total = max(task.totalChecklistItemCount, 1)
         return "\(completed) of \(total) items completed"
+    }
+
+    var isSelectedChecklistCompletionDateDone: Bool {
+        task.isChecklistCompletionRoutine && isSelectedDateDone
     }
 
     var completedLogCountText: String {
@@ -531,7 +540,7 @@ extension TaskDetailFeature.State {
                 calendar: .current
             )
         }
-        if task.isChecklistCompletionRoutine && isDoneToday {
+        if isSelectedChecklistCompletionDateDone {
             return true
         }
         return task.isChecklistItemCompleted(item.id, referenceDate: resolvedSelectedDate)

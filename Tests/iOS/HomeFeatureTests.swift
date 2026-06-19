@@ -1408,6 +1408,12 @@ struct HomeFeatureTests {
             $0.taskDetailState?.daysSinceLastRoutine = 0
             $0.taskDetailState?.overdueDays = 0
             $0.taskDetailState?.isDoneToday = false
+            $0.selectedTaskReloadGuard = HomeFeature.SelectedTaskReloadGuard(
+                taskID: taskID,
+                completedChecklistItemIDsStorage: "",
+                lastDone: nil,
+                scheduleAnchor: nil
+            )
         }
 
         await store.receive(.taskDetail(.logsLoaded([]))) {

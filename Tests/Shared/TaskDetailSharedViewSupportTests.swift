@@ -906,7 +906,7 @@ struct TaskDetailSharedViewSupportTests {
             task.checklistItems[0],
             task: task,
             selectedDate: now,
-            isDoneToday: true,
+            isSelectedDateCompleted: true,
             calendar: .current
         ))
     }

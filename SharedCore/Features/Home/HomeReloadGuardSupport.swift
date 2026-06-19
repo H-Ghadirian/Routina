@@ -47,17 +47,9 @@ enum HomeReloadGuardSupport {
             return task.id
         }
 
-        guard task.isChecklistCompletionRoutine else {
-            return nil
-        }
-
-        if task.isChecklistItemCompleted(itemID, referenceDate: now, calendar: calendar) {
-            return task.isChecklistInProgress(referenceDate: now, calendar: calendar) ? task.id : nil
-        }
-
-        let alreadyCompletedToday = task.completedChecklistItemIDs.isEmpty
-            && task.lastDone.map { calendar.isDate($0, inSameDayAs: now) } == true
-        return alreadyCompletedToday ? nil : task.id
+        // Final checklist completion clears item progress after writing lastDone, so the
+        // completed state needs the same stale-reload guard as partial progress.
+        return task.isChecklistCompletionRoutine ? task.id : nil
     }
 
     static func pendingChecklistUndoReloadGuardTaskID(

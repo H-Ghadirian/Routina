@@ -3,7 +3,7 @@ import SwiftUI
 struct TaskDetailChecklistSectionView: View {
     let task: RoutineTask
     let selectedDate: Date
-    let isDoneToday: Bool
+    let isSelectedDateDone: Bool
     let background: Color
     let stroke: Color
     @Binding var newItemTitle: String
@@ -229,7 +229,7 @@ struct TaskDetailChecklistSectionView: View {
             item,
             task: task,
             selectedDate: selectedDate,
-            isDoneToday: isDoneToday
+            isSelectedDateCompleted: isSelectedDateDone
         )
 
         return HStack(alignment: .center, spacing: 12) {

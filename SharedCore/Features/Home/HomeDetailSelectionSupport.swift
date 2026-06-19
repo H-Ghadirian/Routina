@@ -81,6 +81,11 @@ enum HomeDetailSelectionSupport {
                 selectedTaskID: selection.selectedTaskID,
                 detailState: selection.taskDetailState
             )
+        if let pendingTaskID = selection.pendingSelectedChecklistReloadGuardTaskID,
+           let detailTask = selection.taskDetailState?.task,
+           detailTask.id == pendingTaskID {
+            selection.selectedTaskReloadGuard = HomeReloadGuardSupport.makeSelectedTaskReloadGuard(for: detailTask)
+        }
     }
 
     @discardableResult
@@ -133,7 +138,10 @@ enum HomeDetailSelectionSupport {
                 completionDate: $0,
                 calendar: calendar
             )
-        }.map { calendar.isDate($0, inSameDayAs: todayDisplayDay) } ?? false
+        }.map { displayDay in
+            !detailState.hasPendingLocalRemoval(on: displayDay, calendar: calendar)
+                && calendar.isDate(displayDay, inSameDayAs: todayDisplayDay)
+        } ?? false
         let doneTodayFromLogs = detailState.logs.contains {
             guard let timestamp = $0.timestamp else { return false }
             guard $0.kind == .completed else { return false }
@@ -144,7 +152,8 @@ enum HomeDetailSelectionSupport {
             ) else {
                 return false
             }
-            return calendar.isDate(displayDay, inSameDayAs: todayDisplayDay)
+            return !detailState.hasPendingLocalRemoval(on: displayDay, calendar: calendar)
+                && calendar.isDate(displayDay, inSameDayAs: todayDisplayDay)
         }
         detailState.isDoneToday = doneTodayFromLastDone || doneTodayFromLogs
         detailState.isAssumedDoneToday = !detailState.isDoneToday && RoutineAssumedCompletion.isAssumedDone(

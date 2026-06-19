@@ -31,6 +31,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0253](0253-guard-checklist-detail-mutations-through-reloads.md) guards selected checklist detail mutations through async reloads:** Home reload reconciliation keeps the selected detail task's post-mutation checklist state, including final completion with cleared item-progress IDs, until matching persisted state arrives.
 - **[0252](0252-stabilize-home-task-list-presentation-identity.md) keeps Home task-list identity stable:** Task lists classify section membership once, claim each task ID once per presentation, and key sections/groups by durable presentation keys instead of visible titles.
 - **[0249](0249-reset-daily-checklist-progress.md) scopes daily checklist-completion progress to one day:** Daily checklist routines keep partial checked items during the current day, then stale partial checklist progress is ignored and cleared so the next day starts with every item unchecked.
 - **[0247](0247-make-mac-daily-routine-grouping-optional.md) refines [0202](0202-nest-daily-routines-under-mac-plan-today.md) and [0210](0210-store-durable-preferences-in-swiftdata.md) for Mac daily routine grouping:** Settings -> General exposes `Separate daily routines in task list`, defaulting off; Mac Home merges daily routines visually into `Plan to do today` by default, while enabling the setting restores the nested collapsible `Daily Routines` group and keeps daily/planned ordering buckets separate.
@@ -167,6 +168,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0253](0253-guard-checklist-detail-mutations-through-reloads.md) | Guard Checklist Detail Mutations Through Reloads | Accepted | 2026-06-19 |
 | [0252](0252-stabilize-home-task-list-presentation-identity.md) | Stabilize Home Task List Presentation Identity | Accepted | 2026-06-19 |
 | [0251](0251-require-decision-conflict-check-before-implementation.md) | Require Decision Conflict Check Before Implementation | Accepted | 2026-06-19 |
 | [0250](0250-split-current-behavior-and-regression-scenarios.md) | Split Current Behavior and Regression Scenarios From Decision History | Accepted | 2026-06-19 |

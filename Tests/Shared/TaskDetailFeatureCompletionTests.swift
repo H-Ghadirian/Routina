@@ -152,9 +152,51 @@ struct TaskDetailFeatureCompletionTests {
             task.checklistItems[2],
             task: task,
             selectedDate: now,
-            isDoneToday: true,
+            isSelectedDateCompleted: true,
             calendar: calendar
         ))
+    }
+
+    @Test
+    func completedChecklistRowsStayCheckedAfterFinalItemClearsPartialProgress() {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-06-19T12:00:00Z")
+        let firstID = UUID()
+        let secondID = UUID()
+        let task = RoutineTask(
+            name: "Working Hours",
+            checklistItems: [
+                RoutineChecklistItem(id: firstID, title: "Sciforma", intervalDays: 1, createdAt: now),
+                RoutineChecklistItem(id: secondID, title: "Excel", intervalDays: 1, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 9, minute: 0)),
+            lastDone: now,
+            scheduleAnchor: now
+        )
+        task.resetChecklistProgress()
+
+        let state = TaskDetailFeature.State(
+            task: task,
+            logs: [],
+            selectedDate: calendar.startOfDay(for: now),
+            daysSinceLastRoutine: 0,
+            overdueDays: 0,
+            isDoneToday: false
+        )
+
+        #expect(state.isSelectedDateDone)
+        #expect(state.checklistProgressText == "All items completed today")
+        for item in task.checklistItems {
+            #expect(state.isChecklistItemMarkedDone(item))
+            #expect(!TaskDetailChecklistPresentation.canToggleItem(
+                item,
+                task: task,
+                selectedDate: state.resolvedSelectedDate,
+                isSelectedDateCompleted: state.isSelectedDateDone,
+                calendar: calendar
+            ))
+        }
     }
 
     @Test
@@ -1017,6 +1059,7 @@ struct TaskDetailFeatureCompletionTests {
             ],
             scheduleMode: .fixedIntervalChecklist,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 9, minute: 0)),
+            lastDone: now,
             scheduleAnchor: nil
         )
         let completedLog = RoutineLog(timestamp: now, taskID: task.id, kind: .completed)
@@ -1039,15 +1082,20 @@ struct TaskDetailFeatureCompletionTests {
         }
 
         await store.send(.logsLoaded([completedLog]))
+        #expect(store.state.task.lastDone == now)
         #expect(store.state.logs.isEmpty)
         #expect(!store.state.isDoneToday)
+        #expect(!store.state.isSelectedDateDone)
         for item in task.checklistItems {
             #expect(!store.state.isChecklistItemMarkedDone(item))
         }
 
         await store.send(.logsLoaded([])) {
+            $0.task.lastDone = nil
             $0.pendingLocalRemovalDates = []
         }
+        #expect(!store.state.isDoneToday)
+        #expect(!store.state.isSelectedDateDone)
     }
 
     @Test

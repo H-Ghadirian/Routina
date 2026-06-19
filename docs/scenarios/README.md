@@ -45,16 +45,17 @@ Then stale partial checklist progress is ignored and the next day starts uncheck
 ### Completed Daily Checklist Ignores Stale Partial Progress
 
 Area: Tasks
-Decision links: [0249](../decisions/0249-reset-daily-checklist-progress.md)
+Decision links: [0249](../decisions/0249-reset-daily-checklist-progress.md), [0253](../decisions/0253-guard-checklist-detail-mutations-through-reloads.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/HomeRoutineDisplayFactoryTests.swift`
+- `Tests/Shared/HomeTaskHelperTests.swift`
 - `Tests/Shared/SwiftDataModelTests.swift`
 - `Tests/Shared/TaskDetailFeatureCompletionTests.swift`
 
 Given a daily checklist-completion routine has a completed log for today and stale partial checklist-progress IDs
-When the app derives Home or Task Detail checklist state for today, receives a duplicate checklist item toggle, or receives a stale completed-log reload after Undo
-Then stale state is ignored, completed-day checklist rows stay read-only, and Undo keeps rows unchecked without flashing back to completed
+When the app derives Home or Task Detail checklist state for today, receives the final checklist item tap followed by a stale Home task reload, receives a duplicate checklist item toggle, or receives stale completed task/log evidence after Undo
+Then stale or cleared in-progress IDs are ignored, completed-day checklist rows stay checked/read-only without blinking unchecked first, and Undo keeps rows unchecked without flashing back to completed
 
 ### Multi-Day Routine Lifecycle
 

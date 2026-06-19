@@ -16,7 +16,10 @@ extension TaskDetailFeature {
         let todayDisplayDay = calendar.startOfDay(for: now)
         let doneTodayFromLastDone = state.task.lastDone.flatMap {
             RoutineDateMath.completionDisplayDay(for: state.task, completionDate: $0, calendar: calendar)
-        }.map { calendar.isDate($0, inSameDayAs: todayDisplayDay) } ?? false
+        }.map { displayDay in
+            !state.hasPendingLocalRemoval(on: displayDay, calendar: calendar)
+                && calendar.isDate(displayDay, inSameDayAs: todayDisplayDay)
+        } ?? false
         let doneTodayFromLogs = state.logs.contains {
             guard let timestamp = $0.timestamp else { return false }
             guard $0.kind == .completed else { return false }
@@ -27,7 +30,8 @@ extension TaskDetailFeature {
             ) else {
                 return false
             }
-            return calendar.isDate(displayDay, inSameDayAs: todayDisplayDay)
+            return !state.hasPendingLocalRemoval(on: displayDay, calendar: calendar)
+                && calendar.isDate(displayDay, inSameDayAs: todayDisplayDay)
         }
         state.isDoneToday = doneTodayFromLastDone || doneTodayFromLogs
         state.isAssumedDoneToday = !state.isDoneToday && RoutineAssumedCompletion.isAssumedDone(
@@ -187,10 +191,32 @@ extension TaskDetailFeature {
             }
         }.map { $0.detachedCopy() }
 
-        state.pendingLocalRemovalDates.removeAll { pendingDate in
+        let confirmedRemovalDates = state.pendingLocalRemovalDates.filter { pendingDate in
             !loadedLogs.contains { log in
                 guard let timestamp = log.timestamp else { return false }
                 return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: pendingDate)
+            }
+        }
+
+        if !confirmedRemovalDates.isEmpty {
+            let remainingLatestCompletion = mergedLogs
+                .filter { $0.kind == .completed }
+                .compactMap(\.timestamp)
+                .max()
+            for pendingDate in confirmedRemovalDates {
+                if state.task.lastDone.map({ calendar.isDate($0, inSameDayAs: pendingDate) }) == true {
+                    state.task.lastDone = remainingLatestCompletion
+                    state.task.refreshScheduleAnchorAfterRemovingLatestCompletion(
+                        remainingLatestCompletion: remainingLatestCompletion
+                    )
+                    state.task.resetStepProgress()
+                    state.task.resetChecklistProgress()
+                }
+            }
+            state.pendingLocalRemovalDates.removeAll { pendingDate in
+                confirmedRemovalDates.contains {
+                    calendar.isDate($0, inSameDayAs: pendingDate)
+                }
             }
         }
 
@@ -240,5 +266,13 @@ extension TaskDetailFeature {
         }
 
         state.logs.insert(RoutineLog(timestamp: timestamp, taskID: state.task.id, kind: kind), at: 0)
+    }
+}
+
+extension TaskDetailFeature.State {
+    func hasPendingLocalRemoval(on date: Date, calendar: Calendar) -> Bool {
+        pendingLocalRemovalDates.contains {
+            calendar.isDate($0, inSameDayAs: date)
+        }
     }
 }
