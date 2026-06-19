@@ -170,7 +170,6 @@ struct TaskDetailEditRoutineContent: View {
                 get: { store.editAutoAssumeDailyDone },
                 set: { store.send(.editAutoAssumeDailyDoneChanged($0)) }
             ),
-            canAutoAssumeDailyDone: store.canAutoAssumeDailyDone,
             focusModeEnabled: Binding(
                 get: { store.editFocusModeEnabled },
                 set: { store.send(.editFocusModeEnabledChanged($0)) }

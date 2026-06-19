@@ -11,11 +11,17 @@ import Testing
 @MainActor
 struct RoutineAssumedCompletionTests {
     @Test
-    func eligibility_requiresSimpleDailyRoutineWithOptIn() {
-        let eligible = RoutineTask(
+    func eligibility_requiresSimpleDailyStandardRoutineWithOptIn() {
+        let due = RoutineTask(
             name: "Brush teeth",
             scheduleMode: .fixedInterval,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 21, minute: 0)),
+            autoAssumeDailyDone: true
+        )
+        let gentle = RoutineTask(
+            name: "Journal",
+            scheduleMode: .softInterval,
+            recurrenceRule: .interval(days: 1),
             autoAssumeDailyDone: true
         )
         let weekly = RoutineTask(
@@ -32,7 +38,8 @@ struct RoutineAssumedCompletionTests {
             autoAssumeDailyDone: true
         )
 
-        #expect(RoutineAssumedCompletion.isEligible(eligible))
+        #expect(RoutineAssumedCompletion.isEligible(due))
+        #expect(RoutineAssumedCompletion.isEligible(gentle))
         #expect(!RoutineAssumedCompletion.isEligible(weekly))
         #expect(!RoutineAssumedCompletion.isEligible(withSteps))
     }

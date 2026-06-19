@@ -124,6 +124,26 @@ struct TaskFormPresentationTests {
     }
 
     @Test @MainActor
+    func autoAssumeEligibilityTracksLiveGentleDailyScheduleBindings() {
+        var scheduleMode = RoutineScheduleMode.oneOff
+        let model = taskFormModel(
+            taskType: .todo,
+            scheduleModeBinding: Binding(
+                get: { scheduleMode },
+                set: { scheduleMode = $0 }
+            )
+        )
+
+        #expect(!model.canAutoAssumeDailyDone)
+
+        scheduleMode = .softInterval
+        #expect(model.canAutoAssumeDailyDone)
+
+        scheduleMode = .softIntervalChecklist
+        #expect(!model.canAutoAssumeDailyDone)
+    }
+
+    @Test @MainActor
     func routineRepeatTypeBindingSwitchesChecklistRunoutScheduleModes() {
         var taskType = RoutineTaskType.routine
         var scheduleMode = RoutineScheduleMode.fixedIntervalChecklist

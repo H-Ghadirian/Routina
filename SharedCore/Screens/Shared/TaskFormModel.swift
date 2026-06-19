@@ -135,7 +135,6 @@ struct TaskFormModel {
     var frequencyUnit: Binding<TaskFormFrequencyUnit>
     var frequencyValue: Binding<Int>
     var autoAssumeDailyDone: Binding<Bool> = .constant(false)
-    var canAutoAssumeDailyDone: Bool = false
     var focusModeEnabled: Binding<Bool> = .constant(false)
 
     // MARK: Color
@@ -297,6 +296,61 @@ extension TaskFormModel {
             routineDurationMode: routineDurationMode.wrappedValue,
             recurrenceKind: recurrenceKind.wrappedValue,
             frequencyUnit: frequencyUnit.wrappedValue
+        )
+    }
+
+    var canAutoAssumeDailyDone: Bool {
+        RoutineAssumedCompletion.isEligible(
+            scheduleMode: scheduleMode.wrappedValue,
+            recurrenceRule: candidateRecurrenceRule,
+            hasSequentialSteps: !routineSteps.isEmpty,
+            hasChecklistItems: !routineChecklistItems.isEmpty
+        )
+    }
+
+    private var candidateRecurrenceRule: RoutineRecurrenceRule {
+        let currentScheduleMode = scheduleMode.wrappedValue
+        let usesAvailabilityTiming = !isAllDay.wrappedValue
+        let timeRange = usesAvailabilityTiming && recurrenceHasTimeRange.wrappedValue
+            ? RoutineTimeRange(
+                start: RoutineTimeOfDay.from(recurrenceTimeRangeStart.wrappedValue),
+                end: RoutineTimeOfDay.from(recurrenceTimeRangeEnd.wrappedValue)
+            )
+            : nil
+        let timeOfDay = usesAvailabilityTiming && recurrenceHasExplicitTime.wrappedValue
+            ? RoutineTimeOfDay.from(recurrenceTimeOfDay.wrappedValue)
+            : nil
+
+        guard currentScheduleMode != .oneOff else {
+            return .interval(days: 1, at: timeOfDay, timeRange: timeRange)
+        }
+
+        guard !currentScheduleMode.isChecklistDrivenMode else {
+            return .interval(days: max(effectiveIntervalDays, 1))
+        }
+
+        switch recurrenceKind.wrappedValue {
+        case .intervalDays:
+            return .interval(days: max(effectiveIntervalDays, 1), at: timeOfDay, timeRange: timeRange)
+        case .dailyTime:
+            if let timeRange {
+                return .daily(in: timeRange)
+            }
+            return RoutineRecurrenceRule(kind: .dailyTime, timeOfDay: timeOfDay)
+        case .weekly:
+            return .weekly(on: effectiveRecurrenceWeekdays, at: timeOfDay, timeRange: timeRange)
+        case .monthlyDay:
+            return .monthly(on: effectiveRecurrenceDaysOfMonth, at: timeOfDay, timeRange: timeRange)
+        }
+    }
+
+    private var effectiveIntervalDays: Int {
+        TaskFormRecurrenceConstraints.effectiveIntervalDays(
+            value: frequencyValue.wrappedValue,
+            unit: frequencyUnit.wrappedValue,
+            scheduleMode: scheduleMode.wrappedValue,
+            routineDurationMode: routineDurationMode.wrappedValue,
+            recurrenceKind: recurrenceKind.wrappedValue
         )
     }
 

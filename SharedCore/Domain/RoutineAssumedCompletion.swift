@@ -17,7 +17,8 @@ enum RoutineAssumedCompletion {
         hasSequentialSteps: Bool,
         hasChecklistItems: Bool
     ) -> Bool {
-        scheduleMode == .fixedInterval
+        scheduleMode.taskType == .routine
+            && scheduleMode.isStandardRoutineMode
             && !hasSequentialSteps
             && !hasChecklistItems
             && recurrenceRule.isDaily
