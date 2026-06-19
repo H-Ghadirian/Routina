@@ -70,6 +70,7 @@ enum HomeTaskDeletionSupport {
             removedDoneCount += doneStats.countsByTaskID[id, default: 0]
             removedCanceledCount += doneStats.canceledCountsByTaskID[id, default: 0]
             doneStats.countsByTaskID.removeValue(forKey: id)
+            doneStats.completedDatesByTaskID.removeValue(forKey: id)
             doneStats.canceledCountsByTaskID.removeValue(forKey: id)
             doneStats.canceledDatesByTaskID.removeValue(forKey: id)
             doneStats.missedDatesByTaskID.removeValue(forKey: id)

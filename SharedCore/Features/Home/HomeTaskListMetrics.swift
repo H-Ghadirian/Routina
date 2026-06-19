@@ -17,6 +17,13 @@ struct HomeTaskListMetrics<Display: HomeTaskListDisplay> {
         return formattedDeadlineSectionTitle(for: sectionDate)
     }
 
+    func deadlineSectionKey(for task: Display) -> String {
+        guard let sectionDate = sectionDateForDeadlineGrouping(for: task) else {
+            return "onTrack"
+        }
+        return "deadline:\(dateKey(for: sectionDate))"
+    }
+
     func formattedDeadlineSectionTitle(for date: Date) -> String {
         let formatter = DateFormatter()
         formatter.calendar = configuration.calendar
@@ -80,5 +87,14 @@ struct HomeTaskListMetrics<Display: HomeTaskListDisplay> {
         if dueIn == 0 { return 2 }
         if dueIn == 1 { return 1 }
         return 0
+    }
+
+    private func dateKey(for date: Date) -> String {
+        let day = configuration.calendar.startOfDay(for: date)
+        let components = configuration.calendar.dateComponents([.year, .month, .day], from: day)
+        let year = components.year ?? 0
+        let month = components.month ?? 0
+        let dayOfMonth = components.day ?? 0
+        return String(format: "%04d-%02d-%02d", year, month, dayOfMonth)
     }
 }

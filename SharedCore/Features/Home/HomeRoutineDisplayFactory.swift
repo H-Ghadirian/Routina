@@ -13,12 +13,15 @@ struct HomeRoutineDisplayFactory {
         fileAttachmentTaskIDs: Set<UUID> = []
     ) -> HomeRoutineDisplayCore {
         let doneTodayFromLastDone = task.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false
-        let assumedDoneToday = !doneTodayFromLastDone && RoutineAssumedCompletion.isAssumedDone(
+        let doneTodayFromLogs = doneStats.hasCompletedDate(taskID: task.id, date: now, calendar: calendar)
+        let isDoneToday = doneTodayFromLastDone || doneTodayFromLogs
+        let assumedDoneToday = !isDoneToday && RoutineAssumedCompletion.isAssumedDone(
             for: task,
             on: now,
             referenceDate: now,
             calendar: calendar
         )
+        let presentsCompletedChecklistDay = task.isChecklistCompletionRoutine && isDoneToday
         let linkedPlaces = task.placeIDs.compactMap { placesByID[$0] }
         let displayPlaceName = placeListDisplayName(for: linkedPlaces)
         let locationPlaces = equivalentPlaces(
@@ -80,7 +83,7 @@ struct HomeRoutineDisplayFactory {
             isOneOffTask: task.isOneOffTask,
             isCompletedOneOff: task.isCompletedOneOff,
             isCanceledOneOff: task.isCanceledOneOff,
-            isDoneToday: doneTodayFromLastDone || assumedDoneToday,
+            isDoneToday: isDoneToday || assumedDoneToday,
             isAssumedDoneToday: assumedDoneToday,
             isPaused: isArchived,
             isSnoozed: isSnoozed,
@@ -96,10 +99,14 @@ struct HomeRoutineDisplayFactory {
             isInProgress: task.isInProgress,
             nextStepTitle: task.nextStepTitle,
             checklistItemCount: task.checklistItems.count,
-            completedChecklistItemCount: task.completedChecklistItemCount(referenceDate: now, calendar: calendar),
+            completedChecklistItemCount: presentsCompletedChecklistDay
+                ? 0
+                : task.completedChecklistItemCount(referenceDate: now, calendar: calendar),
             dueChecklistItemCount: dueChecklistItems.count,
             hasDailyRunoutChecklistItem: task.hasDailyRunoutChecklistItem,
-            nextPendingChecklistItemTitle: task.nextPendingChecklistItemTitle(referenceDate: now, calendar: calendar),
+            nextPendingChecklistItemTitle: presentsCompletedChecklistDay
+                ? nil
+                : task.nextPendingChecklistItemTitle(referenceDate: now, calendar: calendar),
             nextDueChecklistItemTitle: nextDueChecklistItem?.title,
             doneCount: doneStats.countsByTaskID[task.id, default: 0],
             manualSectionOrders: task.manualSectionOrders,

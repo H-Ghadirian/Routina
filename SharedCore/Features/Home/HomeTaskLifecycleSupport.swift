@@ -102,6 +102,7 @@ enum HomeTaskLifecycleSupport {
             if update.didCompleteRoutine {
                 doneStats.totalCount += 1
                 doneStats.countsByTaskID[taskID, default: 0] += 1
+                doneStats.completedDatesByTaskID[taskID, default: []].insert(referenceDate)
             }
             return .checklist(
                 HomeChecklistRunoutDoneUpdate(
@@ -147,6 +148,7 @@ enum HomeTaskLifecycleSupport {
         if case .completedRoutine = result {
             doneStats.totalCount += 1
             doneStats.countsByTaskID[taskID, default: 0] += 1
+            doneStats.completedDatesByTaskID[taskID, default: []].insert(completionDate)
             _ = BatteryRoutineService.dismissCompletedLowBatteryPrompt(
                 for: tasks[index],
                 at: completionDate

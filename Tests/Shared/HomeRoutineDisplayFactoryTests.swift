@@ -71,10 +71,47 @@ struct HomeRoutineDisplayFactoryTests {
         #expect(display.locationAvailability == .available(placeName: "Rewe"))
     }
 
+    @Test
+    func completedChecklistRoutineUsesCompletedLogOverStalePartialProgress() {
+        let now = makeDate("2026-06-09T08:00:00Z")
+        let firstID = UUID()
+        let secondID = UUID()
+        let thirdID = UUID()
+        let task = RoutineTask(
+            name: "Check list",
+            checklistItems: [
+                RoutineChecklistItem(id: firstID, title: "One", intervalDays: 1, createdAt: now),
+                RoutineChecklistItem(id: secondID, title: "Two", intervalDays: 1, createdAt: now),
+                RoutineChecklistItem(id: thirdID, title: "Three", intervalDays: 1, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 9, minute: 0)),
+            scheduleAnchor: now
+        )
+        task.completedChecklistItemIDs = [firstID, secondID]
+        task.completedChecklistProgressStartedAt = now
+
+        let display = makeDisplay(
+            task: task,
+            places: [],
+            coordinate: LocationCoordinate(latitude: 52.5200, longitude: 13.4050),
+            doneStats: HomeDoneStats(
+                totalCount: 1,
+                countsByTaskID: [task.id: 1],
+                completedDatesByTaskID: [task.id: [now]]
+            )
+        )
+
+        #expect(display.isDoneToday)
+        #expect(display.completedChecklistItemCount == 0)
+        #expect(display.nextPendingChecklistItemTitle == nil)
+    }
+
     private func makeDisplay(
         task: RoutineTask,
         places: [RoutinePlace],
-        coordinate: LocationCoordinate
+        coordinate: LocationCoordinate,
+        doneStats: HomeDoneStats = HomeDoneStats()
     ) -> HomeRoutineDisplayCore {
         HomeRoutineDisplayFactory(
             now: makeDate("2026-06-09T08:00:00Z"),
@@ -90,7 +127,7 @@ struct HomeRoutineDisplayFactoryTests {
                 horizontalAccuracy: 25,
                 timestamp: makeDate("2026-06-09T08:00:00Z")
             ),
-            doneStats: HomeDoneStats()
+            doneStats: doneStats
         )
     }
 }

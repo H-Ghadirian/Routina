@@ -4,6 +4,7 @@ import SwiftData
 struct HomeDoneStats: Equatable {
     var totalCount: Int = 0
     var countsByTaskID: [UUID: Int] = [:]
+    var completedDatesByTaskID: [UUID: Set<Date>] = [:]
     var canceledTotalCount: Int = 0
     var canceledCountsByTaskID: [UUID: Int] = [:]
     var canceledDatesByTaskID: [UUID: Set<Date>] = [:]
@@ -27,6 +28,16 @@ struct HomeDoneStats: Equatable {
             return true
         }
         return false
+    }
+
+    func hasCompletedDate(
+        taskID: UUID,
+        date: Date,
+        calendar: Calendar
+    ) -> Bool {
+        completedDatesByTaskID[taskID]?.contains {
+            calendar.isDate($0, inSameDayAs: date)
+        } ?? false
     }
 }
 
@@ -136,6 +147,7 @@ enum HomeTaskSupport {
         let taskIDs = Set(tasks.map(\.id))
         var totalCount = 0
         var countsByTaskID: [UUID: Int] = [:]
+        var completedDatesByTaskID: [UUID: Set<Date>] = [:]
         var canceledTotalCount = 0
         var canceledCountsByTaskID: [UUID: Int] = [:]
         var canceledDatesByTaskID: [UUID: Set<Date>] = [:]
@@ -148,6 +160,9 @@ enum HomeTaskSupport {
             case .completed:
                 totalCount += 1
                 countsByTaskID[log.taskID, default: 0] += 1
+                if let timestamp = log.timestamp {
+                    completedDatesByTaskID[log.taskID, default: []].insert(timestamp)
+                }
             case .canceled:
                 canceledTotalCount += 1
                 canceledCountsByTaskID[log.taskID, default: 0] += 1
@@ -164,6 +179,7 @@ enum HomeTaskSupport {
         return HomeDoneStats(
             totalCount: totalCount,
             countsByTaskID: countsByTaskID,
+            completedDatesByTaskID: completedDatesByTaskID,
             canceledTotalCount: canceledTotalCount,
             canceledCountsByTaskID: canceledCountsByTaskID,
             canceledDatesByTaskID: canceledDatesByTaskID,

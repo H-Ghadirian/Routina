@@ -63,6 +63,7 @@ struct HomeFeatureTaskLoadEffectFactoryTests {
         #expect(Set(result.logs.map(\.id)) == [completedLog.id, canceledLog.id])
         #expect(result.doneStats.totalCount == 1)
         #expect(result.doneStats.countsByTaskID[taskID] == 1)
+        #expect(result.doneStats.completedDatesByTaskID[taskID] == [makeDate("2026-03-20T08:00:00Z")])
         #expect(result.doneStats.canceledTotalCount == 1)
         #expect(result.doneStats.canceledCountsByTaskID[taskID] == 1)
         #expect(result.doneStats.canceledDatesByTaskID[taskID] == [makeDate("2026-03-21T08:00:00Z")])

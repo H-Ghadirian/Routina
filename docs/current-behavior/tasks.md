@@ -15,6 +15,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0246](../decisions/0246-show-multiday-ongoing-range.md)
 - [0247](../decisions/0247-make-mac-daily-routine-grouping-optional.md)
 - [0249](../decisions/0249-reset-daily-checklist-progress.md)
+- [0252](../decisions/0252-stabilize-home-task-list-presentation-identity.md)
 
 ## Current Contract
 
@@ -28,5 +29,6 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Multi-day routines use a `Start` -> in-progress -> `Stop` lifecycle. Their detail calendar shows an ongoing range while active and a completed span after stopping.
 - Checklist runout item actions are item-scoped. Completing all currently due items records routine completion.
 - Daily checklist-completion progress lasts for the current day only. Tomorrow starts unchecked unless the routine was completed and recorded in history.
+- Once a checklist-completion routine is completed for a selected day, its checklist rows present as checked and read-only; the toolbar Undo action reopens/removes the completed day without flashing stale completed checklist state back into the rows.
 - Optional checklists attached to ordinary tasks can block manual completion until all required items are checked.
-
+- Home task lists derive visible sections from one stable presentation model. Each task ID appears in at most one row per presentation, and section identity is based on durable keys rather than visible section titles.

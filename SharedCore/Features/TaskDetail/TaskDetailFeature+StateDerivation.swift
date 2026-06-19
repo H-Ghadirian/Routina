@@ -167,11 +167,32 @@ extension TaskDetailFeature {
         }
     }
 
+    func trackPendingLocalRemoval(on completedDay: Date, in state: inout State) {
+        let alreadyPending = state.pendingLocalRemovalDates.contains {
+            calendar.isDate($0, inSameDayAs: completedDay)
+        }
+        guard !alreadyPending else { return }
+        state.pendingLocalRemovalDates.append(completedDay)
+    }
+
     func logsPreservingPendingLocalCompletions(
         _ loadedLogs: [RoutineLog],
         in state: inout State
     ) -> [RoutineLog] {
-        var mergedLogs = loadedLogs.map { $0.detachedCopy() }
+        var mergedLogs = loadedLogs.filter { log in
+            guard let timestamp = log.timestamp else { return true }
+            guard log.kind == .completed else { return true }
+            return !state.pendingLocalRemovalDates.contains {
+                calendar.isDate($0, inSameDayAs: timestamp)
+            }
+        }.map { $0.detachedCopy() }
+
+        state.pendingLocalRemovalDates.removeAll { pendingDate in
+            !loadedLogs.contains { log in
+                guard let timestamp = log.timestamp else { return false }
+                return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: pendingDate)
+            }
+        }
 
         state.pendingLocalCompletionDates.removeAll { pendingDate in
             mergedLogs.contains { log in

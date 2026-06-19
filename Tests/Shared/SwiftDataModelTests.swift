@@ -543,6 +543,44 @@ struct SwiftDataModelTests {
     }
 
     @Test
+    func routineTask_ignoresStaleChecklistProgressAfterSameDayCompletion() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let firstID = UUID()
+        let secondID = UUID()
+        let thirdID = UUID()
+        let doneAt = makeDate("2026-06-19T12:00:00Z")
+        let task = RoutineTask(
+            checklistItems: [
+                RoutineChecklistItem(id: firstID, title: "One", intervalDays: 1),
+                RoutineChecklistItem(id: secondID, title: "Two", intervalDays: 1),
+                RoutineChecklistItem(id: thirdID, title: "Three", intervalDays: 1)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 9, minute: 0)),
+            lastDone: doneAt,
+            scheduleAnchor: doneAt
+        )
+        task.completedChecklistItemIDs = [firstID, secondID]
+        task.completedChecklistProgressStartedAt = doneAt
+
+        #expect(task.completedChecklistItemCount(referenceDate: doneAt, calendar: calendar) == 0)
+        #expect(!task.isChecklistInProgress(referenceDate: doneAt, calendar: calendar))
+        #expect(task.nextPendingChecklistItemTitle(referenceDate: doneAt, calendar: calendar) == "One")
+        #expect(!task.isChecklistItemCompleted(firstID, referenceDate: doneAt, calendar: calendar))
+        #expect(!task.isChecklistItemCompleted(secondID, referenceDate: doneAt, calendar: calendar))
+
+        let duplicateCompletion = task.markChecklistItemCompleted(
+            thirdID,
+            completedAt: doneAt,
+            calendar: calendar
+        )
+
+        #expect(duplicateCompletion == .ignoredAlreadyCompletedToday)
+        #expect(task.completedChecklistItemIDs.isEmpty)
+    }
+
+    @Test
     func routineTask_dailyTimeRecurrencePreservesExplicitScheduleRule() {
         let task = RoutineTask(
             name: "Stretch",

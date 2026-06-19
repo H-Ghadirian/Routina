@@ -16,6 +16,7 @@ struct TaskDetailFeature: Reducer {
         var taskRefreshID: UInt64 = 0
         var logs: [RoutineLog] = []
         var pendingLocalCompletionDates: [Date] = []
+        var pendingLocalRemovalDates: [Date] = []
         var selectedDate: Date?
         var daysSinceLastRoutine: Int = 0
         var overdueDays: Int = 0
@@ -471,6 +472,9 @@ struct TaskDetailFeature: Reducer {
             removePendingLocalCompletion: { day, state in
                 removePendingLocalCompletion(on: day, from: &state)
             },
+            trackPendingLocalRemoval: { day, state in
+                trackPendingLocalRemoval(on: day, in: &state)
+            },
             removeCompletion: { day, state in
                 removeCompletion(on: day, from: &state)
             },
@@ -724,22 +728,8 @@ struct TaskDetailFeature: Reducer {
             let referenceDate = now
             if state.task.isChecklistCompletionRoutine,
                state.isDoneToday,
-               !state.task.isChecklistInProgress(referenceDate: referenceDate, calendar: calendar),
                state.task.checklistItems.contains(where: { $0.id == itemID }) {
-                let selectedDay = resolvedSelectedDay(for: state.selectedDate)
-                removeCompletion(on: selectedDay, from: &state)
-                state.task.completedChecklistItemIDs = Set(
-                    state.task.checklistItems.map(\.id).filter { $0 != itemID }
-                )
-                state.task.completedChecklistProgressStartedAt = referenceDate
-                refreshTaskView(&state)
-                updateDerivedState(&state)
-                return handleCompletedChecklistItemUnmarked(
-                    taskID: state.task.id,
-                    itemID: itemID,
-                    completedDay: selectedDay,
-                    referenceDate: referenceDate
-                )
+                return .none
             }
             if state.task.isChecklistItemCompleted(itemID, referenceDate: referenceDate, calendar: calendar) {
                 guard state.task.isChecklistInProgress(referenceDate: referenceDate, calendar: calendar) else { return .none }

@@ -42,6 +42,20 @@ Given a daily checklist-completion routine has partially checked items today
 When the app derives routine state tomorrow
 Then stale partial checklist progress is ignored and the next day starts unchecked
 
+### Completed Daily Checklist Ignores Stale Partial Progress
+
+Area: Tasks
+Decision links: [0249](../decisions/0249-reset-daily-checklist-progress.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/HomeRoutineDisplayFactoryTests.swift`
+- `Tests/Shared/SwiftDataModelTests.swift`
+- `Tests/Shared/TaskDetailFeatureCompletionTests.swift`
+
+Given a daily checklist-completion routine has a completed log for today and stale partial checklist-progress IDs
+When the app derives Home or Task Detail checklist state for today, receives a duplicate checklist item toggle, or receives a stale completed-log reload after Undo
+Then stale state is ignored, completed-day checklist rows stay read-only, and Undo keeps rows unchecked without flashing back to completed
+
 ### Multi-Day Routine Lifecycle
 
 Area: Tasks
@@ -67,6 +81,18 @@ Coverage:
 Given Mac Home shows `Plan to do today`
 When daily routines are loaded with the grouping setting off or on
 Then daily routines remain in the today area, visually merged by default and nested only when the setting is enabled
+
+### Home Task Lists Keep Stable Row Identity
+
+Area: Tasks
+Decision links: [0252](../decisions/0252-stabilize-home-task-list-presentation-identity.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/HomeTaskListFilteringTests.swift`
+
+Given task data briefly appears in overlapping active, away, archived, planned, daily, or status inputs during a refresh
+When Home task-list presentation is derived
+Then each task ID is claimed once, section and group IDs stay stable, and the UI updates existing rows instead of replacing them
 
 ### Plan Focus Allocation Preserves Focus History
 
@@ -134,4 +160,3 @@ Coverage:
 Given the map is showing an unsaved location, an away saved place, or the current resolved saved place
 When the action panel is derived
 Then Add Place and Check In appear only for the contexts where they make sense
-

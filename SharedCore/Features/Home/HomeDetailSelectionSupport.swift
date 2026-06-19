@@ -126,8 +126,28 @@ enum HomeDetailSelectionSupport {
         detailState.overdueDays = detailState.task.isArchived(referenceDate: now, calendar: calendar)
             ? 0
             : RoutineDateMath.overdueDays(for: detailState.task, referenceDate: now, calendar: calendar)
-        detailState.isDoneToday = detailState.task.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false
-        detailState.isAssumedDoneToday = RoutineAssumedCompletion.isAssumedDone(
+        let todayDisplayDay = calendar.startOfDay(for: now)
+        let doneTodayFromLastDone = detailState.task.lastDone.flatMap {
+            RoutineDateMath.completionDisplayDay(
+                for: detailState.task,
+                completionDate: $0,
+                calendar: calendar
+            )
+        }.map { calendar.isDate($0, inSameDayAs: todayDisplayDay) } ?? false
+        let doneTodayFromLogs = detailState.logs.contains {
+            guard let timestamp = $0.timestamp else { return false }
+            guard $0.kind == .completed else { return false }
+            guard let displayDay = RoutineDateMath.completionDisplayDay(
+                for: detailState.task,
+                completionDate: timestamp,
+                calendar: calendar
+            ) else {
+                return false
+            }
+            return calendar.isDate(displayDay, inSameDayAs: todayDisplayDay)
+        }
+        detailState.isDoneToday = doneTodayFromLastDone || doneTodayFromLogs
+        detailState.isAssumedDoneToday = !detailState.isDoneToday && RoutineAssumedCompletion.isAssumedDone(
             for: detailState.task,
             on: now,
             logs: detailState.logs

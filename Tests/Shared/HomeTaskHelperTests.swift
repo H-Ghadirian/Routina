@@ -81,6 +81,11 @@ struct HomeTaskHelperTests {
                 removedID: 4,
                 otherRemovedID: 1
             ],
+            completedDatesByTaskID: [
+                keptID: [makeDate("2026-05-05T18:30:00Z")],
+                removedID: [makeDate("2026-05-06T18:30:00Z")],
+                otherRemovedID: [makeDate("2026-05-07T18:30:00Z")]
+            ],
             canceledTotalCount: 3,
             canceledCountsByTaskID: [
                 removedID: 2,
@@ -107,6 +112,7 @@ struct HomeTaskHelperTests {
         #expect(doneStats.totalCount == 3)
         #expect(doneStats.canceledTotalCount == 0)
         #expect(doneStats.countsByTaskID == [keptID: 2])
+        #expect(doneStats.completedDatesByTaskID == [keptID: [makeDate("2026-05-05T18:30:00Z")]])
         #expect(doneStats.canceledCountsByTaskID.isEmpty)
         #expect(doneStats.canceledDatesByTaskID.isEmpty)
         #expect(doneStats.missedDatesByTaskID.isEmpty)
@@ -158,6 +164,10 @@ struct HomeTaskHelperTests {
         #expect(stats.countsByTaskID == [
             primaryTask.id: 2,
             secondaryTask.id: 1
+        ])
+        #expect(stats.completedDatesByTaskID == [
+            primaryTask.id: [completedDate],
+            secondaryTask.id: [completedDate]
         ])
         #expect(stats.canceledTotalCount == 2)
         #expect(stats.canceledCountsByTaskID == [primaryTask.id: 2])

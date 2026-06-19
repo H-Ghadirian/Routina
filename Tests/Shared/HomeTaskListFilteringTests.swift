@@ -264,6 +264,54 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func presentationClaimsEachTaskIDOnceAcrossSourceBuckets() {
+        let taskID = UUID()
+        let presentation = HomeTaskListPresentation.iOS(
+            filtering: makeFiltering(),
+            routineDisplays: [
+                TestTaskDisplay(taskID: taskID, name: "Active source", daysUntilDue: 4)
+            ],
+            awayRoutineDisplays: [
+                TestTaskDisplay(taskID: taskID, name: "Away source", daysUntilDue: 4)
+            ],
+            archivedRoutineDisplays: [
+                TestTaskDisplay(taskID: taskID, name: "Archived source", daysUntilDue: 4)
+            ],
+            hideUnavailableRoutines: false,
+            taskListKind: .all
+        )
+
+        #expect(presentation.visibleTaskCount == 1)
+        #expect(presentation.sections.flatMap(\.tasks).map(\.taskID) == [taskID])
+        #expect(presentation.sections.flatMap(\.tasks).map(\.name) == ["Active source"])
+    }
+
+    @Test
+    func presentationIDsComeFromStableKeysNotVisibleTitles() {
+        let section = HomeTaskListPresentationSection<TestTaskDisplay>(
+            kind: .regular,
+            identityKey: "onTrack",
+            title: "Visible title",
+            tasks: [TestTaskDisplay(name: "Task")],
+            rowNumberOffset: 0,
+            includeMarkDone: true,
+            moveContext: nil
+        )
+        let renamedSection = HomeTaskListPresentationSection<TestTaskDisplay>(
+            kind: .regular,
+            identityKey: "onTrack",
+            title: "Renamed visible title",
+            tasks: [TestTaskDisplay(name: "Task")],
+            rowNumberOffset: 0,
+            includeMarkDone: true,
+            moveContext: nil
+        )
+
+        #expect(section.id == "regular:onTrack")
+        #expect(renamedSection.id == section.id)
+    }
+
+    @Test
     func advancedQueryMatchesFieldedTermsAndExclusions() {
         let tasks = [
             TestTaskDisplay(name: "Draft launch plan", placeName: "Office", tags: ["Work"], isOneOffTask: true, todoState: .ready),
@@ -343,6 +391,7 @@ struct HomeTaskListFilteringTests {
 
         let sections = makeFiltering().groupedRoutineSections(from: tasks)
 
+        #expect(sections.map(\.identityKey) == ["missed", "overdue", "dueSoon", "onTrack", "doneToday"])
         #expect(sections.map(\.title) == ["Missed", "Overdue", "Due Soon", "On Track", "Done Today"])
         #expect(sections.map { $0.tasks.map(\.name) } == [["Missed"], ["Overdue"], ["Due Today"], ["On Track"], ["Done Today"]])
     }
@@ -358,7 +407,18 @@ struct HomeTaskListFilteringTests {
         let sections = makeFiltering().groupedRoutineSections(from: [task])
 
         #expect(sections.map(\.title) == ["Overdue"])
+        #expect(sections.map(\.identityKey) == ["overdue"])
         #expect(sections.flatMap(\.tasks).map(\.name) == ["Runout routine"])
+    }
+
+    @Test
+    func deadlineSectionsUseStableDateKeys() {
+        let sections = makeFiltering(routineListSectioningMode: .deadlineDate)
+            .groupedRoutineSections(from: [
+                TestTaskDisplay(name: "Monday task", daysUntilDue: 4)
+            ])
+
+        #expect(sections.map(\.identityKey) == ["deadline:2024-05-06"])
     }
 
     @Test

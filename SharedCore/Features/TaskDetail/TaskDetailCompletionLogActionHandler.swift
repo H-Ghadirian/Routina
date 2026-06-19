@@ -9,6 +9,7 @@ struct TaskDetailCompletionLogActionHandler {
     var calendar: Calendar
     var resolvedSelectedDay: (Date?) -> Date
     var removePendingLocalCompletion: (Date, inout State) -> Void
+    var trackPendingLocalRemoval: (Date, inout State) -> Void
     var removeCompletion: (Date, inout State) -> Void
     var removeLogEntryLocally: (Date, inout State) -> Void
     var logsPreservingPendingLocalCompletions: ([RoutineLog], inout State) -> [RoutineLog]
@@ -27,6 +28,7 @@ struct TaskDetailCompletionLogActionHandler {
         }
         let selectedDay = resolvedSelectedDay(state.selectedDate)
         removePendingLocalCompletion(selectedDay, &state)
+        trackPendingLocalRemoval(selectedDay, &state)
         removeCompletion(selectedDay, &state)
         refreshTaskView(&state)
         updateDerivedState(&state)
@@ -35,6 +37,7 @@ struct TaskDetailCompletionLogActionHandler {
 
     func removeLogEntry(_ timestamp: Date, state: inout State) -> Effect<Action> {
         removePendingLocalCompletion(timestamp, &state)
+        trackPendingLocalRemoval(timestamp, &state)
         removeLogEntryLocally(timestamp, &state)
         refreshTaskView(&state)
         updateDerivedState(&state)

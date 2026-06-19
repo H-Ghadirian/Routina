@@ -53,6 +53,7 @@ struct HomeTaskLifecycleSupportTests {
         )))
         #expect(tasks[0].lastDone == makeDate("2026-05-08T10:00:00Z"))
         #expect(doneStats.totalCount == 1)
+        #expect(doneStats.completedDatesByTaskID[task.id] == [makeDate("2026-05-08T10:00:00Z")])
     }
 
     @Test
@@ -83,6 +84,7 @@ struct HomeTaskLifecycleSupportTests {
         #expect(tasks[0].lastDone == makeDate("2026-05-07T18:30:00Z"))
         #expect(doneStats.totalCount == 1)
         #expect(doneStats.countsByTaskID[task.id] == 1)
+        #expect(doneStats.completedDatesByTaskID[task.id] == [makeDate("2026-05-07T18:30:00Z")])
     }
 
     @Test

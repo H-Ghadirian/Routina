@@ -1841,12 +1841,15 @@ struct TaskDetailFeatureTests {
             $0.task.lastDone = nil
             $0.task.scheduleAnchor = nil
             $0.logs = []
+            $0.pendingLocalRemovalDates = [calendar.startOfDay(for: now)]
             $0.daysSinceLastRoutine = 0
             $0.overdueDays = 0
             $0.isDoneToday = false
         }
 
-        await store.receive(.logsLoaded([]))
+        await store.receive(.logsLoaded([])) {
+            $0.pendingLocalRemovalDates = []
+        }
 
         let persistedTask = try #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
         let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
@@ -1896,12 +1899,15 @@ struct TaskDetailFeatureTests {
             $0.task.lastDone = now
             $0.task.scheduleAnchor = now
             $0.logs = [todayLog]
+            $0.pendingLocalRemovalDates = [selectedDayStart]
             $0.daysSinceLastRoutine = 0
             $0.overdueDays = 0
             $0.isDoneToday = true
         }
 
-        await store.receive(.logsLoaded([todayLog]))
+        await store.receive(.logsLoaded([todayLog])) {
+            $0.pendingLocalRemovalDates = []
+        }
 
         let persistedTask = try #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
         let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())

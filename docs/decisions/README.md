@@ -31,6 +31,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0252](0252-stabilize-home-task-list-presentation-identity.md) keeps Home task-list identity stable:** Task lists classify section membership once, claim each task ID once per presentation, and key sections/groups by durable presentation keys instead of visible titles.
 - **[0249](0249-reset-daily-checklist-progress.md) scopes daily checklist-completion progress to one day:** Daily checklist routines keep partial checked items during the current day, then stale partial checklist progress is ignored and cleared so the next day starts with every item unchecked.
 - **[0247](0247-make-mac-daily-routine-grouping-optional.md) refines [0202](0202-nest-daily-routines-under-mac-plan-today.md) and [0210](0210-store-durable-preferences-in-swiftdata.md) for Mac daily routine grouping:** Settings -> General exposes `Separate daily routines in task list`, defaulting off; Mac Home merges daily routines visually into `Plan to do today` by default, while enabling the setting restores the nested collapsible `Daily Routines` group and keeps daily/planned ordering buckets separate.
 - **[0248](0248-add-explicit-mac-prod-run-entrypoint.md) refines [0238](0238-use-project-local-mac-dev-run-entrypoint.md) for Mac production launches:** `script/build_and_run.sh` keeps dev as the default run path but accepts `--prod` for `RoutinaMacOSProd` / `Routinam.app`, with a separate Codex `Run Prod` action for intentional production launches.
@@ -166,6 +167,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0252](0252-stabilize-home-task-list-presentation-identity.md) | Stabilize Home Task List Presentation Identity | Accepted | 2026-06-19 |
 | [0251](0251-require-decision-conflict-check-before-implementation.md) | Require Decision Conflict Check Before Implementation | Accepted | 2026-06-19 |
 | [0250](0250-split-current-behavior-and-regression-scenarios.md) | Split Current Behavior and Regression Scenarios From Decision History | Accepted | 2026-06-19 |
 | [0249](0249-reset-daily-checklist-progress.md) | Reset Daily Checklist Progress Each Day | Accepted | 2026-06-19 |

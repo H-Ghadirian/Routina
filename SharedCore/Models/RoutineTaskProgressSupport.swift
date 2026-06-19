@@ -414,9 +414,9 @@ extension RoutineTask {
 
         resetStaleDailyChecklistProgressIfNeeded(referenceDate: completedAt, calendar: calendar)
 
-        if completedChecklistItemIDs.isEmpty,
-           let lastDone,
+        if let lastDone,
            calendar.isDate(lastDone, inSameDayAs: completedAt) {
+            resetChecklistProgress()
             return .ignoredAlreadyCompletedToday
         }
 
@@ -568,6 +568,12 @@ extension RoutineTask {
         referenceDate: Date,
         calendar: Calendar
     ) -> Set<UUID> {
+        if isChecklistCompletionRoutine,
+           let lastDone,
+           calendar.isDate(lastDone, inSameDayAs: referenceDate) {
+            return []
+        }
+
         guard usesDailyChecklistCompletionProgress,
               !completedChecklistItemIDs.isEmpty
         else {

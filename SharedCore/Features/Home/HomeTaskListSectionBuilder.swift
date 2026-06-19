@@ -10,35 +10,15 @@ struct HomeTaskListSectionBuilder<Display: HomeTaskListDisplay> {
         case .none:
             return filteredTasks.isEmpty
                 ? []
-                : [HomeTaskListSection(title: Self.ungroupedTitle, tasks: filteredTasks)]
+                : [HomeTaskListSection(identityKey: "tasks", title: Self.ungroupedTitle, tasks: filteredTasks)]
         case .tags:
             return tagBasedSections(from: filteredTasks)
         case .status, .deadlineDate:
             break
         }
 
-        let missed = filteredTasks.filter { metrics.hasMissedExactTimedOccurrence(for: $0) }
-        let overdue = filteredTasks.filter {
-            !metrics.hasMissedExactTimedOccurrence(for: $0)
-                && metrics.overdueDays(for: $0) > 0
-        }
-        let dueSoon = filteredTasks.filter {
-            !metrics.hasMissedExactTimedOccurrence(for: $0)
-                && !$0.isDoneToday
-                && metrics.overdueDays(for: $0) == 0
-                && (metrics.urgencyLevel(for: $0) > 0 || metrics.isYellowUrgency($0))
-        }
-        let onTrack = filteredTasks.filter {
-            !metrics.hasMissedExactTimedOccurrence(for: $0)
-                && !$0.isDoneToday
-                && metrics.overdueDays(for: $0) == 0
-                && metrics.urgencyLevel(for: $0) == 0
-                && !metrics.isYellowUrgency($0)
-        }
-        let doneToday = filteredTasks.filter {
-            $0.isDoneToday
-                && !metrics.hasMissedExactTimedOccurrence(for: $0)
-                && metrics.overdueDays(for: $0) == 0
+        let bucketedTasks = filteredTasks.reduce(into: [HomeTaskListStatusBucket: [Display]]()) { buckets, task in
+            buckets[statusBucket(for: task), default: []].append(task)
         }
 
         let onTrackSections: [HomeTaskListSection<Display>]
@@ -46,21 +26,45 @@ struct HomeTaskListSectionBuilder<Display: HomeTaskListDisplay> {
         case .none:
             onTrackSections = []
         case .status:
-            onTrackSections = [HomeTaskListSection(title: "On Track", tasks: onTrack)]
+            onTrackSections = [
+                HomeTaskListSection(
+                    identityKey: HomeTaskListStatusBucket.onTrack.identityKey,
+                    title: HomeTaskListStatusBucket.onTrack.title,
+                    tasks: bucketedTasks[.onTrack, default: []]
+                )
+            ]
         case .deadlineDate:
-            onTrackSections = deadlineBasedSections(from: onTrack)
+            onTrackSections = deadlineBasedSections(from: bucketedTasks[.onTrack, default: []])
         case .tags:
             onTrackSections = []
         }
 
         return (
             [
-                HomeTaskListSection(title: "Missed", tasks: missed),
-                HomeTaskListSection(title: "Overdue", tasks: overdue),
-                HomeTaskListSection(title: "Due Soon", tasks: dueSoon)
+                HomeTaskListSection(
+                    identityKey: HomeTaskListStatusBucket.missed.identityKey,
+                    title: HomeTaskListStatusBucket.missed.title,
+                    tasks: bucketedTasks[.missed, default: []]
+                ),
+                HomeTaskListSection(
+                    identityKey: HomeTaskListStatusBucket.overdue.identityKey,
+                    title: HomeTaskListStatusBucket.overdue.title,
+                    tasks: bucketedTasks[.overdue, default: []]
+                ),
+                HomeTaskListSection(
+                    identityKey: HomeTaskListStatusBucket.dueSoon.identityKey,
+                    title: HomeTaskListStatusBucket.dueSoon.title,
+                    tasks: bucketedTasks[.dueSoon, default: []]
+                )
             ]
             + onTrackSections
-            + [HomeTaskListSection(title: "Done Today", tasks: doneToday)]
+            + [
+                HomeTaskListSection(
+                    identityKey: HomeTaskListStatusBucket.doneToday.identityKey,
+                    title: HomeTaskListStatusBucket.doneToday.title,
+                    tasks: bucketedTasks[.doneToday, default: []]
+                )
+            ]
         )
         .filter { !$0.tasks.isEmpty }
     }
@@ -80,10 +84,11 @@ struct HomeTaskListSectionBuilder<Display: HomeTaskListDisplay> {
         var sections: [HomeTaskListSection<Display>] = []
         for task in sorted {
             let title = metrics.deadlineSectionTitle(for: task)
-            if let lastIndex = sections.indices.last, sections[lastIndex].title == title {
+            let identityKey = metrics.deadlineSectionKey(for: task)
+            if let lastIndex = sections.indices.last, sections[lastIndex].identityKey == identityKey {
                 sections[lastIndex].tasks.append(task)
             } else {
-                sections.append(HomeTaskListSection(title: title, tasks: [task]))
+                sections.append(HomeTaskListSection(identityKey: identityKey, title: title, tasks: [task]))
             }
         }
 
@@ -106,14 +111,71 @@ struct HomeTaskListSectionBuilder<Display: HomeTaskListDisplay> {
             groups[key] = group
         }
 
-        return groups.values.sorted { lhs, rhs in
+        return groups.map { key, group in
+            (identityKey: key, title: group.title, tasks: group.tasks, isUntagged: group.isUntagged)
+        }
+        .sorted { lhs, rhs in
             if lhs.isUntagged != rhs.isUntagged {
                 return !lhs.isUntagged && rhs.isUntagged
             }
             return lhs.title.localizedCaseInsensitiveCompare(rhs.title) == .orderedAscending
         }
         .map { group in
-            HomeTaskListSection(title: group.title, tasks: group.tasks)
+            HomeTaskListSection(identityKey: group.identityKey, title: group.title, tasks: group.tasks)
+        }
+    }
+
+    private func statusBucket(for task: Display) -> HomeTaskListStatusBucket {
+        if metrics.hasMissedExactTimedOccurrence(for: task) {
+            return .missed
+        }
+        if metrics.overdueDays(for: task) > 0 {
+            return .overdue
+        }
+        if task.isDoneToday {
+            return .doneToday
+        }
+        if metrics.urgencyLevel(for: task) > 0 || metrics.isYellowUrgency(task) {
+            return .dueSoon
+        }
+        return .onTrack
+    }
+}
+
+private enum HomeTaskListStatusBucket: CaseIterable, Hashable {
+    case missed
+    case overdue
+    case dueSoon
+    case onTrack
+    case doneToday
+
+    var identityKey: String {
+        switch self {
+        case .missed:
+            return "missed"
+        case .overdue:
+            return "overdue"
+        case .dueSoon:
+            return "dueSoon"
+        case .onTrack:
+            return "onTrack"
+        case .doneToday:
+            return "doneToday"
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .missed:
+            return "Missed"
+        case .overdue:
+            return "Overdue"
+        case .dueSoon:
+            return "Due Soon"
+        case .onTrack:
+            return "On Track"
+        case .doneToday:
+            return "Done Today"
         }
     }
 }

@@ -889,7 +889,7 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
-    func checklistPresentationAllowsUndoFromCompletedChecklistRoutine() {
+    func checklistPresentationKeepsCompletedChecklistRoutineRowsReadOnly() {
         let now = Date()
         let itemID = UUID()
         let task = RoutineTask(
@@ -897,11 +897,12 @@ struct TaskDetailSharedViewSupportTests {
             checklistItems: [
                 RoutineChecklistItem(id: itemID, title: "Sciforma", intervalDays: 30, createdAt: now)
             ],
-            scheduleMode: .fixedIntervalChecklist,
-            lastDone: now
+            scheduleMode: .fixedIntervalChecklist
         )
+        task.completedChecklistItemIDs = [itemID]
+        task.completedChecklistProgressStartedAt = now
 
-        #expect(TaskDetailChecklistPresentation.canToggleItem(
+        #expect(!TaskDetailChecklistPresentation.canToggleItem(
             task.checklistItems[0],
             task: task,
             selectedDate: now,

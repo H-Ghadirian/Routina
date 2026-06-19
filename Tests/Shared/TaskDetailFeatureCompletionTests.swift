@@ -101,27 +101,100 @@ struct TaskDetailFeatureCompletionTests {
             }
         }
 
-        await store.send(.toggleChecklistItemCompletion(excelID)) {
-            $0.taskRefreshID = 5
-            $0.task.lastDone = nil
-            $0.task.scheduleAnchor = nil
-            $0.task.completedChecklistItemIDs = [sciformaID]
-            $0.logs = []
-            $0.isDoneToday = false
-            $0.daysSinceLastRoutine = 0
-            $0.overdueDays = 0
-        }
-        #expect(store.state.task.isChecklistItemCompleted(sciformaID))
-        #expect(!store.state.task.isChecklistItemCompleted(excelID))
-
-        await store.receive(.logsLoaded([]))
+        await store.send(.toggleChecklistItemCompletion(excelID))
 
         let persistedReopenedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
         let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
-        #expect(persistedReopenedTask.lastDone == nil)
-        #expect(persistedReopenedTask.isChecklistItemCompleted(sciformaID))
-        #expect(!persistedReopenedTask.isChecklistItemCompleted(excelID))
-        #expect(persistedLogs.isEmpty)
+        #expect(store.state.task.lastDone == now)
+        #expect(store.state.task.completedChecklistItemCount(referenceDate: now, calendar: calendar) == 0)
+        #expect(store.state.isDoneToday)
+        #expect(persistedReopenedTask.lastDone == now)
+        #expect(persistedReopenedTask.completedChecklistItemCount(referenceDate: now, calendar: calendar) == 0)
+        #expect(persistedLogs.count == 1)
+    }
+
+    @Test
+    func completedDailyChecklistIgnoresStalePartialProgressInPresentation() {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-06-19T12:00:00Z")
+        let firstID = UUID()
+        let secondID = UUID()
+        let thirdID = UUID()
+        let task = RoutineTask(
+            name: "Check list",
+            checklistItems: [
+                RoutineChecklistItem(id: firstID, title: "One", intervalDays: 1, createdAt: now),
+                RoutineChecklistItem(id: secondID, title: "Two", intervalDays: 1, createdAt: now),
+                RoutineChecklistItem(id: thirdID, title: "Three", intervalDays: 1, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 9, minute: 0)),
+            scheduleAnchor: now
+        )
+        task.completedChecklistItemIDs = [firstID, secondID]
+        task.completedChecklistProgressStartedAt = now
+
+        let state = TaskDetailFeature.State(
+            task: task,
+            logs: [RoutineLog(timestamp: now, taskID: task.id, kind: .completed)],
+            selectedDate: calendar.startOfDay(for: now),
+            daysSinceLastRoutine: 0,
+            overdueDays: 0,
+            isDoneToday: true
+        )
+
+        #expect(state.checklistProgressText == "All items completed today")
+        #expect(state.summaryStatusTitle == "Done today")
+        for item in task.checklistItems {
+            #expect(state.isChecklistItemMarkedDone(item))
+        }
+        #expect(!TaskDetailChecklistPresentation.canToggleItem(
+            task.checklistItems[2],
+            task: task,
+            selectedDate: now,
+            isDoneToday: true,
+            calendar: calendar
+        ))
+    }
+
+    @Test
+    func completedDailyChecklistIgnoresStalePartialToggle() async throws {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-06-19T12:00:00Z")
+        let firstID = UUID()
+        let secondID = UUID()
+        let thirdID = UUID()
+        let task = RoutineTask(
+            name: "Check list",
+            checklistItems: [
+                RoutineChecklistItem(id: firstID, title: "One", intervalDays: 1, createdAt: now),
+                RoutineChecklistItem(id: secondID, title: "Two", intervalDays: 1, createdAt: now),
+                RoutineChecklistItem(id: thirdID, title: "Three", intervalDays: 1, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 9, minute: 0)),
+            scheduleAnchor: now
+        )
+        task.completedChecklistItemIDs = [firstID, secondID]
+        task.completedChecklistProgressStartedAt = now
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                logs: [RoutineLog(timestamp: now, taskID: task.id, kind: .completed)],
+                selectedDate: calendar.startOfDay(for: now),
+                daysSinceLastRoutine: 0,
+                overdueDays: 0,
+                isDoneToday: true
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.calendar = calendar
+            $0.date.now = now
+        }
+
+        await store.send(.toggleChecklistItemCompletion(thirdID))
     }
 
     @Test
@@ -837,12 +910,15 @@ struct TaskDetailFeatureCompletionTests {
         await store.send(.undoSelectedDateCompletion) {
             $0.taskRefreshID = 1
             $0.logs = [todayLog]
+            $0.pendingLocalRemovalDates = [selectedDayStart]
             $0.daysSinceLastRoutine = 0
             $0.overdueDays = 0
             $0.isDoneToday = true
         }
 
-        await store.receive(.logsLoaded([todayLog]))
+        await store.receive(.logsLoaded([todayLog])) {
+            $0.pendingLocalRemovalDates = []
+        }
 
         #expect(!store.state.isCompletionButtonDisabled)
         #expect(store.state.completionButtonTitle.hasPrefix("Done for"))
@@ -922,6 +998,55 @@ struct TaskDetailFeatureCompletionTests {
             $0.daysSinceLastRoutine = 0
             $0.overdueDays = 0
             $0.isDoneToday = true
+        }
+    }
+
+    @Test
+    func logsLoaded_preservesPendingLocalUndoDuringStaleReload() async {
+        let now = makeDate("2026-06-19T12:00:00Z")
+        let calendar = makeTestCalendar()
+        let firstID = UUID()
+        let secondID = UUID()
+        let thirdID = UUID()
+        let task = RoutineTask(
+            name: "Check list",
+            checklistItems: [
+                RoutineChecklistItem(id: firstID, title: "One", intervalDays: 1, createdAt: now),
+                RoutineChecklistItem(id: secondID, title: "Two", intervalDays: 1, createdAt: now),
+                RoutineChecklistItem(id: thirdID, title: "Three", intervalDays: 1, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 9, minute: 0)),
+            scheduleAnchor: nil
+        )
+        let completedLog = RoutineLog(timestamp: now, taskID: task.id, kind: .completed)
+        let selectedDay = calendar.startOfDay(for: now)
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                logs: [],
+                pendingLocalRemovalDates: [selectedDay],
+                selectedDate: selectedDay,
+                daysSinceLastRoutine: 0,
+                overdueDays: 0,
+                isDoneToday: false
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+        }
+
+        await store.send(.logsLoaded([completedLog]))
+        #expect(store.state.logs.isEmpty)
+        #expect(!store.state.isDoneToday)
+        for item in task.checklistItems {
+            #expect(!store.state.isChecklistItemMarkedDone(item))
+        }
+
+        await store.send(.logsLoaded([])) {
+            $0.pendingLocalRemovalDates = []
         }
     }
 
@@ -1341,12 +1466,15 @@ struct TaskDetailFeatureCompletionTests {
             $0.task.scheduleAnchor = makeDate("2026-04-19T10:00:00Z")
             $0.taskRefreshID = 1
             $0.logs = []
+            $0.pendingLocalRemovalDates = [invalidFridayCompletion]
             $0.daysSinceLastRoutine = 0
             $0.overdueDays = 0
             $0.isDoneToday = false
         }
 
-        await store.receive(.logsLoaded([]))
+        await store.receive(.logsLoaded([])) {
+            $0.pendingLocalRemovalDates = []
+        }
 
         let persistedTaskID = task.id
         let persistedTask = try #require(

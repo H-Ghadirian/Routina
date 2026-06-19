@@ -113,8 +113,15 @@ enum HomeTaskListTagGrouping {
 }
 
 struct HomeTaskListSection<Display: HomeTaskListDisplay> {
+    let identityKey: String
     let title: String
     var tasks: [Display]
+
+    init(identityKey: String, title: String, tasks: [Display]) {
+        self.identityKey = identityKey
+        self.title = title
+        self.tasks = tasks
+    }
 }
 
 extension HomeTaskListSection: Equatable where Display: Equatable {}

@@ -338,12 +338,10 @@ extension TaskDetailFeature.State {
     }
 
     var checklistProgressText: String {
-        let completed = task.completedChecklistItemCount(referenceDate: resolvedSelectedDate)
-        if task.isChecklistCompletionRoutine
-            && isDoneToday
-            && !task.isChecklistInProgress(referenceDate: resolvedSelectedDate) {
+        if task.isChecklistCompletionRoutine && isDoneToday {
             return "All items completed today"
         }
+        let completed = task.completedChecklistItemCount(referenceDate: resolvedSelectedDate)
         let total = max(task.totalChecklistItemCount, 1)
         return "\(completed) of \(total) items completed"
     }
@@ -401,11 +399,11 @@ extension TaskDetailFeature.State {
             return "To do"
         }
         if task.isChecklistCompletionRoutine {
-            if task.isChecklistInProgress(referenceDate: resolvedSelectedDate) {
-                return "Checklist \(task.completedChecklistItemCount(referenceDate: resolvedSelectedDate)) of \(task.totalChecklistItemCount) in progress"
-            }
             if isDoneToday {
                 return "Done today"
+            }
+            if task.isChecklistInProgress(referenceDate: resolvedSelectedDate) {
+                return "Checklist \(task.completedChecklistItemCount(referenceDate: resolvedSelectedDate)) of \(task.totalChecklistItemCount) in progress"
             }
             if overdueDays > 0 {
                 return "Overdue by \(overdueDays) \(Self.dayWord(overdueDays))"
@@ -533,9 +531,7 @@ extension TaskDetailFeature.State {
                 calendar: .current
             )
         }
-        if task.isChecklistCompletionRoutine
-            && isDoneToday
-            && !task.isChecklistInProgress(referenceDate: resolvedSelectedDate) {
+        if task.isChecklistCompletionRoutine && isDoneToday {
             return true
         }
         return task.isChecklistItemCompleted(item.id, referenceDate: resolvedSelectedDate)
