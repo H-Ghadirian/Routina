@@ -919,7 +919,8 @@ extension HomeTCAView {
 
     var macFiltersDetailView: some View {
         HomeMacFilterDetailContainerView(
-            title: macFilterDetailTitle
+            title: macFilterDetailTitle,
+            showsTitle: false
         ) {
             HomeMacRoutineFiltersDetailView(
                 availableFilters: macAvailableFilters,
@@ -936,6 +937,7 @@ extension HomeTCAView {
                 selectedGoalFilter: homeFilterBindings.selectedGoalFilter,
                 selectedMediaFilter: homeFilterBindings.selectedMediaFilter,
                 selectedTodoStateFilter: homeFilterBindings.selectedTodoStateFilter,
+                taskRowVisibility: taskRowVisibility,
                 queryOptions: HomeAdvancedQueryOptions(
                     tags: homeTagFilterData.tagSummaries.map(\.name),
                     places: sortedRoutinePlaces.map(\.displayName)
@@ -943,7 +945,10 @@ extension HomeTCAView {
                 importanceUrgencySummary: importanceUrgencyFilterSummary,
                 showsGoalFilter: isGoalsTabEnabled,
                 showsTagSection: homeTagFilterData.hasTags,
-                showsPlaceSection: hasPlaceAwareContent
+                showsPlaceSection: hasPlaceAwareContent,
+                onTaskRowFieldVisibilityChanged: { field, isVisible in
+                    settingsStore.send(.taskRowFieldVisibilityChanged(field, isVisible))
+                }
             ) {
                 tagFilterBar
             } placeSectionContent: {

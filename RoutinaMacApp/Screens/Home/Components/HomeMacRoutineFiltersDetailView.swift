@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: View {
+    @State private var selectedTab: HomeMacRoutineFilterDetailTab = .filter
+
     let availableFilters: [RoutineListFilter]
     @Binding var taskListMode: HomeTaskListMode
     @Binding var selectedFilter: RoutineListFilter
@@ -15,23 +17,43 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     @Binding var selectedGoalFilter: HomeTaskGoalFilter
     @Binding var selectedMediaFilter: TaskMediaFilter
     @Binding var selectedTodoStateFilter: TodoState?
+    let taskRowVisibility: HomeTaskRowVisibility
     let queryOptions: HomeAdvancedQueryOptions
     let importanceUrgencySummary: String
     let showsGoalFilter: Bool
     let showsTagSection: Bool
     let showsPlaceSection: Bool
+    let onTaskRowFieldVisibilityChanged: (HomeTaskRowField, Bool) -> Void
     @ViewBuilder let tagSectionContent: () -> TagContent
     @ViewBuilder let placeSectionContent: () -> PlaceContent
 
     var body: some View {
+        Group {
+            tabPicker
+
+            switch selectedTab {
+            case .filter:
+                filterTabContent
+            case .sort:
+                sortTabContent
+            case .appearance:
+                appearanceTabContent
+            }
+        }
+    }
+
+    private var tabPicker: some View {
+        HomeMacRoutineFilterDetailTabStrip(selection: $selectedTab)
+            .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    private var filterTabContent: some View {
         Group {
             HomeMacSidebarSectionCard(title: "Query") {
                 queryBuilder
             }
 
             coreFilterCard
-
-            sortFilterCard
 
             HomeMacSidebarSectionCard {
                 HomeMacImportanceUrgencyDisclosureSection(
@@ -55,6 +77,40 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                     }
                 }
             }
+        }
+    }
+
+    private var sortTabContent: some View {
+        HomeMacSidebarSectionCard(title: "Sorting") {
+            VStack(alignment: .leading, spacing: 18) {
+                filterControlSection("Grouping") {
+                    groupingPicker
+                }
+
+                filterControlSection("Sort") {
+                    sortPicker
+                }
+            }
+        }
+    }
+
+    private var appearanceTabContent: some View {
+        HomeMacSidebarSectionCard(title: "Task Row") {
+            ForEach(macTaskRowFields) { field in
+                Toggle(isOn: taskRowFieldVisibilityBinding(field)) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(field.title)
+                        Text(field.subtitle)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .toggleStyle(.switch)
+            }
+
+            Text("Shown: \(macTaskRowSummaryText)")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -135,22 +191,6 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                         filterControlSection("Todo State") {
                             todoStateFilterSection
                         }
-                    }
-                }
-            }
-        }
-    }
-
-    private var sortFilterCard: some View {
-        HomeMacSidebarSectionCard {
-            HomeMacCollapsibleFilterSection(title: "Sorting") {
-                VStack(alignment: .leading, spacing: 18) {
-                    filterControlSection("Grouping") {
-                        groupingPicker
-                    }
-
-                    filterControlSection("Sort") {
-                        sortPicker
                     }
                 }
             }
@@ -427,5 +467,90 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                 )
         }
         .buttonStyle(.plain)
+    }
+
+    private func taskRowFieldVisibilityBinding(_ field: HomeTaskRowField) -> Binding<Bool> {
+        Binding(
+            get: { taskRowVisibility.shows(field) },
+            set: { onTaskRowFieldVisibilityChanged(field, $0) }
+        )
+    }
+
+    private var macTaskRowFields: [HomeTaskRowField] {
+        HomeTaskRowField.allCases.filter { $0 != .taskTypeBadge }
+    }
+
+    private var macTaskRowSummaryText: String {
+        let hiddenCount = macTaskRowFields.filter {
+            !taskRowVisibility.shows($0)
+        }.count
+        guard hiddenCount > 0 else { return "All fields" }
+        return "\(macTaskRowFields.count - hiddenCount) of \(macTaskRowFields.count) fields"
+    }
+}
+
+private struct HomeMacRoutineFilterDetailTabStrip: View {
+    @Binding var selection: HomeMacRoutineFilterDetailTab
+    @Namespace private var glassNamespace
+
+    var body: some View {
+        GlassEffectContainer(spacing: 5) {
+            HStack(spacing: 5) {
+                ForEach(HomeMacRoutineFilterDetailTab.allCases) { tab in
+                    segmentButton(for: tab)
+                }
+            }
+            .padding(5)
+            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16))
+        }
+        .frame(width: 520)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Task list tabs")
+    }
+
+    private func segmentButton(for tab: HomeMacRoutineFilterDetailTab) -> some View {
+        let isSelected = selection == tab
+
+        return Button {
+            withAnimation(.easeInOut(duration: 0.18)) {
+                selection = tab
+            }
+        } label: {
+            Text(tab.title)
+                .font(.system(size: 16, weight: isSelected ? .semibold : .medium))
+                .foregroundStyle(isSelected ? .primary : .secondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .background {
+            if isSelected {
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .glassEffect(
+                        .regular.tint(Color.accentColor.opacity(0.34)).interactive(),
+                        in: .rect(cornerRadius: 11)
+                    )
+                    .glassEffectID("HomeMacRoutineFilterDetailTabSelection", in: glassNamespace)
+            }
+        }
+        .accessibilityLabel(tab.title)
+        .accessibilityValue(isSelected ? "Selected" : "")
+    }
+}
+
+private enum HomeMacRoutineFilterDetailTab: String, CaseIterable, Identifiable {
+    case filter
+    case sort
+    case appearance
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .filter: return "Filter"
+        case .sort: return "Sort"
+        case .appearance: return "Appearance"
+        }
     }
 }

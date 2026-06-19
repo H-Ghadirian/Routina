@@ -59,29 +59,6 @@ SettingsMacDetailShell(
         .foregroundStyle(.secondary)
     }
 
-    SettingsMacDetailCard(title: "Task Row") {
-        SettingsTaskRowPreviewView(
-            visibility: store.appearance.taskRowVisibility,
-            showsTaskTypeBadge: false
-        )
-
-        ForEach(macTaskRowFields) { field in
-            Toggle(isOn: taskRowFieldVisibilityBinding(field)) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(field.title)
-                    Text(field.subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .toggleStyle(.switch)
-        }
-
-        Text("Shown: \(macTaskRowSummaryText)")
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-    }
-
     SettingsMacDetailCard(title: "Timeline Row") {
         SettingsTimelineRowPreviewView(visibility: store.appearance.timelineRowVisibility)
 
@@ -169,30 +146,11 @@ SettingsMacDetailShell(
         )
     }
 
-    private func taskRowFieldVisibilityBinding(_ field: HomeTaskRowField) -> Binding<Bool> {
-        Binding(
-            get: { store.appearance.taskRowVisibility.shows(field) },
-            set: { store.send(.taskRowFieldVisibilityChanged(field, $0)) }
-        )
-    }
-
     private func timelineRowFieldVisibilityBinding(_ field: HomeTimelineRowField) -> Binding<Bool> {
         Binding(
             get: { store.appearance.timelineRowVisibility.shows(field) },
             set: { store.send(.timelineRowFieldVisibilityChanged(field, $0)) }
         )
-    }
-
-    private var macTaskRowFields: [HomeTaskRowField] {
-        HomeTaskRowField.allCases.filter { $0 != .taskTypeBadge }
-    }
-
-    private var macTaskRowSummaryText: String {
-        let hiddenCount = macTaskRowFields.filter {
-            !store.appearance.taskRowVisibility.shows($0)
-        }.count
-        guard hiddenCount > 0 else { return "All fields" }
-        return "\(macTaskRowFields.count - hiddenCount) of \(macTaskRowFields.count) fields"
     }
 
     private var macTimelineRowSummaryText: String {

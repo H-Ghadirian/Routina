@@ -2,12 +2,25 @@ import SwiftUI
 
 struct HomeMacFilterDetailContainerView<Content: View>: View {
     let title: String
+    let showsTitle: Bool
     @ViewBuilder let content: () -> Content
+
+    init(
+        title: String,
+        showsTitle: Bool = true,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.title = title
+        self.showsTitle = showsTitle
+        self.content = content
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                HomeMacFilterDetailTitleView(title: title)
+                if showsTitle {
+                    HomeMacFilterDetailTitleView(title: title)
+                }
                 content()
             }
             .padding(24)
