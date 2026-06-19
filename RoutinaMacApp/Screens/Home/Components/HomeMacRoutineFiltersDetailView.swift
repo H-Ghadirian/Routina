@@ -477,7 +477,10 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     }
 
     private var macTaskRowFields: [HomeTaskRowField] {
-        HomeTaskRowField.allCases.filter { $0 != .taskTypeBadge }
+        HomeTaskRowField.allCases.filter { field in
+            field != .taskTypeBadge
+                && (showsGoalFilter || field != .goals)
+        }
     }
 
     private var macTaskRowSummaryText: String {

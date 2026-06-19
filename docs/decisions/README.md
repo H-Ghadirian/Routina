@@ -31,7 +31,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
-- **[0254](0254-move-mac-task-row-appearance-to-home-filter-detail.md) moves Mac task-row appearance into Home filter detail:** Mac Home filter detail has `Filter`, `Sort`, and `Appearance` tabs, with Task Row field visibility in `Appearance`; macOS Settings -> Appearance no longer shows the Task Row card, while Timeline Row remains there.
+- **[0254](0254-move-mac-task-row-appearance-to-home-filter-detail.md) moves Mac task-row appearance into Home filter detail:** Mac Home filter detail has `Filter`, `Sort`, and `Appearance` tabs, with Task Row field visibility in `Appearance`; the Task Row `Goals` control follows the global Goals visibility gate; macOS Settings -> Appearance no longer shows the Task Row card, while Timeline Row remains there.
 - **[0253](0253-guard-checklist-detail-mutations-through-reloads.md) guards selected checklist detail mutations through async reloads:** Home reload reconciliation keeps the selected detail task's post-mutation checklist state, including final completion with cleared item-progress IDs, until matching persisted state arrives.
 - **[0252](0252-stabilize-home-task-list-presentation-identity.md) keeps Home task-list identity stable:** Task lists classify section membership once, claim each task ID once per presentation, and key sections/groups by durable presentation keys instead of visible titles.
 - **[0249](0249-reset-daily-checklist-progress.md) scopes daily checklist-completion progress to one day:** Daily checklist routines keep partial checked items during the current day, then stale partial checklist progress is ignored and cleared so the next day starts with every item unchecked.

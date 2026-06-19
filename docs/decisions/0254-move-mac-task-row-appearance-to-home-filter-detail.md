@@ -23,6 +23,8 @@ local without changing the underlying persisted preference.
 
 Mac Home filter detail now has `Filter`, `Sort`, and `Appearance` tabs. The
 `Appearance` tab owns Task Row field visibility for the Mac Home task list.
+Because macOS Goal surfaces are gated by `appSettingGoalsTabEnabled`, the
+Task Row `Goals` visibility control is shown only while Goals are enabled.
 
 The setting continues to use the existing `appSettingHomeTaskRowHiddenFields`
 preference and the existing Settings appearance mutation path. No data migration
