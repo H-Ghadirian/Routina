@@ -76,6 +76,7 @@ struct TaskFormMacToggleBlock<Content: View>: View {
                 Text(title)
                     .font(.body.weight(.medium))
             }
+            .toggleStyle(.switch)
             .disabled(isDisabled)
 
             if let caption {

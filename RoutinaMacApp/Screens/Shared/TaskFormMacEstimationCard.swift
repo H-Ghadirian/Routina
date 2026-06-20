@@ -8,6 +8,7 @@ struct TaskFormMacEstimationCard: View {
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 10) {
                     Toggle("Set duration estimate", isOn: estimatedDurationEnabledBinding)
+                        .toggleStyle(.switch)
                     if estimatedDurationEnabledBinding.wrappedValue {
                         TaskFormDurationEntry(
                             title: "Estimate",
@@ -20,6 +21,7 @@ struct TaskFormMacEstimationCard: View {
 
                 VStack(alignment: .leading, spacing: 10) {
                     Toggle("Set story points", isOn: storyPointsEnabledBinding)
+                        .toggleStyle(.switch)
                     if storyPointsEnabledBinding.wrappedValue {
                         Stepper(value: storyPointsStepperBinding, in: 1...100) {
                             Text(TaskFormPresentation.storyPointsLabel(for: storyPointsStepperBinding.wrappedValue))
@@ -30,6 +32,7 @@ struct TaskFormMacEstimationCard: View {
                 }
 
                 Toggle("Show focus timer", isOn: model.focusModeEnabled)
+                    .toggleStyle(.switch)
             }
         }
     }
