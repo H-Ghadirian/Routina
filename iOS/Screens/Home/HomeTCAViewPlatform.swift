@@ -105,15 +105,17 @@ detailContent
     }
 
     var filterPicker: some View {
-        Picker("Routine Filter", selection: Binding(
-            get: { store.selectedFilter },
-            set: { store.send(.selectedFilterChanged($0)) }
-        )) {
-            ForEach(iOSAvailableFilters) { filter in
-                Text(filter.rawValue).tag(filter)
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Routine Filter",
+            options: iOSAvailableFilters,
+            selection: Binding(
+                get: { store.selectedFilter },
+                set: { store.send(.selectedFilterChanged($0)) }
+            ),
+            fillsAvailableWidth: true
+        ) { filter in
+            Text(filter.rawValue)
         }
-        .pickerStyle(.segmented)
         .padding(.horizontal)
         .padding(.top, 4)
     }

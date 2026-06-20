@@ -134,10 +134,11 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 8)
-                        .foregroundStyle(taskListMode == option.mode ? Color.white : Color.primary)
-                        .background(
-                            Capsule()
-                                .fill(taskListMode == option.mode ? Color.accentColor : Color.secondary.opacity(0.10))
+                        .foregroundStyle(.primary)
+                        .routinaGlassPill(
+                            tint: taskListMode == option.mode ? .accentColor : .secondary,
+                            tintOpacity: taskListMode == option.mode ? 0.30 : 0.08,
+                            interactive: true
                         )
                 }
                 .buttonStyle(.plain)
@@ -228,10 +229,11 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                             .frame(maxWidth: .infinity)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 8)
-                            .foregroundStyle(taskListViewMode == mode ? Color.white : Color.primary)
-                            .background(
-                                Capsule()
-                                    .fill(taskListViewMode == mode ? Color.accentColor : Color.secondary.opacity(0.10))
+                            .foregroundStyle(.primary)
+                            .routinaGlassPill(
+                                tint: taskListViewMode == mode ? .accentColor : .secondary,
+                                tintOpacity: taskListViewMode == mode ? 0.30 : 0.08,
+                                interactive: true
                             )
                     }
                     .buttonStyle(.plain)
@@ -262,10 +264,11 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                             .frame(maxWidth: .infinity)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 8)
-                            .foregroundStyle(selectedFilter == filter ? Color.white : Color.primary)
-                            .background(
-                                Capsule()
-                                    .fill(selectedFilter == filter ? Color.accentColor : Color.secondary.opacity(0.10))
+                            .foregroundStyle(.primary)
+                            .routinaGlassPill(
+                                tint: selectedFilter == filter ? .accentColor : .secondary,
+                                tintOpacity: selectedFilter == filter ? 0.30 : 0.08,
+                                interactive: true
                             )
                     }
                     .buttonStyle(.plain)
@@ -290,10 +293,11 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                             .frame(maxWidth: .infinity)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 8)
-                            .foregroundStyle(routineListSectioningMode == mode ? Color.white : Color.primary)
-                            .background(
-                                Capsule()
-                                    .fill(routineListSectioningMode == mode ? Color.accentColor : Color.secondary.opacity(0.10))
+                            .foregroundStyle(.primary)
+                            .routinaGlassPill(
+                                tint: routineListSectioningMode == mode ? .accentColor : .secondary,
+                                tintOpacity: routineListSectioningMode == mode ? 0.30 : 0.08,
+                                interactive: true
                             )
                     }
                     .buttonStyle(.plain)
@@ -322,10 +326,11 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                             .frame(maxWidth: .infinity)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 8)
-                            .foregroundStyle(taskListSortOrder == order ? Color.white : Color.primary)
-                            .background(
-                                Capsule()
-                                    .fill(taskListSortOrder == order ? Color.accentColor : Color.secondary.opacity(0.10))
+                            .foregroundStyle(.primary)
+                            .routinaGlassPill(
+                                tint: taskListSortOrder == order ? .accentColor : .secondary,
+                                tintOpacity: taskListSortOrder == order ? 0.30 : 0.08,
+                                interactive: true
                             )
                     }
                     .buttonStyle(.plain)
@@ -364,10 +369,11 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 8)
-                        .foregroundStyle(selectedGoalFilter == filter ? Color.white : Color.primary)
-                        .background(
-                            Capsule()
-                                .fill(selectedGoalFilter == filter ? Color.accentColor : Color.secondary.opacity(0.10))
+                        .foregroundStyle(.primary)
+                        .routinaGlassPill(
+                            tint: selectedGoalFilter == filter ? .accentColor : .secondary,
+                            tintOpacity: selectedGoalFilter == filter ? 0.30 : 0.08,
+                            interactive: true
                         )
                 }
                 .buttonStyle(.plain)
@@ -390,10 +396,11 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 8)
-                        .foregroundStyle(selectedMediaFilter == filter ? Color.white : Color.primary)
-                        .background(
-                            Capsule()
-                                .fill(selectedMediaFilter == filter ? Color.accentColor : Color.secondary.opacity(0.10))
+                        .foregroundStyle(.primary)
+                        .routinaGlassPill(
+                            tint: selectedMediaFilter == filter ? .accentColor : .secondary,
+                            tintOpacity: selectedMediaFilter == filter ? 0.30 : 0.08,
+                            interactive: true
                         )
                 }
                 .buttonStyle(.plain)
@@ -417,10 +424,11 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                             .frame(maxWidth: .infinity)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 8)
-                            .foregroundStyle(createdDateFilter == filter ? Color.white : Color.primary)
-                            .background(
-                                Capsule()
-                                    .fill(createdDateFilter == filter ? Color.accentColor : Color.secondary.opacity(0.10))
+                            .foregroundStyle(.primary)
+                            .routinaGlassPill(
+                                tint: createdDateFilter == filter ? .accentColor : .secondary,
+                                tintOpacity: createdDateFilter == filter ? 0.30 : 0.08,
+                                interactive: true
                             )
                     }
                     .buttonStyle(.plain)
@@ -443,9 +451,9 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
         HomeTodoStateFilterChips(
             selectedTodoStateFilter: $selectedTodoStateFilter,
             layoutStyle: .adaptiveGrid(minimumWidth: 80, spacing: 8),
-            selectedForegroundColor: .white,
+            selectedForegroundColor: nil,
             unselectedForegroundColor: .primary,
-            selectedBackgroundOpacity: 1,
+            selectedBackgroundOpacity: 0.30,
             fillsAvailableWidth: true,
             verticalPadding: 8
         )
@@ -460,10 +468,11 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 8)
-                .foregroundStyle(selectedPressureFilter == pressure ? Color.white : Color.primary)
-                .background(
-                    Capsule()
-                        .fill(selectedPressureFilter == pressure ? Color.accentColor : Color.secondary.opacity(0.10))
+                .foregroundStyle(.primary)
+                .routinaGlassPill(
+                    tint: selectedPressureFilter == pressure ? .accentColor : .secondary,
+                    tintOpacity: selectedPressureFilter == pressure ? 0.30 : 0.08,
+                    interactive: true
                 )
         }
         .buttonStyle(.plain)

@@ -436,13 +436,13 @@ private struct DayPlanHeaderView: View {
     }
 
     private var visibleRangeModePicker: some View {
-        Picker("Planner range", selection: visibleRangeModeBinding) {
-            ForEach(DayPlanVisibleRangeMode.allCases) { mode in
-                Text(mode.title).tag(mode)
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Planner range",
+            options: DayPlanVisibleRangeMode.allCases,
+            selection: visibleRangeModeBinding
+        ) { mode in
+            Text(mode.title)
         }
-        .labelsHidden()
-        .pickerStyle(.segmented)
         .accessibilityLabel("Planner range")
     }
 

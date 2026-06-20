@@ -624,15 +624,16 @@ extension HomeTCAView {
     }
 
     var platformTimelineRangePicker: some View {
-        Picker("Range", selection: Binding(
-            get: { store.selectedTimelineRange },
-            set: { store.send(.selectedTimelineRangeChanged($0)) }
-        )) {
-            ForEach(TimelineRange.allCases) { range in
-                Text(range.rawValue).tag(range)
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Range",
+            options: TimelineRange.allCases,
+            selection: Binding(
+                get: { store.selectedTimelineRange },
+                set: { store.send(.selectedTimelineRangeChanged($0)) }
+            )
+        ) { range in
+            Text(range.rawValue)
         }
-        .pickerStyle(.segmented)
     }
 
     @ViewBuilder

@@ -27,12 +27,14 @@ struct StatsHourlyActivitySection: View {
                 )
             }
 
-            Picker("Hourly metric", selection: $selectedMetric) {
-                ForEach(StatsHourlyActivityMetric.allCases) { metric in
-                    Text(metric.title).tag(metric)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Hourly metric",
+                options: StatsHourlyActivityMetric.allCases,
+                selection: $selectedMetric,
+                fillsAvailableWidth: true
+            ) { metric in
+                Text(metric.title)
             }
-            .pickerStyle(.segmented)
             .accessibilityIdentifier("stats.hourlyActivity.metricPicker")
 
             if points.allSatisfy({ !$0.hasActivity }) {

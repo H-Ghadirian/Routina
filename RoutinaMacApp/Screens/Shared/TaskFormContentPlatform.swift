@@ -261,14 +261,13 @@ struct TaskFormContent: View {
                 caption: "Use this for tasks that keep occupying your mind, even when they are not the most urgent."
             ) {
                 HStack(spacing: 0) {
-                    Picker("Pressure", selection: model.pressure) {
-                        ForEach(RoutineTaskPressure.allCases, id: \.self) { pressure in
-                            Text(pressure.title).tag(pressure)
-                        }
+                    RoutinaGlassSegmentedControl(
+                        accessibilityLabel: "Pressure",
+                        options: RoutineTaskPressure.allCases,
+                        selection: model.pressure
+                    ) { pressure in
+                        Text(pressure.title)
                     }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
-                    .fixedSize()
                     Spacer(minLength: 0)
                 }
             }

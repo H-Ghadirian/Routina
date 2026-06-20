@@ -30,13 +30,14 @@ struct StatsCreatedTasksChartSection: View {
                 )
             ) {
                 VStack(alignment: .trailing, spacing: 10) {
-                    Picker("Created task type", selection: selectedTaskTypeFilterBinding) {
-                        ForEach(StatsTaskTypeFilter.allCases) { filter in
-                            Text(filter.rawValue).tag(filter)
-                        }
+                    RoutinaGlassSegmentedControl(
+                        accessibilityLabel: "Created task type",
+                        options: StatsTaskTypeFilter.allCases,
+                        selection: selectedTaskTypeFilterBinding,
+                        fillsAvailableWidth: true
+                    ) { filter in
+                        Text(filter.rawValue)
                     }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
                     .frame(width: 220)
                     .accessibilityIdentifier("stats.createdTasks.typePicker")
 

@@ -45,15 +45,17 @@ struct HomeMacTimelineTagFiltersView: View {
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 4)
 
-            Picker("Show tasks with", selection: Binding(
-                get: { includeTagMatchMode },
-                set: { newValue in onIncludeTagMatchModeChange(newValue) }
-            )) {
-                ForEach(RoutineTagMatchMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Show tasks with",
+                options: RoutineTagMatchMode.allCases,
+                selection: Binding(
+                    get: { includeTagMatchMode },
+                    set: { newValue in onIncludeTagMatchModeChange(newValue) }
+                ),
+                fillsAvailableWidth: true
+            ) { mode in
+                Text(mode.rawValue)
             }
-            .pickerStyle(.segmented)
 
             WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
                 if selectedTags.isEmpty {
@@ -151,15 +153,17 @@ struct HomeMacTimelineTagFiltersView: View {
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 4)
 
-            Picker("Hide tasks with", selection: Binding(
-                get: { excludeTagMatchMode },
-                set: { newValue in onExcludeTagMatchModeChange(newValue) }
-            )) {
-                ForEach(RoutineTagMatchMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Hide tasks with",
+                options: RoutineTagMatchMode.allCases,
+                selection: Binding(
+                    get: { excludeTagMatchMode },
+                    set: { newValue in onExcludeTagMatchModeChange(newValue) }
+                ),
+                fillsAvailableWidth: true
+            ) { mode in
+                Text(mode.rawValue)
             }
-            .pickerStyle(.segmented)
 
             WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
                 if selectedExcludedTags.isEmpty {

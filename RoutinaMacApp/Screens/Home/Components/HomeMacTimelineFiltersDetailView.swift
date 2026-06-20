@@ -156,43 +156,43 @@ struct HomeMacTimelineFiltersDetailView: View {
     }
 
     private var rangePicker: some View {
-        Picker("Range", selection: $selectedRange) {
-            ForEach(TimelineRange.allCases) { range in
-                Text(range.rawValue).tag(range)
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Range",
+            options: TimelineRange.allCases,
+            selection: $selectedRange
+        ) { range in
+            Text(range.rawValue)
         }
-        .labelsHidden()
-        .pickerStyle(.segmented)
     }
 
     private var typePicker: some View {
-        Picker("Type", selection: contentTypeBinding) {
-            ForEach(TimelineFilterType.visibleContentTypeCases(includingEventEmotion: includesEventEmotionFilters)) { type in
-                Text(type.rawValue).tag(type)
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Type",
+            options: TimelineFilterType.visibleContentTypeCases(includingEventEmotion: includesEventEmotionFilters),
+            selection: contentTypeBinding
+        ) { type in
+            Text(type.rawValue)
         }
-        .labelsHidden()
-        .pickerStyle(.segmented)
     }
 
     private var statusPicker: some View {
-        Picker("Status", selection: statusBinding) {
-            ForEach(TimelineFilterType.statusCases) { status in
-                Text(status.rawValue).tag(status)
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Status",
+            options: TimelineFilterType.statusCases,
+            selection: statusBinding
+        ) { status in
+            Text(status.rawValue)
         }
-        .labelsHidden()
-        .pickerStyle(.segmented)
     }
 
     private var mediaPicker: some View {
-        Picker("Media", selection: $selectedMediaFilter) {
-            ForEach(TaskMediaFilter.allCases) { filter in
-                Label(filter.title, systemImage: filter.systemImage).tag(filter)
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Media",
+            options: TaskMediaFilter.allCases,
+            selection: $selectedMediaFilter
+        ) { filter in
+            Text(filter.title)
         }
-        .labelsHidden()
-        .pickerStyle(.segmented)
     }
 
     private var contentTypeBinding: Binding<TimelineFilterType> {

@@ -14,15 +14,17 @@ struct HomeMacStatsIncludedTagSection: View {
     var body: some View {
         DisclosureGroup(isExpanded: isExpandedBinding) {
             VStack(alignment: .leading, spacing: 12) {
-                Picker("Show stats with", selection: Binding(
-                    get: { includeTagMatchMode },
-                    set: { onIncludeTagMatchModeChange($0) }
-                )) {
-                    ForEach(RoutineTagMatchMode.allCases) { mode in
-                        Text(mode.rawValue).tag(mode)
-                    }
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Show stats with",
+                    options: RoutineTagMatchMode.allCases,
+                    selection: Binding(
+                        get: { includeTagMatchMode },
+                        set: { onIncludeTagMatchModeChange($0) }
+                    ),
+                    fillsAvailableWidth: true
+                ) { mode in
+                    Text(mode.rawValue)
                 }
-                .pickerStyle(.segmented)
 
                 selectedTagsView
 
@@ -168,15 +170,17 @@ struct HomeMacStatsExcludedTagSection: View {
     var body: some View {
         DisclosureGroup(isExpanded: isExpandedBinding) {
             VStack(alignment: .leading, spacing: 12) {
-                Picker("Hide stats with", selection: Binding(
-                    get: { excludeTagMatchMode },
-                    set: { onExcludeTagMatchModeChange($0) }
-                )) {
-                    ForEach(RoutineTagMatchMode.allCases) { mode in
-                        Text(mode.rawValue).tag(mode)
-                    }
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Hide stats with",
+                    options: RoutineTagMatchMode.allCases,
+                    selection: Binding(
+                        get: { excludeTagMatchMode },
+                        set: { onExcludeTagMatchModeChange($0) }
+                    ),
+                    fillsAvailableWidth: true
+                ) { mode in
+                    Text(mode.rawValue)
                 }
-                .pickerStyle(.segmented)
 
                 selectedExcludedTagsView
 

@@ -685,12 +685,14 @@ struct StatsView: View {
     }
 
     private var dashboardScopePicker: some View {
-        Picker("Stats category", selection: dashboardScopeBinding) {
-            ForEach(availableDashboardScopes) { scope in
-                Text(scope.title).tag(scope)
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Stats category",
+            options: availableDashboardScopes,
+            selection: dashboardScopeBinding,
+            fillsAvailableWidth: true
+        ) { scope in
+            Text(scope.title)
         }
-        .pickerStyle(.segmented)
         .frame(maxWidth: 520)
         .accessibilityIdentifier("stats.dashboard.scopePicker")
     }

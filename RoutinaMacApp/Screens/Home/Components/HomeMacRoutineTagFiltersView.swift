@@ -20,12 +20,14 @@ struct HomeMacRoutineTagFiltersView: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            Picker("Show tasks with", selection: includeTagMatchModeBinding) {
-                ForEach(RoutineTagMatchMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Show tasks with",
+                options: RoutineTagMatchMode.allCases,
+                selection: includeTagMatchModeBinding,
+                fillsAvailableWidth: true
+            ) { mode in
+                Text(mode.rawValue)
             }
-            .pickerStyle(.segmented)
 
             WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
                 if data.selectedTags.isEmpty {
@@ -124,12 +126,14 @@ struct HomeMacRoutineTagFiltersView: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            Picker("Hide tasks with", selection: excludeTagMatchModeBinding) {
-                ForEach(RoutineTagMatchMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Hide tasks with",
+                options: RoutineTagMatchMode.allCases,
+                selection: excludeTagMatchModeBinding,
+                fillsAvailableWidth: true
+            ) { mode in
+                Text(mode.rawValue)
             }
-            .pickerStyle(.segmented)
 
             selectedExcludedTags
             addExcludedTagsSection

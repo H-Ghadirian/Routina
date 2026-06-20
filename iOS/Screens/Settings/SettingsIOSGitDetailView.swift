@@ -7,12 +7,14 @@ struct SettingsGitDetailView: View {
     var body: some View {
 List {
     Section("GitHub – Mode") {
-        Picker("Source", selection: scopeBinding) {
-            ForEach(GitHubStatsScope.allCases) { scope in
-                Text(scope.title).tag(scope)
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Source",
+            options: GitHubStatsScope.allCases,
+            selection: scopeBinding,
+            fillsAvailableWidth: true
+        ) { scope in
+            Text(scope.title)
         }
-        .pickerStyle(.segmented)
 
         Text(store.github.scope.subtitle)
             .font(.footnote)

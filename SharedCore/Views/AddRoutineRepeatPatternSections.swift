@@ -18,12 +18,14 @@ struct AddRoutineRepeatPatternSections: View {
 
     var body: some View {
         Section(header: Text("Repeat Type")) {
-            Picker("Repeat Type", selection: repeatBasisBinding) {
-                ForEach(RoutineRepeatBasis.allCases) { basis in
-                    Text(basis.rawValue).tag(basis)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Repeat Type",
+                options: RoutineRepeatBasis.allCases,
+                selection: repeatBasisBinding,
+                fillsAvailableWidth: true
+            ) { basis in
+                Text(basis.rawValue)
             }
-            .pickerStyle(.segmented)
 
             Text(recurrencePatternDescription)
                 .font(.caption)
@@ -32,12 +34,14 @@ struct AddRoutineRepeatPatternSections: View {
 
         if recurrenceKind.repeatBasis == .calendar {
             Section(header: Text("Calendar Pattern")) {
-                Picker("Calendar Pattern", selection: calendarRecurrenceKindBinding) {
-                    ForEach(RoutineRecurrenceRule.Kind.calendarCases, id: \.self) { kind in
-                        Text(kind.pickerTitle).tag(kind)
-                    }
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Calendar Pattern",
+                    options: RoutineRecurrenceRule.Kind.calendarCases,
+                    selection: calendarRecurrenceKindBinding,
+                    fillsAvailableWidth: true
+                ) { kind in
+                    Text(kind.pickerTitle)
                 }
-                .pickerStyle(.segmented)
             }
         }
 
@@ -82,12 +86,14 @@ struct AddRoutineRepeatPatternSections: View {
     private var intervalSections: some View {
         Group {
             Section(header: Text("Frequency")) {
-                Picker("Frequency", selection: $frequency) {
-                    ForEach(AddRoutineFeature.Frequency.allCases, id: \.self) { frequency in
-                        Text(frequency.rawValue).tag(frequency)
-                    }
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Frequency",
+                    options: AddRoutineFeature.Frequency.allCases,
+                    selection: $frequency,
+                    fillsAvailableWidth: true
+                ) { frequency in
+                    Text(frequency.rawValue)
                 }
-                .pickerStyle(.segmented)
             }
 
             Section(header: Text("Repeat")) {

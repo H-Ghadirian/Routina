@@ -232,13 +232,14 @@ struct EmotionLogEditorView: View {
         VStack(alignment: .leading, spacing: 8) {
             emotionSectionTitle("Pleasantness")
 
-            Picker("Pleasantness", selection: pleasantnessSelection) {
-                ForEach(PleasantnessSegment.allCases) { segment in
-                    Text(segment.title).tag(segment)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Pleasantness",
+                options: PleasantnessSegment.allCases,
+                selection: pleasantnessSelection,
+                fillsAvailableWidth: true
+            ) { segment in
+                Text(segment.title)
             }
-            .pickerStyle(.segmented)
-            .labelsHidden()
         }
     }
 
@@ -246,13 +247,14 @@ struct EmotionLogEditorView: View {
         VStack(alignment: .leading, spacing: 8) {
             emotionSectionTitle("Energy")
 
-            Picker("Energy", selection: energySelection) {
-                ForEach(EnergySegment.allCases) { segment in
-                    Text(segment.title).tag(segment)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Energy",
+                options: EnergySegment.allCases,
+                selection: energySelection,
+                fillsAvailableWidth: true
+            ) { segment in
+                Text(segment.title)
             }
-            .pickerStyle(.segmented)
-            .labelsHidden()
         }
     }
 

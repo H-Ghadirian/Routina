@@ -531,16 +531,17 @@ struct TimelineView: View {
                                 Text("Show items with")
                                     .font(.subheadline.weight(.semibold))
                                 Spacer()
-                                Picker("Show items with", selection: Binding(
-                                    get: { store.includeTagMatchMode },
-                                    set: { store.send(.includeTagMatchModeChanged($0)) }
-                                )) {
-                                    ForEach(RoutineTagMatchMode.allCases) { mode in
-                                        Text(mode.rawValue).tag(mode)
-                                    }
+                                RoutinaGlassSegmentedControl(
+                                    accessibilityLabel: "Show items with",
+                                    options: RoutineTagMatchMode.allCases,
+                                    selection: Binding(
+                                        get: { store.includeTagMatchMode },
+                                        set: { store.send(.includeTagMatchModeChanged($0)) }
+                                    ),
+                                    fillsAvailableWidth: true
+                                ) { mode in
+                                    Text(mode.rawValue)
                                 }
-                                .labelsHidden()
-                                .pickerStyle(.segmented)
                                 .frame(maxWidth: 180)
                             }
 
@@ -598,16 +599,17 @@ struct TimelineView: View {
                                 Text("Hide items with")
                                     .font(.subheadline.weight(.semibold))
                                 Spacer()
-                                Picker("Hide items with", selection: Binding(
-                                    get: { store.excludeTagMatchMode },
-                                    set: { store.send(.excludeTagMatchModeChanged($0)) }
-                                )) {
-                                    ForEach(RoutineTagMatchMode.allCases) { mode in
-                                        Text(mode.rawValue).tag(mode)
-                                    }
+                                RoutinaGlassSegmentedControl(
+                                    accessibilityLabel: "Hide items with",
+                                    options: RoutineTagMatchMode.allCases,
+                                    selection: Binding(
+                                        get: { store.excludeTagMatchMode },
+                                        set: { store.send(.excludeTagMatchModeChanged($0)) }
+                                    ),
+                                    fillsAvailableWidth: true
+                                ) { mode in
+                                    Text(mode.rawValue)
                                 }
-                                .labelsHidden()
-                                .pickerStyle(.segmented)
                                 .frame(maxWidth: 180)
                             }
 

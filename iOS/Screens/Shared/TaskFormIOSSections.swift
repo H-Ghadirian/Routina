@@ -106,12 +106,14 @@ struct TaskFormIOSPressureSection: View {
 
     var body: some View {
         Section(header: Text("Pressure")) {
-            Picker("Pressure", selection: model.pressure) {
-                ForEach(RoutineTaskPressure.allCases, id: \.self) { pressure in
-                    Text(pressure.title).tag(pressure)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Pressure",
+                options: RoutineTaskPressure.allCases,
+                selection: model.pressure,
+                fillsAvailableWidth: true
+            ) { pressure in
+                Text(pressure.title)
             }
-            .pickerStyle(.segmented)
             Text("Use this for tasks that keep occupying your mind, even when they are not the most urgent.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -125,22 +127,26 @@ struct TaskFormIOSScheduleTypeSection: View {
 
     var body: some View {
         Section(header: Text("Due Style")) {
-            Picker("Due Style", selection: model.scheduleBehavior) {
-                ForEach(RoutineScheduleBehavior.allCases) { behavior in
-                    Text(behavior.rawValue).tag(behavior)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Due Style",
+                options: RoutineScheduleBehavior.allCases,
+                selection: model.scheduleBehavior,
+                fillsAvailableWidth: true
+            ) { behavior in
+                Text(behavior.rawValue)
             }
-            .pickerStyle(.segmented)
             TaskFormIOSScheduleBehaviorHint(behavior: model.scheduleBehavior.wrappedValue)
         }
 
         Section(header: Text("Completion")) {
-            Picker("Completion", selection: model.routineFinishMode) {
-                ForEach(RoutineFinishMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Completion",
+                options: RoutineFinishMode.allCases,
+                selection: model.routineFinishMode,
+                fillsAvailableWidth: true
+            ) { mode in
+                Text(mode.rawValue)
             }
-            .pickerStyle(.segmented)
         }
     }
 }
@@ -342,12 +348,14 @@ struct TaskFormIOSRepeatPatternSections: View {
     @ViewBuilder
     private var repeatPatternSection: some View {
         Section(header: Text("Repeat Type")) {
-            Picker("Repeat Type", selection: model.routineRepeatType) {
-                ForEach(model.routineRepeatTypeCases) { repeatType in
-                    Text(repeatType.rawValue).tag(repeatType)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Repeat Type",
+                options: model.routineRepeatTypeCases,
+                selection: model.routineRepeatType,
+                fillsAvailableWidth: true
+            ) { repeatType in
+                Text(repeatType.rawValue)
             }
-            .pickerStyle(.segmented)
             if model.routineRepeatType.wrappedValue != .itemRunout {
                 Text(presentation.recurrencePatternDescription).font(.caption).foregroundStyle(.secondary)
             }
@@ -360,12 +368,14 @@ struct TaskFormIOSRepeatPatternSections: View {
 
     private var calendarPatternSection: some View {
         Section(header: Text("Calendar Pattern")) {
-            Picker("Calendar Pattern", selection: model.calendarRecurrenceKind) {
-                ForEach(RoutineRecurrenceRule.Kind.calendarCases, id: \.self) { kind in
-                    Text(kind.pickerTitle).tag(kind)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Calendar Pattern",
+                options: RoutineRecurrenceRule.Kind.calendarCases,
+                selection: model.calendarRecurrenceKind,
+                fillsAvailableWidth: true
+            ) { kind in
+                Text(kind.pickerTitle)
             }
-            .pickerStyle(.segmented)
         }
     }
 
@@ -419,12 +429,14 @@ struct TaskFormIOSRepeatPatternSections: View {
     }
 
     private var frequencyUnitPicker: some View {
-        Picker("Frequency", selection: model.frequencyUnit) {
-            ForEach(TaskFormFrequencyUnit.allCases, id: \.self) { unit in
-                Text(unit.rawValue).tag(unit)
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Frequency",
+            options: TaskFormFrequencyUnit.allCases,
+            selection: model.frequencyUnit,
+            fillsAvailableWidth: true
+        ) { unit in
+            Text(unit.rawValue)
         }
-        .pickerStyle(.segmented)
     }
 
     private var intervalRepeatLabel: String {

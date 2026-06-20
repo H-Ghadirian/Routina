@@ -153,13 +153,14 @@ struct AwaySessionStartSheet: View {
             }
 
             Section("Timer") {
-                Picker("Timer", selection: $timerMode) {
-                    ForEach(AwaySessionTimerMode.allCases) { mode in
-                        Text(mode.title)
-                            .tag(mode)
-                    }
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Timer",
+                    options: AwaySessionTimerMode.allCases,
+                    selection: $timerMode,
+                    fillsAvailableWidth: true
+                ) { mode in
+                    Text(mode.title)
                 }
-                .pickerStyle(.segmented)
 
                 if timerMode == .fixedDuration {
                     Stepper(
@@ -938,13 +939,14 @@ private struct AwayTimerSetupPanel: View {
             Label("Timer", systemImage: "timer")
                 .font(.headline)
 
-            Picker("Timer", selection: $timerMode) {
-                ForEach(AwaySessionTimerMode.allCases) { mode in
-                    Text(mode.title)
-                        .tag(mode)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Timer",
+                options: AwaySessionTimerMode.allCases,
+                selection: $timerMode,
+                fillsAvailableWidth: true
+            ) { mode in
+                Text(mode.title)
             }
-            .pickerStyle(.segmented)
 
             if timerMode == .fixedDuration {
                 fixedDurationControls

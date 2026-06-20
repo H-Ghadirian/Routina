@@ -92,34 +92,40 @@ struct StatsAchievementsSection: View {
     }
 
     private var categoryPicker: some View {
-        Picker("Achievement category", selection: $selectedDomain) {
-            ForEach(StatsAchievementDomain.allCases) { domain in
-                Text(domain.title).tag(domain)
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Achievement category",
+            options: StatsAchievementDomain.allCases,
+            selection: $selectedDomain,
+            fillsAvailableWidth: true
+        ) { domain in
+            Text(domain.title)
         }
-        .pickerStyle(.segmented)
         .frame(maxWidth: 860)
         .accessibilityIdentifier("stats.achievements.categoryPicker")
     }
 
     private var statusPicker: some View {
-        Picker("Achievement status", selection: $selectedStatus) {
-            ForEach(StatsAchievementStatusFilter.allCases) { status in
-                Text(status.title).tag(status)
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Achievement status",
+            options: StatsAchievementStatusFilter.allCases,
+            selection: $selectedStatus,
+            fillsAvailableWidth: true
+        ) { status in
+            Text(status.title)
         }
-        .pickerStyle(.segmented)
         .frame(maxWidth: 360)
         .accessibilityIdentifier("stats.achievements.statusPicker")
     }
 
     private var achievedPeriodPicker: some View {
-        Picker("Achieved period", selection: $selectedEarnedPeriod) {
-            ForEach(StatsAchievementCelebrationPeriod.allCases) { period in
-                Text(period.title).tag(period)
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Achieved period",
+            options: StatsAchievementCelebrationPeriod.allCases,
+            selection: $selectedEarnedPeriod,
+            fillsAvailableWidth: true
+        ) { period in
+            Text(period.title)
         }
-        .pickerStyle(.segmented)
         .frame(maxWidth: 560)
         .accessibilityIdentifier("stats.achievements.achievedPeriodPicker")
     }

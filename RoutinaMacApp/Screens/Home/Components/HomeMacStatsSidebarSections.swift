@@ -117,22 +117,19 @@ private struct HomeMacStatsOptionChip: View {
                 Image(systemName: systemImage)
                     .font(.caption.weight(.semibold))
 
-                Text(title)
-                    .font(.caption.weight(.semibold))
-            }
-            .foregroundStyle(isSelected ? Color.white : Color.primary)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(isSelected ? Color.accentColor : Color.secondary.opacity(0.10))
-            )
-            .overlay(
-                Capsule(style: .continuous)
-                    .stroke(isSelected ? Color.accentColor.opacity(0.25) : Color.white.opacity(0.06), lineWidth: 1)
-            )
-            .contentShape(Capsule(style: .continuous))
+            Text(title)
+                .font(.caption.weight(.semibold))
         }
+        .foregroundStyle(.primary)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .routinaGlassPill(
+            tint: isSelected ? .accentColor : .secondary,
+            tintOpacity: isSelected ? 0.30 : 0.08,
+            interactive: true
+        )
+        .contentShape(Capsule(style: .continuous))
+    }
         .buttonStyle(.plain)
     }
 }

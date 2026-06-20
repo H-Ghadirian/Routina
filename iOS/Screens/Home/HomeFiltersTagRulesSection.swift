@@ -40,13 +40,14 @@ private struct HomeIncludedTagsFilterSection: View {
                 Text(labels.includedTitle)
                     .font(.subheadline.weight(.semibold))
                 Spacer()
-                Picker(labels.includedPickerTitle, selection: $includeTagMatchMode) {
-                    ForEach(RoutineTagMatchMode.allCases) { mode in
-                        Text(mode.rawValue).tag(mode)
-                    }
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: labels.includedPickerTitle,
+                    options: RoutineTagMatchMode.allCases,
+                    selection: $includeTagMatchMode,
+                    fillsAvailableWidth: true
+                ) { mode in
+                    Text(mode.rawValue)
                 }
-                .labelsHidden()
-                .pickerStyle(.segmented)
                 .frame(maxWidth: 180)
             }
 
@@ -146,13 +147,14 @@ private struct HomeExcludedTagsFilterSection: View {
                 Text(labels.excludedTitle)
                     .font(.subheadline.weight(.semibold))
                 Spacer()
-                Picker(labels.excludedPickerTitle, selection: $excludeTagMatchMode) {
-                    ForEach(RoutineTagMatchMode.allCases) { mode in
-                        Text(mode.rawValue).tag(mode)
-                    }
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: labels.excludedPickerTitle,
+                    options: RoutineTagMatchMode.allCases,
+                    selection: $excludeTagMatchMode,
+                    fillsAvailableWidth: true
+                ) { mode in
+                    Text(mode.rawValue)
                 }
-                .labelsHidden()
-                .pickerStyle(.segmented)
                 .frame(maxWidth: 180)
             }
 

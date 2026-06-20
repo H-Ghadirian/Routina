@@ -224,12 +224,14 @@ struct HomeMacAdventureView: View {
     }
 
     private var screenPicker: some View {
-        Picker("Adventure screen", selection: $selectedScreen) {
-            ForEach(HomeAdventureScreen.allCases) { screen in
-                Text(screen.title).tag(screen)
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Adventure screen",
+            options: HomeAdventureScreen.allCases,
+            selection: $selectedScreen,
+            fillsAvailableWidth: true
+        ) { screen in
+            Text(screen.title)
         }
-        .pickerStyle(.segmented)
         .frame(maxWidth: 300, alignment: .leading)
         .accessibilityIdentifier("adventure.screenPicker")
     }

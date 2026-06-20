@@ -496,13 +496,14 @@ struct HomeMacBoardScopeInspectorView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 } else {
                     VStack(alignment: .leading, spacing: 10) {
-                        Picker("Column", selection: $allocationColumnFilter) {
-                            ForEach(AllocationColumnFilter.allCases) { filter in
-                                Text(filter.pickerTitle).tag(filter)
-                            }
+                        RoutinaGlassSegmentedControl(
+                            accessibilityLabel: "Column",
+                            options: AllocationColumnFilter.allCases,
+                            selection: $allocationColumnFilter,
+                            fillsAvailableWidth: true
+                        ) { filter in
+                            Text(filter.pickerTitle)
                         }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
                         .controlSize(.small)
 
                         if filteredAllocationDrafts.isEmpty {

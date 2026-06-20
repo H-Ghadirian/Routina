@@ -354,14 +354,14 @@ struct PlaceCheckInMapSheet: View {
     }
 
     private var mapDetailPicker: some View {
-        Picker("Places view", selection: $selectedMode) {
-            ForEach(PlaceCheckInMapSheetMode.allCases) { mode in
-                Label(mode.title, systemImage: mode.systemImage)
-                    .tag(mode)
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Places view",
+            options: PlaceCheckInMapSheetMode.allCases,
+            selection: $selectedMode,
+            fillsAvailableWidth: true
+        ) { mode in
+            Label(mode.title, systemImage: mode.systemImage)
         }
-        .pickerStyle(.segmented)
-        .labelsHidden()
         .frame(maxWidth: .infinity)
     }
 

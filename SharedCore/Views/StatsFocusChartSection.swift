@@ -51,12 +51,14 @@ struct StatsFocusChartSection: View {
                 )
             }
 
-            Picker("Focus chart period", selection: $selectedGrouping) {
-                ForEach(StatsFocusChartGrouping.allCases) { grouping in
-                    Text(grouping.title).tag(grouping)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Focus chart period",
+                options: StatsFocusChartGrouping.allCases,
+                selection: $selectedGrouping,
+                fillsAvailableWidth: true
+            ) { grouping in
+                Text(grouping.title)
             }
-            .pickerStyle(.segmented)
             .frame(maxWidth: 320)
             .accessibilityIdentifier("stats.focus.groupingPicker")
 

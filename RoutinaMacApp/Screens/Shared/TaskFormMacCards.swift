@@ -522,13 +522,13 @@ struct TaskFormMacBehaviorCard: View {
     }
 
     private var taskTypeControl: some View {
-        Picker("Task type", selection: model.taskType) {
-            Text("Routine").tag(RoutineTaskType.routine)
-            Text("Todo").tag(RoutineTaskType.todo)
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Task type",
+            options: RoutineTaskType.allCases,
+            selection: model.taskType
+        ) { taskType in
+            Text(taskType.rawValue)
         }
-        .labelsHidden()
-        .pickerStyle(.segmented)
-        .fixedSize()
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
@@ -562,27 +562,25 @@ struct TaskFormMacBehaviorCard: View {
 
     private var scheduleBehaviorControl: some View {
         TaskFormMacControlBlock(title: "Due style") {
-            Picker("Due style", selection: model.scheduleBehavior) {
-                ForEach(RoutineScheduleBehavior.allCases) { behavior in
-                    Text(behavior.rawValue).tag(behavior)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Due style",
+                options: RoutineScheduleBehavior.allCases,
+                selection: model.scheduleBehavior
+            ) { behavior in
+                Text(behavior.rawValue)
             }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            .fixedSize()
         }
     }
 
     private var routineFormatControl: some View {
         TaskFormMacControlBlock(title: "Completion") {
-            Picker("Completion", selection: model.routineFinishMode) {
-                ForEach(RoutineFinishMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Completion",
+                options: RoutineFinishMode.allCases,
+                selection: model.routineFinishMode
+            ) { mode in
+                Text(mode.rawValue)
             }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            .fixedSize()
         }
     }
 
@@ -626,14 +624,13 @@ struct TaskFormMacBehaviorCard: View {
     private var repeatPatternControls: some View {
         TaskFormMacControlBlock(title: "Repeat type") {
             HStack(spacing: 0) {
-                Picker("Repeat type", selection: model.routineRepeatType) {
-                    ForEach(model.routineRepeatTypeCases) { repeatType in
-                        Text(repeatType.rawValue).tag(repeatType)
-                    }
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Repeat type",
+                    options: model.routineRepeatTypeCases,
+                    selection: model.routineRepeatType
+                ) { repeatType in
+                    Text(repeatType.rawValue)
                 }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .fixedSize()
                 Spacer(minLength: 0)
             }
         }
@@ -673,14 +670,13 @@ struct TaskFormMacBehaviorCard: View {
     private var calendarPatternControl: some View {
         TaskFormMacControlBlock(title: "Calendar pattern") {
             HStack(spacing: 0) {
-                Picker("Calendar pattern", selection: model.calendarRecurrenceKind) {
-                    ForEach(RoutineRecurrenceRule.Kind.calendarCases, id: \.self) { kind in
-                        Text(kind.pickerTitle).tag(kind)
-                    }
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Calendar pattern",
+                    options: RoutineRecurrenceRule.Kind.calendarCases,
+                    selection: model.calendarRecurrenceKind
+                ) { kind in
+                    Text(kind.pickerTitle)
                 }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .fixedSize()
                 Spacer(minLength: 0)
             }
         }
@@ -698,13 +694,14 @@ struct TaskFormMacBehaviorCard: View {
             }
             .fixedSize()
 
-            Picker("Unit", selection: model.frequencyUnit) {
-                ForEach(TaskFormFrequencyUnit.allCases, id: \.self) { unit in
-                    Text(unit.rawValue).tag(unit)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Unit",
+                options: TaskFormFrequencyUnit.allCases,
+                selection: model.frequencyUnit,
+                fillsAvailableWidth: true
+            ) { unit in
+                Text(unit.rawValue)
             }
-            .labelsHidden()
-            .pickerStyle(.segmented)
             .frame(width: 220)
 
             Spacer(minLength: 0)
@@ -825,14 +822,13 @@ struct TaskFormMacBehaviorCard: View {
 
     private var dateAvailabilityControls: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Picker("Date availability", selection: dateAvailabilityModeBinding) {
-                ForEach(TaskFormDateAvailabilityMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Date availability",
+                options: TaskFormDateAvailabilityMode.allCases,
+                selection: dateAvailabilityModeBinding
+            ) { mode in
+                Text(mode.rawValue)
             }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            .fixedSize()
 
             dateAvailabilityPickers
         }
@@ -840,14 +836,13 @@ struct TaskFormMacBehaviorCard: View {
 
     private var timeAvailabilityControls: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Picker("Time availability", selection: timingModeBinding) {
-                ForEach(TaskFormTimingMode.cases(for: model.taskType.wrappedValue)) { mode in
-                    Text(mode.rawValue).tag(mode)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Time availability",
+                options: TaskFormTimingMode.cases(for: model.taskType.wrappedValue),
+                selection: timingModeBinding
+            ) { mode in
+                Text(mode.rawValue)
             }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            .fixedSize()
 
             if currentTimingMode == .exact {
                 DatePicker(
@@ -863,14 +858,13 @@ struct TaskFormMacBehaviorCard: View {
     }
 
     private var routineDurationControls: some View {
-        Picker("Duration", selection: model.routineDurationMode) {
-            ForEach(RoutineDurationMode.allCases) { mode in
-                Text(mode.rawValue).tag(mode)
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Duration",
+            options: RoutineDurationMode.allCases,
+            selection: model.routineDurationMode
+        ) { mode in
+            Text(mode.rawValue)
         }
-        .labelsHidden()
-        .pickerStyle(.segmented)
-        .fixedSize()
     }
 
     @ViewBuilder

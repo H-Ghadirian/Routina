@@ -16,12 +16,14 @@ struct HomeFiltersTaskListModeSection: View {
 
     var body: some View {
         Section("Task Type") {
-            Picker("Task type", selection: $taskListMode) {
-                ForEach(HomeFeature.TaskListMode.allCases) { mode in
-                    Label(mode.rawValue, systemImage: mode.systemImage).tag(mode)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Task type",
+                options: HomeFeature.TaskListMode.allCases,
+                selection: $taskListMode,
+                fillsAvailableWidth: true
+            ) { mode in
+                Label(mode.rawValue, systemImage: mode.systemImage)
             }
-            .pickerStyle(.segmented)
 
             Text("Choose which tasks the Home list should show.")
                 .font(.caption)
@@ -35,12 +37,14 @@ struct HomeFiltersViewModeSection: View {
 
     var body: some View {
         Section("View Mode") {
-            Picker("List view", selection: $taskListViewMode) {
-                ForEach(HomeTaskListViewMode.allCases) { mode in
-                    Label(mode.title, systemImage: mode.systemImage).tag(mode)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "List view",
+                options: HomeTaskListViewMode.allCases,
+                selection: $taskListViewMode,
+                fillsAvailableWidth: true
+            ) { mode in
+                Label(mode.title, systemImage: mode.systemImage)
             }
-            .pickerStyle(.segmented)
 
             Text(taskListViewMode == .actionable
                 ? "Showing tasks without unfinished blockers."
@@ -169,13 +173,14 @@ struct HomeFiltersPressureSection: View {
 
     var body: some View {
         Section("Pressure") {
-            Picker("Pressure", selection: $selectedPressureFilter) {
-                Text("All").tag(Optional<RoutineTaskPressure>.none)
-                ForEach(RoutineTaskPressure.allCases, id: \.self) { pressure in
-                    Text(pressure.title).tag(Optional(pressure))
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Pressure",
+                options: [Optional<RoutineTaskPressure>.none] + RoutineTaskPressure.allCases.map(Optional.some),
+                selection: $selectedPressureFilter,
+                fillsAvailableWidth: true
+            ) { pressure in
+                Text(pressure?.title ?? "All")
             }
-            .pickerStyle(.segmented)
         }
     }
 }
@@ -185,12 +190,14 @@ struct HomeFiltersGoalSection: View {
 
     var body: some View {
         Section("Goal") {
-            Picker("Goal", selection: $selectedGoalFilter) {
-                ForEach(HomeTaskGoalFilter.allCases) { filter in
-                    Text(filter.title).tag(filter)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Goal",
+                options: HomeTaskGoalFilter.allCases,
+                selection: $selectedGoalFilter,
+                fillsAvailableWidth: true
+            ) { filter in
+                Text(filter.title)
             }
-            .pickerStyle(.segmented)
         }
     }
 }

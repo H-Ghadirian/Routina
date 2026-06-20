@@ -453,13 +453,13 @@ struct RoutineEventEditorView: View {
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
 
-                    Picker("Timing", selection: $isAllDay) {
-                        Text("All Day").tag(true)
-                        Text("Timed").tag(false)
+                    RoutinaGlassSegmentedControl(
+                        accessibilityLabel: "Timing",
+                        options: [true, false],
+                        selection: $isAllDay
+                    ) { isAllDayOption in
+                        Text(isAllDayOption ? "All Day" : "Timed")
                     }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
-                    .fixedSize()
                 }
 
                 VStack(alignment: .leading, spacing: 10) {

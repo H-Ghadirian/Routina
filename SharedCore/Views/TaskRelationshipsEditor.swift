@@ -165,12 +165,14 @@ private struct TaskRelationshipPickerSheet<SearchField: View>: View {
         NavigationStack {
             VStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 12) {
-                    Picker("Relationship Type", selection: $selectedKind) {
-                        ForEach(RoutineTaskRelationshipKind.allCases, id: \.self) { kind in
-                            Text(kind.title).tag(kind)
-                        }
+                    RoutinaGlassSegmentedControl(
+                        accessibilityLabel: "Relationship Type",
+                        options: RoutineTaskRelationshipKind.allCases,
+                        selection: $selectedKind,
+                        fillsAvailableWidth: true
+                    ) { kind in
+                        Text(kind.title)
                     }
-                    .pickerStyle(.segmented)
 
                     HStack(spacing: 8) {
                         Image(systemName: "magnifyingglass")

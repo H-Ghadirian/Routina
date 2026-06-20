@@ -68,12 +68,14 @@ struct CalendarTaskImportSheet: View {
 
     private var sourcePicker: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Picker("Source", selection: $viewModel.selectedSource) {
-                ForEach(CalendarTaskImportViewModel.ImportSource.allCases) { source in
-                    Text(source.title).tag(source)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Source",
+                options: CalendarTaskImportViewModel.ImportSource.allCases,
+                selection: $viewModel.selectedSource,
+                fillsAvailableWidth: true
+            ) { source in
+                Text(source.title)
             }
-            .pickerStyle(.segmented)
             .onChange(of: viewModel.selectedSource) { _, source in
                 guard source == .outlook, viewModel.canRefreshOutlook else { return }
                 Task {

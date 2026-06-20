@@ -24,11 +24,14 @@ struct TaskFormIOSTaskTypeSection: View {
 
     var body: some View {
         Section(header: Text("Kind")) {
-            Picker("Kind", selection: model.taskType) {
-                Text("Routine").tag(RoutineTaskType.routine)
-                Text("Todo").tag(RoutineTaskType.todo)
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Kind",
+                options: RoutineTaskType.allCases,
+                selection: model.taskType,
+                fillsAvailableWidth: true
+            ) { taskType in
+                Text(taskType.rawValue)
             }
-            .pickerStyle(.segmented)
 
             if showsRoutineDurationControl {
                 Divider()
@@ -71,12 +74,14 @@ struct TaskFormIOSTaskTypeSection: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            Picker("Date availability", selection: dateAvailabilityModeBinding) {
-                ForEach(TaskFormDateAvailabilityMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Date availability",
+                options: TaskFormDateAvailabilityMode.allCases,
+                selection: dateAvailabilityModeBinding,
+                fillsAvailableWidth: true
+            ) { mode in
+                Text(mode.rawValue)
             }
-            .pickerStyle(.segmented)
 
             dateAvailabilityPickers
         }
@@ -88,12 +93,14 @@ struct TaskFormIOSTaskTypeSection: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            Picker("Time availability", selection: timingModeBinding) {
-                ForEach(TaskFormTimingMode.cases(for: model.taskType.wrappedValue)) { mode in
-                    Text(mode.rawValue).tag(mode)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Time availability",
+                options: TaskFormTimingMode.cases(for: model.taskType.wrappedValue),
+                selection: timingModeBinding,
+                fillsAvailableWidth: true
+            ) { mode in
+                Text(mode.rawValue)
             }
-            .pickerStyle(.segmented)
 
             if currentTimingMode == .exact {
                 DatePicker("Time", selection: model.recurrenceTimeOfDay, displayedComponents: .hourAndMinute)
@@ -109,12 +116,14 @@ struct TaskFormIOSTaskTypeSection: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            Picker("Duration", selection: model.routineDurationMode) {
-                ForEach(RoutineDurationMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Duration",
+                options: RoutineDurationMode.allCases,
+                selection: model.routineDurationMode,
+                fillsAvailableWidth: true
+            ) { mode in
+                Text(mode.rawValue)
             }
-            .pickerStyle(.segmented)
         }
     }
 

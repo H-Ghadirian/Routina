@@ -30,12 +30,14 @@ List {
     }
 
     Section("App Theme") {
-        Picker("Theme", selection: appColorSchemeBinding) {
-            ForEach(AppColorScheme.allCases) { scheme in
-                Text(scheme.title).tag(scheme)
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Theme",
+            options: AppColorScheme.allCases,
+            selection: appColorSchemeBinding,
+            fillsAvailableWidth: true
+        ) { scheme in
+            Text(scheme.title)
         }
-        .pickerStyle(.segmented)
 
         Text(store.appearance.appColorScheme.subtitle)
             .foregroundStyle(.secondary)
