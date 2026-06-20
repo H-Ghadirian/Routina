@@ -128,13 +128,25 @@ struct TaskDetailOptionalActionsSectionView: View {
 
     private func actionButton(_ action: TaskDetailOptionalAction) -> some View {
         Button(action: action.perform) {
-            Label(action.title, systemImage: action.systemImage)
-                .font(.subheadline)
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            actionButtonLabel(action)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .routinaGlassCard(
+                    cornerRadius: 8,
+                    tint: .secondary,
+                    tintOpacity: 0.08,
+                    interactive: true
+                )
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(.plain)
+    }
+
+    private func actionButtonLabel(_ action: TaskDetailOptionalAction) -> some View {
+        Label(action.title, systemImage: action.systemImage)
+            .font(.subheadline)
+            .lineLimit(1)
+            .minimumScaleFactor(0.85)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
