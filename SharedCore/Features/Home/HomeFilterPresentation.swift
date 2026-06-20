@@ -45,6 +45,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
     let selectedPressureFilter: RoutineTaskPressure?
     let selectedGoalFilter: HomeTaskGoalFilter
     let selectedMediaFilter: TaskMediaFilter
+    let hideAssumedDoneTasks: Bool
     let hideUnavailableRoutines: Bool
     let showArchivedTasks: Bool
     let hasSavedPlaces: Bool
@@ -68,6 +69,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         selectedPressureFilter: RoutineTaskPressure? = nil,
         selectedGoalFilter: HomeTaskGoalFilter = .all,
         selectedMediaFilter: TaskMediaFilter = .all,
+        hideAssumedDoneTasks: Bool = true,
         hideUnavailableRoutines: Bool = false,
         showArchivedTasks: Bool = true,
         hasSavedPlaces: Bool = false,
@@ -90,6 +92,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         self.selectedPressureFilter = selectedPressureFilter
         self.selectedGoalFilter = selectedGoalFilter
         self.selectedMediaFilter = selectedMediaFilter
+        self.hideAssumedDoneTasks = hideAssumedDoneTasks
         self.hideUnavailableRoutines = hideUnavailableRoutines
         self.showArchivedTasks = showArchivedTasks
         self.hasSavedPlaces = hasSavedPlaces
@@ -111,6 +114,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         if taskListViewMode != .all { count += 1 }
         if taskListSortOrder != .smart { count += 1 }
         if createdDateFilter != .all { count += 1 }
+        if !hideAssumedDoneTasks { count += 1 }
         if hideUnavailableRoutines { count += 1 }
         if !showArchivedTasks { count += 1 }
         return count
@@ -178,6 +182,10 @@ struct HomeFilterPresentation: Equatable, Sendable {
 
         if let selectedImportanceUrgencyFilterLabel {
             labels.append(selectedImportanceUrgencyFilterLabel)
+        }
+
+        if !hideAssumedDoneTasks {
+            labels.append("Assumed visible")
         }
 
         if hideUnavailableRoutines {

@@ -18,6 +18,7 @@ extension HomeTCAView {
             selectedPressureFilter: store.selectedPressureFilter,
             selectedGoalFilter: store.selectedGoalFilter,
             selectedMediaFilter: store.selectedMediaFilter,
+            hideAssumedDoneTasks: store.hideAssumedDoneTasks,
             hideUnavailableRoutines: store.hideUnavailableRoutines,
             showArchivedTasks: store.showArchivedTasks,
             onClearAll: { store.send(.clearOptionalFilters) },
@@ -48,6 +49,9 @@ extension HomeTCAView {
             onClearMedia: {
                 store.send(.selectedMediaFilterChanged(.all))
             },
+            onHideAssumedDoneTasks: {
+                store.send(.hideAssumedDoneTasksChanged(true))
+            },
             onShowUnavailableRoutines: {
                 store.send(.hideUnavailableRoutinesChanged(false))
             },
@@ -75,6 +79,7 @@ extension HomeTCAView {
             selectedPressureFilter: store.selectedPressureFilter,
             selectedGoalFilter: store.selectedGoalFilter,
             selectedMediaFilter: store.selectedMediaFilter,
+            hideAssumedDoneTasks: store.hideAssumedDoneTasks,
             hideUnavailableRoutines: store.hideUnavailableRoutines,
             showArchivedTasks: store.showArchivedTasks,
             hasSavedPlaces: hasSavedPlaces,
@@ -94,6 +99,13 @@ extension HomeTCAView {
         Binding(
             get: { store.showArchivedTasks },
             set: { store.send(.showArchivedTasksChanged($0)) }
+        )
+    }
+
+    var hideAssumedDoneTasksBinding: Binding<Bool> {
+        Binding(
+            get: { store.hideAssumedDoneTasks },
+            set: { store.send(.hideAssumedDoneTasksChanged($0)) }
         )
     }
 
@@ -161,6 +173,7 @@ extension HomeTCAView {
                 get: { store.selectedMediaFilter },
                 set: { store.send(.selectedMediaFilterChanged($0)) }
             ),
+            hideAssumedDoneTasks: hideAssumedDoneTasksBinding,
             includeTagMatchMode: Binding(
                 get: { store.includeTagMatchMode },
                 set: { store.send(.includeTagMatchModeChanged($0)) }

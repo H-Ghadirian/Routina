@@ -148,6 +148,22 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func assumedDoneFilterHidesAssumedRowsByDefault() {
+        let tasks = [
+            TestTaskDisplay(name: "Morning pages", isAssumedDoneToday: true),
+            TestTaskDisplay(name: "Read chapter")
+        ]
+
+        let defaultResult = makeFiltering()
+            .filteredTasks(tasks)
+        let visibleResult = makeFiltering(hideAssumedDoneTasks: false)
+            .filteredTasks(tasks)
+
+        #expect(defaultResult.map(\.name) == ["Read chapter"])
+        #expect(Set(visibleResult.map(\.name)) == ["Morning pages", "Read chapter"])
+    }
+
+    @Test
     func filteredPlannedTodayTasksMatchesReferenceDate() {
         let referenceDate = Date(timeIntervalSince1970: 1_714_608_000)
         let tasks = [
@@ -1202,6 +1218,7 @@ private func makeFiltering(
     selectedPressureFilter: RoutineTaskPressure? = nil,
     selectedGoalFilter: HomeTaskGoalFilter = .all,
     selectedMediaFilter: TaskMediaFilter = .all,
+    hideAssumedDoneTasks: Bool = true,
     taskListViewMode: HomeTaskListViewMode = .all,
     taskListSortOrder: HomeTaskListSortOrder = .smart,
     createdDateFilter: HomeTaskCreatedDateFilter = .all,
@@ -1227,6 +1244,7 @@ private func makeFiltering(
             selectedPressureFilter: selectedPressureFilter,
             selectedGoalFilter: selectedGoalFilter,
             selectedMediaFilter: selectedMediaFilter,
+            hideAssumedDoneTasks: hideAssumedDoneTasks,
             taskListViewMode: taskListViewMode,
             taskListSortOrder: taskListSortOrder,
             createdDateFilter: createdDateFilter,

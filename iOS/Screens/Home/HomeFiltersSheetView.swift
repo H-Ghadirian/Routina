@@ -18,6 +18,7 @@ struct HomeFiltersSheetView: View {
                 )
                 HomeFiltersTaskListModeSection(taskListMode: bindings.taskListMode)
                 HomeFiltersViewModeSection(taskListViewMode: bindings.taskListViewMode)
+                HomeFiltersAssumedDoneSection(hideAssumedDoneTasks: bindings.hideAssumedDoneTasks)
                 HomeFiltersGroupingSection(
                     routineListSectioningMode: bindings.routineListSectioningMode
                 )

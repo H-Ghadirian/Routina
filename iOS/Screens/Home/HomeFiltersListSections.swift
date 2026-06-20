@@ -51,6 +51,22 @@ struct HomeFiltersViewModeSection: View {
     }
 }
 
+struct HomeFiltersAssumedDoneSection: View {
+    @Binding var hideAssumedDoneTasks: Bool
+
+    var body: some View {
+        Section("Assumed Done") {
+            Toggle("Don't show assumed done tasks", isOn: $hideAssumedDoneTasks)
+
+            Text(hideAssumedDoneTasks
+                ? "Tasks that are only assumed done stay out of the list."
+                : "Assumed done tasks stay visible until you confirm or mark them not today.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
 struct HomeFiltersSortSection: View {
     @Binding var taskListSortOrder: HomeTaskListSortOrder
 

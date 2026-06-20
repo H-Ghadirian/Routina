@@ -148,6 +148,7 @@ struct HomeFilterEditorTests {
             selectedTodoStateFilter: .blocked,
             selectedPressureFilter: .high,
             selectedGoalFilter: .withGoal,
+            hideAssumedDoneTasks: false,
             taskListViewMode: .actionable,
             taskListSortOrder: .createdNewestFirst,
             createdDateFilter: .today
@@ -172,6 +173,7 @@ struct HomeFilterEditorTests {
         #expect(taskFilters.selectedTodoStateFilter == nil)
         #expect(taskFilters.selectedPressureFilter == nil)
         #expect(taskFilters.selectedGoalFilter == .all)
+        #expect(taskFilters.hideAssumedDoneTasks)
         #expect(taskFilters.taskListViewMode == .all)
         #expect(taskFilters.taskListSortOrder == .smart)
         #expect(taskFilters.createdDateFilter == .all)
@@ -196,6 +198,7 @@ struct HomeFilterEditorTests {
             selectedTodoStateFilter: .inProgress,
             selectedPressureFilter: .medium,
             selectedGoalFilter: .withoutGoal,
+            hideAssumedDoneTasks: false,
             taskListViewMode: .actionable,
             taskListSortOrder: .createdOldestFirst,
             createdDateFilter: .last7Days,
@@ -212,6 +215,7 @@ struct HomeFilterEditorTests {
                     selectedTodoStateFilter: .ready,
                     selectedPressureFilter: RoutineTaskPressure.none,
                     selectedGoalFilter: .withGoal,
+                    hideAssumedDoneTasks: true,
                     taskListViewMode: .all,
                     taskListSortOrder: .createdNewestFirst,
                     createdDateFilter: .today
@@ -238,6 +242,7 @@ struct HomeFilterEditorTests {
         #expect(taskFilters.selectedTodoStateFilter == .ready)
         #expect(taskFilters.selectedPressureFilter == RoutineTaskPressure.none)
         #expect(taskFilters.selectedGoalFilter == .withGoal)
+        #expect(taskFilters.hideAssumedDoneTasks)
         #expect(taskFilters.taskListViewMode == .all)
         #expect(taskFilters.taskListSortOrder == .createdNewestFirst)
         #expect(taskFilters.createdDateFilter == .today)
@@ -254,6 +259,7 @@ struct HomeFilterEditorTests {
             selectedTodoStateFilter: .inProgress,
             selectedPressureFilter: .medium,
             selectedGoalFilter: .withoutGoal,
+            hideAssumedDoneTasks: false,
             taskListViewMode: .actionable,
             taskListSortOrder: .createdOldestFirst,
             createdDateFilter: .last7Days

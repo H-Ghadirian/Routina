@@ -11,6 +11,7 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     @Binding var routineListSectioningMode: RoutineListSectioningMode
     @Binding var taskListSortOrder: HomeTaskListSortOrder
     @Binding var createdDateFilter: HomeTaskCreatedDateFilter
+    @Binding var hideAssumedDoneTasks: Bool
     @Binding var showArchivedTasks: Bool
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     @Binding var selectedPressureFilter: RoutineTaskPressure?
@@ -169,6 +170,7 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                     }
 
                     filterControlSection("Show") {
+                        assumedDoneToggle
                         archivedToggle
                         filterPicker
                     }
@@ -434,6 +436,18 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
             Text(showArchivedTasks
                 ? "Archived routines and todos are shown in their own list."
                 : "Archived routines and todos are hidden from the task list.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var assumedDoneToggle: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Toggle("Don't show assumed done tasks", isOn: $hideAssumedDoneTasks)
+
+            Text(hideAssumedDoneTasks
+                ? "Tasks that are only assumed done stay out of the list."
+                : "Assumed done tasks stay visible until you confirm or mark them not today.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

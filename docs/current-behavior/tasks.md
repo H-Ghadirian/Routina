@@ -18,6 +18,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0252](../decisions/0252-stabilize-home-task-list-presentation-identity.md)
 - [0253](../decisions/0253-guard-checklist-detail-mutations-through-reloads.md)
 - [0259](../decisions/0259-allow-daily-checklist-auto-assumed-completion.md)
+- [0260](../decisions/0260-hide-assumed-done-tasks-by-default.md)
 
 ## Current Contract
 
@@ -33,6 +34,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Checklist runout item actions are item-scoped. Completing all currently due items records routine completion.
 - Daily checklist-completion progress lasts for the current day only. Tomorrow starts unchecked unless the routine was completed and recorded in history.
 - Daily Checklist-completion routines with auto-assume done use day-level assumption only; assumed completion does not fake completed checklist item IDs, and current-day partial checklist progress suppresses assumed presentation until the routine is fully completed or progress is cleared.
+- Home task filters hide assumed-done rows by default through `Don't show assumed done tasks`; users can uncheck it to review, confirm, or correct assumed days.
 - Once a checklist-completion routine is completed for a selected day, its checklist rows present as checked and read-only from selected-day completion evidence, even though in-progress checklist IDs are cleared after the final item. The toolbar Undo action reopens/removes the completed day without flashing stale completed checklist state back into the rows.
 - Selected checklist item mutations keep their post-action detail state through stale Home reloads, including final completion after item-progress IDs reset.
 - Optional checklists attached to ordinary tasks can block manual completion until all required items are checked.

@@ -77,6 +77,18 @@ struct HomeFilterPresentationTests {
     }
 
     @Test
+    func showingAssumedDoneTasksCountsAsNonDefaultFilter() {
+        let presentation = HomeFilterPresentation(
+            taskListKind: .all,
+            hideAssumedDoneTasks: false
+        )
+
+        #expect(presentation.activeOptionalFilterCount == 1)
+        #expect(presentation.hasActiveOptionalFilters)
+        #expect(presentation.filterLabels == ["Assumed visible"])
+    }
+
+    @Test
     func placeCopyAdaptsToTaskListKindAndSavedPlaces() {
         let selected = HomeFilterPresentation(
             taskListKind: .routines,

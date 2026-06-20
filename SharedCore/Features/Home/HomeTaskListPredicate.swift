@@ -16,6 +16,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             && matchesPressureFilter(task)
             && matchesGoalFilter(task)
             && matchesMediaFilter(task)
+            && matchesAssumedDoneFilter(task)
             && matchesCreatedDateFilter(task)
             && matchesImportanceUrgencyFilter(task)
             && matchesSelectedTags(task)
@@ -35,6 +36,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             && matchesPressureFilter(task)
             && matchesGoalFilter(task)
             && matchesMediaFilter(task)
+            && matchesAssumedDoneFilter(task)
             && matchesCreatedDateFilter(task)
             && matchesImportanceUrgencyFilter(task)
             && matchesSelectedTags(task)
@@ -104,6 +106,10 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             hasImage: task.hasImage,
             hasFileAttachment: task.hasFileAttachment
         )
+    }
+
+    func matchesAssumedDoneFilter(_ task: Display) -> Bool {
+        !configuration.hideAssumedDoneTasks || !task.isAssumedDoneToday
     }
 
     func matchesCreatedDateFilter(_ task: Display) -> Bool {

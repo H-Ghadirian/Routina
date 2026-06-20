@@ -32,6 +32,7 @@ protocol HomeTaskListDisplay {
     var isCompletedOneOff: Bool { get }
     var isCanceledOneOff: Bool { get }
     var isDoneToday: Bool { get }
+    var isAssumedDoneToday: Bool { get }
     var isPaused: Bool { get }
     var isPinned: Bool { get }
     var isInProgress: Bool { get }
@@ -59,6 +60,10 @@ extension HomeTaskListDisplay {
     }
 
     var hasDailyRunoutChecklistItem: Bool {
+        false
+    }
+
+    var isAssumedDoneToday: Bool {
         false
     }
 
@@ -135,6 +140,7 @@ struct HomeTaskListFilteringConfiguration {
     var selectedPressureFilter: RoutineTaskPressure?
     var selectedGoalFilter: HomeTaskGoalFilter
     var selectedMediaFilter: TaskMediaFilter
+    var hideAssumedDoneTasks: Bool
     var taskListViewMode: HomeTaskListViewMode
     var taskListSortOrder: HomeTaskListSortOrder
     var createdDateFilter: HomeTaskCreatedDateFilter

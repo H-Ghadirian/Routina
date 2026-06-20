@@ -14,6 +14,7 @@ struct HomeTaskFiltersState: Equatable {
     var selectedPressureFilter: RoutineTaskPressure? = nil
     var selectedGoalFilter: HomeTaskGoalFilter = .all
     var selectedMediaFilter: TaskMediaFilter = .all
+    var hideAssumedDoneTasks: Bool = true
     var taskListViewMode: HomeTaskListViewMode = .all
     var taskListSortOrder: HomeTaskListSortOrder = .smart
     var createdDateFilter: HomeTaskCreatedDateFilter = .all
@@ -36,6 +37,7 @@ struct HomeTaskFiltersState: Equatable {
             selectedPressureFilter: selectedPressureFilter,
             selectedGoalFilter: selectedGoalFilter,
             selectedMediaFilter: selectedMediaFilter,
+            hideAssumedDoneTasks: hideAssumedDoneTasks,
             taskListViewMode: taskListViewMode,
             taskListSortOrder: taskListSortOrder,
             createdDateFilter: createdDateFilter,
@@ -72,6 +74,7 @@ struct HomeTaskFiltersState: Equatable {
         selectedPressureFilter = snapshot.selectedPressureFilter
         selectedGoalFilter = snapshot.selectedGoalFilter
         selectedMediaFilter = snapshot.selectedMediaFilter
+        hideAssumedDoneTasks = snapshot.hideAssumedDoneTasks
         taskListViewMode = snapshot.taskListViewMode
         taskListSortOrder = snapshot.taskListSortOrder
         createdDateFilter = snapshot.createdDateFilter
@@ -160,6 +163,7 @@ enum HomeTemporaryViewStateMapper {
             selectedPressureFilter: persistedState.homeSelectedPressureFilter,
             selectedGoalFilter: persistedState.homeSelectedGoalFilter,
             selectedMediaFilter: persistedState.homeSelectedMediaFilter,
+            hideAssumedDoneTasks: persistedState.homeHideAssumedDoneTasks,
             taskListViewMode: persistedState.homeTaskListViewMode,
             taskListSortOrder: persistedState.homeTaskListSortOrder,
             createdDateFilter: persistedState.homeCreatedDateFilter,
@@ -228,6 +232,7 @@ enum HomeTemporaryViewStateMapper {
             homeSelectedPressureFilter: taskFilters.selectedPressureFilter,
             homeSelectedGoalFilter: taskFilters.selectedGoalFilter,
             homeSelectedMediaFilter: taskFilters.selectedMediaFilter,
+            homeHideAssumedDoneTasks: taskFilters.hideAssumedDoneTasks,
             homeTaskListViewMode: taskFilters.taskListViewMode,
             homeTaskListSortOrder: taskFilters.taskListSortOrder,
             homeCreatedDateFilter: taskFilters.createdDateFilter,

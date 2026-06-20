@@ -19,6 +19,7 @@ extension HomeTCAView {
                 selectedPressureFilter: store.selectedPressureFilter,
                 selectedGoalFilter: effectiveSelectedGoalFilter,
                 selectedMediaFilter: store.selectedMediaFilter,
+                hideAssumedDoneTasks: store.hideAssumedDoneTasks,
                 taskListViewMode: store.taskListViewMode,
                 taskListSortOrder: store.taskListSortOrder,
                 createdDateFilter: store.createdDateFilter,

@@ -132,6 +132,7 @@ struct HomeFeature {
             selectedPressureFilter: RoutineTaskPressure? = nil,
             selectedGoalFilter: HomeTaskGoalFilter = .all,
             selectedMediaFilter: TaskMediaFilter = .all,
+            hideAssumedDoneTasks: Bool = true,
             taskListViewMode: HomeTaskListViewMode = .all,
             taskListSortOrder: HomeTaskListSortOrder = .smart,
             createdDateFilter: HomeTaskCreatedDateFilter = .all,
@@ -203,6 +204,7 @@ struct HomeFeature {
                 selectedPressureFilter: selectedPressureFilter,
                 selectedGoalFilter: selectedGoalFilter,
                 selectedMediaFilter: selectedMediaFilter,
+                hideAssumedDoneTasks: hideAssumedDoneTasks,
                 taskListViewMode: taskListViewMode,
                 taskListSortOrder: taskListSortOrder,
                 createdDateFilter: createdDateFilter,
@@ -354,6 +356,11 @@ struct HomeFeature {
         var selectedMediaFilter: TaskMediaFilter {
             get { taskFilters.selectedMediaFilter }
             set { taskFilters.selectedMediaFilter = newValue }
+        }
+
+        var hideAssumedDoneTasks: Bool {
+            get { taskFilters.hideAssumedDoneTasks }
+            set { taskFilters.hideAssumedDoneTasks = newValue }
         }
 
         var taskListViewMode: HomeTaskListViewMode {
@@ -593,6 +600,7 @@ struct HomeFeature {
         case selectedPressureFilterChanged(RoutineTaskPressure?)
         case selectedGoalFilterChanged(HomeTaskGoalFilter)
         case selectedMediaFilterChanged(TaskMediaFilter)
+        case hideAssumedDoneTasksChanged(Bool)
         case taskListViewModeChanged(HomeTaskListViewMode)
         case taskListSortOrderChanged(HomeTaskListSortOrder)
         case createdDateFilterChanged(HomeTaskCreatedDateFilter)
@@ -1091,6 +1099,9 @@ struct HomeFeature {
 
             case let .selectedMediaFilterChanged(filter):
                 return filterMutationHandler().applyTaskFilterMutation(.selectedMediaFilter(filter), state: &state)
+
+            case let .hideAssumedDoneTasksChanged(hideAssumedDoneTasks):
+                return filterMutationHandler().applyTaskFilterMutation(.hideAssumedDoneTasks(hideAssumedDoneTasks), state: &state)
 
             case let .taskListViewModeChanged(mode):
                 return filterMutationHandler().applyTaskFilterMutation(.taskListViewMode(mode), state: &state)

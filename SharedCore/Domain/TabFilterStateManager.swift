@@ -134,6 +134,7 @@ struct TabFilterStateManager {
         var selectedPressureFilter: RoutineTaskPressure? = nil
         var selectedGoalFilter: HomeTaskGoalFilter = .all
         var selectedMediaFilter: TaskMediaFilter = .all
+        var hideAssumedDoneTasks: Bool = true
         var taskListViewMode: HomeTaskListViewMode = .all
         var taskListSortOrder: HomeTaskListSortOrder = .smart
         var createdDateFilter: HomeTaskCreatedDateFilter = .all
@@ -154,6 +155,7 @@ struct TabFilterStateManager {
                 selectedPressureFilter: nil,
                 selectedGoalFilter: .all,
                 selectedMediaFilter: .all,
+                hideAssumedDoneTasks: true,
                 taskListViewMode: .all,
                 taskListSortOrder: .smart,
                 createdDateFilter: .all,
@@ -175,6 +177,7 @@ struct TabFilterStateManager {
             selectedPressureFilter: RoutineTaskPressure? = nil,
             selectedGoalFilter: HomeTaskGoalFilter = .all,
             selectedMediaFilter: TaskMediaFilter = .all,
+            hideAssumedDoneTasks: Bool = true,
             taskListViewMode: HomeTaskListViewMode = .all,
             taskListSortOrder: HomeTaskListSortOrder = .smart,
             createdDateFilter: HomeTaskCreatedDateFilter = .all,
@@ -193,6 +196,7 @@ struct TabFilterStateManager {
             self.selectedPressureFilter = selectedPressureFilter
             self.selectedGoalFilter = selectedGoalFilter
             self.selectedMediaFilter = selectedMediaFilter
+            self.hideAssumedDoneTasks = hideAssumedDoneTasks
             self.taskListViewMode = taskListViewMode
             self.taskListSortOrder = taskListSortOrder
             self.createdDateFilter = createdDateFilter
@@ -213,6 +217,7 @@ struct TabFilterStateManager {
             case selectedPressureFilter
             case selectedGoalFilter
             case selectedMediaFilter
+            case hideAssumedDoneTasks
             case taskListViewMode
             case taskListSortOrder
             case createdDateFilter
@@ -235,6 +240,7 @@ struct TabFilterStateManager {
             selectedPressureFilter = try container.decodeIfPresent(RoutineTaskPressure.self, forKey: .selectedPressureFilter)
             selectedGoalFilter = try container.decodeIfPresent(HomeTaskGoalFilter.self, forKey: .selectedGoalFilter) ?? .all
             selectedMediaFilter = try container.decodeIfPresent(TaskMediaFilter.self, forKey: .selectedMediaFilter) ?? .all
+            hideAssumedDoneTasks = try container.decodeIfPresent(Bool.self, forKey: .hideAssumedDoneTasks) ?? true
             taskListViewMode = try container.decodeIfPresent(HomeTaskListViewMode.self, forKey: .taskListViewMode) ?? .all
             taskListSortOrder = try container.decodeIfPresent(HomeTaskListSortOrder.self, forKey: .taskListSortOrder) ?? .smart
             createdDateFilter = try container.decodeIfPresent(HomeTaskCreatedDateFilter.self, forKey: .createdDateFilter) ?? .all
@@ -276,6 +282,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
     var homeSelectedPressureFilter: RoutineTaskPressure? = nil
     var homeSelectedGoalFilter: HomeTaskGoalFilter = .all
     var homeSelectedMediaFilter: TaskMediaFilter = .all
+    var homeHideAssumedDoneTasks: Bool = true
     var homeTaskListViewMode: HomeTaskListViewMode = .all
     var homeTaskListSortOrder: HomeTaskListSortOrder = .smart
     var homeCreatedDateFilter: HomeTaskCreatedDateFilter = .all
@@ -328,6 +335,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedPressureFilter: RoutineTaskPressure? = nil,
         homeSelectedGoalFilter: HomeTaskGoalFilter = .all,
         homeSelectedMediaFilter: TaskMediaFilter = .all,
+        homeHideAssumedDoneTasks: Bool = true,
         homeTaskListViewMode: HomeTaskListViewMode = .all,
         homeTaskListSortOrder: HomeTaskListSortOrder = .smart,
         homeCreatedDateFilter: HomeTaskCreatedDateFilter = .all,
@@ -379,6 +387,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         self.homeSelectedPressureFilter = homeSelectedPressureFilter
         self.homeSelectedGoalFilter = homeSelectedGoalFilter
         self.homeSelectedMediaFilter = homeSelectedMediaFilter
+        self.homeHideAssumedDoneTasks = homeHideAssumedDoneTasks
         self.homeTaskListViewMode = homeTaskListViewMode
         self.homeTaskListSortOrder = homeTaskListSortOrder
         self.homeCreatedDateFilter = homeCreatedDateFilter
@@ -432,6 +441,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         case homeSelectedPressureFilter
         case homeSelectedGoalFilter
         case homeSelectedMediaFilter
+        case homeHideAssumedDoneTasks
         case homeTaskListViewMode
         case homeTaskListSortOrder
         case homeCreatedDateFilter
@@ -487,6 +497,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
             homeSelectedPressureFilter: try container.decodeIfPresent(RoutineTaskPressure.self, forKey: .homeSelectedPressureFilter),
             homeSelectedGoalFilter: try container.decodeIfPresent(HomeTaskGoalFilter.self, forKey: .homeSelectedGoalFilter) ?? .all,
             homeSelectedMediaFilter: try container.decodeIfPresent(TaskMediaFilter.self, forKey: .homeSelectedMediaFilter) ?? .all,
+            homeHideAssumedDoneTasks: try container.decodeIfPresent(Bool.self, forKey: .homeHideAssumedDoneTasks) ?? true,
             homeTaskListViewMode: try container.decodeIfPresent(HomeTaskListViewMode.self, forKey: .homeTaskListViewMode) ?? .all,
             homeTaskListSortOrder: try container.decodeIfPresent(HomeTaskListSortOrder.self, forKey: .homeTaskListSortOrder) ?? .smart,
             homeCreatedDateFilter: try container.decodeIfPresent(HomeTaskCreatedDateFilter.self, forKey: .homeCreatedDateFilter) ?? .all,
@@ -541,6 +552,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedPressureFilter: nil,
         homeSelectedGoalFilter: .all,
         homeSelectedMediaFilter: .all,
+        homeHideAssumedDoneTasks: true,
         homeTaskListViewMode: .all,
         homeTaskListSortOrder: .smart,
         homeCreatedDateFilter: .all,
