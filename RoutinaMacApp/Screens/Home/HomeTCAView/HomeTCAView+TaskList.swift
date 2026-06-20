@@ -262,7 +262,7 @@ extension HomeTCAView {
 
         if section.kind.isCollapsible && isExpanded {
             VStack(alignment: .leading, spacing: 0) {
-                taskListSectionHeader(for: section)
+                taskListExpandedSectionHeader(for: section)
                     .padding(.bottom, 6)
 
                 taskListSectionTaskGroups(
@@ -274,18 +274,19 @@ extension HomeTCAView {
                 .padding(.bottom, 8)
             }
             .padding(4)
-            .routinaGlassPanel(
-                cornerRadius: 12,
+            .routinaGlassCard(
+                cornerRadius: 8,
                 tint: taskListSectionHeaderTint(for: section),
-                tintOpacity: taskListExpandedSectionTintOpacity(for: section)
+                tintOpacity: taskListSectionHeaderTintOpacity(for: section, isExpanded: true),
+                interactive: true
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(
                         taskListSectionHeaderTint(for: section).opacity(
-                            taskListExpandedSectionStrokeOpacity(for: section)
+                            taskListSectionHeaderStrokeOpacity(for: section, isExpanded: true)
                         ),
-                        lineWidth: 1
+                        lineWidth: 0.75
                     )
             )
         } else {
@@ -300,6 +301,22 @@ extension HomeTCAView {
                     )
                 }
             }
+        }
+    }
+
+    private func taskListExpandedSectionHeader(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+    ) -> some View {
+        Button {
+            toggleTaskListSection(section)
+        } label: {
+            taskListSectionHeaderContent(for: section, isExpanded: true)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(section.title)
+        .accessibilityValue("Expanded")
+        .contextMenu {
+            taskListSectionFocusContextMenu(for: section)
         }
     }
 
@@ -411,6 +428,28 @@ extension HomeTCAView {
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
         isExpanded: Bool
     ) -> some View {
+        taskListSectionHeaderContent(for: section, isExpanded: isExpanded)
+            .routinaGlassCard(
+                cornerRadius: 8,
+                tint: taskListSectionHeaderTint(for: section),
+                tintOpacity: taskListSectionHeaderTintOpacity(for: section, isExpanded: isExpanded),
+                interactive: true
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(
+                        taskListSectionHeaderTint(for: section).opacity(
+                            taskListSectionHeaderStrokeOpacity(for: section, isExpanded: isExpanded)
+                        ),
+                        lineWidth: 0.75
+                    )
+            )
+    }
+
+    private func taskListSectionHeaderContent(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        isExpanded: Bool
+    ) -> some View {
         let tint = taskListSectionHeaderTint(for: section)
 
         return HStack(spacing: 7) {
@@ -448,19 +487,6 @@ extension HomeTCAView {
         .padding(.vertical, 7)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .routinaGlassCard(
-            cornerRadius: 8,
-            tint: tint,
-            tintOpacity: taskListSectionHeaderTintOpacity(for: section, isExpanded: isExpanded),
-            interactive: true
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(
-                    tint.opacity(taskListSectionHeaderStrokeOpacity(for: section, isExpanded: isExpanded)),
-                    lineWidth: 0.75
-                )
-        )
     }
 
     private func taskListSectionHeaderTintOpacity(
@@ -492,36 +518,6 @@ extension HomeTCAView {
             return isExpanded ? 0.24 : 0.18
         case .pinned, .regular, .away:
             return 0.22
-        }
-    }
-
-    private func taskListExpandedSectionTintOpacity(
-        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
-    ) -> Double {
-        switch section.kind {
-        case .tag:
-            return 0.10
-        case .plannedToday, .daily:
-            return 0.07
-        case .untagged, .archived:
-            return 0.05
-        case .pinned, .regular, .away:
-            return 0.04
-        }
-    }
-
-    private func taskListExpandedSectionStrokeOpacity(
-        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
-    ) -> Double {
-        switch section.kind {
-        case .tag:
-            return 0.34
-        case .plannedToday, .daily:
-            return 0.26
-        case .untagged, .archived:
-            return 0.18
-        case .pinned, .regular, .away:
-            return 0.16
         }
     }
 
