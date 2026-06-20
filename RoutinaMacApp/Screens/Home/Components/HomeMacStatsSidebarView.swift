@@ -38,11 +38,13 @@ struct HomeMacStatsSidebarView: View {
                     queryOptions: queryOptions
                 )
 
-                HomeMacStatsDashboardScopeSection(
-                    selectedDashboardScope: selectedDashboardScope,
-                    availableDashboardScopes: availableDashboardScopes,
-                    onSelectDashboardScope: onSelectDashboardScope
-                )
+                if availableDashboardScopes.count > 1 {
+                    HomeMacStatsDashboardScopeSection(
+                        selectedDashboardScope: selectedDashboardScope,
+                        availableDashboardScopes: availableDashboardScopes,
+                        onSelectDashboardScope: onSelectDashboardScope
+                    )
+                }
 
                 HomeMacStatsTaskTypeSection(
                     selectedTaskTypeFilter: selectedTaskTypeFilter,

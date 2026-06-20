@@ -158,17 +158,45 @@ extension HomeTCAView {
     }
 
     private var availableStatsDashboardScopes: [StatsDashboardScope] {
-        StatsDashboardScope.allCases.filter { scope in
-            (scope != .wins || isStatsWinsEnabled)
-                && (scope != .sleep || isStatsSleepTabEnabled)
-                && (scope != .achievements || isStatsAchievementsEnabled)
+        let reportableItems = availableStatsDashboardItems
+        return StatsDashboardScope.allCases.filter { scope in
+            guard isStatsDashboardScopeFeatureEnabled(scope) else { return false }
+            return scope == .all || reportableItems.contains { $0.isIncluded(in: scope) }
+        }
+    }
+
+    private var availableStatsDashboardItems: [StatsMacDashboardItem] {
+        let selectedRange = statsStore?.selectedRange ?? .week
+        let metrics = statsStore?.metrics ?? StatsFeatureMetrics()
+        let isGitFeaturesEnabled = statsStore?.isGitFeaturesEnabled ?? settingsStore.appearance.isGitFeaturesEnabled
+
+        return StatsMacDashboardItem.allCases.filter { item in
+            item.isAvailable(
+                selectedRange: selectedRange,
+                isGitFeaturesEnabled: isGitFeaturesEnabled,
+                isGoalsTabEnabled: isGoalsTabEnabled,
+                areMacEventEmotionActionsEnabled: areMacEventEmotionActionsEnabled,
+                isStatsWinsEnabled: isStatsWinsEnabled,
+                isStatsAchievementsEnabled: isStatsAchievementsEnabled
+            )
+                && item.isReportable(metrics: metrics)
+        }
+    }
+
+    private func isStatsDashboardScopeFeatureEnabled(_ scope: StatsDashboardScope) -> Bool {
+        switch scope {
+        case .all, .focus:
+            return true
+        case .sleep:
+            return isStatsSleepTabEnabled
+        case .wins:
+            return isStatsWinsEnabled
+        case .achievements:
+            return isStatsAchievementsEnabled
         }
     }
 
     private var resolvedStatsDashboardScope: StatsDashboardScope {
-        if selectedStatsDashboardScope == .wins && !isStatsWinsEnabled { return .all }
-        if selectedStatsDashboardScope == .sleep && !isStatsSleepTabEnabled { return .all }
-        if selectedStatsDashboardScope == .achievements && !isStatsAchievementsEnabled { return .all }
         if !availableStatsDashboardScopes.contains(selectedStatsDashboardScope) {
             return .all
         }
