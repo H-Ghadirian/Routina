@@ -260,34 +260,38 @@ extension HomeTCAView {
     ) -> some View {
         let isExpanded = taskListSectionIsExpanded(section)
 
-        if section.kind.isCollapsible && isExpanded {
+        if section.kind.isCollapsible {
             VStack(alignment: .leading, spacing: 0) {
-                taskListExpandedSectionHeader(for: section)
-                    .padding(.bottom, 6)
+                taskListCollapsibleSectionHeader(for: section, isExpanded: isExpanded)
+                    .padding(.bottom, isExpanded ? 6 : 0)
 
-                taskListSectionTaskGroups(
-                    for: section,
-                    in: presentation,
-                    allowsPlannerDrag: allowsPlannerDrag
-                )
-                .padding(.horizontal, 8)
-                .padding(.bottom, 8)
+                if isExpanded {
+                    taskListSectionTaskGroups(
+                        for: section,
+                        in: presentation,
+                        allowsPlannerDrag: allowsPlannerDrag
+                    )
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 8)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
             }
             .routinaGlassCard(
                 cornerRadius: 8,
                 tint: taskListSectionHeaderTint(for: section),
-                tintOpacity: taskListSectionHeaderTintOpacity(for: section, isExpanded: true),
+                tintOpacity: taskListSectionHeaderTintOpacity(for: section, isExpanded: isExpanded),
                 interactive: true
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(
                         taskListSectionHeaderTint(for: section).opacity(
-                            taskListSectionHeaderStrokeOpacity(for: section, isExpanded: true)
+                            taskListSectionHeaderStrokeOpacity(for: section, isExpanded: isExpanded)
                         ),
                         lineWidth: 0.75
                     )
             )
+            .clipped()
         } else {
             VStack(alignment: .leading, spacing: 6) {
                 taskListSectionHeader(for: section)
@@ -303,17 +307,18 @@ extension HomeTCAView {
         }
     }
 
-    private func taskListExpandedSectionHeader(
-        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+    private func taskListCollapsibleSectionHeader(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        isExpanded: Bool
     ) -> some View {
         Button {
             toggleTaskListSection(section)
         } label: {
-            taskListSectionHeaderContent(for: section, isExpanded: true)
+            taskListSectionHeaderContent(for: section, isExpanded: isExpanded)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(section.title)
-        .accessibilityValue("Expanded")
+        .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
         .contextMenu {
             taskListSectionFocusContextMenu(for: section)
         }
@@ -340,6 +345,7 @@ extension HomeTCAView {
                         allowsPlannerDrag: allowsPlannerDrag
                     )
                 }
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
     }
@@ -397,52 +403,13 @@ extension HomeTCAView {
         .contentShape(Rectangle())
     }
 
-    @ViewBuilder
     private func taskListSectionHeader(
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     ) -> some View {
-        if section.kind.isCollapsible {
-            let isExpanded = taskListSectionIsExpanded(section)
-
-            Button {
-                toggleTaskListSection(section)
-            } label: {
-                taskListSectionHeaderLabel(for: section, isExpanded: isExpanded)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(section.title)
-            .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
-            .contextMenu {
-                taskListSectionFocusContextMenu(for: section)
-            }
-        } else {
-            Text(section.title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 10)
-        }
-    }
-
-    private func taskListSectionHeaderLabel(
-        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
-        isExpanded: Bool
-    ) -> some View {
-        taskListSectionHeaderContent(for: section, isExpanded: isExpanded)
-            .routinaGlassCard(
-                cornerRadius: 8,
-                tint: taskListSectionHeaderTint(for: section),
-                tintOpacity: taskListSectionHeaderTintOpacity(for: section, isExpanded: isExpanded),
-                interactive: true
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(
-                        taskListSectionHeaderTint(for: section).opacity(
-                            taskListSectionHeaderStrokeOpacity(for: section, isExpanded: isExpanded)
-                        ),
-                        lineWidth: 0.75
-                    )
-            )
+        Text(section.title)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 10)
     }
 
     private func taskListSectionHeaderContent(
@@ -702,7 +669,7 @@ extension HomeTCAView {
         _ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     ) {
         guard section.kind.isCollapsible else { return }
-        withAnimation(.snappy(duration: 0.2)) {
+        withAnimation(.easeInOut(duration: 0.24)) {
             switch section.kind {
             case .plannedToday:
                 setTagTaskListSection(section, collapsed: taskListSectionIsExpanded(section))
@@ -729,7 +696,7 @@ extension HomeTCAView {
         _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
     ) {
         guard group.isCollapsible else { return }
-        withAnimation(.snappy(duration: 0.2)) {
+        withAnimation(.easeInOut(duration: 0.24)) {
             isMacPlanTodayDailyRoutinesGroupCollapsed.toggle()
         }
     }
