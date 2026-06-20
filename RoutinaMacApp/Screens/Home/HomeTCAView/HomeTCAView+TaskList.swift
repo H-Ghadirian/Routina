@@ -273,7 +273,6 @@ extension HomeTCAView {
                 .padding(.horizontal, 8)
                 .padding(.bottom, 8)
             }
-            .padding(4)
             .routinaGlassCard(
                 cornerRadius: 8,
                 tint: taskListSectionHeaderTint(for: section),
