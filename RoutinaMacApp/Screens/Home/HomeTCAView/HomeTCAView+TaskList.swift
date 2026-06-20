@@ -328,40 +328,126 @@ extension HomeTCAView {
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     ) -> some View {
         if section.kind.isCollapsible {
+            let isExpanded = taskListSectionIsExpanded(section)
+
             Button {
                 toggleTaskListSection(section)
             } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "chevron.right")
-                        .font(.caption2.weight(.semibold))
-                        .rotationEffect(.degrees(taskListSectionIsExpanded(section) ? 90 : 0))
-
-                    Text(section.title)
-
-                    Text("\(section.tasks.count)")
-                        .font(.caption2.weight(.semibold).monospacedDigit())
-                        .foregroundStyle(.tertiary)
-
-                    Spacer(minLength: 0)
-                }
-                .contentShape(Rectangle())
-                .frame(maxWidth: .infinity, alignment: .leading)
+                taskListSectionHeaderLabel(for: section, isExpanded: isExpanded)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(section.title)
-            .accessibilityValue(taskListSectionIsExpanded(section) ? "Expanded" : "Collapsed")
+            .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
             .contextMenu {
                 taskListSectionFocusContextMenu(for: section)
             }
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 10)
         } else {
             Text(section.title)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 10)
         }
+    }
+
+    private func taskListSectionHeaderLabel(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        isExpanded: Bool
+    ) -> some View {
+        let tint = taskListSectionHeaderTint(for: section)
+
+        return HStack(spacing: 7) {
+            Image(systemName: "chevron.right")
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(tint)
+                .frame(width: 12)
+                .rotationEffect(.degrees(isExpanded ? 90 : 0))
+
+            Image(systemName: taskListSectionHeaderIcon(for: section))
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(tint)
+                .frame(width: 18, height: 18)
+                .background(
+                    Circle()
+                        .fill(tint.opacity(0.16))
+                )
+
+            Text(section.title)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .layoutPriority(1)
+
+            Spacer(minLength: 6)
+
+            Text(section.tasks.count.formatted())
+                .font(.caption2.weight(.bold).monospacedDigit())
+                .foregroundStyle(tint)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .routinaGlassPill(tint: tint, tintOpacity: 0.16)
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 7)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .routinaGlassCard(cornerRadius: 8, tint: tint, tintOpacity: 0.07, interactive: true)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(tint.opacity(0.22), lineWidth: 0.75)
+        )
+    }
+
+    private func taskListSectionHeaderIcon(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+    ) -> String {
+        switch section.kind {
+        case .plannedToday:
+            return "checklist"
+        case .daily:
+            return "arrow.triangle.2.circlepath"
+        case .tag:
+            return "tag.fill"
+        case .untagged:
+            return "tag.slash"
+        case .archived:
+            return "archivebox.fill"
+        case .pinned:
+            return "pin.fill"
+        case .regular, .away:
+            return "list.bullet"
+        }
+    }
+
+    private func taskListSectionHeaderTint(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+    ) -> Color {
+        switch section.kind {
+        case .plannedToday:
+            return .accentColor
+        case .daily:
+            return .teal
+        case .tag:
+            if let tag = taskListSectionHeaderTagName(for: section) {
+                return tagTint(for: tag)
+            }
+            return .accentColor
+        case .untagged, .archived:
+            return .secondary
+        case .pinned:
+            return .orange
+        case .regular, .away:
+            return .secondary
+        }
+    }
+
+    private func taskListSectionHeaderTagName(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+    ) -> String? {
+        if let firstTag = section.tasks.compactMap(\.taskListPrimaryTag).first {
+            return firstTag
+        }
+        guard section.title.hasPrefix("#") else { return nil }
+        return String(section.title.dropFirst())
     }
 
     @ViewBuilder
