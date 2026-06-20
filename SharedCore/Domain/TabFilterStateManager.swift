@@ -41,8 +41,8 @@ enum HomeTaskListSortOrder: String, Codable, CaseIterable, Equatable, Identifiab
 
 enum HomeTaskCreatedDateFilter: String, Codable, CaseIterable, Equatable, Identifiable, Sendable {
     case all = "All"
-    case today = "Created Today"
-    case yesterday = "Created Yesterday"
+    case today = "Today"
+    case yesterday = "Yesterday"
     case last7Days = "Last 7 Days"
     case last30Days = "Last 30 Days"
 
