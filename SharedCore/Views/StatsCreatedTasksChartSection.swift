@@ -2,6 +2,8 @@ import Charts
 import SwiftUI
 
 struct StatsCreatedTasksChartSection: View {
+    private static let taskTypePickerWidth: CGFloat = 280
+
     let metrics: StatsFeatureMetrics
     let selectedRange: DoneChartRange
     let selectedTaskTypeFilter: StatsTaskTypeFilter
@@ -38,7 +40,7 @@ struct StatsCreatedTasksChartSection: View {
                     ) { filter in
                         Text(filter.rawValue)
                     }
-                    .frame(width: 220)
+                    .frame(width: Self.taskTypePickerWidth)
                     .accessibilityIdentifier("stats.createdTasks.typePicker")
 
                     StatsSmallHighlightBadge(
