@@ -467,8 +467,12 @@ extension HomeTCAView {
         switch deepLink {
         case .task:
             macHomeDetailMode = .details
-        case .goal, .note, .event:
+        case .goal:
             break
+        case let .note(noteID):
+            macTimelineSidebarScrollRequest = MacTimelineSidebarScrollRequest(entryID: noteID)
+        case let .event(eventID):
+            macTimelineSidebarScrollRequest = MacTimelineSidebarScrollRequest(entryID: eventID)
         case .sprint:
             macHomeDetailMode = MacHomeDetailMode.board.visibleSurfaceMode
         case .sleep:

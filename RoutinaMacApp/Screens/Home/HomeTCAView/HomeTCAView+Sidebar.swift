@@ -363,6 +363,7 @@ extension HomeTCAView {
         selectedNoteID = noteID
         macHomeDetailMode = .details
         searchTextBinding.wrappedValue = ""
+        macTimelineSidebarScrollRequest = MacTimelineSidebarScrollRequest(entryID: noteID)
         store.send(.openNoteDeepLink(noteID))
     }
 
@@ -579,22 +580,29 @@ extension HomeTCAView {
                         Divider()
                     }
 
-                    if isMacTimelineMode {
+                    ZStack(alignment: .top) {
                         macTimelineSidebarView
-                    } else if isMacGoalsMode {
-                        MacGoalsSidebarView(store: goalsStore)
-                    } else if isMacStatsMode {
-                        macProgressSidebarView
-                    } else if isMacSettingsMode {
-                        macSettingsSidebarView
-                    } else if isMacBoardSidebarPresented {
-                        macBoardSidebarView
-                    } else {
-                        listOfSortedTasksView(
-                            routineDisplays: store.routineDisplays,
-                            awayRoutineDisplays: store.awayRoutineDisplays,
-                            archivedRoutineDisplays: store.archivedRoutineDisplays
-                        )
+                            .opacity(isMacTimelineMode ? 1 : 0)
+                            .allowsHitTesting(isMacTimelineMode)
+                            .accessibilityHidden(!isMacTimelineMode)
+
+                        if isMacTimelineMode {
+                            EmptyView()
+                        } else if isMacGoalsMode {
+                            MacGoalsSidebarView(store: goalsStore)
+                        } else if isMacStatsMode {
+                            macProgressSidebarView
+                        } else if isMacSettingsMode {
+                            macSettingsSidebarView
+                        } else if isMacBoardSidebarPresented {
+                            macBoardSidebarView
+                        } else {
+                            listOfSortedTasksView(
+                                routineDisplays: store.routineDisplays,
+                                awayRoutineDisplays: store.awayRoutineDisplays,
+                                archivedRoutineDisplays: store.archivedRoutineDisplays
+                            )
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -781,6 +789,7 @@ extension HomeTCAView {
         store.send(.selectedTimelineImportanceUrgencyFilterChanged(nil))
         store.send(.selectedTimelineMediaFilterChanged(.all))
         store.send(.macSidebarSelectionChanged(.timelineEntry(eventID)))
+        macTimelineSidebarScrollRequest = MacTimelineSidebarScrollRequest(entryID: eventID)
     }
 
     func openSavedEmotion(_ emotionID: UUID) {
@@ -804,6 +813,7 @@ extension HomeTCAView {
         store.send(.selectedTimelineImportanceUrgencyFilterChanged(nil))
         store.send(.selectedTimelineMediaFilterChanged(.all))
         store.send(.macSidebarSelectionChanged(.timelineEntry(emotionID)))
+        macTimelineSidebarScrollRequest = MacTimelineSidebarScrollRequest(entryID: emotionID)
     }
 
     func openCheckInFromAddMenu() {

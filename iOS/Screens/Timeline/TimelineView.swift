@@ -5,6 +5,7 @@ import UIKit
 
 struct TimelineView: View {
     let store: StoreOf<TimelineFeature>
+    let presentationID: UUID
     @Environment(\.calendar) private var calendar
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -91,10 +92,6 @@ struct TimelineView: View {
 
     private var visibleTimelineEntryIDs: [UUID] {
         groupedByDay.flatMap { $0.entries.map(\.id) }
-    }
-
-    private var latestTimelineEntryID: UUID? {
-        groupedByDay.last?.entries.last?.id
     }
 
     private var sleepSessionChangeToken: [String] {
@@ -343,6 +340,14 @@ struct TimelineView: View {
             visibleEntryIDs: visibleTimelineEntryIDs,
             usesSidebarLayout: usesSidebarLayout
         )
+    }
+
+    private func selectInitialTimelineEntry() {
+        guard usesSidebarLayout else { return }
+        guard let entryID = visibleTimelineEntryIDs.last else { return }
+        if selectedTimelineEntryID != entryID {
+            selectedTimelineEntryID = entryID
+        }
     }
 
     private func routePendingDeepLinkedNote() {
@@ -687,7 +692,15 @@ struct TimelineView: View {
                         }
                     }
                 }
+                .id(presentationID)
                 .listStyle(.plain)
+                .defaultScrollAnchor(.bottom)
+                .onAppear {
+                    selectInitialTimelineEntry()
+                }
+                .onChange(of: presentationID) { _, _ in
+                    selectInitialTimelineEntry()
+                }
             }
         }
         .navigationTitle("Timeline")

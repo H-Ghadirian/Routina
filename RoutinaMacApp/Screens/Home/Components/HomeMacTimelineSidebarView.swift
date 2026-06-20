@@ -3,6 +3,9 @@ import SwiftUI
 struct HomeMacTimelineSidebarView<RowContent: View>: View {
     let timelineEntryCount: Int
     let groupedEntries: [(date: Date, entries: [TimelineEntry])]
+    let presentationID: UUID
+    let isActive: Bool
+    @Binding var positionedPresentationID: UUID?
     @Binding var selection: HomeFeature.MacSidebarSelection?
     @Binding var scrollRequest: MacTimelineSidebarScrollRequest?
     let sectionTitle: (Date) -> String
@@ -38,15 +41,47 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
                             }
                         }
                     }
+                    .id(presentationID)
                     .listStyle(.sidebar)
                     .onAppear {
-                        selectAndScrollToResolvedTimelineEntry(with: scrollProxy)
+                        if isPositionedForCurrentPresentation {
+                            if isActive {
+                                selectResolvedTimelineEntry()
+                            }
+                        } else {
+                            positionInitialTimelineEntry(with: scrollProxy, shouldSelect: isActive)
+                        }
                     }
                     .onChange(of: visibleEntryIDs) { _, _ in
-                        selectAndScrollToResolvedTimelineEntry(with: scrollProxy)
+                        if !isPositionedForCurrentPresentation {
+                            positionInitialTimelineEntry(with: scrollProxy, shouldSelect: isActive)
+                        } else if isActive {
+                            if !scrollToPendingTimelineEntry(with: scrollProxy) {
+                                selectResolvedTimelineEntry()
+                            }
+                        }
+                    }
+                    .onChange(of: presentationID) { _, _ in
+                        positionedPresentationID = nil
+                        positionInitialTimelineEntry(with: scrollProxy, shouldSelect: isActive)
+                    }
+                    .onChange(of: isActive) { _, newValue in
+                        guard newValue else { return }
+                        if isPositionedForCurrentPresentation {
+                            if !scrollToPendingTimelineEntry(with: scrollProxy) {
+                                selectResolvedTimelineEntry()
+                            }
+                        } else {
+                            positionInitialTimelineEntry(with: scrollProxy, shouldSelect: true)
+                        }
                     }
                     .onChange(of: scrollRequest) { _, _ in
-                        scrollToPendingTimelineEntry(with: scrollProxy)
+                        guard isActive else { return }
+                        if isPositionedForCurrentPresentation {
+                            scrollToPendingTimelineEntry(with: scrollProxy)
+                        } else {
+                            positionInitialTimelineEntry(with: scrollProxy, shouldSelect: true)
+                        }
                     }
                 }
             }
@@ -76,7 +111,30 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
         return result
     }
 
-    private func selectAndScrollToResolvedTimelineEntry(with proxy: ScrollViewProxy) {
+    private var isPositionedForCurrentPresentation: Bool {
+        positionedPresentationID == presentationID
+    }
+
+    private func positionInitialTimelineEntry(with proxy: ScrollViewProxy, shouldSelect: Bool) {
+        guard let entryID = initialTimelineEntryID(prefersPendingRequest: shouldSelect) else { return }
+
+        if shouldSelect, selectedEntryID != entryID {
+            selection = .timelineEntry(entryID)
+        }
+        positionTimelineList(to: entryID, with: proxy, clearsMatchingRequest: shouldSelect)
+    }
+
+    private func initialTimelineEntryID(prefersPendingRequest: Bool) -> UUID? {
+        if prefersPendingRequest,
+           let requestedEntryID = scrollRequest?.entryID,
+           visibleEntryIDs.contains(requestedEntryID) {
+            return requestedEntryID
+        }
+
+        return visibleEntryIDs.last
+    }
+
+    private func selectResolvedTimelineEntry() {
         guard let entryID = TimelineSelectionSupport.resolvedSelection(
             currentSelection: selectedEntryID,
             visibleEntryIDs: visibleEntryIDs,
@@ -86,22 +144,49 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
         if selectedEntryID != entryID {
             selection = .timelineEntry(entryID)
         }
-        scrollTimelineList(to: entryID, with: proxy)
     }
 
-    private func scrollToPendingTimelineEntry(with proxy: ScrollViewProxy) {
+    @discardableResult
+    private func scrollToPendingTimelineEntry(with proxy: ScrollViewProxy) -> Bool {
         guard
             let entryID = scrollRequest?.entryID,
             visibleEntryIDs.contains(entryID)
-        else { return }
+        else { return false }
 
+        if selectedEntryID != entryID {
+            selection = .timelineEntry(entryID)
+        }
         scrollTimelineList(to: entryID, with: proxy)
         scrollRequest = nil
+        return true
+    }
+
+    private func positionTimelineList(
+        to entryID: UUID,
+        with proxy: ScrollViewProxy,
+        clearsMatchingRequest: Bool
+    ) {
+        DispatchQueue.main.async {
+            proxy.scrollTo(entryID, anchor: .bottom)
+            DispatchQueue.main.async {
+                proxy.scrollTo(entryID, anchor: .bottom)
+                if clearsMatchingRequest, scrollRequest?.entryID == entryID {
+                    scrollRequest = nil
+                }
+                positionedPresentationID = presentationID
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    proxy.scrollTo(entryID, anchor: .bottom)
+                }
+            }
+        }
     }
 
     private func scrollTimelineList(to entryID: UUID, with proxy: ScrollViewProxy) {
         DispatchQueue.main.async {
             proxy.scrollTo(entryID, anchor: .bottom)
+            DispatchQueue.main.async {
+                proxy.scrollTo(entryID, anchor: .bottom)
+            }
         }
     }
 }

@@ -174,6 +174,8 @@ struct HomeTCAView: View {
     @StateObject var dayPlanPlanner = DayPlanPlannerState()
     @State var dayPlanUnplannedCompletedFilterDate: Date?
     @State var macSidebarTaskScrollRequest: MacSidebarTaskScrollRequest?
+    @State var macTimelineSidebarPresentationID = UUID()
+    @State var macTimelineSidebarPositionedPresentationID: UUID?
     @State var macTimelineSidebarScrollRequest: MacTimelineSidebarScrollRequest?
     @State var isFinishedSprintsExpanded = false
     @State var placeCheckInSelectedPlaceID: UUID?

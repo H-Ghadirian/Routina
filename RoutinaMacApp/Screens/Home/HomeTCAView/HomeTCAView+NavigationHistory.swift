@@ -88,6 +88,7 @@ extension HomeTCAView {
             store.send(.macSidebarSelectionChanged(.task(taskID)))
 
         case let .timelineEntry(entryID):
+            macTimelineSidebarScrollRequest = MacTimelineSidebarScrollRequest(entryID: entryID)
             store.send(.macSidebarSelectionChanged(.timelineEntry(entryID)))
             if store.selectedTaskID != snapshot.selectedTaskID {
                 store.send(.setSelectedTask(snapshot.selectedTaskID))

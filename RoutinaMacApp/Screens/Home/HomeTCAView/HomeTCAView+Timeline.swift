@@ -190,14 +190,16 @@ extension HomeTCAView {
         isNoteEditorPresented = false
         store.send(.macSidebarModeChanged(.timeline))
         validateSelectedTimelineTag()
+        macTimelineSidebarScrollRequest = nil
+        guard macTimelineSidebarPositionedPresentationID != macTimelineSidebarPresentationID else {
+            return
+        }
         guard let latestEntry = timelineEntries.last else {
-            macTimelineSidebarScrollRequest = nil
             return
         }
         selectedNoteID = latestEntry.isNote ? latestEntry.id : nil
         store.send(.macSidebarSelectionChanged(.timelineEntry(latestEntry.id)))
         store.send(.setSelectedTask(latestEntry.taskID))
-        macTimelineSidebarScrollRequest = MacTimelineSidebarScrollRequest(entryID: latestEntry.id)
     }
 
     func timelineSidebarRow(_ entry: TimelineEntry, rowNumber: Int) -> some View {
@@ -452,6 +454,9 @@ extension HomeTCAView {
             HomeMacTimelineSidebarView(
                 timelineEntryCount: store.timelineLogs.count + events.count + emotionLogs.count + notes.count + focusSessions.count + sprintFocusSessions.count + sleepSessions.count + awaySessions.count + placeCheckInSessions.count,
                 groupedEntries: groupedTimelineEntries,
+                presentationID: macTimelineSidebarPresentationID,
+                isActive: isMacTimelineMode,
+                positionedPresentationID: $macTimelineSidebarPositionedPresentationID,
                 selection: macSidebarSelectionBinding,
                 scrollRequest: $macTimelineSidebarScrollRequest,
                 sectionTitle: { date in

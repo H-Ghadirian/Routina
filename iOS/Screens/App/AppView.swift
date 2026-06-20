@@ -20,6 +20,7 @@ struct AppView: View {
     @State private var presentedNewActionSheet: NewActionSheet?
     @State private var isNewSheetSleepConfirmationPresented = false
     @State private var newSheetSleepWarningMessage: String?
+    @State private var timelinePresentationID = UUID()
     @AppStorage(UserDefaultStringValueKey.appSettingAppColorScheme.rawValue, store: SharedDefaults.app)
     private var appColorSchemeRawValue = AppColorScheme.system.rawValue
     @AppStorage(UserDefaultBoolValueKey.appSettingSleepHomeMenuEnabled.rawValue, store: SharedDefaults.app)
@@ -53,7 +54,8 @@ let tabView = TabView(
 
     SwiftUI.Tab(Tab.timeline.rawValue, systemImage: "clock.arrow.circlepath", value: AppTabBarItem.timeline) {
         TimelineView(
-            store: store.scope(state: \.timeline, action: \.timeline)
+            store: store.scope(state: \.timeline, action: \.timeline),
+            presentationID: timelinePresentationID
         )
     }
 
