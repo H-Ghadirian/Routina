@@ -490,15 +490,15 @@ extension HomeTCAView {
 
     private func taskListSectionHeaderTintOpacity(
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
-        isExpanded: Bool
+        isExpanded _: Bool
     ) -> Double {
         switch section.kind {
         case .tag:
-            return isExpanded ? 0.17 : 0.12
+            return 0.12
         case .plannedToday, .daily:
-            return isExpanded ? 0.12 : 0.08
+            return 0.08
         case .untagged, .archived:
-            return isExpanded ? 0.10 : 0.06
+            return 0.06
         case .pinned, .regular, .away:
             return 0.07
         }
@@ -506,15 +506,15 @@ extension HomeTCAView {
 
     private func taskListSectionHeaderStrokeOpacity(
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
-        isExpanded: Bool
+        isExpanded _: Bool
     ) -> Double {
         switch section.kind {
         case .tag:
-            return isExpanded ? 0.42 : 0.30
+            return 0.30
         case .plannedToday, .daily:
-            return isExpanded ? 0.34 : 0.22
+            return 0.22
         case .untagged, .archived:
-            return isExpanded ? 0.24 : 0.18
+            return 0.18
         case .pinned, .regular, .away:
             return 0.22
         }
