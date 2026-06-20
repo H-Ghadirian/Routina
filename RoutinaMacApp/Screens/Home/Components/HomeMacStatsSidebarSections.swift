@@ -5,15 +5,23 @@ struct HomeMacStatsQuerySection: View {
     let queryOptions: HomeAdvancedQueryOptions
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HomeMacStatsSectionTitle("Query")
-
+        HomeMacCollapsibleFilterSection(
+            title: "Query",
+            summaryText: summaryText,
+            systemImage: "line.3.horizontal.decrease.circle",
+            tint: .cyan
+        ) {
             HomeAdvancedQueryBuilder(
                 query: $advancedQuery,
                 usesFlowLayout: true,
                 options: queryOptions
             )
         }
+    }
+
+    private var summaryText: String {
+        let trimmedQuery = advancedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedQuery.isEmpty ? "No query filter." : trimmedQuery
     }
 }
 
@@ -25,16 +33,14 @@ struct HomeMacStatsTaskTypeSection: View {
         VStack(alignment: .leading, spacing: 12) {
             HomeMacStatsSectionTitle("Show")
 
-            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                ForEach(StatsTaskTypeFilter.allCases) { filter in
-                    HomeMacStatsOptionChip(
-                        title: filter.rawValue,
-                        systemImage: filter.macSidebarIconName,
-                        isSelected: selectedTaskTypeFilter == filter
-                    ) {
-                        onSelectTaskTypeFilter(filter)
-                    }
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Stats task type",
+                options: StatsTaskTypeFilter.allCases,
+                selection: selectedTaskTypeFilter,
+                onSelect: onSelectTaskTypeFilter,
+                minimumSegmentWidth: 92
+            ) { filter in
+                Label(filter.rawValue, systemImage: filter.macSidebarIconName)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -50,16 +56,14 @@ struct HomeMacStatsDashboardScopeSection: View {
         VStack(alignment: .leading, spacing: 12) {
             HomeMacStatsSectionTitle("Scope")
 
-            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                ForEach(availableDashboardScopes) { scope in
-                    HomeMacStatsOptionChip(
-                        title: scope.title,
-                        systemImage: scope.macSidebarIconName,
-                        isSelected: selectedDashboardScope == scope
-                    ) {
-                        onSelectDashboardScope(scope)
-                    }
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Stats scope",
+                options: availableDashboardScopes,
+                selection: selectedDashboardScope,
+                onSelect: onSelectDashboardScope,
+                minimumSegmentWidth: 92
+            ) { scope in
+                Label(scope.title, systemImage: scope.macSidebarIconName)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -74,16 +78,17 @@ struct HomeMacStatsRangeSection: View {
         VStack(alignment: .leading, spacing: 12) {
             HomeMacStatsSectionTitle("Time Range")
 
-            WrappingHStack(horizontalSpacing: 8, verticalSpacing: 8) {
-                ForEach(DoneChartRange.allCases) { range in
-                    HomeMacStatsOptionChip(
-                        title: range.rawValue,
-                        systemImage: range.macSidebarIconName,
-                        isSelected: selectedRange == range
-                    ) {
-                        onSelectRange(range)
-                    }
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Stats time range",
+                options: DoneChartRange.allCases,
+                selection: selectedRange,
+                onSelect: onSelectRange,
+                minimumSegmentWidth: 112,
+                horizontalPadding: 10,
+                fillsAvailableWidth: true,
+                maximumSegmentsPerRow: 2
+            ) { range in
+                Label(range.rawValue, systemImage: range.macSidebarIconName)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -102,35 +107,6 @@ struct HomeMacStatsSectionTitle: View {
             .font(.caption.weight(.semibold))
             .foregroundStyle(.secondary)
             .padding(.horizontal, 4)
-    }
-}
-
-private struct HomeMacStatsOptionChip: View {
-    let title: String
-    let systemImage: String
-    let isSelected: Bool
-    let onSelect: () -> Void
-
-    var body: some View {
-        Button(action: onSelect) {
-            HStack(spacing: 6) {
-                Image(systemName: systemImage)
-                    .font(.caption.weight(.semibold))
-
-            Text(title)
-                .font(.caption.weight(.semibold))
-        }
-        .foregroundStyle(.primary)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .routinaGlassPill(
-            tint: isSelected ? .accentColor : .secondary,
-            tintOpacity: isSelected ? 0.30 : 0.08,
-            interactive: true
-        )
-        .contentShape(Capsule(style: .continuous))
-    }
-        .buttonStyle(.plain)
     }
 }
 

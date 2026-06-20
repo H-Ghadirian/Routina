@@ -56,26 +56,28 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
             coreFilterCard
 
-            HomeMacSidebarSectionCard {
-                HomeMacImportanceUrgencyDisclosureSection(
-                    selectedFilter: $selectedImportanceUrgencyFilter,
-                    summaryText: importanceUrgencySummary
-                )
-            }
+            HomeMacImportanceUrgencyDisclosureSection(
+                selectedFilter: $selectedImportanceUrgencyFilter,
+                summaryText: importanceUrgencySummary
+            )
 
             if showsTagSection {
-                HomeMacSidebarSectionCard {
-                    HomeMacCollapsibleFilterSection(title: "Tags") {
-                        tagSectionContent()
-                    }
+                HomeMacCollapsibleFilterSection(
+                    title: "Tags",
+                    systemImage: "tag.fill",
+                    tint: .teal
+                ) {
+                    tagSectionContent()
                 }
             }
 
             if showsPlaceSection {
-                HomeMacSidebarSectionCard {
-                    HomeMacCollapsibleFilterSection(title: "Places") {
-                        placeSectionContent()
-                    }
+                HomeMacCollapsibleFilterSection(
+                    title: "Places",
+                    systemImage: "mappin.and.ellipse",
+                    tint: .green
+                ) {
+                    placeSectionContent()
                 }
             }
         }
@@ -101,9 +103,11 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                 Toggle(isOn: taskRowFieldVisibilityBinding(field)) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(field.title)
-                        Text(field.subtitle)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        if let subtitle = field.subtitle {
+                            Text(subtitle)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
                 .toggleStyle(.switch)
@@ -120,80 +124,73 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     }
 
     private var taskListModePicker: some View {
-        LazyVGrid(
-            columns: [GridItem(.adaptive(minimum: 112), spacing: 8, alignment: .leading)],
-            alignment: .leading,
-            spacing: 8
-        ) {
-            ForEach(taskListModeOptions, id: \.title) { option in
-                Button {
-                    taskListMode = option.mode
-                } label: {
-                    Label(option.title, systemImage: option.systemImage)
-                        .font(.caption.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                        .foregroundStyle(.primary)
-                        .routinaGlassPill(
-                            tint: taskListMode == option.mode ? .accentColor : .secondary,
-                            tintOpacity: taskListMode == option.mode ? 0.30 : 0.08,
-                            interactive: true
-                        )
-                }
-                .buttonStyle(.plain)
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Task type",
+            options: taskListModeOptions,
+            selection: $taskListMode,
+            minimumSegmentWidth: 112
+        ) { mode in
+            Label(mode.rawValue, systemImage: taskListModeSystemImage(mode))
         }
     }
 
-    private var taskListModeOptions: [(mode: HomeTaskListMode, title: String, systemImage: String)] {
-        [
-            (.all, "All", "tray.full"),
-            (.todos, "Todos", "checklist"),
-            (.routines, "Routines", "repeat")
-        ]
+    private var taskListModeOptions: [HomeTaskListMode] {
+        [.all, .todos, .routines]
+    }
+
+    private func taskListModeSystemImage(_ mode: HomeTaskListMode) -> String {
+        switch mode {
+        case .all:
+            return "tray.full"
+        case .todos:
+            return "checklist"
+        case .routines:
+            return "repeat"
+        }
     }
 
     private var coreFilterCard: some View {
-        HomeMacSidebarSectionCard {
-            HomeMacCollapsibleFilterSection(title: "Filters") {
-                VStack(alignment: .leading, spacing: 18) {
-                    filterControlSection("Task type") {
-                        taskListModePicker
-                    }
+        HomeMacCollapsibleFilterSection(
+            title: "Filters",
+            systemImage: "slider.horizontal.3",
+            tint: .accentColor
+        ) {
+            VStack(alignment: .leading, spacing: 18) {
+                filterControlSection("Task type") {
+                    taskListModePicker
+                }
 
-                    filterControlSection("View Mode") {
-                        viewModePicker
-                    }
+                filterControlSection("View Mode") {
+                    viewModePicker
+                }
 
-                    filterControlSection("Created") {
-                        createdDatePicker
-                    }
+                filterControlSection("Created") {
+                    createdDatePicker
+                }
 
-                    VStack(alignment: .leading, spacing: 10) {
-                        assumedDoneToggle
-                        archivedToggle
-                        filterPicker
-                    }
+                VStack(alignment: .leading, spacing: 10) {
+                    assumedDoneToggle
+                    archivedToggle
+                    filterPicker
+                }
 
-                    filterControlSection("Pressure") {
-                        pressurePicker
-                    }
+                filterControlSection("Pressure") {
+                    pressurePicker
+                }
 
-                    if showsGoalFilter {
-                        filterControlSection("Goal") {
-                            goalPicker
-                        }
+                if showsGoalFilter {
+                    filterControlSection("Goal") {
+                        goalPicker
                     }
+                }
 
-                    filterControlSection("Media") {
-                        mediaPicker
-                    }
+                filterControlSection("Media") {
+                    mediaPicker
+                }
 
-                    if taskListMode == .todos || taskListMode == .all {
-                        filterControlSection("Todo State") {
-                            todoStateFilterSection
-                        }
+                if taskListMode == .todos || taskListMode == .all {
+                    filterControlSection("Todo State") {
+                        todoStateFilterSection
                     }
                 }
             }
@@ -215,29 +212,13 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
     private var viewModePicker: some View {
         VStack(alignment: .leading, spacing: 8) {
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 112), spacing: 8, alignment: .leading)],
-                alignment: .leading,
-                spacing: 8
-            ) {
-                ForEach(HomeTaskListViewMode.allCases) { mode in
-                    Button {
-                        taskListViewMode = mode
-                    } label: {
-                        Label(mode.title, systemImage: mode.systemImage)
-                            .font(.caption.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 8)
-                            .foregroundStyle(.primary)
-                            .routinaGlassPill(
-                                tint: taskListViewMode == mode ? .accentColor : .secondary,
-                                tintOpacity: taskListViewMode == mode ? 0.30 : 0.08,
-                                interactive: true
-                            )
-                    }
-                    .buttonStyle(.plain)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "View Mode",
+                options: HomeTaskListViewMode.allCases,
+                selection: $taskListViewMode,
+                minimumSegmentWidth: 112
+            ) { mode in
+                Label(mode.title, systemImage: mode.systemImage)
             }
 
             Text(taskListViewMode == .actionable
@@ -249,59 +230,25 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     }
 
     private var filterPicker: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 92), spacing: 8, alignment: .leading)],
-                alignment: .leading,
-                spacing: 8
-            ) {
-                ForEach(availableFilters) { filter in
-                    Button {
-                        selectedFilter = filter
-                    } label: {
-                        Text(filter.rawValue)
-                            .font(.caption.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 8)
-                            .foregroundStyle(.primary)
-                            .routinaGlassPill(
-                                tint: selectedFilter == filter ? .accentColor : .secondary,
-                                tintOpacity: selectedFilter == filter ? 0.30 : 0.08,
-                                interactive: true
-                            )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Status filter",
+            options: availableFilters,
+            selection: $selectedFilter,
+            minimumSegmentWidth: 92
+        ) { filter in
+            Text(filter.rawValue)
         }
     }
 
     private var groupingPicker: some View {
         VStack(alignment: .leading, spacing: 8) {
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 126), spacing: 8, alignment: .leading)],
-                alignment: .leading,
-                spacing: 8
-            ) {
-                ForEach(RoutineListSectioningMode.allCases) { mode in
-                    Button {
-                        routineListSectioningMode = mode
-                    } label: {
-                        Label(mode.title, systemImage: mode.systemImage)
-                            .font(.caption.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 8)
-                            .foregroundStyle(.primary)
-                            .routinaGlassPill(
-                                tint: routineListSectioningMode == mode ? .accentColor : .secondary,
-                                tintOpacity: routineListSectioningMode == mode ? 0.30 : 0.08,
-                                interactive: true
-                            )
-                    }
-                    .buttonStyle(.plain)
-                }
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Grouping",
+                options: RoutineListSectioningMode.allCases,
+                selection: $routineListSectioningMode,
+                minimumSegmentWidth: 126
+            ) { mode in
+                Label(mode.title, systemImage: mode.systemImage)
             }
 
             Text(routineListSectioningMode.subtitle)
@@ -311,129 +258,57 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     }
 
     private var sortPicker: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 126), spacing: 8, alignment: .leading)],
-                alignment: .leading,
-                spacing: 8
-            ) {
-                ForEach(HomeTaskListSortOrder.allCases) { order in
-                    Button {
-                        taskListSortOrder = order
-                    } label: {
-                        Label(order.title, systemImage: order.systemImage)
-                            .font(.caption.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 8)
-                            .foregroundStyle(.primary)
-                            .routinaGlassPill(
-                                tint: taskListSortOrder == order ? .accentColor : .secondary,
-                                tintOpacity: taskListSortOrder == order ? 0.30 : 0.08,
-                                interactive: true
-                            )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Sort",
+            options: HomeTaskListSortOrder.allCases,
+            selection: $taskListSortOrder,
+            minimumSegmentWidth: 126
+        ) { order in
+            Label(order.title, systemImage: order.systemImage)
         }
     }
 
     private var pressurePicker: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 92), spacing: 8, alignment: .leading)],
-                alignment: .leading,
-                spacing: 8
-            ) {
-                pressureButton(title: "All", pressure: nil)
-                ForEach(RoutineTaskPressure.allCases, id: \.self) { pressure in
-                    pressureButton(title: pressure.title, pressure: pressure)
-                }
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Pressure",
+            options: pressureOptions,
+            selection: $selectedPressureFilter,
+            minimumSegmentWidth: 92
+        ) { pressure in
+            Text(pressure?.title ?? "All")
         }
     }
 
     private var goalPicker: some View {
-        LazyVGrid(
-            columns: [GridItem(.adaptive(minimum: 92), spacing: 8, alignment: .leading)],
-            alignment: .leading,
-            spacing: 8
-        ) {
-            ForEach(HomeTaskGoalFilter.allCases) { filter in
-                Button {
-                    selectedGoalFilter = filter
-                } label: {
-                    Text(filter.title)
-                        .font(.caption.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                        .foregroundStyle(.primary)
-                        .routinaGlassPill(
-                            tint: selectedGoalFilter == filter ? .accentColor : .secondary,
-                            tintOpacity: selectedGoalFilter == filter ? 0.30 : 0.08,
-                            interactive: true
-                        )
-                }
-                .buttonStyle(.plain)
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Goal",
+            options: HomeTaskGoalFilter.allCases,
+            selection: $selectedGoalFilter,
+            minimumSegmentWidth: 92
+        ) { filter in
+            Text(filter.title)
         }
     }
 
     private var mediaPicker: some View {
-        LazyVGrid(
-            columns: [GridItem(.adaptive(minimum: 104), spacing: 8, alignment: .leading)],
-            alignment: .leading,
-            spacing: 8
-        ) {
-            ForEach(TaskMediaFilter.allCases) { filter in
-                Button {
-                    selectedMediaFilter = filter
-                } label: {
-                    Label(filter.title, systemImage: filter.systemImage)
-                        .font(.caption.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                        .foregroundStyle(.primary)
-                        .routinaGlassPill(
-                            tint: selectedMediaFilter == filter ? .accentColor : .secondary,
-                            tintOpacity: selectedMediaFilter == filter ? 0.30 : 0.08,
-                            interactive: true
-                        )
-                }
-                .buttonStyle(.plain)
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Media",
+            options: TaskMediaFilter.allCases,
+            selection: $selectedMediaFilter,
+            minimumSegmentWidth: 104
+        ) { filter in
+            Label(filter.title, systemImage: filter.systemImage)
         }
     }
 
     private var createdDatePicker: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 126), spacing: 8, alignment: .leading)],
-                alignment: .leading,
-                spacing: 8
-            ) {
-                ForEach(HomeTaskCreatedDateFilter.allCases) { filter in
-                    Button {
-                        createdDateFilter = filter
-                    } label: {
-                        Label(filter.title, systemImage: filter.systemImage)
-                            .font(.caption.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 8)
-                            .foregroundStyle(.primary)
-                            .routinaGlassPill(
-                                tint: createdDateFilter == filter ? .accentColor : .secondary,
-                                tintOpacity: createdDateFilter == filter ? 0.30 : 0.08,
-                                interactive: true
-                            )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Created",
+            options: HomeTaskCreatedDateFilter.allCases,
+            selection: $createdDateFilter,
+            minimumSegmentWidth: 126
+        ) { filter in
+            Label(filter.title, systemImage: filter.systemImage)
         }
     }
 
@@ -448,34 +323,22 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     }
 
     private var todoStateFilterSection: some View {
-        HomeTodoStateFilterChips(
-            selectedTodoStateFilter: $selectedTodoStateFilter,
-            layoutStyle: .adaptiveGrid(minimumWidth: 80, spacing: 8),
-            selectedForegroundColor: nil,
-            unselectedForegroundColor: .primary,
-            selectedBackgroundOpacity: 0.30,
-            fillsAvailableWidth: true,
-            verticalPadding: 8
-        )
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Todo State",
+            options: todoStateOptions,
+            selection: $selectedTodoStateFilter,
+            minimumSegmentWidth: 80
+        ) { state in
+            Text(state?.displayTitle ?? "Any State")
+        }
     }
 
-    private func pressureButton(title: String, pressure: RoutineTaskPressure?) -> some View {
-        Button {
-            selectedPressureFilter = pressure
-        } label: {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .foregroundStyle(.primary)
-                .routinaGlassPill(
-                    tint: selectedPressureFilter == pressure ? .accentColor : .secondary,
-                    tintOpacity: selectedPressureFilter == pressure ? 0.30 : 0.08,
-                    interactive: true
-                )
-        }
-        .buttonStyle(.plain)
+    private var pressureOptions: [RoutineTaskPressure?] {
+        [nil] + RoutineTaskPressure.allCases.map(Optional.some)
+    }
+
+    private var todoStateOptions: [TodoState?] {
+        [nil] + TodoState.filterableCases.map(Optional.some)
     }
 
     private func taskRowFieldVisibilityBinding(_ field: HomeTaskRowField) -> Binding<Bool> {

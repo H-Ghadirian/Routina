@@ -72,39 +72,37 @@ struct HomeMacTimelineFiltersDetailView: View {
                 }
             }
 
-            HomeMacSidebarSectionCard {
-                HomeMacImportanceUrgencyDisclosureSection(
-                    selectedFilter: $selectedImportanceUrgencyFilter,
-                    summaryText: importanceUrgencySummary
-                )
-            }
+            HomeMacImportanceUrgencyDisclosureSection(
+                selectedFilter: $selectedImportanceUrgencyFilter,
+                summaryText: importanceUrgencySummary
+            )
 
             if !availableTags.isEmpty {
-                HomeMacSidebarSectionCard {
-                    HomeMacCollapsibleFilterSection(
-                        title: "Tags",
-                        summaryText: timelineTagsSummary
-                    ) {
-                        HomeMacTimelineTagFiltersView(
-                            allTagsCount: allTagsCount,
-                            availableTags: availableTags,
-                            suggestedRelatedTags: suggestedRelatedTags,
-                            availableExcludeTags: availableExcludeTags,
-                            selectedTags: selectedTags,
-                            includeTagMatchMode: includeTagMatchMode,
-                            excludeTagMatchMode: excludeTagMatchMode,
-                            selectedExcludedTags: selectedExcludedTags,
-                            tagSelectionSummary: tagSelectionSummary,
-                            excludedTagSummary: excludedTagSummary,
-                            tagCount: tagCount,
-                            tagColor: tagColor,
-                            onSelectTags: onSelectTags,
-                            onIncludeTagMatchModeChange: onIncludeTagMatchModeChange,
-                            onSelectSuggestedTag: onSelectSuggestedTag,
-                            onExcludeTagMatchModeChange: onExcludeTagMatchModeChange,
-                            onToggleExcludedTag: onToggleExcludedTag
-                        )
-                    }
+                HomeMacCollapsibleFilterSection(
+                    title: "Tags",
+                    summaryText: timelineTagsSummary,
+                    systemImage: "tag.fill",
+                    tint: .teal
+                ) {
+                    HomeMacTimelineTagFiltersView(
+                        allTagsCount: allTagsCount,
+                        availableTags: availableTags,
+                        suggestedRelatedTags: suggestedRelatedTags,
+                        availableExcludeTags: availableExcludeTags,
+                        selectedTags: selectedTags,
+                        includeTagMatchMode: includeTagMatchMode,
+                        excludeTagMatchMode: excludeTagMatchMode,
+                        selectedExcludedTags: selectedExcludedTags,
+                        tagSelectionSummary: tagSelectionSummary,
+                        excludedTagSummary: excludedTagSummary,
+                        tagCount: tagCount,
+                        tagColor: tagColor,
+                        onSelectTags: onSelectTags,
+                        onIncludeTagMatchModeChange: onIncludeTagMatchModeChange,
+                        onSelectSuggestedTag: onSelectSuggestedTag,
+                        onExcludeTagMatchModeChange: onExcludeTagMatchModeChange,
+                        onToggleExcludedTag: onToggleExcludedTag
+                    )
                 }
             }
         }

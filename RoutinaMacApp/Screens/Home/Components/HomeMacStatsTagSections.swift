@@ -9,50 +9,37 @@ struct HomeMacStatsIncludedTagSection: View {
     let tagCount: (String) -> Int
     let onSelectTags: (Set<String>) -> Void
     let onIncludeTagMatchModeChange: (RoutineTagMatchMode) -> Void
-    @State private var isExpanded = false
 
     var body: some View {
-        DisclosureGroup(isExpanded: isExpandedBinding) {
-            VStack(alignment: .leading, spacing: 12) {
-                RoutinaGlassSegmentedControl(
-                    accessibilityLabel: "Show stats with",
-                    options: RoutineTagMatchMode.allCases,
-                    selection: Binding(
-                        get: { includeTagMatchMode },
-                        set: { onIncludeTagMatchModeChange($0) }
-                    ),
-                    fillsAvailableWidth: true
-                ) { mode in
-                    Text(mode.rawValue)
-                }
-
-                selectedTagsView
-
-                HomeMacStatsSectionTitle("Add more")
-
-                availableTagsView
-            }
-            .padding(.top, 12)
-        } label: {
-            HomeMacStatsTagDisclosureLabel(
-                title: "Show stats with",
-                summaryText: tagSelectionSummary,
-                isExpanded: isExpanded
-            )
+        HomeMacCollapsibleFilterSection(
+            title: "Show stats with",
+            summaryText: tagSelectionSummary,
+            systemImage: "tag.fill",
+            tint: .teal
+        ) {
+            content
         }
-        .font(.caption)
-        .accentColor(.secondary)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 4)
     }
 
-    private var isExpandedBinding: Binding<Bool> {
-        Binding {
-            isExpanded
-        } set: { newValue in
-            withAnimation(.snappy(duration: 0.22)) {
-                isExpanded = newValue
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Show stats with",
+                options: RoutineTagMatchMode.allCases,
+                selection: Binding(
+                    get: { includeTagMatchMode },
+                    set: { onIncludeTagMatchModeChange($0) }
+                ),
+                fillsAvailableWidth: true
+            ) { mode in
+                Text(mode.rawValue)
             }
+
+            selectedTagsView
+
+            HomeMacStatsSectionTitle("Add more")
+
+            availableTagsView
         }
     }
 
@@ -165,50 +152,37 @@ struct HomeMacStatsExcludedTagSection: View {
     let tagCount: (String) -> Int
     let onToggleExcludedTag: (String) -> Void
     let onExcludeTagMatchModeChange: (RoutineTagMatchMode) -> Void
-    @State private var isExpanded = false
 
     var body: some View {
-        DisclosureGroup(isExpanded: isExpandedBinding) {
-            VStack(alignment: .leading, spacing: 12) {
-                RoutinaGlassSegmentedControl(
-                    accessibilityLabel: "Hide stats with",
-                    options: RoutineTagMatchMode.allCases,
-                    selection: Binding(
-                        get: { excludeTagMatchMode },
-                        set: { onExcludeTagMatchModeChange($0) }
-                    ),
-                    fillsAvailableWidth: true
-                ) { mode in
-                    Text(mode.rawValue)
-                }
-
-                selectedExcludedTagsView
-
-                HomeMacStatsSectionTitle("Add tags to hide")
-
-                availableExcludedTagsView
-            }
-            .padding(.top, 12)
-        } label: {
-            HomeMacStatsTagDisclosureLabel(
-                title: "Hide stats with",
-                summaryText: excludedTagSummary,
-                isExpanded: isExpanded
-            )
+        HomeMacCollapsibleFilterSection(
+            title: "Hide stats with",
+            summaryText: excludedTagSummary,
+            systemImage: "tag.slash.fill",
+            tint: .red
+        ) {
+            content
         }
-        .font(.caption)
-        .accentColor(.secondary)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 4)
     }
 
-    private var isExpandedBinding: Binding<Bool> {
-        Binding {
-            isExpanded
-        } set: { newValue in
-            withAnimation(.snappy(duration: 0.22)) {
-                isExpanded = newValue
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Hide stats with",
+                options: RoutineTagMatchMode.allCases,
+                selection: Binding(
+                    get: { excludeTagMatchMode },
+                    set: { onExcludeTagMatchModeChange($0) }
+                ),
+                fillsAvailableWidth: true
+            ) { mode in
+                Text(mode.rawValue)
             }
+
+            selectedExcludedTagsView
+
+            HomeMacStatsSectionTitle("Add tags to hide")
+
+            availableExcludedTagsView
         }
     }
 
@@ -290,33 +264,4 @@ private func macStatsNormalizedTagSet<Tags: Sequence>(
     _ tags: Tags
 ) -> Set<String> where Tags.Element == String {
     Set(tags.compactMap(RoutineTag.normalized))
-}
-
-private struct HomeMacStatsTagDisclosureLabel: View {
-    let title: String
-    let summaryText: String
-    let isExpanded: Bool
-
-    var body: some View {
-        HStack(spacing: 8) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-
-                if !isExpanded {
-                    Text(summaryText)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-
-            Spacer(minLength: 0)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 4)
-        .contentShape(Rectangle())
-    }
 }

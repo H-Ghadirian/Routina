@@ -3,6 +3,8 @@ import SwiftUI
 struct HomeMacCollapsibleFilterSection<Content: View>: View {
     let title: String
     let summaryText: String
+    let systemImage: String
+    let tint: Color
     @ViewBuilder let content: () -> Content
     @State private var isExpanded = false
     @State private var contentHeight: CGFloat = 0
@@ -10,10 +12,14 @@ struct HomeMacCollapsibleFilterSection<Content: View>: View {
     init(
         title: String,
         summaryText: String = "",
+        systemImage: String = "slider.horizontal.3",
+        tint: Color = .accentColor,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.title = title
         self.summaryText = summaryText
+        self.systemImage = systemImage
+        self.tint = tint
         self.content = content
     }
 
@@ -32,7 +38,16 @@ struct HomeMacCollapsibleFilterSection<Content: View>: View {
         }
         .font(.caption)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 4)
+        .padding(14)
+        .routinaGlassPanel(
+            cornerRadius: 18,
+            tint: tint,
+            tintOpacity: isExpanded ? 0.10 : 0.08
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .strokeBorder(tint.opacity(isExpanded ? 0.28 : 0.18), lineWidth: 1)
+        )
     }
 
     private var collapsibleContent: some View {
@@ -63,31 +78,41 @@ struct HomeMacCollapsibleFilterSection<Content: View>: View {
     }
 
     private var disclosureHeader: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             Image(systemName: "chevron.right")
                 .font(.caption2.weight(.bold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(tint)
                 .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                .frame(width: 12)
+                .frame(width: 14)
+
+            Image(systemName: systemImage)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(tint)
+                .frame(width: 24, height: 24)
+                .background(
+                    Circle()
+                        .fill(tint.opacity(0.16))
+                )
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
 
-                if !isExpanded && !summaryText.isEmpty {
+                if !summaryText.isEmpty {
                     Text(summaryText)
-                        .font(.caption2)
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
+            .layoutPriority(1)
 
             Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
-        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
         .contentShape(Rectangle())
     }
 
@@ -113,7 +138,9 @@ struct HomeMacImportanceUrgencyDisclosureSection: View {
     var body: some View {
         HomeMacCollapsibleFilterSection(
             title: "Importance & Urgency",
-            summaryText: summaryText
+            summaryText: summaryText,
+            systemImage: "square.grid.2x2",
+            tint: .orange
         ) {
             HomeMacImportanceUrgencyMatrixView(
                 selectedFilter: $selectedFilter,
