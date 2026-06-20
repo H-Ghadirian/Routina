@@ -278,12 +278,18 @@ extension HomeTCAView {
                     selectedNoteID = nil
                     store.send(.macSidebarSelectionChanged(.task(taskID)))
                 case let .timelineEntry(entryID):
+                    guard !store.isMacFilterDetailPresented || !isMacTimelineMode else {
+                        return
+                    }
                     store.send(.macSidebarSelectionChanged(.timelineEntry(entryID)))
                     let entry = timelineEntries.first { $0.id == entryID }
                     selectedNoteID = entry?.isNote == true ? entryID : nil
                     let taskID = entry?.taskID
                     store.send(.setSelectedTask(taskID))
                 case nil:
+                    guard !store.isMacFilterDetailPresented || !isMacTimelineMode else {
+                        return
+                    }
                     selectedNoteID = nil
                     store.send(.macSidebarSelectionChanged(nil))
                 }

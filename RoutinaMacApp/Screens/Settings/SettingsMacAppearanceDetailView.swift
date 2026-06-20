@@ -62,12 +62,14 @@ SettingsMacDetailShell(
     }
 
     SettingsMacDetailCard(title: "Tag Counters") {
-        Picker("Display", selection: tagCounterDisplayModeBinding) {
-            ForEach(TagCounterDisplayMode.allCases) { mode in
-                Text(mode.title).tag(mode)
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Tag counter display",
+            options: TagCounterDisplayMode.allCases,
+            selection: tagCounterDisplayModeBinding,
+            minimumSegmentWidth: 104
+        ) { mode in
+            Text(mode.summaryText)
         }
-        .pickerStyle(.menu)
 
         Text(store.appearance.tagCounterDisplayMode.subtitle)
             .font(.footnote)

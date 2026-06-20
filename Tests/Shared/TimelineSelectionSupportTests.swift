@@ -42,4 +42,28 @@ struct TimelineSelectionSupportTests {
             ) == second
         )
     }
+
+    @Test
+    func resolvedSelectionCanDeferSidebarFallbackSelection() {
+        let first = UUID()
+        let second = UUID()
+        let missing = UUID()
+
+        #expect(
+            TimelineSelectionSupport.resolvedSelection(
+                currentSelection: second,
+                visibleEntryIDs: [first, second],
+                usesSidebarLayout: true,
+                allowsFallbackSelection: false
+            ) == second
+        )
+        #expect(
+            TimelineSelectionSupport.resolvedSelection(
+                currentSelection: missing,
+                visibleEntryIDs: [first, second],
+                usesSidebarLayout: true,
+                allowsFallbackSelection: false
+            ) == nil
+        )
+    }
 }

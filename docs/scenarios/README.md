@@ -113,6 +113,18 @@ Given task data briefly appears in overlapping active, away, archived, planned, 
 When Home task-list presentation is derived
 Then each task ID is claimed once, section and group IDs stay stable, and the UI updates existing rows instead of replacing them
 
+### Timeline Filters Do Not Auto-Open Row Details
+
+Area: Timeline
+Decision links: [0242](../decisions/0242-show-timeline-sections-top-down.md), [0256](../decisions/0256-move-mac-timeline-row-appearance-to-timeline-filter-detail.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/TimelineSelectionSupportTests.swift`
+
+Given Mac Home is showing the Timeline filter detail
+When a filter change updates the visible timeline rows
+Then the sidebar does not automatically select a fallback row or close the filter detail until the user explicitly leaves the filter detail or selects a row
+
 ### Plan Focus Allocation Preserves Focus History
 
 Area: Planner

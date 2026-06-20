@@ -496,32 +496,36 @@ struct TimelineView: View {
         NavigationStack {
             List {
                 Section("Range") {
-                    Picker("Range", selection: selectedRangeBinding) {
-                        ForEach(TimelineRange.allCases) { range in
-                            Text(range.rawValue).tag(range)
-                        }
+                    RoutinaGlassSegmentedControl(
+                        accessibilityLabel: "Range",
+                        options: TimelineRange.allCases,
+                        selection: selectedRangeBinding
+                    ) { range in
+                        Text(range.rawValue)
                     }
-                    .pickerStyle(.inline)
                 }
 
                 if showsTypeFilterSection {
                     Section("Type") {
-                        Picker("Type", selection: filterTypeBinding) {
-                            ForEach(TimelineFilterType.visibleCases(includingEventEmotion: areMacEventEmotionActionsEnabled)) { type in
-                                Text(type.rawValue).tag(type)
-                            }
+                        RoutinaGlassSegmentedControl(
+                            accessibilityLabel: "Type",
+                            options: TimelineFilterType.visibleCases(includingEventEmotion: areMacEventEmotionActionsEnabled),
+                            selection: filterTypeBinding
+                        ) { type in
+                            Text(type.rawValue)
                         }
-                        .pickerStyle(.inline)
                     }
                 }
 
                 Section("Media") {
-                    Picker("Media", selection: mediaFilterBinding) {
-                        ForEach(TaskMediaFilter.allCases) { filter in
-                            Label(filter.title, systemImage: filter.systemImage).tag(filter)
-                        }
+                    RoutinaGlassSegmentedControl(
+                        accessibilityLabel: "Media",
+                        options: TaskMediaFilter.allCases,
+                        selection: mediaFilterBinding,
+                        minimumSegmentWidth: 92
+                    ) { filter in
+                        Label(filter.title, systemImage: filter.systemImage)
                     }
-                    .pickerStyle(.inline)
                 }
 
                 if !availableTags.isEmpty {

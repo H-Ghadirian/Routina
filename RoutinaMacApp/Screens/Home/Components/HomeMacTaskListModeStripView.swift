@@ -5,31 +5,17 @@ struct HomeMacTaskListModeStripView: View {
     let onSelectMode: (HomeFeature.TaskListMode) -> Void
 
     var body: some View {
-        HStack(spacing: 8) {
-            ForEach(Self.displayModes) { mode in
-                Button {
-                    onSelectMode(mode)
-                } label: {
-                    let isSelected = selectedMode == mode
-
-                    Text(mode.rawValue)
-                        .font(.caption.weight(.semibold))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                        .frame(maxWidth: .infinity, minHeight: 32)
-                        .foregroundStyle(isSelected ? Color.white : Color.primary)
-                        .routinaGlassPill(
-                            tint: isSelected ? .accentColor : .secondary,
-                            tintOpacity: isSelected ? 0.42 : 0.10,
-                            interactive: true
-                        )
-                        .contentShape(Capsule(style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .frame(maxWidth: .infinity)
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Task list mode",
+            options: Self.displayModes,
+            selection: selectedMode,
+            onSelect: onSelectMode,
+            minimumSegmentWidth: 72,
+            fillsAvailableWidth: true
+        ) { mode in
+            Text(mode.rawValue)
                 .accessibilityLabel(mode.accessibilityLabel)
                 .help(mode.rawValue)
-            }
         }
     }
 

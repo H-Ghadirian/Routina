@@ -257,7 +257,16 @@ struct MacHomeDetailModePicker: View {
     @Binding var selection: MacHomeDetailMode
 
     var body: some View {
-        MacLiquidGlassHomeDetailModePicker(selection: $selection)
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Detail mode",
+            options: MacHomeDetailMode.visibleModes,
+            selection: $selection,
+            minimumSegmentWidth: 92,
+            fillsAvailableWidth: true
+        ) { mode in
+            Text(mode.rawValue)
+        }
+        .frame(width: MacHomeDetailMode.visibleModes.count == 3 ? 330 : 420)
     }
 }
 
@@ -265,106 +274,15 @@ struct MacHomeProgressModePicker: View {
     @Binding var selection: MacHomeProgressMode
 
     var body: some View {
-        MacLiquidGlassHomeProgressModePicker(selection: $selection)
-    }
-}
-
-private struct MacLiquidGlassHomeDetailModePicker: View {
-    @Binding var selection: MacHomeDetailMode
-    @Namespace private var glassNamespace
-
-    var body: some View {
-        GlassEffectContainer(spacing: 4) {
-            HStack(spacing: 4) {
-                ForEach(MacHomeDetailMode.visibleModes) { mode in
-                    segmentButton(for: mode)
-                }
-            }
-            .padding(4)
-            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 14))
-        }
-        .frame(width: MacHomeDetailMode.visibleModes.count == 3 ? 330 : 420)
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Detail mode")
-    }
-
-    private func segmentButton(for mode: MacHomeDetailMode) -> some View {
-        let isSelected = selection == mode
-
-        return Button {
-            withAnimation(.easeInOut(duration: 0.18)) {
-                selection = mode
-            }
-        } label: {
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Progress mode",
+            options: MacHomeProgressMode.visibleModes,
+            selection: $selection,
+            minimumSegmentWidth: 92,
+            fillsAvailableWidth: true
+        ) { mode in
             Text(mode.rawValue)
-                .font(.system(size: 14, weight: isSelected ? .semibold : .medium))
-                .foregroundStyle(isSelected ? .primary : .secondary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 7)
-                .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .background {
-            if isSelected {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .glassEffect(
-                        .regular.tint(Color.accentColor.opacity(0.34)).interactive(),
-                        in: .rect(cornerRadius: 10)
-                    )
-                    .glassEffectID("MacHomeDetailModeSelection", in: glassNamespace)
-            }
-        }
-        .accessibilityLabel(mode.rawValue)
-        .accessibilityValue(isSelected ? "Selected" : "")
-    }
-}
-
-private struct MacLiquidGlassHomeProgressModePicker: View {
-    @Binding var selection: MacHomeProgressMode
-    @Namespace private var glassNamespace
-
-    var body: some View {
-        GlassEffectContainer(spacing: 4) {
-            HStack(spacing: 4) {
-                ForEach(MacHomeProgressMode.visibleModes) { mode in
-                    segmentButton(for: mode)
-                }
-            }
-            .padding(4)
-            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 14))
         }
         .frame(width: 260)
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Progress mode")
-    }
-
-    private func segmentButton(for mode: MacHomeProgressMode) -> some View {
-        let isSelected = selection == mode
-
-        return Button {
-            withAnimation(.easeInOut(duration: 0.18)) {
-                selection = mode
-            }
-        } label: {
-            Text(mode.rawValue)
-                .font(.system(size: 14, weight: isSelected ? .semibold : .medium))
-                .foregroundStyle(isSelected ? .primary : .secondary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 7)
-                .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .background {
-            if isSelected {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .glassEffect(
-                        .regular.tint(Color.accentColor.opacity(0.34)).interactive(),
-                        in: .rect(cornerRadius: 10)
-                    )
-                    .glassEffectID("MacHomeProgressModeSelection", in: glassNamespace)
-            }
-        }
-        .accessibilityLabel(mode.rawValue)
-        .accessibilityValue(isSelected ? "Selected" : "")
     }
 }

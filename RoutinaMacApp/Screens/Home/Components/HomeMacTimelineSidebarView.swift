@@ -5,6 +5,7 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
     let groupedEntries: [(date: Date, entries: [TimelineEntry])]
     let presentationID: UUID
     let isActive: Bool
+    let allowsFallbackSelection: Bool
     @Binding var positionedPresentationID: UUID?
     @Binding var selection: HomeFeature.MacSidebarSelection?
     @Binding var scrollRequest: MacTimelineSidebarScrollRequest?
@@ -49,12 +50,18 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
                                 selectResolvedTimelineEntry()
                             }
                         } else {
-                            positionInitialTimelineEntry(with: scrollProxy, shouldSelect: isActive)
+                            positionInitialTimelineEntry(
+                                with: scrollProxy,
+                                shouldSelect: isActive && allowsFallbackSelection
+                            )
                         }
                     }
                     .onChange(of: visibleEntryIDs) { _, _ in
                         if !isPositionedForCurrentPresentation {
-                            positionInitialTimelineEntry(with: scrollProxy, shouldSelect: isActive)
+                            positionInitialTimelineEntry(
+                                with: scrollProxy,
+                                shouldSelect: isActive && allowsFallbackSelection
+                            )
                         } else if isActive {
                             if !scrollToPendingTimelineEntry(with: scrollProxy) {
                                 selectResolvedTimelineEntry()
@@ -63,7 +70,10 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
                     }
                     .onChange(of: presentationID) { _, _ in
                         positionedPresentationID = nil
-                        positionInitialTimelineEntry(with: scrollProxy, shouldSelect: isActive)
+                        positionInitialTimelineEntry(
+                            with: scrollProxy,
+                            shouldSelect: isActive && allowsFallbackSelection
+                        )
                     }
                     .onChange(of: isActive) { _, newValue in
                         guard newValue else { return }
@@ -72,7 +82,10 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
                                 selectResolvedTimelineEntry()
                             }
                         } else {
-                            positionInitialTimelineEntry(with: scrollProxy, shouldSelect: true)
+                            positionInitialTimelineEntry(
+                                with: scrollProxy,
+                                shouldSelect: allowsFallbackSelection
+                            )
                         }
                     }
                     .onChange(of: scrollRequest) { _, _ in
@@ -138,7 +151,8 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
         guard let entryID = TimelineSelectionSupport.resolvedSelection(
             currentSelection: selectedEntryID,
             visibleEntryIDs: visibleEntryIDs,
-            usesSidebarLayout: true
+            usesSidebarLayout: true,
+            allowsFallbackSelection: allowsFallbackSelection
         ) else { return }
 
         if selectedEntryID != entryID {

@@ -3,12 +3,15 @@ import SwiftUI
 struct RoutinaGlassSegmentedControl<Option: Hashable, Label: View>: View {
     let accessibilityLabel: String
     let options: [Option]
-    @Binding var selection: Option
+    let selection: Option
+    let onSelect: (Option) -> Void
     let minimumSegmentWidth: CGFloat
     let horizontalPadding: CGFloat
     let verticalPadding: CGFloat
     let fillsAvailableWidth: Bool
+    let maximumSegmentsPerRow: Int?
     let tint: (Option) -> Color
+    let foregroundColor: (Option, Bool) -> Color
     @ViewBuilder let label: (Option) -> Label
     @Namespace private var glassNamespace
 
@@ -20,17 +23,54 @@ struct RoutinaGlassSegmentedControl<Option: Hashable, Label: View>: View {
         horizontalPadding: CGFloat = 14,
         verticalPadding: CGFloat = 7,
         fillsAvailableWidth: Bool = false,
+        maximumSegmentsPerRow: Int? = nil,
         tint: @escaping (Option) -> Color = { _ in .accentColor },
+        foregroundColor: @escaping (Option, Bool) -> Color = { _, isSelected in
+            isSelected ? .primary : .secondary
+        },
         @ViewBuilder label: @escaping (Option) -> Label
     ) {
         self.accessibilityLabel = accessibilityLabel
         self.options = options
-        self._selection = selection
+        self.selection = selection.wrappedValue
+        self.onSelect = { selection.wrappedValue = $0 }
         self.minimumSegmentWidth = minimumSegmentWidth
         self.horizontalPadding = horizontalPadding
         self.verticalPadding = verticalPadding
         self.fillsAvailableWidth = fillsAvailableWidth
+        self.maximumSegmentsPerRow = maximumSegmentsPerRow
         self.tint = tint
+        self.foregroundColor = foregroundColor
+        self.label = label
+    }
+
+    init(
+        accessibilityLabel: String,
+        options: [Option],
+        selection: Option,
+        onSelect: @escaping (Option) -> Void,
+        minimumSegmentWidth: CGFloat = 68,
+        horizontalPadding: CGFloat = 14,
+        verticalPadding: CGFloat = 7,
+        fillsAvailableWidth: Bool = false,
+        maximumSegmentsPerRow: Int? = nil,
+        tint: @escaping (Option) -> Color = { _ in .accentColor },
+        foregroundColor: @escaping (Option, Bool) -> Color = { _, isSelected in
+            isSelected ? .primary : .secondary
+        },
+        @ViewBuilder label: @escaping (Option) -> Label
+    ) {
+        self.accessibilityLabel = accessibilityLabel
+        self.options = options
+        self.selection = selection
+        self.onSelect = onSelect
+        self.minimumSegmentWidth = minimumSegmentWidth
+        self.horizontalPadding = horizontalPadding
+        self.verticalPadding = verticalPadding
+        self.fillsAvailableWidth = fillsAvailableWidth
+        self.maximumSegmentsPerRow = maximumSegmentsPerRow
+        self.tint = tint
+        self.foregroundColor = foregroundColor
         self.label = label
     }
 
@@ -49,18 +89,45 @@ struct RoutinaGlassSegmentedControl<Option: Hashable, Label: View>: View {
 
     private var segmentedSurface: some View {
         GlassEffectContainer(spacing: 4) {
+            segmentedContent
+                .padding(4)
+                .frame(maxWidth: fillsAvailableWidth ? .infinity : nil)
+                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 13))
+        }
+        .padding(.vertical, 1)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    @ViewBuilder
+    private var segmentedContent: some View {
+        if let maximumSegmentsPerRow, maximumSegmentsPerRow > 0 {
+            let rows = optionRows(maximumSegmentsPerRow: maximumSegmentsPerRow)
+            VStack(spacing: 4) {
+                ForEach(rows.indices, id: \.self) { rowIndex in
+                    HStack(spacing: 4) {
+                        ForEach(rows[rowIndex], id: \.option) { item in
+                            button(for: item.option, glassID: item.index)
+                        }
+                    }
+                }
+            }
+        } else {
             HStack(spacing: 4) {
                 ForEach(Array(options.enumerated()), id: \.element) { index, option in
                     button(for: option, glassID: index)
                 }
             }
-            .padding(4)
-            .frame(maxWidth: fillsAvailableWidth ? .infinity : nil)
-            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 13))
         }
-        .padding(.vertical, 1)
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(accessibilityLabel)
+    }
+
+    private func optionRows(maximumSegmentsPerRow: Int) -> [[IndexedOption]] {
+        Array(options.enumerated()).reduce(into: [[IndexedOption]]()) { rows, pair in
+            if rows.last?.count == maximumSegmentsPerRow || rows.isEmpty {
+                rows.append([])
+            }
+            rows[rows.count - 1].append(IndexedOption(index: pair.offset, option: pair.element))
+        }
     }
 
     private func button(for option: Option, glassID: Int) -> some View {
@@ -68,13 +135,13 @@ struct RoutinaGlassSegmentedControl<Option: Hashable, Label: View>: View {
 
         return Button {
             withAnimation(.easeInOut(duration: 0.18)) {
-                selection = option
+                onSelect(option)
             }
         } label: {
             label(option)
                 .font(.system(size: 13, weight: isSelected ? .semibold : .medium))
                 .lineLimit(1)
-                .foregroundStyle(isSelected ? .primary : .secondary)
+                .foregroundStyle(foregroundColor(option, isSelected))
                 .padding(.horizontal, horizontalPadding)
                 .padding(.vertical, verticalPadding)
                 .frame(minWidth: minimumSegmentWidth, maxWidth: fillsAvailableWidth ? .infinity : nil)
@@ -93,6 +160,11 @@ struct RoutinaGlassSegmentedControl<Option: Hashable, Label: View>: View {
         }
         .accessibilityValue(isSelected ? "Selected" : "")
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private struct IndexedOption: Hashable {
+        let index: Int
+        let option: Option
     }
 }
 
