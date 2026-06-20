@@ -51,7 +51,7 @@ enum HomeTaskRowField: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    var subtitle: String {
+    var subtitle: String? {
         switch self {
         case .icon:
             return "Emoji, image marker, and color block."
@@ -78,7 +78,7 @@ enum HomeTaskRowField: String, CaseIterable, Identifiable, Sendable {
         case .place:
             return "Linked place availability."
         case .tags:
-            return "Task tags."
+            return nil
         case .goals:
             return "Linked goals."
         }

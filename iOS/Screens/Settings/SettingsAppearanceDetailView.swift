@@ -54,9 +54,11 @@ List {
             Toggle(isOn: taskRowFieldVisibilityBinding(field)) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(field.title)
-                    Text(field.subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    if let subtitle = field.subtitle {
+                        Text(subtitle)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
         }
