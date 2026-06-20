@@ -67,6 +67,7 @@ enum TaskDetailPresentation {
         if task.isChecklistCompletionRoutine {
             if task.isChecklistInProgress { return .orange }
             if isDoneToday { return .green }
+            if isAssumedDoneToday { return .mint }
             if overdueDays > 0 { return .red }
             if daysUntilDueIfActive(task, referenceDate: referenceDate) == 0 {
                 return TaskDetailPlatformStyle.dueTodayTitleColor

@@ -141,6 +141,17 @@ struct TaskFormPresentationTests {
 
         scheduleMode = .softIntervalChecklist
         #expect(!model.canAutoAssumeDailyDone)
+
+        let checklistModel = taskFormModel(
+            scheduleMode: .softIntervalChecklist,
+            checklistItems: [RoutineChecklistItem(title: "Breakfast", intervalDays: 1)]
+        )
+        let runoutModel = taskFormModel(
+            scheduleMode: .derivedFromChecklist,
+            checklistItems: [RoutineChecklistItem(title: "Milk", intervalDays: 1)]
+        )
+        #expect(checklistModel.canAutoAssumeDailyDone)
+        #expect(!runoutModel.canAutoAssumeDailyDone)
     }
 
     @Test @MainActor

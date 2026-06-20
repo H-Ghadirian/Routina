@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted
+Superseded
+
+## Superseded by
+
+[0259](../0259-allow-daily-checklist-auto-assumed-completion.md)
 
 ## Date
 
@@ -10,7 +14,7 @@ Accepted
 
 ## Refines
 
-[0181](0181-allow-gentle-calendar-repeats.md) and [0201](0201-use-ready-to-do-for-gentle-ready-badge.md).
+[0181](../0181-allow-gentle-calendar-repeats.md) and [0201](../0201-use-ready-to-do-for-gentle-ready-badge.md).
 
 ## Context
 
@@ -18,7 +22,7 @@ Auto-assumed daily completion lets a simple daily routine default to done after 
 
 The eligibility rule previously required the routine to use the fixed `Due` schedule mode. That made the option disappear for `Gentle` routines even when the rest of the routine was a simple daily Standard routine.
 
-Decision [0181](0181-allow-gentle-calendar-repeats.md) established that Due/Gentle controls overdue pressure while Interval/Calendar controls cadence. Decision [0201](0201-use-ready-to-do-for-gentle-ready-badge.md) clarified that Gentle routines should stay low-pressure rather than urgent.
+Decision [0181](../0181-allow-gentle-calendar-repeats.md) established that Due/Gentle controls overdue pressure while Interval/Calendar controls cadence. Decision [0201](../0201-use-ready-to-do-for-gentle-ready-badge.md) clarified that Gentle routines should stay low-pressure rather than urgent.
 
 ## Decision
 

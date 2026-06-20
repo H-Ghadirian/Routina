@@ -143,7 +143,7 @@ struct TaskDetailFeatureCompletionTests {
             isDoneToday: true
         )
 
-        #expect(state.checklistProgressText == "All items completed today")
+        #expect(state.checklistProgressText == "All items completed on selected day")
         #expect(state.summaryStatusTitle == "Done today")
         for item in task.checklistItems {
             #expect(state.isChecklistItemMarkedDone(item))
@@ -186,7 +186,7 @@ struct TaskDetailFeatureCompletionTests {
         )
 
         #expect(state.isSelectedDateDone)
-        #expect(state.checklistProgressText == "All items completed today")
+        #expect(state.checklistProgressText == "All items completed on selected day")
         for item in task.checklistItems {
             #expect(state.isChecklistItemMarkedDone(item))
             #expect(!TaskDetailChecklistPresentation.canToggleItem(
@@ -1241,6 +1241,77 @@ struct TaskDetailFeatureCompletionTests {
             makeDate("2026-02-24T12:00:00Z"),
         ])
         #expect(scheduledIDs.value == [task.id.uuidString])
+    }
+
+    @Test
+    func markAsDone_confirmsAssumedChecklistCompletionRoutine() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-06-20T08:30:00Z")
+        let task = RoutineTask(
+            name: "Meals",
+            checklistItems: [
+                RoutineChecklistItem(title: "Breakfast", intervalDays: 1, createdAt: now),
+                RoutineChecklistItem(title: "Lunch", intervalDays: 1, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            recurrenceRule: .interval(days: 1),
+            scheduleAnchor: makeDate("2026-06-19T08:00:00Z"),
+            createdAt: makeDate("2026-06-19T08:00:00Z"),
+            autoAssumeDailyDone: true
+        )
+        context.insert(task)
+        try context.save()
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                logs: [],
+                selectedDate: calendar.startOfDay(for: now)
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+
+        #expect(store.state.isSelectedDateAssumedDone)
+        #expect(!store.state.isCompletionButtonDisabled)
+        #expect(store.state.completionButtonAction == TaskDetailFeature.Action.markAsDone)
+        #expect(store.state.completionButtonTitle == "Confirm done")
+
+        _ = await store.withExhaustivity(.off) {
+            await store.send(TaskDetailFeature.Action.markAsDone) {
+                $0.task.lastDone = now
+                $0.taskRefreshID = 1
+                $0.isDoneToday = true
+                $0.isAssumedDoneToday = false
+                $0.daysSinceLastRoutine = 0
+                $0.overdueDays = 0
+                $0.pendingLocalCompletionDates = [now]
+            }
+        }
+
+        await store.receive {
+            guard case let .logsLoaded(logs) = $0 else { return false }
+            return logs.contains { $0.kind == RoutineLogKind.completed && $0.timestamp == now }
+        } assert: {
+            $0.logs = RoutineLogHistory.detailLogs(taskID: task.id, context: context)
+            $0.pendingLocalCompletionDates = []
+            $0.isDoneToday = true
+            $0.isAssumedDoneToday = false
+            $0.daysSinceLastRoutine = 0
+            $0.overdueDays = 0
+        }
+
+        let persistedTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
+        let persistedLogs = RoutineLogHistory.detailLogs(taskID: task.id, context: context)
+        #expect(persistedTask.lastDone == now)
+        #expect(persistedLogs.contains { $0.kind == RoutineLogKind.completed && $0.timestamp == now })
     }
 
     @Test

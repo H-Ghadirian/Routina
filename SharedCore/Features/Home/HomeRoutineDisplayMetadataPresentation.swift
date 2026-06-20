@@ -190,6 +190,9 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
             return totalItems == 0 ? nil : "\(totalItems) \(totalItems == 1 ? "item" : "items")"
         }
         if task.scheduleMode.isChecklistCompletionMode {
+            if task.isAssumedDoneToday {
+                return nil
+            }
             if let nextPendingChecklistItemTitle = task.nextPendingChecklistItemTitle,
                task.completedChecklistItemCount < task.checklistItemCount {
                 return "Next: \(nextPendingChecklistItemTitle)"

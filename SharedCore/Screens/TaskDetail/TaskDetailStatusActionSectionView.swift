@@ -51,6 +51,7 @@ struct TaskDetailStatusSectionView<TimeSpentButton: View>: View {
     let isStepRoutineOffToday: Bool
     let isChecklistCompletionRoutine: Bool
     let canUndoSelectedDate: Bool
+    let isSelectedDateAssumedDone: Bool
     let shouldShowBulkConfirmAssumedDays: Bool
     let bulkConfirmAssumedDaysTitle: String
     let hasBlockingRelationships: Bool
@@ -108,6 +109,7 @@ struct TaskDetailStatusSectionView<TimeSpentButton: View>: View {
                 isStepRoutineOffToday: isStepRoutineOffToday,
                 isChecklistCompletionRoutine: isChecklistCompletionRoutine,
                 canUndoSelectedDate: canUndoSelectedDate,
+                isSelectedDateAssumedDone: isSelectedDateAssumedDone,
                 shouldShowBulkConfirmAssumedDays: shouldShowBulkConfirmAssumedDays,
                 bulkConfirmAssumedDaysTitle: bulkConfirmAssumedDaysTitle,
                 hasBlockingRelationships: hasBlockingRelationships,
@@ -141,6 +143,7 @@ struct TaskDetailStatusActionSectionView<CompletionLabel: View, TimeSpentButton:
     let isStepRoutineOffToday: Bool
     let isChecklistCompletionRoutine: Bool
     let canUndoSelectedDate: Bool
+    let isSelectedDateAssumedDone: Bool
     let shouldShowBulkConfirmAssumedDays: Bool
     let bulkConfirmAssumedDaysTitle: String
     let hasBlockingRelationships: Bool
@@ -161,6 +164,7 @@ struct TaskDetailStatusActionSectionView<CompletionLabel: View, TimeSpentButton:
         isStepRoutineOffToday: Bool,
         isChecklistCompletionRoutine: Bool,
         canUndoSelectedDate: Bool,
+        isSelectedDateAssumedDone: Bool = false,
         shouldShowBulkConfirmAssumedDays: Bool = false,
         bulkConfirmAssumedDaysTitle: String = "",
         hasBlockingRelationships: Bool,
@@ -180,6 +184,7 @@ struct TaskDetailStatusActionSectionView<CompletionLabel: View, TimeSpentButton:
         self.isStepRoutineOffToday = isStepRoutineOffToday
         self.isChecklistCompletionRoutine = isChecklistCompletionRoutine
         self.canUndoSelectedDate = canUndoSelectedDate
+        self.isSelectedDateAssumedDone = isSelectedDateAssumedDone
         self.shouldShowBulkConfirmAssumedDays = shouldShowBulkConfirmAssumedDays
         self.bulkConfirmAssumedDaysTitle = bulkConfirmAssumedDaysTitle
         self.hasBlockingRelationships = hasBlockingRelationships
@@ -240,7 +245,7 @@ struct TaskDetailStatusActionSectionView<CompletionLabel: View, TimeSpentButton:
             helperText("Step-based routines can only be progressed for today.")
         }
 
-        if isChecklistCompletionRoutine && !canUndoSelectedDate {
+        if isChecklistCompletionRoutine && !canUndoSelectedDate && !isSelectedDateAssumedDone {
             helperText("Complete checklist items below to finish this routine.")
         }
 

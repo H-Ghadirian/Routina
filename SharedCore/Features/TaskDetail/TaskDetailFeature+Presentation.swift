@@ -224,6 +224,9 @@ extension TaskDetailFeature.State {
         if task.isOneOffTask && hasActiveRelationshipBlocker {
             return true
         }
+        if isSelectedDateAssumedDone {
+            return task.isArchived()
+        }
         if task.blocksManualCompletionForIncompleteChecklist {
             return true
         }
@@ -410,6 +413,9 @@ extension TaskDetailFeature.State {
         if task.isChecklistCompletionRoutine {
             if isDoneToday {
                 return "Done today"
+            }
+            if isAssumedDoneToday {
+                return "Assumed done today"
             }
             if task.isChecklistInProgress(referenceDate: resolvedSelectedDate) {
                 return "Checklist \(task.completedChecklistItemCount(referenceDate: resolvedSelectedDate)) of \(task.totalChecklistItemCount) in progress"

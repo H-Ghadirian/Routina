@@ -17,11 +17,18 @@ enum RoutineAssumedCompletion {
         hasSequentialSteps: Bool,
         hasChecklistItems: Bool
     ) -> Bool {
-        scheduleMode.taskType == .routine
-            && scheduleMode.isStandardRoutineMode
-            && !hasSequentialSteps
-            && !hasChecklistItems
-            && recurrenceRule.isDaily
+        guard scheduleMode.taskType == .routine,
+              !hasSequentialSteps,
+              recurrenceRule.isDaily
+        else {
+            return false
+        }
+
+        if scheduleMode.isStandardRoutineMode {
+            return !hasChecklistItems
+        }
+
+        return scheduleMode.isChecklistCompletionMode && hasChecklistItems
     }
 
     static func isAssumedDone(
@@ -61,6 +68,10 @@ enum RoutineAssumedCompletion {
         }
 
         if hasRecordedCancellation(for: task, on: selectedDay, logs: logs, calendar: calendar) {
+            return false
+        }
+
+        if task.isChecklistInProgress(referenceDate: selectedDay, calendar: calendar) {
             return false
         }
 

@@ -960,6 +960,7 @@ detailBody
             isStepRoutineOffToday: store.isStepRoutineOffToday,
             isChecklistCompletionRoutine: store.task.isChecklistCompletionRoutine,
             canUndoSelectedDate: store.canUndoSelectedDate,
+            isSelectedDateAssumedDone: store.isSelectedDateAssumedDone,
             shouldShowBulkConfirmAssumedDays: store.shouldShowBulkConfirmAssumedDays,
             bulkConfirmAssumedDaysTitle: store.bulkConfirmAssumedDaysTitle,
             hasBlockingRelationships: !store.blockingRelationships.isEmpty,

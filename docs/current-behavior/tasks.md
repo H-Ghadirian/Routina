@@ -17,7 +17,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0249](../decisions/0249-reset-daily-checklist-progress.md)
 - [0252](../decisions/0252-stabilize-home-task-list-presentation-identity.md)
 - [0253](../decisions/0253-guard-checklist-detail-mutations-through-reloads.md)
-- [0255](../decisions/0255-allow-gentle-auto-assumed-daily-completion.md)
+- [0259](../decisions/0259-allow-daily-checklist-auto-assumed-completion.md)
 
 ## Current Contract
 
@@ -27,11 +27,12 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Daily routines already belong to the daily routine area and do not expose stored planned-date controls.
 - On Mac, daily routines are shown inside `Plan to do today`. By default they visually merge into the today list; Settings can restore a nested `Daily Routines` group.
 - Routines separate schedule behavior from format. Due/Gentle controls pressure and status; Interval/Calendar controls cadence; Standard/Checklist controls finish behavior.
-- Auto-assume done is opt-in for simple daily Standard routines in both Due and Gentle styles. Todos, checklist/runout routines, routines with steps or checklist items, and non-daily cadences do not qualify.
+- Auto-assume done is opt-in for daily Standard routines without steps/checklists and daily Checklist-completion routines in both Due and Gentle styles. Todos, checklist runout routines, Standard routines with optional checklist items, routines with steps, and non-daily cadences do not qualify.
 - Calendar repeats offer weekday and month-day choices. Interval repeats own the single daily-repeat path.
 - Multi-day routines use a `Start` -> in-progress -> `Stop` lifecycle. Their detail calendar shows an ongoing range while active and a completed span after stopping.
 - Checklist runout item actions are item-scoped. Completing all currently due items records routine completion.
 - Daily checklist-completion progress lasts for the current day only. Tomorrow starts unchecked unless the routine was completed and recorded in history.
+- Daily Checklist-completion routines with auto-assume done use day-level assumption only; assumed completion does not fake completed checklist item IDs, and current-day partial checklist progress suppresses assumed presentation until the routine is fully completed or progress is cleared.
 - Once a checklist-completion routine is completed for a selected day, its checklist rows present as checked and read-only from selected-day completion evidence, even though in-progress checklist IDs are cleared after the final item. The toolbar Undo action reopens/removes the completed day without flashing stale completed checklist state back into the rows.
 - Selected checklist item mutations keep their post-action detail state through stale Home reloads, including final completion after item-progress IDs reset.
 - Optional checklists attached to ordinary tasks can block manual completion until all required items are checked.

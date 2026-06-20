@@ -107,6 +107,65 @@ struct HomeRoutineDisplayFactoryTests {
         #expect(display.nextPendingChecklistItemTitle == nil)
     }
 
+    @Test
+    func assumedChecklistRoutineHidesPendingChecklistPrompt() {
+        let now = makeDate("2026-06-09T08:00:00Z")
+        let task = RoutineTask(
+            name: "Meals",
+            checklistItems: [
+                RoutineChecklistItem(title: "Breakfast", intervalDays: 1, createdAt: now),
+                RoutineChecklistItem(title: "Lunch", intervalDays: 1, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 7, minute: 0)),
+            scheduleAnchor: now,
+            createdAt: makeDate("2026-06-08T08:00:00Z"),
+            autoAssumeDailyDone: true
+        )
+
+        let display = makeDisplay(
+            task: task,
+            places: [],
+            coordinate: LocationCoordinate(latitude: 52.5200, longitude: 13.4050)
+        )
+
+        #expect(display.isDoneToday)
+        #expect(display.isAssumedDoneToday)
+        #expect(display.completedChecklistItemCount == 0)
+        #expect(display.nextPendingChecklistItemTitle == nil)
+    }
+
+    @Test
+    func partialChecklistProgressSuppressesAssumedHomeDisplay() {
+        let now = makeDate("2026-06-09T08:00:00Z")
+        let firstID = UUID()
+        let task = RoutineTask(
+            name: "Meals",
+            checklistItems: [
+                RoutineChecklistItem(id: firstID, title: "Breakfast", intervalDays: 1, createdAt: now),
+                RoutineChecklistItem(title: "Lunch", intervalDays: 1, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 7, minute: 0)),
+            scheduleAnchor: now,
+            createdAt: makeDate("2026-06-08T08:00:00Z"),
+            autoAssumeDailyDone: true
+        )
+        task.completedChecklistItemIDs = [firstID]
+        task.completedChecklistProgressStartedAt = now
+
+        let display = makeDisplay(
+            task: task,
+            places: [],
+            coordinate: LocationCoordinate(latitude: 52.5200, longitude: 13.4050)
+        )
+
+        #expect(!display.isDoneToday)
+        #expect(!display.isAssumedDoneToday)
+        #expect(display.completedChecklistItemCount == 1)
+        #expect(display.nextPendingChecklistItemTitle == "Lunch")
+    }
+
     private func makeDisplay(
         task: RoutineTask,
         places: [RoutinePlace],

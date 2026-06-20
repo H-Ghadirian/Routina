@@ -57,6 +57,24 @@ Given a daily checklist-completion routine has a completed log for today and sta
 When the app derives Home or Task Detail checklist state for today, receives the final checklist item tap followed by a stale Home task reload, receives a duplicate checklist item toggle, or receives stale completed task/log evidence after Undo
 Then stale or cleared in-progress IDs are ignored, completed-day checklist rows stay checked/read-only without blinking unchecked first, and Undo keeps rows unchecked without flashing back to completed
 
+### Daily Checklist Auto-Assume Uses Day-Level Completion
+
+Area: Tasks
+Decision links: [0259](../decisions/0259-allow-daily-checklist-auto-assumed-completion.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/RoutineAssumedCompletionTests.swift`
+- `Tests/Shared/HomeRoutineDisplayFactoryTests.swift`
+- `Tests/Shared/TaskDetailFeatureCompletionTests.swift`
+
+Given a daily checklist-completion routine has auto-assume done enabled
+When today's availability starts and no checklist item progress exists
+Then Home and Task Detail present the routine as assumed done without pretending individual checklist items are checked
+
+Given the user starts checking checklist items for that daily occurrence
+When the app derives assumed completion state
+Then manual partial checklist progress suppresses assumed-done presentation until the routine is fully completed or progress is cleared
+
 ### Multi-Day Routine Lifecycle
 
 Area: Tasks

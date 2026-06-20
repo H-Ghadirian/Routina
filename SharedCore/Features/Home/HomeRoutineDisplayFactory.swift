@@ -21,7 +21,7 @@ struct HomeRoutineDisplayFactory {
             referenceDate: now,
             calendar: calendar
         )
-        let presentsCompletedChecklistDay = task.isChecklistCompletionRoutine && isDoneToday
+        let presentsCompletedChecklistDay = task.isChecklistCompletionRoutine && (isDoneToday || assumedDoneToday)
         let linkedPlaces = task.placeIDs.compactMap { placesByID[$0] }
         let displayPlaceName = placeListDisplayName(for: linkedPlaces)
         let locationPlaces = equivalentPlaces(

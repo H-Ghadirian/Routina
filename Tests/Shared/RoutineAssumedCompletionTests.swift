@@ -11,7 +11,8 @@ import Testing
 @MainActor
 struct RoutineAssumedCompletionTests {
     @Test
-    func eligibility_requiresSimpleDailyStandardRoutineWithOptIn() {
+    func eligibility_allowsDailyStandardAndChecklistCompletionRoutinesWithOptIn() {
+        let checklistItem = RoutineChecklistItem(title: "Breakfast", intervalDays: 1)
         let due = RoutineTask(
             name: "Brush teeth",
             scheduleMode: .fixedInterval,
@@ -30,6 +31,34 @@ struct RoutineAssumedCompletionTests {
             recurrenceRule: .weekly(on: 2, at: nil),
             autoAssumeDailyDone: true
         )
+        let checklist = RoutineTask(
+            name: "Meals",
+            checklistItems: [checklistItem],
+            scheduleMode: .fixedIntervalChecklist,
+            recurrenceRule: .interval(days: 1),
+            autoAssumeDailyDone: true
+        )
+        let gentleChecklist = RoutineTask(
+            name: "Study blocks",
+            checklistItems: [checklistItem],
+            scheduleMode: .softIntervalChecklist,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 9, minute: 0)),
+            autoAssumeDailyDone: true
+        )
+        let optionalChecklist = RoutineTask(
+            name: "Read",
+            checklistItems: [checklistItem],
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 1),
+            autoAssumeDailyDone: true
+        )
+        let runout = RoutineTask(
+            name: "Groceries",
+            checklistItems: [checklistItem],
+            scheduleMode: .derivedFromChecklist,
+            recurrenceRule: .interval(days: 1),
+            autoAssumeDailyDone: true
+        )
         let withSteps = RoutineTask(
             name: "Morning routine",
             steps: [RoutineStep(title: "Stretch")],
@@ -40,7 +69,11 @@ struct RoutineAssumedCompletionTests {
 
         #expect(RoutineAssumedCompletion.isEligible(due))
         #expect(RoutineAssumedCompletion.isEligible(gentle))
+        #expect(RoutineAssumedCompletion.isEligible(checklist))
+        #expect(RoutineAssumedCompletion.isEligible(gentleChecklist))
         #expect(!RoutineAssumedCompletion.isEligible(weekly))
+        #expect(!RoutineAssumedCompletion.isEligible(optionalChecklist))
+        #expect(!RoutineAssumedCompletion.isEligible(runout))
         #expect(!RoutineAssumedCompletion.isEligible(withSteps))
     }
 
@@ -74,6 +107,43 @@ struct RoutineAssumedCompletionTests {
                 calendar: calendar
             )
         )
+    }
+
+    @Test
+    func checklistPartialProgressSuppressesAssumedDone() {
+        let calendar = makeTestCalendar()
+        let today = makeDate("2026-02-25T00:00:00Z")
+        let referenceDate = makeDate("2026-02-25T10:00:00Z")
+        let firstID = UUID()
+        let secondID = UUID()
+        let task = RoutineTask(
+            name: "Meals",
+            checklistItems: [
+                RoutineChecklistItem(id: firstID, title: "Breakfast", intervalDays: 1, createdAt: today),
+                RoutineChecklistItem(id: secondID, title: "Lunch", intervalDays: 1, createdAt: today)
+            ],
+            scheduleMode: .fixedIntervalChecklist,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 8, minute: 0)),
+            createdAt: makeDate("2026-02-24T00:00:00Z"),
+            autoAssumeDailyDone: true
+        )
+
+        #expect(RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: today,
+            referenceDate: referenceDate,
+            calendar: calendar
+        ))
+
+        task.completedChecklistItemIDs = [firstID]
+        task.completedChecklistProgressStartedAt = referenceDate
+
+        #expect(!RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: today,
+            referenceDate: referenceDate,
+            calendar: calendar
+        ))
     }
 
     @Test

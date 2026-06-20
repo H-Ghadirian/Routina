@@ -570,7 +570,7 @@ struct TaskDetailFeature: Reducer {
                     doneAt: completionDate
                 )
             }
-            if state.task.isChecklistCompletionRoutine {
+            if state.task.isChecklistCompletionRoutine && !state.isSelectedDateAssumedDone {
                 return .none
             }
             guard !state.task.blocksManualCompletionForIncompleteChecklist else {
