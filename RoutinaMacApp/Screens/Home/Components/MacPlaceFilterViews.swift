@@ -120,12 +120,6 @@ struct MacPlaceFilterPanel: View {
                 .foregroundStyle(Color.accentColor)
             }
 
-            Button("Manage") {
-                onManagePlaces()
-            }
-            .buttonStyle(.plain)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(Color.accentColor)
         }
     }
 
@@ -156,9 +150,11 @@ struct MacPlaceFilterPanel: View {
                 .font(.caption)
         }
 
-        Text(manualPlaceFilterDescription)
-            .font(.caption)
-            .foregroundStyle(.secondary)
+        if selectedPlaceID != nil {
+            Text(manualPlaceFilterDescription)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
 
         if let locationStatusText {
             Text(locationStatusText)
