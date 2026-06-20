@@ -195,29 +195,11 @@ extension HomeTCAView {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 8, pinnedViews: []) {
                     ForEach(presentation.sections) { section in
-                        VStack(alignment: .leading, spacing: 6) {
-                            taskListSectionHeader(for: section)
-
-                            if taskListSectionIsExpanded(section) {
-                                ForEach(section.taskGroups) { group in
-                                    if let groupTitle = group.title {
-                                        taskListInnerGroupHeader(groupTitle, count: group.tasks.count, group: group)
-                                    }
-
-                                    if taskListGroupIsExpanded(group) {
-                                        ForEach(group.tasks, id: \.id) { task in
-                                            macTaskSourceRow(
-                                                for: task,
-                                                rowNumber: visibleRowNumber(for: task, in: presentation),
-                                                includeMarkDone: section.includeMarkDone,
-                                                moveContext: group.moveContext,
-                                                allowsPlannerDrag: allowsPlannerDrag
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        taskListSectionView(
+                            for: section,
+                            in: presentation,
+                            allowsPlannerDrag: allowsPlannerDrag
+                        )
                     }
                 }
                 .padding(10)
@@ -266,6 +248,82 @@ extension HomeTCAView {
                     visibleTaskIDs: visibleTaskIDs
                 )
                 return visibleTaskIDs.isEmpty ? .ignored : .handled
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func taskListSectionView(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>,
+        allowsPlannerDrag: Bool
+    ) -> some View {
+        let isExpanded = taskListSectionIsExpanded(section)
+
+        if section.kind.isCollapsible && isExpanded {
+            VStack(alignment: .leading, spacing: 0) {
+                taskListSectionHeader(for: section)
+                    .padding(.bottom, 6)
+
+                taskListSectionTaskGroups(
+                    for: section,
+                    in: presentation,
+                    allowsPlannerDrag: allowsPlannerDrag
+                )
+                .padding(.horizontal, 8)
+                .padding(.bottom, 8)
+            }
+            .padding(4)
+            .routinaGlassPanel(
+                cornerRadius: 12,
+                tint: taskListSectionHeaderTint(for: section),
+                tintOpacity: taskListExpandedSectionTintOpacity(for: section)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(
+                        taskListSectionHeaderTint(for: section).opacity(
+                            taskListExpandedSectionStrokeOpacity(for: section)
+                        ),
+                        lineWidth: 1
+                    )
+            )
+        } else {
+            VStack(alignment: .leading, spacing: 6) {
+                taskListSectionHeader(for: section)
+
+                if isExpanded {
+                    taskListSectionTaskGroups(
+                        for: section,
+                        in: presentation,
+                        allowsPlannerDrag: allowsPlannerDrag
+                    )
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func taskListSectionTaskGroups(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>,
+        allowsPlannerDrag: Bool
+    ) -> some View {
+        ForEach(section.taskGroups) { group in
+            if let groupTitle = group.title {
+                taskListInnerGroupHeader(groupTitle, count: group.tasks.count, group: group)
+            }
+
+            if taskListGroupIsExpanded(group) {
+                ForEach(group.tasks, id: \.id) { task in
+                    macTaskSourceRow(
+                        for: task,
+                        rowNumber: visibleRowNumber(for: task, in: presentation),
+                        includeMarkDone: section.includeMarkDone,
+                        moveContext: group.moveContext,
+                        allowsPlannerDrag: allowsPlannerDrag
+                    )
+                }
             }
         }
     }
@@ -390,11 +448,81 @@ extension HomeTCAView {
         .padding(.vertical, 7)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .routinaGlassCard(cornerRadius: 8, tint: tint, tintOpacity: 0.07, interactive: true)
+        .routinaGlassCard(
+            cornerRadius: 8,
+            tint: tint,
+            tintOpacity: taskListSectionHeaderTintOpacity(for: section, isExpanded: isExpanded),
+            interactive: true
+        )
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(tint.opacity(0.22), lineWidth: 0.75)
+                .stroke(
+                    tint.opacity(taskListSectionHeaderStrokeOpacity(for: section, isExpanded: isExpanded)),
+                    lineWidth: 0.75
+                )
         )
+    }
+
+    private func taskListSectionHeaderTintOpacity(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        isExpanded: Bool
+    ) -> Double {
+        switch section.kind {
+        case .tag:
+            return isExpanded ? 0.17 : 0.12
+        case .plannedToday, .daily:
+            return isExpanded ? 0.12 : 0.08
+        case .untagged, .archived:
+            return isExpanded ? 0.10 : 0.06
+        case .pinned, .regular, .away:
+            return 0.07
+        }
+    }
+
+    private func taskListSectionHeaderStrokeOpacity(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        isExpanded: Bool
+    ) -> Double {
+        switch section.kind {
+        case .tag:
+            return isExpanded ? 0.42 : 0.30
+        case .plannedToday, .daily:
+            return isExpanded ? 0.34 : 0.22
+        case .untagged, .archived:
+            return isExpanded ? 0.24 : 0.18
+        case .pinned, .regular, .away:
+            return 0.22
+        }
+    }
+
+    private func taskListExpandedSectionTintOpacity(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+    ) -> Double {
+        switch section.kind {
+        case .tag:
+            return 0.10
+        case .plannedToday, .daily:
+            return 0.07
+        case .untagged, .archived:
+            return 0.05
+        case .pinned, .regular, .away:
+            return 0.04
+        }
+    }
+
+    private func taskListExpandedSectionStrokeOpacity(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+    ) -> Double {
+        switch section.kind {
+        case .tag:
+            return 0.34
+        case .plannedToday, .daily:
+            return 0.26
+        case .untagged, .archived:
+            return 0.18
+        case .pinned, .regular, .away:
+            return 0.16
+        }
     }
 
     private func taskListSectionHeaderIcon(
