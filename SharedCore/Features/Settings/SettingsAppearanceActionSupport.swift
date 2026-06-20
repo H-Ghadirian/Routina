@@ -175,6 +175,16 @@ enum SettingsAppearanceActionHandler {
         return .none
     }
 
+    static func taskRelationshipVisualizerToggled(
+        _ isEnabled: Bool,
+        state: inout SettingsAppearanceState,
+        appSettingsClient: AppSettingsClient
+    ) -> Effect<SettingsFeature.Action> {
+        state.isTaskRelationshipVisualizerEnabled = isEnabled
+        appSettingsClient.setTaskRelationshipVisualizerEnabled(isEnabled)
+        return .none
+    }
+
     static func showPersianDatesToggled(
         _ isEnabled: Bool,
         state: inout SettingsAppearanceState,

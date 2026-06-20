@@ -51,6 +51,7 @@ enum AppSettingsDefaults {
         .appSettingHideUnavailableRoutines: false,
         .appSettingAppLockEnabled: false,
         .appSettingTaskSharingEnabled: false,
+        .appSettingTaskRelationshipVisualizerEnabled: false,
         .appSettingHomeTaskListModeTabsVisible: false,
         .appSettingMacHomeSectionFocusTimersEnabled: false,
         .appSettingMacTimelineQuickFiltersVisible: false,
@@ -135,6 +136,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingAppLockEnabled
     case appSettingGitFeaturesEnabled
     case appSettingTaskSharingEnabled
+    case appSettingTaskRelationshipVisualizerEnabled
     case appSettingGoalsTabEnabled
     case appSettingAdventureMapEnabled
     case appSettingBoardScreenEnabled
@@ -213,6 +215,8 @@ struct AppSettingsClient: Sendable {
     var setGitFeaturesEnabled: @Sendable (Bool) -> Void
     var taskSharingEnabled: @Sendable () -> Bool = { false }
     var setTaskSharingEnabled: @Sendable (Bool) -> Void = { _ in }
+    var taskRelationshipVisualizerEnabled: @Sendable () -> Bool = { false }
+    var setTaskRelationshipVisualizerEnabled: @Sendable (Bool) -> Void = { _ in }
     var showPersianDates: @Sendable () -> Bool
     var setShowPersianDates: @Sendable (Bool) -> Void
     var automaticPlaceCheckInEnabled: @Sendable () -> Bool
@@ -424,6 +428,13 @@ extension AppSettingsClient {
             SharedDefaults.app[.appSettingTaskSharingEnabled] = isEnabled
             AppSettingsPersistenceMirror.schedule()
         },
+        taskRelationshipVisualizerEnabled: {
+            SharedDefaults.app[.appSettingTaskRelationshipVisualizerEnabled]
+        },
+        setTaskRelationshipVisualizerEnabled: { isEnabled in
+            SharedDefaults.app[.appSettingTaskRelationshipVisualizerEnabled] = isEnabled
+            AppSettingsPersistenceMirror.schedule()
+        },
         showPersianDates: {
             SharedDefaults.app[.appSettingShowPersianDates]
         },
@@ -633,6 +644,8 @@ extension AppSettingsClient {
         setGitFeaturesEnabled: { _ in },
         taskSharingEnabled: { false },
         setTaskSharingEnabled: { _ in },
+        taskRelationshipVisualizerEnabled: { false },
+        setTaskRelationshipVisualizerEnabled: { _ in },
         showPersianDates: { false },
         setShowPersianDates: { _ in },
         automaticPlaceCheckInEnabled: { true },

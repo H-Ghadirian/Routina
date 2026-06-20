@@ -97,6 +97,7 @@ struct SettingsRoutineDataPersistenceTests {
             UserDefaultBoolValueKey.appSettingNotificationsEnabled.rawValue,
             UserDefaultBoolValueKey.appSettingAppLockEnabled.rawValue,
             UserDefaultBoolValueKey.appSettingTaskSharingEnabled.rawValue,
+            UserDefaultBoolValueKey.appSettingTaskRelationshipVisualizerEnabled.rawValue,
             UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
             UserDefaultBoolValueKey.appSettingFocusShieldEnabled.rawValue,
             UserDefaultBoolValueKey.appSettingAutomaticPlaceCheckInEnabled.rawValue,
@@ -131,6 +132,7 @@ struct SettingsRoutineDataPersistenceTests {
         defaults[.appSettingNotificationsEnabled] = true
         defaults[.appSettingAppLockEnabled] = true
         defaults[.appSettingTaskSharingEnabled] = true
+        defaults[.appSettingTaskRelationshipVisualizerEnabled] = true
         defaults[.appSettingShowPersianDates] = true
         defaults[.appSettingFocusShieldEnabled] = true
         defaults[.appSettingAutomaticPlaceCheckInEnabled] = false
@@ -143,6 +145,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(backup.userPreferences?.selectedAppIcon == AppIconOption.teal.rawValue)
         #expect(backup.userPreferences?.tagColors == "{\"Focus\":\"#112233\"}")
         #expect(backup.userPreferences?.taskSharingEnabled == true)
+        #expect(backup.userPreferences?.taskRelationshipVisualizerEnabled == true)
 
         let restoreContext = makeInMemoryContext()
         let summary = try SettingsRoutineDataPersistence.replaceAllRoutineData(
@@ -168,6 +171,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(restored.notificationsEnabled)
         #expect(restored.appLockEnabled)
         #expect(restored.taskSharingEnabled)
+        #expect(restored.taskRelationshipVisualizerEnabled)
         #expect(restored.showPersianDates)
         #expect(restored.focusShieldEnabled)
         #expect(!restored.automaticPlaceCheckInEnabled)

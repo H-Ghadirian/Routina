@@ -63,6 +63,8 @@ struct SettingsFeatureDependencyTests {
                 setGitFeaturesEnabled: { _ in },
                 taskSharingEnabled: { true },
                 setTaskSharingEnabled: { _ in },
+                taskRelationshipVisualizerEnabled: { true },
+                setTaskRelationshipVisualizerEnabled: { _ in },
                 showPersianDates: { true },
                 setShowPersianDates: { _ in },
                 automaticPlaceCheckInEnabled: { false },
@@ -124,6 +126,7 @@ struct SettingsFeatureDependencyTests {
             $0.appearance.isAppLockEnabled = true
             $0.appearance.isGitFeaturesEnabled = true
             $0.appearance.isTaskSharingEnabled = true
+            $0.appearance.isTaskRelationshipVisualizerEnabled = true
             $0.appearance.showPersianDates = true
             $0.appearance.showsTimelineTasksInDayPlanner = false
             $0.appearance.separatesDailyRoutinesInTaskList = true

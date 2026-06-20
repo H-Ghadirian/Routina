@@ -525,10 +525,35 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func taskRelationshipVisualizerToggled_persistsSelection() async {
+        let persistedValue = LockIsolated<Bool?>(nil)
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setTaskRelationshipVisualizerEnabled = { persistedValue.setValue($0) }
+        }
+
+        await store.send(.taskRelationshipVisualizerToggled(true)) {
+            $0.appearance.isTaskRelationshipVisualizerEnabled = true
+        }
+
+        #expect(persistedValue.value == true)
+    }
+
+    @Test
     func defaultSettingsKeepTaskSharingOff() {
         #expect(AppSettingsDefaults.boolValues[.appSettingTaskSharingEnabled] == .some(false))
         #expect(!SettingsFeature.State().appearance.isTaskSharingEnabled)
         #expect(!RoutinaUserPreferences().taskSharingEnabled)
+    }
+
+    @Test
+    func defaultSettingsKeepTaskRelationshipVisualizerOff() {
+        #expect(AppSettingsDefaults.boolValues[.appSettingTaskRelationshipVisualizerEnabled] == .some(false))
+        #expect(!SettingsFeature.State().appearance.isTaskRelationshipVisualizerEnabled)
+        #expect(!RoutinaUserPreferences().taskRelationshipVisualizerEnabled)
     }
 
     @Test

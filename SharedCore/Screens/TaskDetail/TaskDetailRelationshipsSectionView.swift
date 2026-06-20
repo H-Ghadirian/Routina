@@ -70,6 +70,7 @@ private struct TaskDetailGoalChip: View {
 struct TaskDetailRelationshipsSectionView: View {
     let groups: [(kind: RoutineTaskRelationshipKind, items: [RoutineTaskResolvedRelationship])]
     @Binding var selectedRelationshipKind: RoutineTaskRelationshipKind
+    let showsVisualizeButton: Bool
     let isVisualizeDisabled: Bool
     let background: Color
     let stroke: Color
@@ -99,15 +100,17 @@ struct TaskDetailRelationshipsSectionView: View {
 
             Spacer(minLength: 0)
 
-            Button {
-                onVisualize()
-            } label: {
-                Label("Visualize", systemImage: "point.3.connected.trianglepath.dotted")
-                    .font(.caption.weight(.semibold))
+            if showsVisualizeButton {
+                Button {
+                    onVisualize()
+                } label: {
+                    Label("Visualize", systemImage: "point.3.connected.trianglepath.dotted")
+                        .font(.caption.weight(.semibold))
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(isVisualizeDisabled)
             }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-            .disabled(isVisualizeDisabled)
         }
     }
 

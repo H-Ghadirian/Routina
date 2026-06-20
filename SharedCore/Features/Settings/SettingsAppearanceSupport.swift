@@ -57,6 +57,7 @@ enum SettingsAppearanceEditor {
         appLockEnabled: Bool,
         gitFeaturesEnabled: Bool,
         taskSharingEnabled: Bool,
+        taskRelationshipVisualizerEnabled: Bool,
         showPersianDates: Bool,
         showTimelineTasksInDayPlanner: Bool,
         separateDailyRoutinesInTaskList: Bool,
@@ -71,6 +72,7 @@ enum SettingsAppearanceEditor {
         state.isAppLockEnabled = appLockEnabled
         state.isGitFeaturesEnabled = gitFeaturesEnabled
         state.isTaskSharingEnabled = taskSharingEnabled
+        state.isTaskRelationshipVisualizerEnabled = taskRelationshipVisualizerEnabled
         state.showPersianDates = showPersianDates
         state.showsTimelineTasksInDayPlanner = showTimelineTasksInDayPlanner
         state.separatesDailyRoutinesInTaskList = separateDailyRoutinesInTaskList

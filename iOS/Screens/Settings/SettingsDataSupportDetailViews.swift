@@ -100,6 +100,11 @@ private struct SettingsBetaExperimentsSection: View {
             Text("Show task sharing in task details.")
                 .foregroundStyle(.secondary)
 
+            Toggle("Show linked task visualizer", isOn: taskRelationshipVisualizerBinding)
+
+            Text("Show the Visualize button for linked tasks in task details.")
+                .foregroundStyle(.secondary)
+
             Toggle("Show Goals tab", isOn: $isGoalsTabEnabled)
 
             Text("Show Goal navigation, controls, and Stats reports.")
@@ -145,6 +150,13 @@ private struct SettingsBetaExperimentsSection: View {
         Binding(
             get: { store.appearance.isTaskSharingEnabled },
             set: { store.send(.taskSharingToggled($0)) }
+        )
+    }
+
+    private var taskRelationshipVisualizerBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.isTaskRelationshipVisualizerEnabled },
+            set: { store.send(.taskRelationshipVisualizerToggled($0)) }
         )
     }
 }

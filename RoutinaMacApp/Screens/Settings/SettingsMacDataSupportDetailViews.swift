@@ -485,6 +485,13 @@ private struct SettingsMacBetaExperimentsCard: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 
+            Toggle("Show linked task visualizer", isOn: taskRelationshipVisualizerBinding)
+                .toggleStyle(.switch)
+
+            Text("Show the Visualize button for linked tasks in task details.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
             Toggle("Show Goals tab", isOn: $isGoalsTabEnabled)
                 .toggleStyle(.switch)
 
@@ -592,6 +599,13 @@ private struct SettingsMacBetaExperimentsCard: View {
         Binding(
             get: { store.appearance.isTaskSharingEnabled },
             set: { store.send(.taskSharingToggled($0)) }
+        )
+    }
+
+    private var taskRelationshipVisualizerBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.isTaskRelationshipVisualizerEnabled },
+            set: { store.send(.taskRelationshipVisualizerToggled($0)) }
         )
     }
 }

@@ -36,6 +36,10 @@ struct TaskDetailTCAView: View {
         UserDefaultBoolValueKey.appSettingTaskSharingEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isTaskSharingEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingTaskRelationshipVisualizerEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isTaskRelationshipVisualizerEnabled = false
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
 
@@ -923,6 +927,7 @@ detailBody
         TaskDetailRelationshipsSectionView(
             groups: store.groupedResolvedRelationships,
             selectedRelationshipKind: presentationRouting.linkedTaskRelationshipKind,
+            showsVisualizeButton: isTaskRelationshipVisualizerEnabled,
             isVisualizeDisabled: store.resolvedRelationships.isEmpty,
             background: routineLogsBackground,
             stroke: TaskDetailPlatformStyle.sectionCardStroke,
