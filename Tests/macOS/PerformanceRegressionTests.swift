@@ -26,6 +26,23 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(source.contains("homeToolbarTodoCount"))
     }
 
+    func testHomeRefreshUsesCentralCloudSyncFanIn() throws {
+        let source = try Self.sourceFile("SharedCore/Screens/Home/HomeTCAView+Refresh.swift")
+
+        XCTAssertTrue(
+            source.contains("publisher(for: .routineDidUpdate)"),
+            "Home should still refresh through the app-owned update notification."
+        )
+        XCTAssertFalse(
+            source.contains("NSPersistentStoreRemoteChange"),
+            "Home should not subscribe directly to Core Data remote-change notifications; CloudSyncedSurfaceRefreshCoordinator coalesces them first."
+        )
+        XCTAssertFalse(
+            source.contains("NSPersistentCloudKitContainer.eventChangedNotification"),
+            "Home should not subscribe directly to CloudKit event notifications; direct subscriptions duplicate refresh/fetch work during sync."
+        )
+    }
+
     func testHomeDoneStatsDoesNotRewalkLogsForEachOutcome() throws {
         let source = try Self.sourceFile("SharedCore/Features/Home/HomeTaskSupport.swift")
 

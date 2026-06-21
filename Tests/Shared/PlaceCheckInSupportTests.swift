@@ -402,6 +402,35 @@ struct PlaceCheckInSupportTests {
 
     @MainActor
     @Test
+    func reconcileAutomaticCheckIn_keepsAutomaticSessionForUncertainBoundaryExit() throws {
+        let context = makeInMemoryContext()
+        let office = makePlace(in: context, name: "Office", latitude: 52.5200, longitude: 13.4050, radiusMeters: 150)
+        let session = PlaceCheckInSession(
+            placeID: office.id,
+            placeName: office.displayName,
+            latitude: office.latitude,
+            longitude: office.longitude,
+            placeRadiusMeters: office.radiusMeters,
+            startedAt: makeDate("2026-05-10T09:00:00Z"),
+            captureMode: .automatic
+        )
+        context.insert(session)
+        try context.save()
+
+        let nextSession = try PlaceCheckInSupport.reconcileAutomaticCheckIn(
+            coordinate: LocationCoordinate(latitude: 52.52235, longitude: 13.4050),
+            horizontalAccuracyMeters: 200,
+            date: makeDate("2026-05-10T10:00:00Z"),
+            in: context
+        )
+
+        #expect(nextSession == nil)
+        #expect(session.endedAt == nil)
+        #expect(try PlaceCheckInSupport.activeSession(in: context)?.id == session.id)
+    }
+
+    @MainActor
+    @Test
     func endActiveAutomaticSession_endsOnlyAutomaticSessions() throws {
         let context = makeInMemoryContext()
         let automaticSession = PlaceCheckInSession(

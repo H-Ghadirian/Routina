@@ -284,7 +284,13 @@ enum PlaceCheckInSupport {
         let active = try activeSession(in: context)
 
         guard let place = nearestContainingPlace(to: coordinate, places: places) else {
-            if let active, active.isAutomatic {
+            if let active,
+               shouldEndActiveAutomaticSession(
+                   active,
+                   coordinate: coordinate,
+                   horizontalAccuracyMeters: horizontalAccuracyMeters,
+                   places: places
+               ) {
                 _ = try endActiveSession(at: date, in: context, sourceDevice: sourceDevice)
             }
             return nil
@@ -535,6 +541,50 @@ enum PlaceCheckInSupport {
             .min { lhs, rhs in
                 lhs.distance(to: coordinate) < rhs.distance(to: coordinate)
             }
+    }
+
+    private static func shouldEndActiveAutomaticSession(
+        _ session: PlaceCheckInSession,
+        coordinate: LocationCoordinate,
+        horizontalAccuracyMeters: Double?,
+        places: [RoutinePlace]
+    ) -> Bool {
+        guard session.isAutomatic else { return false }
+        guard let sessionCoordinate = automaticSessionCoordinate(session, places: places) else {
+            return true
+        }
+
+        let radiusMeters = max(automaticSessionRadius(session, places: places), 25)
+        let exitGraceMeters = max(
+            75,
+            horizontalAccuracyMeters ?? 0,
+            session.horizontalAccuracyMeters ?? 0
+        )
+        return sessionCoordinate.distance(to: coordinate) > radiusMeters + exitGraceMeters
+    }
+
+    private static func automaticSessionCoordinate(
+        _ session: PlaceCheckInSession,
+        places: [RoutinePlace]
+    ) -> LocationCoordinate? {
+        if let placeID = session.placeID,
+           let place = places.first(where: { $0.id == placeID }) {
+            return LocationCoordinate(latitude: place.latitude, longitude: place.longitude)
+        }
+
+        return session.coordinate
+    }
+
+    private static func automaticSessionRadius(
+        _ session: PlaceCheckInSession,
+        places: [RoutinePlace]
+    ) -> Double {
+        if let placeID = session.placeID,
+           let place = places.first(where: { $0.id == placeID }) {
+            return place.radiusMeters
+        }
+
+        return session.placeRadiusMeters ?? 150
     }
 
     static func suggestedRawCurrentLocationName(
