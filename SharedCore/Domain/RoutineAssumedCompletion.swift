@@ -47,10 +47,6 @@ enum RoutineAssumedCompletion {
         if let createdAt = task.createdAt {
             let createdDay = calendar.startOfDay(for: createdAt)
             guard selectedDay >= createdDay else { return false }
-            if selectedDay == createdDay,
-               createdAt > availableAt(for: task, on: selectedDay, calendar: calendar) {
-                return false
-            }
         }
 
         if let pausedAt = task.pausedAt,

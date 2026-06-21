@@ -218,6 +218,29 @@ struct HomeRoutineDisplayFactoryTests {
         #expect(display.nextPendingChecklistItemTitle == "Lunch")
     }
 
+    @Test
+    func creationDayAllDayAutoAssumedRoutinePresentsAsAssumedInHome() {
+        let now = makeDate("2026-06-09T08:00:00Z")
+        let task = RoutineTask(
+            name: "Hydrate",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 1),
+            scheduleAnchor: makeDate("2026-06-09T00:00:00Z"),
+            createdAt: makeDate("2026-06-09T07:30:00Z"),
+            autoAssumeDailyDone: true
+        )
+
+        let display = makeDisplay(
+            task: task,
+            now: now,
+            places: [],
+            coordinate: LocationCoordinate(latitude: 52.5200, longitude: 13.4050)
+        )
+
+        #expect(display.isDoneToday)
+        #expect(display.isAssumedDoneToday)
+    }
+
     private func makeDisplay(
         task: RoutineTask,
         now: Date = makeDate("2026-06-09T08:00:00Z"),

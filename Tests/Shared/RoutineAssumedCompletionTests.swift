@@ -243,6 +243,35 @@ struct RoutineAssumedCompletionTests {
     }
 
     @Test
+    func creationDayAfterAvailabilityStartCanBeAssumedDone() {
+        let calendar = makeTestCalendar()
+        let today = makeDate("2026-02-25T00:00:00Z")
+        let referenceDate = makeDate("2026-02-25T10:00:00Z")
+        let task = RoutineTask(
+            name: "Brush teeth",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 1),
+            createdAt: makeDate("2026-02-25T09:30:00Z"),
+            autoAssumeDailyDone: true
+        )
+
+        #expect(RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: today,
+            referenceDate: referenceDate,
+            calendar: calendar
+        ))
+
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
+        #expect(!RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: yesterday,
+            referenceDate: referenceDate,
+            calendar: calendar
+        ))
+    }
+
+    @Test
     func pastAssumedDates_skipCompletedAndCanceledDays() {
         let calendar = makeTestCalendar()
         let referenceDate = makeDate("2026-02-25T08:00:00Z")

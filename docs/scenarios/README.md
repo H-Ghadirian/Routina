@@ -83,6 +83,10 @@ Given a daily checklist-completion routine has auto-assume done enabled
 When today's availability starts and no checklist item progress exists
 Then Home and Task Detail present the routine as assumed done without pretending individual checklist items are checked
 
+Given a daily routine is created today with auto-assume done enabled
+When today's availability has already started
+Then Home treats the current occurrence as assumed done while dates before creation remain unassumed
+
 Given the user starts checking checklist items for that daily occurrence
 When the app derives assumed completion state
 Then manual partial checklist progress suppresses assumed-done presentation until the routine is fully completed or progress is cleared
