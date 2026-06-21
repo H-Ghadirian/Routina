@@ -20,3 +20,4 @@ Decision records in `docs/decisions/` remain the source for why choices were mad
 - [Stats](stats.md)
 - [Settings](settings.md)
 - [Places](places.md)
+- [UI](ui.md)

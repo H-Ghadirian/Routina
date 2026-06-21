@@ -29,6 +29,18 @@ If coverage does not exist yet, write `Coverage needed:` instead of `Coverage:` 
 
 ## Initial High-Value Scenarios
 
+### Custom Buttons Use Full Visual Hit Areas
+
+Area: Other
+Decision links: [0264](../decisions/0264-match-button-hit-areas-to-visual-surfaces.md)
+Current behavior: [UI](../current-behavior/ui.md)
+Coverage needed:
+- UI-level verification that custom/plain SwiftUI buttons respond across their full visible card, chip, row, or pill surface.
+
+Given a custom or plain SwiftUI button has a visible padded card, chip, row, or pill surface
+When the user taps or clicks inside that visible surface but outside the text, emoji, or icon glyphs
+Then the button action still runs
+
 ### Daily Checklist Progress Resets
 
 Area: Tasks

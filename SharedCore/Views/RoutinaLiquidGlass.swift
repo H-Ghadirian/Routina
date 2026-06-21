@@ -238,16 +238,20 @@ extension View {
                     .regular.tint(tint.opacity(tintOpacity)).interactive(),
                     in: .rect(cornerRadius: cornerRadius)
                 )
+                .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             } else {
                 glassEffect(.regular.interactive(), in: .rect(cornerRadius: cornerRadius))
+                    .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             }
         } else if let tint {
             glassEffect(
                 .regular.tint(tint.opacity(tintOpacity)),
                 in: .rect(cornerRadius: cornerRadius)
             )
+            .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         } else {
             glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
+                .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         }
     }
 }

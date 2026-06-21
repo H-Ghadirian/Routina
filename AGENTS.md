@@ -11,6 +11,10 @@
 - After making a change that introduces or revises long-term decisions, add a new decision record or supersede an existing one.
 - Decision records should capture why a choice was made, not every small implementation detail. Use them for architecture, conventions, data model, dependencies, product behavior, build setup, and other choices future contributors should preserve or understand.
 
+## UI Interaction Rules
+
+- All visible buttons must be clickable across their full visual surface, not only on their text, emoji, or icon. Native button styles can own their native hit areas; custom/plain SwiftUI buttons must fill their intended target and define a matching `contentShape`, or use a shared Routina visual modifier that does.
+
 ## Build Verification
 
 - Swift package tests:

@@ -137,12 +137,14 @@ struct TaskDetailOptionalActionsSectionView: View {
             actionButtonLabel(action)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 7)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .routinaGlassCard(
                     cornerRadius: 8,
                     tint: .secondary,
                     tintOpacity: 0.08,
                     interactive: true
                 )
+                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         .buttonStyle(.plain)
     }
