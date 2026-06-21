@@ -124,8 +124,25 @@ struct HomeFilterPresentation: Equatable, Sendable {
         activeOptionalFilterCount > 0
     }
 
+    var availableStatusFilters: [RoutineListFilter] {
+        switch taskListKind {
+        case .all, .routines:
+            return [.all, .due, .doneToday]
+        case .todos:
+            return [.all, .due]
+        }
+    }
+
+    var hasTaskTypeFilter: Bool {
+        taskListKind != .all
+    }
+
     var filterLabels: [String] {
         var labels: [String] = []
+
+        if hasTaskTypeFilter {
+            labels.append(taskListKind.taskTypeFilterLabel)
+        }
 
         if selectedFilter != .all {
             labels.append(selectedFilter.rawValue)
@@ -274,5 +291,18 @@ struct HomeFilterPresentation: Equatable, Sendable {
         guard !summary.isEmpty else { return nil }
         let resultLabel = resultCount == 1 ? "1 result" : "\(resultCount) results"
         return "\(summary) • \(resultLabel)"
+    }
+}
+
+private extension HomeFilterTaskListKind {
+    var taskTypeFilterLabel: String {
+        switch self {
+        case .all:
+            return "All"
+        case .routines:
+            return "Routines"
+        case .todos:
+            return "Todos"
+        }
     }
 }

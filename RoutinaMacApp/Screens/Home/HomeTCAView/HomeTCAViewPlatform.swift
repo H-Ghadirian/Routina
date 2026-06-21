@@ -609,7 +609,7 @@ extension HomeTCAView {
     }
 
     var macAvailableFilters: [RoutineListFilter] {
-        [.all, .due, .doneToday]
+        macHomeFilterPresentation.availableStatusFilters
     }
 
     var macPlaceFilterOptions: [MacPlaceFilterOption] {

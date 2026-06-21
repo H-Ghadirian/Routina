@@ -113,7 +113,9 @@ extension HomeTCAView {
                 || store.selectedTimelineMediaFilter != .all
                 || !store.selectedTimelineExcludedTags.isEmpty
         case .routines, .board:
-            return store.selectedFilter != .all || macHomeFilterPresentation.hasActiveOptionalFilters
+            return store.taskListMode != .all
+                || store.selectedFilter != .all
+                || macHomeFilterPresentation.hasActiveOptionalFilters
         case .goals, .adventure, .stats, .settings, .addTask:
             return false
         }
@@ -196,6 +198,9 @@ extension HomeTCAView {
             store.send(.selectedTimelineExcludedTagsChanged([]))
             store.send(.selectedTimelineExcludeTagMatchModeChanged(.any))
         } else {
+            if store.taskListMode != .all {
+                store.send(.taskListModeFilterChanged(.all))
+            }
             store.send(.selectedFilterChanged(.all))
             store.send(.clearOptionalFilters)
         }

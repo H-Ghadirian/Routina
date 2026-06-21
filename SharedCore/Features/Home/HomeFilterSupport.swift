@@ -48,6 +48,17 @@ enum HomeStatsFilterMutation: Equatable {
 }
 
 enum HomeFilterEditor {
+    static func normalizeSelectedFilter(
+        forTaskListModeRawValue taskListModeRawValue: String?,
+        taskFilters: inout HomeTaskFiltersState
+    ) {
+        guard taskListModeRawValue == "Todos",
+              taskFilters.selectedFilter == .doneToday
+        else { return }
+
+        taskFilters.selectedFilter = .all
+    }
+
     @discardableResult
     static func transitionTaskListMode(
         from oldModeRawValue: String,
@@ -59,6 +70,7 @@ enum HomeFilterEditor {
 
         let savedSnapshot = taskFilters.tabFilterSnapshots[newModeRawValue]
         taskFilters.apply(snapshot: savedSnapshot ?? .default)
+        normalizeSelectedFilter(forTaskListModeRawValue: newModeRawValue, taskFilters: &taskFilters)
 
         if savedSnapshot == nil && hideUnavailableRoutines {
             hideUnavailableRoutines = false

@@ -89,6 +89,22 @@ struct HomeFilterPresentationTests {
     }
 
     @Test
+    func statusFiltersHideDoneTodayForTodos() {
+        #expect(HomeFilterPresentation(taskListKind: .all).availableStatusFilters == [.all, .due, .doneToday])
+        #expect(HomeFilterPresentation(taskListKind: .routines).availableStatusFilters == [.all, .due, .doneToday])
+        #expect(HomeFilterPresentation(taskListKind: .todos).availableStatusFilters == [.all, .due])
+    }
+
+    @Test
+    func taskTypeFilterAppearsInSummaryLabels() {
+        let presentation = HomeFilterPresentation(taskListKind: .todos)
+
+        #expect(presentation.hasTaskTypeFilter)
+        #expect(presentation.filterLabels == ["Todos"])
+        #expect(presentation.activeTaskFiltersSummary(resultCount: 4, maxVisibleCount: 4) == "Todos • 4 results")
+    }
+
+    @Test
     func placeCopyAdaptsToTaskListKindAndSavedPlaces() {
         let selected = HomeFilterPresentation(
             taskListKind: .routines,

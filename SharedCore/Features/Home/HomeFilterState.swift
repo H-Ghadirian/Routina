@@ -176,6 +176,10 @@ enum HomeTemporaryViewStateMapper {
            let snapshot = taskFilters.tabFilterSnapshots[rawValue] {
             taskFilters.apply(snapshot: snapshot)
         }
+        HomeFilterEditor.normalizeSelectedFilter(
+            forTaskListModeRawValue: persistedState.homeTaskListModeRawValue,
+            taskFilters: &taskFilters
+        )
 
         return HomeTemporaryViewStateValues(
             hideUnavailableRoutines: persistedState.hideUnavailableRoutines || defaultHideUnavailableRoutines,

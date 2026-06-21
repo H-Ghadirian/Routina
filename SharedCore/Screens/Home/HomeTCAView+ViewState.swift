@@ -248,7 +248,7 @@ extension HomeTCAView {
     }
 
     var iOSAvailableFilters: [RoutineListFilter] {
-        [.all, .due, .doneToday]
+        homeFilterPresentation.availableStatusFilters
     }
 
     var homeTagFilterSupport: HomeTagFilterSupport<HomeFeature.RoutineDisplay> {

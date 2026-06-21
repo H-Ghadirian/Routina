@@ -58,7 +58,7 @@ struct HomeMacSidebarPresentation {
         if mode == .goals { return false }
         if mode == .adventure { return false }
         if mode == .stats { return false }
-        return selectedFilter != .all || hasActiveOptionalFilters
+        return taskListMode != .all || selectedFilter != .all || hasActiveOptionalFilters
     }
 
     private var filterDetailNavigationTitle: String {

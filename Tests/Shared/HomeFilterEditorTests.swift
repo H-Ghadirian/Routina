@@ -267,6 +267,32 @@ struct HomeFilterEditorTests {
     }
 
     @Test
+    func transitionTaskListModeToTodosClearsDoneTodayStatusFilter() {
+        var taskFilters = HomeTaskFiltersState(
+            selectedFilter: .due,
+            tabFilterSnapshots: [
+                "Todos": TabFilterStateManager.Snapshot(
+                    selectedTag: nil,
+                    excludedTags: [],
+                    selectedFilter: .doneToday,
+                    selectedManualPlaceFilterID: nil
+                )
+            ]
+        )
+        var hideUnavailableRoutines = false
+
+        HomeFilterEditor.transitionTaskListMode(
+            from: "All",
+            to: "Todos",
+            taskFilters: &taskFilters,
+            hideUnavailableRoutines: &hideUnavailableRoutines
+        )
+
+        #expect(taskFilters.selectedFilter == RoutineListFilter.all)
+        #expect(taskFilters.tabFilterSnapshots["All"]?.selectedFilter == RoutineListFilter.due)
+    }
+
+    @Test
     func timelineFilterMutation_selectedTagsKeepsLegacySelectedTagInSync() {
         var timelineFilters = HomeTimelineFiltersState()
 
