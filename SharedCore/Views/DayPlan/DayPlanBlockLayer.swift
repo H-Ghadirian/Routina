@@ -34,6 +34,12 @@ struct DayPlanBlockLayer: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             ForEach(Array(dates.enumerated()), id: \.element) { dayIndex, date in
+                let plannedBlocks = blocksForDate(date)
+                let eventBlocks = eventBlocksForDate(date)
+                let timedBlockPlacementsByID = timedBlockPlacementsByID(
+                    plannedBlocks: plannedBlocks,
+                    eventBlocks: eventBlocks
+                )
                 ForEach(sleepBlocksForDate(date)) { sleepBlock in
                     let block = sleepBlock.block
                     let blockHeight = blockHeight(for: block)
@@ -139,7 +145,11 @@ struct DayPlanBlockLayer: View {
                     .zIndex(0.65)
                 }
 
-                ForEach(eventBlocksForDate(date)) { eventBlock in
+                ForEach(positionedEventBlocks(
+                    eventBlocks,
+                    placementsByID: timedBlockPlacementsByID
+                )) { positionedEventBlock in
+                    let eventBlock = positionedEventBlock.eventBlock
                     let block = eventBlock.block
                     let blockHeight = blockHeight(for: block)
                     DayPlanBlockCard(
@@ -163,11 +173,17 @@ struct DayPlanBlockLayer: View {
                         }
                     )
                     .frame(
-                        width: max(dayWidth - 10, 90),
+                        width: timedBlockWidth(for: positionedEventBlock.columnCount),
                         height: blockHeight
                     )
                     .offset(
-                        x: timeColumnWidth + CGFloat(dayIndex) * dayWidth + 5,
+                        x: timeColumnWidth
+                            + CGFloat(dayIndex) * dayWidth
+                            + 5
+                            + timedBlockXOffset(
+                                columnIndex: positionedEventBlock.columnIndex,
+                                columnCount: positionedEventBlock.columnCount
+                            ),
                         y: yOffset(for: block.startMinute)
                     )
                     .zIndex(0.75)
@@ -213,7 +229,11 @@ struct DayPlanBlockLayer: View {
                     .zIndex(sprintFocusBlock.isActive ? 3 : 0.85)
                 }
 
-                ForEach(blocksForDate(date)) { block in
+                ForEach(positionedPlannedBlocks(
+                    plannedBlocks,
+                    placementsByID: timedBlockPlacementsByID
+                )) { positionedBlock in
+                    let block = positionedBlock.block
                     let blockHeight = blockHeight(for: block)
                     DayPlanBlockCard(
                         block: block,
@@ -243,11 +263,17 @@ struct DayPlanBlockLayer: View {
                         }
                     )
                     .frame(
-                        width: max(dayWidth - 10, 90),
+                        width: timedBlockWidth(for: positionedBlock.columnCount),
                         height: blockHeight
                     )
                     .offset(
-                        x: timeColumnWidth + CGFloat(dayIndex) * dayWidth + 5,
+                        x: timeColumnWidth
+                            + CGFloat(dayIndex) * dayWidth
+                            + 5
+                            + timedBlockXOffset(
+                                columnIndex: positionedBlock.columnIndex,
+                                columnCount: positionedBlock.columnCount
+                            ),
                         y: yOffset(for: block.startMinute)
                     )
                     .matchedGeometryEffect(
@@ -276,6 +302,117 @@ struct DayPlanBlockLayer: View {
         }
 
         return blockHeight(for: sprintFocusBlock.block)
+    }
+
+    private func timedBlockPlacementsByID(
+        plannedBlocks: [DayPlanBlock],
+        eventBlocks: [DayPlanEventBlock]
+    ) -> [String: DayPlanTimedBlockColumnPlacement] {
+        let plannedItems = plannedBlocks.map { block in
+            DayPlanTimedBlockColumnItem(
+                id: timedBlockID(for: block),
+                startMinute: block.startMinute,
+                endMinute: block.endMinute
+            )
+        }
+        let eventItems = eventBlocks.map { eventBlock in
+            DayPlanTimedBlockColumnItem(
+                id: timedBlockID(for: eventBlock),
+                startMinute: eventBlock.block.startMinute,
+                endMinute: eventBlock.block.endMinute
+            )
+        }
+
+        return Dictionary(
+            uniqueKeysWithValues: DayPlanTimedBlockColumnLayout
+                .placements(for: plannedItems + eventItems)
+                .map { ($0.id, $0) }
+        )
+    }
+
+    private func positionedEventBlocks(
+        _ eventBlocks: [DayPlanEventBlock],
+        placementsByID: [String: DayPlanTimedBlockColumnPlacement]
+    ) -> [PositionedEventBlock] {
+        return eventBlocks.map { eventBlock in
+            let id = timedBlockID(for: eventBlock)
+            let placement = placementsByID[id] ?? DayPlanTimedBlockColumnPlacement(
+                id: id,
+                columnIndex: 0,
+                columnCount: 1
+            )
+            return PositionedEventBlock(
+                eventBlock: eventBlock,
+                columnIndex: placement.columnIndex,
+                columnCount: placement.columnCount
+            )
+        }
+    }
+
+    private func positionedPlannedBlocks(
+        _ blocks: [DayPlanBlock],
+        placementsByID: [String: DayPlanTimedBlockColumnPlacement]
+    ) -> [PositionedPlannedBlock] {
+        return blocks.map { block in
+            let id = timedBlockID(for: block)
+            let placement = placementsByID[id] ?? DayPlanTimedBlockColumnPlacement(
+                id: id,
+                columnIndex: 0,
+                columnCount: 1
+            )
+            return PositionedPlannedBlock(
+                block: block,
+                columnIndex: placement.columnIndex,
+                columnCount: placement.columnCount
+            )
+        }
+    }
+
+    private func timedBlockWidth(for columnCount: Int) -> CGFloat {
+        guard columnCount > 1 else {
+            return max(dayWidth - 10, 90)
+        }
+
+        let totalGap = CGFloat(columnCount - 1) * timedBlockColumnGap
+        return max((max(dayWidth - 10, 1) - totalGap) / CGFloat(columnCount), 1)
+    }
+
+    private func timedBlockXOffset(columnIndex: Int, columnCount: Int) -> CGFloat {
+        guard columnCount > 1 else { return 0 }
+        return CGFloat(columnIndex)
+            * (timedBlockWidth(for: columnCount) + timedBlockColumnGap)
+    }
+
+    private func timedBlockID(for block: DayPlanBlock) -> String {
+        "planned-\(block.id.uuidString)"
+    }
+
+    private func timedBlockID(for eventBlock: DayPlanEventBlock) -> String {
+        "event-\(eventBlock.id)"
+    }
+
+    private var timedBlockColumnGap: CGFloat {
+        4
+    }
+}
+
+private struct PositionedEventBlock: Identifiable {
+    var eventBlock: DayPlanEventBlock
+    var columnIndex: Int
+    var columnCount: Int
+
+    var id: String {
+        eventBlock.id
+    }
+}
+
+private struct PositionedPlannedBlock: Identifiable {
+    var block: DayPlanBlock
+    var columnIndex: Int
+    var columnCount: Int
+
+    var id: DayPlanBlock.ID {
+        block.id
     }
 }
 

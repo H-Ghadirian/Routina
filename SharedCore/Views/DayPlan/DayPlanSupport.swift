@@ -41,3 +41,85 @@ enum DayPlanTaskSorting {
         return trimmed.isEmpty ? "Untitled task" : trimmed
     }
 }
+
+struct DayPlanTimedBlockColumnItem: Equatable {
+    var id: String
+    var startMinute: Int
+    var endMinute: Int
+
+    init(id: String, startMinute: Int, endMinute: Int) {
+        let startMinute = min(max(startMinute, 0), DayPlanBlock.minutesPerDay - 1)
+        self.id = id
+        self.startMinute = startMinute
+        self.endMinute = min(max(endMinute, startMinute + 1), DayPlanBlock.minutesPerDay)
+    }
+}
+
+struct DayPlanTimedBlockColumnPlacement: Equatable {
+    var id: String
+    var columnIndex: Int
+    var columnCount: Int
+}
+
+enum DayPlanTimedBlockColumnLayout {
+    static func placements(
+        for items: [DayPlanTimedBlockColumnItem]
+    ) -> [DayPlanTimedBlockColumnPlacement] {
+        guard !items.isEmpty else { return [] }
+
+        let sortedItems = items.sorted { lhs, rhs in
+            if lhs.startMinute != rhs.startMinute {
+                return lhs.startMinute < rhs.startMinute
+            }
+            if lhs.endMinute != rhs.endMinute {
+                return lhs.endMinute > rhs.endMinute
+            }
+            return lhs.id < rhs.id
+        }
+
+        var groupAssignments: [ColumnAssignment] = []
+        var activeAssignments: [ColumnAssignment] = []
+        var placementsByID: [String: DayPlanTimedBlockColumnPlacement] = [:]
+
+        func flushGroup() {
+            guard !groupAssignments.isEmpty else { return }
+
+            let columnCount = (groupAssignments.map(\.columnIndex).max() ?? 0) + 1
+            for assignment in groupAssignments {
+                placementsByID[assignment.item.id] = DayPlanTimedBlockColumnPlacement(
+                    id: assignment.item.id,
+                    columnIndex: assignment.columnIndex,
+                    columnCount: columnCount
+                )
+            }
+
+            groupAssignments.removeAll(keepingCapacity: true)
+        }
+
+        for item in sortedItems {
+            activeAssignments.removeAll { $0.item.endMinute <= item.startMinute }
+            if activeAssignments.isEmpty {
+                flushGroup()
+            }
+
+            let usedColumns = Set(activeAssignments.map(\.columnIndex))
+            var columnIndex = 0
+            while usedColumns.contains(columnIndex) {
+                columnIndex += 1
+            }
+
+            let assignment = ColumnAssignment(item: item, columnIndex: columnIndex)
+            groupAssignments.append(assignment)
+            activeAssignments.append(assignment)
+        }
+
+        flushGroup()
+
+        return items.compactMap { placementsByID[$0.id] }
+    }
+}
+
+private struct ColumnAssignment {
+    var item: DayPlanTimedBlockColumnItem
+    var columnIndex: Int
+}

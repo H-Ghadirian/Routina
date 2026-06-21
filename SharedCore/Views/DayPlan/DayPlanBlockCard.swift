@@ -217,24 +217,66 @@ struct DayPlanBlockCard: View {
                     .lineLimit(1)
             }
         } else {
-            HStack(alignment: .top, spacing: 10) {
-                DayPlanTaskAvatar(emoji: block.emojiSnapshot, tint: tint)
-                    .frame(width: 30, height: 30)
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(block.titleSnapshot)
-                        .font(.subheadline.weight(.semibold))
-                        .lineLimit(1)
-
-                    Text(rangeText)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                        .lineLimit(1)
-                }
-
-                Spacer(minLength: 6)
+            ViewThatFits(in: .horizontal) {
+                largeContent
+                compactContent
+                textOnlyContent
             }
+        }
+    }
+
+    private var largeContent: some View {
+        HStack(alignment: .top, spacing: 8) {
+            DayPlanTaskAvatar(emoji: block.emojiSnapshot, tint: tint)
+                .frame(width: 28, height: 28)
+
+            textStack(
+                titleFont: .subheadline.weight(.semibold),
+                rangeFont: .caption
+            )
+            .layoutPriority(1)
+
+            Spacer(minLength: 0)
+        }
+    }
+
+    private var compactContent: some View {
+        HStack(alignment: .top, spacing: 6) {
+            miniIcon
+                .padding(.top, 1)
+
+            textStack(
+                titleFont: .caption.weight(.semibold),
+                rangeFont: .caption2
+            )
+            .layoutPriority(1)
+
+            Spacer(minLength: 0)
+        }
+    }
+
+    private var textOnlyContent: some View {
+        textStack(
+            titleFont: .caption.weight(.semibold),
+            rangeFont: .caption2
+        )
+    }
+
+    private func textStack(titleFont: Font, rangeFont: Font) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(block.titleSnapshot)
+                .font(titleFont)
+                .foregroundStyle(.primary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.82)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(rangeText)
+                .font(rangeFont)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
         }
     }
 

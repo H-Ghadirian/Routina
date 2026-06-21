@@ -2334,6 +2334,61 @@ struct DayPlanPlannerStateTests {
 
         #expect(target == nil)
     }
+
+    @Test
+    func timedBlockColumnLayoutSplitsSameTimeEventsIntoSideBySideColumns() {
+        let placements = DayPlanTimedBlockColumnLayout.placements(
+            for: [
+                DayPlanTimedBlockColumnItem(id: "a", startMinute: 10 * 60, endMinute: 12 * 60),
+                DayPlanTimedBlockColumnItem(id: "b", startMinute: 10 * 60, endMinute: 12 * 60),
+            ]
+        )
+
+        #expect(
+            placements == [
+                DayPlanTimedBlockColumnPlacement(id: "a", columnIndex: 0, columnCount: 2),
+                DayPlanTimedBlockColumnPlacement(id: "b", columnIndex: 1, columnCount: 2),
+            ]
+        )
+    }
+
+    @Test
+    func timedBlockColumnLayoutSplitsSameTimeEventAndTaskIntoSideBySideColumns() {
+        let placements = DayPlanTimedBlockColumnLayout.placements(
+            for: [
+                DayPlanTimedBlockColumnItem(id: "planned-task", startMinute: 10 * 60, endMinute: 12 * 60),
+                DayPlanTimedBlockColumnItem(id: "calendar-event", startMinute: 10 * 60, endMinute: 12 * 60),
+            ]
+        )
+
+        #expect(
+            placements == [
+                DayPlanTimedBlockColumnPlacement(id: "planned-task", columnIndex: 1, columnCount: 2),
+                DayPlanTimedBlockColumnPlacement(id: "calendar-event", columnIndex: 0, columnCount: 2),
+            ]
+        )
+    }
+
+    @Test
+    func timedBlockColumnLayoutReusesColumnsWithinConnectedOverlapGroups() {
+        let placements = DayPlanTimedBlockColumnLayout.placements(
+            for: [
+                DayPlanTimedBlockColumnItem(id: "a", startMinute: 9 * 60, endMinute: 10 * 60),
+                DayPlanTimedBlockColumnItem(id: "b", startMinute: 9 * 60 + 30, endMinute: 10 * 60 + 30),
+                DayPlanTimedBlockColumnItem(id: "c", startMinute: 10 * 60, endMinute: 11 * 60),
+                DayPlanTimedBlockColumnItem(id: "d", startMinute: 12 * 60, endMinute: 13 * 60),
+            ]
+        )
+
+        #expect(
+            placements == [
+                DayPlanTimedBlockColumnPlacement(id: "a", columnIndex: 0, columnCount: 2),
+                DayPlanTimedBlockColumnPlacement(id: "b", columnIndex: 1, columnCount: 2),
+                DayPlanTimedBlockColumnPlacement(id: "c", columnIndex: 0, columnCount: 2),
+                DayPlanTimedBlockColumnPlacement(id: "d", columnIndex: 0, columnCount: 1),
+            ]
+        )
+    }
 }
 
 private let gregorianCalendar: Calendar = {
