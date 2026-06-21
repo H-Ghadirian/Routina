@@ -164,7 +164,7 @@ struct DayPlanSidebarView: View {
             Stepper(
                 "Duration: \(DayPlanFormatting.durationText(planner.durationMinutes))",
                 value: $planner.durationMinutes,
-                in: DayPlanBlock.minimumDurationMinutes...planner.maximumDurationForStart,
+                in: durationStepperRange,
                 step: 15
             )
 
@@ -206,6 +206,14 @@ struct DayPlanSidebarView: View {
                 }
             }
         }
+    }
+
+    private var durationStepperRange: ClosedRange<Int> {
+        let lowerBound = min(
+            DayPlanBlock.minimumDurationMinutes,
+            max(DayPlanBlock.minimumStoredDurationMinutes, planner.durationMinutes)
+        )
+        return lowerBound...planner.maximumDurationForStart
     }
 
     private var startDateBinding: Binding<Date> {

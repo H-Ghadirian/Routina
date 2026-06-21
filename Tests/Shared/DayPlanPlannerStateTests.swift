@@ -790,6 +790,78 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func exactTimedRoutineUsesShortEstimateForPlannerBlockDuration() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let occurrence = try #require(date("2026-05-11T12:00:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Brush teeth",
+            emoji: "✨",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 21, minute: 0)),
+            estimatedDurationMinutes: 5
+        )
+        context.insert(task)
+        try context.save()
+        let planner = DayPlanPlannerState(selectedDate: occurrence)
+
+        planner.showExactTimedTasks(
+            from: [task],
+            calendar: calendar,
+            context: context
+        )
+
+        let block = try #require(planner.weekBlocksByDayKey.values.flatMap { $0 }.first)
+        #expect(block.taskID == taskID)
+        #expect(block.startMinute == 21 * 60)
+        #expect(block.durationMinutes == 5)
+    }
+
+    @Test
+    func exactTimedRoutineRefreshesStaleDefaultDurationWhenEstimateChanges() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let occurrence = try #require(date("2026-05-11T12:00:00Z"))
+        let dayKey = DayPlanStorage.dayKey(for: occurrence, calendar: calendar)
+        let blockID = UUID()
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Brush teeth",
+            emoji: "✨",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 21, minute: 0)),
+            estimatedDurationMinutes: 5
+        )
+        let staleBlock = DayPlanBlock(
+            id: blockID,
+            taskID: taskID,
+            dayKey: dayKey,
+            startMinute: 21 * 60,
+            durationMinutes: 60,
+            titleSnapshot: "Brush teeth",
+            emojiSnapshot: "✨"
+        )
+        context.insert(task)
+        DayPlanStorage.saveBlocks([staleBlock], forDayKey: dayKey, context: context)
+        let planner = DayPlanPlannerState(selectedDate: occurrence)
+
+        planner.showExactTimedTasks(
+            from: [task],
+            calendar: calendar,
+            context: context
+        )
+
+        let block = try #require(planner.weekBlocksByDayKey[dayKey]?.first)
+        #expect(block.id == blockID)
+        #expect(block.taskID == taskID)
+        #expect(block.startMinute == 21 * 60)
+        #expect(block.durationMinutes == 5)
+    }
+
+    @Test
     func exactAvailabilityTodoCreatesTimedPlannerBlockWithoutDeadline() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

@@ -130,12 +130,55 @@ final class DayPlanPlannerState: ObservableObject {
                 guard !task.isArchived(referenceDate: scheduledBlock.startDate, calendar: calendar) else {
                     continue
                 }
-                guard !dayBlocks.contains(where: { $0.taskID == task.id }) else {
+                let startMinute = startMinute(for: scheduledBlock.startDate, calendar: calendar)
+                let durationMinutes = scheduledDurationMinutes(
+                    for: scheduledBlock,
+                    task: task,
+                    startMinute: startMinute
+                )
+
+                if let existingIndex = dayBlocks.firstIndex(where: { $0.taskID == task.id }) {
+                    let existingBlock = dayBlocks[existingIndex]
+                    guard shouldRefreshScheduledBlock(
+                        existingBlock,
+                        scheduledStartMinute: startMinute,
+                        scheduledDurationMinutes: durationMinutes
+                    ) else {
+                        continue
+                    }
+                    guard !hasConflict(
+                        in: dayBlocks,
+                        ignoring: existingBlock.id,
+                        startMinute: startMinute,
+                        durationMinutes: durationMinutes
+                    ) else {
+                        continue
+                    }
+                    guard !isBlocked(
+                        dayKey: dayKey,
+                        startMinute: startMinute,
+                        durationMinutes: durationMinutes,
+                        blockedIntervalsByDayKey: blockedIntervalsByDayKey
+                    ) else {
+                        continue
+                    }
+
+                    dayBlocks[existingIndex] = DayPlanBlock(
+                        id: existingBlock.id,
+                        taskID: task.id,
+                        dayKey: dayKey,
+                        startMinute: startMinute,
+                        durationMinutes: durationMinutes,
+                        titleSnapshot: DayPlanTaskSorting.title(for: task),
+                        emojiSnapshot: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
+                        createdAt: existingBlock.createdAt,
+                        updatedAt: now,
+                        minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+                    )
+                    didChangeDay = true
                     continue
                 }
 
-                let startMinute = startMinute(for: scheduledBlock.startDate, calendar: calendar)
-                let durationMinutes = scheduledBlock.durationMinutes ?? task.estimatedDurationMinutes ?? 60
                 guard !isBlocked(
                     dayKey: dayKey,
                     startMinute: startMinute,
@@ -154,7 +197,8 @@ final class DayPlanPlannerState: ObservableObject {
                         titleSnapshot: DayPlanTaskSorting.title(for: task),
                         emojiSnapshot: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
                         createdAt: now,
-                        updatedAt: now
+                        updatedAt: now,
+                        minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
                     )
                 )
                 didChangeDay = true
@@ -210,7 +254,11 @@ final class DayPlanPlannerState: ObservableObject {
         focusedSleep = nil
         selectedTaskID = task.id
         if selectedBlock == nil, let estimate = task.estimatedDurationMinutes {
-            durationMinutes = DayPlanBlock.clampedDuration(estimate, startMinute: startMinute)
+            durationMinutes = DayPlanBlock.clampedDuration(
+                estimate,
+                startMinute: startMinute,
+                minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+            )
         }
     }
 
@@ -283,10 +331,15 @@ final class DayPlanPlannerState: ObservableObject {
         guard let locatedBlock = locatedBlock(id, calendar: calendar) else { return false }
 
         let targetDayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-        let targetStartMinute = DayPlanBlock.clampedStartMinute(startMinute)
+        let targetMinimumDuration = minimumDurationForExistingBlock(locatedBlock.block)
+        let targetStartMinute = DayPlanBlock.clampedStartMinute(
+            startMinute,
+            minimumDurationMinutes: targetMinimumDuration
+        )
         let targetDuration = DayPlanBlock.clampedDuration(
             locatedBlock.block.durationMinutes,
-            startMinute: targetStartMinute
+            startMinute: targetStartMinute,
+            minimumDurationMinutes: targetMinimumDuration
         )
         var targetBlocks = weekBlocksByDayKey[targetDayKey] ?? DayPlanStorage.loadBlocks(forDayKey: targetDayKey, context: context)
         let targetEndMinute = targetStartMinute + targetDuration
@@ -306,7 +359,8 @@ final class DayPlanPlannerState: ObservableObject {
             titleSnapshot: locatedBlock.block.titleSnapshot,
             emojiSnapshot: locatedBlock.block.emojiSnapshot,
             createdAt: locatedBlock.block.createdAt,
-            updatedAt: Date()
+            updatedAt: Date(),
+            minimumDurationMinutes: targetMinimumDuration
         )
         var sourceBlocks = weekBlocksByDayKey[locatedBlock.dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: locatedBlock.dayKey, context: context)
         sourceBlocks.removeAll { $0.id == id }
@@ -460,7 +514,8 @@ final class DayPlanPlannerState: ObservableObject {
                 titleSnapshot: title,
                 emojiSnapshot: emoji,
                 createdAt: selectedBlock.createdAt,
-                updatedAt: now
+                updatedAt: now,
+                minimumDurationMinutes: minimumDurationForDraftDuration()
             )
         } else {
             let block = DayPlanBlock(
@@ -471,7 +526,8 @@ final class DayPlanPlannerState: ObservableObject {
                 titleSnapshot: title,
                 emojiSnapshot: emoji,
                 createdAt: now,
-                updatedAt: now
+                updatedAt: now,
+                minimumDurationMinutes: minimumDurationForDraftDuration()
             )
             blocks.append(block)
             selectedBlockID = block.id
@@ -576,7 +632,11 @@ final class DayPlanPlannerState: ObservableObject {
         ignoring ignoredBlockID: DayPlanBlock.ID?
     ) -> DayPlanBlock? {
         let start = DayPlanBlock.clampedStartMinute(startMinute)
-        let duration = DayPlanBlock.clampedDuration(durationMinutes, startMinute: start)
+        let duration = DayPlanBlock.clampedDuration(
+            durationMinutes,
+            startMinute: start,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
         let end = start + duration
 
         return blocks.first { block in
@@ -596,7 +656,11 @@ final class DayPlanPlannerState: ObservableObject {
     }
 
     func clampDurationForCurrentStart() {
-        durationMinutes = DayPlanBlock.clampedDuration(durationMinutes, startMinute: startMinute)
+        durationMinutes = DayPlanBlock.clampedDuration(
+            durationMinutes,
+            startMinute: startMinute,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
     }
 
     private func syncSelectedDayBlocks(calendar: Calendar, context: ModelContext) {
@@ -607,6 +671,61 @@ final class DayPlanPlannerState: ObservableObject {
     private struct ExactScheduledBlock {
         var startDate: Date
         var durationMinutes: Int?
+    }
+
+    private func scheduledDurationMinutes(
+        for scheduledBlock: ExactScheduledBlock,
+        task: RoutineTask,
+        startMinute: Int
+    ) -> Int {
+        DayPlanBlock.clampedDuration(
+            scheduledBlock.durationMinutes ?? task.estimatedDurationMinutes ?? 60,
+            startMinute: startMinute,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
+    }
+
+    private func shouldRefreshScheduledBlock(
+        _ block: DayPlanBlock,
+        scheduledStartMinute: Int,
+        scheduledDurationMinutes: Int
+    ) -> Bool {
+        guard block.startMinute == scheduledStartMinute,
+              block.durationMinutes > scheduledDurationMinutes
+        else {
+            return false
+        }
+
+        return block.durationMinutes == 60
+            || (
+                scheduledDurationMinutes < DayPlanBlock.minimumDurationMinutes
+                    && block.durationMinutes == DayPlanBlock.minimumDurationMinutes
+            )
+    }
+
+    private func hasConflict(
+        in blocks: [DayPlanBlock],
+        ignoring ignoredBlockID: DayPlanBlock.ID,
+        startMinute: Int,
+        durationMinutes: Int
+    ) -> Bool {
+        let endMinute = min(DayPlanBlock.minutesPerDay, startMinute + durationMinutes)
+        return blocks.contains { block in
+            guard block.id != ignoredBlockID else { return false }
+            return max(startMinute, block.startMinute) < min(endMinute, block.endMinute)
+        }
+    }
+
+    private func minimumDurationForExistingBlock(_ block: DayPlanBlock) -> Int {
+        block.durationMinutes < DayPlanBlock.minimumDurationMinutes
+            ? DayPlanBlock.minimumStoredDurationMinutes
+            : DayPlanBlock.minimumDurationMinutes
+    }
+
+    private func minimumDurationForDraftDuration() -> Int {
+        durationMinutes < DayPlanBlock.minimumDurationMinutes
+            ? DayPlanBlock.minimumStoredDurationMinutes
+            : DayPlanBlock.minimumDurationMinutes
     }
 
     private func exactScheduledBlock(
