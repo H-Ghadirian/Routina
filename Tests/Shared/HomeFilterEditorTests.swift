@@ -73,6 +73,22 @@ struct HomeFilterEditorTests {
     }
 
     @Test
+    func advancedQueryInputSuggestsTaskStateAsStateKey() {
+        let emptyState = HomeAdvancedQueryInputState(query: "")
+
+        #expect(emptyState.suggestions.map(\.token).contains("state"))
+        #expect(!emptyState.suggestions.map(\.token).contains("is"))
+
+        let stateKeyState = HomeAdvancedQueryInputState(query: "state")
+        #expect(stateKeyState.suggestions.first?.token == ":")
+        #expect(stateKeyState.accepting(stateKeyState.suggestions[0]) == "state:")
+
+        let legacyAliasState = HomeAdvancedQueryInputState(query: "is:")
+        #expect(legacyAliasState.suggestions.first?.token == "Done")
+        #expect(legacyAliasState.accepting(legacyAliasState.suggestions[0]) == "is:done ")
+    }
+
+    @Test
     func advancedQueryInputDoesNotCapContextualValuePrefixMatchesAtEight() {
         let state = HomeAdvancedQueryInputState(
             query: "tag:f",

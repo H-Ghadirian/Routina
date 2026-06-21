@@ -240,8 +240,8 @@ struct HomeAdvancedQuerySuggestion: Identifiable, Equatable {
 
 private enum HomeAdvancedQueryDraftContext: Equatable {
     case key(prefix: String)
-    case operatorToken(field: HomeAdvancedQueryField)
-    case value(field: HomeAdvancedQueryField, comparison: String?, prefix: String)
+    case operatorToken(field: HomeAdvancedQueryField, queryKey: String)
+    case value(field: HomeAdvancedQueryField, queryKey: String, comparison: String?, prefix: String)
 }
 
 private enum HomeAdvancedQueryField: String, CaseIterable, Equatable {
@@ -256,12 +256,7 @@ private enum HomeAdvancedQueryField: String, CaseIterable, Equatable {
     case urgency
 
     var queryKey: String {
-        switch self {
-        case .state:
-            return "is"
-        default:
-            return rawValue
-        }
+        rawValue
     }
 
     var aliases: [String] {
@@ -273,19 +268,14 @@ private enum HomeAdvancedQueryField: String, CaseIterable, Equatable {
         case .type:
             return ["kind"]
         case .state:
-            return ["status", "state"]
+            return ["is", "status"]
         default:
             return []
         }
     }
 
     var title: String {
-        switch self {
-        case .state:
-            return "is"
-        default:
-            return rawValue
-        }
+        rawValue
     }
 
     var description: String {
@@ -357,13 +347,16 @@ private extension HomeAdvancedQueryInputState {
         switch draftContext {
         case .key(let prefix):
             if let field = Self.field(for: prefix) {
-                return Self.operatorSuggestions(for: field)
+                return Self.operatorSuggestions(
+                    for: field,
+                    queryKey: Self.queryKey(for: prefix, field: field)
+                )
             }
             return Self.keySuggestions
-        case .operatorToken(let field):
-            return Self.operatorSuggestions(for: field)
-        case .value(let field, let comparison, _):
-            return valueSuggestions(for: field, comparison: comparison)
+        case .operatorToken(let field, let queryKey):
+            return Self.operatorSuggestions(for: field, queryKey: queryKey)
+        case .value(let field, let queryKey, let comparison, _):
+            return valueSuggestions(for: field, queryKey: queryKey, comparison: comparison)
         }
     }
 
@@ -393,22 +386,24 @@ private extension HomeAdvancedQueryInputState {
         guard let field = Self.field(for: rawField) else {
             return .key(prefix: rawField)
         }
+        let queryKey = Self.queryKey(for: rawField, field: field)
 
         let valueStart = draft.index(after: separatorIndex)
         let rawValue = String(draft[valueStart...])
         if rawValue.isEmpty {
-            return .value(field: field, comparison: nil, prefix: "")
+            return .value(field: field, queryKey: queryKey, comparison: nil, prefix: "")
         }
 
         let parsed = Self.parsedComparisonPrefix(rawValue)
         if field.supportsComparison, rawValue == parsed.comparison {
-            return .value(field: field, comparison: parsed.comparison, prefix: "")
+            return .value(field: field, queryKey: queryKey, comparison: parsed.comparison, prefix: "")
         }
-        return .value(field: field, comparison: parsed.comparison, prefix: parsed.value)
+        return .value(field: field, queryKey: queryKey, comparison: parsed.comparison, prefix: parsed.value)
     }
 
     func valueSuggestions(
         for field: HomeAdvancedQueryField,
+        queryKey: String,
         comparison: String?
     ) -> [HomeAdvancedQuerySuggestion] {
         let values: [(title: String, queryValue: String)] = switch field {
@@ -441,18 +436,21 @@ private extension HomeAdvancedQueryInputState {
             let operatorPrefix = comparison ?? ""
             return HomeAdvancedQuerySuggestion(
                 token: title,
-                replacementToken: "\(field.queryKey):\(operatorPrefix)\(queryValue)",
+                replacementToken: "\(queryKey):\(operatorPrefix)\(queryValue)",
                 description: field.valueDescription,
                 kind: .value
             )
         }
     }
 
-    static func operatorSuggestions(for field: HomeAdvancedQueryField) -> [HomeAdvancedQuerySuggestion] {
+    static func operatorSuggestions(
+        for field: HomeAdvancedQueryField,
+        queryKey: String
+    ) -> [HomeAdvancedQuerySuggestion] {
         var suggestions = [
             HomeAdvancedQuerySuggestion(
                 token: ":",
-                replacementToken: "\(field.queryKey):",
+                replacementToken: "\(queryKey):",
                 description: "Match a value",
                 kind: .operatorToken
             )
@@ -462,25 +460,25 @@ private extension HomeAdvancedQueryInputState {
             suggestions.append(contentsOf: [
                 HomeAdvancedQuerySuggestion(
                     token: ">",
-                    replacementToken: "\(field.queryKey):>",
+                    replacementToken: "\(queryKey):>",
                     description: "Greater than",
                     kind: .operatorToken
                 ),
                 HomeAdvancedQuerySuggestion(
                     token: ">=",
-                    replacementToken: "\(field.queryKey):>=",
+                    replacementToken: "\(queryKey):>=",
                     description: "Greater than or equal",
                     kind: .operatorToken
                 ),
                 HomeAdvancedQuerySuggestion(
                     token: "<",
-                    replacementToken: "\(field.queryKey):<",
+                    replacementToken: "\(queryKey):<",
                     description: "Less than",
                     kind: .operatorToken
                 ),
                 HomeAdvancedQuerySuggestion(
                     token: "<=",
-                    replacementToken: "\(field.queryKey):<=",
+                    replacementToken: "\(queryKey):<=",
                     description: "Less than or equal",
                     kind: .operatorToken
                 )
@@ -501,6 +499,14 @@ private extension HomeAdvancedQueryInputState {
         return HomeAdvancedQueryField.allCases.first {
             $0.queryKey == normalized || $0.aliases.contains(normalized)
         }
+    }
+
+    static func queryKey(for value: String, field: HomeAdvancedQueryField) -> String {
+        let normalized = value.normalizedAdvancedQueryToken
+        if field.queryKey == normalized || field.aliases.contains(normalized) {
+            return normalized
+        }
+        return field.queryKey
     }
 
     static func parsedComparisonPrefix(_ value: String) -> (comparison: String?, value: String) {
