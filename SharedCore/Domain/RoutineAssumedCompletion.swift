@@ -170,7 +170,7 @@ enum RoutineAssumedCompletion {
         }
 
         let referenceTime = RoutineTimeOfDay.from(referenceDate, calendar: calendar)
-        guard referenceTime.minutesFromStartOfDay < timeRange.end.minutesFromStartOfDay,
+        guard referenceTime.minutesFromStartOfDay < timeRange.start.minutesFromStartOfDay,
               let previousDay = calendar.date(byAdding: .day, value: -1, to: today)
         else {
             return today

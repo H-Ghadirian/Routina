@@ -140,6 +140,36 @@ struct RoutineAssumedCompletionTests {
     }
 
     @Test
+    func overnightWindowAfterEndBeforeNextStartCurrentOccurrenceUsesPreviousDay() {
+        let calendar = makeTestCalendar()
+        let referenceDate = makeDate("2026-02-26T12:00:00Z")
+        let timeRange = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 21, minute: 0),
+            end: RoutineTimeOfDay(hour: 3, minute: 0)
+        )
+        let task = RoutineTask(
+            name: "Brush teeth",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(in: timeRange),
+            createdAt: makeDate("2026-02-20T00:00:00Z"),
+            autoAssumeDailyDone: true
+        )
+        let currentOccurrenceDay = RoutineAssumedCompletion.currentOccurrenceDay(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(currentOccurrenceDay == makeDate("2026-02-25T00:00:00Z"))
+        #expect(RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: currentOccurrenceDay,
+            referenceDate: referenceDate,
+            calendar: calendar
+        ))
+    }
+
+    @Test
     func overnightWindowEarlyMorningCompletionSuppressesAssumedDone() {
         let calendar = makeTestCalendar()
         let referenceDate = makeDate("2026-02-26T01:00:00Z")

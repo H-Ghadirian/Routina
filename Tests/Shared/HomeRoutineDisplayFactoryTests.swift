@@ -162,6 +162,32 @@ struct HomeRoutineDisplayFactoryTests {
     }
 
     @Test
+    func overnightAutoAssumedRoutineStaysAssumedAfterWindowBeforeNextStart() {
+        let now = makeDate("2026-06-10T12:00:00Z")
+        let task = RoutineTask(
+            name: "Brush teeth",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(in: RoutineTimeRange(
+                start: RoutineTimeOfDay(hour: 21, minute: 0),
+                end: RoutineTimeOfDay(hour: 3, minute: 0)
+            )),
+            scheduleAnchor: makeDate("2026-06-09T00:00:00Z"),
+            createdAt: makeDate("2026-06-09T00:00:00Z"),
+            autoAssumeDailyDone: true
+        )
+
+        let display = makeDisplay(
+            task: task,
+            now: now,
+            places: [],
+            coordinate: LocationCoordinate(latitude: 52.5200, longitude: 13.4050)
+        )
+
+        #expect(display.isDoneToday)
+        #expect(display.isAssumedDoneToday)
+    }
+
+    @Test
     func partialChecklistProgressSuppressesAssumedHomeDisplay() {
         let now = makeDate("2026-06-09T08:00:00Z")
         let firstID = UUID()
