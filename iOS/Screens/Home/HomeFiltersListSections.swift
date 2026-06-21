@@ -32,51 +32,29 @@ struct HomeFiltersTaskListModeSection: View {
     }
 }
 
-struct HomeFiltersViewModeSection: View {
+struct HomeFiltersVisibilitySection: View {
     @Binding var taskListViewMode: HomeTaskListViewMode
+    @Binding var hideAssumedDoneTasks: Bool
+    @Binding var showArchivedTasks: Bool
 
     var body: some View {
         Section {
-            Toggle("Don't show blocked tasks", isOn: hideBlockedTasksBinding)
-        }
-    }
+            Toggle("Show blocked tasks", isOn: showBlockedTasksBinding)
+                .toggleStyle(.switch)
 
-    private var hideBlockedTasksBinding: Binding<Bool> {
-        Binding(
-            get: { taskListViewMode == .actionable },
-            set: { taskListViewMode = $0 ? .actionable : .all }
-        )
-    }
-}
-
-struct HomeFiltersAssumedDoneSection: View {
-    @Binding var hideAssumedDoneTasks: Bool
-
-    var body: some View {
-        Section("Assumed Done") {
             Toggle("Don't show assumed done tasks", isOn: $hideAssumedDoneTasks)
+                .toggleStyle(.switch)
 
-            Text(hideAssumedDoneTasks
-                ? "Tasks that are only assumed done stay out of the list."
-                : "Assumed done tasks stay visible until you confirm or mark them not today.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            Toggle("Show archived list", isOn: $showArchivedTasks)
+                .toggleStyle(.switch)
         }
     }
-}
 
-struct HomeFiltersSortSection: View {
-    @Binding var taskListSortOrder: HomeTaskListSortOrder
-
-    var body: some View {
-        Section("Sort") {
-            Picker("Task order", selection: $taskListSortOrder) {
-                ForEach(HomeTaskListSortOrder.allCases) { order in
-                    Label(order.title, systemImage: order.systemImage).tag(order)
-                }
-            }
-            .pickerStyle(.inline)
-        }
+    private var showBlockedTasksBinding: Binding<Bool> {
+        Binding(
+            get: { taskListViewMode == .all },
+            set: { taskListViewMode = $0 ? .all : .actionable }
+        )
     }
 }
 
@@ -114,18 +92,17 @@ struct HomeFiltersCreatedSection: View {
     }
 }
 
-struct HomeFiltersArchivedSection: View {
-    @Binding var showArchivedTasks: Bool
+struct HomeFiltersSortSection: View {
+    @Binding var taskListSortOrder: HomeTaskListSortOrder
 
     var body: some View {
-        Section("Archived") {
-            Toggle("Show archived list", isOn: $showArchivedTasks)
-
-            Text(showArchivedTasks
-                ? "Archived routines and todos are shown in their own list."
-                : "Archived routines and todos are hidden from the task list.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+        Section("Sort") {
+            Picker("Task order", selection: $taskListSortOrder) {
+                ForEach(HomeTaskListSortOrder.allCases) { order in
+                    Label(order.title, systemImage: order.systemImage).tag(order)
+                }
+            }
+            .pickerStyle(.inline)
         }
     }
 }

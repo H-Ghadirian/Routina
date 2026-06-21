@@ -160,17 +160,17 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                     taskListModePicker
                 }
 
-                blockedTasksToggle
+                VStack(alignment: .leading, spacing: 10) {
+                    blockedTasksToggle
+                    assumedDoneToggle
+                    archivedToggle
+                }
 
                 filterControlSection("Created") {
                     createdDatePicker
                 }
 
-                VStack(alignment: .leading, spacing: 10) {
-                    assumedDoneToggle
-                    archivedToggle
-                    filterPicker
-                }
+                filterPicker
 
                 filterControlSection("Pressure") {
                     pressurePicker
@@ -209,13 +209,14 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     }
 
     private var blockedTasksToggle: some View {
-        Toggle("Don't show blocked tasks", isOn: hideBlockedTasksBinding)
+        Toggle("Show blocked tasks", isOn: showBlockedTasksBinding)
+            .toggleStyle(.switch)
     }
 
-    private var hideBlockedTasksBinding: Binding<Bool> {
+    private var showBlockedTasksBinding: Binding<Bool> {
         Binding(
-            get: { taskListViewMode == .actionable },
-            set: { taskListViewMode = $0 ? .actionable : .all }
+            get: { taskListViewMode == .all },
+            set: { taskListViewMode = $0 ? .all : .actionable }
         )
     }
 

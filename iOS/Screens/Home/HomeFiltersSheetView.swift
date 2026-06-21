@@ -17,14 +17,16 @@ struct HomeFiltersSheetView: View {
                     )
                 )
                 HomeFiltersTaskListModeSection(taskListMode: bindings.taskListMode)
-                HomeFiltersViewModeSection(taskListViewMode: bindings.taskListViewMode)
-                HomeFiltersAssumedDoneSection(hideAssumedDoneTasks: bindings.hideAssumedDoneTasks)
+                HomeFiltersVisibilitySection(
+                    taskListViewMode: bindings.taskListViewMode,
+                    hideAssumedDoneTasks: bindings.hideAssumedDoneTasks,
+                    showArchivedTasks: bindings.showArchivedTasks
+                )
                 HomeFiltersGroupingSection(
                     routineListSectioningMode: bindings.routineListSectioningMode
                 )
                 HomeFiltersSortSection(taskListSortOrder: bindings.taskListSortOrder)
                 HomeFiltersCreatedSection(createdDateFilter: bindings.createdDateFilter)
-                HomeFiltersArchivedSection(showArchivedTasks: bindings.showArchivedTasks)
                 HomeFiltersStatusSection(
                     placeFilterPluralNoun: configuration.place.placeFilterPluralNoun,
                     availableFilters: configuration.availableFilters,
