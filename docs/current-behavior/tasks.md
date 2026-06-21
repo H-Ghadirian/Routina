@@ -34,7 +34,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Checklist runout item actions are item-scoped. Completing all currently due items records routine completion.
 - Daily checklist-completion progress lasts for the current day only. Tomorrow starts unchecked unless the routine was completed and recorded in history.
 - Daily Checklist-completion routines with auto-assume done use day-level assumption only; assumed completion does not fake completed checklist item IDs, and current-day partial checklist progress suppresses assumed presentation until the routine is fully completed or progress is cleared.
-- Home task filters hide assumed-done rows by default through `Don't show assumed done tasks`; users can uncheck it to review, confirm, or correct assumed days.
+- Home task filters hide assumed-done rows by default; users can turn on `Show assumed done` in `All` or `Routines` views to review, confirm, or correct assumed days.
 - Home status filters offer `Done Today` only for `All` and `Routines`; Todos use Timeline for completed work instead of keeping completed rows in the active task list.
 - Once a checklist-completion routine is completed for a selected day, its checklist rows present as checked and read-only from selected-day completion evidence, even though in-progress checklist IDs are cleared after the final item. The toolbar Undo action reopens/removes the completed day without flashing stale completed checklist state back into the rows.
 - Selected checklist item mutations keep their post-action detail state through stale Home reloads, including final completion after item-progress IDs reset.

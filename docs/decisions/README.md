@@ -31,8 +31,9 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0262](0262-use-positive-assumed-done-filter-copy.md) refines [0260](0260-hide-assumed-done-tasks-by-default.md) and [0261](0261-scope-done-today-filter-to-routines.md) for assumed-done filter presentation:** Home filter surfaces use `Show assumed done`, defaulting off, and hide that routine-only control when task type is `Todos`.
 - **[0261](0261-scope-done-today-filter-to-routines.md) refines [0216](0216-move-mac-home-task-type-tabs-to-filter-screen.md) and [0260](0260-hide-assumed-done-tasks-by-default.md) for Home task filters:** `Done Today` is available only for `All` and `Routines`, stale Todos + Done Today state normalizes to `All`, and Mac task-type filters make the sidebar `Clear All Filters` affordance visible.
-- **[0260](0260-hide-assumed-done-tasks-by-default.md) refines [0259](0259-allow-daily-checklist-auto-assumed-completion.md) and [0252](0252-stabilize-home-task-list-presentation-identity.md) for Home assumed-done presentation:** Home task filters include `Don't show assumed done tasks`, checked by default, while letting users temporarily show assumed-done rows for review, confirmation, or correction.
+- **[0260](0260-hide-assumed-done-tasks-by-default.md) refines [0259](0259-allow-daily-checklist-auto-assumed-completion.md) and [0252](0252-stabilize-home-task-list-presentation-identity.md) for Home assumed-done presentation:** Home task filters hide assumed-done rows by default while letting users temporarily show assumed-done rows for review, confirmation, or correction.
 - **[0259](0259-allow-daily-checklist-auto-assumed-completion.md) supersedes [0255](superseded/0255-allow-gentle-auto-assumed-daily-completion.md) for auto-assumed daily completion:** Auto-assume done is available for eligible daily Standard routines and daily Checklist-completion routines in both Due and Gentle styles, while remaining opt-in and unavailable for todos, checklist runout routines, Standard routines with optional checklist items, step routines, and non-daily cadences.
 - **[0258](0258-hide-linked-task-visualizer-behind-beta-toggle.md) gates linked-task visualization:** Task detail hides the linked-task Visualize button by default, Support & About -> Beta Experiments exposes `Show linked task visualizer`, and the durable preference is stored with `RoutinaUserPreferences`.
 - **[0257](0257-hide-task-sharing-behind-beta-toggle.md) gates task sharing:** Task detail hides CloudKit task sharing by default, Support & About -> Beta Experiments exposes `Enable task sharing`, and the durable preference is stored with `RoutinaUserPreferences`; stable deep-link sharing stays available from the separate `Link` menu.
@@ -175,6 +176,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0262](0262-use-positive-assumed-done-filter-copy.md) | Use Positive Assumed-Done Filter Copy | Accepted | 2026-06-21 |
 | [0261](0261-scope-done-today-filter-to-routines.md) | Scope Done Today Filter to Routines | Accepted | 2026-06-21 |
 | [0260](0260-hide-assumed-done-tasks-by-default.md) | Hide Assumed-Done Tasks by Default | Accepted | 2026-06-20 |
 | [0259](0259-allow-daily-checklist-auto-assumed-completion.md) | Allow Daily Checklist Auto-Assumed Completion | Accepted | 2026-06-20 |

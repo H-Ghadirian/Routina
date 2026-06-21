@@ -85,7 +85,20 @@ struct HomeFilterPresentationTests {
 
         #expect(presentation.activeOptionalFilterCount == 1)
         #expect(presentation.hasActiveOptionalFilters)
-        #expect(presentation.filterLabels == ["Assumed visible"])
+        #expect(presentation.filterLabels == ["Showing assumed done"])
+    }
+
+    @Test
+    func showingAssumedDoneTasksDoesNotCountForTodos() {
+        let presentation = HomeFilterPresentation(
+            taskListKind: .todos,
+            hideAssumedDoneTasks: false
+        )
+
+        #expect(!presentation.showsAssumedDoneVisibilityFilter)
+        #expect(presentation.activeOptionalFilterCount == 0)
+        #expect(!presentation.hasActiveOptionalFilters)
+        #expect(presentation.filterLabels == ["Todos"])
     }
 
     @Test

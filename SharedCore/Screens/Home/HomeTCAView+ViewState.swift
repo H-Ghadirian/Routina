@@ -18,6 +18,7 @@ extension HomeTCAView {
             selectedPressureFilter: store.selectedPressureFilter,
             selectedGoalFilter: store.selectedGoalFilter,
             selectedMediaFilter: store.selectedMediaFilter,
+            showsAssumedDoneVisibilityFilter: homeFilterPresentation.showsAssumedDoneVisibilityFilter,
             hideAssumedDoneTasks: store.hideAssumedDoneTasks,
             hideUnavailableRoutines: store.hideUnavailableRoutines,
             showArchivedTasks: store.showArchivedTasks,

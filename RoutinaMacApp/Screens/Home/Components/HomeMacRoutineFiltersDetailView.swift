@@ -162,7 +162,9 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
                 VStack(alignment: .leading, spacing: 10) {
                     blockedTasksToggle
-                    assumedDoneToggle
+                    if taskListMode != .todos {
+                        assumedDoneToggle
+                    }
                     archivedToggle
                 }
 
@@ -309,8 +311,15 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     }
 
     private var assumedDoneToggle: some View {
-        Toggle("Don't show assumed done tasks", isOn: $hideAssumedDoneTasks)
+        Toggle("Show assumed done", isOn: showAssumedDoneTasksBinding)
             .toggleStyle(.switch)
+    }
+
+    private var showAssumedDoneTasksBinding: Binding<Bool> {
+        Binding(
+            get: { !hideAssumedDoneTasks },
+            set: { hideAssumedDoneTasks = !$0 }
+        )
     }
 
     private var todoStateFilterSection: some View {
