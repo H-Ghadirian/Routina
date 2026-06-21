@@ -107,22 +107,28 @@ struct TaskDetailOptionalActionsSectionView: View {
                 )
 
                 if isExpanded {
-                    LazyVGrid(
-                        columns: [GridItem(.adaptive(minimum: 124), spacing: 8)],
-                        alignment: .leading,
-                        spacing: 8
-                    ) {
-                        actionButtons
-                    }
+                    optionalActionGrid
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             }
         }
+        .clipped()
     }
 
     @ViewBuilder
     private var actionButtons: some View {
         ForEach(actions) { action in
             actionButton(action)
+        }
+    }
+
+    private var optionalActionGrid: some View {
+        LazyVGrid(
+            columns: [GridItem(.adaptive(minimum: 124), spacing: 8)],
+            alignment: .leading,
+            spacing: 8
+        ) {
+            actionButtons
         }
     }
 

@@ -39,7 +39,7 @@ struct TaskDetailCollapsibleSectionHeaderView: View {
 
     var body: some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.16)) {
+            withAnimation(.snappy(duration: 0.16)) {
                 onToggle()
             }
         } label: {
