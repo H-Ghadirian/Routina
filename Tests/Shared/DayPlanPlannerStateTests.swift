@@ -89,6 +89,31 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func resizingPlannerBlockKeepsHandlesOutsideChangingCardContent() throws {
+        let projectRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let calendarSource = try String(
+            contentsOf: projectRoot.appendingPathComponent("SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"),
+            encoding: .utf8
+        )
+        let blockLayerSource = try String(
+            contentsOf: projectRoot.appendingPathComponent("SharedCore/Views/DayPlan/DayPlanBlockLayer.swift"),
+            encoding: .utf8
+        )
+
+        #expect(calendarSource.contains("resizingContentLayoutHeight: resizeSession?.contentLayoutHeight"))
+        #expect(calendarSource.contains("contentLayoutHeight: blockHeight(forDurationMinutes: block.durationMinutes)"))
+        #expect(blockLayerSource.contains("renderedHeight: blockHeight"))
+        #expect(blockLayerSource.contains("contentLayoutHeight: contentLayoutHeight(for: block)"))
+        #expect(blockLayerSource.contains("showsResizeHandles: false"))
+        #expect(blockLayerSource.contains(".clipped(antialiased: true)"))
+        #expect(blockLayerSource.contains("resizeHandle(for: block, date: date, edge: .top)"))
+        #expect(blockLayerSource.contains("resizeHandle(for: block, date: date, edge: .bottom)"))
+    }
+
+    @Test
     func focusSleepSessionSelectsStartDayAndScrollMinute() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

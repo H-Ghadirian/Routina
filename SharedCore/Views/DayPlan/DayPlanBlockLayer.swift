@@ -3,6 +3,8 @@ import SwiftUI
 struct DayPlanBlockLayer: View {
     var dates: [Date]
     var selectedBlockID: DayPlanBlock.ID?
+    var resizingBlockID: DayPlanBlock.ID?
+    var resizingContentLayoutHeight: CGFloat?
     var focusedSleepSessionID: UUID?
     var calendar: Calendar
     var dayWidth: CGFloat
@@ -240,6 +242,8 @@ struct DayPlanBlockLayer: View {
                         tint: taskTint(block),
                         isSelected: block.id == selectedBlockID,
                         renderedHeight: blockHeight,
+                        contentLayoutHeight: contentLayoutHeight(for: block),
+                        showsResizeHandles: false,
                         selectedDate: date,
                         calendar: calendar,
                         onSelect: {
@@ -266,6 +270,13 @@ struct DayPlanBlockLayer: View {
                         width: timedBlockWidth(for: positionedBlock.columnCount),
                         height: blockHeight
                     )
+                    .clipped(antialiased: true)
+                    .overlay(alignment: .top) {
+                        resizeHandle(for: block, date: date, edge: .top)
+                    }
+                    .overlay(alignment: .bottom) {
+                        resizeHandle(for: block, date: date, edge: .bottom)
+                    }
                     .offset(
                         x: timeColumnWidth
                             + CGFloat(dayIndex) * dayWidth
@@ -294,6 +305,25 @@ struct DayPlanBlockLayer: View {
 
     private func blockHeight(for block: DayPlanBlock) -> CGFloat {
         max(CGFloat(block.durationMinutes) / 60 * hourHeight, 18)
+    }
+
+    private func contentLayoutHeight(for block: DayPlanBlock) -> CGFloat? {
+        guard block.id == resizingBlockID else { return nil }
+        return resizingContentLayoutHeight
+    }
+
+    private func resizeHandle(for block: DayPlanBlock, date: Date, edge: DayPlanResizeEdge) -> some View {
+        DayPlanResizeHandle(
+            edge: edge,
+            isSelected: block.id == selectedBlockID,
+            onResizeStarted: {
+                onResizeStarted(block, date)
+            },
+            onResizeChanged: { edge, verticalDelta in
+                onResizeChanged(block, date, edge, verticalDelta)
+            },
+            onResizeEnded: onResizeEnded
+        )
     }
 
     private func sprintFocusBlockHeight(for sprintFocusBlock: DayPlanSprintFocusBlock) -> CGFloat {

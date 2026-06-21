@@ -18,6 +18,8 @@ struct DayPlanBlockCard: View {
     var displayDurationMinutes: Int? = nil
     var isSelected: Bool
     var renderedHeight: CGFloat
+    var contentLayoutHeight: CGFloat? = nil
+    var showsResizeHandles: Bool = true
     var selectedDate: Date
     var calendar: Calendar
     var onSelect: () -> Void
@@ -70,7 +72,7 @@ struct DayPlanBlockCard: View {
                 }
             }
             .overlay(alignment: .bottomTrailing) {
-                if renderedHeight >= 28 {
+                if layoutHeight >= 28 {
                     if let automaticKind {
                         Image(systemName: automaticIconName(for: automaticKind))
                             .font(.caption2.weight(.bold))
@@ -99,22 +101,26 @@ struct DayPlanBlockCard: View {
             }
             .onDrag(onDragProvider)
             .overlay(alignment: .top) {
-                DayPlanResizeHandle(
-                    edge: .top,
-                    isSelected: isSelected,
-                    onResizeStarted: onResizeStarted,
-                    onResizeChanged: onResizeChanged,
-                    onResizeEnded: onResizeEnded
-                )
+                if showsResizeHandles {
+                    DayPlanResizeHandle(
+                        edge: .top,
+                        isSelected: isSelected,
+                        onResizeStarted: onResizeStarted,
+                        onResizeChanged: onResizeChanged,
+                        onResizeEnded: onResizeEnded
+                    )
+                }
             }
             .overlay(alignment: .bottom) {
-                DayPlanResizeHandle(
-                    edge: .bottom,
-                    isSelected: isSelected,
-                    onResizeStarted: onResizeStarted,
-                    onResizeChanged: onResizeChanged,
-                    onResizeEnded: onResizeEnded
-                )
+                if showsResizeHandles {
+                    DayPlanResizeHandle(
+                        edge: .bottom,
+                        isSelected: isSelected,
+                        onResizeStarted: onResizeStarted,
+                        onResizeChanged: onResizeChanged,
+                        onResizeEnded: onResizeEnded
+                    )
+                }
             }
             .contextMenu {
                 Button("Delete", role: .destructive, action: onDelete)
@@ -184,7 +190,7 @@ struct DayPlanBlockCard: View {
 
     @ViewBuilder
     private var cardContent: some View {
-        if renderedHeight < 36 {
+        if layoutHeight < 36 {
             HStack(spacing: 5) {
                 miniIcon
 
@@ -200,7 +206,7 @@ struct DayPlanBlockCard: View {
                     .monospacedDigit()
                     .lineLimit(1)
             }
-        } else if renderedHeight < 48 {
+        } else if layoutHeight < 48 {
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 5) {
                     miniIcon
@@ -298,14 +304,14 @@ struct DayPlanBlockCard: View {
         let activityLeadingPadding: CGFloat = showsActivityStripe ? 8 : 0
         let statusTrailingPadding: CGFloat = showsStatusIcon ? 18 : 0
 
-        if renderedHeight < 36 {
+        if layoutHeight < 36 {
             return EdgeInsets(
                 top: 1,
                 leading: 6 + activityLeadingPadding,
                 bottom: 1,
                 trailing: 6 + statusTrailingPadding
             )
-        } else if renderedHeight < 48 {
+        } else if layoutHeight < 48 {
             return EdgeInsets(
                 top: 2,
                 leading: 7 + activityLeadingPadding,
@@ -373,7 +379,11 @@ struct DayPlanBlockCard: View {
     }
 
     private var showsStatusIcon: Bool {
-        renderedHeight >= 28 && (isAutomatic || isLiveFocus || isSprintFocus || isEvent || isSleep || isAway)
+        layoutHeight >= 28 && (isAutomatic || isLiveFocus || isSprintFocus || isEvent || isSleep || isAway)
+    }
+
+    private var layoutHeight: CGFloat {
+        contentLayoutHeight ?? renderedHeight
     }
 
     private var fillOpacity: Double {

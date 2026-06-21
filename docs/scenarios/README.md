@@ -171,6 +171,18 @@ Given plan focus starts from tasks in `Plan to do today`
 When focus time is allocated while running or after finish
 Then task allocations are recorded without deleting the unassigned focus session history
 
+### Planner Block Resize Stays Continuous Across Layout Changes
+
+Area: Planner
+Decision links: [0264](../decisions/0264-match-button-hit-areas-to-visual-surfaces.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/DayPlanPlannerStateTests.swift`
+
+Given a manual planner block is selected
+When the user drags the top or bottom resize grip and the block crosses a height threshold that changes its card presentation
+Then the active drag continues resizing the block to its live size and position without requiring the user to release and grab the grip again
+
 ### Protected Modes Do Not Overlap
 
 Area: Planner

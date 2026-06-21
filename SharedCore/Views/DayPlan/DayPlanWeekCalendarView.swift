@@ -113,6 +113,8 @@ struct DayPlanWeekCalendarView: View {
                             DayPlanBlockLayer(
                                 dates: dates,
                                 selectedBlockID: selectedBlockID,
+                                resizingBlockID: resizeSession?.blockID,
+                                resizingContentLayoutHeight: resizeSession?.contentLayoutHeight,
                                 focusedSleepSessionID: focusedSleep?.sessionID,
                                 calendar: calendar,
                                 dayWidth: dayWidth,
@@ -267,7 +269,8 @@ struct DayPlanWeekCalendarView: View {
         resizeSession = DayPlanResizeSession(
             blockID: block.id,
             startMinute: block.startMinute,
-            durationMinutes: block.durationMinutes
+            durationMinutes: block.durationMinutes,
+            contentLayoutHeight: blockHeight(forDurationMinutes: block.durationMinutes)
         )
     }
 
@@ -280,7 +283,8 @@ struct DayPlanWeekCalendarView: View {
         let session = resizeSession ?? DayPlanResizeSession(
             blockID: block.id,
             startMinute: block.startMinute,
-            durationMinutes: block.durationMinutes
+            durationMinutes: block.durationMinutes,
+            contentLayoutHeight: blockHeight(forDurationMinutes: block.durationMinutes)
         )
         guard session.blockID == block.id else { return }
 
@@ -315,6 +319,10 @@ struct DayPlanWeekCalendarView: View {
     private func minuteDelta(for verticalDelta: CGFloat) -> Int {
         let rawMinutes = (verticalDelta / hourHeight) * 60
         return Int(rawMinutes.rounded())
+    }
+
+    private func blockHeight(forDurationMinutes durationMinutes: Int) -> CGFloat {
+        max(CGFloat(durationMinutes) / 60 * hourHeight, 18)
     }
 
     private func clearDropState() {
@@ -668,4 +676,5 @@ private struct DayPlanResizeSession: Equatable {
     let blockID: DayPlanBlock.ID
     let startMinute: Int
     let durationMinutes: Int
+    let contentLayoutHeight: CGFloat
 }
