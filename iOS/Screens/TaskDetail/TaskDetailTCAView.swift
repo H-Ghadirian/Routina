@@ -17,6 +17,7 @@ struct TaskDetailTCAView: View {
     @State private var isTimeControlRevealed = false
     @State private var isTodoStateControlRevealed = false
     @State private var isPressureControlRevealed = false
+    @State private var isChecklistSectionRevealed = false
     @State private var timeEditing = TaskDetailTimeEditingState()
     @State var isEditEmojiPickerPresented = false
     @State var syncedMacOverviewHeight: CGFloat = 0
@@ -243,7 +244,7 @@ detailBody
                     commentsSection
                 }
                 historySection
-                if store.task.hasChecklistItems {
+                if shouldShowChecklistSection {
                     checklistItemsSection
                 }
                 if shouldShowLinkedEventsSection {
@@ -286,7 +287,7 @@ detailBody
                     commentsSection
                 }
                 historySection
-                if store.task.hasChecklistItems {
+                if shouldShowChecklistSection {
                     checklistItemsSection
                 }
                 if shouldShowLinkedEventsSection {
@@ -397,9 +398,11 @@ detailBody
             })
         }
 
-        if !store.task.hasChecklistItems {
+        if !shouldShowChecklistSection {
             actions.append(TaskDetailOptionalAction(title: "Checklist", systemImage: "checklist") {
-                store.send(.setEditSheet(true))
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    isChecklistSectionRevealed = true
+                }
             })
         }
 
@@ -444,6 +447,10 @@ detailBody
         isPressureControlRevealed || TaskDetailOptionalControlVisibility.showsPressure(for: store.task)
     }
 
+    private var shouldShowChecklistSection: Bool {
+        isChecklistSectionRevealed || store.task.hasChecklistItems
+    }
+
     private var shouldShowTodoStateAddAction: Bool {
         canShowTodoStateControl && !shouldShowTodoStateControl
     }
@@ -478,6 +485,7 @@ detailBody
         isTimeControlRevealed = false
         isTodoStateControlRevealed = false
         isPressureControlRevealed = false
+        isChecklistSectionRevealed = false
     }
 
     private var blockingFocusTitle: String? {
@@ -954,6 +962,7 @@ detailBody
                 set: { store.send(.editChecklistItemDraftIntervalChanged($0)) }
             ),
             isAddItemDisabled: RoutineChecklistItem.normalizedTitle(store.editChecklistItemDraftTitle) == nil,
+            isComposerInitiallyExpanded: isChecklistSectionRevealed && !store.task.hasChecklistItems,
             isMarkedDone: { store.state.isChecklistItemMarkedDone($0) },
             onAddItem: { store.send(.detailAddChecklistItemTapped) },
             onToggleCompletion: { store.send(.toggleChecklistItemCompletion($0)) },

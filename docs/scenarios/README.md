@@ -75,6 +75,23 @@ Given the user starts checking checklist items for that daily occurrence
 When the app derives assumed completion state
 Then manual partial checklist progress suppresses assumed-done presentation until the routine is fully completed or progress is cleared
 
+### New Routine Checklists Use Checklist Completion
+
+Area: Tasks
+Decision links: [0263](../decisions/0263-promote-new-routine-checklists-to-checklist-completion.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDetailEditSaveTests.swift`
+- `Tests/Shared/TaskDetailCommentsTests.swift`
+
+Given a Standard routine has no checklist items
+When the user adds checklist items in Task Details
+Then the editor and save path promote it to Checklist completion so eligible daily routines can expose auto-assume done
+
+Given an existing Standard routine already has checklist items from legacy optional data
+When the user saves it from Task Details
+Then the app preserves the Standard completion mode unless the user explicitly changes it
+
 ### Multi-Day Routine Lifecycle
 
 Area: Tasks

@@ -19,6 +19,7 @@ struct TaskDetailTCAView: View {
     @State private var isTimeControlRevealed = false
     @State private var isTodoStateControlRevealed = false
     @State private var isPressureControlRevealed = false
+    @State private var isChecklistSectionRevealed = false
     @State private var isTimeSectionExpanded = false
     @State private var timeEditing = TaskDetailTimeEditingState()
     @State private var taskTimeEntryHours = 0
@@ -223,7 +224,7 @@ detailBody
                     commentsSection
                 }
                 historySection
-                if store.task.hasChecklistItems {
+                if shouldShowChecklistSection {
                     checklistItemsSection
                 }
                 if shouldShowLinkedEventsSection {
@@ -350,6 +351,10 @@ detailBody
         isPressureControlRevealed || TaskDetailOptionalControlVisibility.showsPressure(for: store.task)
     }
 
+    private var shouldShowChecklistSection: Bool {
+        isChecklistSectionRevealed || store.task.hasChecklistItems
+    }
+
     private var shouldShowTodoStateAddAction: Bool {
         canShowTodoStateControl && !shouldShowTodoStateControl
     }
@@ -417,7 +422,7 @@ detailBody
                     commentsSection
                 }
                 historySection
-                if store.task.hasChecklistItems {
+                if shouldShowChecklistSection {
                     checklistItemsSection
                 }
                 if shouldShowLinkedEventsSection {
@@ -530,8 +535,12 @@ detailBody
             actions.append(editSectionAction(title: "Estimate", section: .estimation))
         }
 
-        if !store.task.hasChecklistItems {
-            actions.append(editSectionAction(title: "Checklist", section: .checklist))
+        if !shouldShowChecklistSection {
+            actions.append(TaskDetailOptionalAction(title: "Checklist", systemImage: "checklist") {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    isChecklistSectionRevealed = true
+                }
+            })
         }
 
         if store.task.tags.isEmpty {
@@ -638,6 +647,7 @@ detailBody
         isTimeControlRevealed = false
         isTodoStateControlRevealed = false
         isPressureControlRevealed = false
+        isChecklistSectionRevealed = false
     }
 
     private var blockingFocusTitle: String? {
@@ -1118,6 +1128,7 @@ detailBody
                 set: { store.send(.editChecklistItemDraftIntervalChanged($0)) }
             ),
             isAddItemDisabled: RoutineChecklistItem.normalizedTitle(store.editChecklistItemDraftTitle) == nil,
+            isComposerInitiallyExpanded: isChecklistSectionRevealed && !store.task.hasChecklistItems,
             isMarkedDone: { store.state.isChecklistItemMarkedDone($0) },
             onAddItem: { store.send(.detailAddChecklistItemTapped) },
             onToggleCompletion: { store.send(.toggleChecklistItemCompletion($0)) },

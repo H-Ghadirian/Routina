@@ -216,6 +216,52 @@ struct TaskDetailCommentsTests {
     }
 
     @Test
+    func detailChecklist_firstItemPromotesStandardRoutineToChecklistCompletion() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-04-02T08:15:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Meals",
+            interval: 1,
+            lastDone: nil,
+            emoji: "✨",
+            scheduleMode: .fixedInterval
+        )
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task.detachedCopy(),
+                editChecklistItemDraftTitle: " Bread "
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            setTestDateDependencies(&$0, now: now)
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.detailAddChecklistItemTapped)
+
+        #expect(store.state.task.scheduleMode == .fixedIntervalChecklist)
+        #expect(store.state.editScheduleMode == .fixedIntervalChecklist)
+        #expect(store.state.task.checklistItems.map(\.title) == ["Bread"])
+        #expect(!store.state.isEditSheetPresented)
+
+        let taskID = task.id
+        let descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate<RoutineTask> { task in
+                task.id == taskID
+            }
+        )
+        let persistedTask = try #require(context.fetch(descriptor).first)
+        #expect(persistedTask.scheduleMode == .fixedIntervalChecklist)
+        #expect(persistedTask.checklistItems.map(\.title) == ["Bread"])
+    }
+
+    @Test
     func detailChecklist_canEditItemWithoutLosingRunoutState() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-04-02T08:15:00Z")

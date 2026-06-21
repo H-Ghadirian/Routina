@@ -827,21 +827,31 @@ struct TaskDetailFeature: Reducer {
             guard let title = RoutineChecklistItem.normalizedTitle(state.editChecklistItemDraftTitle) else {
                 return .none
             }
+            let existingChecklistItems = state.task.checklistItems
             let item = RoutineChecklistItem(
                 title: title,
                 intervalDays: state.editChecklistItemDraftInterval,
                 createdAt: now
             )
-            let updatedItems = RoutineChecklistItem.sanitized(state.task.checklistItems + [item])
+            let updatedItems = RoutineChecklistItem.sanitized(existingChecklistItems + [item])
+            let updatedScheduleMode = TaskDetailRoutineChecklistModeNormalizer.effectiveScheduleMode(
+                currentMode: state.task.scheduleMode,
+                existingChecklistItems: existingChecklistItems,
+                candidateChecklistItems: updatedItems,
+                candidateSteps: state.task.steps
+            )
+            state.task.scheduleMode = updatedScheduleMode
             state.task.replaceChecklistItems(updatedItems)
             state.editRoutineChecklistItems = updatedItems
+            state.editScheduleMode = updatedScheduleMode
             state.editChecklistItemDraftTitle = ""
             state.editChecklistItemDraftInterval = 3
             refreshTaskView(&state)
             updateDerivedState(&state)
             return handleDetailChecklistItemsChanged(
                 taskID: state.task.id,
-                checklistItems: updatedItems
+                checklistItems: updatedItems,
+                scheduleMode: updatedScheduleMode
             )
 
         case let .detailUpdateChecklistItem(itemID, draftTitle, intervalDays):

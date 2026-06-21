@@ -9,6 +9,7 @@ struct TaskDetailChecklistSectionView: View {
     @Binding var newItemTitle: String
     @Binding var newItemIntervalDays: Int
     let isAddItemDisabled: Bool
+    var isComposerInitiallyExpanded = false
     let isMarkedDone: (RoutineChecklistItem) -> Bool
     let onAddItem: () -> Void
     let onToggleCompletion: (UUID) -> Void
@@ -87,6 +88,16 @@ struct TaskDetailChecklistSectionView: View {
             isShowingDoneItems = false
             isChecklistComposerExpanded = false
             cancelChecklistItemEditing()
+        }
+        .onAppear {
+            if isComposerInitiallyExpanded {
+                isChecklistComposerExpanded = true
+            }
+        }
+        .onChange(of: isComposerInitiallyExpanded) { _, shouldExpand in
+            if shouldExpand {
+                isChecklistComposerExpanded = true
+            }
         }
     }
 

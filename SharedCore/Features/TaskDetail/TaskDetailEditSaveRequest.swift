@@ -71,7 +71,8 @@ struct TaskDetailEditSaveRequestBuilder {
 
         let trimmedName = state.editRoutineName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else { return nil }
-        let scheduleMode = effectiveScheduleMode(for: state)
+        let sanitizedChecklistItems = RoutineChecklistItem.sanitized(state.editRoutineChecklistItems)
+        let scheduleMode = effectiveScheduleMode(for: state, checklistItems: sanitizedChecklistItems)
         state.editChecklistValidationMessage = AddRoutineChecklistValidator.validationMessage(
             scheduleMode: scheduleMode,
             checklistItems: state.editRoutineChecklistItems,
@@ -105,7 +106,6 @@ struct TaskDetailEditSaveRequestBuilder {
             endDate: state.editAvailabilityEndDate,
             calendar: calendar
         )
-        let sanitizedChecklistItems = RoutineChecklistItem.sanitized(state.editRoutineChecklistItems)
 
         return TaskDetailEditSaveRequest(
             taskID: state.task.id,
@@ -234,15 +234,46 @@ struct TaskDetailEditSaveRequestBuilder {
         scheduleMode.isRoutineModeRequiringChecklistItems
     }
 
-    private func effectiveScheduleMode(for state: TaskDetailFeature.State) -> RoutineScheduleMode {
-        guard scheduleModeRequiresChecklistItems(state.editScheduleMode),
-              state.editRoutineChecklistItems.isEmpty,
-              !state.task.checklistItems.isEmpty else {
-            return state.editScheduleMode
-        }
-        return RoutineScheduleMode.routineMode(
-            behavior: state.editScheduleMode.scheduleBehavior,
-            format: .standard
+    private func effectiveScheduleMode(
+        for state: TaskDetailFeature.State,
+        checklistItems: [RoutineChecklistItem]
+    ) -> RoutineScheduleMode {
+        TaskDetailRoutineChecklistModeNormalizer.effectiveScheduleMode(
+            currentMode: state.editScheduleMode,
+            existingChecklistItems: state.task.checklistItems,
+            candidateChecklistItems: checklistItems,
+            candidateSteps: state.editRoutineSteps
         )
+    }
+}
+
+enum TaskDetailRoutineChecklistModeNormalizer {
+    static func effectiveScheduleMode(
+        currentMode: RoutineScheduleMode,
+        existingChecklistItems: [RoutineChecklistItem],
+        candidateChecklistItems: [RoutineChecklistItem],
+        candidateSteps: [RoutineStep]
+    ) -> RoutineScheduleMode {
+        if currentMode.taskType == .routine,
+           currentMode.isStandardRoutineMode,
+           existingChecklistItems.isEmpty,
+           !candidateChecklistItems.isEmpty,
+           candidateSteps.isEmpty {
+            return RoutineScheduleMode.routineMode(
+                behavior: currentMode.scheduleBehavior,
+                format: .checklist
+            )
+        }
+
+        if currentMode.isRoutineModeRequiringChecklistItems,
+           candidateChecklistItems.isEmpty,
+           !existingChecklistItems.isEmpty {
+            return RoutineScheduleMode.routineMode(
+                behavior: currentMode.scheduleBehavior,
+                format: .standard
+            )
+        }
+
+        return currentMode
     }
 }

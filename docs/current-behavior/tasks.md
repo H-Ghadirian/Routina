@@ -28,6 +28,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Daily routines already belong to the daily routine area and do not expose stored planned-date controls.
 - On Mac, daily routines are shown inside `Plan to do today`. By default they visually merge into the today list; Settings can restore a nested `Daily Routines` group.
 - Routines separate schedule behavior from format. Due/Gentle controls pressure and status; Interval/Calendar controls cadence; Standard/Checklist controls finish behavior.
+- Adding checklist items to a routine that previously had none promotes Standard completion to Checklist completion when no sequential steps would be discarded. Existing Standard routines that already carry checklist items remain editable as legacy optional checklist data.
 - Auto-assume done is opt-in for daily Standard routines without steps/checklists and daily Checklist-completion routines in both Due and Gentle styles. Todos, checklist runout routines, Standard routines with optional checklist items, routines with steps, and non-daily cadences do not qualify.
 - Calendar repeats offer weekday and month-day choices. Interval repeats own the single daily-repeat path.
 - Multi-day routines use a `Start` -> in-progress -> `Stop` lifecycle. Their detail calendar shows an ongoing range while active and a completed span after stopping.

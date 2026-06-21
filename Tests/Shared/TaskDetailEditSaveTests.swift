@@ -857,7 +857,105 @@ struct TaskDetailEditSaveTests {
     }
 
     @Test
-    func editSaveTapped_persistsChecklistItemsForStandardRoutine() async throws {
+    func editAddChecklistItemTapped_promotesNewStandardRoutineChecklistToChecklistCompletion() async {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let task = RoutineTask(
+            name: "Meals",
+            emoji: "✨",
+            scheduleMode: .fixedInterval,
+            interval: 1,
+            lastDone: nil
+        )
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Meals",
+                editRoutineEmoji: "✨",
+                editScheduleMode: .fixedInterval,
+                editChecklistItemDraftTitle: "Bread",
+                editFrequency: .day,
+                editFrequencyValue: 1
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editAddChecklistItemTapped) {
+            $0.editScheduleMode = .fixedIntervalChecklist
+            $0.editChecklistItemDraftTitle = ""
+            $0.editChecklistItemDraftInterval = 3
+        }
+
+        #expect(store.state.editRoutineChecklistItems.map(\.title) == ["Bread"])
+        #expect(store.state.canAutoAssumeDailyDone)
+    }
+
+    @Test
+    func editSaveTapped_promotesNewStandardRoutineChecklistToChecklistCompletion() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Meals",
+            interval: 1,
+            lastDone: nil,
+            emoji: "✨",
+            scheduleMode: .fixedInterval
+        )
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Meals",
+                editRoutineEmoji: "✨",
+                editScheduleMode: .fixedInterval,
+                editRoutineChecklistItems: [RoutineChecklistItem(title: "Bread", intervalDays: 1)],
+                editFrequency: .day,
+                editFrequencyValue: 1,
+                editAutoAssumeDailyDone: true
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+        await store.receive(.onAppear) {
+            $0.selectedDate = calendar.startOfDay(for: now)
+        }
+
+        let taskID = task.id
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { task in
+                        task.id == taskID
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.scheduleMode == .fixedIntervalChecklist)
+        #expect(persistedTask.checklistItems.map(\.title) == ["Bread"])
+        #expect(persistedTask.autoAssumeDailyDone)
+    }
+
+    @Test
+    func editSaveTapped_preservesExistingStandardRoutineChecklistItemsAsLegacyOptionalData() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-10T09:00:00Z")
@@ -867,6 +965,7 @@ struct TaskDetailEditSaveTests {
             interval: 7,
             lastDone: nil,
             emoji: "✨",
+            checklistItems: [RoutineChecklistItem(title: "Book room", intervalDays: 1)],
             scheduleMode: .fixedInterval
         )
 

@@ -62,6 +62,7 @@ struct TaskDetailStepChecklistEditActionHandler {
             createdAt: now(),
             to: state.editRoutineChecklistItems
         )
+        normalizeRoutineChecklistMode(state: &state)
         state.editChecklistItemDraftTitle = ""
         state.editChecklistItemDraftInterval = 3
         refreshChecklistValidation(state: &state)
@@ -117,6 +118,15 @@ struct TaskDetailStepChecklistEditActionHandler {
             ]
         }
         return state.editRoutineChecklistItems
+    }
+
+    private func normalizeRoutineChecklistMode(state: inout State) {
+        state.editScheduleMode = TaskDetailRoutineChecklistModeNormalizer.effectiveScheduleMode(
+            currentMode: state.editScheduleMode,
+            existingChecklistItems: state.task.checklistItems,
+            candidateChecklistItems: RoutineChecklistItem.sanitized(state.editRoutineChecklistItems),
+            candidateSteps: RoutineStep.sanitized(state.editRoutineSteps)
+        )
     }
 
     private func clearPlanningIfDailyRoutine(state: inout State) {

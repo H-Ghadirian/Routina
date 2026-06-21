@@ -341,12 +341,16 @@ extension TaskDetailFeature {
 
     func handleDetailChecklistItemsChanged(
         taskID: UUID,
-        checklistItems: [RoutineChecklistItem]
+        checklistItems: [RoutineChecklistItem],
+        scheduleMode: RoutineScheduleMode? = nil
     ) -> Effect<Action> {
         .run { @MainActor _ in
             do {
                 let context = modelContext()
                 guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
+                if let scheduleMode {
+                    task.scheduleMode = scheduleMode
+                }
                 task.replaceChecklistItems(checklistItems)
                 DeviceActivityRecorder.recordAction(
                     .updated,
