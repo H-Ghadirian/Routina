@@ -12,12 +12,32 @@ struct HomeRoutineDisplayFactory {
         doneStats: HomeDoneStats,
         fileAttachmentTaskIDs: Set<UUID> = []
     ) -> HomeRoutineDisplayCore {
-        let doneTodayFromLastDone = task.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false
-        let doneTodayFromLogs = doneStats.hasCompletedDate(taskID: task.id, date: now, calendar: calendar)
+        let currentOccurrenceDay = RoutineAssumedCompletion.currentOccurrenceDay(
+            for: task,
+            referenceDate: now,
+            calendar: calendar
+        )
+        let doneTodayFromLastDone = task.lastDone.flatMap {
+            RoutineDateMath.completionDisplayDay(
+                for: task,
+                completionDate: $0,
+                calendar: calendar
+            )
+        }.map { calendar.isDate($0, inSameDayAs: currentOccurrenceDay) } ?? false
+        let doneTodayFromLogs = doneStats.completedDatesByTaskID[task.id]?.contains {
+            guard let displayDay = RoutineDateMath.completionDisplayDay(
+                for: task,
+                completionDate: $0,
+                calendar: calendar
+            ) else {
+                return false
+            }
+            return calendar.isDate(displayDay, inSameDayAs: currentOccurrenceDay)
+        } ?? false
         let isDoneToday = doneTodayFromLastDone || doneTodayFromLogs
         let assumedDoneToday = !isDoneToday && RoutineAssumedCompletion.isAssumedDone(
             for: task,
-            on: now,
+            on: currentOccurrenceDay,
             referenceDate: now,
             calendar: calendar
         )

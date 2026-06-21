@@ -164,6 +164,41 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func sidebarPresentationHidesAssumedDailyRowsFromPlanTodayByDefault() {
+        let assumedID = UUID()
+        let visibleID = UUID()
+        let tasks = [
+            TestTaskDisplay(
+                taskID: assumedID,
+                name: "Brush teeth",
+                recurrenceRule: .interval(days: 1),
+                isDoneToday: true,
+                isAssumedDoneToday: true
+            ),
+            TestTaskDisplay(
+                taskID: visibleID,
+                name: "Meals",
+                recurrenceRule: .interval(days: 1)
+            )
+        ]
+
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(),
+            routineDisplays: tasks,
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(presentation.sections.map(\.title) == ["Plan to do today"])
+        #expect(presentation.sections.flatMap(\.tasks).map(\.taskID) == [visibleID])
+    }
+
+    @Test
     func filteredPlannedTodayTasksMatchesReferenceDate() {
         let referenceDate = Date(timeIntervalSince1970: 1_714_608_000)
         let tasks = [

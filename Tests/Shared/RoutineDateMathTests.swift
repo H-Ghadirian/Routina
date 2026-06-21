@@ -346,6 +346,29 @@ struct RoutineDateMathTests {
     }
 
     @Test
+    func completionDisplayDayForOvernightRangeUsesStartDay() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let timeRange = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 21, minute: 0),
+            end: RoutineTimeOfDay(hour: 3, minute: 0)
+        )
+        let task = RoutineTask(
+            recurrenceRule: .daily(in: timeRange),
+            scheduleAnchor: makeDate("2026-03-20T00:00:00Z")
+        )
+
+        let displayDay = RoutineDateMath.completionDisplayDay(
+            for: task,
+            completionDate: makeDate("2026-03-21T01:30:00Z"),
+            calendar: calendar
+        )
+
+        #expect(displayDay == makeDate("2026-03-20T00:00:00Z"))
+    }
+
+    @Test
     func dueDate_weeklySchedule_usesConfiguredWeekday() {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current

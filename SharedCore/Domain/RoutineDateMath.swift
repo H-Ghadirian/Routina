@@ -405,16 +405,32 @@ enum RoutineDateMath {
         completionDate: Date,
         calendar: Calendar = .current
     ) -> Date? {
-        let day = calendar.startOfDay(for: completionDate)
-        if usesExactTimedOccurrenceTracking(for: task) {
-            guard let occurrence = scheduledOccurrence(for: task, on: day, calendar: calendar) else {
-                return nil
+        let completionDay = calendar.startOfDay(for: completionDate)
+        guard usesExactTimedOccurrenceTracking(for: task) else {
+            return completionDay
+        }
+
+        var candidateDays = [completionDay]
+        if let previousDay = calendar.date(byAdding: .day, value: -1, to: completionDay) {
+            candidateDays.append(previousDay)
+        }
+
+        for candidateDay in candidateDays {
+            guard let occurrence = scheduledOccurrence(for: task, on: candidateDay, calendar: calendar) else {
+                continue
             }
-            guard calendar.isDate(completionDate, inSameDayAs: occurrence) else {
-                return nil
+
+            if let timeRange = task.recurrenceRule.timeRange {
+                let windowEnd = timeRange.endDate(on: occurrence, calendar: calendar)
+                if completionDate >= occurrence && completionDate < windowEnd {
+                    return candidateDay
+                }
+            } else if calendar.isDate(completionDate, inSameDayAs: occurrence) {
+                return candidateDay
             }
         }
-        return day
+
+        return nil
     }
 
     static func softIntervalThresholdDate(

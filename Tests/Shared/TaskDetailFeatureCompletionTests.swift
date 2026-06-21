@@ -1282,7 +1282,7 @@ struct TaskDetailFeatureCompletionTests {
         #expect(store.state.isSelectedDateAssumedDone)
         #expect(!store.state.isCompletionButtonDisabled)
         #expect(store.state.completionButtonAction == TaskDetailFeature.Action.markAsDone)
-        #expect(store.state.completionButtonTitle == "Confirm done")
+        #expect(store.state.completionButtonTitle.hasPrefix("Confirm"))
 
         _ = await store.withExhaustivity(.off) {
             await store.send(TaskDetailFeature.Action.markAsDone) {

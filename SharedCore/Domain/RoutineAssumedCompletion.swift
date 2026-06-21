@@ -157,6 +157,28 @@ enum RoutineAssumedCompletion {
         return calendar.date(bySettingHour: 12, minute: 0, second: 0, of: dayStart) ?? dayStart
     }
 
+    static func currentOccurrenceDay(
+        for task: RoutineTask,
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> Date {
+        let today = calendar.startOfDay(for: referenceDate)
+        guard let timeRange = task.recurrenceRule.timeRange,
+              timeRange.isOvernight
+        else {
+            return today
+        }
+
+        let referenceTime = RoutineTimeOfDay.from(referenceDate, calendar: calendar)
+        guard referenceTime.minutesFromStartOfDay < timeRange.end.minutesFromStartOfDay,
+              let previousDay = calendar.date(byAdding: .day, value: -1, to: today)
+        else {
+            return today
+        }
+
+        return previousDay
+    }
+
     private static func availableAt(
         for task: RoutineTask,
         on day: Date,
@@ -183,13 +205,14 @@ enum RoutineAssumedCompletion {
         calendar: Calendar
     ) -> Bool {
         if let lastDone = task.lastDone,
-           calendar.isDate(lastDone, inSameDayAs: day) {
+           isRecordedDate(lastDone, for: task, on: day, calendar: calendar) {
             return true
         }
 
         return logs.contains { log in
             guard let timestamp = log.timestamp else { return false }
-            return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: day)
+            return log.kind == .completed
+                && isRecordedDate(timestamp, for: task, on: day, calendar: calendar)
         }
     }
 
@@ -200,13 +223,30 @@ enum RoutineAssumedCompletion {
         calendar: Calendar
     ) -> Bool {
         if let canceledAt = task.canceledAt,
-           calendar.isDate(canceledAt, inSameDayAs: day) {
+           isRecordedDate(canceledAt, for: task, on: day, calendar: calendar) {
             return true
         }
 
         return logs.contains { log in
             guard let timestamp = log.timestamp else { return false }
-            return log.kind == .canceled && calendar.isDate(timestamp, inSameDayAs: day)
+            return log.kind == .canceled
+                && isRecordedDate(timestamp, for: task, on: day, calendar: calendar)
         }
+    }
+
+    private static func isRecordedDate(
+        _ date: Date,
+        for task: RoutineTask,
+        on day: Date,
+        calendar: Calendar
+    ) -> Bool {
+        if let displayDay = RoutineDateMath.completionDisplayDay(
+            for: task,
+            completionDate: date,
+            calendar: calendar
+        ) {
+            return calendar.isDate(displayDay, inSameDayAs: day)
+        }
+        return calendar.isDate(date, inSameDayAs: day)
     }
 }

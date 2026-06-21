@@ -110,6 +110,72 @@ struct RoutineAssumedCompletionTests {
     }
 
     @Test
+    func overnightWindowEarlyMorningCurrentOccurrenceUsesPreviousDay() {
+        let calendar = makeTestCalendar()
+        let referenceDate = makeDate("2026-02-26T01:00:00Z")
+        let timeRange = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 21, minute: 0),
+            end: RoutineTimeOfDay(hour: 3, minute: 0)
+        )
+        let task = RoutineTask(
+            name: "Brush teeth",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(in: timeRange),
+            createdAt: makeDate("2026-02-20T00:00:00Z"),
+            autoAssumeDailyDone: true
+        )
+        let currentOccurrenceDay = RoutineAssumedCompletion.currentOccurrenceDay(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(currentOccurrenceDay == makeDate("2026-02-25T00:00:00Z"))
+        #expect(RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: currentOccurrenceDay,
+            referenceDate: referenceDate,
+            calendar: calendar
+        ))
+    }
+
+    @Test
+    func overnightWindowEarlyMorningCompletionSuppressesAssumedDone() {
+        let calendar = makeTestCalendar()
+        let referenceDate = makeDate("2026-02-26T01:00:00Z")
+        let timeRange = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 21, minute: 0),
+            end: RoutineTimeOfDay(hour: 3, minute: 0)
+        )
+        let task = RoutineTask(
+            name: "Brush teeth",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(in: timeRange),
+            createdAt: makeDate("2026-02-20T00:00:00Z"),
+            autoAssumeDailyDone: true
+        )
+        let logs = [
+            RoutineLog(
+                timestamp: makeDate("2026-02-26T01:30:00Z"),
+                taskID: task.id,
+                kind: .completed
+            )
+        ]
+
+        #expect(!RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: RoutineAssumedCompletion.currentOccurrenceDay(
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ),
+            referenceDate: referenceDate,
+            logs: logs,
+            calendar: calendar
+        ))
+    }
+
+    @Test
     func checklistPartialProgressSuppressesAssumedDone() {
         let calendar = makeTestCalendar()
         let today = makeDate("2026-02-25T00:00:00Z")
