@@ -889,6 +889,35 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func checklistPresentationShowsItemIntervalsOnlyForRunoutRoutines() {
+        let completionChecklist = RoutineTask(
+            name: "Working Hours",
+            checklistItems: [
+                RoutineChecklistItem(title: "Sciforma", intervalDays: 30)
+            ],
+            scheduleMode: .fixedIntervalChecklist
+        )
+        let optionalChecklist = RoutineTask(
+            name: "Read",
+            checklistItems: [
+                RoutineChecklistItem(title: "Desk", intervalDays: 1)
+            ],
+            scheduleMode: .fixedInterval
+        )
+        let runoutChecklist = RoutineTask(
+            name: "Groceries",
+            checklistItems: [
+                RoutineChecklistItem(title: "Milk", intervalDays: 3)
+            ],
+            scheduleMode: .derivedFromChecklist
+        )
+
+        #expect(!TaskDetailChecklistPresentation.showsItemIntervalControls(for: completionChecklist))
+        #expect(!TaskDetailChecklistPresentation.showsItemIntervalControls(for: optionalChecklist))
+        #expect(TaskDetailChecklistPresentation.showsItemIntervalControls(for: runoutChecklist))
+    }
+
+    @Test
     func checklistPresentationKeepsCompletedChecklistRoutineRowsReadOnly() {
         let now = Date()
         let itemID = UUID()

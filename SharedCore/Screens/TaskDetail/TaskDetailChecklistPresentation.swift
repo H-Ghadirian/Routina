@@ -23,6 +23,10 @@ enum TaskDetailChecklistPresentation {
         task.supportsOptionalChecklistProgress
     }
 
+    static func showsItemIntervalControls(for task: RoutineTask) -> Bool {
+        task.isChecklistDriven
+    }
+
     static func isRunoutItemMarkedDone(
         _ item: RoutineChecklistItem,
         referenceDate: Date = Date(),

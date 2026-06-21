@@ -51,6 +51,10 @@ struct TaskDetailChecklistSectionView: View {
         doneItemCount > 0
     }
 
+    private var showsItemIntervalControls: Bool {
+        TaskDetailChecklistPresentation.showsItemIntervalControls(for: task)
+    }
+
     var body: some View {
         TaskDetailSectionCardView(background: background, stroke: stroke) {
             VStack(alignment: .leading, spacing: 12) {
@@ -139,7 +143,7 @@ struct TaskDetailChecklistSectionView: View {
                 }
             }
 
-            if task.isChecklistDriven {
+            if showsItemIntervalControls {
                 Stepper(value: $newItemIntervalDays, in: 1...365) {
                     Text(TaskFormPresentation.checklistIntervalLabel(for: newItemIntervalDays))
                         .font(.caption)
@@ -211,9 +215,11 @@ struct TaskDetailChecklistSectionView: View {
                 .textFieldStyle(.roundedBorder)
                 .onSubmit { saveChecklistItemEditing(item.id) }
 
-            Stepper(value: $editingChecklistItemIntervalDays, in: 1...365) {
-                Text(TaskFormPresentation.checklistIntervalLabel(for: editingChecklistItemIntervalDays))
-                    .font(.caption)
+            if showsItemIntervalControls {
+                Stepper(value: $editingChecklistItemIntervalDays, in: 1...365) {
+                    Text(TaskFormPresentation.checklistIntervalLabel(for: editingChecklistItemIntervalDays))
+                        .font(.caption)
+                }
             }
 
             HStack {
