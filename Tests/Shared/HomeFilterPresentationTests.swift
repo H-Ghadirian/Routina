@@ -48,7 +48,7 @@ struct HomeFilterPresentationTests {
 
         #expect(presentation.filterLabels == [
             "Due",
-            "Actionable",
+            "Don't show blocked tasks",
             "Blocked",
             "Pressure High",
             "No Goal",
@@ -59,7 +59,7 @@ struct HomeFilterPresentationTests {
             "L4/L3+",
             "Away hidden"
         ])
-        #expect(presentation.activeTaskFiltersSummary(resultCount: 12, maxVisibleCount: 4) == "Due • Actionable • Blocked • Pressure High +7 • 12 results")
+        #expect(presentation.activeTaskFiltersSummary(resultCount: 12, maxVisibleCount: 4) == "Due • Don't show blocked tasks • Blocked • Pressure High +7 • 12 results")
     }
 
     @Test

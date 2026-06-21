@@ -36,22 +36,16 @@ struct HomeFiltersViewModeSection: View {
     @Binding var taskListViewMode: HomeTaskListViewMode
 
     var body: some View {
-        Section("View Mode") {
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "List view",
-                options: HomeTaskListViewMode.allCases,
-                selection: $taskListViewMode,
-                fillsAvailableWidth: true
-            ) { mode in
-                Label(mode.title, systemImage: mode.systemImage)
-            }
-
-            Text(taskListViewMode == .actionable
-                ? "Showing tasks without unfinished blockers."
-                : "Showing every task that matches your filters.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+        Section {
+            Toggle("Don't show blocked tasks", isOn: hideBlockedTasksBinding)
         }
+    }
+
+    private var hideBlockedTasksBinding: Binding<Bool> {
+        Binding(
+            get: { taskListViewMode == .actionable },
+            set: { taskListViewMode = $0 ? .actionable : .all }
+        )
     }
 }
 

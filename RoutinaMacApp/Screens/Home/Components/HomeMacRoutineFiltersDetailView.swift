@@ -160,9 +160,7 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                     taskListModePicker
                 }
 
-                filterControlSection("View Mode") {
-                    viewModePicker
-                }
+                blockedTasksToggle
 
                 filterControlSection("Created") {
                     createdDatePicker
@@ -210,23 +208,15 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
         }
     }
 
-    private var viewModePicker: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "View Mode",
-                options: HomeTaskListViewMode.allCases,
-                selection: $taskListViewMode,
-                minimumSegmentWidth: 112
-            ) { mode in
-                Label(mode.title, systemImage: mode.systemImage)
-            }
+    private var blockedTasksToggle: some View {
+        Toggle("Don't show blocked tasks", isOn: hideBlockedTasksBinding)
+    }
 
-            Text(taskListViewMode == .actionable
-                ? "Showing tasks without unfinished blockers."
-                : "Showing every task that matches your filters.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
+    private var hideBlockedTasksBinding: Binding<Bool> {
+        Binding(
+            get: { taskListViewMode == .actionable },
+            set: { taskListViewMode = $0 ? .actionable : .all }
+        )
     }
 
     private var filterPicker: some View {

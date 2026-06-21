@@ -6,7 +6,14 @@ enum HomeTaskListViewMode: String, Codable, CaseIterable, Equatable, Identifiabl
 
     var id: Self { self }
 
-    var title: String { rawValue }
+    var title: String {
+        switch self {
+        case .all:
+            return rawValue
+        case .actionable:
+            return "Don't show blocked tasks"
+        }
+    }
 
     var systemImage: String {
         switch self {
