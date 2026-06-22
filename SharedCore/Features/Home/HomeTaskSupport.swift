@@ -39,6 +39,38 @@ struct HomeDoneStats: Equatable {
             calendar.isDate($0, inSameDayAs: date)
         } ?? false
     }
+
+    mutating func replaceLogs(for taskID: UUID, with logs: [RoutineLog]) {
+        totalCount = max(totalCount - countsByTaskID[taskID, default: 0], 0)
+        canceledTotalCount = max(canceledTotalCount - canceledCountsByTaskID[taskID, default: 0], 0)
+
+        countsByTaskID.removeValue(forKey: taskID)
+        completedDatesByTaskID.removeValue(forKey: taskID)
+        canceledCountsByTaskID.removeValue(forKey: taskID)
+        canceledDatesByTaskID.removeValue(forKey: taskID)
+        missedDatesByTaskID.removeValue(forKey: taskID)
+
+        for log in logs where log.taskID == taskID {
+            switch log.kind {
+            case .completed:
+                totalCount += 1
+                countsByTaskID[taskID, default: 0] += 1
+                if let timestamp = log.timestamp {
+                    completedDatesByTaskID[taskID, default: []].insert(timestamp)
+                }
+            case .canceled:
+                canceledTotalCount += 1
+                canceledCountsByTaskID[taskID, default: 0] += 1
+                if let timestamp = log.timestamp {
+                    canceledDatesByTaskID[taskID, default: []].insert(timestamp)
+                }
+            case .missed:
+                if let timestamp = log.timestamp {
+                    missedDatesByTaskID[taskID, default: []].insert(timestamp)
+                }
+            }
+        }
+    }
 }
 
 enum HomeTaskSupport {

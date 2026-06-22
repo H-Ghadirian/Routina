@@ -35,6 +35,13 @@ struct HomeRoutineDisplayFactory {
             return calendar.isDate(displayDay, inSameDayAs: currentOccurrenceDay)
         } ?? false
         let isDoneToday = doneTodayFromLastDone || doneTodayFromLogs
+        let canceledTodayFromTask = task.canceledAt.map {
+            isRecordedDate($0, for: task, on: currentOccurrenceDay)
+        } ?? false
+        let canceledTodayFromLogs = doneStats.canceledDatesByTaskID[task.id]?.contains {
+            isRecordedDate($0, for: task, on: currentOccurrenceDay)
+        } ?? false
+        let isCanceledToday = canceledTodayFromTask || canceledTodayFromLogs
         let assumedDoneToday = !isDoneToday && RoutineAssumedCompletion.isAssumedDone(
             for: task,
             on: currentOccurrenceDay,
@@ -104,6 +111,7 @@ struct HomeRoutineDisplayFactory {
             isCompletedOneOff: task.isCompletedOneOff,
             isCanceledOneOff: task.isCanceledOneOff,
             isDoneToday: isDoneToday || assumedDoneToday,
+            isCanceledToday: isCanceledToday,
             isAssumedDoneToday: assumedDoneToday,
             isPaused: isArchived,
             isSnoozed: isSnoozed,
@@ -133,6 +141,17 @@ struct HomeRoutineDisplayFactory {
             color: task.color,
             todoState: task.todoState
         )
+    }
+
+    private func isRecordedDate(_ date: Date, for task: RoutineTask, on day: Date) -> Bool {
+        if let displayDay = RoutineDateMath.completionDisplayDay(
+            for: task,
+            completionDate: date,
+            calendar: calendar
+        ) {
+            return calendar.isDate(displayDay, inSameDayAs: day)
+        }
+        return calendar.isDate(date, inSameDayAs: day)
     }
 
     private func makeLocationAvailability(

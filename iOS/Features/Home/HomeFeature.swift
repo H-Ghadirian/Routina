@@ -571,6 +571,9 @@ struct HomeFeature {
             syncSelectedTaskFromTaskDetail: { state in
                 selectionRouter().syncSelectedTaskFromTaskDetail(&state)
             },
+            syncSelectedTaskLogs: { logs, state in
+                syncSelectedTaskLogs(logs, state: &state)
+            },
             openLinkedTask: { taskID, state in
                 selectionRouter().openLinkedTask(taskID, state: &state)
             },
@@ -1043,6 +1046,12 @@ struct HomeFeature {
         state.selection.taskDetailEffectTaskID = currentTaskID
         guard let previousTaskID else { return .none }
         return .cancel(id: TaskDetailCancelID.task(previousTaskID))
+    }
+
+    private func syncSelectedTaskLogs(_ logs: [RoutineLog], state: inout State) {
+        guard let taskID = state.selection.taskDetailState?.task.id else { return }
+        state.doneStats.replaceLogs(for: taskID, with: logs)
+        refreshDisplays(&state)
     }
 
     private func handleDeleteTasks(_ ids: [UUID], state: inout State) -> Effect<Action> {

@@ -26,7 +26,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Todo availability has independent date and time axes. Date bounds, time windows, deadlines, reminders, and planned dates are separate concepts.
 - Planned dates are date-only Home-list planning hints for todos and non-daily routines. They are not availability, deadline, reminder, or completion history.
 - Daily routines already belong to the daily routine area and do not expose stored planned-date controls.
-- Home `Plan to do today` includes active unpinned tasks planned for the current day, plus weekly/month-day calendar routines whose configured occurrence is today. Rolling interval routines such as `Every 7 days` stay in the normal due/status sections unless explicitly planned.
+- Home `Plan to do today` includes active unpinned tasks planned for the current day, plus weekly/month-day calendar routines whose configured occurrence is today. A calendar routine with a canceled occurrence for today is not shown in the today plan. Rolling interval routines such as `Every 7 days` stay in the normal due/status sections unless explicitly planned.
 - On Mac, daily routines are shown inside `Plan to do today`. By default they visually merge into the today list; Settings can restore a nested `Daily Routines` group.
 - Routines separate schedule behavior from format. Due/Gentle controls pressure and status; Interval/Calendar controls cadence; Standard/Checklist controls finish behavior.
 - Adding checklist items to a routine that previously had none promotes Standard completion to Checklist completion when no sequential steps would be discarded. Existing Standard routines that already carry checklist items remain editable as legacy optional checklist data.

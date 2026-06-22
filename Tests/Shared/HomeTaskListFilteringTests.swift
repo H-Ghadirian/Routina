@@ -257,6 +257,95 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func filteredPlannedTodayTasksExcludesCanceledCalendarOccurrenceToday() {
+        let referenceDate = makeDate("2026-06-22T10:00:00Z") // Monday
+        let tasks = [
+            TestTaskDisplay(
+                name: "Canceled Monday",
+                recurrenceRule: .weekly(on: 2),
+                daysUntilDue: 7,
+                isCanceledToday: true
+            ),
+            TestTaskDisplay(
+                name: "Active Monday",
+                recurrenceRule: .weekly(on: 2),
+                daysUntilDue: 0
+            )
+        ]
+
+        let result = makeFiltering(referenceDate: referenceDate)
+            .filteredPlannedTodayTasks(tasks)
+
+        #expect(result.map(\.name) == ["Active Monday"])
+    }
+
+    @Test
+    func filteredPlannedTodayTasksExcludesCanceledWeeklyTimeWindowToday() {
+        let referenceDate = makeDate("2026-06-22T10:00:00Z") // Monday
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 17, minute: 0),
+            end: RoutineTimeOfDay(hour: 18, minute: 0)
+        )
+        let tasks = [
+            TestTaskDisplay(
+                name: "Canceled 17 to 18",
+                recurrenceRule: .weekly(on: 2, timeRange: window),
+                daysUntilDue: 7,
+                isCanceledToday: true
+            ),
+            TestTaskDisplay(
+                name: "Active 17 to 18",
+                recurrenceRule: .weekly(on: 2, timeRange: window),
+                dueDate: makeDate("2026-06-22T17:00:00Z"),
+                daysUntilDue: 0
+            )
+        ]
+
+        let result = makeFiltering(referenceDate: referenceDate)
+            .filteredPlannedTodayTasks(tasks)
+
+        #expect(result.map(\.name) == ["Active 17 to 18"])
+    }
+
+    @Test
+    func sidebarPresentationKeepsCanceledCalendarOccurrenceOutOfPlanToday() {
+        let referenceDate = makeDate("2026-06-22T10:00:00Z") // Monday
+        let canceledID = UUID()
+        let plannedID = UUID()
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(routineListSectioningMode: .tags, referenceDate: referenceDate),
+            routineDisplays: [
+                TestTaskDisplay(
+                    taskID: canceledID,
+                    name: "Canceled Monday",
+                    tags: ["Health"],
+                    recurrenceRule: .weekly(on: 2),
+                    daysUntilDue: 7,
+                    isCanceledToday: true
+                ),
+                TestTaskDisplay(
+                    taskID: plannedID,
+                    name: "Planned Monday",
+                    tags: ["Health"],
+                    recurrenceRule: .weekly(on: 2),
+                    daysUntilDue: 0
+                )
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(presentation.sections.map(\.kind) == [.plannedToday, .tag])
+        #expect(presentation.sections.first?.tasks.map(\.taskID) == [plannedID])
+        #expect(presentation.sections.last?.tasks.map(\.taskID) == [canceledID])
+    }
+
+    @Test
     func filteredPlannedTodayTasksHonorsExplicitPlannedDateOverCalendarOccurrence() {
         let referenceDate = makeDate("2026-06-22T10:00:00Z") // Monday
         let tomorrow = makeDate("2026-06-23T10:00:00Z")
@@ -1398,6 +1487,7 @@ private struct TestTaskDisplay: HomeRoutineMetadataDisplay, Equatable {
     var isCompletedOneOff: Bool = false
     var isCanceledOneOff: Bool = false
     var isDoneToday: Bool = false
+    var isCanceledToday: Bool = false
     var isAssumedDoneToday: Bool = false
     var isPaused: Bool = false
     var isSnoozed: Bool = false

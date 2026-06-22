@@ -39,6 +39,7 @@ struct HomeRoutineDisplay: Equatable, Identifiable, HomeTaskListDisplay, HomeTas
     var isCompletedOneOff: Bool
     var isCanceledOneOff: Bool
     var isDoneToday: Bool
+    var isCanceledToday: Bool = false
     var isAssumedDoneToday: Bool = false
     var isPaused: Bool
     var isSnoozed: Bool

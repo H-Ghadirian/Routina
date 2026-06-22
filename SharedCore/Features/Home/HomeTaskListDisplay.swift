@@ -32,6 +32,7 @@ protocol HomeTaskListDisplay {
     var isCompletedOneOff: Bool { get }
     var isCanceledOneOff: Bool { get }
     var isDoneToday: Bool { get }
+    var isCanceledToday: Bool { get }
     var isAssumedDoneToday: Bool { get }
     var isPaused: Bool { get }
     var isPinned: Bool { get }
@@ -64,6 +65,10 @@ extension HomeTaskListDisplay {
     }
 
     var isAssumedDoneToday: Bool {
+        false
+    }
+
+    var isCanceledToday: Bool {
         false
     }
 

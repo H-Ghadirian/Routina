@@ -177,6 +177,43 @@ struct HomeTaskHelperTests {
     }
 
     @Test
+    func doneStatsReplaceLogsRefreshesSelectedTaskOutcomeCaches() {
+        let taskID = UUID()
+        let otherTaskID = UUID()
+        let staleCompletedDate = makeDate("2026-06-15T08:00:00Z")
+        let canceledDate = makeDate("2026-06-22T17:30:00Z")
+        var stats = HomeDoneStats(
+            totalCount: 2,
+            countsByTaskID: [
+                taskID: 1,
+                otherTaskID: 1
+            ],
+            completedDatesByTaskID: [
+                taskID: [staleCompletedDate],
+                otherTaskID: [staleCompletedDate]
+            ],
+            canceledTotalCount: 0,
+            canceledCountsByTaskID: [:],
+            canceledDatesByTaskID: [:],
+            missedDatesByTaskID: [:]
+        )
+
+        stats.replaceLogs(
+            for: taskID,
+            with: [
+                RoutineLog(timestamp: canceledDate, taskID: taskID, kind: .canceled)
+            ]
+        )
+
+        #expect(stats.totalCount == 1)
+        #expect(stats.countsByTaskID == [otherTaskID: 1])
+        #expect(stats.completedDatesByTaskID == [otherTaskID: [staleCompletedDate]])
+        #expect(stats.canceledTotalCount == 1)
+        #expect(stats.canceledCountsByTaskID == [taskID: 1])
+        #expect(stats.canceledDatesByTaskID == [taskID: [canceledDate]])
+    }
+
+    @Test
     func rowToneResolverUsesDisplayFieldsForScrollPathColor() {
         let referenceDate = makeDate("2026-05-25T08:00:00Z")
 

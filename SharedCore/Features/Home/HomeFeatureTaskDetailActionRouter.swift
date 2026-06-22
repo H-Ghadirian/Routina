@@ -6,6 +6,7 @@ struct HomeFeatureTaskDetailActionRouter<State, Action> {
     var updatePendingChecklistReloadGuard: (UUID, inout State) -> Void
     var updatePendingChecklistUndoReloadGuard: (inout State) -> Void
     var syncSelectedTaskFromTaskDetail: (inout State) -> Void
+    var syncSelectedTaskLogs: ([RoutineLog], inout State) -> Void
     var openLinkedTask: (UUID, inout State) -> Effect<Action>
     var openLinkedTaskSheet: (inout State) -> Void
 
@@ -29,8 +30,9 @@ struct HomeFeatureTaskDetailActionRouter<State, Action> {
             updatePendingChecklistUndoReloadGuard(&state)
             return .none
 
-        case .logsLoaded:
+        case let .logsLoaded(logs):
             syncSelectedTaskFromTaskDetail(&state)
+            syncSelectedTaskLogs(logs, &state)
             return .none
 
         case let .openLinkedTask(taskID):

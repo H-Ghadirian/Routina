@@ -108,6 +108,58 @@ struct HomeRoutineDisplayFactoryTests {
     }
 
     @Test
+    func canceledCalendarRoutineOccurrenceMarksDisplayCanceledToday() {
+        let now = makeDate("2026-06-22T10:00:00Z")
+        let task = RoutineTask(
+            name: "Class",
+            recurrenceRule: .weekly(on: 2, at: RoutineTimeOfDay(hour: 9, minute: 0))
+        )
+        let canceledAt = makeDate("2026-06-22T09:00:00Z")
+
+        let display = makeDisplay(
+            task: task,
+            now: now,
+            places: [],
+            coordinate: LocationCoordinate(latitude: 52.5200, longitude: 13.4050),
+            doneStats: HomeDoneStats(
+                canceledTotalCount: 1,
+                canceledCountsByTaskID: [task.id: 1],
+                canceledDatesByTaskID: [task.id: [canceledAt]]
+            )
+        )
+
+        #expect(display.isCanceledToday)
+    }
+
+    @Test
+    func canceledWeeklyTimeWindowOccurrenceMarksDisplayCanceledToday() {
+        let now = makeDate("2026-06-22T10:00:00Z")
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 17, minute: 0),
+            end: RoutineTimeOfDay(hour: 18, minute: 0)
+        )
+        let task = RoutineTask(
+            name: "Therapy",
+            recurrenceRule: .weekly(on: 2, timeRange: window)
+        )
+        let canceledAt = makeDate("2026-06-22T17:30:00Z")
+
+        let display = makeDisplay(
+            task: task,
+            now: now,
+            places: [],
+            coordinate: LocationCoordinate(latitude: 52.5200, longitude: 13.4050),
+            doneStats: HomeDoneStats(
+                canceledTotalCount: 1,
+                canceledCountsByTaskID: [task.id: 1],
+                canceledDatesByTaskID: [task.id: [canceledAt]]
+            )
+        )
+
+        #expect(display.isCanceledToday)
+    }
+
+    @Test
     func assumedChecklistRoutineHidesPendingChecklistPrompt() {
         let now = makeDate("2026-06-09T08:00:00Z")
         let task = RoutineTask(

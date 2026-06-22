@@ -38,6 +38,7 @@ struct HomeRoutineDisplayCore: Equatable {
     var isCompletedOneOff: Bool
     var isCanceledOneOff: Bool
     var isDoneToday: Bool
+    var isCanceledToday: Bool
     var isAssumedDoneToday: Bool
     var isPaused: Bool
     var isSnoozed: Bool

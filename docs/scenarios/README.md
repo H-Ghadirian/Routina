@@ -139,6 +139,10 @@ Given a weekly or month-day calendar routine is configured for today's weekday o
 When Home derives `Plan to do today`
 Then that calendar routine appears in the existing today list without a separate scheduled-today group, while rolling interval routines stay in the normal due/status sections unless explicitly planned
 
+Given a weekly or month-day calendar routine has a canceled occurrence for today
+When Home derives `Plan to do today`
+Then that routine no longer appears in the today plan for the canceled day
+
 ### Home Task Lists Keep Stable Row Identity
 
 Area: Tasks

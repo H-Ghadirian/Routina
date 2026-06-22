@@ -149,6 +149,7 @@ private extension HomeFeature.RoutineDisplay {
             isCompletedOneOff: core.isCompletedOneOff,
             isCanceledOneOff: core.isCanceledOneOff,
             isDoneToday: core.isDoneToday,
+            isCanceledToday: core.isCanceledToday,
             isAssumedDoneToday: core.isAssumedDoneToday,
             isPaused: core.isPaused,
             isSnoozed: core.isSnoozed,
