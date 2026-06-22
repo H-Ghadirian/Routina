@@ -10,6 +10,8 @@ struct DayPlanTimelineActivityBlock: Identifiable, Equatable {
         switch source {
         case let .log(logID):
             return "timeline-log-\(logID.uuidString)"
+        case .assumedDone:
+            return "timeline-assumed-\(block.taskID.uuidString)-\(block.dayKey)"
         case .taskLastDone:
             return "timeline-last-done-\(block.taskID.uuidString)"
         case .taskCanceledAt:
@@ -21,6 +23,8 @@ struct DayPlanTimelineActivityBlock: Identifiable, Equatable {
         switch source {
         case let .log(logID):
             return "timeline-log-\(logID.uuidString)"
+        case .assumedDone:
+            return "timeline-assumed-\(block.taskID.uuidString)-\(block.dayKey)"
         case .taskLastDone:
             return [
                 "timeline-last-done",
@@ -41,8 +45,13 @@ struct DayPlanTimelineActivityBlock: Identifiable, Equatable {
 
 enum DayPlanTimelineActivitySource: Equatable {
     case log(UUID)
+    case assumedDone
     case taskLastDone
     case taskCanceledAt
+
+    var isSyntheticAssumedDone: Bool {
+        self == .assumedDone
+    }
 }
 
 enum DayPlanHiddenTimelineActivityStore {
@@ -79,7 +88,8 @@ enum DayPlanTimelineTasks {
         plannedBlocks: [DayPlanBlock],
         blockedIntervals: [DayPlanBlockedInterval] = [],
         calendar: Calendar,
-        hiddenActivityIDs: Set<String> = []
+        hiddenActivityIDs: Set<String> = [],
+        referenceDate: Date = Date()
     ) -> Int {
         activityBlocks(
             on: date,
@@ -88,7 +98,8 @@ enum DayPlanTimelineTasks {
             plannedBlocks: plannedBlocks,
             blockedIntervals: blockedIntervals,
             calendar: calendar,
-            hiddenActivityIDs: hiddenActivityIDs
+            hiddenActivityIDs: hiddenActivityIDs,
+            referenceDate: referenceDate
         )
         .count
     }
@@ -100,7 +111,8 @@ enum DayPlanTimelineTasks {
         plannedBlocks: [DayPlanBlock],
         blockedIntervals: [DayPlanBlockedInterval] = [],
         calendar: Calendar,
-        hiddenActivityIDs: Set<String> = []
+        hiddenActivityIDs: Set<String> = [],
+        referenceDate: Date = Date()
     ) -> [RoutineTask] {
         let matchingIDs = Set(activityBlocks(
             on: date,
@@ -109,7 +121,8 @@ enum DayPlanTimelineTasks {
             plannedBlocks: plannedBlocks,
             blockedIntervals: blockedIntervals,
             calendar: calendar,
-            hiddenActivityIDs: hiddenActivityIDs
+            hiddenActivityIDs: hiddenActivityIDs,
+            referenceDate: referenceDate
         ).map(\.block.taskID))
 
         return tasks
@@ -145,7 +158,8 @@ enum DayPlanTimelineTasks {
         plannedBlocks: [DayPlanBlock],
         blockedIntervals: [DayPlanBlockedInterval] = [],
         calendar: Calendar,
-        hiddenActivityIDs: Set<String> = []
+        hiddenActivityIDs: Set<String> = [],
+        referenceDate: Date = Date()
     ) -> [DayPlanTimelineActivityBlock] {
         let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
         return activityBlocksByDayKey(
@@ -155,7 +169,8 @@ enum DayPlanTimelineTasks {
             plannedBlocksByDayKey: [dayKey: plannedBlocks],
             blockedIntervalsByDayKey: [dayKey: blockedIntervals],
             calendar: calendar,
-            hiddenActivityIDs: hiddenActivityIDs
+            hiddenActivityIDs: hiddenActivityIDs,
+            referenceDate: referenceDate
         )[dayKey] ?? []
     }
 
@@ -166,7 +181,8 @@ enum DayPlanTimelineTasks {
         plannedBlocks: [DayPlanBlock],
         blockedIntervals: [DayPlanBlockedInterval] = [],
         calendar: Calendar,
-        hiddenActivityIDs: Set<String> = []
+        hiddenActivityIDs: Set<String> = [],
+        referenceDate: Date = Date()
     ) -> [DayPlanTimelineActivityBlock] {
         let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
         return automaticSuggestionBlocksByDayKey(
@@ -176,7 +192,8 @@ enum DayPlanTimelineTasks {
             plannedBlocksByDayKey: [dayKey: plannedBlocks],
             blockedIntervalsByDayKey: [dayKey: blockedIntervals],
             calendar: calendar,
-            hiddenActivityIDs: hiddenActivityIDs
+            hiddenActivityIDs: hiddenActivityIDs,
+            referenceDate: referenceDate
         )[dayKey] ?? []
     }
 
@@ -187,7 +204,8 @@ enum DayPlanTimelineTasks {
         plannedBlocksByDayKey: [String: [DayPlanBlock]],
         blockedIntervalsByDayKey: [String: [DayPlanBlockedInterval]] = [:],
         calendar: Calendar,
-        hiddenActivityIDs: Set<String> = []
+        hiddenActivityIDs: Set<String> = [],
+        referenceDate: Date = Date()
     ) -> [String: [DayPlanTimelineActivityBlock]] {
         activityBlocksByDayKey(
             on: dates,
@@ -198,7 +216,8 @@ enum DayPlanTimelineTasks {
             calendar: calendar,
             hiddenActivityIDs: hiddenActivityIDs,
             excludesAllDayTasks: true,
-            includedKinds: automaticSuggestionKinds
+            includedKinds: automaticSuggestionKinds,
+            referenceDate: referenceDate
         )
     }
 
@@ -211,7 +230,8 @@ enum DayPlanTimelineTasks {
         calendar: Calendar,
         hiddenActivityIDs: Set<String> = [],
         excludesAllDayTasks: Bool = false,
-        includedKinds: [RoutineLogKind]? = nil
+        includedKinds: [RoutineLogKind]? = nil,
+        referenceDate: Date = Date()
     ) -> [String: [DayPlanTimelineActivityBlock]] {
         let visibleDayKeys = Set(dates.map { DayPlanStorage.dayKey(for: $0, calendar: calendar) })
         guard !visibleDayKeys.isEmpty else { return [:] }
@@ -258,6 +278,44 @@ enum DayPlanTimelineTasks {
                         kind: .completed,
                         actualDurationMinutes: nil,
                         source: .taskLastDone
+                    ),
+                    taskID: task.id
+                )
+            }
+
+            for date in dates {
+                let assumptionReferenceDate = referenceDateForAssumedCompletion(
+                    on: date,
+                    referenceDate: referenceDate,
+                    calendar: calendar
+                )
+                let assumedDay = RoutineAssumedCompletion.currentOccurrenceDay(
+                    for: task,
+                    referenceDate: assumptionReferenceDate,
+                    calendar: calendar
+                )
+                guard calendar.isDate(assumedDay, inSameDayAs: date),
+                      RoutineAssumedCompletion.isAssumedDone(
+                        for: task,
+                        on: assumedDay,
+                        referenceDate: assumptionReferenceDate,
+                        logs: logs,
+                        calendar: calendar
+                      )
+                else {
+                    continue
+                }
+
+                record(
+                    DayPlanTimelineActivity(
+                        timestamp: RoutineAssumedCompletion.completionTimestamp(
+                            for: assumedDay,
+                            referenceDate: referenceDate,
+                            calendar: calendar
+                        ),
+                        kind: .completed,
+                        actualDurationMinutes: nil,
+                        source: .assumedDone
                     ),
                     taskID: task.id
                 )
@@ -423,6 +481,9 @@ enum DayPlanTimelineTasks {
             log.timestamp = targetTimestamp
             movedLog = log
 
+        case .assumedDone:
+            return false
+
         case .taskLastDone:
             task.lastDone = targetTimestamp
             movedLog = upsertFallbackLog(
@@ -517,6 +578,21 @@ enum DayPlanTimelineTasks {
         let components = calendar.dateComponents([.hour, .minute], from: timestamp)
         let minute = ((components.hour ?? 0) * 60) + (components.minute ?? 0)
         return DayPlanBlock.clampedStartMinute(minute)
+    }
+
+    private static func referenceDateForAssumedCompletion(
+        on date: Date,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> Date {
+        let day = calendar.startOfDay(for: date)
+        let today = calendar.startOfDay(for: referenceDate)
+        guard day < today else { return referenceDate }
+
+        return calendar.date(
+            byAdding: DateComponents(day: 1, second: -1),
+            to: day
+        ) ?? day
     }
 
     private static func isBlocked(_ block: DayPlanBlock, by intervals: [DayPlanBlockedInterval]) -> Bool {

@@ -91,6 +91,22 @@ Given the user starts checking checklist items for that daily occurrence
 When the app derives assumed completion state
 Then manual partial checklist progress suppresses assumed-done presentation until the routine is fully completed or progress is cleared
 
+### Planner Shows Assumed Done Routines
+
+Area: Planner
+Decision links: [0268](../decisions/0268-show-assumed-done-routines-in-planner.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/DayPlanPlannerStateTests.swift`
+
+Given an eligible daily routine has auto-assume done enabled
+When Planner derives automatic activity for an assumed-done day
+Then the routine appears as completed planner activity without creating a completion log
+
+Given the user hides that assumed-done planner activity
+When Planner derives automatic activity again
+Then the synthetic assumed-done activity stays hidden for that task and day
+
 ### New Routine Checklists Use Checklist Completion
 
 Area: Tasks

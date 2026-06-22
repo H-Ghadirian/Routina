@@ -582,6 +582,112 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func automaticPlannerSuggestionsIncludeAssumedDoneRoutines() throws {
+        let calendar = gregorianCalendar
+        let activityDate = try #require(date("2026-05-07T12:00:00Z"))
+        let referenceDate = try #require(date("2026-06-22T10:00:00Z"))
+        let createdAt = try #require(date("2026-05-01T08:00:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Morning reset",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 0, minute: 0)),
+            createdAt: createdAt,
+            autoAssumeDailyDone: true,
+            estimatedDurationMinutes: 30
+        )
+
+        let suggestions = DayPlanTimelineTasks.automaticSuggestionBlocks(
+            on: activityDate,
+            from: [task],
+            logs: [],
+            plannedBlocks: [],
+            calendar: calendar,
+            referenceDate: referenceDate
+        )
+        let suggestion = try #require(suggestions.first)
+
+        #expect(suggestions.count == 1)
+        #expect(suggestion.block.taskID == taskID)
+        #expect(suggestion.kind == .completed)
+        #expect(suggestion.source == .assumedDone)
+        #expect(suggestion.block.startMinute == 11 * 60 + 30)
+        #expect(suggestion.block.durationMinutes == 30)
+    }
+
+    @Test
+    func hiddenAssumedDoneActivityBlocksAreExcludedFromPlannerSuggestions() throws {
+        let calendar = gregorianCalendar
+        let activityDate = try #require(date("2026-05-07T12:00:00Z"))
+        let referenceDate = try #require(date("2026-06-22T10:00:00Z"))
+        let createdAt = try #require(date("2026-05-01T08:00:00Z"))
+        let task = RoutineTask(
+            name: "Morning reset",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 0, minute: 0)),
+            createdAt: createdAt,
+            autoAssumeDailyDone: true,
+            estimatedDurationMinutes: 30
+        )
+        let visibleBlock = try #require(
+            DayPlanTimelineTasks.automaticSuggestionBlocks(
+                on: activityDate,
+                from: [task],
+                logs: [],
+                plannedBlocks: [],
+                calendar: calendar,
+                referenceDate: referenceDate
+            )
+            .first
+        )
+        let hiddenStorage = DayPlanHiddenTimelineActivityStore.storageString(
+            afterHiding: visibleBlock,
+            in: nil
+        )
+        let hiddenIDs = DayPlanHiddenTimelineActivityStore.hiddenIDs(from: hiddenStorage)
+
+        let hiddenBlocks = DayPlanTimelineTasks.automaticSuggestionBlocks(
+            on: activityDate,
+            from: [task],
+            logs: [],
+            plannedBlocks: [],
+            calendar: calendar,
+            hiddenActivityIDs: hiddenIDs,
+            referenceDate: referenceDate
+        )
+
+        #expect(hiddenBlocks.isEmpty)
+    }
+
+    @Test
+    func automaticPlannerSuggestionsDoNotAssumeFutureRoutineDays() throws {
+        let calendar = gregorianCalendar
+        let futureDate = try #require(date("2026-06-23T12:00:00Z"))
+        let referenceDate = try #require(date("2026-06-22T10:00:00Z"))
+        let createdAt = try #require(date("2026-05-01T08:00:00Z"))
+        let task = RoutineTask(
+            name: "Morning reset",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 0, minute: 0)),
+            createdAt: createdAt,
+            autoAssumeDailyDone: true,
+            estimatedDurationMinutes: 30
+        )
+
+        let suggestions = DayPlanTimelineTasks.automaticSuggestionBlocks(
+            on: futureDate,
+            from: [task],
+            logs: [],
+            plannedBlocks: [],
+            calendar: calendar,
+            referenceDate: referenceDate
+        )
+
+        #expect(suggestions.isEmpty)
+    }
+
+    @Test
     func hiddenTimelineActivityBlocksAreExcludedFromAutomaticPlannerSuggestions() throws {
         let calendar = gregorianCalendar
         let activityDate = try #require(date("2026-05-07T12:00:00Z"))
@@ -2444,6 +2550,52 @@ struct DayPlanPlannerStateTests {
         #expect(didMove)
         #expect(log.timestamp == expectedMovedTimestamp)
         #expect(task.lastDone == latestTimestamp)
+    }
+
+    @Test
+    func movingAssumedDoneTimelineActivityDoesNotCreateCompletionLog() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let activityDate = try #require(date("2026-05-07T12:00:00Z"))
+        let targetDate = try #require(date("2026-05-08T12:00:00Z"))
+        let referenceDate = try #require(date("2026-06-22T10:00:00Z"))
+        let createdAt = try #require(date("2026-05-01T08:00:00Z"))
+        let task = RoutineTask(
+            name: "Morning reset",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 0, minute: 0)),
+            createdAt: createdAt,
+            autoAssumeDailyDone: true,
+            estimatedDurationMinutes: 30
+        )
+        context.insert(task)
+        try context.save()
+        let activity = try #require(
+            DayPlanTimelineTasks.automaticSuggestionBlocks(
+                on: activityDate,
+                from: [task],
+                logs: [],
+                plannedBlocks: [],
+                calendar: calendar,
+                referenceDate: referenceDate
+            )
+            .first
+        )
+
+        let didMove = DayPlanTimelineTasks.moveActivity(
+            activity,
+            to: targetDate,
+            startMinute: 11 * 60 + 15,
+            tasks: [task],
+            logs: [],
+            context: context,
+            calendar: calendar
+        )
+
+        let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+        #expect(!didMove)
+        #expect(persistedLogs.isEmpty)
+        #expect(task.lastDone == nil)
     }
 
     @Test

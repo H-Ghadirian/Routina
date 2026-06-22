@@ -21,11 +21,13 @@ This page summarizes active Planner, timeline activity, focus, Away, and Sleep b
 - [0244](../decisions/0244-start-mac-toolbar-focus-with-task-picker.md)
 - [0245](../decisions/0245-retire-pending-focus-assignment-ui.md)
 - [0267](../decisions/0267-support-mac-toolbar-tag-focus.md)
+- [0268](../decisions/0268-show-assumed-done-routines-in-planner.md)
 
 ## Current Contract
 
 - Timeline activity is evidence for completed, missed, canceled, sleep, place, note, emotion, event, and accepted focus activity.
-- Planner can surface timeline activity, but automatic suggestions come only from completed activity and may be hidden as presentation state.
+- Planner can surface timeline activity, but automatic suggestions come only from completed activity and eligible assumed-done routine days, and may be hidden as presentation state.
+- Assumed-done planner activity is synthetic: it can be hidden from Planner or converted into a planner block without creating completion history until the user confirms the routine day.
 - Planner supports a default week view and a focused one-day view without changing stored planner data.
 - Planner all-day lanes accept tasks, timed blocks, and completed activity drops.
 - Standalone events render as calendar-visible, read-only planner blocks.

@@ -575,7 +575,8 @@ private struct DayPlanTimelinePanelView: View {
             logs: logs,
             plannedBlocksByDayKey: plannedBlocksByDayKey,
             calendar: calendar,
-            hiddenActivityIDs: hiddenTimelineActivityIDs
+            hiddenActivityIDs: hiddenTimelineActivityIDs,
+            referenceDate: referenceDate
         )
         let linkedAwayBlocksByDayKey = DayPlanAwayBlocks.linkedBlocksByDayKey(
             awayBlocksByDayKey,
@@ -588,7 +589,8 @@ private struct DayPlanTimelinePanelView: View {
             plannedBlocksByDayKey: plannedBlocksByDayKey,
             blockedIntervalsByDayKey: blockedIntervalsByDayKey,
             calendar: calendar,
-            hiddenActivityIDs: hiddenTimelineActivityIDs
+            hiddenActivityIDs: hiddenTimelineActivityIDs,
+            referenceDate: referenceDate
         )
         let automaticSuggestionBlocksByDayKey = DayPlanTimelineTasks.automaticSuggestionBlocksByDayKey(
             on: visibleDates,
@@ -597,7 +599,8 @@ private struct DayPlanTimelinePanelView: View {
             plannedBlocksByDayKey: plannedBlocksByDayKey,
             blockedIntervalsByDayKey: blockedIntervalsByDayKey,
             calendar: calendar,
-            hiddenActivityIDs: hiddenTimelineActivityIDs
+            hiddenActivityIDs: hiddenTimelineActivityIDs,
+            referenceDate: referenceDate
         )
         let allDayBlocks = DayPlanAllDayTasks.blocks(
             on: visibleDates,
@@ -1292,6 +1295,23 @@ private struct DayPlanTimelinePanelView: View {
         to date: Date,
         startMinute: Int
     ) {
+        if activity.source.isSyntheticAssumedDone {
+            var adjustedActivity = activity
+            adjustedActivity.block = DayPlanBlock(
+                id: activity.block.id,
+                taskID: activity.block.taskID,
+                dayKey: DayPlanStorage.dayKey(for: date, calendar: calendar),
+                startMinute: startMinute,
+                durationMinutes: activity.block.durationMinutes,
+                titleSnapshot: activity.block.titleSnapshot,
+                emojiSnapshot: activity.block.emojiSnapshot,
+                createdAt: activity.block.createdAt,
+                updatedAt: activity.block.updatedAt
+            )
+            planner.confirmTimelineActivity(adjustedActivity, on: date, calendar: calendar, context: modelContext)
+            return
+        }
+
         _ = DayPlanTimelineTasks.moveActivity(
             activity,
             to: date,
