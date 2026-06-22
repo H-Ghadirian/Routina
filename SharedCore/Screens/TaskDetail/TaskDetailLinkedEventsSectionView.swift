@@ -4,6 +4,7 @@ struct TaskDetailLinkedEventsSectionView: View {
     let events: [RoutineEventLinkCandidate]
     let background: Color
     let stroke: Color
+    let onOpenEvent: (UUID) -> Void
 
     @Environment(\.calendar) private var calendar
 
@@ -32,26 +33,41 @@ struct TaskDetailLinkedEventsSectionView: View {
     }
 
     private func eventRow(_ event: RoutineEventLinkCandidate) -> some View {
-        HStack(spacing: 12) {
-            Text(event.displayEmoji)
-                .font(.title3)
-                .frame(width: 30, height: 30)
-                .routinaGlassPill(tint: .accentColor, tintOpacity: 0.13)
+        Button {
+            onOpenEvent(event.id)
+        } label: {
+            HStack(spacing: 12) {
+                Text(event.displayEmoji)
+                    .font(.title3)
+                    .frame(width: 30, height: 30)
+                    .routinaGlassPill(tint: .accentColor, tintOpacity: 0.13)
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(event.displayTitle)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(event.displayTitle)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
 
-                Text(event.dateText(calendar: calendar))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    Text(event.dateText(calendar: calendar))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
             }
-
-            Spacer(minLength: 0)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .buttonStyle(.plain)
+        .accessibilityLabel("Open \(event.displayTitle)")
     }
+}
+
+struct TaskDetailLinkedEventPresentation: Identifiable, Equatable {
+    let id: UUID
 }

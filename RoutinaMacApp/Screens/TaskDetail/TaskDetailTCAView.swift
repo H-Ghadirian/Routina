@@ -30,6 +30,7 @@ struct TaskDetailTCAView: View {
     @State var attachmentTempURL: URL?
     @State var fileToSave: AttachmentItem?
     @State private var isRelationshipGraphPresented = false
+    @State private var selectedLinkedEventPresentation: TaskDetailLinkedEventPresentation?
     @State private var isMatrixExpanded = false
     @State private var isCalendarExpanded = false
     @State private var referenceDate = Date()
@@ -109,6 +110,9 @@ detailBody
             store.send(.openLinkedTask(taskID))
         }
     )
+}
+.sheet(item: $selectedLinkedEventPresentation) { presentation in
+    linkedEventDetailSheet(eventID: presentation.id)
 }
 .sheet(item: $timeEditing.editingLog) { log in
     TaskDetailLogTimeSpentSheet(
@@ -926,7 +930,8 @@ detailBody
         TaskDetailLinkedEventsSectionView(
             events: store.taskEventCandidates,
             background: routineLogsBackground,
-            stroke: TaskDetailPlatformStyle.sectionCardStroke
+            stroke: TaskDetailPlatformStyle.sectionCardStroke,
+            onOpenEvent: { selectedLinkedEventPresentation = TaskDetailLinkedEventPresentation(id: $0) }
         )
     }
 
@@ -1110,6 +1115,20 @@ detailBody
             onOpenTask: { store.send(.openLinkedTask($0)) },
             onOpenAddLinkedTask: { store.send(.openAddLinkedTask) }
         )
+    }
+
+    @ViewBuilder
+    private func linkedEventDetailSheet(eventID: UUID) -> some View {
+        if let event = events.first(where: { $0.id == eventID }) {
+            NavigationStack {
+                RoutineEventDetailView(event: event)
+            }
+        } else {
+            Text("Event not found")
+                .font(.headline)
+                .foregroundStyle(.secondary)
+                .padding()
+        }
     }
 
     private var checklistItemsSection: some View {
