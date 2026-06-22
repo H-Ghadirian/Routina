@@ -42,6 +42,70 @@ enum DayPlanTaskSorting {
     }
 }
 
+enum DayPlanVisibleBlocks {
+    static func blocks(
+        _ blocks: [DayPlanBlock],
+        tasks: [RoutineTask],
+        logs: [RoutineLog],
+        calendar: Calendar
+    ) -> [DayPlanBlock] {
+        guard !blocks.isEmpty else { return [] }
+
+        let tasksByID = Dictionary(grouping: tasks, by: \.id).compactMapValues(\.first)
+        let logsByTaskID = Dictionary(grouping: logs, by: \.taskID)
+
+        return blocks.filter { block in
+            guard let task = tasksByID[block.taskID] else { return true }
+            return !hasHiddenOutcome(
+                for: block,
+                task: task,
+                logs: logsByTaskID[block.taskID] ?? [],
+                calendar: calendar
+            )
+        }
+    }
+
+    private static func hasHiddenOutcome(
+        for block: DayPlanBlock,
+        task: RoutineTask,
+        logs: [RoutineLog],
+        calendar: Calendar
+    ) -> Bool {
+        if task.isCanceledOneOff {
+            return true
+        }
+
+        guard let blockDate = date(fromDayKey: block.dayKey, calendar: calendar) else {
+            return false
+        }
+
+        if let canceledAt = task.canceledAt,
+           calendar.isDate(canceledAt, inSameDayAs: blockDate) {
+            return true
+        }
+
+        return logs.contains { log in
+            guard log.kind == .canceled || log.kind == .missed,
+                  let timestamp = log.timestamp else {
+                return false
+            }
+            return calendar.isDate(timestamp, inSameDayAs: blockDate)
+        }
+    }
+
+    private static func date(fromDayKey dayKey: String, calendar: Calendar) -> Date? {
+        let parts = dayKey.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return nil }
+        var components = DateComponents()
+        components.calendar = calendar
+        components.timeZone = calendar.timeZone
+        components.year = parts[0]
+        components.month = parts[1]
+        components.day = parts[2]
+        return calendar.date(from: components)
+    }
+}
+
 struct DayPlanTimedBlockColumnItem: Equatable {
     var id: String
     var startMinute: Int

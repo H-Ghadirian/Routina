@@ -185,6 +185,99 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func visiblePlannerBlocksHideCanceledAndMissedTasks() throws {
+        let calendar = gregorianCalendar
+        let blockDate = try #require(date("2026-05-07T12:00:00Z"))
+        let canceledAt = try #require(date("2026-05-07T10:00:00Z"))
+        let missedAt = try #require(date("2026-05-07T11:00:00Z"))
+        let activeTaskID = UUID()
+        let canceledTaskID = UUID()
+        let missedTaskID = UUID()
+        let activeTask = RoutineTask(
+            id: activeTaskID,
+            name: "Still planned",
+            scheduleMode: .oneOff
+        )
+        let canceledTask = RoutineTask(
+            id: canceledTaskID,
+            name: "Canceled errand",
+            scheduleMode: .oneOff,
+            canceledAt: canceledAt
+        )
+        let missedTask = RoutineTask(
+            id: missedTaskID,
+            name: "Missed call",
+            scheduleMode: .fixedInterval
+        )
+        let blocks = [
+            plannerBlock(taskID: activeTaskID, title: "Still planned", on: blockDate, calendar: calendar),
+            plannerBlock(taskID: canceledTaskID, title: "Canceled errand", on: blockDate, calendar: calendar),
+            plannerBlock(taskID: missedTaskID, title: "Missed call", on: blockDate, calendar: calendar),
+        ]
+        let logs = [
+            RoutineLog(
+                timestamp: missedAt,
+                taskID: missedTaskID,
+                kind: .missed
+            ),
+        ]
+
+        let visibleBlocks = DayPlanVisibleBlocks.blocks(
+            blocks,
+            tasks: [activeTask, canceledTask, missedTask],
+            logs: logs,
+            calendar: calendar
+        )
+
+        #expect(visibleBlocks.map(\.taskID) == [activeTaskID])
+    }
+
+    @Test
+    func visiblePlannerBlocksKeepCompletedAndDifferentDayOutcomes() throws {
+        let calendar = gregorianCalendar
+        let blockDate = try #require(date("2026-05-07T12:00:00Z"))
+        let completedAt = try #require(date("2026-05-07T10:00:00Z"))
+        let missedOnDifferentDay = try #require(date("2026-05-08T11:00:00Z"))
+        let completedTaskID = UUID()
+        let missedTomorrowTaskID = UUID()
+        let completedTask = RoutineTask(
+            id: completedTaskID,
+            name: "Done later",
+            scheduleMode: .fixedInterval
+        )
+        let missedTomorrowTask = RoutineTask(
+            id: missedTomorrowTaskID,
+            name: "Missed tomorrow",
+            scheduleMode: .fixedInterval
+        )
+        let blocks = [
+            plannerBlock(taskID: completedTaskID, title: "Done later", on: blockDate, calendar: calendar),
+            plannerBlock(taskID: missedTomorrowTaskID, title: "Missed tomorrow", on: blockDate, calendar: calendar),
+        ]
+        let logs = [
+            RoutineLog(
+                timestamp: completedAt,
+                taskID: completedTaskID,
+                kind: .completed
+            ),
+            RoutineLog(
+                timestamp: missedOnDifferentDay,
+                taskID: missedTomorrowTaskID,
+                kind: .missed
+            ),
+        ]
+
+        let visibleBlocks = DayPlanVisibleBlocks.blocks(
+            blocks,
+            tasks: [completedTask, missedTomorrowTask],
+            logs: logs,
+            calendar: calendar
+        )
+
+        #expect(visibleBlocks.map(\.taskID) == [completedTaskID, missedTomorrowTaskID])
+    }
+
+    @Test
     func timelineTasksIncludeMissedAndCanceledActivityNotAlreadyPlanned() throws {
         let calendar = gregorianCalendar
         let activityDate = try #require(date("2026-05-07T12:00:00Z"))
@@ -2775,6 +2868,23 @@ private func dayPlanBlock(on date: Date, calendar: Calendar) -> DayPlanBlock {
         durationMinutes: 90,
         titleSnapshot: "Group session",
         emojiSnapshot: "✨",
+        createdAt: date,
+        updatedAt: date
+    )
+}
+
+private func plannerBlock(
+    taskID: UUID,
+    title: String,
+    on date: Date,
+    calendar: Calendar
+) -> DayPlanBlock {
+    DayPlanBlock(
+        taskID: taskID,
+        dayKey: DayPlanStorage.dayKey(for: date, calendar: calendar),
+        startMinute: 9 * 60,
+        durationMinutes: 60,
+        titleSnapshot: title,
         createdAt: date,
         updatedAt: date
     )

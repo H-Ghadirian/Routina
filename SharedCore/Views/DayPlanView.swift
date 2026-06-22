@@ -237,7 +237,7 @@ struct DayPlanSidebarView: View {
                 on: focusedDate,
                 from: tasks,
                 logs: logs,
-                plannedBlocks: planner.blocks(on: focusedDate, calendar: calendar, context: modelContext),
+                plannedBlocks: visiblePlannedBlocks(on: focusedDate),
                 calendar: calendar,
                 hiddenActivityIDs: hiddenTimelineActivityIDs
             )
@@ -256,6 +256,15 @@ struct DayPlanSidebarView: View {
 
     private var hiddenTimelineActivityIDs: Set<String> {
         DayPlanHiddenTimelineActivityStore.hiddenIDs(from: hiddenTimelineActivityStorage)
+    }
+
+    private func visiblePlannedBlocks(on date: Date) -> [DayPlanBlock] {
+        DayPlanVisibleBlocks.blocks(
+            planner.blocks(on: date, calendar: calendar, context: modelContext),
+            tasks: tasks,
+            logs: logs,
+            calendar: calendar
+        )
     }
 
     private var selectedTask: RoutineTask? {
@@ -1232,7 +1241,12 @@ private struct DayPlanTimelinePanelView: View {
                 let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
                 return (
                     dayKey,
-                    planner.blocks(on: date, calendar: calendar, context: modelContext)
+                    DayPlanVisibleBlocks.blocks(
+                        planner.blocks(on: date, calendar: calendar, context: modelContext),
+                        tasks: tasks,
+                        logs: logs,
+                        calendar: calendar
+                    )
                 )
             }
         )
