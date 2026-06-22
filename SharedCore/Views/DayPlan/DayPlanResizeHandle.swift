@@ -12,6 +12,8 @@ enum DayPlanResizeEdge {
 struct DayPlanResizeHandle: View {
     var edge: DayPlanResizeEdge
     var isSelected: Bool
+    var hitHeight: CGFloat = 16
+    var outwardOverlap: CGFloat = 6
     var onResizeStarted: () -> Void
     var onResizeChanged: (DayPlanResizeEdge, CGFloat) -> Void
     var onResizeEnded: () -> Void
@@ -22,7 +24,7 @@ struct DayPlanResizeHandle: View {
     var body: some View {
         Rectangle()
             .fill(Color.clear)
-            .frame(height: 16)
+            .frame(height: hitHeight)
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
             .overlay(alignment: .center) {
@@ -45,8 +47,8 @@ struct DayPlanResizeHandle: View {
                         onResizeEnded()
                     }
             )
-            .padding(.top, edge == .top ? -6 : 0)
-            .padding(.bottom, edge == .bottom ? -6 : 0)
+            .padding(.top, edge == .top ? -outwardOverlap : 0)
+            .padding(.bottom, edge == .bottom ? -outwardOverlap : 0)
     }
 
     private var marker: some View {

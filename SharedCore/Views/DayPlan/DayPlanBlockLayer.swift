@@ -5,6 +5,7 @@ struct DayPlanBlockLayer: View {
     var selectedBlockID: DayPlanBlock.ID?
     var resizingBlockID: DayPlanBlock.ID?
     var resizingContentLayoutHeight: CGFloat?
+    var highlightedBlockID: DayPlanBlock.ID?
     var focusedSleepSessionID: UUID?
     var calendar: Calendar
     var dayWidth: CGFloat
@@ -241,6 +242,7 @@ struct DayPlanBlockLayer: View {
                         block: block,
                         tint: taskTint(block),
                         isSelected: block.id == selectedBlockID,
+                        isHighlighted: block.id == highlightedBlockID,
                         renderedHeight: blockHeight,
                         contentLayoutHeight: contentLayoutHeight(for: block),
                         showsResizeHandles: false,
@@ -272,10 +274,10 @@ struct DayPlanBlockLayer: View {
                     )
                     .clipped(antialiased: true)
                     .overlay(alignment: .top) {
-                        resizeHandle(for: block, date: date, edge: .top)
+                        resizeHandle(for: block, date: date, edge: .top, blockHeight: blockHeight)
                     }
                     .overlay(alignment: .bottom) {
-                        resizeHandle(for: block, date: date, edge: .bottom)
+                        resizeHandle(for: block, date: date, edge: .bottom, blockHeight: blockHeight)
                     }
                     .offset(
                         x: timeColumnWidth
@@ -312,10 +314,19 @@ struct DayPlanBlockLayer: View {
         return resizingContentLayoutHeight
     }
 
-    private func resizeHandle(for block: DayPlanBlock, date: Date, edge: DayPlanResizeEdge) -> some View {
-        DayPlanResizeHandle(
+    private func resizeHandle(
+        for block: DayPlanBlock,
+        date: Date,
+        edge: DayPlanResizeEdge,
+        blockHeight: CGFloat
+    ) -> some View {
+        let hitHeight = resizeHandleHitHeight(for: blockHeight)
+
+        return DayPlanResizeHandle(
             edge: edge,
             isSelected: block.id == selectedBlockID,
+            hitHeight: hitHeight,
+            outwardOverlap: resizeHandleOutwardOverlap(forHitHeight: hitHeight),
             onResizeStarted: {
                 onResizeStarted(block, date)
             },
@@ -324,6 +335,20 @@ struct DayPlanBlockLayer: View {
             },
             onResizeEnded: onResizeEnded
         )
+    }
+
+    private func resizeHandleHitHeight(for blockHeight: CGFloat) -> CGFloat {
+        let preferredHitHeight: CGFloat = 16
+        let minimumMoveDragArea: CGFloat = 8
+        guard blockHeight < preferredHitHeight * 2 + minimumMoveDragArea else {
+            return preferredHitHeight
+        }
+
+        return max(5, (blockHeight - minimumMoveDragArea) / 2)
+    }
+
+    private func resizeHandleOutwardOverlap(forHitHeight hitHeight: CGFloat) -> CGFloat {
+        hitHeight >= 16 ? 6 : 0
     }
 
     private func sprintFocusBlockHeight(for sprintFocusBlock: DayPlanSprintFocusBlock) -> CGFloat {

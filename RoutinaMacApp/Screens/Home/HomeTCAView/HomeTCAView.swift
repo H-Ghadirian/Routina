@@ -275,6 +275,16 @@ homeContent
                 .onChange(of: store.pendingSleepPlannerSessionID) { _, sleepID in
                     handlePendingSleepPlannerDeepLink(sleepID)
                 }
+                .onChange(of: macHomeDetailMode) { _, mode in
+                    if mode.visibleSurfaceMode != .planner {
+                        dayPlanPlanner.clearPlannerUndo()
+                    }
+                }
+                .onChange(of: store.macSidebarMode) { _, mode in
+                    if mode != .routines {
+                        dayPlanPlanner.clearPlannerUndo()
+                    }
+                }
         )
         .environment(\.routinaMacOpenFocusTimerTarget, openFocusTimerTarget)
     }

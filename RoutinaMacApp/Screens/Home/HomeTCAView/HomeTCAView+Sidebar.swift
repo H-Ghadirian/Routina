@@ -230,6 +230,9 @@ extension HomeTCAView {
             set: { mode in
                 let visibleMode = mode.visibleSurfaceMode
                 macHomeDetailMode = visibleMode
+                if visibleMode != .planner {
+                    dayPlanPlanner.clearPlannerUndo()
+                }
                 if visibleMode == .places {
                     clearDayPlanUnplannedCompletedFilter()
                 }

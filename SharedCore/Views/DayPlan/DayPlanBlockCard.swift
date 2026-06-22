@@ -17,6 +17,7 @@ struct DayPlanBlockCard: View {
     var style: Style = .manual
     var displayDurationMinutes: Int? = nil
     var isSelected: Bool
+    var isHighlighted: Bool = false
     var renderedHeight: CGFloat
     var contentLayoutHeight: CGFloat? = nil
     var showsResizeHandles: Bool = true
@@ -64,6 +65,13 @@ struct DayPlanBlockCard: View {
                         tint.opacity(strokeOpacity),
                         style: StrokeStyle(lineWidth: strokeWidth, dash: strokeDash)
                     )
+            }
+            .overlay {
+                if isHighlighted {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Color.accentColor.opacity(0.95), lineWidth: 3)
+                        .shadow(color: Color.accentColor.opacity(0.45), radius: 6)
+                }
             }
             .overlay(alignment: .leading) {
                 if showsActivityStripe {

@@ -36,6 +36,18 @@ struct RoutineCommands: Commands {
     #endif
 
     var body: some Commands {
+        CommandGroup(replacing: .undoRedo) {
+            Button("Undo") {
+                performUndo()
+            }
+            .keyboardShortcut("z", modifiers: .command)
+
+            Button("Redo") {
+                performRedo()
+            }
+            .keyboardShortcut("z", modifiers: [.command, .shift])
+        }
+
         CommandGroup(before: .appSettings) {
             #if !SWIFT_PACKAGE
             Button("Going to Sleep") {
@@ -113,6 +125,36 @@ struct RoutineCommands: Commands {
             NotificationCenter.default.post(name: notificationName, object: nil)
         }
         .keyboardShortcut(shortcut.keyEquivalent, modifiers: shortcut.modifiers)
+    }
+
+    private func performUndo() {
+        if textEditingMonitor.isEditingText {
+            NSApp.sendAction(Selector(("undo:")), to: nil, from: nil)
+            return
+        }
+
+        #if SWIFT_PACKAGE
+        NSApp.sendAction(Selector(("undo:")), to: nil, from: nil)
+        #else
+        if !RoutinaUndoSupport.performUndo() {
+            NSApp.sendAction(Selector(("undo:")), to: nil, from: nil)
+        }
+        #endif
+    }
+
+    private func performRedo() {
+        if textEditingMonitor.isEditingText {
+            NSApp.sendAction(Selector(("redo:")), to: nil, from: nil)
+            return
+        }
+
+        #if SWIFT_PACKAGE
+        NSApp.sendAction(Selector(("redo:")), to: nil, from: nil)
+        #else
+        if !RoutinaUndoSupport.performRedo() {
+            NSApp.sendAction(Selector(("redo:")), to: nil, from: nil)
+        }
+        #endif
     }
 
     private var quickAddShortcut: (keyEquivalent: KeyEquivalent, modifiers: EventModifiers) {

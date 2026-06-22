@@ -37,6 +37,35 @@ enum DayPlanVisibleRangeMode: String, CaseIterable, Identifiable {
     }
 }
 
+private struct DayPlanPlannerUndoSnapshot: Equatable {
+    var dayKey: String
+    var blocks: [DayPlanBlock]
+}
+
+private struct DayPlanPlannerUndoSide: Equatable {
+    var snapshots: [DayPlanPlannerUndoSnapshot]
+    var focusedBlockID: UUID
+    var focusedDate: Date
+    var focusedStartMinute: Int
+}
+
+private struct DayPlanPlannerUndoChange: Equatable {
+    var actionName: String
+    var undoSide: DayPlanPlannerUndoSide
+    var redoSide: DayPlanPlannerUndoSide
+}
+
+private struct DayPlanPendingResizeUndo {
+    var blockID: UUID
+    var beforeSide: DayPlanPlannerUndoSide
+}
+
+@MainActor
+private final class DayPlanPlannerUndoTarget: NSObject {
+    weak var planner: DayPlanPlannerState?
+}
+
+@MainActor
 final class DayPlanPlannerState: ObservableObject {
     @Published var selectedDate: Date
     @Published var blocks: [DayPlanBlock] = []
@@ -49,8 +78,14 @@ final class DayPlanPlannerState: ObservableObject {
     @Published var focusedUnplannedCompletedDate: Date?
     @Published var focusedSleep: DayPlanFocusedSleep?
     @Published var visibleRangeMode: DayPlanVisibleRangeMode
+    @Published var highlightedBlockID: UUID?
+    @Published var highlightedBlockScrollMinute: Int?
 
     @Published private var visibleDate: Date
+    private var pendingResizeUndo: DayPlanPendingResizeUndo?
+    private var plannerUndoChange: DayPlanPlannerUndoChange?
+    private var plannerRedoChange: DayPlanPlannerUndoChange?
+    private let undoTarget = DayPlanPlannerUndoTarget()
 
     init(
         selectedDate: Date = DayPlanPlannerState.defaultSelectedDate(),
@@ -59,6 +94,7 @@ final class DayPlanPlannerState: ObservableObject {
         self.selectedDate = selectedDate
         self.visibleDate = selectedDate
         self.visibleRangeMode = visibleRangeMode
+        undoTarget.planner = self
     }
 
     var selectedBlock: DayPlanBlock? {
@@ -252,6 +288,7 @@ final class DayPlanPlannerState: ObservableObject {
 
     func selectTask(_ task: RoutineTask) {
         focusedSleep = nil
+        clearPlannerUndoHighlight()
         selectedTaskID = task.id
         if selectedBlock == nil, let estimate = task.estimatedDurationMinutes {
             durationMinutes = DayPlanBlock.clampedDuration(
@@ -290,6 +327,7 @@ final class DayPlanPlannerState: ObservableObject {
 
     func selectSlot(on date: Date, startMinute: Int, calendar: Calendar, context: ModelContext) {
         focusedSleep = nil
+        clearPlannerUndoHighlight()
         selectedDate = date
         selectedBlockID = nil
         syncSelectedDayBlocks(calendar: calendar, context: context)
@@ -299,6 +337,7 @@ final class DayPlanPlannerState: ObservableObject {
 
     func edit(_ block: DayPlanBlock, on date: Date? = nil, calendar: Calendar? = nil, context: ModelContext) {
         focusedSleep = nil
+        clearPlannerUndoHighlight()
         if let date, let calendar {
             selectedDate = date
             syncSelectedDayBlocks(calendar: calendar, context: context)
@@ -331,6 +370,8 @@ final class DayPlanPlannerState: ObservableObject {
         guard let locatedBlock = locatedBlock(id, calendar: calendar) else { return false }
 
         let targetDayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+        let affectedDayKeys = orderedUniqueDayKeys([locatedBlock.dayKey, targetDayKey])
+        let beforeSnapshots = snapshots(forDayKeys: affectedDayKeys, context: context)
         let targetMinimumDuration = minimumDurationForExistingBlock(locatedBlock.block)
         let targetStartMinute = DayPlanBlock.clampedStartMinute(
             startMinute,
@@ -389,6 +430,28 @@ final class DayPlanPlannerState: ObservableObject {
         self.startMinute = movedBlock.startMinute
         durationMinutes = movedBlock.durationMinutes
         syncSelectedDayBlocks(calendar: calendar, context: context)
+        let afterSnapshots = snapshots(forDayKeys: affectedDayKeys, context: context)
+        registerPlannerUndoIfNeeded(
+            actionName: "Move Planner Block",
+            beforeSnapshots: beforeSnapshots,
+            afterSnapshots: afterSnapshots,
+            beforeFocus: focusSide(
+                snapshots: beforeSnapshots,
+                blockID: id,
+                fallbackDate: dateForDayKey(locatedBlock.dayKey, calendar: calendar) ?? selectedDate,
+                fallbackStartMinute: locatedBlock.block.startMinute,
+                calendar: calendar
+            ),
+            afterFocus: focusSide(
+                snapshots: afterSnapshots,
+                blockID: id,
+                fallbackDate: date,
+                fallbackStartMinute: movedBlock.startMinute,
+                calendar: calendar
+            ),
+            calendar: calendar,
+            context: context
+        )
         return true
     }
 
@@ -453,6 +516,16 @@ final class DayPlanPlannerState: ObservableObject {
         guard let locatedBlock = locatedBlock(id, calendar: calendar) else { return false }
 
         let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+        if pendingResizeUndo == nil,
+           let beforeSide = focusSide(
+                snapshots: snapshots(forDayKeys: [dayKey], context: context),
+                blockID: id,
+                fallbackDate: date,
+                fallbackStartMinute: locatedBlock.block.startMinute,
+                calendar: calendar
+           ) {
+            pendingResizeUndo = DayPlanPendingResizeUndo(blockID: id, beforeSide: beforeSide)
+        }
         let targetStartMinute = DayPlanBlock.clampedStartMinute(startMinute)
         let targetDuration = DayPlanBlock.clampedDuration(
             durationMinutes,
@@ -495,9 +568,249 @@ final class DayPlanPlannerState: ObservableObject {
         return true
     }
 
+    func beginResizeBlock(
+        _ block: DayPlanBlock,
+        on date: Date,
+        calendar: Calendar,
+        context: ModelContext
+    ) {
+        clearPlannerUndoHighlight()
+        let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+        guard let beforeSide = focusSide(
+            snapshots: snapshots(forDayKeys: [dayKey], context: context),
+            blockID: block.id,
+            fallbackDate: date,
+            fallbackStartMinute: block.startMinute,
+            calendar: calendar
+        ) else { return }
+        pendingResizeUndo = DayPlanPendingResizeUndo(blockID: block.id, beforeSide: beforeSide)
+    }
+
+    func endResizeBlock(
+        _ blockID: DayPlanBlock.ID?,
+        calendar: Calendar,
+        context: ModelContext
+    ) {
+        guard let pendingResizeUndo,
+              blockID == nil || pendingResizeUndo.blockID == blockID
+        else {
+            self.pendingResizeUndo = nil
+            return
+        }
+
+        let dayKeys = pendingResizeUndo.beforeSide.snapshots.map(\.dayKey)
+        let afterSnapshots = snapshots(forDayKeys: dayKeys, context: context)
+        let afterSide = focusSide(
+            snapshots: afterSnapshots,
+            blockID: pendingResizeUndo.blockID,
+            fallbackDate: pendingResizeUndo.beforeSide.focusedDate,
+            fallbackStartMinute: pendingResizeUndo.beforeSide.focusedStartMinute,
+            calendar: calendar
+        )
+
+        self.pendingResizeUndo = nil
+
+        guard let afterSide else { return }
+        registerPlannerUndoIfNeeded(
+            actionName: "Resize Planner Block",
+            beforeSnapshots: pendingResizeUndo.beforeSide.snapshots,
+            afterSnapshots: afterSnapshots,
+            beforeFocus: pendingResizeUndo.beforeSide,
+            afterFocus: afterSide,
+            calendar: calendar,
+            context: context
+        )
+    }
+
+    func clearPlannerUndo() {
+        pendingResizeUndo = nil
+        plannerUndoChange = nil
+        plannerRedoChange = nil
+        clearPlannerUndoHighlight()
+        RoutinaUndoSupport.removeUndoActions(withTarget: undoTarget)
+        RoutinaUndoSupport.setActiveUndoManager(nil)
+        RoutinaUndoSupport.clearActiveScopedUndo()
+    }
+
+    @discardableResult
+    func performPlannerUndo(calendar: Calendar, context: ModelContext) -> Bool {
+        guard let change = plannerUndoChange else { return false }
+        restore(change.undoSide, calendar: calendar, context: context)
+        plannerUndoChange = nil
+        plannerRedoChange = DayPlanPlannerUndoChange(
+            actionName: change.actionName,
+            undoSide: change.redoSide,
+            redoSide: change.undoSide
+        )
+        return true
+    }
+
+    @discardableResult
+    func performPlannerRedo(calendar: Calendar, context: ModelContext) -> Bool {
+        guard let change = plannerRedoChange else { return false }
+        restore(change.undoSide, calendar: calendar, context: context)
+        plannerRedoChange = nil
+        plannerUndoChange = DayPlanPlannerUndoChange(
+            actionName: change.actionName,
+            undoSide: change.redoSide,
+            redoSide: change.undoSide
+        )
+        return true
+    }
+
+    private func registerPlannerUndoIfNeeded(
+        actionName: String,
+        beforeSnapshots: [DayPlanPlannerUndoSnapshot],
+        afterSnapshots: [DayPlanPlannerUndoSnapshot],
+        beforeFocus: DayPlanPlannerUndoSide?,
+        afterFocus: DayPlanPlannerUndoSide?,
+        calendar: Calendar,
+        context: ModelContext
+    ) {
+        guard beforeSnapshots != afterSnapshots,
+              let beforeFocus,
+              let afterFocus
+        else { return }
+
+        registerPlannerUndo(
+            DayPlanPlannerUndoChange(
+                actionName: actionName,
+                undoSide: beforeFocus,
+                redoSide: afterFocus
+            ),
+            calendar: calendar,
+            context: context
+        )
+    }
+
+    private func registerPlannerUndo(
+        _ change: DayPlanPlannerUndoChange,
+        calendar: Calendar,
+        context: ModelContext
+    ) {
+        plannerUndoChange = change
+        plannerRedoChange = nil
+
+        guard let undoManager = RoutinaUndoSupport.currentUndoManager,
+              undoManager.isUndoRegistrationEnabled
+        else { return }
+
+        undoManager.registerUndo(withTarget: undoTarget) { target in
+            target.planner?.applyPlannerUndo(change, calendar: calendar, context: context)
+        }
+        undoManager.setActionName(change.actionName)
+    }
+
+    private func applyPlannerUndo(
+        _ change: DayPlanPlannerUndoChange,
+        calendar: Calendar,
+        context: ModelContext
+    ) {
+        restore(change.undoSide, calendar: calendar, context: context)
+
+        registerPlannerUndo(
+            DayPlanPlannerUndoChange(
+                actionName: change.actionName,
+                undoSide: change.redoSide,
+                redoSide: change.undoSide
+            ),
+            calendar: calendar,
+            context: context
+        )
+    }
+
+    private func restore(
+        _ side: DayPlanPlannerUndoSide,
+        calendar: Calendar,
+        context: ModelContext
+    ) {
+        for snapshot in side.snapshots {
+            DayPlanStorage.saveBlocks(snapshot.blocks, forDayKey: snapshot.dayKey, context: context)
+            weekBlocksByDayKey[snapshot.dayKey] = snapshot.blocks
+        }
+
+        showDate(side.focusedDate, calendar: calendar, context: context)
+
+        if let focusedBlock = block(withID: side.focusedBlockID) {
+            selectedBlockID = focusedBlock.id
+            selectedTaskID = focusedBlock.taskID
+            startMinute = focusedBlock.startMinute
+            durationMinutes = focusedBlock.durationMinutes
+            highlightedBlockID = focusedBlock.id
+            highlightedBlockScrollMinute = focusedBlock.startMinute
+        } else {
+            highlightedBlockID = side.focusedBlockID
+            highlightedBlockScrollMinute = side.focusedStartMinute
+        }
+
+        NotificationCenter.default.postRoutineDidUpdate()
+    }
+
+    private func block(withID blockID: UUID) -> DayPlanBlock? {
+        blocks.first { $0.id == blockID }
+            ?? weekBlocksByDayKey.values.lazy.compactMap { dayBlocks in
+                dayBlocks.first { $0.id == blockID }
+            }
+            .first
+    }
+
+    private func snapshots(
+        forDayKeys dayKeys: [String],
+        context: ModelContext
+    ) -> [DayPlanPlannerUndoSnapshot] {
+        orderedUniqueDayKeys(dayKeys).map { dayKey in
+            DayPlanPlannerUndoSnapshot(
+                dayKey: dayKey,
+                blocks: weekBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
+            )
+        }
+    }
+
+    private func focusSide(
+        snapshots: [DayPlanPlannerUndoSnapshot],
+        blockID: UUID,
+        fallbackDate: Date,
+        fallbackStartMinute: Int,
+        calendar: Calendar
+    ) -> DayPlanPlannerUndoSide? {
+        let focusedSnapshot = snapshots.first { snapshot in
+            snapshot.blocks.contains { $0.id == blockID }
+        }
+        let focusedBlock = focusedSnapshot?.blocks.first { $0.id == blockID }
+        let focusedDate = focusedSnapshot
+            .flatMap { dateForDayKey($0.dayKey, calendar: calendar) }
+            ?? calendar.startOfDay(for: fallbackDate)
+
+        return DayPlanPlannerUndoSide(
+            snapshots: snapshots,
+            focusedBlockID: blockID,
+            focusedDate: focusedDate,
+            focusedStartMinute: focusedBlock?.startMinute ?? fallbackStartMinute
+        )
+    }
+
+    private func orderedUniqueDayKeys(_ dayKeys: [String]) -> [String] {
+        var seen: Set<String> = []
+        return dayKeys.filter { dayKey in
+            seen.insert(dayKey).inserted
+        }
+    }
+
+    private func dateForDayKey(_ dayKey: String, calendar: Calendar) -> Date? {
+        let parts = dayKey.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return nil }
+        return calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2]))
+    }
+
+    private func clearPlannerUndoHighlight() {
+        highlightedBlockID = nil
+        highlightedBlockScrollMinute = nil
+    }
+
     func commitBlock(task: RoutineTask, calendar: Calendar, context: ModelContext) {
         guard conflictingBlock == nil else { return }
         focusedSleep = nil
+        clearPlannerUndoHighlight()
 
         let dayKey = DayPlanStorage.dayKey(for: selectedDate, calendar: calendar)
         let now = Date()

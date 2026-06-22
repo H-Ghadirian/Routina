@@ -212,31 +212,49 @@ enum DayPlanStorage {
     ) {
         let blocks = sanitized(blocks, dayKey: dayKey)
 
+        let undoManager = MainActor.assumeIsolated {
+            RoutinaUndoSupport.currentUndoManager
+        }
+        let didDisableUndo = MainActor.assumeIsolated {
+            guard let undoManager,
+                  undoManager.isUndoRegistrationEnabled
+            else { return false }
+            undoManager.disableUndoRegistration()
+            return true
+        }
+        defer {
+            if didDisableUndo {
+                MainActor.assumeIsolated {
+                    undoManager?.enableUndoRegistration()
+                }
+            }
+        }
+
         do {
-            let records = try context.fetch(recordsDescriptor(forDayKey: dayKey))
-            var recordsByID: [UUID: DayPlanBlockRecord] = [:]
-            for record in records {
-                if recordsByID[record.id] == nil {
-                    recordsByID[record.id] = record
-                } else {
+                let records = try context.fetch(recordsDescriptor(forDayKey: dayKey))
+                var recordsByID: [UUID: DayPlanBlockRecord] = [:]
+                for record in records {
+                    if recordsByID[record.id] == nil {
+                        recordsByID[record.id] = record
+                    } else {
+                        context.delete(record)
+                    }
+                }
+                let blockIDs = Set(blocks.map(\.id))
+
+                for record in recordsByID.values where !blockIDs.contains(record.id) {
                     context.delete(record)
                 }
-            }
-            let blockIDs = Set(blocks.map(\.id))
 
-            for record in recordsByID.values where !blockIDs.contains(record.id) {
-                context.delete(record)
-            }
-
-            for block in blocks {
-                if let record = recordsByID.removeValue(forKey: block.id) {
-                    record.apply(block)
-                } else {
-                    context.insert(DayPlanBlockRecord(block: block))
+                for block in blocks {
+                    if let record = recordsByID.removeValue(forKey: block.id) {
+                        record.apply(block)
+                    } else {
+                        context.insert(DayPlanBlockRecord(block: block))
+                    }
                 }
-            }
 
-            try context.save()
+                try context.save()
         } catch {
             NSLog("Failed to save day plan blocks for \(dayKey): \(error.localizedDescription)")
         }

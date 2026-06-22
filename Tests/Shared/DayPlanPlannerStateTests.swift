@@ -109,8 +109,30 @@ struct DayPlanPlannerStateTests {
         #expect(blockLayerSource.contains("contentLayoutHeight: contentLayoutHeight(for: block)"))
         #expect(blockLayerSource.contains("showsResizeHandles: false"))
         #expect(blockLayerSource.contains(".clipped(antialiased: true)"))
-        #expect(blockLayerSource.contains("resizeHandle(for: block, date: date, edge: .top)"))
-        #expect(blockLayerSource.contains("resizeHandle(for: block, date: date, edge: .bottom)"))
+        #expect(blockLayerSource.contains("resizeHandle(for: block, date: date, edge: .top, blockHeight: blockHeight)"))
+        #expect(blockLayerSource.contains("resizeHandle(for: block, date: date, edge: .bottom, blockHeight: blockHeight)"))
+    }
+
+    @Test
+    func smallPlannerBlocksKeepMoveDragAreaBetweenResizeHandles() throws {
+        let projectRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let resizeHandleSource = try String(
+            contentsOf: projectRoot.appendingPathComponent("SharedCore/Views/DayPlan/DayPlanResizeHandle.swift"),
+            encoding: .utf8
+        )
+        let blockLayerSource = try String(
+            contentsOf: projectRoot.appendingPathComponent("SharedCore/Views/DayPlan/DayPlanBlockLayer.swift"),
+            encoding: .utf8
+        )
+
+        #expect(resizeHandleSource.contains("var hitHeight: CGFloat = 16"))
+        #expect(resizeHandleSource.contains(".frame(height: hitHeight)"))
+        #expect(blockLayerSource.contains("let minimumMoveDragArea: CGFloat = 8"))
+        #expect(blockLayerSource.contains("return max(5, (blockHeight - minimumMoveDragArea) / 2)"))
+        #expect(blockLayerSource.contains("outwardOverlap: resizeHandleOutwardOverlap(forHitHeight: hitHeight)"))
     }
 
     @Test
@@ -2413,6 +2435,245 @@ struct DayPlanPlannerStateTests {
                 DayPlanTimedBlockColumnPlacement(id: "d", columnIndex: 0, columnCount: 1),
             ]
         )
+    }
+
+    @Test
+    func plannerMoveUndoRestoresBlockAndFocusesOriginalDate() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let undoManager = UndoManager()
+        RoutinaUndoSupport.setActiveUndoManager(undoManager)
+        RoutinaUndoSupport.configure(
+            undoManagerProvider: { undoManager },
+            contextPreparer: { $0.undoManager = undoManager }
+        )
+        defer {
+            RoutinaUndoSupport.setActiveUndoManager(nil)
+            RoutinaUndoSupport.configure(
+                undoManagerProvider: { nil },
+                contextPreparer: { _ in }
+            )
+        }
+
+        let sourceDate = try #require(date("2026-05-02T12:00:00Z"))
+        let targetDate = try #require(date("2026-06-25T12:00:00Z"))
+        let block = dayPlanBlock(on: sourceDate, calendar: calendar)
+        let sourceDayKey = DayPlanStorage.dayKey(for: sourceDate, calendar: calendar)
+        let targetDayKey = DayPlanStorage.dayKey(for: targetDate, calendar: calendar)
+        DayPlanStorage.saveBlocks([block], forDayKey: sourceDayKey, context: context)
+        let planner = DayPlanPlannerState(selectedDate: targetDate)
+        planner.weekBlocksByDayKey = [sourceDayKey: [block]]
+
+        let didMove = planner.moveBlock(
+            block.id,
+            to: targetDate,
+            startMinute: 9 * 60,
+            calendar: calendar,
+            context: context
+        )
+        undoManager.undo()
+
+        let restoredSourceBlocks = DayPlanStorage.loadBlocks(forDayKey: sourceDayKey, context: context)
+        let restoredTargetBlocks = DayPlanStorage.loadBlocks(forDayKey: targetDayKey, context: context)
+        let restoredBlock = try #require(restoredSourceBlocks.first)
+        #expect(didMove)
+        #expect(restoredSourceBlocks.map(\.id) == [block.id])
+        #expect(restoredTargetBlocks.isEmpty)
+        #expect(restoredBlock.startMinute == block.startMinute)
+        #expect(planner.selectedDate == calendar.startOfDay(for: sourceDate))
+        #expect(planner.selectedBlockID == block.id)
+        #expect(planner.highlightedBlockID == block.id)
+        #expect(planner.highlightedBlockScrollMinute == block.startMinute)
+    }
+
+    @Test
+    func plannerResizeUndoRestoresInitialResizeStateAsSingleUndo() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let undoManager = UndoManager()
+        RoutinaUndoSupport.setActiveUndoManager(undoManager)
+        RoutinaUndoSupport.configure(
+            undoManagerProvider: { undoManager },
+            contextPreparer: { $0.undoManager = undoManager }
+        )
+        defer {
+            RoutinaUndoSupport.setActiveUndoManager(nil)
+            RoutinaUndoSupport.configure(
+                undoManagerProvider: { nil },
+                contextPreparer: { _ in }
+            )
+        }
+
+        let blockDate = try #require(date("2026-05-02T12:00:00Z"))
+        let block = dayPlanBlock(on: blockDate, calendar: calendar)
+        let dayKey = DayPlanStorage.dayKey(for: blockDate, calendar: calendar)
+        DayPlanStorage.saveBlocks([block], forDayKey: dayKey, context: context)
+        let planner = DayPlanPlannerState(selectedDate: blockDate)
+        planner.weekBlocksByDayKey = [dayKey: [block]]
+
+        planner.beginResizeBlock(block, on: blockDate, calendar: calendar, context: context)
+        let didResizeFirst = planner.resizeBlock(
+            block.id,
+            on: blockDate,
+            startMinute: block.startMinute - 30,
+            durationMinutes: block.durationMinutes + 30,
+            calendar: calendar,
+            context: context
+        )
+        let didResizeSecond = planner.resizeBlock(
+            block.id,
+            on: blockDate,
+            startMinute: block.startMinute - 45,
+            durationMinutes: block.durationMinutes + 60,
+            calendar: calendar,
+            context: context
+        )
+        planner.endResizeBlock(block.id, calendar: calendar, context: context)
+
+        undoManager.undo()
+
+        let restoredBlock = try #require(DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context).first)
+        #expect(didResizeFirst)
+        #expect(didResizeSecond)
+        #expect(!undoManager.canUndo)
+        #expect(undoManager.canRedo)
+        #expect(restoredBlock.startMinute == block.startMinute)
+        #expect(restoredBlock.durationMinutes == block.durationMinutes)
+        #expect(planner.selectedDate == calendar.startOfDay(for: blockDate))
+        #expect(planner.highlightedBlockID == block.id)
+        #expect(planner.highlightedBlockScrollMinute == block.startMinute)
+    }
+
+    @Test
+    func commandLayerPlannerUndoRestoresResizeWithoutNativeUndoManager() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        RoutinaUndoSupport.configure(
+            undoManagerProvider: { nil },
+            contextPreparer: { _ in }
+        )
+        defer {
+            RoutinaUndoSupport.clearActiveScopedUndo()
+            RoutinaUndoSupport.configure(
+                undoManagerProvider: { nil },
+                contextPreparer: { _ in }
+            )
+        }
+
+        let blockDate = try #require(date("2026-05-02T12:00:00Z"))
+        let block = dayPlanBlock(on: blockDate, calendar: calendar)
+        let dayKey = DayPlanStorage.dayKey(for: blockDate, calendar: calendar)
+        DayPlanStorage.saveBlocks([block], forDayKey: dayKey, context: context)
+        let planner = DayPlanPlannerState(selectedDate: blockDate)
+        planner.weekBlocksByDayKey = [dayKey: [block]]
+        RoutinaUndoSupport.setActiveScopedUndo(
+            undo: { planner.performPlannerUndo(calendar: calendar, context: context) },
+            redo: { planner.performPlannerRedo(calendar: calendar, context: context) }
+        )
+
+        planner.beginResizeBlock(block, on: blockDate, calendar: calendar, context: context)
+        let didResize = planner.resizeBlock(
+            block.id,
+            on: blockDate,
+            startMinute: block.startMinute,
+            durationMinutes: block.durationMinutes + 45,
+            calendar: calendar,
+            context: context
+        )
+        planner.endResizeBlock(block.id, calendar: calendar, context: context)
+
+        #expect(didResize)
+        #expect(RoutinaUndoSupport.performUndo())
+        let restoredBlock = try #require(DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context).first)
+        #expect(restoredBlock.durationMinutes == block.durationMinutes)
+        #expect(planner.highlightedBlockID == block.id)
+        #expect(planner.highlightedBlockScrollMinute == block.startMinute)
+    }
+
+    @Test
+    func clearingPlannerUndoRemovesPendingPlannerUndoAction() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let undoManager = UndoManager()
+        RoutinaUndoSupport.setActiveUndoManager(undoManager)
+        RoutinaUndoSupport.configure(
+            undoManagerProvider: { undoManager },
+            contextPreparer: { $0.undoManager = undoManager }
+        )
+        defer {
+            RoutinaUndoSupport.setActiveUndoManager(nil)
+            RoutinaUndoSupport.configure(
+                undoManagerProvider: { nil },
+                contextPreparer: { _ in }
+            )
+        }
+
+        let sourceDate = try #require(date("2026-05-02T12:00:00Z"))
+        let targetDate = try #require(date("2026-06-25T12:00:00Z"))
+        let block = dayPlanBlock(on: sourceDate, calendar: calendar)
+        let sourceDayKey = DayPlanStorage.dayKey(for: sourceDate, calendar: calendar)
+        DayPlanStorage.saveBlocks([block], forDayKey: sourceDayKey, context: context)
+        let planner = DayPlanPlannerState(selectedDate: targetDate)
+        planner.weekBlocksByDayKey = [sourceDayKey: [block]]
+
+        let didMove = planner.moveBlock(
+            block.id,
+            to: targetDate,
+            startMinute: 9 * 60,
+            calendar: calendar,
+            context: context
+        )
+
+        #expect(didMove)
+        #expect(undoManager.canUndo)
+        planner.clearPlannerUndo()
+        undoManager.undo()
+        let targetDayKey = DayPlanStorage.dayKey(for: targetDate, calendar: calendar)
+        #expect(DayPlanStorage.loadBlocks(forDayKey: sourceDayKey, context: context).isEmpty)
+        #expect(DayPlanStorage.loadBlocks(forDayKey: targetDayKey, context: context).map(\.id) == [block.id])
+    }
+
+    @Test
+    func plannerUndoRegistersWithActiveUndoManager() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let bridgeUndoManager = UndoManager()
+        let activeUndoManager = UndoManager()
+        RoutinaUndoSupport.configure(
+            undoManagerProvider: { bridgeUndoManager },
+            contextPreparer: { $0.undoManager = activeUndoManager }
+        )
+        RoutinaUndoSupport.setActiveUndoManager(activeUndoManager)
+        defer {
+            RoutinaUndoSupport.setActiveUndoManager(nil)
+            RoutinaUndoSupport.configure(
+                undoManagerProvider: { nil },
+                contextPreparer: { _ in }
+            )
+        }
+
+        let sourceDate = try #require(date("2026-05-02T12:00:00Z"))
+        let targetDate = try #require(date("2026-06-25T12:00:00Z"))
+        let block = dayPlanBlock(on: sourceDate, calendar: calendar)
+        let sourceDayKey = DayPlanStorage.dayKey(for: sourceDate, calendar: calendar)
+        DayPlanStorage.saveBlocks([block], forDayKey: sourceDayKey, context: context)
+        let planner = DayPlanPlannerState(selectedDate: targetDate)
+        planner.weekBlocksByDayKey = [sourceDayKey: [block]]
+
+        let didMove = planner.moveBlock(
+            block.id,
+            to: targetDate,
+            startMinute: 9 * 60,
+            calendar: calendar,
+            context: context
+        )
+
+        #expect(didMove)
+        #expect(!bridgeUndoManager.canUndo)
+        #expect(activeUndoManager.canUndo)
+
+        activeUndoManager.undo()
+        #expect(DayPlanStorage.loadBlocks(forDayKey: sourceDayKey, context: context).map(\.id) == [block.id])
     }
 }
 

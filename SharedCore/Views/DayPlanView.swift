@@ -480,6 +480,7 @@ private struct DayPlanHeaderView: View {
 private struct DayPlanTimelinePanelView: View {
     @Environment(\.calendar) private var calendar
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.undoManager) private var undoManager
     @ObservedObject var planner: DayPlanPlannerState
     var onSelectUnplannedCompletedDate: ((Date) -> Void)? = nil
     var onOpenTaskDetails: ((UUID) -> Void)? = nil
@@ -612,6 +613,8 @@ private struct DayPlanTimelinePanelView: View {
             DayPlanWeekCalendarView(
                 dates: visibleDates,
                 selectedBlockID: planner.selectedBlockID,
+                highlightedBlockID: planner.highlightedBlockID,
+                highlightedBlockScrollMinute: planner.highlightedBlockScrollMinute,
                 selectedDate: planner.selectedDate,
                 focusedUnplannedCompletedDate: activeFocusedUnplannedCompletedDate,
                 focusedSleep: planner.focusedSleep,
@@ -752,6 +755,7 @@ private struct DayPlanTimelinePanelView: View {
                     hideTimelineActivity(activity)
                 },
                 onMoveBlock: { blockID, date, minute in
+                    activatePlannerUndoManager()
                     let durationMinutes = plannedBlock(with: blockID)?.durationMinutes ?? planner.durationMinutes
                     guard !hasSleepConflict(
                         on: date,
@@ -780,7 +784,12 @@ private struct DayPlanTimelinePanelView: View {
                 onMoveTimelineActivityToAllDay: { activity, date in
                     moveTimelineActivityToAllDay(activity, on: date)
                 },
+                onBeginResizeBlock: { block, date in
+                    activatePlannerUndoManager()
+                    planner.beginResizeBlock(block, on: date, calendar: calendar, context: modelContext)
+                },
                 onResizeBlock: { blockID, date, startMinute, durationMinutes in
+                    activatePlannerUndoManager()
                     guard !hasSleepConflict(
                         on: date,
                         startMinute: startMinute,
@@ -798,6 +807,10 @@ private struct DayPlanTimelinePanelView: View {
                         context: modelContext
                     )
                 },
+                onEndResizeBlock: { blockID in
+                    activatePlannerUndoManager()
+                    planner.endResizeBlock(blockID, calendar: calendar, context: modelContext)
+                },
                 onDropTask: { taskID, date, minute in
                     dropTask(
                         taskID,
@@ -812,6 +825,9 @@ private struct DayPlanTimelinePanelView: View {
             )
         }
         .dayPlanLifecycle(planner: planner, tasks: tasks, sleepSessions: sleepSessions, awaySessions: awaySessions, calendar: calendar)
+        .onAppear {
+            activatePlannerUndoManager()
+        }
         .onChange(of: showsTimelineTasksInDayPlanner) { _, isEnabled in
             if isEnabled {
                 planner.clearFocusedUnplannedCompletedTasks()
@@ -825,6 +841,18 @@ private struct DayPlanTimelinePanelView: View {
         .sheet(item: $allocatingPlanFocusSession) { presentation in
             planFocusAllocationSheet(for: presentation.sessionID)
         }
+    }
+
+    private func activatePlannerUndoManager() {
+        RoutinaUndoSupport.setActiveUndoManager(undoManager)
+        RoutinaUndoSupport.setActiveScopedUndo(
+            undo: { [weak planner] in
+                planner?.performPlannerUndo(calendar: calendar, context: modelContext) == true
+            },
+            redo: { [weak planner] in
+                planner?.performPlannerRedo(calendar: calendar, context: modelContext) == true
+            }
+        )
     }
 
     @ViewBuilder

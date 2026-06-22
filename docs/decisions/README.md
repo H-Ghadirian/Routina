@@ -31,6 +31,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0265](0265-scope-planner-block-undo-to-planner.md) refines [0091](0091-use-native-macos-undo-redo.md) for Planner block edits:** Planner block resize and reposition actions register native undo only while Planner is active, clear that undo when leaving Planner, and navigate/highlight the restored block when undo is applied.
 - **[0264](0264-match-button-hit-areas-to-visual-surfaces.md) refines [0024](0024-adopt-liquid-glass-ui-surfaces.md), [0089](0089-prefer-native-apple-platform-patterns.md), and [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md) for app-wide button interaction:** Every visible button target must make its full visual surface interactive; custom/plain buttons define a matching `contentShape`, and shared glass surfaces provide their rounded hit shape by default.
 - **[0263](0263-promote-new-routine-checklists-to-checklist-completion.md) refines [0175](0175-use-routine-finish-mode-for-checklist-creation.md) and [0259](0259-allow-daily-checklist-auto-assumed-completion.md) for Task Detail checklist editing:** New routine checklist items promote Standard completion to Checklist completion when no sequential steps would be discarded, while existing Standard-plus-checklist data remains editable for compatibility.
 - **[0262](0262-use-positive-assumed-done-filter-copy.md) refines [0260](0260-hide-assumed-done-tasks-by-default.md) and [0261](0261-scope-done-today-filter-to-routines.md) for assumed-done filter presentation:** Home filter surfaces use `Show assumed done`, defaulting off, and hide that routine-only control when task type is `Todos`.
@@ -178,6 +179,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0265](0265-scope-planner-block-undo-to-planner.md) | Scope Planner Block Undo to Planner | Accepted | 2026-06-21 |
 | [0264](0264-match-button-hit-areas-to-visual-surfaces.md) | Match Button Hit Areas to Visual Surfaces | Accepted | 2026-06-21 |
 | [0263](0263-promote-new-routine-checklists-to-checklist-completion.md) | Promote New Routine Checklists to Checklist Completion | Accepted | 2026-06-21 |
 | [0262](0262-use-positive-assumed-done-filter-copy.md) | Use Positive Assumed-Done Filter Copy | Accepted | 2026-06-21 |

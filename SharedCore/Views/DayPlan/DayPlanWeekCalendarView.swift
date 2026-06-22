@@ -8,6 +8,8 @@ import AppKit
 struct DayPlanWeekCalendarView: View {
     var dates: [Date]
     var selectedBlockID: DayPlanBlock.ID?
+    var highlightedBlockID: DayPlanBlock.ID?
+    var highlightedBlockScrollMinute: Int?
     var selectedDate: Date
     var focusedUnplannedCompletedDate: Date?
     var focusedSleep: DayPlanFocusedSleep?
@@ -42,7 +44,9 @@ struct DayPlanWeekCalendarView: View {
     var onMoveTimelineActivity: (DayPlanTimelineActivityBlock, Date, Int) -> Void = { _, _, _ in }
     var onMoveBlockToAllDay: (DayPlanBlock.ID, Date) -> Void = { _, _ in }
     var onMoveTimelineActivityToAllDay: (DayPlanTimelineActivityBlock, Date) -> Void = { _, _ in }
+    var onBeginResizeBlock: (DayPlanBlock, Date) -> Void = { _, _ in }
     var onResizeBlock: (DayPlanBlock.ID, Date, Int, Int) -> Void
+    var onEndResizeBlock: (DayPlanBlock.ID?) -> Void = { _ in }
     var onDropTask: (UUID, Date, Int) -> Void
     var onDropTaskToAllDay: (UUID, Date) -> Void = { _, _ in }
 
@@ -115,6 +119,7 @@ struct DayPlanWeekCalendarView: View {
                                 selectedBlockID: selectedBlockID,
                                 resizingBlockID: resizeSession?.blockID,
                                 resizingContentLayoutHeight: resizeSession?.contentLayoutHeight,
+                                highlightedBlockID: highlightedBlockID,
                                 focusedSleepSessionID: focusedSleep?.sessionID,
                                 calendar: calendar,
                                 dayWidth: dayWidth,
@@ -169,6 +174,14 @@ struct DayPlanWeekCalendarView: View {
                                 DayPlanMinuteScrollAnchor(
                                     target: .focusedSleep(focusedSleep.scrollTargetID),
                                     minute: focusedSleep.startMinute,
+                                    hourHeight: hourHeight,
+                                    timeColumnWidth: timeColumnWidth
+                                )
+                            }
+                            if let highlightedBlockID, let highlightedBlockScrollMinute {
+                                DayPlanMinuteScrollAnchor(
+                                    target: .plannerBlock(highlightedBlockID),
+                                    minute: highlightedBlockScrollMinute,
                                     hourHeight: hourHeight,
                                     timeColumnWidth: timeColumnWidth
                                 )
@@ -246,10 +259,18 @@ struct DayPlanWeekCalendarView: View {
                     scrollToInitialTarget(with: scrollProxy)
                 }
                 .onChange(of: dates) { _, _ in
-                    scrollToInitialTarget(with: scrollProxy)
+                    if !scrollToPlannerHighlight(with: scrollProxy) {
+                        scrollToInitialTarget(with: scrollProxy)
+                    }
                 }
                 .onChange(of: focusedSleep) { _, _ in
                     scrollToFocusedSleep(with: scrollProxy)
+                }
+                .onChange(of: highlightedBlockID) { _, _ in
+                    scrollToPlannerHighlight(with: scrollProxy)
+                }
+                .onChange(of: highlightedBlockScrollMinute) { _, _ in
+                    scrollToPlannerHighlight(with: scrollProxy)
                 }
             }
         }
@@ -266,6 +287,7 @@ struct DayPlanWeekCalendarView: View {
         draggedTimelineActivity = nil
         draggedBlockDurationMinutes = nil
         onSelectBlock(block, date)
+        onBeginResizeBlock(block, date)
         resizeSession = DayPlanResizeSession(
             blockID: block.id,
             startMinute: block.startMinute,
@@ -313,7 +335,9 @@ struct DayPlanWeekCalendarView: View {
     }
 
     private func endResize() {
+        let blockID = resizeSession?.blockID
         resizeSession = nil
+        onEndResizeBlock(blockID)
     }
 
     private func minuteDelta(for verticalDelta: CGFloat) -> Int {
@@ -360,7 +384,7 @@ struct DayPlanWeekCalendarView: View {
     }
 
     private func scrollToInitialTarget(with proxy: ScrollViewProxy) {
-        if !scrollToFocusedSleep(with: proxy) {
+        if !scrollToPlannerHighlight(with: proxy), !scrollToFocusedSleep(with: proxy) {
             scrollToCurrentTime(with: proxy)
         }
     }
@@ -371,6 +395,16 @@ struct DayPlanWeekCalendarView: View {
 
         DispatchQueue.main.async {
             proxy.scrollTo(DayPlanScrollTarget.focusedSleep(focusedSleep.scrollTargetID), anchor: .center)
+        }
+        return true
+    }
+
+    @discardableResult
+    private func scrollToPlannerHighlight(with proxy: ScrollViewProxy) -> Bool {
+        guard let highlightedBlockID else { return false }
+
+        DispatchQueue.main.async {
+            proxy.scrollTo(DayPlanScrollTarget.plannerBlock(highlightedBlockID), anchor: .center)
         }
         return true
     }

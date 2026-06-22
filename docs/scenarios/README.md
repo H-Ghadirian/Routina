@@ -183,6 +183,18 @@ Given a manual planner block is selected
 When the user drags the top or bottom resize grip and the block crosses a height threshold that changes its card presentation
 Then the active drag continues resizing the block to its live size and position without requiring the user to release and grab the grip again
 
+### Small Planner Blocks Remain Movable
+
+Area: Planner
+Decision links: [0264](../decisions/0264-match-button-hit-areas-to-visual-surfaces.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/DayPlanPlannerStateTests.swift`
+
+Given a manual planner block is short, such as a 5- or 15-minute block
+When the user hovers or drags from the middle of the block
+Then the block can still be moved because resize grips stay limited to the block edges
+
 ### Protected Modes Do Not Overlap
 
 Area: Planner
