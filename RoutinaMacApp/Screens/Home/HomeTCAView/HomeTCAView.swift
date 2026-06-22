@@ -335,7 +335,10 @@ homeContent
             state: \.taskDetailState,
             action: \.taskDetail
         ) {
-            TaskDetailTCAView(store: detailStore)
+            TaskDetailTCAView(
+                store: detailStore,
+                onOpenEventDetails: openSavedEvent
+            )
         } else if let selectedNote {
             RoutineNoteDetailView(
                 note: selectedNote,
@@ -498,7 +501,10 @@ homeContent
                state: \.taskDetailState,
                action: \.taskDetail
         ) {
-            TaskDetailTCAView(store: detailStore)
+            TaskDetailTCAView(
+                store: detailStore,
+                onOpenEventDetails: openSavedEvent
+            )
         } else if store.routineTasks.contains(where: { $0.id == taskID }) {
             HomeLoadingStateView(
                 title: "Opening Routine",

@@ -6,6 +6,7 @@ struct TaskDetailTCAView: View {
     let store: StoreOf<TaskDetailFeature>
     var showsPrincipalToolbarTitle = true
     let externalBlockingFocusTitle: String?
+    let onOpenEventDetails: ((UUID) -> Void)?
     @Dependency(\.appSettingsClient) private var appSettingsClient
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -58,11 +59,13 @@ struct TaskDetailTCAView: View {
     init(
         store: StoreOf<TaskDetailFeature>,
         showsPrincipalToolbarTitle: Bool = true,
-        blockingFocusTitle: String? = nil
+        blockingFocusTitle: String? = nil,
+        onOpenEventDetails: ((UUID) -> Void)? = nil
     ) {
         self.store = store
         self.showsPrincipalToolbarTitle = showsPrincipalToolbarTitle
         self.externalBlockingFocusTitle = blockingFocusTitle
+        self.onOpenEventDetails = onOpenEventDetails
 
         let taskID = store.task.id
         _focusSessions = Query(
@@ -931,8 +934,17 @@ detailBody
             events: store.taskEventCandidates,
             background: routineLogsBackground,
             stroke: TaskDetailPlatformStyle.sectionCardStroke,
-            onOpenEvent: { selectedLinkedEventPresentation = TaskDetailLinkedEventPresentation(id: $0) }
+            onOpenEvent: openLinkedEvent
         )
+    }
+
+    private func openLinkedEvent(_ eventID: UUID) {
+        if let onOpenEventDetails {
+            selectedLinkedEventPresentation = nil
+            onOpenEventDetails(eventID)
+        } else {
+            selectedLinkedEventPresentation = TaskDetailLinkedEventPresentation(id: eventID)
+        }
     }
 
     func macStatusSection(

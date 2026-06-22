@@ -315,6 +315,7 @@ struct DayPlanDetailView: View {
     var selectedTaskID: UUID? = nil
     var onSelectUnplannedCompletedDate: ((Date) -> Void)? = nil
     var onOpenTaskDetails: ((UUID) -> Void)? = nil
+    var onOpenEventDetails: ((UUID) -> Void)? = nil
     @Query private var tasks: [RoutineTask]
 
     var body: some View {
@@ -323,7 +324,8 @@ struct DayPlanDetailView: View {
             DayPlanTimelinePanelView(
                 planner: planner,
                 onSelectUnplannedCompletedDate: onSelectUnplannedCompletedDate,
-                onOpenTaskDetails: onOpenTaskDetails
+                onOpenTaskDetails: onOpenTaskDetails,
+                onOpenEventDetails: onOpenEventDetails
             )
         }
         .padding(20)
@@ -484,6 +486,7 @@ private struct DayPlanTimelinePanelView: View {
     @ObservedObject var planner: DayPlanPlannerState
     var onSelectUnplannedCompletedDate: ((Date) -> Void)? = nil
     var onOpenTaskDetails: ((UUID) -> Void)? = nil
+    var onOpenEventDetails: ((UUID) -> Void)? = nil
     @Query private var tasks: [RoutineTask]
     @Query private var logs: [RoutineLog]
     @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
@@ -721,7 +724,12 @@ private struct DayPlanTimelinePanelView: View {
                     onOpenTaskDetails?(taskID)
                 },
                 onOpenEventDetails: { eventID in
-                    selectedEventID = eventID
+                    if let onOpenEventDetails {
+                        selectedEventID = nil
+                        onOpenEventDetails(eventID)
+                    } else {
+                        selectedEventID = eventID
+                    }
                 },
                 onOpenFocusTaskDetails: { taskID in
                     if let task = tasks.first(where: { $0.id == taskID }) {

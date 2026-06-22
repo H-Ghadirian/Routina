@@ -32,6 +32,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     let selectedTimelineAwaySession: AwaySession?
     let onSelectDayPlanUnplannedCompletedDate: (Date) -> Void
     let onOpenDayPlanTaskDetails: (UUID) -> Void
+    let onOpenEventDetails: (UUID) -> Void
     let onEditNote: (UUID) -> Void
     let onDeleteNote: (UUID) -> Void
     let onToggleBoardInspector: () -> Void
@@ -90,7 +91,8 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
                     planner: dayPlanPlanner,
                     selectedTaskID: selectedTaskID,
                     onSelectUnplannedCompletedDate: onSelectDayPlanUnplannedCompletedDate,
-                    onOpenTaskDetails: onOpenDayPlanTaskDetails
+                    onOpenTaskDetails: onOpenDayPlanTaskDetails,
+                    onOpenEventDetails: onOpenEventDetails
                 )
             case .board:
                 boardDetailContent
@@ -173,7 +175,8 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
         ) {
             TaskDetailTCAView(
                 store: detailStore,
-                showsPrincipalToolbarTitle: false
+                showsPrincipalToolbarTitle: false,
+                onOpenEventDetails: onOpenEventDetails
             )
         } else if let selectedTimelineEmotion {
             EmotionLogDetailView(emotion: selectedTimelineEmotion)
@@ -236,7 +239,8 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
         ) {
             TaskDetailTCAView(
                 store: detailStore,
-                showsPrincipalToolbarTitle: false
+                showsPrincipalToolbarTitle: false,
+                onOpenEventDetails: onOpenEventDetails
             )
         } else {
             ContentUnavailableView(

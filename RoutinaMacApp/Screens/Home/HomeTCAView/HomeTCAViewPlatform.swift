@@ -283,6 +283,7 @@ extension HomeTCAView {
                     onOpenDayPlanTaskDetails: { taskID in
                         openDayPlanTaskDetails(taskID)
                     },
+                    onOpenEventDetails: openSavedEvent,
                     onEditNote: openEditNote,
                     onDeleteNote: closeDeletedNote,
                     onToggleBoardInspector: toggleMacBoardTicketInspector,
