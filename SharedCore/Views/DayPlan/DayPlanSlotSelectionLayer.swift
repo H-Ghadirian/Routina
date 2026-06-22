@@ -8,23 +8,37 @@ struct DayPlanSlotSelectionLayer: View {
     var onSelectSlot: (Date, Int) -> Void
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            ForEach(Array(dates.enumerated()), id: \.element) { dayIndex, date in
-                ForEach(0..<24, id: \.self) { hour in
-                    Button {
-                        onSelectSlot(date, hour * 60)
-                    } label: {
-                        Color.clear
-                            .contentShape(Rectangle())
+        Color.clear
+            .frame(
+                width: timeColumnWidth + (CGFloat(dates.count) * dayWidth),
+                height: hourHeight * 24
+            )
+            .contentShape(Rectangle())
+            .simultaneousGesture(
+                SpatialTapGesture()
+                    .onEnded { value in
+                        guard let target = target(for: value.location) else { return }
+                        onSelectSlot(target.date, target.startMinute)
                     }
-                    .buttonStyle(.plain)
-                    .frame(width: dayWidth, height: hourHeight)
-                    .offset(
-                        x: timeColumnWidth + CGFloat(dayIndex) * dayWidth,
-                        y: CGFloat(hour) * hourHeight
-                    )
-                }
-            }
+            )
+    }
+
+    private func target(for location: CGPoint) -> DayPlanDropTarget? {
+        let daysWidth = CGFloat(dates.count) * dayWidth
+        guard location.x >= timeColumnWidth,
+              location.x < timeColumnWidth + daysWidth,
+              location.y >= 0,
+              location.y < hourHeight * 24
+        else {
+            return nil
         }
+
+        return DayPlanDropTargetResolver.target(
+            for: location,
+            dates: dates,
+            dayWidth: dayWidth,
+            timeColumnWidth: timeColumnWidth,
+            hourHeight: hourHeight
+        )
     }
 }

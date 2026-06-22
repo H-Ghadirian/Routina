@@ -22,6 +22,7 @@ This page summarizes active Planner, timeline activity, focus, Away, and Sleep b
 - [0245](../decisions/0245-retire-pending-focus-assignment-ui.md)
 - [0267](../decisions/0267-support-mac-toolbar-tag-focus.md)
 - [0268](../decisions/0268-show-assumed-done-routines-in-planner.md)
+- [0269](../decisions/0269-support-planner-slot-actions.md)
 
 ## Current Contract
 
@@ -30,6 +31,7 @@ This page summarizes active Planner, timeline activity, focus, Away, and Sleep b
 - Assumed-done planner activity is synthetic: it can be hidden from Planner or converted into a planner block without creating completion history until the user confirms the routine day.
 - Planner supports a default week view and a focused one-day view without changing stored planner data.
 - Planner all-day lanes accept tasks, timed blocks, and completed activity drops.
+- Clicking an empty timed Planner slot selects the clicked 15-minute date/time and opens a compact action panel for creating a task block or logging a finished Away interval.
 - Standalone events render as calendar-visible, read-only planner blocks.
 - Sleep, Focus, and Away are app-level protected session modes and must not overlap.
 - Task, unassigned, and board focus can pause and resume. Active time, not paused wall-clock time, feeds app history and stats.

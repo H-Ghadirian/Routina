@@ -49,6 +49,7 @@ struct DayPlanWeekCalendarView: View {
     var onEndResizeBlock: (DayPlanBlock.ID?) -> Void = { _ in }
     var onDropTask: (UUID, Date, Int) -> Void
     var onDropTaskToAllDay: (UUID, Date) -> Void = { _, _ in }
+    var slotPopoverContent: ((Date, Int, @escaping () -> Void) -> AnyView)? = nil
 
     @State private var isDropTargeted = false
     @State private var isCompletingDrop = false
@@ -57,6 +58,7 @@ struct DayPlanWeekCalendarView: View {
     @State private var draggedTimelineActivity: DayPlanTimelineActivityBlock?
     @State private var draggedBlockDurationMinutes: Int?
     @State private var resizeSession: DayPlanResizeSession?
+    @State private var selectedSlotPopover: DayPlanSelectedSlotPopover?
     @Namespace private var blockAnimationNamespace
 
     private let hourHeight: CGFloat = 64
@@ -112,7 +114,17 @@ struct DayPlanWeekCalendarView: View {
                                 dayWidth: dayWidth,
                                 hourHeight: hourHeight,
                                 timeColumnWidth: timeColumnWidth,
-                                onSelectSlot: onSelectSlot
+                                onSelectSlot: { date, minute in
+                                    presentSlotPopover(on: date, startMinute: minute)
+                                    onSelectSlot(date, minute)
+                                }
+                            )
+                            selectedSlotActionPanel(
+                                dayWidth: dayWidth,
+                                hourHeight: hourHeight,
+                                timeColumnWidth: timeColumnWidth,
+                                contentWidth: contentWidth,
+                                contentHeight: contentHeight
                             )
                             DayPlanBlockLayer(
                                 dates: dates,
@@ -133,8 +145,14 @@ struct DayPlanWeekCalendarView: View {
                                 awayBlocksForDate: awayBlocksForDate,
                                 sprintFocusBlocksForDate: sprintFocusBlocksForDate,
                                 taskTint: taskTint,
-                                onSelectBlock: onSelectBlock,
-                                onOpenBlockDetails: onOpenBlockDetails,
+                                onSelectBlock: { block, date in
+                                    selectedSlotPopover = nil
+                                    onSelectBlock(block, date)
+                                },
+                                onOpenBlockDetails: { block, date in
+                                    selectedSlotPopover = nil
+                                    onOpenBlockDetails(block, date)
+                                },
                                 onOpenTimelineTaskDetails: onOpenTimelineTaskDetails,
                                 onOpenEventDetails: onOpenEventDetails,
                                 onConfirmTimelineActivity: onConfirmTimelineActivity,
@@ -282,6 +300,7 @@ struct DayPlanWeekCalendarView: View {
     }
 
     private func beginResize(_ block: DayPlanBlock, _ date: Date) {
+        selectedSlotPopover = nil
         clearDropState()
         draggedBlockID = nil
         draggedTimelineActivity = nil
@@ -355,6 +374,7 @@ struct DayPlanWeekCalendarView: View {
     }
 
     private func dragProvider(for block: DayPlanBlock, on date: Date) -> NSItemProvider {
+        selectedSlotPopover = nil
         isCompletingDrop = false
         clearDropState()
         endResize()
@@ -366,6 +386,7 @@ struct DayPlanWeekCalendarView: View {
     }
 
     private func dragProvider(for activity: DayPlanTimelineActivityBlock, on date: Date) -> NSItemProvider {
+        selectedSlotPopover = nil
         isCompletingDrop = false
         clearDropState()
         endResize()
@@ -409,6 +430,58 @@ struct DayPlanWeekCalendarView: View {
         return true
     }
 
+    private func presentSlotPopover(on date: Date, startMinute: Int) {
+        guard slotPopoverContent != nil else { return }
+        selectedSlotPopover = DayPlanSelectedSlotPopover(
+            date: calendar.startOfDay(for: date),
+            startMinute: DayPlanBlock.clampedStartMinute(startMinute)
+        )
+    }
+
+    @ViewBuilder
+    private func selectedSlotActionPanel(
+        dayWidth: CGFloat,
+        hourHeight: CGFloat,
+        timeColumnWidth: CGFloat,
+        contentWidth: CGFloat,
+        contentHeight: CGFloat
+    ) -> some View {
+        if let selectedSlotPopover,
+           let slotPopoverContent,
+           let dayIndex = dates.firstIndex(where: { calendar.isDate($0, inSameDayAs: selectedSlotPopover.date) }) {
+            let panelWidth: CGFloat = 340
+            let estimatedPanelHeight: CGFloat = 360
+            let desiredX = timeColumnWidth + CGFloat(dayIndex) * dayWidth + 12
+            let maxX = max(8, contentWidth - panelWidth - 8)
+            let panelX = min(max(desiredX, 8), maxX)
+            let desiredY = (CGFloat(selectedSlotPopover.startMinute) / 60 * hourHeight) + 8
+            let maxY = max(8, contentHeight - estimatedPanelHeight - 8)
+            let panelY = min(max(desiredY, 8), maxY)
+
+            slotPopoverContent(
+                selectedSlotPopover.date,
+                selectedSlotPopover.startMinute,
+                {
+                    self.selectedSlotPopover = nil
+                }
+            )
+            .frame(width: panelWidth)
+            .routinaGlassPanel(cornerRadius: 12)
+            .shadow(color: .black.opacity(0.16), radius: 18, x: 0, y: 10)
+            .overlay {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+            }
+            .offset(x: panelX, y: panelY)
+            .zIndex(80)
+        }
+    }
+
+}
+
+private struct DayPlanSelectedSlotPopover: Equatable {
+    var date: Date
+    var startMinute: Int
 }
 
 private struct DayPlanAllDayLaneView: View {

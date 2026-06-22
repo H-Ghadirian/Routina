@@ -7,6 +7,7 @@ enum AwaySessionSupportError: LocalizedError, Equatable {
     case activeFocusSession
     case invalidDuration
     case invalidTimeline
+    case overlappingProtectedSession
 
     var errorDescription: String? {
         switch self {
@@ -20,6 +21,8 @@ enum AwaySessionSupportError: LocalizedError, Equatable {
             return "Choose an away duration from 1 to 720 minutes."
         case .invalidTimeline:
             return "Choose an end time after the start time."
+        case .overlappingProtectedSession:
+            return "Away cannot overlap Sleep, Focus, or another Away session."
         }
     }
 }
@@ -107,6 +110,63 @@ enum AwaySessionSupport {
             entityTitle: session.displayTitle,
             sourceDevice: sourceDevice,
             at: startedAt,
+            in: context
+        )
+        try context.save()
+        notifyAwayChanged(using: context)
+        return session
+    }
+
+    @discardableResult
+    @MainActor
+    static func logAway(
+        id: UUID = UUID(),
+        preset: AwaySessionPreset,
+        durationMinutes: Int,
+        title: String? = nil,
+        linkedTaskID: UUID? = nil,
+        startedAt: Date,
+        context: ModelContext,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
+    ) throws -> AwaySession {
+        guard (1...720).contains(durationMinutes) else {
+            throw AwaySessionSupportError.invalidDuration
+        }
+        let completedAt = startedAt.addingTimeInterval(TimeInterval(durationMinutes * 60))
+        guard completedAt > startedAt else {
+            throw AwaySessionSupportError.invalidTimeline
+        }
+        if let existing = try awaySession(id: id, in: context) {
+            return existing
+        }
+        guard try !hasProtectedSessionOverlap(
+            startedAt: startedAt,
+            endedAt: completedAt,
+            in: context
+        ) else {
+            throw AwaySessionSupportError.overlappingProtectedSession
+        }
+
+        let session = AwaySession(
+            id: id,
+            preset: preset,
+            title: title,
+            linkedTaskID: linkedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: TimeInterval(durationMinutes * 60),
+            completedAt: completedAt,
+            createdAt: Date(),
+            updatedAt: Date()
+        )
+        context.insert(session)
+        DeviceActivityRecorder.recordAction(
+            .completed,
+            entity: .awaySession,
+            entityID: session.id,
+            entityTitle: session.displayTitle,
+            details: "Logged away session",
+            sourceDevice: sourceDevice,
+            at: completedAt,
             in: context
         )
         try context.save()
@@ -321,6 +381,56 @@ enum AwaySessionSupport {
         var sprintDescriptor = FetchDescriptor<SprintFocusSessionRecord>(predicate: sprintFocusPredicate)
         sprintDescriptor.fetchLimit = 1
         return try !context.fetch(sprintDescriptor).isEmpty
+    }
+
+    @MainActor
+    private static func hasProtectedSessionOverlap(
+        startedAt: Date,
+        endedAt: Date,
+        in context: ModelContext
+    ) throws -> Bool {
+        guard endedAt > startedAt else { return false }
+
+        let awaySessions = try context.fetch(FetchDescriptor<AwaySession>())
+        if awaySessions.contains(where: { session in
+            guard let sessionStartedAt = session.startedAt else { return false }
+            let sessionEndedAt = session.finishedAt ?? session.plannedEndAt ?? .distantFuture
+            return intervalsOverlap(startedAt, endedAt, sessionStartedAt, sessionEndedAt)
+        }) {
+            return true
+        }
+
+        let sleepSessions = try context.fetch(FetchDescriptor<SleepSession>())
+        if sleepSessions.contains(where: { session in
+            guard let sessionStartedAt = session.startedAt else { return false }
+            return intervalsOverlap(startedAt, endedAt, sessionStartedAt, session.endedAt ?? .distantFuture)
+        }) {
+            return true
+        }
+
+        let focusSessions = try context.fetch(FetchDescriptor<FocusSession>())
+        if focusSessions.contains(where: { session in
+            guard let sessionStartedAt = session.startedAt,
+                  session.abandonedAt == nil
+            else { return false }
+            return intervalsOverlap(startedAt, endedAt, sessionStartedAt, session.completedAt ?? .distantFuture)
+        }) {
+            return true
+        }
+
+        let sprintFocusSessions = try context.fetch(FetchDescriptor<SprintFocusSessionRecord>())
+        return sprintFocusSessions.contains(where: { session in
+            intervalsOverlap(startedAt, endedAt, session.startedAt, session.stoppedAt ?? .distantFuture)
+        })
+    }
+
+    private static func intervalsOverlap(
+        _ lhsStart: Date,
+        _ lhsEnd: Date,
+        _ rhsStart: Date,
+        _ rhsEnd: Date
+    ) -> Bool {
+        max(lhsStart, rhsStart) < min(lhsEnd, rhsEnd)
     }
 
     @MainActor

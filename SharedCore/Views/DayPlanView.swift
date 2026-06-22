@@ -843,6 +843,40 @@ private struct DayPlanTimelinePanelView: View {
                 },
                 onDropTaskToAllDay: { taskID, date in
                     dropTaskToAllDay(taskID, on: date)
+                },
+                slotPopoverContent: { date, minute, dismiss in
+                    AnyView(
+                        DayPlanSlotActionPopover(
+                            date: date,
+                            startMinute: minute,
+                            tasks: DayPlanTaskSorting.availableTasks(from: tasks),
+                            defaultTaskID: planner.selectedTaskID,
+                            defaultDurationMinutes: planner.durationMinutes,
+                            now: referenceDate,
+                            calendar: calendar,
+                            onCreateTaskBlock: { taskID, durationMinutes in
+                                createTaskBlock(
+                                    taskID,
+                                    on: date,
+                                    startMinute: minute,
+                                    durationMinutes: durationMinutes,
+                                    blockedIntervalsByDayKey: blockedIntervalsByDayKey
+                                )
+                            },
+                            onLogAway: { preset, title, linkedTaskID, durationMinutes in
+                                logAway(
+                                    preset: preset,
+                                    title: title,
+                                    linkedTaskID: linkedTaskID,
+                                    on: date,
+                                    startMinute: minute,
+                                    durationMinutes: durationMinutes,
+                                    blockedIntervalsByDayKey: blockedIntervalsByDayKey
+                                )
+                            },
+                            onDismiss: dismiss
+                        )
+                    )
                 }
             )
         }
@@ -1389,6 +1423,95 @@ private struct DayPlanTimelinePanelView: View {
         planner.commitBlock(task: task, calendar: calendar, context: modelContext)
     }
 
+    private func createTaskBlock(
+        _ taskID: UUID,
+        on date: Date,
+        startMinute: Int,
+        durationMinutes: Int,
+        blockedIntervalsByDayKey: [String: [DayPlanBlockedInterval]]
+    ) -> String? {
+        guard let task = tasks.first(where: { $0.id == taskID }) else {
+            return "Choose a task."
+        }
+        let clampedStart = DayPlanBlock.clampedStartMinute(startMinute)
+        let clampedDuration = DayPlanBlock.clampedDuration(
+            durationMinutes,
+            startMinute: clampedStart
+        )
+
+        if let conflict = plannerBlockConflict(on: date, startMinute: clampedStart, durationMinutes: clampedDuration) {
+            return "Overlaps \(conflict.titleSnapshot)."
+        }
+        if let conflict = protectedIntervalConflict(
+            on: date,
+            startMinute: clampedStart,
+            durationMinutes: clampedDuration,
+            blockedIntervalsByDayKey: blockedIntervalsByDayKey
+        ) {
+            return "Overlaps \(conflict.title)."
+        }
+
+        planner.selectSlot(on: date, startMinute: clampedStart, calendar: calendar, context: modelContext)
+        planner.selectTask(task)
+        planner.durationMinutes = clampedDuration
+        planner.commitBlock(task: task, calendar: calendar, context: modelContext)
+        return nil
+    }
+
+    private func logAway(
+        preset: AwaySessionPreset,
+        title: String?,
+        linkedTaskID: UUID?,
+        on date: Date,
+        startMinute: Int,
+        durationMinutes: Int,
+        blockedIntervalsByDayKey: [String: [DayPlanBlockedInterval]]
+    ) -> String? {
+        let clampedStart = DayPlanBlock.clampedStartMinute(
+            startMinute,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
+        let clampedDuration = DayPlanBlock.clampedDuration(
+            durationMinutes,
+            startMinute: clampedStart,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
+        guard let startedAt = slotDate(on: date, startMinute: clampedStart),
+              let endedAt = calendar.date(byAdding: .minute, value: clampedDuration, to: startedAt)
+        else {
+            return "Choose a valid time."
+        }
+        guard endedAt <= Date() else {
+            return "Away logs need an interval that has already ended."
+        }
+        if let conflict = plannerBlockConflict(on: date, startMinute: clampedStart, durationMinutes: clampedDuration) {
+            return "Overlaps \(conflict.titleSnapshot)."
+        }
+        if let conflict = protectedIntervalConflict(
+            on: date,
+            startMinute: clampedStart,
+            durationMinutes: clampedDuration,
+            blockedIntervalsByDayKey: blockedIntervalsByDayKey
+        ) {
+            return "Overlaps \(conflict.title)."
+        }
+
+        do {
+            _ = try AwaySessionSupport.logAway(
+                preset: preset,
+                durationMinutes: clampedDuration,
+                title: title,
+                linkedTaskID: linkedTaskID,
+                startedAt: startedAt,
+                context: modelContext
+            )
+            return nil
+        } catch {
+            NSLog("Failed to log away session from planner: \(error.localizedDescription)")
+            return error.localizedDescription
+        }
+    }
+
     private func hasSleepConflict(
         on date: Date,
         startMinute: Int,
@@ -1400,6 +1523,49 @@ private struct DayPlanTimelinePanelView: View {
         return intervals.contains {
             $0.overlaps(startMinute: startMinute, durationMinutes: durationMinutes)
         }
+    }
+
+    private func protectedIntervalConflict(
+        on date: Date,
+        startMinute: Int,
+        durationMinutes: Int,
+        blockedIntervalsByDayKey: [String: [DayPlanBlockedInterval]]
+    ) -> DayPlanBlockedInterval? {
+        let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+        guard let intervals = blockedIntervalsByDayKey[dayKey] else { return nil }
+        return intervals.first {
+            $0.overlaps(startMinute: startMinute, durationMinutes: durationMinutes)
+        }
+    }
+
+    private func plannerBlockConflict(
+        on date: Date,
+        startMinute: Int,
+        durationMinutes: Int
+    ) -> DayPlanBlock? {
+        let start = DayPlanBlock.clampedStartMinute(startMinute)
+        let duration = DayPlanBlock.clampedDuration(durationMinutes, startMinute: start)
+        let end = start + duration
+        return DayPlanVisibleBlocks.blocks(
+            planner.blocks(on: date, calendar: calendar, context: modelContext),
+            tasks: tasks,
+            logs: logs,
+            calendar: calendar
+        )
+        .first { block in
+            max(start, block.startMinute) < min(end, block.endMinute)
+        }
+    }
+
+    private func slotDate(on date: Date, startMinute: Int) -> Date? {
+        calendar.date(
+            byAdding: .minute,
+            value: DayPlanBlock.clampedStartMinute(
+                startMinute,
+                minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+            ),
+            to: calendar.startOfDay(for: date)
+        )
     }
 
     private func plannedBlock(with id: DayPlanBlock.ID) -> DayPlanBlock? {
@@ -1419,6 +1585,307 @@ private struct DayPlanFocusAllocationPresentation: Identifiable {
     let sessionID: UUID
 
     var id: UUID { sessionID }
+}
+
+private enum DayPlanSlotActionMode: String, CaseIterable, Hashable {
+    case task
+    case away
+
+    var title: String {
+        switch self {
+        case .task:
+            return "Task"
+        case .away:
+            return "Away"
+        }
+    }
+}
+
+private struct DayPlanSlotActionPopover: View {
+    let date: Date
+    let startMinute: Int
+    let tasks: [RoutineTask]
+    let defaultTaskID: UUID?
+    let defaultDurationMinutes: Int
+    let now: Date
+    let calendar: Calendar
+    let onCreateTaskBlock: (UUID, Int) -> String?
+    let onLogAway: (AwaySessionPreset, String?, UUID?, Int) -> String?
+    let onDismiss: () -> Void
+
+    @State private var mode: DayPlanSlotActionMode = .task
+    @State private var selectedTaskID: UUID?
+    @State private var taskDurationMinutes: Int
+    @State private var awayPreset: AwaySessionPreset = .custom
+    @State private var awayTitle = ""
+    @State private var awayLinkedTaskID: UUID?
+    @State private var awayDurationMinutes: Int
+    @State private var errorText: String?
+
+    init(
+        date: Date,
+        startMinute: Int,
+        tasks: [RoutineTask],
+        defaultTaskID: UUID?,
+        defaultDurationMinutes: Int,
+        now: Date,
+        calendar: Calendar,
+        onCreateTaskBlock: @escaping (UUID, Int) -> String?,
+        onLogAway: @escaping (AwaySessionPreset, String?, UUID?, Int) -> String?,
+        onDismiss: @escaping () -> Void
+    ) {
+        self.date = date
+        self.startMinute = DayPlanBlock.clampedStartMinute(startMinute)
+        self.tasks = tasks
+        self.defaultTaskID = defaultTaskID
+        self.defaultDurationMinutes = defaultDurationMinutes
+        self.now = now
+        self.calendar = calendar
+        self.onCreateTaskBlock = onCreateTaskBlock
+        self.onLogAway = onLogAway
+        self.onDismiss = onDismiss
+
+        let initialTaskID = defaultTaskID.flatMap { id in tasks.first(where: { $0.id == id })?.id } ?? tasks.first?.id
+        let initialDuration = Self.clampedDuration(
+            defaultDurationMinutes,
+            startMinute: self.startMinute,
+            minimumDurationMinutes: DayPlanBlock.minimumDurationMinutes
+        )
+        _selectedTaskID = State(initialValue: initialTaskID)
+        _taskDurationMinutes = State(initialValue: initialDuration)
+        _awayLinkedTaskID = State(initialValue: initialTaskID)
+        _awayDurationMinutes = State(initialValue: Self.clampedDuration(
+            AwaySessionPreset.custom.defaultDurationMinutes,
+            startMinute: self.startMinute,
+            minimumDurationMinutes: 5
+        ))
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(intervalTitle)
+                        .font(.headline)
+                    Text(date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 8)
+
+                Button {
+                    onDismiss()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .accessibilityLabel("Close")
+            }
+
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Slot action",
+                options: DayPlanSlotActionMode.allCases,
+                selection: $mode,
+                minimumSegmentWidth: 92,
+                fillsAvailableWidth: true
+            ) { actionMode in
+                Text(actionMode.title)
+            }
+
+            switch mode {
+            case .task:
+                taskBlockContent
+            case .away:
+                awayLogContent
+            }
+
+            if let errorText {
+                Label(errorText, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(14)
+        .frame(width: 340)
+    }
+
+    private var taskBlockContent: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Picker("Task", selection: taskSelectionBinding) {
+                Text("Choose a task").tag(Optional<UUID>.none)
+                ForEach(tasks) { task in
+                    Text(DayPlanTaskSorting.title(for: task)).tag(Optional(task.id))
+                }
+            }
+            .pickerStyle(.menu)
+
+            Stepper(
+                "Duration: \(DayPlanFormatting.durationText(taskDurationMinutes))",
+                value: $taskDurationMinutes,
+                in: taskDurationRange,
+                step: 15
+            )
+
+            Button {
+                submitTaskBlock()
+            } label: {
+                Label("Add Block", systemImage: "calendar.badge.plus")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(selectedTaskID == nil)
+        }
+    }
+
+    private var awayLogContent: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Picker("Preset", selection: $awayPreset) {
+                ForEach(AwaySessionPreset.allCases) { preset in
+                    Label(preset.title, systemImage: preset.systemImage)
+                        .tag(preset)
+                }
+            }
+            .pickerStyle(.menu)
+
+            TextField("Title", text: $awayTitle)
+                .textFieldStyle(.roundedBorder)
+
+            Picker("Linked task", selection: awayTaskSelectionBinding) {
+                Text("No linked task").tag(Optional<UUID>.none)
+                ForEach(tasks) { task in
+                    Text(DayPlanTaskSorting.title(for: task)).tag(Optional(task.id))
+                }
+            }
+            .pickerStyle(.menu)
+
+            Stepper(
+                "Duration: \(DayPlanFormatting.durationText(awayDurationMinutes))",
+                value: $awayDurationMinutes,
+                in: awayDurationRange,
+                step: 5
+            )
+
+            Button {
+                submitAwayLog()
+            } label: {
+                Label("Log Away", systemImage: "lock.shield.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.teal)
+            .disabled(!canLogAway)
+
+            if !canLogAway {
+                Text("Away logs are for finished intervals.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var taskSelectionBinding: Binding<UUID?> {
+        Binding(
+            get: { selectedTaskID },
+            set: { taskID in
+                selectedTaskID = taskID
+                if let task = tasks.first(where: { $0.id == taskID }),
+                   let estimate = task.estimatedDurationMinutes {
+                    taskDurationMinutes = Self.clampedDuration(
+                        estimate,
+                        startMinute: startMinute,
+                        minimumDurationMinutes: DayPlanBlock.minimumDurationMinutes
+                    )
+                }
+            }
+        )
+    }
+
+    private var awayTaskSelectionBinding: Binding<UUID?> {
+        Binding(
+            get: { awayLinkedTaskID },
+            set: { awayLinkedTaskID = $0 }
+        )
+    }
+
+    private var taskDurationRange: ClosedRange<Int> {
+        DayPlanBlock.minimumDurationMinutes...maximumDurationMinutes
+    }
+
+    private var awayDurationRange: ClosedRange<Int> {
+        5...max(5, maximumDurationMinutes)
+    }
+
+    private var maximumDurationMinutes: Int {
+        max(DayPlanBlock.minimumDurationMinutes, DayPlanBlock.minutesPerDay - startMinute)
+    }
+
+    private var intervalTitle: String {
+        "\(DayPlanFormatting.timeText(for: startMinute, on: date, calendar: calendar)) - \(DayPlanFormatting.timeText(for: startMinute + activeDurationMinutes, on: date, calendar: calendar))"
+    }
+
+    private var activeDurationMinutes: Int {
+        mode == .task ? taskDurationMinutes : awayDurationMinutes
+    }
+
+    private var selectedAwayEndDate: Date? {
+        guard let startDate = calendar.date(byAdding: .minute, value: startMinute, to: calendar.startOfDay(for: date)) else {
+            return nil
+        }
+        return calendar.date(byAdding: .minute, value: awayDurationMinutes, to: startDate)
+    }
+
+    private var canLogAway: Bool {
+        guard let selectedAwayEndDate else { return false }
+        return selectedAwayEndDate <= now
+    }
+
+    private func submitTaskBlock() {
+        guard let selectedTaskID else {
+            errorText = "Choose a task."
+            return
+        }
+
+        if let error = onCreateTaskBlock(selectedTaskID, taskDurationMinutes) {
+            errorText = error
+        } else {
+            errorText = nil
+            onDismiss()
+        }
+    }
+
+    private func submitAwayLog() {
+        guard canLogAway else {
+            errorText = "Away logs need an interval that has already ended."
+            return
+        }
+
+        if let error = onLogAway(
+            awayPreset,
+            awayTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : awayTitle,
+            awayLinkedTaskID,
+            awayDurationMinutes
+        ) {
+            errorText = error
+        } else {
+            errorText = nil
+            onDismiss()
+        }
+    }
+
+    private static func clampedDuration(
+        _ durationMinutes: Int,
+        startMinute: Int,
+        minimumDurationMinutes: Int
+    ) -> Int {
+        DayPlanBlock.clampedDuration(
+            durationMinutes,
+            startMinute: startMinute,
+            minimumDurationMinutes: minimumDurationMinutes
+        )
+    }
 }
 
 private struct DayPlanFocusAllocationSheet: View {

@@ -149,6 +149,95 @@ struct AwaySessionSupportTests {
 
     @MainActor
     @Test
+    func logAway_createsCompletedSessionForSelectedInterval() throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let task = makeTask(
+            in: context,
+            name: "Doctor appointment",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil
+        )
+        let startedAt = makeDate("2026-06-01T08:15:00Z")
+        let expectedEnd = makeDate("2026-06-01T08:50:00Z")
+
+        let session = try AwaySessionSupport.logAway(
+            preset: .custom,
+            durationMinutes: 35,
+            title: "Away appointment",
+            linkedTaskID: task.id,
+            startedAt: startedAt,
+            context: context
+        )
+        let awayBlocksByDayKey = DayPlanAwayBlocks.blocksByDayKey(
+            on: [startedAt],
+            from: [session],
+            tasks: [task],
+            referenceDate: expectedEnd,
+            calendar: calendar
+        )
+        let dayKey = DayPlanStorage.dayKey(for: startedAt, calendar: calendar)
+        let awayBlock = try #require(awayBlocksByDayKey[dayKey]?.first)
+
+        #expect(session.state == .completed)
+        #expect(session.startedAt == startedAt)
+        #expect(session.completedAt == expectedEnd)
+        #expect(session.linkedTaskID == task.id)
+        #expect(try AwaySessionSupport.activeSession(in: context) == nil)
+        #expect(awayBlock.block.startMinute == 8 * 60 + 15)
+        #expect(awayBlock.block.durationMinutes == 35)
+        #expect(awayBlock.block.titleSnapshot == "Away appointment · Doctor appointment")
+    }
+
+    @MainActor
+    @Test
+    func logAway_rejectsOverlappingProtectedSessions() throws {
+        let context = makeInMemoryContext()
+        let existingAwayStart = makeDate("2026-06-01T09:00:00Z")
+        let sleep = SleepSession(
+            startedAt: makeDate("2026-06-01T10:00:00Z"),
+            endedAt: makeDate("2026-06-01T10:30:00Z")
+        )
+        let focus = FocusSession(
+            taskID: UUID(),
+            startedAt: makeDate("2026-06-01T11:00:00Z"),
+            plannedDurationSeconds: 25 * 60,
+            completedAt: makeDate("2026-06-01T11:25:00Z")
+        )
+        context.insert(sleep)
+        context.insert(focus)
+        try context.save()
+        _ = try AwaySessionSupport.logAway(
+            preset: .reset,
+            durationMinutes: 30,
+            startedAt: existingAwayStart,
+            context: context
+        )
+
+        for overlappingStart in [
+            makeDate("2026-06-01T09:15:00Z"),
+            makeDate("2026-06-01T10:15:00Z"),
+            makeDate("2026-06-01T11:10:00Z"),
+        ] {
+            do {
+                _ = try AwaySessionSupport.logAway(
+                    preset: .custom,
+                    durationMinutes: 10,
+                    startedAt: overlappingStart,
+                    context: context
+                )
+                Issue.record("Expected overlapping away log to fail.")
+            } catch let error as AwaySessionSupportError {
+                #expect(error == .overlappingProtectedSession)
+            } catch {
+                Issue.record("Unexpected error: \(error)")
+            }
+        }
+    }
+
+    @MainActor
+    @Test
     func endActiveAwayEarly_completesCountUpAway() throws {
         let context = makeInMemoryContext()
         let startedAt = makeDate("2026-06-01T09:00:00Z")
