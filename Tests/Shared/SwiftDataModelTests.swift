@@ -38,11 +38,29 @@ struct SwiftDataModelTests {
         #expect(task.ongoingSince == nil)
         #expect(task.isAllDay == false)
         #expect(task.autoAssumeDailyDone == false)
+        #expect(task.autoAssumeDoneTimeOfDay == nil)
         #expect(task.estimatedDurationMinutes == nil)
         #expect(task.storyPoints == nil)
         #expect(task.focusModeEnabled == false)
         #expect(task.voiceNote == nil)
         #expect(task.hasVoiceNote == false)
+    }
+
+    @Test
+    func routineTask_storesAutoAssumeDoneTimeOfDayWhenEnabled() {
+        let task = RoutineTask(
+            name: "Meal",
+            autoAssumeDailyDone: true,
+            autoAssumeDoneTimeOfDay: RoutineTimeOfDay(hour: 8, minute: 15)
+        )
+
+        #expect(task.autoAssumeDoneTimeOfDay == RoutineTimeOfDay(hour: 8, minute: 15))
+
+        task.autoAssumeDoneTimeOfDay = RoutineTimeOfDay(hour: 21, minute: 5)
+
+        #expect(task.autoAssumeDoneTimeOfDayHour == 21)
+        #expect(task.autoAssumeDoneTimeOfDayMinute == 5)
+        #expect(task.autoAssumeDoneTimeOfDay == RoutineTimeOfDay(hour: 21, minute: 5))
     }
 
     @Test
@@ -999,5 +1017,31 @@ struct SwiftDataModelTests {
 
         let fetched = try #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
         #expect(fetched.createdAt == nil)
+    }
+
+    @Test
+    func checklistCompletionRoutineItemsStoreNeutralInterval() {
+        let task = RoutineTask(
+            name: "Meal",
+            checklistItems: [
+                RoutineChecklistItem(title: "first meal", intervalDays: 3)
+            ],
+            scheduleMode: .softIntervalChecklist
+        )
+
+        #expect(task.checklistItems.map(\.intervalDays) == [1])
+    }
+
+    @Test
+    func runoutChecklistRoutineItemsPreserveIntervals() {
+        let task = RoutineTask(
+            name: "Groceries",
+            checklistItems: [
+                RoutineChecklistItem(title: "Bread", intervalDays: 3)
+            ],
+            scheduleMode: .derivedFromChecklist
+        )
+
+        #expect(task.checklistItems.map(\.intervalDays) == [3])
     }
 }

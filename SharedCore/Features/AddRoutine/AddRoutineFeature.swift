@@ -72,6 +72,7 @@ struct AddRoutineFeature: Reducer {
         case recurrenceDayOfMonthChanged(Int)
         case recurrenceDaysOfMonthChanged([Int])
         case autoAssumeDailyDoneChanged(Bool)
+        case autoAssumeDoneTimeOfDayChanged(RoutineTimeOfDay)
         case existingRoutineNamesChanged([String])
         case availablePlacesChanged([RoutinePlaceSummary])
         case selectedPlaceChanged(UUID?)
@@ -526,6 +527,10 @@ struct AddRoutineFeature: Reducer {
 
         case let .autoAssumeDailyDoneChanged(isEnabled):
             scheduleMutationHandler().setAutoAssumeDailyDone(isEnabled, state: &state)
+            return .none
+
+        case let .autoAssumeDoneTimeOfDayChanged(timeOfDay):
+            scheduleMutationHandler().setAutoAssumeDoneTimeOfDay(timeOfDay, state: &state)
             return .none
 
         case let .existingRoutineNamesChanged(names):

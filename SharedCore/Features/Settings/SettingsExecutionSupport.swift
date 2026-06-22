@@ -7,6 +7,7 @@ enum SettingsExecutionSupport {
     ) -> Bool {
         appSettingsClient.hideUnavailableRoutines()
             || appSettingsClient.temporaryViewState() != nil
+            || appSettingsClient.hiddenDayPlanTimelineActivityIDs()?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
     }
 
     static func withSecurityScopedAccess<T>(

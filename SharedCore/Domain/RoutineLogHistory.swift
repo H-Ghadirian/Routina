@@ -358,7 +358,8 @@ enum RoutineLogHistory {
             }
 
             let completionDate = RoutineAssumedCompletion.completionTimestamp(
-                for: day,
+                for: task,
+                on: day,
                 referenceDate: referenceDate,
                 calendar: calendar
             )

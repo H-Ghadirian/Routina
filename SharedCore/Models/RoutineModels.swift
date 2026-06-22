@@ -64,6 +64,8 @@ final class RoutineTask {
     var activityStateRawValue: String = RoutineActivityState.idle.rawValue
     var ongoingSince: Date?
     var autoAssumeDailyDone: Bool = false
+    var autoAssumeDoneTimeOfDayHour: Int?
+    var autoAssumeDoneTimeOfDayMinute: Int?
     var estimatedDurationMinutes: Int?
     var actualDurationMinutes: Int?
     var storyPoints: Int?
@@ -124,6 +126,19 @@ final class RoutineTask {
     var color: RoutineTaskColor {
         get { RoutineTaskColor(rawValue: colorRawValue) ?? .none }
         set { colorRawValue = newValue.rawValue }
+    }
+
+    var autoAssumeDoneTimeOfDay: RoutineTimeOfDay? {
+        get {
+            guard let hour = autoAssumeDoneTimeOfDayHour,
+                  let minute = autoAssumeDoneTimeOfDayMinute
+            else { return nil }
+            return RoutineTimeOfDay(hour: hour, minute: minute)
+        }
+        set {
+            autoAssumeDoneTimeOfDayHour = newValue?.hour
+            autoAssumeDoneTimeOfDayMinute = newValue?.minute
+        }
     }
 
     var importanceUrgencyLabel: String {
@@ -205,7 +220,9 @@ final class RoutineTask {
     var checklistItems: [RoutineChecklistItem] {
         get { RoutineChecklistItemStorage.deserialize(checklistItemsStorage) }
         set {
-            checklistItemsStorage = RoutineChecklistItemStorage.serialize(newValue)
+            checklistItemsStorage = RoutineChecklistItemStorage.serialize(
+                RoutineChecklistItem.sanitized(newValue, for: scheduleMode)
+            )
             sanitizeChecklistProgress()
         }
     }
@@ -277,6 +294,11 @@ final class RoutineTask {
             }
             if newValue == .oneOff {
                 routineDurationMode = .oneDay
+            }
+            if hasChecklistItems {
+                checklistItemsStorage = RoutineChecklistItemStorage.serialize(
+                    RoutineChecklistItem.sanitized(checklistItems, for: newValue)
+                )
             }
             sanitizeChecklistProgress()
         }
@@ -374,6 +396,7 @@ final class RoutineTask {
         activityStateRawValue: String? = nil,
         ongoingSince: Date? = nil,
         autoAssumeDailyDone: Bool = false,
+        autoAssumeDoneTimeOfDay: RoutineTimeOfDay? = nil,
         estimatedDurationMinutes: Int? = nil,
         actualDurationMinutes: Int? = nil,
         storyPoints: Int? = nil,
@@ -431,8 +454,10 @@ final class RoutineTask {
         self.eventIDsStorage = RoutineEventIDStorage.serialize(eventIDs)
         self.relationshipsStorage = RoutineTaskRelationshipStorage.serialize(relationships, ownerID: id)
         self.stepsStorage = RoutineStepStorage.serialize(steps)
-        self.checklistItemsStorage = RoutineChecklistItemStorage.serialize(resolvedChecklistItems)
         self.scheduleModeRawValue = resolvedScheduleMode.rawValue
+        self.checklistItemsStorage = RoutineChecklistItemStorage.serialize(
+            RoutineChecklistItem.sanitized(resolvedChecklistItems, for: resolvedScheduleMode)
+        )
         storeRecurrenceRuleInColumns(resolvedRecurrenceRule)
         self.interval = Int16(clamping: resolvedScheduleMode == .oneOff ? 1 : resolvedRecurrenceRule.approximateIntervalDays)
         self.lastDone = lastDone
@@ -450,6 +475,7 @@ final class RoutineTask {
         self.activityStateRawValue = RoutineActivityState(rawValue: activityStateRawValue ?? "")?.rawValue ?? RoutineActivityState.idle.rawValue
         self.ongoingSince = ongoingSince
         self.autoAssumeDailyDone = autoAssumeDailyDone
+        self.autoAssumeDoneTimeOfDay = autoAssumeDailyDone ? autoAssumeDoneTimeOfDay : nil
         self.estimatedDurationMinutes = Self.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
         self.actualDurationMinutes = Self.sanitizedActualDurationMinutes(actualDurationMinutes)
         self.storyPoints = Self.sanitizedStoryPoints(storyPoints)
@@ -718,6 +744,7 @@ final class RoutineTask {
             activityStateRawValue: activityStateRawValue,
             ongoingSince: ongoingSince,
             autoAssumeDailyDone: autoAssumeDailyDone,
+            autoAssumeDoneTimeOfDay: autoAssumeDoneTimeOfDay,
             estimatedDurationMinutes: estimatedDurationMinutes,
             actualDurationMinutes: actualDurationMinutes,
             storyPoints: storyPoints,

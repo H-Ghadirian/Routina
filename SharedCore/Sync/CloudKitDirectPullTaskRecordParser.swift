@@ -184,6 +184,26 @@ enum CloudKitDirectPullTaskRecordParser {
                 "cd_autoassumedailydone"
             ]
         )
+        let autoAssumeDoneTimeOfDayHourValue = intValue(
+            in: record,
+            keys: [
+                "autoAssumeDoneTimeOfDayHour",
+                "AUTOASSUMEDONETIMEOFDAYHOUR",
+                "zautoassumedonetimeofdayhour",
+                "ZAUTOASSUMEDONETIMEOFDAYHOUR",
+                "cd_autoassumedonetimeofdayhour"
+            ]
+        )
+        let autoAssumeDoneTimeOfDayMinuteValue = intValue(
+            in: record,
+            keys: [
+                "autoAssumeDoneTimeOfDayMinute",
+                "AUTOASSUMEDONETIMEOFDAYMINUTE",
+                "zautoassumedonetimeofdayminute",
+                "ZAUTOASSUMEDONETIMEOFDAYMINUTE",
+                "cd_autoassumedonetimeofdayminute"
+            ]
+        )
         let estimatedDurationMinutesValue = intValue(
             in: record,
             keys: [
@@ -265,6 +285,8 @@ enum CloudKitDirectPullTaskRecordParser {
                 || actualDurationMinutesValue != nil
                 || storyPointsValue != nil
                 || autoAssumeDailyDoneValue != nil
+                || autoAssumeDoneTimeOfDayHourValue != nil
+                || autoAssumeDoneTimeOfDayMinuteValue != nil
                 || placeIDsStorageValue != nil
         else {
             return nil
@@ -328,6 +350,8 @@ enum CloudKitDirectPullTaskRecordParser {
             activityStateRawValue: activityStateRawValueValue,
             ongoingSince: ongoingSinceValue,
             autoAssumeDailyDone: autoAssumeDailyDoneValue,
+            autoAssumeDoneTimeOfDayHour: autoAssumeDoneTimeOfDayHourValue,
+            autoAssumeDoneTimeOfDayMinute: autoAssumeDoneTimeOfDayMinuteValue,
             estimatedDurationMinutes: estimatedDurationMinutesValue,
             actualDurationMinutes: RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutesValue),
             storyPoints: storyPointsValue,

@@ -135,6 +135,9 @@ struct TaskFormModel {
     var frequencyUnit: Binding<TaskFormFrequencyUnit>
     var frequencyValue: Binding<Int>
     var autoAssumeDailyDone: Binding<Bool> = .constant(false)
+    var autoAssumeDoneTimeOfDay: Binding<Date> = .constant(
+        RoutineAssumedCompletion.defaultDoneTimeOfDay.date(on: Date())
+    )
     var focusModeEnabled: Binding<Bool> = .constant(false)
 
     // MARK: Color
@@ -308,6 +311,10 @@ extension TaskFormModel {
         )
     }
 
+    var showsAutoAssumeDoneTimeOfDay: Bool {
+        autoAssumeDailyDone.wrappedValue && canAutoAssumeDailyDone
+    }
+
     private var candidateRecurrenceRule: RoutineRecurrenceRule {
         let currentScheduleMode = scheduleMode.wrappedValue
         let usesAvailabilityTiming = !isAllDay.wrappedValue
@@ -443,14 +450,19 @@ extension TaskFormModel {
 
     private var candidateChecklistItems: [RoutineChecklistItem] {
         if let pendingTitle = RoutineChecklistItem.normalizedTitle(checklistItemDraftTitle.wrappedValue) {
-            return routineChecklistItems + [
-                RoutineChecklistItem(
-                    title: pendingTitle,
-                    intervalDays: checklistItemDraftInterval.wrappedValue
-                )
-            ]
+            return RoutineChecklistItem.sanitized(
+                routineChecklistItems + [
+                    RoutineChecklistItem(
+                        title: pendingTitle,
+                        intervalDays: scheduleMode.wrappedValue.normalizedChecklistItemIntervalDays(
+                            checklistItemDraftInterval.wrappedValue
+                        )
+                    )
+                ],
+                for: scheduleMode.wrappedValue
+            )
         }
-        return routineChecklistItems
+        return RoutineChecklistItem.sanitized(routineChecklistItems, for: scheduleMode.wrappedValue)
     }
 
     private var hasChecklistSectionContent: Bool {

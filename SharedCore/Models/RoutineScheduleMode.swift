@@ -79,6 +79,16 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
         routineFormat == .checklist || routineFormat == .runout
     }
 
+    var storesChecklistItemIntervals: Bool {
+        isChecklistDrivenMode
+    }
+
+    func normalizedChecklistItemIntervalDays(_ intervalDays: Int) -> Int {
+        storesChecklistItemIntervals
+            ? RoutineChecklistItem.clampedIntervalDays(intervalDays)
+            : 1
+    }
+
     var showsRoutineRepeatControls: Bool {
         self != .oneOff && routineFormat != .runout
     }
@@ -224,6 +234,24 @@ struct RoutineChecklistItem: Codable, Equatable, Hashable, Identifiable, Sendabl
                 id: item.id,
                 title: title,
                 intervalDays: item.intervalDays,
+                lastPurchasedAt: item.lastPurchasedAt,
+                undoLastPurchasedAt: item.undoLastPurchasedAt,
+                undoTaskLastDone: item.undoTaskLastDone,
+                undoTaskScheduleAnchor: item.undoTaskScheduleAnchor,
+                createdAt: item.createdAt
+            )
+        }
+    }
+
+    static func sanitized(
+        _ items: [RoutineChecklistItem],
+        for scheduleMode: RoutineScheduleMode
+    ) -> [RoutineChecklistItem] {
+        sanitized(items).map { item in
+            RoutineChecklistItem(
+                id: item.id,
+                title: item.title,
+                intervalDays: scheduleMode.normalizedChecklistItemIntervalDays(item.intervalDays),
                 lastPurchasedAt: item.lastPurchasedAt,
                 undoLastPurchasedAt: item.undoLastPurchasedAt,
                 undoTaskLastDone: item.undoTaskLastDone,

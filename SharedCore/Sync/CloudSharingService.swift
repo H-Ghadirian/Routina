@@ -62,6 +62,7 @@ enum CloudSharingService {
         var activityStateRawValue: String?
         var ongoingSince: Date?
         var autoAssumeDailyDone: Bool
+        var autoAssumeDoneTimeOfDay: RoutineTimeOfDay?
         var estimatedDurationMinutes: Int?
         var actualDurationMinutes: Int?
         var storyPoints: Int?
@@ -315,6 +316,7 @@ extension CloudSharingService.SharedTaskPayload {
         self.activityStateRawValue = task.activityStateRawValue
         self.ongoingSince = task.ongoingSince
         self.autoAssumeDailyDone = task.autoAssumeDailyDone
+        self.autoAssumeDoneTimeOfDay = task.autoAssumeDoneTimeOfDay
         self.estimatedDurationMinutes = task.estimatedDurationMinutes
         self.actualDurationMinutes = task.actualDurationMinutes
         self.storyPoints = task.storyPoints
@@ -383,6 +385,7 @@ extension CloudSharingService.SharedTaskPayload {
         task.activityStateRawValue = RoutineActivityState(rawValue: activityStateRawValue ?? "")?.rawValue ?? RoutineActivityState.idle.rawValue
         task.ongoingSince = ongoingSince
         task.autoAssumeDailyDone = autoAssumeDailyDone
+        task.autoAssumeDoneTimeOfDay = autoAssumeDailyDone ? autoAssumeDoneTimeOfDay : nil
         task.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
         task.actualDurationMinutes = RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutes)
         task.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
@@ -443,6 +446,7 @@ private extension RoutineTask {
             activityStateRawValue: payload.activityStateRawValue,
             ongoingSince: payload.ongoingSince,
             autoAssumeDailyDone: payload.autoAssumeDailyDone,
+            autoAssumeDoneTimeOfDay: payload.autoAssumeDoneTimeOfDay,
             estimatedDurationMinutes: payload.estimatedDurationMinutes,
             actualDurationMinutes: payload.actualDurationMinutes,
             storyPoints: payload.storyPoints,

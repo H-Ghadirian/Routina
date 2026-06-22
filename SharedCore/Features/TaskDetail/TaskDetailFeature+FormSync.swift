@@ -57,6 +57,8 @@ extension TaskDetailFeature {
         state.editRecurrenceWeekday = recurrenceRule.weekday ?? Calendar.current.component(.weekday, from: now)
         state.editRecurrenceDayOfMonth = recurrenceRule.dayOfMonth ?? Calendar.current.component(.day, from: now)
         state.editAutoAssumeDailyDone = state.task.autoAssumeDailyDone
+        state.editAutoAssumeDoneTimeOfDay = state.task.autoAssumeDoneTimeOfDay
+            ?? RoutineAssumedCompletion.defaultDoneTimeOfDay
         state.editEstimatedDurationMinutes = state.task.estimatedDurationMinutes
         state.editActualDurationMinutes = state.task.actualDurationMinutes
         state.editStoryPoints = state.task.storyPoints

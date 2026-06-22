@@ -614,6 +614,7 @@ struct AddRoutineFeatureSaveTests {
     func saveTapped_inChecklistModeCommitsDraftItemBeforeValidation() async {
         let now = makeDate("2026-03-20T10:00:00Z")
         let capturedChecklistTitles = LockIsolated<[String]>([])
+        let capturedChecklistIntervals = LockIsolated<[Int]>([])
         let store = TestStore(
             initialState: makeState(
                 basics: AddRoutineBasicsState(routineName: "Pack gym bag"),
@@ -625,6 +626,7 @@ struct AddRoutineFeatureSaveTests {
             AddRoutineFeature(
                 onSave: { request in
                     capturedChecklistTitles.withValue { $0 = request.checklistItems.map(\.title) }
+                    capturedChecklistIntervals.withValue { $0 = request.checklistItems.map(\.intervalDays) }
                     return .none
                 },
                 onCancel: { .none }
@@ -637,11 +639,12 @@ struct AddRoutineFeatureSaveTests {
         _ = await store.withExhaustivity(.off) {
             await store.send(.saveTapped) {
                 $0.checklist.checklistItemDraftTitle = ""
-                $0.checklist.checklistItemDraftInterval = 3
+                $0.checklist.checklistItemDraftInterval = 1
             }
         }
 
         #expect(capturedChecklistTitles.value == ["Shoes"])
+        #expect(capturedChecklistIntervals.value == [1])
         #expect(store.state.checklist.checklistValidationMessage == nil)
     }
 
@@ -649,6 +652,7 @@ struct AddRoutineFeatureSaveTests {
     func saveTapped_inChecklistMode_sendsChecklistItemsAndMode() async {
         let now = makeDate("2026-03-20T10:00:00Z")
         let capturedChecklistTitles = LockIsolated<[String]>([])
+        let capturedChecklistIntervals = LockIsolated<[Int]>([])
         let capturedScheduleModes = LockIsolated<[RoutineScheduleMode]>([])
         let store = TestStore(
             initialState: makeState(
@@ -667,6 +671,7 @@ struct AddRoutineFeatureSaveTests {
                     #expect(request.steps.isEmpty)
                     capturedScheduleModes.withValue { $0 = [request.scheduleMode] }
                     capturedChecklistTitles.withValue { $0 = request.checklistItems.map(\.title) }
+                    capturedChecklistIntervals.withValue { $0 = request.checklistItems.map(\.intervalDays) }
                     return .none
                 },
                 onCancel: { .none }
@@ -694,6 +699,7 @@ struct AddRoutineFeatureSaveTests {
     func saveTapped_inCompletionChecklistMode_sendsChecklistItemsAndMode() async {
         let now = makeDate("2026-03-20T10:00:00Z")
         let capturedChecklistTitles = LockIsolated<[String]>([])
+        let capturedChecklistIntervals = LockIsolated<[Int]>([])
         let capturedScheduleModes = LockIsolated<[RoutineScheduleMode]>([])
         let store = TestStore(
             initialState: makeState(
@@ -711,6 +717,7 @@ struct AddRoutineFeatureSaveTests {
                     #expect(request.steps.isEmpty)
                     capturedScheduleModes.withValue { $0 = [request.scheduleMode] }
                     capturedChecklistTitles.withValue { $0 = request.checklistItems.map(\.title) }
+                    capturedChecklistIntervals.withValue { $0 = request.checklistItems.map(\.intervalDays) }
                     return .none
                 },
                 onCancel: { .none }
@@ -722,13 +729,16 @@ struct AddRoutineFeatureSaveTests {
 
         _ = await store.withExhaustivity(.off) {
             await store.send(.saveTapped) {
+                $0.checklist.routineChecklistItems[0].intervalDays = 1
                 $0.checklist.checklistItemDraftTitle = ""
-                $0.checklist.checklistItemDraftInterval = 3
+                $0.checklist.checklistItemDraftInterval = 1
             }
         }
 
         #expect(capturedScheduleModes.value == [.fixedIntervalChecklist])
         #expect(capturedChecklistTitles.value == ["Shoes", "Towel"])
+        #expect(capturedChecklistIntervals.value == [1, 1])
+        #expect(store.state.checklist.routineChecklistItems.map(\.intervalDays) == [1, 1])
     }
 
     @Test

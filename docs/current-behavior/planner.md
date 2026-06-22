@@ -23,12 +23,15 @@ This page summarizes active Planner, timeline activity, focus, Away, and Sleep b
 - [0267](../decisions/0267-support-mac-toolbar-tag-focus.md)
 - [0268](../decisions/0268-show-assumed-done-routines-in-planner.md)
 - [0269](../decisions/0269-support-planner-slot-actions.md)
+- [0271](../decisions/0271-use-probable-times-for-assumed-planner-activity.md)
 
 ## Current Contract
 
 - Timeline activity is evidence for completed, missed, canceled, sleep, place, note, emotion, event, and accepted focus activity.
 - Planner can surface timeline activity, but automatic suggestions come only from completed activity and eligible assumed-done routine days, and may be hidden as presentation state.
-- Assumed-done planner activity is synthetic: it can be hidden from Planner or converted into a planner block without creating completion history until the user confirms the routine day.
+- Assumed-done planner activity is synthetic: it uses the routine's probable done time for planner placement, can be hidden from Planner or converted into a planner block, and does not create completion history until the user confirms the routine day.
+- Automatic activity that cannot be placed because planner task or event blocks reserve the usable time appears in the top `Needs Time` lane for that day, where it can be dragged into the timed calendar, hidden, confirmed, or opened like other automatic activity.
+- Protected Away, Focus, and Sleep intervals remain separate from the `Needs Time` lane and keep their existing suppression/linking behavior for overlapping automatic activity.
 - Planner supports a default week view and a focused one-day view without changing stored planner data.
 - Planner all-day lanes accept tasks, timed blocks, and completed activity drops.
 - Clicking an empty timed Planner slot selects the clicked 15-minute date/time and opens a compact action panel for creating a task block or logging a finished Away interval.

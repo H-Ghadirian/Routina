@@ -204,7 +204,9 @@ extension RoutineTask {
     }
 
     func replaceChecklistItems(_ updatedItems: [RoutineChecklistItem]) {
-        checklistItemsStorage = RoutineChecklistItemStorage.serialize(updatedItems)
+        checklistItemsStorage = RoutineChecklistItemStorage.serialize(
+            RoutineChecklistItem.sanitized(updatedItems, for: scheduleMode)
+        )
         sanitizeChecklistProgress()
     }
 

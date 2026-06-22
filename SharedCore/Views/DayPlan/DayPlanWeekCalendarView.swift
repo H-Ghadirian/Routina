@@ -18,6 +18,7 @@ struct DayPlanWeekCalendarView: View {
     var showsUnplannedCompletedBadges: Bool
     var blocksForDate: (Date) -> [DayPlanBlock]
     var automaticTimelineBlocksForDate: (Date) -> [DayPlanTimelineActivityBlock] = { _ in [] }
+    var unplaceableAutomaticTimelineBlocksForDate: (Date) -> [DayPlanTimelineActivityBlock] = { _ in [] }
     var eventBlocksForDate: (Date) -> [DayPlanEventBlock] = { _ in [] }
     var sleepBlocksForDate: (Date) -> [DayPlanSleepBlock] = { _ in [] }
     var awayBlocksForDate: (Date) -> [DayPlanAwayBlock] = { _ in [] }
@@ -75,6 +76,21 @@ struct DayPlanWeekCalendarView: View {
                 showsUnplannedCompletedBadges: showsUnplannedCompletedBadges,
                 unplannedCompletedCount: unplannedCompletedCount,
                 onSelectUnplannedCompletedDate: onSelectUnplannedCompletedDate
+            )
+
+            DayPlanUnplaceableActivityLaneView(
+                dates: dates,
+                selectedDate: selectedDate,
+                calendar: calendar,
+                timeColumnWidth: timeColumnWidth,
+                blocksForDate: unplaceableAutomaticTimelineBlocksForDate,
+                taskTint: taskTint,
+                onOpenTimelineTaskDetails: onOpenTimelineTaskDetails,
+                onConfirmTimelineActivity: onConfirmTimelineActivity,
+                onHideTimelineActivity: onHideTimelineActivity,
+                onTimelineDragProvider: { activity, date in
+                    dragProvider(for: activity, on: date)
+                }
             )
 
             DayPlanAllDayLaneView(
@@ -482,6 +498,134 @@ struct DayPlanWeekCalendarView: View {
 private struct DayPlanSelectedSlotPopover: Equatable {
     var date: Date
     var startMinute: Int
+}
+
+private struct DayPlanUnplaceableActivityLaneView: View {
+    var dates: [Date]
+    var selectedDate: Date
+    var calendar: Calendar
+    var timeColumnWidth: CGFloat
+    var blocksForDate: (Date) -> [DayPlanTimelineActivityBlock]
+    var taskTint: (DayPlanBlock) -> Color
+    var onOpenTimelineTaskDetails: (UUID) -> Void
+    var onConfirmTimelineActivity: (DayPlanTimelineActivityBlock, Date) -> Void
+    var onHideTimelineActivity: (DayPlanTimelineActivityBlock, Date) -> Void
+    var onTimelineDragProvider: (DayPlanTimelineActivityBlock, Date) -> NSItemProvider
+
+    private let rowHeight: CGFloat = 30
+    private let rowSpacing: CGFloat = 4
+    private let verticalPadding: CGFloat = 6
+
+    private var maxRows: Int {
+        dates.map { blocksForDate($0).count }.max() ?? 0
+    }
+
+    private var laneHeight: CGFloat {
+        guard maxRows > 0 else { return 0 }
+        return verticalPadding * 2
+            + CGFloat(maxRows) * rowHeight
+            + CGFloat(max(maxRows - 1, 0)) * rowSpacing
+    }
+
+    var body: some View {
+        if maxRows > 0 {
+            GeometryReader { proxy in
+                let dayCount = max(dates.count, 1)
+                let dayWidth = max((proxy.size.width - timeColumnWidth) / CGFloat(dayCount), 1)
+                let daysWidth = dayWidth * CGFloat(dayCount)
+
+                HStack(spacing: 0) {
+                    Text("Needs Time")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+                        .frame(width: timeColumnWidth - 10, alignment: .trailing)
+                        .padding(.trailing, 10)
+                        .padding(.top, verticalPadding + 6)
+                        .frame(width: timeColumnWidth, height: laneHeight, alignment: .topTrailing)
+
+                    ZStack(alignment: .topLeading) {
+                        laneBackground(dayWidth: dayWidth, laneHeight: laneHeight)
+
+                        ForEach(Array(dates.enumerated()), id: \.element) { dayIndex, date in
+                            ForEach(Array(blocksForDate(date).enumerated()), id: \.element.id) { rowIndex, activity in
+                                let block = activity.block
+                                DayPlanBlockCard(
+                                    block: block,
+                                    tint: taskTint(block),
+                                    style: .automatic(activity.kind),
+                                    isSelected: false,
+                                    renderedHeight: rowHeight,
+                                    showsResizeHandles: false,
+                                    selectedDate: date,
+                                    calendar: calendar,
+                                    onSelect: {},
+                                    onOpenDetails: {
+                                        onOpenTimelineTaskDetails(block.taskID)
+                                    },
+                                    onDelete: {},
+                                    onConfirmAutomatic: {
+                                        onConfirmTimelineActivity(activity, date)
+                                    },
+                                    onHideAutomatic: {
+                                        onHideTimelineActivity(activity, date)
+                                    },
+                                    onResizeStarted: {},
+                                    onResizeChanged: { _, _ in },
+                                    onResizeEnded: {},
+                                    onDragProvider: {
+                                        onTimelineDragProvider(activity, date)
+                                    }
+                                )
+                                .frame(
+                                    width: max(dayWidth - 10, 90),
+                                    height: rowHeight
+                                )
+                                .offset(
+                                    x: CGFloat(dayIndex) * dayWidth + 5,
+                                    y: verticalPadding + CGFloat(rowIndex) * (rowHeight + rowSpacing)
+                                )
+                            }
+                        }
+                    }
+                    .frame(width: daysWidth, height: laneHeight, alignment: .topLeading)
+                }
+            }
+            .frame(height: laneHeight)
+            .background(Color.secondary.opacity(0.035))
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(Color.secondary.opacity(0.18))
+                    .frame(height: 1)
+            }
+        }
+    }
+
+    private func laneBackground(dayWidth: CGFloat, laneHeight: CGFloat) -> some View {
+        ZStack(alignment: .topLeading) {
+            ForEach(Array(dates.enumerated()), id: \.element) { index, date in
+                Rectangle()
+                    .fill(backgroundFill(for: date))
+                    .frame(width: dayWidth, height: laneHeight)
+                    .offset(x: CGFloat(index) * dayWidth)
+
+                Rectangle()
+                    .fill(Color.secondary.opacity(0.18))
+                    .frame(width: 1, height: laneHeight)
+                    .offset(x: CGFloat(index) * dayWidth)
+            }
+
+            Rectangle()
+                .fill(Color.secondary.opacity(0.18))
+                .frame(width: 1, height: laneHeight)
+                .offset(x: CGFloat(dates.count) * dayWidth - 1)
+        }
+    }
+
+    private func backgroundFill(for date: Date) -> Color {
+        calendar.isDate(date, inSameDayAs: selectedDate)
+            ? Color.accentColor.opacity(0.06)
+            : Color.clear
+    }
 }
 
 private struct DayPlanAllDayLaneView: View {

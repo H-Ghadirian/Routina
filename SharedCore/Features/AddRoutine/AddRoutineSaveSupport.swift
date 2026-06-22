@@ -23,6 +23,10 @@ struct AddRoutineDraftFinalizer {
     let now: Date
 
     func apply(to state: inout AddRoutineFeature.State) {
+        let hadChecklistDraft = RoutineChecklistItem.normalizedTitle(
+            state.checklist.checklistItemDraftTitle
+        ) != nil
+
         AddRoutineOrganizationEditor.commitDraftTag(organization: &state.organization)
         AddRoutineOrganizationEditor.commitDraftGoal(organization: &state.organization)
         state.checklist.routineSteps = Self.appendingStep(
@@ -32,12 +36,20 @@ struct AddRoutineDraftFinalizer {
         state.checklist.stepDraft = ""
         state.checklist.routineChecklistItems = Self.appendingChecklistItem(
             from: state.checklist.checklistItemDraftTitle,
-            intervalDays: state.checklist.checklistItemDraftInterval,
+            intervalDays: state.schedule.scheduleMode.normalizedChecklistItemIntervalDays(
+                state.checklist.checklistItemDraftInterval
+            ),
             createdAt: now,
             to: state.checklist.routineChecklistItems
         )
+        state.checklist.routineChecklistItems = RoutineChecklistItem.sanitized(
+            state.checklist.routineChecklistItems,
+            for: state.schedule.scheduleMode
+        )
         state.checklist.checklistItemDraftTitle = ""
-        state.checklist.checklistItemDraftInterval = 3
+        if hadChecklistDraft {
+            state.checklist.checklistItemDraftInterval = state.schedule.scheduleMode.storesChecklistItemIntervals ? 3 : 1
+        }
     }
 
     static func appendingStep(
@@ -99,6 +111,7 @@ struct AddRoutineSaveRequest: Equatable {
     let attachments: [AttachmentItem]
     let color: RoutineTaskColor
     let autoAssumeDailyDone: Bool
+    let autoAssumeDoneTimeOfDay: RoutineTimeOfDay?
     let estimatedDurationMinutes: Int?
     let storyPoints: Int?
     let focusModeEnabled: Bool
@@ -137,6 +150,7 @@ struct AddRoutineSaveRequest: Equatable {
         attachments: [AttachmentItem] = [],
         color: RoutineTaskColor,
         autoAssumeDailyDone: Bool = false,
+        autoAssumeDoneTimeOfDay: RoutineTimeOfDay? = nil,
         estimatedDurationMinutes: Int? = nil,
         storyPoints: Int? = nil,
         focusModeEnabled: Bool = false
@@ -187,6 +201,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.attachments = attachments
         self.color = color
         self.autoAssumeDailyDone = autoAssumeDailyDone
+        self.autoAssumeDoneTimeOfDay = autoAssumeDailyDone ? autoAssumeDoneTimeOfDay : nil
         self.estimatedDurationMinutes = estimatedDurationMinutes
         self.storyPoints = storyPoints
         self.focusModeEnabled = focusModeEnabled
@@ -279,6 +294,7 @@ struct AddRoutineSaveRequest: Equatable {
                 hasSequentialSteps: !self.steps.isEmpty,
                 hasChecklistItems: !self.checklistItems.isEmpty
             )
+        self.autoAssumeDoneTimeOfDay = autoAssumeDailyDone ? schedule.autoAssumeDoneTimeOfDay : nil
     }
 
     private static func selectedRecurrenceRule(

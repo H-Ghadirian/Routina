@@ -1,6 +1,8 @@
 import Foundation
 
 enum RoutineAssumedCompletion {
+    static let defaultDoneTimeOfDay = RoutineTimeOfDay(hour: 12, minute: 0)
+
     static func isEligible(_ task: RoutineTask) -> Bool {
         task.autoAssumeDailyDone
             && isEligible(
@@ -142,6 +144,7 @@ enum RoutineAssumedCompletion {
 
     static func completionTimestamp(
         for day: Date,
+        timeOfDay: RoutineTimeOfDay? = nil,
         referenceDate: Date = Date(),
         calendar: Calendar = .current
     ) -> Date {
@@ -149,8 +152,21 @@ enum RoutineAssumedCompletion {
             return referenceDate
         }
 
-        let dayStart = calendar.startOfDay(for: day)
-        return calendar.date(bySettingHour: 12, minute: 0, second: 0, of: dayStart) ?? dayStart
+        return (timeOfDay ?? defaultDoneTimeOfDay).date(on: day, calendar: calendar)
+    }
+
+    static func completionTimestamp(
+        for task: RoutineTask,
+        on day: Date,
+        referenceDate: Date = Date(),
+        calendar: Calendar = .current
+    ) -> Date {
+        completionTimestamp(
+            for: day,
+            timeOfDay: task.autoAssumeDoneTimeOfDay,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
     }
 
     static func currentOccurrenceDay(

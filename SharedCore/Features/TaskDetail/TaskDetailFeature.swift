@@ -77,6 +77,7 @@ struct TaskDetailFeature: Reducer {
         var editRecurrenceWeekday: Int = Calendar.current.component(.weekday, from: Date())
         var editRecurrenceDayOfMonth: Int = Calendar.current.component(.day, from: Date())
         var editAutoAssumeDailyDone: Bool = false
+        var editAutoAssumeDoneTimeOfDay: RoutineTimeOfDay = RoutineAssumedCompletion.defaultDoneTimeOfDay
         var editEstimatedDurationMinutes: Int?
         var editActualDurationMinutes: Int?
         var editStoryPoints: Int?
@@ -298,6 +299,7 @@ struct TaskDetailFeature: Reducer {
         case editRecurrenceWeekdayChanged(Int)
         case editRecurrenceDayOfMonthChanged(Int)
         case editAutoAssumeDailyDoneChanged(Bool)
+        case editAutoAssumeDoneTimeOfDayChanged(RoutineTimeOfDay)
         case editSaveTapped
         case confirmAssumedPastDays
         case setDeleteConfirmation(Bool)
@@ -828,24 +830,25 @@ struct TaskDetailFeature: Reducer {
                 return .none
             }
             let existingChecklistItems = state.task.checklistItems
-            let item = RoutineChecklistItem(
+            let candidateItem = RoutineChecklistItem(
                 title: title,
                 intervalDays: state.editChecklistItemDraftInterval,
                 createdAt: now
             )
-            let updatedItems = RoutineChecklistItem.sanitized(existingChecklistItems + [item])
+            let candidateItems = RoutineChecklistItem.sanitized(existingChecklistItems + [candidateItem])
             let updatedScheduleMode = TaskDetailRoutineChecklistModeNormalizer.effectiveScheduleMode(
                 currentMode: state.task.scheduleMode,
                 existingChecklistItems: existingChecklistItems,
-                candidateChecklistItems: updatedItems,
+                candidateChecklistItems: candidateItems,
                 candidateSteps: state.task.steps
             )
+            let updatedItems = RoutineChecklistItem.sanitized(candidateItems, for: updatedScheduleMode)
             state.task.scheduleMode = updatedScheduleMode
             state.task.replaceChecklistItems(updatedItems)
             state.editRoutineChecklistItems = updatedItems
             state.editScheduleMode = updatedScheduleMode
             state.editChecklistItemDraftTitle = ""
-            state.editChecklistItemDraftInterval = 3
+            state.editChecklistItemDraftInterval = updatedScheduleMode.storesChecklistItemIntervals ? 3 : 1
             refreshTaskView(&state)
             updateDerivedState(&state)
             return handleDetailChecklistItemsChanged(
@@ -865,7 +868,7 @@ struct TaskDetailFeature: Reducer {
                     return RoutineChecklistItem(
                         id: item.id,
                         title: title,
-                        intervalDays: intervalDays,
+                        intervalDays: state.task.scheduleMode.normalizedChecklistItemIntervalDays(intervalDays),
                         lastPurchasedAt: item.lastPurchasedAt,
                         undoLastPurchasedAt: item.undoLastPurchasedAt,
                         undoTaskLastDone: item.undoTaskLastDone,
@@ -1266,6 +1269,12 @@ struct TaskDetailFeature: Reducer {
         case let .editAutoAssumeDailyDoneChanged(isEnabled):
             return recurrenceEditActionHandler().editAutoAssumeDailyDoneChanged(
                 isEnabled,
+                state: &state
+            )
+
+        case let .editAutoAssumeDoneTimeOfDayChanged(timeOfDay):
+            return recurrenceEditActionHandler().editAutoAssumeDoneTimeOfDayChanged(
+                timeOfDay,
                 state: &state
             )
 

@@ -19,6 +19,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0253](../decisions/0253-guard-checklist-detail-mutations-through-reloads.md)
 - [0259](../decisions/0259-allow-daily-checklist-auto-assumed-completion.md)
 - [0260](../decisions/0260-hide-assumed-done-tasks-by-default.md)
+- [0270](../decisions/0270-normalize-checklist-item-intervals.md)
 
 ## Current Contract
 
@@ -34,6 +35,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Calendar repeats offer weekday and month-day choices. Interval repeats own the single daily-repeat path.
 - Multi-day routines use a `Start` -> in-progress -> `Stop` lifecycle. Their detail calendar shows an ongoing range while active and a completed span after stopping.
 - Checklist runout item actions are item-scoped. Completing all currently due items records routine completion.
+- Checklist item intervals are stored as meaningful cadence only for checklist runout routines. Checklist-completion routines and optional checklist data normalize item intervals to a neutral one-day value.
 - Daily checklist-completion progress lasts for the current day only. Tomorrow starts unchecked unless the routine was completed and recorded in history.
 - Daily Checklist-completion routines with auto-assume done use day-level assumption only; assumed completion does not fake completed checklist item IDs, and current-day partial checklist progress suppresses assumed presentation until the routine is fully completed or progress is cleared.
 - Home task filters hide assumed-done rows by default; users can turn on `Show assumed done` in `All` or `Routines` views to review, confirm, or correct assumed days.

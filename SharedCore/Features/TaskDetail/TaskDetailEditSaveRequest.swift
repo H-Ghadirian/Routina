@@ -34,6 +34,7 @@ struct TaskDetailEditSaveRequest: Equatable {
     var recurrenceRule: RoutineRecurrenceRule
     var color: RoutineTaskColor
     var autoAssumeDailyDone: Bool
+    var autoAssumeDoneTimeOfDay: RoutineTimeOfDay?
     var estimatedDurationMinutes: Int?
     var actualDurationMinutes: Int?
     var storyPoints: Int?
@@ -46,6 +47,10 @@ struct TaskDetailEditSaveRequestBuilder {
     let matrixPriority: (RoutineTaskImportance, RoutineTaskUrgency) -> RoutineTaskPriority
 
     func build(state: inout TaskDetailFeature.State) -> TaskDetailEditSaveRequest? {
+        let hadChecklistDraft = RoutineChecklistItem.normalizedTitle(
+            state.editChecklistItemDraftTitle
+        ) != nil
+
         state.editRoutineTags = RoutineTag.appending(
             state.editTagDraft,
             to: state.editRoutineTags,
@@ -62,20 +67,24 @@ struct TaskDetailEditSaveRequestBuilder {
         state.editStepDraft = ""
         state.editRoutineChecklistItems = appendChecklistItem(
             from: state.editChecklistItemDraftTitle,
-            intervalDays: state.editChecklistItemDraftInterval,
+            intervalDays: state.editScheduleMode.normalizedChecklistItemIntervalDays(state.editChecklistItemDraftInterval),
             createdAt: now(),
             to: state.editRoutineChecklistItems
         )
         state.editChecklistItemDraftTitle = ""
-        state.editChecklistItemDraftInterval = 3
+        if hadChecklistDraft {
+            state.editChecklistItemDraftInterval = state.editScheduleMode.storesChecklistItemIntervals ? 3 : 1
+        }
 
         let trimmedName = state.editRoutineName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else { return nil }
-        let sanitizedChecklistItems = RoutineChecklistItem.sanitized(state.editRoutineChecklistItems)
-        let scheduleMode = effectiveScheduleMode(for: state, checklistItems: sanitizedChecklistItems)
+        let candidateChecklistItems = RoutineChecklistItem.sanitized(state.editRoutineChecklistItems)
+        let scheduleMode = effectiveScheduleMode(for: state, checklistItems: candidateChecklistItems)
+        let sanitizedChecklistItems = RoutineChecklistItem.sanitized(candidateChecklistItems, for: scheduleMode)
+        state.editRoutineChecklistItems = sanitizedChecklistItems
         state.editChecklistValidationMessage = AddRoutineChecklistValidator.validationMessage(
             scheduleMode: scheduleMode,
-            checklistItems: state.editRoutineChecklistItems,
+            checklistItems: sanitizedChecklistItems,
             checklistItemDraftTitle: state.editChecklistItemDraftTitle
         )
         guard state.editChecklistValidationMessage == nil else {
@@ -149,6 +158,9 @@ struct TaskDetailEditSaveRequestBuilder {
             recurrenceRule: recurrenceRule,
             color: state.editColor,
             autoAssumeDailyDone: state.editAutoAssumeDailyDone,
+            autoAssumeDoneTimeOfDay: state.editAutoAssumeDailyDone
+                ? state.editAutoAssumeDoneTimeOfDay
+                : nil,
             estimatedDurationMinutes: state.editEstimatedDurationMinutes,
             actualDurationMinutes: state.editActualDurationMinutes,
             storyPoints: state.editStoryPoints,

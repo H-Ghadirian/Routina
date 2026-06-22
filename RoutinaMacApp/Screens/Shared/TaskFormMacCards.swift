@@ -1040,7 +1040,14 @@ struct TaskFormMacBehaviorCard: View {
             caption: presentation.autoAssumeDailyDoneHelpText,
             isDisabled: !model.canAutoAssumeDailyDone
         ) {
-            EmptyView()
+            if model.showsAutoAssumeDoneTimeOfDay {
+                DatePicker(
+                    "Probable time",
+                    selection: model.autoAssumeDoneTimeOfDay,
+                    displayedComponents: .hourAndMinute
+                )
+                .fixedSize()
+            }
         }
     }
 

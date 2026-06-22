@@ -117,6 +117,36 @@ struct PersistenceControllerTests {
         #expect(task.recurrenceTimeRangeEndHour == 10)
         #expect(task.recurrenceRuleStorage.isEmpty)
     }
+
+    @MainActor
+    @Test
+    func normalizeChecklistItemIntervals_updatesOnlyNonRunoutChecklistItems() throws {
+        let container = try PersistenceController.makeLocalOnlyContainer(inMemory: true)
+        let context = container.mainContext
+        let completionTask = RoutineTask(
+            name: "Meal",
+            scheduleMode: .softIntervalChecklist
+        )
+        completionTask.checklistItemsStorage = RoutineChecklistItemStorage.serialize([
+            RoutineChecklistItem(title: "first meal", intervalDays: 3)
+        ])
+        let runoutTask = RoutineTask(
+            name: "Groceries",
+            checklistItems: [
+                RoutineChecklistItem(title: "Bread", intervalDays: 3)
+            ],
+            scheduleMode: .derivedFromChecklist
+        )
+        context.insert(completionTask)
+        context.insert(runoutTask)
+        try context.save()
+
+        let normalizedCount = try PersistenceController.normalizeChecklistItemIntervals(in: context)
+
+        #expect(normalizedCount == 1)
+        #expect(completionTask.checklistItems.map(\.intervalDays) == [1])
+        #expect(runoutTask.checklistItems.map(\.intervalDays) == [3])
+    }
 }
 
 private enum TestPersistenceError: LocalizedError {

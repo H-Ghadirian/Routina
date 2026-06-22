@@ -78,6 +78,29 @@ enum DayPlanHiddenTimelineActivityStore {
     }
 }
 
+private struct DayPlanTimelineActivityPlacement {
+    var placed: [DayPlanTimelineActivityBlock]
+    var unplaced: [DayPlanTimelineActivityBlock]
+
+    func sorted() -> DayPlanTimelineActivityPlacement {
+        DayPlanTimelineActivityPlacement(
+            placed: DayPlanTimelineActivityPlacement.sorted(placed),
+            unplaced: DayPlanTimelineActivityPlacement.sorted(unplaced)
+        )
+    }
+
+    private static func sorted(
+        _ blocks: [DayPlanTimelineActivityBlock]
+    ) -> [DayPlanTimelineActivityBlock] {
+        blocks.sorted { lhs, rhs in
+            if lhs.block.startMinute != rhs.block.startMinute {
+                return lhs.block.startMinute < rhs.block.startMinute
+            }
+            return lhs.block.titleSnapshot.localizedCaseInsensitiveCompare(rhs.block.titleSnapshot) == .orderedAscending
+        }
+    }
+}
+
 enum DayPlanTimelineTasks {
     private static let automaticSuggestionKinds: [RoutineLogKind] = [.completed]
 
@@ -221,6 +244,31 @@ enum DayPlanTimelineTasks {
         )
     }
 
+    static func automaticUnplaceableSuggestionBlocksByDayKey(
+        on dates: [Date],
+        from tasks: [RoutineTask],
+        logs: [RoutineLog],
+        plannedBlocksByDayKey: [String: [DayPlanBlock]],
+        blockedIntervalsByDayKey: [String: [DayPlanBlockedInterval]] = [:],
+        calendar: Calendar,
+        hiddenActivityIDs: Set<String> = [],
+        referenceDate: Date = Date()
+    ) -> [String: [DayPlanTimelineActivityBlock]] {
+        activityBlockPlacementsByDayKey(
+            on: dates,
+            from: tasks,
+            logs: logs,
+            plannedBlocksByDayKey: plannedBlocksByDayKey,
+            blockedIntervalsByDayKey: blockedIntervalsByDayKey,
+            calendar: calendar,
+            hiddenActivityIDs: hiddenActivityIDs,
+            excludesAllDayTasks: true,
+            includedKinds: automaticSuggestionKinds,
+            referenceDate: referenceDate
+        )
+        .mapValues { $0.unplaced }
+    }
+
     static func activityBlocksByDayKey(
         on dates: [Date],
         from tasks: [RoutineTask],
@@ -233,6 +281,33 @@ enum DayPlanTimelineTasks {
         includedKinds: [RoutineLogKind]? = nil,
         referenceDate: Date = Date()
     ) -> [String: [DayPlanTimelineActivityBlock]] {
+        activityBlockPlacementsByDayKey(
+            on: dates,
+            from: tasks,
+            logs: logs,
+            plannedBlocksByDayKey: plannedBlocksByDayKey,
+            blockedIntervalsByDayKey: blockedIntervalsByDayKey,
+            calendar: calendar,
+            hiddenActivityIDs: hiddenActivityIDs,
+            excludesAllDayTasks: excludesAllDayTasks,
+            includedKinds: includedKinds,
+            referenceDate: referenceDate
+        )
+        .mapValues { $0.placed }
+    }
+
+    private static func activityBlockPlacementsByDayKey(
+        on dates: [Date],
+        from tasks: [RoutineTask],
+        logs: [RoutineLog],
+        plannedBlocksByDayKey: [String: [DayPlanBlock]],
+        blockedIntervalsByDayKey: [String: [DayPlanBlockedInterval]] = [:],
+        calendar: Calendar,
+        hiddenActivityIDs: Set<String> = [],
+        excludesAllDayTasks: Bool = false,
+        includedKinds: [RoutineLogKind]? = nil,
+        referenceDate: Date = Date()
+    ) -> [String: DayPlanTimelineActivityPlacement] {
         let visibleDayKeys = Set(dates.map { DayPlanStorage.dayKey(for: $0, calendar: calendar) })
         guard !visibleDayKeys.isEmpty else { return [:] }
 
@@ -308,9 +383,9 @@ enum DayPlanTimelineTasks {
 
                 record(
                     DayPlanTimelineActivity(
-                        timestamp: RoutineAssumedCompletion.completionTimestamp(
+                        timestamp: displayTimestampForAssumedCompletion(
                             for: assumedDay,
-                            referenceDate: referenceDate,
+                            task: task,
                             calendar: calendar
                         ),
                         kind: .completed,
@@ -363,20 +438,18 @@ enum DayPlanTimelineTasks {
         let blocksByDayKey = Dictionary(grouping: blocks, by: \.block.dayKey)
         return Dictionary(uniqueKeysWithValues: blocksByDayKey.map { dayKey, dayBlocks in
             let plannedBlocks = plannedBlocksByDayKey[dayKey] ?? []
-            let arrangedBlocks = arrangedTimelineActivityBlocks(
+            let placement = arrangedTimelineActivityBlocks(
                 dayBlocks,
                 plannedBlocks: plannedBlocks,
                 calendar: calendar
             )
-            .filter { !isBlocked($0.block, by: blockedIntervalsByDayKey[dayKey] ?? []) }
-            .sorted { lhs, rhs in
-                if lhs.block.startMinute != rhs.block.startMinute {
-                    return lhs.block.startMinute < rhs.block.startMinute
-                }
-                return lhs.block.titleSnapshot.localizedCaseInsensitiveCompare(rhs.block.titleSnapshot) == .orderedAscending
-            }
+            let blockedIntervals = blockedIntervalsByDayKey[dayKey] ?? []
+            let visiblePlacement = DayPlanTimelineActivityPlacement(
+                placed: placement.placed.filter { !isBlocked($0.block, by: blockedIntervals) },
+                unplaced: placement.unplaced.filter { !isBlocked($0.block, by: blockedIntervals) }
+            )
 
-            return (dayKey, arrangedBlocks)
+            return (dayKey, visiblePlacement.sorted())
         })
     }
 
@@ -595,6 +668,15 @@ enum DayPlanTimelineTasks {
         ) ?? day
     }
 
+    private static func displayTimestampForAssumedCompletion(
+        for day: Date,
+        task: RoutineTask,
+        calendar: Calendar
+    ) -> Date {
+        (task.autoAssumeDoneTimeOfDay ?? RoutineAssumedCompletion.defaultDoneTimeOfDay)
+            .date(on: day, calendar: calendar)
+    }
+
     private static func isBlocked(_ block: DayPlanBlock, by intervals: [DayPlanBlockedInterval]) -> Bool {
         intervals.contains { $0.overlaps(block: block) }
     }
@@ -603,7 +685,7 @@ enum DayPlanTimelineTasks {
         _ blocks: [DayPlanTimelineActivityBlock],
         plannedBlocks: [DayPlanBlock],
         calendar: Calendar
-    ) -> [DayPlanTimelineActivityBlock] {
+    ) -> DayPlanTimelineActivityPlacement {
         let completedBlocks = blocks
             .filter { $0.kind == .completed }
             .sorted { lhs, rhs in
@@ -614,19 +696,26 @@ enum DayPlanTimelineTasks {
             }
 
         var occupiedIntervals = plannedBlocks.map(DayPlanOccupiedInterval.init(block:))
-        let arrangedCompletedBlocks: [DayPlanTimelineActivityBlock] = completedBlocks.compactMap { activity in
+        var arrangedCompletedBlocks: [DayPlanTimelineActivityBlock] = []
+        var unplacedBlocks: [DayPlanTimelineActivityBlock] = []
+
+        for activity in completedBlocks {
             let completionMinute = startMinute(for: activity.block.updatedAt, calendar: calendar)
             guard let arrangedActivity = activity.ending(
                 noLaterThan: completionMinute,
                 avoiding: occupiedIntervals
             ) else {
-                return nil
+                unplacedBlocks.append(activity)
+                continue
             }
             occupiedIntervals.append(DayPlanOccupiedInterval(block: arrangedActivity.block))
-            return arrangedActivity
+            arrangedCompletedBlocks.append(arrangedActivity)
         }
 
-        return blocks.filter { $0.kind != .completed } + arrangedCompletedBlocks
+        return DayPlanTimelineActivityPlacement(
+            placed: blocks.filter { $0.kind != .completed } + arrangedCompletedBlocks,
+            unplaced: unplacedBlocks
+        )
     }
 
     private static func timestamp(on date: Date, startMinute: Int, calendar: Calendar) -> Date {
@@ -727,7 +816,8 @@ private extension DayPlanTimelineActivityBlock {
         noLaterThan endMinute: Int,
         avoiding occupiedIntervals: [DayPlanOccupiedInterval]
     ) -> DayPlanTimelineActivityBlock? {
-        var clampedEndMinute = min(max(endMinute, 0), DayPlanBlock.minutesPerDay)
+        let preferredEndMinute = max(endMinute, block.durationMinutes)
+        var clampedEndMinute = min(max(preferredEndMinute, DayPlanBlock.minimumDurationMinutes), DayPlanBlock.minutesPerDay)
         var startMinute = max(0, clampedEndMinute - block.durationMinutes)
 
         while clampedEndMinute >= DayPlanBlock.minimumDurationMinutes {

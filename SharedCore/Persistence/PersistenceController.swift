@@ -226,6 +226,27 @@ public struct PersistenceController {
         return migratedCount
     }
 
+    @discardableResult
+    @MainActor
+    static func normalizeChecklistItemIntervals(in context: ModelContext) throws -> Int {
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        var normalizedCount = 0
+
+        for task in tasks {
+            let currentItems = task.checklistItems
+            let normalizedItems = RoutineChecklistItem.sanitized(currentItems, for: task.scheduleMode)
+            guard normalizedItems != currentItems else { continue }
+
+            task.replaceChecklistItems(normalizedItems)
+            normalizedCount += 1
+        }
+
+        if normalizedCount > 0 {
+            try context.save()
+        }
+        return normalizedCount
+    }
+
     static func strategyAfterPrimaryInitializationFailure(
         inMemory: Bool,
         hasExistingPersistentStore: Bool
@@ -262,12 +283,16 @@ public struct PersistenceController {
     static func runPostOpenMigrations(in container: ModelContainer) {
         do {
             let migratedCount = try migrateLegacyRecurrenceRules(in: container.mainContext)
+            let normalizedChecklistCount = try normalizeChecklistItemIntervals(in: container.mainContext)
             RoutinaUserPreferencesStore.migrateDefaultsIfNeeded(in: container.mainContext)
             if migratedCount > 0 {
                 NSLog("Migrated \(migratedCount) routine recurrence rule(s) from legacy JSON storage.")
             }
+            if normalizedChecklistCount > 0 {
+                NSLog("Normalized checklist item intervals for \(normalizedChecklistCount) routine(s).")
+            }
         } catch {
-            NSLog("Legacy recurrence rule migration failed: \(error.localizedDescription)")
+            NSLog("Post-open persistence migration failed: \(error.localizedDescription)")
         }
     }
 

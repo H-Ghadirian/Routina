@@ -30,6 +30,7 @@ struct AddRoutineScheduleMutationHandler {
         if mode == .oneOff {
             state.basics.routineDurationMode = .oneDay
         }
+        normalizeChecklistItemIntervals(state: &state)
         enforceRecurrenceConstraints(state: &state)
         enforceAutoAssumeEligibility(state: &state)
     }
@@ -55,6 +56,7 @@ struct AddRoutineScheduleMutationHandler {
     func addChecklistItem(state: inout AddRoutineFeature.State) {
         AddRoutineChecklistEditor.addChecklistItem(
             createdAt: now(),
+            scheduleMode: state.schedule.scheduleMode,
             checklist: &state.checklist
         )
         enforceAutoAssumeEligibility(state: &state)
@@ -209,9 +211,23 @@ struct AddRoutineScheduleMutationHandler {
         state.schedule.autoAssumeDailyDone = isEnabled && state.canAutoAssumeDailyDone
     }
 
+    func setAutoAssumeDoneTimeOfDay(
+        _ timeOfDay: RoutineTimeOfDay,
+        state: inout AddRoutineFeature.State
+    ) {
+        state.schedule.autoAssumeDoneTimeOfDay = timeOfDay
+    }
+
     private func enforceAutoAssumeEligibility(state: inout AddRoutineFeature.State) {
         guard !state.canAutoAssumeDailyDone else { return }
         state.schedule.autoAssumeDailyDone = false
+    }
+
+    private func normalizeChecklistItemIntervals(state: inout AddRoutineFeature.State) {
+        state.checklist.routineChecklistItems = RoutineChecklistItem.sanitized(
+            state.checklist.routineChecklistItems,
+            for: state.schedule.scheduleMode
+        )
     }
 
     private func enforceRecurrenceConstraints(state: inout AddRoutineFeature.State) {

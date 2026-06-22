@@ -44,6 +44,8 @@ extension CloudKitDirectPullService {
         var activityStateRawValue: String?
         var ongoingSince: Date?
         var autoAssumeDailyDone: Bool?
+        var autoAssumeDoneTimeOfDayHour: Int?
+        var autoAssumeDoneTimeOfDayMinute: Int?
         var estimatedDurationMinutes: Int?
         var actualDurationMinutes: Int?
         var storyPoints: Int?

@@ -582,6 +582,45 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func automaticPlannerSuggestionsPlaceEarlyCompletedActivityAtDayStart() throws {
+        let calendar = gregorianCalendar
+        let activityDate = try #require(date("2026-06-21T12:00:00Z"))
+        let completedAt = try #require(date("2026-06-21T00:07:07Z"))
+        let taskID = UUID()
+        let logID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "My Meal",
+            scheduleMode: .softIntervalChecklist,
+            recurrenceRule: .interval(days: 1),
+            estimatedDurationMinutes: 30
+        )
+        let logs = [
+            RoutineLog(
+                id: logID,
+                timestamp: completedAt,
+                taskID: taskID,
+                kind: .completed
+            ),
+        ]
+
+        let suggestions = DayPlanTimelineTasks.automaticSuggestionBlocks(
+            on: activityDate,
+            from: [task],
+            logs: logs,
+            plannedBlocks: [],
+            calendar: calendar
+        )
+        let suggestion = try #require(suggestions.first)
+
+        #expect(suggestions.count == 1)
+        #expect(suggestion.block.taskID == taskID)
+        #expect(suggestion.source == .log(logID))
+        #expect(suggestion.block.startMinute == 0)
+        #expect(suggestion.block.durationMinutes == 30)
+    }
+
+    @Test
     func automaticPlannerSuggestionsIncludeAssumedDoneRoutines() throws {
         let calendar = gregorianCalendar
         let activityDate = try #require(date("2026-05-07T12:00:00Z"))
@@ -614,6 +653,273 @@ struct DayPlanPlannerStateTests {
         #expect(suggestion.source == .assumedDone)
         #expect(suggestion.block.startMinute == 11 * 60 + 30)
         #expect(suggestion.block.durationMinutes == 30)
+    }
+
+    @Test
+    func automaticPlannerAssumedDoneUsesProbableTime() throws {
+        let calendar = gregorianCalendar
+        let activityDate = try #require(date("2026-06-22T12:00:00Z"))
+        let referenceDate = try #require(date("2026-06-22T19:00:00Z"))
+        let createdAt = try #require(date("2026-06-21T08:00:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Meal",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 0, minute: 0)),
+            createdAt: createdAt,
+            autoAssumeDailyDone: true,
+            autoAssumeDoneTimeOfDay: RoutineTimeOfDay(hour: 8, minute: 15),
+            estimatedDurationMinutes: 30
+        )
+
+        let suggestions = DayPlanTimelineTasks.automaticSuggestionBlocks(
+            on: activityDate,
+            from: [task],
+            logs: [],
+            plannedBlocks: [],
+            calendar: calendar,
+            referenceDate: referenceDate
+        )
+        let suggestion = try #require(suggestions.first)
+
+        #expect(suggestions.count == 1)
+        #expect(suggestion.block.taskID == taskID)
+        #expect(suggestion.source == .assumedDone)
+        #expect(suggestion.block.startMinute == 7 * 60 + 45)
+        #expect(suggestion.block.durationMinutes == 30)
+    }
+
+    @Test
+    func automaticPlannerAssumedDoneConflictAppearsUnplaceable() throws {
+        let calendar = gregorianCalendar
+        let activityDate = try #require(date("2026-06-22T12:00:00Z"))
+        let referenceDate = try #require(date("2026-06-22T19:00:00Z"))
+        let createdAt = try #require(date("2026-06-21T08:00:00Z"))
+        let dayKey = DayPlanStorage.dayKey(for: activityDate, calendar: calendar)
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Meal",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 0, minute: 0)),
+            createdAt: createdAt,
+            autoAssumeDailyDone: true,
+            autoAssumeDoneTimeOfDay: RoutineTimeOfDay(hour: 8, minute: 15),
+            estimatedDurationMinutes: 30
+        )
+        let occupiedBlock = DayPlanBlock(
+            taskID: UUID(),
+            dayKey: dayKey,
+            startMinute: 0,
+            durationMinutes: 9 * 60,
+            titleSnapshot: "Reserved morning"
+        )
+
+        let visibleSuggestions = DayPlanTimelineTasks.automaticSuggestionBlocksByDayKey(
+            on: [activityDate],
+            from: [task],
+            logs: [],
+            plannedBlocksByDayKey: [dayKey: [occupiedBlock]],
+            calendar: calendar,
+            referenceDate: referenceDate
+        )
+        let unplaceableSuggestions = DayPlanTimelineTasks.automaticUnplaceableSuggestionBlocksByDayKey(
+            on: [activityDate],
+            from: [task],
+            logs: [],
+            plannedBlocksByDayKey: [dayKey: [occupiedBlock]],
+            calendar: calendar,
+            referenceDate: referenceDate
+        )
+        let unplaceable = try #require(unplaceableSuggestions[dayKey]?.first)
+
+        #expect(visibleSuggestions[dayKey]?.isEmpty ?? true)
+        #expect(unplaceableSuggestions[dayKey]?.count == 1)
+        #expect(unplaceable.block.taskID == taskID)
+        #expect(unplaceable.source == .assumedDone)
+        #expect(unplaceable.block.startMinute == 8 * 60 + 15)
+        #expect(unplaceable.block.durationMinutes == 30)
+    }
+
+    @Test
+    func automaticPlannerUnplaceableSuggestionsRespectProtectedIntervals() throws {
+        let calendar = gregorianCalendar
+        let activityDate = try #require(date("2026-06-22T12:00:00Z"))
+        let referenceDate = try #require(date("2026-06-22T19:00:00Z"))
+        let createdAt = try #require(date("2026-06-21T08:00:00Z"))
+        let dayKey = DayPlanStorage.dayKey(for: activityDate, calendar: calendar)
+        let task = RoutineTask(
+            name: "Meal",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 0, minute: 0)),
+            createdAt: createdAt,
+            autoAssumeDailyDone: true,
+            autoAssumeDoneTimeOfDay: RoutineTimeOfDay(hour: 8, minute: 15),
+            estimatedDurationMinutes: 30
+        )
+        let occupiedBlock = DayPlanBlock(
+            taskID: UUID(),
+            dayKey: dayKey,
+            startMinute: 0,
+            durationMinutes: 9 * 60,
+            titleSnapshot: "Reserved morning"
+        )
+        let protectedInterval = DayPlanBlockedInterval(
+            dayKey: dayKey,
+            startMinute: 8 * 60,
+            endMinute: 9 * 60,
+            title: "Away"
+        )
+
+        let unplaceableSuggestions = DayPlanTimelineTasks.automaticUnplaceableSuggestionBlocksByDayKey(
+            on: [activityDate],
+            from: [task],
+            logs: [],
+            plannedBlocksByDayKey: [dayKey: [occupiedBlock]],
+            blockedIntervalsByDayKey: [dayKey: [protectedInterval]],
+            calendar: calendar,
+            referenceDate: referenceDate
+        )
+
+        #expect(unplaceableSuggestions[dayKey]?.isEmpty ?? true)
+    }
+
+    @Test
+    func automaticPlannerSuggestionsIncludeAssumedDoneChecklistIntervalRoutines() throws {
+        let calendar = gregorianCalendar
+        let activityDate = try #require(date("2026-06-22T12:00:00Z"))
+        let referenceDate = try #require(date("2026-06-22T10:00:00Z"))
+        let createdAt = try #require(date("2026-06-21T08:00:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Meal",
+            checklistItems: [
+                RoutineChecklistItem(
+                    title: "first meal",
+                    intervalDays: 3,
+                    createdAt: createdAt
+                ),
+            ],
+            scheduleMode: .softIntervalChecklist,
+            recurrenceRule: .interval(days: 1),
+            createdAt: createdAt,
+            autoAssumeDailyDone: true,
+            estimatedDurationMinutes: 30
+        )
+
+        let suggestions = DayPlanTimelineTasks.automaticSuggestionBlocks(
+            on: activityDate,
+            from: [task],
+            logs: [],
+            plannedBlocks: [],
+            calendar: calendar,
+            referenceDate: referenceDate
+        )
+        let suggestion = try #require(suggestions.first)
+
+        #expect(suggestions.count == 1)
+        #expect(suggestion.block.taskID == taskID)
+        #expect(suggestion.kind == .completed)
+        #expect(suggestion.source == .assumedDone)
+        #expect(suggestion.block.titleSnapshot == "Meal")
+        #expect(suggestion.block.startMinute == 11 * 60 + 30)
+    }
+
+    @Test
+    func automaticPlannerSuggestionsIncludeYesterdayAssumedDoneChecklistIntervalRoutines() throws {
+        let calendar = gregorianCalendar
+        let activityDate = try #require(date("2026-06-21T12:00:00Z"))
+        let referenceDate = try #require(date("2026-06-22T10:00:00Z"))
+        let createdAt = try #require(date("2026-06-21T08:00:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Meal",
+            checklistItems: [
+                RoutineChecklistItem(
+                    title: "first meal",
+                    intervalDays: 3,
+                    createdAt: createdAt
+                ),
+            ],
+            scheduleMode: .softIntervalChecklist,
+            recurrenceRule: .interval(days: 1),
+            createdAt: createdAt,
+            autoAssumeDailyDone: true,
+            estimatedDurationMinutes: 30
+        )
+
+        let suggestions = DayPlanTimelineTasks.automaticSuggestionBlocks(
+            on: activityDate,
+            from: [task],
+            logs: [],
+            plannedBlocks: [],
+            calendar: calendar,
+            referenceDate: referenceDate
+        )
+        let suggestion = try #require(suggestions.first)
+
+        #expect(suggestions.count == 1)
+        #expect(suggestion.block.taskID == taskID)
+        #expect(suggestion.kind == .completed)
+        #expect(suggestion.source == .assumedDone)
+        #expect(suggestion.block.titleSnapshot == "Meal")
+        #expect(suggestion.block.startMinute == 11 * 60 + 30)
+    }
+
+    @Test
+    func assumedDoneChecklistRoutinesSurviveTodayPlannerLayoutConflicts() throws {
+        let calendar = gregorianCalendar
+        let activityDate = try #require(date("2026-06-22T12:00:00Z"))
+        let referenceDate = try #require(date("2026-06-22T19:51:00Z"))
+        let createdAt = try #require(date("2026-06-21T08:00:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Meal",
+            checklistItems: [
+                RoutineChecklistItem(
+                    title: "first meal",
+                    intervalDays: 3,
+                    createdAt: createdAt
+                ),
+            ],
+            scheduleMode: .softIntervalChecklist,
+            recurrenceRule: .interval(days: 1),
+            createdAt: createdAt,
+            autoAssumeDailyDone: true,
+            estimatedDurationMinutes: 30
+        )
+        let plannedBlocks = [
+            DayPlanBlock(
+                taskID: UUID(),
+                dayKey: DayPlanStorage.dayKey(for: activityDate, calendar: calendar),
+                startMinute: 18 * 60,
+                durationMinutes: 30,
+                titleSnapshot: "Routina improvement"
+            ),
+            DayPlanBlock(
+                taskID: UUID(),
+                dayKey: DayPlanStorage.dayKey(for: activityDate, calendar: calendar),
+                startMinute: 18 * 60 + 30,
+                durationMinutes: 60,
+                titleSnapshot: "Group session"
+            ),
+        ]
+
+        let suggestions = DayPlanTimelineTasks.automaticSuggestionBlocks(
+            on: activityDate,
+            from: [task],
+            logs: [],
+            plannedBlocks: plannedBlocks,
+            calendar: calendar,
+            referenceDate: referenceDate
+        )
+
+        #expect(suggestions.map(\.block.taskID) == [taskID])
+        #expect(suggestions.first?.block.startMinute == 11 * 60 + 30)
     }
 
     @Test

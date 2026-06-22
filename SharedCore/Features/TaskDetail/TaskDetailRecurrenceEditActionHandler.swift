@@ -244,6 +244,14 @@ struct TaskDetailRecurrenceEditActionHandler {
         return .none
     }
 
+    func editAutoAssumeDoneTimeOfDayChanged(
+        _ timeOfDay: RoutineTimeOfDay,
+        state: inout State
+    ) -> Effect<Action> {
+        state.editAutoAssumeDoneTimeOfDay = timeOfDay
+        return .none
+    }
+
     private func rebaseEditReminderIfUsingLeadTime(
         _ state: inout State,
         mutate: (inout State) -> Void
@@ -285,7 +293,9 @@ struct TaskDetailRecurrenceEditActionHandler {
             return state.editRoutineChecklistItems + [
                 RoutineChecklistItem(
                     title: pendingTitle,
-                    intervalDays: state.editChecklistItemDraftInterval
+                    intervalDays: state.editScheduleMode.normalizedChecklistItemIntervalDays(
+                        state.editChecklistItemDraftInterval
+                    )
                 )
             ]
         }

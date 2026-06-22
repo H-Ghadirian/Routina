@@ -79,6 +79,12 @@ enum CloudKitDirectPullTaskPayloadApplier {
         if let autoAssumeDailyDone = payload.autoAssumeDailyDone {
             task.autoAssumeDailyDone = autoAssumeDailyDone
         }
+        if payload.autoAssumeDoneTimeOfDayHour != nil || payload.autoAssumeDoneTimeOfDayMinute != nil {
+            task.autoAssumeDoneTimeOfDay = RoutineTimeOfDay(
+                hour: payload.autoAssumeDoneTimeOfDayHour ?? RoutineAssumedCompletion.defaultDoneTimeOfDay.hour,
+                minute: payload.autoAssumeDoneTimeOfDayMinute ?? RoutineAssumedCompletion.defaultDoneTimeOfDay.minute
+            )
+        }
         if let estimatedDurationMinutes = payload.estimatedDurationMinutes {
             task.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
         }
@@ -143,6 +149,12 @@ enum CloudKitDirectPullTaskPayloadApplier {
             activityStateRawValue: payload.activityStateRawValue,
             ongoingSince: payload.ongoingSince,
             autoAssumeDailyDone: payload.autoAssumeDailyDone ?? false,
+            autoAssumeDoneTimeOfDay: payload.autoAssumeDoneTimeOfDayHour != nil || payload.autoAssumeDoneTimeOfDayMinute != nil
+                ? RoutineTimeOfDay(
+                    hour: payload.autoAssumeDoneTimeOfDayHour ?? RoutineAssumedCompletion.defaultDoneTimeOfDay.hour,
+                    minute: payload.autoAssumeDoneTimeOfDayMinute ?? RoutineAssumedCompletion.defaultDoneTimeOfDay.minute
+                )
+                : nil,
             estimatedDurationMinutes: payload.estimatedDurationMinutes,
             actualDurationMinutes: payload.actualDurationMinutes,
             storyPoints: payload.storyPoints,

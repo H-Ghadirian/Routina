@@ -150,6 +150,10 @@ struct AddRoutineTaskFormModelFactory {
                 get: { store.schedule.autoAssumeDailyDone },
                 send: AddRoutineFeature.Action.autoAssumeDailyDoneChanged
             ),
+            autoAssumeDoneTimeOfDay: binding(
+                get: { store.schedule.autoAssumeDoneTimeOfDay.date(on: Date()) },
+                send: { .autoAssumeDoneTimeOfDayChanged(RoutineTimeOfDay.from($0)) }
+            ),
             focusModeEnabled: binding(
                 get: { store.basics.focusModeEnabled },
                 send: AddRoutineFeature.Action.focusModeEnabledChanged

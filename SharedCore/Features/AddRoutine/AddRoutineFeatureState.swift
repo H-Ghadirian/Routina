@@ -62,6 +62,7 @@ struct AddRoutineScheduleState: Equatable {
     var recurrenceWeekdays: [Int] = []
     var recurrenceDaysOfMonth: [Int] = []
     var autoAssumeDailyDone: Bool = false
+    var autoAssumeDoneTimeOfDay: RoutineTimeOfDay = RoutineAssumedCompletion.defaultDoneTimeOfDay
 }
 
 struct AddRoutineChecklistState: Equatable {
@@ -106,11 +107,19 @@ struct AddRoutineFeatureState: Equatable {
 
     var candidateChecklistItems: [RoutineChecklistItem] {
         if let pendingItem = RoutineChecklistItem.normalizedTitle(checklist.checklistItemDraftTitle).map({
-            RoutineChecklistItem(title: $0, intervalDays: checklist.checklistItemDraftInterval)
+            RoutineChecklistItem(
+                title: $0,
+                intervalDays: schedule.scheduleMode.normalizedChecklistItemIntervalDays(
+                    checklist.checklistItemDraftInterval
+                )
+            )
         }) {
-            return checklist.routineChecklistItems + [pendingItem]
+            return RoutineChecklistItem.sanitized(
+                checklist.routineChecklistItems + [pendingItem],
+                for: schedule.scheduleMode
+            )
         }
-        return checklist.routineChecklistItems
+        return RoutineChecklistItem.sanitized(checklist.routineChecklistItems, for: schedule.scheduleMode)
     }
 
     var isSaveDisabled: Bool {

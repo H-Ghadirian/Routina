@@ -57,16 +57,17 @@ enum AddRoutineChecklistEditor {
 
     static func addChecklistItem(
         createdAt: Date,
+        scheduleMode: RoutineScheduleMode,
         checklist: inout AddRoutineChecklistState
     ) {
         checklist.routineChecklistItems = AddRoutineDraftFinalizer.appendingChecklistItem(
             from: checklist.checklistItemDraftTitle,
-            intervalDays: checklist.checklistItemDraftInterval,
+            intervalDays: scheduleMode.normalizedChecklistItemIntervalDays(checklist.checklistItemDraftInterval),
             createdAt: createdAt,
             to: checklist.routineChecklistItems
         )
         checklist.checklistItemDraftTitle = ""
-        checklist.checklistItemDraftInterval = 3
+        checklist.checklistItemDraftInterval = scheduleMode.storesChecklistItemIntervals ? 3 : 1
     }
 
     static func removeChecklistItem(

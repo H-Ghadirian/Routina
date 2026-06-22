@@ -100,7 +100,8 @@ struct TaskDetailCompletionLogActionHandler {
 
         for day in assumedDays {
             let completionDate = RoutineAssumedCompletion.completionTimestamp(
-                for: day,
+                for: state.task,
+                on: day,
                 referenceDate: now(),
                 calendar: calendar
             )

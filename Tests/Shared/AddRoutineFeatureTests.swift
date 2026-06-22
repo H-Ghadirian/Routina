@@ -949,12 +949,16 @@ struct AddRoutineFeatureTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) {
+            $0.checklist.routineChecklistItems[0].intervalDays = 1
+            $0.checklist.routineChecklistItems[1].intervalDays = 1
+        }
 
         #expect(capturedRequest.value?.scheduleMode == .softIntervalChecklist)
         #expect(capturedRequest.value?.recurrenceRule == .interval(days: 4, at: exactTime))
         #expect(capturedRequest.value?.steps.isEmpty == true)
         #expect(capturedRequest.value?.checklistItems.map(\.title) == ["Whites", "Colors"])
+        #expect(capturedRequest.value?.checklistItems.map(\.intervalDays) == [1, 1])
     }
 
     @Test

@@ -559,6 +559,10 @@ private struct DayPlanTimelinePanelView: View {
             from: events,
             calendar: calendar
         )
+        let automaticOccupiedBlocksByDayKey = mergePlannerBlocks(
+            plannedBlocksByDayKey,
+            eventBlocksByDayKey.mapValues { $0.map(\.block) }
+        )
         let blockedIntervalsByDayKey = mergeBlockedIntervals(
             mergeBlockedIntervals(
                 sleepBlocksByDayKey.mapValues { blocks in blocks.map(\.interval) },
@@ -573,7 +577,7 @@ private struct DayPlanTimelinePanelView: View {
             on: visibleDates,
             from: tasks,
             logs: logs,
-            plannedBlocksByDayKey: plannedBlocksByDayKey,
+            plannedBlocksByDayKey: automaticOccupiedBlocksByDayKey,
             calendar: calendar,
             hiddenActivityIDs: hiddenTimelineActivityIDs,
             referenceDate: referenceDate
@@ -586,7 +590,17 @@ private struct DayPlanTimelinePanelView: View {
             on: visibleDates,
             from: tasks,
             logs: logs,
-            plannedBlocksByDayKey: plannedBlocksByDayKey,
+            plannedBlocksByDayKey: automaticOccupiedBlocksByDayKey,
+            blockedIntervalsByDayKey: blockedIntervalsByDayKey,
+            calendar: calendar,
+            hiddenActivityIDs: hiddenTimelineActivityIDs,
+            referenceDate: referenceDate
+        )
+        let unplaceableAutomaticSuggestionBlocksByDayKey = DayPlanTimelineTasks.automaticUnplaceableSuggestionBlocksByDayKey(
+            on: visibleDates,
+            from: tasks,
+            logs: logs,
+            plannedBlocksByDayKey: automaticOccupiedBlocksByDayKey,
             blockedIntervalsByDayKey: blockedIntervalsByDayKey,
             calendar: calendar,
             hiddenActivityIDs: hiddenTimelineActivityIDs,
@@ -596,7 +610,7 @@ private struct DayPlanTimelinePanelView: View {
             on: visibleDates,
             from: tasks,
             logs: logs,
-            plannedBlocksByDayKey: plannedBlocksByDayKey,
+            plannedBlocksByDayKey: automaticOccupiedBlocksByDayKey,
             blockedIntervalsByDayKey: blockedIntervalsByDayKey,
             calendar: calendar,
             hiddenActivityIDs: hiddenTimelineActivityIDs,
@@ -644,6 +658,11 @@ private struct DayPlanTimelinePanelView: View {
                     guard showsTimelineTasksInDayPlanner else { return [] }
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
                     return automaticSuggestionBlocksByDayKey[dayKey] ?? []
+                },
+                unplaceableAutomaticTimelineBlocksForDate: { date in
+                    guard showsTimelineTasksInDayPlanner else { return [] }
+                    let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+                    return unplaceableAutomaticSuggestionBlocksByDayKey[dayKey] ?? []
                 },
                 eventBlocksForDate: { date in
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
@@ -1296,6 +1315,17 @@ private struct DayPlanTimelinePanelView: View {
         var result = lhs
         for (dayKey, intervals) in rhs {
             result[dayKey, default: []].append(contentsOf: intervals)
+        }
+        return result
+    }
+
+    private func mergePlannerBlocks(
+        _ lhs: [String: [DayPlanBlock]],
+        _ rhs: [String: [DayPlanBlock]]
+    ) -> [String: [DayPlanBlock]] {
+        var result = lhs
+        for (dayKey, blocks) in rhs {
+            result[dayKey, default: []].append(contentsOf: blocks)
         }
         return result
     }

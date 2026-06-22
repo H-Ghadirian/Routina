@@ -1616,6 +1616,16 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func hiddenPlannerActivityCountsAsTemporaryViewStateToReset() {
+        var appSettingsClient = AppSettingsClient.noop
+        appSettingsClient.hiddenDayPlanTimelineActivityIDs = {
+            "timeline-assumed-00000000-0000-0000-0000-000000000001-2026-06-22"
+        }
+
+        #expect(SettingsExecutionSupport.hasTemporaryViewStateToReset(appSettingsClient: appSettingsClient))
+    }
+
+    @Test
     func exportRoutineDataTapped_cancelledSelectionFinishesGracefully() async {
         let store = TestStore(initialState: SettingsFeature.State()) {
             SettingsFeature()

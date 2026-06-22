@@ -889,10 +889,11 @@ struct TaskDetailEditSaveTests {
         await store.send(.editAddChecklistItemTapped) {
             $0.editScheduleMode = .fixedIntervalChecklist
             $0.editChecklistItemDraftTitle = ""
-            $0.editChecklistItemDraftInterval = 3
+            $0.editChecklistItemDraftInterval = 1
         }
 
         #expect(store.state.editRoutineChecklistItems.map(\.title) == ["Bread"])
+        #expect(store.state.editRoutineChecklistItems.map(\.intervalDays) == [1])
         #expect(store.state.canAutoAssumeDailyDone)
     }
 
@@ -920,7 +921,8 @@ struct TaskDetailEditSaveTests {
                 editRoutineChecklistItems: [RoutineChecklistItem(title: "Bread", intervalDays: 1)],
                 editFrequency: .day,
                 editFrequencyValue: 1,
-                editAutoAssumeDailyDone: true
+                editAutoAssumeDailyDone: true,
+                editAutoAssumeDoneTimeOfDay: RoutineTimeOfDay(hour: 8, minute: 15)
             )
         ) {
             TaskDetailFeature()
@@ -951,7 +953,9 @@ struct TaskDetailEditSaveTests {
         )
         #expect(persistedTask.scheduleMode == .fixedIntervalChecklist)
         #expect(persistedTask.checklistItems.map(\.title) == ["Bread"])
+        #expect(persistedTask.checklistItems.map(\.intervalDays) == [1])
         #expect(persistedTask.autoAssumeDailyDone)
+        #expect(persistedTask.autoAssumeDoneTimeOfDay == RoutineTimeOfDay(hour: 8, minute: 15))
     }
 
     @Test

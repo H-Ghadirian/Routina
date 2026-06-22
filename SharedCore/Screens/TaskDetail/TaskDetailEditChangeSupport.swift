@@ -48,6 +48,7 @@ struct TaskDetailEditChangeRequest {
     let recurrenceWeekday: Int
     let recurrenceDayOfMonth: Int
     let autoAssumeDailyDone: Bool
+    let autoAssumeDoneTimeOfDay: RoutineTimeOfDay
     let focusModeEnabled: Bool
     let pressure: RoutineTaskPressure
     let task: RoutineTask
@@ -100,6 +101,7 @@ struct TaskDetailEditChangeRequest {
         self.recurrenceWeekday = state.editRecurrenceWeekday
         self.recurrenceDayOfMonth = state.editRecurrenceDayOfMonth
         self.autoAssumeDailyDone = state.editAutoAssumeDailyDone
+        self.autoAssumeDoneTimeOfDay = state.editAutoAssumeDoneTimeOfDay
         self.focusModeEnabled = state.editFocusModeEnabled
         self.pressure = state.editPressure
         self.task = state.task
@@ -136,10 +138,18 @@ enum TaskDetailEditChangeDetector {
         let currentChecklistItems = RoutineChecklistItem.sanitized(task.checklistItems)
         let candidateChecklistItems = RoutineChecklistItem.normalizedTitle(request.checklistItemDraftTitle).map { title in
             request.checklistItems + [
-                RoutineChecklistItem(title: title, intervalDays: request.checklistItemDraftInterval)
+                RoutineChecklistItem(
+                    title: title,
+                    intervalDays: request.scheduleMode.normalizedChecklistItemIntervalDays(
+                        request.checklistItemDraftInterval
+                    )
+                )
             ]
         } ?? request.checklistItems
-        let sanitizedCandidateChecklistItems = RoutineChecklistItem.sanitized(candidateChecklistItems)
+        let sanitizedCandidateChecklistItems = RoutineChecklistItem.sanitized(
+            candidateChecklistItems,
+            for: request.scheduleMode
+        )
 
         return trimmedName != currentName
             || request.emoji != currentEmoji
@@ -173,6 +183,7 @@ enum TaskDetailEditChangeDetector {
             || sanitizedCandidateChecklistItems != currentChecklistItems
             || recurrenceRule(for: request) != task.recurrenceRule
             || request.autoAssumeDailyDone != task.autoAssumeDailyDone
+            || normalizedAutoAssumeDoneTimeOfDay(for: request) != normalizedAutoAssumeDoneTimeOfDay(for: task)
             || request.focusModeEnabled != task.focusModeEnabled
             || request.pressure != task.pressure
     }
@@ -185,6 +196,20 @@ enum TaskDetailEditChangeDetector {
 
     private static func normalizedRoutineDurationMode(for task: RoutineTask) -> RoutineDurationMode {
         task.routineDurationMode
+    }
+
+    private static func normalizedAutoAssumeDoneTimeOfDay(
+        for request: TaskDetailEditChangeRequest
+    ) -> RoutineTimeOfDay? {
+        request.autoAssumeDailyDone ? request.autoAssumeDoneTimeOfDay : nil
+    }
+
+    private static func normalizedAutoAssumeDoneTimeOfDay(
+        for task: RoutineTask
+    ) -> RoutineTimeOfDay? {
+        task.autoAssumeDailyDone
+            ? (task.autoAssumeDoneTimeOfDay ?? RoutineAssumedCompletion.defaultDoneTimeOfDay)
+            : nil
     }
 
     private static func recurrenceRule(for request: TaskDetailEditChangeRequest) -> RoutineRecurrenceRule {

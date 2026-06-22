@@ -246,6 +246,7 @@ struct AppSettingsClient: Sendable {
     var lastRoutineDataBackupDate: @Sendable () -> Date?
     var setLastRoutineDataBackupDate: @Sendable (Date?) -> Void
     var selectedAppIcon: @Sendable () -> AppIconOption
+    var hiddenDayPlanTimelineActivityIDs: @Sendable () -> String?
     var temporaryViewState: @Sendable () -> TemporaryViewState?
     var setTemporaryViewState: @Sendable (TemporaryViewState?) -> Void
     var resetTemporaryViewState: @Sendable () -> Void
@@ -585,6 +586,9 @@ extension AppSettingsClient {
         selectedAppIcon: {
             .persistedSelection
         },
+        hiddenDayPlanTimelineActivityIDs: {
+            SharedDefaults.app[.appSettingHiddenDayPlanTimelineActivityIDs]
+        },
         temporaryViewState: {
             guard let rawValue = SharedDefaults.app[.appSettingTemporaryViewState],
                   let data = rawValue.data(using: .utf8)
@@ -613,6 +617,7 @@ extension AppSettingsClient {
         resetTemporaryViewState: {
             SharedDefaults.app[.appSettingHideUnavailableRoutines] = false
             SharedDefaults.app[.appSettingTemporaryViewState] = nil
+            SharedDefaults.app[.appSettingHiddenDayPlanTimelineActivityIDs] = nil
             AppSettingsPersistenceMirror.schedule()
         },
         resetAllSettingsToDefaults: {
@@ -675,6 +680,7 @@ extension AppSettingsClient {
         lastRoutineDataBackupDate: { nil },
         setLastRoutineDataBackupDate: { _ in },
         selectedAppIcon: { .orange },
+        hiddenDayPlanTimelineActivityIDs: { nil },
         temporaryViewState: { nil },
         setTemporaryViewState: { _ in },
         resetTemporaryViewState: { },

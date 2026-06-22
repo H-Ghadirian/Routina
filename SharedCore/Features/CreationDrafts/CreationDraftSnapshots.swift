@@ -81,6 +81,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
     var recurrenceWeekdays: [Int] = []
     var recurrenceDaysOfMonth: [Int] = []
     var autoAssumeDailyDone = false
+    var autoAssumeDoneTimeOfDay: RoutineTimeOfDay = RoutineAssumedCompletion.defaultDoneTimeOfDay
     var routineSteps: [RoutineStep] = []
     var stepDraft = ""
     var routineChecklistItems: [RoutineChecklistItem] = []
@@ -140,6 +141,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
         recurrenceWeekdays = schedule.recurrenceWeekdays
         recurrenceDaysOfMonth = schedule.recurrenceDaysOfMonth
         autoAssumeDailyDone = schedule.autoAssumeDailyDone
+        autoAssumeDoneTimeOfDay = schedule.autoAssumeDoneTimeOfDay
         routineSteps = checklist.routineSteps
         stepDraft = checklist.stepDraft
         routineChecklistItems = checklist.routineChecklistItems
@@ -187,6 +189,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
             || recurrenceTimeRangeStart != RoutineTimeRange.defaultValue.start
             || recurrenceTimeRangeEnd != RoutineTimeRange.defaultValue.end
             || autoAssumeDailyDone
+            || autoAssumeDoneTimeOfDay != RoutineAssumedCompletion.defaultDoneTimeOfDay
             || !routineSteps.isEmpty
             || hasText(stepDraft)
             || !routineChecklistItems.isEmpty
@@ -263,6 +266,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
             state.schedule.recurrenceDaysOfMonth = [state.schedule.recurrenceDayOfMonth]
         }
         state.schedule.autoAssumeDailyDone = autoAssumeDailyDone
+        state.schedule.autoAssumeDoneTimeOfDay = autoAssumeDoneTimeOfDay
         state.checklist.routineSteps = RoutineStep.sanitized(routineSteps)
         state.checklist.stepDraft = stepDraft
         state.checklist.routineChecklistItems = RoutineChecklistItem.sanitized(routineChecklistItems)

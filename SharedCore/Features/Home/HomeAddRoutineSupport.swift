@@ -80,6 +80,7 @@ enum HomeAddRoutineSupport {
             scheduleAnchor: request.scheduleMode == .oneOff ? nil : scheduleAnchor,
             color: request.color,
             autoAssumeDailyDone: request.autoAssumeDailyDone,
+            autoAssumeDoneTimeOfDay: request.autoAssumeDoneTimeOfDay,
             estimatedDurationMinutes: request.estimatedDurationMinutes,
             storyPoints: request.storyPoints,
             focusModeEnabled: request.focusModeEnabled

@@ -94,6 +94,7 @@ struct SettingsFeatureDependencyTests {
                 lastRoutineDataBackupDate: { lastBackupDate },
                 setLastRoutineDataBackupDate: { _ in },
                 selectedAppIcon: { .teal },
+                hiddenDayPlanTimelineActivityIDs: { nil },
                 temporaryViewState: { nil },
                 setTemporaryViewState: { _ in },
                 resetTemporaryViewState: { }

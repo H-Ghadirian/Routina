@@ -63,8 +63,12 @@ struct TaskDetailStepChecklistEditActionHandler {
             to: state.editRoutineChecklistItems
         )
         normalizeRoutineChecklistMode(state: &state)
+        state.editRoutineChecklistItems = RoutineChecklistItem.sanitized(
+            state.editRoutineChecklistItems,
+            for: state.editScheduleMode
+        )
         state.editChecklistItemDraftTitle = ""
-        state.editChecklistItemDraftInterval = 3
+        state.editChecklistItemDraftInterval = state.editScheduleMode.storesChecklistItemIntervals ? 3 : 1
         refreshChecklistValidation(state: &state)
         disableAutoAssumeIfNeeded(state: &state)
         clearPlanningIfDailyRoutine(state: &state)
@@ -113,7 +117,9 @@ struct TaskDetailStepChecklistEditActionHandler {
             return state.editRoutineChecklistItems + [
                 RoutineChecklistItem(
                     title: pendingTitle,
-                    intervalDays: state.editChecklistItemDraftInterval
+                    intervalDays: state.editScheduleMode.normalizedChecklistItemIntervalDays(
+                        state.editChecklistItemDraftInterval
+                    )
                 )
             ]
         }

@@ -457,6 +457,13 @@ struct TaskFormIOSRepeatPatternSections: View {
         Section(header: Text("Assumed Done")) {
             Toggle("Auto-assume done", isOn: model.autoAssumeDailyDone)
                 .disabled(!model.canAutoAssumeDailyDone)
+            if model.showsAutoAssumeDoneTimeOfDay {
+                DatePicker(
+                    "Probable time",
+                    selection: model.autoAssumeDoneTimeOfDay,
+                    displayedComponents: .hourAndMinute
+                )
+            }
             Text(presentation.autoAssumeDailyDoneHelpText)
                 .font(.caption)
                 .foregroundStyle(.secondary)
