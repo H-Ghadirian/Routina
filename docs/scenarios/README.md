@@ -121,18 +121,23 @@ Given a multi-day routine has not started
 When the user starts it, views it while active, stops it, and undoes completion
 Then the primary action, active range, completed span, and undo behavior stay consistent
 
-### Daily Routines Stay In Plan To Do Today
+### Today Routines Stay In Plan To Do Today
 
 Area: Tasks
-Decision links: [0202](../decisions/0202-nest-daily-routines-under-mac-plan-today.md), [0247](../decisions/0247-make-mac-daily-routine-grouping-optional.md)
+Decision links: [0202](../decisions/0202-nest-daily-routines-under-mac-plan-today.md), [0247](../decisions/0247-make-mac-daily-routine-grouping-optional.md), [0266](../decisions/0266-show-calendar-routines-in-plan-today.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/macOS/HomeFeatureTaskListModeTests.swift`
 - `Tests/iOS/HomeFeatureTaskListModeTests.swift`
+- `Tests/Shared/HomeTaskListFilteringTests.swift`
 
 Given Mac Home shows `Plan to do today`
 When daily routines are loaded with the grouping setting off or on
 Then daily routines remain in the today area, visually merged by default and nested only when the setting is enabled
+
+Given a weekly or month-day calendar routine is configured for today's weekday or day of month
+When Home derives `Plan to do today`
+Then that calendar routine appears in the existing today list without a separate scheduled-today group, while rolling interval routines stay in the normal due/status sections unless explicitly planned
 
 ### Home Task Lists Keep Stable Row Identity
 

@@ -91,6 +91,26 @@ extension HomeTaskListDisplay {
     var taskListTagManualOrderSectionKey: String {
         HomeTaskListTagGrouping.sectionKey(for: taskListPrimaryTag)
     }
+
+    func isFixedCalendarRoutineScheduled(on day: Date, calendar: Calendar) -> Bool {
+        guard !isOneOffTask, !isDailyRoutine else { return false }
+        let normalizedDay = calendar.startOfDay(for: day)
+
+        switch recurrenceRule.kind {
+        case .weekly:
+            return recurrenceRule.resolvedWeekdays(calendar: calendar)
+                .contains(calendar.component(.weekday, from: normalizedDay))
+
+        case .monthlyDay:
+            let dayCount = calendar.range(of: .day, in: .month, for: normalizedDay)?.count ?? 31
+            let scheduledDays = recurrenceRule.resolvedDaysOfMonth(calendar: calendar)
+                .map { min(max($0, 1), dayCount) }
+            return scheduledDays.contains(calendar.component(.day, from: normalizedDay))
+
+        case .intervalDays, .dailyTime:
+            return false
+        }
+    }
 }
 
 enum HomeTaskListTagGrouping {

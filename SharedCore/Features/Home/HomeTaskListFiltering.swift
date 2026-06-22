@@ -138,11 +138,16 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
         displays
             .filter { task in
                 guard !task.isDailyRoutine,
-                      predicate.matchesVisibleTask(task),
-                      let plannedDate = task.plannedDate else { return false }
-                return metrics.configuration.calendar.isDate(
-                    plannedDate,
-                    inSameDayAs: metrics.configuration.referenceDate
+                      predicate.matchesVisibleTask(task) else { return false }
+                if let plannedDate = task.plannedDate {
+                    return metrics.configuration.calendar.isDate(
+                        plannedDate,
+                        inSameDayAs: metrics.configuration.referenceDate
+                    )
+                }
+                return task.isFixedCalendarRoutineScheduled(
+                    on: metrics.configuration.referenceDate,
+                    calendar: metrics.configuration.calendar
                 )
             }
             .sorted(by: sorter.plannedTodayTaskSort)

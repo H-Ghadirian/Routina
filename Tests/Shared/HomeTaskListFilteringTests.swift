@@ -219,6 +219,63 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func filteredPlannedTodayTasksIncludesFixedCalendarOccurrencesToday() {
+        let referenceDate = makeDate("2026-06-22T10:00:00Z") // Monday
+        let tasks = [
+            TestTaskDisplay(
+                name: "Monday at five",
+                recurrenceRule: .weekly(on: 2, at: RoutineTimeOfDay(hour: 17, minute: 0)),
+                dueDate: makeDate("2026-06-22T17:00:00Z"),
+                daysUntilDue: 0
+            ),
+            TestTaskDisplay(
+                name: "Twenty second",
+                recurrenceRule: .monthly(on: 22),
+                daysUntilDue: 0
+            ),
+            TestTaskDisplay(
+                name: "Tuesday",
+                recurrenceRule: .weekly(on: 3),
+                daysUntilDue: 1
+            ),
+            TestTaskDisplay(
+                name: "Every seven days",
+                recurrenceRule: .interval(days: 7),
+                daysUntilDue: 0
+            ),
+            TestTaskDisplay(
+                name: "Daily",
+                recurrenceRule: .interval(days: 1),
+                daysUntilDue: 0
+            )
+        ]
+
+        let result = makeFiltering(referenceDate: referenceDate)
+            .filteredPlannedTodayTasks(tasks)
+
+        #expect(Set(result.map(\.name)) == ["Monday at five", "Twenty second"])
+    }
+
+    @Test
+    func filteredPlannedTodayTasksHonorsExplicitPlannedDateOverCalendarOccurrence() {
+        let referenceDate = makeDate("2026-06-22T10:00:00Z") // Monday
+        let tomorrow = makeDate("2026-06-23T10:00:00Z")
+        let tasks = [
+            TestTaskDisplay(
+                name: "Moved to tomorrow",
+                recurrenceRule: .weekly(on: 2),
+                plannedDate: tomorrow,
+                daysUntilDue: 0
+            )
+        ]
+
+        let result = makeFiltering(referenceDate: referenceDate)
+            .filteredPlannedTodayTasks(tasks)
+
+        #expect(result.isEmpty)
+    }
+
+    @Test
     func presentationKeepsDailyRoutineOutOfPlannedTodaySection() {
         let referenceDate = Date(timeIntervalSince1970: 1_714_608_000)
         let dailyID = UUID()
@@ -736,15 +793,23 @@ struct HomeTaskListFilteringTests {
 
     @Test
     func sidebarPresentationMergesDailyRoutinesIntoPlanTodayByDefault() {
-        let referenceDate = Date(timeIntervalSince1970: 1_714_608_000)
+        let referenceDate = makeDate("2026-06-22T10:00:00Z") // Monday
         let plannedID = UUID()
         let dailyID = UUID()
+        let scheduledID = UUID()
         let regularID = UUID()
         let presentation = HomeTaskListPresentation.sidebar(
-            filtering: makeFiltering(),
+            filtering: makeFiltering(referenceDate: referenceDate),
             routineDisplays: [
                 TestTaskDisplay(taskID: regularID, name: "Weekly", recurrenceRule: .interval(days: 7), daysUntilDue: 4),
                 TestTaskDisplay(taskID: dailyID, name: "Daily", recurrenceRule: .interval(days: 1), daysUntilDue: 0),
+                TestTaskDisplay(
+                    taskID: scheduledID,
+                    name: "Monday at five",
+                    recurrenceRule: .weekly(on: 2, at: RoutineTimeOfDay(hour: 17, minute: 0)),
+                    dueDate: makeDate("2026-06-22T17:00:00Z"),
+                    daysUntilDue: 0
+                ),
                 TestTaskDisplay(taskID: plannedID, name: "Plan today", plannedDate: referenceDate)
             ],
             awayRoutineDisplays: [],
@@ -759,12 +824,12 @@ struct HomeTaskListFilteringTests {
         let planSection = presentation.sections.first
         #expect(presentation.sections.map(\.kind) == [.plannedToday, .regular])
         #expect(presentation.sections.map(\.title) == ["Plan to do today", "On Track"])
-        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 2])
-        #expect(planSection?.tasks.map(\.taskID) == [plannedID, dailyID])
+        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 3])
+        #expect(planSection?.tasks.map(\.taskID) == [scheduledID, plannedID, dailyID])
         #expect(planSection?.taskGroups.map(\.title) == [nil, nil])
         #expect(planSection?.taskGroups.map(\.isCollapsible) == [false, false])
         #expect(planSection?.taskGroups.compactMap(\.moveContext?.sectionKey) == ["plannedToday", "daily"])
-        #expect(planSection?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs) == [[plannedID], [dailyID]])
+        #expect(planSection?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs) == [[scheduledID, plannedID], [dailyID]])
     }
 
     @Test
@@ -1264,7 +1329,8 @@ private func makeFiltering(
     excludeTagMatchMode: RoutineTagMatchMode = .any,
     searchText: String = "",
     routineListSectioningMode: RoutineListSectioningMode = .status,
-    routineTasks: [RoutineTask] = []
+    routineTasks: [RoutineTask] = [],
+    referenceDate: Date = Date(timeIntervalSince1970: 1_714_608_000)
 ) -> HomeTaskListFiltering<TestTaskDisplay> {
     var calendar = Calendar(identifier: .gregorian)
     calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
@@ -1290,7 +1356,7 @@ private func makeFiltering(
             searchText: searchText,
             routineListSectioningMode: routineListSectioningMode,
             routineTasks: routineTasks,
-            referenceDate: Date(timeIntervalSince1970: 1_714_608_000),
+            referenceDate: referenceDate,
             calendar: calendar
         ),
         matchesCurrentTaskListMode: { _ in true }
