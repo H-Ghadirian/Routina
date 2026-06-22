@@ -431,7 +431,7 @@ Group {
         else {
             return nil
         }
-        guard !session.isUnassigned else {
+        guard session.isTaskFocus else {
             return nil
         }
 

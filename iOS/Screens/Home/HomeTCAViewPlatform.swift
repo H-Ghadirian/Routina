@@ -485,12 +485,29 @@ private struct HomePinnedFocusTimerBanner: View {
             return nil
         }
 
-        let taskTitle = session.isUnassigned ? nil : tasks.first { $0.id == session.taskID }?.name
+        let taskTitle = session.isTaskFocus ? tasks.first { $0.id == session.taskID }?.name : nil
+        let kind: HomePinnedFocusTimerStatus.Kind
+        let title: String
+        let targetID: UUID?
+        if let tagTitle = session.focusTagTitle {
+            kind = .tag
+            title = tagTitle
+            targetID = nil
+        } else if session.isUnassigned {
+            kind = .unassigned
+            title = "Unassigned focus"
+            targetID = nil
+        } else {
+            kind = .task
+            title = normalizedTitle(taskTitle, fallback: "Task focus")
+            targetID = session.taskID
+        }
+
         return HomePinnedFocusTimerStatus(
             id: session.id,
-            targetID: session.isUnassigned ? nil : session.taskID,
-            kind: session.isUnassigned ? .unassigned : .task,
-            title: normalizedTitle(taskTitle, fallback: session.isUnassigned ? "Unassigned focus" : "Task focus"),
+            targetID: targetID,
+            kind: kind,
+            title: title,
             startedAt: startedAt,
             plannedDurationSeconds: session.plannedDurationSeconds,
             pausedAt: session.pausedAt,
@@ -525,6 +542,7 @@ private struct HomePinnedFocusTimerBanner: View {
 private struct HomePinnedFocusTimerStatus: Equatable {
     enum Kind: Equatable {
         case task
+        case tag
         case sprint
         case unassigned
     }
@@ -546,6 +564,8 @@ private struct HomePinnedFocusTimerStatus: Equatable {
         switch kind {
         case .task:
             return "timer"
+        case .tag:
+            return "tag.fill"
         case .sprint:
             return "flag.checkered"
         case .unassigned:
@@ -558,6 +578,8 @@ private struct HomePinnedFocusTimerStatus: Equatable {
         switch kind {
         case .task:
             return .task(targetID)
+        case .tag:
+            return nil
         case .sprint:
             return .sprint(targetID)
         case .unassigned:

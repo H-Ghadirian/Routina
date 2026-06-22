@@ -1374,6 +1374,40 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func activeTagFocusSessionBlocksUseTagTitleAndDoNotOpenTaskDetails() throws {
+        let calendar = gregorianCalendar
+        let visibleDate = try #require(date("2026-05-07T12:00:00Z"))
+        let startedAt = try #require(date("2026-05-07T09:30:00Z"))
+        let now = try #require(date("2026-05-07T10:05:00Z"))
+        let sessionID = UUID()
+        let session = FocusSession(
+            id: sessionID,
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            tagName: "Admin"
+        )
+
+        let focusBlocksByDayKey = DayPlanFocusSessionBlocks.activeBlocksByDayKey(
+            on: [visibleDate],
+            from: [],
+            sessions: [session],
+            now: now,
+            calendar: calendar
+        )
+
+        let dayKey = DayPlanStorage.dayKey(for: visibleDate, calendar: calendar)
+        let focusBlock = try #require(focusBlocksByDayKey[dayKey]?.first)
+        #expect(focusBlock.sessionID == sessionID)
+        #expect(focusBlock.block.id == sessionID)
+        #expect(focusBlock.block.taskID == FocusSession.unassignedTaskID)
+        #expect(focusBlock.block.titleSnapshot == "#Admin")
+        #expect(focusBlock.block.startMinute == 9 * 60 + 30)
+        #expect(focusBlock.durationMinutes == 35)
+        #expect(!focusBlock.opensTaskDetails)
+    }
+
+    @Test
     func startedFocusSessionCreatesPersistedPlannerBlock() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()
@@ -1415,6 +1449,42 @@ struct DayPlanPlannerStateTests {
         #expect(loadedBlocks.first?.durationMinutes == 25)
         #expect(loadedBlocks.first?.titleSnapshot == "Write notes")
         #expect(loadedBlocks.first?.emojiSnapshot == "📝")
+    }
+
+    @Test
+    func startedTagFocusSessionCreatesPersistedPlannerBlock() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let startedAt = try #require(date("2026-05-07T09:30:00Z"))
+        let sessionID = UUID()
+        let session = FocusSession(
+            id: sessionID,
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 25 * 60,
+            tagName: "Admin"
+        )
+        context.insert(session)
+
+        let savedBlock = try #require(
+            DayPlanFocusSessionPlannerSync.saveStartedTagFocusBlock(
+                tagName: "Admin",
+                session: session,
+                startedAt: startedAt,
+                durationSeconds: session.plannedDurationSeconds,
+                calendar: calendar,
+                context: context
+            )
+        )
+        let loadedBlocks = DayPlanStorage.loadBlocks(forDayKey: savedBlock.dayKey, context: context)
+
+        #expect(loadedBlocks.count == 1)
+        #expect(loadedBlocks.first?.id == sessionID)
+        #expect(loadedBlocks.first?.taskID == FocusSession.unassignedTaskID)
+        #expect(loadedBlocks.first?.startMinute == 9 * 60 + 30)
+        #expect(loadedBlocks.first?.durationMinutes == 25)
+        #expect(loadedBlocks.first?.titleSnapshot == "#Admin")
+        #expect(loadedBlocks.first?.emojiSnapshot == nil)
     }
 
     @Test

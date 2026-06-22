@@ -181,7 +181,10 @@ enum SleepSessionSupport {
         for session: FocusSession,
         in context: ModelContext
     ) throws -> String? {
-        guard !session.isUnassigned else {
+        if let tagTitle = session.focusTagTitle {
+            return tagTitle
+        }
+        guard session.isTaskFocus else {
             return nil
         }
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())

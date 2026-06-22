@@ -170,8 +170,23 @@ enum StatsFeatureDerivedStateBuilder {
         )
         let filteredTaskIDs = Set(filteredTasks.map(\.id))
         let filteredLogs = logs.filter { filteredTaskIDs.contains($0.taskID) }
-        let filteredFocusSessions = focusSessions.filter {
-            $0.isUnassigned || filteredTaskIDs.contains($0.taskID)
+        let filteredFocusSessions = focusSessions.filter { session in
+            if session.isUnassigned {
+                return true
+            }
+            if let tagName = session.focusTagName {
+                return HomeDisplayFilterSupport.matchesSelectedTags(
+                    sanitizedSelectedTags,
+                    mode: includeTagMatchMode,
+                    in: [tagName]
+                )
+                && HomeDisplayFilterSupport.matchesExcludedTags(
+                    sanitizedExcludedTags,
+                    mode: excludeTagMatchMode,
+                    in: [tagName]
+                )
+            }
+            return filteredTaskIDs.contains(session.taskID)
         }
         let createdChartFilteredTasks: [RoutineTask]
         if let createdChartTaskTypeFilter {

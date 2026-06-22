@@ -55,7 +55,9 @@ enum FocusDurationStats {
 
             let taskID = session.taskID
             let title: String
-            if taskID == FocusSession.unassignedTaskID {
+            if let tagTitle = session.focusTagTitle {
+                title = tagTitle
+            } else if taskID == FocusSession.unassignedTaskID {
                 title = "Unassigned focus"
             } else {
                 title = taskTitlesByID[taskID] ?? "Unknown task"
@@ -63,7 +65,10 @@ enum FocusDurationStats {
 
             let key: String
             let contributionTaskID: UUID?
-            if taskID == FocusSession.unassignedTaskID {
+            if let normalizedTag = session.focusTagName.flatMap(RoutineTag.normalized) {
+                key = "tag-\(normalizedTag)"
+                contributionTaskID = nil
+            } else if taskID == FocusSession.unassignedTaskID {
                 key = "unassigned-focus"
                 contributionTaskID = nil
             } else {

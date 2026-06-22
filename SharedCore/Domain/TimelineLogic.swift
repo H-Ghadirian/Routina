@@ -394,7 +394,7 @@ enum TimelineLogic {
 
             if let cutoff, startedAt < cutoff { return nil }
 
-            let task = session.isUnassigned ? nil : lookup[session.taskID]
+            let task = session.isTaskFocus ? lookup[session.taskID] : nil
             let title: String
             let emoji: String
             let tags: [String]
@@ -403,7 +403,15 @@ enum TimelineLogic {
             let isOneOff: Bool
             let entryTaskID: UUID?
 
-            if session.isUnassigned {
+            if let tagName = session.focusTagName {
+                title = "#\(tagName)"
+                emoji = "⏱️"
+                tags = [tagName]
+                importance = .level2
+                urgency = .level2
+                isOneOff = false
+                entryTaskID = nil
+            } else if session.isUnassigned {
                 title = "Unassigned focus"
                 emoji = "⏱️"
                 tags = []

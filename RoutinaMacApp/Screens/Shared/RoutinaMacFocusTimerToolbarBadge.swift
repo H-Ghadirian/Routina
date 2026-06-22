@@ -265,6 +265,8 @@ private extension RoutinaMacFocusTimerStatus {
         switch kind {
         case .task:
             return .task
+        case .tag:
+            return .tag
         case .sprint:
             return .sprint
         case .unassigned:
@@ -276,7 +278,7 @@ private extension RoutinaMacFocusTimerStatus {
 
     var supportsPauseResume: Bool {
         switch kind {
-        case .task, .unassigned:
+        case .task, .tag, .unassigned:
             return true
         case .sprint, nil:
             return false
@@ -285,7 +287,7 @@ private extension RoutinaMacFocusTimerStatus {
 
     var supportsAbandon: Bool {
         switch kind {
-        case .task, .unassigned:
+        case .task, .tag, .unassigned:
             return true
         case .sprint, nil:
             return false
@@ -296,6 +298,8 @@ private extension RoutinaMacFocusTimerStatus {
         switch kind {
         case .task:
             return "Task"
+        case .tag:
+            return "Tag"
         case .sprint:
             return "Board"
         case .unassigned:
@@ -309,7 +313,7 @@ private extension RoutinaMacFocusTimerStatus {
         switch kind {
         case .sprint:
             return .blue
-        case .task:
+        case .task, .tag:
             return .teal
         case .unassigned:
             return .orange
@@ -325,6 +329,8 @@ private extension RoutinaMacFocusTimerStatus {
             target = "sprint"
         case .task:
             target = "task"
+        case .tag:
+            target = "tag"
         case .unassigned:
             target = "focus"
         case nil:

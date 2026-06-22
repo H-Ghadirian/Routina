@@ -86,7 +86,17 @@ final class RoutinaMacFocusTimerStatusBarController: NSObject {
         runningTimeMenuItem = nil
 
         if status.isActive {
-            let openTitle = status.kind == .sprint ? "Open Sprint" : "Open Task Details"
+            let openTitle: String
+            switch status.kind {
+            case .sprint:
+                openTitle = "Open Sprint"
+            case .task:
+                openTitle = "Open Task Details"
+            case .tag:
+                openTitle = "Tag Focus"
+            case .unassigned, nil:
+                openTitle = "Focus Timer"
+            }
             let summaryItem = NSMenuItem(
                 title: "\(openTitle): \(status.shortTitle)",
                 action: status.deepLink == nil ? nil : #selector(openRunningFocus),

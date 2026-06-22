@@ -548,6 +548,43 @@ struct SettingsRoutineDataPersistenceTests {
     }
 
     @Test
+    func backupPackageAndRestore_preservesTagFocusSessions() async throws {
+        let context = makeInMemoryContext()
+        let exportedAt = Date(timeIntervalSince1970: 3_000)
+        let focus = FocusSession(
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: Date(timeIntervalSince1970: 2_900),
+            plannedDurationSeconds: 25 * 60,
+            completedAt: Date(timeIntervalSince1970: 3_000),
+            tagName: "Admin"
+        )
+        context.insert(focus)
+        try context.save()
+
+        let package = try SettingsRoutineDataPersistence.buildBackupPackage(
+            from: context,
+            exportedAt: exportedAt
+        )
+        let backup = try SettingsRoutineDataBackupCoding.decodeBackup(from: package.manifestData)
+
+        #expect(backup.focusSessions?.first?.tagName == "Admin")
+
+        let restoreContext = makeInMemoryContext()
+        let summary = try SettingsRoutineDataPersistence.replaceAllRoutineData(
+            with: package.manifestData,
+            in: restoreContext,
+            importDate: exportedAt
+        )
+
+        let restoredFocus = try #require(restoreContext.fetch(FetchDescriptor<FocusSession>()).first)
+        #expect(summary.focusSessions == 1)
+        #expect(restoredFocus.id == focus.id)
+        #expect(restoredFocus.isTagFocus)
+        #expect(restoredFocus.focusTagName == "Admin")
+        #expect(restoredFocus.taskID == FocusSession.unassignedTaskID)
+    }
+
+    @Test
     func backupPackageAndRestore_preservesEmotionLogsAndLinks() async throws {
         let context = makeInMemoryContext()
         let task = RoutineTask(name: "Appointment")

@@ -433,7 +433,8 @@ enum SettingsRoutineDataImportEntityInserter {
                 completedAt: session.completedAt,
                 abandonedAt: session.abandonedAt,
                 pausedAt: session.pausedAt,
-                accumulatedPausedSeconds: session.accumulatedPausedSeconds ?? 0
+                accumulatedPausedSeconds: session.accumulatedPausedSeconds ?? 0,
+                tagName: session.tagName
             )
             context.insert(importedSession)
             importedCount += 1

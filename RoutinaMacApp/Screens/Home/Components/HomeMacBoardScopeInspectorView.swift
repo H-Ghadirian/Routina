@@ -324,6 +324,7 @@ struct HomeMacBoardScopeInspectorView: View {
     }
 
     private func taskFocusTitle(for session: FocusSession) -> String {
+        if let tagTitle = session.focusTagTitle { return tagTitle }
         guard !session.isUnassigned else { return "unassigned focus" }
         return taskFocusSessionTasks.first(where: { $0.id == session.taskID })?.name ?? "a task"
     }

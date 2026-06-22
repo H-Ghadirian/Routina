@@ -26,7 +26,7 @@ public enum FocusTimerWidgetService {
         do {
             let session = try activeFocusSession(in: context)
             let activeTask = try session.flatMap { session in
-                session.isUnassigned ? nil : try task(for: session.taskID, in: context)
+                session.isTaskFocus ? try task(for: session.taskID, in: context) : nil
             }
             let data = FocusTimerWidgetDataComputer.compute(
                 tasks: activeTask.map { [$0] } ?? [],

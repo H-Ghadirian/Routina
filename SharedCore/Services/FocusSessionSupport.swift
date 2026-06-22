@@ -54,6 +54,61 @@ enum FocusSessionSupport {
     }
 
     @MainActor
+    static func startTagFocus(
+        tagName rawTagName: String,
+        startedAt: Date = Date(),
+        plannedDurationSeconds: TimeInterval,
+        context: ModelContext,
+        calendar: Calendar = .current,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
+    ) throws -> FocusSession {
+        guard let tagName = RoutineTag.cleaned(rawTagName) else {
+            throw RoutinaQuickAddError.emptyInput
+        }
+        guard try SleepSessionSupport.activeSession(in: context) == nil else {
+            throw RoutinaQuickAddError.activeSleepSession
+        }
+        guard try AwaySessionSupport.activeSession(in: context) == nil else {
+            throw RoutinaQuickAddError.activeAwaySession
+        }
+        guard try activeTaskFocus(in: context) == nil else {
+            throw RoutinaQuickAddError.activeFocusSession(nil)
+        }
+        guard try activeSprintFocus(in: context) == nil else {
+            throw RoutinaQuickAddError.activeFocusSession(nil)
+        }
+
+        let duration = max(0, plannedDurationSeconds)
+        let session = FocusSession(
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: duration,
+            tagName: tagName
+        )
+        context.insert(session)
+        DayPlanFocusSessionPlannerSync.saveStartedTagFocusBlock(
+            tagName: tagName,
+            session: session,
+            startedAt: startedAt,
+            durationSeconds: duration,
+            calendar: calendar,
+            context: context
+        )
+        DeviceActivityRecorder.recordAction(
+            .started,
+            entity: .focusSession,
+            entityID: session.id,
+            entityTitle: "#\(tagName)",
+            sourceDevice: sourceDevice,
+            at: startedAt,
+            in: context
+        )
+        try context.save()
+        notifyFocusChanged(using: context)
+        return session
+    }
+
+    @MainActor
     static func startUnassignedFocus(
         id: UUID = UUID(),
         startedAt: Date = Date(),
@@ -112,7 +167,7 @@ enum FocusSessionSupport {
         switch kind {
         case .sprint:
             return try finishSprintFocus(sessionID: sessionID, endedAt: endedAt, context: context, sourceDevice: sourceDevice)
-        case .task, .unassigned, nil:
+        case .task, .tag, .unassigned, nil:
             if try finishTaskFocus(
                 sessionID: sessionID,
                 kind: kind,
@@ -144,7 +199,7 @@ enum FocusSessionSupport {
             return false
         }
 
-        let title = try taskTitle(for: session, in: context) ?? "Unassigned focus"
+        let title = try focusTitle(for: session, in: context)
         DeviceActivityRecorder.recordAction(
             .paused,
             entity: .focusSession,
@@ -175,7 +230,7 @@ enum FocusSessionSupport {
             return false
         }
 
-        let title = try taskTitle(for: session, in: context) ?? "Unassigned focus"
+        let title = try focusTitle(for: session, in: context)
         DeviceActivityRecorder.recordAction(
             .resumed,
             entity: .focusSession,
@@ -209,7 +264,7 @@ enum FocusSessionSupport {
         session.abandonedAt = endedAt
         DayPlanFocusSessionPlannerSync.removeFocusBlock(for: session, context: context)
 
-        let title = try taskTitle(for: session, in: context) ?? "Unassigned focus"
+        let title = try focusTitle(for: session, in: context)
         DeviceActivityRecorder.recordAction(
             .ended,
             entity: .focusSession,
@@ -319,7 +374,7 @@ enum FocusSessionSupport {
 
         session.closePauseIfNeeded(at: endedAt)
         session.completedAt = endedAt
-        if !session.isUnassigned,
+        if session.isTaskFocus,
            session.plannedDurationSeconds <= 0,
            let task = try task(id: session.taskID, in: context) {
             DayPlanFocusSessionPlannerSync.saveEndedCountUpFocusBlock(
@@ -329,9 +384,19 @@ enum FocusSessionSupport {
                 calendar: calendar,
                 context: context
             )
+        } else if session.isTagFocus,
+                  session.plannedDurationSeconds <= 0,
+                  let tagName = session.focusTagName {
+            DayPlanFocusSessionPlannerSync.saveEndedCountUpTagFocusBlock(
+                tagName: tagName,
+                session: session,
+                endedAt: endedAt,
+                calendar: calendar,
+                context: context
+            )
         }
 
-        let title = try taskTitle(for: session, in: context) ?? "Unassigned focus"
+        let title = try focusTitle(for: session, in: context)
         DeviceActivityRecorder.recordAction(
             .completed,
             entity: .focusSession,
@@ -386,7 +451,9 @@ enum FocusSessionSupport {
             .filter { session in
                 switch kind {
                 case .task:
-                    return !session.isUnassigned
+                    return session.isTaskFocus
+                case .tag:
+                    return session.isTagFocus
                 case .unassigned:
                     return session.isUnassigned
                 case .sprint, nil:
@@ -443,10 +510,14 @@ enum FocusSessionSupport {
     }
 
     @MainActor
-    private static func taskTitle(for session: FocusSession, in context: ModelContext) throws -> String? {
-        guard !session.isUnassigned,
+    private static func focusTitle(for session: FocusSession, in context: ModelContext) throws -> String {
+        if let tagTitle = session.focusTagTitle {
+            return tagTitle
+        }
+
+        guard session.isTaskFocus,
               let task = try task(id: session.taskID, in: context) else {
-            return nil
+            return "Unassigned focus"
         }
         return RoutineTask.trimmedName(task.name) ?? "Untitled task"
     }
@@ -469,6 +540,7 @@ enum FocusSessionSupport {
 
 enum FocusSessionKind: String, Equatable, Sendable {
     case task
+    case tag
     case sprint
     case unassigned
 }

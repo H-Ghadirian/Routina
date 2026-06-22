@@ -465,9 +465,10 @@ struct FocusSessionCard: View {
     }
 
     private func otherTaskActiveContent(_ session: FocusSession) -> some View {
-        let taskName = session.isUnassigned
-            ? "unassigned focus"
-            : allTasks.first { $0.id == session.taskID }?.name ?? "another task"
+        let taskName = session.focusTagTitle
+            ?? (session.isUnassigned
+                ? "unassigned focus"
+                : allTasks.first { $0.id == session.taskID }?.name ?? "another task")
 
         return VStack(alignment: .leading, spacing: 10) {
             Label("Focusing on \(taskName)", systemImage: "timer")

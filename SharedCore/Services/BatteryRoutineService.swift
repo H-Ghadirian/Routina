@@ -219,7 +219,7 @@ enum BatteryRoutineService {
 
         let focusSessions = try context.fetch(FetchDescriptor<FocusSession>())
         for session in focusSessions
-            where !session.isUnassigned && taskIDs.contains(session.taskID) {
+            where session.isTaskFocus && taskIDs.contains(session.taskID) {
             context.delete(session)
         }
 

@@ -133,14 +133,15 @@ enum FocusTimerWidgetDataComputer {
             return FocusTimerWidgetData.inactive
         }
 
-        let task = session.isUnassigned ? nil : tasks.first { $0.id == session.taskID }
+        let task = session.isTaskFocus ? tasks.first { $0.id == session.taskID } : nil
         let taskName = (task?.name ?? "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
+        let displayName = session.focusTagTitle ?? (taskName.isEmpty ? "Unassigned focus" : taskName)
 
         return FocusTimerWidgetData(
             sessionID: session.id,
-            taskID: session.isUnassigned ? nil : session.taskID,
-            taskName: taskName.isEmpty ? "Unassigned focus" : taskName,
+            taskID: session.isTaskFocus ? session.taskID : nil,
+            taskName: displayName,
             taskEmoji: task?.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "🎯",
             startedAt: session.startedAt,
             plannedDurationSeconds: session.plannedDurationSeconds,

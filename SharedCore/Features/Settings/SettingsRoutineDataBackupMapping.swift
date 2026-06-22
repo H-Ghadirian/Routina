@@ -107,6 +107,7 @@ enum SettingsRoutineDataBackupMapping {
         Backup.Focus(
             id: session.id,
             taskID: session.taskID,
+            tagName: session.focusTagName,
             startedAt: session.startedAt,
             plannedDurationSeconds: session.plannedDurationSeconds,
             completedAt: session.completedAt,

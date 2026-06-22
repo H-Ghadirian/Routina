@@ -714,7 +714,9 @@ private struct DayPlanTimelinePanelView: View {
                 },
                 onOpenBlockDetails: { block, date in
                     planner.edit(block, on: date, calendar: calendar, context: modelContext)
-                    onOpenTaskDetails?(block.taskID)
+                    if tasks.contains(where: { $0.id == block.taskID }) {
+                        onOpenTaskDetails?(block.taskID)
+                    }
                 },
                 onOpenTimelineTaskDetails: { taskID in
                     if let task = tasks.first(where: { $0.id == taskID }) {
@@ -735,8 +737,8 @@ private struct DayPlanTimelinePanelView: View {
                     if let task = tasks.first(where: { $0.id == taskID }) {
                         planner.selectedBlockID = nil
                         planner.selectTask(task)
+                        onOpenTaskDetails?(taskID)
                     }
-                    onOpenTaskDetails?(taskID)
                 },
                 onOpenAllDayTaskDetails: { taskID in
                     if let task = tasks.first(where: { $0.id == taskID }) {

@@ -228,6 +228,7 @@ extension SettingsRoutineDataPersistence {
         struct Focus: Codable {
             var id: UUID
             var taskID: UUID
+            var tagName: String?
             var startedAt: Date?
             var plannedDurationSeconds: TimeInterval
             var completedAt: Date?

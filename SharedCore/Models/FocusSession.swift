@@ -19,9 +19,26 @@ final class FocusSession {
     var abandonedAt: Date?
     var pausedAt: Date?
     var accumulatedPausedSeconds: TimeInterval = 0
+    var tagName: String?
 
     var isUnassigned: Bool {
-        taskID == Self.unassignedTaskID
+        taskID == Self.unassignedTaskID && focusTagName == nil
+    }
+
+    var isTagFocus: Bool {
+        focusTagName != nil
+    }
+
+    var isTaskFocus: Bool {
+        taskID != Self.unassignedTaskID && !isTagFocus
+    }
+
+    var focusTagName: String? {
+        RoutineTag.cleaned(tagName ?? "")
+    }
+
+    var focusTagTitle: String? {
+        focusTagName.map { "#\($0)" }
     }
 
     var state: FocusSessionState {
@@ -91,7 +108,8 @@ final class FocusSession {
         completedAt: Date? = nil,
         abandonedAt: Date? = nil,
         pausedAt: Date? = nil,
-        accumulatedPausedSeconds: TimeInterval = 0
+        accumulatedPausedSeconds: TimeInterval = 0,
+        tagName: String? = nil
     ) {
         self.id = id
         self.taskID = taskID
@@ -101,6 +119,7 @@ final class FocusSession {
         self.abandonedAt = abandonedAt
         self.pausedAt = pausedAt
         self.accumulatedPausedSeconds = max(0, accumulatedPausedSeconds)
+        self.tagName = RoutineTag.cleaned(tagName ?? "")
     }
 }
 
