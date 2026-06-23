@@ -1913,6 +1913,26 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func focusSessionChangeTokenTracksFocusCompletion() throws {
+        let startedAt = try #require(date("2026-05-07T09:30:00Z"))
+        let endedAt = try #require(date("2026-05-07T10:28:00Z"))
+        let sessionID = UUID()
+        let session = FocusSession(
+            id: sessionID,
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            tagName: "HSE"
+        )
+
+        let activeToken = DayPlanFocusSessionChangeToken.tokens(from: [session])
+        session.completedAt = endedAt
+        let completedToken = DayPlanFocusSessionChangeToken.tokens(from: [session])
+
+        #expect(activeToken != completedToken)
+    }
+
+    @Test
     func startedFocusSessionCreatesPersistedPlannerBlock() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

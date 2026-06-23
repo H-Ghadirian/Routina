@@ -65,7 +65,14 @@ struct DayPlanSidebarView: View {
 
     var body: some View {
         taskPanel
-            .dayPlanLifecycle(planner: planner, tasks: tasks, sleepSessions: sleepSessions, awaySessions: awaySessions, calendar: calendar)
+            .dayPlanLifecycle(
+                planner: planner,
+                tasks: tasks,
+                sleepSessions: sleepSessions,
+                awaySessions: awaySessions,
+                focusSessions: focusSessions,
+                calendar: calendar
+            )
     }
 
     private var taskPanel: some View {
@@ -910,7 +917,14 @@ private struct DayPlanTimelinePanelView: View {
                 }
             )
         }
-        .dayPlanLifecycle(planner: planner, tasks: tasks, sleepSessions: sleepSessions, awaySessions: awaySessions, calendar: calendar)
+        .dayPlanLifecycle(
+            planner: planner,
+            tasks: tasks,
+            sleepSessions: sleepSessions,
+            awaySessions: awaySessions,
+            focusSessions: focusSessions,
+            calendar: calendar
+        )
         .onAppear {
             activatePlannerUndoManager()
         }
@@ -2104,6 +2118,7 @@ private struct DayPlanLifecycleModifier: ViewModifier {
     var tasks: [RoutineTask]
     var sleepSessions: [SleepSession]
     var awaySessions: [AwaySession]
+    var focusSessions: [FocusSession]
     var calendar: Calendar
 
     func body(content: Content) -> some View {
@@ -2131,12 +2146,20 @@ private struct DayPlanLifecycleModifier: ViewModifier {
             .onChange(of: awaySessionChangeToken) { _, _ in
                 showExactTimedTasks()
             }
+            .onChange(of: focusSessionChangeToken) { _, _ in
+                planner.loadBlocks(calendar: calendar, context: modelContext)
+                showExactTimedTasks()
+            }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
                     planner.loadBlocks(calendar: calendar, context: modelContext)
                     showExactTimedTasks()
                 }
             }
+    }
+
+    private var focusSessionChangeToken: [String] {
+        DayPlanFocusSessionChangeToken.tokens(from: focusSessions)
     }
 
     private var sleepSessionChangeToken: [String] {
@@ -2197,6 +2220,7 @@ private extension View {
         tasks: [RoutineTask],
         sleepSessions: [SleepSession],
         awaySessions: [AwaySession],
+        focusSessions: [FocusSession] = [],
         calendar: Calendar
     ) -> some View {
         modifier(
@@ -2205,9 +2229,30 @@ private extension View {
                 tasks: tasks,
                 sleepSessions: sleepSessions,
                 awaySessions: awaySessions,
+                focusSessions: focusSessions,
                 calendar: calendar
             )
         )
+    }
+}
+
+enum DayPlanFocusSessionChangeToken {
+    static func tokens(from sessions: [FocusSession]) -> [String] {
+        sessions
+            .map { session in
+                [
+                    session.id.uuidString,
+                    session.taskID.uuidString,
+                    session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                    session.completedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                    session.abandonedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                    session.pausedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                    session.accumulatedPausedSeconds.description,
+                    session.plannedDurationSeconds.description,
+                    session.focusTagName ?? "",
+                ].joined(separator: ":")
+            }
+            .sorted()
     }
 }
 
