@@ -1,6 +1,23 @@
 import Foundation
 import SwiftData
 
+enum SleepSessionSupportError: LocalizedError, Equatable {
+    case invalidDuration
+    case invalidTimeline
+    case overlappingProtectedSession
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidDuration:
+            return "Choose a sleep duration from 5 minutes to 16 hours."
+        case .invalidTimeline:
+            return "Choose an end time after the start time."
+        case .overlappingProtectedSession:
+            return "Sleep cannot overlap Away, Focus, or another Sleep session."
+        }
+    }
+}
+
 enum SleepSessionSupport {
     @MainActor
     static func activeSession(in context: ModelContext) throws -> SleepSession? {
@@ -47,6 +64,57 @@ enum SleepSessionSupport {
         }
 
         return "A focus timer is running. Starting sleep mode will stop it."
+    }
+
+    @discardableResult
+    @MainActor
+    static func logSleep(
+        id: UUID = UUID(),
+        durationMinutes: Int,
+        startedAt: Date,
+        context: ModelContext,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
+    ) throws -> SleepSession {
+        guard (5...(16 * 60)).contains(durationMinutes) else {
+            throw SleepSessionSupportError.invalidDuration
+        }
+        let endedAt = startedAt.addingTimeInterval(TimeInterval(durationMinutes * 60))
+        guard endedAt > startedAt else {
+            throw SleepSessionSupportError.invalidTimeline
+        }
+        if let existing = try sleepSession(id: id, in: context) {
+            return existing
+        }
+        guard try !hasProtectedSessionOverlap(
+            startedAt: startedAt,
+            endedAt: endedAt,
+            in: context
+        ) else {
+            throw SleepSessionSupportError.overlappingProtectedSession
+        }
+
+        let session = SleepSession(
+            id: id,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            targetDurationMinutes: durationMinutes,
+            createdAt: Date(),
+            updatedAt: Date()
+        )
+        context.insert(session)
+        DeviceActivityRecorder.recordAction(
+            .completed,
+            entity: .sleepSession,
+            entityID: session.id,
+            entityTitle: "Sleep",
+            details: "Logged sleep session",
+            sourceDevice: sourceDevice,
+            at: endedAt,
+            in: context
+        )
+        try context.save()
+        notifySleepChanged(using: context)
+        return session
     }
 
     @discardableResult
@@ -129,6 +197,67 @@ enum SleepSessionSupport {
         context.delete(session)
         try context.save()
         notifySleepChanged(using: context)
+    }
+
+    @MainActor
+    private static func sleepSession(id: UUID, in context: ModelContext) throws -> SleepSession? {
+        var descriptor = FetchDescriptor<SleepSession>(
+            predicate: #Predicate { session in
+                session.id == id
+            }
+        )
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first
+    }
+
+    @MainActor
+    private static func hasProtectedSessionOverlap(
+        startedAt: Date,
+        endedAt: Date,
+        in context: ModelContext
+    ) throws -> Bool {
+        guard endedAt > startedAt else { return false }
+
+        let sleepSessions = try context.fetch(FetchDescriptor<SleepSession>())
+        if sleepSessions.contains(where: { session in
+            guard let sessionStartedAt = session.startedAt else { return false }
+            return intervalsOverlap(startedAt, endedAt, sessionStartedAt, session.endedAt ?? .distantFuture)
+        }) {
+            return true
+        }
+
+        let awaySessions = try context.fetch(FetchDescriptor<AwaySession>())
+        if awaySessions.contains(where: { session in
+            guard let sessionStartedAt = session.startedAt else { return false }
+            let sessionEndedAt = session.finishedAt ?? session.plannedEndAt ?? .distantFuture
+            return intervalsOverlap(startedAt, endedAt, sessionStartedAt, sessionEndedAt)
+        }) {
+            return true
+        }
+
+        let focusSessions = try context.fetch(FetchDescriptor<FocusSession>())
+        if focusSessions.contains(where: { session in
+            guard let sessionStartedAt = session.startedAt,
+                  session.abandonedAt == nil
+            else { return false }
+            return intervalsOverlap(startedAt, endedAt, sessionStartedAt, session.completedAt ?? .distantFuture)
+        }) {
+            return true
+        }
+
+        let sprintFocusSessions = try context.fetch(FetchDescriptor<SprintFocusSessionRecord>())
+        return sprintFocusSessions.contains(where: { session in
+            intervalsOverlap(startedAt, endedAt, session.startedAt, session.stoppedAt ?? .distantFuture)
+        })
+    }
+
+    private static func intervalsOverlap(
+        _ lhsStart: Date,
+        _ lhsEnd: Date,
+        _ rhsStart: Date,
+        _ rhsEnd: Date
+    ) -> Bool {
+        max(lhsStart, rhsStart) < min(lhsEnd, rhsEnd)
     }
 
     @MainActor

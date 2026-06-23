@@ -24,6 +24,8 @@ This page summarizes active Planner, timeline activity, focus, Away, and Sleep b
 - [0268](../decisions/0268-show-assumed-done-routines-in-planner.md)
 - [0269](../decisions/0269-support-planner-slot-actions.md)
 - [0271](../decisions/0271-use-probable-times-for-assumed-planner-activity.md)
+- [0273](../decisions/0273-log-sleep-from-planner-away-slot-action.md)
+- [0274](../decisions/0274-present-resizable-planner-slot-draft.md)
 
 ## Current Contract
 
@@ -34,7 +36,7 @@ This page summarizes active Planner, timeline activity, focus, Away, and Sleep b
 - Protected Away, Focus, and Sleep intervals remain separate from the `Needs Time` lane and keep their existing suppression/linking behavior for overlapping automatic activity.
 - Planner supports a default week view and a focused one-day view without changing stored planner data.
 - Planner all-day lanes accept tasks, timed blocks, and completed activity drops.
-- Clicking an empty timed Planner slot selects the clicked 15-minute date/time and opens a compact action panel for creating a task block or logging a finished Away interval.
+- Single-clicking an empty timed Planner slot selects the clicked 15-minute date/time without starting creation. Double-clicking an empty timed Planner slot shows a temporary resizable draft block and opens a compact action panel anchored to that draft for creating a task block or logging finished screen-away time. On macOS this panel is a native popover so it can remain visible near app edges instead of being clipped by the planner viewport; late-day slots can open the popover above the draft, and the anchor shifts within the visible screen frame so bottom-right fullscreen presentations remain usable. Resizing the draft updates the displayed time range and duration before commit. The Away tab presents Away presets plus Sleep; Away choices create completed `AwaySession` records, while Sleep creates a completed `SleepSession`.
 - Standalone events render as calendar-visible, read-only planner blocks.
 - Sleep, Focus, and Away are app-level protected session modes and must not overlap.
 - Task, unassigned, and board focus can pause and resume. Active time, not paused wall-clock time, feeds app history and stats.

@@ -60,6 +60,72 @@ struct SleepSessionSupportTests {
 
     @MainActor
     @Test
+    func logSleep_createsCompletedSessionForSelectedInterval() throws {
+        let context = makeInMemoryContext()
+        let startedAt = makeDate("2026-06-01T21:45:00Z")
+        let expectedEnd = makeDate("2026-06-02T05:45:00Z")
+
+        let session = try SleepSessionSupport.logSleep(
+            durationMinutes: 8 * 60,
+            startedAt: startedAt,
+            context: context
+        )
+
+        #expect(session.startedAt == startedAt)
+        #expect(session.endedAt == expectedEnd)
+        #expect(session.targetDurationMinutes == 8 * 60)
+        #expect(!session.isActive)
+        #expect(try SleepSessionSupport.activeSession(in: context) == nil)
+    }
+
+    @MainActor
+    @Test
+    func logSleep_rejectsOverlappingProtectedSessions() throws {
+        let context = makeInMemoryContext()
+        let existingSleepStart = makeDate("2026-06-01T21:00:00Z")
+        let away = AwaySession(
+            preset: .outside,
+            startedAt: makeDate("2026-06-01T10:00:00Z"),
+            plannedDurationSeconds: 30 * 60,
+            completedAt: makeDate("2026-06-01T10:30:00Z")
+        )
+        let focus = FocusSession(
+            taskID: UUID(),
+            startedAt: makeDate("2026-06-01T11:00:00Z"),
+            plannedDurationSeconds: 25 * 60,
+            completedAt: makeDate("2026-06-01T11:25:00Z")
+        )
+        context.insert(away)
+        context.insert(focus)
+        try context.save()
+        _ = try SleepSessionSupport.logSleep(
+            durationMinutes: 8 * 60,
+            startedAt: existingSleepStart,
+            context: context
+        )
+
+        for overlappingStart in [
+            makeDate("2026-06-01T10:15:00Z"),
+            makeDate("2026-06-01T11:10:00Z"),
+            makeDate("2026-06-02T00:00:00Z"),
+        ] {
+            do {
+                _ = try SleepSessionSupport.logSleep(
+                    durationMinutes: 10,
+                    startedAt: overlappingStart,
+                    context: context
+                )
+                Issue.record("Expected overlapping sleep log to fail.")
+            } catch let error as SleepSessionSupportError {
+                #expect(error == .overlappingProtectedSession)
+            } catch {
+                Issue.record("Unexpected error: \(error)")
+            }
+        }
+    }
+
+    @MainActor
+    @Test
     func startSleep_stopsActiveFocusTimers() throws {
         let context = makeInMemoryContext()
         let task = makeTask(

@@ -881,14 +881,14 @@ private struct DayPlanTimelinePanelView: View {
                 onDropTaskToAllDay: { taskID, date in
                     dropTaskToAllDay(taskID, on: date)
                 },
-                slotPopoverContent: { date, minute, dismiss in
+                slotPopoverContent: { date, minute, draftDurationMinutes, dismiss in
                     AnyView(
                         DayPlanSlotActionPopover(
                             date: date,
                             startMinute: minute,
+                            durationMinutes: draftDurationMinutes,
                             tasks: DayPlanTaskSorting.availableTasks(from: tasks),
                             defaultTaskID: planner.selectedTaskID,
-                            defaultDurationMinutes: planner.durationMinutes,
                             now: referenceDate,
                             calendar: calendar,
                             onCreateTaskBlock: { taskID, durationMinutes in
@@ -905,6 +905,14 @@ private struct DayPlanTimelinePanelView: View {
                                     preset: preset,
                                     title: title,
                                     linkedTaskID: linkedTaskID,
+                                    on: date,
+                                    startMinute: minute,
+                                    durationMinutes: durationMinutes,
+                                    blockedIntervalsByDayKey: blockedIntervalsByDayKey
+                                )
+                            },
+                            onLogSleep: { durationMinutes in
+                                logSleep(
                                     on: date,
                                     startMinute: minute,
                                     durationMinutes: durationMinutes,
@@ -1568,6 +1576,50 @@ private struct DayPlanTimelinePanelView: View {
         }
     }
 
+    private func logSleep(
+        on date: Date,
+        startMinute: Int,
+        durationMinutes: Int,
+        blockedIntervalsByDayKey: [String: [DayPlanBlockedInterval]]
+    ) -> String? {
+        let clampedStart = DayPlanBlock.clampedStartMinute(
+            startMinute,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
+        let clampedDuration = min(max(durationMinutes, 5), 16 * 60)
+        guard let startedAt = slotDate(on: date, startMinute: clampedStart),
+              let endedAt = calendar.date(byAdding: .minute, value: clampedDuration, to: startedAt)
+        else {
+            return "Choose a valid time."
+        }
+        guard endedAt <= Date() else {
+            return "Sleep logs need an interval that has already ended."
+        }
+        if let conflict = plannerBlockConflict(startedAt: startedAt, endedAt: endedAt) {
+            return "Overlaps \(conflict.titleSnapshot)."
+        }
+        if let conflict = protectedIntervalConflict(
+            on: date,
+            startMinute: clampedStart,
+            durationMinutes: clampedDuration,
+            blockedIntervalsByDayKey: blockedIntervalsByDayKey
+        ) {
+            return "Overlaps \(conflict.title)."
+        }
+
+        do {
+            _ = try SleepSessionSupport.logSleep(
+                durationMinutes: clampedDuration,
+                startedAt: startedAt,
+                context: modelContext
+            )
+            return nil
+        } catch {
+            NSLog("Failed to log sleep session from planner: \(error.localizedDescription)")
+            return error.localizedDescription
+        }
+    }
+
     private func hasSleepConflict(
         on date: Date,
         startMinute: Int,
@@ -1612,6 +1664,40 @@ private struct DayPlanTimelinePanelView: View {
         .first { block in
             max(start, block.startMinute) < min(end, block.endMinute)
         }
+    }
+
+    private func plannerBlockConflict(startedAt: Date, endedAt: Date) -> DayPlanBlock? {
+        guard endedAt > startedAt else { return nil }
+
+        var day = calendar.startOfDay(for: startedAt)
+        while day < endedAt {
+            guard let nextDay = calendar.date(byAdding: .day, value: 1, to: day) else {
+                return nil
+            }
+
+            let intervalStart = max(startedAt, day)
+            let intervalEnd = min(endedAt, nextDay)
+            if intervalEnd > intervalStart {
+                let startMinute = minuteOfDay(for: intervalStart)
+                let durationMinutes = max(1, Int(ceil(intervalEnd.timeIntervalSince(intervalStart) / 60)))
+                if let conflict = plannerBlockConflict(
+                    on: day,
+                    startMinute: startMinute,
+                    durationMinutes: durationMinutes
+                ) {
+                    return conflict
+                }
+            }
+
+            day = nextDay
+        }
+
+        return nil
+    }
+
+    private func minuteOfDay(for date: Date) -> Int {
+        let components = calendar.dateComponents([.hour, .minute], from: date)
+        return ((components.hour ?? 0) * 60) + (components.minute ?? 0)
     }
 
     private var activeTaskAndTagFocusSessions: [FocusSession] {
@@ -1667,88 +1753,145 @@ private enum DayPlanSlotActionMode: String, CaseIterable, Hashable {
     }
 }
 
+private enum DayPlanAwayLogOption: Hashable, Identifiable {
+    case away(AwaySessionPreset)
+    case sleep
+
+    static let options: [DayPlanAwayLogOption] = AwaySessionPreset.allCases.map(DayPlanAwayLogOption.away) + [.sleep]
+
+    var id: String {
+        switch self {
+        case let .away(preset):
+            return preset.rawValue
+        case .sleep:
+            return "sleep"
+        }
+    }
+
+    var awayPreset: AwaySessionPreset? {
+        guard case let .away(preset) = self else { return nil }
+        return preset
+    }
+
+    var isSleep: Bool {
+        self == .sleep
+    }
+
+    var title: String {
+        switch self {
+        case let .away(preset):
+            return preset.title
+        case .sleep:
+            return "Sleep"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case let .away(preset):
+            return preset.systemImage
+        case .sleep:
+            return "bed.double.fill"
+        }
+    }
+
+    var tint: Color {
+        switch self {
+        case let .away(preset):
+            return preset.dayPlanTint
+        case .sleep:
+            return .orange
+        }
+    }
+
+    var defaultDurationMinutes: Int {
+        switch self {
+        case let .away(preset):
+            return preset.defaultDurationMinutes
+        case .sleep:
+            return 8 * 60
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case let .away(preset):
+            return "\(preset.defaultDurationMinutes)m"
+        case .sleep:
+            return "8h"
+        }
+    }
+
+    var durationTitle: String {
+        isSleep ? "Sleep duration" : "Duration"
+    }
+
+    var logActionTitle: String {
+        isSleep ? "Log Sleep" : "Log Away"
+    }
+
+    var logActionSystemImage: String {
+        isSleep ? "bed.double.fill" : "lock.shield.fill"
+    }
+
+    var finishedIntervalMessage: String {
+        isSleep ? "Sleep logs are for finished intervals." : "Away logs are for finished intervals."
+    }
+}
+
 private struct DayPlanSlotActionPopover: View {
     let date: Date
     let startMinute: Int
+    @Binding var durationMinutes: Int
     let tasks: [RoutineTask]
     let defaultTaskID: UUID?
-    let defaultDurationMinutes: Int
     let now: Date
     let calendar: Calendar
     let onCreateTaskBlock: (UUID, Int) -> String?
     let onLogAway: (AwaySessionPreset, String?, UUID?, Int) -> String?
+    let onLogSleep: (Int) -> String?
     let onDismiss: () -> Void
 
     @State private var mode: DayPlanSlotActionMode = .task
     @State private var selectedTaskID: UUID?
-    @State private var taskDurationMinutes: Int
-    @State private var awayPreset: AwaySessionPreset = .custom
+    @State private var selectedAwayOption: DayPlanAwayLogOption = .away(.custom)
     @State private var awayTitle = ""
     @State private var awayLinkedTaskID: UUID?
-    @State private var awayDurationMinutes: Int
     @State private var errorText: String?
 
     init(
         date: Date,
         startMinute: Int,
+        durationMinutes: Binding<Int>,
         tasks: [RoutineTask],
         defaultTaskID: UUID?,
-        defaultDurationMinutes: Int,
         now: Date,
         calendar: Calendar,
         onCreateTaskBlock: @escaping (UUID, Int) -> String?,
         onLogAway: @escaping (AwaySessionPreset, String?, UUID?, Int) -> String?,
+        onLogSleep: @escaping (Int) -> String?,
         onDismiss: @escaping () -> Void
     ) {
         self.date = date
         self.startMinute = DayPlanBlock.clampedStartMinute(startMinute)
+        self._durationMinutes = durationMinutes
         self.tasks = tasks
         self.defaultTaskID = defaultTaskID
-        self.defaultDurationMinutes = defaultDurationMinutes
         self.now = now
         self.calendar = calendar
         self.onCreateTaskBlock = onCreateTaskBlock
         self.onLogAway = onLogAway
+        self.onLogSleep = onLogSleep
         self.onDismiss = onDismiss
 
         let initialTaskID = defaultTaskID.flatMap { id in tasks.first(where: { $0.id == id })?.id } ?? tasks.first?.id
-        let initialDuration = Self.clampedDuration(
-            defaultDurationMinutes,
-            startMinute: self.startMinute,
-            minimumDurationMinutes: DayPlanBlock.minimumDurationMinutes
-        )
         _selectedTaskID = State(initialValue: initialTaskID)
-        _taskDurationMinutes = State(initialValue: initialDuration)
         _awayLinkedTaskID = State(initialValue: initialTaskID)
-        _awayDurationMinutes = State(initialValue: Self.clampedDuration(
-            AwaySessionPreset.custom.defaultDurationMinutes,
-            startMinute: self.startMinute,
-            minimumDurationMinutes: 5
-        ))
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(intervalTitle)
-                        .font(.headline)
-                    Text(date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer(minLength: 8)
-
-                Button {
-                    onDismiss()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .accessibilityLabel("Close")
-            }
+        VStack(alignment: .leading, spacing: 16) {
+            header
 
             RoutinaGlassSegmentedControl(
                 accessibilityLabel: "Slot action",
@@ -1774,8 +1917,52 @@ private struct DayPlanSlotActionPopover: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(14)
-        .frame(width: 340)
+        .padding(16)
+        .frame(width: 440)
+        .onAppear {
+            setTaskDuration(durationMinutes)
+        }
+        .onChange(of: mode) { _, newMode in
+            errorText = nil
+            switch newMode {
+            case .task:
+                setTaskDuration(durationMinutes)
+            case .away:
+                setAwayDuration(selectedAwayOption.defaultDurationMinutes, for: selectedAwayOption)
+            }
+        }
+    }
+
+    private var header: some View {
+        HStack(alignment: .center, spacing: 12) {
+            Image(systemName: mode == .task ? "calendar.badge.plus" : selectedAwayOption.systemImage)
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(width: 34, height: 34)
+                .background((mode == .task ? Color.accentColor : selectedAwayOption.tint), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(intervalTitle)
+                    .font(.headline.monospacedDigit().weight(.semibold))
+                Text(date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 8)
+
+            Button {
+                onDismiss()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title3)
+                    .symbolRenderingMode(.hierarchical)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .accessibilityLabel("Close")
+            .contentShape(Circle())
+        }
     }
 
     private var taskBlockContent: some View {
@@ -1788,11 +1975,13 @@ private struct DayPlanSlotActionPopover: View {
             }
             .pickerStyle(.menu)
 
-            Stepper(
-                "Duration: \(DayPlanFormatting.durationText(taskDurationMinutes))",
-                value: $taskDurationMinutes,
-                in: taskDurationRange,
-                step: 15
+            DayPlanSlotDurationControl(
+                title: "Duration",
+                minutes: taskDurationBinding,
+                range: taskDurationRange,
+                step: 15,
+                presets: taskDurationPresets,
+                tint: .accentColor
             )
 
             Button {
@@ -1804,52 +1993,82 @@ private struct DayPlanSlotActionPopover: View {
             .buttonStyle(.borderedProminent)
             .disabled(selectedTaskID == nil)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var awayLogContent: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Picker("Preset", selection: $awayPreset) {
-                ForEach(AwaySessionPreset.allCases) { preset in
-                    Label(preset.title, systemImage: preset.systemImage)
-                        .tag(preset)
+        VStack(alignment: .leading, spacing: 12) {
+            LazyVGrid(columns: awayOptionColumns, spacing: 8) {
+                ForEach(DayPlanAwayLogOption.options) { option in
+                    Button {
+                        selectAwayOption(option)
+                    } label: {
+                        DayPlanAwayOptionCard(
+                            option: option,
+                            isSelected: selectedAwayOption == option
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
             }
-            .pickerStyle(.menu)
 
-            TextField("Title", text: $awayTitle)
-                .textFieldStyle(.roundedBorder)
+            if !selectedAwayOption.isSleep {
+                TextField("Title", text: $awayTitle)
+                    .textFieldStyle(.roundedBorder)
 
-            Picker("Linked task", selection: awayTaskSelectionBinding) {
-                Text("No linked task").tag(Optional<UUID>.none)
-                ForEach(tasks) { task in
-                    Text(DayPlanTaskSorting.title(for: task)).tag(Optional(task.id))
+                Picker("Linked task", selection: awayTaskSelectionBinding) {
+                    Text("No linked task").tag(Optional<UUID>.none)
+                    ForEach(tasks) { task in
+                        Text(DayPlanTaskSorting.title(for: task)).tag(Optional(task.id))
+                    }
                 }
+                .pickerStyle(.menu)
             }
-            .pickerStyle(.menu)
 
-            Stepper(
-                "Duration: \(DayPlanFormatting.durationText(awayDurationMinutes))",
-                value: $awayDurationMinutes,
-                in: awayDurationRange,
-                step: 5
+            DayPlanSlotDurationControl(
+                title: selectedAwayOption.durationTitle,
+                minutes: awayDurationBinding,
+                range: selectedAwayDurationRange,
+                step: selectedAwayOption.isSleep ? 15 : 5,
+                presets: selectedAwayDurationPresets,
+                tint: selectedAwayOption.tint
             )
 
             Button {
                 submitAwayLog()
             } label: {
-                Label("Log Away", systemImage: "lock.shield.fill")
+                Label(selectedAwayOption.logActionTitle, systemImage: selectedAwayOption.logActionSystemImage)
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .tint(.teal)
+            .tint(selectedAwayOption.tint)
             .disabled(!canLogAway)
 
             if !canLogAway {
-                Text("Away logs are for finished intervals.")
+                Text(selectedAwayOption.finishedIntervalMessage)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var awayOptionColumns: [GridItem] {
+        [
+            GridItem(.flexible(), spacing: 8),
+            GridItem(.flexible(), spacing: 8),
+            GridItem(.flexible(), spacing: 8)
+        ]
+    }
+
+    private func selectAwayOption(_ option: DayPlanAwayLogOption) {
+        selectedAwayOption = option
+        errorText = nil
+        if option.isSleep {
+            awayLinkedTaskID = nil
+        }
+        setAwayDuration(option.defaultDurationMinutes, for: option)
     }
 
     private var taskSelectionBinding: Binding<UUID?> {
@@ -1859,13 +2078,23 @@ private struct DayPlanSlotActionPopover: View {
                 selectedTaskID = taskID
                 if let task = tasks.first(where: { $0.id == taskID }),
                    let estimate = task.estimatedDurationMinutes {
-                    taskDurationMinutes = Self.clampedDuration(
-                        estimate,
-                        startMinute: startMinute,
-                        minimumDurationMinutes: DayPlanBlock.minimumDurationMinutes
-                    )
+                    setTaskDuration(estimate)
                 }
             }
+        )
+    }
+
+    private var taskDurationBinding: Binding<Int> {
+        Binding(
+            get: { clampedTaskDurationMinutes },
+            set: { setTaskDuration($0) }
+        )
+    }
+
+    private var awayDurationBinding: Binding<Int> {
+        Binding(
+            get: { clampedAwayDurationMinutes },
+            set: { setAwayDuration($0, for: selectedAwayOption) }
         )
     }
 
@@ -1880,8 +2109,26 @@ private struct DayPlanSlotActionPopover: View {
         DayPlanBlock.minimumDurationMinutes...maximumDurationMinutes
     }
 
+    private var taskDurationPresets: [Int] {
+        [15, 30, 45, 60, 90, 120]
+    }
+
     private var awayDurationRange: ClosedRange<Int> {
         5...max(5, maximumDurationMinutes)
+    }
+
+    private var sleepDurationRange: ClosedRange<Int> {
+        5...(16 * 60)
+    }
+
+    private var selectedAwayDurationRange: ClosedRange<Int> {
+        selectedAwayOption.isSleep ? sleepDurationRange : awayDurationRange
+    }
+
+    private var selectedAwayDurationPresets: [Int] {
+        selectedAwayOption.isSleep
+            ? [30, 60, 120, 240, 360, 480]
+            : [10, 15, 20, 30, 45, 60]
     }
 
     private var maximumDurationMinutes: Int {
@@ -1889,18 +2136,45 @@ private struct DayPlanSlotActionPopover: View {
     }
 
     private var intervalTitle: String {
-        "\(DayPlanFormatting.timeText(for: startMinute, on: date, calendar: calendar)) - \(DayPlanFormatting.timeText(for: startMinute + activeDurationMinutes, on: date, calendar: calendar))"
+        guard let startedAt = selectedStartDate,
+              let endedAt = calendar.date(byAdding: .minute, value: activeDurationMinutes, to: startedAt)
+        else {
+            return "\(DayPlanFormatting.timeText(for: startMinute, on: date, calendar: calendar)) - \(DayPlanFormatting.timeText(for: startMinute + activeDurationMinutes, on: date, calendar: calendar))"
+        }
+        return "\(timeText(startedAt)) - \(endTimeText(endedAt, relativeTo: startedAt))"
     }
 
     private var activeDurationMinutes: Int {
-        mode == .task ? taskDurationMinutes : awayDurationMinutes
+        mode == .task ? clampedTaskDurationMinutes : clampedAwayDurationMinutes
+    }
+
+    private var clampedTaskDurationMinutes: Int {
+        Self.clampedDuration(
+            durationMinutes,
+            startMinute: startMinute,
+            minimumDurationMinutes: DayPlanBlock.minimumDurationMinutes
+        )
+    }
+
+    private var clampedAwayDurationMinutes: Int {
+        selectedAwayOption.isSleep
+            ? Self.clampedSleepDuration(durationMinutes)
+            : Self.clampedDuration(
+                durationMinutes,
+                startMinute: startMinute,
+                minimumDurationMinutes: 5
+            )
+    }
+
+    private var selectedStartDate: Date? {
+        calendar.date(byAdding: .minute, value: startMinute, to: calendar.startOfDay(for: date))
     }
 
     private var selectedAwayEndDate: Date? {
-        guard let startDate = calendar.date(byAdding: .minute, value: startMinute, to: calendar.startOfDay(for: date)) else {
+        guard let startDate = selectedStartDate else {
             return nil
         }
-        return calendar.date(byAdding: .minute, value: awayDurationMinutes, to: startDate)
+        return calendar.date(byAdding: .minute, value: clampedAwayDurationMinutes, to: startDate)
     }
 
     private var canLogAway: Bool {
@@ -1914,7 +2188,7 @@ private struct DayPlanSlotActionPopover: View {
             return
         }
 
-        if let error = onCreateTaskBlock(selectedTaskID, taskDurationMinutes) {
+        if let error = onCreateTaskBlock(selectedTaskID, clampedTaskDurationMinutes) {
             errorText = error
         } else {
             errorText = nil
@@ -1924,20 +2198,49 @@ private struct DayPlanSlotActionPopover: View {
 
     private func submitAwayLog() {
         guard canLogAway else {
-            errorText = "Away logs need an interval that has already ended."
+            errorText = selectedAwayOption.finishedIntervalMessage
             return
         }
 
-        if let error = onLogAway(
-            awayPreset,
-            awayTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : awayTitle,
-            awayLinkedTaskID,
-            awayDurationMinutes
-        ) {
+        let error: String?
+        if selectedAwayOption.isSleep {
+            error = onLogSleep(clampedAwayDurationMinutes)
+        } else if let awayPreset = selectedAwayOption.awayPreset {
+            error = onLogAway(
+                awayPreset,
+                awayTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : awayTitle,
+                awayLinkedTaskID,
+                clampedAwayDurationMinutes
+            )
+        } else {
+            error = "Choose an away option."
+        }
+
+        if let error {
             errorText = error
         } else {
             errorText = nil
             onDismiss()
+        }
+    }
+
+    private func setTaskDuration(_ newValue: Int) {
+        durationMinutes = Self.clampedDuration(
+            newValue,
+            startMinute: startMinute,
+            minimumDurationMinutes: DayPlanBlock.minimumDurationMinutes
+        )
+    }
+
+    private func setAwayDuration(_ newValue: Int, for option: DayPlanAwayLogOption) {
+        if option.isSleep {
+            durationMinutes = Self.clampedSleepDuration(newValue)
+        } else {
+            durationMinutes = Self.clampedDuration(
+                newValue,
+                startMinute: startMinute,
+                minimumDurationMinutes: 5
+            )
         }
     }
 
@@ -1951,6 +2254,191 @@ private struct DayPlanSlotActionPopover: View {
             startMinute: startMinute,
             minimumDurationMinutes: minimumDurationMinutes
         )
+    }
+
+    private static func clampedSleepDuration(_ durationMinutes: Int) -> Int {
+        min(max(durationMinutes, 5), 16 * 60)
+    }
+
+    private func timeText(_ date: Date) -> String {
+        date.formatted(date: .omitted, time: .shortened)
+    }
+
+    private func endTimeText(_ endDate: Date, relativeTo startDate: Date) -> String {
+        if calendar.isDate(endDate, inSameDayAs: startDate) {
+            return timeText(endDate)
+        }
+        return endDate.formatted(.dateTime.weekday(.abbreviated).hour().minute())
+    }
+}
+
+private struct DayPlanAwayOptionCard: View {
+    let option: DayPlanAwayLogOption
+    let isSelected: Bool
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 8) {
+            Image(systemName: option.systemImage)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(width: 22, height: 22)
+                .background(option.tint, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(option.title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+
+                Text(option.subtitle)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+
+            Spacer(minLength: 0)
+
+            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                .font(.caption2.weight(.semibold))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(isSelected ? option.tint : .secondary)
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+        .routinaGlassPanel(cornerRadius: 10, tint: option.tint, tintOpacity: isSelected ? 0.16 : 0.06, interactive: true)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(option.tint.opacity(isSelected ? 0.9 : 0.22), lineWidth: isSelected ? 1.2 : 1)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+}
+
+private struct DayPlanSlotDurationControl: View {
+    let title: String
+    @Binding var minutes: Int
+    let range: ClosedRange<Int>
+    let step: Int
+    let presets: [Int]
+    let tint: Color
+
+    private var visiblePresets: [Int] {
+        presets.filter { range.contains($0) }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    Text(DayPlanFormatting.durationText(minutes))
+                        .font(.headline.monospacedDigit().weight(.semibold))
+                        .foregroundStyle(.primary)
+                }
+
+                Spacer(minLength: 8)
+
+                HStack(spacing: 6) {
+                    durationButton(systemImage: "minus", isEnabled: minutes > range.lowerBound) {
+                        setMinutes(minutes - step)
+                    }
+
+                    durationButton(systemImage: "plus", isEnabled: minutes < range.upperBound) {
+                        setMinutes(minutes + step)
+                    }
+                }
+            }
+
+            if !visiblePresets.isEmpty {
+                LazyVGrid(columns: presetColumns, spacing: 6) {
+                    ForEach(visiblePresets, id: \.self) { preset in
+                        Button {
+                            setMinutes(preset)
+                        } label: {
+                            Text(DayPlanFormatting.durationText(preset))
+                                .font(.caption.weight(.semibold))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 5)
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.primary)
+                        .background(
+                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                .fill(tint.opacity(minutes == preset ? 0.24 : 0.10))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                .stroke(tint.opacity(minutes == preset ? 0.85 : 0.22), lineWidth: 1)
+                        )
+                        .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    }
+                }
+            }
+        }
+        .padding(10)
+        .routinaGlassPanel(cornerRadius: 10, tint: tint, tintOpacity: 0.06, interactive: true)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(tint.opacity(0.16), lineWidth: 1)
+        )
+    }
+
+    private var presetColumns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: 6), count: max(visiblePresets.count, 1))
+    }
+
+    private func durationButton(
+        systemImage: String,
+        isEnabled: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.caption.weight(.bold))
+                .frame(width: 30, height: 28)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(isEnabled ? Color.primary : Color.secondary.opacity(0.6))
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(tint.opacity(isEnabled ? 0.14 : 0.06))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(tint.opacity(isEnabled ? 0.28 : 0.12), lineWidth: 1)
+        )
+        .disabled(!isEnabled)
+        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    private func setMinutes(_ newValue: Int) {
+        minutes = min(max(newValue, range.lowerBound), range.upperBound)
+    }
+}
+
+private extension AwaySessionPreset {
+    var dayPlanTint: Color {
+        switch self {
+        case .wake:
+            return .orange
+        case .reset:
+            return .teal
+        case .outside:
+            return .green
+        case .windDown:
+            return .indigo
+        case .meal:
+            return .pink
+        case .custom:
+            return .cyan
+        }
     }
 }
 

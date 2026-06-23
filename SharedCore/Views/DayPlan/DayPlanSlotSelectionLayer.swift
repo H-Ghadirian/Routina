@@ -6,6 +6,9 @@ struct DayPlanSlotSelectionLayer: View {
     var hourHeight: CGFloat
     var timeColumnWidth: CGFloat
     var onSelectSlot: (Date, Int) -> Void
+    var onOpenSlotActions: (Date, Int) -> Void
+
+    @State private var pendingTap: PendingSlotTap?
 
     var body: some View {
         Color.clear
@@ -18,9 +21,28 @@ struct DayPlanSlotSelectionLayer: View {
                 SpatialTapGesture()
                     .onEnded { value in
                         guard let target = target(for: value.location) else { return }
-                        onSelectSlot(target.date, target.startMinute)
+                        handleTap(on: target)
                     }
             )
+    }
+
+    private func handleTap(on target: DayPlanDropTarget) {
+        let now = Date()
+        if let pendingTap,
+           pendingTap.matches(target),
+           now.timeIntervalSince(pendingTap.timestamp) <= 0.42 {
+            self.pendingTap = nil
+            onSelectSlot(target.date, target.startMinute)
+            onOpenSlotActions(target.date, target.startMinute)
+            return
+        }
+
+        pendingTap = PendingSlotTap(
+            date: target.date,
+            startMinute: target.startMinute,
+            timestamp: now
+        )
+        onSelectSlot(target.date, target.startMinute)
     }
 
     private func target(for location: CGPoint) -> DayPlanDropTarget? {
@@ -40,5 +62,15 @@ struct DayPlanSlotSelectionLayer: View {
             timeColumnWidth: timeColumnWidth,
             hourHeight: hourHeight
         )
+    }
+}
+
+private struct PendingSlotTap {
+    let date: Date
+    let startMinute: Int
+    let timestamp: Date
+
+    func matches(_ target: DayPlanDropTarget) -> Bool {
+        date == target.date && startMinute == target.startMinute
     }
 }

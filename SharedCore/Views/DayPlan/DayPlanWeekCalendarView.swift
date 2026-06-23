@@ -50,7 +50,7 @@ struct DayPlanWeekCalendarView: View {
     var onEndResizeBlock: (DayPlanBlock.ID?) -> Void = { _ in }
     var onDropTask: (UUID, Date, Int) -> Void
     var onDropTaskToAllDay: (UUID, Date) -> Void = { _, _ in }
-    var slotPopoverContent: ((Date, Int, @escaping () -> Void) -> AnyView)? = nil
+    var slotPopoverContent: ((Date, Int, Binding<Int>, @escaping () -> Void) -> AnyView)? = nil
 
     @State private var isDropTargeted = false
     @State private var isCompletingDrop = false
@@ -60,6 +60,8 @@ struct DayPlanWeekCalendarView: View {
     @State private var draggedBlockDurationMinutes: Int?
     @State private var resizeSession: DayPlanResizeSession?
     @State private var selectedSlotPopover: DayPlanSelectedSlotPopover?
+    @State private var isSlotPopoverPresented = false
+    @State private var draftResizeBaseline: DayPlanSelectedSlotPopover?
     @Namespace private var blockAnimationNamespace
 
     private let hourHeight: CGFloat = 64
@@ -131,6 +133,9 @@ struct DayPlanWeekCalendarView: View {
                                 hourHeight: hourHeight,
                                 timeColumnWidth: timeColumnWidth,
                                 onSelectSlot: { date, minute in
+                                    onSelectSlot(date, minute)
+                                },
+                                onOpenSlotActions: { date, minute in
                                     presentSlotPopover(on: date, startMinute: minute)
                                     onSelectSlot(date, minute)
                                 }
@@ -317,6 +322,7 @@ struct DayPlanWeekCalendarView: View {
 
     private func beginResize(_ block: DayPlanBlock, _ date: Date) {
         selectedSlotPopover = nil
+        draftResizeBaseline = nil
         clearDropState()
         draggedBlockID = nil
         draggedTimelineActivity = nil
@@ -391,6 +397,7 @@ struct DayPlanWeekCalendarView: View {
 
     private func dragProvider(for block: DayPlanBlock, on date: Date) -> NSItemProvider {
         selectedSlotPopover = nil
+        draftResizeBaseline = nil
         isCompletingDrop = false
         clearDropState()
         endResize()
@@ -403,6 +410,7 @@ struct DayPlanWeekCalendarView: View {
 
     private func dragProvider(for activity: DayPlanTimelineActivityBlock, on date: Date) -> NSItemProvider {
         selectedSlotPopover = nil
+        draftResizeBaseline = nil
         isCompletingDrop = false
         clearDropState()
         endResize()
@@ -448,10 +456,18 @@ struct DayPlanWeekCalendarView: View {
 
     private func presentSlotPopover(on date: Date, startMinute: Int) {
         guard slotPopoverContent != nil else { return }
+        draftResizeBaseline = nil
+        let clampedStartMinute = DayPlanBlock.clampedStartMinute(startMinute)
         selectedSlotPopover = DayPlanSelectedSlotPopover(
             date: calendar.startOfDay(for: date),
-            startMinute: DayPlanBlock.clampedStartMinute(startMinute)
+            startMinute: clampedStartMinute,
+            durationMinutes: defaultSlotDraftDuration(startMinute: clampedStartMinute)
         )
+        isSlotPopoverPresented = false
+        DispatchQueue.main.async {
+            guard selectedSlotPopover != nil else { return }
+            isSlotPopoverPresented = true
+        }
     }
 
     @ViewBuilder
@@ -465,21 +481,74 @@ struct DayPlanWeekCalendarView: View {
         if let selectedSlotPopover,
            let slotPopoverContent,
            let dayIndex = dates.firstIndex(where: { calendar.isDate($0, inSameDayAs: selectedSlotPopover.date) }) {
-            let panelWidth: CGFloat = 340
-            let estimatedPanelHeight: CGFloat = 360
-            let desiredX = timeColumnWidth + CGFloat(dayIndex) * dayWidth + 12
+            let draftX = timeColumnWidth + CGFloat(dayIndex) * dayWidth + 5
+            let draftWidth = max(dayWidth - 10, 90)
+            let draftY = yOffset(for: selectedSlotPopover.startMinute, hourHeight: hourHeight)
+            let draftHeight = draftBlockHeight(for: selectedSlotPopover, hourHeight: hourHeight)
+            let durationBinding = selectedSlotDurationBinding(for: selectedSlotPopover)
+#if os(macOS)
+            let estimatedPopoverSize = CGSize(width: 440, height: 440)
+            let preferredPopoverEdge: NSRectEdge = draftY + draftHeight + estimatedPopoverSize.height > contentHeight ? .maxY : .maxX
+            let popoverPositioningRect = slotPopoverPositioningRect(
+                preferredEdge: preferredPopoverEdge,
+                draftX: draftX,
+                draftY: draftY,
+                draftWidth: draftWidth,
+                draftHeight: draftHeight,
+                contentWidth: contentWidth,
+                contentHeight: contentHeight,
+                estimatedPopoverSize: estimatedPopoverSize
+            )
+#endif
+
+            DayPlanSlotDraftBlock(
+                date: selectedSlotPopover.date,
+                startMinute: selectedSlotPopover.startMinute,
+                durationMinutes: selectedSlotPopover.durationMinutes,
+                renderedHeight: draftHeight,
+                calendar: calendar,
+                onResizeStarted: beginDraftResize,
+                onResizeChanged: resizeDraft,
+                onResizeEnded: endDraftResize
+            )
+            .frame(width: draftWidth, height: draftHeight)
+#if os(macOS)
+            .background {
+                DayPlanNativePopoverPresenter(
+                    isPresented: selectedSlotPresentedBinding(),
+                    preferredEdge: preferredPopoverEdge,
+                    positioningRect: popoverPositioningRect,
+                    content: slotPopoverContent(
+                        selectedSlotPopover.date,
+                        selectedSlotPopover.startMinute,
+                        durationBinding,
+                        dismissSelectedSlotPopover
+                    )
+                )
+                .frame(width: draftWidth, height: draftHeight)
+            }
+#endif
+            .position(x: draftX + (draftWidth / 2), y: draftY + (draftHeight / 2))
+            .zIndex(70)
+
+#if !os(macOS)
+            let panelWidth: CGFloat = 440
+            let estimatedPanelHeight: CGFloat = 380
+            let rightPanelX = draftX + draftWidth + 12
+            let leftPanelX = draftX - panelWidth - 12
+            let inlinePanelPrefersRightSide = rightPanelX + panelWidth + 8 <= contentWidth
+            let desiredX = inlinePanelPrefersRightSide ? rightPanelX : leftPanelX
             let maxX = max(8, contentWidth - panelWidth - 8)
             let panelX = min(max(desiredX, 8), maxX)
-            let desiredY = (CGFloat(selectedSlotPopover.startMinute) / 60 * hourHeight) + 8
+            let desiredY = draftY + min(max((draftHeight - estimatedPanelHeight) / 2, -12), 12)
             let maxY = max(8, contentHeight - estimatedPanelHeight - 8)
             let panelY = min(max(desiredY, 8), maxY)
 
             slotPopoverContent(
                 selectedSlotPopover.date,
                 selectedSlotPopover.startMinute,
-                {
-                    self.selectedSlotPopover = nil
-                }
+                durationBinding,
+                dismissSelectedSlotPopover
             )
             .frame(width: panelWidth)
             .routinaGlassPanel(cornerRadius: 12)
@@ -490,14 +559,487 @@ struct DayPlanWeekCalendarView: View {
             }
             .offset(x: panelX, y: panelY)
             .zIndex(80)
+#endif
         }
     }
+
+    private func selectedSlotPresentedBinding() -> Binding<Bool> {
+        Binding(
+            get: { isSlotPopoverPresented && selectedSlotPopover != nil },
+            set: { isPresented in
+                if !isPresented {
+                    dismissSelectedSlotPopover()
+                }
+            }
+        )
+    }
+
+    private func dismissSelectedSlotPopover() {
+        isSlotPopoverPresented = false
+        selectedSlotPopover = nil
+        draftResizeBaseline = nil
+    }
+
+    private func selectedSlotDurationBinding(for selection: DayPlanSelectedSlotPopover) -> Binding<Int> {
+        Binding(
+            get: {
+                selectedSlotPopover?.durationMinutes ?? selection.durationMinutes
+            },
+            set: { newValue in
+                guard var draft = selectedSlotPopover else { return }
+                draft.durationMinutes = clampedSlotDraftDuration(newValue)
+                selectedSlotPopover = draft
+            }
+        )
+    }
+
+    private func defaultSlotDraftDuration(startMinute: Int) -> Int {
+        DayPlanBlock.clampedDuration(
+            max(dropDurationMinutes, DayPlanBlock.minimumDurationMinutes),
+            startMinute: startMinute,
+            minimumDurationMinutes: DayPlanBlock.minimumDurationMinutes
+        )
+    }
+
+    private func clampedSlotDraftDuration(_ durationMinutes: Int) -> Int {
+        min(max(durationMinutes, 5), 16 * 60)
+    }
+
+    private func beginDraftResize() {
+        draftResizeBaseline = selectedSlotPopover
+    }
+
+    private func resizeDraft(edge: DayPlanResizeEdge, verticalDelta: CGFloat) {
+        guard let baseline = draftResizeBaseline ?? selectedSlotPopover else { return }
+
+        let deltaMinutes = snappedMinuteDelta(for: verticalDelta)
+        let originalStart = baseline.startMinute
+        let visualOriginalEnd = min(
+            DayPlanBlock.minutesPerDay,
+            originalStart + max(baseline.durationMinutes, DayPlanBlock.minimumDurationMinutes)
+        )
+        let startMinute: Int
+        let durationMinutes: Int
+
+        switch edge {
+        case .top:
+            let maxStart = visualOriginalEnd - DayPlanBlock.minimumDurationMinutes
+            startMinute = min(max(originalStart + deltaMinutes, 0), maxStart)
+            durationMinutes = visualOriginalEnd - startMinute
+        case .bottom:
+            let minEnd = originalStart + DayPlanBlock.minimumDurationMinutes
+            let endMinute = min(max(visualOriginalEnd + deltaMinutes, minEnd), DayPlanBlock.minutesPerDay)
+            startMinute = originalStart
+            durationMinutes = endMinute - originalStart
+        }
+
+        guard var draft = selectedSlotPopover else { return }
+        draft.startMinute = DayPlanBlock.clampedStartMinute(startMinute)
+        draft.durationMinutes = clampedSlotDraftDuration(durationMinutes)
+        selectedSlotPopover = draft
+    }
+
+    private func endDraftResize() {
+        draftResizeBaseline = nil
+    }
+
+    private func snappedMinuteDelta(for verticalDelta: CGFloat) -> Int {
+        let rawMinutes = (verticalDelta / hourHeight) * 60
+        return Int((rawMinutes / 15).rounded()) * 15
+    }
+
+    private func yOffset(for minute: Int, hourHeight: CGFloat) -> CGFloat {
+        CGFloat(minute) / 60 * hourHeight
+    }
+
+    private func draftBlockHeight(
+        for selection: DayPlanSelectedSlotPopover,
+        hourHeight: CGFloat
+    ) -> CGFloat {
+        let visibleDurationMinutes = min(
+            max(selection.durationMinutes, 5),
+            DayPlanBlock.minutesPerDay - selection.startMinute
+        )
+        return max(CGFloat(visibleDurationMinutes) / 60 * hourHeight, 18)
+    }
+
+#if os(macOS)
+    private func slotPopoverPositioningRect(
+        preferredEdge: NSRectEdge,
+        draftX: CGFloat,
+        draftY: CGFloat,
+        draftWidth: CGFloat,
+        draftHeight: CGFloat,
+        contentWidth: CGFloat,
+        contentHeight: CGFloat,
+        estimatedPopoverSize: CGSize
+    ) -> CGRect {
+        let margin: CGFloat = 12
+        switch preferredEdge {
+        case .maxY, .minY:
+            let draftCenterX = draftX + (draftWidth / 2)
+            let minCenterX = (estimatedPopoverSize.width / 2) + margin
+            let maxCenterX = max(minCenterX, contentWidth - (estimatedPopoverSize.width / 2) - margin)
+            let clampedCenterX = min(max(draftCenterX, minCenterX), maxCenterX)
+            let localX = min(max(clampedCenterX - draftX, 0), draftWidth)
+            let localY = preferredEdge == .maxY ? draftHeight : 0
+            return CGRect(x: localX, y: localY, width: 1, height: 1)
+        default:
+            let draftCenterY = draftY + (draftHeight / 2)
+            let minCenterY = (estimatedPopoverSize.height / 2) + margin
+            let maxCenterY = max(minCenterY, contentHeight - (estimatedPopoverSize.height / 2) - margin)
+            let clampedCenterY = min(max(draftCenterY, minCenterY), maxCenterY)
+            let localX = preferredEdge == .maxX ? draftWidth : 0
+            let localY = min(max(clampedCenterY - draftY, 0), draftHeight)
+            return CGRect(x: localX, y: localY, width: 1, height: 1)
+        }
+    }
+#endif
 
 }
 
 private struct DayPlanSelectedSlotPopover: Equatable {
     var date: Date
     var startMinute: Int
+    var durationMinutes: Int
+}
+
+#if os(macOS)
+private struct DayPlanNativePopoverPresenter<PopoverContent: View>: NSViewRepresentable {
+    @Binding var isPresented: Bool
+    var preferredEdge: NSRectEdge
+    var positioningRect: CGRect
+    var content: PopoverContent
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(isPresented: $isPresented)
+    }
+
+    func makeNSView(context: Context) -> NSView {
+        NSView(frame: .zero)
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        context.coordinator.isPresented = $isPresented
+        context.coordinator.update(
+            isPresented: isPresented,
+            preferredEdge: preferredEdge,
+            positioningRect: positioningRect,
+            content: content,
+            anchorView: nsView
+        )
+    }
+
+    @MainActor
+    final class Coordinator: NSObject, NSPopoverDelegate {
+        var isPresented: Binding<Bool>
+        private var popover: NSPopover?
+        private var hostingController: NSHostingController<PopoverContent>?
+
+        init(isPresented: Binding<Bool>) {
+            self.isPresented = isPresented
+        }
+
+        func update(
+            isPresented: Bool,
+            preferredEdge: NSRectEdge,
+            positioningRect: CGRect,
+            content: PopoverContent,
+            anchorView: NSView
+        ) {
+            if let hostingController {
+                hostingController.rootView = content
+            } else {
+                hostingController = NSHostingController(rootView: content)
+            }
+
+            if isPresented {
+                showPopover(
+                    preferredEdge: preferredEdge,
+                    positioningRect: positioningRect,
+                    anchorView: anchorView
+                )
+            } else {
+                popover?.performClose(nil)
+            }
+        }
+
+        private func showPopover(
+            preferredEdge: NSRectEdge,
+            positioningRect: CGRect,
+            anchorView: NSView
+        ) {
+            guard isPresented.wrappedValue else { return }
+            guard anchorView.window != nil else {
+                DispatchQueue.main.async { [weak self, weak anchorView] in
+                    guard let self, let anchorView else { return }
+                    self.showPopover(
+                        preferredEdge: preferredEdge,
+                        positioningRect: positioningRect,
+                        anchorView: anchorView
+                    )
+                }
+                return
+            }
+            guard popover?.isShown != true, let hostingController else { return }
+
+            hostingController.view.layoutSubtreeIfNeeded()
+            let contentSize = normalizedPopoverSize(hostingController.view.fittingSize)
+            let presentation = adjustedPresentation(
+                preferredEdge: preferredEdge,
+                positioningRect: positioningRect,
+                contentSize: contentSize,
+                anchorView: anchorView
+            )
+
+            let popover = NSPopover()
+            popover.behavior = .semitransient
+            popover.animates = true
+            popover.contentSize = contentSize
+            popover.contentViewController = hostingController
+            popover.delegate = self
+            popover.show(
+                relativeTo: presentation.positioningRect,
+                of: anchorView,
+                preferredEdge: presentation.edge
+            )
+            self.popover = popover
+        }
+
+        private func normalizedPopoverSize(_ fittingSize: CGSize) -> CGSize {
+            CGSize(
+                width: max(fittingSize.width, 440),
+                height: max(fittingSize.height, 240)
+            )
+        }
+
+        private func adjustedPresentation(
+            preferredEdge: NSRectEdge,
+            positioningRect: CGRect,
+            contentSize: CGSize,
+            anchorView: NSView
+        ) -> DayPlanPopoverPresentation {
+            guard let window = anchorView.window else {
+                return DayPlanPopoverPresentation(edge: preferredEdge, positioningRect: positioningRect)
+            }
+
+            let visibleFrame = (window.screen ?? NSScreen.main)?.visibleFrame.insetBy(dx: 12, dy: 12)
+            guard let visibleFrame else {
+                return DayPlanPopoverPresentation(edge: preferredEdge, positioningRect: positioningRect)
+            }
+
+            let anchorWindowRect = anchorView.convert(positioningRect, to: nil)
+            let anchorScreenRect = window.convertToScreen(anchorWindowRect)
+            let edge = bestPopoverEdge(
+                preferredEdge: preferredEdge,
+                anchorScreenRect: anchorScreenRect,
+                visibleFrame: visibleFrame,
+                contentSize: contentSize
+            )
+            let rect = clampedPositioningRect(
+                positioningRect,
+                edge: edge,
+                anchorScreenRect: anchorScreenRect,
+                visibleFrame: visibleFrame,
+                contentSize: contentSize
+            )
+            return DayPlanPopoverPresentation(edge: edge, positioningRect: rect)
+        }
+
+        private func bestPopoverEdge(
+            preferredEdge: NSRectEdge,
+            anchorScreenRect: CGRect,
+            visibleFrame: CGRect,
+            contentSize: CGSize
+        ) -> NSRectEdge {
+            let orderedEdges: [NSRectEdge]
+            switch preferredEdge {
+            case .maxY:
+                orderedEdges = [.maxY, .minY, .minX, .maxX]
+            case .minY:
+                orderedEdges = [.minY, .maxY, .minX, .maxX]
+            case .minX:
+                orderedEdges = [.minX, .maxX, .maxY, .minY]
+            default:
+                orderedEdges = [.maxX, .minX, .maxY, .minY]
+            }
+
+            if let fittingEdge = orderedEdges.first(where: {
+                primaryAvailableSpace(
+                    for: $0,
+                    anchorScreenRect: anchorScreenRect,
+                    visibleFrame: visibleFrame
+                ) >= primaryNeededSpace(for: $0, contentSize: contentSize)
+            }) {
+                return fittingEdge
+            }
+
+            return orderedEdges.max {
+                primaryAvailableSpace(for: $0, anchorScreenRect: anchorScreenRect, visibleFrame: visibleFrame)
+                    < primaryAvailableSpace(for: $1, anchorScreenRect: anchorScreenRect, visibleFrame: visibleFrame)
+            } ?? preferredEdge
+        }
+
+        private func primaryAvailableSpace(
+            for edge: NSRectEdge,
+            anchorScreenRect: CGRect,
+            visibleFrame: CGRect
+        ) -> CGFloat {
+            switch edge {
+            case .maxY:
+                return visibleFrame.maxY - anchorScreenRect.maxY
+            case .minY:
+                return anchorScreenRect.minY - visibleFrame.minY
+            case .minX:
+                return anchorScreenRect.minX - visibleFrame.minX
+            default:
+                return visibleFrame.maxX - anchorScreenRect.maxX
+            }
+        }
+
+        private func primaryNeededSpace(for edge: NSRectEdge, contentSize: CGSize) -> CGFloat {
+            switch edge {
+            case .maxY, .minY:
+                return contentSize.height
+            default:
+                return contentSize.width
+            }
+        }
+
+        private func clampedPositioningRect(
+            _ positioningRect: CGRect,
+            edge: NSRectEdge,
+            anchorScreenRect: CGRect,
+            visibleFrame: CGRect,
+            contentSize: CGSize
+        ) -> CGRect {
+            var rect = positioningRect
+            switch edge {
+            case .maxY, .minY:
+                let halfWidth = contentSize.width / 2
+                let minMidX = visibleFrame.minX + halfWidth
+                let maxMidX = max(minMidX, visibleFrame.maxX - halfWidth)
+                let clampedMidX = min(
+                    max(anchorScreenRect.midX, minMidX),
+                    maxMidX
+                )
+                rect.origin.x += clampedMidX - anchorScreenRect.midX
+            default:
+                let halfHeight = contentSize.height / 2
+                let minMidY = visibleFrame.minY + halfHeight
+                let maxMidY = max(minMidY, visibleFrame.maxY - halfHeight)
+                let clampedMidY = min(
+                    max(anchorScreenRect.midY, minMidY),
+                    maxMidY
+                )
+                rect.origin.y += clampedMidY - anchorScreenRect.midY
+            }
+            return rect
+        }
+
+        func popoverDidClose(_ notification: Notification) {
+            popover = nil
+            DispatchQueue.main.async { [isPresented] in
+                isPresented.wrappedValue = false
+            }
+        }
+    }
+}
+
+private struct DayPlanPopoverPresentation {
+    let edge: NSRectEdge
+    let positioningRect: CGRect
+}
+#endif
+
+private struct DayPlanSlotDraftBlock: View {
+    var date: Date
+    var startMinute: Int
+    var durationMinutes: Int
+    var renderedHeight: CGFloat
+    var calendar: Calendar
+    var onResizeStarted: () -> Void
+    var onResizeChanged: (DayPlanResizeEdge, CGFloat) -> Void
+    var onResizeEnded: () -> Void
+
+    private var tint: Color {
+        .accentColor
+    }
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 7, style: .continuous)
+            .fill(tint.opacity(0.88))
+            .overlay(alignment: .topLeading) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("New Block")
+                        .font(.caption.weight(.bold))
+                        .lineLimit(1)
+                    Label(intervalText, systemImage: "clock")
+                        .font(.caption2.monospacedDigit().weight(.semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+            }
+            .overlay(alignment: .top) {
+                resizeHandle(edge: .top)
+            }
+            .overlay(alignment: .bottom) {
+                resizeHandle(edge: .bottom)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .stroke(.white.opacity(0.45), lineWidth: 1)
+            }
+            .shadow(color: tint.opacity(0.28), radius: 10, y: 4)
+            .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+            .accessibilityLabel("New block, \(intervalText)")
+    }
+
+    private var intervalText: String {
+        guard let startDate = calendar.date(
+            byAdding: .minute,
+            value: startMinute,
+            to: calendar.startOfDay(for: date)
+        ),
+              let endDate = calendar.date(byAdding: .minute, value: durationMinutes, to: startDate)
+        else {
+            return "\(DayPlanFormatting.timeText(for: startMinute, on: date, calendar: calendar)) - \(DayPlanFormatting.timeText(for: startMinute + durationMinutes, on: date, calendar: calendar))"
+        }
+
+        let startText = startDate.formatted(date: .omitted, time: .shortened)
+        let endText: String
+        if calendar.isDate(endDate, inSameDayAs: startDate) {
+            endText = endDate.formatted(date: .omitted, time: .shortened)
+        } else {
+            endText = endDate.formatted(.dateTime.weekday(.abbreviated).hour().minute())
+        }
+        return "\(startText) - \(endText)"
+    }
+
+    private func resizeHandle(edge: DayPlanResizeEdge) -> some View {
+        DayPlanResizeHandle(
+            edge: edge,
+            isSelected: true,
+            hitHeight: resizeHandleHitHeight,
+            outwardOverlap: resizeHandleHitHeight >= 16 ? 6 : 0,
+            onResizeStarted: onResizeStarted,
+            onResizeChanged: onResizeChanged,
+            onResizeEnded: onResizeEnded
+        )
+    }
+
+    private var resizeHandleHitHeight: CGFloat {
+        let preferredHitHeight: CGFloat = 16
+        let minimumMoveDragArea: CGFloat = 8
+        guard renderedHeight < preferredHitHeight * 2 + minimumMoveDragArea else {
+            return preferredHitHeight
+        }
+
+        return max(5, (renderedHeight - minimumMoveDragArea) / 2)
+    }
 }
 
 private struct DayPlanUnplaceableActivityLaneView: View {
