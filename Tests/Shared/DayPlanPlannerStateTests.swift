@@ -2402,6 +2402,60 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func visiblePlannerBlocksHideActiveCountUpTagFocusStarterBlock() throws {
+        let calendar = gregorianCalendar
+        let visibleDate = try #require(date("2026-05-07T12:00:00Z"))
+        let startedAt = try #require(date("2026-05-07T09:30:00Z"))
+        let countUpSessionID = UUID()
+        let fixedSessionID = UUID()
+        let countUpSession = FocusSession(
+            id: countUpSessionID,
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            tagName: "HSE"
+        )
+        let fixedSession = FocusSession(
+            id: fixedSessionID,
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 25 * 60,
+            tagName: "Admin"
+        )
+        let countUpStarterBlock = DayPlanBlock(
+            id: countUpSessionID,
+            taskID: FocusSession.unassignedTaskID,
+            dayKey: DayPlanStorage.dayKey(for: visibleDate, calendar: calendar),
+            startMinute: 9 * 60 + 30,
+            durationMinutes: 1,
+            titleSnapshot: "#HSE",
+            createdAt: startedAt,
+            updatedAt: startedAt,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
+        let fixedBlock = DayPlanBlock(
+            id: fixedSessionID,
+            taskID: FocusSession.unassignedTaskID,
+            dayKey: DayPlanStorage.dayKey(for: visibleDate, calendar: calendar),
+            startMinute: 10 * 60,
+            durationMinutes: 25,
+            titleSnapshot: "#Admin",
+            createdAt: startedAt,
+            updatedAt: startedAt
+        )
+
+        let visibleBlocks = DayPlanVisibleBlocks.blocks(
+            [countUpStarterBlock, fixedBlock],
+            tasks: [],
+            logs: [],
+            calendar: calendar,
+            activeFocusSessions: [countUpSession, fixedSession]
+        )
+
+        #expect(visibleBlocks.map(\.id) == [fixedSessionID])
+    }
+
+    @Test
     func activePlanFocusSessionBlocksStartAfterAllocatedPlannerBlocks() throws {
         let calendar = gregorianCalendar
         let visibleDate = try #require(date("2026-05-07T12:00:00Z"))

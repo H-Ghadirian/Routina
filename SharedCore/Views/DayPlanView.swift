@@ -50,6 +50,7 @@ struct DayPlanSidebarView: View {
     @ObservedObject var planner: DayPlanPlannerState
     @Query private var tasks: [RoutineTask]
     @Query private var logs: [RoutineLog]
+    @Query(sort: \FocusSession.startedAt, order: .reverse) private var focusSessions: [FocusSession]
     @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
     @Query(sort: \AwaySession.startedAt, order: .reverse) private var awaySessions: [AwaySession]
     var usesPanelBackground = true
@@ -263,8 +264,18 @@ struct DayPlanSidebarView: View {
             planner.blocks(on: date, calendar: calendar, context: modelContext),
             tasks: tasks,
             logs: logs,
-            calendar: calendar
+            calendar: calendar,
+            activeFocusSessions: activeTaskAndTagFocusSessions
         )
+    }
+
+    private var activeTaskAndTagFocusSessions: [FocusSession] {
+        focusSessions.filter { session in
+            (session.isTaskFocus || session.isTagFocus)
+                && session.startedAt != nil
+                && session.completedAt == nil
+                && session.abandonedAt == nil
+        }
     }
 
     private var selectedTask: RoutineTask? {
@@ -1301,7 +1312,8 @@ private struct DayPlanTimelinePanelView: View {
                         planner.blocks(on: date, calendar: calendar, context: modelContext),
                         tasks: tasks,
                         logs: logs,
-                        calendar: calendar
+                        calendar: calendar,
+                        activeFocusSessions: activeTaskAndTagFocusSessions
                     )
                 )
             }
@@ -1580,10 +1592,20 @@ private struct DayPlanTimelinePanelView: View {
             planner.blocks(on: date, calendar: calendar, context: modelContext),
             tasks: tasks,
             logs: logs,
-            calendar: calendar
+            calendar: calendar,
+            activeFocusSessions: activeTaskAndTagFocusSessions
         )
         .first { block in
             max(start, block.startMinute) < min(end, block.endMinute)
+        }
+    }
+
+    private var activeTaskAndTagFocusSessions: [FocusSession] {
+        focusSessions.filter { session in
+            (session.isTaskFocus || session.isTagFocus)
+                && session.startedAt != nil
+                && session.completedAt == nil
+                && session.abandonedAt == nil
         }
     }
 

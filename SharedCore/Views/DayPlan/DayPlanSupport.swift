@@ -47,7 +47,8 @@ enum DayPlanVisibleBlocks {
         _ blocks: [DayPlanBlock],
         tasks: [RoutineTask],
         logs: [RoutineLog],
-        calendar: Calendar
+        calendar: Calendar,
+        activeFocusSessions: [FocusSession] = []
     ) -> [DayPlanBlock] {
         guard !blocks.isEmpty else { return [] }
 
@@ -55,6 +56,10 @@ enum DayPlanVisibleBlocks {
         let logsByTaskID = Dictionary(grouping: logs, by: \.taskID)
 
         return blocks.filter { block in
+            if isActiveCountUpFocusStarterBlock(block, activeFocusSessions: activeFocusSessions) {
+                return false
+            }
+
             guard let task = tasksByID[block.taskID] else { return true }
             return !hasHiddenOutcome(
                 for: block,
@@ -90,6 +95,23 @@ enum DayPlanVisibleBlocks {
                 return false
             }
             return calendar.isDate(timestamp, inSameDayAs: blockDate)
+        }
+    }
+
+    private static func isActiveCountUpFocusStarterBlock(
+        _ block: DayPlanBlock,
+        activeFocusSessions: [FocusSession]
+    ) -> Bool {
+        activeFocusSessions.contains { session in
+            guard session.id == block.id,
+                  session.plannedDurationSeconds <= 0,
+                  session.completedAt == nil,
+                  session.abandonedAt == nil,
+                  session.startedAt != nil else {
+                return false
+            }
+
+            return session.isTaskFocus || session.isTagFocus
         }
     }
 
