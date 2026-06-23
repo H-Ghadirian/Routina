@@ -666,6 +666,17 @@ struct AddRoutineFeatureTests {
 
     @Test
     func applyQuickAddDraftFromName_populatesFormFields() async {
+        let placesKey = UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue
+        let previousPlacesValue = SharedDefaults.app.object(forKey: placesKey)
+        defer {
+            if let previousPlacesValue {
+                SharedDefaults.app.set(previousPlacesValue, forKey: placesKey)
+            } else {
+                SharedDefaults.app.removeObject(forKey: placesKey)
+            }
+        }
+        SharedDefaults.app[.appSettingPlacesEnabled] = true
+
         let placeID = UUID()
         let store = TestStore(
             initialState: makeState(

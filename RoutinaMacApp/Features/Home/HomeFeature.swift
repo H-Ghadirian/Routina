@@ -960,7 +960,8 @@ struct HomeFeature {
     }
 
     private func automaticPlaceCheckInEffect(for snapshot: LocationSnapshot) -> Effect<Action> {
-        guard appSettingsClient.automaticPlaceCheckInEnabled() else {
+        guard appSettingsClient.placesEnabled(),
+              appSettingsClient.automaticPlaceCheckInEnabled() else {
             return .run { @MainActor _ in
                 do {
                     _ = try PlaceCheckInSupport.endActiveAutomaticSession(in: self.modelContext())

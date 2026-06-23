@@ -74,6 +74,7 @@ struct SettingsAppearanceState: Equatable {
     var isGitFeaturesEnabled: Bool = false
     var isTaskSharingEnabled: Bool = false
     var isTaskRelationshipVisualizerEnabled: Bool = false
+    var isPlacesEnabled: Bool = false
     var showPersianDates: Bool = false
     var showsTimelineTasksInDayPlanner: Bool = true
     var separatesDailyRoutinesInTaskList: Bool = false

@@ -95,7 +95,8 @@ extension HomeTCAView {
     var currentSelectedSettingsSection: SettingsMacSection {
         let visibleSections = SettingsMacSection.visibleSections(
             isGitFeaturesEnabled: settingsStore.appearance.isGitFeaturesEnabled,
-            isDevicesSectionEnabled: isSettingsDevicesSectionEnabled
+            isDevicesSectionEnabled: isSettingsDevicesSectionEnabled,
+            isPlacesEnabled: isPlacesEnabled
         )
         let candidate = store.selectedSettingsSection ?? .notifications
         let resolvedSection = candidate.resolvedNavigationSection
@@ -144,8 +145,8 @@ extension HomeTCAView {
             selectedTags: store.selectedTags,
             includeTagMatchMode: store.includeTagMatchMode,
             excludedTags: store.excludedTags,
-            selectedPlaceName: selectedPlaceName,
-            hasSelectedPlaceFilter: store.selectedManualPlaceFilterID != nil,
+            selectedPlaceName: isPlacesEnabled ? selectedPlaceName : nil,
+            hasSelectedPlaceFilter: isPlacesEnabled && store.selectedManualPlaceFilterID != nil,
             selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
             selectedPressureFilter: store.selectedPressureFilter,
             selectedGoalFilter: effectiveSelectedGoalFilter,
@@ -153,8 +154,8 @@ extension HomeTCAView {
             hideAssumedDoneTasks: store.hideAssumedDoneTasks,
             hideUnavailableRoutines: store.hideUnavailableRoutines,
             showArchivedTasks: store.showArchivedTasks,
-            hasSavedPlaces: hasSavedPlaces,
-            awayRoutineCount: store.awayRoutineDisplays.count,
+            hasSavedPlaces: isPlacesEnabled && hasSavedPlaces,
+            awayRoutineCount: isPlacesEnabled ? store.awayRoutineDisplays.count : 0,
             locationAuthorizationStatus: store.locationSnapshot.authorizationStatus
         )
     }
@@ -259,6 +260,11 @@ extension HomeTCAView {
     }
 
     func openMacPlacesWorkspace() {
+        guard isPlacesEnabled else {
+            mainDetailModeBinding.wrappedValue = .details
+            showRoutinesInSidebar()
+            return
+        }
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
@@ -424,6 +430,11 @@ extension HomeTCAView {
     }
 
     func openSettingsPlacesInSidebar() {
+        guard isPlacesEnabled else {
+            openSettingsInSidebar()
+            store.send(.selectedSettingsSectionChanged(.general))
+            return
+        }
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
@@ -553,7 +564,7 @@ extension HomeTCAView {
     @ViewBuilder
     var macSidebarContent: some View {
         Group {
-            if macHomeDetailMode == .places && isMacRoutinesMode {
+            if isPlacesEnabled && macHomeDetailMode == .places && isMacRoutinesMode {
                 macPlacesSidebarView
             } else if isMacAddTaskMode || store.taskDetailState?.isEditSheetPresented == true {
                 macFormSectionNav
@@ -720,7 +731,10 @@ extension HomeTCAView {
     }
 
     private func shouldDisplayFormSection(_ section: FormSection) -> Bool {
-        section != .goals || isGoalsTabEnabled
+        if section == .places {
+            return isPlacesEnabled
+        }
+        return section != .goals || isGoalsTabEnabled
     }
 
     var macSidebarHeader: some View {
@@ -832,6 +846,7 @@ extension HomeTCAView {
     }
 
     func openCheckInFromAddMenu() {
+        guard isPlacesEnabled else { return }
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
@@ -902,11 +917,11 @@ extension HomeTCAView {
     var emptyTaskListMessage: String {
         switch store.taskListMode {
         case .all:
-            return "Try a different place or clear a few filters."
+            return isPlacesEnabled ? "Try a different place or clear a few filters." : "Clear a few filters and try again."
         case .routines:
-            return "Try a different place or switch back to all routines."
+            return isPlacesEnabled ? "Try a different place or switch back to all routines." : "Clear a few filters or switch back to all routines."
         case .todos:
-            return "Try a different place or switch back to all todos."
+            return isPlacesEnabled ? "Try a different place or switch back to all todos." : "Clear a few filters or switch back to all todos."
         }
     }
 
@@ -966,12 +981,12 @@ extension HomeTCAView {
                 taskRowVisibility: taskRowVisibility,
                 queryOptions: HomeAdvancedQueryOptions(
                     tags: homeTagFilterData.tagSummaries.map(\.name),
-                    places: sortedRoutinePlaces.map(\.displayName)
+                    places: isPlacesEnabled ? sortedRoutinePlaces.map(\.displayName) : []
                 ),
                 importanceUrgencySummary: importanceUrgencyFilterSummary,
                 showsGoalFilter: isGoalsTabEnabled,
                 showsTagSection: homeTagFilterData.hasTags,
-                showsPlaceSection: hasPlaceAwareContent,
+                showsPlaceSection: isPlacesEnabled && hasPlaceAwareContent,
                 onTaskRowFieldVisibilityChanged: { field, isVisible in
                     settingsStore.send(.taskRowFieldVisibilityChanged(field, isVisible))
                 }
@@ -1005,6 +1020,7 @@ extension HomeTCAView {
             store: settingsStore,
             selectedSection: currentSelectedSettingsSection,
             isDevicesSectionEnabled: isSettingsDevicesSectionEnabled,
+            isPlacesEnabled: isPlacesEnabled,
             onSelectSection: { section in
                 store.send(.selectedSettingsSectionChanged(section))
             }

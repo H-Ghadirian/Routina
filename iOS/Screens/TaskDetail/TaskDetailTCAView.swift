@@ -42,6 +42,10 @@ struct TaskDetailTCAView: View {
         UserDefaultBoolValueKey.appSettingTaskRelationshipVisualizerEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isTaskRelationshipVisualizerEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isPlacesEnabled = false
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
 
@@ -721,7 +725,8 @@ detailBody
             state: store.state,
             summaryStatusColor: summaryStatusColor,
             dueDateMetadataDisplayText: dueDateMetadataDisplayText,
-            layout: .mobile
+            layout: .mobile,
+            showsPlaces: isPlacesEnabled
         )
     }
 
@@ -730,7 +735,8 @@ detailBody
             state: store.state,
             summaryStatusColor: summaryStatusColor,
             dueDateMetadataDisplayText: dueDateMetadataDisplayText,
-            layout: .mobile
+            layout: .mobile,
+            showsPlaces: isPlacesEnabled
         )
     }
 
@@ -897,7 +903,10 @@ detailBody
     }
 
     private var hasVisibleStatusMetadata: Bool {
-        TaskDetailStatusMetadataPresentation.hasVisibleMetadata(for: store.state)
+        TaskDetailStatusMetadataPresentation.hasVisibleMetadata(
+            for: store.state,
+            showsPlaces: isPlacesEnabled
+        )
     }
 
     private var historySection: some View {

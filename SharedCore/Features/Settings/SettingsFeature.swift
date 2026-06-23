@@ -23,6 +23,7 @@ struct SettingsFeature {
         case gitFeaturesToggled(Bool)
         case taskSharingToggled(Bool)
         case taskRelationshipVisualizerToggled(Bool)
+        case placesToggled(Bool)
         case showPersianDatesToggled(Bool)
         case automaticPlaceCheckInToggled(Bool)
         case showTimelineTasksInDayPlannerToggled(Bool)
@@ -210,6 +211,13 @@ struct SettingsFeature {
 
             case let .taskRelationshipVisualizerToggled(isEnabled):
                 return SettingsAppearanceActionHandler.taskRelationshipVisualizerToggled(
+                    isEnabled,
+                    state: &state.appearance,
+                    appSettingsClient: self.appSettingsClient
+                )
+
+            case let .placesToggled(isEnabled):
+                return SettingsAppearanceActionHandler.placesToggled(
                     isEnabled,
                     state: &state.appearance,
                     appSettingsClient: self.appSettingsClient
@@ -453,6 +461,7 @@ struct SettingsFeature {
                     gitFeaturesEnabled: appSettingsClient.gitFeaturesEnabled(),
                     taskSharingEnabled: appSettingsClient.taskSharingEnabled(),
                     taskRelationshipVisualizerEnabled: appSettingsClient.taskRelationshipVisualizerEnabled(),
+                    placesEnabled: appSettingsClient.placesEnabled(),
                     lastRoutineDataBackupDate: appSettingsClient.lastRoutineDataBackupDate(),
                     deviceAuthenticationStatus: deviceAuthenticationClient.status(),
                     state: &state

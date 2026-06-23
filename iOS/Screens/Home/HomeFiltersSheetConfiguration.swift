@@ -12,6 +12,7 @@ struct HomeFiltersPlaceConfiguration {
     let sortedRoutinePlaces: [RoutinePlace]
     let hasSavedPlaces: Bool
     let hasPlaceLinkedRoutines: Bool
+    let isPlacesEnabled: Bool
     let isLocationAuthorized: Bool
     let placeFilterPluralNoun: String
     let placeFilterAllTitle: String

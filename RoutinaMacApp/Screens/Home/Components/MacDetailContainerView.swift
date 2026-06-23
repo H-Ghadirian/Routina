@@ -18,6 +18,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     let selectedSettingsSection: SettingsMacSection
     let dayPlanPlanner: DayPlanPlannerState
     let adventureProgression: HomeAdventureProgression
+    let showsPlaces: Bool
     @Binding var mainDetailMode: MacHomeDetailMode
     @Binding var isBoardInspectorPresented: Bool
     @Binding var placeCheckInSelectedPlaceID: UUID?
@@ -83,7 +84,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     @ViewBuilder
     private var mainDetailBody: some View {
         Group {
-            switch mainDetailMode {
+            switch mainDetailMode.visibleSurfaceMode {
             case .details:
                 selectedTaskDetailContent
             case .planner:
@@ -97,7 +98,11 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
             case .board:
                 boardDetailContent
             case .places:
-                placesDetailContent
+                if showsPlaces {
+                    placesDetailContent
+                } else {
+                    selectedTaskDetailContent
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -189,7 +194,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
                 onEdit: { onEditNote(selectedTimelineNote.id) },
                 onDelete: { onDeleteNote(selectedTimelineNote.id) }
             )
-        } else if let selectedTimelinePlaceCheckInSession {
+        } else if showsPlaces, let selectedTimelinePlaceCheckInSession {
             PlaceCheckInSessionDetailView(session: selectedTimelinePlaceCheckInSession)
         } else if let selectedTimelineAwaySession {
             AwaySessionEditSheet(session: selectedTimelineAwaySession)
@@ -213,10 +218,16 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
             ContentUnavailableView(
                 "Select a timeline entry or filters",
                 systemImage: "clock.arrow.circlepath",
-                description: Text("Choose a task, note, or place check-in from the sidebar, or open filters beside search to refine the timeline.")
+                description: Text(timelineEmptyDescription)
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+    }
+
+    private var timelineEmptyDescription: String {
+        showsPlaces
+            ? "Choose a task, note, or place check-in from the sidebar, or open filters beside search to refine the timeline."
+            : "Choose a task or note from the sidebar, or open filters beside search to refine the timeline."
     }
 
     private func timelineFocusSubtitle(for entry: TimelineEntry) -> String {
@@ -270,7 +281,7 @@ struct MacHomeDetailModePicker: View {
         ) { mode in
             Text(mode.rawValue)
         }
-        .frame(width: MacHomeDetailMode.visibleModes.count == 3 ? 330 : 420)
+        .frame(width: max(240, CGFloat(MacHomeDetailMode.visibleModes.count) * 110))
     }
 }
 

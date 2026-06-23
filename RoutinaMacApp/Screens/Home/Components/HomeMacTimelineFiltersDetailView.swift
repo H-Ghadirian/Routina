@@ -29,6 +29,7 @@ struct HomeMacTimelineFiltersDetailView: View {
     let onToggleExcludedTag: (String) -> Void
     let onTimelineRowFieldVisibilityChanged: (HomeTimelineRowField, Bool) -> Void
     let includesEventEmotionFilters: Bool
+    let includesPlaceFilters: Bool
 
     var body: some View {
         Group {
@@ -166,7 +167,10 @@ struct HomeMacTimelineFiltersDetailView: View {
     private var typePicker: some View {
         RoutinaGlassSegmentedControl(
             accessibilityLabel: "Type",
-            options: TimelineFilterType.visibleContentTypeCases(includingEventEmotion: includesEventEmotionFilters),
+            options: TimelineFilterType.visibleContentTypeCases(
+                includingEventEmotion: includesEventEmotionFilters,
+                includingPlaces: includesPlaceFilters
+            ),
             selection: contentTypeBinding
         ) { type in
             Text(type.rawValue)
@@ -198,7 +202,10 @@ struct HomeMacTimelineFiltersDetailView: View {
             get: {
                 selectedType.isStatusCase
                     ? .all
-                    : selectedType.normalized(includingEventEmotion: includesEventEmotionFilters)
+                    : selectedType.normalized(
+                        includingEventEmotion: includesEventEmotionFilters,
+                        includingPlaces: includesPlaceFilters
+                    )
             },
             set: { selectedType = $0 }
         )

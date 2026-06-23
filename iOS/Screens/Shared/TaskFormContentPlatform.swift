@@ -23,10 +23,14 @@ struct TaskFormContent: View {
         UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
         store: SharedDefaults.app
     ) private var showPersianDates = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isPlacesEnabled = false
 
     var body: some View {
         Form {
-            ForEach(model.visibleCompactSections(isShowingMoreDetails: isShowingMoreDetails), id: \.self) { section in
+            ForEach(visibleCompactSections, id: \.self) { section in
                 compactSection(section)
             }
 
@@ -94,9 +98,15 @@ struct TaskFormContent: View {
             hasAvailableTags: !model.availableTags.isEmpty,
             hasAvailableGoals: !model.availableGoals.isEmpty,
             goalDraft: model.goalDraft.wrappedValue,
-            selectedPlaceName: selectedPlaceName,
+            selectedPlaceName: isPlacesEnabled ? selectedPlaceName : nil,
             canAutoAssumeDailyDone: model.canAutoAssumeDailyDone
         )
+    }
+
+    private var visibleCompactSections: [TaskFormCompactSection] {
+        model.visibleCompactSections(isShowingMoreDetails: isShowingMoreDetails).filter {
+            $0 != .place || isPlacesEnabled
+        }
     }
 
     private var selectedPlaceName: String? {
@@ -163,7 +173,9 @@ struct TaskFormContent: View {
         case .checklist:
             checklistSection
         case .place:
-            placeSection
+            if isPlacesEnabled {
+                placeSection
+            }
         case .repeatPattern:
             if presentation.showsRepeatControls {
                 repeatPatternSections

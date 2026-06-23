@@ -51,6 +51,8 @@ struct StatsView: View {
     private var isStatsAchievementsEnabled = false
     @AppStorage(UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue, store: SharedDefaults.app)
     private var isGoalsTabEnabled = false
+    @AppStorage(UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue, store: SharedDefaults.app)
+    private var isPlacesEnabled = false
 
     private typealias Metrics = StatsFeature.Metrics
 
@@ -71,6 +73,14 @@ struct StatsView: View {
 
     private var selectedRange: DoneChartRange {
         store.selectedRange
+    }
+
+    private var statsPlaces: [RoutinePlace] {
+        isPlacesEnabled ? places : []
+    }
+
+    private var statsPlaceCheckInSessions: [PlaceCheckInSession] {
+        isPlacesEnabled ? placeCheckInSessions : []
     }
 
     private var filterSheetBinding: Binding<Bool> {
@@ -352,8 +362,8 @@ struct StatsView: View {
                 events: events,
                 noteAttachmentNoteIDs: Set(noteAttachments.map(\.noteID)),
                 goals: goals,
-                places: places,
-                placeCheckInSessions: placeCheckInSessions,
+                places: statsPlaces,
+                placeCheckInSessions: statsPlaceCheckInSessions,
                 onAppear: { store.send(.onAppear) },
                 onDataChanged: { tasks, logs, focusSessions, sprintFocusSessions, boardSprints, sleepSessions, awaySessions, emotionLogs, notes, events, noteAttachmentNoteIDs, goals, places, placeCheckInSessions in
                     store.send(
@@ -370,12 +380,32 @@ struct StatsView: View {
                             events: events,
                             noteAttachmentNoteIDs: noteAttachmentNoteIDs,
                             goals: goals,
-                            places: places,
-                            placeCheckInSessions: placeCheckInSessions
+                            places: isPlacesEnabled ? places : [],
+                            placeCheckInSessions: isPlacesEnabled ? placeCheckInSessions : []
                         )
                     )
                 }
             )
+            .onChange(of: isPlacesEnabled) { _, _ in
+                store.send(
+                    .setData(
+                        tasks: tasks,
+                        logs: logs,
+                        focusSessions: focusSessions,
+                        sprintFocusSessions: sprintFocusSessions,
+                        boardSprints: boardSprints,
+                        sleepSessions: sleepSessions,
+                        awaySessions: awaySessions,
+                        emotionLogs: emotionLogs,
+                        notes: notes,
+                        events: events,
+                        noteAttachmentNoteIDs: Set(noteAttachments.map(\.noteID)),
+                        goals: goals,
+                        places: statsPlaces,
+                        placeCheckInSessions: statsPlaceCheckInSessions
+                    )
+                )
+            }
     }
 
     @ViewBuilder
@@ -991,8 +1021,8 @@ struct StatsView: View {
                 notes: notes,
                 noteAttachmentNoteIDs: Set(noteAttachments.map(\.noteID)),
                 goals: goals,
-                places: places,
-                placeCheckInSessions: placeCheckInSessions,
+                places: statsPlaces,
+                placeCheckInSessions: statsPlaceCheckInSessions,
                 calendar: calendar
             ),
             earnedAchievementIDsByPeriod: StatsAchievementStats.achievementIDsEarnedByPeriod(
@@ -1004,8 +1034,8 @@ struct StatsView: View {
                 notes: notes,
                 noteAttachmentNoteIDs: Set(noteAttachments.map(\.noteID)),
                 goals: goals,
-                places: places,
-                placeCheckInSessions: placeCheckInSessions,
+                places: statsPlaces,
+                placeCheckInSessions: statsPlaceCheckInSessions,
                 referenceDate: Date(),
                 calendar: calendar
             ),
@@ -1024,8 +1054,8 @@ struct StatsView: View {
                 emotionLogs: emotionLogs,
                 notes: notes,
                 goals: goals,
-                places: places,
-                placeCheckInSessions: placeCheckInSessions,
+                places: statsPlaces,
+                placeCheckInSessions: statsPlaceCheckInSessions,
                 referenceDate: Date(),
                 calendar: calendar
             ),

@@ -53,6 +53,10 @@ struct TaskDetailTCAView: View {
         UserDefaultBoolValueKey.appSettingTaskRelationshipVisualizerEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isTaskRelationshipVisualizerEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isPlacesEnabled = false
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
 
@@ -568,7 +572,9 @@ detailBody
             })
         }
 
-        actions.append(editSectionAction(title: "Places", section: .places))
+        if isPlacesEnabled {
+            actions.append(editSectionAction(title: "Places", section: .places))
+        }
 
         if !store.task.hasNotes {
             actions.append(editSectionAction(title: "Notes", section: .notes))
@@ -857,7 +863,8 @@ detailBody
             state: store.state,
             summaryStatusColor: summaryStatusColor,
             dueDateMetadataDisplayText: dueDateMetadataDisplayText,
-            layout: .desktop
+            layout: .desktop,
+            showsPlaces: isPlacesEnabled
         )
     }
 
@@ -866,7 +873,8 @@ detailBody
             state: store.state,
             summaryStatusColor: summaryStatusColor,
             dueDateMetadataDisplayText: dueDateMetadataDisplayText,
-            layout: .desktop
+            layout: .desktop,
+            showsPlaces: isPlacesEnabled
         )
     }
 
@@ -1049,7 +1057,10 @@ detailBody
     }
 
     private var hasVisibleStatusMetadata: Bool {
-        TaskDetailStatusMetadataPresentation.hasVisibleMetadata(for: store.state)
+        TaskDetailStatusMetadataPresentation.hasVisibleMetadata(
+            for: store.state,
+            showsPlaces: isPlacesEnabled
+        )
     }
 
     private var historySection: some View {

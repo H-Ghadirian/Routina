@@ -17,6 +17,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0248](../decisions/0248-add-explicit-mac-prod-run-entrypoint.md)
 - [0257](../decisions/0257-hide-task-sharing-behind-beta-toggle.md)
 - [0258](../decisions/0258-hide-linked-task-visualizer-behind-beta-toggle.md)
+- [0275](../decisions/0275-hide-places-behind-beta-toggle.md)
 
 ## Current Contract
 
@@ -30,6 +31,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - Settings reset requires App Lock to already be enabled and a fresh successful device-owner authentication. User content remains untouched.
 - Turning App Lock off requires fresh device-owner authentication.
 - Settings hides Devices by default behind the beta toggle.
+- Settings hides Places by default behind Support & About -> Beta Experiments -> `Show Places`.
 - Task sharing is off by default and hidden in task details until enabled from Support & About -> Beta Experiments.
 - The linked-task Visualize button is off by default and hidden in task details until enabled from Support & About -> Beta Experiments.
 - macOS development runs use `script/build_and_run.sh` by default. Production launches use the explicit `--prod` path.

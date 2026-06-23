@@ -29,6 +29,7 @@ extension HomeTCAView {
             mode: homeToolbarMode,
             showsDetailModePicker: showsDetailModePickerInToolbar,
             showsProgressModePicker: showsProgressModePickerInToolbar,
+            showsPlaces: isPlacesEnabled,
             detailMode: mainDetailModeBinding,
             progressMode: macHomeProgressModeBinding,
             locationSnapshot: store.locationSnapshot,
@@ -265,6 +266,7 @@ extension HomeTCAView {
                     selectedSettingsSection: currentSelectedSettingsSection,
                     dayPlanPlanner: dayPlanPlanner,
                     adventureProgression: homeAdventureProgression,
+                    showsPlaces: isPlacesEnabled,
                     mainDetailMode: mainDetailModeBinding,
                     isBoardInspectorPresented: macBoardInspectorPresentedBinding,
                     placeCheckInSelectedPlaceID: $placeCheckInSelectedPlaceID,
@@ -275,7 +277,7 @@ extension HomeTCAView {
                     selectedTimelineEvent: selectedMacTimelineEvent,
                     selectedTimelineNote: selectedMacTimelineNote,
                     selectedTimelineNoteAttachments: selectedMacTimelineNoteAttachments,
-                    selectedTimelinePlaceCheckInSession: selectedMacTimelinePlaceCheckInSession,
+                    selectedTimelinePlaceCheckInSession: isPlacesEnabled ? selectedMacTimelinePlaceCheckInSession : nil,
                     selectedTimelineAwaySession: selectedMacTimelineAwaySession,
                     onSelectDayPlanUnplannedCompletedDate: { date in
                         focusMacSidebarOnDayPlanUnplannedCompletedTasks(on: date)
@@ -614,7 +616,8 @@ extension HomeTCAView {
     }
 
     var macPlaceFilterOptions: [MacPlaceFilterOption] {
-        MacPlaceFilterOptionFactory.options(
+        guard isPlacesEnabled else { return [] }
+        return MacPlaceFilterOptionFactory.options(
             places: sortedRoutinePlaces,
             displays: store.routineDisplays
                 + store.awayRoutineDisplays
@@ -644,16 +647,21 @@ extension HomeTCAView {
                 selection: Binding(
                     get: {
                         store.selectedTimelineFilterType.normalized(
-                            includingEventEmotion: areMacEventEmotionActionsEnabled
+                            includingEventEmotion: areMacEventEmotionActionsEnabled,
+                            includingPlaces: isPlacesEnabled
                         )
                     },
                     set: {
                         store.send(.selectedTimelineFilterTypeChanged(
-                            $0.normalized(includingEventEmotion: areMacEventEmotionActionsEnabled)
+                            $0.normalized(
+                                includingEventEmotion: areMacEventEmotionActionsEnabled,
+                                includingPlaces: isPlacesEnabled
+                            )
                         ))
                     }
                 ),
-                includesEventEmotion: areMacEventEmotionActionsEnabled
+                includesEventEmotion: areMacEventEmotionActionsEnabled,
+                includesPlaces: isPlacesEnabled
             )
         }
     }

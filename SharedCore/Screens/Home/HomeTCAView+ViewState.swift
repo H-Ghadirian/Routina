@@ -13,7 +13,7 @@ extension HomeTCAView {
             advancedQuery: store.advancedQuery,
             selectedTags: store.selectedTags,
             excludedTags: store.excludedTags,
-            selectedPlaceName: selectedPlaceName,
+            selectedPlaceName: isPlacesEnabled ? selectedPlaceName : nil,
             selectedImportanceUrgencyFilterLabel: homeFilterPresentation.selectedImportanceUrgencyFilterLabel,
             selectedPressureFilter: store.selectedPressureFilter,
             selectedGoalFilter: store.selectedGoalFilter,
@@ -74,8 +74,8 @@ extension HomeTCAView {
             selectedTags: store.selectedTags,
             includeTagMatchMode: store.includeTagMatchMode,
             excludedTags: store.excludedTags,
-            selectedPlaceName: selectedPlaceName,
-            hasSelectedPlaceFilter: store.selectedManualPlaceFilterID != nil,
+            selectedPlaceName: isPlacesEnabled ? selectedPlaceName : nil,
+            hasSelectedPlaceFilter: isPlacesEnabled && store.selectedManualPlaceFilterID != nil,
             selectedImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
             selectedPressureFilter: store.selectedPressureFilter,
             selectedGoalFilter: store.selectedGoalFilter,
@@ -83,8 +83,8 @@ extension HomeTCAView {
             hideAssumedDoneTasks: store.hideAssumedDoneTasks,
             hideUnavailableRoutines: store.hideUnavailableRoutines,
             showArchivedTasks: store.showArchivedTasks,
-            hasSavedPlaces: hasSavedPlaces,
-            awayRoutineCount: store.awayRoutineDisplays.count,
+            hasSavedPlaces: isPlacesEnabled && hasSavedPlaces,
+            awayRoutineCount: isPlacesEnabled ? store.awayRoutineDisplays.count : 0,
             locationAuthorizationStatus: store.locationSnapshot.authorizationStatus
         )
     }

@@ -12,6 +12,10 @@ struct EmotionLogEditorView: View {
     @Query private var tasks: [RoutineTask]
     @Query(sort: \RoutinePlace.name) private var places: [RoutinePlace]
     @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isPlacesEnabled = false
 
     private enum PleasantnessSegment: String, CaseIterable, Identifiable {
         case unpleasant
@@ -380,14 +384,16 @@ struct EmotionLogEditorView: View {
                     label: taskTitle
                 )
 
-                contextLinkPicker(
-                    title: "Place",
-                    pluralTitle: "places",
-                    systemImage: "mappin.and.ellipse",
-                    selection: $linkedPlaceID,
-                    items: places,
-                    label: { $0.displayName }
-                )
+                if isPlacesEnabled {
+                    contextLinkPicker(
+                        title: "Place",
+                        pluralTitle: "places",
+                        systemImage: "mappin.and.ellipse",
+                        selection: $linkedPlaceID,
+                        items: places,
+                        label: { $0.displayName }
+                    )
+                }
 
                 contextLinkPicker(
                     title: "Sleep",
@@ -409,12 +415,12 @@ struct EmotionLogEditorView: View {
         !notes.isEmpty
             || !goals.isEmpty
             || !tasks.isEmpty
-            || !places.isEmpty
+            || (isPlacesEnabled && !places.isEmpty)
             || !sleepSessions.isEmpty
             || linkedNoteID != nil
             || linkedGoalID != nil
             || linkedTaskID != nil
-            || linkedPlaceID != nil
+            || (isPlacesEnabled && linkedPlaceID != nil)
             || linkedSleepSessionID != nil
     }
 
@@ -689,6 +695,10 @@ struct EmotionLogDetailView: View {
     @Query private var tasks: [RoutineTask]
     @Query private var places: [RoutinePlace]
     @Query private var sleepSessions: [SleepSession]
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isPlacesEnabled = false
 
     var body: some View {
         Group {
@@ -806,7 +816,7 @@ struct EmotionLogDetailView: View {
                                     deepLink: .task(task.id)
                                 )
                             }
-                            if let place = linkedPlace {
+                            if isPlacesEnabled, let place = linkedPlace {
                                 contextRow("Place", value: place.displayName, systemImage: "mappin.and.ellipse")
                             }
                             if let sleep = linkedSleepSession {

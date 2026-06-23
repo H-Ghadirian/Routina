@@ -52,6 +52,7 @@ enum AppSettingsDefaults {
         .appSettingAppLockEnabled: false,
         .appSettingTaskSharingEnabled: false,
         .appSettingTaskRelationshipVisualizerEnabled: false,
+        .appSettingPlacesEnabled: false,
         .appSettingHomeTaskListModeTabsVisible: false,
         .appSettingMacHomeSectionFocusTimersEnabled: false,
         .appSettingMacTimelineQuickFiltersVisible: false,
@@ -137,6 +138,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingGitFeaturesEnabled
     case appSettingTaskSharingEnabled
     case appSettingTaskRelationshipVisualizerEnabled
+    case appSettingPlacesEnabled
     case appSettingGoalsTabEnabled
     case appSettingAdventureMapEnabled
     case appSettingBoardScreenEnabled
@@ -217,6 +219,8 @@ struct AppSettingsClient: Sendable {
     var setTaskSharingEnabled: @Sendable (Bool) -> Void = { _ in }
     var taskRelationshipVisualizerEnabled: @Sendable () -> Bool = { false }
     var setTaskRelationshipVisualizerEnabled: @Sendable (Bool) -> Void = { _ in }
+    var placesEnabled: @Sendable () -> Bool = { false }
+    var setPlacesEnabled: @Sendable (Bool) -> Void = { _ in }
     var showPersianDates: @Sendable () -> Bool
     var setShowPersianDates: @Sendable (Bool) -> Void
     var automaticPlaceCheckInEnabled: @Sendable () -> Bool
@@ -436,6 +440,13 @@ extension AppSettingsClient {
             SharedDefaults.app[.appSettingTaskRelationshipVisualizerEnabled] = isEnabled
             AppSettingsPersistenceMirror.schedule()
         },
+        placesEnabled: {
+            SharedDefaults.app[.appSettingPlacesEnabled]
+        },
+        setPlacesEnabled: { isEnabled in
+            SharedDefaults.app[.appSettingPlacesEnabled] = isEnabled
+            AppSettingsPersistenceMirror.schedule()
+        },
         showPersianDates: {
             SharedDefaults.app[.appSettingShowPersianDates]
         },
@@ -651,6 +662,8 @@ extension AppSettingsClient {
         setTaskSharingEnabled: { _ in },
         taskRelationshipVisualizerEnabled: { false },
         setTaskRelationshipVisualizerEnabled: { _ in },
+        placesEnabled: { false },
+        setPlacesEnabled: { _ in },
         showPersianDates: { false },
         setShowPersianDates: { _ in },
         automaticPlaceCheckInEnabled: { true },

@@ -27,6 +27,8 @@ struct AppView: View {
     private var isSleepNewSheetEnabled = true
     @AppStorage(UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue, store: SharedDefaults.app)
     private var isGoalsTabEnabled = false
+    @AppStorage(UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue, store: SharedDefaults.app)
+    private var isPlacesEnabled = false
 
     var body: some View {
 let tabView = TabView(
@@ -68,6 +70,7 @@ let tabView = TabView(
                 statsStore: store.scope(state: \.stats, action: \.stats),
                 settingsStore: store.scope(state: \.settings, action: \.settings),
                 showGoalsTab: isGoalsTabEnabled,
+                showPlaces: isPlacesEnabled,
                 onSelectTab: { store.send(.tabSelected($0)) }
             )
         }
@@ -191,7 +194,8 @@ Group {
 
     private var availableNewTabActions: [NewTabAction] {
         NewTabAction.creationActions + NewTabAction.sessionActions.filter { action in
-            action != .sleep || isNewSheetSleepActionEnabled
+            guard action != .checkIn || isPlacesEnabled else { return false }
+            return action != .sleep || isNewSheetSleepActionEnabled
         }
     }
 
@@ -239,6 +243,7 @@ Group {
         case .task:
             openNewTask()
         case .checkIn:
+            guard isPlacesEnabled else { return }
             presentedNewActionSheet = .checkIn
         case .away:
             presentedNewActionSheet = .away
@@ -275,7 +280,9 @@ Group {
         case .note:
             RoutineNoteEditorView()
         case .checkIn:
-            PlaceCheckInMapSheet()
+            if isPlacesEnabled {
+                PlaceCheckInMapSheet()
+            }
         case .away:
             AwaySessionStartSheet()
         }
@@ -613,6 +620,7 @@ private struct AppMoreNavigationView: View {
     let statsStore: StoreOf<StatsFeature>
     let settingsStore: StoreOf<SettingsFeature>
     let showGoalsTab: Bool
+    let showPlaces: Bool
     let onSelectTab: (Tab) -> Void
 
     var body: some View {
@@ -670,7 +678,7 @@ private struct AppMoreNavigationView: View {
                         icon: "gear",
                         tint: .gray,
                         title: Tab.settings.rawValue,
-                        subtitle: "Preferences, data, tags, places, and support"
+                        subtitle: settingsSubtitle
                     )
                 }
             }
@@ -678,6 +686,12 @@ private struct AppMoreNavigationView: View {
         .listStyle(.insetGrouped)
         .navigationTitle(Tab.more.rawValue)
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var settingsSubtitle: String {
+        showPlaces
+            ? "Preferences, data, tags, places, and support"
+            : "Preferences, data, tags, and support"
     }
 
     private func moreButton<Label: View>(

@@ -21,20 +21,23 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
 
     static func visibleSections(
         isGitFeaturesEnabled: Bool,
-        isDevicesSectionEnabled: Bool = false
+        isDevicesSectionEnabled: Bool = false,
+        isPlacesEnabled: Bool = false
     ) -> [SettingsSectionID] {
         allCases.filter {
             isSectionVisible(
                 $0,
                 isGitFeaturesEnabled: isGitFeaturesEnabled,
-                isDevicesSectionEnabled: isDevicesSectionEnabled
+                isDevicesSectionEnabled: isDevicesSectionEnabled,
+                isPlacesEnabled: isPlacesEnabled
             )
         }
     }
 
     static func compactSectionGroups(
         isGitFeaturesEnabled: Bool,
-        isDevicesSectionEnabled: Bool = false
+        isDevicesSectionEnabled: Bool = false,
+        isPlacesEnabled: Bool = false
     ) -> [[SettingsSectionID]] {
         let groupedSections: [[SettingsSectionID]] = [
             [
@@ -62,7 +65,8 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
                     isSectionVisible(
                         $0,
                         isGitFeaturesEnabled: isGitFeaturesEnabled,
-                        isDevicesSectionEnabled: isDevicesSectionEnabled
+                        isDevicesSectionEnabled: isDevicesSectionEnabled,
+                        isPlacesEnabled: isPlacesEnabled
                     )
                 }
             }
@@ -72,9 +76,13 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
     private static func isSectionVisible(
         _ section: SettingsSectionID,
         isGitFeaturesEnabled: Bool,
-        isDevicesSectionEnabled: Bool
+        isDevicesSectionEnabled: Bool,
+        isPlacesEnabled: Bool
     ) -> Bool {
         if section == .devices && !isDevicesSectionEnabled {
+            return false
+        }
+        if section == .places && !isPlacesEnabled {
             return false
         }
         if section == .git && !isGitFeaturesEnabled {
@@ -374,6 +382,33 @@ enum SettingsQuickAddSyntaxGuide {
         "Tags and places stop at spaces, so use one-word names.",
         "Optional starters like add, create, new, task, todo, routine, and remind me to are removed from the final title."
     ]
+
+    static func visibleExamples(includingPlaces: Bool) -> [SettingsQuickAddExample] {
+        guard !includingPlaces else { return examples }
+
+        return examples.filter { example in
+            !example.phrase.contains("@")
+        }
+    }
+
+    static func visibleSyntaxGroups(includingPlaces: Bool) -> [SettingsQuickAddSyntaxGroup] {
+        guard !includingPlaces else { return syntaxGroups }
+
+        return syntaxGroups.map { group in
+            SettingsQuickAddSyntaxGroup(
+                title: group.title,
+                rows: group.rows.filter { !$0.syntax.contains("@") }
+            )
+        }
+    }
+
+    static func visibleNotes(includingPlaces: Bool) -> [String] {
+        guard !includingPlaces else { return notes }
+
+        return notes.map { note in
+            note.replacingOccurrences(of: "Tags and places stop at spaces", with: "Tags stop at spaces")
+        }
+    }
 }
 
 extension SettingsNotificationsState {

@@ -610,7 +610,8 @@ struct AddRoutineFeature: Reducer {
         guard let draft = RoutinaQuickAddParser.parse(
             state.basics.routineName,
             referenceDate: now,
-            calendar: calendar
+            calendar: calendar,
+            includingPlaces: SharedDefaults.app[.appSettingPlacesEnabled]
         ), draft.hasDetectedMetadata else {
             return
         }
@@ -627,7 +628,8 @@ struct AddRoutineFeature: Reducer {
             availableTags: state.organization.availableTags
         )
 
-        if let placeID = matchingPlaceID(named: draft.placeName, in: state.organization.availablePlaces) {
+        if SharedDefaults.app[.appSettingPlacesEnabled],
+           let placeID = matchingPlaceID(named: draft.placeName, in: state.organization.availablePlaces) {
             AddRoutineFormEditor.setSelectedPlace(placeID, basics: &state.basics)
         }
 

@@ -6,6 +6,7 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
     let presentationID: UUID
     let isActive: Bool
     let allowsFallbackSelection: Bool
+    let showsPlaces: Bool
     @Binding var positionedPresentationID: UUID?
     @Binding var selection: HomeFeature.MacSidebarSelection?
     @Binding var scrollRequest: MacTimelineSidebarScrollRequest?
@@ -18,7 +19,7 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
                 ContentUnavailableView(
                     "No timeline entries yet",
                     systemImage: "clock.arrow.circlepath",
-                    description: Text("Completed items, notes, place check-ins, emotions, and sleep records will appear here in chronological order.")
+                    description: Text(emptyTimelineDescription)
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if groupedEntries.isEmpty {
@@ -105,6 +106,13 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
         groupedEntries.flatMap { section in
             section.entries.map(\.id)
         }
+    }
+
+    private var emptyTimelineDescription: String {
+        if showsPlaces {
+            return "Completed items, notes, place check-ins, emotions, and sleep records will appear here in chronological order."
+        }
+        return "Completed items, notes, emotions, and sleep records will appear here in chronological order."
     }
 
     private var selectedEntryID: UUID? {

@@ -20,6 +20,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0259](../decisions/0259-allow-daily-checklist-auto-assumed-completion.md)
 - [0260](../decisions/0260-hide-assumed-done-tasks-by-default.md)
 - [0270](../decisions/0270-normalize-checklist-item-intervals.md)
+- [0275](../decisions/0275-hide-places-behind-beta-toggle.md)
 
 ## Current Contract
 
@@ -43,4 +44,5 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Once a checklist-completion routine is completed for a selected day, its checklist rows present as checked and read-only from selected-day completion evidence, even though in-progress checklist IDs are cleared after the final item. The toolbar Undo action reopens/removes the completed day without flashing stale completed checklist state back into the rows.
 - Selected checklist item mutations keep their post-action detail state through stale Home reloads, including final completion after item-progress IDs reset.
 - Optional checklists attached to ordinary tasks can block manual completion until all required items are checked.
+- Task place sections, linked-place badges, and place-based task filters are hidden while the Places beta setting is off.
 - Home task lists derive visible sections from one stable presentation model. Each task ID appears in at most one row per presentation, and section identity is based on durable keys rather than visible section titles.

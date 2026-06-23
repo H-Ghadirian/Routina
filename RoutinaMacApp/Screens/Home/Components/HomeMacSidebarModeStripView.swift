@@ -18,6 +18,10 @@ struct HomeMacSidebarModeStripView: View {
         store: SharedDefaults.app
     ) private var isAdventureMapEnabled = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isPlacesEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
         store: SharedDefaults.app
     ) private var areMacEventEmotionActionsEnabled = false
@@ -124,17 +128,19 @@ struct HomeMacSidebarModeStripView: View {
                 modifiers: MacAddMenuShortcut.task.modifiers
             )
 
-            Divider()
+            if isPlacesEnabled {
+                Divider()
 
-            Button {
-                onCheckIn()
-            } label: {
-                addMenuLabel(for: .checkIn)
+                Button {
+                    onCheckIn()
+                } label: {
+                    addMenuLabel(for: .checkIn)
+                }
+                .keyboardShortcut(
+                    MacAddMenuShortcut.checkIn.keyEquivalent,
+                    modifiers: MacAddMenuShortcut.checkIn.modifiers
+                )
             }
-            .keyboardShortcut(
-                MacAddMenuShortcut.checkIn.keyEquivalent,
-                modifiers: MacAddMenuShortcut.checkIn.modifiers
-            )
 
             Button {
                 onStartAway()
@@ -163,10 +169,11 @@ struct HomeMacSidebarModeStripView: View {
 
     private var helpLabelForAddMenu: String {
         let personalActions = areMacEventEmotionActionsEnabled ? "event, emotion, note" : "note"
+        let placeAction = isPlacesEnabled ? ", check in" : ""
         if isGoalsTabEnabled {
-            return "Add \(personalActions), goal, task, check in, or away"
+            return "Add \(personalActions), goal, task\(placeAction), or away"
         }
-        return "Add \(personalActions), task, check in, or away"
+        return "Add \(personalActions), task\(placeAction), or away"
     }
 
     private func sidebarModeLabel(for mode: HomeFeature.MacSidebarMode) -> some View {

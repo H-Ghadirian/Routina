@@ -32,6 +32,10 @@ struct TimelineView: View {
         UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
         store: SharedDefaults.app
     ) private var areMacEventEmotionActionsEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isPlacesEnabled = false
     @State private var editingAwaySession: AwaySession?
 
     var body: some View {
@@ -114,11 +118,15 @@ struct TimelineView: View {
         .onChange(of: noteAttachmentChangeToken) { _, _ in
             syncTimelineData()
         }
+        .onChange(of: isPlacesEnabled) { _, _ in
+            syncTimelineData()
+            validateTimelineFilterVisibility()
+        }
         .onChange(of: areMacEventEmotionActionsEnabled) { _, _ in
-            validateEventEmotionFilterVisibility()
+            validateTimelineFilterVisibility()
         }
         .onChange(of: store.filterType) { _, _ in
-            validateEventEmotionFilterVisibility()
+            validateTimelineFilterVisibility()
         }
     }
 
@@ -277,7 +285,7 @@ struct TimelineView: View {
             sprintFocusSessions: sprintFocusSessions,
             boardSprints: boardSprints,
             sleepSessions: sleepSessions,
-            placeCheckInSessions: placeCheckInSessions,
+            placeCheckInSessions: isPlacesEnabled ? placeCheckInSessions : [],
             awaySessions: awaySessions,
             fileAttachmentTaskIDs: fileAttachmentTaskIDs,
             noteAttachmentNoteIDs: noteAttachmentNoteIDs
@@ -314,7 +322,14 @@ struct TimelineView: View {
     private var filterTypeBinding: Binding<TimelineFilterType> {
         Binding(
             get: { effectiveFilterType },
-            set: { store.send(.filterTypeChanged($0.normalized(includingEventEmotion: areMacEventEmotionActionsEnabled))) }
+            set: {
+                store.send(.filterTypeChanged(
+                    $0.normalized(
+                        includingEventEmotion: areMacEventEmotionActionsEnabled,
+                        includingPlaces: isPlacesEnabled
+                    )
+                ))
+            }
         )
     }
 
@@ -393,7 +408,10 @@ struct TimelineView: View {
     }
 
     private var effectiveFilterType: TimelineFilterType {
-        store.filterType.normalized(includingEventEmotion: areMacEventEmotionActionsEnabled)
+        store.filterType.normalized(
+            includingEventEmotion: areMacEventEmotionActionsEnabled,
+            includingPlaces: isPlacesEnabled
+        )
     }
 
     private var hasAnyTimelineRecords: Bool {
@@ -405,7 +423,13 @@ struct TimelineView: View {
             || !sprintFocusSessions.isEmpty
             || !sleepSessions.isEmpty
             || !awaySessions.isEmpty
-            || !placeCheckInSessions.isEmpty
+            || (isPlacesEnabled && !placeCheckInSessions.isEmpty)
+    }
+
+    private var timelineEmptyDescription: String {
+        isPlacesEnabled
+            ? "Completed items, focus sessions, notes, place check-ins, emotions, away sessions, and sleep records will appear here in chronological order."
+            : "Completed items, focus sessions, notes, emotions, away sessions, and sleep records will appear here in chronological order."
     }
 
     private var showsTypeFilterSection: Bool {
@@ -415,19 +439,28 @@ struct TimelineView: View {
             || !focusSessions.isEmpty
             || !sprintFocusSessions.isEmpty
             || !sleepSessions.isEmpty
-            || !placeCheckInSessions.isEmpty
+            || (isPlacesEnabled && !placeCheckInSessions.isEmpty)
     }
 
     private func validateEventEmotionFilterVisibility() {
-        if !areMacEventEmotionActionsEnabled, store.filterType.isEventOrEmotion {
-            store.send(.filterTypeChanged(.all))
+        validateTimelineFilterVisibility()
+    }
+
+    private func validateTimelineFilterVisibility() {
+        let normalized = store.filterType.normalized(
+            includingEventEmotion: areMacEventEmotionActionsEnabled,
+            includingPlaces: isPlacesEnabled
+        )
+        if normalized != store.filterType {
+            store.send(.filterTypeChanged(normalized))
         }
     }
 
     private var timelinePigmentControl: some View {
         TimelinePigmentControl(
             selection: filterTypeBinding,
-            includesEventEmotion: areMacEventEmotionActionsEnabled
+            includesEventEmotion: areMacEventEmotionActionsEnabled,
+            includesPlaces: isPlacesEnabled
         )
     }
 
@@ -437,7 +470,7 @@ struct TimelineView: View {
                 ContentUnavailableView(
                     "No timeline entries yet",
                     systemImage: "clock.arrow.circlepath",
-                    description: Text("Completed items, focus sessions, notes, place check-ins, emotions, away sessions, and sleep records will appear here in chronological order.")
+                    description: Text(timelineEmptyDescription)
                 )
             } else {
             VStack(spacing: 0) {
@@ -509,7 +542,10 @@ struct TimelineView: View {
                     Section("Type") {
                         RoutinaGlassSegmentedControl(
                             accessibilityLabel: "Type",
-                            options: TimelineFilterType.visibleCases(includingEventEmotion: areMacEventEmotionActionsEnabled),
+                            options: TimelineFilterType.visibleCases(
+                                includingEventEmotion: areMacEventEmotionActionsEnabled,
+                                includingPlaces: isPlacesEnabled
+                            ),
                             selection: filterTypeBinding
                         ) { type in
                             Text(type.rawValue)
@@ -941,7 +977,8 @@ struct TimelineView: View {
     }
 
     private func placeCheckInSession(for entry: TimelineEntry) -> PlaceCheckInSession? {
-        placeCheckInSessions.first { $0.id == entry.id }
+        guard isPlacesEnabled else { return nil }
+        return placeCheckInSessions.first { $0.id == entry.id }
     }
 
     private func awaySession(for entry: TimelineEntry) -> AwaySession? {

@@ -3,11 +3,15 @@ import SwiftUI
 struct TimelinePigmentControl: View {
     @Binding var selection: TimelineFilterType
     var includesEventEmotion = true
+    var includesPlaces = true
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                ForEach(TimelineFilterType.visibleTimelinePigmentCases(includingEventEmotion: includesEventEmotion)) { type in
+                ForEach(TimelineFilterType.visibleTimelinePigmentCases(
+                    includingEventEmotion: includesEventEmotion,
+                    includingPlaces: includesPlaces
+                )) { type in
                     pigmentButton(for: type)
                 }
             }

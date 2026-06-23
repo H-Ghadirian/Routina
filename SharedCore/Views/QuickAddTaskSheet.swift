@@ -5,6 +5,10 @@ struct QuickAddTaskSheet: View {
     @Environment(\.calendar) private var calendar
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isPlacesEnabled = false
     @State private var text = ""
     @State private var isSaving = false
     @State private var errorMessage: String?
@@ -16,7 +20,7 @@ struct QuickAddTaskSheet: View {
     }
 
     private var draft: RoutinaQuickAddDraft? {
-        RoutinaQuickAddParser.parse(text, calendar: calendar)
+        RoutinaQuickAddParser.parse(text, calendar: calendar, includingPlaces: isPlacesEnabled)
     }
 
     private var canSave: Bool {
@@ -105,7 +109,8 @@ struct QuickAddTaskSheet: View {
                 _ = try await RoutinaQuickAddService.createTask(
                     from: text,
                     context: modelContext,
-                    calendar: calendar
+                    calendar: calendar,
+                    includingPlaces: isPlacesEnabled
                 )
                 onCreated()
                 dismiss()

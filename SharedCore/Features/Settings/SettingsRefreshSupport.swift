@@ -18,6 +18,7 @@ struct SettingsOnAppearSnapshot: Equatable {
     var gitFeaturesEnabled: Bool
     var taskSharingEnabled: Bool
     var taskRelationshipVisualizerEnabled: Bool
+    var placesEnabled: Bool
     var showPersianDates: Bool
     var automaticPlaceCheckInEnabled: Bool
     var showTimelineTasksInDayPlanner: Bool
@@ -89,6 +90,7 @@ enum SettingsRefreshEditor {
             gitFeaturesEnabled: snapshot.gitFeaturesEnabled,
             taskSharingEnabled: snapshot.taskSharingEnabled,
             taskRelationshipVisualizerEnabled: snapshot.taskRelationshipVisualizerEnabled,
+            placesEnabled: snapshot.placesEnabled,
             showPersianDates: snapshot.showPersianDates,
             showTimelineTasksInDayPlanner: snapshot.showTimelineTasksInDayPlanner,
             separateDailyRoutinesInTaskList: snapshot.separateDailyRoutinesInTaskList,
@@ -107,6 +109,7 @@ enum SettingsRefreshEditor {
         gitFeaturesEnabled: Bool,
         taskSharingEnabled: Bool,
         taskRelationshipVisualizerEnabled: Bool,
+        placesEnabled: Bool,
         lastRoutineDataBackupDate: Date?,
         deviceAuthenticationStatus: DeviceAuthenticationStatus,
         state: inout SettingsFeatureState
@@ -116,6 +119,7 @@ enum SettingsRefreshEditor {
         state.appearance.isGitFeaturesEnabled = gitFeaturesEnabled
         state.appearance.isTaskSharingEnabled = taskSharingEnabled
         state.appearance.isTaskRelationshipVisualizerEnabled = taskRelationshipVisualizerEnabled
+        state.appearance.isPlacesEnabled = placesEnabled
         state.dataTransfer.lastSuccessfulBackupDate = lastRoutineDataBackupDate
         state.appearance.appLockMethodDescription = deviceAuthenticationStatus.methodDescription
         state.appearance.appLockUnavailableReason = deviceAuthenticationStatus.unavailableReason

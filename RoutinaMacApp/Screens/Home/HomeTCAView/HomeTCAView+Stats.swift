@@ -23,7 +23,7 @@ extension HomeTCAView {
             notes: notes,
             events: events,
             goals: store.routineGoals,
-            placeCheckInSessions: placeCheckInSessions,
+            placeCheckInSessions: isPlacesEnabled ? placeCheckInSessions : [],
             referenceDate: Date(),
             calendar: calendar
         )

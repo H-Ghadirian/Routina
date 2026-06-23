@@ -20,6 +20,10 @@ struct HomeTCAView: View {
         store: SharedDefaults.app
     ) var areHomeTaskListModeTabsVisible = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) var isPlacesEnabled = false
+    @AppStorage(
         UserDefaultStringValueKey.appSettingHomeTaskRowHiddenFields.rawValue,
         store: SharedDefaults.app
     ) private var taskRowHiddenFieldsRawValue = ""
@@ -315,13 +319,15 @@ private struct IOSSmartAddTaskSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @FocusState private var isInputFocused: Bool
+    @AppStorage(UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue, store: SharedDefaults.app)
+    private var isPlacesEnabled = false
     @State private var text = ""
     @State private var isSaving = false
     @State private var errorMessage: String?
     @State private var isShowingDetails = false
 
     private var draft: RoutinaQuickAddDraft? {
-        RoutinaQuickAddParser.parse(text, calendar: calendar)
+        RoutinaQuickAddParser.parse(text, calendar: calendar, includingPlaces: isPlacesEnabled)
     }
 
     private var canSave: Bool {
@@ -427,7 +433,8 @@ private struct IOSSmartAddTaskSheet: View {
                 _ = try await RoutinaQuickAddService.createTask(
                     from: text,
                     context: modelContext,
-                    calendar: calendar
+                    calendar: calendar,
+                    includingPlaces: isPlacesEnabled
                 )
                 onCreated()
                 dismiss()
@@ -492,7 +499,10 @@ private struct IOSSmartAddTaskSheet: View {
             addRoutineStore.send(.addTagTapped)
         }
 
-        addRoutineStore.send(.selectedPlaceChanged(matchingPlaceID(named: draft.placeName, in: addRoutineStore)))
+        let placeID = isPlacesEnabled
+            ? matchingPlaceID(named: draft.placeName, in: addRoutineStore)
+            : nil
+        addRoutineStore.send(.selectedPlaceChanged(placeID))
     }
 
     private func seedFrequency(

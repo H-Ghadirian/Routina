@@ -1074,6 +1074,7 @@ enum SettingsRoutineDataImportEntityInserter {
         preferences.gitFeaturesEnabled = backupPreferences.gitFeaturesEnabled ?? false
         preferences.taskSharingEnabled = backupPreferences.taskSharingEnabled ?? false
         preferences.taskRelationshipVisualizerEnabled = backupPreferences.taskRelationshipVisualizerEnabled ?? false
+        preferences.placesEnabled = backupPreferences.placesEnabled ?? false
         preferences.showPersianDates = backupPreferences.showPersianDates ?? false
         preferences.batteryRoutineMonitoringEnabled = backupPreferences.batteryRoutineMonitoringEnabled ?? BatteryRoutinePreferences.defaultMonitoringEnabled
         preferences.sleepHomeActionEnabled = backupPreferences.sleepHomeActionEnabled ?? true

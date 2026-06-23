@@ -90,7 +90,8 @@ enum RoutinaQuickAddParser {
     static func parse(
         _ input: String,
         referenceDate: Date = .now,
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        includingPlaces: Bool = true
     ) -> RoutinaQuickAddDraft? {
         var working = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !working.isEmpty else { return nil }
@@ -100,10 +101,12 @@ enum RoutinaQuickAddParser {
             from: &working
         ).compactMap(RoutineTag.cleaned)
 
-        let placeName = extractTokens(
-            pattern: "(?:^|\\s)@([^\\s#@!]+)",
-            from: &working
-        ).first.flatMap(RoutinePlace.cleanedName)
+        let placeName = includingPlaces
+            ? extractTokens(
+                pattern: "(?:^|\\s)@([^\\s#@!]+)",
+                from: &working
+            ).first.flatMap(RoutinePlace.cleanedName)
+            : nil
 
         let priority = extractPriority(from: &working)
         let durationMinutes = extractDurationMinutes(from: &working)

@@ -65,7 +65,8 @@ enum TaskDetailHeaderBadgePresentation {
         state: TaskDetailFeature.State,
         summaryStatusColor: Color,
         dueDateMetadataDisplayText: String?,
-        layout: Layout
+        layout: Layout,
+        showsPlaces: Bool = true
     ) -> [[TaskDetailHeaderBadgeItem]] {
         var rows: [[TaskDetailHeaderBadgeItem]]
 
@@ -90,7 +91,7 @@ enum TaskDetailHeaderBadgePresentation {
             rows = []
         }
 
-        if let locationRow = locationRow(for: state) {
+        if showsPlaces, let locationRow = locationRow(for: state) {
             rows.append(locationRow)
         }
 
@@ -108,7 +109,8 @@ enum TaskDetailHeaderBadgePresentation {
         state: TaskDetailFeature.State,
         summaryStatusColor: Color,
         dueDateMetadataDisplayText: String?,
-        layout: Layout
+        layout: Layout,
+        showsPlaces: Bool = true
     ) -> [[TaskDetailHeaderBadgeItem]] {
         var rows: [[TaskDetailHeaderBadgeItem]] = [[
             TaskDetailHeaderBadgeItem(
@@ -131,7 +133,7 @@ enum TaskDetailHeaderBadgePresentation {
                 rows.append([dueBadge(value: dueDateMetadataDisplayText)])
             }
 
-            rows.append(mobileCompletedLocationRow(for: state))
+            rows.append(mobileCompletedLocationRow(for: state, showsPlaces: showsPlaces))
 
             if state.canceledLogCount > 0 {
                 rows.append([canceledBadge(for: state)])
@@ -140,10 +142,11 @@ enum TaskDetailHeaderBadgePresentation {
         case .desktop:
             rows.append(desktopRoutineSecondRow(
                 for: state,
-                dueDateMetadataDisplayText: dueDateMetadataDisplayText
+                dueDateMetadataDisplayText: dueDateMetadataDisplayText,
+                showsPlaces: showsPlaces
             ))
 
-            if dueDateMetadataDisplayText != nil, let locationRow = locationRow(for: state) {
+            if showsPlaces, dueDateMetadataDisplayText != nil, let locationRow = locationRow(for: state) {
                 rows.append(locationRow)
             }
         }
@@ -253,15 +256,19 @@ enum TaskDetailHeaderBadgePresentation {
         ]
     }
 
-    private static func mobileCompletedLocationRow(for state: TaskDetailFeature.State) -> [TaskDetailHeaderBadgeItem] {
-        var row = locationRow(for: state) ?? []
+    private static func mobileCompletedLocationRow(
+        for state: TaskDetailFeature.State,
+        showsPlaces: Bool
+    ) -> [TaskDetailHeaderBadgeItem] {
+        var row = showsPlaces ? locationRow(for: state) ?? [] : []
         row.append(completedBadge(for: state))
         return row
     }
 
     private static func desktopRoutineSecondRow(
         for state: TaskDetailFeature.State,
-        dueDateMetadataDisplayText: String?
+        dueDateMetadataDisplayText: String?,
+        showsPlaces: Bool
     ) -> [TaskDetailHeaderBadgeItem] {
         var row = [completedBadge(for: state)]
 
@@ -271,7 +278,7 @@ enum TaskDetailHeaderBadgePresentation {
 
         if let dueDateMetadataDisplayText {
             row.append(dueBadge(value: dueDateMetadataDisplayText))
-        } else if let linkedPlace = state.linkedPlaceSummary {
+        } else if showsPlaces, let linkedPlace = state.linkedPlaceSummary {
             row.append(
                 TaskDetailHeaderBadgeItem(
                     title: "Location",
@@ -391,10 +398,13 @@ enum TaskDetailStatusMetadataPresentation {
         )
     }
 
-    static func hasVisibleMetadata(for state: TaskDetailFeature.State) -> Bool {
+    static func hasVisibleMetadata(
+        for state: TaskDetailFeature.State,
+        showsPlaces: Bool = true
+    ) -> Bool {
         !state.task.isOneOffTask
             || shouldShowCompletionCount(for: state)
-            || state.linkedPlaceSummary != nil
+            || (showsPlaces && state.linkedPlaceSummary != nil)
             || state.task.pausedAt != nil
             || state.dueDateMetadataText != nil
             || state.shouldShowSelectedDateMetadata

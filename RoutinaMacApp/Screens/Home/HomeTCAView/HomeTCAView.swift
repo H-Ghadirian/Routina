@@ -11,10 +11,14 @@ enum MacHomeDetailMode: String, CaseIterable, Identifiable {
     var id: Self { self }
 
     static var visibleModes: [Self] {
-        guard SharedDefaults.app[.appSettingBoardScreenEnabled] else {
-            return [.details, .planner, .places]
+        var modes: [Self] = [.details, .planner]
+        if SharedDefaults.app[.appSettingBoardScreenEnabled] {
+            modes.append(.board)
         }
-        return allCases
+        if SharedDefaults.app[.appSettingPlacesEnabled] {
+            modes.append(.places)
+        }
+        return modes
     }
 
     var visibleSurfaceMode: Self {
@@ -95,6 +99,10 @@ struct HomeTCAView: View {
         UserDefaultBoolValueKey.appSettingBoardScreenEnabled.rawValue,
         store: SharedDefaults.app
     ) var isBoardScreenEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) var isPlacesEnabled = false
     @AppStorage(
         UserDefaultBoolValueKey.appSettingMacTimelineQuickFiltersVisible.rawValue,
         store: SharedDefaults.app
@@ -267,10 +275,21 @@ homeContent
                     handlePendingSleepPlannerDeepLink(store.pendingSleepPlannerSessionID)
                 }
                 .onChange(of: areMacEventEmotionActionsEnabled) { _, _ in
-                    validateMacEventEmotionFilterVisibility()
+                    validateMacTimelineFilterVisibility()
+                }
+                .onChange(of: isPlacesEnabled) { _, _ in
+                    validateMacTimelineFilterVisibility()
+                    if !isPlacesEnabled {
+                        macHomeDetailMode = .details
+                        placeCheckInSelectedPlaceID = nil
+                        placeCheckInSelectedHistoryMarkerID = nil
+                    } else if macHomeDetailMode.visibleSurfaceMode != .places {
+                        placeCheckInSelectedPlaceID = nil
+                        placeCheckInSelectedHistoryMarkerID = nil
+                    }
                 }
                 .onChange(of: store.selectedTimelineFilterType) { _, _ in
-                    validateMacEventEmotionFilterVisibility()
+                    validateMacTimelineFilterVisibility()
                 }
                 .onChange(of: store.pendingSleepPlannerSessionID) { _, sleepID in
                     handlePendingSleepPlannerDeepLink(sleepID)
@@ -298,8 +317,16 @@ homeContent
     }
 
     private func validateMacEventEmotionFilterVisibility() {
-        if !areMacEventEmotionActionsEnabled, store.selectedTimelineFilterType.isEventOrEmotion {
-            store.send(.selectedTimelineFilterTypeChanged(.all))
+        validateMacTimelineFilterVisibility()
+    }
+
+    private func validateMacTimelineFilterVisibility() {
+        let normalized = store.selectedTimelineFilterType.normalized(
+            includingEventEmotion: areMacEventEmotionActionsEnabled,
+            includingPlaces: isPlacesEnabled
+        )
+        if normalized != store.selectedTimelineFilterType {
+            store.send(.selectedTimelineFilterTypeChanged(normalized))
         }
     }
 

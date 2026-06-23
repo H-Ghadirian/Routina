@@ -15,6 +15,10 @@ struct SettingsMacView: View {
         UserDefaultBoolValueKey.appSettingSettingsDevicesSectionEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isDevicesSectionEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isPlacesEnabled = false
 
     var body: some View {
 NavigationSplitView {
@@ -65,7 +69,8 @@ NavigationSplitView {
     private var visibleSections: [SettingsMacSection] {
         SettingsMacSection.visibleSections(
             isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled,
-            isDevicesSectionEnabled: isDevicesSectionEnabled
+            isDevicesSectionEnabled: isDevicesSectionEnabled,
+            isPlacesEnabled: isPlacesEnabled
         )
     }
 }

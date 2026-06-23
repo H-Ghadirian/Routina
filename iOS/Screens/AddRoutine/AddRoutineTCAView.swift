@@ -16,6 +16,10 @@ struct AddRoutineTCAView: View {
         SettingsFeature()
     }
     @Query(sort: \RoutineEvent.startedAt, order: .reverse) private var events: [RoutineEvent]
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) var isPlacesEnabled = false
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
 

@@ -10,7 +10,8 @@ struct HomeRoutineDisplayFactory {
         goalsByID: [UUID: RoutineGoal],
         locationSnapshot: LocationSnapshot,
         doneStats: HomeDoneStats,
-        fileAttachmentTaskIDs: Set<UUID> = []
+        fileAttachmentTaskIDs: Set<UUID> = [],
+        showsPlaces: Bool = true
     ) -> HomeRoutineDisplayCore {
         let currentOccurrenceDay = RoutineAssumedCompletion.currentOccurrenceDay(
             for: task,
@@ -49,7 +50,7 @@ struct HomeRoutineDisplayFactory {
             calendar: calendar
         )
         let presentsCompletedChecklistDay = task.isChecklistCompletionRoutine && (isDoneToday || assumedDoneToday)
-        let linkedPlaces = task.placeIDs.compactMap { placesByID[$0] }
+        let linkedPlaces = showsPlaces ? task.placeIDs.compactMap { placesByID[$0] } : []
         let displayPlaceName = placeListDisplayName(for: linkedPlaces)
         let locationPlaces = equivalentPlaces(
             for: linkedPlaces,
@@ -80,8 +81,8 @@ struct HomeRoutineDisplayFactory {
             notes: CalendarTaskImportSupport.displayNotes(from: task.notes),
             hasImage: task.hasImage,
             hasFileAttachment: fileAttachmentTaskIDs.contains(task.id),
-            placeID: task.placeID,
-            placeIDs: task.placeIDs,
+            placeID: showsPlaces ? task.placeID : nil,
+            placeIDs: showsPlaces ? task.placeIDs : [],
             placeName: displayPlaceName,
             locationAvailability: locationAvailability,
             tags: task.tags,

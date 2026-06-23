@@ -34,7 +34,7 @@ extension HomeTCAView {
             sprintFocusSessions: sprintFocusSessions,
             boardSprints: boardSprints,
             sleepSessions: sleepSessions,
-            placeCheckInSessions: placeCheckInSessions,
+            placeCheckInSessions: isPlacesEnabled ? placeCheckInSessions : [],
             awaySessions: awaySessions,
             fileAttachmentTaskIDs: store.fileAttachmentTaskIDs,
             noteAttachmentNoteIDs: noteAttachmentNoteIDs,
@@ -47,7 +47,10 @@ extension HomeTCAView {
     }
 
     private var effectiveMacTimelineFilterType: TimelineFilterType {
-        store.selectedTimelineFilterType.normalized(includingEventEmotion: areMacEventEmotionActionsEnabled)
+        store.selectedTimelineFilterType.normalized(
+            includingEventEmotion: areMacEventEmotionActionsEnabled,
+            includingPlaces: isPlacesEnabled
+        )
     }
 
     var availableTimelineTags: [String] {
@@ -358,7 +361,10 @@ extension HomeTCAView {
                     get: { effectiveMacTimelineFilterType },
                     set: {
                         store.send(.selectedTimelineFilterTypeChanged(
-                            $0.normalized(includingEventEmotion: areMacEventEmotionActionsEnabled)
+                            $0.normalized(
+                                includingEventEmotion: areMacEventEmotionActionsEnabled,
+                                includingPlaces: isPlacesEnabled
+                            )
                         ))
                     }
                 ),
@@ -417,7 +423,8 @@ extension HomeTCAView {
                 onTimelineRowFieldVisibilityChanged: { field, isVisible in
                     settingsStore.send(.timelineRowFieldVisibilityChanged(field, isVisible))
                 },
-                includesEventEmotionFilters: areMacEventEmotionActionsEnabled
+                includesEventEmotionFilters: areMacEventEmotionActionsEnabled,
+                includesPlaceFilters: isPlacesEnabled
             )
         }
     }
@@ -430,7 +437,7 @@ extension HomeTCAView {
             || !sprintFocusSessions.isEmpty
             || !sleepSessions.isEmpty
             || !awaySessions.isEmpty
-            || !placeCheckInSessions.isEmpty
+            || (isPlacesEnabled && !placeCheckInSessions.isEmpty)
     }
 
     var macTimelineSidebarView: some View {
@@ -441,22 +448,27 @@ extension HomeTCAView {
                         get: { effectiveMacTimelineFilterType },
                         set: {
                             store.send(.selectedTimelineFilterTypeChanged(
-                                $0.normalized(includingEventEmotion: areMacEventEmotionActionsEnabled)
+                                $0.normalized(
+                                    includingEventEmotion: areMacEventEmotionActionsEnabled,
+                                    includingPlaces: isPlacesEnabled
+                                )
                             ))
                         }
                     ),
-                    includesEventEmotion: areMacEventEmotionActionsEnabled
+                    includesEventEmotion: areMacEventEmotionActionsEnabled,
+                    includesPlaces: isPlacesEnabled
                 )
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
             }
 
             HomeMacTimelineSidebarView(
-                timelineEntryCount: store.timelineLogs.count + events.count + emotionLogs.count + notes.count + focusSessions.count + sprintFocusSessions.count + sleepSessions.count + awaySessions.count + placeCheckInSessions.count,
+                timelineEntryCount: store.timelineLogs.count + events.count + emotionLogs.count + notes.count + focusSessions.count + sprintFocusSessions.count + sleepSessions.count + awaySessions.count + (isPlacesEnabled ? placeCheckInSessions.count : 0),
                 groupedEntries: groupedTimelineEntries,
                 presentationID: macTimelineSidebarPresentationID,
                 isActive: isMacTimelineMode && !store.isMacFilterDetailPresented,
                 allowsFallbackSelection: !store.isMacFilterDetailPresented,
+                showsPlaces: isPlacesEnabled,
                 positionedPresentationID: $macTimelineSidebarPositionedPresentationID,
                 selection: macSidebarSelectionBinding,
                 scrollRequest: $macTimelineSidebarScrollRequest,

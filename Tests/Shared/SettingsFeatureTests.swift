@@ -543,6 +543,24 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func placesToggled_persistsSelection() async {
+        let persistedValue = LockIsolated<Bool?>(nil)
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setPlacesEnabled = { persistedValue.setValue($0) }
+        }
+
+        await store.send(.placesToggled(true)) {
+            $0.appearance.isPlacesEnabled = true
+        }
+
+        #expect(persistedValue.value == true)
+    }
+
+    @Test
     func defaultSettingsKeepTaskSharingOff() {
         #expect(AppSettingsDefaults.boolValues[.appSettingTaskSharingEnabled] == .some(false))
         #expect(!SettingsFeature.State().appearance.isTaskSharingEnabled)
@@ -554,6 +572,13 @@ struct SettingsFeatureTests {
         #expect(AppSettingsDefaults.boolValues[.appSettingTaskRelationshipVisualizerEnabled] == .some(false))
         #expect(!SettingsFeature.State().appearance.isTaskRelationshipVisualizerEnabled)
         #expect(!RoutinaUserPreferences().taskRelationshipVisualizerEnabled)
+    }
+
+    @Test
+    func defaultSettingsKeepPlacesOff() {
+        #expect(AppSettingsDefaults.boolValues[.appSettingPlacesEnabled] == .some(false))
+        #expect(!SettingsFeature.State().appearance.isPlacesEnabled)
+        #expect(!RoutinaUserPreferences().placesEnabled)
     }
 
     @Test

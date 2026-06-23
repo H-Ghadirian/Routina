@@ -34,6 +34,21 @@ struct RoutinaQuickAddParserTests {
     }
 
     @Test
+    func parseIgnoresPlaceSyntaxWhenPlacesAreDisabled() throws {
+        let draft = try #require(RoutinaQuickAddParser.parse(
+            "Water plants every Saturday at 9am #home @Balcony !high 25m",
+            referenceDate: makeDate("2026-04-23T10:00:00Z"),
+            calendar: makeTestCalendar(),
+            includingPlaces: false
+        ))
+
+        #expect(draft.name == "Water plants @Balcony")
+        #expect(draft.tags == ["home"])
+        #expect(draft.placeName == nil)
+        #expect(draft.estimatedDurationMinutes == 25)
+    }
+
+    @Test
     func parseBareHourAfterAtAsExactTime() throws {
         let draft = try #require(RoutinaQuickAddParser.parse(
             "Water plants every Sat at 9 #home",
@@ -122,7 +137,8 @@ struct RoutinaQuickAddParserTests {
             from: "Water plants every Saturday at 9am #home @Balcony !high 25m",
             context: context,
             referenceDate: makeDate("2026-04-23T10:00:00Z"),
-            calendar: makeTestCalendar()
+            calendar: makeTestCalendar(),
+            includingPlaces: true
         )
 
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())

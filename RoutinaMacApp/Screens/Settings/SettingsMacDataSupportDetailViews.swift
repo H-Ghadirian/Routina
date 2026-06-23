@@ -5,6 +5,10 @@ import UniformTypeIdentifiers
 struct SettingsMacCloudDetailView: View {
     let store: StoreOf<SettingsFeature>
     @State private var isBackupExporterPresented = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isPlacesEnabled = false
 
     var body: some View {
 SettingsMacDetailShell(
@@ -81,7 +85,9 @@ SettingsMacDetailShell(
         settingsInfoRow(title: "Estimated iCloud Data", value: store.cloud.usageTotalText)
         settingsInfoRow(title: "Tasks", value: "\(store.cloud.cloudUsageEstimate.taskCount) • \(store.cloud.usageTaskPayloadText)")
         settingsInfoRow(title: "Logs", value: "\(store.cloud.cloudUsageEstimate.logCount) • \(store.cloud.usageLogPayloadText)")
-        settingsInfoRow(title: "Places", value: "\(store.cloud.cloudUsageEstimate.placeCount) • \(store.cloud.usagePlacePayloadText)")
+        if isPlacesEnabled {
+            settingsInfoRow(title: "Places", value: "\(store.cloud.cloudUsageEstimate.placeCount) • \(store.cloud.usagePlacePayloadText)")
+        }
         settingsInfoRow(title: "Goals", value: "\(store.cloud.cloudUsageEstimate.goalCount) • \(store.cloud.usageGoalPayloadText)")
         settingsInfoRow(title: "Emotions", value: "\(store.cloud.cloudUsageEstimate.emotionLogCount) • \(store.cloud.usageEmotionPayloadText)")
         settingsInfoRow(title: "Notes", value: "\(store.cloud.cloudUsageEstimate.noteCount) • \(store.cloud.usageNotePayloadText)")
@@ -156,6 +162,10 @@ struct SettingsMacShortcutsDetailView: View {
         UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
         store: SharedDefaults.app
     ) private var areMacEventEmotionActionsEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isPlacesEnabled = false
 
     private let appShortcuts: [SettingsMacShortcutRowModel] = [
         SettingsMacShortcutRowModel(title: "Quick Add", detail: "“Quick add in Routina” or “Add a task in Routina”"),
@@ -246,7 +256,9 @@ struct SettingsMacShortcutsDetailView: View {
                 return areMacEventEmotionActionsEnabled
             case .goal:
                 return isGoalsTabEnabled
-            case .note, .task, .checkIn, .away:
+            case .checkIn:
+                return isPlacesEnabled
+            case .note, .task, .away:
                 return true
             }
         }
@@ -254,18 +266,23 @@ struct SettingsMacShortcutsDetailView: View {
 }
 
 struct SettingsMacQuickAddDetailView: View {
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isPlacesEnabled = false
+
     var body: some View {
         SettingsMacDetailShell(
             title: "Quick Add",
-            subtitle: "Use compact phrases to create todos, routines, deadlines, tags, places, priority, and focus estimates."
+            subtitle: quickAddSubtitle
         ) {
             SettingsMacDetailCard(title: "Examples") {
-                ForEach(SettingsQuickAddSyntaxGuide.examples) { example in
+                ForEach(SettingsQuickAddSyntaxGuide.visibleExamples(includingPlaces: isPlacesEnabled)) { example in
                     SettingsQuickAddExampleBlock(example: example)
                 }
             }
 
-            ForEach(SettingsQuickAddSyntaxGuide.syntaxGroups) { group in
+            ForEach(SettingsQuickAddSyntaxGuide.visibleSyntaxGroups(includingPlaces: isPlacesEnabled)) { group in
                 SettingsMacDetailCard(title: group.title) {
                     ForEach(group.rows) { row in
                         SettingsQuickAddSyntaxBlock(row: row, style: .badge)
@@ -274,11 +291,18 @@ struct SettingsMacQuickAddDetailView: View {
             }
 
             SettingsMacDetailCard(title: "Notes") {
-                ForEach(SettingsQuickAddSyntaxGuide.notes, id: \.self) { note in
+                ForEach(SettingsQuickAddSyntaxGuide.visibleNotes(includingPlaces: isPlacesEnabled), id: \.self) { note in
                     SettingsQuickAddNoteBlock(note: note, style: .labeled)
                 }
             }
         }
+    }
+
+    private var quickAddSubtitle: String {
+        if isPlacesEnabled {
+            return "Use compact phrases to create todos, routines, deadlines, tags, places, priority, and focus estimates."
+        }
+        return "Use compact phrases to create todos, routines, deadlines, tags, priority, and focus estimates."
     }
 }
 

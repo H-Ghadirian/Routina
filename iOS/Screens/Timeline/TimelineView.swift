@@ -26,11 +26,19 @@ struct TimelineView: View {
         UserDefaultStringValueKey.appSettingHomeTimelineRowHiddenFields.rawValue,
         store: SharedDefaults.app
     ) private var timelineRowHiddenFieldsRawValue = ""
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isPlacesEnabled = false
     @State private var relatedFilterTagSuggestionAnchor: String?
     @State private var selectedTimelineEntryID: UUID?
     @State private var editingAwaySession: AwaySession?
 
     var body: some View {
+        timelineWithRoutingObservers
+    }
+
+    private var timelineWithDataObservers: some View {
         timelineRootWithSheets
             .task(timelineTask)
             .onChange(of: tasks) { _, _ in refreshTimelineData() }
@@ -46,6 +54,17 @@ struct TimelineView: View {
             .onChange(of: emotionLogChangeToken) { _, _ in refreshTimelineData() }
             .onChange(of: noteChangeToken) { _, _ in refreshTimelineData() }
             .onChange(of: noteAttachmentChangeToken) { _, _ in refreshTimelineData() }
+    }
+
+    private var timelineWithRoutingObservers: some View {
+        timelineWithDataObservers
+            .onChange(of: isPlacesEnabled) { _, _ in
+                refreshTimelineData()
+                validateTimelineFilterVisibility()
+            }
+            .onChange(of: store.filterType) { _, _ in
+                validateTimelineFilterVisibility()
+            }
             .onChange(of: visibleTimelineEntryIDs) { _, _ in resolveTimelineRouting() }
             .onChange(of: store.deepLinkedNoteID) { _, _ in routePendingDeepLinkedNote() }
             .onChange(of: store.deepLinkedEventID) { _, _ in routePendingDeepLinkedEvent() }
@@ -235,7 +254,7 @@ struct TimelineView: View {
             sprintFocusSessions: sprintFocusSessions,
             boardSprints: boardSprints,
             sleepSessions: sleepSessions,
-            placeCheckInSessions: placeCheckInSessions,
+            placeCheckInSessions: isPlacesEnabled ? placeCheckInSessions : [],
             awaySessions: awaySessions,
             fileAttachmentTaskIDs: fileAttachmentTaskIDs,
             noteAttachmentNoteIDs: noteAttachmentNoteIDs
@@ -380,9 +399,28 @@ struct TimelineView: View {
 
     private var filterTypeBinding: Binding<TimelineFilterType> {
         Binding(
-            get: { store.filterType },
-            set: { store.send(.filterTypeChanged($0)) }
+            get: {
+                store.filterType.normalized(
+                    includingEventEmotion: true,
+                    includingPlaces: isPlacesEnabled
+                )
+            },
+            set: {
+                store.send(.filterTypeChanged(
+                    $0.normalized(includingEventEmotion: true, includingPlaces: isPlacesEnabled)
+                ))
+            }
         )
+    }
+
+    private func validateTimelineFilterVisibility() {
+        let normalized = store.filterType.normalized(
+            includingEventEmotion: true,
+            includingPlaces: isPlacesEnabled
+        )
+        if normalized != store.filterType {
+            store.send(.filterTypeChanged(normalized))
+        }
     }
 
     private var mediaFilterBinding: Binding<TaskMediaFilter> {
@@ -425,7 +463,7 @@ struct TimelineView: View {
             sprintFocusSessions: store.sprintFocusSessions,
             boardSprints: store.boardSprints,
             sleepSessions: store.sleepSessions,
-            placeCheckInSessions: store.placeCheckInSessions,
+            placeCheckInSessions: isPlacesEnabled ? store.placeCheckInSessions : [],
             awaySessions: store.awaySessions,
             fileAttachmentTaskIDs: store.fileAttachmentTaskIDs,
             noteAttachmentNoteIDs: store.noteAttachmentNoteIDs,
@@ -518,7 +556,13 @@ struct TimelineView: View {
             || !sprintFocusSessions.isEmpty
             || !awaySessions.isEmpty
             || !sleepSessions.isEmpty
-            || !placeCheckInSessions.isEmpty
+            || (isPlacesEnabled && !placeCheckInSessions.isEmpty)
+    }
+
+    private var timelineEmptyDescription: String {
+        isPlacesEnabled
+            ? "Completed items, focus sessions, notes, place check-ins, emotions, away sessions, and sleep records will appear here in chronological order."
+            : "Completed items, focus sessions, notes, emotions, away sessions, and sleep records will appear here in chronological order."
     }
 
     private var hasActiveFilterChips: Bool {
@@ -531,7 +575,10 @@ struct TimelineView: View {
     }
 
     private var timelinePigmentControl: some View {
-        TimelinePigmentControl(selection: filterTypeBinding)
+        TimelinePigmentControl(
+            selection: filterTypeBinding,
+            includesPlaces: isPlacesEnabled
+        )
     }
 
     @ViewBuilder
@@ -540,7 +587,7 @@ struct TimelineView: View {
             ContentUnavailableView(
                 "No timeline entries yet",
                 systemImage: "clock.arrow.circlepath",
-                description: Text("Completed items, focus sessions, notes, place check-ins, emotions, away sessions, and sleep records will appear here in chronological order.")
+                description: Text(timelineEmptyDescription)
             )
         } else {
             VStack(spacing: 0) {
@@ -670,7 +717,7 @@ struct TimelineView: View {
                     ContentUnavailableView(
                         "No timeline entries yet",
                         systemImage: "clock.arrow.circlepath",
-                        description: Text("Completed items, focus sessions, notes, place check-ins, emotions, away sessions, and sleep records will appear here in chronological order.")
+                        description: Text(timelineEmptyDescription)
                     )
                 } else if groupedByDay.isEmpty {
                 ContentUnavailableView(
@@ -792,10 +839,13 @@ struct TimelineView: View {
                     .pickerStyle(.inline)
                 }
 
-                if tasks.contains(where: { $0.isOneOffTask }) || !events.isEmpty || !notes.isEmpty || !focusSessions.isEmpty || !sprintFocusSessions.isEmpty || !sleepSessions.isEmpty || !awaySessions.isEmpty || !placeCheckInSessions.isEmpty {
+                if tasks.contains(where: { $0.isOneOffTask }) || !events.isEmpty || !notes.isEmpty || !focusSessions.isEmpty || !sprintFocusSessions.isEmpty || !sleepSessions.isEmpty || !awaySessions.isEmpty || (isPlacesEnabled && !placeCheckInSessions.isEmpty) {
                     Section("Type") {
                         Picker("Type", selection: filterTypeBinding) {
-                            ForEach(TimelineFilterType.allCases) { type in
+                            ForEach(TimelineFilterType.visibleCases(
+                                includingEventEmotion: true,
+                                includingPlaces: isPlacesEnabled
+                            )) { type in
                                 Text(type.rawValue).tag(type)
                             }
                         }
@@ -1130,7 +1180,8 @@ struct TimelineView: View {
     }
 
     private func placeCheckInSession(for entry: TimelineEntry) -> PlaceCheckInSession? {
-        placeCheckInSessions.first { $0.id == entry.id }
+        guard isPlacesEnabled else { return nil }
+        return placeCheckInSessions.first { $0.id == entry.id }
     }
 
     private func awaySession(for entry: TimelineEntry) -> AwaySession? {

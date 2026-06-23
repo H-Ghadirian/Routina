@@ -49,6 +49,24 @@ struct SettingsSectionViewSupportTests {
     }
 
     @Test
+    func visibleSectionsHidePlacesWhenFeatureIsDisabled() {
+        #expect(!SettingsSectionID.visibleSections(
+            isGitFeaturesEnabled: false
+        ).contains(.places))
+        #expect(SettingsSectionID.visibleSections(
+            isGitFeaturesEnabled: false,
+            isPlacesEnabled: true
+        ).contains(.places))
+        #expect(!SettingsSectionID.compactSectionGroups(
+            isGitFeaturesEnabled: false
+        ).flatMap { $0 }.contains(.places))
+        #expect(SettingsSectionID.compactSectionGroups(
+            isGitFeaturesEnabled: false,
+            isPlacesEnabled: true
+        ).flatMap { $0 }.contains(.places))
+    }
+
+    @Test
     func placesAndTagsRowsDoNotShowSubtitles() {
         let state = SettingsFeatureState()
 

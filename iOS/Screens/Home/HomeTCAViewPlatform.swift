@@ -122,7 +122,7 @@ detailContent
 
     @ViewBuilder
     var locationFilterPanel: some View {
-        if hasPlaceAwareContent {
+        if isPlacesEnabled && hasPlaceAwareContent {
             HomeIOSLocationFilterPanel(
                 isLocationAuthorized: store.locationSnapshot.authorizationStatus.isAuthorized,
                 places: sortedRoutinePlaces,
@@ -149,9 +149,10 @@ detailContent
             taskListMode: store.taskListMode,
             availableFilters: iOSAvailableFilters,
             place: HomeFiltersPlaceConfiguration(
-                sortedRoutinePlaces: sortedRoutinePlaces,
-                hasSavedPlaces: hasSavedPlaces,
-                hasPlaceLinkedRoutines: hasPlaceLinkedRoutines,
+                sortedRoutinePlaces: isPlacesEnabled ? sortedRoutinePlaces : [],
+                hasSavedPlaces: isPlacesEnabled && hasSavedPlaces,
+                hasPlaceLinkedRoutines: isPlacesEnabled && hasPlaceLinkedRoutines,
+                isPlacesEnabled: isPlacesEnabled,
                 isLocationAuthorized: store.locationSnapshot.authorizationStatus.isAuthorized,
                 placeFilterPluralNoun: placeFilterPluralNoun,
                 placeFilterAllTitle: placeFilterAllTitle,
@@ -199,9 +200,18 @@ detailContent
 
     var platformTimelineTypePicker: some View {
         TimelinePigmentControl(selection: Binding(
-            get: { store.selectedTimelineFilterType },
-            set: { store.send(.selectedTimelineFilterTypeChanged($0)) }
-        ))
+            get: {
+                store.selectedTimelineFilterType.normalized(
+                    includingEventEmotion: true,
+                    includingPlaces: isPlacesEnabled
+                )
+            },
+            set: {
+                store.send(.selectedTimelineFilterTypeChanged(
+                    $0.normalized(includingEventEmotion: true, includingPlaces: isPlacesEnabled)
+                ))
+            }
+        ), includesPlaces: isPlacesEnabled)
     }
 
     @ViewBuilder

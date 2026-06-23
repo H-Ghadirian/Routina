@@ -5,13 +5,15 @@ struct HomeMacSettingsSidebarView: View {
     let store: StoreOf<SettingsFeature>
     let selectedSection: SettingsMacSection
     let isDevicesSectionEnabled: Bool
+    let isPlacesEnabled: Bool
     let onSelectSection: (SettingsMacSection) -> Void
 
     var body: some View {
         List {
             ForEach(SettingsMacSection.visibleSections(
                 isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled,
-                isDevicesSectionEnabled: isDevicesSectionEnabled
+                isDevicesSectionEnabled: isDevicesSectionEnabled,
+                isPlacesEnabled: isPlacesEnabled
             )) { section in
                 Button {
                     onSelectSection(section)

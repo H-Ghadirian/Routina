@@ -10,7 +10,8 @@ extension HomeFeature {
         locationSnapshot: LocationSnapshot,
         doneStats: DoneStats,
         sprintBoardData: SprintBoardData,
-        fileAttachmentTaskIDs: Set<UUID> = []
+        fileAttachmentTaskIDs: Set<UUID> = [],
+        showsPlaces: Bool = true
     ) -> RoutineDisplay {
         let core = HomeRoutineDisplayFactory(now: now, calendar: calendar).makeCore(
             for: task,
@@ -18,7 +19,8 @@ extension HomeFeature {
             goalsByID: goalsByID,
             locationSnapshot: locationSnapshot,
             doneStats: doneStats,
-            fileAttachmentTaskIDs: fileAttachmentTaskIDs
+            fileAttachmentTaskIDs: fileAttachmentTaskIDs,
+            showsPlaces: showsPlaces
         )
         let assignedSprint = sprintBoardData.sprint(for: task.id)
         let assignedBacklog = sprintBoardData.backlog(for: task.id)
@@ -27,7 +29,10 @@ extension HomeFeature {
     }
 
     func refreshDisplays(_ state: inout State) {
-        let placesByID = Dictionary(state.routinePlaces.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let showsPlaces = appSettingsClient.placesEnabled()
+        let placesByID = showsPlaces
+            ? Dictionary(state.routinePlaces.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            : [:]
         let goalsByID = Dictionary(state.routineGoals.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         var active: [RoutineDisplay] = []
         var away: [RoutineDisplay] = []
@@ -42,7 +47,8 @@ extension HomeFeature {
                 locationSnapshot: state.locationSnapshot,
                 doneStats: state.doneStats,
                 sprintBoardData: state.sprintBoardData,
-                fileAttachmentTaskIDs: state.fileAttachmentTaskIDs
+                fileAttachmentTaskIDs: state.fileAttachmentTaskIDs,
+                showsPlaces: showsPlaces
             )
 
             if task.isOneOffTask {

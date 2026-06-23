@@ -2,6 +2,8 @@ import SwiftUI
 
 struct HomeMacAdventureSidebarView: View {
     let progression: HomeAdventureProgression
+    @AppStorage(UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue, store: SharedDefaults.app)
+    private var isPlacesEnabled = false
     @AppStorage(UserDefaultStringValueKey.appSettingMacAdventureOwnedItemIDs.rawValue, store: SharedDefaults.app)
     private var ownedItemIDsRaw = ""
     @AppStorage(UserDefaultStringValueKey.appSettingMacAdventureUnlockedWorldIDs.rawValue, store: SharedDefaults.app)
@@ -116,7 +118,7 @@ struct HomeMacAdventureSidebarView: View {
                         .font(.subheadline.weight(.semibold))
 
                     if progression.sources.isEmpty {
-                        Text("Complete tasks, focus, capture notes, log emotions, check in, sleep, or finish away sessions to start earning.")
+                        Text(emptyCoinSourcesText)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     } else {
@@ -154,11 +156,19 @@ struct HomeMacAdventureSidebarView: View {
             .padding(14)
         }
     }
+
+    private var emptyCoinSourcesText: String {
+        isPlacesEnabled
+            ? "Complete tasks, focus, capture notes, log emotions, check in, sleep, or finish away sessions to start earning."
+            : "Complete tasks, focus, capture notes, log emotions, sleep, or finish away sessions to start earning."
+    }
 }
 
 struct HomeMacAdventureView: View {
     let progression: HomeAdventureProgression
     @State private var selectedScreen = HomeAdventureScreen.map
+    @AppStorage(UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue, store: SharedDefaults.app)
+    private var isPlacesEnabled = false
     @AppStorage(UserDefaultStringValueKey.appSettingMacAdventureOwnedItemIDs.rawValue, store: SharedDefaults.app)
     private var ownedItemIDsRaw = ""
     @AppStorage(UserDefaultStringValueKey.appSettingMacAdventureUnlockedWorldIDs.rawValue, store: SharedDefaults.app)
@@ -244,7 +254,8 @@ struct HomeMacAdventureView: View {
         case .earnCoins:
             HomeAdventureCoinGuideScreen(
                 progression: progression,
-                wallet: wallet
+                wallet: wallet,
+                showsPlaces: isPlacesEnabled
             )
         }
     }
@@ -858,6 +869,7 @@ private enum HomeAdventureScreen: String, CaseIterable, Identifiable {
 private struct HomeAdventureCoinGuideScreen: View {
     let progression: HomeAdventureProgression
     let wallet: HomeAdventureWallet
+    let showsPlaces: Bool
 
     private let summaryColumns = [
         GridItem(.adaptive(minimum: 210), spacing: 10)
@@ -931,7 +943,7 @@ private struct HomeAdventureCoinGuideScreen: View {
             }
 
             LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
-                ForEach(HomeAdventureCoinRule.all) { rule in
+                ForEach(visibleCoinRules) { rule in
                     HomeAdventureCoinRuleCard(
                         rule: rule,
                         source: progression.sources.first { $0.id == rule.id }
@@ -939,6 +951,10 @@ private struct HomeAdventureCoinGuideScreen: View {
                 }
             }
         }
+    }
+
+    private var visibleCoinRules: [HomeAdventureCoinRule] {
+        HomeAdventureCoinRule.all.filter { showsPlaces || $0.id != "places" }
     }
 }
 
@@ -1091,7 +1107,7 @@ private struct HomeAdventureUnlockGuidance {
             return "Earn \(coinGap.formatted()) coins: \(coinExampleText)."
         }
         if actionGap > 0 {
-            return "Do \(actionGap.formatted()) more Routina actions: complete/create tasks, focus, capture notes, log goals, or check in."
+            return "Do \(actionGap.formatted()) more Routina actions: complete/create tasks, focus, capture notes, or log goals."
         }
         if activeDayGap > 0 {
             return "Use Routina on \(activeDayGap.formatted()) more active days."

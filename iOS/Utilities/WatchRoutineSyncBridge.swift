@@ -104,8 +104,9 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
             do {
                 let referenceDate = Date()
                 let tasks = try context.fetch(descriptor)
-                let places = try context.fetch(FetchDescriptor<RoutinePlace>())
-                let placeCheckIns = try context.fetch(FetchDescriptor<PlaceCheckInSession>())
+                let isPlacesEnabled = SharedDefaults.app[.appSettingPlacesEnabled]
+                let places = isPlacesEnabled ? try context.fetch(FetchDescriptor<RoutinePlace>()) : []
+                let placeCheckIns = isPlacesEnabled ? try context.fetch(FetchDescriptor<PlaceCheckInSession>()) : []
                 let sleepSessions = try context.fetch(FetchDescriptor<SleepSession>())
                 let sessions = try context.fetch(FetchDescriptor<FocusSession>())
                 let focus = FocusTimerWidgetDataComputer.compute(
@@ -313,6 +314,7 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
         at date: Date,
         sourceDevice: RoutinaDeviceActivitySource?
     ) {
+        guard SharedDefaults.app[.appSettingPlacesEnabled] else { return }
         guard let modelContextProvider else { return }
         let context = modelContextProvider()
 
@@ -333,6 +335,7 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
         at date: Date,
         sourceDevice: RoutinaDeviceActivitySource?
     ) {
+        guard SharedDefaults.app[.appSettingPlacesEnabled] else { return }
         guard let modelContextProvider else { return }
         let context = modelContextProvider()
 

@@ -13,7 +13,9 @@ struct HomeFiltersSheetView: View {
                     advancedQuery: bindings.advancedQuery,
                     options: HomeAdvancedQueryOptions(
                         tags: tagData.tagSummaries.map(\.name),
-                        places: configuration.place.sortedRoutinePlaces.map(\.displayName)
+                        places: configuration.place.isPlacesEnabled
+                            ? configuration.place.sortedRoutinePlaces.map(\.displayName)
+                            : []
                     )
                 )
                 HomeFiltersTaskListModeSection(taskListMode: bindings.taskListMode)
@@ -55,11 +57,13 @@ struct HomeFiltersSheetView: View {
                     data: tagData,
                     actions: actions.tagActions
                 )
-                HomeFiltersPlaceSection(
-                    configuration: configuration.place,
-                    selectedPlaceID: bindings.selectedPlaceID,
-                    hideUnavailableRoutines: bindings.hideUnavailableRoutines
-                )
+                if configuration.place.isPlacesEnabled {
+                    HomeFiltersPlaceSection(
+                        configuration: configuration.place,
+                        selectedPlaceID: bindings.selectedPlaceID,
+                        hideUnavailableRoutines: bindings.hideUnavailableRoutines
+                    )
+                }
                 HomeFiltersClearSection(
                     hasActiveOptionalFilters: configuration.hasActiveOptionalFilters,
                     onClearOptionalFilters: actions.onClearOptionalFilters

@@ -38,6 +38,7 @@ final class RoutinaUserPreferences {
     var gitFeaturesEnabled: Bool = false
     var taskSharingEnabled: Bool = false
     var taskRelationshipVisualizerEnabled: Bool = false
+    var placesEnabled: Bool = false
     var showPersianDates: Bool = false
     var batteryRoutineMonitoringEnabled: Bool = false
     var sleepHomeActionEnabled: Bool = true
@@ -176,6 +177,7 @@ enum RoutinaUserPreferencesStore {
         preferences.gitFeaturesEnabled = defaults[.appSettingGitFeaturesEnabled]
         preferences.taskSharingEnabled = defaults[.appSettingTaskSharingEnabled]
         preferences.taskRelationshipVisualizerEnabled = defaults[.appSettingTaskRelationshipVisualizerEnabled]
+        preferences.placesEnabled = defaults[.appSettingPlacesEnabled]
         preferences.showPersianDates = defaults[.appSettingShowPersianDates]
         preferences.batteryRoutineMonitoringEnabled = BatteryRoutinePreferences.isMonitoringEnabled
         preferences.sleepHomeActionEnabled = defaults[.appSettingSleepHomeActionEnabled]
@@ -229,6 +231,7 @@ enum RoutinaUserPreferencesStore {
         defaults[.appSettingGitFeaturesEnabled] = preferences.gitFeaturesEnabled
         defaults[.appSettingTaskSharingEnabled] = preferences.taskSharingEnabled
         defaults[.appSettingTaskRelationshipVisualizerEnabled] = preferences.taskRelationshipVisualizerEnabled
+        defaults[.appSettingPlacesEnabled] = preferences.placesEnabled
         defaults[.appSettingShowPersianDates] = preferences.showPersianDates
         defaults[.appSettingBatteryRoutineMonitoringEnabled] = preferences.batteryRoutineMonitoringEnabled
         defaults[.appSettingSleepHomeActionEnabled] = preferences.sleepHomeActionEnabled

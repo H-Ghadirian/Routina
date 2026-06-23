@@ -105,6 +105,11 @@ private struct SettingsBetaExperimentsSection: View {
             Text("Show the Visualize button for linked tasks in task details.")
                 .foregroundStyle(.secondary)
 
+            Toggle("Show Places", isOn: placesBinding)
+
+            Text("Show place management, check-ins, filters, task fields, and place stats.")
+                .foregroundStyle(.secondary)
+
             Toggle("Show Goals tab", isOn: $isGoalsTabEnabled)
 
             Text("Show Goal navigation, controls, and Stats reports.")
@@ -157,6 +162,13 @@ private struct SettingsBetaExperimentsSection: View {
         Binding(
             get: { store.appearance.isTaskRelationshipVisualizerEnabled },
             set: { store.send(.taskRelationshipVisualizerToggled($0)) }
+        )
+    }
+
+    private var placesBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.isPlacesEnabled },
+            set: { store.send(.placesToggled($0)) }
         )
     }
 }

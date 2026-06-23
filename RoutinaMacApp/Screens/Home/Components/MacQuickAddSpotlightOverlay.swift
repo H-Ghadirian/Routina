@@ -6,6 +6,8 @@ struct MacQuickAddSpotlightOverlay: View {
     @Environment(\.calendar) private var calendar
     @Environment(\.modelContext) private var modelContext
     @FocusState private var isInputFocused: Bool
+    @AppStorage(UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue, store: SharedDefaults.app)
+    private var isPlacesEnabled = false
     @State private var text = ""
     @State private var isSaving = false
     @State private var errorMessage: String?
@@ -13,7 +15,7 @@ struct MacQuickAddSpotlightOverlay: View {
     let onCreated: (RoutinaQuickAddCreateResult) -> Void
 
     private var draft: RoutinaQuickAddDraft? {
-        RoutinaQuickAddParser.parse(text, calendar: calendar)
+        RoutinaQuickAddParser.parse(text, calendar: calendar, includingPlaces: isPlacesEnabled)
     }
 
     private var canSave: Bool {
@@ -154,7 +156,8 @@ struct MacQuickAddSpotlightOverlay: View {
                 let result = try await RoutinaQuickAddService.createTask(
                     from: text,
                     context: modelContext,
-                    calendar: calendar
+                    calendar: calendar,
+                    includingPlaces: isPlacesEnabled
                 )
                 text = ""
                 onCreated(result)

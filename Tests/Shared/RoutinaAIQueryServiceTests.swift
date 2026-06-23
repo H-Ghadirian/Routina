@@ -13,6 +13,17 @@ import Testing
 struct RoutinaAIQueryServiceTests {
     @Test
     func snapshotFiltersBySearchTextAndCountsMatchingTasks() throws {
+        let placesKey = UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue
+        let previousPlacesValue = SharedDefaults.app.object(forKey: placesKey)
+        defer {
+            if let previousPlacesValue {
+                SharedDefaults.app.set(previousPlacesValue, forKey: placesKey)
+            } else {
+                SharedDefaults.app.removeObject(forKey: placesKey)
+            }
+        }
+        SharedDefaults.app[.appSettingPlacesEnabled] = true
+
         let context = makeInMemoryContext()
         let home = makePlace(in: context, name: "Home")
         _ = makeTask(
@@ -129,6 +140,17 @@ struct RoutinaAIQueryServiceTests {
 
     @Test
     func snapshotToleratesDuplicatePlaceIDs() throws {
+        let placesKey = UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue
+        let previousPlacesValue = SharedDefaults.app.object(forKey: placesKey)
+        defer {
+            if let previousPlacesValue {
+                SharedDefaults.app.set(previousPlacesValue, forKey: placesKey)
+            } else {
+                SharedDefaults.app.removeObject(forKey: placesKey)
+            }
+        }
+        SharedDefaults.app[.appSettingPlacesEnabled] = true
+
         let context = makeInMemoryContext()
         let sharedID = UUID()
         let firstPlace = RoutinePlace(id: sharedID, name: "Office A", latitude: 52.52, longitude: 13.40)

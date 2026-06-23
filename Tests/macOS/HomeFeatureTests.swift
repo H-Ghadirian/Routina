@@ -29,24 +29,38 @@ struct HomeFeatureTests {
     }
 
     @Test
-    func macDetailModes_hideBoardUntilBetaExperimentIsEnabled() {
-        let key = UserDefaultBoolValueKey.appSettingBoardScreenEnabled.rawValue
-        let previousValue = SharedDefaults.app.object(forKey: key)
+    func macDetailModes_hideBoardAndPlacesUntilBetaExperimentsAreEnabled() {
+        let boardKey = UserDefaultBoolValueKey.appSettingBoardScreenEnabled.rawValue
+        let placesKey = UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue
+        let previousBoardValue = SharedDefaults.app.object(forKey: boardKey)
+        let previousPlacesValue = SharedDefaults.app.object(forKey: placesKey)
         defer {
-            if let previousValue {
-                SharedDefaults.app.set(previousValue, forKey: key)
+            if let previousBoardValue {
+                SharedDefaults.app.set(previousBoardValue, forKey: boardKey)
             } else {
-                SharedDefaults.app.removeObject(forKey: key)
+                SharedDefaults.app.removeObject(forKey: boardKey)
+            }
+            if let previousPlacesValue {
+                SharedDefaults.app.set(previousPlacesValue, forKey: placesKey)
+            } else {
+                SharedDefaults.app.removeObject(forKey: placesKey)
             }
         }
 
         SharedDefaults.app[.appSettingBoardScreenEnabled] = false
-        #expect(MacHomeDetailMode.visibleModes == [.details, .planner, .places])
+        SharedDefaults.app[.appSettingPlacesEnabled] = false
+        #expect(MacHomeDetailMode.visibleModes == [.details, .planner])
         #expect(MacHomeDetailMode.board.visibleSurfaceMode == .details)
+        #expect(MacHomeDetailMode.places.visibleSurfaceMode == .details)
 
         SharedDefaults.app[.appSettingBoardScreenEnabled] = true
+        #expect(MacHomeDetailMode.visibleModes == [.details, .planner, .board])
+        #expect(MacHomeDetailMode.board.visibleSurfaceMode == .board)
+
+        SharedDefaults.app[.appSettingPlacesEnabled] = true
         #expect(MacHomeDetailMode.visibleModes == [.details, .planner, .board, .places])
         #expect(MacHomeDetailMode.board.visibleSurfaceMode == .board)
+        #expect(MacHomeDetailMode.places.visibleSurfaceMode == .places)
     }
 
     @Test

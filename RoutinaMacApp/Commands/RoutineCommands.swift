@@ -33,6 +33,10 @@ struct RoutineCommands: Commands {
         UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
         store: SharedDefaults.app
     ) private var areMacEventEmotionActionsEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isPlacesEnabled = false
     #endif
 
     var body: some Commands {
@@ -81,7 +85,11 @@ struct RoutineCommands: Commands {
             #endif
 
             addMenuCommand(.task, notificationName: .routinaMacOpenAddTask)
-            addMenuCommand(.checkIn, notificationName: .routinaMacOpenCheckIn)
+            #if !SWIFT_PACKAGE
+            if isPlacesEnabled {
+                addMenuCommand(.checkIn, notificationName: .routinaMacOpenCheckIn)
+            }
+            #endif
             addMenuCommand(.away, notificationName: .routinaMacOpenAway)
 
             Divider()

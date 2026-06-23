@@ -3,7 +3,8 @@ import Foundation
 extension StatsAchievementStats {
     static func emotionAchievements(
         logs: [EmotionLog],
-        calendar: Calendar
+        calendar: Calendar,
+        includingPlaces: Bool = true
     ) -> [StatsAchievementProgress] {
         let emotionDays = uniqueDays(
             dates: logs.compactMap(\.createdAt),
@@ -97,7 +98,9 @@ extension StatsAchievementStats {
             StatsAchievementProgress(
                 id: "emotion.linked.10",
                 title: "Context Weaver",
-                subtitle: "Link ten emotions to tasks, notes, goals, places, or sleep.",
+                subtitle: includingPlaces
+                    ? "Link ten emotions to tasks, notes, goals, places, or sleep."
+                    : "Link ten emotions to tasks, notes, goals, or sleep.",
                 systemImage: "link.circle.fill",
                 domain: .emotions,
                 category: .emotion,

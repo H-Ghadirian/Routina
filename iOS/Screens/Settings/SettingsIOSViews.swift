@@ -31,13 +31,18 @@ struct SettingsIOSRootView: View {
         UserDefaultBoolValueKey.appSettingSettingsDevicesSectionEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isDevicesSectionEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isPlacesEnabled = false
 
     var body: some View {
 List {
     ForEach(
         SettingsIOSSection.compactSectionGroups(
             isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled,
-            isDevicesSectionEnabled: isDevicesSectionEnabled
+            isDevicesSectionEnabled: isDevicesSectionEnabled,
+            isPlacesEnabled: isPlacesEnabled
         ),
         id: \.self
     ) { sections in
@@ -65,6 +70,10 @@ private struct SettingsIPadSplitView: View {
         UserDefaultBoolValueKey.appSettingSettingsDevicesSectionEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isDevicesSectionEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isPlacesEnabled = false
 
     var body: some View {
 NavigationSplitView {
@@ -96,7 +105,8 @@ NavigationSplitView {
     private var visibleSections: [SettingsIOSSection] {
         SettingsIOSSection.visibleSections(
             isGitFeaturesEnabled: store.appearance.isGitFeaturesEnabled,
-            isDevicesSectionEnabled: isDevicesSectionEnabled
+            isDevicesSectionEnabled: isDevicesSectionEnabled,
+            isPlacesEnabled: isPlacesEnabled
         )
     }
 }
@@ -203,15 +213,18 @@ private struct SettingsIOSShortcutsDetailView: View {
 }
 
 private struct SettingsQuickAddDetailView: View {
+    @AppStorage(UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue, store: SharedDefaults.app)
+    private var isPlacesEnabled = false
+
     var body: some View {
         List {
             Section("Examples") {
-                ForEach(SettingsQuickAddSyntaxGuide.examples) { example in
+                ForEach(SettingsQuickAddSyntaxGuide.visibleExamples(includingPlaces: isPlacesEnabled)) { example in
                     SettingsQuickAddExampleBlock(example: example)
                 }
             }
 
-            ForEach(SettingsQuickAddSyntaxGuide.syntaxGroups) { group in
+            ForEach(SettingsQuickAddSyntaxGuide.visibleSyntaxGroups(includingPlaces: isPlacesEnabled)) { group in
                 Section(group.title) {
                     ForEach(group.rows) { row in
                         SettingsQuickAddSyntaxBlock(row: row)
@@ -220,7 +233,7 @@ private struct SettingsQuickAddDetailView: View {
             }
 
             Section("Notes") {
-                ForEach(SettingsQuickAddSyntaxGuide.notes, id: \.self) { note in
+                ForEach(SettingsQuickAddSyntaxGuide.visibleNotes(includingPlaces: isPlacesEnabled), id: \.self) { note in
                     SettingsQuickAddNoteBlock(note: note)
                 }
             }

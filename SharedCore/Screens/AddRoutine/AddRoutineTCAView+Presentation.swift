@@ -37,7 +37,7 @@ extension AddRoutineTCAView {
             hasAvailableTags: !store.organization.availableTags.isEmpty,
             hasAvailableGoals: !store.organization.availableGoals.isEmpty,
             goalDraft: store.organization.goalDraft,
-            selectedPlaceName: selectedPlaceName,
+            selectedPlaceName: isPlacesEnabled ? selectedPlaceName : nil,
             canAutoAssumeDailyDone: store.canAutoAssumeDailyDone
         )
     }

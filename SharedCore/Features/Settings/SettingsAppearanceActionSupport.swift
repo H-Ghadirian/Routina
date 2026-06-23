@@ -185,6 +185,16 @@ enum SettingsAppearanceActionHandler {
         return .none
     }
 
+    static func placesToggled(
+        _ isEnabled: Bool,
+        state: inout SettingsAppearanceState,
+        appSettingsClient: AppSettingsClient
+    ) -> Effect<SettingsFeature.Action> {
+        state.isPlacesEnabled = isEnabled
+        appSettingsClient.setPlacesEnabled(isEnabled)
+        return .none
+    }
+
     static func showPersianDatesToggled(
         _ isEnabled: Bool,
         state: inout SettingsAppearanceState,

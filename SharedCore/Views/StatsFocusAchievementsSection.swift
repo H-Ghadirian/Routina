@@ -11,8 +11,36 @@ struct StatsAchievementsSection: View {
 
     private var filteredAchievements: [StatsAchievementProgress] {
         achievements.filter { achievement in
-            selectedDomain == .all || achievement.domain == selectedDomain
+            effectiveSelectedDomain == .all || achievement.domain == effectiveSelectedDomain
         }
+    }
+
+    private var availableDomains: [StatsAchievementDomain] {
+        let presentDomains = Set(achievements.map(\.domain))
+        return StatsAchievementDomain.allCases.filter { domain in
+            domain == .all || presentDomains.contains(domain)
+        }
+    }
+
+    private var effectiveSelectedDomain: StatsAchievementDomain {
+        availableDomains.contains(selectedDomain) ? selectedDomain : .all
+    }
+
+    private var selectedDomainBinding: Binding<StatsAchievementDomain> {
+        Binding(
+            get: { effectiveSelectedDomain },
+            set: { selectedDomain = $0 }
+        )
+    }
+
+    private var achievementHistorySubtitle: String {
+        let domainTitles = availableDomains
+            .filter { $0 != .all }
+            .map { $0.title.lowercased() }
+        guard !domainTitles.isEmpty else {
+            return "All-time badges earned from enabled history."
+        }
+        return "All-time badges earned from \(domainTitles.formatted()) history."
     }
 
     private var filteredEarnedCount: Int {
@@ -52,7 +80,7 @@ struct StatsAchievementsSection: View {
         VStack(alignment: .leading, spacing: 18) {
             StatsSectionHeader(
                 title: "Achievements",
-                subtitle: "All-time badges earned from focus, sleep, away, done, emotion, place, goal, and note history."
+                subtitle: achievementHistorySubtitle
             ) {
                 StatsSmallHighlightBadge(
                     title: "Earned",
@@ -81,6 +109,11 @@ struct StatsAchievementsSection: View {
                 )
             }
         }
+        .onChange(of: availableDomains) { _, domains in
+            if !domains.contains(selectedDomain) {
+                selectedDomain = .all
+            }
+        }
         .onChange(of: selectedStatus) { _, status in
             if status == .achieved {
                 selectedEarnedPeriod = .today
@@ -94,8 +127,8 @@ struct StatsAchievementsSection: View {
     private var categoryPicker: some View {
         RoutinaGlassSegmentedControl(
             accessibilityLabel: "Achievement category",
-            options: StatsAchievementDomain.allCases,
-            selection: $selectedDomain,
+            options: availableDomains,
+            selection: selectedDomainBinding,
             fillsAvailableWidth: true
         ) { domain in
             Text(domain.title)

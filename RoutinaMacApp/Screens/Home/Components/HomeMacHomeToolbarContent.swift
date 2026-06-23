@@ -11,6 +11,7 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     let mode: Mode
     let showsDetailModePicker: Bool
     let showsProgressModePicker: Bool
+    let showsPlaces: Bool
     @Binding var detailMode: MacHomeDetailMode
     @Binding var progressMode: MacHomeProgressMode
     let locationSnapshot: LocationSnapshot
@@ -54,10 +55,12 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
 
     @ToolbarContentBuilder
     private var navigationToolbarItems: some ToolbarContent {
-        RoutinaMacPlaceCheckInToolbarItem(
-            locationSnapshot: locationSnapshot,
-            onMapRequested: onPlaceCheckInMapRequested
-        )
+        if showsPlaces {
+            RoutinaMacPlaceCheckInToolbarItem(
+                locationSnapshot: locationSnapshot,
+                onMapRequested: onPlaceCheckInMapRequested
+            )
+        }
 
         if let activePlanFocusSession {
             ToolbarItem(placement: .navigation) {

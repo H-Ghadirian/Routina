@@ -127,16 +127,22 @@ enum StatsAchievementStats {
         placeCheckInSessions: [PlaceCheckInSession] = [],
         calendar: Calendar = .current
     ) -> [StatsAchievementProgress] {
-        focusAchievements(sessions: focusSessions, calendar: calendar)
+        let includesPlaces = !places.isEmpty || !placeCheckInSessions.isEmpty
+
+        return focusAchievements(sessions: focusSessions, calendar: calendar)
             + sleepAchievements(sessions: sleepSessions, calendar: calendar)
             + awayAchievements(sessions: awaySessions, calendar: calendar)
             + doneAchievements(logs: logs, calendar: calendar)
-            + emotionAchievements(logs: emotionLogs, calendar: calendar)
-            + placeAchievements(
+            + emotionAchievements(
+                logs: emotionLogs,
+                calendar: calendar,
+                includingPlaces: includesPlaces
+            )
+            + (includesPlaces ? placeAchievements(
                 places: places,
                 sessions: placeCheckInSessions,
                 calendar: calendar
-            )
+            ) : [])
             + goalAchievements(goals: goals)
             + noteAchievements(
                 notes: notes,

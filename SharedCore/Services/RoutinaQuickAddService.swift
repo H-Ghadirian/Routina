@@ -69,12 +69,14 @@ enum RoutinaQuickAddService {
         from text: String,
         context: ModelContext,
         referenceDate: Date = .now,
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        includingPlaces: Bool = SharedDefaults.app[.appSettingPlacesEnabled]
     ) async throws -> RoutinaQuickAddCreateResult {
         guard var draft = RoutinaQuickAddParser.parse(
             text,
             referenceDate: referenceDate,
-            calendar: calendar
+            calendar: calendar,
+            includingPlaces: includingPlaces
         ), let trimmedName = RoutineTask.trimmedName(draft.name),
            !trimmedName.isEmpty
         else {
@@ -88,7 +90,7 @@ enum RoutinaQuickAddService {
         }
 
         draft.tags = try canonicalTags(for: draft.tags, context: context)
-        let place = try matchedPlace(named: draft.placeName, context: context)
+        let place = includingPlaces ? try matchedPlace(named: draft.placeName, context: context) : nil
         let request = draft.saveRequest(placeID: place?.id)
         let goalIDs = try RoutineGoalPersistence.ensureGoals(request.goals, in: context)
         let task = HomeAddRoutineSupport.makeRoutine(

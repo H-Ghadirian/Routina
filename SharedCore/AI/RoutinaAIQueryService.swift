@@ -103,7 +103,9 @@ public enum RoutinaAIQueryService {
         calendar: Calendar = .current
     ) throws -> RoutinaAITaskSnapshot {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
-        let places = try context.fetch(FetchDescriptor<RoutinePlace>())
+        let places = SharedDefaults.app[.appSettingPlacesEnabled]
+            ? try context.fetch(FetchDescriptor<RoutinePlace>())
+            : []
         let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
         let placesByID = Dictionary(places.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let goalsByID = Dictionary(goals.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })

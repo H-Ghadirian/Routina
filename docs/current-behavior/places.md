@@ -22,9 +22,12 @@ This page summarizes active Places, saved-place, check-in, and map behavior.
 - [0232](../decisions/0232-allow-known-pin-check-in.md)
 - [0233](../decisions/0233-allow-selected-saved-place-check-in.md)
 - [0234](../decisions/0234-hide-current-place-map-check-in.md)
+- [0275](../decisions/0275-hide-places-behind-beta-toggle.md)
 
 ## Current Contract
 
+- Places is hidden by default behind Support & About -> Beta Experiments -> `Show Places`.
+- When Places is off, visible app surfaces do not show place navigation, Check In entry points, task place sections, place filters, place stats, place timeline filters, Quick Add place help/parsing, Watch place sync, or Settings Places controls.
 - Place check-ins are duration-based `PlaceCheckInSession` records and timeline evidence.
 - Place check-ins are distinct from planner blocks, sleep, and focus sessions.
 - Tasks can link to multiple saved places. The first selected place remains the compatibility primary.
@@ -36,4 +39,3 @@ This page summarizes active Places, saved-place, check-in, and map behavior.
 - If a selected or pinned saved place matches the current resolved place, Check In is hidden.
 - Known current-location saved-place panels may remain informational only.
 - Settings -> Places is focused on check-in behavior and diagnostics. Place creation and saved-place management happen on dedicated Places surfaces.
-

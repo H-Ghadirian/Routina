@@ -25,6 +25,8 @@ struct StatsViewWrapper: View {
 private struct StatsDataObserver: View {
     let store: StoreOf<StatsFeature>
     @Environment(\.modelContext) private var modelContext
+    @AppStorage(UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue, store: SharedDefaults.app)
+    private var isPlacesEnabled = false
 
     var body: some View {
         Color.clear
@@ -36,6 +38,9 @@ private struct StatsDataObserver: View {
                 refreshData()
             }
             .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
+                refreshData()
+            }
+            .onChange(of: isPlacesEnabled) { _, _ in
                 refreshData()
             }
     }
@@ -70,8 +75,8 @@ private struct StatsDataObserver: View {
                     events: events,
                     noteAttachmentNoteIDs: Set(noteAttachments.map(\.noteID)),
                     goals: goals,
-                    places: places,
-                    placeCheckInSessions: placeCheckInSessions
+                    places: isPlacesEnabled ? places : [],
+                    placeCheckInSessions: isPlacesEnabled ? placeCheckInSessions : []
                 )
             )
         } catch {
@@ -107,6 +112,8 @@ struct StatsView: View {
     private var isGoalsTabEnabled = false
     @AppStorage(UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue, store: SharedDefaults.app)
     private var areMacEventEmotionActionsEnabled = false
+    @AppStorage(UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue, store: SharedDefaults.app)
+    private var isPlacesEnabled = false
 
     private typealias Metrics = StatsFeature.Metrics
 
@@ -158,6 +165,14 @@ struct StatsView: View {
 
     private var selectedTaskTypeFilter: StatsTaskTypeFilter {
         store.taskTypeFilter
+    }
+
+    private var statsPlaces: [RoutinePlace] {
+        isPlacesEnabled ? store.places : []
+    }
+
+    private var statsPlaceCheckInSessions: [PlaceCheckInSession] {
+        isPlacesEnabled ? store.placeCheckInSessions : []
     }
 
     private var activeItemsBreakdown: StatsActiveItemsBreakdown {
@@ -784,8 +799,8 @@ struct StatsView: View {
                 notes: store.notes,
                 noteAttachmentNoteIDs: store.noteAttachmentNoteIDs,
                 goals: store.goals,
-                places: store.places,
-                placeCheckInSessions: store.placeCheckInSessions,
+                places: statsPlaces,
+                placeCheckInSessions: statsPlaceCheckInSessions,
                 calendar: calendar
             ),
             earnedAchievementIDsByPeriod: StatsAchievementStats.achievementIDsEarnedByPeriod(
@@ -797,8 +812,8 @@ struct StatsView: View {
                 notes: store.notes,
                 noteAttachmentNoteIDs: store.noteAttachmentNoteIDs,
                 goals: store.goals,
-                places: store.places,
-                placeCheckInSessions: store.placeCheckInSessions,
+                places: statsPlaces,
+                placeCheckInSessions: statsPlaceCheckInSessions,
                 referenceDate: Date(),
                 calendar: calendar
             ),
@@ -817,8 +832,8 @@ struct StatsView: View {
                 emotionLogs: store.emotionLogs,
                 notes: store.notes,
                 goals: store.goals,
-                places: store.places,
-                placeCheckInSessions: store.placeCheckInSessions,
+                places: statsPlaces,
+                placeCheckInSessions: statsPlaceCheckInSessions,
                 referenceDate: Date(),
                 calendar: calendar
             ),

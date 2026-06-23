@@ -30,6 +30,10 @@ struct TaskFormContent: View {
         UserDefaultBoolValueKey.appSettingGoalsTabEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isGoalsTabEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isPlacesEnabled = false
 
     private var nameFocusBinding: FocusState<Bool>.Binding {
         model.nameFocus ?? $fallbackNameFocused
@@ -97,7 +101,10 @@ struct TaskFormContent: View {
     }
 
     private func shouldDisplayFormSection(_ section: FormSection) -> Bool {
-        section != .goals || isGoalsTabEnabled
+        if section == .places {
+            return isPlacesEnabled
+        }
+        return section != .goals || isGoalsTabEnabled
     }
 
     private var visibleSections: [FormSection] {
@@ -182,7 +189,10 @@ struct TaskFormContent: View {
         case .behavior:           behaviorCard
         case .pressure:           pressureCard
         case .estimation:         estimationCard
-        case .places:             placesCard
+        case .places:
+            if isPlacesEnabled {
+                placesCard
+            }
         case .importanceUrgency:  importanceCard
         case .tags:               tagsCard
         case .goals:              goalsCard
@@ -215,7 +225,11 @@ struct TaskFormContent: View {
     }
 
     private var smartNameDraft: RoutinaQuickAddDraft? {
-        guard let draft = RoutinaQuickAddParser.parse(model.name.wrappedValue, calendar: calendar),
+        guard let draft = RoutinaQuickAddParser.parse(
+            model.name.wrappedValue,
+            calendar: calendar,
+            includingPlaces: isPlacesEnabled
+        ),
               draft.hasDetectedMetadata else {
             return nil
         }
@@ -224,13 +238,20 @@ struct TaskFormContent: View {
 
     private var taskNameField: some View {
         MacFocusableTextField(
-            placeholder: "Water plants every Sat at 9am #home @Balcony !high 25m",
+            placeholder: smartNamePlaceholder,
             text: model.name,
             isFocusRequested: model.autofocusName,
             focusRequestID: model.nameFocusRequestID,
             onTab: smartNameDraft == nil ? nil : model.onApplySmartName
         )
         .frame(height: 50)
+    }
+
+    private var smartNamePlaceholder: String {
+        if isPlacesEnabled {
+            return "Water plants every Sat at 9am #home @Balcony !high 25m"
+        }
+        return "Water plants every Sat at 9am #home !high 25m"
     }
 
     // MARK: Color
@@ -517,7 +538,7 @@ struct TaskFormContent: View {
             hasAvailableTags: !model.availableTags.isEmpty,
             hasAvailableGoals: !model.availableGoals.isEmpty,
             goalDraft: model.goalDraft.wrappedValue,
-            selectedPlaceName: selectedPlaceName,
+            selectedPlaceName: isPlacesEnabled ? selectedPlaceName : nil,
             canAutoAssumeDailyDone: model.canAutoAssumeDailyDone
         )
     }

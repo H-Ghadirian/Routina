@@ -101,6 +101,33 @@ struct TimelineLogicTests {
     }
 
     @Test
+    func timelineVisibleCasesCanHidePlaceFilters() {
+        #expect(TimelineFilterType.visibleContentTypeCases(includingEventEmotion: true, includingPlaces: false) == [
+            .all,
+            .routines,
+            .todos,
+            .focus,
+            .events,
+            .emotions,
+            .notes,
+            .sleep,
+            .away,
+        ])
+        #expect(TimelineFilterType.visibleTimelinePigmentCases(includingEventEmotion: true, includingPlaces: false) == [
+            .all,
+            .routines,
+            .todos,
+            .focus,
+            .notes,
+            .emotions,
+            .sleep,
+            .away,
+        ])
+        #expect(TimelineFilterType.visibleCases(includingEventEmotion: true, includingPlaces: false).contains(.places) == false)
+        #expect(TimelineFilterType.places.normalized(includingEventEmotion: true, includingPlaces: false) == .all)
+    }
+
+    @Test
     func filteredEntries_returnsAllEntriesForAllRange() {
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-20T10:00:00Z")
