@@ -86,6 +86,37 @@ private enum AwaySessionTimerMode: String, CaseIterable, Identifiable {
     }
 }
 
+private enum AwayStartPresetOption: Hashable, Identifiable {
+    case away(AwaySessionPreset)
+    case sleep
+
+    static func options(includesSleep: Bool) -> [AwayStartPresetOption] {
+        var options = AwaySessionPreset.allCases.map(AwayStartPresetOption.away)
+        if includesSleep {
+            options.append(.sleep)
+        }
+        return options
+    }
+
+    var id: String {
+        switch self {
+        case let .away(preset):
+            return preset.rawValue
+        case .sleep:
+            return "sleep"
+        }
+    }
+
+    var awayPreset: AwaySessionPreset? {
+        guard case let .away(preset) = self else { return nil }
+        return preset
+    }
+
+    var isSleep: Bool {
+        self == .sleep
+    }
+}
+
 enum AwaySessionStartPresentation {
     case sheet
     case inline
@@ -95,7 +126,7 @@ struct AwaySessionStartSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Query private var tasks: [RoutineTask]
-    @State private var selectedPreset: AwaySessionPreset = .wake
+    @State private var selectedOption: AwayStartPresetOption = .away(.wake)
     @State private var linkedTaskID: UUID?
     @State private var timerMode: AwaySessionTimerMode = .fixedDuration
     @State private var durationMinutes = AwaySessionPreset.wake.defaultDurationMinutes
@@ -110,7 +141,7 @@ struct AwaySessionStartSheet: View {
     var body: some View {
         NavigationStack {
             startContent
-            .navigationTitle("Start Away")
+            .navigationTitle(startTitle)
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -122,7 +153,7 @@ struct AwaySessionStartSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Start") {
-                        startAway()
+                        startSelectedOption()
                     }
                     .fontWeight(.semibold)
                 }
@@ -143,58 +174,50 @@ struct AwaySessionStartSheet: View {
     private var sheetContent: some View {
         Form {
             Section("Preset") {
-                Picker("Preset", selection: selectedPresetBinding) {
-                    ForEach(AwaySessionPreset.allCases) { preset in
-                        Label(preset.title, systemImage: preset.systemImage)
-                            .tag(preset)
+                Picker("Preset", selection: selectedOptionBinding) {
+                    ForEach(startPresetOptions) { option in
+                        Label(option.title, systemImage: option.systemImage)
+                            .tag(option)
                     }
                 }
                 .pickerStyle(.inline)
             }
 
-            Section("Timer") {
-                RoutinaGlassSegmentedControl(
-                    accessibilityLabel: "Timer",
-                    options: AwaySessionTimerMode.allCases,
-                    selection: $timerMode,
-                    fillsAvailableWidth: true
-                ) { mode in
-                    Text(mode.title)
-                }
+            if !selectedOption.isSleep {
+                Section("Timer") {
+                    RoutinaGlassSegmentedControl(
+                        accessibilityLabel: "Timer",
+                        options: AwaySessionTimerMode.allCases,
+                        selection: $timerMode,
+                        fillsAvailableWidth: true
+                    ) { mode in
+                        Text(mode.title)
+                    }
 
-                if timerMode == .fixedDuration {
-                    Stepper(
-                        "Duration: \(durationMinutes)m",
-                        value: durationMinutesBinding,
-                        in: 1...720,
-                        step: 5
-                    )
-                } else {
-                    LabeledContent("Duration") {
-                        Text("Open-ended")
+                    if timerMode == .fixedDuration {
+                        Stepper(
+                            "Duration: \(durationMinutes)m",
+                            value: durationMinutesBinding,
+                            in: 1...720,
+                            step: 5
+                        )
+                    } else {
+                        LabeledContent("Duration") {
+                            Text("Open-ended")
+                        }
                     }
                 }
-            }
 
-            AwayTaskLinkFormSection(
-                linkedTaskID: $linkedTaskID,
-                tasks: sortedTasks
-            )
+                AwayTaskLinkFormSection(
+                    linkedTaskID: $linkedTaskID,
+                    tasks: sortedTasks
+                )
+            }
 
             if let errorText {
                 Section {
                     Text(errorText)
                         .foregroundStyle(.red)
-                }
-            }
-
-            if let startSleepAction {
-                Section("Sleep") {
-                    Button {
-                        startSleepAction()
-                    } label: {
-                        Label("Start Sleep", systemImage: "bed.double.fill")
-                    }
                 }
             }
         }
@@ -204,7 +227,7 @@ struct AwaySessionStartSheet: View {
         ZStack {
             LinearGradient(
                 colors: [
-                    selectedPreset.tint.opacity(0.18),
+                    selectedOption.tint.opacity(0.18),
                     Color.secondary.opacity(0.04),
                     Color.clear
                 ],
@@ -216,69 +239,73 @@ struct AwaySessionStartSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     AwayStartHeroCard(
-                        preset: selectedPreset,
+                        option: selectedOption,
                         timerMode: timerMode,
                         durationMinutes: durationMinutes
                     )
 
                     ViewThatFits(in: .horizontal) {
                         HStack(alignment: .top, spacing: 16) {
-                            AwayPresetPickerPanel(
-                                selectedPreset: selectedPresetBinding,
-                                selectedTint: selectedPreset.tint
+                            AwayStartPresetPickerPanel(
+                                selectedOption: selectedOptionBinding,
+                                options: startPresetOptions,
+                                selectedTint: selectedOption.tint
                             )
                             .frame(maxWidth: .infinity, alignment: .top)
 
                             VStack(spacing: 16) {
-                                AwayTimerSetupPanel(
-                                    timerMode: $timerMode,
-                                    durationMinutes: durationMinutesBinding,
-                                    tint: selectedPreset.tint
-                                )
+                                if !selectedOption.isSleep {
+                                    AwayTimerSetupPanel(
+                                        timerMode: $timerMode,
+                                        durationMinutes: durationMinutesBinding,
+                                        tint: selectedOption.tint
+                                    )
 
-                                AwayTaskLinkPanel(
-                                    linkedTaskID: $linkedTaskID,
-                                    tasks: sortedTasks,
-                                    tint: selectedPreset.tint
-                                )
+                                    AwayTaskLinkPanel(
+                                        linkedTaskID: $linkedTaskID,
+                                        tasks: sortedTasks,
+                                        tint: selectedOption.tint
+                                    )
+                                }
 
                                 AwayStartSummaryPanel(
-                                    preset: selectedPreset,
+                                    option: selectedOption,
                                     timerMode: timerMode,
                                     durationMinutes: durationMinutes,
                                     errorText: errorText,
-                                    onStart: startAway,
-                                    onStartSleep: startSleepAction
+                                    onStart: startSelectedOption
                                 )
                             }
                             .frame(width: 330)
                         }
 
                         VStack(alignment: .leading, spacing: 16) {
-                            AwayPresetPickerPanel(
-                                selectedPreset: selectedPresetBinding,
-                                selectedTint: selectedPreset.tint
+                            AwayStartPresetPickerPanel(
+                                selectedOption: selectedOptionBinding,
+                                options: startPresetOptions,
+                                selectedTint: selectedOption.tint
                             )
 
-                            AwayTimerSetupPanel(
-                                timerMode: $timerMode,
-                                durationMinutes: durationMinutesBinding,
-                                tint: selectedPreset.tint
-                            )
+                            if !selectedOption.isSleep {
+                                AwayTimerSetupPanel(
+                                    timerMode: $timerMode,
+                                    durationMinutes: durationMinutesBinding,
+                                    tint: selectedOption.tint
+                                )
 
-                            AwayTaskLinkPanel(
-                                linkedTaskID: $linkedTaskID,
-                                tasks: sortedTasks,
-                                tint: selectedPreset.tint
-                            )
+                                AwayTaskLinkPanel(
+                                    linkedTaskID: $linkedTaskID,
+                                    tasks: sortedTasks,
+                                    tint: selectedOption.tint
+                                )
+                            }
 
                             AwayStartSummaryPanel(
-                                preset: selectedPreset,
+                                option: selectedOption,
                                 timerMode: timerMode,
                                 durationMinutes: durationMinutes,
                                 errorText: errorText,
-                                onStart: startAway,
-                                onStartSleep: startSleepAction
+                                onStart: startSelectedOption
                             )
                         }
                     }
@@ -290,21 +317,24 @@ struct AwaySessionStartSheet: View {
         }
     }
 
-    private var startSleepAction: (() -> Void)? {
-        guard onStartSleep != nil else { return nil }
-        return startSleep
+    private var startPresetOptions: [AwayStartPresetOption] {
+        AwayStartPresetOption.options(includesSleep: onStartSleep != nil)
     }
 
     private var sortedTasks: [RoutineTask] {
         AwayTaskLinkPresentation.sortedTasks(tasks)
     }
 
-    private var selectedPresetBinding: Binding<AwaySessionPreset> {
+    private var startTitle: String {
+        selectedOption.isSleep ? "Start Sleep" : "Start Away"
+    }
+
+    private var selectedOptionBinding: Binding<AwayStartPresetOption> {
         Binding(
-            get: { selectedPreset },
-            set: { preset in
-                selectedPreset = preset
-                if !hasCustomizedDuration {
+            get: { selectedOption },
+            set: { option in
+                selectedOption = option
+                if !hasCustomizedDuration, let preset = option.awayPreset {
                     durationMinutes = preset.defaultDurationMinutes
                 }
             }
@@ -330,7 +360,21 @@ struct AwaySessionStartSheet: View {
     }
 
     @MainActor
+    private func startSelectedOption() {
+        switch selectedOption {
+        case .away:
+            startAway()
+        case .sleep:
+            startSleep()
+        }
+    }
+
+    @MainActor
     private func startAway() {
+        guard let selectedPreset = selectedOption.awayPreset else {
+            startSleep()
+            return
+        }
         do {
             _ = try AwaySessionSupport.startAway(
                 preset: selectedPreset,
@@ -352,8 +396,12 @@ struct AwaySessionStartSheet: View {
 
     @MainActor
     private func startSleep() {
+        guard let onStartSleep else {
+            errorText = "Sleep is unavailable from here."
+            return
+        }
         errorText = nil
-        onStartSleep?()
+        onStartSleep()
         if dismissOnCompletion {
             dismiss()
         }
@@ -424,7 +472,7 @@ struct AwaySessionEditSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     AwayStartHeroCard(
-                        preset: selectedPreset,
+                        option: .away(selectedPreset),
                         timerMode: timerMode,
                         durationMinutes: durationMinutes,
                         titleOverride: displayTitle,
@@ -739,7 +787,7 @@ private struct AwayEditSummaryPanel: View {
 }
 
 private struct AwayStartHeroCard: View {
-    let preset: AwaySessionPreset
+    let option: AwayStartPresetOption
     let timerMode: AwaySessionTimerMode
     let durationMinutes: Int
     var titleOverride: String?
@@ -763,15 +811,15 @@ private struct AwayStartHeroCard: View {
             }
         }
         .padding(20)
-        .routinaGlassPanel(cornerRadius: 18, tint: preset.tint, tintOpacity: 0.10)
+        .routinaGlassPanel(cornerRadius: 18, tint: option.tint, tintOpacity: 0.10)
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(preset.tint.opacity(0.22), lineWidth: 1)
+                .stroke(option.tint.opacity(0.22), lineWidth: 1)
         }
     }
 
     private var heroIcon: some View {
-        Image(systemName: preset.systemImage)
+        Image(systemName: option.systemImage)
             .font(.system(size: 30, weight: .semibold))
             .foregroundStyle(.white)
             .symbolRenderingMode(.hierarchical)
@@ -779,8 +827,8 @@ private struct AwayStartHeroCard: View {
             .background(
                 LinearGradient(
                     colors: [
-                        preset.tint,
-                        preset.tint.opacity(0.58)
+                        option.tint,
+                        option.tint.opacity(0.58)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -795,17 +843,17 @@ private struct AwayStartHeroCard: View {
 
     private var titleBlock: some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text("Away mode")
+            Text(option.modeEyebrow)
                 .font(.caption.weight(.bold))
-                .foregroundStyle(preset.tint)
+                .foregroundStyle(option.tint)
                 .textCase(.uppercase)
 
-            Text(titleOverride ?? preset.title)
+            Text(titleOverride ?? option.title)
                 .font(.system(.largeTitle, design: .rounded).weight(.bold))
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
 
-            Text(subtitleOverride ?? preset.startLine)
+            Text(subtitleOverride ?? option.startLine)
                 .font(.headline)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -814,24 +862,58 @@ private struct AwayStartHeroCard: View {
 
     private var heroMetric: some View {
         VStack(alignment: .trailing, spacing: 4) {
-            Text(timerSummary)
+            Text(option.timerSummary(timerMode: timerMode, durationMinutes: durationMinutes))
                 .font(.system(size: 28, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(.primary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
 
-            Text(timerMode == .fixedDuration ? "protected timer" : "open timer")
+            Text(option.timerCaption(timerMode: timerMode))
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .routinaGlassCard(cornerRadius: 14, tint: preset.tint, tintOpacity: 0.08)
+        .routinaGlassCard(cornerRadius: 14, tint: option.tint, tintOpacity: 0.08)
     }
+}
 
-    private var timerSummary: String {
-        timerMode == .fixedDuration ? "\(durationMinutes)m" : "Count up"
+private struct AwayStartPresetPickerPanel: View {
+    @Binding var selectedOption: AwayStartPresetOption
+    let options: [AwayStartPresetOption]
+    let selectedTint: Color
+
+    private let columns = [
+        GridItem(.adaptive(minimum: 150), spacing: 10)
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Label("Preset", systemImage: "square.grid.2x2.fill")
+                .font(.headline)
+
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
+                ForEach(options) { option in
+                    AwayPresetCard(
+                        title: option.title,
+                        systemImage: option.systemImage,
+                        defaultDurationText: option.defaultDurationText,
+                        presetTint: option.tint,
+                        isSelected: selectedOption == option,
+                        selectedTint: selectedTint
+                    ) {
+                        selectedOption = option
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .routinaGlassPanel(cornerRadius: 16, tint: selectedTint, tintOpacity: 0.06)
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(.primary.opacity(0.08), lineWidth: 1)
+        }
     }
 }
 
@@ -851,7 +933,10 @@ private struct AwayPresetPickerPanel: View {
             LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
                 ForEach(AwaySessionPreset.allCases) { preset in
                     AwayPresetCard(
-                        preset: preset,
+                        title: preset.title,
+                        systemImage: preset.systemImage,
+                        defaultDurationText: preset.defaultDurationText,
+                        presetTint: preset.tint,
                         isSelected: selectedPreset == preset,
                         selectedTint: selectedTint
                     ) {
@@ -870,20 +955,23 @@ private struct AwayPresetPickerPanel: View {
 }
 
 private struct AwayPresetCard: View {
-    let preset: AwaySessionPreset
+    let title: String
+    let systemImage: String
+    let defaultDurationText: String
+    let presetTint: Color
     let isSelected: Bool
     let selectedTint: Color
     let action: () -> Void
 
     private var tint: Color {
-        isSelected ? selectedTint : preset.tint
+        isSelected ? selectedTint : presetTint
     }
 
     var body: some View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .top, spacing: 10) {
-                    Image(systemName: preset.systemImage)
+                    Image(systemName: systemImage)
                         .font(.headline.weight(.semibold))
                         .foregroundStyle(isSelected ? .white : tint)
                         .frame(width: 34, height: 34)
@@ -900,13 +988,13 @@ private struct AwayPresetCard: View {
                 }
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(preset.title)
+                    Text(title)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.primary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.82)
 
-                    Text(preset.defaultDurationText)
+                    Text(defaultDurationText)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -1029,12 +1117,11 @@ private struct AwayTimerSetupPanel: View {
 }
 
 private struct AwayStartSummaryPanel: View {
-    let preset: AwaySessionPreset
+    let option: AwayStartPresetOption
     let timerMode: AwaySessionTimerMode
     let durationMinutes: Int
     let errorText: String?
     let onStart: () -> Void
-    let onStartSleep: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -1044,33 +1131,33 @@ private struct AwayStartSummaryPanel: View {
             VStack(spacing: 10) {
                 AwayStartSummaryRow(
                     title: "Preset",
-                    value: preset.title,
-                    systemImage: preset.systemImage,
-                    tint: preset.tint
+                    value: option.title,
+                    systemImage: option.systemImage,
+                    tint: option.tint
                 )
                 AwayStartSummaryRow(
                     title: "Timer",
-                    value: timerText,
-                    systemImage: timerMode == .fixedDuration ? "timer" : "infinity",
-                    tint: preset.tint
+                    value: option.timerText(timerMode: timerMode, durationMinutes: durationMinutes),
+                    systemImage: option.timerSystemImage(timerMode: timerMode),
+                    tint: option.tint
                 )
                 AwayStartSummaryRow(
                     title: "Starts",
                     value: "Now",
                     systemImage: "paperplane.fill",
-                    tint: preset.tint
+                    tint: option.tint
                 )
             }
 
             Button {
                 onStart()
             } label: {
-                Label("Start Away", systemImage: "lock.shield.fill")
+                Label(option.startActionTitle, systemImage: option.startActionSystemImage)
                     .font(.headline.weight(.semibold))
-                    .foregroundStyle(preset.actionForeground)
+                    .foregroundStyle(option.actionForeground)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 11)
-                    .background(preset.actionTint, in: Capsule())
+                    .background(option.actionTint, in: Capsule())
                     .overlay {
                         Capsule()
                             .stroke(.white.opacity(0.16), lineWidth: 1)
@@ -1080,25 +1167,6 @@ private struct AwayStartSummaryPanel: View {
             .contentShape(Capsule())
             .keyboardShortcut(.defaultAction)
 
-            if let onStartSleep {
-                Button {
-                    onStartSleep()
-                } label: {
-                    Label("Start Sleep", systemImage: "bed.double.fill")
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(preset.tint)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(preset.tint.opacity(0.11), in: Capsule())
-                        .overlay {
-                            Capsule()
-                                .stroke(preset.tint.opacity(0.24), lineWidth: 1)
-                        }
-                }
-                .buttonStyle(.plain)
-                .contentShape(Capsule())
-            }
-
             if let errorText {
                 Text(errorText)
                     .font(.caption.weight(.semibold))
@@ -1107,15 +1175,11 @@ private struct AwayStartSummaryPanel: View {
             }
         }
         .padding(16)
-        .routinaGlassPanel(cornerRadius: 16, tint: preset.tint, tintOpacity: 0.08)
+        .routinaGlassPanel(cornerRadius: 16, tint: option.tint, tintOpacity: 0.08)
         .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(preset.tint.opacity(0.18), lineWidth: 1)
+                .stroke(option.tint.opacity(0.18), lineWidth: 1)
         }
-    }
-
-    private var timerText: String {
-        timerMode == .fixedDuration ? "\(durationMinutes)m duration" : "Count up"
     }
 }
 
@@ -1484,4 +1548,105 @@ private struct AwayMetricRow: View {
 
 extension AwaySessionPreset: Identifiable {
     var id: String { rawValue }
+}
+
+private extension AwayStartPresetOption {
+    var title: String {
+        switch self {
+        case let .away(preset):
+            return preset.title
+        case .sleep:
+            return "Sleep"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case let .away(preset):
+            return preset.systemImage
+        case .sleep:
+            return "bed.double.fill"
+        }
+    }
+
+    var tint: Color {
+        switch self {
+        case let .away(preset):
+            return preset.tint
+        case .sleep:
+            return .orange
+        }
+    }
+
+    var actionTint: Color {
+        switch self {
+        case let .away(preset):
+            return preset.actionTint
+        case .sleep:
+            return Color(red: 0.96, green: 0.57, blue: 0.16)
+        }
+    }
+
+    var actionForeground: Color {
+        switch self {
+        case let .away(preset):
+            return preset.actionForeground
+        case .sleep:
+            return Color.black.opacity(0.84)
+        }
+    }
+
+    var defaultDurationText: String {
+        switch self {
+        case let .away(preset):
+            return preset.defaultDurationText
+        case .sleep:
+            return "\(sleepDurationText) target"
+        }
+    }
+
+    var modeEyebrow: String {
+        isSleep ? "Sleep mode" : "Away mode"
+    }
+
+    var startLine: String {
+        switch self {
+        case let .away(preset):
+            return preset.startLine
+        case .sleep:
+            return "A protected wind-down for real rest."
+        }
+    }
+
+    var startActionTitle: String {
+        isSleep ? "Start Sleep" : "Start Away"
+    }
+
+    var startActionSystemImage: String {
+        isSleep ? "bed.double.fill" : "lock.shield.fill"
+    }
+
+    func timerSummary(timerMode: AwaySessionTimerMode, durationMinutes: Int) -> String {
+        guard !isSleep else { return sleepDurationText }
+        return timerMode == .fixedDuration ? "\(durationMinutes)m" : "Count up"
+    }
+
+    func timerCaption(timerMode: AwaySessionTimerMode) -> String {
+        guard !isSleep else { return "sleep target" }
+        return timerMode == .fixedDuration ? "protected timer" : "open timer"
+    }
+
+    func timerText(timerMode: AwaySessionTimerMode, durationMinutes: Int) -> String {
+        guard !isSleep else { return "\(sleepDurationText) target" }
+        return timerMode == .fixedDuration ? "\(durationMinutes)m duration" : "Count up"
+    }
+
+    func timerSystemImage(timerMode: AwaySessionTimerMode) -> String {
+        guard !isSleep else { return "alarm.fill" }
+        return timerMode == .fixedDuration ? "timer" : "infinity"
+    }
+
+    private var sleepDurationText: String {
+        SleepSessionFormatting.durationText(seconds: 8 * 60 * 60)
+    }
 }
