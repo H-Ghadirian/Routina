@@ -515,9 +515,15 @@ struct FocusSessionCard: View {
     private func finish(_ session: FocusSession) {
         guard session.completedAt == nil else { return }
         let endedAt = Date()
+        let pausedAt = session.pausedAt
+        if let pausedAt {
+            syncPausedCountUpPlannerSegment(for: session, pausedAt: pausedAt)
+        }
         session.closePauseIfNeeded(at: endedAt)
         session.completedAt = endedAt
-        syncEndedCountUpPlannerBlock(for: session, endedAt: endedAt)
+        if pausedAt == nil {
+            syncEndedCountUpPlannerBlock(for: session, endedAt: endedAt)
+        }
         onCompletedDuration?(session.actualDurationSeconds)
         DeviceActivityRecorder.recordAction(
             .completed,
@@ -550,6 +556,7 @@ struct FocusSessionCard: View {
     private func pause(_ session: FocusSession) {
         let pausedAt = Date()
         guard session.pause(at: pausedAt) else { return }
+        syncPausedCountUpPlannerSegment(for: session, pausedAt: pausedAt)
         DeviceActivityRecorder.recordAction(
             .paused,
             entity: .focusSession,
@@ -565,7 +572,12 @@ struct FocusSessionCard: View {
 
     private func resume(_ session: FocusSession) {
         let resumedAt = Date()
+        let pausedAt = session.pausedAt
         guard session.resume(at: resumedAt) else { return }
+        if let pausedAt {
+            syncPausedCountUpPlannerSegment(for: session, pausedAt: pausedAt)
+        }
+        syncResumedCountUpPlannerSegment(for: session, resumedAt: resumedAt)
         DeviceActivityRecorder.recordAction(
             .resumed,
             entity: .focusSession,
@@ -584,6 +596,26 @@ struct FocusSessionCard: View {
             for: task,
             session: session,
             endedAt: endedAt,
+            calendar: calendar,
+            context: modelContext
+        )
+    }
+
+    private func syncPausedCountUpPlannerSegment(for session: FocusSession, pausedAt: Date) {
+        DayPlanFocusSessionPlannerSync.savePausedCountUpFocusSegment(
+            for: task,
+            session: session,
+            pausedAt: pausedAt,
+            calendar: calendar,
+            context: modelContext
+        )
+    }
+
+    private func syncResumedCountUpPlannerSegment(for session: FocusSession, resumedAt: Date) {
+        DayPlanFocusSessionPlannerSync.saveResumedCountUpFocusSegment(
+            for: task,
+            session: session,
+            resumedAt: resumedAt,
             calendar: calendar,
             context: modelContext
         )

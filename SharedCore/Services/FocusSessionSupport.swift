@@ -190,6 +190,7 @@ enum FocusSessionSupport {
         sessionID: UUID?,
         kind: FocusSessionKind?,
         pausedAt: Date = Date(),
+        calendar: Calendar = .current,
         context: ModelContext,
         sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> Bool {
@@ -199,6 +200,7 @@ enum FocusSessionSupport {
             return false
         }
 
+        try savePausedCountUpFocusSegment(for: session, pausedAt: pausedAt, calendar: calendar, context: context)
         let title = try focusTitle(for: session, in: context)
         DeviceActivityRecorder.recordAction(
             .paused,
@@ -221,15 +223,19 @@ enum FocusSessionSupport {
         sessionID: UUID?,
         kind: FocusSessionKind?,
         resumedAt: Date = Date(),
+        calendar: Calendar = .current,
         context: ModelContext,
         sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> Bool {
         guard kind != .sprint,
               let session = try activeTaskFocus(sessionID: sessionID, kind: kind, in: context),
+              let pausedAt = session.pausedAt,
               session.resume(at: resumedAt) else {
             return false
         }
 
+        try savePausedCountUpFocusSegment(for: session, pausedAt: pausedAt, calendar: calendar, context: context)
+        try saveResumedCountUpFocusSegment(for: session, resumedAt: resumedAt, calendar: calendar, context: context)
         let title = try focusTitle(for: session, in: context)
         DeviceActivityRecorder.recordAction(
             .resumed,
@@ -372,9 +378,14 @@ enum FocusSessionSupport {
             return false
         }
 
+        let pausedAt = session.pausedAt
+        if let pausedAt {
+            try savePausedCountUpFocusSegment(for: session, pausedAt: pausedAt, calendar: calendar, context: context)
+        }
         session.closePauseIfNeeded(at: endedAt)
         session.completedAt = endedAt
-        if session.isTaskFocus,
+        if pausedAt == nil,
+           session.isTaskFocus,
            session.plannedDurationSeconds <= 0,
            let task = try task(id: session.taskID, in: context) {
             DayPlanFocusSessionPlannerSync.saveEndedCountUpFocusBlock(
@@ -384,7 +395,8 @@ enum FocusSessionSupport {
                 calendar: calendar,
                 context: context
             )
-        } else if session.isTagFocus,
+        } else if pausedAt == nil,
+                  session.isTagFocus,
                   session.plannedDurationSeconds <= 0,
                   let tagName = session.focusTagName {
             DayPlanFocusSessionPlannerSync.saveEndedCountUpTagFocusBlock(
@@ -520,6 +532,66 @@ enum FocusSessionSupport {
             return "Unassigned focus"
         }
         return RoutineTask.trimmedName(task.name) ?? "Untitled task"
+    }
+
+    @MainActor
+    private static func savePausedCountUpFocusSegment(
+        for session: FocusSession,
+        pausedAt: Date,
+        calendar: Calendar,
+        context: ModelContext
+    ) throws {
+        guard session.plannedDurationSeconds <= 0 else { return }
+
+        if session.isTaskFocus,
+           let task = try task(id: session.taskID, in: context) {
+            DayPlanFocusSessionPlannerSync.savePausedCountUpFocusSegment(
+                for: task,
+                session: session,
+                pausedAt: pausedAt,
+                calendar: calendar,
+                context: context
+            )
+        } else if session.isTagFocus,
+                  let tagName = session.focusTagName {
+            DayPlanFocusSessionPlannerSync.savePausedCountUpTagFocusSegment(
+                tagName: tagName,
+                session: session,
+                pausedAt: pausedAt,
+                calendar: calendar,
+                context: context
+            )
+        }
+    }
+
+    @MainActor
+    private static func saveResumedCountUpFocusSegment(
+        for session: FocusSession,
+        resumedAt: Date,
+        calendar: Calendar,
+        context: ModelContext
+    ) throws {
+        guard session.plannedDurationSeconds <= 0 else { return }
+
+        if session.isTaskFocus,
+           let task = try task(id: session.taskID, in: context) {
+            DayPlanFocusSessionPlannerSync.saveResumedCountUpFocusSegment(
+                for: task,
+                session: session,
+                resumedAt: resumedAt,
+                calendar: calendar,
+                context: context
+            )
+        } else if session.isTagFocus,
+                  let tagName = session.focusTagName {
+            DayPlanFocusSessionPlannerSync.saveResumedCountUpTagFocusSegment(
+                tagName: tagName,
+                session: session,
+                resumedAt: resumedAt,
+                calendar: calendar,
+                context: context
+            )
+        }
     }
 
     @MainActor

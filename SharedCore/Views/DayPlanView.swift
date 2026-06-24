@@ -538,6 +538,9 @@ private struct DayPlanTimelinePanelView: View {
         let referenceDate = Date()
         let visibleDates = planner.visibleDates(calendar: calendar)
         let plannedBlocksByDayKey = plannedBlocksByDayKey(for: visibleDates)
+        let rawPlannedBlocks = visibleDates.flatMap { date in
+            planner.blocks(on: date, calendar: calendar, context: modelContext)
+        }
         let hiddenTimelineActivityIDs = DayPlanHiddenTimelineActivityStore.hiddenIDs(from: hiddenTimelineActivityStorage)
         let sleepBlocksByDayKey = DayPlanSleepBlocks.blocksByDayKey(
             on: visibleDates,
@@ -644,7 +647,6 @@ private struct DayPlanTimelinePanelView: View {
         let selectedDayKey = DayPlanStorage.dayKey(for: planner.selectedDate, calendar: calendar)
         let selectedDayBlockedMinutes = blockedIntervalsByDayKey[selectedDayKey, default: []]
             .reduce(0) { $0 + $1.durationMinutes }
-        let plannedBlocks = plannedBlocksByDayKey.values.flatMap { $0 }
         let tintsByTaskID = tintsByTaskID()
 
         VStack(alignment: .leading, spacing: 12) {
@@ -715,7 +717,7 @@ private struct DayPlanTimelinePanelView: View {
                         },
                         now: now,
                         calendar: calendar,
-                        excluding: plannedBlocks
+                        excluding: rawPlannedBlocks
                     )
                 },
                 activeSprintFocusBlocks: { now in

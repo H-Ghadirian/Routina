@@ -8,7 +8,7 @@ struct DayPlanFocusSessionBlock: Identifiable, Equatable {
     var opensTaskDetails: Bool = true
 
     var id: String {
-        "\(block.dayKey)-\(sessionID.uuidString)"
+        "\(block.dayKey)-\(sessionID.uuidString)-\(block.id.uuidString)"
     }
 }
 
@@ -121,8 +121,22 @@ enum DayPlanFocusSessionBlocks {
                   let task = tasksByID[session.taskID]
             else { return nil }
 
+            let latestSegmentBlock = DayPlanFocusSessionPlannerSync.latestFocusSegmentBlock(
+                in: plannedBlocks,
+                for: session
+            )
+            if session.isPaused, session.plannedDurationSeconds <= 0, latestSegmentBlock != nil {
+                return nil
+            }
+
             let dayKey = DayPlanStorage.dayKey(for: now, calendar: calendar)
-            let renderStart = renderStart(for: startedAt, now: now, calendar: calendar)
+            let renderStart = activeRenderStart(
+                for: session,
+                startedAt: startedAt,
+                latestSegmentBlock: latestSegmentBlock,
+                now: now,
+                calendar: calendar
+            )
             let startMinute = startMinute(for: renderStart, calendar: calendar)
             let elapsedSeconds = max(
                 60,
@@ -132,7 +146,7 @@ enum DayPlanFocusSessionBlocks {
             let remainingMinutes = max(1, DayPlanBlock.minutesPerDay - startMinute)
             let durationMinutes = min(elapsedMinutes, remainingMinutes)
             let block = DayPlanBlock(
-                id: session.id,
+                id: latestSegmentBlock?.id ?? session.id,
                 taskID: task.id,
                 dayKey: dayKey,
                 startMinute: startMinute,
@@ -178,8 +192,22 @@ enum DayPlanFocusSessionBlocks {
               let tagTitle = session.focusTagTitle
         else { return nil }
 
+        let latestSegmentBlock = DayPlanFocusSessionPlannerSync.latestFocusSegmentBlock(
+            in: plannedBlocks,
+            for: session
+        )
+        if session.isPaused, session.plannedDurationSeconds <= 0, latestSegmentBlock != nil {
+            return nil
+        }
+
         let dayKey = DayPlanStorage.dayKey(for: now, calendar: calendar)
-        let renderStart = renderStart(for: startedAt, now: now, calendar: calendar)
+        let renderStart = activeRenderStart(
+            for: session,
+            startedAt: startedAt,
+            latestSegmentBlock: latestSegmentBlock,
+            now: now,
+            calendar: calendar
+        )
         let startMinute = startMinute(for: renderStart, calendar: calendar)
         let elapsedSeconds = max(
             60,
@@ -189,7 +217,7 @@ enum DayPlanFocusSessionBlocks {
         let remainingMinutes = max(1, DayPlanBlock.minutesPerDay - startMinute)
         let durationMinutes = min(elapsedMinutes, remainingMinutes)
         let block = DayPlanBlock(
-            id: session.id,
+            id: latestSegmentBlock?.id ?? session.id,
             taskID: FocusSession.unassignedTaskID,
             dayKey: dayKey,
             startMinute: startMinute,
@@ -319,10 +347,28 @@ enum DayPlanFocusSessionBlocks {
         now: Date
     ) -> TimeInterval {
         guard renderStart == startedAt else {
-            return max(0, now.timeIntervalSince(renderStart))
+            let renderEnd = session.pausedAt ?? now
+            return max(0, renderEnd.timeIntervalSince(renderStart))
         }
 
         return session.activeDurationSeconds(at: now)
+    }
+
+    private static func activeRenderStart(
+        for session: FocusSession,
+        startedAt: Date,
+        latestSegmentBlock: DayPlanBlock?,
+        now: Date,
+        calendar: Calendar
+    ) -> Date {
+        let sessionRenderStart = renderStart(for: startedAt, now: now, calendar: calendar)
+        guard session.plannedDurationSeconds <= 0,
+              let latestSegmentBlock,
+              latestSegmentBlock.createdAt > sessionRenderStart else {
+            return sessionRenderStart
+        }
+
+        return renderStart(for: latestSegmentBlock.createdAt, now: now, calendar: calendar)
     }
 
     private static func isRepresentedByPlannerBlock(
@@ -367,6 +413,52 @@ enum DayPlanFocusSessionPlannerSync {
             sessionBytes.14 ^ taskBytes.1,
             sessionBytes.15 ^ taskBytes.0
         ))
+    }
+
+    static func focusSegmentBlocks(
+        in blocks: [DayPlanBlock],
+        for session: FocusSession
+    ) -> [DayPlanBlock] {
+        blocks
+            .filter { isFocusSegmentBlock($0, for: session) }
+            .sorted { lhs, rhs in
+                if lhs.createdAt != rhs.createdAt {
+                    return lhs.createdAt < rhs.createdAt
+                }
+                return lhs.startMinute < rhs.startMinute
+            }
+    }
+
+    static func latestFocusSegmentBlock(
+        in blocks: [DayPlanBlock],
+        for session: FocusSession
+    ) -> DayPlanBlock? {
+        focusSegmentBlocks(in: blocks, for: session).last
+    }
+
+    static func isFocusSegmentBlock(
+        _ block: DayPlanBlock,
+        for session: FocusSession
+    ) -> Bool {
+        guard session.plannedDurationSeconds <= 0,
+              (session.isTaskFocus || session.isTagFocus),
+              let startedAt = session.startedAt,
+              block.taskID == session.taskID else {
+            return false
+        }
+
+        if block.id == session.id {
+            return true
+        }
+
+        guard block.createdAt >= startedAt else {
+            return false
+        }
+
+        return block.id == focusSegmentBlockID(
+            sessionID: session.id,
+            segmentStartedAt: block.createdAt
+        )
     }
 
     @discardableResult
@@ -485,6 +577,84 @@ enum DayPlanFocusSessionPlannerSync {
     }
 
     @discardableResult
+    static func savePausedCountUpFocusSegment(
+        for task: RoutineTask,
+        session: FocusSession,
+        pausedAt: Date,
+        calendar: Calendar,
+        context: ModelContext
+    ) -> DayPlanBlock? {
+        savePausedCountUpFocusSegment(
+            session: session,
+            taskID: task.id,
+            title: DayPlanTaskSorting.title(for: task),
+            emoji: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
+            pausedAt: pausedAt,
+            calendar: calendar,
+            context: context
+        )
+    }
+
+    @discardableResult
+    static func savePausedCountUpTagFocusSegment(
+        tagName: String,
+        session: FocusSession,
+        pausedAt: Date,
+        calendar: Calendar,
+        context: ModelContext
+    ) -> DayPlanBlock? {
+        let title = RoutineTag.cleaned(tagName).map { "#\($0)" } ?? "#Tag"
+        return savePausedCountUpFocusSegment(
+            session: session,
+            taskID: FocusSession.unassignedTaskID,
+            title: title,
+            emoji: nil,
+            pausedAt: pausedAt,
+            calendar: calendar,
+            context: context
+        )
+    }
+
+    @discardableResult
+    static func saveResumedCountUpFocusSegment(
+        for task: RoutineTask,
+        session: FocusSession,
+        resumedAt: Date,
+        calendar: Calendar,
+        context: ModelContext
+    ) -> DayPlanBlock? {
+        saveResumedCountUpFocusSegment(
+            session: session,
+            taskID: task.id,
+            title: DayPlanTaskSorting.title(for: task),
+            emoji: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
+            resumedAt: resumedAt,
+            calendar: calendar,
+            context: context
+        )
+    }
+
+    @discardableResult
+    static func saveResumedCountUpTagFocusSegment(
+        tagName: String,
+        session: FocusSession,
+        resumedAt: Date,
+        calendar: Calendar,
+        context: ModelContext
+    ) -> DayPlanBlock? {
+        let title = RoutineTag.cleaned(tagName).map { "#\($0)" } ?? "#Tag"
+        return saveResumedCountUpFocusSegment(
+            session: session,
+            taskID: FocusSession.unassignedTaskID,
+            title: title,
+            emoji: nil,
+            resumedAt: resumedAt,
+            calendar: calendar,
+            context: context
+        )
+    }
+
+    @discardableResult
     static func saveStartedFocusBlock(
         for task: RoutineTask,
         session: FocusSession,
@@ -561,25 +731,34 @@ enum DayPlanFocusSessionPlannerSync {
             return nil
         }
 
-        let elapsedSeconds = max(60, session.activeDurationSeconds(at: endedAt))
-        let block = plannerBlock(
-            for: task,
-            session: session,
-            startedAt: startedAt,
-            durationSeconds: elapsedSeconds,
-            calendar: calendar,
-            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
-        )
-        var blocks = DayPlanStorage.loadBlocks(forDayKey: block.dayKey, context: context)
-
-        if let index = blocks.firstIndex(where: { $0.id == block.id }) {
-            blocks[index] = block
+        let storedSegments = focusSegmentBlocks(for: session, context: context)
+        if storedSegments.count > 1,
+           let latestSegment = storedSegments.last {
+            let durationSeconds = max(60, endedAt.timeIntervalSince(latestSegment.createdAt))
+            let block = focusSegmentBlock(
+                session: session,
+                taskID: task.id,
+                title: DayPlanTaskSorting.title(for: task),
+                emoji: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
+                segmentStartedAt: latestSegment.createdAt,
+                durationSeconds: durationSeconds,
+                calendar: calendar
+            )
+            upsertBlock(block, context: context)
+            return block
         } else {
-            blocks.append(block)
+            let elapsedSeconds = max(60, session.activeDurationSeconds(at: endedAt))
+            let block = plannerBlock(
+                for: task,
+                session: session,
+                startedAt: startedAt,
+                durationSeconds: elapsedSeconds,
+                calendar: calendar,
+                minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+            )
+            upsertBlock(block, context: context)
+            return block
         }
-
-        DayPlanStorage.saveBlocks(blocks, forDayKey: block.dayKey, context: context)
-        return block
     }
 
     @discardableResult
@@ -595,25 +774,35 @@ enum DayPlanFocusSessionPlannerSync {
             return nil
         }
 
-        let elapsedSeconds = max(60, session.activeDurationSeconds(at: endedAt))
-        let block = tagPlannerBlock(
-            tagName: tagName,
-            session: session,
-            startedAt: startedAt,
-            durationSeconds: elapsedSeconds,
-            calendar: calendar,
-            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
-        )
-        var blocks = DayPlanStorage.loadBlocks(forDayKey: block.dayKey, context: context)
-
-        if let index = blocks.firstIndex(where: { $0.id == block.id }) {
-            blocks[index] = block
+        let storedSegments = focusSegmentBlocks(for: session, context: context)
+        if storedSegments.count > 1,
+           let latestSegment = storedSegments.last {
+            let durationSeconds = max(60, endedAt.timeIntervalSince(latestSegment.createdAt))
+            let title = RoutineTag.cleaned(tagName).map { "#\($0)" } ?? "#Tag"
+            let block = focusSegmentBlock(
+                session: session,
+                taskID: FocusSession.unassignedTaskID,
+                title: title,
+                emoji: nil,
+                segmentStartedAt: latestSegment.createdAt,
+                durationSeconds: durationSeconds,
+                calendar: calendar
+            )
+            upsertBlock(block, context: context)
+            return block
         } else {
-            blocks.append(block)
+            let elapsedSeconds = max(60, session.activeDurationSeconds(at: endedAt))
+            let block = tagPlannerBlock(
+                tagName: tagName,
+                session: session,
+                startedAt: startedAt,
+                durationSeconds: elapsedSeconds,
+                calendar: calendar,
+                minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+            )
+            upsertBlock(block, context: context)
+            return block
         }
-
-        DayPlanStorage.saveBlocks(blocks, forDayKey: block.dayKey, context: context)
-        return block
     }
 
     @discardableResult
@@ -655,13 +844,10 @@ enum DayPlanFocusSessionPlannerSync {
         context: ModelContext
     ) -> Bool {
         do {
-            let sessionID = session.id
-            let descriptor = FetchDescriptor<DayPlanBlockRecord>(
-                predicate: #Predicate<DayPlanBlockRecord> { record in
-                    record.id == sessionID
+            let records = try context.fetch(FetchDescriptor<DayPlanBlockRecord>())
+                .filter { record in
+                    record.id == session.id || isFocusSegmentBlock(record.detachedBlock, for: session)
                 }
-            )
-            let records = try context.fetch(descriptor)
             guard !records.isEmpty else {
                 return false
             }
@@ -708,6 +894,167 @@ enum DayPlanFocusSessionPlannerSync {
             updatedAt: startedAt,
             minimumDurationMinutes: minimumDurationMinutes
         )
+    }
+
+    private static func focusSegmentBlocks(for session: FocusSession, context: ModelContext) -> [DayPlanBlock] {
+        do {
+            let records = try context.fetch(FetchDescriptor<DayPlanBlockRecord>())
+            return focusSegmentBlocks(in: records.map(\.detachedBlock), for: session)
+        } catch {
+            NSLog("Failed to load focus planner segments for \(session.id): \(error.localizedDescription)")
+            return []
+        }
+    }
+
+    private static func savePausedCountUpFocusSegment(
+        session: FocusSession,
+        taskID: UUID,
+        title: String,
+        emoji: String?,
+        pausedAt: Date,
+        calendar: Calendar,
+        context: ModelContext
+    ) -> DayPlanBlock? {
+        guard session.plannedDurationSeconds <= 0,
+              let startedAt = session.startedAt else {
+            return nil
+        }
+
+        let segmentStartedAt = latestFocusSegmentBlock(for: session, context: context)?.createdAt ?? startedAt
+        guard pausedAt >= segmentStartedAt else {
+            return nil
+        }
+
+        let block = focusSegmentBlock(
+            session: session,
+            taskID: taskID,
+            title: title,
+            emoji: emoji,
+            segmentStartedAt: segmentStartedAt,
+            durationSeconds: max(60, pausedAt.timeIntervalSince(segmentStartedAt)),
+            calendar: calendar
+        )
+        upsertBlock(block, context: context)
+        return block
+    }
+
+    private static func saveResumedCountUpFocusSegment(
+        session: FocusSession,
+        taskID: UUID,
+        title: String,
+        emoji: String?,
+        resumedAt: Date,
+        calendar: Calendar,
+        context: ModelContext
+    ) -> DayPlanBlock? {
+        guard session.plannedDurationSeconds <= 0,
+              let startedAt = session.startedAt,
+              resumedAt >= startedAt else {
+            return nil
+        }
+
+        let block = focusSegmentBlock(
+            session: session,
+            taskID: taskID,
+            title: title,
+            emoji: emoji,
+            segmentStartedAt: resumedAt,
+            durationSeconds: 60,
+            calendar: calendar
+        )
+        upsertBlock(block, context: context)
+        return block
+    }
+
+    private static func latestFocusSegmentBlock(for session: FocusSession, context: ModelContext) -> DayPlanBlock? {
+        focusSegmentBlocks(for: session, context: context).last
+    }
+
+    private static func focusSegmentBlock(
+        session: FocusSession,
+        taskID: UUID,
+        title: String,
+        emoji: String?,
+        segmentStartedAt: Date,
+        durationSeconds: TimeInterval,
+        calendar: Calendar
+    ) -> DayPlanBlock {
+        let startMinute = startMinute(
+            for: segmentStartedAt,
+            calendar: calendar,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
+        return DayPlanBlock(
+            id: segmentBlockID(
+                sessionID: session.id,
+                sessionStartedAt: session.startedAt,
+                segmentStartedAt: segmentStartedAt
+            ),
+            taskID: taskID,
+            dayKey: DayPlanStorage.dayKey(for: segmentStartedAt, calendar: calendar),
+            startMinute: startMinute,
+            durationMinutes: durationMinutes(
+                durationSeconds: durationSeconds,
+                startMinute: startMinute,
+                minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+            ),
+            titleSnapshot: title,
+            emojiSnapshot: emoji,
+            createdAt: segmentStartedAt,
+            updatedAt: segmentStartedAt.addingTimeInterval(max(0, durationSeconds)),
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
+    }
+
+    private static func segmentBlockID(
+        sessionID: UUID,
+        sessionStartedAt: Date?,
+        segmentStartedAt: Date
+    ) -> UUID {
+        if let sessionStartedAt,
+           sessionStartedAt == segmentStartedAt {
+            return sessionID
+        }
+
+        return focusSegmentBlockID(sessionID: sessionID, segmentStartedAt: segmentStartedAt)
+    }
+
+    private static func focusSegmentBlockID(sessionID: UUID, segmentStartedAt: Date) -> UUID {
+        let sessionBytes = sessionID.uuid
+        let milliseconds = Int64((segmentStartedAt.timeIntervalSince1970 * 1_000).rounded())
+        let timestampBytes = UInt64(bitPattern: milliseconds)
+
+        func timestampByte(_ shift: UInt64) -> UInt8 {
+            UInt8((timestampBytes >> shift) & 0xff)
+        }
+
+        let b0 = timestampByte(56)
+        let b1 = timestampByte(48)
+        let b2 = timestampByte(40)
+        let b3 = timestampByte(32)
+        let b4 = timestampByte(24)
+        let b5 = timestampByte(16)
+        let b6 = timestampByte(8)
+        let b7 = timestampByte(0)
+
+        return UUID(uuid: (
+            sessionBytes.0 ^ b0,
+            sessionBytes.1 ^ b1,
+            sessionBytes.2 ^ b2,
+            sessionBytes.3 ^ b3,
+            sessionBytes.4 ^ b4,
+            sessionBytes.5 ^ b5,
+            sessionBytes.6 ^ b6,
+            sessionBytes.7 ^ b7,
+            sessionBytes.8 ^ b7,
+            sessionBytes.9 ^ b6,
+            sessionBytes.10 ^ b5,
+            sessionBytes.11 ^ b4,
+            sessionBytes.12 ^ b3,
+            sessionBytes.13 ^ b2,
+            sessionBytes.14 ^ b1,
+            sessionBytes.15 ^ b0
+        ))
     }
 
     static func tagPlannerBlock(

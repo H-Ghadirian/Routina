@@ -54,9 +54,13 @@ enum DayPlanVisibleBlocks {
 
         let tasksByID = Dictionary(grouping: tasks, by: \.id).compactMapValues(\.first)
         let logsByTaskID = Dictionary(grouping: logs, by: \.taskID)
+        let activeCountUpSegmentBlockIDs = activeCountUpCurrentSegmentBlockIDs(
+            blocks,
+            activeFocusSessions: activeFocusSessions
+        )
 
         return blocks.filter { block in
-            if isActiveCountUpFocusStarterBlock(block, activeFocusSessions: activeFocusSessions) {
+            if activeCountUpSegmentBlockIDs.contains(block.id) {
                 return false
             }
 
@@ -98,21 +102,25 @@ enum DayPlanVisibleBlocks {
         }
     }
 
-    private static func isActiveCountUpFocusStarterBlock(
-        _ block: DayPlanBlock,
+    private static func activeCountUpCurrentSegmentBlockIDs(
+        _ blocks: [DayPlanBlock],
         activeFocusSessions: [FocusSession]
-    ) -> Bool {
-        activeFocusSessions.contains { session in
-            guard session.id == block.id,
-                  session.plannedDurationSeconds <= 0,
+    ) -> Set<UUID> {
+        Set(activeFocusSessions.compactMap { session in
+            guard session.plannedDurationSeconds <= 0,
                   session.completedAt == nil,
                   session.abandonedAt == nil,
-                  session.startedAt != nil else {
-                return false
+                  session.pausedAt == nil,
+                  session.startedAt != nil,
+                  session.isTaskFocus || session.isTagFocus else {
+                return nil
             }
 
-            return session.isTaskFocus || session.isTagFocus
-        }
+            return DayPlanFocusSessionPlannerSync.latestFocusSegmentBlock(
+                in: blocks,
+                for: session
+            )?.id ?? session.id
+        })
     }
 
     private static func date(fromDayKey dayKey: String, calendar: Calendar) -> Date? {
