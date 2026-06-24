@@ -114,6 +114,13 @@ final class RoutinaMacFocusTimerStatusBarController: NSObject {
             timeItem.isEnabled = false
             menu.addItem(timeItem)
             runningTimeMenuItem = timeItem
+
+            if status.supportsPauseResume {
+                menu.addItem(menuItem(
+                    title: status.isPaused ? "Resume Timer" : "Pause Timer",
+                    action: #selector(togglePauseResumeFocus)
+                ))
+            }
             menu.addItem(.separator())
         }
 
@@ -158,6 +165,18 @@ final class RoutinaMacFocusTimerStatusBarController: NSObject {
         }
     }
 
+    @objc private func togglePauseResumeFocus() {
+        guard let statusStore else { return }
+
+        do {
+            if try statusStore.togglePauseResume(for: currentStatus) {
+                updateStatusItem()
+            }
+        } catch {
+            NSLog("Failed to toggle focus timer pause state from menu bar: \(error.localizedDescription)")
+        }
+    }
+
     @objc private func quit() {
         NSApplication.shared.terminate(nil)
     }
@@ -169,6 +188,7 @@ private struct RoutinaMacFocusTimerMenuKey: Equatable {
     var kind: RoutinaMacFocusTimerStatus.Kind?
     var title: String
     var isActive: Bool
+    var isPaused: Bool
 
     init(status: RoutinaMacFocusTimerStatus) {
         id = status.id
@@ -176,5 +196,6 @@ private struct RoutinaMacFocusTimerMenuKey: Equatable {
         kind = status.kind
         title = status.title
         isActive = status.isActive
+        isPaused = status.isPaused
     }
 }

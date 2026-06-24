@@ -151,23 +151,8 @@ private struct RoutinaMacFocusTimerToolbarBadgeContent: View {
     }
 
     private func togglePause(_ status: RoutinaMacFocusTimerStatus) {
-        guard let sessionID = status.id else { return }
-
         do {
-            if status.isPaused {
-                _ = try FocusSessionSupport.resumeFocus(
-                    sessionID: sessionID,
-                    kind: status.focusSessionKind,
-                    context: modelContext
-                )
-            } else {
-                _ = try FocusSessionSupport.pauseFocus(
-                    sessionID: sessionID,
-                    kind: status.focusSessionKind,
-                    context: modelContext
-                )
-            }
-            statusStore.refresh()
+            _ = try statusStore.togglePauseResume(for: status)
         } catch {
             NSLog("Failed to toggle focus timer pause state from toolbar: \(error.localizedDescription)")
         }
@@ -261,30 +246,6 @@ private struct RoutinaMacFocusTimerToolbarTimeText: View {
 }
 
 private extension RoutinaMacFocusTimerStatus {
-    var focusSessionKind: FocusSessionKind? {
-        switch kind {
-        case .task:
-            return .task
-        case .tag:
-            return .tag
-        case .sprint:
-            return .sprint
-        case .unassigned:
-            return .unassigned
-        case nil:
-            return nil
-        }
-    }
-
-    var supportsPauseResume: Bool {
-        switch kind {
-        case .task, .tag, .unassigned:
-            return true
-        case .sprint, nil:
-            return false
-        }
-    }
-
     var supportsAbandon: Bool {
         switch kind {
         case .task, .tag, .unassigned:

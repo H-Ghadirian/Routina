@@ -17,6 +17,40 @@ final class RoutinaMacFocusTimerStatusStore: ObservableObject {
         $status
     }
 
+    @discardableResult
+    func togglePauseResume(
+        for status: RoutinaMacFocusTimerStatus,
+        at date: Date = Date()
+    ) throws -> Bool {
+        guard status.supportsPauseResume,
+              let sessionID = status.id else {
+            return false
+        }
+
+        let context = persistence.container.mainContext
+        let didChange: Bool
+        if status.isPaused {
+            didChange = try FocusSessionSupport.resumeFocus(
+                sessionID: sessionID,
+                kind: status.focusSessionKind,
+                resumedAt: date,
+                context: context
+            )
+        } else {
+            didChange = try FocusSessionSupport.pauseFocus(
+                sessionID: sessionID,
+                kind: status.focusSessionKind,
+                pausedAt: date,
+                context: context
+            )
+        }
+
+        if didChange {
+            refresh()
+        }
+        return didChange
+    }
+
     func refresh() {
         do {
             let context = persistence.container.mainContext
@@ -271,6 +305,30 @@ struct RoutinaMacFocusTimerStatus: Equatable {
             return .sprint(targetID)
         case .unassigned:
             return nil
+        }
+    }
+
+    var focusSessionKind: FocusSessionKind? {
+        switch kind {
+        case .task:
+            return .task
+        case .tag:
+            return .tag
+        case .sprint:
+            return .sprint
+        case .unassigned:
+            return .unassigned
+        case nil:
+            return nil
+        }
+    }
+
+    var supportsPauseResume: Bool {
+        switch kind {
+        case .task, .tag, .unassigned:
+            return true
+        case .sprint, nil:
+            return false
         }
     }
 }
