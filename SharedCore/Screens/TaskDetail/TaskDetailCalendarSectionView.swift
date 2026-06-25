@@ -4,6 +4,8 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
     let displayedMonthStart: Date
     let onPreviousMonth: () -> Void
     let onNextMonth: () -> Void
+    let isTodaySelected: Bool
+    let onToday: () -> Void
     let showsAssumedLegend: Bool
     let showsMissedLegend: Bool
     let showsCanceledLegend: Bool
@@ -18,6 +20,8 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
         displayedMonthStart: Date,
         onPreviousMonth: @escaping () -> Void,
         onNextMonth: @escaping () -> Void,
+        isTodaySelected: Bool,
+        onToday: @escaping () -> Void,
         showsAssumedLegend: Bool,
         showsMissedLegend: Bool = false,
         showsCanceledLegend: Bool = false,
@@ -31,6 +35,8 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
         self.displayedMonthStart = displayedMonthStart
         self.onPreviousMonth = onPreviousMonth
         self.onNextMonth = onNextMonth
+        self.isTodaySelected = isTodaySelected
+        self.onToday = onToday
         self.showsAssumedLegend = showsAssumedLegend
         self.showsMissedLegend = showsMissedLegend
         self.showsCanceledLegend = showsCanceledLegend
@@ -47,7 +53,9 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
             TaskDetailCalendarSectionHeaderView(
                 displayedMonthStart: displayedMonthStart,
                 onPreviousMonth: onPreviousMonth,
-                onNextMonth: onNextMonth
+                onNextMonth: onNextMonth,
+                isTodaySelected: isTodaySelected,
+                onToday: onToday
             )
             .padding(.bottom, 8)
 
@@ -78,6 +86,8 @@ private struct TaskDetailCalendarSectionHeaderView: View {
     let displayedMonthStart: Date
     let onPreviousMonth: () -> Void
     let onNextMonth: () -> Void
+    let isTodaySelected: Bool
+    let onToday: () -> Void
 
     var body: some View {
         HStack {
@@ -91,6 +101,11 @@ private struct TaskDetailCalendarSectionHeaderView: View {
                 .font(.subheadline.weight(.semibold))
 
             Spacer()
+
+            Button("Today", action: onToday)
+                .controlSize(.small)
+                .disabled(isTodaySelected)
+                .accessibilityHint("Select today")
 
             Button(action: onNextMonth) {
                 Image(systemName: "chevron.right")
@@ -168,7 +183,7 @@ private struct TaskDetailCalendarSectionLegendView: View {
         if showsPausedLegend {
             items.append(TaskDetailCalendarSectionLegendItem(color: TaskDetailStatusPalette.paused, label: "Paused"))
         }
-        items.append(TaskDetailCalendarSectionLegendItem(color: TaskDetailStatusPalette.today, label: "Today", isStroked: true))
+        items.append(TaskDetailCalendarSectionLegendItem(color: TaskDetailStatusPalette.today, label: "Today", isUnderlined: true))
 
         return items
     }
@@ -178,6 +193,7 @@ private struct TaskDetailCalendarSectionLegendItem: Identifiable {
     let color: Color
     let label: String
     var isStroked = false
+    var isUnderlined = false
 
     var id: String { label }
 }
@@ -198,7 +214,12 @@ private struct TaskDetailCalendarSectionLegendItemView: View {
 
     @ViewBuilder
     private var marker: some View {
-        if item.isStroked {
+        if item.isUnderlined {
+            Text("1")
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(item.color)
+                .underline(true, color: item.color)
+        } else if item.isStroked {
             Circle()
                 .stroke(item.color, lineWidth: 2)
         } else {

@@ -867,18 +867,18 @@ extension TaskDetailFeature {
         }
     }
 
-    func handleChecklistItemsPurchased(
+    func handleChecklistItemsDone(
         taskID: UUID,
         itemIDs: Set<UUID>,
-        purchasedAt: Date
+        doneAt: Date
     ) -> Effect<Action> {
         .run { @MainActor send in
             do {
                 let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
-                guard let updatedTask = try RoutineLogHistory.markChecklistItemsPurchased(
+                guard let updatedTask = try RoutineLogHistory.markChecklistItemsDone(
                     taskID: taskID,
                     itemIDs: itemIDs,
-                    purchasedAt: purchasedAt,
+                    doneAt: doneAt,
                     context: context,
                     calendar: calendar
                 ) else {
@@ -889,13 +889,79 @@ extension TaskDetailFeature {
                 await notificationClient.schedule(
                     NotificationCoordinator.notificationPayload(
                         for: updatedTask.task,
-                        referenceDate: purchasedAt,
+                        referenceDate: doneAt,
                         calendar: calendar
                     )
                 )
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
                 print("Error updating checklist items: \(error)")
+            }
+        }
+    }
+
+    func handleChecklistItemRunoutExtended(
+        taskID: UUID,
+        itemID: UUID,
+        extendedAt: Date
+    ) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
+                guard let updatedTask = try RoutineLogHistory.extendChecklistItemRunout(
+                    taskID: taskID,
+                    itemID: itemID,
+                    extendedAt: extendedAt,
+                    context: context,
+                    calendar: calendar
+                ) else {
+                    return
+                }
+                let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+                send(.logsLoaded(updatedLogs))
+                await notificationClient.schedule(
+                    NotificationCoordinator.notificationPayload(
+                        for: updatedTask.task,
+                        referenceDate: extendedAt,
+                        calendar: calendar
+                    )
+                )
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error extending checklist item runout: \(error)")
+            }
+        }
+    }
+
+    func handleChecklistItemRunoutDoneUndone(
+        taskID: UUID,
+        itemID: UUID,
+        undoneAt: Date
+    ) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
+                guard let updatedTask = try RoutineLogHistory.undoChecklistItemRunoutDone(
+                    taskID: taskID,
+                    itemID: itemID,
+                    undoneAt: undoneAt,
+                    context: context,
+                    calendar: calendar
+                ) else {
+                    return
+                }
+                let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+                send(.logsLoaded(updatedLogs))
+                await notificationClient.schedule(
+                    NotificationCoordinator.notificationPayload(
+                        for: updatedTask.task,
+                        referenceDate: undoneAt,
+                        calendar: calendar
+                    )
+                )
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error undoing checklist item runout: \(error)")
             }
         }
     }

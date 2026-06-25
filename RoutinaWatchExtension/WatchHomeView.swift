@@ -451,7 +451,7 @@ struct WatchHomeView: View {
 
     private func actionTitle(for routine: WatchRoutineSyncStore.WatchRoutine) -> String {
         if routine.isChecklistDriven {
-            return "Buy Due"
+            return "Done Due"
         }
         if routine.isChecklistCompletionRoutine {
             return "Checklist"

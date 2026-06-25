@@ -519,6 +519,13 @@ extension TaskDetailFeature.State {
     }
 
     func isChecklistItemMarkedDone(_ item: RoutineChecklistItem) -> Bool {
+        if task.isChecklistDriven {
+            return TaskDetailChecklistPresentation.isRunoutItemMarkedDone(
+                item,
+                referenceDate: Date(),
+                calendar: .current
+            )
+        }
         if task.isChecklistCompletionRoutine && isDoneToday && !task.isChecklistInProgress {
             return true
         }

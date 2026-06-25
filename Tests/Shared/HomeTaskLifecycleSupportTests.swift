@@ -254,4 +254,38 @@ struct HomeTaskLifecycleSupportTests {
         #expect(update == nil)
         #expect(tasks[0].plannedDate == nil)
     }
+
+    @Test
+    func markTaskDoneForChecklistRunoutCountsDoneAfterAllDueItemsAreCleared() {
+        let calendar = makeTestCalendar()
+        let breadID = UUID()
+        let milkID = UUID()
+        let createdAt = makeDate("2026-03-10T10:00:00Z")
+        let referenceDate = makeDate("2026-03-18T12:00:00Z")
+        let task = RoutineTask(
+            name: "Groceries",
+            checklistItems: [
+                RoutineChecklistItem(id: breadID, title: "Bread", intervalDays: 3, createdAt: createdAt),
+                RoutineChecklistItem(id: milkID, title: "Milk", intervalDays: 5, createdAt: createdAt)
+            ],
+            scheduleMode: .derivedFromChecklist
+        )
+        task.markChecklistItemsDone([breadID], doneAt: referenceDate, calendar: calendar)
+        var tasks = [task]
+        var doneStats = HomeDoneStats()
+
+        let update = HomeTaskLifecycleSupport.markTaskDone(
+            taskID: task.id,
+            referenceDate: referenceDate,
+            calendar: calendar,
+            tasks: &tasks,
+            doneStats: &doneStats
+        )
+
+        #expect(update == .checklist(HomeChecklistRunoutDoneUpdate(taskID: task.id, completionDate: referenceDate)))
+        #expect(tasks[0].lastDone == referenceDate)
+        #expect(tasks[0].dueChecklistItems(referenceDate: referenceDate, calendar: calendar).isEmpty)
+        #expect(doneStats.totalCount == 1)
+        #expect(doneStats.countsByTaskID[task.id] == 1)
+    }
 }

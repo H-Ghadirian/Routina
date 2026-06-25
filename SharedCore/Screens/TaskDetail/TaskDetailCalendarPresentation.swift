@@ -59,9 +59,19 @@ enum TaskDetailCalendarPresentation {
         isToday: Bool,
         isHighlightedDay: Bool
     ) -> Color {
-        if isSelected { return .blue }
-        if isToday && isHighlightedDay { return .blue }
+        if isSelected { return .accentColor }
+        if isToday && isHighlightedDay { return .primary.opacity(0.75) }
         return .clear
+    }
+
+    static func selectionStrokeLineWidth(
+        isSelected: Bool,
+        isToday: Bool,
+        isHighlightedDay: Bool
+    ) -> CGFloat {
+        if isSelected { return 3.5 }
+        if isToday && isHighlightedDay { return 1.5 }
+        return 0
     }
 
     static func doneDates(

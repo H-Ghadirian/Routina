@@ -192,6 +192,9 @@ struct RoutineChecklistItem: Codable, Equatable, Hashable, Identifiable, Sendabl
     var title: String
     var intervalDays: Int
     var lastPurchasedAt: Date?
+    var undoLastPurchasedAt: Date?
+    var undoTaskLastDone: Date?
+    var undoTaskScheduleAnchor: Date?
     var createdAt: Date = Date()
 
     init(
@@ -199,12 +202,18 @@ struct RoutineChecklistItem: Codable, Equatable, Hashable, Identifiable, Sendabl
         title: String,
         intervalDays: Int,
         lastPurchasedAt: Date? = nil,
+        undoLastPurchasedAt: Date? = nil,
+        undoTaskLastDone: Date? = nil,
+        undoTaskScheduleAnchor: Date? = nil,
         createdAt: Date = Date()
     ) {
         self.id = id
         self.title = title
         self.intervalDays = Self.clampedIntervalDays(intervalDays)
         self.lastPurchasedAt = lastPurchasedAt
+        self.undoLastPurchasedAt = undoLastPurchasedAt
+        self.undoTaskLastDone = undoTaskLastDone
+        self.undoTaskScheduleAnchor = undoTaskScheduleAnchor
         self.createdAt = createdAt
     }
 
@@ -216,6 +225,9 @@ struct RoutineChecklistItem: Codable, Equatable, Hashable, Identifiable, Sendabl
                 title: title,
                 intervalDays: item.intervalDays,
                 lastPurchasedAt: item.lastPurchasedAt,
+                undoLastPurchasedAt: item.undoLastPurchasedAt,
+                undoTaskLastDone: item.undoTaskLastDone,
+                undoTaskScheduleAnchor: item.undoTaskScheduleAnchor,
                 createdAt: item.createdAt
             )
         }

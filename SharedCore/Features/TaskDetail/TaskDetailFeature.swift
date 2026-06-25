@@ -201,10 +201,12 @@ struct TaskDetailFeature: Reducer {
     enum Action: Equatable {
         case markAsDone
         case cancelTodo
-        case markChecklistItemPurchased(UUID)
+        case toggleChecklistRunoutItemDone(UUID)
+        case extendChecklistItemRunout(UUID)
         case toggleChecklistItemCompletion(UUID)
         case markChecklistItemCompleted(UUID)
         case detailAddChecklistItemTapped
+        case detailUpdateChecklistItem(UUID, title: String, intervalDays: Int)
         case requestUndoSelectedDateCompletion
         case undoSelectedDateCompletion
         case requestRemoveLogEntry(Date)
@@ -547,18 +549,21 @@ struct TaskDetailFeature: Reducer {
                         .dueChecklistItems(referenceDate: completionDate, calendar: calendar)
                         .map(\.id)
                 )
-                let updatedItemCount = state.task.markChecklistItemsPurchased(
+                let update = state.task.markChecklistItemsDone(
                     dueItemIDs,
-                    purchasedAt: completionDate
+                    doneAt: completionDate,
+                    calendar: calendar
                 )
-                guard updatedItemCount > 0 else { return .none }
+                guard update.updatedItemCount > 0 else { return .none }
                 refreshTaskView(&state)
-                upsertLocalLog(at: completionDate, in: &state)
+                if update.didCompleteRoutine {
+                    upsertLocalLog(at: completionDate, in: &state)
+                }
                 updateDerivedState(&state)
-                return handleChecklistItemsPurchased(
+                return handleChecklistItemsDone(
                     taskID: state.task.id,
                     itemIDs: dueItemIDs,
-                    purchasedAt: completionDate
+                    doneAt: completionDate
                 )
             }
             if state.task.isChecklistCompletionRoutine {
@@ -628,18 +633,66 @@ struct TaskDetailFeature: Reducer {
             updateDerivedState(&state)
             return handleCancelTodo(taskID: state.task.id, canceledAt: canceledAt)
 
-        case let .markChecklistItemPurchased(itemID):
+        case let .toggleChecklistRunoutItemDone(itemID):
             guard !state.task.isArchived(referenceDate: now, calendar: calendar) else { return .none }
-            let completionDate = now
-            let updatedItemCount = state.task.markChecklistItemsPurchased([itemID], purchasedAt: completionDate)
-            guard updatedItemCount > 0 else { return .none }
+            if let item = state.task.checklistItems.first(where: { $0.id == itemID }),
+               TaskDetailChecklistPresentation.isRunoutItemMarkedDone(
+                item,
+                referenceDate: now,
+                calendar: calendar
+               ) {
+                let undoUpdate = state.task.undoChecklistItemRunoutDone(
+                    itemID,
+                    referenceDate: now,
+                    calendar: calendar
+                )
+                guard undoUpdate.restoredItemCount > 0 else { return .none }
+                if let removedCompletionAt = undoUpdate.removedCompletionAt {
+                    state.logs.removeAll { log in
+                        log.kind == .completed && log.timestamp == removedCompletionAt
+                    }
+                }
+                refreshTaskView(&state)
+                updateDerivedState(&state)
+                return handleChecklistItemRunoutDoneUndone(
+                    taskID: state.task.id,
+                    itemID: itemID,
+                    undoneAt: now
+                )
+            }
+
+            let doneAt = now
+            let update = state.task.markChecklistItemsDone(
+                [itemID],
+                doneAt: doneAt,
+                calendar: calendar
+            )
+            guard update.updatedItemCount > 0 else { return .none }
             refreshTaskView(&state)
-            upsertLocalLog(at: completionDate, in: &state)
+            if update.didCompleteRoutine {
+                upsertLocalLog(at: doneAt, in: &state)
+            }
             updateDerivedState(&state)
-            return handleChecklistItemsPurchased(
+            return handleChecklistItemsDone(
                 taskID: state.task.id,
                 itemIDs: [itemID],
-                purchasedAt: completionDate
+                doneAt: doneAt
+            )
+
+        case let .extendChecklistItemRunout(itemID):
+            guard !state.task.isArchived(referenceDate: now, calendar: calendar) else { return .none }
+            let extendedCount = state.task.extendChecklistItemsRunout(
+                [itemID],
+                referenceDate: now,
+                calendar: calendar
+            )
+            guard extendedCount > 0 else { return .none }
+            refreshTaskView(&state)
+            updateDerivedState(&state)
+            return handleChecklistItemRunoutExtended(
+                taskID: state.task.id,
+                itemID: itemID,
+                extendedAt: now
             )
 
         case let .toggleChecklistItemCompletion(itemID):
@@ -790,6 +843,35 @@ struct TaskDetailFeature: Reducer {
             state.editRoutineChecklistItems = updatedItems
             state.editChecklistItemDraftTitle = ""
             state.editChecklistItemDraftInterval = 3
+            refreshTaskView(&state)
+            updateDerivedState(&state)
+            return handleDetailChecklistItemsChanged(
+                taskID: state.task.id,
+                checklistItems: updatedItems
+            )
+
+        case let .detailUpdateChecklistItem(itemID, draftTitle, intervalDays):
+            guard let title = RoutineChecklistItem.normalizedTitle(draftTitle),
+                  state.task.checklistItems.contains(where: { $0.id == itemID }) else {
+                return .none
+            }
+            let updatedItems = RoutineChecklistItem.sanitized(
+                state.task.checklistItems.map { item in
+                    guard item.id == itemID else { return item }
+                    return RoutineChecklistItem(
+                        id: item.id,
+                        title: title,
+                        intervalDays: intervalDays,
+                        lastPurchasedAt: item.lastPurchasedAt,
+                        undoLastPurchasedAt: item.undoLastPurchasedAt,
+                        undoTaskLastDone: item.undoTaskLastDone,
+                        undoTaskScheduleAnchor: item.undoTaskScheduleAnchor,
+                        createdAt: item.createdAt
+                    )
+                }
+            )
+            state.task.replaceChecklistItems(updatedItems)
+            state.editRoutineChecklistItems = updatedItems
             refreshTaskView(&state)
             updateDerivedState(&state)
             return handleDetailChecklistItemsChanged(

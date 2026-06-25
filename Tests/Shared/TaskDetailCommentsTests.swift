@@ -214,4 +214,63 @@ struct TaskDetailCommentsTests {
         #expect(persistedTask.checklistItems.map(\.title) == ["Milk", "Bread"])
         #expect(persistedTask.checklistItems.last?.intervalDays == 7)
     }
+
+    @Test
+    func detailChecklist_canEditItemWithoutLosingRunoutState() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-04-02T08:15:00Z")
+        let itemID = UUID()
+        let lastPurchasedAt = makeDate("2026-04-01T08:15:00Z")
+        let existingItem = RoutineChecklistItem(
+            id: itemID,
+            title: "Milk",
+            intervalDays: 3,
+            lastPurchasedAt: lastPurchasedAt,
+            createdAt: makeDate("2026-03-28T08:15:00Z")
+        )
+        let task = makeTask(
+            in: context,
+            name: "Groceries",
+            interval: 1,
+            lastDone: nil,
+            emoji: "G",
+            checklistItems: [existingItem]
+        )
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task.detachedCopy()
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            setTestDateDependencies(&$0, now: now)
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.detailUpdateChecklistItem(itemID, title: " Oat milk ", intervalDays: 14))
+
+        let updatedItem = try #require(store.state.task.checklistItems.first)
+        #expect(updatedItem.id == itemID)
+        #expect(updatedItem.title == "Oat milk")
+        #expect(updatedItem.intervalDays == 14)
+        #expect(updatedItem.lastPurchasedAt == lastPurchasedAt)
+        #expect(updatedItem.createdAt == existingItem.createdAt)
+
+        let taskID = task.id
+        let descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate<RoutineTask> { task in
+                task.id == taskID
+            }
+        )
+        let persistedTask = try #require(context.fetch(descriptor).first)
+        let persistedItem = try #require(persistedTask.checklistItems.first)
+        #expect(persistedItem.id == itemID)
+        #expect(persistedItem.title == "Oat milk")
+        #expect(persistedItem.intervalDays == 14)
+        #expect(persistedItem.lastPurchasedAt == lastPurchasedAt)
+    }
 }

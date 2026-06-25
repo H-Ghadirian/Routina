@@ -733,7 +733,13 @@ detailBody
             softDueDate: store.resolvedSoftDueDate,
             isOrangeUrgencyToday: TaskDetailPresentation.isOrangeUrgency(store.task),
             selectedDate: store.resolvedSelectedDate,
-            onSelectDate: { store.send(.selectedDateChanged($0)) }
+            onSelectDate: { store.send(.selectedDateChanged($0)) },
+            onToday: {
+                let calendar = Calendar.current
+                let today = calendar.startOfDay(for: Date())
+                displayedMonthStart = calendar.startOfMonth(for: today)
+                store.send(.selectedDateChanged(today))
+            }
         )
         .routinaPlatformCalendarCardStyle()
     }
@@ -1097,7 +1103,11 @@ detailBody
             isMarkedDone: { store.state.isChecklistItemMarkedDone($0) },
             onAddItem: { store.send(.detailAddChecklistItemTapped) },
             onToggleCompletion: { store.send(.toggleChecklistItemCompletion($0)) },
-            onMarkPurchased: { store.send(.markChecklistItemPurchased($0)) }
+            onToggleRunoutDone: { store.send(.toggleChecklistRunoutItemDone($0)) },
+            onExtend: { store.send(.extendChecklistItemRunout($0)) },
+            onUpdateItem: { itemID, title, intervalDays in
+                store.send(.detailUpdateChecklistItem(itemID, title: title, intervalDays: intervalDays))
+            }
         )
     }
 

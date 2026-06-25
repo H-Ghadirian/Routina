@@ -3,8 +3,8 @@ import Foundation
 import SwiftData
 
 enum HomeTaskLifecycleExecutionSupport {
-    static func markChecklistItemsPurchased<Action>(
-        _ update: HomeChecklistPurchaseUpdate,
+    static func markChecklistItemsDone<Action>(
+        _ update: HomeChecklistRunoutDoneUpdate,
         calendar: Calendar,
         modelContext: @escaping @MainActor @Sendable () -> ModelContext,
         scheduleNotification: @escaping @Sendable (NotificationPayload) async -> Void
@@ -12,9 +12,9 @@ enum HomeTaskLifecycleExecutionSupport {
         .run { @MainActor _ in
             do {
                 let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
-                guard let taskState = try RoutineLogHistory.markDueChecklistItemsPurchased(
+                guard let taskState = try RoutineLogHistory.markDueChecklistItemsDone(
                     taskID: update.taskID,
-                    purchasedAt: update.completionDate,
+                    doneAt: update.completionDate,
                     context: context,
                     calendar: calendar
                 ) else {

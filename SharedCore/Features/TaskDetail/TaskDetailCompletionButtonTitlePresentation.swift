@@ -65,9 +65,9 @@ struct TaskDetailCompletionButtonTitlePresentation {
                 return "No due items right now"
             }
             if dueItems.count == 1, let title = dueItems.first?.title {
-                return "Buy: \(title)"
+                return "Done: \(title)"
             }
-            return "Buy \(dueItems.count) due items"
+            return "Done \(dueItems.count) due items"
         }
         if task.hasSequentialSteps && !calendar.isDateInToday(selectedDate) {
             return "Step routines can only be progressed today"

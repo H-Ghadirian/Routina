@@ -1,6 +1,6 @@
 import Foundation
 
-struct HomeChecklistPurchaseUpdate: Equatable {
+struct HomeChecklistRunoutDoneUpdate: Equatable {
     var taskID: UUID
     var completionDate: Date
 }
@@ -53,7 +53,7 @@ struct HomeMarkTaskCanceledUpdate: Equatable {
 }
 
 enum HomeMarkTaskDoneUpdate: Equatable {
-    case checklist(HomeChecklistPurchaseUpdate)
+    case checklist(HomeChecklistRunoutDoneUpdate)
     case advance(HomeAdvanceTaskUpdate)
 }
 
@@ -88,25 +88,23 @@ enum HomeTaskLifecycleSupport {
             ) else {
                 return nil
             }
-            let hadCompletionToday = tasks[index].lastDone.map {
-                calendar.isDate($0, inSameDayAs: referenceDate)
-            } ?? false
             let dueItemIDs = Set(
                 tasks[index]
                     .dueChecklistItems(referenceDate: referenceDate, calendar: calendar)
                     .map(\.id)
             )
-            let updatedItemCount = tasks[index].markChecklistItemsPurchased(
+            let update = tasks[index].markChecklistItemsDone(
                 dueItemIDs,
-                purchasedAt: referenceDate
+                doneAt: referenceDate,
+                calendar: calendar
             )
-            guard updatedItemCount > 0 else { return nil }
-            if !hadCompletionToday {
+            guard update.updatedItemCount > 0 else { return nil }
+            if update.didCompleteRoutine {
                 doneStats.totalCount += 1
                 doneStats.countsByTaskID[taskID, default: 0] += 1
             }
             return .checklist(
-                HomeChecklistPurchaseUpdate(
+                HomeChecklistRunoutDoneUpdate(
                     taskID: taskID,
                     completionDate: referenceDate
                 )

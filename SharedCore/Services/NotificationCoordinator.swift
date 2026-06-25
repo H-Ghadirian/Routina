@@ -246,9 +246,9 @@ enum NotificationCoordinator {
             }
 
             if task.isChecklistDriven {
-                guard let updatedTask = try RoutineLogHistory.markDueChecklistItemsPurchased(
+                guard let updatedTask = try RoutineLogHistory.markDueChecklistItemsDone(
                     taskID: taskID,
-                    purchasedAt: now,
+                    doneAt: now,
                     context: context,
                     calendar: .current
                 ) else {
@@ -412,9 +412,9 @@ enum NotificationCoordinator {
         } else if payload.isOneOffTask {
             content.body = oneOffNotificationBody(for: payload)
         } else if payload.isChecklistDriven, let nextDueChecklistItemTitle = payload.nextDueChecklistItemTitle {
-            content.body = "\(nextDueChecklistItemTitle) is due today. Tap Done to buy due items or Snooze until tomorrow."
+            content.body = "\(nextDueChecklistItemTitle) is due today. Tap Done to reset due items or Snooze until tomorrow."
         } else if payload.isChecklistDriven {
-            content.body = "Checklist items are due today. Tap Done to buy due items or Snooze until tomorrow."
+            content.body = "Checklist items are due today. Tap Done to reset due items or Snooze until tomorrow."
         } else if payload.isChecklistCompletionRoutine {
             content.body = "Due today. Open the app to complete each checklist item."
         } else {

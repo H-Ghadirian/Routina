@@ -66,6 +66,7 @@ struct TaskDetailCalendarGridView: View {
             Text(day.formatted(.dateTime.day()))
                 .font(.subheadline)
                 .foregroundColor(presentation.foregroundColor)
+                .underline(presentation.isToday, color: presentation.foregroundColor)
                 .frame(maxWidth: .infinity)
                 .frame(height: 28)
                 .background(Circle().fill(presentation.backgroundColor))
@@ -77,7 +78,11 @@ struct TaskDetailCalendarGridView: View {
                                 isToday: presentation.isToday,
                                 isHighlightedDay: presentation.isHighlightedDay
                             ),
-                            lineWidth: isSelected ? 3 : 2
+                            lineWidth: TaskDetailCalendarPresentation.selectionStrokeLineWidth(
+                                isSelected: isSelected,
+                                isToday: presentation.isToday,
+                                isHighlightedDay: presentation.isHighlightedDay
+                            )
                         )
                 )
         }

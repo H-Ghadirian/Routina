@@ -31,6 +31,16 @@ enum RoutineTaskDailyRoutineSupport {
 }
 
 extension RoutineTask {
+    struct ChecklistRunoutUpdate: Equatable {
+        var updatedItemCount: Int
+        var didCompleteRoutine: Bool
+    }
+
+    struct ChecklistRunoutUndoUpdate: Equatable {
+        var restoredItemCount: Int
+        var removedCompletionAt: Date?
+    }
+
     var hasSequentialSteps: Bool {
         !steps.isEmpty
     }
@@ -181,6 +191,9 @@ extension RoutineTask {
                 title: item.title,
                 intervalDays: item.intervalDays,
                 lastPurchasedAt: item.lastPurchasedAt?.addingTimeInterval(duration),
+                undoLastPurchasedAt: item.undoLastPurchasedAt?.addingTimeInterval(duration),
+                undoTaskLastDone: item.undoTaskLastDone?.addingTimeInterval(duration),
+                undoTaskScheduleAnchor: item.undoTaskScheduleAnchor?.addingTimeInterval(duration),
                 createdAt: item.createdAt.addingTimeInterval(duration)
             )
         }
@@ -200,11 +213,14 @@ extension RoutineTask {
     }
 
     @discardableResult
-    func markChecklistItemsPurchased(
+    func markChecklistItemsDone(
         _ itemIDs: Set<UUID>,
-        purchasedAt: Date
-    ) -> Int {
-        guard !isArchived(), isChecklistDriven, !itemIDs.isEmpty else { return 0 }
+        doneAt: Date,
+        calendar: Calendar = .current
+    ) -> ChecklistRunoutUpdate {
+        guard !isArchived(), isChecklistDriven, !itemIDs.isEmpty else {
+            return ChecklistRunoutUpdate(updatedItemCount: 0, didCompleteRoutine: false)
+        }
 
         var updatedCount = 0
         let updatedItems = checklistItems.map { item in
@@ -214,15 +230,126 @@ extension RoutineTask {
                 id: item.id,
                 title: item.title,
                 intervalDays: item.intervalDays,
-                lastPurchasedAt: purchasedAt,
+                lastPurchasedAt: doneAt,
+                undoLastPurchasedAt: item.lastPurchasedAt,
+                undoTaskLastDone: lastDone,
+                undoTaskScheduleAnchor: scheduleAnchor,
+                createdAt: item.createdAt
+            )
+        }
+
+        guard updatedCount > 0 else {
+            return ChecklistRunoutUpdate(updatedItemCount: 0, didCompleteRoutine: false)
+        }
+        checklistItems = updatedItems
+        let didCompleteRoutine = dueChecklistItems(referenceDate: doneAt, calendar: calendar).isEmpty
+        if didCompleteRoutine {
+            recordCompletion(at: doneAt, calendar: calendar)
+        }
+        return ChecklistRunoutUpdate(updatedItemCount: updatedCount, didCompleteRoutine: didCompleteRoutine)
+    }
+
+    @discardableResult
+    func undoChecklistItemRunoutDone(
+        _ itemID: UUID,
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> ChecklistRunoutUndoUpdate {
+        guard !isArchived(), isChecklistDriven,
+              let item = checklistItems.first(where: { $0.id == itemID }),
+              let doneAt = item.lastPurchasedAt,
+              calendar.isDate(doneAt, inSameDayAs: referenceDate) else {
+            return ChecklistRunoutUndoUpdate(restoredItemCount: 0, removedCompletionAt: nil)
+        }
+
+        let currentCompletionAt = lastDone
+        let previousLastDone = item.undoTaskLastDone
+        let previousScheduleAnchor = item.undoTaskScheduleAnchor
+        let shouldRemoveCompletion = currentCompletionAt.map { completionAt in
+            completionAt != previousLastDone
+                && calendar.isDate(completionAt, inSameDayAs: referenceDate)
+        } ?? false
+        let updatedItems = checklistItems.map { currentItem in
+            guard currentItem.id == itemID else { return currentItem }
+            return RoutineChecklistItem(
+                id: currentItem.id,
+                title: currentItem.title,
+                intervalDays: currentItem.intervalDays,
+                lastPurchasedAt: currentItem.undoLastPurchasedAt,
+                undoLastPurchasedAt: nil,
+                undoTaskLastDone: nil,
+                undoTaskScheduleAnchor: nil,
+                createdAt: currentItem.createdAt
+            )
+        }
+
+        checklistItems = updatedItems
+        lastDone = previousLastDone
+        scheduleAnchor = previousScheduleAnchor
+        return ChecklistRunoutUndoUpdate(
+            restoredItemCount: 1,
+            removedCompletionAt: shouldRemoveCompletion ? currentCompletionAt : nil
+        )
+    }
+
+    @discardableResult
+    func extendChecklistItemsRunout(
+        _ itemIDs: Set<UUID>,
+        byDays days: Int = 1,
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> Int {
+        let clampedDays = max(days, 1)
+        guard !isArchived(), isChecklistDriven, !itemIDs.isEmpty else { return 0 }
+
+        var updatedCount = 0
+        let updatedItems = checklistItems.map { item in
+            guard itemIDs.contains(item.id) else { return item }
+            let currentDueDate = RoutineDateMath.dueDate(
+                for: item,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+            guard let extendedDueDate = calendar.date(
+                byAdding: .day,
+                value: clampedDays,
+                to: currentDueDate
+            ),
+            let shiftedAnchor = calendar.date(
+                byAdding: .day,
+                value: -RoutineChecklistItem.clampedIntervalDays(item.intervalDays),
+                to: extendedDueDate
+            ) else {
+                return item
+            }
+            updatedCount += 1
+            return RoutineChecklistItem(
+                id: item.id,
+                title: item.title,
+                intervalDays: item.intervalDays,
+                lastPurchasedAt: shiftedAnchor,
+                undoLastPurchasedAt: item.undoLastPurchasedAt,
+                undoTaskLastDone: item.undoTaskLastDone,
+                undoTaskScheduleAnchor: item.undoTaskScheduleAnchor,
                 createdAt: item.createdAt
             )
         }
 
         guard updatedCount > 0 else { return 0 }
         checklistItems = updatedItems
-        recordCompletion(at: purchasedAt)
         return updatedCount
+    }
+
+    @discardableResult
+    func markChecklistItemsPurchased(
+        _ itemIDs: Set<UUID>,
+        purchasedAt: Date
+    ) -> Int {
+        markChecklistItemsDone(
+            itemIDs,
+            doneAt: purchasedAt,
+            calendar: .current
+        ).updatedItemCount
     }
 
     @discardableResult

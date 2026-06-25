@@ -544,6 +544,34 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func calendarPresentationUsesStrongerBorderForSelectedDayThanTodayMarker() {
+        let selectedWidth = TaskDetailCalendarPresentation.selectionStrokeLineWidth(
+            isSelected: true,
+            isToday: false,
+            isHighlightedDay: false
+        )
+        let todayHighlightedWidth = TaskDetailCalendarPresentation.selectionStrokeLineWidth(
+            isSelected: false,
+            isToday: true,
+            isHighlightedDay: true
+        )
+        let plainTodayWidth = TaskDetailCalendarPresentation.selectionStrokeLineWidth(
+            isSelected: false,
+            isToday: true,
+            isHighlightedDay: false
+        )
+        let plainWidth = TaskDetailCalendarPresentation.selectionStrokeLineWidth(
+            isSelected: false,
+            isToday: false,
+            isHighlightedDay: false
+        )
+
+        #expect(selectedWidth > todayHighlightedWidth)
+        #expect(todayHighlightedWidth > plainWidth)
+        #expect(plainTodayWidth == plainWidth)
+    }
+
+    @Test
     func calendarPresentationMarksCanceledOccurrenceSeparatelyFromMissed() {
         let calendar = makeTestCalendar()
         let canceledDate = makeDate("2026-05-07T18:30:00Z")
@@ -639,7 +667,7 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
-    func checklistPresentationSortsAndSummarizesDueItems() {
+    func checklistPresentationPreservesItemOrderAndSummarizesDueItems() {
         let calendar = makeTestCalendar()
         let referenceDate = makeDate("2026-04-25T10:00:00Z")
         let overdue = RoutineChecklistItem(
@@ -664,7 +692,7 @@ struct TaskDetailSharedViewSupportTests {
             calendar: calendar
         )
 
-        #expect(sortedItems.map(\.title) == ["Milk", "Coffee"])
+        #expect(sortedItems.map(\.title) == ["Coffee", "Milk"])
         #expect(TaskDetailChecklistPresentation.statusText(
             for: overdue,
             task: task,
@@ -679,6 +707,27 @@ struct TaskDetailSharedViewSupportTests {
             referenceDate: referenceDate,
             calendar: calendar
         ) == "Due today")
+    }
+
+    @Test
+    func checklistRunoutItemIsMarkedDoneOnlyOnResetDay() {
+        let calendar = makeTestCalendar()
+        let item = RoutineChecklistItem(
+            title: "Coffee",
+            intervalDays: 3,
+            lastPurchasedAt: makeDate("2026-04-25T10:00:00Z")
+        )
+
+        #expect(TaskDetailChecklistPresentation.isRunoutItemMarkedDone(
+            item,
+            referenceDate: makeDate("2026-04-25T20:00:00Z"),
+            calendar: calendar
+        ))
+        #expect(!TaskDetailChecklistPresentation.isRunoutItemMarkedDone(
+            item,
+            referenceDate: makeDate("2026-04-26T10:00:00Z"),
+            calendar: calendar
+        ))
     }
 
     @Test

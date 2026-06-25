@@ -26,6 +26,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0240](0240-keep-checklist-runout-item-actions-item-scoped.md) refines [0186](0186-put-item-runout-in-repeat-type.md) for checklist runout item actions:** Runout checkbox and `Extend` are item-scoped, checklist rows keep stored order, and a runout routine records completion only after all currently due items are reset.
 - **[0239](0239-link-and-edit-away-sessions.md) refines [0125](0125-support-away-sessions.md), [0148](0148-support-count-up-away-sessions.md), and [0155](0155-link-away-activity-in-planner.md) for Away attribution:** Away sessions can store an optional linked task and can be edited while active or after finishing, while task history remains separate from Away history.
 - **[0238](0238-use-project-local-mac-dev-run-entrypoint.md) sets the Mac dev build/run entrypoint:** macOS development runs use `script/build_and_run.sh`, which builds `RoutinaMacOSDev` into project-local derived data and launches it through the Codex Run action.
 - **[0237](0237-hide-settings-devices-behind-beta-toggle.md) gates Settings Devices visibility:** The Devices settings section remains implemented but is hidden by default behind Settings -> General -> Beta Experiments.
@@ -151,6 +152,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0240](0240-keep-checklist-runout-item-actions-item-scoped.md) | Keep Checklist Runout Item Actions Item-Scoped | Accepted | 2026-06-22 |
 | [0239](0239-link-and-edit-away-sessions.md) | Link and Edit Away Sessions | Accepted | 2026-06-13 |
 | [0238](0238-use-project-local-mac-dev-run-entrypoint.md) | Use Project-Local Mac Dev Run Entrypoint | Accepted | 2026-06-13 |
 | [0001](0001-maintain-project-decision-log.md) | Maintain a Project Decision Log | Accepted | 2026-05-08 |

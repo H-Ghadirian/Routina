@@ -12,16 +12,25 @@ struct TaskDetailChecklistSectionView: View {
     let isMarkedDone: (RoutineChecklistItem) -> Bool
     let onAddItem: () -> Void
     let onToggleCompletion: (UUID) -> Void
-    let onMarkPurchased: (UUID) -> Void
+    let onToggleRunoutDone: (UUID) -> Void
+    let onExtend: (UUID) -> Void
+    let onUpdateItem: (UUID, String, Int) -> Void
 
     @State private var isShowingDoneItems = false
+    @State private var isChecklistComposerExpanded = false
+    @State private var editingChecklistItemID: UUID?
+    @State private var editingChecklistItemTitle = ""
+    @State private var editingChecklistItemIntervalDays = 3
 
     private var sortedItems: [RoutineChecklistItem] {
         TaskDetailChecklistPresentation.sortedItems(for: task)
     }
 
     private var visibleItems: [RoutineChecklistItem] {
-        TaskDetailChecklistPresentation.visibleItems(
+        if task.isChecklistDriven {
+            return sortedItems
+        }
+        return TaskDetailChecklistPresentation.visibleItems(
             sortedItems,
             showDone: isShowingDoneItems,
             isMarkedDone: isMarkedDone
@@ -29,7 +38,8 @@ struct TaskDetailChecklistSectionView: View {
     }
 
     private var doneItemCount: Int {
-        sortedItems.filter(isMarkedDone).count
+        guard !task.isChecklistDriven else { return 0 }
+        return sortedItems.filter(isMarkedDone).count
     }
 
     private var hiddenDoneItemCount: Int {
@@ -43,10 +53,12 @@ struct TaskDetailChecklistSectionView: View {
     var body: some View {
         TaskDetailSectionCardView(background: background, stroke: stroke) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Checklist Items")
-                    .font(.headline)
+                checklistHeader
 
-                checklistComposer
+                if isChecklistComposerExpanded {
+                    checklistComposer
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
 
                 if shouldShowDoneToggle {
                     doneVisibilityControl
@@ -73,6 +85,29 @@ struct TaskDetailChecklistSectionView: View {
         }
         .onChange(of: task.id) { _, _ in
             isShowingDoneItems = false
+            isChecklistComposerExpanded = false
+            cancelChecklistItemEditing()
+        }
+    }
+
+    private var checklistHeader: some View {
+        HStack(spacing: 8) {
+            Text("Checklist Items")
+                .font(.headline)
+
+            Button {
+                withAnimation(.easeInOut(duration: 0.16)) {
+                    isChecklistComposerExpanded.toggle()
+                }
+            } label: {
+                Image(systemName: isChecklistComposerExpanded ? "minus.circle.fill" : "plus.circle.fill")
+                    .font(.title3.weight(.semibold))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Color.accentColor)
+            .accessibilityLabel(isChecklistComposerExpanded ? "Hide add checklist item" : "Add checklist item")
+
+            Spacer(minLength: 0)
         }
     }
 
@@ -150,11 +185,42 @@ struct TaskDetailChecklistSectionView: View {
 
     @ViewBuilder
     private func checklistRow(for item: RoutineChecklistItem) -> some View {
-        if task.isChecklistDriven {
+        if editingChecklistItemID == item.id {
+            checklistItemEditor(for: item)
+        } else if task.isChecklistDriven {
             dueChecklistRow(for: item)
         } else {
             completionChecklistRow(for: item)
         }
+    }
+
+    private func checklistItemEditor(for item: RoutineChecklistItem) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            TextField("Checklist item", text: $editingChecklistItemTitle)
+                .textFieldStyle(.roundedBorder)
+                .onSubmit { saveChecklistItemEditing(item.id) }
+
+            Stepper(value: $editingChecklistItemIntervalDays, in: 1...365) {
+                Text(TaskFormPresentation.checklistIntervalLabel(for: editingChecklistItemIntervalDays))
+                    .font(.caption)
+            }
+
+            HStack {
+                Spacer()
+                Button("Cancel") {
+                    cancelChecklistItemEditing()
+                }
+                .controlSize(.small)
+
+                Button("Save") {
+                    saveChecklistItemEditing(item.id)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .disabled(RoutineChecklistItem.normalizedTitle(editingChecklistItemTitle) == nil)
+            }
+        }
+        .padding(.vertical, 4)
     }
 
     private func completionChecklistRow(for item: RoutineChecklistItem) -> some View {
@@ -166,51 +232,111 @@ struct TaskDetailChecklistSectionView: View {
             isDoneToday: isDoneToday
         )
 
-        return Button {
-            onToggleCompletion(item.id)
-        } label: {
-            HStack(alignment: .center, spacing: 12) {
+        return HStack(alignment: .center, spacing: 12) {
+            Button {
+                onToggleCompletion(item.id)
+            } label: {
                 Image(systemName: isDone ? "checkmark.circle.fill" : "circle")
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(isDone ? .green : TaskDetailChecklistPresentation.completionControlColor(isInteractive: isInteractive))
                     .frame(width: 24, height: 24)
+            }
+            .buttonStyle(.plain)
+            .disabled(!isInteractive)
+            .accessibilityLabel(item.title)
+            .accessibilityValue(isDone ? "Completed" : "Not completed")
 
+            Text(item.title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(isDone ? .secondary : .primary)
+                .strikethrough(isDone, color: .secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            editChecklistItemButton(for: item)
+        }
+    }
+
+    private func dueChecklistRow(for item: RoutineChecklistItem) -> some View {
+        let isDone = isMarkedDone(item)
+
+        return HStack(alignment: .center, spacing: 12) {
+            Button {
+                onToggleRunoutDone(item.id)
+            } label: {
+                Image(systemName: isDone ? "checkmark.square.fill" : "square")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(isDone ? .green : TaskDetailChecklistPresentation.completionControlColor(isInteractive: isRunoutCheckboxInteractive))
+                    .frame(width: 24, height: 24)
+            }
+            .buttonStyle(.plain)
+            .disabled(!isRunoutCheckboxInteractive && !isDone)
+            .accessibilityLabel(item.title)
+            .accessibilityValue(isDone ? "Done today" : "Not done today")
+
+            VStack(alignment: .leading, spacing: 4) {
                 Text(item.title)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(isDone ? .secondary : .primary)
                     .strikethrough(isDone, color: .secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .disabled(!isInteractive)
-        .accessibilityLabel(item.title)
-        .accessibilityValue(isDone ? "Completed" : "Not completed")
-    }
-
-    private func dueChecklistRow(for item: RoutineChecklistItem) -> some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(item.title)
-                    .font(.subheadline.weight(.semibold))
                 Text(TaskDetailChecklistPresentation.statusText(
                     for: item,
                     task: task,
-                    isMarkedDone: isMarkedDone(item)
+                    isMarkedDone: isDone
                 ))
                 .font(.caption)
-                .foregroundStyle(TaskDetailChecklistPresentation.statusColor(for: item, task: task, isMarkedDone: isMarkedDone(item)))
+                .foregroundStyle(TaskDetailChecklistPresentation.statusColor(for: item, task: task, isMarkedDone: isDone))
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             Spacer(minLength: 0)
 
-            Button("Bought") {
-                onMarkPurchased(item.id)
+            Button("Extend") {
+                onExtend(item.id)
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.bordered)
             .controlSize(.small)
-            .disabled(task.isArchived() || !Calendar.current.isDateInToday(selectedDate))
+            .disabled(isDone || task.isArchived() || !Calendar.current.isDateInToday(selectedDate))
+
+            editChecklistItemButton(for: item)
         }
+    }
+
+    private func editChecklistItemButton(for item: RoutineChecklistItem) -> some View {
+        Button {
+            beginChecklistItemEditing(item)
+        } label: {
+            Image(systemName: "pencil.circle")
+                .font(.title3.weight(.semibold))
+                .frame(width: 24, height: 24)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(Color.accentColor)
+        .accessibilityLabel("Edit \(item.title)")
+    }
+
+    private var isRunoutCheckboxInteractive: Bool {
+        !task.isArchived() && Calendar.current.isDateInToday(selectedDate)
+    }
+
+    private func beginChecklistItemEditing(_ item: RoutineChecklistItem) {
+        editingChecklistItemID = item.id
+        editingChecklistItemTitle = item.title
+        editingChecklistItemIntervalDays = RoutineChecklistItem.clampedIntervalDays(item.intervalDays)
+    }
+
+    private func cancelChecklistItemEditing() {
+        editingChecklistItemID = nil
+        editingChecklistItemTitle = ""
+        editingChecklistItemIntervalDays = 3
+    }
+
+    private func saveChecklistItemEditing(_ itemID: UUID) {
+        guard RoutineChecklistItem.normalizedTitle(editingChecklistItemTitle) != nil else { return }
+        onUpdateItem(
+            itemID,
+            editingChecklistItemTitle,
+            editingChecklistItemIntervalDays
+        )
+        cancelChecklistItemEditing()
     }
 }

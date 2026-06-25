@@ -154,9 +154,9 @@ enum RoutinaQuickAddService {
         }
 
         if task.isChecklistDriven {
-            guard let update = try RoutineLogHistory.markDueChecklistItemsPurchased(
+            guard let update = try RoutineLogHistory.markDueChecklistItemsDone(
                 taskID: task.id,
-                purchasedAt: referenceDate,
+                doneAt: referenceDate,
                 context: context,
                 calendar: calendar
             ) else {
@@ -164,11 +164,11 @@ enum RoutinaQuickAddService {
             }
             await refreshNotification(for: update.task, referenceDate: referenceDate, calendar: calendar)
             notifyDataChanged(using: context)
-            let itemText = update.updatedItemCount == 1 ? "item" : "items"
+            let itemText = update.update.updatedItemCount == 1 ? "item" : "items"
             return RoutinaQuickAddCompletionResult(
                 taskID: update.task.id,
                 taskName: name,
-                message: "Marked \(update.updatedItemCount) checklist \(itemText) done for \(name)."
+                message: "Marked \(update.update.updatedItemCount) checklist \(itemText) done for \(name)."
             )
         }
 

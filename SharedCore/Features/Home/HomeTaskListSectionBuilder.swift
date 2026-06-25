@@ -35,7 +35,11 @@ struct HomeTaskListSectionBuilder<Display: HomeTaskListDisplay> {
                 && metrics.urgencyLevel(for: $0) == 0
                 && !metrics.isYellowUrgency($0)
         }
-        let doneToday = filteredTasks.filter(\.isDoneToday)
+        let doneToday = filteredTasks.filter {
+            $0.isDoneToday
+                && !metrics.hasMissedExactTimedOccurrence(for: $0)
+                && metrics.overdueDays(for: $0) == 0
+        }
 
         let onTrackSections: [HomeTaskListSection<Display>]
         switch configuration.routineListSectioningMode {

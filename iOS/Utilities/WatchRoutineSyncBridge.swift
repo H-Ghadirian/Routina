@@ -285,9 +285,9 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
             guard !task.isCompletedOneOff, !task.isCanceledOneOff else { return }
             guard !task.isChecklistCompletionRoutine else { return }
             if task.isChecklistDriven {
-                _ = try RoutineLogHistory.markDueChecklistItemsPurchased(
+                _ = try RoutineLogHistory.markDueChecklistItemsDone(
                     taskID: taskID,
-                    purchasedAt: completedAt,
+                    doneAt: completedAt,
                     context: context,
                     calendar: .current,
                     sourceDevice: sourceDevice

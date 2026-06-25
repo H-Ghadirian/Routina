@@ -7,13 +7,7 @@ enum TaskDetailChecklistPresentation {
         referenceDate: Date = Date(),
         calendar: Calendar = .current
     ) -> [RoutineChecklistItem] {
-        if !task.isChecklistDriven {
-            return task.checklistItems
-        }
-        return task.checklistItems.sorted {
-            RoutineDateMath.dueDate(for: $0, referenceDate: referenceDate, calendar: calendar)
-                < RoutineDateMath.dueDate(for: $1, referenceDate: referenceDate, calendar: calendar)
-        }
+        task.checklistItems
     }
 
     static func visibleItems(
@@ -23,6 +17,15 @@ enum TaskDetailChecklistPresentation {
     ) -> [RoutineChecklistItem] {
         guard !showDone else { return items }
         return items.filter { !isMarkedDone($0) }
+    }
+
+    static func isRunoutItemMarkedDone(
+        _ item: RoutineChecklistItem,
+        referenceDate: Date = Date(),
+        calendar: Calendar = .current
+    ) -> Bool {
+        guard let lastPurchasedAt = item.lastPurchasedAt else { return false }
+        return calendar.isDate(lastPurchasedAt, inSameDayAs: referenceDate)
     }
 
     static func statusText(

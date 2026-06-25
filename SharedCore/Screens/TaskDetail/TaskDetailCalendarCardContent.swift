@@ -11,12 +11,15 @@ struct TaskDetailCalendarCardContent: View {
     let isOrangeUrgencyToday: Bool
     let selectedDate: Date
     let onSelectDate: (Date) -> Void
+    let onToday: () -> Void
 
     var body: some View {
         TaskDetailCalendarSectionView(
             displayedMonthStart: displayedMonthStart,
             onPreviousMonth: onPreviousMonth,
             onNextMonth: onNextMonth,
+            isTodaySelected: Calendar.current.isDateInToday(selectedDate),
+            onToday: onToday,
             showsAssumedLegend: task.autoAssumeDailyDone,
             showsMissedLegend: !missedDates.isEmpty,
             showsCanceledLegend: !canceledDates.isEmpty,

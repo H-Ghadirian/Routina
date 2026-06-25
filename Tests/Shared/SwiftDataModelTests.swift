@@ -262,7 +262,7 @@ struct SwiftDataModelTests {
     func routineTask_checklistItemsSerializeAndUpdateIndividually() {
         let breadID = UUID()
         let milkID = UUID()
-        let createdAt = makeDate("2026-03-17T10:00:00Z")
+        let createdAt = makeDate("2026-03-10T10:00:00Z")
         let task = RoutineTask(
             checklistItems: [
                 RoutineChecklistItem(id: breadID, title: "Bread", intervalDays: 3, createdAt: createdAt),
@@ -273,11 +273,127 @@ struct SwiftDataModelTests {
         #expect(task.scheduleMode == .derivedFromChecklist)
         #expect(task.checklistItems.map(\.title) == ["Bread", "Milk"])
 
-        let updatedCount = task.markChecklistItemsPurchased([breadID], purchasedAt: makeDate("2026-03-18T12:00:00Z"))
-        #expect(updatedCount == 1)
+        let update = task.markChecklistItemsDone(
+            [breadID],
+            doneAt: makeDate("2026-03-18T12:00:00Z"),
+            calendar: makeTestCalendar()
+        )
+        #expect(update.updatedItemCount == 1)
+        #expect(!update.didCompleteRoutine)
         #expect(task.checklistItems.first(where: { $0.id == breadID })?.lastPurchasedAt == makeDate("2026-03-18T12:00:00Z"))
         #expect(task.checklistItems.first(where: { $0.id == milkID })?.lastPurchasedAt == nil)
-        #expect(task.lastDone == makeDate("2026-03-18T12:00:00Z"))
+        #expect(task.lastDone == nil)
+    }
+
+    @Test
+    func routineTask_checklistRunoutCompletionOnlyRecordsWhenAllDueItemsReset() {
+        let breadID = UUID()
+        let milkID = UUID()
+        let createdAt = makeDate("2026-03-10T10:00:00Z")
+        let doneAt = makeDate("2026-03-18T12:00:00Z")
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(
+            checklistItems: [
+                RoutineChecklistItem(id: breadID, title: "Bread", intervalDays: 3, createdAt: createdAt),
+                RoutineChecklistItem(id: milkID, title: "Milk", intervalDays: 5, createdAt: createdAt)
+            ]
+        )
+
+        let update = task.markChecklistItemsDone([breadID, milkID], doneAt: doneAt, calendar: calendar)
+
+        #expect(update == RoutineTask.ChecklistRunoutUpdate(updatedItemCount: 2, didCompleteRoutine: true))
+        #expect(task.lastDone == doneAt)
+        #expect(task.dueChecklistItems(referenceDate: doneAt, calendar: calendar).isEmpty)
+    }
+
+    @Test
+    func routineTask_extendChecklistRunoutAddsOneDayToCurrentDueDate() {
+        let breadID = UUID()
+        let createdAt = makeDate("2026-03-10T10:00:00Z")
+        let referenceDate = makeDate("2026-03-14T12:00:00Z")
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(
+            checklistItems: [
+                RoutineChecklistItem(id: breadID, title: "Bread", intervalDays: 3, createdAt: createdAt)
+            ]
+        )
+
+        let updatedCount = task.extendChecklistItemsRunout(
+            [breadID],
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let item = task.checklistItems.first { $0.id == breadID }
+
+        #expect(updatedCount == 1)
+        #expect(item?.lastPurchasedAt == makeDate("2026-03-11T10:00:00Z"))
+        #expect(item.map { RoutineDateMath.dueDate(for: $0, referenceDate: referenceDate, calendar: calendar) } == makeDate("2026-03-14T10:00:00Z"))
+        #expect(task.lastDone == nil)
+    }
+
+    @Test
+    func routineTask_undoChecklistRunoutDoneRestoresPreviousItemState() {
+        let breadID = UUID()
+        let createdAt = makeDate("2026-03-10T10:00:00Z")
+        let previousDoneAt = makeDate("2026-03-12T10:00:00Z")
+        let doneAt = makeDate("2026-03-18T12:00:00Z")
+        let previousTaskDoneAt = makeDate("2026-03-11T09:00:00Z")
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(
+            checklistItems: [
+                RoutineChecklistItem(
+                    id: breadID,
+                    title: "Bread",
+                    intervalDays: 3,
+                    lastPurchasedAt: previousDoneAt,
+                    createdAt: createdAt
+                )
+            ],
+            lastDone: previousTaskDoneAt,
+            scheduleAnchor: previousTaskDoneAt
+        )
+
+        let doneUpdate = task.markChecklistItemsDone([breadID], doneAt: doneAt, calendar: calendar)
+        let undoUpdate = task.undoChecklistItemRunoutDone(breadID, referenceDate: doneAt, calendar: calendar)
+        let item = task.checklistItems.first { $0.id == breadID }
+
+        #expect(doneUpdate.didCompleteRoutine)
+        #expect(undoUpdate == RoutineTask.ChecklistRunoutUndoUpdate(restoredItemCount: 1, removedCompletionAt: doneAt))
+        #expect(item?.lastPurchasedAt == previousDoneAt)
+        #expect(item?.undoLastPurchasedAt == nil)
+        #expect(task.lastDone == previousTaskDoneAt)
+        #expect(task.scheduleAnchor == previousTaskDoneAt)
+    }
+
+    @Test
+    func routineTask_undoEarlierRunoutItemRemovesLaterRoutineCompletion() {
+        let breadID = UUID()
+        let milkID = UUID()
+        let createdAt = makeDate("2026-03-10T10:00:00Z")
+        let previousTaskDoneAt = makeDate("2026-03-11T09:00:00Z")
+        let breadDoneAt = makeDate("2026-03-18T12:00:00Z")
+        let milkDoneAt = makeDate("2026-03-18T12:05:00Z")
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(
+            checklistItems: [
+                RoutineChecklistItem(id: breadID, title: "Bread", intervalDays: 3, createdAt: createdAt),
+                RoutineChecklistItem(id: milkID, title: "Milk", intervalDays: 5, createdAt: createdAt)
+            ],
+            lastDone: previousTaskDoneAt,
+            scheduleAnchor: previousTaskDoneAt
+        )
+
+        let breadUpdate = task.markChecklistItemsDone([breadID], doneAt: breadDoneAt, calendar: calendar)
+        let milkUpdate = task.markChecklistItemsDone([milkID], doneAt: milkDoneAt, calendar: calendar)
+        let undoUpdate = task.undoChecklistItemRunoutDone(breadID, referenceDate: milkDoneAt, calendar: calendar)
+
+        #expect(!breadUpdate.didCompleteRoutine)
+        #expect(milkUpdate.didCompleteRoutine)
+        #expect(undoUpdate == RoutineTask.ChecklistRunoutUndoUpdate(restoredItemCount: 1, removedCompletionAt: milkDoneAt))
+        #expect(task.checklistItems.first(where: { $0.id == breadID })?.lastPurchasedAt == nil)
+        #expect(task.checklistItems.first(where: { $0.id == milkID })?.lastPurchasedAt == milkDoneAt)
+        #expect(task.lastDone == previousTaskDoneAt)
+        #expect(task.scheduleAnchor == previousTaskDoneAt)
     }
 
     @Test

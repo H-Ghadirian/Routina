@@ -12,9 +12,9 @@ enum HomeTaskRowCompletionPresentation {
                 return "No Due Items"
             }
             if task.dueChecklistItemCount == 1 {
-                return "Buy Due Item"
+                return "Done Due Item"
             }
-            return "Buy Due Items"
+            return "Done Due Items"
         }
         if task.scheduleMode.isChecklistCompletionMode {
             return "Checklist"

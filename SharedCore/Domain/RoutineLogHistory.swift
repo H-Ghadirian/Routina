@@ -535,9 +535,94 @@ enum RoutineLogHistory {
     }
 
     @MainActor
-    static func markDueChecklistItemsPurchased(
+    static func markDueChecklistItemsDone(
         taskID: UUID,
-        purchasedAt: Date,
+        doneAt: Date,
+        context: ModelContext,
+        calendar: Calendar = .current,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
+    ) throws -> (task: RoutineTask, update: RoutineTask.ChecklistRunoutUpdate)? {
+        let descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == taskID
+            }
+        )
+
+        guard let task = try context.fetch(descriptor).first else {
+            return nil
+        }
+
+        let dueItemIDs = Set(task.dueChecklistItems(referenceDate: doneAt, calendar: calendar).map(\.id))
+        guard !dueItemIDs.isEmpty else { return nil }
+
+        return try markChecklistItemsDone(
+            taskID: taskID,
+            itemIDs: dueItemIDs,
+            doneAt: doneAt,
+            context: context,
+            calendar: calendar,
+            sourceDevice: sourceDevice
+        )
+    }
+
+    @MainActor
+    static func markChecklistItemsDone(
+        taskID: UUID,
+        itemIDs: Set<UUID>,
+        doneAt: Date,
+        context: ModelContext,
+        calendar: Calendar = .current,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
+    ) throws -> (task: RoutineTask, update: RoutineTask.ChecklistRunoutUpdate)? {
+        let descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == taskID
+            }
+        )
+
+        guard let task = try context.fetch(descriptor).first else {
+            return nil
+        }
+
+        let update = task.markChecklistItemsDone(itemIDs, doneAt: doneAt, calendar: calendar)
+        guard update.updatedItemCount > 0 else {
+            return nil
+        }
+
+        if update.didCompleteRoutine {
+            let existingLogs = detailLogs(taskID: taskID, context: context)
+            if let existingLog = existingLogs.first(where: { log in
+                guard let timestamp = log.timestamp else { return false }
+                return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: doneAt)
+            }) {
+                let currentTimestamp = existingLog.timestamp ?? .distantPast
+                if doneAt > currentTimestamp {
+                    existingLog.timestamp = doneAt
+                }
+            } else {
+                context.insert(RoutineLog(timestamp: doneAt, taskID: taskID, kind: .completed))
+            }
+        }
+
+        DeviceActivityRecorder.recordAction(
+            update.didCompleteRoutine ? .completed : .updated,
+            entity: .task,
+            entityID: taskID,
+            entityTitle: taskTitle(task),
+            details: "Marked \(update.updatedItemCount) checklist item(s) done",
+            sourceDevice: sourceDevice,
+            at: doneAt,
+            in: context
+        )
+        try context.save()
+        return (task, update)
+    }
+
+    @MainActor
+    static func extendChecklistItemRunout(
+        taskID: UUID,
+        itemID: UUID,
+        extendedAt: Date,
         context: ModelContext,
         calendar: Calendar = .current,
         sourceDevice: RoutinaDeviceActivitySource? = nil
@@ -552,17 +637,90 @@ enum RoutineLogHistory {
             return nil
         }
 
-        let dueItemIDs = Set(task.dueChecklistItems(referenceDate: purchasedAt, calendar: calendar).map(\.id))
-        guard !dueItemIDs.isEmpty else { return nil }
+        let updatedItemCount = task.extendChecklistItemsRunout(
+            [itemID],
+            referenceDate: extendedAt,
+            calendar: calendar
+        )
+        guard updatedItemCount > 0 else { return nil }
 
-        return try markChecklistItemsPurchased(
+        DeviceActivityRecorder.recordAction(
+            .updated,
+            entity: .task,
+            entityID: taskID,
+            entityTitle: taskTitle(task),
+            details: "Extended checklist item runout",
+            sourceDevice: sourceDevice,
+            at: extendedAt,
+            in: context
+        )
+        try context.save()
+        return (task, updatedItemCount)
+    }
+
+    @MainActor
+    static func undoChecklistItemRunoutDone(
+        taskID: UUID,
+        itemID: UUID,
+        undoneAt: Date,
+        context: ModelContext,
+        calendar: Calendar = .current,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
+    ) throws -> (task: RoutineTask, update: RoutineTask.ChecklistRunoutUndoUpdate)? {
+        let descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == taskID
+            }
+        )
+
+        guard let task = try context.fetch(descriptor).first else {
+            return nil
+        }
+
+        let update = task.undoChecklistItemRunoutDone(
+            itemID,
+            referenceDate: undoneAt,
+            calendar: calendar
+        )
+        guard update.restoredItemCount > 0 else { return nil }
+
+        if let removedCompletionAt = update.removedCompletionAt {
+            let logs = detailLogs(taskID: taskID, context: context)
+            for log in logs where log.kind == .completed && log.timestamp == removedCompletionAt {
+                context.delete(log)
+            }
+        }
+
+        DeviceActivityRecorder.recordAction(
+            .updated,
+            entity: .task,
+            entityID: taskID,
+            entityTitle: taskTitle(task),
+            details: "Unchecked checklist item runout",
+            sourceDevice: sourceDevice,
+            at: undoneAt,
+            in: context
+        )
+        try context.save()
+        return (task, update)
+    }
+
+    @MainActor
+    static func markDueChecklistItemsPurchased(
+        taskID: UUID,
+        purchasedAt: Date,
+        context: ModelContext,
+        calendar: Calendar = .current,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
+    ) throws -> (task: RoutineTask, updatedItemCount: Int)? {
+        guard let result = try markDueChecklistItemsDone(
             taskID: taskID,
-            itemIDs: dueItemIDs,
-            purchasedAt: purchasedAt,
+            doneAt: purchasedAt,
             context: context,
             calendar: calendar,
             sourceDevice: sourceDevice
-        )
+        ) else { return nil }
+        return (result.task, result.update.updatedItemCount)
     }
 
     @MainActor
@@ -574,46 +732,15 @@ enum RoutineLogHistory {
         calendar: Calendar = .current,
         sourceDevice: RoutinaDeviceActivitySource? = nil
     ) throws -> (task: RoutineTask, updatedItemCount: Int)? {
-        let descriptor = FetchDescriptor<RoutineTask>(
-            predicate: #Predicate { task in
-                task.id == taskID
-            }
-        )
-
-        guard let task = try context.fetch(descriptor).first else {
-            return nil
-        }
-
-        let updatedItemCount = task.markChecklistItemsPurchased(itemIDs, purchasedAt: purchasedAt)
-        guard updatedItemCount > 0 else {
-            return nil
-        }
-
-        let existingLogs = detailLogs(taskID: taskID, context: context)
-        if let existingLog = existingLogs.first(where: { log in
-            guard let timestamp = log.timestamp else { return false }
-            return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: purchasedAt)
-        }) {
-            let currentTimestamp = existingLog.timestamp ?? .distantPast
-            if purchasedAt > currentTimestamp {
-                existingLog.timestamp = purchasedAt
-            }
-        } else {
-            context.insert(RoutineLog(timestamp: purchasedAt, taskID: taskID, kind: .completed))
-        }
-
-        DeviceActivityRecorder.recordAction(
-            .completed,
-            entity: .task,
-            entityID: taskID,
-            entityTitle: taskTitle(task),
-            details: "Completed \(updatedItemCount) checklist item(s)",
-            sourceDevice: sourceDevice,
-            at: purchasedAt,
-            in: context
-        )
-        try context.save()
-        return (task, updatedItemCount)
+        guard let result = try markChecklistItemsDone(
+            taskID: taskID,
+            itemIDs: itemIDs,
+            doneAt: purchasedAt,
+            context: context,
+            calendar: calendar,
+            sourceDevice: sourceDevice
+        ) else { return nil }
+        return (result.task, result.update.updatedItemCount)
     }
 
     @MainActor

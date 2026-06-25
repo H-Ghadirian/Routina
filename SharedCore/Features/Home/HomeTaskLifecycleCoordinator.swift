@@ -27,7 +27,7 @@ struct HomeTaskLifecycleCoordinator<Action> {
 
         switch update {
         case let .checklist(checklistUpdate):
-            return HomeTaskLifecycleExecutionSupport.markChecklistItemsPurchased(
+            return HomeTaskLifecycleExecutionSupport.markChecklistItemsDone(
                 checklistUpdate,
                 calendar: calendar,
                 modelContext: modelContext,

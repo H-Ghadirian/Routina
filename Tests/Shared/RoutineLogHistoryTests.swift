@@ -271,6 +271,215 @@ struct RoutineLogHistoryTests {
     }
 
     @Test
+    func markChecklistItemsDone_doesNotSaveCompletionLogWhenAnotherRunoutItemIsStillDue() throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let breadID = UUID()
+        let milkID = UUID()
+        let createdAt = makeDate("2026-03-10T10:00:00Z")
+        let doneAt = makeDate("2026-03-18T12:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Groceries",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil,
+            checklistItems: [
+                RoutineChecklistItem(id: breadID, title: "Bread", intervalDays: 3, createdAt: createdAt),
+                RoutineChecklistItem(id: milkID, title: "Milk", intervalDays: 5, createdAt: createdAt)
+            ],
+            scheduleMode: .derivedFromChecklist
+        )
+        try context.save()
+
+        let result = try #require(
+            try RoutineLogHistory.markChecklistItemsDone(
+                taskID: task.id,
+                itemIDs: [breadID],
+                doneAt: doneAt,
+                context: context,
+                calendar: calendar
+            )
+        )
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(result.update == RoutineTask.ChecklistRunoutUpdate(updatedItemCount: 1, didCompleteRoutine: false))
+        #expect(result.task.lastDone == nil)
+        #expect(result.task.dueChecklistItems(referenceDate: doneAt, calendar: calendar).map(\.id) == [milkID])
+        #expect(logs.isEmpty)
+    }
+
+    @Test
+    func markChecklistItemsDone_savesCompletionLogAfterAllDueRunoutItemsReset() throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let breadID = UUID()
+        let milkID = UUID()
+        let createdAt = makeDate("2026-03-10T10:00:00Z")
+        let doneAt = makeDate("2026-03-18T12:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Groceries",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil,
+            checklistItems: [
+                RoutineChecklistItem(id: breadID, title: "Bread", intervalDays: 3, createdAt: createdAt),
+                RoutineChecklistItem(id: milkID, title: "Milk", intervalDays: 5, createdAt: createdAt)
+            ],
+            scheduleMode: .derivedFromChecklist
+        )
+        try context.save()
+
+        let result = try #require(
+            try RoutineLogHistory.markChecklistItemsDone(
+                taskID: task.id,
+                itemIDs: [breadID, milkID],
+                doneAt: doneAt,
+                context: context,
+                calendar: calendar
+            )
+        )
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(result.update == RoutineTask.ChecklistRunoutUpdate(updatedItemCount: 2, didCompleteRoutine: true))
+        #expect(result.task.lastDone == doneAt)
+        #expect(logs.count == 1)
+        #expect(logs.first?.taskID == task.id)
+        #expect(logs.first?.timestamp == doneAt)
+    }
+
+    @Test
+    func undoChecklistItemRunoutDone_restoresPreviousItemAndRemovesCreatedCompletionLog() throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let breadID = UUID()
+        let previousItemDoneAt = makeDate("2026-03-12T10:00:00Z")
+        let previousTaskDoneAt = makeDate("2026-03-11T09:00:00Z")
+        let doneAt = makeDate("2026-03-18T12:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Groceries",
+            interval: 1,
+            lastDone: previousTaskDoneAt,
+            emoji: nil,
+            checklistItems: [
+                RoutineChecklistItem(
+                    id: breadID,
+                    title: "Bread",
+                    intervalDays: 3,
+                    lastPurchasedAt: previousItemDoneAt,
+                    createdAt: makeDate("2026-03-10T10:00:00Z")
+                )
+            ],
+            scheduleMode: .derivedFromChecklist,
+            scheduleAnchor: previousTaskDoneAt
+        )
+        _ = makeLog(in: context, task: task, timestamp: previousTaskDoneAt)
+        try context.save()
+
+        _ = try #require(
+            try RoutineLogHistory.markChecklistItemsDone(
+                taskID: task.id,
+                itemIDs: [breadID],
+                doneAt: doneAt,
+                context: context,
+                calendar: calendar
+            )
+        )
+        let undoResult = try #require(
+            try RoutineLogHistory.undoChecklistItemRunoutDone(
+                taskID: task.id,
+                itemID: breadID,
+                undoneAt: doneAt,
+                context: context,
+                calendar: calendar
+            )
+        )
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+        let item = undoResult.task.checklistItems.first { $0.id == breadID }
+
+        #expect(undoResult.update == RoutineTask.ChecklistRunoutUndoUpdate(restoredItemCount: 1, removedCompletionAt: doneAt))
+        #expect(item?.lastPurchasedAt == previousItemDoneAt)
+        #expect(undoResult.task.lastDone == previousTaskDoneAt)
+        #expect(undoResult.task.scheduleAnchor == previousTaskDoneAt)
+        #expect(logs.count == 1)
+        #expect(logs.first?.timestamp == previousTaskDoneAt)
+    }
+
+    @Test
+    func undoChecklistItemRunoutDone_removesCompletionLogWhenUncheckedItemWasNotLastChecked() throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let breadID = UUID()
+        let milkID = UUID()
+        let previousTaskDoneAt = makeDate("2026-03-11T09:00:00Z")
+        let breadDoneAt = makeDate("2026-03-18T12:00:00Z")
+        let milkDoneAt = makeDate("2026-03-18T12:05:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Groceries",
+            interval: 1,
+            lastDone: previousTaskDoneAt,
+            emoji: nil,
+            checklistItems: [
+                RoutineChecklistItem(
+                    id: breadID,
+                    title: "Bread",
+                    intervalDays: 3,
+                    createdAt: makeDate("2026-03-10T10:00:00Z")
+                ),
+                RoutineChecklistItem(
+                    id: milkID,
+                    title: "Milk",
+                    intervalDays: 5,
+                    createdAt: makeDate("2026-03-10T10:00:00Z")
+                )
+            ],
+            scheduleMode: .derivedFromChecklist,
+            scheduleAnchor: previousTaskDoneAt
+        )
+        _ = makeLog(in: context, task: task, timestamp: previousTaskDoneAt)
+        try context.save()
+
+        _ = try #require(
+            try RoutineLogHistory.markChecklistItemsDone(
+                taskID: task.id,
+                itemIDs: [breadID],
+                doneAt: breadDoneAt,
+                context: context,
+                calendar: calendar
+            )
+        )
+        _ = try #require(
+            try RoutineLogHistory.markChecklistItemsDone(
+                taskID: task.id,
+                itemIDs: [milkID],
+                doneAt: milkDoneAt,
+                context: context,
+                calendar: calendar
+            )
+        )
+        let undoResult = try #require(
+            try RoutineLogHistory.undoChecklistItemRunoutDone(
+                taskID: task.id,
+                itemID: breadID,
+                undoneAt: milkDoneAt,
+                context: context,
+                calendar: calendar
+            )
+        )
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(undoResult.update == RoutineTask.ChecklistRunoutUndoUpdate(restoredItemCount: 1, removedCompletionAt: milkDoneAt))
+        #expect(undoResult.task.checklistItems.first(where: { $0.id == breadID })?.lastPurchasedAt == nil)
+        #expect(undoResult.task.checklistItems.first(where: { $0.id == milkID })?.lastPurchasedAt == milkDoneAt)
+        #expect(undoResult.task.lastDone == previousTaskDoneAt)
+        #expect(logs.count == 1)
+        #expect(logs.first?.timestamp == previousTaskDoneAt)
+    }
+
+    @Test
     func removeCompletion_forPausedTaskWithoutRemainingLogs_restoresPausedAnchor() throws {
         let context = makeInMemoryContext()
         let completionDate = makeDate("2026-03-15T09:00:00Z")

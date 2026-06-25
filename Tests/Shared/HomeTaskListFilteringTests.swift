@@ -348,6 +348,20 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func groupedRoutineSectionsKeepsOverdueTaskOutOfDoneTodayBucket() {
+        let task = TestTaskDisplay(
+            name: "Runout routine",
+            daysUntilDue: -1,
+            isDoneToday: true
+        )
+
+        let sections = makeFiltering().groupedRoutineSections(from: [task])
+
+        #expect(sections.map(\.title) == ["Overdue"])
+        #expect(sections.flatMap(\.tasks).map(\.name) == ["Runout routine"])
+    }
+
+    @Test
     func groupedRoutineSectionsCanGroupByPrimaryTag() {
         let tasks = [
             TestTaskDisplay(name: "Pay rent", tags: ["Admin"]),
