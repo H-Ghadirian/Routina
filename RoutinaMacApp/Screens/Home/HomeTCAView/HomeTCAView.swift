@@ -21,6 +21,8 @@ enum MacHomeDetailMode: String, CaseIterable, Identifiable {
         return modes
     }
 
+    static var defaultLandingMode: Self { .planner }
+
     var visibleSurfaceMode: Self {
         Self.visibleModes.contains(self) ? self : .details
     }
@@ -174,7 +176,7 @@ struct HomeTCAView: View {
     @State var relatedTimelineTagSuggestionAnchor: String?
     @State var relatedStatsTagSuggestionAnchor: String?
     @State var draggedSection: FormSection?
-    @State var macHomeDetailMode: MacHomeDetailMode = .details
+    @State var macHomeDetailMode: MacHomeDetailMode = .defaultLandingMode
     @State var macHomeProgressMode: MacHomeProgressMode = .stats
     @State var selectedStatsDashboardScope: StatsDashboardScope = .all
     @State var macNavigationHistory = HomeMacNavigationHistory()

@@ -64,6 +64,12 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func macDetailModeDefaultLandingMode_opensPlanner() {
+        #expect(MacHomeDetailMode.defaultLandingMode == .planner)
+        #expect(MacHomeDetailMode.visibleModes.contains(MacHomeDetailMode.defaultLandingMode))
+    }
+
+    @Test
     func openNoteDeepLink_selectsTimelineSidebarEntryAndClearsTimelineFilters() async {
         let noteID = UUID()
         let selectedTaskID = UUID()
