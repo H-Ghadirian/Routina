@@ -703,6 +703,7 @@ private func makeHomeRoutineDisplay(
         placeName: nil,
         locationAvailability: locationAvailability,
         tags: [],
+        taskListTagSectionDescriptor: HomeTaskListTagGrouping.descriptor(for: []),
         steps: [],
         interval: interval,
         recurrenceRule: recurrenceRule,

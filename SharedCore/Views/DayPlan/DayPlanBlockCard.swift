@@ -230,12 +230,10 @@ struct DayPlanBlockCard: View {
                     .monospacedDigit()
                     .lineLimit(1)
             }
+        } else if layoutHeight < 74 {
+            compactContent
         } else {
-            ViewThatFits(in: .horizontal) {
-                largeContent
-                compactContent
-                textOnlyContent
-            }
+            largeContent
         }
     }
 

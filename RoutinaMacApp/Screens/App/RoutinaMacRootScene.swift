@@ -52,8 +52,7 @@ struct RoutinaMacRootScene: Scene {
                     activateHomeWindow()
                 }
                 .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { _ in
-                    widgetRefreshScheduler.schedule()
-                    focusTimerStatusStore.refresh()
+                    focusTimerStatusStore.scheduleRefresh()
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
                     focusTimerStatusStore.refresh()
@@ -95,11 +94,6 @@ private final class RoutinaMacWidgetRefreshScheduler {
     func scheduleLaunchRefresh() {
         scheduleFocusRefresh(delayNanoseconds: 300_000_000)
         scheduleStatsRefresh(delayNanoseconds: 2_000_000_000)
-    }
-
-    func schedule(delayNanoseconds: UInt64 = 150_000_000) {
-        scheduleFocusRefresh(delayNanoseconds: delayNanoseconds)
-        scheduleStatsRefresh(delayNanoseconds: delayNanoseconds)
     }
 
     private func scheduleFocusRefresh(delayNanoseconds: UInt64) {

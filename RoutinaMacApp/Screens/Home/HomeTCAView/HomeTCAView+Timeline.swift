@@ -1,5 +1,27 @@
 import SwiftUI
 
+struct MacTimelineSelection {
+    static var empty: MacTimelineSelection {
+        MacTimelineSelection(
+            entry: nil,
+            emotion: nil,
+            event: nil,
+            note: nil,
+            noteAttachments: [],
+            placeCheckInSession: nil,
+            awaySession: nil
+        )
+    }
+
+    var entry: TimelineEntry?
+    var emotion: EmotionLog?
+    var event: RoutineEvent?
+    var note: RoutineNote?
+    var noteAttachments: [RoutineNoteAttachment]
+    var placeCheckInSession: PlaceCheckInSession?
+    var awaySession: AwaySession?
+}
+
 extension HomeTCAView {
     var timelineEntries: [TimelineEntry] {
         baseTimelineEntries
@@ -91,54 +113,82 @@ extension HomeTCAView {
     }
 
     var selectedMacTimelineEntry: TimelineEntry? {
+        selectedMacTimelineSelection.entry
+    }
+
+    var selectedMacTimelineSelection: MacTimelineSelection {
         guard case let .timelineEntry(entryID) = store.macSidebarSelection else {
-            return nil
+            return .empty
         }
-        return timelineEntries.first { $0.id == entryID }
+
+        let entry = timelineEntries.first { $0.id == entryID }
+        let note = selectedTimelineNote(for: entry, fallbackID: entryID)
+        let attachments = note.map(selectedTimelineNoteAttachments) ?? []
+        let emotion = entry.flatMap { entry in
+            entry.isEmotion ? emotionLogs.first { $0.id == entry.id } : nil
+        }
+        let event = entry.flatMap { entry in
+            entry.isEvent ? events.first { $0.id == entry.id } : nil
+        }
+        let placeCheckInSession = entry.flatMap { entry in
+            entry.isPlaceCheckIn ? placeCheckInSessions.first { $0.id == entry.id } : nil
+        }
+        let awaySession = entry.flatMap { entry in
+            entry.isAway ? awaySessions.first { $0.id == entry.id } : nil
+        }
+
+        return MacTimelineSelection(
+            entry: entry,
+            emotion: emotion,
+            event: event,
+            note: note,
+            noteAttachments: attachments,
+            placeCheckInSession: placeCheckInSession,
+            awaySession: awaySession
+        )
     }
 
     var selectedMacTimelineNote: RoutineNote? {
-        if let selectedMacTimelineEntry, selectedMacTimelineEntry.isNote {
-            return notes.first { $0.id == selectedMacTimelineEntry.id }
-        }
-
-        guard case let .timelineEntry(noteID) = store.macSidebarSelection else { return nil }
-        return notes.first { $0.id == noteID }
+        selectedMacTimelineSelection.note
     }
 
     var selectedMacTimelineEmotion: EmotionLog? {
-        guard let selectedMacTimelineEntry, selectedMacTimelineEntry.isEmotion else {
-            return nil
-        }
-        return emotionLogs.first { $0.id == selectedMacTimelineEntry.id }
+        selectedMacTimelineSelection.emotion
     }
 
     var selectedMacTimelineEvent: RoutineEvent? {
-        guard let selectedMacTimelineEntry, selectedMacTimelineEntry.isEvent else {
-            return nil
-        }
-        return events.first { $0.id == selectedMacTimelineEntry.id }
+        selectedMacTimelineSelection.event
     }
 
     var selectedMacTimelineNoteAttachments: [RoutineNoteAttachment] {
-        guard let selectedMacTimelineNote else { return [] }
-        return noteAttachments
-            .filter { $0.noteID == selectedMacTimelineNote.id }
-            .sorted { $0.createdAt < $1.createdAt }
+        selectedMacTimelineSelection.noteAttachments
     }
 
     var selectedMacTimelinePlaceCheckInSession: PlaceCheckInSession? {
-        guard let selectedMacTimelineEntry, selectedMacTimelineEntry.isPlaceCheckIn else {
-            return nil
-        }
-        return placeCheckInSessions.first { $0.id == selectedMacTimelineEntry.id }
+        selectedMacTimelineSelection.placeCheckInSession
     }
 
     var selectedMacTimelineAwaySession: AwaySession? {
-        guard let selectedMacTimelineEntry, selectedMacTimelineEntry.isAway else {
-            return nil
+        selectedMacTimelineSelection.awaySession
+    }
+
+    private func selectedTimelineNote(
+        for entry: TimelineEntry?,
+        fallbackID: UUID
+    ) -> RoutineNote? {
+        if let entry, entry.isNote {
+            return notes.first { $0.id == entry.id }
         }
-        return awaySessions.first { $0.id == selectedMacTimelineEntry.id }
+
+        return notes.first { $0.id == fallbackID }
+    }
+
+    private func selectedTimelineNoteAttachments(
+        for note: RoutineNote
+    ) -> [RoutineNoteAttachment] {
+        noteAttachments
+            .filter { $0.noteID == note.id }
+            .sorted { $0.createdAt < $1.createdAt }
     }
 
     private func openTimelineEntry(_ entry: TimelineEntry) {

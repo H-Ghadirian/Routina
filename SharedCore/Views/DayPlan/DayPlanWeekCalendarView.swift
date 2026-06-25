@@ -24,6 +24,8 @@ struct DayPlanWeekCalendarView: View {
     var awayBlocksForDate: (Date) -> [DayPlanAwayBlock] = { _ in [] }
     var sprintFocusBlocksForDate: (Date) -> [DayPlanSprintFocusBlock] = { _ in [] }
     var blockedIntervalsForDate: (Date) -> [DayPlanBlockedInterval] = { _ in [] }
+    var showsActiveFocusBlocks = false
+    var showsActiveSprintFocusBlocks = false
     var activeFocusSessionBlocks: (Date) -> [DayPlanFocusSessionBlock] = { _ in [] }
     var activeSprintFocusBlocks: (Date) -> [DayPlanSprintFocusBlock] = { _ in [] }
     var allDayBlocks: [DayPlanAllDayBlock] = []
@@ -227,30 +229,34 @@ struct DayPlanWeekCalendarView: View {
                             }
                             SwiftUI.TimelineView(.periodic(from: Date(), by: 60)) { timeline in
                                 ZStack(alignment: .topLeading) {
-                                    DayPlanFocusSessionBlockLayer(
-                                        dates: dates,
-                                        now: timeline.date,
-                                        calendar: calendar,
-                                        dayWidth: dayWidth,
-                                        hourHeight: hourHeight,
-                                        timeColumnWidth: timeColumnWidth,
-                                        focusSessionBlocks: activeFocusSessionBlocks(timeline.date),
-                                        taskTint: taskTint,
-                                        onOpenFocusTaskDetails: onOpenFocusTaskDetails
-                                    )
-                                    .zIndex(3)
+                                    if showsActiveFocusBlocks {
+                                        DayPlanFocusSessionBlockLayer(
+                                            dates: dates,
+                                            now: timeline.date,
+                                            calendar: calendar,
+                                            dayWidth: dayWidth,
+                                            hourHeight: hourHeight,
+                                            timeColumnWidth: timeColumnWidth,
+                                            focusSessionBlocks: activeFocusSessionBlocks(timeline.date),
+                                            taskTint: taskTint,
+                                            onOpenFocusTaskDetails: onOpenFocusTaskDetails
+                                        )
+                                        .zIndex(3)
+                                    }
 
-                                    DayPlanSprintFocusBlockLayer(
-                                        dates: dates,
-                                        calendar: calendar,
-                                        dayWidth: dayWidth,
-                                        hourHeight: hourHeight,
-                                        timeColumnWidth: timeColumnWidth,
-                                        sprintFocusBlocks: activeSprintFocusBlocks(timeline.date),
-                                        taskTint: taskTint,
-                                        onOpenFocusTaskDetails: onOpenFocusTaskDetails
-                                    )
-                                    .zIndex(3.5)
+                                    if showsActiveSprintFocusBlocks {
+                                        DayPlanSprintFocusBlockLayer(
+                                            dates: dates,
+                                            calendar: calendar,
+                                            dayWidth: dayWidth,
+                                            hourHeight: hourHeight,
+                                            timeColumnWidth: timeColumnWidth,
+                                            sprintFocusBlocks: activeSprintFocusBlocks(timeline.date),
+                                            taskTint: taskTint,
+                                            onOpenFocusTaskDetails: onOpenFocusTaskDetails
+                                        )
+                                        .zIndex(3.5)
+                                    }
 
                                     DayPlanCurrentTimeIndicator(
                                         dates: dates,
@@ -1043,6 +1049,11 @@ private struct DayPlanSlotDraftBlock: View {
 }
 
 private struct DayPlanUnplaceableActivityLaneView: View {
+    private struct DayBlocks {
+        var date: Date
+        var blocks: [DayPlanTimelineActivityBlock]
+    }
+
     var dates: [Date]
     var selectedDate: Date
     var calendar: Calendar
@@ -1058,11 +1069,7 @@ private struct DayPlanUnplaceableActivityLaneView: View {
     private let rowSpacing: CGFloat = 4
     private let verticalPadding: CGFloat = 6
 
-    private var maxRows: Int {
-        dates.map { blocksForDate($0).count }.max() ?? 0
-    }
-
-    private var laneHeight: CGFloat {
+    private func laneHeight(maxRows: Int) -> CGFloat {
         guard maxRows > 0 else { return 0 }
         return verticalPadding * 2
             + CGFloat(maxRows) * rowHeight
@@ -1070,6 +1077,12 @@ private struct DayPlanUnplaceableActivityLaneView: View {
     }
 
     var body: some View {
+        let dayBlocks = dates.map { date in
+            DayBlocks(date: date, blocks: blocksForDate(date))
+        }
+        let maxRows = dayBlocks.map { $0.blocks.count }.max() ?? 0
+        let laneHeight = laneHeight(maxRows: maxRows)
+
         if maxRows > 0 {
             GeometryReader { proxy in
                 let dayCount = max(dates.count, 1)
@@ -1088,8 +1101,8 @@ private struct DayPlanUnplaceableActivityLaneView: View {
                     ZStack(alignment: .topLeading) {
                         laneBackground(dayWidth: dayWidth, laneHeight: laneHeight)
 
-                        ForEach(Array(dates.enumerated()), id: \.element) { dayIndex, date in
-                            ForEach(Array(blocksForDate(date).enumerated()), id: \.element.id) { rowIndex, activity in
+                        ForEach(Array(dayBlocks.enumerated()), id: \.element.date) { dayIndex, day in
+                            ForEach(Array(day.blocks.enumerated()), id: \.element.id) { rowIndex, activity in
                                 let block = activity.block
                                 DayPlanBlockCard(
                                     block: block,
@@ -1098,7 +1111,7 @@ private struct DayPlanUnplaceableActivityLaneView: View {
                                     isSelected: false,
                                     renderedHeight: rowHeight,
                                     showsResizeHandles: false,
-                                    selectedDate: date,
+                                    selectedDate: day.date,
                                     calendar: calendar,
                                     onSelect: {},
                                     onOpenDetails: {
@@ -1106,16 +1119,16 @@ private struct DayPlanUnplaceableActivityLaneView: View {
                                     },
                                     onDelete: {},
                                     onConfirmAutomatic: {
-                                        onConfirmTimelineActivity(activity, date)
+                                        onConfirmTimelineActivity(activity, day.date)
                                     },
                                     onHideAutomatic: {
-                                        onHideTimelineActivity(activity, date)
+                                        onHideTimelineActivity(activity, day.date)
                                     },
                                     onResizeStarted: {},
                                     onResizeChanged: { _, _ in },
                                     onResizeEnded: {},
                                     onDragProvider: {
-                                        onTimelineDragProvider(activity, date)
+                                        onTimelineDragProvider(activity, day.date)
                                     }
                                 )
                                 .frame(

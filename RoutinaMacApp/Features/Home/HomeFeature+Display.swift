@@ -129,6 +129,7 @@ private extension HomeFeature.RoutineDisplay {
             placeName: core.placeName,
             locationAvailability: core.locationAvailability,
             tags: core.tags,
+            taskListTagSectionDescriptor: core.taskListTagSectionDescriptor,
             goalIDs: core.goalIDs,
             goalTitles: core.goalTitles,
             steps: core.steps,

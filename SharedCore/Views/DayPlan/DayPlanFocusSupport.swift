@@ -556,6 +556,36 @@ enum DayPlanFocusSessionPlannerSync {
         return !planFocusAllocationBlocks(for: session, context: context).isEmpty
     }
 
+    static func planFocusAllocatedMinutesBySessionID(
+        for sessions: [FocusSession],
+        context: ModelContext
+    ) -> [UUID: Int] {
+        let sessionIDs = sessions
+            .filter(\.isUnassigned)
+            .map(\.id)
+        guard !sessionIDs.isEmpty else { return [:] }
+
+        do {
+            let records = try context.fetch(FetchDescriptor<DayPlanBlockRecord>())
+            var result: [UUID: Int] = [:]
+
+            for record in records {
+                for sessionID in sessionIDs where record.id == allocationBlockID(
+                    sessionID: sessionID,
+                    taskID: record.taskID
+                ) {
+                    result[sessionID, default: 0] += record.durationMinutes
+                    break
+                }
+            }
+
+            return result
+        } catch {
+            NSLog("Failed to load plan focus allocation minutes: \(error.localizedDescription)")
+            return [:]
+        }
+    }
+
     static func planFocusAllocationBlocks(for session: FocusSession, context: ModelContext) -> [DayPlanBlock] {
         do {
             let records = try context.fetch(FetchDescriptor<DayPlanBlockRecord>())
@@ -1173,6 +1203,12 @@ enum DayPlanFocusSessionPlannerSync {
 }
 
 enum DayPlanSprintFocusBlocks {
+    private struct VisibleDayWindow {
+        let dayKey: String
+        let start: Date
+        let end: Date
+    }
+
     static func blocksByDayKey(
         on dates: [Date],
         from sessions: [SprintFocusSessionRecord],
@@ -1182,19 +1218,55 @@ enum DayPlanSprintFocusBlocks {
         referenceDate: Date = Date(),
         calendar: Calendar
     ) -> [String: [DayPlanSprintFocusBlock]] {
-        let visibleDates = dates.map { calendar.startOfDay(for: $0) }
+        let visibleDates = dates
+            .map { calendar.startOfDay(for: $0) }
+            .sorted()
         guard !visibleDates.isEmpty else { return [:] }
+        let visibleDayWindows = visibleDates.compactMap { dayStart -> VisibleDayWindow? in
+            guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else {
+                return nil
+            }
 
-        let allocationsBySessionID = Dictionary(grouping: allocations, by: \.sessionID)
-        let sprintsByID = Dictionary(grouping: sprints, by: \.id).compactMapValues(\.first)
-        let tasksByID = Dictionary(grouping: tasks, by: \.id).compactMapValues(\.first)
-        let blocks = sessions.flatMap { session in
+            return VisibleDayWindow(
+                dayKey: DayPlanStorage.dayKey(for: dayStart, calendar: calendar),
+                start: dayStart,
+                end: dayEnd
+            )
+        }
+        guard let visibleRangeStart = visibleDayWindows.first?.start,
+              let visibleRangeEnd = visibleDayWindows.last?.end else {
+            return [:]
+        }
+        let relevantSessions = sessions.filter {
+            sessionOverlapsVisibleRange(
+                $0,
+                visibleRangeStart: visibleRangeStart,
+                visibleRangeEnd: visibleRangeEnd,
+                referenceDate: referenceDate
+            )
+        }
+        guard !relevantSessions.isEmpty else { return [:] }
+
+        let relevantSessionIDs = Set(relevantSessions.map(\.id))
+        let allocationsBySessionID = Dictionary(
+            grouping: allocations.filter { relevantSessionIDs.contains($0.sessionID) },
+            by: \.sessionID
+        )
+        var sprintsByID: [UUID: BoardSprintRecord] = [:]
+        for sprint in sprints where sprintsByID[sprint.id] == nil {
+            sprintsByID[sprint.id] = sprint
+        }
+        var tasksByID: [UUID: RoutineTask] = [:]
+        for task in tasks where tasksByID[task.id] == nil {
+            tasksByID[task.id] = task
+        }
+        let blocks = relevantSessions.flatMap { session in
             blocksForSession(
                 session,
                 allocations: allocationsBySessionID[session.id] ?? [],
                 sprint: sprintsByID[session.sprintID],
                 tasksByID: tasksByID,
-                visibleDates: visibleDates,
+                visibleDayWindows: visibleDayWindows,
                 referenceDate: referenceDate,
                 calendar: calendar
             )
@@ -1237,12 +1309,22 @@ enum DayPlanSprintFocusBlocks {
         }
     }
 
+    private static func sessionOverlapsVisibleRange(
+        _ session: SprintFocusSessionRecord,
+        visibleRangeStart: Date,
+        visibleRangeEnd: Date,
+        referenceDate: Date
+    ) -> Bool {
+        let sessionEnd = max(session.stoppedAt ?? referenceDate, session.startedAt)
+        return session.startedAt < visibleRangeEnd && sessionEnd >= visibleRangeStart
+    }
+
     private static func blocksForSession(
         _ session: SprintFocusSessionRecord,
         allocations: [SprintFocusAllocationRecord],
         sprint: BoardSprintRecord?,
         tasksByID: [UUID: RoutineTask],
-        visibleDates: [Date],
+        visibleDayWindows: [VisibleDayWindow],
         referenceDate: Date,
         calendar: Calendar
     ) -> [DayPlanSprintFocusBlock] {
@@ -1276,7 +1358,7 @@ enum DayPlanSprintFocusBlocks {
                 startedAt: session.startedAt,
                 offsetMinutes: cursorMinutes,
                 durationMinutes: minutes,
-                visibleDates: visibleDates,
+                visibleDayWindows: visibleDayWindows,
                 updatedAt: session.stoppedAt ?? referenceDate,
                 isActive: session.isActive,
                 isAllocatedToTask: true,
@@ -1296,7 +1378,7 @@ enum DayPlanSprintFocusBlocks {
                 startedAt: session.startedAt,
                 offsetMinutes: cursorMinutes,
                 durationMinutes: remainingMinutes,
-                visibleDates: visibleDates,
+                visibleDayWindows: visibleDayWindows,
                 updatedAt: session.stoppedAt ?? referenceDate,
                 isActive: session.isActive,
                 isAllocatedToTask: false,
@@ -1316,7 +1398,7 @@ enum DayPlanSprintFocusBlocks {
         startedAt: Date,
         offsetMinutes: Int,
         durationMinutes: Int,
-        visibleDates: [Date],
+        visibleDayWindows: [VisibleDayWindow],
         updatedAt: Date,
         isActive: Bool,
         isAllocatedToTask: Bool,
@@ -1328,17 +1410,11 @@ enum DayPlanSprintFocusBlocks {
             return []
         }
 
-        return visibleDates.compactMap { visibleDate -> DayPlanSprintFocusBlock? in
-            let dayStart = calendar.startOfDay(for: visibleDate)
-            guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else {
-                return nil
-            }
-
-            let intervalStart = max(segmentStart, dayStart)
-            let intervalEnd = min(segmentEnd, dayEnd)
+        return visibleDayWindows.compactMap { day -> DayPlanSprintFocusBlock? in
+            let intervalStart = max(segmentStart, day.start)
+            let intervalEnd = min(segmentEnd, day.end)
             guard intervalEnd > intervalStart else { return nil }
 
-            let dayKey = DayPlanStorage.dayKey(for: dayStart, calendar: calendar)
             let startMinute = Self.startMinute(for: intervalStart, calendar: calendar)
             let rawDuration = max(1, Int(ceil(intervalEnd.timeIntervalSince(intervalStart) / 60)))
             let durationMinutes = DayPlanBlock.clampedDuration(
@@ -1349,7 +1425,7 @@ enum DayPlanSprintFocusBlocks {
             let block = DayPlanBlock(
                 id: id,
                 taskID: taskID,
-                dayKey: dayKey,
+                dayKey: day.dayKey,
                 startMinute: startMinute,
                 durationMinutes: durationMinutes,
                 titleSnapshot: title,
@@ -1359,7 +1435,7 @@ enum DayPlanSprintFocusBlocks {
                 minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
             )
             let interval = DayPlanBlockedInterval(
-                dayKey: dayKey,
+                dayKey: day.dayKey,
                 startMinute: block.startMinute,
                 endMinute: block.endMinute,
                 title: title

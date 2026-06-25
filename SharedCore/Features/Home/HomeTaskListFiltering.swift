@@ -65,11 +65,11 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
     }
 
     func filteredTasks(_ displays: [Display]) -> [Display] {
-        sortedTasks(displays).filter(predicate.matchesVisibleTask)
+        sorter.sortedTasks(displays.filter(predicate.matchesVisibleTask))
     }
 
     func filteredAwayTasks(_ displays: [Display]) -> [Display] {
-        sortedTasks(displays).filter(predicate.matchesVisibleTask)
+        sorter.sortedTasks(displays.filter(predicate.matchesVisibleTask))
     }
 
     func filteredArchivedTasks(
@@ -86,9 +86,11 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
         awayDisplays: [Display],
         archivedDisplays: [Display]
     ) -> [Display] {
-        let activePinned = sortedTasks(activeDisplays + awayDisplays).filter { task in
-            task.isPinned && predicate.matchesVisibleTask(task)
-        }
+        let activePinned = sorter.sortedTasks(
+            (activeDisplays + awayDisplays).filter { task in
+                task.isPinned && predicate.matchesVisibleTask(task)
+            }
+        )
         let archivedPinned = filteredArchivedTasks(archivedDisplays).filter(\.isPinned)
 
         return (activePinned + archivedPinned).sorted(by: sorter.pinnedTaskSort)
@@ -131,7 +133,11 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
     }
 
     func filteredDailyRoutineTasks(_ displays: [Display]) -> [Display] {
-        filteredTasks(displays).filter(\.isDailyRoutine)
+        sorter.sortedTasks(
+            displays.filter { task in
+                task.isDailyRoutine && predicate.matchesVisibleTask(task)
+            }
+        )
     }
 
     func filteredPlannedTodayTasks(_ displays: [Display]) -> [Display] {

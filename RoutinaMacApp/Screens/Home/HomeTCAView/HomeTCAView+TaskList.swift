@@ -35,8 +35,34 @@ extension HomeTCAView {
     }
 
     func platformRoutineRow(for task: HomeFeature.RoutineDisplay, rowNumber: Int) -> some View {
-        let metadataText = rowMetadataText(for: task)
-        let rowVisibility = taskRowVisibility
+        platformRoutineRow(
+            for: task,
+            rowNumber: rowNumber,
+            metadataPresenter: routineMetadataPresenter
+        )
+    }
+
+    func platformRoutineRow(
+        for task: HomeFeature.RoutineDisplay,
+        rowNumber: Int,
+        rowVisibility: HomeTaskRowVisibility
+    ) -> some View {
+        platformRoutineRow(
+            for: task,
+            rowNumber: rowNumber,
+            metadataPresenter: routineMetadataPresenter,
+            rowVisibility: rowVisibility
+        )
+    }
+
+    func platformRoutineRow(
+        for task: HomeFeature.RoutineDisplay,
+        rowNumber: Int,
+        metadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay>,
+        rowVisibility suppliedRowVisibility: HomeTaskRowVisibility? = nil
+    ) -> some View {
+        let metadataText = metadataPresenter.rowMetadataText(for: task)
+        let rowVisibility = suppliedRowVisibility ?? taskRowVisibility
 
         return HStack(alignment: .top, spacing: 10) {
             if rowVisibility.shows(.icon) || rowVisibility.shows(.rowNumber) {
@@ -66,7 +92,7 @@ extension HomeTCAView {
                     Spacer(minLength: 8)
 
                     if rowVisibility.shows(.statusBadge) {
-                        statusBadge(for: task)
+                        statusBadge(for: task, metadataPresenter: metadataPresenter)
                     }
                 }
 
@@ -162,34 +188,13 @@ extension HomeTCAView {
         .accessibilityHidden(task.tags.isEmpty)
     }
 
-    private func taskDragPreview(for task: HomeFeature.RoutineDisplay, rowNumber: Int) -> some View {
-        routineRow(for: task, rowNumber: rowNumber)
-            .padding(.trailing, macTaskSourceRowColorBadgeTrailingSpace(for: task))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .frame(width: 300)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(macTaskSourceRowBackground(for: task))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(
-                        macTaskSourceRowStroke(for: task),
-                        lineWidth: macTaskSourceRowStrokeWidth(for: task)
-                    )
-            )
-            .overlay(alignment: .topTrailing) {
-                macTaskSourceRowColorBadge(for: task)
-            }
-            .shadow(color: .black.opacity(0.18), radius: 8, x: 0, y: 4)
-    }
-
     private func macTaskSourceList(
         _ presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>,
         allowsPlannerDrag: Bool
     ) -> some View {
         let visibleTaskIDs = visibleTaskIDs(in: presentation)
+        let metadataPresenter = routineMetadataPresenter
+        let rowVisibility = taskRowVisibility
 
         return ScrollViewReader { scrollProxy in
             ScrollView {
@@ -198,6 +203,8 @@ extension HomeTCAView {
                         taskListSectionView(
                             for: section,
                             in: presentation,
+                            metadataPresenter: metadataPresenter,
+                            rowVisibility: rowVisibility,
                             allowsPlannerDrag: allowsPlannerDrag
                         )
                     }
@@ -256,6 +263,8 @@ extension HomeTCAView {
     private func taskListSectionView(
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
         in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>,
+        metadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay>,
+        rowVisibility: HomeTaskRowVisibility,
         allowsPlannerDrag: Bool
     ) -> some View {
         let isExpanded = taskListSectionIsExpanded(section)
@@ -269,6 +278,8 @@ extension HomeTCAView {
                     taskListSectionTaskGroups(
                         for: section,
                         in: presentation,
+                        metadataPresenter: metadataPresenter,
+                        rowVisibility: rowVisibility,
                         allowsPlannerDrag: allowsPlannerDrag
                     )
                     .padding(.horizontal, 8)
@@ -300,6 +311,8 @@ extension HomeTCAView {
                     taskListSectionTaskGroups(
                         for: section,
                         in: presentation,
+                        metadataPresenter: metadataPresenter,
+                        rowVisibility: rowVisibility,
                         allowsPlannerDrag: allowsPlannerDrag
                     )
                 }
@@ -328,6 +341,8 @@ extension HomeTCAView {
     private func taskListSectionTaskGroups(
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
         in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>,
+        metadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay>,
+        rowVisibility: HomeTaskRowVisibility,
         allowsPlannerDrag: Bool
     ) -> some View {
         ForEach(section.taskGroups) { group in
@@ -342,6 +357,8 @@ extension HomeTCAView {
                         rowNumber: visibleRowNumber(for: task, in: presentation),
                         includeMarkDone: section.includeMarkDone,
                         moveContext: group.moveContext,
+                        metadataPresenter: metadataPresenter,
+                        rowVisibility: rowVisibility,
                         allowsPlannerDrag: allowsPlannerDrag
                     )
                 }
@@ -806,27 +823,34 @@ extension HomeTCAView {
         rowNumber: Int,
         includeMarkDone: Bool,
         moveContext: HomeTaskListMoveContext?,
+        metadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay>,
+        rowVisibility: HomeTaskRowVisibility,
         allowsPlannerDrag: Bool
     ) -> some View {
-        let row = routineRow(for: task, rowNumber: rowNumber)
-            .padding(.trailing, macTaskSourceRowColorBadgeTrailingSpace(for: task))
+        let row = platformRoutineRow(
+            for: task,
+            rowNumber: rowNumber,
+            metadataPresenter: metadataPresenter,
+            rowVisibility: rowVisibility
+        )
+            .padding(.trailing, macTaskSourceRowColorBadgeTrailingSpace(for: task, rowVisibility: rowVisibility))
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
             .routinaGlassCard(
                 cornerRadius: 8,
-                tint: macTaskSourceRowGlassTint(for: task),
-                tintOpacity: macTaskSourceRowGlassOpacity(for: task),
+                tint: macTaskSourceRowGlassTint(for: task, rowVisibility: rowVisibility),
+                tintOpacity: macTaskSourceRowGlassOpacity(for: task, rowVisibility: rowVisibility),
                 interactive: true
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(
-                        macTaskSourceRowStroke(for: task),
+                        macTaskSourceRowStroke(for: task, rowVisibility: rowVisibility),
                         lineWidth: macTaskSourceRowStrokeWidth(for: task)
                     )
             )
             .overlay(alignment: .topTrailing) {
-                macTaskSourceRowColorBadge(for: task)
+                macTaskSourceRowColorBadge(for: task, rowVisibility: rowVisibility)
             }
             .id(task.taskID)
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
@@ -846,30 +870,34 @@ extension HomeTCAView {
 
         if allowsPlannerDrag {
             row
-                .draggable(task.taskID.uuidString) {
-                    taskDragPreview(for: task, rowNumber: rowNumber)
-                }
+                .draggable(task.taskID.uuidString)
                 .help("Drag to place this task on the planner")
         } else {
             row
         }
     }
 
-    private func macTaskSourceRowGlassTint(for task: HomeFeature.RoutineDisplay) -> Color {
+    private func macTaskSourceRowGlassTint(
+        for task: HomeFeature.RoutineDisplay,
+        rowVisibility: HomeTaskRowVisibility
+    ) -> Color {
         if task.id == store.selectedTaskID {
             return .accentColor
         }
-        guard taskRowVisibility.shows(.rowColor) else {
+        guard rowVisibility.shows(.rowColor) else {
             return .secondary
         }
         return task.color.swiftUIColor ?? .secondary
     }
 
-    private func macTaskSourceRowGlassOpacity(for task: HomeFeature.RoutineDisplay) -> Double {
+    private func macTaskSourceRowGlassOpacity(
+        for task: HomeFeature.RoutineDisplay,
+        rowVisibility: HomeTaskRowVisibility
+    ) -> Double {
         if task.id == store.selectedTaskID {
             return 0.16
         }
-        guard taskRowVisibility.shows(.rowColor) else {
+        guard rowVisibility.shows(.rowColor) else {
             return 0.05
         }
         return task.color.swiftUIColor == nil ? 0.05 : 0.10
@@ -902,11 +930,14 @@ extension HomeTCAView {
         store.send(.macSidebarSelectionChanged(.task(taskID)))
     }
 
-    private func macTaskSourceRowBackground(for task: HomeFeature.RoutineDisplay) -> Color {
+    private func macTaskSourceRowBackground(
+        for task: HomeFeature.RoutineDisplay,
+        rowVisibility: HomeTaskRowVisibility
+    ) -> Color {
         if store.selectedTaskID == task.taskID {
             return Color.accentColor.opacity(0.18)
         }
-        guard taskRowVisibility.shows(.rowColor) else {
+        guard rowVisibility.shows(.rowColor) else {
             return Color.secondary.opacity(0.08)
         }
         if let color = task.color.swiftUIColor {
@@ -915,11 +946,14 @@ extension HomeTCAView {
         return Color.secondary.opacity(0.08)
     }
 
-    private func macTaskSourceRowStroke(for task: HomeFeature.RoutineDisplay) -> Color {
+    private func macTaskSourceRowStroke(
+        for task: HomeFeature.RoutineDisplay,
+        rowVisibility: HomeTaskRowVisibility
+    ) -> Color {
         if store.selectedTaskID == task.taskID {
             return Color.accentColor.opacity(0.55)
         }
-        guard taskRowVisibility.shows(.rowColor) else {
+        guard rowVisibility.shows(.rowColor) else {
             return Color.primary.opacity(0.06)
         }
         if let color = task.color.swiftUIColor {
@@ -932,13 +966,19 @@ extension HomeTCAView {
         1
     }
 
-    private func macTaskSourceRowColorBadgeTrailingSpace(for task: HomeFeature.RoutineDisplay) -> CGFloat {
-        taskRowVisibility.shows(.colorBadge) && task.color.swiftUIColor != nil ? 15 : 0
+    private func macTaskSourceRowColorBadgeTrailingSpace(
+        for task: HomeFeature.RoutineDisplay,
+        rowVisibility: HomeTaskRowVisibility
+    ) -> CGFloat {
+        rowVisibility.shows(.colorBadge) && task.color.swiftUIColor != nil ? 15 : 0
     }
 
     @ViewBuilder
-    private func macTaskSourceRowColorBadge(for task: HomeFeature.RoutineDisplay) -> some View {
-        if taskRowVisibility.shows(.colorBadge),
+    private func macTaskSourceRowColorBadge(
+        for task: HomeFeature.RoutineDisplay,
+        rowVisibility: HomeTaskRowVisibility
+    ) -> some View {
+        if rowVisibility.shows(.colorBadge),
            let color = task.color.swiftUIColor {
             HomeTaskRowColorMarkerShape()
                 .fill(color)
@@ -1009,7 +1049,9 @@ extension HomeTCAView {
         includeMarkDone: Bool,
         moveContext: HomeTaskListMoveContext?
     ) -> some View {
-        routineRow(for: task, rowNumber: rowNumber)
+        let rowVisibility = taskRowVisibility
+
+        return platformRoutineRow(for: task, rowNumber: rowNumber, rowVisibility: rowVisibility)
             .tag(MacSidebarSelection.task(task.taskID))
             .contentShape(Rectangle())
             .routinaMacContextMenu {

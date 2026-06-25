@@ -43,6 +43,114 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testCloudSyncFanInThrottlesSurfaceRefreshes() throws {
+        let source = try Self.sourceFile("SharedCore/Sync/CloudSyncedSurfaceRefreshCoordinator.swift")
+
+        XCTAssertTrue(source.contains("surfaceRefreshQuietWindowMilliseconds: Int64 = 1_500"))
+        XCTAssertTrue(source.contains("widgetRefreshQuietWindowMilliseconds: Int64 = 30_000"))
+        XCTAssertTrue(source.contains("minimumSurfaceRefreshSpacing: TimeInterval = 2.0"))
+        XCTAssertTrue(source.contains("maximumSurfaceRefreshDeferral: TimeInterval = 5.0"))
+        XCTAssertTrue(source.contains("firstPendingSurfaceRefreshAt"))
+        XCTAssertTrue(source.contains("lastSurfaceRefreshAt"))
+        XCTAssertTrue(
+            source.contains("pendingRefreshTask?.cancel()"),
+            "Cloud sync notification bursts should keep one pending surface refresh instead of posting repeated planner invalidations."
+        )
+        XCTAssertTrue(
+            source.contains("postRoutineDidUpdate(\n            widgetRefreshDelayMilliseconds: widgetRefreshQuietWindowMilliseconds\n        )"),
+            "Cloud sync should update app surfaces promptly while deferring nonessential widget refresh work out of active scroll windows."
+        )
+    }
+
+    func testRoutineUpdateCoalescesWidgetRefreshWork() throws {
+        let source = try Self.sourceFile("SharedCore/Services/NotificationCoordinator.swift")
+        guard
+            let methodStart = source.range(of: "func postRoutineDidUpdate(widgetRefreshDelayMilliseconds: Int64? = nil)"),
+            let tagRenameStart = source.range(of: "func postRoutineTagDidRename")
+        else {
+            XCTFail("Expected routine update notification helpers to exist")
+            return
+        }
+        let methodSource = String(source[methodStart.lowerBound..<tagRenameStart.lowerBound])
+
+        XCTAssertTrue(methodSource.contains("RoutineWidgetRefreshScheduler.schedule(delayMilliseconds: widgetRefreshDelayMilliseconds)"))
+        XCTAssertFalse(
+            methodSource.contains("WidgetStatsService.refresh(using:"),
+            "Routine updates should coalesce widget stats refreshes instead of fetching widget data on every posted app update."
+        )
+        XCTAssertTrue(source.contains("private enum RoutineWidgetRefreshScheduler"))
+        XCTAssertTrue(source.contains("pendingTask?.cancel()"))
+        XCTAssertTrue(source.contains("defaultWidgetRefreshQuietWindowMilliseconds: Int64 = 1_500"))
+    }
+
+    func testPlannerCachesProtectedSessionBlocksDuringScroll() throws {
+        let source = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
+
+        XCTAssertTrue(source.contains("@StateObject private var sleepBlocksCache = DayPlanSleepBlocksCache()"))
+        XCTAssertTrue(source.contains("@StateObject private var awayBlocksCache = DayPlanAwayBlocksCache()"))
+        XCTAssertTrue(source.contains("let sleepBlocksByDayKey = sleepBlocksCache.blocksByDayKey("))
+        XCTAssertTrue(source.contains("let awayBlocksByDayKey = awayBlocksCache.blocksByDayKey("))
+        XCTAssertTrue(source.contains("referenceMinute = relevantSessions.contains { $0.endedAt == nil }"))
+        XCTAssertTrue(source.contains("referenceMinute = relevantSessions.contains { $0.isActive && $0.plannedEndAt == nil }"))
+    }
+
+    func testPlannerTimelinePanelDoesNotBindSwiftDataQueriesIntoScrollRenderPath() throws {
+        let source = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
+        guard
+            let panelStart = source.range(of: "private struct DayPlanTimelinePanelView: View"),
+            let contentStart = source.range(of: "private struct DayPlanTimelinePanelContentView: View")
+        else {
+            XCTFail("Expected DayPlan timeline panel structures to exist")
+            return
+        }
+        let panelSource = String(source[panelStart.lowerBound..<contentStart.lowerBound])
+
+        XCTAssertFalse(
+            panelSource.contains("@Query"),
+            "Planner timeline scrolling should read an explicit snapshot, not SwiftData @Query arrays that refetch during body updates."
+        )
+        XCTAssertTrue(panelSource.contains("@State private var dataSnapshot = DayPlanTimelineDataSnapshot()"))
+        XCTAssertTrue(panelSource.contains("refreshTimelineDataSnapshot()"))
+        XCTAssertFalse(
+            panelSource.contains("ModelContext.didSave"),
+            "Planner timeline data refreshes should stay behind the app-owned update fan-in instead of every raw SwiftData save."
+        )
+        XCTAssertTrue(source.contains("private struct DayPlanTimelineDataSnapshot"))
+        XCTAssertTrue(source.contains("FetchDescriptor<RoutineTask>()"))
+    }
+
+    func testPlannerTimelineCachesRenderSnapshotDuringScroll() throws {
+        let source = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
+
+        XCTAssertTrue(source.contains("@StateObject private var renderSnapshotCache = DayPlanTimelineRenderSnapshotCache()"))
+        XCTAssertTrue(source.contains("let renderSnapshot = renderSnapshotCache.snapshot("))
+        XCTAssertTrue(source.contains("private final class DayPlanTimelineRenderSnapshotCache"))
+        XCTAssertTrue(source.contains("var dataSnapshotID: UUID"))
+        XCTAssertTrue(source.contains("let refreshesEveryMinute = Self.hasVisibleOpenEndedTimelineBlock("))
+        XCTAssertTrue(source.contains("var referenceMinute: ReferenceMinute?"))
+        XCTAssertTrue(source.contains("referenceMinute = refreshesEveryMinute"))
+        XCTAssertTrue(
+            source.contains("if cachedKey == key, let cachedSnapshot"),
+            "Planner scroll/layout passes should reuse the current render snapshot instead of rebuilding timeline dictionaries and SwiftData-derived task state."
+        )
+    }
+
+    func testPlannerTimelineDataSnapshotDoesNotInvalidateForEquivalentRefreshes() throws {
+        let source = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
+
+        XCTAssertTrue(source.contains("private struct DayPlanTimelineDataSnapshotSignature: Equatable"))
+        XCTAssertTrue(source.contains("var signature = DayPlanTimelineDataSnapshotSignature()"))
+        XCTAssertTrue(source.contains("if refreshedSnapshot.signature != dataSnapshot.signature"))
+        XCTAssertTrue(
+            source.contains("colorRawValue = task.colorRawValue"),
+            "The planner snapshot signature should include fields that change visible block presentation, not just task IDs."
+        )
+        XCTAssertTrue(
+            source.contains("accumulatedPausedSeconds = session.accumulatedPausedSeconds"),
+            "Focus session timing changes should still invalidate the planner snapshot when they affect active focus blocks."
+        )
+    }
+
     func testHomeDoneStatsDoesNotRewalkLogsForEachOutcome() throws {
         let source = try Self.sourceFile("SharedCore/Features/Home/HomeTaskSupport.swift")
 
@@ -78,6 +186,35 @@ final class PerformanceRegressionTests: XCTestCase {
             source.contains("WidgetCenter.shared.reloadAllTimelines()"),
             "Mac launch should reload only the Routina widgets whose data changed instead of invalidating every widget timeline."
         )
+    }
+
+    func testMacRawSwiftDataSavesDoNotDuplicateWidgetRefreshWork() throws {
+        let rootSource = try Self.sourceFile("RoutinaMacApp/Screens/App/RoutinaMacRootScene.swift")
+        let statusStoreSource = try Self.sourceFile("RoutinaMacApp/Screens/App/RoutinaMacFocusTimerStatusStore.swift")
+        guard
+            let saveReceiveStart = rootSource.range(of: "publisher(for: ModelContext.didSave)"),
+            let routineReceiveStart = rootSource.range(
+                of: "publisher(for: .routineDidUpdate)",
+                range: saveReceiveStart.upperBound..<rootSource.endIndex
+            )
+        else {
+            XCTFail("Expected mac root scene save/update notification handlers")
+            return
+        }
+        let saveReceiveSource = String(rootSource[saveReceiveStart.lowerBound..<routineReceiveStart.lowerBound])
+
+        XCTAssertFalse(
+            saveReceiveSource.contains("widgetRefreshScheduler.schedule()"),
+            "Raw SwiftData save notifications are noisy during CloudKit sync and should not duplicate coalesced routine-update widget refresh work."
+        )
+        XCTAssertTrue(saveReceiveSource.contains("focusTimerStatusStore.scheduleRefresh()"))
+        XCTAssertFalse(
+            rootSource.contains("func schedule(delayNanoseconds"),
+            "The mac widget scheduler should be launch-only; routine updates use the shared coalesced widget scheduler."
+        )
+        XCTAssertTrue(statusStoreSource.contains("private var scheduledRefreshTask"))
+        XCTAssertTrue(statusStoreSource.contains("func scheduleRefresh(delayNanoseconds: UInt64 = 500_000_000)"))
+        XCTAssertTrue(statusStoreSource.contains("scheduledRefreshTask?.cancel()"))
     }
 
     func testWidgetStatsServiceDoesNotFetchCanceledLogsForStats() throws {

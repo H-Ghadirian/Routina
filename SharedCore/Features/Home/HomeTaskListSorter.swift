@@ -11,15 +11,29 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
     var metrics: HomeTaskListMetrics<Display>
 
     func sortedTasks(_ displays: [Display]) -> [Display] {
-        displays.sorted(by: regularTaskSort)
+        let sortKeys = cachedSortKeys(for: displays)
+        return displays.sorted { lhs, rhs in
+            regularTaskSort(lhs, rhs, sortKeys: sortKeys)
+        }
     }
 
     func regularTaskSort(_ lhs: Display, _ rhs: Display) -> Bool {
+        regularTaskSort(lhs, rhs, sortKeys: nil)
+    }
+
+    private func regularTaskSort(
+        _ lhs: Display,
+        _ rhs: Display,
+        sortKeys: [UUID: HomeTaskListSortKey]?
+    ) -> Bool {
+        let lhsSortKey = sortKeys?[lhs.taskID]
+        let rhsSortKey = sortKeys?[rhs.taskID]
+
         if let manualOrderComparison = manualOrderSortResult(
             lhs,
             rhs,
-            sectionKey: regularManualOrderSectionKey(for: lhs),
-            otherSectionKey: regularManualOrderSectionKey(for: rhs)
+            sectionKey: regularManualOrderSectionKey(for: lhs, sortKey: lhsSortKey),
+            otherSectionKey: regularManualOrderSectionKey(for: rhs, sortKey: rhsSortKey)
         ) {
             return manualOrderComparison
         }
@@ -32,14 +46,14 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
             return lhs.pressure.sortOrder > rhs.pressure.sortOrder
         }
 
-        let lhsOverdueDays = metrics.overdueDays(for: lhs)
-        let rhsOverdueDays = metrics.overdueDays(for: rhs)
+        let lhsOverdueDays = lhsSortKey?.overdueDays ?? metrics.overdueDays(for: lhs)
+        let rhsOverdueDays = rhsSortKey?.overdueDays ?? metrics.overdueDays(for: rhs)
         if lhsOverdueDays != rhsOverdueDays {
             return lhsOverdueDays > rhsOverdueDays
         }
 
-        let lhsUrgency = metrics.urgencyLevel(for: lhs)
-        let rhsUrgency = metrics.urgencyLevel(for: rhs)
+        let lhsUrgency = lhsSortKey?.urgencyLevel ?? metrics.urgencyLevel(for: lhs)
+        let rhsUrgency = rhsSortKey?.urgencyLevel ?? metrics.urgencyLevel(for: rhs)
         if lhsUrgency != rhsUrgency {
             return lhsUrgency > rhsUrgency
         }
@@ -153,6 +167,13 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
     }
 
     func regularManualOrderSectionKey(for task: Display) -> String {
+        regularManualOrderSectionKey(for: task, sortKey: nil)
+    }
+
+    private func regularManualOrderSectionKey(
+        for task: Display,
+        sortKey: HomeTaskListSortKey?
+    ) -> String {
         if task.isDailyRoutine {
             return Self.dailyManualOrderSectionKey
         }
@@ -162,16 +183,18 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
         }
 
         if configuration.routineListSectioningMode == .tags {
-            return task.taskListTagManualOrderSectionKey
+            return sortKey?.tagManualOrderSectionKey ?? task.taskListTagManualOrderSectionKey
         }
 
         if task.isDoneToday {
             return "doneToday"
         }
-        if metrics.overdueDays(for: task) > 0 {
+        if sortKey?.overdueDays ?? metrics.overdueDays(for: task) > 0 {
             return "overdue"
         }
-        if metrics.urgencyLevel(for: task) > 0 || metrics.isYellowUrgency(task) {
+        let urgencyLevel = sortKey?.urgencyLevel ?? metrics.urgencyLevel(for: task)
+        let isYellowUrgency = sortKey?.isYellowUrgency ?? metrics.isYellowUrgency(task)
+        if urgencyLevel > 0 || isYellowUrgency {
             return "dueSoon"
         }
 
@@ -181,13 +204,43 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
         case .status:
             return "onTrack"
         case .deadlineDate:
-            guard let sectionDate = metrics.sectionDateForDeadlineGrouping(for: task) else {
+            guard let sectionDate = sortKey?.deadlineSectionDate ?? metrics.sectionDateForDeadlineGrouping(for: task) else {
                 return "onTrack"
             }
             return "onTrack:\(manualOrderDateKey(for: sectionDate))"
         case .tags:
-            return task.taskListTagManualOrderSectionKey
+            return sortKey?.tagManualOrderSectionKey ?? task.taskListTagManualOrderSectionKey
         }
+    }
+
+    private func cachedSortKeys(for displays: [Display]) -> [UUID: HomeTaskListSortKey] {
+        var sortKeys: [UUID: HomeTaskListSortKey] = [:]
+        sortKeys.reserveCapacity(displays.count)
+
+        let sectioningMode = configuration.routineListSectioningMode
+        for task in displays {
+            let overdueDays = metrics.overdueDays(for: task)
+            let urgencyLevel = metrics.urgencyLevel(for: task)
+            let isYellowUrgency = sectioningMode == .status || sectioningMode == .deadlineDate
+                ? metrics.isYellowUrgency(task)
+                : false
+            let tagManualOrderSectionKey = sectioningMode == .tags
+                ? HomeTaskListTagGrouping.descriptor(for: task).sectionKey
+                : nil
+            let deadlineSectionDate = sectioningMode == .deadlineDate
+                ? metrics.sectionDateForDeadlineGrouping(for: task)
+                : nil
+
+            sortKeys[task.taskID] = HomeTaskListSortKey(
+                overdueDays: overdueDays,
+                urgencyLevel: urgencyLevel,
+                isYellowUrgency: isYellowUrgency,
+                tagManualOrderSectionKey: tagManualOrderSectionKey,
+                deadlineSectionDate: deadlineSectionDate
+            )
+        }
+
+        return sortKeys
     }
 
     private func manualOrderDateKey(for date: Date) -> String {
@@ -220,4 +273,12 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
             return nil
         }
     }
+}
+
+private struct HomeTaskListSortKey {
+    let overdueDays: Int
+    let urgencyLevel: Int
+    let isYellowUrgency: Bool
+    let tagManualOrderSectionKey: String?
+    let deadlineSectionDate: Date?
 }

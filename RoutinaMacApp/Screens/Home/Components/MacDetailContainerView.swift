@@ -17,7 +17,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     @Binding var selectedStatsDashboardScope: StatsDashboardScope
     let selectedSettingsSection: SettingsMacSection
     let dayPlanPlanner: DayPlanPlannerState
-    let adventureProgression: HomeAdventureProgression
+    let adventureProgression: HomeAdventureProgression?
     let showsPlaces: Bool
     @Binding var mainDetailMode: MacHomeDetailMode
     @Binding var isBoardInspectorPresented: Bool
@@ -154,7 +154,15 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     private var progressDetailContent: some View {
         switch currentProgressMode {
         case .adventure:
-            HomeMacAdventureView(progression: adventureProgression)
+            if let adventureProgression {
+                HomeMacAdventureView(progression: adventureProgression)
+            } else {
+                ContentUnavailableView(
+                    "Adventure unavailable",
+                    systemImage: "sparkles",
+                    description: Text("Adventure progress is not currently available for this view.")
+                )
+            }
         case .stats:
             if let statsStore {
             StatsViewWrapper(

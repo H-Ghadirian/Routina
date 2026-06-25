@@ -507,48 +507,605 @@ private struct DayPlanHeaderView: View {
 }
 
 private struct DayPlanTimelinePanelView: View {
-    @Environment(\.calendar) private var calendar
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.undoManager) private var undoManager
+    @Environment(\.scenePhase) private var scenePhase
     @ObservedObject var planner: DayPlanPlannerState
     var onSelectUnplannedCompletedDate: ((Date) -> Void)? = nil
     var onOpenTaskDetails: ((UUID) -> Void)? = nil
     var onOpenEventDetails: ((UUID) -> Void)? = nil
-    @Query private var tasks: [RoutineTask]
-    @Query private var logs: [RoutineLog]
-    @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
-    @Query(sort: \AwaySession.startedAt, order: .reverse) private var awaySessions: [AwaySession]
-    @Query(sort: \RoutineEvent.startedAt, order: .reverse) private var events: [RoutineEvent]
-    @Query(sort: \SprintFocusSessionRecord.startedAt, order: .reverse) private var sprintFocusSessions: [SprintFocusSessionRecord]
-    @Query private var sprintFocusAllocations: [SprintFocusAllocationRecord]
-    @Query private var boardSprints: [BoardSprintRecord]
-    @Query(sort: \FocusSession.startedAt, order: .reverse) private var focusSessions: [FocusSession]
-    @State private var selectedEventID: UUID?
-    @State private var allocatingPlanFocusSession: DayPlanFocusAllocationPresentation?
-    @AppStorage(
-        UserDefaultBoolValueKey.appSettingShowTimelineTasksInDayPlanner.rawValue,
-        store: SharedDefaults.app
-    ) private var showsTimelineTasksInDayPlanner = true
-    @AppStorage(
-        UserDefaultStringValueKey.appSettingHiddenDayPlanTimelineActivityIDs.rawValue,
-        store: SharedDefaults.app
-    ) private var hiddenTimelineActivityStorage = ""
+    @State private var dataSnapshot = DayPlanTimelineDataSnapshot()
+    @StateObject private var timelinePlacementCache = DayPlanTimelinePlacementCache()
+    @StateObject private var allDayBlocksCache = DayPlanAllDayBlocksCache()
+    @StateObject private var visibleBlockContextCache = DayPlanVisibleBlockContextCache()
+    @StateObject private var sleepBlocksCache = DayPlanSleepBlocksCache()
+    @StateObject private var awayBlocksCache = DayPlanAwayBlocksCache()
+    @StateObject private var completedSprintFocusBlocksCache = DayPlanSprintFocusBlocksCache()
+    @StateObject private var activeSprintFocusBlocksCache = DayPlanSprintFocusBlocksCache()
+    @StateObject private var renderSnapshotCache = DayPlanTimelineRenderSnapshotCache()
 
     var body: some View {
-        let referenceDate = Date()
-        let visibleDates = planner.visibleDates(calendar: calendar)
-        let plannedBlocksByDayKey = plannedBlocksByDayKey(for: visibleDates)
-        let rawPlannedBlocks = visibleDates.flatMap { date in
-            planner.blocks(on: date, calendar: calendar, context: modelContext)
+        DayPlanTimelinePanelContentView(
+            planner: planner,
+            onSelectUnplannedCompletedDate: onSelectUnplannedCompletedDate,
+            onOpenTaskDetails: onOpenTaskDetails,
+            onOpenEventDetails: onOpenEventDetails,
+            dataSnapshotID: dataSnapshot.id,
+            tasks: dataSnapshot.tasks,
+            logs: dataSnapshot.logs,
+            sleepSessions: dataSnapshot.sleepSessions,
+            awaySessions: dataSnapshot.awaySessions,
+            events: dataSnapshot.events,
+            sprintFocusSessions: dataSnapshot.sprintFocusSessions,
+            sprintFocusAllocations: dataSnapshot.sprintFocusAllocations,
+            boardSprints: dataSnapshot.boardSprints,
+            focusSessions: dataSnapshot.focusSessions,
+            timelinePlacementCache: timelinePlacementCache,
+            allDayBlocksCache: allDayBlocksCache,
+            visibleBlockContextCache: visibleBlockContextCache,
+            sleepBlocksCache: sleepBlocksCache,
+            awayBlocksCache: awayBlocksCache,
+            completedSprintFocusBlocksCache: completedSprintFocusBlocksCache,
+            activeSprintFocusBlocksCache: activeSprintFocusBlocksCache,
+            renderSnapshotCache: renderSnapshotCache
+        )
+        .task {
+            refreshTimelineDataSnapshot()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
+            refreshTimelineDataSnapshot()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                refreshTimelineDataSnapshot()
+            }
+        }
+    }
+
+    private func refreshTimelineDataSnapshot() {
+        do {
+            let refreshedSnapshot = try DayPlanTimelineDataSnapshot.fetch(from: modelContext)
+            if refreshedSnapshot.signature != dataSnapshot.signature {
+                dataSnapshot = refreshedSnapshot
+            }
+        } catch {
+            NSLog("DayPlanTimelinePanelView: failed to refresh planner data snapshot - \(error.localizedDescription)")
+        }
+    }
+}
+
+private struct DayPlanTimelineDataSnapshot {
+    var id = UUID()
+    var signature = DayPlanTimelineDataSnapshotSignature()
+    var tasks: [RoutineTask] = []
+    var logs: [RoutineLog] = []
+    var sleepSessions: [SleepSession] = []
+    var awaySessions: [AwaySession] = []
+    var events: [RoutineEvent] = []
+    var sprintFocusSessions: [SprintFocusSessionRecord] = []
+    var sprintFocusAllocations: [SprintFocusAllocationRecord] = []
+    var boardSprints: [BoardSprintRecord] = []
+    var focusSessions: [FocusSession] = []
+
+    init() {}
+
+    init(
+        tasks: [RoutineTask],
+        logs: [RoutineLog],
+        sleepSessions: [SleepSession],
+        awaySessions: [AwaySession],
+        events: [RoutineEvent],
+        sprintFocusSessions: [SprintFocusSessionRecord],
+        sprintFocusAllocations: [SprintFocusAllocationRecord],
+        boardSprints: [BoardSprintRecord],
+        focusSessions: [FocusSession]
+    ) {
+        signature = DayPlanTimelineDataSnapshotSignature(
+            tasks: tasks,
+            logs: logs,
+            sleepSessions: sleepSessions,
+            awaySessions: awaySessions,
+            events: events,
+            sprintFocusSessions: sprintFocusSessions,
+            sprintFocusAllocations: sprintFocusAllocations,
+            boardSprints: boardSprints,
+            focusSessions: focusSessions
+        )
+        self.tasks = tasks
+        self.logs = logs
+        self.sleepSessions = sleepSessions
+        self.awaySessions = awaySessions
+        self.events = events
+        self.sprintFocusSessions = sprintFocusSessions
+        self.sprintFocusAllocations = sprintFocusAllocations
+        self.boardSprints = boardSprints
+        self.focusSessions = focusSessions
+    }
+
+    static func fetch(from context: ModelContext) throws -> DayPlanTimelineDataSnapshot {
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+        let sleepSessions = try context.fetch(
+            FetchDescriptor<SleepSession>(
+                sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
+            )
+        )
+        let awaySessions = try context.fetch(
+            FetchDescriptor<AwaySession>(
+                sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
+            )
+        )
+        let events = try context.fetch(
+            FetchDescriptor<RoutineEvent>(
+                sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
+            )
+        )
+        let sprintFocusSessions = try context.fetch(
+            FetchDescriptor<SprintFocusSessionRecord>(
+                sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
+            )
+        )
+        let sprintFocusAllocations = try context.fetch(FetchDescriptor<SprintFocusAllocationRecord>())
+        let boardSprints = try context.fetch(FetchDescriptor<BoardSprintRecord>())
+        let focusSessions = try context.fetch(
+            FetchDescriptor<FocusSession>(
+                sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
+            )
+        )
+
+        return DayPlanTimelineDataSnapshot(
+            tasks: tasks,
+            logs: logs,
+            sleepSessions: sleepSessions,
+            awaySessions: awaySessions,
+            events: events,
+            sprintFocusSessions: sprintFocusSessions,
+            sprintFocusAllocations: sprintFocusAllocations,
+            boardSprints: boardSprints,
+            focusSessions: focusSessions
+        )
+    }
+}
+
+private struct DayPlanTimelineDataSnapshotSignature: Equatable {
+    var tasks: [TaskSnapshot] = []
+    var logs: [LogSnapshot] = []
+    var sleepSessions: [SleepSessionSnapshot] = []
+    var awaySessions: [AwaySessionSnapshot] = []
+    var events: [EventSnapshot] = []
+    var sprintFocusSessions: [SprintFocusSessionSnapshot] = []
+    var sprintFocusAllocations: [SprintFocusAllocationSnapshot] = []
+    var boardSprints: [BoardSprintSnapshot] = []
+    var focusSessions: [FocusSessionSnapshot] = []
+
+    init() {}
+
+    init(
+        tasks: [RoutineTask],
+        logs: [RoutineLog],
+        sleepSessions: [SleepSession],
+        awaySessions: [AwaySession],
+        events: [RoutineEvent],
+        sprintFocusSessions: [SprintFocusSessionRecord],
+        sprintFocusAllocations: [SprintFocusAllocationRecord],
+        boardSprints: [BoardSprintRecord],
+        focusSessions: [FocusSession]
+    ) {
+        self.tasks = tasks
+            .map(TaskSnapshot.init(task:))
+            .sorted { $0.idSortKey < $1.idSortKey }
+        self.logs = logs
+            .map(LogSnapshot.init(log:))
+            .sorted { lhs, rhs in
+                if lhs.timestamp != rhs.timestamp {
+                    return (lhs.timestamp ?? .distantPast) < (rhs.timestamp ?? .distantPast)
+                }
+                return lhs.idSortKey < rhs.idSortKey
+            }
+        self.sleepSessions = sleepSessions
+            .map(SleepSessionSnapshot.init(session:))
+            .sorted { lhs, rhs in
+                if lhs.startedAt != rhs.startedAt {
+                    return (lhs.startedAt ?? .distantPast) < (rhs.startedAt ?? .distantPast)
+                }
+                return lhs.idSortKey < rhs.idSortKey
+            }
+        self.awaySessions = awaySessions
+            .map(AwaySessionSnapshot.init(session:))
+            .sorted { lhs, rhs in
+                if lhs.startedAt != rhs.startedAt {
+                    return (lhs.startedAt ?? .distantPast) < (rhs.startedAt ?? .distantPast)
+                }
+                return lhs.idSortKey < rhs.idSortKey
+            }
+        self.events = events
+            .map(EventSnapshot.init(event:))
+            .sorted { lhs, rhs in
+                if lhs.startedAt != rhs.startedAt {
+                    return (lhs.startedAt ?? .distantPast) < (rhs.startedAt ?? .distantPast)
+                }
+                return lhs.idSortKey < rhs.idSortKey
+            }
+        self.sprintFocusSessions = sprintFocusSessions
+            .map(SprintFocusSessionSnapshot.init(session:))
+            .sorted { lhs, rhs in
+                if lhs.startedAt != rhs.startedAt {
+                    return lhs.startedAt < rhs.startedAt
+                }
+                return lhs.idSortKey < rhs.idSortKey
+            }
+        self.sprintFocusAllocations = sprintFocusAllocations
+            .map(SprintFocusAllocationSnapshot.init(allocation:))
+            .sorted { lhs, rhs in
+                if lhs.sessionIDSortKey != rhs.sessionIDSortKey {
+                    return lhs.sessionIDSortKey < rhs.sessionIDSortKey
+                }
+                if lhs.sortOrder != rhs.sortOrder {
+                    return lhs.sortOrder < rhs.sortOrder
+                }
+                return lhs.idSortKey < rhs.idSortKey
+            }
+        self.boardSprints = boardSprints
+            .map(BoardSprintSnapshot.init(sprint:))
+            .sorted { $0.idSortKey < $1.idSortKey }
+        self.focusSessions = focusSessions
+            .map(FocusSessionSnapshot.init(session:))
+            .sorted { lhs, rhs in
+                if lhs.startedAt != rhs.startedAt {
+                    return (lhs.startedAt ?? .distantPast) < (rhs.startedAt ?? .distantPast)
+                }
+                return lhs.idSortKey < rhs.idSortKey
+            }
+    }
+
+    struct TaskSnapshot: Equatable {
+        var id: UUID
+        var idSortKey: String
+        var name: String?
+        var emoji: String?
+        var notes: String?
+        var deadline: Date?
+        var isAllDay: Bool
+        var routineDurationModeRawValue: String
+        var availabilityStartDate: Date?
+        var availabilityEndDate: Date?
+        var scheduleModeRawValue: String
+        var recurrenceStorageVersion: Int16
+        var recurrenceKindRawValue: String
+        var recurrenceTimeOfDayHour: Int?
+        var recurrenceTimeOfDayMinute: Int?
+        var recurrenceTimeRangeStartHour: Int?
+        var recurrenceTimeRangeStartMinute: Int?
+        var recurrenceTimeRangeEndHour: Int?
+        var recurrenceTimeRangeEndMinute: Int?
+        var recurrenceWeekday: Int?
+        var recurrenceDayOfMonth: Int?
+        var recurrenceRuleStorage: String
+        var interval: Int16
+        var lastDone: Date?
+        var canceledAt: Date?
+        var scheduleAnchor: Date?
+        var pausedAt: Date?
+        var snoozedUntil: Date?
+        var createdAt: Date?
+        var colorRawValue: String
+        var autoAssumeDailyDone: Bool
+        var autoAssumeDoneTimeOfDayHour: Int?
+        var autoAssumeDoneTimeOfDayMinute: Int?
+        var estimatedDurationMinutes: Int?
+        var stepsStorage: String
+        var checklistItemsStorage: String
+        var completedChecklistItemIDsStorage: String
+        var completedChecklistProgressStartedAt: Date?
+
+        init(task: RoutineTask) {
+            id = task.id
+            idSortKey = task.id.uuidString
+            name = task.name
+            emoji = task.emoji
+            notes = task.notes
+            deadline = task.deadline
+            isAllDay = task.isAllDay
+            routineDurationModeRawValue = task.routineDurationModeRawValue
+            availabilityStartDate = task.availabilityStartDate
+            availabilityEndDate = task.availabilityEndDate
+            scheduleModeRawValue = task.scheduleModeRawValue
+            recurrenceStorageVersion = task.recurrenceStorageVersion
+            recurrenceKindRawValue = task.recurrenceKindRawValue
+            recurrenceTimeOfDayHour = task.recurrenceTimeOfDayHour
+            recurrenceTimeOfDayMinute = task.recurrenceTimeOfDayMinute
+            recurrenceTimeRangeStartHour = task.recurrenceTimeRangeStartHour
+            recurrenceTimeRangeStartMinute = task.recurrenceTimeRangeStartMinute
+            recurrenceTimeRangeEndHour = task.recurrenceTimeRangeEndHour
+            recurrenceTimeRangeEndMinute = task.recurrenceTimeRangeEndMinute
+            recurrenceWeekday = task.recurrenceWeekday
+            recurrenceDayOfMonth = task.recurrenceDayOfMonth
+            recurrenceRuleStorage = task.recurrenceRuleStorage
+            interval = task.interval
+            lastDone = task.lastDone
+            canceledAt = task.canceledAt
+            scheduleAnchor = task.scheduleAnchor
+            pausedAt = task.pausedAt
+            snoozedUntil = task.snoozedUntil
+            createdAt = task.createdAt
+            colorRawValue = task.colorRawValue
+            autoAssumeDailyDone = task.autoAssumeDailyDone
+            autoAssumeDoneTimeOfDayHour = task.autoAssumeDoneTimeOfDayHour
+            autoAssumeDoneTimeOfDayMinute = task.autoAssumeDoneTimeOfDayMinute
+            estimatedDurationMinutes = task.estimatedDurationMinutes
+            stepsStorage = task.stepsStorage
+            checklistItemsStorage = task.checklistItemsStorage
+            completedChecklistItemIDsStorage = task.completedChecklistItemIDsStorage
+            completedChecklistProgressStartedAt = task.completedChecklistProgressStartedAt
+        }
+    }
+
+    struct LogSnapshot: Equatable {
+        var id: UUID
+        var idSortKey: String
+        var timestamp: Date?
+        var taskID: UUID
+        var kindRawValue: String
+        var actualDurationMinutes: Int?
+
+        init(log: RoutineLog) {
+            id = log.id
+            idSortKey = log.id.uuidString
+            timestamp = log.timestamp
+            taskID = log.taskID
+            kindRawValue = log.kindRawValue
+            actualDurationMinutes = log.actualDurationMinutes
+        }
+    }
+
+    struct SleepSessionSnapshot: Equatable {
+        var id: UUID
+        var idSortKey: String
+        var startedAt: Date?
+        var endedAt: Date?
+        var targetDurationMinutes: Int
+
+        init(session: SleepSession) {
+            id = session.id
+            idSortKey = session.id.uuidString
+            startedAt = session.startedAt
+            endedAt = session.endedAt
+            targetDurationMinutes = session.targetDurationMinutes
+        }
+    }
+
+    struct AwaySessionSnapshot: Equatable {
+        var id: UUID
+        var idSortKey: String
+        var presetRawValue: String
+        var title: String
+        var linkedTaskID: UUID?
+        var startedAt: Date?
+        var plannedDurationSeconds: TimeInterval
+        var completedAt: Date?
+        var endedEarlyAt: Date?
+
+        init(session: AwaySession) {
+            id = session.id
+            idSortKey = session.id.uuidString
+            presetRawValue = session.presetRawValue
+            title = session.title
+            linkedTaskID = session.linkedTaskID
+            startedAt = session.startedAt
+            plannedDurationSeconds = session.plannedDurationSeconds
+            completedAt = session.completedAt
+            endedEarlyAt = session.endedEarlyAt
+        }
+    }
+
+    struct EventSnapshot: Equatable {
+        var id: UUID
+        var idSortKey: String
+        var title: String?
+        var emoji: String?
+        var isAllDay: Bool
+        var startedAt: Date?
+        var endedAt: Date?
+
+        init(event: RoutineEvent) {
+            id = event.id
+            idSortKey = event.id.uuidString
+            title = event.title
+            emoji = event.emoji
+            isAllDay = event.isAllDay
+            startedAt = event.startedAt
+            endedAt = event.endedAt
+        }
+    }
+
+    struct SprintFocusSessionSnapshot: Equatable {
+        var id: UUID
+        var idSortKey: String
+        var sprintID: UUID
+        var startedAt: Date
+        var stoppedAt: Date?
+        var pausedAt: Date?
+        var accumulatedPausedSeconds: TimeInterval
+
+        init(session: SprintFocusSessionRecord) {
+            id = session.id
+            idSortKey = session.id.uuidString
+            sprintID = session.sprintID
+            startedAt = session.startedAt
+            stoppedAt = session.stoppedAt
+            pausedAt = session.pausedAt
+            accumulatedPausedSeconds = session.accumulatedPausedSeconds
+        }
+    }
+
+    struct SprintFocusAllocationSnapshot: Equatable {
+        var id: UUID
+        var idSortKey: String
+        var sessionID: UUID
+        var sessionIDSortKey: String
+        var taskID: UUID
+        var minutes: Int
+        var sortOrder: Int
+
+        init(allocation: SprintFocusAllocationRecord) {
+            id = allocation.id
+            idSortKey = allocation.id.uuidString
+            sessionID = allocation.sessionID
+            sessionIDSortKey = allocation.sessionID.uuidString
+            taskID = allocation.taskID
+            minutes = allocation.minutes
+            sortOrder = allocation.sortOrder
+        }
+    }
+
+    struct BoardSprintSnapshot: Equatable {
+        var id: UUID
+        var idSortKey: String
+        var title: String
+
+        init(sprint: BoardSprintRecord) {
+            id = sprint.id
+            idSortKey = sprint.id.uuidString
+            title = sprint.title
+        }
+    }
+
+    struct FocusSessionSnapshot: Equatable {
+        var id: UUID
+        var idSortKey: String
+        var taskID: UUID
+        var startedAt: Date?
+        var plannedDurationSeconds: TimeInterval
+        var completedAt: Date?
+        var abandonedAt: Date?
+        var pausedAt: Date?
+        var accumulatedPausedSeconds: TimeInterval
+        var tagName: String?
+
+        init(session: FocusSession) {
+            id = session.id
+            idSortKey = session.id.uuidString
+            taskID = session.taskID
+            startedAt = session.startedAt
+            plannedDurationSeconds = session.plannedDurationSeconds
+            completedAt = session.completedAt
+            abandonedAt = session.abandonedAt
+            pausedAt = session.pausedAt
+            accumulatedPausedSeconds = session.accumulatedPausedSeconds
+            tagName = session.tagName
+        }
+    }
+}
+
+private struct DayPlanTimelineRenderSnapshot {
+    var visibleDates: [Date]
+    var tasks: [RoutineTask]
+    var logs: [RoutineLog]
+    var sleepSessions: [SleepSession]
+    var awaySessions: [AwaySession]
+    var events: [RoutineEvent]
+    var sprintFocusSessions: [SprintFocusSessionRecord]
+    var sprintFocusAllocations: [SprintFocusAllocationRecord]
+    var boardSprints: [BoardSprintRecord]
+    var focusSessions: [FocusSession]
+    var activeSprintFocusSessions: [SprintFocusSessionRecord]
+    var plannedBlocksByDayKey: [String: [DayPlanBlock]]
+    var rawPlannedBlocks: [DayPlanBlock]
+    var sleepBlocksByDayKey: [String: [DayPlanSleepBlock]]
+    var linkedAwayBlocksByDayKey: [String: [DayPlanAwayBlock]]
+    var sprintFocusBlocksByDayKey: [String: [DayPlanSprintFocusBlock]]
+    var eventBlocksByDayKey: [String: [DayPlanEventBlock]]
+    var blockedIntervalsByDayKey: [String: [DayPlanBlockedInterval]]
+    var timelineBlocksByDayKey: [String: [DayPlanTimelineActivityBlock]]
+    var unplaceableAutomaticSuggestionBlocksByDayKey: [String: [DayPlanTimelineActivityBlock]]
+    var automaticSuggestionBlocksByDayKey: [String: [DayPlanTimelineActivityBlock]]
+    var allDayBlocks: [DayPlanAllDayBlock]
+    var selectedDayBlockedMinutes: Int
+    var tintsByTaskID: [UUID: Color]
+    var activeFocusRenderSessions: [FocusSession]
+    var planFocusAllocatedMinutesBySessionID: [UUID: Int]
+}
+
+@MainActor
+private final class DayPlanTimelineRenderSnapshotCache: ObservableObject {
+    private var cachedKey: DayPlanTimelineRenderSnapshotKey?
+    private var cachedSnapshot: DayPlanTimelineRenderSnapshot?
+
+    func snapshot(
+        dataSnapshotID: UUID,
+        planner: DayPlanPlannerState,
+        tasks: [RoutineTask],
+        logs: [RoutineLog],
+        sleepSessions: [SleepSession],
+        awaySessions: [AwaySession],
+        events: [RoutineEvent],
+        sprintFocusSessions: [SprintFocusSessionRecord],
+        sprintFocusAllocations: [SprintFocusAllocationRecord],
+        boardSprints: [BoardSprintRecord],
+        focusSessions: [FocusSession],
+        referenceDate: Date,
+        calendar: Calendar,
+        modelContext: ModelContext,
+        showsTimelineTasksInDayPlanner: Bool,
+        hiddenTimelineActivityStorage: String,
+        timelinePlacementCache: DayPlanTimelinePlacementCache,
+        allDayBlocksCache: DayPlanAllDayBlocksCache,
+        visibleBlockContextCache: DayPlanVisibleBlockContextCache,
+        sleepBlocksCache: DayPlanSleepBlocksCache,
+        awayBlocksCache: DayPlanAwayBlocksCache,
+        completedSprintFocusBlocksCache: DayPlanSprintFocusBlocksCache,
+        activeSprintFocusBlocksCache: DayPlanSprintFocusBlocksCache
+    ) -> DayPlanTimelineRenderSnapshot {
+        let visibleDates = planner.visibleDates(calendar: calendar)
+        let refreshesEveryMinute = Self.hasVisibleOpenEndedTimelineBlock(
+            visibleDates: visibleDates,
+            sleepSessions: sleepSessions,
+            awaySessions: awaySessions,
+            sprintFocusSessions: sprintFocusSessions,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let key = DayPlanTimelineRenderSnapshotKey(
+            dataSnapshotID: dataSnapshotID,
+            visibleDates: visibleDates,
+            selectedDate: planner.selectedDate,
+            focusedUnplannedCompletedDate: planner.focusedUnplannedCompletedDate,
+            plannerBlocks: planner.blocks,
+            plannerWeekBlocksByDayKey: planner.weekBlocksByDayKey,
+            referenceDate: referenceDate,
+            refreshesEveryMinute: refreshesEveryMinute,
+            calendar: calendar,
+            showsTimelineTasksInDayPlanner: showsTimelineTasksInDayPlanner,
+            hiddenTimelineActivityStorage: hiddenTimelineActivityStorage
+        )
+
+        if cachedKey == key, let cachedSnapshot {
+            return cachedSnapshot
+        }
+
+        let activeTaskAndTagFocusSessions = activeTaskAndTagFocusSessions(from: focusSessions)
+        let visibleBlockContext = visibleBlockContextCache.context(
+            tasks: tasks,
+            logs: logs,
+            calendar: calendar,
+            activeFocusSessions: activeTaskAndTagFocusSessions
+        )
+        let plannedBlockPresentation = plannedBlockPresentation(
+            for: visibleDates,
+            planner: planner,
+            visibleBlockContext: visibleBlockContext,
+            calendar: calendar,
+            context: modelContext
+        )
+        let plannedBlocksByDayKey = plannedBlockPresentation.visibleBlocksByDayKey
+        let rawPlannedBlocks = plannedBlockPresentation.rawBlocks
         let hiddenTimelineActivityIDs = DayPlanHiddenTimelineActivityStore.hiddenIDs(from: hiddenTimelineActivityStorage)
-        let sleepBlocksByDayKey = DayPlanSleepBlocks.blocksByDayKey(
+        let sleepBlocksByDayKey = sleepBlocksCache.blocksByDayKey(
             on: visibleDates,
             from: sleepSessions,
             referenceDate: referenceDate,
             calendar: calendar
         )
-        let awayBlocksByDayKey = DayPlanAwayBlocks.blocksByDayKey(
+        let awayBlocksByDayKey = awayBlocksCache.blocksByDayKey(
             on: visibleDates,
             from: awaySessions,
             tasks: tasks,
@@ -557,7 +1114,7 @@ private struct DayPlanTimelinePanelView: View {
         )
         let completedSprintFocusSessions = sprintFocusSessions.filter { !$0.isActive }
         let activeSprintFocusSessions = sprintFocusSessions.filter(\.isActive)
-        let sprintFocusBlocksByDayKey = DayPlanSprintFocusBlocks.blocksByDayKey(
+        let sprintFocusBlocksByDayKey = completedSprintFocusBlocksCache.blocksByDayKey(
             on: visibleDates,
             from: completedSprintFocusSessions,
             allocations: sprintFocusAllocations,
@@ -566,7 +1123,7 @@ private struct DayPlanTimelinePanelView: View {
             referenceDate: referenceDate,
             calendar: calendar
         )
-        let activeSprintFocusBlocksByDayKey = DayPlanSprintFocusBlocks.blocksByDayKey(
+        let activeSprintFocusBlocksByDayKey = activeSprintFocusBlocksCache.blocksByDayKey(
             on: visibleDates,
             from: activeSprintFocusSessions,
             allocations: sprintFocusAllocations,
@@ -594,7 +1151,7 @@ private struct DayPlanTimelinePanelView: View {
                 activeSprintFocusBlocksByDayKey.mapValues { blocks in blocks.map(\.interval) }
             )
         )
-        let rawAutomaticSuggestionBlocksByDayKey = DayPlanTimelineTasks.automaticSuggestionBlocksByDayKey(
+        let rawAutomaticSuggestionPlacementsByDayKey = timelinePlacementCache.automaticSuggestionPlacementsByDayKey(
             on: visibleDates,
             from: tasks,
             logs: logs,
@@ -603,41 +1160,36 @@ private struct DayPlanTimelinePanelView: View {
             hiddenActivityIDs: hiddenTimelineActivityIDs,
             referenceDate: referenceDate
         )
+        let rawAutomaticSuggestionBlocksByDayKey = rawAutomaticSuggestionPlacementsByDayKey.mapValues(\.placed)
         let linkedAwayBlocksByDayKey = DayPlanAwayBlocks.linkedBlocksByDayKey(
             awayBlocksByDayKey,
             timelineActivitiesByDayKey: rawAutomaticSuggestionBlocksByDayKey
         )
-        let timelineBlocksByDayKey = DayPlanTimelineTasks.activityBlocksByDayKey(
-            on: visibleDates,
-            from: tasks,
-            logs: logs,
-            plannedBlocksByDayKey: automaticOccupiedBlocksByDayKey,
-            blockedIntervalsByDayKey: blockedIntervalsByDayKey,
-            calendar: calendar,
-            hiddenActivityIDs: hiddenTimelineActivityIDs,
-            referenceDate: referenceDate
-        )
-        let unplaceableAutomaticSuggestionBlocksByDayKey = DayPlanTimelineTasks.automaticUnplaceableSuggestionBlocksByDayKey(
-            on: visibleDates,
-            from: tasks,
-            logs: logs,
-            plannedBlocksByDayKey: automaticOccupiedBlocksByDayKey,
-            blockedIntervalsByDayKey: blockedIntervalsByDayKey,
-            calendar: calendar,
-            hiddenActivityIDs: hiddenTimelineActivityIDs,
-            referenceDate: referenceDate
-        )
-        let automaticSuggestionBlocksByDayKey = DayPlanTimelineTasks.automaticSuggestionBlocksByDayKey(
-            on: visibleDates,
-            from: tasks,
-            logs: logs,
-            plannedBlocksByDayKey: automaticOccupiedBlocksByDayKey,
-            blockedIntervalsByDayKey: blockedIntervalsByDayKey,
-            calendar: calendar,
-            hiddenActivityIDs: hiddenTimelineActivityIDs,
-            referenceDate: referenceDate
-        )
-        let allDayBlocks = DayPlanAllDayTasks.blocks(
+        let timelineBlocksByDayKey: [String: [DayPlanTimelineActivityBlock]] =
+            showsTimelineTasksInDayPlanner
+            ? [:]
+            : DayPlanTimelineTasks.activityBlocksByDayKey(
+                on: visibleDates,
+                from: tasks,
+                logs: logs,
+                plannedBlocksByDayKey: automaticOccupiedBlocksByDayKey,
+                blockedIntervalsByDayKey: blockedIntervalsByDayKey,
+                calendar: calendar,
+                hiddenActivityIDs: hiddenTimelineActivityIDs,
+                referenceDate: referenceDate
+            )
+        let visibleAutomaticSuggestionPlacementsByDayKey: [String: DayPlanTimelineActivityPlacement] =
+            showsTimelineTasksInDayPlanner
+            ? Dictionary(
+                uniqueKeysWithValues: rawAutomaticSuggestionPlacementsByDayKey.map { dayKey, placement in
+                    (
+                        dayKey,
+                        placement.filteringBlockedIntervals(blockedIntervalsByDayKey[dayKey] ?? [])
+                    )
+                }
+            )
+            : [:]
+        let allDayBlocks = allDayBlocksCache.blocks(
             on: visibleDates,
             from: tasks,
             logs: logs,
@@ -647,14 +1199,342 @@ private struct DayPlanTimelinePanelView: View {
         let selectedDayKey = DayPlanStorage.dayKey(for: planner.selectedDate, calendar: calendar)
         let selectedDayBlockedMinutes = blockedIntervalsByDayKey[selectedDayKey, default: []]
             .reduce(0) { $0 + $1.durationMinutes }
-        let tintsByTaskID = tintsByTaskID()
+        let activeFocusRenderSessions = activeFocusSessions(from: focusSessions)
+        let snapshot = DayPlanTimelineRenderSnapshot(
+            visibleDates: visibleDates,
+            tasks: tasks,
+            logs: logs,
+            sleepSessions: sleepSessions,
+            awaySessions: awaySessions,
+            events: events,
+            sprintFocusSessions: sprintFocusSessions,
+            sprintFocusAllocations: sprintFocusAllocations,
+            boardSprints: boardSprints,
+            focusSessions: focusSessions,
+            activeSprintFocusSessions: activeSprintFocusSessions,
+            plannedBlocksByDayKey: plannedBlocksByDayKey,
+            rawPlannedBlocks: rawPlannedBlocks,
+            sleepBlocksByDayKey: sleepBlocksByDayKey,
+            linkedAwayBlocksByDayKey: linkedAwayBlocksByDayKey,
+            sprintFocusBlocksByDayKey: sprintFocusBlocksByDayKey,
+            eventBlocksByDayKey: eventBlocksByDayKey,
+            blockedIntervalsByDayKey: blockedIntervalsByDayKey,
+            timelineBlocksByDayKey: timelineBlocksByDayKey,
+            unplaceableAutomaticSuggestionBlocksByDayKey: visibleAutomaticSuggestionPlacementsByDayKey.mapValues(\.unplaced),
+            automaticSuggestionBlocksByDayKey: visibleAutomaticSuggestionPlacementsByDayKey.mapValues(\.placed),
+            allDayBlocks: allDayBlocks,
+            selectedDayBlockedMinutes: selectedDayBlockedMinutes,
+            tintsByTaskID: tintsByTaskID(from: tasks),
+            activeFocusRenderSessions: activeFocusRenderSessions,
+            planFocusAllocatedMinutesBySessionID: DayPlanFocusSessionPlannerSync.planFocusAllocatedMinutesBySessionID(
+                for: activeFocusRenderSessions.filter(\.isUnassigned),
+                context: modelContext
+            )
+        )
+        cachedKey = key
+        cachedSnapshot = snapshot
+        return snapshot
+    }
+
+    private func plannedBlockPresentation(
+        for dates: [Date],
+        planner: DayPlanPlannerState,
+        visibleBlockContext: DayPlanVisibleBlockContext,
+        calendar: Calendar,
+        context: ModelContext
+    ) -> DayPlanPlannedBlockPresentation {
+        var visibleBlocksByDayKey: [String: [DayPlanBlock]] = [:]
+        var rawBlocks: [DayPlanBlock] = []
+        visibleBlocksByDayKey.reserveCapacity(dates.count)
+
+        for date in dates {
+            let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+            let blocks = planner.blocks(on: date, calendar: calendar, context: context)
+            rawBlocks.append(contentsOf: blocks)
+            visibleBlocksByDayKey[dayKey] = DayPlanVisibleBlocks.blocks(
+                blocks,
+                context: visibleBlockContext
+            )
+        }
+
+        return DayPlanPlannedBlockPresentation(
+            visibleBlocksByDayKey: visibleBlocksByDayKey,
+            rawBlocks: rawBlocks
+        )
+    }
+
+    private func activeTaskAndTagFocusSessions(from sessions: [FocusSession]) -> [FocusSession] {
+        sessions.filter { session in
+            (session.isTaskFocus || session.isTagFocus)
+                && session.startedAt != nil
+                && session.completedAt == nil
+                && session.abandonedAt == nil
+        }
+    }
+
+    private func activeFocusSessions(from sessions: [FocusSession]) -> [FocusSession] {
+        sessions
+            .filter { $0.startedAt != nil }
+            .filter { $0.completedAt == nil && $0.abandonedAt == nil }
+            .sorted { ($0.startedAt ?? .distantPast) > ($1.startedAt ?? .distantPast) }
+    }
+
+    private func mergeBlockedIntervals(
+        _ lhs: [String: [DayPlanBlockedInterval]],
+        _ rhs: [String: [DayPlanBlockedInterval]]
+    ) -> [String: [DayPlanBlockedInterval]] {
+        var result = lhs
+        for (dayKey, intervals) in rhs {
+            result[dayKey, default: []].append(contentsOf: intervals)
+        }
+        return result
+    }
+
+    private func mergePlannerBlocks(
+        _ lhs: [String: [DayPlanBlock]],
+        _ rhs: [String: [DayPlanBlock]]
+    ) -> [String: [DayPlanBlock]] {
+        var result = lhs
+        for (dayKey, blocks) in rhs {
+            result[dayKey, default: []].append(contentsOf: blocks)
+        }
+        return result
+    }
+
+    private func tintsByTaskID(from tasks: [RoutineTask]) -> [UUID: Color] {
+        var result: [UUID: Color] = [:]
+        for task in tasks {
+            result[task.id] = task.color.swiftUIColor ?? .accentColor
+        }
+        return result
+    }
+
+    private static func hasVisibleOpenEndedTimelineBlock(
+        visibleDates: [Date],
+        sleepSessions: [SleepSession],
+        awaySessions: [AwaySession],
+        sprintFocusSessions: [SprintFocusSessionRecord],
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> Bool {
+        let visibleDayStarts = visibleDates
+            .map { calendar.startOfDay(for: $0) }
+            .sorted()
+        guard
+            let visibleRangeStart = visibleDayStarts.first,
+            let lastVisibleDayStart = visibleDayStarts.last,
+            let visibleRangeEnd = calendar.date(byAdding: .day, value: 1, to: lastVisibleDayStart)
+        else {
+            return false
+        }
+
+        let hasActiveSleepBlock = sleepSessions.contains { session in
+            guard let startedAt = session.startedAt, session.endedAt == nil else { return false }
+            return intersectsVisibleRange(
+                startedAt: startedAt,
+                endedAt: referenceDate,
+                visibleRangeStart: visibleRangeStart,
+                visibleRangeEnd: visibleRangeEnd
+            )
+        }
+        if hasActiveSleepBlock {
+            return true
+        }
+
+        let hasActiveAwayBlock = awaySessions.contains { session in
+            guard
+                let startedAt = session.startedAt,
+                session.isActive,
+                session.plannedEndAt == nil
+            else {
+                return false
+            }
+            return intersectsVisibleRange(
+                startedAt: startedAt,
+                endedAt: referenceDate,
+                visibleRangeStart: visibleRangeStart,
+                visibleRangeEnd: visibleRangeEnd
+            )
+        }
+        if hasActiveAwayBlock {
+            return true
+        }
+
+        return sprintFocusSessions.contains { session in
+            guard session.isActive else { return false }
+            return intersectsVisibleRange(
+                startedAt: session.startedAt,
+                endedAt: referenceDate,
+                visibleRangeStart: visibleRangeStart,
+                visibleRangeEnd: visibleRangeEnd
+            )
+        }
+    }
+
+    private static func intersectsVisibleRange(
+        startedAt: Date,
+        endedAt: Date,
+        visibleRangeStart: Date,
+        visibleRangeEnd: Date
+    ) -> Bool {
+        max(startedAt, endedAt) >= visibleRangeStart && startedAt < visibleRangeEnd
+    }
+}
+
+private struct DayPlanTimelineRenderSnapshotKey: Equatable {
+    var dataSnapshotID: UUID
+    var calendarIdentifier: String
+    var timeZoneIdentifier: String
+    var firstWeekday: Int
+    var minimumDaysInFirstWeek: Int
+    var visibleDayKeys: [String]
+    var selectedDayKey: String
+    var focusedUnplannedCompletedDayKey: String?
+    var referenceMinute: ReferenceMinute?
+    var showsTimelineTasksInDayPlanner: Bool
+    var hiddenTimelineActivityStorage: String
+    var plannerBlocks: [DayPlanBlock]
+    var plannerWeekBlocksByDayKey: [String: [DayPlanBlock]]
+
+    init(
+        dataSnapshotID: UUID,
+        visibleDates: [Date],
+        selectedDate: Date,
+        focusedUnplannedCompletedDate: Date?,
+        plannerBlocks: [DayPlanBlock],
+        plannerWeekBlocksByDayKey: [String: [DayPlanBlock]],
+        referenceDate: Date,
+        refreshesEveryMinute: Bool,
+        calendar: Calendar,
+        showsTimelineTasksInDayPlanner: Bool,
+        hiddenTimelineActivityStorage: String
+    ) {
+        self.dataSnapshotID = dataSnapshotID
+        calendarIdentifier = String(describing: calendar.identifier)
+        timeZoneIdentifier = calendar.timeZone.identifier
+        firstWeekday = calendar.firstWeekday
+        minimumDaysInFirstWeek = calendar.minimumDaysInFirstWeek
+        visibleDayKeys = visibleDates
+            .map { DayPlanStorage.dayKey(for: $0, calendar: calendar) }
+            .sorted()
+        selectedDayKey = DayPlanStorage.dayKey(for: selectedDate, calendar: calendar)
+        focusedUnplannedCompletedDayKey = focusedUnplannedCompletedDate.map {
+            DayPlanStorage.dayKey(for: $0, calendar: calendar)
+        }
+        referenceMinute = refreshesEveryMinute
+            ? ReferenceMinute(referenceDate: referenceDate, calendar: calendar)
+            : nil
+        self.showsTimelineTasksInDayPlanner = showsTimelineTasksInDayPlanner
+        self.hiddenTimelineActivityStorage = hiddenTimelineActivityStorage
+        self.plannerBlocks = plannerBlocks
+        self.plannerWeekBlocksByDayKey = plannerWeekBlocksByDayKey
+    }
+
+    struct ReferenceMinute: Equatable {
+        var dayKey: String
+        var minute: Int
+
+        init(referenceDate: Date, calendar: Calendar) {
+            dayKey = DayPlanStorage.dayKey(for: referenceDate, calendar: calendar)
+            let components = calendar.dateComponents([.hour, .minute], from: referenceDate)
+            minute = ((components.hour ?? 0) * 60) + (components.minute ?? 0)
+        }
+    }
+}
+
+private struct DayPlanTimelinePanelContentView: View {
+    @Environment(\.calendar) private var calendar
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.undoManager) private var undoManager
+    @ObservedObject var planner: DayPlanPlannerState
+    var onSelectUnplannedCompletedDate: ((Date) -> Void)? = nil
+    var onOpenTaskDetails: ((UUID) -> Void)? = nil
+    var onOpenEventDetails: ((UUID) -> Void)? = nil
+    var dataSnapshotID: UUID
+    var tasks: [RoutineTask]
+    var logs: [RoutineLog]
+    var sleepSessions: [SleepSession]
+    var awaySessions: [AwaySession]
+    var events: [RoutineEvent]
+    var sprintFocusSessions: [SprintFocusSessionRecord]
+    var sprintFocusAllocations: [SprintFocusAllocationRecord]
+    var boardSprints: [BoardSprintRecord]
+    var focusSessions: [FocusSession]
+    @ObservedObject var timelinePlacementCache: DayPlanTimelinePlacementCache
+    @ObservedObject var allDayBlocksCache: DayPlanAllDayBlocksCache
+    @ObservedObject var visibleBlockContextCache: DayPlanVisibleBlockContextCache
+    @ObservedObject var sleepBlocksCache: DayPlanSleepBlocksCache
+    @ObservedObject var awayBlocksCache: DayPlanAwayBlocksCache
+    @ObservedObject var completedSprintFocusBlocksCache: DayPlanSprintFocusBlocksCache
+    @ObservedObject var activeSprintFocusBlocksCache: DayPlanSprintFocusBlocksCache
+    @ObservedObject var renderSnapshotCache: DayPlanTimelineRenderSnapshotCache
+    @State private var selectedEventID: UUID?
+    @State private var allocatingPlanFocusSession: DayPlanFocusAllocationPresentation?
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingShowTimelineTasksInDayPlanner.rawValue,
+        store: SharedDefaults.app
+    ) private var showsTimelineTasksInDayPlanner = true
+    @AppStorage(
+        UserDefaultStringValueKey.appSettingHiddenDayPlanTimelineActivityIDs.rawValue,
+        store: SharedDefaults.app
+    ) private var hiddenTimelineActivityStorage = ""
+
+    var body: some View {
+        let referenceDate = Date()
+        let renderSnapshot = renderSnapshotCache.snapshot(
+            dataSnapshotID: dataSnapshotID,
+            planner: planner,
+            tasks: tasks,
+            logs: logs,
+            sleepSessions: sleepSessions,
+            awaySessions: awaySessions,
+            events: events,
+            sprintFocusSessions: sprintFocusSessions,
+            sprintFocusAllocations: sprintFocusAllocations,
+            boardSprints: boardSprints,
+            focusSessions: focusSessions,
+            referenceDate: referenceDate,
+            calendar: calendar,
+            modelContext: modelContext,
+            showsTimelineTasksInDayPlanner: showsTimelineTasksInDayPlanner,
+            hiddenTimelineActivityStorage: hiddenTimelineActivityStorage,
+            timelinePlacementCache: timelinePlacementCache,
+            allDayBlocksCache: allDayBlocksCache,
+            visibleBlockContextCache: visibleBlockContextCache,
+            sleepBlocksCache: sleepBlocksCache,
+            awayBlocksCache: awayBlocksCache,
+            completedSprintFocusBlocksCache: completedSprintFocusBlocksCache,
+            activeSprintFocusBlocksCache: activeSprintFocusBlocksCache
+        )
+        let visibleDates = renderSnapshot.visibleDates
+        let currentTasks = renderSnapshot.tasks
+        let currentSleepSessions = renderSnapshot.sleepSessions
+        let currentAwaySessions = renderSnapshot.awaySessions
+        let currentFocusSessions = renderSnapshot.focusSessions
+        let currentSprintFocusAllocations = renderSnapshot.sprintFocusAllocations
+        let currentBoardSprints = renderSnapshot.boardSprints
+        let plannedBlocksByDayKey = renderSnapshot.plannedBlocksByDayKey
+        let rawPlannedBlocks = renderSnapshot.rawPlannedBlocks
+        let sleepBlocksByDayKey = renderSnapshot.sleepBlocksByDayKey
+        let linkedAwayBlocksByDayKey = renderSnapshot.linkedAwayBlocksByDayKey
+        let sprintFocusBlocksByDayKey = renderSnapshot.sprintFocusBlocksByDayKey
+        let eventBlocksByDayKey = renderSnapshot.eventBlocksByDayKey
+        let blockedIntervalsByDayKey = renderSnapshot.blockedIntervalsByDayKey
+        let timelineBlocksByDayKey = renderSnapshot.timelineBlocksByDayKey
+        let unplaceableAutomaticSuggestionBlocksByDayKey = renderSnapshot.unplaceableAutomaticSuggestionBlocksByDayKey
+        let automaticSuggestionBlocksByDayKey = renderSnapshot.automaticSuggestionBlocksByDayKey
+        let allDayBlocks = renderSnapshot.allDayBlocks
+        let tintsByTaskID = renderSnapshot.tintsByTaskID
+        let activeFocusRenderSessions = renderSnapshot.activeFocusRenderSessions
+        let activeSprintFocusSessions = renderSnapshot.activeSprintFocusSessions
+        let planFocusAllocatedMinutesBySessionID = renderSnapshot.planFocusAllocatedMinutesBySessionID
 
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text(planner.visibleRangeMode.title)
                     .font(.headline)
                 Spacer()
-                Text("\(DayPlanFormatting.durationText(max(planner.unplannedMinutes - selectedDayBlockedMinutes, 0))) open on selected day")
+                Text("\(DayPlanFormatting.durationText(max(planner.unplannedMinutes - renderSnapshot.selectedDayBlockedMinutes, 0))) open on selected day")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -704,29 +1584,30 @@ private struct DayPlanTimelinePanelView: View {
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
                     return blockedIntervalsByDayKey[dayKey] ?? []
                 },
+                showsActiveFocusBlocks: !activeFocusRenderSessions.isEmpty,
+                showsActiveSprintFocusBlocks: !activeSprintFocusSessions.isEmpty,
                 activeFocusSessionBlocks: { now in
-                    DayPlanFocusSessionBlocks.activeBlocks(
-                        from: tasks,
-                        sessions: focusSessions.filter { session in
-                            guard session.isUnassigned else { return true }
-                            let allocatedMinutes = DayPlanFocusSessionPlannerSync
-                                .planFocusAllocationBlocks(for: session, context: modelContext)
-                                .reduce(0) { $0 + $1.durationMinutes }
-                            let elapsedMinutes = Int(floor(session.activeDurationSeconds(at: now) / 60))
-                            return allocatedMinutes < elapsedMinutes
-                        },
+                    let sessions = activeFocusRenderSessions.filter { session in
+                        guard session.isUnassigned else { return true }
+                        let allocatedMinutes = planFocusAllocatedMinutesBySessionID[session.id] ?? 0
+                        let elapsedMinutes = Int(floor(session.activeDurationSeconds(at: now) / 60))
+                        return allocatedMinutes < elapsedMinutes
+                    }
+                    return DayPlanFocusSessionBlocks.activeBlocks(
+                        from: currentTasks,
+                        sessions: sessions,
                         now: now,
                         calendar: calendar,
                         excluding: rawPlannedBlocks
                     )
                 },
                 activeSprintFocusBlocks: { now in
-                    DayPlanSprintFocusBlocks.blocksByDayKey(
+                    activeSprintFocusBlocksCache.blocksByDayKey(
                         on: visibleDates,
                         from: activeSprintFocusSessions,
-                        allocations: sprintFocusAllocations,
-                        sprints: boardSprints,
-                        tasks: tasks,
+                        allocations: currentSprintFocusAllocations,
+                        sprints: currentBoardSprints,
+                        tasks: currentTasks,
                         referenceDate: now,
                         calendar: calendar
                     )
@@ -765,12 +1646,12 @@ private struct DayPlanTimelinePanelView: View {
                 },
                 onOpenBlockDetails: { block, date in
                     planner.edit(block, on: date, calendar: calendar, context: modelContext)
-                    if tasks.contains(where: { $0.id == block.taskID }) {
+                    if currentTasks.contains(where: { $0.id == block.taskID }) {
                         onOpenTaskDetails?(block.taskID)
                     }
                 },
                 onOpenTimelineTaskDetails: { taskID in
-                    if let task = tasks.first(where: { $0.id == taskID }) {
+                    if let task = currentTasks.first(where: { $0.id == taskID }) {
                         planner.selectedBlockID = nil
                         planner.selectTask(task)
                     }
@@ -785,14 +1666,14 @@ private struct DayPlanTimelinePanelView: View {
                     }
                 },
                 onOpenFocusTaskDetails: { taskID in
-                    if let task = tasks.first(where: { $0.id == taskID }) {
+                    if let task = currentTasks.first(where: { $0.id == taskID }) {
                         planner.selectedBlockID = nil
                         planner.selectTask(task)
                         onOpenTaskDetails?(taskID)
                     }
                 },
                 onOpenAllDayTaskDetails: { taskID in
-                    if let task = tasks.first(where: { $0.id == taskID }) {
+                    if let task = currentTasks.first(where: { $0.id == taskID }) {
                         planner.selectedBlockID = nil
                         planner.selectTask(task)
                     }
@@ -889,7 +1770,7 @@ private struct DayPlanTimelinePanelView: View {
                             date: date,
                             startMinute: minute,
                             durationMinutes: draftDurationMinutes,
-                            tasks: DayPlanTaskSorting.availableTasks(from: tasks),
+                            tasks: DayPlanTaskSorting.availableTasks(from: currentTasks),
                             defaultTaskID: planner.selectedTaskID,
                             now: referenceDate,
                             calendar: calendar,
@@ -929,14 +1810,21 @@ private struct DayPlanTimelinePanelView: View {
         }
         .dayPlanLifecycle(
             planner: planner,
-            tasks: tasks,
-            sleepSessions: sleepSessions,
-            awaySessions: awaySessions,
-            focusSessions: focusSessions,
+            tasks: currentTasks,
+            sleepSessions: currentSleepSessions,
+            awaySessions: currentAwaySessions,
+            focusSessions: currentFocusSessions,
             calendar: calendar
         )
         .onAppear {
             activatePlannerUndoManager()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
+            timelinePlacementCache.requireFullValidation()
+            allDayBlocksCache.requireFullValidation()
+            visibleBlockContextCache.requireFullValidation()
+            sleepBlocksCache.invalidate()
+            awayBlocksCache.invalidate()
         }
         .onChange(of: showsTimelineTasksInDayPlanner) { _, isEnabled in
             if isEnabled {
@@ -1173,10 +2061,14 @@ private struct DayPlanTimelinePanelView: View {
         showsTimelineTasksInDayPlanner ? nil : planner.focusedUnplannedCompletedDate
     }
 
-    private var activeFocusSessions: [FocusSession] {
-        focusSessions
+    private func activeFocusSessions(from sessions: [FocusSession]) -> [FocusSession] {
+        sessions
             .filter { $0.completedAt == nil && $0.abandonedAt == nil }
             .sorted { ($0.startedAt ?? .distantPast) > ($1.startedAt ?? .distantPast) }
+    }
+
+    private var activeFocusSessions: [FocusSession] {
+        activeFocusSessions(from: focusSessions)
     }
 
     private var activePlanFocusSession: FocusSession? {
@@ -1326,21 +2218,27 @@ private struct DayPlanTimelinePanelView: View {
         }
     }
 
-    private func plannedBlocksByDayKey(for dates: [Date]) -> [String: [DayPlanBlock]] {
-        Dictionary(
-            uniqueKeysWithValues: dates.map { date in
-                let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-                return (
-                    dayKey,
-                    DayPlanVisibleBlocks.blocks(
-                        planner.blocks(on: date, calendar: calendar, context: modelContext),
-                        tasks: tasks,
-                        logs: logs,
-                        calendar: calendar,
-                        activeFocusSessions: activeTaskAndTagFocusSessions
-                    )
-                )
-            }
+    private func plannedBlockPresentation(
+        for dates: [Date],
+        visibleBlockContext: DayPlanVisibleBlockContext
+    ) -> DayPlanPlannedBlockPresentation {
+        var visibleBlocksByDayKey: [String: [DayPlanBlock]] = [:]
+        var rawBlocks: [DayPlanBlock] = []
+        visibleBlocksByDayKey.reserveCapacity(dates.count)
+
+        for date in dates {
+            let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+            let blocks = planner.blocks(on: date, calendar: calendar, context: modelContext)
+            rawBlocks.append(contentsOf: blocks)
+            visibleBlocksByDayKey[dayKey] = DayPlanVisibleBlocks.blocks(
+                blocks,
+                context: visibleBlockContext
+            )
+        }
+
+        return DayPlanPlannedBlockPresentation(
+            visibleBlocksByDayKey: visibleBlocksByDayKey,
+            rawBlocks: rawBlocks
         )
     }
 
@@ -1366,12 +2264,16 @@ private struct DayPlanTimelinePanelView: View {
         return result
     }
 
-    private func tintsByTaskID() -> [UUID: Color] {
+    private func tintsByTaskID(from tasks: [RoutineTask]) -> [UUID: Color] {
         var result: [UUID: Color] = [:]
         for task in tasks {
             result[task.id] = task.color.swiftUIColor ?? .accentColor
         }
         return result
+    }
+
+    private func tintsByTaskID() -> [UUID: Color] {
+        tintsByTaskID(from: tasks)
     }
 
     private func moveBlockToAllDay(_ blockID: DayPlanBlock.ID, on date: Date) {
@@ -1702,13 +2604,17 @@ private struct DayPlanTimelinePanelView: View {
         return ((components.hour ?? 0) * 60) + (components.minute ?? 0)
     }
 
-    private var activeTaskAndTagFocusSessions: [FocusSession] {
-        focusSessions.filter { session in
+    private func activeTaskAndTagFocusSessions(from sessions: [FocusSession]) -> [FocusSession] {
+        sessions.filter { session in
             (session.isTaskFocus || session.isTagFocus)
                 && session.startedAt != nil
                 && session.completedAt == nil
                 && session.abandonedAt == nil
         }
+    }
+
+    private var activeTaskAndTagFocusSessions: [FocusSession] {
+        activeTaskAndTagFocusSessions(from: focusSessions)
     }
 
     private func slotDate(on date: Date, startMinute: Int) -> Date? {
@@ -1728,6 +2634,1452 @@ private struct DayPlanTimelinePanelView: View {
         }
         .first
             ?? planner.blocks.first { $0.id == id }
+    }
+}
+
+private struct DayPlanPlannedBlockPresentation {
+    var visibleBlocksByDayKey: [String: [DayPlanBlock]]
+    var rawBlocks: [DayPlanBlock]
+}
+
+@MainActor
+private final class DayPlanVisibleBlockContextCache: ObservableObject {
+    private var cachedReuseSignature: DayPlanVisibleBlockContextReuseSignature?
+    private var cachedKey: DayPlanVisibleBlockContextCacheKey?
+    private var cachedContext: DayPlanVisibleBlockContext?
+    private var requiresFullValidation = false
+
+    func context(
+        tasks: [RoutineTask],
+        logs: [RoutineLog],
+        calendar: Calendar,
+        activeFocusSessions: [FocusSession]
+    ) -> DayPlanVisibleBlockContext {
+        let reuseSignature = DayPlanVisibleBlockContextReuseSignature(
+            tasks: tasks,
+            logs: logs,
+            activeFocusSessions: activeFocusSessions,
+            calendar: calendar
+        )
+
+        if !requiresFullValidation, cachedReuseSignature == reuseSignature, let cachedContext {
+            return cachedContext
+        }
+
+        let key = DayPlanVisibleBlockContextCacheKey(
+            tasks: tasks,
+            logs: logs,
+            activeFocusSessions: activeFocusSessions,
+            calendar: calendar
+        )
+
+        if cachedKey == key, let cachedContext {
+            cachedReuseSignature = reuseSignature
+            requiresFullValidation = false
+            return cachedContext
+        }
+
+        let context = DayPlanVisibleBlockContext(
+            tasks: tasks,
+            logs: logs,
+            calendar: calendar,
+            activeFocusSessions: activeFocusSessions
+        )
+        cachedReuseSignature = reuseSignature
+        cachedKey = key
+        cachedContext = context
+        requiresFullValidation = false
+        return context
+    }
+
+    func requireFullValidation() {
+        requiresFullValidation = true
+    }
+
+    func invalidate() {
+        cachedReuseSignature = nil
+        cachedKey = nil
+        cachedContext = nil
+        requiresFullValidation = false
+    }
+}
+
+private struct DayPlanVisibleBlockContextReuseSignature: Equatable {
+    var calendarIdentifier: String
+    var timeZoneIdentifier: String
+    var firstWeekday: Int
+    var minimumDaysInFirstWeek: Int
+    var taskObjects: [ObjectIdentifier]
+    var logObjects: [ObjectIdentifier]
+    var activeFocusSessionObjects: [ObjectIdentifier]
+
+    init(
+        tasks: [RoutineTask],
+        logs: [RoutineLog],
+        activeFocusSessions: [FocusSession],
+        calendar: Calendar
+    ) {
+        calendarIdentifier = String(describing: calendar.identifier)
+        timeZoneIdentifier = calendar.timeZone.identifier
+        firstWeekday = calendar.firstWeekday
+        minimumDaysInFirstWeek = calendar.minimumDaysInFirstWeek
+        taskObjects = tasks.map { ObjectIdentifier($0) }
+        logObjects = logs.map { ObjectIdentifier($0) }
+        activeFocusSessionObjects = activeFocusSessions.map { ObjectIdentifier($0) }
+    }
+}
+
+private struct DayPlanVisibleBlockContextCacheKey: Equatable {
+    var calendarIdentifier: String
+    var timeZoneIdentifier: String
+    var firstWeekday: Int
+    var minimumDaysInFirstWeek: Int
+    var tasks: [TaskSnapshot]
+    var logs: [LogSnapshot]
+    var activeFocusSessions: [FocusSessionSnapshot]
+
+    init(
+        tasks: [RoutineTask],
+        logs: [RoutineLog],
+        activeFocusSessions: [FocusSession],
+        calendar: Calendar
+    ) {
+        calendarIdentifier = String(describing: calendar.identifier)
+        timeZoneIdentifier = calendar.timeZone.identifier
+        firstWeekday = calendar.firstWeekday
+        minimumDaysInFirstWeek = calendar.minimumDaysInFirstWeek
+        self.tasks = tasks
+            .map(TaskSnapshot.init(task:))
+            .sorted { $0.idSortKey < $1.idSortKey }
+
+        let canceledKind = RoutineLogKind.canceled.rawValue
+        let missedKind = RoutineLogKind.missed.rawValue
+        self.logs = logs
+            .compactMap { log -> LogSnapshot? in
+                guard log.kindRawValue == canceledKind || log.kindRawValue == missedKind,
+                      log.timestamp != nil else {
+                    return nil
+                }
+                return LogSnapshot(log: log)
+            }
+            .sorted { lhs, rhs in
+                if lhs.timestamp != rhs.timestamp {
+                    return (lhs.timestamp ?? .distantPast) < (rhs.timestamp ?? .distantPast)
+                }
+                if lhs.taskIDSortKey != rhs.taskIDSortKey {
+                    return lhs.taskIDSortKey < rhs.taskIDSortKey
+                }
+                if lhs.kindRawValue != rhs.kindRawValue {
+                    return lhs.kindRawValue < rhs.kindRawValue
+                }
+                return lhs.idSortKey < rhs.idSortKey
+            }
+        self.activeFocusSessions = activeFocusSessions
+            .map(FocusSessionSnapshot.init(session:))
+            .sorted { $0.idSortKey < $1.idSortKey }
+    }
+
+    struct TaskSnapshot: Equatable {
+        var id: UUID
+        var idSortKey: String
+        var scheduleModeRawValue: String
+        var canceledAt: Date?
+
+        init(task: RoutineTask) {
+            id = task.id
+            idSortKey = task.id.uuidString
+            scheduleModeRawValue = task.scheduleModeRawValue
+            canceledAt = task.canceledAt
+        }
+    }
+
+    struct LogSnapshot: Equatable {
+        var id: UUID
+        var idSortKey: String
+        var timestamp: Date?
+        var taskID: UUID
+        var taskIDSortKey: String
+        var kindRawValue: String
+
+        init(log: RoutineLog) {
+            id = log.id
+            idSortKey = log.id.uuidString
+            timestamp = log.timestamp
+            taskID = log.taskID
+            taskIDSortKey = log.taskID.uuidString
+            kindRawValue = log.kindRawValue
+        }
+    }
+
+    struct FocusSessionSnapshot: Equatable {
+        var id: UUID
+        var idSortKey: String
+        var taskID: UUID
+        var plannedDurationSeconds: TimeInterval
+        var startedAt: Date?
+        var completedAt: Date?
+        var abandonedAt: Date?
+        var pausedAt: Date?
+        var tagName: String?
+
+        init(session: FocusSession) {
+            id = session.id
+            idSortKey = session.id.uuidString
+            taskID = session.taskID
+            plannedDurationSeconds = session.plannedDurationSeconds
+            startedAt = session.startedAt
+            completedAt = session.completedAt
+            abandonedAt = session.abandonedAt
+            pausedAt = session.pausedAt
+            tagName = session.tagName
+        }
+    }
+}
+
+@MainActor
+private final class DayPlanSleepBlocksCache: ObservableObject {
+    private var cachedKey: DayPlanSleepBlocksCacheKey?
+    private var cachedBlocksByDayKey: [String: [DayPlanSleepBlock]] = [:]
+
+    func blocksByDayKey(
+        on dates: [Date],
+        from sessions: [SleepSession],
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> [String: [DayPlanSleepBlock]] {
+        let key = DayPlanSleepBlocksCacheKey(
+            dates: dates,
+            sessions: sessions,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        if cachedKey == key {
+            return cachedBlocksByDayKey
+        }
+
+        let blocksByDayKey = DayPlanSleepBlocks.blocksByDayKey(
+            on: dates,
+            from: sessions,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        cachedKey = key
+        cachedBlocksByDayKey = blocksByDayKey
+        return blocksByDayKey
+    }
+
+    func invalidate() {
+        cachedKey = nil
+        cachedBlocksByDayKey = [:]
+    }
+}
+
+private struct DayPlanSleepBlocksCacheKey: Equatable {
+    var calendarIdentifier: String
+    var timeZoneIdentifier: String
+    var firstWeekday: Int
+    var minimumDaysInFirstWeek: Int
+    var visibleDayKeys: [String]
+    var referenceMinute: ReferenceMinute?
+    var sessions: [SessionSnapshot]
+
+    init(
+        dates: [Date],
+        sessions: [SleepSession],
+        referenceDate: Date,
+        calendar: Calendar
+    ) {
+        calendarIdentifier = String(describing: calendar.identifier)
+        timeZoneIdentifier = calendar.timeZone.identifier
+        firstWeekday = calendar.firstWeekday
+        minimumDaysInFirstWeek = calendar.minimumDaysInFirstWeek
+        let visibleDayStarts = dates
+            .map { calendar.startOfDay(for: $0) }
+            .sorted()
+        visibleDayKeys = visibleDayStarts
+            .map { DayPlanStorage.dayKey(for: $0, calendar: calendar) }
+        let visibleRangeStart = visibleDayStarts.first
+        let visibleRangeEnd = visibleDayStarts.last.flatMap {
+            calendar.date(byAdding: .day, value: 1, to: $0)
+        }
+        let relevantSessions: [SleepSession]
+        if let visibleRangeStart, let visibleRangeEnd {
+            relevantSessions = sessions.filter { session in
+                guard let startedAt = session.startedAt else { return false }
+                let endedAt = session.endedAt ?? referenceDate
+                return startedAt < visibleRangeEnd && endedAt >= visibleRangeStart
+            }
+        } else {
+            relevantSessions = []
+        }
+        referenceMinute = relevantSessions.contains { $0.endedAt == nil }
+            ? ReferenceMinute(referenceDate: referenceDate, calendar: calendar)
+            : nil
+        self.sessions = relevantSessions
+            .map(SessionSnapshot.init(session:))
+            .sorted { lhs, rhs in
+                if lhs.startedAt != rhs.startedAt {
+                    return (lhs.startedAt ?? .distantPast) < (rhs.startedAt ?? .distantPast)
+                }
+                return lhs.idSortKey < rhs.idSortKey
+            }
+    }
+
+    struct ReferenceMinute: Equatable {
+        var dayKey: String
+        var minute: Int
+
+        init(referenceDate: Date, calendar: Calendar) {
+            dayKey = DayPlanStorage.dayKey(for: referenceDate, calendar: calendar)
+            let components = calendar.dateComponents([.hour, .minute], from: referenceDate)
+            minute = ((components.hour ?? 0) * 60) + (components.minute ?? 0)
+        }
+    }
+
+    struct SessionSnapshot: Equatable {
+        var id: UUID
+        var idSortKey: String
+        var startedAt: Date?
+        var endedAt: Date?
+
+        init(session: SleepSession) {
+            id = session.id
+            idSortKey = session.id.uuidString
+            startedAt = session.startedAt
+            endedAt = session.endedAt
+        }
+    }
+}
+
+@MainActor
+private final class DayPlanAwayBlocksCache: ObservableObject {
+    private var cachedKey: DayPlanAwayBlocksCacheKey?
+    private var cachedBlocksByDayKey: [String: [DayPlanAwayBlock]] = [:]
+
+    func blocksByDayKey(
+        on dates: [Date],
+        from sessions: [AwaySession],
+        tasks: [RoutineTask],
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> [String: [DayPlanAwayBlock]] {
+        let key = DayPlanAwayBlocksCacheKey(
+            dates: dates,
+            sessions: sessions,
+            tasks: tasks,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        if cachedKey == key {
+            return cachedBlocksByDayKey
+        }
+
+        let blocksByDayKey = DayPlanAwayBlocks.blocksByDayKey(
+            on: dates,
+            from: sessions,
+            tasks: tasks,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        cachedKey = key
+        cachedBlocksByDayKey = blocksByDayKey
+        return blocksByDayKey
+    }
+
+    func invalidate() {
+        cachedKey = nil
+        cachedBlocksByDayKey = [:]
+    }
+}
+
+private struct DayPlanAwayBlocksCacheKey: Equatable {
+    var calendarIdentifier: String
+    var timeZoneIdentifier: String
+    var firstWeekday: Int
+    var minimumDaysInFirstWeek: Int
+    var visibleDayKeys: [String]
+    var referenceMinute: ReferenceMinute?
+    var sessions: [SessionSnapshot]
+    var tasks: [TaskSnapshot]
+
+    init(
+        dates: [Date],
+        sessions: [AwaySession],
+        tasks: [RoutineTask],
+        referenceDate: Date,
+        calendar: Calendar
+    ) {
+        calendarIdentifier = String(describing: calendar.identifier)
+        timeZoneIdentifier = calendar.timeZone.identifier
+        firstWeekday = calendar.firstWeekday
+        minimumDaysInFirstWeek = calendar.minimumDaysInFirstWeek
+        let visibleDayStarts = dates
+            .map { calendar.startOfDay(for: $0) }
+            .sorted()
+        visibleDayKeys = visibleDayStarts
+            .map { DayPlanStorage.dayKey(for: $0, calendar: calendar) }
+        let visibleRangeStart = visibleDayStarts.first
+        let visibleRangeEnd = visibleDayStarts.last.flatMap {
+            calendar.date(byAdding: .day, value: 1, to: $0)
+        }
+        let relevantSessions: [AwaySession]
+        if let visibleRangeStart, let visibleRangeEnd {
+            relevantSessions = sessions.filter { session in
+                guard let startedAt = session.startedAt else { return false }
+                let endedAt = session.finishedAt ?? session.plannedEndAt ?? referenceDate
+                return startedAt < visibleRangeEnd && endedAt >= visibleRangeStart
+            }
+        } else {
+            relevantSessions = []
+        }
+        referenceMinute = relevantSessions.contains { $0.isActive && $0.plannedEndAt == nil }
+            ? ReferenceMinute(referenceDate: referenceDate, calendar: calendar)
+            : nil
+        self.sessions = relevantSessions
+            .map(SessionSnapshot.init(session:))
+            .sorted { lhs, rhs in
+                if lhs.startedAt != rhs.startedAt {
+                    return (lhs.startedAt ?? .distantPast) < (rhs.startedAt ?? .distantPast)
+                }
+                return lhs.idSortKey < rhs.idSortKey
+            }
+
+        let linkedTaskIDs = Set(relevantSessions.compactMap(\.linkedTaskID))
+        self.tasks = tasks
+            .filter { linkedTaskIDs.contains($0.id) }
+            .map(TaskSnapshot.init(task:))
+            .sorted { $0.idSortKey < $1.idSortKey }
+    }
+
+    struct ReferenceMinute: Equatable {
+        var dayKey: String
+        var minute: Int
+
+        init(referenceDate: Date, calendar: Calendar) {
+            dayKey = DayPlanStorage.dayKey(for: referenceDate, calendar: calendar)
+            let components = calendar.dateComponents([.hour, .minute], from: referenceDate)
+            minute = ((components.hour ?? 0) * 60) + (components.minute ?? 0)
+        }
+    }
+
+    struct SessionSnapshot: Equatable {
+        var id: UUID
+        var idSortKey: String
+        var presetRawValue: String
+        var title: String
+        var linkedTaskID: UUID?
+        var linkedTaskIDSortKey: String?
+        var startedAt: Date?
+        var plannedDurationSeconds: TimeInterval
+        var completedAt: Date?
+        var endedEarlyAt: Date?
+
+        init(session: AwaySession) {
+            id = session.id
+            idSortKey = session.id.uuidString
+            presetRawValue = session.presetRawValue
+            title = session.title
+            linkedTaskID = session.linkedTaskID
+            linkedTaskIDSortKey = session.linkedTaskID?.uuidString
+            startedAt = session.startedAt
+            plannedDurationSeconds = session.plannedDurationSeconds
+            completedAt = session.completedAt
+            endedEarlyAt = session.endedEarlyAt
+        }
+    }
+
+    struct TaskSnapshot: Equatable {
+        var id: UUID
+        var idSortKey: String
+        var name: String?
+        var emoji: String?
+
+        init(task: RoutineTask) {
+            id = task.id
+            idSortKey = task.id.uuidString
+            name = task.name
+            emoji = task.emoji
+        }
+    }
+}
+
+@MainActor
+private final class DayPlanSprintFocusBlocksCache: ObservableObject {
+    private var cachedKey: DayPlanSprintFocusBlocksCacheKey?
+    private var cachedBlocksByDayKey: [String: [DayPlanSprintFocusBlock]] = [:]
+
+    func blocksByDayKey(
+        on dates: [Date],
+        from sessions: [SprintFocusSessionRecord],
+        allocations: [SprintFocusAllocationRecord],
+        sprints: [BoardSprintRecord],
+        tasks: [RoutineTask],
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> [String: [DayPlanSprintFocusBlock]] {
+        let key = DayPlanSprintFocusBlocksCacheKey(
+            dates: dates,
+            sessions: sessions,
+            allocations: allocations,
+            sprints: sprints,
+            tasks: tasks,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        if cachedKey == key {
+            return cachedBlocksByDayKey
+        }
+
+        let blocksByDayKey = DayPlanSprintFocusBlocks.blocksByDayKey(
+            on: dates,
+            from: sessions,
+            allocations: allocations,
+            sprints: sprints,
+            tasks: tasks,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        cachedKey = key
+        cachedBlocksByDayKey = blocksByDayKey
+        return blocksByDayKey
+    }
+
+    func invalidate() {
+        cachedKey = nil
+        cachedBlocksByDayKey = [:]
+    }
+}
+
+private struct DayPlanSprintFocusBlocksCacheKey: Equatable {
+    var calendarIdentifier: String
+    var timeZoneIdentifier: String
+    var firstWeekday: Int
+    var minimumDaysInFirstWeek: Int
+    var visibleDayKeys: [String]
+    var referenceMinute: ReferenceMinute?
+    var sessions: [SessionSnapshot]
+    var allocations: [AllocationSnapshot]
+    var sprints: [SprintSnapshot]
+    var tasks: [TaskSnapshot]
+
+    init(
+        dates: [Date],
+        sessions: [SprintFocusSessionRecord],
+        allocations: [SprintFocusAllocationRecord],
+        sprints: [BoardSprintRecord],
+        tasks: [RoutineTask],
+        referenceDate: Date,
+        calendar: Calendar
+    ) {
+        calendarIdentifier = String(describing: calendar.identifier)
+        timeZoneIdentifier = calendar.timeZone.identifier
+        firstWeekday = calendar.firstWeekday
+        minimumDaysInFirstWeek = calendar.minimumDaysInFirstWeek
+        let visibleDayStarts = dates
+            .map { calendar.startOfDay(for: $0) }
+            .sorted()
+        visibleDayKeys = visibleDayStarts
+            .map { DayPlanStorage.dayKey(for: $0, calendar: calendar) }
+        let visibleRangeStart = visibleDayStarts.first
+        let visibleRangeEnd = visibleDayStarts.last.flatMap {
+            calendar.date(byAdding: .day, value: 1, to: $0)
+        }
+        let relevantSessions: [SprintFocusSessionRecord]
+        if let visibleRangeStart, let visibleRangeEnd {
+            relevantSessions = sessions.filter { session in
+                let sessionEnd = max(session.stoppedAt ?? referenceDate, session.startedAt)
+                return session.startedAt < visibleRangeEnd && sessionEnd >= visibleRangeStart
+            }
+        } else {
+            relevantSessions = []
+        }
+        let relevantSessionIDs = Set(relevantSessions.map(\.id))
+        let relevantSprintIDs = Set(relevantSessions.map(\.sprintID))
+        let relevantAllocations = allocations.filter {
+            relevantSessionIDs.contains($0.sessionID) && $0.minutes > 0
+        }
+        let allocatedTaskIDs = Set(relevantAllocations.map(\.taskID))
+
+        referenceMinute = relevantSessions.contains(where: \.isActive)
+            ? ReferenceMinute(referenceDate: referenceDate, calendar: calendar)
+            : nil
+        self.sessions = relevantSessions
+            .map(SessionSnapshot.init(session:))
+            .sorted { lhs, rhs in
+                if lhs.startedAt != rhs.startedAt {
+                    return lhs.startedAt < rhs.startedAt
+                }
+                return lhs.idSortKey < rhs.idSortKey
+            }
+        self.allocations = relevantAllocations
+            .map(AllocationSnapshot.init(allocation:))
+            .sorted { lhs, rhs in
+                if lhs.sessionID != rhs.sessionID {
+                    return lhs.sessionIDSortKey < rhs.sessionIDSortKey
+                }
+                if lhs.sortOrder != rhs.sortOrder {
+                    return lhs.sortOrder < rhs.sortOrder
+                }
+                return lhs.idSortKey < rhs.idSortKey
+            }
+        self.sprints = sprints
+            .filter { relevantSprintIDs.contains($0.id) }
+            .map(SprintSnapshot.init(sprint:))
+            .sorted { $0.idSortKey < $1.idSortKey }
+        self.tasks = tasks
+            .filter { allocatedTaskIDs.contains($0.id) }
+            .map(TaskSnapshot.init(task:))
+            .sorted { $0.idSortKey < $1.idSortKey }
+    }
+
+    struct ReferenceMinute: Equatable {
+        var dayKey: String
+        var minute: Int
+
+        init(referenceDate: Date, calendar: Calendar) {
+            dayKey = DayPlanStorage.dayKey(for: referenceDate, calendar: calendar)
+            let components = calendar.dateComponents([.hour, .minute], from: referenceDate)
+            minute = ((components.hour ?? 0) * 60) + (components.minute ?? 0)
+        }
+    }
+
+    struct SessionSnapshot: Equatable {
+        var id: UUID
+        var idSortKey: String
+        var sprintID: UUID
+        var startedAt: Date
+        var stoppedAt: Date?
+        var pausedAt: Date?
+        var accumulatedPausedSeconds: TimeInterval
+
+        init(session: SprintFocusSessionRecord) {
+            id = session.id
+            idSortKey = session.id.uuidString
+            sprintID = session.sprintID
+            startedAt = session.startedAt
+            stoppedAt = session.stoppedAt
+            pausedAt = session.pausedAt
+            accumulatedPausedSeconds = session.accumulatedPausedSeconds
+        }
+    }
+
+    struct AllocationSnapshot: Equatable {
+        var id: UUID
+        var idSortKey: String
+        var sessionID: UUID
+        var sessionIDSortKey: String
+        var taskID: UUID
+        var minutes: Int
+        var sortOrder: Int
+
+        init(allocation: SprintFocusAllocationRecord) {
+            id = allocation.id
+            idSortKey = allocation.id.uuidString
+            sessionID = allocation.sessionID
+            sessionIDSortKey = allocation.sessionID.uuidString
+            taskID = allocation.taskID
+            minutes = allocation.minutes
+            sortOrder = allocation.sortOrder
+        }
+    }
+
+    struct SprintSnapshot: Equatable {
+        var id: UUID
+        var idSortKey: String
+        var title: String
+
+        init(sprint: BoardSprintRecord) {
+            id = sprint.id
+            idSortKey = sprint.id.uuidString
+            title = sprint.title
+        }
+    }
+
+    struct TaskSnapshot: Equatable {
+        var id: UUID
+        var idSortKey: String
+        var name: String?
+        var emoji: String?
+
+        init(task: RoutineTask) {
+            id = task.id
+            idSortKey = task.id.uuidString
+            name = task.name
+            emoji = task.emoji
+        }
+    }
+}
+
+@MainActor
+private final class DayPlanAllDayBlocksCache: ObservableObject {
+    private var cachedReuseSignature: DayPlanAllDayBlocksReuseSignature?
+    private var cachedFastSignature: DayPlanAllDayBlocksFastSignature?
+    private var cachedKey: DayPlanAllDayBlocksCacheKey?
+    private var cachedBlocks: [DayPlanAllDayBlock] = []
+    private var requiresFullValidation = false
+
+    func blocks(
+        on dates: [Date],
+        from tasks: [RoutineTask],
+        logs: [RoutineLog],
+        events: [RoutineEvent],
+        calendar: Calendar
+    ) -> [DayPlanAllDayBlock] {
+        let reuseSignature = DayPlanAllDayBlocksReuseSignature(
+            dates: dates,
+            tasks: tasks,
+            logs: logs,
+            events: events,
+            calendar: calendar
+        )
+
+        if !requiresFullValidation, cachedReuseSignature == reuseSignature, cachedKey != nil {
+            return cachedBlocks
+        }
+
+        let fastSignature = DayPlanAllDayBlocksFastSignature(
+            dates: dates,
+            tasks: tasks,
+            logs: logs,
+            events: events,
+            calendar: calendar
+        )
+
+        if !requiresFullValidation, cachedFastSignature == fastSignature, cachedKey != nil {
+            cachedReuseSignature = reuseSignature
+            return cachedBlocks
+        }
+
+        let key = DayPlanAllDayBlocksCacheKey(
+            dates: dates,
+            tasks: tasks,
+            logs: logs,
+            events: events,
+            calendar: calendar
+        )
+
+        if cachedKey == key {
+            cachedReuseSignature = reuseSignature
+            cachedFastSignature = fastSignature
+            requiresFullValidation = false
+            return cachedBlocks
+        }
+
+        let blocks = DayPlanAllDayTasks.blocks(
+            on: dates,
+            from: tasks,
+            logs: logs,
+            events: events,
+            calendar: calendar
+        )
+        cachedReuseSignature = reuseSignature
+        cachedFastSignature = fastSignature
+        cachedKey = key
+        cachedBlocks = blocks
+        requiresFullValidation = false
+        return blocks
+    }
+
+    func requireFullValidation() {
+        requiresFullValidation = true
+    }
+
+    func invalidate() {
+        cachedReuseSignature = nil
+        cachedFastSignature = nil
+        cachedKey = nil
+        cachedBlocks = []
+        requiresFullValidation = false
+    }
+}
+
+private struct DayPlanAllDayBlocksReuseSignature: Equatable {
+    var calendarIdentifier: String
+    var timeZoneIdentifier: String
+    var firstWeekday: Int
+    var minimumDaysInFirstWeek: Int
+    var visibleDayKeys: [String]
+    var taskObjects: [ObjectIdentifier]
+    var logObjects: [ObjectIdentifier]
+    var eventObjects: [ObjectIdentifier]
+
+    init(
+        dates: [Date],
+        tasks: [RoutineTask],
+        logs: [RoutineLog],
+        events: [RoutineEvent],
+        calendar: Calendar
+    ) {
+        calendarIdentifier = String(describing: calendar.identifier)
+        timeZoneIdentifier = calendar.timeZone.identifier
+        firstWeekday = calendar.firstWeekday
+        minimumDaysInFirstWeek = calendar.minimumDaysInFirstWeek
+        visibleDayKeys = dates
+            .map { DayPlanStorage.dayKey(for: $0, calendar: calendar) }
+            .sorted()
+        taskObjects = tasks.map { ObjectIdentifier($0) }
+        logObjects = logs.map { ObjectIdentifier($0) }
+        eventObjects = events.map { ObjectIdentifier($0) }
+    }
+}
+
+private struct DayPlanAllDayBlocksFastSignature: Equatable {
+    var calendarIdentifier: String
+    var timeZoneIdentifier: String
+    var firstWeekday: Int
+    var minimumDaysInFirstWeek: Int
+    var visibleDayKeys: [String]
+    var taskIDs: Set<UUID>
+    var logIDs: Set<UUID>
+    var eventIDs: Set<UUID>
+
+    init(
+        dates: [Date],
+        tasks: [RoutineTask],
+        logs: [RoutineLog],
+        events: [RoutineEvent],
+        calendar: Calendar
+    ) {
+        calendarIdentifier = String(describing: calendar.identifier)
+        timeZoneIdentifier = calendar.timeZone.identifier
+        firstWeekday = calendar.firstWeekday
+        minimumDaysInFirstWeek = calendar.minimumDaysInFirstWeek
+        visibleDayKeys = dates
+            .map { DayPlanStorage.dayKey(for: $0, calendar: calendar) }
+            .sorted()
+        taskIDs = Set(tasks.map(\.id))
+        logIDs = Set(logs.map(\.id))
+        eventIDs = Set(events.map(\.id))
+    }
+}
+
+private struct DayPlanAllDayBlocksCacheKey: Equatable {
+    var calendarIdentifier: String
+    var timeZoneIdentifier: String
+    var firstWeekday: Int
+    var minimumDaysInFirstWeek: Int
+    var visibleDayKeys: [String]
+    var tasks: [TaskSnapshot]
+    var logs: [LogSnapshot]
+    var events: [EventSnapshot]
+
+    init(
+        dates: [Date],
+        tasks: [RoutineTask],
+        logs: [RoutineLog],
+        events: [RoutineEvent],
+        calendar: Calendar
+    ) {
+        calendarIdentifier = String(describing: calendar.identifier)
+        timeZoneIdentifier = calendar.timeZone.identifier
+        firstWeekday = calendar.firstWeekday
+        minimumDaysInFirstWeek = calendar.minimumDaysInFirstWeek
+        visibleDayKeys = dates
+            .map { DayPlanStorage.dayKey(for: $0, calendar: calendar) }
+            .sorted()
+        self.tasks = tasks
+            .map { TaskSnapshot(task: $0) }
+            .sorted { $0.id.uuidString < $1.id.uuidString }
+        self.logs = logs
+            .map { LogSnapshot(log: $0) }
+            .sorted { lhs, rhs in
+                if lhs.timestamp != rhs.timestamp {
+                    return (lhs.timestamp ?? .distantPast) < (rhs.timestamp ?? .distantPast)
+                }
+                return lhs.id.uuidString < rhs.id.uuidString
+            }
+        self.events = events
+            .map { EventSnapshot(event: $0) }
+            .sorted { lhs, rhs in
+                if lhs.startedAt != rhs.startedAt {
+                    return (lhs.startedAt ?? .distantPast) < (rhs.startedAt ?? .distantPast)
+                }
+                return lhs.id.uuidString < rhs.id.uuidString
+            }
+    }
+
+    struct TaskSnapshot: Equatable {
+        var id: UUID
+        var name: String?
+        var emoji: String?
+        var notes: String?
+        var deadline: Date?
+        var isAllDay: Bool
+        var routineDurationModeRawValue: String
+        var availabilityStartDate: Date?
+        var availabilityEndDate: Date?
+        var scheduleModeRawValue: String
+        var recurrenceStorageVersion: Int16
+        var recurrenceKindRawValue: String
+        var recurrenceTimeOfDayHour: Int?
+        var recurrenceTimeOfDayMinute: Int?
+        var recurrenceTimeRangeStartHour: Int?
+        var recurrenceTimeRangeStartMinute: Int?
+        var recurrenceTimeRangeEndHour: Int?
+        var recurrenceTimeRangeEndMinute: Int?
+        var recurrenceWeekday: Int?
+        var recurrenceDayOfMonth: Int?
+        var recurrenceRuleStorage: String
+        var interval: Int16
+        var lastDone: Date?
+        var canceledAt: Date?
+        var scheduleAnchor: Date?
+        var pausedAt: Date?
+        var snoozedUntil: Date?
+        var createdAt: Date?
+
+        init(task: RoutineTask) {
+            id = task.id
+            name = task.name
+            emoji = task.emoji
+            notes = task.notes
+            deadline = task.deadline
+            isAllDay = task.isAllDay
+            routineDurationModeRawValue = task.routineDurationModeRawValue
+            availabilityStartDate = task.availabilityStartDate
+            availabilityEndDate = task.availabilityEndDate
+            scheduleModeRawValue = task.scheduleModeRawValue
+            recurrenceStorageVersion = task.recurrenceStorageVersion
+            recurrenceKindRawValue = task.recurrenceKindRawValue
+            recurrenceTimeOfDayHour = task.recurrenceTimeOfDayHour
+            recurrenceTimeOfDayMinute = task.recurrenceTimeOfDayMinute
+            recurrenceTimeRangeStartHour = task.recurrenceTimeRangeStartHour
+            recurrenceTimeRangeStartMinute = task.recurrenceTimeRangeStartMinute
+            recurrenceTimeRangeEndHour = task.recurrenceTimeRangeEndHour
+            recurrenceTimeRangeEndMinute = task.recurrenceTimeRangeEndMinute
+            recurrenceWeekday = task.recurrenceWeekday
+            recurrenceDayOfMonth = task.recurrenceDayOfMonth
+            recurrenceRuleStorage = task.recurrenceRuleStorage
+            interval = task.interval
+            lastDone = task.lastDone
+            canceledAt = task.canceledAt
+            scheduleAnchor = task.scheduleAnchor
+            pausedAt = task.pausedAt
+            snoozedUntil = task.snoozedUntil
+            createdAt = task.createdAt
+        }
+    }
+
+    struct LogSnapshot: Equatable {
+        var id: UUID
+        var timestamp: Date?
+        var taskID: UUID
+        var kindRawValue: String
+
+        init(log: RoutineLog) {
+            id = log.id
+            timestamp = log.timestamp
+            taskID = log.taskID
+            kindRawValue = log.kindRawValue
+        }
+    }
+
+    struct EventSnapshot: Equatable {
+        var id: UUID
+        var title: String?
+        var emoji: String?
+        var isAllDay: Bool
+        var startedAt: Date?
+        var endedAt: Date?
+
+        init(event: RoutineEvent) {
+            id = event.id
+            title = event.title
+            emoji = event.emoji
+            isAllDay = event.isAllDay
+            startedAt = event.startedAt
+            endedAt = event.endedAt
+        }
+    }
+}
+
+@MainActor
+private final class DayPlanTimelinePlacementCache: ObservableObject {
+    private var cachedReuseSignature: DayPlanTimelinePlacementReuseSignature?
+    private var cachedFastSignature: DayPlanTimelinePlacementFastSignature?
+    private var cachedKey: DayPlanTimelinePlacementCacheKey?
+    private var cachedPlacements: [String: DayPlanTimelineActivityPlacement] = [:]
+    private var requiresFullValidation = false
+
+    func automaticSuggestionPlacementsByDayKey(
+        on dates: [Date],
+        from tasks: [RoutineTask],
+        logs: [RoutineLog],
+        plannedBlocksByDayKey: [String: [DayPlanBlock]],
+        blockedIntervalsByDayKey: [String: [DayPlanBlockedInterval]] = [:],
+        calendar: Calendar,
+        hiddenActivityIDs: Set<String> = [],
+        referenceDate: Date = Date()
+    ) -> [String: DayPlanTimelineActivityPlacement] {
+        let reuseSignature = DayPlanTimelinePlacementReuseSignature(
+            dates: dates,
+            tasks: tasks,
+            logs: logs,
+            plannedBlocksByDayKey: plannedBlocksByDayKey,
+            blockedIntervalsByDayKey: blockedIntervalsByDayKey,
+            calendar: calendar,
+            hiddenActivityIDs: hiddenActivityIDs,
+            referenceDate: referenceDate
+        )
+
+        if !requiresFullValidation, cachedReuseSignature == reuseSignature, cachedKey != nil {
+            return cachedPlacements
+        }
+
+        let fastSignature = DayPlanTimelinePlacementFastSignature(
+            dates: dates,
+            tasks: tasks,
+            logs: logs,
+            plannedBlocksByDayKey: plannedBlocksByDayKey,
+            blockedIntervalsByDayKey: blockedIntervalsByDayKey,
+            calendar: calendar,
+            hiddenActivityIDs: hiddenActivityIDs,
+            referenceDate: referenceDate
+        )
+
+        if !requiresFullValidation, cachedFastSignature == fastSignature, cachedKey != nil {
+            cachedReuseSignature = reuseSignature
+            return cachedPlacements
+        }
+
+        let key = DayPlanTimelinePlacementCacheKey(
+            dates: dates,
+            tasks: tasks,
+            logs: logs,
+            plannedBlocksByDayKey: plannedBlocksByDayKey,
+            blockedIntervalsByDayKey: blockedIntervalsByDayKey,
+            calendar: calendar,
+            hiddenActivityIDs: hiddenActivityIDs,
+            referenceDate: referenceDate
+        )
+
+        if cachedKey == key {
+            cachedReuseSignature = reuseSignature
+            cachedFastSignature = fastSignature
+            requiresFullValidation = false
+            return cachedPlacements
+        }
+
+        let placements = DayPlanTimelineTasks.automaticSuggestionPlacementsByDayKey(
+            on: dates,
+            from: tasks,
+            logs: logs,
+            plannedBlocksByDayKey: plannedBlocksByDayKey,
+            blockedIntervalsByDayKey: blockedIntervalsByDayKey,
+            calendar: calendar,
+            hiddenActivityIDs: hiddenActivityIDs,
+            referenceDate: referenceDate
+        )
+        cachedReuseSignature = reuseSignature
+        cachedFastSignature = fastSignature
+        cachedKey = key
+        cachedPlacements = placements
+        requiresFullValidation = false
+        return placements
+    }
+
+    func requireFullValidation() {
+        requiresFullValidation = true
+    }
+
+    func invalidate() {
+        cachedReuseSignature = nil
+        cachedFastSignature = nil
+        cachedKey = nil
+        cachedPlacements = [:]
+        requiresFullValidation = false
+    }
+}
+
+private struct DayPlanTimelinePlacementReuseSignature: Equatable {
+    var calendarIdentifier: String
+    var timeZoneIdentifier: String
+    var firstWeekday: Int
+    var minimumDaysInFirstWeek: Int
+    var referenceRenderBucket: DayPlanTimelineReferenceRenderBucket
+    var visibleDayKeys: [String]
+    var hiddenActivityIDs: [String]
+    var taskObjects: [ObjectIdentifier]
+    var logObjects: [ObjectIdentifier]
+    var plannedDays: [DayPlanTimelinePlacementCacheKey.DayBlocksSnapshot]
+    var blockedDays: [DayPlanTimelinePlacementCacheKey.DayBlockedIntervalsSnapshot]
+
+    init(
+        dates: [Date],
+        tasks: [RoutineTask],
+        logs: [RoutineLog],
+        plannedBlocksByDayKey: [String: [DayPlanBlock]],
+        blockedIntervalsByDayKey: [String: [DayPlanBlockedInterval]],
+        calendar: Calendar,
+        hiddenActivityIDs: Set<String>,
+        referenceDate: Date
+    ) {
+        calendarIdentifier = String(describing: calendar.identifier)
+        timeZoneIdentifier = calendar.timeZone.identifier
+        firstWeekday = calendar.firstWeekday
+        minimumDaysInFirstWeek = calendar.minimumDaysInFirstWeek
+        referenceRenderBucket = DayPlanTimelineReferenceRenderBucket(
+            dates: dates,
+            calendar: calendar,
+            referenceDate: referenceDate
+        )
+        visibleDayKeys = dates
+            .map { DayPlanStorage.dayKey(for: $0, calendar: calendar) }
+            .sorted()
+        self.hiddenActivityIDs = hiddenActivityIDs.sorted()
+        taskObjects = tasks.map { ObjectIdentifier($0) }
+        logObjects = logs.map { ObjectIdentifier($0) }
+        plannedDays = plannedBlocksByDayKey
+            .map { dayKey, blocks in
+                DayPlanTimelinePlacementCacheKey.DayBlocksSnapshot(dayKey: dayKey, blocks: blocks)
+            }
+            .sorted { $0.dayKey < $1.dayKey }
+        blockedDays = blockedIntervalsByDayKey
+            .map { dayKey, intervals in
+                DayPlanTimelinePlacementCacheKey.DayBlockedIntervalsSnapshot(dayKey: dayKey, intervals: intervals)
+            }
+            .sorted { $0.dayKey < $1.dayKey }
+    }
+}
+
+private struct DayPlanTimelineReferenceRenderBucket: Equatable {
+    var referenceDayKey: String
+    var visibleCurrentMinute: Int?
+
+    init(
+        dates: [Date],
+        calendar: Calendar,
+        referenceDate: Date
+    ) {
+        referenceDayKey = DayPlanStorage.dayKey(for: referenceDate, calendar: calendar)
+        let visibleDayKeys = Set(dates.map { DayPlanStorage.dayKey(for: $0, calendar: calendar) })
+        guard visibleDayKeys.contains(referenceDayKey) else {
+            visibleCurrentMinute = nil
+            return
+        }
+
+        let components = calendar.dateComponents([.hour, .minute], from: referenceDate)
+        visibleCurrentMinute = ((components.hour ?? 0) * 60) + (components.minute ?? 0)
+    }
+}
+
+private struct DayPlanTimelinePlacementFastSignature: Equatable {
+    var calendarIdentifier: String
+    var timeZoneIdentifier: String
+    var firstWeekday: Int
+    var minimumDaysInFirstWeek: Int
+    var referenceAssumptionBucket: DayPlanTimelineReferenceAssumptionBucket
+    var visibleDayKeys: [String]
+    var hiddenActivityIDs: Set<String>
+    var taskIDs: Set<UUID>
+    var logIDs: Set<UUID>
+    var plannedDays: [DayPlanTimelinePlacementCacheKey.DayBlocksSnapshot]
+    var blockedDays: [DayPlanTimelinePlacementCacheKey.DayBlockedIntervalsSnapshot]
+
+    init(
+        dates: [Date],
+        tasks: [RoutineTask],
+        logs: [RoutineLog],
+        plannedBlocksByDayKey: [String: [DayPlanBlock]],
+        blockedIntervalsByDayKey: [String: [DayPlanBlockedInterval]],
+        calendar: Calendar,
+        hiddenActivityIDs: Set<String>,
+        referenceDate: Date
+    ) {
+        calendarIdentifier = String(describing: calendar.identifier)
+        timeZoneIdentifier = calendar.timeZone.identifier
+        firstWeekday = calendar.firstWeekday
+        minimumDaysInFirstWeek = calendar.minimumDaysInFirstWeek
+        referenceAssumptionBucket = DayPlanTimelineReferenceAssumptionBucket(
+            dates: dates,
+            tasks: tasks,
+            calendar: calendar,
+            referenceDate: referenceDate
+        )
+        visibleDayKeys = dates
+            .map { DayPlanStorage.dayKey(for: $0, calendar: calendar) }
+            .sorted()
+        self.hiddenActivityIDs = hiddenActivityIDs
+        taskIDs = Set(tasks.map(\.id))
+        logIDs = Set(logs.map(\.id))
+        plannedDays = plannedBlocksByDayKey
+            .map { dayKey, blocks in
+                DayPlanTimelinePlacementCacheKey.DayBlocksSnapshot(dayKey: dayKey, blocks: blocks)
+            }
+            .sorted { $0.dayKey < $1.dayKey }
+        blockedDays = blockedIntervalsByDayKey
+            .map { dayKey, intervals in
+                DayPlanTimelinePlacementCacheKey.DayBlockedIntervalsSnapshot(dayKey: dayKey, intervals: intervals)
+            }
+            .sorted { $0.dayKey < $1.dayKey }
+    }
+}
+
+private struct DayPlanTimelinePlacementCacheKey: Equatable {
+    var calendarIdentifier: String
+    var timeZoneIdentifier: String
+    var firstWeekday: Int
+    var minimumDaysInFirstWeek: Int
+    var referenceAssumptionBucket: DayPlanTimelineReferenceAssumptionBucket
+    var visibleDayKeys: [String]
+    var hiddenActivityIDs: [String]
+    var tasks: [TaskSnapshot]
+    var logs: [LogSnapshot]
+    var plannedDays: [DayBlocksSnapshot]
+    var blockedDays: [DayBlockedIntervalsSnapshot]
+
+    init(
+        dates: [Date],
+        tasks: [RoutineTask],
+        logs: [RoutineLog],
+        plannedBlocksByDayKey: [String: [DayPlanBlock]],
+        blockedIntervalsByDayKey: [String: [DayPlanBlockedInterval]],
+        calendar: Calendar,
+        hiddenActivityIDs: Set<String>,
+        referenceDate: Date
+    ) {
+        calendarIdentifier = String(describing: calendar.identifier)
+        timeZoneIdentifier = calendar.timeZone.identifier
+        firstWeekday = calendar.firstWeekday
+        minimumDaysInFirstWeek = calendar.minimumDaysInFirstWeek
+        referenceAssumptionBucket = DayPlanTimelineReferenceAssumptionBucket(
+            dates: dates,
+            tasks: tasks,
+            calendar: calendar,
+            referenceDate: referenceDate
+        )
+        visibleDayKeys = dates
+            .map { DayPlanStorage.dayKey(for: $0, calendar: calendar) }
+            .sorted()
+        self.hiddenActivityIDs = hiddenActivityIDs.sorted()
+        self.tasks = tasks
+            .map { TaskSnapshot(task: $0) }
+            .sorted { $0.id.uuidString < $1.id.uuidString }
+        self.logs = logs
+            .map { LogSnapshot(log: $0) }
+            .sorted { lhs, rhs in
+                if lhs.timestamp != rhs.timestamp {
+                    return (lhs.timestamp ?? .distantPast) < (rhs.timestamp ?? .distantPast)
+                }
+                return lhs.id.uuidString < rhs.id.uuidString
+            }
+        plannedDays = plannedBlocksByDayKey
+            .map { dayKey, blocks in
+                DayBlocksSnapshot(dayKey: dayKey, blocks: blocks)
+            }
+            .sorted { $0.dayKey < $1.dayKey }
+        blockedDays = blockedIntervalsByDayKey
+            .map { dayKey, intervals in
+                DayBlockedIntervalsSnapshot(dayKey: dayKey, intervals: intervals)
+            }
+            .sorted { $0.dayKey < $1.dayKey }
+    }
+
+    struct TaskSnapshot: Equatable {
+        var id: UUID
+        var name: String?
+        var emoji: String?
+        var isAllDay: Bool
+        var scheduleModeRawValue: String
+        var recurrenceStorageVersion: Int16
+        var recurrenceKindRawValue: String
+        var recurrenceTimeOfDayHour: Int?
+        var recurrenceTimeOfDayMinute: Int?
+        var recurrenceTimeRangeStartHour: Int?
+        var recurrenceTimeRangeStartMinute: Int?
+        var recurrenceTimeRangeEndHour: Int?
+        var recurrenceTimeRangeEndMinute: Int?
+        var recurrenceWeekday: Int?
+        var recurrenceDayOfMonth: Int?
+        var recurrenceRuleStorage: String
+        var interval: Int16
+        var lastDone: Date?
+        var canceledAt: Date?
+        var scheduleAnchor: Date?
+        var pausedAt: Date?
+        var snoozedUntil: Date?
+        var createdAt: Date?
+        var autoAssumeDailyDone: Bool
+        var autoAssumeDoneTimeOfDayHour: Int?
+        var autoAssumeDoneTimeOfDayMinute: Int?
+        var estimatedDurationMinutes: Int?
+        var hasStoredSequentialSteps: Bool
+        var hasStoredChecklistItems: Bool
+        var autoAssumeChecklistItemsStorage: String?
+        var autoAssumeCompletedChecklistItemIDsStorage: String?
+        var autoAssumeCompletedChecklistProgressStartedAt: Date?
+
+        init(task: RoutineTask) {
+            id = task.id
+            name = task.name
+            emoji = task.emoji
+            let autoAssumeDailyDone = task.autoAssumeDailyDone
+            let checklistItemsStorage = task.checklistItemsStorage
+            isAllDay = task.isAllDay
+            scheduleModeRawValue = task.scheduleModeRawValue
+            recurrenceStorageVersion = task.recurrenceStorageVersion
+            recurrenceKindRawValue = task.recurrenceKindRawValue
+            recurrenceTimeOfDayHour = task.recurrenceTimeOfDayHour
+            recurrenceTimeOfDayMinute = task.recurrenceTimeOfDayMinute
+            recurrenceTimeRangeStartHour = task.recurrenceTimeRangeStartHour
+            recurrenceTimeRangeStartMinute = task.recurrenceTimeRangeStartMinute
+            recurrenceTimeRangeEndHour = task.recurrenceTimeRangeEndHour
+            recurrenceTimeRangeEndMinute = task.recurrenceTimeRangeEndMinute
+            recurrenceWeekday = task.recurrenceWeekday
+            recurrenceDayOfMonth = task.recurrenceDayOfMonth
+            recurrenceRuleStorage = task.recurrenceRuleStorage
+            interval = task.interval
+            lastDone = task.lastDone
+            canceledAt = task.canceledAt
+            scheduleAnchor = task.scheduleAnchor
+            pausedAt = task.pausedAt
+            snoozedUntil = task.snoozedUntil
+            createdAt = task.createdAt
+            self.autoAssumeDailyDone = autoAssumeDailyDone
+            autoAssumeDoneTimeOfDayHour = autoAssumeDailyDone ? task.autoAssumeDoneTimeOfDayHour : nil
+            autoAssumeDoneTimeOfDayMinute = autoAssumeDailyDone ? task.autoAssumeDoneTimeOfDayMinute : nil
+            estimatedDurationMinutes = task.estimatedDurationMinutes
+            hasStoredSequentialSteps = !task.stepsStorage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            hasStoredChecklistItems = !checklistItemsStorage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            autoAssumeChecklistItemsStorage = autoAssumeDailyDone ? checklistItemsStorage : nil
+            autoAssumeCompletedChecklistItemIDsStorage = autoAssumeDailyDone
+                ? task.completedChecklistItemIDsStorage
+                : nil
+            autoAssumeCompletedChecklistProgressStartedAt = autoAssumeDailyDone
+                ? task.completedChecklistProgressStartedAt
+                : nil
+        }
+    }
+
+    struct LogSnapshot: Equatable {
+        var id: UUID
+        var timestamp: Date?
+        var taskID: UUID
+        var kindRawValue: String
+        var actualDurationMinutes: Int?
+
+        init(log: RoutineLog) {
+            id = log.id
+            timestamp = log.timestamp
+            taskID = log.taskID
+            kindRawValue = log.kindRawValue
+            actualDurationMinutes = log.actualDurationMinutes
+        }
+    }
+
+    struct DayBlocksSnapshot: Equatable {
+        var dayKey: String
+        var blocks: [BlockSnapshot]
+
+        init(dayKey: String, blocks: [DayPlanBlock]) {
+            self.dayKey = dayKey
+            self.blocks = blocks
+                .map { BlockSnapshot(block: $0) }
+                .sorted { lhs, rhs in
+                    if lhs.dayKey != rhs.dayKey {
+                        return lhs.dayKey < rhs.dayKey
+                    }
+                    if lhs.startMinute != rhs.startMinute {
+                        return lhs.startMinute < rhs.startMinute
+                    }
+                    if lhs.durationMinutes != rhs.durationMinutes {
+                        return lhs.durationMinutes < rhs.durationMinutes
+                    }
+                    return lhs.taskID.uuidString < rhs.taskID.uuidString
+                }
+        }
+    }
+
+    struct BlockSnapshot: Equatable {
+        var taskID: UUID
+        var dayKey: String
+        var startMinute: Int
+        var durationMinutes: Int
+
+        init(block: DayPlanBlock) {
+            taskID = block.taskID
+            dayKey = block.dayKey
+            startMinute = block.startMinute
+            durationMinutes = block.durationMinutes
+        }
+    }
+
+    struct DayBlockedIntervalsSnapshot: Equatable {
+        var dayKey: String
+        var intervals: [BlockedIntervalSnapshot]
+
+        init(dayKey: String, intervals: [DayPlanBlockedInterval]) {
+            self.dayKey = dayKey
+            self.intervals = intervals
+                .map { BlockedIntervalSnapshot(interval: $0) }
+                .sorted { lhs, rhs in
+                    if lhs.startMinute != rhs.startMinute {
+                        return lhs.startMinute < rhs.startMinute
+                    }
+                    return lhs.endMinute < rhs.endMinute
+                }
+        }
+    }
+
+    struct BlockedIntervalSnapshot: Equatable {
+        var dayKey: String
+        var startMinute: Int
+        var endMinute: Int
+
+        init(interval: DayPlanBlockedInterval) {
+            dayKey = interval.dayKey
+            startMinute = interval.startMinute
+            endMinute = interval.endMinute
+        }
+    }
+}
+
+private struct DayPlanTimelineReferenceAssumptionBucket: Equatable {
+    var referenceDayKey: String
+    var passedAvailabilityBoundaryCount: Int
+
+    init(
+        dates: [Date],
+        tasks: [RoutineTask],
+        calendar: Calendar,
+        referenceDate: Date
+    ) {
+        let today = calendar.startOfDay(for: referenceDate)
+        referenceDayKey = DayPlanStorage.dayKey(for: today, calendar: calendar)
+
+        let visibleDayKeys = Set(dates.map { DayPlanStorage.dayKey(for: $0, calendar: calendar) })
+        guard visibleDayKeys.contains(referenceDayKey) else {
+            passedAvailabilityBoundaryCount = 0
+            return
+        }
+
+        let currentTime = RoutineTimeOfDay.from(referenceDate, calendar: calendar)
+        let currentMinute = currentTime.minutesFromStartOfDay
+        let boundaries = Set(tasks.compactMap(Self.availabilityBoundaryMinute))
+        passedAvailabilityBoundaryCount = boundaries.filter { $0 <= currentMinute }.count
+    }
+
+    private static func availabilityBoundaryMinute(for task: RoutineTask) -> Int? {
+        guard task.autoAssumeDailyDone else { return nil }
+
+        if let hour = task.recurrenceTimeRangeStartHour,
+           let minute = task.recurrenceTimeRangeStartMinute {
+            return clampedMinute(hour: hour, minute: minute)
+        }
+
+        if let hour = task.recurrenceTimeOfDayHour,
+           let minute = task.recurrenceTimeOfDayMinute {
+            return clampedMinute(hour: hour, minute: minute)
+        }
+
+        return 0
+    }
+
+    private static func clampedMinute(hour: Int, minute: Int) -> Int {
+        min(max(hour, 0), 23) * 60 + min(max(minute, 0), 59)
     }
 }
 

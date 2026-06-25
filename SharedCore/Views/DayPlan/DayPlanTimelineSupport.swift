@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import OSLog
 
 struct DayPlanTimelineActivityBlock: Identifiable, Equatable {
     var block: DayPlanBlock
@@ -78,7 +79,7 @@ enum DayPlanHiddenTimelineActivityStore {
     }
 }
 
-private struct DayPlanTimelineActivityPlacement {
+struct DayPlanTimelineActivityPlacement {
     var placed: [DayPlanTimelineActivityBlock]
     var unplaced: [DayPlanTimelineActivityBlock]
 
@@ -98,6 +99,53 @@ private struct DayPlanTimelineActivityPlacement {
             }
             return lhs.block.titleSnapshot.localizedCaseInsensitiveCompare(rhs.block.titleSnapshot) == .orderedAscending
         }
+    }
+
+    func filteringBlockedIntervals(_ intervals: [DayPlanBlockedInterval]) -> DayPlanTimelineActivityPlacement {
+        guard !intervals.isEmpty else { return sorted() }
+
+        return DayPlanTimelineActivityPlacement(
+            placed: placed.filter { !Self.isBlocked($0.block, by: intervals) },
+            unplaced: unplaced.filter { !Self.isBlocked($0.block, by: intervals) }
+        )
+        .sorted()
+    }
+
+    private static func isBlocked(_ block: DayPlanBlock, by intervals: [DayPlanBlockedInterval]) -> Bool {
+        intervals.contains { $0.overlaps(block: block) }
+    }
+}
+
+private enum DayPlanPerformanceLog {
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "Routina",
+        category: "PlannerPerformance"
+    )
+    private static let slowPlacementThresholdMilliseconds = 50.0
+
+    static func logTimelinePlacementIfSlow(
+        elapsedMilliseconds: Double,
+        visibleDayCount: Int,
+        taskCount: Int,
+        logCount: Int,
+        sourceCount: Int,
+        placedCount: Int,
+        unplacedCount: Int
+    ) {
+        guard elapsedMilliseconds >= slowPlacementThresholdMilliseconds else { return }
+
+        logger.debug(
+            """
+            Planner timeline placement spike: \
+            \(elapsedMilliseconds, format: .fixed(precision: 1), privacy: .public)ms, \
+            days=\(visibleDayCount, privacy: .public), \
+            tasks=\(taskCount, privacy: .public), \
+            logs=\(logCount, privacy: .public), \
+            sources=\(sourceCount, privacy: .public), \
+            placed=\(placedCount, privacy: .public), \
+            unplaced=\(unplacedCount, privacy: .public)
+            """
+        )
     }
 }
 
@@ -244,6 +292,30 @@ enum DayPlanTimelineTasks {
         )
     }
 
+    static func automaticSuggestionPlacementsByDayKey(
+        on dates: [Date],
+        from tasks: [RoutineTask],
+        logs: [RoutineLog],
+        plannedBlocksByDayKey: [String: [DayPlanBlock]],
+        blockedIntervalsByDayKey: [String: [DayPlanBlockedInterval]] = [:],
+        calendar: Calendar,
+        hiddenActivityIDs: Set<String> = [],
+        referenceDate: Date = Date()
+    ) -> [String: DayPlanTimelineActivityPlacement] {
+        activityBlockPlacementsByDayKey(
+            on: dates,
+            from: tasks,
+            logs: logs,
+            plannedBlocksByDayKey: plannedBlocksByDayKey,
+            blockedIntervalsByDayKey: blockedIntervalsByDayKey,
+            calendar: calendar,
+            hiddenActivityIDs: hiddenActivityIDs,
+            excludesAllDayTasks: true,
+            includedKinds: automaticSuggestionKinds,
+            referenceDate: referenceDate
+        )
+    }
+
     static func automaticUnplaceableSuggestionBlocksByDayKey(
         on dates: [Date],
         from tasks: [RoutineTask],
@@ -308,19 +380,36 @@ enum DayPlanTimelineTasks {
         includedKinds: [RoutineLogKind]? = nil,
         referenceDate: Date = Date()
     ) -> [String: DayPlanTimelineActivityPlacement] {
-        let visibleDayKeys = Set(dates.map { DayPlanStorage.dayKey(for: $0, calendar: calendar) })
+        let startedAt = ProcessInfo.processInfo.systemUptime
+        let dateInfos = dates.map {
+            DayPlanTimelineDateInfo(
+                date: $0,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+        }
+        let visibleDayKeys = Set(dateInfos.map(\.dayKey))
         guard !visibleDayKeys.isEmpty else { return [:] }
 
-        let tasksByID = Dictionary(grouping: tasks, by: \.id).compactMapValues(\.first)
+        let taskInfosByID = Dictionary(
+            grouping: tasks.map { DayPlanTimelineTaskInfo(task: $0) },
+            by: \.id
+        )
+        .compactMapValues(\.first)
         let plannedTaskIDsByDayKey = plannedBlocksByDayKey.mapValues { Set($0.map(\.taskID)) }
+        let recordedDayIndexes = recordedDayIndexes(
+            taskInfosByID: taskInfosByID,
+            logs: logs,
+            calendar: calendar
+        )
         var latestActivityByKey: [DayPlanTimelineActivityKey: DayPlanTimelineActivity] = [:]
 
         func record(_ activity: DayPlanTimelineActivity, taskID: UUID) {
             if let includedKinds, !includedKinds.contains(activity.kind) {
                 return
             }
-            guard let task = tasksByID[taskID] else { return }
-            guard !excludesAllDayTasks || !task.isAllDay else { return }
+            guard let taskInfo = taskInfosByID[taskID] else { return }
+            guard !excludesAllDayTasks || !taskInfo.isAllDay else { return }
             let dayKey = DayPlanStorage.dayKey(for: activity.timestamp, calendar: calendar)
             guard visibleDayKeys.contains(dayKey) else { return }
             guard plannedTaskIDsByDayKey[dayKey]?.contains(taskID) != true else { return }
@@ -334,10 +423,11 @@ enum DayPlanTimelineTasks {
 
         for log in logs {
             guard let timestamp = log.timestamp else { continue }
+            let kind = log.kind
             record(
                 DayPlanTimelineActivity(
                     timestamp: timestamp,
-                    kind: log.kind,
+                    kind: kind,
                     actualDurationMinutes: log.actualDurationMinutes,
                     source: .log(log.id)
                 ),
@@ -345,8 +435,8 @@ enum DayPlanTimelineTasks {
             )
         }
 
-        for task in tasks {
-            if let lastDone = task.lastDone {
+        for taskInfo in taskInfosByID.values {
+            if let lastDone = taskInfo.lastDone {
                 record(
                     DayPlanTimelineActivity(
                         timestamp: lastDone,
@@ -354,49 +444,45 @@ enum DayPlanTimelineTasks {
                         actualDurationMinutes: nil,
                         source: .taskLastDone
                     ),
-                    taskID: task.id
+                    taskID: taskInfo.id
                 )
             }
 
-            for date in dates {
-                let assumptionReferenceDate = referenceDateForAssumedCompletion(
-                    on: date,
-                    referenceDate: referenceDate,
-                    calendar: calendar
-                )
-                let assumedDay = RoutineAssumedCompletion.currentOccurrenceDay(
-                    for: task,
-                    referenceDate: assumptionReferenceDate,
-                    calendar: calendar
-                )
-                guard calendar.isDate(assumedDay, inSameDayAs: date),
-                      RoutineAssumedCompletion.isAssumedDone(
-                        for: task,
-                        on: assumedDay,
-                        referenceDate: assumptionReferenceDate,
-                        logs: logs,
+            if taskInfo.isAssumedCompletionEligible {
+                for dateInfo in dateInfos {
+                    let assumedDay = taskInfo.currentOccurrenceDay(
+                        referenceDate: dateInfo.assumptionReferenceDate,
                         calendar: calendar
-                      )
-                else {
-                    continue
-                }
-
-                record(
-                    DayPlanTimelineActivity(
-                        timestamp: displayTimestampForAssumedCompletion(
-                            for: assumedDay,
-                            task: task,
+                    )
+                    guard calendar.isDate(assumedDay, inSameDayAs: dateInfo.date),
+                          taskInfo.isAssumedDone(
+                            on: assumedDay,
+                            dayKey: dateInfo.dayKey,
+                            referenceDate: dateInfo.assumptionReferenceDate,
+                            recordedCompletionDayKeys: recordedDayIndexes.completed[taskInfo.id, default: []],
+                            recordedCancellationDayKeys: recordedDayIndexes.canceled[taskInfo.id, default: []],
                             calendar: calendar
+                          )
+                    else {
+                        continue
+                    }
+
+                    record(
+                        DayPlanTimelineActivity(
+                            timestamp: taskInfo.assumedCompletionTimestamp(
+                                on: assumedDay,
+                                calendar: calendar
+                            ),
+                            kind: .completed,
+                            actualDurationMinutes: nil,
+                            source: .assumedDone
                         ),
-                        kind: .completed,
-                        actualDurationMinutes: nil,
-                        source: .assumedDone
-                    ),
-                    taskID: task.id
-                )
+                        taskID: taskInfo.id
+                    )
+                }
             }
 
-            if let canceledAt = task.canceledAt {
+            if let canceledAt = taskInfo.canceledAt {
                 record(
                     DayPlanTimelineActivity(
                         timestamp: canceledAt,
@@ -404,25 +490,25 @@ enum DayPlanTimelineTasks {
                         actualDurationMinutes: nil,
                         source: .taskCanceledAt
                     ),
-                    taskID: task.id
+                    taskID: taskInfo.id
                 )
             }
         }
 
         let blocks = latestActivityByKey.compactMap { key, activity -> DayPlanTimelineActivityBlock? in
-            guard let task = tasksByID[key.taskID] else { return nil }
+            guard let taskInfo = taskInfosByID[key.taskID] else { return nil }
             let startMinute = startMinute(for: activity.timestamp, calendar: calendar)
             let durationMinutes = activity.actualDurationMinutes
-                ?? task.estimatedDurationMinutes
+                ?? taskInfo.estimatedDurationMinutes
                 ?? DayPlanBlock.minimumDurationMinutes * 2
             let block = DayPlanBlock(
-                id: task.id,
-                taskID: task.id,
+                id: taskInfo.id,
+                taskID: taskInfo.id,
                 dayKey: key.dayKey,
                 startMinute: startMinute,
                 durationMinutes: durationMinutes,
-                titleSnapshot: DayPlanTaskSorting.title(for: task),
-                emojiSnapshot: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
+                titleSnapshot: taskInfo.title,
+                emojiSnapshot: taskInfo.emoji,
                 createdAt: activity.timestamp,
                 updatedAt: activity.timestamp
             )
@@ -436,7 +522,7 @@ enum DayPlanTimelineTasks {
         }
 
         let blocksByDayKey = Dictionary(grouping: blocks, by: \.block.dayKey)
-        return Dictionary(uniqueKeysWithValues: blocksByDayKey.map { dayKey, dayBlocks in
+        let placementsByDayKey = Dictionary(uniqueKeysWithValues: blocksByDayKey.map { dayKey, dayBlocks in
             let plannedBlocks = plannedBlocksByDayKey[dayKey] ?? []
             let placement = arrangedTimelineActivityBlocks(
                 dayBlocks,
@@ -444,13 +530,65 @@ enum DayPlanTimelineTasks {
                 calendar: calendar
             )
             let blockedIntervals = blockedIntervalsByDayKey[dayKey] ?? []
-            let visiblePlacement = DayPlanTimelineActivityPlacement(
-                placed: placement.placed.filter { !isBlocked($0.block, by: blockedIntervals) },
-                unplaced: placement.unplaced.filter { !isBlocked($0.block, by: blockedIntervals) }
-            )
+            let visiblePlacement = placement.filteringBlockedIntervals(blockedIntervals)
 
-            return (dayKey, visiblePlacement.sorted())
+            return (dayKey, visiblePlacement)
         })
+
+        let elapsedMilliseconds = (ProcessInfo.processInfo.systemUptime - startedAt) * 1_000
+        let placedCount = placementsByDayKey.values.reduce(0) { $0 + $1.placed.count }
+        let unplacedCount = placementsByDayKey.values.reduce(0) { $0 + $1.unplaced.count }
+        DayPlanPerformanceLog.logTimelinePlacementIfSlow(
+            elapsedMilliseconds: elapsedMilliseconds,
+            visibleDayCount: dates.count,
+            taskCount: tasks.count,
+            logCount: logs.count,
+            sourceCount: latestActivityByKey.count,
+            placedCount: placedCount,
+            unplacedCount: unplacedCount
+        )
+
+        return placementsByDayKey
+    }
+
+    private static func recordedDayIndexes(
+        taskInfosByID: [UUID: DayPlanTimelineTaskInfo],
+        logs: [RoutineLog],
+        calendar: Calendar
+    ) -> DayPlanTimelineRecordedDayIndexes {
+        var completed: [UUID: Set<String>] = [:]
+        var canceled: [UUID: Set<String>] = [:]
+
+        for taskInfo in taskInfosByID.values {
+            if let lastDone = taskInfo.lastDone {
+                completed[taskInfo.id, default: []].insert(
+                    taskInfo.recordedDisplayDayKey(for: lastDone, calendar: calendar)
+                )
+            }
+            if let canceledAt = taskInfo.canceledAt {
+                canceled[taskInfo.id, default: []].insert(
+                    taskInfo.recordedDisplayDayKey(for: canceledAt, calendar: calendar)
+                )
+            }
+        }
+
+        for log in logs {
+            guard let timestamp = log.timestamp,
+                  let taskInfo = taskInfosByID[log.taskID]
+            else { continue }
+
+            let dayKey = taskInfo.recordedDisplayDayKey(for: timestamp, calendar: calendar)
+            switch log.kind {
+            case .completed:
+                completed[log.taskID, default: []].insert(dayKey)
+            case .canceled:
+                canceled[log.taskID, default: []].insert(dayKey)
+            case .missed:
+                break
+            }
+        }
+
+        return DayPlanTimelineRecordedDayIndexes(completed: completed, canceled: canceled)
     }
 
     static func taskIDs(
@@ -653,34 +791,6 @@ enum DayPlanTimelineTasks {
         return DayPlanBlock.clampedStartMinute(minute)
     }
 
-    private static func referenceDateForAssumedCompletion(
-        on date: Date,
-        referenceDate: Date,
-        calendar: Calendar
-    ) -> Date {
-        let day = calendar.startOfDay(for: date)
-        let today = calendar.startOfDay(for: referenceDate)
-        guard day < today else { return referenceDate }
-
-        return calendar.date(
-            byAdding: DateComponents(day: 1, second: -1),
-            to: day
-        ) ?? day
-    }
-
-    private static func displayTimestampForAssumedCompletion(
-        for day: Date,
-        task: RoutineTask,
-        calendar: Calendar
-    ) -> Date {
-        (task.autoAssumeDoneTimeOfDay ?? RoutineAssumedCompletion.defaultDoneTimeOfDay)
-            .date(on: day, calendar: calendar)
-    }
-
-    private static func isBlocked(_ block: DayPlanBlock, by intervals: [DayPlanBlockedInterval]) -> Bool {
-        intervals.contains { $0.overlaps(block: block) }
-    }
-
     private static func arrangedTimelineActivityBlocks(
         _ blocks: [DayPlanTimelineActivityBlock],
         plannedBlocks: [DayPlanBlock],
@@ -862,6 +972,179 @@ private struct DayPlanTimelineActivity: Equatable {
     var kind: RoutineLogKind
     var actualDurationMinutes: Int?
     var source: DayPlanTimelineActivitySource
+}
+
+private struct DayPlanTimelineDateInfo {
+    var date: Date
+    var dayKey: String
+    var assumptionReferenceDate: Date
+
+    init(date: Date, referenceDate: Date, calendar: Calendar) {
+        self.date = date
+        dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+
+        let day = calendar.startOfDay(for: date)
+        let today = calendar.startOfDay(for: referenceDate)
+        guard day < today else {
+            assumptionReferenceDate = referenceDate
+            return
+        }
+
+        assumptionReferenceDate = calendar.date(
+            byAdding: DateComponents(day: 1, second: -1),
+            to: day
+        ) ?? day
+    }
+}
+
+private struct DayPlanTimelineRecordedDayIndexes {
+    var completed: [UUID: Set<String>]
+    var canceled: [UUID: Set<String>]
+}
+
+private struct DayPlanTimelineTaskInfo {
+    var task: RoutineTask
+    var id: UUID
+    var title: String
+    var emoji: String?
+    var isAllDay: Bool
+    var lastDone: Date?
+    var canceledAt: Date?
+    var estimatedDurationMinutes: Int?
+    var autoAssumeDoneTimeOfDay: RoutineTimeOfDay?
+    var createdAt: Date?
+    var pausedAt: Date?
+    var snoozedUntil: Date?
+    var recurrenceRule: RoutineRecurrenceRule
+    var hasChecklistItems: Bool
+    var isAssumedCompletionEligible: Bool
+
+    init(task: RoutineTask) {
+        let scheduleMode = task.scheduleMode
+        let recurrenceRule = task.recurrenceRule
+        let hasSequentialSteps = task.hasSequentialSteps
+        let hasChecklistItems = task.hasChecklistItems
+
+        self.task = task
+        id = task.id
+        title = DayPlanTaskSorting.title(for: task)
+        emoji = CalendarTaskImportSupport.displayEmoji(for: task.emoji)
+        isAllDay = task.isAllDay
+        lastDone = task.lastDone
+        canceledAt = task.canceledAt
+        estimatedDurationMinutes = task.estimatedDurationMinutes
+        autoAssumeDoneTimeOfDay = task.autoAssumeDoneTimeOfDay
+        createdAt = task.createdAt
+        pausedAt = task.pausedAt
+        snoozedUntil = task.snoozedUntil
+        self.recurrenceRule = recurrenceRule
+        self.hasChecklistItems = hasChecklistItems
+        isAssumedCompletionEligible = task.autoAssumeDailyDone
+            && RoutineAssumedCompletion.isEligible(
+                scheduleMode: scheduleMode,
+                recurrenceRule: recurrenceRule,
+                hasSequentialSteps: hasSequentialSteps,
+                hasChecklistItems: hasChecklistItems
+            )
+    }
+
+    func currentOccurrenceDay(referenceDate: Date, calendar: Calendar) -> Date {
+        let today = calendar.startOfDay(for: referenceDate)
+        guard let timeRange = recurrenceRule.timeRange,
+              timeRange.isOvernight
+        else {
+            return today
+        }
+
+        let referenceTime = RoutineTimeOfDay.from(referenceDate, calendar: calendar)
+        guard referenceTime.minutesFromStartOfDay < timeRange.start.minutesFromStartOfDay,
+              let previousDay = calendar.date(byAdding: .day, value: -1, to: today)
+        else {
+            return today
+        }
+
+        return previousDay
+    }
+
+    func isAssumedDone(
+        on day: Date,
+        dayKey: String,
+        referenceDate: Date,
+        recordedCompletionDayKeys: Set<String>,
+        recordedCancellationDayKeys: Set<String>,
+        calendar: Calendar
+    ) -> Bool {
+        guard isAssumedCompletionEligible else { return false }
+
+        let selectedDay = calendar.startOfDay(for: day)
+        let today = calendar.startOfDay(for: referenceDate)
+        guard selectedDay <= today else { return false }
+
+        if let createdAt {
+            let createdDay = calendar.startOfDay(for: createdAt)
+            guard selectedDay >= createdDay else { return false }
+        }
+
+        if let pausedAt,
+           selectedDay >= calendar.startOfDay(for: pausedAt) {
+            return false
+        }
+
+        if selectedDay == today, isArchived(referenceDate: referenceDate, calendar: calendar) {
+            return false
+        }
+
+        if recordedCompletionDayKeys.contains(dayKey) {
+            return false
+        }
+
+        if recordedCancellationDayKeys.contains(dayKey) {
+            return false
+        }
+
+        if hasChecklistItems,
+           task.isChecklistInProgress(referenceDate: selectedDay, calendar: calendar) {
+            return false
+        }
+
+        if selectedDay == today {
+            return referenceDate >= availableAt(on: selectedDay, calendar: calendar)
+        }
+
+        return true
+    }
+
+    func assumedCompletionTimestamp(on day: Date, calendar: Calendar) -> Date {
+        (autoAssumeDoneTimeOfDay ?? RoutineAssumedCompletion.defaultDoneTimeOfDay)
+            .date(on: day, calendar: calendar)
+    }
+
+    func recordedDisplayDayKey(for timestamp: Date, calendar: Calendar) -> String {
+        let displayDay = RoutineDateMath.completionDisplayDay(
+            for: task,
+            completionDate: timestamp,
+            calendar: calendar
+        ) ?? calendar.startOfDay(for: timestamp)
+        return DayPlanStorage.dayKey(for: displayDay, calendar: calendar)
+    }
+
+    private func availableAt(on day: Date, calendar: Calendar) -> Date {
+        if let timeRange = recurrenceRule.timeRange {
+            return timeRange.startDate(on: day, calendar: calendar)
+        }
+        if let timeOfDay = recurrenceRule.timeOfDay {
+            return timeOfDay.date(on: day, calendar: calendar)
+        }
+        return calendar.startOfDay(for: day)
+    }
+
+    private func isArchived(referenceDate: Date, calendar: Calendar) -> Bool {
+        if pausedAt != nil {
+            return true
+        }
+        guard let snoozedUntil else { return false }
+        return calendar.startOfDay(for: referenceDate) < calendar.startOfDay(for: snoozedUntil)
+    }
 }
 
 private struct DayPlanTimelineActivityKey: Hashable {

@@ -11,6 +11,7 @@ protocol HomeTaskListDisplay {
     var placeIDs: [UUID] { get }
     var placeName: String? { get }
     var tags: [String] { get }
+    var taskListTagSectionDescriptor: HomeTaskListTagSectionDescriptor { get }
     var goalTitles: [String] { get }
     var interval: Int { get }
     var recurrenceRule: RoutineRecurrenceRule { get }
@@ -85,16 +86,20 @@ extension HomeTaskListDisplay {
         )
     }
 
+    var taskListTagSectionDescriptor: HomeTaskListTagSectionDescriptor {
+        HomeTaskListTagGrouping.descriptor(for: tags)
+    }
+
     var taskListPrimaryTag: String? {
-        HomeTaskListTagGrouping.primaryTag(for: self)
+        taskListTagSectionDescriptor.primaryTag
     }
 
     var taskListTagSectionTitle: String {
-        HomeTaskListTagGrouping.sectionTitle(for: taskListPrimaryTag)
+        taskListTagSectionDescriptor.title
     }
 
     var taskListTagManualOrderSectionKey: String {
-        HomeTaskListTagGrouping.sectionKey(for: taskListPrimaryTag)
+        taskListTagSectionDescriptor.sectionKey
     }
 
     func isFixedCalendarRoutineScheduled(on day: Date, calendar: Calendar) -> Bool {
@@ -122,7 +127,33 @@ enum HomeTaskListTagGrouping {
     static let untaggedTitle = "No Tags"
 
     static func primaryTag<Display: HomeTaskListDisplay>(for task: Display) -> String? {
-        RoutineTag.deduplicated(task.tags).first
+        descriptor(for: task).primaryTag
+    }
+
+    static func descriptor<Display: HomeTaskListDisplay>(for task: Display) -> HomeTaskListTagSectionDescriptor {
+        task.taskListTagSectionDescriptor
+    }
+
+    static func descriptor(for tags: [String]) -> HomeTaskListTagSectionDescriptor {
+        for rawTag in tags {
+            guard let cleanedTag = RoutineTag.cleaned(rawTag),
+                  let normalizedTag = RoutineTag.normalized(cleanedTag) else {
+                continue
+            }
+            return HomeTaskListTagSectionDescriptor(
+                primaryTag: cleanedTag,
+                title: "#\(cleanedTag)",
+                sectionKey: "tag:\(normalizedTag)",
+                isUntagged: false
+            )
+        }
+
+        return HomeTaskListTagSectionDescriptor(
+            primaryTag: nil,
+            title: untaggedTitle,
+            sectionKey: "tag:untagged",
+            isUntagged: true
+        )
     }
 
     static func sectionTitle(for tag: String?) -> String {
@@ -140,6 +171,13 @@ enum HomeTaskListTagGrouping {
     static func isUntaggedTitle(_ title: String) -> Bool {
         title == untaggedTitle
     }
+}
+
+struct HomeTaskListTagSectionDescriptor: Equatable {
+    let primaryTag: String?
+    let title: String
+    let sectionKey: String
+    let isUntagged: Bool
 }
 
 struct HomeTaskListSection<Display: HomeTaskListDisplay> {

@@ -65,6 +65,7 @@ struct HomeRoutineDisplayFactory {
         let isSnoozed = task.isSnoozed(referenceDate: now, calendar: calendar)
         let nextDueChecklistItem = task.nextDueChecklistItem(referenceDate: now, calendar: calendar)
         let dueChecklistItems = task.dueChecklistItems(referenceDate: now, calendar: calendar)
+        let taskTags = task.tags
         let missedExactTimedOccurrenceDate = RoutineDateMath.missedExactTimedOccurrenceDate(
             for: task,
             referenceDate: now,
@@ -85,7 +86,8 @@ struct HomeRoutineDisplayFactory {
             placeIDs: showsPlaces ? task.placeIDs : [],
             placeName: displayPlaceName,
             locationAvailability: locationAvailability,
-            tags: task.tags,
+            tags: taskTags,
+            taskListTagSectionDescriptor: HomeTaskListTagGrouping.descriptor(for: taskTags),
             goalIDs: task.goalIDs,
             goalTitles: task.goalIDs.compactMap { goalsByID[$0]?.displayTitle },
             steps: task.steps.map(\.title),

@@ -47,74 +47,24 @@ struct MacToolbarIconButton: NSViewRepresentable {
     }
 }
 
-struct MacToolbarStatusBadge: NSViewRepresentable {
+struct MacToolbarStatusBadge: View {
     let title: String
     let systemImage: String
     let tintColor: NSColor
 
-    func makeNSView(context: Context) -> NSView {
-        let imageView = NSImageView()
-        imageView.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 13, weight: .bold)
-        imageView.contentTintColor = tintColor
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: systemImage)
+                .font(.system(size: 13, weight: .bold))
 
-        let textField = NSTextField(labelWithString: title)
-        let font = Self.badgeFont
-        textField.font = font
-        textField.textColor = tintColor
-        textField.lineBreakMode = .byTruncatingTail
-        textField.maximumNumberOfLines = 1
-        textField.setContentCompressionResistancePriority(.required, for: .horizontal)
-        textField.setContentHuggingPriority(.required, for: .horizontal)
-        let widthConstraint = textField.widthAnchor.constraint(
-            greaterThanOrEqualToConstant: Self.measuredTitleWidth(title, font: font)
-        )
-        widthConstraint.identifier = Self.titleWidthConstraintIdentifier
-        widthConstraint.isActive = true
-
-        let stackView = NSStackView(views: [imageView, textField])
-        stackView.orientation = .horizontal
-        stackView.alignment = .centerY
-        stackView.spacing = 5
-        stackView.edgeInsets = NSEdgeInsets(top: 0, left: 4, bottom: 0, right: 8)
-        stackView.setContentHuggingPriority(.required, for: .horizontal)
-        stackView.setContentCompressionResistancePriority(.required, for: .horizontal)
-
-        update(stackView: stackView, imageView: imageView, textField: textField)
-        return stackView
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        guard let stackView = nsView as? NSStackView,
-              stackView.views.count == 2,
-              let imageView = stackView.views[0] as? NSImageView,
-              let textField = stackView.views[1] as? NSTextField
-        else {
-            return
+            Text(title)
+                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
         }
-
-        update(stackView: stackView, imageView: imageView, textField: textField)
-    }
-
-    private func update(stackView: NSStackView, imageView: NSImageView, textField: NSTextField) {
-        imageView.image = NSImage(systemSymbolName: systemImage, accessibilityDescription: title)
-        imageView.toolTip = title
-        imageView.contentTintColor = tintColor
-        textField.widthConstraint?.constant = Self.measuredTitleWidth(title, font: textField.font ?? Self.badgeFont)
-        textField.stringValue = title
-        textField.textColor = tintColor
-        stackView.toolTip = title
-    }
-
-    fileprivate static let titleWidthConstraintIdentifier = "MacToolbarStatusBadge.titleWidth"
-    private static let badgeFont = NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .semibold)
-
-    private static func measuredTitleWidth(_ title: String, font: NSFont) -> CGFloat {
-        ceil((title as NSString).size(withAttributes: [.font: font]).width) + 2
-    }
-}
-
-private extension NSTextField {
-    var widthConstraint: NSLayoutConstraint? {
-        constraints.first { $0.identifier == MacToolbarStatusBadge.titleWidthConstraintIdentifier }
+        .foregroundStyle(Color(nsColor: tintColor))
+        .padding(.leading, 4)
+        .padding(.trailing, 8)
+        .help(title)
     }
 }

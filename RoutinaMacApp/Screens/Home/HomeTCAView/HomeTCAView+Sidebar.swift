@@ -607,13 +607,8 @@ extension HomeTCAView {
                     }
 
                     ZStack(alignment: .top) {
-                        macTimelineSidebarView
-                            .opacity(isMacTimelineMode ? 1 : 0)
-                            .allowsHitTesting(isMacTimelineMode)
-                            .accessibilityHidden(!isMacTimelineMode)
-
                         if isMacTimelineMode {
-                            EmptyView()
+                            macTimelineSidebarView
                         } else if isMacGoalsMode {
                             MacGoalsSidebarView(store: goalsStore)
                         } else if isMacStatsMode {

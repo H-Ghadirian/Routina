@@ -274,10 +274,14 @@ struct DayPlanBlockLayer: View {
                     )
                     .clipped(antialiased: true)
                     .overlay(alignment: .top) {
-                        resizeHandle(for: block, date: date, edge: .top, blockHeight: blockHeight)
+                        if showsResizeHandles(for: block) {
+                            resizeHandle(for: block, date: date, edge: .top, blockHeight: blockHeight)
+                        }
                     }
                     .overlay(alignment: .bottom) {
-                        resizeHandle(for: block, date: date, edge: .bottom, blockHeight: blockHeight)
+                        if showsResizeHandles(for: block) {
+                            resizeHandle(for: block, date: date, edge: .bottom, blockHeight: blockHeight)
+                        }
                     }
                     .offset(
                         x: timeColumnWidth
@@ -286,15 +290,17 @@ struct DayPlanBlockLayer: View {
                             + timedBlockXOffset(
                                 columnIndex: positionedBlock.columnIndex,
                                 columnCount: positionedBlock.columnCount
-                            ),
+                        ),
                         y: yOffset(for: block.startMinute)
                     )
-                    .matchedGeometryEffect(
-                        id: block.id,
-                        in: blockAnimationNamespace,
-                        properties: .frame,
-                        anchor: .topLeading
-                    )
+                    .routinaIf(usesGeometryAnimation(for: block)) { view in
+                        view.matchedGeometryEffect(
+                            id: block.id,
+                            in: blockAnimationNamespace,
+                            properties: .frame,
+                            anchor: .topLeading
+                        )
+                    }
                     .zIndex(block.id == selectedBlockID ? 2 : 1)
                 }
             }
@@ -312,6 +318,16 @@ struct DayPlanBlockLayer: View {
     private func contentLayoutHeight(for block: DayPlanBlock) -> CGFloat? {
         guard block.id == resizingBlockID else { return nil }
         return resizingContentLayoutHeight
+    }
+
+    private func showsResizeHandles(for block: DayPlanBlock) -> Bool {
+        block.id == selectedBlockID || block.id == resizingBlockID
+    }
+
+    private func usesGeometryAnimation(for block: DayPlanBlock) -> Bool {
+        block.id == selectedBlockID
+            || block.id == highlightedBlockID
+            || block.id == resizingBlockID
     }
 
     private func resizeHandle(

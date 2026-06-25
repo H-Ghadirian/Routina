@@ -12,16 +12,11 @@ extension Notification.Name {
 }
 
 extension NotificationCenter {
-    func postRoutineDidUpdate() {
+    func postRoutineDidUpdate(widgetRefreshDelayMilliseconds: Int64? = nil) {
         post(name: .routineDidUpdate, object: nil)
 #if canImport(WidgetKit)
         Task { @MainActor in
-            WidgetStatsService.refresh(using: PersistenceController.shared.container)
-            FocusTimerWidgetService.refresh(using: PersistenceController.shared.container)
-#if os(iOS) && canImport(ActivityKit)
-            await FocusTimerLiveActivityService.sync(using: PersistenceController.shared.container)
-#endif
-            WidgetCenter.shared.reloadAllTimelines()
+            RoutineWidgetRefreshScheduler.schedule(delayMilliseconds: widgetRefreshDelayMilliseconds)
         }
 #endif
     }
@@ -47,6 +42,30 @@ extension NotificationCenter {
         )
     }
 }
+
+#if canImport(WidgetKit)
+@MainActor
+private enum RoutineWidgetRefreshScheduler {
+    private static var pendingTask: Task<Void, Never>?
+    private static let defaultWidgetRefreshQuietWindowMilliseconds: Int64 = 1_500
+
+    static func schedule(delayMilliseconds: Int64? = nil) {
+        pendingTask?.cancel()
+        pendingTask = Task { @MainActor in
+            let quietWindowMilliseconds = delayMilliseconds ?? defaultWidgetRefreshQuietWindowMilliseconds
+            try? await Task.sleep(for: .milliseconds(quietWindowMilliseconds))
+            guard !Task.isCancelled else { return }
+
+            WidgetStatsService.refresh(using: PersistenceController.shared.container)
+            FocusTimerWidgetService.refresh(using: PersistenceController.shared.container)
+#if os(iOS) && canImport(ActivityKit)
+            await FocusTimerLiveActivityService.sync(using: PersistenceController.shared.container)
+#endif
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+    }
+}
+#endif
 
 enum RoutineTagNotificationKey: String {
     case oldName

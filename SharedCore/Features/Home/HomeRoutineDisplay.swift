@@ -13,6 +13,7 @@ struct HomeRoutineDisplay: Equatable, Identifiable, HomeTaskListDisplay, HomeTas
     var placeName: String?
     var locationAvailability: RoutineLocationAvailability
     var tags: [String]
+    var taskListTagSectionDescriptor: HomeTaskListTagSectionDescriptor
     var goalIDs: [UUID] = []
     var goalTitles: [String] = []
     var steps: [String]

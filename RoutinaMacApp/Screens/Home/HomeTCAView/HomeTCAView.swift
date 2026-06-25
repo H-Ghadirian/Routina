@@ -180,6 +180,7 @@ struct HomeTCAView: View {
     @State var macNavigationHistory = HomeMacNavigationHistory()
     @State var isRestoringMacNavigationHistory = false
     @StateObject var dayPlanPlanner = DayPlanPlannerState()
+    @StateObject var macTaskListPresentationCache = HomeMacTaskListPresentationCache()
     @State var dayPlanUnplannedCompletedFilterDate: Date?
     @State var macSidebarTaskScrollRequest: MacSidebarTaskScrollRequest?
     @State var macTimelineSidebarPresentationID = UUID()
@@ -521,6 +522,18 @@ homeContent
         platformRoutineRow(for: task, rowNumber: rowNumber)
     }
 
+    func routineRow(
+        for task: HomeFeature.RoutineDisplay,
+        rowNumber: Int,
+        metadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay>
+    ) -> some View {
+        platformRoutineRow(
+            for: task,
+            rowNumber: rowNumber,
+            metadataPresenter: metadataPresenter
+        )
+    }
+
     @ViewBuilder
     func taskDetailDestination(taskID: UUID) -> some View {
         if store.selectedTaskID == taskID,
@@ -570,6 +583,14 @@ homeContent
 
     @ViewBuilder
     func statusBadge(for task: HomeFeature.RoutineDisplay) -> some View {
+        statusBadge(for: task, metadataPresenter: routineMetadataPresenter)
+    }
+
+    @ViewBuilder
+    func statusBadge(
+        for task: HomeFeature.RoutineDisplay,
+        metadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay>
+    ) -> some View {
         if store.taskListMode == .todos,
            task.isOneOffTask,
            !task.isCompletedOneOff,
@@ -577,7 +598,11 @@ homeContent
            !task.isInProgress {
             EmptyView()
         } else {
-            HomeStatusBadgeView(style: HomeStatusBadgeStyle(badgeStyle(for: task)))
+            HomeStatusBadgeView(
+                style: HomeStatusBadgeStyle(
+                    metadataPresenter.badgeStyle(for: task)!.tuple
+                )
+            )
         }
     }
 

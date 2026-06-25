@@ -7,6 +7,7 @@ final class RoutinaMacFocusTimerStatusStore: ObservableObject {
     @Published private(set) var status: RoutinaMacFocusTimerStatus = .inactive
 
     private let persistence: PersistenceController
+    private var scheduledRefreshTask: Task<Void, Never>?
 
     init(persistence: PersistenceController) {
         self.persistence = persistence
@@ -65,6 +66,15 @@ final class RoutinaMacFocusTimerStatusStore: ObservableObject {
             }
             FocusShieldSupport.syncFocusShield(using: persistence.container.mainContext)
             NSLog("RoutinaMacFocusTimerStatusStore: failed to refresh focus timer status: \(error)")
+        }
+    }
+
+    func scheduleRefresh(delayNanoseconds: UInt64 = 500_000_000) {
+        scheduledRefreshTask?.cancel()
+        scheduledRefreshTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: delayNanoseconds)
+            guard !Task.isCancelled else { return }
+            self?.refresh()
         }
     }
 

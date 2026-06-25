@@ -253,6 +253,13 @@ extension HomeTCAView {
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
+                let timelineSelection = isMacTimelineMode
+                    ? selectedMacTimelineSelection
+                    : .empty
+                let adventureProgression = isMacStatsMode && macHomeProgressMode.visibleSurfaceMode == .adventure
+                    ? homeAdventureProgression
+                    : nil
+
                 MacDetailContainerView(
                     store: store,
                     isBoardPresented: isMacBoardMode,
@@ -265,20 +272,20 @@ extension HomeTCAView {
                     selectedStatsDashboardScope: $selectedStatsDashboardScope,
                     selectedSettingsSection: currentSelectedSettingsSection,
                     dayPlanPlanner: dayPlanPlanner,
-                    adventureProgression: homeAdventureProgression,
+                    adventureProgression: adventureProgression,
                     showsPlaces: isPlacesEnabled,
                     mainDetailMode: mainDetailModeBinding,
                     isBoardInspectorPresented: macBoardInspectorPresentedBinding,
                     placeCheckInSelectedPlaceID: $placeCheckInSelectedPlaceID,
                     placeCheckInSelectedHistoryMarkerID: $placeCheckInSelectedHistoryMarkerID,
                     selectedTaskID: store.selectedTaskID,
-                    selectedTimelineEntry: selectedMacTimelineEntry,
-                    selectedTimelineEmotion: selectedMacTimelineEmotion,
-                    selectedTimelineEvent: selectedMacTimelineEvent,
-                    selectedTimelineNote: selectedMacTimelineNote,
-                    selectedTimelineNoteAttachments: selectedMacTimelineNoteAttachments,
-                    selectedTimelinePlaceCheckInSession: isPlacesEnabled ? selectedMacTimelinePlaceCheckInSession : nil,
-                    selectedTimelineAwaySession: selectedMacTimelineAwaySession,
+                    selectedTimelineEntry: timelineSelection.entry,
+                    selectedTimelineEmotion: timelineSelection.emotion,
+                    selectedTimelineEvent: timelineSelection.event,
+                    selectedTimelineNote: timelineSelection.note,
+                    selectedTimelineNoteAttachments: timelineSelection.noteAttachments,
+                    selectedTimelinePlaceCheckInSession: isPlacesEnabled ? timelineSelection.placeCheckInSession : nil,
+                    selectedTimelineAwaySession: timelineSelection.awaySession,
                     onSelectDayPlanUnplannedCompletedDate: { date in
                         focusMacSidebarOnDayPlanUnplannedCompletedTasks(on: date)
                     },

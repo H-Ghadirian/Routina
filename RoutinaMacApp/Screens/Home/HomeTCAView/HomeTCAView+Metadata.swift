@@ -4,7 +4,7 @@ import ComposableArchitecture
 extension HomeFeature.RoutineDisplay: HomeRoutineMetadataDisplay {}
 
 extension HomeTCAView {
-    private var routineMetadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay> {
+    var routineMetadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay> {
         HomeRoutineDisplayMetadataPresenter(
             filtering: taskListFiltering(),
             showPersianDates: showPersianDates,

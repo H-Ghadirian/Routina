@@ -100,12 +100,12 @@ struct HomeTaskListSectionBuilder<Display: HomeTaskListDisplay> {
 
         var groups: [String: (title: String, tasks: [Display], isUntagged: Bool)] = [:]
         for task in tasks {
-            let primaryTag = task.taskListPrimaryTag
-            let key = HomeTaskListTagGrouping.sectionKey(for: primaryTag)
+            let descriptor = HomeTaskListTagGrouping.descriptor(for: task)
+            let key = descriptor.sectionKey
             var group = groups[key] ?? (
-                title: HomeTaskListTagGrouping.sectionTitle(for: primaryTag),
+                title: descriptor.title,
                 tasks: [],
-                isUntagged: primaryTag == nil
+                isUntagged: descriptor.isUntagged
             )
             group.tasks.append(task)
             groups[key] = group
