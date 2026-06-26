@@ -548,7 +548,7 @@ private struct SettingsMacBetaExperimentsCard: View {
             Toggle("Show Away", isOn: awayBinding)
                 .toggleStyle(.switch)
 
-            Text("Show Away mode controls, Away planner blocks, Away timeline items, and Away stats.")
+            Text("Show Away mode controls, Away planner blocks, Away timeline items, Away stats, and Sleep stats/blocking surfaces.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 
@@ -580,12 +580,14 @@ private struct SettingsMacBetaExperimentsCard: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 
-            Toggle("Show Sleep tab", isOn: $isStatsSleepTabEnabled)
-                .toggleStyle(.switch)
+            if store.appearance.isAwayEnabled {
+                Toggle("Show Sleep tab", isOn: $isStatsSleepTabEnabled)
+                    .toggleStyle(.switch)
 
-            Text("Show the Sleep tab for Sleep-specific dashboard scope in Stats.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                Text("Show the Sleep tab for Sleep-specific dashboard scope in Stats.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
 
             Toggle("Show Achievements", isOn: $isStatsAchievementsEnabled)
                 .toggleStyle(.switch)

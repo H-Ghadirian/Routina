@@ -170,7 +170,9 @@ struct HomeMacAdventureSidebarView: View {
         if isPlacesEnabled {
             actions.append("check in")
         }
-        actions.append("sleep")
+        if isAwayEnabled {
+            actions.append("sleep")
+        }
         if isAwayEnabled {
             actions.append("finish away sessions")
         }

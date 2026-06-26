@@ -12,7 +12,7 @@ enum ProtectionBlockingMode: String, CaseIterable, Codable, Hashable, Identifiab
     }
 
     static func visibleCases(includingAway: Bool) -> [ProtectionBlockingMode] {
-        allCases.filter { includingAway || $0 != .away }
+        includingAway ? allCases : [.focus]
     }
 
     var title: String {

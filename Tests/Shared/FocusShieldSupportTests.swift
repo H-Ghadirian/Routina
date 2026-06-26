@@ -12,6 +12,12 @@ import Testing
 @Suite(.serialized)
 struct FocusShieldSupportTests {
     @Test
+    func visibleBlockingModesHideAwayAndSleepWhenAwayExperimentIsOff() {
+        #expect(ProtectionBlockingMode.visibleCases(includingAway: false) == [.focus])
+        #expect(ProtectionBlockingMode.visibleCases(includingAway: true) == [.focus, .away, .sleep])
+    }
+
+    @Test
     func blockingModeStorageDefaultsToAllProtectedModesAndPersistsEmptySelection() {
         let key = UserDefaultStringValueKey.appSettingProtectionBlockingEnabledModes.rawValue
         let previousValue = SharedDefaults.app.object(forKey: key)

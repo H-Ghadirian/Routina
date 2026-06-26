@@ -22,16 +22,17 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - [0229](../decisions/0229-hide-secondary-mac-stats-charts-by-default.md)
 - [0236](../decisions/0236-hide-empty-stats-reports.md)
 - [0275](../decisions/0275-hide-places-behind-beta-toggle.md)
+- [0279](../decisions/0279-hide-sleep-stats-and-blocking-with-away-toggle.md)
 
 ## Current Contract
 
 - Stats dashboards are customizable, reorderable, and adaptive-width.
 - Dashboard reports appear only when their backing metric has data. Saved order and hidden-item preferences are preserved for when data appears later.
-- Sleep time and Sleep sessions sit beside comparable summary reports when available.
+- Sleep time and Sleep sessions sit beside comparable summary reports when available and when the Away experiment is enabled.
 - Goal reports follow the Goals beta setting.
 - Place reports and place achievements follow the Places beta setting.
 - macOS Event and Emotion reports follow the Mac Event/Emotion beta setting.
 - macOS Focus vs completed work and Estimated vs Actual time reports remain addable but start hidden by default.
-- Wins, Achievements, Sleep scope, Goals UI, and Adventure surfaces remain implemented but are hidden by default behind their related settings.
+- Wins, Achievements, Sleep scope, Goals UI, and Adventure surfaces remain implemented but are hidden by default behind their related settings; Sleep-specific Stats and Adventure surfaces also stay hidden while `Show Away` is off.
 - Stats hero activity previews use range-appropriate buckets: day-level for week, roughly weekly for month, and trailing 12-month framing for year.
 - Adventure derives progression from existing activity history and shares the Mac Stats sidebar tab behind a `Stats / Adventure` segment when enabled.

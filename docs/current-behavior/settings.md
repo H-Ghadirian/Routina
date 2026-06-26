@@ -18,6 +18,8 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0257](../decisions/0257-hide-task-sharing-behind-beta-toggle.md)
 - [0258](../decisions/0258-hide-linked-task-visualizer-behind-beta-toggle.md)
 - [0275](../decisions/0275-hide-places-behind-beta-toggle.md)
+- [0277](../decisions/0277-hide-notes-and-away-behind-beta-toggles.md)
+- [0279](../decisions/0279-hide-sleep-stats-and-blocking-with-away-toggle.md)
 
 ## Current Contract
 
@@ -32,6 +34,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - Turning App Lock off requires fresh device-owner authentication.
 - Settings hides Devices by default behind the beta toggle.
 - Settings hides Places by default behind Support & About -> Beta Experiments -> `Show Places`.
+- Settings hides Notes and Away by default behind Support & About -> Beta Experiments; while Away is off, Blocking exposes only Focus mode controls and Stats hides Sleep-specific surfaces.
 - Task sharing is off by default and hidden in task details until enabled from Support & About -> Beta Experiments.
 - The linked-task Visualize button is off by default and hidden in task details until enabled from Support & About -> Beta Experiments.
 - macOS development runs use `script/build_and_run.sh` by default. Production launches use the explicit `--prod` path.

@@ -16,7 +16,7 @@ extension HomeTCAView {
             logs: store.timelineLogs,
             focusSessions: focusSessions,
             sprintFocusSessions: sprintFocusSessions,
-            sleepSessions: sleepSessions,
+            sleepSessions: isAwayEnabled ? sleepSessions : [],
             awaySessions: isAwayEnabled ? awaySessions : [],
             dayPlanBlocks: dayPlanBlocks,
             emotionLogs: emotionLogs,
@@ -171,14 +171,17 @@ extension HomeTCAView {
         let isGitFeaturesEnabled = statsStore?.isGitFeaturesEnabled ?? settingsStore.appearance.isGitFeaturesEnabled
 
         return StatsMacDashboardItem.allCases.filter { item in
-            item.isAvailable(
-                selectedRange: selectedRange,
-                isGitFeaturesEnabled: isGitFeaturesEnabled,
-                isGoalsTabEnabled: isGoalsTabEnabled,
-                areMacEventEmotionActionsEnabled: areMacEventEmotionActionsEnabled,
-                isStatsWinsEnabled: isStatsWinsEnabled,
-                isStatsAchievementsEnabled: isStatsAchievementsEnabled
-            )
+            (item != .awayTime || isAwayEnabled)
+                && (item != .sleepTime || isAwayEnabled)
+                && (item != .sleepSessions || isAwayEnabled)
+                && item.isAvailable(
+                    selectedRange: selectedRange,
+                    isGitFeaturesEnabled: isGitFeaturesEnabled,
+                    isGoalsTabEnabled: isGoalsTabEnabled,
+                    areMacEventEmotionActionsEnabled: areMacEventEmotionActionsEnabled,
+                    isStatsWinsEnabled: isStatsWinsEnabled,
+                    isStatsAchievementsEnabled: isStatsAchievementsEnabled
+                )
                 && item.isReportable(metrics: metrics)
         }
     }
@@ -188,7 +191,7 @@ extension HomeTCAView {
         case .all, .focus:
             return true
         case .sleep:
-            return isStatsSleepTabEnabled
+            return isAwayEnabled && isStatsSleepTabEnabled
         case .wins:
             return isStatsWinsEnabled
         case .achievements:

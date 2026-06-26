@@ -91,6 +91,10 @@ struct StatsView: View {
         isAwayEnabled ? awaySessions : []
     }
 
+    private var statsSleepSessions: [SleepSession] {
+        isAwayEnabled ? sleepSessions : []
+    }
+
     private var statsNotes: [RoutineNote] {
         isNotesEnabled ? notes : []
     }
@@ -277,13 +281,15 @@ struct StatsView: View {
         StatsDashboardItem.allCases.filter { item in
             (item != .notes || isNotesEnabled)
                 && (item != .awayTime || isAwayEnabled)
+                && (item != .sleepTime || isAwayEnabled)
+                && (item != .sleepSessions || isAwayEnabled)
                 && item.isAvailable(
-                selectedRange: selectedRange,
-                isGitFeaturesEnabled: store.isGitFeaturesEnabled,
-                isGoalsTabEnabled: isGoalsTabEnabled,
-                isStatsWinsEnabled: isStatsWinsEnabled,
-                isStatsAchievementsEnabled: isStatsAchievementsEnabled
-            )
+                    selectedRange: selectedRange,
+                    isGitFeaturesEnabled: store.isGitFeaturesEnabled,
+                    isGoalsTabEnabled: isGoalsTabEnabled,
+                    isStatsWinsEnabled: isStatsWinsEnabled,
+                    isStatsAchievementsEnabled: isStatsAchievementsEnabled
+                )
                 && item.isReportable(metrics: metrics, healthSummary: store.healthSummary)
         }
     }
@@ -310,7 +316,7 @@ struct StatsView: View {
     private var availableDashboardScopes: [StatsDashboardScope] {
         StatsDashboardScope.allCases.filter { scope in
             (scope != .wins || isStatsWinsEnabled)
-                && (scope != .sleep || isStatsSleepTabEnabled)
+                && (scope != .sleep || (isAwayEnabled && isStatsSleepTabEnabled))
                 && (scope != .achievements || isStatsAchievementsEnabled)
         }
     }
@@ -319,7 +325,7 @@ struct StatsView: View {
         if selectedDashboardScope == .wins && !isStatsWinsEnabled {
             return .all
         }
-        if selectedDashboardScope == .sleep && !isStatsSleepTabEnabled {
+        if selectedDashboardScope == .sleep && (!isAwayEnabled || !isStatsSleepTabEnabled) {
             return .all
         }
         if selectedDashboardScope == .achievements && !isStatsAchievementsEnabled {
@@ -373,7 +379,7 @@ struct StatsView: View {
                 focusSessions: focusSessions,
                 sprintFocusSessions: sprintFocusSessions,
                 boardSprints: boardSprints,
-                sleepSessions: sleepSessions,
+                sleepSessions: statsSleepSessions,
                 awaySessions: statsAwaySessions,
                 emotionLogs: emotionLogs,
                 notes: statsNotes,
@@ -391,7 +397,7 @@ struct StatsView: View {
                             focusSessions: focusSessions,
                             sprintFocusSessions: sprintFocusSessions,
                             boardSprints: boardSprints,
-                            sleepSessions: sleepSessions,
+                            sleepSessions: isAwayEnabled ? sleepSessions : [],
                             awaySessions: isAwayEnabled ? awaySessions : [],
                             emotionLogs: emotionLogs,
                             notes: isNotesEnabled ? notes : [],
@@ -412,7 +418,7 @@ struct StatsView: View {
                         focusSessions: focusSessions,
                         sprintFocusSessions: sprintFocusSessions,
                         boardSprints: boardSprints,
-                        sleepSessions: sleepSessions,
+                        sleepSessions: statsSleepSessions,
                         awaySessions: statsAwaySessions,
                         emotionLogs: emotionLogs,
                         notes: statsNotes,
@@ -440,7 +446,7 @@ struct StatsView: View {
                 focusSessions: focusSessions,
                 sprintFocusSessions: sprintFocusSessions,
                 boardSprints: boardSprints,
-                sleepSessions: sleepSessions,
+                sleepSessions: statsSleepSessions,
                 awaySessions: statsAwaySessions,
                 emotionLogs: emotionLogs,
                 notes: statsNotes,
@@ -1059,7 +1065,7 @@ struct StatsView: View {
         StatsAchievementsSection(
             achievements: StatsAchievementStats.achievements(
                 focusSessions: focusSessions,
-                sleepSessions: sleepSessions,
+                sleepSessions: statsSleepSessions,
                 awaySessions: statsAwaySessions,
                 logs: logs,
                 emotionLogs: emotionLogs,
@@ -1072,7 +1078,7 @@ struct StatsView: View {
             ),
             earnedAchievementIDsByPeriod: StatsAchievementStats.achievementIDsEarnedByPeriod(
                 focusSessions: focusSessions,
-                sleepSessions: sleepSessions,
+                sleepSessions: statsSleepSessions,
                 awaySessions: statsAwaySessions,
                 logs: logs,
                 emotionLogs: emotionLogs,
@@ -1093,7 +1099,7 @@ struct StatsView: View {
         StatsRecentWinsSection(
             celebrations: StatsAchievementStats.celebrationPeriods(
                 focusSessions: focusSessions,
-                sleepSessions: sleepSessions,
+                sleepSessions: statsSleepSessions,
                 awaySessions: statsAwaySessions,
                 logs: logs,
                 emotionLogs: emotionLogs,

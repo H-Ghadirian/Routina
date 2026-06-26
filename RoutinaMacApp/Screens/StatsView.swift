@@ -78,7 +78,7 @@ private struct StatsDataObserver: View {
                     focusSessions: focusSessions,
                     sprintFocusSessions: sprintFocusSessions,
                     boardSprints: boardSprints,
-                    sleepSessions: sleepSessions,
+                    sleepSessions: isAwayEnabled ? sleepSessions : [],
                     awaySessions: isAwayEnabled ? awaySessions : [],
                     emotionLogs: emotionLogs,
                     notes: isNotesEnabled ? notes : [],
@@ -189,6 +189,14 @@ struct StatsView: View {
         isPlacesEnabled ? store.placeCheckInSessions : []
     }
 
+    private var statsSleepSessions: [SleepSession] {
+        isAwayEnabled ? store.sleepSessions : []
+    }
+
+    private var statsAwaySessions: [AwaySession] {
+        isAwayEnabled ? store.awaySessions : []
+    }
+
     private var activeItemsBreakdown: StatsActiveItemsBreakdown {
         StatsActiveItemsBreakdown(
             tasks: filteredTasksForCurrentStatsFilters,
@@ -252,14 +260,16 @@ struct StatsView: View {
         StatsMacDashboardItem.allCases.filter { item in
             (item != .notes || isNotesEnabled)
                 && (item != .awayTime || isAwayEnabled)
+                && (item != .sleepTime || isAwayEnabled)
+                && (item != .sleepSessions || isAwayEnabled)
                 && item.isAvailable(
-                selectedRange: selectedRange,
-                isGitFeaturesEnabled: store.isGitFeaturesEnabled,
-                isGoalsTabEnabled: isGoalsTabEnabled,
-                areMacEventEmotionActionsEnabled: areMacEventEmotionActionsEnabled,
-                isStatsWinsEnabled: isStatsWinsEnabled,
-                isStatsAchievementsEnabled: isStatsAchievementsEnabled
-            )
+                    selectedRange: selectedRange,
+                    isGitFeaturesEnabled: store.isGitFeaturesEnabled,
+                    isGoalsTabEnabled: isGoalsTabEnabled,
+                    areMacEventEmotionActionsEnabled: areMacEventEmotionActionsEnabled,
+                    isStatsWinsEnabled: isStatsWinsEnabled,
+                    isStatsAchievementsEnabled: isStatsAchievementsEnabled
+                )
                 && item.isReportable(metrics: store.metrics)
         }
     }
@@ -287,7 +297,7 @@ struct StatsView: View {
         if selectedDashboardScope == .wins && !isStatsWinsEnabled {
             return .all
         }
-        if selectedDashboardScope == .sleep && !isStatsSleepTabEnabled {
+        if selectedDashboardScope == .sleep && (!isAwayEnabled || !isStatsSleepTabEnabled) {
             return .all
         }
         if selectedDashboardScope == .achievements && !isStatsAchievementsEnabled {
@@ -808,8 +818,8 @@ struct StatsView: View {
         StatsAchievementsSection(
             achievements: StatsAchievementStats.achievements(
                 focusSessions: store.focusSessions,
-                sleepSessions: store.sleepSessions,
-                awaySessions: store.awaySessions,
+                sleepSessions: statsSleepSessions,
+                awaySessions: statsAwaySessions,
                 logs: store.logs,
                 emotionLogs: store.emotionLogs,
                 notes: store.notes,
@@ -821,8 +831,8 @@ struct StatsView: View {
             ),
             earnedAchievementIDsByPeriod: StatsAchievementStats.achievementIDsEarnedByPeriod(
                 focusSessions: store.focusSessions,
-                sleepSessions: store.sleepSessions,
-                awaySessions: store.awaySessions,
+                sleepSessions: statsSleepSessions,
+                awaySessions: statsAwaySessions,
                 logs: store.logs,
                 emotionLogs: store.emotionLogs,
                 notes: store.notes,
@@ -842,8 +852,8 @@ struct StatsView: View {
         StatsRecentWinsSection(
             celebrations: StatsAchievementStats.celebrationPeriods(
                 focusSessions: store.focusSessions,
-                sleepSessions: store.sleepSessions,
-                awaySessions: store.awaySessions,
+                sleepSessions: statsSleepSessions,
+                awaySessions: statsAwaySessions,
                 logs: store.logs,
                 emotionLogs: store.emotionLogs,
                 notes: store.notes,

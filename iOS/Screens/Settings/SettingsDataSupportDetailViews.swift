@@ -117,7 +117,7 @@ private struct SettingsBetaExperimentsSection: View {
 
             Toggle("Show Away", isOn: awayBinding)
 
-            Text("Show Away mode controls, Away planner blocks, Away timeline items, and Away stats.")
+            Text("Show Away mode controls, Away planner blocks, Away timeline items, Away stats, and Sleep stats/blocking surfaces.")
                 .foregroundStyle(.secondary)
 
             Toggle("Show Goals tab", isOn: $isGoalsTabEnabled)
@@ -135,10 +135,12 @@ private struct SettingsBetaExperimentsSection: View {
             Text("Show Recent Wins in Stats.")
                 .foregroundStyle(.secondary)
 
-            Toggle("Show Sleep tab", isOn: $isStatsSleepTabEnabled)
+            if store.appearance.isAwayEnabled {
+                Toggle("Show Sleep tab", isOn: $isStatsSleepTabEnabled)
 
-            Text("Show the Sleep tab for Sleep-specific dashboard scope in Stats.")
-                .foregroundStyle(.secondary)
+                Text("Show the Sleep tab for Sleep-specific dashboard scope in Stats.")
+                    .foregroundStyle(.secondary)
+            }
 
             Toggle("Show Achievements", isOn: $isStatsAchievementsEnabled)
 
