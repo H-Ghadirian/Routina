@@ -17,7 +17,7 @@ struct DayPlanWeekGridView: View {
 
             ForEach(Array(dates.enumerated()), id: \.element) { index, date in
                 Rectangle()
-                    .fill(calendar.isDate(date, inSameDayAs: selectedDate) ? Color.accentColor.opacity(0.08) : Color.clear)
+                    .fill(calendar.isDate(date, inSameDayAs: selectedDate) ? Color.secondary.opacity(0.035) : Color.clear)
                     .frame(width: dayWidth, height: hourHeight * 24)
                     .offset(x: timeColumnWidth + CGFloat(index) * dayWidth)
 

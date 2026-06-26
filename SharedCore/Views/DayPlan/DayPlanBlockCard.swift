@@ -55,10 +55,12 @@ struct DayPlanBlockCard: View {
         cardContent
             .padding(contentInsets)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(
+            .background {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.secondary.opacity(neutralFillOpacity))
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(tint.opacity(fillOpacity))
-            )
+            }
             .overlay {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(
@@ -381,7 +383,7 @@ struct DayPlanBlockCard: View {
     }
 
     private var showsActivityStripe: Bool {
-        isAutomatic || isLiveFocus || isSprintFocus || isEvent || isSleep || isAway
+        true
     }
 
     private var showsStatusIcon: Bool {
@@ -394,46 +396,56 @@ struct DayPlanBlockCard: View {
 
     private var fillOpacity: Double {
         if isAutomatic {
-            return 0.08
+            return 0.035
         }
         if isLiveFocus {
-            return 0.2
+            return 0.08
         }
         if isSprintFocus {
-            return sprintFocusIsActive ? 0.2 : 0.16
+            return sprintFocusIsActive ? 0.08 : 0.06
         }
         if isEvent {
-            return 0.12
+            return 0.035
         }
         if isSleep {
-            return isSelected ? 0.24 : 0.16
+            return isSelected ? 0.07 : 0.045
         }
         if isAway {
-            return 0.16
+            return 0.045
         }
-        return isSelected ? 0.22 : 0.14
+        return isSelected ? 0.075 : 0.045
+    }
+
+    private var neutralFillOpacity: Double {
+        if isSelected || isHighlighted {
+            return 0.105
+        }
+        if isLiveFocus || isSprintFocus || isSleep || isAway {
+            return 0.085
+        }
+        return 0.07
     }
 
     private var strokeOpacity: Double {
         if isAutomatic {
-            return 0.72
+            return 0.55
         }
         if isLiveFocus {
-            return 0.85
+            return 0.75
         }
         if isSprintFocus {
-            return sprintFocusIsActive ? 0.85 : 0.78
+            return sprintFocusIsActive ? 0.75 : 0.62
         }
         if isEvent {
-            return 0.78
+            return 0.50
         }
         if isSleep {
-            return isSelected ? 0.95 : 0.78
+            return isSelected ? 0.72 : 0.56
         }
         if isAway {
-            return 0.78
+            return 0.52
         }
-        return isSelected ? 0.75 : 0.35
+        return isSelected ? 0.66 : 0.28
     }
 
     private var strokeWidth: CGFloat {

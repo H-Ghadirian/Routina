@@ -1181,7 +1181,7 @@ private struct DayPlanUnplaceableActivityLaneView: View {
 
     private func backgroundFill(for date: Date) -> Color {
         calendar.isDate(date, inSameDayAs: selectedDate)
-            ? Color.accentColor.opacity(0.06)
+            ? Color.secondary.opacity(0.045)
             : Color.clear
     }
 }
@@ -1322,7 +1322,7 @@ private struct DayPlanAllDayLaneView: View {
             return Color.accentColor.opacity(0.16)
         }
         if calendar.isDate(date, inSameDayAs: selectedDate) {
-            return Color.accentColor.opacity(0.08)
+            return Color.secondary.opacity(0.045)
         }
         return Color.clear
     }
@@ -1368,12 +1368,14 @@ private struct DayPlanAllDayPill: View {
                     .font(.caption2.weight(.bold))
             }
         }
-        .foregroundStyle(tint)
+        .foregroundStyle(.primary)
         .padding(.horizontal, 8)
-        .background(
+        .background {
             RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(tint.opacity(0.16))
-        )
+                .fill(Color.secondary.opacity(0.075))
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(tint.opacity(0.055))
+        }
         .overlay(alignment: .leading) {
             RoundedRectangle(cornerRadius: 7, style: .continuous)
                 .fill(tint.opacity(0.72))
@@ -1381,7 +1383,7 @@ private struct DayPlanAllDayPill: View {
         }
         .overlay {
             RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .stroke(tint.opacity(0.45), lineWidth: 1)
+                .stroke(tint.opacity(0.32), lineWidth: 1)
         }
         .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
         .help(block.isEvent ? "All-day event" : "All-day task")

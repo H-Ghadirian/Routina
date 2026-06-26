@@ -55,8 +55,8 @@ struct DayPlanWeekDayHeader: View {
         .routinaIf(isSelected || isFocusedForUnplannedCompleted) { view in
             view.routinaGlassCard(
                 cornerRadius: 0,
-                tint: .accentColor,
-                tintOpacity: isFocusedForUnplannedCompleted ? 0.20 : 0.14
+                tint: selectedBackgroundTint,
+                tintOpacity: selectedBackgroundTintOpacity
             )
         }
         .overlay(alignment: .trailing) {
@@ -68,5 +68,13 @@ struct DayPlanWeekDayHeader: View {
 
     private var timelineTaskCountText: String {
         "\(unplannedCompletedCount) \(unplannedCompletedCount == 1 ? "task" : "tasks")"
+    }
+
+    private var selectedBackgroundTint: Color {
+        isFocusedForUnplannedCompleted ? .accentColor : .secondary
+    }
+
+    private var selectedBackgroundTintOpacity: Double {
+        isFocusedForUnplannedCompleted ? 0.20 : 0.10
     }
 }
