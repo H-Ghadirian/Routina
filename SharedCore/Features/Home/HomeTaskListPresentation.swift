@@ -20,6 +20,7 @@ enum HomeTaskListPresentationSectionKind: String, Equatable {
     case pinned
     case plannedToday
     case daily
+    case future
     case regular
     case tag
     case untagged
@@ -30,7 +31,7 @@ enum HomeTaskListPresentationSectionKind: String, Equatable {
 extension HomeTaskListPresentationSectionKind {
     var isCollapsible: Bool {
         switch self {
-        case .plannedToday, .daily, .tag, .untagged, .archived:
+        case .plannedToday, .daily, .future, .tag, .untagged, .archived:
             return true
         case .pinned, .regular, .away:
             return false
@@ -407,10 +408,10 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         }
 
         if filtering.usesTagSectioning {
-            presentationSections += tagPresentationSections(
+            if let futureSection = sidebarFutureSection(
                 from: regularSections,
                 offset: &offset,
-                includeMarkDone: true,
+                showsGroupTitles: true,
                 moveContext: { section in
                     HomeTaskListMoveContext(
                         sectionKey: section.tasks.first.map { filtering.regularManualOrderSectionKey(for: $0) }
@@ -418,42 +419,36 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                         orderedTaskIDs: section.tasks.map(\.taskID)
                     )
                 }
-            )
+            ) {
+                presentationSections.append(futureSection)
+            }
         } else if filtering.usesUngroupedSectioning {
-            for section in regularSections {
-                presentationSections.append(
-                    HomeTaskListPresentationSection(
-                        kind: .regular,
-                        identityKey: section.identityKey,
-                        title: section.title,
-                        tasks: section.tasks,
-                        rowNumberOffset: offset,
-                        includeMarkDone: true,
-                        moveContext: HomeTaskListMoveContext(
-                            sectionKey: HomeTaskListFiltering<Display>.ungroupedManualOrderSectionKey,
-                            orderedTaskIDs: section.tasks.map(\.taskID)
-                        )
+            if let futureSection = sidebarFutureSection(
+                from: regularSections,
+                offset: &offset,
+                showsGroupTitles: false,
+                moveContext: { section in
+                    HomeTaskListMoveContext(
+                        sectionKey: HomeTaskListFiltering<Display>.ungroupedManualOrderSectionKey,
+                        orderedTaskIDs: section.tasks.map(\.taskID)
                     )
-                )
-                offset += section.tasks.count
+                }
+            ) {
+                presentationSections.append(futureSection)
             }
         } else {
-            for section in regularSections {
-                presentationSections.append(
-                    HomeTaskListPresentationSection(
-                        kind: .regular,
-                        identityKey: section.identityKey,
-                        title: section.title,
-                        tasks: section.tasks,
-                        rowNumberOffset: offset,
-                        includeMarkDone: true,
-                        moveContext: HomeTaskListMoveContext(
-                            sectionKey: section.tasks.first.map { filtering.regularManualOrderSectionKey(for: $0) } ?? "onTrack",
-                            orderedTaskIDs: section.tasks.map(\.taskID)
-                        )
+            if let futureSection = sidebarFutureSection(
+                from: regularSections,
+                offset: &offset,
+                showsGroupTitles: true,
+                moveContext: { section in
+                    HomeTaskListMoveContext(
+                        sectionKey: section.tasks.first.map { filtering.regularManualOrderSectionKey(for: $0) } ?? "onTrack",
+                        orderedTaskIDs: section.tasks.map(\.taskID)
                     )
-                )
-                offset += section.tasks.count
+                }
+            ) {
+                presentationSections.append(futureSection)
             }
         }
 
@@ -517,6 +512,36 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         }
 
         return groups
+    }
+
+    private static func sidebarFutureSection(
+        from regularSections: [HomeTaskListSection<Display>],
+        offset: inout Int,
+        showsGroupTitles: Bool,
+        moveContext: (HomeTaskListSection<Display>) -> HomeTaskListMoveContext?
+    ) -> HomeTaskListPresentationSection<Display>? {
+        let taskGroups = regularSections.map { section in
+            HomeTaskListPresentationTaskGroup(
+                title: showsGroupTitles ? section.title : nil,
+                tasks: section.tasks,
+                moveContext: moveContext(section),
+                isCollapsible: false
+            )
+        }
+        let tasks = taskGroups.flatMap(\.tasks)
+        guard !tasks.isEmpty else { return nil }
+
+        defer { offset += tasks.count }
+        return HomeTaskListPresentationSection(
+            kind: .future,
+            identityKey: "future",
+            title: "Future",
+            tasks: tasks,
+            rowNumberOffset: offset,
+            includeMarkDone: true,
+            moveContext: nil,
+            taskGroups: taskGroups
+        )
     }
 
     private static func tagPresentationSections(

@@ -158,6 +158,10 @@ struct HomeTCAView: View {
         store: SharedDefaults.app
     ) var isMacPlanTodayDailyRoutinesGroupCollapsed = true
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacFutureTasksSectionCollapsed.rawValue,
+        store: SharedDefaults.app
+    ) var isMacFutureTasksSectionCollapsed = true
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingSeparateDailyRoutinesInTaskList.rawValue,
         store: SharedDefaults.app
     ) var separatesDailyRoutinesInTaskList = false

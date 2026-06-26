@@ -479,6 +479,8 @@ extension HomeTCAView {
         switch section.kind {
         case .tag:
             return 0.12
+        case .future:
+            return 0.07
         case .plannedToday, .daily:
             return 0.08
         case .untagged, .archived:
@@ -495,6 +497,8 @@ extension HomeTCAView {
         switch section.kind {
         case .tag:
             return 0.30
+        case .future:
+            return 0.20
         case .plannedToday, .daily:
             return 0.22
         case .untagged, .archived:
@@ -512,6 +516,8 @@ extension HomeTCAView {
             return "checklist"
         case .daily:
             return "arrow.triangle.2.circlepath"
+        case .future:
+            return "calendar"
         case .tag:
             return "tag.fill"
         case .untagged:
@@ -533,6 +539,8 @@ extension HomeTCAView {
             return .accentColor
         case .daily:
             return .teal
+        case .future:
+            return .secondary
         case .tag:
             if let tag = taskListSectionHeaderTagName(for: section) {
                 return tagTint(for: tag)
@@ -673,6 +681,8 @@ extension HomeTCAView {
             return !collapsedTagTaskListSectionIDs.contains(section.id)
         case .daily:
             return !isDailyRoutinesSectionCollapsed
+        case .future:
+            return !isMacFutureTasksSectionCollapsed
         case .tag, .untagged:
             return !collapsedTagTaskListSectionIDs.contains(section.id)
         case .archived:
@@ -692,6 +702,8 @@ extension HomeTCAView {
                 setTagTaskListSection(section, collapsed: taskListSectionIsExpanded(section))
             case .daily:
                 isDailyRoutinesSectionCollapsed.toggle()
+            case .future:
+                isMacFutureTasksSectionCollapsed.toggle()
             case .tag, .untagged:
                 setTagTaskListSection(section, collapsed: taskListSectionIsExpanded(section))
             case .archived:
@@ -1080,7 +1092,7 @@ private extension HomeTaskListPresentationSection where Display == HomeFeature.R
     var canStartFocusTimer: Bool {
         guard !tasks.isEmpty else { return false }
         switch kind {
-        case .plannedToday, .daily, .tag, .untagged, .regular, .pinned:
+        case .plannedToday, .daily, .future, .tag, .untagged, .regular, .pinned:
             return true
         case .away, .archived:
             return false

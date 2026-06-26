@@ -21,6 +21,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0260](../decisions/0260-hide-assumed-done-tasks-by-default.md)
 - [0270](../decisions/0270-normalize-checklist-item-intervals.md)
 - [0275](../decisions/0275-hide-places-behind-beta-toggle.md)
+- [0281](../decisions/0281-collapse-mac-future-tasks.md)
 
 ## Current Contract
 
@@ -30,6 +31,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Daily routines already belong to the daily routine area and do not expose stored planned-date controls.
 - Home `Plan to do today` includes active unpinned tasks planned for the current day, plus weekly/month-day calendar routines whose configured occurrence is today. A calendar routine with a canceled occurrence for today is not shown in the today plan. Rolling interval routines such as `Every 7 days` stay in the normal due/status sections unless explicitly planned.
 - On Mac, daily routines are shown inside `Plan to do today`. By default they visually merge into the today list; Settings can restore a nested `Daily Routines` group.
+- On Mac, normal active tasks outside `Plan to do today` are grouped under a collapsed-by-default `Future` section. Existing status, deadline, tag, and ungrouped inner organization and manual ordering are preserved inside `Future`.
 - Routines separate schedule behavior from format. Due/Gentle controls pressure and status; Interval/Calendar controls cadence; Standard/Checklist controls finish behavior.
 - Adding checklist items to a routine that previously had none promotes Standard completion to Checklist completion when no sequential steps would be discarded. Existing Standard routines that already carry checklist items remain editable as legacy optional checklist data.
 - Auto-assume done is opt-in for daily Standard routines without steps/checklists and daily Checklist-completion routines in both Due and Gentle styles. Todos, checklist runout routines, Standard routines with optional checklist items, routines with steps, and non-daily cadences do not qualify.

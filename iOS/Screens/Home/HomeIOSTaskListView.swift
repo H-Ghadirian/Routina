@@ -134,6 +134,8 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
             return !collapsedTagTaskListSectionIDs.contains(section.id)
         case .daily:
             return !isDailyRoutinesSectionCollapsed
+        case .future:
+            return !collapsedTagTaskListSectionIDs.contains(section.id)
         case .tag, .untagged:
             return !collapsedTagTaskListSectionIDs.contains(section.id)
         case .archived:
@@ -151,6 +153,8 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
                 setTagTaskListSection(section, collapsed: isSectionExpanded(section))
             case .daily:
                 isDailyRoutinesSectionCollapsed.toggle()
+            case .future:
+                setTagTaskListSection(section, collapsed: isSectionExpanded(section))
             case .tag, .untagged:
                 setTagTaskListSection(section, collapsed: isSectionExpanded(section))
             case .archived:
