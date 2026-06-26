@@ -53,6 +53,8 @@ enum AppSettingsDefaults {
         .appSettingTaskSharingEnabled: false,
         .appSettingTaskRelationshipVisualizerEnabled: false,
         .appSettingPlacesEnabled: false,
+        .appSettingNotesEnabled: false,
+        .appSettingAwayEnabled: false,
         .appSettingHomeTaskListModeTabsVisible: false,
         .appSettingMacHomeSectionFocusTimersEnabled: false,
         .appSettingMacTimelineQuickFiltersVisible: false,
@@ -139,6 +141,8 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingTaskSharingEnabled
     case appSettingTaskRelationshipVisualizerEnabled
     case appSettingPlacesEnabled
+    case appSettingNotesEnabled
+    case appSettingAwayEnabled
     case appSettingGoalsTabEnabled
     case appSettingAdventureMapEnabled
     case appSettingBoardScreenEnabled
@@ -221,6 +225,10 @@ struct AppSettingsClient: Sendable {
     var setTaskRelationshipVisualizerEnabled: @Sendable (Bool) -> Void = { _ in }
     var placesEnabled: @Sendable () -> Bool = { false }
     var setPlacesEnabled: @Sendable (Bool) -> Void = { _ in }
+    var notesEnabled: @Sendable () -> Bool = { false }
+    var setNotesEnabled: @Sendable (Bool) -> Void = { _ in }
+    var awayEnabled: @Sendable () -> Bool = { false }
+    var setAwayEnabled: @Sendable (Bool) -> Void = { _ in }
     var showPersianDates: @Sendable () -> Bool
     var setShowPersianDates: @Sendable (Bool) -> Void
     var automaticPlaceCheckInEnabled: @Sendable () -> Bool
@@ -447,6 +455,20 @@ extension AppSettingsClient {
             SharedDefaults.app[.appSettingPlacesEnabled] = isEnabled
             AppSettingsPersistenceMirror.schedule()
         },
+        notesEnabled: {
+            SharedDefaults.app[.appSettingNotesEnabled]
+        },
+        setNotesEnabled: { isEnabled in
+            SharedDefaults.app[.appSettingNotesEnabled] = isEnabled
+            AppSettingsPersistenceMirror.schedule()
+        },
+        awayEnabled: {
+            SharedDefaults.app[.appSettingAwayEnabled]
+        },
+        setAwayEnabled: { isEnabled in
+            SharedDefaults.app[.appSettingAwayEnabled] = isEnabled
+            AppSettingsPersistenceMirror.schedule()
+        },
         showPersianDates: {
             SharedDefaults.app[.appSettingShowPersianDates]
         },
@@ -664,6 +686,10 @@ extension AppSettingsClient {
         setTaskRelationshipVisualizerEnabled: { _ in },
         placesEnabled: { false },
         setPlacesEnabled: { _ in },
+        notesEnabled: { false },
+        setNotesEnabled: { _ in },
+        awayEnabled: { false },
+        setAwayEnabled: { _ in },
         showPersianDates: { false },
         setShowPersianDates: { _ in },
         automaticPlaceCheckInEnabled: { true },

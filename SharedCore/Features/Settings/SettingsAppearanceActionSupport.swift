@@ -195,6 +195,26 @@ enum SettingsAppearanceActionHandler {
         return .none
     }
 
+    static func notesToggled(
+        _ isEnabled: Bool,
+        state: inout SettingsAppearanceState,
+        appSettingsClient: AppSettingsClient
+    ) -> Effect<SettingsFeature.Action> {
+        state.isNotesEnabled = isEnabled
+        appSettingsClient.setNotesEnabled(isEnabled)
+        return .none
+    }
+
+    static func awayToggled(
+        _ isEnabled: Bool,
+        state: inout SettingsAppearanceState,
+        appSettingsClient: AppSettingsClient
+    ) -> Effect<SettingsFeature.Action> {
+        state.isAwayEnabled = isEnabled
+        appSettingsClient.setAwayEnabled(isEnabled)
+        return .none
+    }
+
     static func showPersianDatesToggled(
         _ isEnabled: Bool,
         state: inout SettingsAppearanceState,

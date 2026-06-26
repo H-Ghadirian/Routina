@@ -30,6 +30,8 @@ struct HomeMacTimelineFiltersDetailView: View {
     let onTimelineRowFieldVisibilityChanged: (HomeTimelineRowField, Bool) -> Void
     let includesEventEmotionFilters: Bool
     let includesPlaceFilters: Bool
+    let includesNoteFilters: Bool
+    let includesAwayFilters: Bool
 
     var body: some View {
         Group {
@@ -169,7 +171,9 @@ struct HomeMacTimelineFiltersDetailView: View {
             accessibilityLabel: "Type",
             options: TimelineFilterType.visibleContentTypeCases(
                 includingEventEmotion: includesEventEmotionFilters,
-                includingPlaces: includesPlaceFilters
+                includingPlaces: includesPlaceFilters,
+                includingNotes: includesNoteFilters,
+                includingAway: includesAwayFilters
             ),
             selection: contentTypeBinding
         ) { type in
@@ -204,7 +208,9 @@ struct HomeMacTimelineFiltersDetailView: View {
                     ? .all
                     : selectedType.normalized(
                         includingEventEmotion: includesEventEmotionFilters,
-                        includingPlaces: includesPlaceFilters
+                        includingPlaces: includesPlaceFilters,
+                        includingNotes: includesNoteFilters,
+                        includingAway: includesAwayFilters
                     )
             },
             set: { selectedType = $0 }

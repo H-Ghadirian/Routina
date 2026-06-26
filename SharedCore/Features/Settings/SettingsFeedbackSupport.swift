@@ -69,7 +69,7 @@ enum SettingsFeedbackSupport {
         if goalCount > 0 {
             parts.append(goalCount == 1 ? "1 goal" : "\(goalCount) goals")
         }
-        if noteCount > 0 {
+        if SharedDefaults.app[.appSettingNotesEnabled], noteCount > 0 {
             parts.append(noteCount == 1 ? "1 note" : "\(noteCount) notes")
         }
         if eventCount > 0 {

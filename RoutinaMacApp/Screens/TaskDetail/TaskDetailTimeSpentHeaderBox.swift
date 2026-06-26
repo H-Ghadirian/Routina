@@ -19,6 +19,10 @@ struct TaskDetailTimeSpentHeaderBox: View {
         order: .reverse
     ) private var activeAwaySessions: [AwaySession]
     @AppStorage("macTaskDetailLastTimeEntryMinutes", store: SharedDefaults.app) private var savedEntryMinutes = 0
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isAwayEnabled = false
 
     let task: RoutineTask
     let focusSessions: [FocusSession]
@@ -398,9 +402,13 @@ struct TaskDetailTimeSpentHeaderBox: View {
     private var canStartFocus: Bool {
         task.focusModeEnabled
             && activeSleepSessions.isEmpty
-            && activeAwaySessions.isEmpty
+            && visibleActiveAwaySessions.isEmpty
             && blockingFocusTitle == nil
             && !focusSessions.contains { $0.state == .active }
+    }
+
+    private var visibleActiveAwaySessions: [AwaySession] {
+        isAwayEnabled ? activeAwaySessions : []
     }
 
     private var canApplyEntry: Bool {

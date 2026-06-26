@@ -7,47 +7,57 @@ struct SettingsTagsDetailView: View {
         UserDefaultBoolValueKey.appSettingRelatedTagRulesEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isRelatedTagRulesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isNotesEnabled = false
 
     var body: some View {
-List {
-    Section("Saved Tags") {
-        if store.tags.savedTags.isEmpty {
-            Text("No tags yet. Tags you add to tasks, goals, notes, or events will appear here.")
-                .foregroundStyle(.secondary)
-        } else {
-            ForEach(store.tags.savedTags) { tag in
-                SettingsTagRow(store: store, tag: tag, isRelatedTagRulesEnabled: isRelatedTagRulesEnabled)
+        List {
+            Section("Saved Tags") {
+                if store.tags.savedTags.isEmpty {
+                    Text(emptyTagsText)
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(store.tags.savedTags) { tag in
+                        SettingsTagRow(store: store, tag: tag, isRelatedTagRulesEnabled: isRelatedTagRulesEnabled)
+                    }
+                }
             }
+
+            if !store.tags.tagStatusMessage.isEmpty {
+                Section("Status") {
+                    Text(store.tags.tagStatusMessage)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .navigationTitle("Tags")
+        .navigationBarTitleDisplayMode(.inline)
+        .alert(
+            "Delete Tag?",
+            isPresented: deleteTagConfirmationBinding
+        ) {
+            Button("Delete", role: .destructive) {
+                store.send(.deleteTagConfirmed)
+            }
+            Button("Cancel", role: .cancel) {
+                store.send(.setDeleteTagConfirmation(false))
+            }
+        } message: {
+            Text(store.tags.deleteConfirmationMessage)
+        }
+        .sheet(isPresented: renameTagSheetBinding) {
+            SettingsTagRenameSheet(store: store)
+                .presentationDetents([.height(240)])
         }
     }
 
-    if !store.tags.tagStatusMessage.isEmpty {
-        Section("Status") {
-            Text(store.tags.tagStatusMessage)
-                .foregroundStyle(.secondary)
-        }
-    }
-}
-.listStyle(.insetGrouped)
-.navigationTitle("Tags")
-.navigationBarTitleDisplayMode(.inline)
-.alert(
-    "Delete Tag?",
-    isPresented: deleteTagConfirmationBinding
-) {
-    Button("Delete", role: .destructive) {
-        store.send(.deleteTagConfirmed)
-    }
-    Button("Cancel", role: .cancel) {
-        store.send(.setDeleteTagConfirmation(false))
-    }
-} message: {
-    Text(store.tags.deleteConfirmationMessage)
-}
-.sheet(isPresented: renameTagSheetBinding) {
-    SettingsTagRenameSheet(store: store)
-        .presentationDetents([.height(240)])
-}
+    private var emptyTagsText: String {
+        isNotesEnabled
+            ? "No tags yet. Tags you add to tasks, goals, notes, or events will appear here."
+            : "No tags yet. Tags you add to tasks, goals, or events will appear here."
     }
 
     private var deleteTagConfirmationBinding: Binding<Bool> {

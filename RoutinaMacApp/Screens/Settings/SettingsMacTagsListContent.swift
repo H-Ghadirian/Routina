@@ -7,10 +7,14 @@ struct SettingsMacTagsListContent: View {
         UserDefaultBoolValueKey.appSettingRelatedTagRulesEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isRelatedTagRulesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isNotesEnabled = false
 
     var body: some View {
 if store.tags.savedTags.isEmpty {
-    Text("No tags yet. Tags you add to tasks, goals, notes, or events will appear here.")
+    Text(emptyTagsText)
         .font(.footnote)
         .foregroundStyle(.secondary)
 } else {
@@ -19,6 +23,12 @@ if store.tags.savedTags.isEmpty {
         filteredTagsList
     }
 }
+    }
+
+    private var emptyTagsText: String {
+        isNotesEnabled
+            ? "No tags yet. Tags you add to tasks, goals, notes, or events will appear here."
+            : "No tags yet. Tags you add to tasks, goals, or events will appear here."
     }
 
     @ViewBuilder

@@ -34,6 +34,10 @@ struct TaskFormContent: View {
         UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isPlacesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isNotesEnabled = false
 
     private var nameFocusBinding: FocusState<Bool>.Binding {
         model.nameFocus ?? $fallbackNameFocused
@@ -103,6 +107,9 @@ struct TaskFormContent: View {
     private func shouldDisplayFormSection(_ section: FormSection) -> Bool {
         if section == .places {
             return isPlacesEnabled
+        }
+        if section == .notes || section == .voiceNote {
+            return isNotesEnabled
         }
         return section != .goals || isGoalsTabEnabled
     }
@@ -200,11 +207,17 @@ struct TaskFormContent: View {
         case .linkedTasks:        linkedTasksCard
         case .planning:           planningCard
         case .linkURL:            linkURLCard
-        case .notes:              notesCard
+        case .notes:
+            if isNotesEnabled {
+                notesCard
+            }
         case .steps:              stepsCard
         case .checklist:          checklistCard
         case .image:              imageCard
-        case .voiceNote:          voiceNoteCard
+        case .voiceNote:
+            if isNotesEnabled {
+                voiceNoteCard
+            }
         case .attachment:         attachmentCard
         case .dangerZone:         dangerZoneCard
         }

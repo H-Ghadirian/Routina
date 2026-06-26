@@ -24,6 +24,8 @@ struct SettingsFeature {
         case taskSharingToggled(Bool)
         case taskRelationshipVisualizerToggled(Bool)
         case placesToggled(Bool)
+        case notesToggled(Bool)
+        case awayToggled(Bool)
         case showPersianDatesToggled(Bool)
         case automaticPlaceCheckInToggled(Bool)
         case showTimelineTasksInDayPlannerToggled(Bool)
@@ -218,6 +220,20 @@ struct SettingsFeature {
 
             case let .placesToggled(isEnabled):
                 return SettingsAppearanceActionHandler.placesToggled(
+                    isEnabled,
+                    state: &state.appearance,
+                    appSettingsClient: self.appSettingsClient
+                )
+
+            case let .notesToggled(isEnabled):
+                return SettingsAppearanceActionHandler.notesToggled(
+                    isEnabled,
+                    state: &state.appearance,
+                    appSettingsClient: self.appSettingsClient
+                )
+
+            case let .awayToggled(isEnabled):
+                return SettingsAppearanceActionHandler.awayToggled(
                     isEnabled,
                     state: &state.appearance,
                     appSettingsClient: self.appSettingsClient
@@ -462,6 +478,8 @@ struct SettingsFeature {
                     taskSharingEnabled: appSettingsClient.taskSharingEnabled(),
                     taskRelationshipVisualizerEnabled: appSettingsClient.taskRelationshipVisualizerEnabled(),
                     placesEnabled: appSettingsClient.placesEnabled(),
+                    notesEnabled: appSettingsClient.notesEnabled(),
+                    awayEnabled: appSettingsClient.awayEnabled(),
                     lastRoutineDataBackupDate: appSettingsClient.lastRoutineDataBackupDate(),
                     deviceAuthenticationStatus: deviceAuthenticationClient.status(),
                     state: &state

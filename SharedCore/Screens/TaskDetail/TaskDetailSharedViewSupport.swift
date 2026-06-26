@@ -400,7 +400,8 @@ enum TaskDetailStatusMetadataPresentation {
 
     static func hasVisibleMetadata(
         for state: TaskDetailFeature.State,
-        showsPlaces: Bool = true
+        showsPlaces: Bool = true,
+        showsNotes: Bool = true
     ) -> Bool {
         !state.task.isOneOffTask
             || shouldShowCompletionCount(for: state)
@@ -410,7 +411,7 @@ enum TaskDetailStatusMetadataPresentation {
             || state.shouldShowSelectedDateMetadata
             || !state.task.tags.isEmpty
             || state.task.hasImage
-            || state.task.hasVoiceNote
+            || (showsNotes && state.task.hasVoiceNote)
             || !state.taskAttachments.isEmpty
             || state.task.hasChecklistItems
             || state.task.hasSequentialSteps
@@ -421,6 +422,7 @@ enum TaskDetailStatusMetadataPresentation {
         showSelectedDate: Bool,
         displayedActualDurationText: String?,
         dueDateMetadataDisplayText: String?,
+        showsNotes: Bool = true,
         referenceDate: Date = Date()
     ) -> [TaskDetailStatusMetadataItem] {
         var items: [TaskDetailStatusMetadataItem] = []
@@ -451,12 +453,12 @@ enum TaskDetailStatusMetadataPresentation {
             items.append(.init(id: "selectedDate", label: "Selected", value: state.selectedDateMetadataText))
         }
 
-        if state.task.hasImage || state.task.hasVoiceNote || !state.taskAttachments.isEmpty {
+        if state.task.hasImage || (showsNotes && state.task.hasVoiceNote) || !state.taskAttachments.isEmpty {
             items.append(
                 .init(
                     id: "attachments",
                     label: "Attachment",
-                    value: attachmentSummaryText(for: state),
+                    value: attachmentSummaryText(for: state, showsNotes: showsNotes),
                     systemImage: "paperclip"
                 )
             )
@@ -473,11 +475,14 @@ enum TaskDetailStatusMetadataPresentation {
         return true
     }
 
-    private static func attachmentSummaryText(for state: TaskDetailFeature.State) -> String {
+    private static func attachmentSummaryText(
+        for state: TaskDetailFeature.State,
+        showsNotes: Bool
+    ) -> String {
         let fileCount = state.taskAttachments.count
         return [
             state.task.hasImage ? "1 image" : nil,
-            state.task.hasVoiceNote ? "1 voice note" : nil,
+            (showsNotes && state.task.hasVoiceNote) ? "1 voice note" : nil,
             fileCount > 0 ? "\(fileCount) \(fileCount == 1 ? "file" : "files")" : nil
         ]
         .compactMap { $0 }

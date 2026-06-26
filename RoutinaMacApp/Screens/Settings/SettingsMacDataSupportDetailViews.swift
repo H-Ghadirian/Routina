@@ -9,6 +9,14 @@ struct SettingsMacCloudDetailView: View {
         UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isPlacesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isNotesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isAwayEnabled = false
 
     var body: some View {
 SettingsMacDetailShell(
@@ -90,10 +98,14 @@ SettingsMacDetailShell(
         }
         settingsInfoRow(title: "Goals", value: "\(store.cloud.cloudUsageEstimate.goalCount) • \(store.cloud.usageGoalPayloadText)")
         settingsInfoRow(title: "Emotions", value: "\(store.cloud.cloudUsageEstimate.emotionLogCount) • \(store.cloud.usageEmotionPayloadText)")
-        settingsInfoRow(title: "Notes", value: "\(store.cloud.cloudUsageEstimate.noteCount) • \(store.cloud.usageNotePayloadText)")
+        if isNotesEnabled {
+            settingsInfoRow(title: "Notes", value: "\(store.cloud.cloudUsageEstimate.noteCount) • \(store.cloud.usageNotePayloadText)")
+        }
         settingsInfoRow(title: "Events", value: "\(store.cloud.cloudUsageEstimate.eventCount) • \(store.cloud.usageEventPayloadText)")
         settingsInfoRow(title: "Images", value: "\(store.cloud.cloudUsageEstimate.imageCount) • \(store.cloud.usageImagePayloadText)")
-        settingsInfoRow(title: "Voice Notes", value: "\(store.cloud.cloudUsageEstimate.voiceNoteCount) • \(store.cloud.usageVoiceNotePayloadText)")
+        if isNotesEnabled {
+            settingsInfoRow(title: "Voice Notes", value: "\(store.cloud.cloudUsageEstimate.voiceNoteCount) • \(store.cloud.usageVoiceNotePayloadText)")
+        }
 
         Text(store.cloud.usageSummaryText)
             .font(.footnote)
@@ -166,6 +178,14 @@ struct SettingsMacShortcutsDetailView: View {
         UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isPlacesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isNotesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isAwayEnabled = false
 
     private let appShortcuts: [SettingsMacShortcutRowModel] = [
         SettingsMacShortcutRowModel(title: "Quick Add", detail: "“Quick add in Routina” or “Add a task in Routina”"),
@@ -258,7 +278,11 @@ struct SettingsMacShortcutsDetailView: View {
                 return isGoalsTabEnabled
             case .checkIn:
                 return isPlacesEnabled
-            case .note, .task, .away:
+            case .note:
+                return isNotesEnabled
+            case .away:
+                return isAwayEnabled
+            case .task:
                 return true
             }
         }
@@ -290,7 +314,7 @@ struct SettingsMacQuickAddDetailView: View {
                 }
             }
 
-            SettingsMacDetailCard(title: "Notes") {
+            SettingsMacDetailCard(title: "Tips") {
                 ForEach(SettingsQuickAddSyntaxGuide.visibleNotes(includingPlaces: isPlacesEnabled), id: \.self) { note in
                     SettingsQuickAddNoteBlock(note: note, style: .labeled)
                 }
@@ -516,6 +540,27 @@ private struct SettingsMacBetaExperimentsCard: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 
+            Toggle("Show Places", isOn: placesBinding)
+                .toggleStyle(.switch)
+
+            Text("Show place management, check-ins, filters, task fields, and place stats.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Toggle("Show Notes", isOn: notesBinding)
+                .toggleStyle(.switch)
+
+            Text("Show note creation, note fields, note timeline items, and note stats.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Toggle("Show Away", isOn: awayBinding)
+                .toggleStyle(.switch)
+
+            Text("Show Away mode controls, Away planner blocks, Away timeline items, and Away stats.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
             Toggle("Show Goals tab", isOn: $isGoalsTabEnabled)
                 .toggleStyle(.switch)
 
@@ -585,16 +630,20 @@ private struct SettingsMacBetaExperimentsCard: View {
             Toggle("Show Timeline quick filters", isOn: $areMacTimelineQuickFiltersVisible)
                 .toggleStyle(.switch)
 
-            Text("Show the All, Routines, Todos, Notes, and other quick filters in Timeline.")
+            Text(store.appearance.isNotesEnabled
+                ? "Show the All, Routines, Todos, Notes, and other quick filters in Timeline."
+                : "Show the All, Routines, Todos, and other quick filters in Timeline.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 
-            Toggle("Show Status note section", isOn: $isMacStatusComposerEnabled)
-                .toggleStyle(.switch)
+            if store.appearance.isNotesEnabled {
+                Toggle("Show Status note section", isOn: $isMacStatusComposerEnabled)
+                    .toggleStyle(.switch)
 
-            Text("Show the bottom sidebar composer for adding Status notes from Home.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                Text("Show the bottom sidebar composer for adding Status notes from Home.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
 
             Toggle("Show Event and Emotion actions", isOn: $areMacEventEmotionActionsEnabled)
                 .toggleStyle(.switch)
@@ -630,6 +679,27 @@ private struct SettingsMacBetaExperimentsCard: View {
         Binding(
             get: { store.appearance.isTaskRelationshipVisualizerEnabled },
             set: { store.send(.taskRelationshipVisualizerToggled($0)) }
+        )
+    }
+
+    private var placesBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.isPlacesEnabled },
+            set: { store.send(.placesToggled($0)) }
+        )
+    }
+
+    private var notesBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.isNotesEnabled },
+            set: { store.send(.notesToggled($0)) }
+        )
+    }
+
+    private var awayBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.isAwayEnabled },
+            set: { store.send(.awayToggled($0)) }
         )
     }
 }

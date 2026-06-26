@@ -46,6 +46,10 @@ struct TaskDetailTCAView: View {
         UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isPlacesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isNotesEnabled = false
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
 
@@ -482,9 +486,9 @@ detailBody
     }
 
     private var hasTaskExtras: Bool {
-        store.task.hasNotes
+        (isNotesEnabled && store.task.hasNotes)
             || store.task.hasImage
-            || store.task.hasVoiceNote
+            || (isNotesEnabled && store.task.hasVoiceNote)
             || !store.taskAttachments.isEmpty
             || !store.task.resolvedLinkURLs.isEmpty
     }
@@ -787,9 +791,9 @@ detailBody
     private var taskExtrasSection: some View {
         TaskDetailExtrasSectionView(
             imageData: store.task.imageData,
-            voiceNote: store.task.voiceNote,
+            voiceNote: isNotesEnabled ? store.task.voiceNote : nil,
             attachments: store.taskAttachments,
-            notes: CalendarTaskImportSupport.displayNotes(from: store.task.notes),
+            notes: isNotesEnabled ? CalendarTaskImportSupport.displayNotes(from: store.task.notes) : nil,
             links: store.task.resolvedLinkURLs,
             background: routineLogsBackground,
             stroke: TaskDetailPlatformStyle.sectionCardStroke,
@@ -836,7 +840,8 @@ detailBody
                 for: store.state,
                 showSelectedDate: true,
                 displayedActualDurationText: displayedActualDurationText,
-                dueDateMetadataDisplayText: dueDateMetadataDisplayText
+                dueDateMetadataDisplayText: dueDateMetadataDisplayText,
+                showsNotes: isNotesEnabled
             ),
             pauseArchivePresentation: pauseArchivePresentation,
             completionButtonTitle: store.completionButtonTitle,
@@ -905,7 +910,8 @@ detailBody
     private var hasVisibleStatusMetadata: Bool {
         TaskDetailStatusMetadataPresentation.hasVisibleMetadata(
             for: store.state,
-            showsPlaces: isPlacesEnabled
+            showsPlaces: isPlacesEnabled,
+            showsNotes: isNotesEnabled
         )
     }
 

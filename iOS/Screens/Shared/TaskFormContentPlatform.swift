@@ -27,6 +27,10 @@ struct TaskFormContent: View {
         UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isPlacesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isNotesEnabled = false
 
     var body: some View {
         Form {
@@ -105,7 +109,14 @@ struct TaskFormContent: View {
 
     private var visibleCompactSections: [TaskFormCompactSection] {
         model.visibleCompactSections(isShowingMoreDetails: isShowingMoreDetails).filter {
-            $0 != .place || isPlacesEnabled
+            switch $0 {
+            case .place:
+                return isPlacesEnabled
+            case .notes, .voiceNote:
+                return isNotesEnabled
+            default:
+                return true
+            }
         }
     }
 

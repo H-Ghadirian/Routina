@@ -19,6 +19,8 @@ struct SettingsOnAppearSnapshot: Equatable {
     var taskSharingEnabled: Bool
     var taskRelationshipVisualizerEnabled: Bool
     var placesEnabled: Bool
+    var notesEnabled: Bool
+    var awayEnabled: Bool
     var showPersianDates: Bool
     var automaticPlaceCheckInEnabled: Bool
     var showTimelineTasksInDayPlanner: Bool
@@ -91,6 +93,8 @@ enum SettingsRefreshEditor {
             taskSharingEnabled: snapshot.taskSharingEnabled,
             taskRelationshipVisualizerEnabled: snapshot.taskRelationshipVisualizerEnabled,
             placesEnabled: snapshot.placesEnabled,
+            notesEnabled: snapshot.notesEnabled,
+            awayEnabled: snapshot.awayEnabled,
             showPersianDates: snapshot.showPersianDates,
             showTimelineTasksInDayPlanner: snapshot.showTimelineTasksInDayPlanner,
             separateDailyRoutinesInTaskList: snapshot.separateDailyRoutinesInTaskList,
@@ -110,6 +114,8 @@ enum SettingsRefreshEditor {
         taskSharingEnabled: Bool,
         taskRelationshipVisualizerEnabled: Bool,
         placesEnabled: Bool,
+        notesEnabled: Bool,
+        awayEnabled: Bool,
         lastRoutineDataBackupDate: Date?,
         deviceAuthenticationStatus: DeviceAuthenticationStatus,
         state: inout SettingsFeatureState
@@ -120,6 +126,8 @@ enum SettingsRefreshEditor {
         state.appearance.isTaskSharingEnabled = taskSharingEnabled
         state.appearance.isTaskRelationshipVisualizerEnabled = taskRelationshipVisualizerEnabled
         state.appearance.isPlacesEnabled = placesEnabled
+        state.appearance.isNotesEnabled = notesEnabled
+        state.appearance.isAwayEnabled = awayEnabled
         state.dataTransfer.lastSuccessfulBackupDate = lastRoutineDataBackupDate
         state.appearance.appLockMethodDescription = deviceAuthenticationStatus.methodDescription
         state.appearance.appLockUnavailableReason = deviceAuthenticationStatus.unavailableReason

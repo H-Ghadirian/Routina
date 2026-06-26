@@ -110,6 +110,16 @@ private struct SettingsBetaExperimentsSection: View {
             Text("Show place management, check-ins, filters, task fields, and place stats.")
                 .foregroundStyle(.secondary)
 
+            Toggle("Show Notes", isOn: notesBinding)
+
+            Text("Show note creation, note fields, note timeline items, and note stats.")
+                .foregroundStyle(.secondary)
+
+            Toggle("Show Away", isOn: awayBinding)
+
+            Text("Show Away mode controls, Away planner blocks, Away timeline items, and Away stats.")
+                .foregroundStyle(.secondary)
+
             Toggle("Show Goals tab", isOn: $isGoalsTabEnabled)
 
             Text("Show Goal navigation, controls, and Stats reports.")
@@ -169,6 +179,20 @@ private struct SettingsBetaExperimentsSection: View {
         Binding(
             get: { store.appearance.isPlacesEnabled },
             set: { store.send(.placesToggled($0)) }
+        )
+    }
+
+    private var notesBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.isNotesEnabled },
+            set: { store.send(.notesToggled($0)) }
+        )
+    }
+
+    private var awayBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.isAwayEnabled },
+            set: { store.send(.awayToggled($0)) }
         )
     }
 }

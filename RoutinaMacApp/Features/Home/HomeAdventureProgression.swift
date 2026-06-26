@@ -521,8 +521,8 @@ struct HomeAdventureCoinRule: Identifiable, Equatable {
         ),
         HomeAdventureCoinRule(
             id: "captures",
-            actionTitle: "Capture a note, event, or emotion",
-            sourceTitle: "Notes, events, emotions",
+            actionTitle: "Capture a record",
+            sourceTitle: "Captures",
             systemImage: "sparkles",
             unitSingular: "capture",
             unitPlural: "captures",
@@ -777,7 +777,7 @@ enum HomeAdventureProgressionBuilder {
                     StageTemplate("lunar-1", "lunar-archive", 13, "Quiet Launch", "Unlock the archive with broad consistency.", 7_200, 430, 64, 280),
                     StageTemplate("lunar-2", "lunar-archive", 14, "Memory Vault", "Captured thoughts become map progress.", 8_800, 520, 76, 330),
                     StageTemplate("lunar-3", "lunar-archive", 15, "Starlit Sprint", "A larger action history lights the archive.", 10_600, 620, 90, 390),
-                    StageTemplate("lunar-4", "lunar-archive", 16, "Moonlit Library", "Balance focus, notes, sleep, and tasks.", 12_600, 735, 105, 460),
+                    StageTemplate("lunar-4", "lunar-archive", 16, "Moonlit Library", "Balance focus, sleep, and tasks.", 12_600, 735, 105, 460),
                     StageTemplate("lunar-5", "lunar-archive", 17, "Orbit Hall", "A long-lived routine history opens the hall.", 15_000, 865, 122, 540),
                     StageTemplate("lunar-6", "lunar-archive", 18, "Archive Gate", "Clear the archive with mature momentum.", 17_800, 1_010, 140, 640)
                 ]

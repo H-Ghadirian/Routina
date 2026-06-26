@@ -62,6 +62,10 @@ struct DayPlanSidebarView: View {
         UserDefaultStringValueKey.appSettingHiddenDayPlanTimelineActivityIDs.rawValue,
         store: SharedDefaults.app
     ) private var hiddenTimelineActivityStorage = ""
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isAwayEnabled = false
 
     var body: some View {
         taskPanel
@@ -69,10 +73,14 @@ struct DayPlanSidebarView: View {
                 planner: planner,
                 tasks: tasks,
                 sleepSessions: sleepSessions,
-                awaySessions: awaySessions,
+                awaySessions: visibleAwaySessions,
                 focusSessions: focusSessions,
                 calendar: calendar
             )
+    }
+
+    private var visibleAwaySessions: [AwaySession] {
+        isAwayEnabled ? awaySessions : []
     }
 
     private var taskPanel: some View {
@@ -522,6 +530,10 @@ private struct DayPlanTimelinePanelView: View {
     @StateObject private var completedSprintFocusBlocksCache = DayPlanSprintFocusBlocksCache()
     @StateObject private var activeSprintFocusBlocksCache = DayPlanSprintFocusBlocksCache()
     @StateObject private var renderSnapshotCache = DayPlanTimelineRenderSnapshotCache()
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isAwayEnabled = false
 
     var body: some View {
         DayPlanTimelinePanelContentView(
@@ -533,12 +545,13 @@ private struct DayPlanTimelinePanelView: View {
             tasks: dataSnapshot.tasks,
             logs: dataSnapshot.logs,
             sleepSessions: dataSnapshot.sleepSessions,
-            awaySessions: dataSnapshot.awaySessions,
+            awaySessions: isAwayEnabled ? dataSnapshot.awaySessions : [],
             events: dataSnapshot.events,
             sprintFocusSessions: dataSnapshot.sprintFocusSessions,
             sprintFocusAllocations: dataSnapshot.sprintFocusAllocations,
             boardSprints: dataSnapshot.boardSprints,
             focusSessions: dataSnapshot.focusSessions,
+            includesAway: isAwayEnabled,
             timelinePlacementCache: timelinePlacementCache,
             allDayBlocksCache: allDayBlocksCache,
             visibleBlockContextCache: visibleBlockContextCache,
@@ -1460,6 +1473,7 @@ private struct DayPlanTimelinePanelContentView: View {
     var sprintFocusAllocations: [SprintFocusAllocationRecord]
     var boardSprints: [BoardSprintRecord]
     var focusSessions: [FocusSession]
+    var includesAway: Bool
     @ObservedObject var timelinePlacementCache: DayPlanTimelinePlacementCache
     @ObservedObject var allDayBlocksCache: DayPlanAllDayBlocksCache
     @ObservedObject var visibleBlockContextCache: DayPlanVisibleBlockContextCache
@@ -1774,6 +1788,7 @@ private struct DayPlanTimelinePanelContentView: View {
                             defaultTaskID: planner.selectedTaskID,
                             now: referenceDate,
                             calendar: calendar,
+                            includesAway: includesAway,
                             onCreateTaskBlock: { taskID, durationMinutes in
                                 createTaskBlock(
                                     taskID,
@@ -4096,6 +4111,7 @@ private struct DayPlanFocusAllocationPresentation: Identifiable {
 private enum DayPlanSlotActionMode: String, CaseIterable, Hashable {
     case task
     case away
+    case sleep
 
     var title: String {
         switch self {
@@ -4103,7 +4119,13 @@ private enum DayPlanSlotActionMode: String, CaseIterable, Hashable {
             return "Task"
         case .away:
             return "Away"
+        case .sleep:
+            return "Sleep"
         }
+    }
+
+    static func visibleCases(includingAway: Bool) -> [DayPlanSlotActionMode] {
+        includingAway ? [.task, .away] : [.task, .sleep]
     }
 }
 
@@ -4112,6 +4134,10 @@ private enum DayPlanAwayLogOption: Hashable, Identifiable {
     case sleep
 
     static let options: [DayPlanAwayLogOption] = AwaySessionPreset.allCases.map(DayPlanAwayLogOption.away) + [.sleep]
+
+    static func options(includingAway: Bool) -> [DayPlanAwayLogOption] {
+        includingAway ? options : [.sleep]
+    }
 
     var id: String {
         switch self {
@@ -4201,6 +4227,7 @@ private struct DayPlanSlotActionPopover: View {
     let defaultTaskID: UUID?
     let now: Date
     let calendar: Calendar
+    let includesAway: Bool
     let onCreateTaskBlock: (UUID, Int) -> String?
     let onLogAway: (AwaySessionPreset, String?, UUID?, Int) -> String?
     let onLogSleep: (Int) -> String?
@@ -4221,6 +4248,7 @@ private struct DayPlanSlotActionPopover: View {
         defaultTaskID: UUID?,
         now: Date,
         calendar: Calendar,
+        includesAway: Bool = true,
         onCreateTaskBlock: @escaping (UUID, Int) -> String?,
         onLogAway: @escaping (AwaySessionPreset, String?, UUID?, Int) -> String?,
         onLogSleep: @escaping (Int) -> String?,
@@ -4233,6 +4261,7 @@ private struct DayPlanSlotActionPopover: View {
         self.defaultTaskID = defaultTaskID
         self.now = now
         self.calendar = calendar
+        self.includesAway = includesAway
         self.onCreateTaskBlock = onCreateTaskBlock
         self.onLogAway = onLogAway
         self.onLogSleep = onLogSleep
@@ -4241,6 +4270,7 @@ private struct DayPlanSlotActionPopover: View {
         let initialTaskID = defaultTaskID.flatMap { id in tasks.first(where: { $0.id == id })?.id } ?? tasks.first?.id
         _selectedTaskID = State(initialValue: initialTaskID)
         _awayLinkedTaskID = State(initialValue: initialTaskID)
+        _selectedAwayOption = State(initialValue: includesAway ? .away(.custom) : .sleep)
     }
 
     var body: some View {
@@ -4249,7 +4279,7 @@ private struct DayPlanSlotActionPopover: View {
 
             RoutinaGlassSegmentedControl(
                 accessibilityLabel: "Slot action",
-                options: DayPlanSlotActionMode.allCases,
+                options: DayPlanSlotActionMode.visibleCases(includingAway: includesAway),
                 selection: $mode,
                 minimumSegmentWidth: 92,
                 fillsAvailableWidth: true
@@ -4260,7 +4290,7 @@ private struct DayPlanSlotActionPopover: View {
             switch mode {
             case .task:
                 taskBlockContent
-            case .away:
+            case .away, .sleep:
                 awayLogContent
             }
 
@@ -4282,6 +4312,12 @@ private struct DayPlanSlotActionPopover: View {
             case .task:
                 setTaskDuration(durationMinutes)
             case .away:
+                if selectedAwayOption.isSleep {
+                    selectedAwayOption = .away(.custom)
+                }
+                setAwayDuration(selectedAwayOption.defaultDurationMinutes, for: selectedAwayOption)
+            case .sleep:
+                selectedAwayOption = .sleep
                 setAwayDuration(selectedAwayOption.defaultDurationMinutes, for: selectedAwayOption)
             }
         }
@@ -4352,18 +4388,20 @@ private struct DayPlanSlotActionPopover: View {
 
     private var awayLogContent: some View {
         VStack(alignment: .leading, spacing: 12) {
-            LazyVGrid(columns: awayOptionColumns, spacing: 8) {
-                ForEach(DayPlanAwayLogOption.options) { option in
-                    Button {
-                        selectAwayOption(option)
-                    } label: {
-                        DayPlanAwayOptionCard(
-                            option: option,
-                            isSelected: selectedAwayOption == option
-                        )
+            if includesAway {
+                LazyVGrid(columns: awayOptionColumns, spacing: 8) {
+                    ForEach(DayPlanAwayLogOption.options(includingAway: includesAway)) { option in
+                        Button {
+                            selectAwayOption(option)
+                        } label: {
+                            DayPlanAwayOptionCard(
+                                option: option,
+                                isSelected: selectedAwayOption == option
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
-                    .buttonStyle(.plain)
-                    .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
             }
 
@@ -4417,6 +4455,7 @@ private struct DayPlanSlotActionPopover: View {
     }
 
     private func selectAwayOption(_ option: DayPlanAwayLogOption) {
+        guard includesAway || option.isSleep else { return }
         selectedAwayOption = option
         errorText = nil
         if option.isSleep {
@@ -4567,7 +4606,7 @@ private struct DayPlanSlotActionPopover: View {
                 clampedAwayDurationMinutes
             )
         } else {
-            error = "Choose an away option."
+            error = "Choose an option."
         }
 
         if let error {

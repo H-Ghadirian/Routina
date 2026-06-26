@@ -30,6 +30,14 @@ struct TimelineView: View {
         UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isPlacesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isNotesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isAwayEnabled = false
     @State private var relatedFilterTagSuggestionAnchor: String?
     @State private var selectedTimelineEntryID: UUID?
     @State private var editingAwaySession: AwaySession?
@@ -61,6 +69,19 @@ struct TimelineView: View {
             .onChange(of: isPlacesEnabled) { _, _ in
                 refreshTimelineData()
                 validateTimelineFilterVisibility()
+            }
+            .onChange(of: isNotesEnabled) { _, _ in
+                refreshTimelineData()
+                validateTimelineFilterVisibility()
+                guard !isNotesEnabled, let noteID = store.deepLinkedNoteID else { return }
+                store.send(.noteDeepLinkPresentationDismissed(noteID))
+            }
+            .onChange(of: isAwayEnabled) { _, _ in
+                refreshTimelineData()
+                validateTimelineFilterVisibility()
+                if !isAwayEnabled {
+                    editingAwaySession = nil
+                }
             }
             .onChange(of: store.filterType) { _, _ in
                 validateTimelineFilterVisibility()
@@ -249,15 +270,15 @@ struct TimelineView: View {
             logs: logs,
             events: events,
             emotionLogs: emotionLogs,
-            notes: notes,
+            notes: isNotesEnabled ? notes : [],
             focusSessions: focusSessions,
             sprintFocusSessions: sprintFocusSessions,
             boardSprints: boardSprints,
             sleepSessions: sleepSessions,
             placeCheckInSessions: isPlacesEnabled ? placeCheckInSessions : [],
-            awaySessions: awaySessions,
+            awaySessions: isAwayEnabled ? awaySessions : [],
             fileAttachmentTaskIDs: fileAttachmentTaskIDs,
-            noteAttachmentNoteIDs: noteAttachmentNoteIDs
+            noteAttachmentNoteIDs: isNotesEnabled ? noteAttachmentNoteIDs : []
         ))
     }
 
@@ -298,7 +319,10 @@ struct TimelineView: View {
     private var deepLinkedNotePresentationBinding: Binding<TimelineNoteDeepLinkPresentation?> {
         Binding(
             get: {
-                guard !usesSidebarLayout, let noteID = store.deepLinkedNoteID else { return nil }
+                guard isNotesEnabled,
+                      !usesSidebarLayout,
+                      let noteID = store.deepLinkedNoteID
+                else { return nil }
                 return TimelineNoteDeepLinkPresentation(id: noteID)
             },
             set: { presentation in
@@ -371,6 +395,10 @@ struct TimelineView: View {
 
     private func routePendingDeepLinkedNote() {
         guard usesSidebarLayout, let noteID = store.deepLinkedNoteID else { return }
+        guard isNotesEnabled else {
+            store.send(.noteDeepLinkPresentationDismissed(noteID))
+            return
+        }
         guard visibleTimelineEntryIDs.contains(noteID) else { return }
         selectedTimelineEntryID = noteID
         store.send(.noteDeepLinkPresentationDismissed(noteID))
@@ -402,12 +430,19 @@ struct TimelineView: View {
             get: {
                 store.filterType.normalized(
                     includingEventEmotion: true,
-                    includingPlaces: isPlacesEnabled
+                    includingPlaces: isPlacesEnabled,
+                    includingNotes: isNotesEnabled,
+                    includingAway: isAwayEnabled
                 )
             },
             set: {
                 store.send(.filterTypeChanged(
-                    $0.normalized(includingEventEmotion: true, includingPlaces: isPlacesEnabled)
+                    $0.normalized(
+                        includingEventEmotion: true,
+                        includingPlaces: isPlacesEnabled,
+                        includingNotes: isNotesEnabled,
+                        includingAway: isAwayEnabled
+                    )
                 ))
             }
         )
@@ -416,7 +451,9 @@ struct TimelineView: View {
     private func validateTimelineFilterVisibility() {
         let normalized = store.filterType.normalized(
             includingEventEmotion: true,
-            includingPlaces: isPlacesEnabled
+            includingPlaces: isPlacesEnabled,
+            includingNotes: isNotesEnabled,
+            includingAway: isAwayEnabled
         )
         if normalized != store.filterType {
             store.send(.filterTypeChanged(normalized))
@@ -551,18 +588,28 @@ struct TimelineView: View {
         !logs.isEmpty
             || !events.isEmpty
             || !emotionLogs.isEmpty
-            || !notes.isEmpty
+            || (isNotesEnabled && !notes.isEmpty)
             || !focusSessions.isEmpty
             || !sprintFocusSessions.isEmpty
-            || !awaySessions.isEmpty
+            || (isAwayEnabled && !awaySessions.isEmpty)
             || !sleepSessions.isEmpty
             || (isPlacesEnabled && !placeCheckInSessions.isEmpty)
     }
 
     private var timelineEmptyDescription: String {
-        isPlacesEnabled
-            ? "Completed items, focus sessions, notes, place check-ins, emotions, away sessions, and sleep records will appear here in chronological order."
-            : "Completed items, focus sessions, notes, emotions, away sessions, and sleep records will appear here in chronological order."
+        var items = ["Completed items", "focus sessions"]
+        if isNotesEnabled {
+            items.append("notes")
+        }
+        if isPlacesEnabled {
+            items.append("place check-ins")
+        }
+        items.append("emotions")
+        if isAwayEnabled {
+            items.append("away sessions")
+        }
+        items.append("sleep records")
+        return "\(items.joined(separator: ", ")) will appear here in chronological order."
     }
 
     private var hasActiveFilterChips: Bool {
@@ -577,7 +624,9 @@ struct TimelineView: View {
     private var timelinePigmentControl: some View {
         TimelinePigmentControl(
             selection: filterTypeBinding,
-            includesPlaces: isPlacesEnabled
+            includesPlaces: isPlacesEnabled,
+            includesNotes: isNotesEnabled,
+            includesAway: isAwayEnabled
         )
     }
 
@@ -839,12 +888,14 @@ struct TimelineView: View {
                     .pickerStyle(.inline)
                 }
 
-                if tasks.contains(where: { $0.isOneOffTask }) || !events.isEmpty || !notes.isEmpty || !focusSessions.isEmpty || !sprintFocusSessions.isEmpty || !sleepSessions.isEmpty || !awaySessions.isEmpty || (isPlacesEnabled && !placeCheckInSessions.isEmpty) {
+                if tasks.contains(where: { $0.isOneOffTask }) || !events.isEmpty || (isNotesEnabled && !notes.isEmpty) || !focusSessions.isEmpty || !sprintFocusSessions.isEmpty || !sleepSessions.isEmpty || (isAwayEnabled && !awaySessions.isEmpty) || (isPlacesEnabled && !placeCheckInSessions.isEmpty) {
                     Section("Type") {
                         Picker("Type", selection: filterTypeBinding) {
                             ForEach(TimelineFilterType.visibleCases(
                                 includingEventEmotion: true,
-                                includingPlaces: isPlacesEnabled
+                                includingPlaces: isPlacesEnabled,
+                                includingNotes: isNotesEnabled,
+                                includingAway: isAwayEnabled
                             )) { type in
                                 Text(type.rawValue).tag(type)
                             }

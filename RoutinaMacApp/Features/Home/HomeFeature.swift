@@ -1220,6 +1220,7 @@ struct HomeFeature {
                 )
 
             case let .openNoteDeepLink(noteID):
+                guard appSettingsClient.notesEnabled() else { return .none }
                 return macNavigationRouter().openNoteDeepLink(noteID, state: &state)
 
             case let .openEventDeepLink(eventID):

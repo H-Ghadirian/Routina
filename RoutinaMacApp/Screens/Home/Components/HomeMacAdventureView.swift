@@ -4,6 +4,10 @@ struct HomeMacAdventureSidebarView: View {
     let progression: HomeAdventureProgression
     @AppStorage(UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue, store: SharedDefaults.app)
     private var isPlacesEnabled = false
+    @AppStorage(UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue, store: SharedDefaults.app)
+    private var isAwayEnabled = false
+    @AppStorage(UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue, store: SharedDefaults.app)
+    private var isNotesEnabled = false
     @AppStorage(UserDefaultStringValueKey.appSettingMacAdventureOwnedItemIDs.rawValue, store: SharedDefaults.app)
     private var ownedItemIDsRaw = ""
     @AppStorage(UserDefaultStringValueKey.appSettingMacAdventureUnlockedWorldIDs.rawValue, store: SharedDefaults.app)
@@ -158,9 +162,32 @@ struct HomeMacAdventureSidebarView: View {
     }
 
     private var emptyCoinSourcesText: String {
-        isPlacesEnabled
-            ? "Complete tasks, focus, capture notes, log emotions, check in, sleep, or finish away sessions to start earning."
-            : "Complete tasks, focus, capture notes, log emotions, sleep, or finish away sessions to start earning."
+        var actions = ["Complete tasks", "focus"]
+        if isNotesEnabled {
+            actions.append("capture notes")
+        }
+        actions.append("log emotions")
+        if isPlacesEnabled {
+            actions.append("check in")
+        }
+        actions.append("sleep")
+        if isAwayEnabled {
+            actions.append("finish away sessions")
+        }
+        return "\(Self.listText(actions)) to start earning."
+    }
+
+    private static func listText(_ items: [String]) -> String {
+        switch items.count {
+        case 0:
+            return ""
+        case 1:
+            return items[0]
+        case 2:
+            return "\(items[0]) or \(items[1])"
+        default:
+            return items.dropLast().joined(separator: ", ") + ", or \(items.last ?? "")"
+        }
     }
 }
 
@@ -169,6 +196,8 @@ struct HomeMacAdventureView: View {
     @State private var selectedScreen = HomeAdventureScreen.map
     @AppStorage(UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue, store: SharedDefaults.app)
     private var isPlacesEnabled = false
+    @AppStorage(UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue, store: SharedDefaults.app)
+    private var isAwayEnabled = false
     @AppStorage(UserDefaultStringValueKey.appSettingMacAdventureOwnedItemIDs.rawValue, store: SharedDefaults.app)
     private var ownedItemIDsRaw = ""
     @AppStorage(UserDefaultStringValueKey.appSettingMacAdventureUnlockedWorldIDs.rawValue, store: SharedDefaults.app)
@@ -255,7 +284,8 @@ struct HomeMacAdventureView: View {
             HomeAdventureCoinGuideScreen(
                 progression: progression,
                 wallet: wallet,
-                showsPlaces: isPlacesEnabled
+                showsPlaces: isPlacesEnabled,
+                showsAway: isAwayEnabled
             )
         }
     }
@@ -870,6 +900,7 @@ private struct HomeAdventureCoinGuideScreen: View {
     let progression: HomeAdventureProgression
     let wallet: HomeAdventureWallet
     let showsPlaces: Bool
+    let showsAway: Bool
 
     private let summaryColumns = [
         GridItem(.adaptive(minimum: 210), spacing: 10)
@@ -954,7 +985,10 @@ private struct HomeAdventureCoinGuideScreen: View {
     }
 
     private var visibleCoinRules: [HomeAdventureCoinRule] {
-        HomeAdventureCoinRule.all.filter { showsPlaces || $0.id != "places" }
+        HomeAdventureCoinRule.all.filter { rule in
+            (showsPlaces || rule.id != "places")
+                && (showsAway || rule.id != "away")
+        }
     }
 }
 
@@ -1107,7 +1141,7 @@ private struct HomeAdventureUnlockGuidance {
             return "Earn \(coinGap.formatted()) coins: \(coinExampleText)."
         }
         if actionGap > 0 {
-            return "Do \(actionGap.formatted()) more Routina actions: complete/create tasks, focus, capture notes, or log goals."
+            return "Do \(actionGap.formatted()) more Routina actions: complete/create tasks, focus, capture records, or log goals."
         }
         if activeDayGap > 0 {
             return "Use Routina on \(activeDayGap.formatted()) more active days."

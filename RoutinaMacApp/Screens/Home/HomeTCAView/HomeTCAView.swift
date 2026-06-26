@@ -106,6 +106,14 @@ struct HomeTCAView: View {
         store: SharedDefaults.app
     ) var isPlacesEnabled = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) var isNotesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
+        store: SharedDefaults.app
+    ) var isAwayEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingMacTimelineQuickFiltersVisible.rawValue,
         store: SharedDefaults.app
     ) var areMacTimelineQuickFiltersVisible = false
@@ -291,6 +299,20 @@ homeContent
                         placeCheckInSelectedHistoryMarkerID = nil
                     }
                 }
+                .onChange(of: isNotesEnabled) { _, _ in
+                    validateMacTimelineFilterVisibility()
+                    if !isNotesEnabled {
+                        isNoteEditorPresented = false
+                        editingNoteID = nil
+                        selectedNoteID = nil
+                    }
+                }
+                .onChange(of: isAwayEnabled) { _, _ in
+                    validateMacTimelineFilterVisibility()
+                    if !isAwayEnabled {
+                        closeAwayStart()
+                    }
+                }
                 .onChange(of: store.selectedTimelineFilterType) { _, _ in
                     validateMacTimelineFilterVisibility()
                 }
@@ -326,7 +348,9 @@ homeContent
     private func validateMacTimelineFilterVisibility() {
         let normalized = store.selectedTimelineFilterType.normalized(
             includingEventEmotion: areMacEventEmotionActionsEnabled,
-            includingPlaces: isPlacesEnabled
+            includingPlaces: isPlacesEnabled,
+            includingNotes: isNotesEnabled,
+            includingAway: isAwayEnabled
         )
         if normalized != store.selectedTimelineFilterType {
             store.send(.selectedTimelineFilterTypeChanged(normalized))

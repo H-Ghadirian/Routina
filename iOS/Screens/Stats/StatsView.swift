@@ -53,6 +53,10 @@ struct StatsView: View {
     private var isGoalsTabEnabled = false
     @AppStorage(UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue, store: SharedDefaults.app)
     private var isPlacesEnabled = false
+    @AppStorage(UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue, store: SharedDefaults.app)
+    private var isNotesEnabled = false
+    @AppStorage(UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue, store: SharedDefaults.app)
+    private var isAwayEnabled = false
 
     private typealias Metrics = StatsFeature.Metrics
 
@@ -81,6 +85,18 @@ struct StatsView: View {
 
     private var statsPlaceCheckInSessions: [PlaceCheckInSession] {
         isPlacesEnabled ? placeCheckInSessions : []
+    }
+
+    private var statsAwaySessions: [AwaySession] {
+        isAwayEnabled ? awaySessions : []
+    }
+
+    private var statsNotes: [RoutineNote] {
+        isNotesEnabled ? notes : []
+    }
+
+    private var statsNoteAttachmentNoteIDs: Set<UUID> {
+        isNotesEnabled ? Set(noteAttachments.map(\.noteID)) : []
     }
 
     private var filterSheetBinding: Binding<Bool> {
@@ -259,7 +275,9 @@ struct StatsView: View {
 
     private var availableDashboardItems: [StatsDashboardItem] {
         StatsDashboardItem.allCases.filter { item in
-            item.isAvailable(
+            (item != .notes || isNotesEnabled)
+                && (item != .awayTime || isAwayEnabled)
+                && item.isAvailable(
                 selectedRange: selectedRange,
                 isGitFeaturesEnabled: store.isGitFeaturesEnabled,
                 isGoalsTabEnabled: isGoalsTabEnabled,
@@ -356,11 +374,11 @@ struct StatsView: View {
                 sprintFocusSessions: sprintFocusSessions,
                 boardSprints: boardSprints,
                 sleepSessions: sleepSessions,
-                awaySessions: awaySessions,
+                awaySessions: statsAwaySessions,
                 emotionLogs: emotionLogs,
-                notes: notes,
+                notes: statsNotes,
                 events: events,
-                noteAttachmentNoteIDs: Set(noteAttachments.map(\.noteID)),
+                noteAttachmentNoteIDs: statsNoteAttachmentNoteIDs,
                 goals: goals,
                 places: statsPlaces,
                 placeCheckInSessions: statsPlaceCheckInSessions,
@@ -374,11 +392,11 @@ struct StatsView: View {
                             sprintFocusSessions: sprintFocusSessions,
                             boardSprints: boardSprints,
                             sleepSessions: sleepSessions,
-                            awaySessions: awaySessions,
+                            awaySessions: isAwayEnabled ? awaySessions : [],
                             emotionLogs: emotionLogs,
-                            notes: notes,
+                            notes: isNotesEnabled ? notes : [],
                             events: events,
-                            noteAttachmentNoteIDs: noteAttachmentNoteIDs,
+                            noteAttachmentNoteIDs: isNotesEnabled ? noteAttachmentNoteIDs : [],
                             goals: goals,
                             places: isPlacesEnabled ? places : [],
                             placeCheckInSessions: isPlacesEnabled ? placeCheckInSessions : []
@@ -395,17 +413,44 @@ struct StatsView: View {
                         sprintFocusSessions: sprintFocusSessions,
                         boardSprints: boardSprints,
                         sleepSessions: sleepSessions,
-                        awaySessions: awaySessions,
+                        awaySessions: statsAwaySessions,
                         emotionLogs: emotionLogs,
-                        notes: notes,
+                        notes: statsNotes,
                         events: events,
-                        noteAttachmentNoteIDs: Set(noteAttachments.map(\.noteID)),
+                        noteAttachmentNoteIDs: statsNoteAttachmentNoteIDs,
                         goals: goals,
                         places: statsPlaces,
                         placeCheckInSessions: statsPlaceCheckInSessions
                     )
                 )
             }
+            .onChange(of: isNotesEnabled) { _, _ in
+                refreshStatsDataForVisibilityChange()
+            }
+            .onChange(of: isAwayEnabled) { _, _ in
+                refreshStatsDataForVisibilityChange()
+            }
+    }
+
+    private func refreshStatsDataForVisibilityChange() {
+        store.send(
+            .setData(
+                tasks: tasks,
+                logs: logs,
+                focusSessions: focusSessions,
+                sprintFocusSessions: sprintFocusSessions,
+                boardSprints: boardSprints,
+                sleepSessions: sleepSessions,
+                awaySessions: statsAwaySessions,
+                emotionLogs: emotionLogs,
+                notes: statsNotes,
+                events: events,
+                noteAttachmentNoteIDs: statsNoteAttachmentNoteIDs,
+                goals: goals,
+                places: statsPlaces,
+                placeCheckInSessions: statsPlaceCheckInSessions
+            )
+        )
     }
 
     @ViewBuilder
@@ -1015,11 +1060,11 @@ struct StatsView: View {
             achievements: StatsAchievementStats.achievements(
                 focusSessions: focusSessions,
                 sleepSessions: sleepSessions,
-                awaySessions: awaySessions,
+                awaySessions: statsAwaySessions,
                 logs: logs,
                 emotionLogs: emotionLogs,
-                notes: notes,
-                noteAttachmentNoteIDs: Set(noteAttachments.map(\.noteID)),
+                notes: statsNotes,
+                noteAttachmentNoteIDs: statsNoteAttachmentNoteIDs,
                 goals: goals,
                 places: statsPlaces,
                 placeCheckInSessions: statsPlaceCheckInSessions,
@@ -1028,11 +1073,11 @@ struct StatsView: View {
             earnedAchievementIDsByPeriod: StatsAchievementStats.achievementIDsEarnedByPeriod(
                 focusSessions: focusSessions,
                 sleepSessions: sleepSessions,
-                awaySessions: awaySessions,
+                awaySessions: statsAwaySessions,
                 logs: logs,
                 emotionLogs: emotionLogs,
-                notes: notes,
-                noteAttachmentNoteIDs: Set(noteAttachments.map(\.noteID)),
+                notes: statsNotes,
+                noteAttachmentNoteIDs: statsNoteAttachmentNoteIDs,
                 goals: goals,
                 places: statsPlaces,
                 placeCheckInSessions: statsPlaceCheckInSessions,
@@ -1049,10 +1094,10 @@ struct StatsView: View {
             celebrations: StatsAchievementStats.celebrationPeriods(
                 focusSessions: focusSessions,
                 sleepSessions: sleepSessions,
-                awaySessions: awaySessions,
+                awaySessions: statsAwaySessions,
                 logs: logs,
                 emotionLogs: emotionLogs,
-                notes: notes,
+                notes: statsNotes,
                 goals: goals,
                 places: statsPlaces,
                 placeCheckInSessions: statsPlaceCheckInSessions,

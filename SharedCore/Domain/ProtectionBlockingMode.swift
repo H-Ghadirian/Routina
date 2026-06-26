@@ -11,6 +11,10 @@ enum ProtectionBlockingMode: String, CaseIterable, Codable, Hashable, Identifiab
         Set(allCases)
     }
 
+    static func visibleCases(includingAway: Bool) -> [ProtectionBlockingMode] {
+        allCases.filter { includingAway || $0 != .away }
+    }
+
     var title: String {
         switch self {
         case .focus:

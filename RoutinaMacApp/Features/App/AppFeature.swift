@@ -229,6 +229,7 @@ struct AppFeature {
                 .send(.goals(.openGoalDeepLink(goalID)))
             )
         case let .note(noteID):
+            guard appSettingsClient.notesEnabled() else { return .none }
             state.selectedTab = .home
             state.pendingDeepLinkedTaskID = nil
             state.pendingDeepLinkedSprintID = nil

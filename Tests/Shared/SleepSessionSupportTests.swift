@@ -82,6 +82,16 @@ struct SleepSessionSupportTests {
     @Test
     func logSleep_rejectsOverlappingProtectedSessions() throws {
         let context = makeInMemoryContext()
+        let awayKey = UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue
+        let previousAwayValue = SharedDefaults.app.object(forKey: awayKey)
+        defer {
+            if let previousAwayValue {
+                SharedDefaults.app.set(previousAwayValue, forKey: awayKey)
+            } else {
+                SharedDefaults.app.removeObject(forKey: awayKey)
+            }
+        }
+        SharedDefaults.app[.appSettingAwayEnabled] = true
         let existingSleepStart = makeDate("2026-06-01T21:00:00Z")
         let away = AwaySession(
             preset: .outside,

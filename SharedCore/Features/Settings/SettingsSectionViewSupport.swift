@@ -612,7 +612,10 @@ extension SettingsTagsState {
 
         switch savedTags.count {
         case 0:
-            return "Review and manage tags across tasks, goals, notes, and events\(fastFilterSuffix)"
+            let sources = SharedDefaults.app[.appSettingNotesEnabled]
+                ? "tasks, goals, notes, and events"
+                : "tasks, goals, and events"
+            return "Review and manage tags across \(sources)\(fastFilterSuffix)"
         case 1:
             return "1 saved tag\(fastFilterSuffix)"
         default:
@@ -622,7 +625,9 @@ extension SettingsTagsState {
 
     var deleteConfirmationMessage: String {
         guard let tag = tagPendingDeletion else {
-            return "This will remove the tag from every task, goal, note, or event that uses it."
+            return SharedDefaults.app[.appSettingNotesEnabled]
+                ? "This will remove the tag from every task, goal, note, or event that uses it."
+                : "This will remove the tag from every task, goal, or event that uses it."
         }
 
         let affectedParts = tag.settingsAffectedDeletionParts
@@ -659,7 +664,7 @@ extension RoutineTagSummary {
         if linkedGoalCount > 0 {
             parts.append(linkedGoalCount == 1 ? "1 goal" : "\(linkedGoalCount) goals")
         }
-        if linkedNoteCount > 0 {
+        if SharedDefaults.app[.appSettingNotesEnabled], linkedNoteCount > 0 {
             parts.append(linkedNoteCount == 1 ? "1 note" : "\(linkedNoteCount) notes")
         }
         if linkedEventCount > 0 {
@@ -684,7 +689,7 @@ extension RoutineTagSummary {
         if linkedGoalCount > 0 {
             parts.append(linkedGoalCount == 1 ? "1 goal" : "\(linkedGoalCount) goals")
         }
-        if linkedNoteCount > 0 {
+        if SharedDefaults.app[.appSettingNotesEnabled], linkedNoteCount > 0 {
             parts.append(linkedNoteCount == 1 ? "1 note" : "\(linkedNoteCount) notes")
         }
         if linkedEventCount > 0 {

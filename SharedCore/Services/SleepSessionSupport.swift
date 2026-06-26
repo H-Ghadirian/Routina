@@ -226,7 +226,9 @@ enum SleepSessionSupport {
             return true
         }
 
-        let awaySessions = try context.fetch(FetchDescriptor<AwaySession>())
+        let awaySessions = SharedDefaults.app[.appSettingAwayEnabled]
+            ? try context.fetch(FetchDescriptor<AwaySession>())
+            : []
         if awaySessions.contains(where: { session in
             guard let sessionStartedAt = session.startedAt else { return false }
             let sessionEndedAt = session.finishedAt ?? session.plannedEndAt ?? .distantFuture

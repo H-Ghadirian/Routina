@@ -9,6 +9,10 @@ import UniformTypeIdentifiers
 struct SettingsMacBlockingDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var enabledModes = FocusShieldSupport.loadEnabledBlockingModes()
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isAwayEnabled = false
 
     #if os(macOS)
     @AppStorage(
@@ -34,7 +38,7 @@ struct SettingsMacBlockingDetailView: View {
         ) {
             SettingsMacDetailCard(title: "Protected Modes") {
                 VStack(alignment: .leading, spacing: 12) {
-                    ForEach(ProtectionBlockingMode.allCases) { mode in
+                    ForEach(visibleBlockingModes) { mode in
                         Toggle(isOn: binding(for: mode)) {
                             VStack(alignment: .leading, spacing: 2) {
                                 Label(mode.label, systemImage: mode.systemImage)
@@ -47,7 +51,7 @@ struct SettingsMacBlockingDetailView: View {
                         .toggleStyle(.switch)
                     }
 
-                    Text("Enabled modes: \(FocusShieldSupport.enabledBlockingModesSummaryText(enabledModes)).")
+                    Text("Enabled modes: \(FocusShieldSupport.enabledBlockingModesSummaryText(enabledModes, includingAway: isAwayEnabled)).")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -88,10 +92,11 @@ struct SettingsMacBlockingDetailView: View {
                 } else {
                     VStack(alignment: .leading, spacing: 10) {
                         ForEach(blockedApps) { app in
-                            SettingsMacBlockedAppRow(
-                                app: app,
-                                onRemove: { removeBlockedApp(app) },
-                                onModeChanged: { mode, isEnabled in
+                                SettingsMacBlockedAppRow(
+                                    app: app,
+                                    includesAway: isAwayEnabled,
+                                    onRemove: { removeBlockedApp(app) },
+                                    onModeChanged: { mode, isEnabled in
                                     setMode(mode, isEnabled: isEnabled, for: app)
                                 }
                             )
@@ -141,6 +146,7 @@ struct SettingsMacBlockingDetailView: View {
                             ForEach(blockedWebsiteDomains) { website in
                                 SettingsMacBlockedWebsiteRow(
                                     website: website,
+                                    includesAway: isAwayEnabled,
                                     onRemove: { removeWebsiteDomain(website) },
                                     onModeChanged: { mode, isEnabled in
                                         setWebsiteMode(mode, isEnabled: isEnabled, for: website)
@@ -180,6 +186,10 @@ struct SettingsMacBlockingDetailView: View {
                 syncBlocking()
             }
         )
+    }
+
+    private var visibleBlockingModes: [ProtectionBlockingMode] {
+        ProtectionBlockingMode.visibleCases(includingAway: isAwayEnabled)
     }
 
     private func syncBlocking() {
@@ -307,6 +317,7 @@ struct SettingsMacBlockingDetailView: View {
 #if os(macOS)
 private struct SettingsMacBlockedWebsiteRow: View {
     let website: BlockingWebsiteDomain
+    let includesAway: Bool
     let onRemove: () -> Void
     let onModeChanged: (ProtectionBlockingMode, Bool) -> Void
 
@@ -334,7 +345,7 @@ private struct SettingsMacBlockedWebsiteRow: View {
             }
 
             HStack(spacing: 14) {
-                ForEach(ProtectionBlockingMode.allCases) { mode in
+                ForEach(ProtectionBlockingMode.visibleCases(includingAway: includesAway)) { mode in
                     Toggle(mode.title, isOn: modeBinding(mode))
                         .toggleStyle(.checkbox)
                         .font(.caption)
@@ -356,6 +367,7 @@ private struct SettingsMacBlockedWebsiteRow: View {
 
 private struct SettingsMacBlockedAppRow: View {
     let app: MacFocusBlockedApp
+    let includesAway: Bool
     let onRemove: () -> Void
     let onModeChanged: (ProtectionBlockingMode, Bool) -> Void
 
@@ -389,7 +401,7 @@ private struct SettingsMacBlockedAppRow: View {
             }
 
             HStack(spacing: 14) {
-                ForEach(ProtectionBlockingMode.allCases) { mode in
+                ForEach(ProtectionBlockingMode.visibleCases(includingAway: includesAway)) { mode in
                     Toggle(mode.title, isOn: modeBinding(mode))
                         .toggleStyle(.checkbox)
                         .font(.caption)

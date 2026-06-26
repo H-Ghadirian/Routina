@@ -4,13 +4,17 @@ struct TimelinePigmentControl: View {
     @Binding var selection: TimelineFilterType
     var includesEventEmotion = true
     var includesPlaces = true
+    var includesNotes = true
+    var includesAway = true
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(TimelineFilterType.visibleTimelinePigmentCases(
                     includingEventEmotion: includesEventEmotion,
-                    includingPlaces: includesPlaces
+                    includingPlaces: includesPlaces,
+                    includingNotes: includesNotes,
+                    includingAway: includesAway
                 )) { type in
                     pigmentButton(for: type)
                 }

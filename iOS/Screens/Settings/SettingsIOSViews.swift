@@ -232,7 +232,7 @@ private struct SettingsQuickAddDetailView: View {
                 }
             }
 
-            Section("Notes") {
+            Section("Tips") {
                 ForEach(SettingsQuickAddSyntaxGuide.visibleNotes(includingPlaces: isPlacesEnabled), id: \.self) { note in
                     SettingsQuickAddNoteBlock(note: note)
                 }

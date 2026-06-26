@@ -480,6 +480,9 @@ final class WatchRoutineSyncBridge: NSObject, WCSessionDelegate {
     }
 
     private func openDeepLink(_ deepLink: RoutinaDeepLink) {
+        if case .note = deepLink, !SharedDefaults.app[.appSettingNotesEnabled] {
+            return
+        }
         NSLog("Watch open-on-iPhone request received: \(deepLink.url.absoluteString), appState: \(UIApplication.shared.applicationState.rawValue)")
         RoutinaDeepLinkDispatcher.open(deepLink)
         guard UIApplication.shared.applicationState != .active else { return }

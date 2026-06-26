@@ -37,6 +37,14 @@ struct RoutineCommands: Commands {
         UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isPlacesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isNotesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isAwayEnabled = false
     #endif
 
     var body: some Commands {
@@ -76,7 +84,13 @@ struct RoutineCommands: Commands {
             }
             #endif
 
+            #if !SWIFT_PACKAGE
+            if isNotesEnabled {
+                addMenuCommand(.note, notificationName: .routinaMacOpenAddNote)
+            }
+            #else
             addMenuCommand(.note, notificationName: .routinaMacOpenAddNote)
+            #endif
 
             #if !SWIFT_PACKAGE
             if isGoalsTabEnabled {
@@ -90,7 +104,13 @@ struct RoutineCommands: Commands {
                 addMenuCommand(.checkIn, notificationName: .routinaMacOpenCheckIn)
             }
             #endif
+            #if !SWIFT_PACKAGE
+            if isAwayEnabled {
+                addMenuCommand(.away, notificationName: .routinaMacOpenAway)
+            }
+            #else
             addMenuCommand(.away, notificationName: .routinaMacOpenAway)
+            #endif
 
             Divider()
 

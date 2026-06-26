@@ -36,6 +36,14 @@ struct TimelineView: View {
         UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isPlacesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isNotesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isAwayEnabled = false
     @State private var editingAwaySession: AwaySession?
 
     var body: some View {
@@ -79,54 +87,75 @@ struct TimelineView: View {
             syncTimelineData()
             validateEventEmotionFilterVisibility()
         }
-        .onChange(of: tasks) { _, _ in
-            syncTimelineData()
-        }
-        .onChange(of: logs) { _, _ in
-            syncTimelineData()
-        }
-        .onChange(of: focusSessionChangeToken) { _, _ in
-            syncTimelineData()
-        }
-        .onChange(of: sprintFocusSessionChangeToken) { _, _ in
-            syncTimelineData()
-        }
-        .onChange(of: boardSprintChangeToken) { _, _ in
-            syncTimelineData()
-        }
-        .onChange(of: sleepSessionChangeToken) { _, _ in
-            syncTimelineData()
-        }
-        .onChange(of: awaySessionChangeToken) { _, _ in
-            syncTimelineData()
-        }
-        .onChange(of: placeCheckInChangeToken) { _, _ in
-            syncTimelineData()
-        }
-        .onChange(of: fileAttachmentChangeToken) { _, _ in
-            syncTimelineData()
-        }
-        .onChange(of: eventChangeToken) { _, _ in
-            syncTimelineData()
-        }
-        .onChange(of: emotionLogChangeToken) { _, _ in
-            syncTimelineData()
-        }
-        .onChange(of: noteChangeToken) { _, _ in
-            syncTimelineData()
-        }
-        .onChange(of: noteAttachmentChangeToken) { _, _ in
+        .onChange(of: timelineDataChangeToken) { _, _ in
             syncTimelineData()
         }
         .onChange(of: isPlacesEnabled) { _, _ in
             syncTimelineData()
             validateTimelineFilterVisibility()
         }
+        .onChange(of: isNotesEnabled) { _, _ in
+            syncTimelineData()
+            validateTimelineFilterVisibility()
+            guard !isNotesEnabled, let noteID = store.deepLinkedNoteID else { return }
+            store.send(.noteDeepLinkPresentationDismissed(noteID))
+        }
+        .onChange(of: isAwayEnabled) { _, _ in
+            syncTimelineData()
+            validateTimelineFilterVisibility()
+            if !isAwayEnabled {
+                editingAwaySession = nil
+            }
+        }
         .onChange(of: areMacEventEmotionActionsEnabled) { _, _ in
             validateTimelineFilterVisibility()
         }
         .onChange(of: store.filterType) { _, _ in
             validateTimelineFilterVisibility()
+        }
+    }
+
+    private var timelineDataChangeToken: [String] {
+        taskChangeToken
+            + logChangeToken
+            + focusSessionChangeToken
+            + sprintFocusSessionChangeToken
+            + boardSprintChangeToken
+            + sleepSessionChangeToken
+            + awaySessionChangeToken
+            + placeCheckInChangeToken
+            + fileAttachmentChangeToken
+            + eventChangeToken
+            + emotionLogChangeToken
+            + noteChangeToken
+            + noteAttachmentChangeToken
+    }
+
+    private var taskChangeToken: [String] {
+        tasks.map { task in
+            [
+                task.id.uuidString,
+                task.name ?? "",
+                task.emoji ?? "",
+                task.tagsStorage,
+                task.importanceRawValue,
+                task.urgencyRawValue,
+                task.scheduleModeRawValue,
+                task.imageData?.count.description ?? "",
+                task.voiceNoteData?.count.description ?? "",
+            ].joined(separator: ":")
+        }
+    }
+
+    private var logChangeToken: [String] {
+        logs.map { log in
+            [
+                log.id.uuidString,
+                log.taskID.uuidString,
+                log.timestamp?.timeIntervalSinceReferenceDate.description ?? "",
+                log.kindRawValue,
+                log.actualDurationMinutes?.description ?? "",
+            ].joined(separator: ":")
         }
     }
 
@@ -263,7 +292,7 @@ struct TimelineView: View {
     private var deepLinkedNotePresentationBinding: Binding<TimelineNoteDeepLinkPresentation?> {
         Binding(
             get: {
-                guard let noteID = store.deepLinkedNoteID else { return nil }
+                guard isNotesEnabled, let noteID = store.deepLinkedNoteID else { return nil }
                 return TimelineNoteDeepLinkPresentation(id: noteID)
             },
             set: { presentation in
@@ -280,15 +309,15 @@ struct TimelineView: View {
             logs: logs,
             events: events,
             emotionLogs: emotionLogs,
-            notes: notes,
+            notes: isNotesEnabled ? notes : [],
             focusSessions: focusSessions,
             sprintFocusSessions: sprintFocusSessions,
             boardSprints: boardSprints,
             sleepSessions: sleepSessions,
             placeCheckInSessions: isPlacesEnabled ? placeCheckInSessions : [],
-            awaySessions: awaySessions,
+            awaySessions: isAwayEnabled ? awaySessions : [],
             fileAttachmentTaskIDs: fileAttachmentTaskIDs,
-            noteAttachmentNoteIDs: noteAttachmentNoteIDs
+            noteAttachmentNoteIDs: isNotesEnabled ? noteAttachmentNoteIDs : []
         ))
     }
 
@@ -326,7 +355,9 @@ struct TimelineView: View {
                 store.send(.filterTypeChanged(
                     $0.normalized(
                         includingEventEmotion: areMacEventEmotionActionsEnabled,
-                        includingPlaces: isPlacesEnabled
+                        includingPlaces: isPlacesEnabled,
+                        includingNotes: isNotesEnabled,
+                        includingAway: isAwayEnabled
                     )
                 ))
             }
@@ -410,7 +441,9 @@ struct TimelineView: View {
     private var effectiveFilterType: TimelineFilterType {
         store.filterType.normalized(
             includingEventEmotion: areMacEventEmotionActionsEnabled,
-            includingPlaces: isPlacesEnabled
+            includingPlaces: isPlacesEnabled,
+            includingNotes: isNotesEnabled,
+            includingAway: isAwayEnabled
         )
     }
 
@@ -418,27 +451,38 @@ struct TimelineView: View {
         !logs.isEmpty
             || !events.isEmpty
             || !emotionLogs.isEmpty
-            || !notes.isEmpty
+            || (isNotesEnabled && !notes.isEmpty)
             || !focusSessions.isEmpty
             || !sprintFocusSessions.isEmpty
             || !sleepSessions.isEmpty
-            || !awaySessions.isEmpty
+            || (isAwayEnabled && !awaySessions.isEmpty)
             || (isPlacesEnabled && !placeCheckInSessions.isEmpty)
     }
 
     private var timelineEmptyDescription: String {
-        isPlacesEnabled
-            ? "Completed items, focus sessions, notes, place check-ins, emotions, away sessions, and sleep records will appear here in chronological order."
-            : "Completed items, focus sessions, notes, emotions, away sessions, and sleep records will appear here in chronological order."
+        var items = ["Completed items", "focus sessions"]
+        if isNotesEnabled {
+            items.append("notes")
+        }
+        if isPlacesEnabled {
+            items.append("place check-ins")
+        }
+        items.append("emotions")
+        if isAwayEnabled {
+            items.append("away sessions")
+        }
+        items.append("sleep records")
+        return "\(items.joined(separator: ", ")) will appear here in chronological order."
     }
 
     private var showsTypeFilterSection: Bool {
         tasks.contains(where: { $0.isOneOffTask })
             || (areMacEventEmotionActionsEnabled && (!events.isEmpty || !emotionLogs.isEmpty))
-            || !notes.isEmpty
+            || (isNotesEnabled && !notes.isEmpty)
             || !focusSessions.isEmpty
             || !sprintFocusSessions.isEmpty
             || !sleepSessions.isEmpty
+            || (isAwayEnabled && !awaySessions.isEmpty)
             || (isPlacesEnabled && !placeCheckInSessions.isEmpty)
     }
 
@@ -449,7 +493,9 @@ struct TimelineView: View {
     private func validateTimelineFilterVisibility() {
         let normalized = store.filterType.normalized(
             includingEventEmotion: areMacEventEmotionActionsEnabled,
-            includingPlaces: isPlacesEnabled
+            includingPlaces: isPlacesEnabled,
+            includingNotes: isNotesEnabled,
+            includingAway: isAwayEnabled
         )
         if normalized != store.filterType {
             store.send(.filterTypeChanged(normalized))
@@ -460,7 +506,9 @@ struct TimelineView: View {
         TimelinePigmentControl(
             selection: filterTypeBinding,
             includesEventEmotion: areMacEventEmotionActionsEnabled,
-            includesPlaces: isPlacesEnabled
+            includesPlaces: isPlacesEnabled,
+            includesNotes: isNotesEnabled,
+            includesAway: isAwayEnabled
         )
     }
 
@@ -544,7 +592,9 @@ struct TimelineView: View {
                             accessibilityLabel: "Type",
                             options: TimelineFilterType.visibleCases(
                                 includingEventEmotion: areMacEventEmotionActionsEnabled,
-                                includingPlaces: isPlacesEnabled
+                                includingPlaces: isPlacesEnabled,
+                                includingNotes: isNotesEnabled,
+                                includingAway: isAwayEnabled
                             ),
                             selection: filterTypeBinding
                         ) { type in

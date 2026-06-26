@@ -31,6 +31,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0277](0277-hide-notes-and-away-behind-beta-toggles.md) refines Notes and Away default visibility:** Notes and Away stay implemented and data-compatible, but app-facing note creation/links/fields/stats/tag participation and Away creation/planner/timeline/stats/blocking/interference are hidden by default behind Support & About -> Beta Experiments -> `Show Notes` and `Show Away`.
 - **[0276](0276-open-mac-home-to-planner.md) refines Mac Home launch behavior:** Fresh Mac Home instances open with Planner selected by default, while Details remains visible and selectable and deep links or explicit actions still route to their required Home surface.
 - **[0275](0275-hide-places-behind-beta-toggle.md) refines the Places decisions for default visibility:** Places stays implemented and data-compatible, but all app-facing Places navigation, Check In entry points, task place sections, filters, stats, timeline filters, Quick Add help/parsing, Watch place sync, and Settings Places controls are hidden by default behind Support & About -> Beta Experiments -> `Show Places`.
 - **[0274](0274-present-resizable-planner-slot-draft.md) refines [0089](0089-prefer-native-apple-platform-patterns.md), [0269](0269-support-planner-slot-actions.md), and [0273](0273-log-sleep-from-planner-away-slot-action.md) for Planner empty-slot creation:** Double-clicking empty time shows a temporary resizable draft block, uses a native macOS popover beside it so the editor is not clipped near app edges, and keeps Task, Away, and Sleep persistence model-specific when committed.
@@ -190,6 +191,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0277](0277-hide-notes-and-away-behind-beta-toggles.md) | Hide Notes and Away Behind Beta Toggles | Accepted | 2026-06-25 |
 | [0276](0276-open-mac-home-to-planner.md) | Open Mac Home to Planner | Accepted | 2026-06-25 |
 | [0275](0275-hide-places-behind-beta-toggle.md) | Hide Places Behind Beta Toggle | Accepted | 2026-06-23 |
 | [0274](0274-present-resizable-planner-slot-draft.md) | Present Resizable Planner Slot Draft | Accepted | 2026-06-23 |

@@ -57,6 +57,10 @@ struct TaskDetailTCAView: View {
         UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isPlacesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isNotesEnabled = false
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
 
@@ -576,7 +580,7 @@ detailBody
             actions.append(editSectionAction(title: "Places", section: .places))
         }
 
-        if !store.task.hasNotes {
+        if isNotesEnabled && !store.task.hasNotes {
             actions.append(editSectionAction(title: "Notes", section: .notes))
         }
 
@@ -592,7 +596,7 @@ detailBody
             actions.append(editSectionAction(title: "Image", section: .image))
         }
 
-        if !store.task.hasVoiceNote {
+        if isNotesEnabled && !store.task.hasVoiceNote {
             actions.append(editSectionAction(title: "Voice Note", section: .voiceNote))
         }
 
@@ -650,9 +654,9 @@ detailBody
     }
 
     private var hasTaskExtras: Bool {
-        store.task.hasNotes
+        (isNotesEnabled && store.task.hasNotes)
             || store.task.hasImage
-            || store.task.hasVoiceNote
+            || (isNotesEnabled && store.task.hasVoiceNote)
             || !store.taskAttachments.isEmpty
     }
 
@@ -925,9 +929,9 @@ detailBody
     private var taskExtrasSection: some View {
         TaskDetailExtrasSectionView(
             imageData: store.task.imageData,
-            voiceNote: store.task.voiceNote,
+            voiceNote: isNotesEnabled ? store.task.voiceNote : nil,
             attachments: store.taskAttachments,
-            notes: CalendarTaskImportSupport.displayNotes(from: store.task.notes),
+            notes: isNotesEnabled ? CalendarTaskImportSupport.displayNotes(from: store.task.notes) : nil,
             links: [],
             background: routineLogsBackground,
             stroke: TaskDetailPlatformStyle.sectionCardStroke,
@@ -984,7 +988,8 @@ detailBody
                 for: store.state,
                 showSelectedDate: true,
                 displayedActualDurationText: displayedActualDurationText,
-                dueDateMetadataDisplayText: dueDateMetadataDisplayText
+                dueDateMetadataDisplayText: dueDateMetadataDisplayText,
+                showsNotes: isNotesEnabled
             ),
             pauseArchivePresentation: pauseArchivePresentation,
             completionButtonTitle: store.completionButtonTitle,
@@ -1059,7 +1064,8 @@ detailBody
     private var hasVisibleStatusMetadata: Bool {
         TaskDetailStatusMetadataPresentation.hasVisibleMetadata(
             for: store.state,
-            showsPlaces: isPlacesEnabled
+            showsPlaces: isPlacesEnabled,
+            showsNotes: isNotesEnabled
         )
     }
 

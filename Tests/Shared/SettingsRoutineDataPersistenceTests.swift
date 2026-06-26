@@ -99,6 +99,8 @@ struct SettingsRoutineDataPersistenceTests {
             UserDefaultBoolValueKey.appSettingTaskSharingEnabled.rawValue,
             UserDefaultBoolValueKey.appSettingTaskRelationshipVisualizerEnabled.rawValue,
             UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
+            UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
+            UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
             UserDefaultBoolValueKey.appSettingShowPersianDates.rawValue,
             UserDefaultBoolValueKey.appSettingFocusShieldEnabled.rawValue,
             UserDefaultBoolValueKey.appSettingAutomaticPlaceCheckInEnabled.rawValue,
@@ -135,6 +137,8 @@ struct SettingsRoutineDataPersistenceTests {
         defaults[.appSettingTaskSharingEnabled] = true
         defaults[.appSettingTaskRelationshipVisualizerEnabled] = true
         defaults[.appSettingPlacesEnabled] = true
+        defaults[.appSettingNotesEnabled] = true
+        defaults[.appSettingAwayEnabled] = true
         defaults[.appSettingShowPersianDates] = true
         defaults[.appSettingFocusShieldEnabled] = true
         defaults[.appSettingAutomaticPlaceCheckInEnabled] = false
@@ -149,6 +153,8 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(backup.userPreferences?.taskSharingEnabled == true)
         #expect(backup.userPreferences?.taskRelationshipVisualizerEnabled == true)
         #expect(backup.userPreferences?.placesEnabled == true)
+        #expect(backup.userPreferences?.notesEnabled == true)
+        #expect(backup.userPreferences?.awayEnabled == true)
 
         let restoreContext = makeInMemoryContext()
         let summary = try SettingsRoutineDataPersistence.replaceAllRoutineData(
@@ -176,6 +182,8 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(restored.taskSharingEnabled)
         #expect(restored.taskRelationshipVisualizerEnabled)
         #expect(restored.placesEnabled)
+        #expect(restored.notesEnabled)
+        #expect(restored.awayEnabled)
         #expect(restored.showPersianDates)
         #expect(restored.focusShieldEnabled)
         #expect(!restored.automaticPlaceCheckInEnabled)

@@ -27,6 +27,10 @@ private struct StatsDataObserver: View {
     @Environment(\.modelContext) private var modelContext
     @AppStorage(UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue, store: SharedDefaults.app)
     private var isPlacesEnabled = false
+    @AppStorage(UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue, store: SharedDefaults.app)
+    private var isNotesEnabled = false
+    @AppStorage(UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue, store: SharedDefaults.app)
+    private var isAwayEnabled = false
 
     var body: some View {
         Color.clear
@@ -41,6 +45,12 @@ private struct StatsDataObserver: View {
                 refreshData()
             }
             .onChange(of: isPlacesEnabled) { _, _ in
+                refreshData()
+            }
+            .onChange(of: isNotesEnabled) { _, _ in
+                refreshData()
+            }
+            .onChange(of: isAwayEnabled) { _, _ in
                 refreshData()
             }
     }
@@ -69,11 +79,11 @@ private struct StatsDataObserver: View {
                     sprintFocusSessions: sprintFocusSessions,
                     boardSprints: boardSprints,
                     sleepSessions: sleepSessions,
-                    awaySessions: awaySessions,
+                    awaySessions: isAwayEnabled ? awaySessions : [],
                     emotionLogs: emotionLogs,
-                    notes: notes,
+                    notes: isNotesEnabled ? notes : [],
                     events: events,
-                    noteAttachmentNoteIDs: Set(noteAttachments.map(\.noteID)),
+                    noteAttachmentNoteIDs: isNotesEnabled ? Set(noteAttachments.map(\.noteID)) : [],
                     goals: goals,
                     places: isPlacesEnabled ? places : [],
                     placeCheckInSessions: isPlacesEnabled ? placeCheckInSessions : []
@@ -114,6 +124,10 @@ struct StatsView: View {
     private var areMacEventEmotionActionsEnabled = false
     @AppStorage(UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue, store: SharedDefaults.app)
     private var isPlacesEnabled = false
+    @AppStorage(UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue, store: SharedDefaults.app)
+    private var isNotesEnabled = false
+    @AppStorage(UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue, store: SharedDefaults.app)
+    private var isAwayEnabled = false
 
     private typealias Metrics = StatsFeature.Metrics
 
@@ -236,7 +250,9 @@ struct StatsView: View {
 
     private var availableDashboardItems: [StatsMacDashboardItem] {
         StatsMacDashboardItem.allCases.filter { item in
-            item.isAvailable(
+            (item != .notes || isNotesEnabled)
+                && (item != .awayTime || isAwayEnabled)
+                && item.isAvailable(
                 selectedRange: selectedRange,
                 isGitFeaturesEnabled: store.isGitFeaturesEnabled,
                 isGoalsTabEnabled: isGoalsTabEnabled,

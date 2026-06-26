@@ -29,6 +29,10 @@ struct AppView: View {
     private var isGoalsTabEnabled = false
     @AppStorage(UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue, store: SharedDefaults.app)
     private var isPlacesEnabled = false
+    @AppStorage(UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue, store: SharedDefaults.app)
+    private var isNotesEnabled = false
+    @AppStorage(UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue, store: SharedDefaults.app)
+    private var isAwayEnabled = false
 
     var body: some View {
 let tabView = TabView(
@@ -193,8 +197,10 @@ Group {
     }
 
     private var availableNewTabActions: [NewTabAction] {
-        NewTabAction.creationActions + NewTabAction.sessionActions.filter { action in
+        (NewTabAction.creationActions + NewTabAction.sessionActions).filter { action in
+            guard action != .note || isNotesEnabled else { return false }
             guard action != .checkIn || isPlacesEnabled else { return false }
+            guard action != .away || isAwayEnabled else { return false }
             return action != .sleep || isNewSheetSleepActionEnabled
         }
     }
@@ -237,6 +243,7 @@ Group {
         case .emotion:
             presentedNewActionSheet = .emotion
         case .note:
+            guard isNotesEnabled else { return }
             presentedNewActionSheet = .note
         case .goal:
             openNewGoal()
@@ -246,6 +253,7 @@ Group {
             guard isPlacesEnabled else { return }
             presentedNewActionSheet = .checkIn
         case .away:
+            guard isAwayEnabled else { return }
             presentedNewActionSheet = .away
         case .sleep:
             requestSleepFromNewSheet()
@@ -278,13 +286,17 @@ Group {
         case .emotion:
             EmotionLogEditorView()
         case .note:
-            RoutineNoteEditorView()
+            if isNotesEnabled {
+                RoutineNoteEditorView()
+            }
         case .checkIn:
             if isPlacesEnabled {
                 PlaceCheckInMapSheet()
             }
         case .away:
-            AwaySessionStartSheet()
+            if isAwayEnabled {
+                AwaySessionStartSheet()
+            }
         }
     }
 

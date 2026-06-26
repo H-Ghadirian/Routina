@@ -9,6 +9,10 @@ struct RoutineEventEditorView: View {
     @Query private var goals: [RoutineGoal]
     @Query(sort: \RoutineNote.createdAt, order: .reverse) private var notes: [RoutineNote]
     @Query(sort: \RoutineEvent.startedAt, order: .reverse) private var events: [RoutineEvent]
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isNotesEnabled = false
 
     let event: RoutineEvent?
     let onCancel: (() -> Void)?
@@ -120,9 +124,11 @@ struct RoutineEventEditorView: View {
 
             notificationSection
 
-            Section("Notes") {
-                TextField("Context", text: $notesText, axis: .vertical)
-                    .lineLimit(4...8)
+            if isNotesEnabled {
+                Section("Notes") {
+                    TextField("Context", text: $notesText, axis: .vertical)
+                        .lineLimit(4...8)
+                }
             }
 
             Section("Tags") {
@@ -146,7 +152,7 @@ struct RoutineEventEditorView: View {
     private var currentDraftSnapshot: RoutineEventDraftSnapshot {
         RoutineEventDraftSnapshot(
             title: title,
-            notesText: notesText,
+            notesText: isNotesEnabled ? notesText : "",
             emoji: emoji,
             isAllDay: isAllDay,
             startDate: startDate,
@@ -315,7 +321,10 @@ struct RoutineEventEditorView: View {
 
     private var availableTags: [String] {
         RoutineTag.allTags(
-            from: tasks.map(\.tags) + goals.map(\.tags) + notes.map(\.tags) + events.map(\.tags)
+            from: tasks.map(\.tags)
+                + goals.map(\.tags)
+                + (isNotesEnabled ? notes.map(\.tags) : [])
+                + events.map(\.tags)
         )
     }
 
@@ -341,7 +350,9 @@ struct RoutineEventEditorView: View {
                     HStack(alignment: .top, spacing: 18) {
                         VStack(alignment: .leading, spacing: 18) {
                             macEventCard
-                            macNotesCard
+                            if isNotesEnabled {
+                                macNotesCard
+                            }
                         }
                         .frame(minWidth: 520, maxWidth: .infinity, alignment: .topLeading)
 
@@ -357,7 +368,9 @@ struct RoutineEventEditorView: View {
                         macEventCard
                         macScheduleCard
                         macNotificationCard
-                        macNotesCard
+                        if isNotesEnabled {
+                            macNotesCard
+                        }
                         macTagsCard
                     }
                 }
@@ -801,7 +814,7 @@ struct RoutineEventEditorView: View {
         let now = Date()
         let target = event ?? RoutineEvent(createdAt: now, updatedAt: now)
         target.title = RoutineEvent.cleanedText(title)
-        target.notes = RoutineEvent.cleanedText(notesText)
+        target.notes = isNotesEnabled ? RoutineEvent.cleanedText(notesText) : event?.notes
         target.emoji = RoutineEvent.cleanedText(emoji)
         target.tags = tags
         target.isAllDay = isAllDay
@@ -897,6 +910,10 @@ struct RoutineEventDetailView: View {
     let event: RoutineEvent
     @Environment(\.calendar) private var calendar
     @State private var isEditing = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isNotesEnabled = false
 
     var body: some View {
         ScrollView {
@@ -936,7 +953,7 @@ struct RoutineEventDetailView: View {
                     }
                 }
 
-                if let notes = RoutineEvent.cleanedText(event.notes) {
+                if isNotesEnabled, let notes = RoutineEvent.cleanedText(event.notes) {
                     RoutineEventDetailCard(title: "Notes", systemImage: "text.alignleft") {
                         Text(notes)
                             .frame(maxWidth: .infinity, alignment: .leading)

@@ -213,8 +213,10 @@ enum RoutinaQuickAddService {
         guard try SleepSessionSupport.activeSession(in: context) == nil else {
             throw RoutinaQuickAddError.activeSleepSession
         }
-        guard try AwaySessionSupport.activeSession(in: context) == nil else {
-            throw RoutinaQuickAddError.activeAwaySession
+        if SharedDefaults.app[.appSettingAwayEnabled] {
+            guard try AwaySessionSupport.activeSession(in: context) == nil else {
+                throw RoutinaQuickAddError.activeAwaySession
+            }
         }
 
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
@@ -348,7 +350,9 @@ enum RoutinaQuickAddService {
 
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
-        let notes = try context.fetch(FetchDescriptor<RoutineNote>())
+        let notes = SharedDefaults.app[.appSettingNotesEnabled]
+            ? try context.fetch(FetchDescriptor<RoutineNote>())
+            : []
         let availableTags = RoutineTag.allTags(
             from: tasks.map(\.tags) + goals.map(\.tags) + notes.map(\.tags)
         )

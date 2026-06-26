@@ -561,6 +561,42 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func notesToggled_persistsSelection() async {
+        let persistedValue = LockIsolated<Bool?>(nil)
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setNotesEnabled = { persistedValue.setValue($0) }
+        }
+
+        await store.send(.notesToggled(true)) {
+            $0.appearance.isNotesEnabled = true
+        }
+
+        #expect(persistedValue.value == true)
+    }
+
+    @Test
+    func awayToggled_persistsSelection() async {
+        let persistedValue = LockIsolated<Bool?>(nil)
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setAwayEnabled = { persistedValue.setValue($0) }
+        }
+
+        await store.send(.awayToggled(true)) {
+            $0.appearance.isAwayEnabled = true
+        }
+
+        #expect(persistedValue.value == true)
+    }
+
+    @Test
     func defaultSettingsKeepTaskSharingOff() {
         #expect(AppSettingsDefaults.boolValues[.appSettingTaskSharingEnabled] == .some(false))
         #expect(!SettingsFeature.State().appearance.isTaskSharingEnabled)
@@ -579,6 +615,16 @@ struct SettingsFeatureTests {
         #expect(AppSettingsDefaults.boolValues[.appSettingPlacesEnabled] == .some(false))
         #expect(!SettingsFeature.State().appearance.isPlacesEnabled)
         #expect(!RoutinaUserPreferences().placesEnabled)
+    }
+
+    @Test
+    func defaultSettingsKeepNotesAndAwayOff() {
+        #expect(AppSettingsDefaults.boolValues[.appSettingNotesEnabled] == .some(false))
+        #expect(AppSettingsDefaults.boolValues[.appSettingAwayEnabled] == .some(false))
+        #expect(!SettingsFeature.State().appearance.isNotesEnabled)
+        #expect(!SettingsFeature.State().appearance.isAwayEnabled)
+        #expect(!RoutinaUserPreferences().notesEnabled)
+        #expect(!RoutinaUserPreferences().awayEnabled)
     }
 
     @Test
@@ -1339,6 +1385,16 @@ struct SettingsFeatureTests {
     @Test
     func saveTagRenameTapped_updatesAllMatchingRoutines() async throws {
         let context = makeInMemoryContext()
+        let notesKey = UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue
+        let previousNotesValue = SharedDefaults.app.object(forKey: notesKey)
+        defer {
+            if let previousNotesValue {
+                SharedDefaults.app.set(previousNotesValue, forKey: notesKey)
+            } else {
+                SharedDefaults.app.removeObject(forKey: notesKey)
+            }
+        }
+        SharedDefaults.app[.appSettingNotesEnabled] = true
         let fitness = makeTask(in: context, name: "Workout", interval: 1, lastDone: nil, emoji: "💪", tags: ["Fitness", "Morning"])
         let stretch = makeTask(in: context, name: "Stretch", interval: 2, lastDone: nil, emoji: "🧘", tags: ["fitness"])
         _ = makeTask(in: context, name: "Read", interval: 3, lastDone: nil, emoji: "📚", tags: ["Morning"])
@@ -1446,6 +1502,16 @@ struct SettingsFeatureTests {
     @Test
     func deleteTagConfirmed_removesTagFromAllMatchingRoutines() async throws {
         let context = makeInMemoryContext()
+        let notesKey = UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue
+        let previousNotesValue = SharedDefaults.app.object(forKey: notesKey)
+        defer {
+            if let previousNotesValue {
+                SharedDefaults.app.set(previousNotesValue, forKey: notesKey)
+            } else {
+                SharedDefaults.app.removeObject(forKey: notesKey)
+            }
+        }
+        SharedDefaults.app[.appSettingNotesEnabled] = true
         _ = makeTask(in: context, name: "Workout", interval: 1, lastDone: nil, emoji: "💪", tags: ["Health", "Morning"])
         let read = makeTask(in: context, name: "Read", interval: 3, lastDone: nil, emoji: "📚", tags: ["Morning"])
         let plan = makeTask(in: context, name: "Plan", interval: 4, lastDone: nil, emoji: "📝", tags: ["Evening", "Morning"])
@@ -1796,7 +1862,7 @@ struct SettingsFeatureTests {
             $0.cloud.cloudUsageEstimate = cloudEstimate
         }
 
-        let successMessage = "Loaded 1 routines, 0 goals, 0 places, 0 logs, 0 sleep sessions, 0 away sessions, 0 place check-ins, 0 emotions, 0 notes, 0 events, and 0 attachments."
+        let successMessage = "Loaded 1 routines, 0 goals, 0 places, 0 logs, 0 sleep sessions, 0 place check-ins, 0 emotions, 0 events, and 0 attachments."
         await store.receive(.routineDataTransferFinished(success: true, message: successMessage)) {
             $0.dataTransfer.isDataTransferInProgress = false
             $0.dataTransfer.activeOperation = nil

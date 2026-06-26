@@ -25,6 +25,10 @@ struct GoalsEditorToolbarContent: ToolbarContent {
 
 struct GoalsEditorForm: View {
     let store: StoreOf<GoalsFeature>
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isNotesEnabled = false
 
     var body: some View {
         Form {
@@ -33,8 +37,10 @@ struct GoalsEditorForm: View {
 
                 TextField("Emoji", text: emojiBinding)
 
-                TextField("Notes", text: notesBinding, axis: .vertical)
-                    .lineLimit(3...6)
+                if isNotesEnabled {
+                    TextField("Notes", text: notesBinding, axis: .vertical)
+                        .lineLimit(3...6)
+                }
             }
 
             Section {

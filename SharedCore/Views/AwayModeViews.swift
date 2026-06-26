@@ -13,10 +13,14 @@ extension View {
 
 private struct AwaySessionEditorSheetModifier: ViewModifier {
     @Binding var editingSession: AwaySession?
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isAwayEnabled = false
 
     func body(content: Content) -> some View {
         content.sheet(isPresented: isPresented) {
-            if let editingSession {
+            if isAwayEnabled, let editingSession {
                 AwaySessionEditSheet(session: editingSession)
                     .id(editingSession.id)
             }
@@ -25,7 +29,7 @@ private struct AwaySessionEditorSheetModifier: ViewModifier {
 
     private var isPresented: Binding<Bool> {
         Binding(
-            get: { editingSession != nil },
+            get: { isAwayEnabled && editingSession != nil },
             set: { isPresented in
                 if !isPresented {
                     editingSession = nil
@@ -37,6 +41,10 @@ private struct AwaySessionEditorSheetModifier: ViewModifier {
 
 private struct AwayModeRootModifier: ViewModifier {
     @Query private var activeAwaySessions: [AwaySession]
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isAwayEnabled = false
 
     init() {
         _activeAwaySessions = Query(
@@ -51,18 +59,23 @@ private struct AwayModeRootModifier: ViewModifier {
     func body(content: Content) -> some View {
         ZStack {
             content
-                .disabled(activeAwaySession != nil)
+                .disabled(visibleActiveAwaySession != nil)
 
-            if let activeAwaySession {
+            if let activeAwaySession = visibleActiveAwaySession {
                 AwayModeFullScreenView(session: activeAwaySession)
                     .transition(.opacity.combined(with: .scale(scale: 0.98)))
                     .zIndex(1)
             }
         }
-        .animation(.easeInOut(duration: 0.22), value: activeAwaySession?.id)
+        .animation(.easeInOut(duration: 0.22), value: visibleActiveAwaySession?.id)
         #if os(macOS)
-        .toolbarVisibility(activeAwaySession == nil ? .automatic : .hidden, for: .windowToolbar)
+        .toolbarVisibility(visibleActiveAwaySession == nil ? .automatic : .hidden, for: .windowToolbar)
         #endif
+    }
+
+    private var visibleActiveAwaySession: AwaySession? {
+        guard isAwayEnabled else { return nil }
+        return activeAwaySession
     }
 
     private var activeAwaySession: AwaySession? {

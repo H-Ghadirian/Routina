@@ -62,45 +62,61 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
 
     static func visibleCases(
         includingEventEmotion includeEventEmotion: Bool,
-        includingPlaces includePlaces: Bool = true
+        includingPlaces includePlaces: Bool = true,
+        includingNotes includeNotes: Bool = true,
+        includingAway includeAway: Bool = true
     ) -> [TimelineFilterType] {
         visibleCases(
             from: allCases,
             includingEventEmotion: includeEventEmotion,
-            includingPlaces: includePlaces
+            includingPlaces: includePlaces,
+            includingNotes: includeNotes,
+            includingAway: includeAway
         )
     }
 
     static func visibleContentTypeCases(
         includingEventEmotion includeEventEmotion: Bool,
-        includingPlaces includePlaces: Bool = true
+        includingPlaces includePlaces: Bool = true,
+        includingNotes includeNotes: Bool = true,
+        includingAway includeAway: Bool = true
     ) -> [TimelineFilterType] {
         visibleCases(
             from: contentTypeCases,
             includingEventEmotion: includeEventEmotion,
-            includingPlaces: includePlaces
+            includingPlaces: includePlaces,
+            includingNotes: includeNotes,
+            includingAway: includeAway
         )
     }
 
     static func visibleTimelinePigmentCases(
         includingEventEmotion includeEventEmotion: Bool,
-        includingPlaces includePlaces: Bool = true
+        includingPlaces includePlaces: Bool = true,
+        includingNotes includeNotes: Bool = true,
+        includingAway includeAway: Bool = true
     ) -> [TimelineFilterType] {
         visibleCases(
             from: timelinePigmentCases,
             includingEventEmotion: includeEventEmotion,
-            includingPlaces: includePlaces
+            includingPlaces: includePlaces,
+            includingNotes: includeNotes,
+            includingAway: includeAway
         )
     }
 
     static func visibleCases(
         from cases: [TimelineFilterType],
         includingEventEmotion includeEventEmotion: Bool,
-        includingPlaces includePlaces: Bool = true
+        includingPlaces includePlaces: Bool = true,
+        includingNotes includeNotes: Bool = true,
+        includingAway includeAway: Bool = true
     ) -> [TimelineFilterType] {
         cases.filter { type in
             (includeEventEmotion || !type.isEventOrEmotion)
                 && (includePlaces || type != .places)
+                && (includeNotes || type != .notes)
+                && (includeAway || type != .away)
         }
     }
 
@@ -114,10 +130,14 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
 
     func normalized(
         includingEventEmotion includeEventEmotion: Bool,
-        includingPlaces includePlaces: Bool = true
+        includingPlaces includePlaces: Bool = true,
+        includingNotes includeNotes: Bool = true,
+        includingAway includeAway: Bool = true
     ) -> TimelineFilterType {
         guard includeEventEmotion || !isEventOrEmotion else { return .all }
         guard includePlaces || self != .places else { return .all }
+        guard includeNotes || self != .notes else { return .all }
+        guard includeAway || self != .away else { return .all }
         return self
     }
 }

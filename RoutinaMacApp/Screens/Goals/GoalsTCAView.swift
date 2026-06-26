@@ -232,6 +232,10 @@ private struct GoalListRow: View {
 private struct GoalDetailPane: View {
     let store: StoreOf<GoalsFeature>
     var goal: GoalsFeature.GoalDisplay
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isNotesEnabled = false
 
     var body: some View {
         ScrollView {
@@ -242,7 +246,7 @@ private struct GoalDetailPane: View {
 
                 metrics
 
-                if let notes = goal.notes {
+                if isNotesEnabled, let notes = goal.notes {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Notes")
                             .font(.headline)

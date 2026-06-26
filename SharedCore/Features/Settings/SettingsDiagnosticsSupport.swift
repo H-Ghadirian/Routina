@@ -28,6 +28,8 @@ enum SettingsDiagnosticsLoader {
             taskSharingEnabled: appSettingsClient.taskSharingEnabled(),
             taskRelationshipVisualizerEnabled: appSettingsClient.taskRelationshipVisualizerEnabled(),
             placesEnabled: appSettingsClient.placesEnabled(),
+            notesEnabled: appSettingsClient.notesEnabled(),
+            awayEnabled: appSettingsClient.awayEnabled(),
             showPersianDates: appSettingsClient.showPersianDates(),
             automaticPlaceCheckInEnabled: appSettingsClient.automaticPlaceCheckInEnabled(),
             showTimelineTasksInDayPlanner: appSettingsClient.showTimelineTasksInDayPlanner(),

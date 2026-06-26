@@ -221,7 +221,7 @@ extension HomeTCAView {
                     onCancel: closeAddEvent,
                     onSaved: openSavedEvent
                 )
-            } else if isNoteEditorPresented {
+            } else if isNotesEnabled && isNoteEditorPresented {
                 if editingNoteID != nil {
                     if let editingNote {
                         RoutineNoteEditorView(
@@ -243,7 +243,7 @@ extension HomeTCAView {
                         onSaved: openSavedNote
                     )
                 }
-            } else if isAwayStartPresented {
+            } else if isAwayEnabled && isAwayStartPresented {
                 AwaySessionStartSheet(
                     presentation: .inline,
                     onCancel: closeAwayStart,
@@ -282,10 +282,10 @@ extension HomeTCAView {
                     selectedTimelineEntry: timelineSelection.entry,
                     selectedTimelineEmotion: timelineSelection.emotion,
                     selectedTimelineEvent: timelineSelection.event,
-                    selectedTimelineNote: timelineSelection.note,
-                    selectedTimelineNoteAttachments: timelineSelection.noteAttachments,
+                    selectedTimelineNote: isNotesEnabled ? timelineSelection.note : nil,
+                    selectedTimelineNoteAttachments: isNotesEnabled ? timelineSelection.noteAttachments : [],
                     selectedTimelinePlaceCheckInSession: isPlacesEnabled ? timelineSelection.placeCheckInSession : nil,
-                    selectedTimelineAwaySession: timelineSelection.awaySession,
+                    selectedTimelineAwaySession: isAwayEnabled ? timelineSelection.awaySession : nil,
                     onSelectDayPlanUnplannedCompletedDate: { date in
                         focusMacSidebarOnDayPlanUnplannedCompletedTasks(on: date)
                     },
@@ -655,20 +655,26 @@ extension HomeTCAView {
                     get: {
                         store.selectedTimelineFilterType.normalized(
                             includingEventEmotion: areMacEventEmotionActionsEnabled,
-                            includingPlaces: isPlacesEnabled
+                            includingPlaces: isPlacesEnabled,
+                            includingNotes: isNotesEnabled,
+                            includingAway: isAwayEnabled
                         )
                     },
                     set: {
                         store.send(.selectedTimelineFilterTypeChanged(
                             $0.normalized(
                                 includingEventEmotion: areMacEventEmotionActionsEnabled,
-                                includingPlaces: isPlacesEnabled
+                                includingPlaces: isPlacesEnabled,
+                                includingNotes: isNotesEnabled,
+                                includingAway: isAwayEnabled
                             )
                         ))
                     }
                 ),
                 includesEventEmotion: areMacEventEmotionActionsEnabled,
-                includesPlaces: isPlacesEnabled
+                includesPlaces: isPlacesEnabled,
+                includesNotes: isNotesEnabled,
+                includesAway: isAwayEnabled
             )
         }
     }

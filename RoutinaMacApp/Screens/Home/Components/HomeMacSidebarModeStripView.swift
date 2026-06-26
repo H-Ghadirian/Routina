@@ -22,6 +22,14 @@ struct HomeMacSidebarModeStripView: View {
         store: SharedDefaults.app
     ) private var isPlacesEnabled = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isNotesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isAwayEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
         store: SharedDefaults.app
     ) private var areMacEventEmotionActionsEnabled = false
@@ -97,15 +105,17 @@ struct HomeMacSidebarModeStripView: View {
                 )
             }
 
-            Button {
-                onAddNote()
-            } label: {
-                addMenuLabel(for: .note)
+            if isNotesEnabled {
+                Button {
+                    onAddNote()
+                } label: {
+                    addMenuLabel(for: .note)
+                }
+                .keyboardShortcut(
+                    MacAddMenuShortcut.note.keyEquivalent,
+                    modifiers: MacAddMenuShortcut.note.modifiers
+                )
             }
-            .keyboardShortcut(
-                MacAddMenuShortcut.note.keyEquivalent,
-                modifiers: MacAddMenuShortcut.note.modifiers
-            )
 
             if isGoalsTabEnabled {
                 Button {
@@ -142,15 +152,17 @@ struct HomeMacSidebarModeStripView: View {
                 )
             }
 
-            Button {
-                onStartAway()
-            } label: {
-                addMenuLabel(for: .away)
+            if isAwayEnabled {
+                Button {
+                    onStartAway()
+                } label: {
+                    addMenuLabel(for: .away)
+                }
+                .keyboardShortcut(
+                    MacAddMenuShortcut.away.keyEquivalent,
+                    modifiers: MacAddMenuShortcut.away.modifiers
+                )
             }
-            .keyboardShortcut(
-                MacAddMenuShortcut.away.keyEquivalent,
-                modifiers: MacAddMenuShortcut.away.modifiers
-            )
         } label: {
             sidebarModeLabel(for: .addTask)
         }
@@ -168,12 +180,18 @@ struct HomeMacSidebarModeStripView: View {
     }
 
     private var helpLabelForAddMenu: String {
-        let personalActions = areMacEventEmotionActionsEnabled ? "event, emotion, note" : "note"
+        let personalActions: [String] = [
+            areMacEventEmotionActionsEnabled ? "event" : nil,
+            areMacEventEmotionActionsEnabled ? "emotion" : nil,
+            isNotesEnabled ? "note" : nil
+        ].compactMap { $0 }
         let placeAction = isPlacesEnabled ? ", check in" : ""
+        let awayAction = isAwayEnabled ? ", or away" : ""
+        let personalPrefix = personalActions.isEmpty ? "" : "\(personalActions.joined(separator: ", ")), "
         if isGoalsTabEnabled {
-            return "Add \(personalActions), goal, task\(placeAction), or away"
+            return "Add \(personalPrefix)goal, task\(placeAction)\(awayAction)"
         }
-        return "Add \(personalActions), task\(placeAction), or away"
+        return "Add \(personalPrefix)task\(placeAction)\(awayAction)"
     }
 
     private func sidebarModeLabel(for mode: HomeFeature.MacSidebarMode) -> some View {

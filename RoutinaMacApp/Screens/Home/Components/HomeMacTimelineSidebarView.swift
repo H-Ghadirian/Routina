@@ -7,6 +7,8 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
     let isActive: Bool
     let allowsFallbackSelection: Bool
     let showsPlaces: Bool
+    let showsNotes: Bool
+    let showsAway: Bool
     @Binding var positionedPresentationID: UUID?
     @Binding var selection: HomeFeature.MacSidebarSelection?
     @Binding var scrollRequest: MacTimelineSidebarScrollRequest?
@@ -109,10 +111,32 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
     }
 
     private var emptyTimelineDescription: String {
-        if showsPlaces {
-            return "Completed items, notes, place check-ins, emotions, and sleep records will appear here in chronological order."
+        var items = ["completed items"]
+        if showsNotes {
+            items.append("notes")
         }
-        return "Completed items, notes, emotions, and sleep records will appear here in chronological order."
+        if showsPlaces {
+            items.append("place check-ins")
+        }
+        items.append("emotions")
+        items.append("sleep records")
+        if showsAway {
+            items.append("away sessions")
+        }
+        return "\(Self.listText(items).capitalized) will appear here in chronological order."
+    }
+
+    private static func listText(_ items: [String]) -> String {
+        switch items.count {
+        case 0:
+            return ""
+        case 1:
+            return items[0]
+        case 2:
+            return "\(items[0]) and \(items[1])"
+        default:
+            return items.dropLast().joined(separator: ", ") + ", and \(items.last ?? "")"
+        }
     }
 
     private var selectedEntryID: UUID? {

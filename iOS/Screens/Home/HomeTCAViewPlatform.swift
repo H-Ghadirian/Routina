@@ -203,15 +203,22 @@ detailContent
             get: {
                 store.selectedTimelineFilterType.normalized(
                     includingEventEmotion: true,
-                    includingPlaces: isPlacesEnabled
+                    includingPlaces: isPlacesEnabled,
+                    includingNotes: isNotesEnabled,
+                    includingAway: isAwayEnabled
                 )
             },
             set: {
                 store.send(.selectedTimelineFilterTypeChanged(
-                    $0.normalized(includingEventEmotion: true, includingPlaces: isPlacesEnabled)
+                    $0.normalized(
+                        includingEventEmotion: true,
+                        includingPlaces: isPlacesEnabled,
+                        includingNotes: isNotesEnabled,
+                        includingAway: isAwayEnabled
+                    )
                 ))
             }
-        ), includesPlaces: isPlacesEnabled)
+        ), includesPlaces: isPlacesEnabled, includesNotes: isNotesEnabled, includesAway: isAwayEnabled)
     }
 
     @ViewBuilder

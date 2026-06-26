@@ -51,15 +51,15 @@ extension HomeTCAView {
             tasks: store.routineTasks,
             events: events,
             emotionLogs: emotionLogs,
-            notes: notes,
+            notes: isNotesEnabled ? notes : [],
             focusSessions: focusSessions,
             sprintFocusSessions: sprintFocusSessions,
             boardSprints: boardSprints,
             sleepSessions: sleepSessions,
             placeCheckInSessions: isPlacesEnabled ? placeCheckInSessions : [],
-            awaySessions: awaySessions,
+            awaySessions: isAwayEnabled ? awaySessions : [],
             fileAttachmentTaskIDs: store.fileAttachmentTaskIDs,
-            noteAttachmentNoteIDs: noteAttachmentNoteIDs,
+            noteAttachmentNoteIDs: isNotesEnabled ? noteAttachmentNoteIDs : [],
             range: store.selectedTimelineRange,
             filterType: effectiveMacTimelineFilterType,
             mediaFilter: store.selectedTimelineMediaFilter,
@@ -71,7 +71,9 @@ extension HomeTCAView {
     private var effectiveMacTimelineFilterType: TimelineFilterType {
         store.selectedTimelineFilterType.normalized(
             includingEventEmotion: areMacEventEmotionActionsEnabled,
-            includingPlaces: isPlacesEnabled
+            includingPlaces: isPlacesEnabled,
+            includingNotes: isNotesEnabled,
+            includingAway: isAwayEnabled
         )
     }
 
@@ -413,7 +415,9 @@ extension HomeTCAView {
                         store.send(.selectedTimelineFilterTypeChanged(
                             $0.normalized(
                                 includingEventEmotion: areMacEventEmotionActionsEnabled,
-                                includingPlaces: isPlacesEnabled
+                                includingPlaces: isPlacesEnabled,
+                                includingNotes: isNotesEnabled,
+                                includingAway: isAwayEnabled
                             )
                         ))
                     }
@@ -474,7 +478,9 @@ extension HomeTCAView {
                     settingsStore.send(.timelineRowFieldVisibilityChanged(field, isVisible))
                 },
                 includesEventEmotionFilters: areMacEventEmotionActionsEnabled,
-                includesPlaceFilters: isPlacesEnabled
+                includesPlaceFilters: isPlacesEnabled,
+                includesNoteFilters: isNotesEnabled,
+                includesAwayFilters: isAwayEnabled
             )
         }
     }
@@ -482,11 +488,11 @@ extension HomeTCAView {
     private var showsMacTimelineTypeFilterSection: Bool {
         store.routineTasks.contains(where: \.isOneOffTask)
             || (areMacEventEmotionActionsEnabled && (!events.isEmpty || !emotionLogs.isEmpty))
-            || !notes.isEmpty
+            || (isNotesEnabled && !notes.isEmpty)
             || !focusSessions.isEmpty
             || !sprintFocusSessions.isEmpty
             || !sleepSessions.isEmpty
-            || !awaySessions.isEmpty
+            || (isAwayEnabled && !awaySessions.isEmpty)
             || (isPlacesEnabled && !placeCheckInSessions.isEmpty)
     }
 
@@ -500,25 +506,31 @@ extension HomeTCAView {
                             store.send(.selectedTimelineFilterTypeChanged(
                                 $0.normalized(
                                     includingEventEmotion: areMacEventEmotionActionsEnabled,
-                                    includingPlaces: isPlacesEnabled
+                                    includingPlaces: isPlacesEnabled,
+                                    includingNotes: isNotesEnabled,
+                                    includingAway: isAwayEnabled
                                 )
                             ))
                         }
                     ),
                     includesEventEmotion: areMacEventEmotionActionsEnabled,
-                    includesPlaces: isPlacesEnabled
+                    includesPlaces: isPlacesEnabled,
+                    includesNotes: isNotesEnabled,
+                    includesAway: isAwayEnabled
                 )
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
             }
 
             HomeMacTimelineSidebarView(
-                timelineEntryCount: store.timelineLogs.count + events.count + emotionLogs.count + notes.count + focusSessions.count + sprintFocusSessions.count + sleepSessions.count + awaySessions.count + (isPlacesEnabled ? placeCheckInSessions.count : 0),
+                timelineEntryCount: store.timelineLogs.count + events.count + emotionLogs.count + (isNotesEnabled ? notes.count : 0) + focusSessions.count + sprintFocusSessions.count + sleepSessions.count + (isAwayEnabled ? awaySessions.count : 0) + (isPlacesEnabled ? placeCheckInSessions.count : 0),
                 groupedEntries: groupedTimelineEntries,
                 presentationID: macTimelineSidebarPresentationID,
                 isActive: isMacTimelineMode && !store.isMacFilterDetailPresented,
                 allowsFallbackSelection: !store.isMacFilterDetailPresented,
                 showsPlaces: isPlacesEnabled,
+                showsNotes: isNotesEnabled,
+                showsAway: isAwayEnabled,
                 positionedPresentationID: $macTimelineSidebarPositionedPresentationID,
                 selection: macSidebarSelectionBinding,
                 scrollRequest: $macTimelineSidebarScrollRequest,

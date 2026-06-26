@@ -32,7 +32,9 @@ enum SettingsDataQueries {
     static func fetchTagSummaries(in context: ModelContext) throws -> [RoutineTagSummary] {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
-        let notes = try context.fetch(FetchDescriptor<RoutineNote>())
+        let notes = SharedDefaults.app[.appSettingNotesEnabled]
+            ? try context.fetch(FetchDescriptor<RoutineNote>())
+            : []
         let events = try context.fetch(FetchDescriptor<RoutineEvent>())
         return RoutineTag.summaries(from: tasks, goals: goals, notes: notes, events: events)
     }
@@ -41,7 +43,9 @@ enum SettingsDataQueries {
     static func fetchTaskTagCollections(in context: ModelContext) throws -> [[String]] {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
-        let notes = try context.fetch(FetchDescriptor<RoutineNote>())
+        let notes = SharedDefaults.app[.appSettingNotesEnabled]
+            ? try context.fetch(FetchDescriptor<RoutineNote>())
+            : []
         let events = try context.fetch(FetchDescriptor<RoutineEvent>())
         return tasks.map(\.tags) + goals.map(\.tags) + notes.map(\.tags) + events.map(\.tags)
     }

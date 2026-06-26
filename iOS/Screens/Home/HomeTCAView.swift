@@ -24,6 +24,14 @@ struct HomeTCAView: View {
         store: SharedDefaults.app
     ) var isPlacesEnabled = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) var isNotesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
+        store: SharedDefaults.app
+    ) var isAwayEnabled = false
+    @AppStorage(
         UserDefaultStringValueKey.appSettingHomeTaskRowHiddenFields.rawValue,
         store: SharedDefaults.app
     ) private var taskRowHiddenFieldsRawValue = ""

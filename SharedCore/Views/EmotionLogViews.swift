@@ -16,6 +16,10 @@ struct EmotionLogEditorView: View {
         UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isPlacesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isNotesEnabled = false
 
     private enum PleasantnessSegment: String, CaseIterable, Identifiable {
         case unpleasant
@@ -357,14 +361,16 @@ struct EmotionLogEditorView: View {
                 alignment: .leading,
                 spacing: 10
             ) {
-                contextLinkPicker(
-                    title: "Note",
-                    pluralTitle: "notes",
-                    systemImage: "note.text",
-                    selection: $linkedNoteID,
-                    items: notes,
-                    label: { $0.displayTitle }
-                )
+                if isNotesEnabled {
+                    contextLinkPicker(
+                        title: "Note",
+                        pluralTitle: "notes",
+                        systemImage: "note.text",
+                        selection: $linkedNoteID,
+                        items: notes,
+                        label: { $0.displayTitle }
+                    )
+                }
 
                 contextLinkPicker(
                     title: "Goal",
@@ -412,12 +418,12 @@ struct EmotionLogEditorView: View {
     }
 
     private var shouldShowContextCard: Bool {
-        !notes.isEmpty
+        (isNotesEnabled && !notes.isEmpty)
             || !goals.isEmpty
             || !tasks.isEmpty
             || (isPlacesEnabled && !places.isEmpty)
             || !sleepSessions.isEmpty
-            || linkedNoteID != nil
+            || (isNotesEnabled && linkedNoteID != nil)
             || linkedGoalID != nil
             || linkedTaskID != nil
             || (isPlacesEnabled && linkedPlaceID != nil)
@@ -465,7 +471,7 @@ struct EmotionLogEditorView: View {
             intensity: intensity,
             selectedBodyAreas: EmotionBodyArea.allCases.filter { selectedBodyAreas.contains($0) },
             reflection: reflection,
-            linkedNoteID: linkedNoteID,
+            linkedNoteID: isNotesEnabled ? linkedNoteID : nil,
             linkedGoalID: linkedGoalID,
             linkedTaskID: linkedTaskID,
             linkedPlaceID: linkedPlaceID,
@@ -635,6 +641,7 @@ struct EmotionLogEditorView: View {
 
     private func save() {
         let bodyAreas = EmotionBodyArea.allCases.filter { selectedBodyAreas.contains($0) }
+        let noteIDForSave = isNotesEnabled ? linkedNoteID : emotion?.linkedNoteID
         let savedID: UUID
         if let emotion {
             emotion.update(
@@ -645,7 +652,7 @@ struct EmotionLogEditorView: View {
                 intensity: Int(intensity.rounded()),
                 bodyAreas: bodyAreas,
                 reflection: reflection,
-                linkedNoteID: linkedNoteID,
+                linkedNoteID: noteIDForSave,
                 linkedGoalID: linkedGoalID,
                 linkedTaskID: linkedTaskID,
                 linkedPlaceID: linkedPlaceID,
@@ -661,7 +668,7 @@ struct EmotionLogEditorView: View {
                 intensity: Int(intensity.rounded()),
                 bodyAreas: bodyAreas,
                 reflection: reflection,
-                linkedNoteID: linkedNoteID,
+                linkedNoteID: noteIDForSave,
                 linkedGoalID: linkedGoalID,
                 linkedTaskID: linkedTaskID,
                 linkedPlaceID: linkedPlaceID,
@@ -699,6 +706,10 @@ struct EmotionLogDetailView: View {
         UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isPlacesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isNotesEnabled = false
 
     var body: some View {
         Group {
@@ -789,7 +800,7 @@ struct EmotionLogDetailView: View {
                     }
                 }
 
-                if emotion.hasContextLinks {
+                if hasVisibleContextLinks {
                     EmotionLogCard(title: "Links", systemImage: "link") {
                         VStack(alignment: .leading, spacing: 10) {
                             if let note = linkedNote {
@@ -842,7 +853,16 @@ struct EmotionLogDetailView: View {
     }
 
     private var linkedNote: RoutineNote? {
-        emotion.linkedNoteID.flatMap { id in notes.first { $0.id == id } }
+        guard isNotesEnabled else { return nil }
+        return emotion.linkedNoteID.flatMap { id in notes.first { $0.id == id } }
+    }
+
+    private var hasVisibleContextLinks: Bool {
+        linkedNote != nil
+            || linkedGoal != nil
+            || linkedTask != nil
+            || (isPlacesEnabled && linkedPlace != nil)
+            || linkedSleepSession != nil
     }
 
     private var linkedGoal: RoutineGoal? {

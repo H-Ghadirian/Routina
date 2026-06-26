@@ -59,6 +59,8 @@ enum SettingsAppearanceEditor {
         taskSharingEnabled: Bool,
         taskRelationshipVisualizerEnabled: Bool,
         placesEnabled: Bool,
+        notesEnabled: Bool,
+        awayEnabled: Bool,
         showPersianDates: Bool,
         showTimelineTasksInDayPlanner: Bool,
         separateDailyRoutinesInTaskList: Bool,
@@ -75,6 +77,8 @@ enum SettingsAppearanceEditor {
         state.isTaskSharingEnabled = taskSharingEnabled
         state.isTaskRelationshipVisualizerEnabled = taskRelationshipVisualizerEnabled
         state.isPlacesEnabled = placesEnabled
+        state.isNotesEnabled = notesEnabled
+        state.isAwayEnabled = awayEnabled
         state.showPersianDates = showPersianDates
         state.showsTimelineTasksInDayPlanner = showTimelineTasksInDayPlanner
         state.separatesDailyRoutinesInTaskList = separateDailyRoutinesInTaskList

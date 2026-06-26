@@ -346,6 +346,7 @@ extension HomeTCAView {
     }
 
     func openAddNote() {
+        guard isNotesEnabled else { return }
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isAwayStartPresented = false
@@ -359,6 +360,7 @@ extension HomeTCAView {
     }
 
     func openEditNote(_ noteID: UUID) {
+        guard isNotesEnabled else { return }
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isAwayStartPresented = false
@@ -632,7 +634,7 @@ extension HomeTCAView {
         .navigationTitle("Routina")
         .routinaHomeSidebarColumnWidth()
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if isMacStatusComposerEnabled {
+            if isMacStatusComposerEnabled && isNotesEnabled {
                 HomeMacStatusComposerView()
             }
         }
@@ -728,6 +730,9 @@ extension HomeTCAView {
     private func shouldDisplayFormSection(_ section: FormSection) -> Bool {
         if section == .places {
             return isPlacesEnabled
+        }
+        if section == .notes || section == .voiceNote {
+            return isNotesEnabled
         }
         return section != .goals || isGoalsTabEnabled
     }
@@ -852,6 +857,7 @@ extension HomeTCAView {
     }
 
     func openAwayFromAddMenu() {
+        guard isAwayEnabled else { return }
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false

@@ -209,6 +209,36 @@ enum SettingsRoutineDataTransferActionExecution {
     }
 
     private static func importSuccessMessage(for summary: SettingsRoutineDataPersistence.ImportSummary) -> String {
-        "Loaded \(summary.tasks) routines, \(summary.goals) goals, \(summary.places) places, \(summary.logs) logs, \(summary.sleepSessions) sleep sessions, \(summary.awaySessions) away sessions, \(summary.placeCheckInSessions) place check-ins, \(summary.emotionLogs) emotions, \(summary.notes) notes, \(summary.events) events, and \(summary.attachments) attachments."
+        var parts = [
+            "\(summary.tasks) routines",
+            "\(summary.goals) goals",
+            "\(summary.places) places",
+            "\(summary.logs) logs",
+            "\(summary.sleepSessions) sleep sessions"
+        ]
+        if SharedDefaults.app[.appSettingAwayEnabled] {
+            parts.append("\(summary.awaySessions) away sessions")
+        }
+        parts.append("\(summary.placeCheckInSessions) place check-ins")
+        parts.append("\(summary.emotionLogs) emotions")
+        if SharedDefaults.app[.appSettingNotesEnabled] {
+            parts.append("\(summary.notes) notes")
+        }
+        parts.append("\(summary.events) events")
+        parts.append("\(summary.attachments) attachments")
+        return "Loaded \(formattedList(parts))."
+    }
+
+    private static func formattedList(_ parts: [String]) -> String {
+        switch parts.count {
+        case 0:
+            return "nothing"
+        case 1:
+            return parts[0]
+        case 2:
+            return "\(parts[0]) and \(parts[1])"
+        default:
+            return parts.dropLast().joined(separator: ", ") + ", and \(parts.last ?? "")"
+        }
     }
 }

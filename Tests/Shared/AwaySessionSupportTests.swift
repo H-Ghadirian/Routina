@@ -264,6 +264,16 @@ struct AwaySessionSupportTests {
     @Test
     func startFocusSession_failsWhileAwayIsActive() throws {
         let context = makeInMemoryContext()
+        let awayKey = UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue
+        let previousAwayValue = SharedDefaults.app.object(forKey: awayKey)
+        defer {
+            if let previousAwayValue {
+                SharedDefaults.app.set(previousAwayValue, forKey: awayKey)
+            } else {
+                SharedDefaults.app.removeObject(forKey: awayKey)
+            }
+        }
+        SharedDefaults.app[.appSettingAwayEnabled] = true
         let task = makeTask(
             in: context,
             name: "Deep work",

@@ -94,15 +94,16 @@ enum FocusShieldSupport {
         return modes
     }
 
-    static func enabledBlockingModesSummaryText(_ modes: Set<ProtectionBlockingMode>) -> String {
-        if modes.isEmpty {
+    static func enabledBlockingModesSummaryText(
+        _ modes: Set<ProtectionBlockingMode>,
+        includingAway: Bool = true
+    ) -> String {
+        let visibleModes = ProtectionBlockingMode.visibleCases(includingAway: includingAway)
+            .filter { modes.contains($0) }
+        if visibleModes.isEmpty {
             return "No modes"
         }
-        if modes == ProtectionBlockingMode.defaultEnabledModes {
-            return "Focus, Away, Sleep"
-        }
-        return ProtectionBlockingMode.allCases
-            .filter { modes.contains($0) }
+        return visibleModes
             .map(\.title)
             .joined(separator: ", ")
     }
@@ -210,7 +211,7 @@ enum FocusShieldSupport {
         if hasActiveFocusSession(in: context) {
             return .focus
         }
-        if hasActiveAwaySession(in: context) {
+        if SharedDefaults.app[.appSettingAwayEnabled], hasActiveAwaySession(in: context) {
             return .away
         }
         if hasActiveSleepSession(in: context) {

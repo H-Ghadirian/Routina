@@ -189,6 +189,7 @@ struct TimelineFeature {
                 return .none
 
             case let .openNoteDeepLink(noteID):
+                guard appSettingsClient.notesEnabled() else { return .none }
                 state.selectedRange = .all
                 state.filterType = .notes
                 state.setSelectedTag(nil)

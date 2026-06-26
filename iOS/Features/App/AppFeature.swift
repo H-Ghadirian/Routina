@@ -228,6 +228,7 @@ struct AppFeature {
             persistTemporaryViewState(state)
             return .send(.goals(.openGoalDeepLink(goalID)))
         case let .note(noteID):
+            guard appSettingsClient.notesEnabled() else { return .none }
             state.selectedTab = .timeline
             state.pendingDeepLinkedTaskID = nil
             persistTemporaryViewState(state)

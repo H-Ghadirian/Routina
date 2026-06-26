@@ -18,7 +18,9 @@ enum SettingsTagPersistence {
     ) throws -> SettingsTagPersistenceResult {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
-        let notes = try context.fetch(FetchDescriptor<RoutineNote>())
+        let notes = SharedDefaults.app[.appSettingNotesEnabled]
+            ? try context.fetch(FetchDescriptor<RoutineNote>())
+            : []
         let events = try context.fetch(FetchDescriptor<RoutineEvent>())
         var updatedRoutineCount = 0
         var updatedGoalCount = 0
@@ -101,7 +103,9 @@ enum SettingsTagPersistence {
     ) throws -> SettingsTagPersistenceResult {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
-        let notes = try context.fetch(FetchDescriptor<RoutineNote>())
+        let notes = SharedDefaults.app[.appSettingNotesEnabled]
+            ? try context.fetch(FetchDescriptor<RoutineNote>())
+            : []
         let events = try context.fetch(FetchDescriptor<RoutineEvent>())
         var updatedRoutineCount = 0
         var updatedGoalCount = 0

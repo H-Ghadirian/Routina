@@ -361,6 +361,8 @@ extension SettingsRoutineDataPersistence {
             var taskSharingEnabled: Bool?
             var taskRelationshipVisualizerEnabled: Bool?
             var placesEnabled: Bool?
+            var notesEnabled: Bool?
+            var awayEnabled: Bool?
             var showPersianDates: Bool?
             var batteryRoutineMonitoringEnabled: Bool?
             var sleepHomeActionEnabled: Bool?

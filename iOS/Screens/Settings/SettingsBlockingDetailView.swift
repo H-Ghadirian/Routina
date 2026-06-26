@@ -12,6 +12,10 @@ struct SettingsBlockingDetailView: View {
     @State private var blockedWebsiteDomains = FocusShieldSupport.loadBlockedWebsiteDomains()
     @State private var websiteDraft = ""
     @State private var websiteStatusMessage: String?
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isAwayEnabled = false
 
     #if canImport(FamilyControls) && canImport(ManagedSettings)
     @AppStorage(
@@ -27,7 +31,7 @@ struct SettingsBlockingDetailView: View {
     var body: some View {
         List {
             Section("Applies During") {
-                ForEach(ProtectionBlockingMode.allCases) { mode in
+                ForEach(visibleBlockingModes) { mode in
                     Toggle(isOn: binding(for: mode)) {
                         SettingsBlockingModeLabel(mode: mode)
                     }
@@ -88,6 +92,7 @@ struct SettingsBlockingDetailView: View {
                     ForEach(blockedWebsiteDomains) { website in
                         SettingsBlockedWebsiteRow(
                             website: website,
+                            includesAway: isAwayEnabled,
                             onRemove: { removeWebsiteDomain(website) },
                             onModeChanged: { mode, isEnabled in
                                 setWebsiteMode(mode, isEnabled: isEnabled, for: website)
@@ -149,6 +154,10 @@ struct SettingsBlockingDetailView: View {
                 syncBlocking()
             }
         )
+    }
+
+    private var visibleBlockingModes: [ProtectionBlockingMode] {
+        ProtectionBlockingMode.visibleCases(includingAway: isAwayEnabled)
     }
 
     private func addWebsiteDomain() {
@@ -256,6 +265,7 @@ struct SettingsBlockingDetailView: View {
 
 private struct SettingsBlockedWebsiteRow: View {
     let website: BlockingWebsiteDomain
+    let includesAway: Bool
     let onRemove: () -> Void
     let onModeChanged: (ProtectionBlockingMode, Bool) -> Void
 
@@ -281,7 +291,7 @@ private struct SettingsBlockedWebsiteRow: View {
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                ForEach(ProtectionBlockingMode.allCases) { mode in
+                ForEach(ProtectionBlockingMode.visibleCases(includingAway: includesAway)) { mode in
                     Toggle(mode.title, isOn: modeBinding(mode))
                         .font(.footnote)
                 }

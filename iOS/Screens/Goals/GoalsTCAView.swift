@@ -200,6 +200,10 @@ private struct GoalListRow: View {
 private struct GoalDetailView: View {
     let store: StoreOf<GoalsFeature>
     var goalID: UUID
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isNotesEnabled = false
 
     var body: some View {
         if store.isEditorPresented && store.editorDraft.id == goalID {
@@ -231,7 +235,7 @@ private struct GoalDetailView: View {
                             }
                         }
 
-                        if let notes = goal.notes {
+                        if isNotesEnabled, let notes = goal.notes {
                             Text(notes)
                                 .foregroundStyle(.secondary)
                         }
