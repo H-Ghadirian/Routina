@@ -270,24 +270,9 @@ extension HomeTCAView {
         let isExpanded = taskListSectionIsExpanded(section)
 
         if section.kind.isCollapsible {
-            if taskListSectionUsesDetachedHeader(section) {
+            if taskListSectionUsesContinuousSurface(section) {
                 VStack(alignment: .leading, spacing: isExpanded ? 8 : 0) {
                     taskListCollapsibleSectionHeader(for: section, isExpanded: isExpanded)
-                        .routinaGlassCard(
-                            cornerRadius: 8,
-                            tint: taskListSectionHeaderTint(for: section),
-                            tintOpacity: taskListSectionHeaderTintOpacity(for: section, isExpanded: isExpanded),
-                            interactive: true
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .stroke(
-                                    taskListSectionHeaderTint(for: section).opacity(
-                                        taskListSectionHeaderStrokeOpacity(for: section, isExpanded: isExpanded)
-                                    ),
-                                    lineWidth: 0.75
-                                )
-                        )
 
                     if isExpanded {
                         taskListSectionTaskGroups(
@@ -297,9 +282,25 @@ extension HomeTCAView {
                             rowVisibility: rowVisibility,
                             allowsPlannerDrag: allowsPlannerDrag
                         )
+                        .padding(.horizontal, 10)
+                        .padding(.bottom, 10)
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
                 }
+                .routinaGlassCard(
+                    cornerRadius: taskListTopLevelSectionCornerRadius(for: section),
+                    tint: taskListSectionHeaderTint(for: section),
+                    tintOpacity: taskListSectionHeaderTintOpacity(for: section, isExpanded: isExpanded),
+                    interactive: true
+                )
+                .overlay(alignment: .top) {
+                    taskListTopLevelSectionHorizontalRule(for: section, isExpanded: isExpanded)
+                }
+                .overlay(alignment: .bottom) {
+                    taskListTopLevelSectionHorizontalRule(for: section, isExpanded: isExpanded)
+                }
+                .clipped()
+                .padding(.horizontal, -10)
             } else {
                 VStack(alignment: .leading, spacing: 0) {
                     taskListCollapsibleSectionHeader(for: section, isExpanded: isExpanded)
@@ -352,10 +353,34 @@ extension HomeTCAView {
         }
     }
 
-    private func taskListSectionUsesDetachedHeader(
+    private func taskListSectionUsesContinuousSurface(
         _ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     ) -> Bool {
         section.kind == .plannedToday || section.kind == .future
+    }
+
+    private func taskListTopLevelSectionCornerRadius(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+    ) -> CGFloat {
+        switch section.kind {
+        case .plannedToday, .future:
+            return 0
+        case .daily, .tag, .untagged, .archived, .pinned, .regular, .away:
+            return 8
+        }
+    }
+
+    private func taskListTopLevelSectionHorizontalRule(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        isExpanded: Bool
+    ) -> some View {
+        Rectangle()
+            .fill(
+                taskListSectionHeaderTint(for: section).opacity(
+                    taskListSectionHeaderStrokeOpacity(for: section, isExpanded: isExpanded)
+                )
+            )
+            .frame(height: 0.75)
     }
 
     private func taskListCollapsibleSectionHeader(
@@ -448,7 +473,7 @@ extension HomeTCAView {
         guard section.taskGroups.count > 1 else { return 0 }
         if section.kind == .plannedToday,
            section.taskGroups.allSatisfy({ $0.title == nil && !$0.isCollapsible }) {
-            return 0
+            return taskListTaskRowSpacing()
         }
         return 8
     }
@@ -462,17 +487,23 @@ extension HomeTCAView {
         rowVisibility: HomeTaskRowVisibility,
         allowsPlannerDrag: Bool
     ) -> some View {
-        ForEach(group.tasks, id: \.id) { task in
-            macTaskSourceRow(
-                for: task,
-                rowNumber: visibleRowNumber(for: task, in: presentation),
-                includeMarkDone: section.includeMarkDone,
-                moveContext: group.moveContext,
-                metadataPresenter: metadataPresenter,
-                rowVisibility: rowVisibility,
-                allowsPlannerDrag: allowsPlannerDrag
-            )
+        VStack(alignment: .leading, spacing: taskListTaskRowSpacing()) {
+            ForEach(group.tasks, id: \.id) { task in
+                macTaskSourceRow(
+                    for: task,
+                    rowNumber: visibleRowNumber(for: task, in: presentation),
+                    includeMarkDone: section.includeMarkDone,
+                    moveContext: group.moveContext,
+                    metadataPresenter: metadataPresenter,
+                    rowVisibility: rowVisibility,
+                    allowsPlannerDrag: allowsPlannerDrag
+                )
+            }
         }
+    }
+
+    private func taskListTaskRowSpacing() -> CGFloat {
+        5
     }
 
     private func taskListGroupUsesSectionSurface(
@@ -558,7 +589,7 @@ extension HomeTCAView {
         .padding(.horizontal, 9)
         .padding(.vertical, 7)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .contentShape(Rectangle())
     }
 
     private func taskListInnerGroupHeaderLabel(

@@ -137,7 +137,7 @@ Given a multi-day routine has not started
 When the user starts it, views it while active, stops it, and undoes completion
 Then the primary action, active range, completed span, and undo behavior stay consistent
 
-### Today Routines Stay In Plan To Do Today
+### Today Routines Stay In Today Section
 
 Area: Tasks
 Decision links: [0202](../decisions/0202-nest-daily-routines-under-mac-plan-today.md), [0247](../decisions/0247-make-mac-daily-routine-grouping-optional.md), [0266](../decisions/0266-show-calendar-routines-in-plan-today.md)
@@ -147,16 +147,24 @@ Coverage:
 - `Tests/iOS/HomeFeatureTaskListModeTests.swift`
 - `Tests/Shared/HomeTaskListFilteringTests.swift`
 
-Given Mac Home shows `Plan to do today`
+Given Mac Home shows `Today`
 When daily routines are loaded with the grouping setting off or on
 Then daily routines remain in the today area, visually merged by default and nested only when the setting is enabled
 
+Given Mac Home shows expanded `Today`
+When planned rows are visible
+Then the header and rows share one full-bleed section surface with square horizontal edges, no colored side borders, and spacing between task cards
+
+Given Mac Home shows expanded `Future`
+When future task groups are visible
+Then the header and groups share one full-bleed section surface while nested tag groups keep their own collapsible surfaces
+
 Given a weekly or month-day calendar routine is configured for today's weekday or day of month
-When Home derives `Plan to do today`
+When Home derives `Today`
 Then that calendar routine appears in the existing today list without a separate scheduled-today group, while rolling interval routines stay in the normal due/status sections unless explicitly planned
 
 Given a weekly or month-day calendar routine has a canceled occurrence for today
-When Home derives `Plan to do today`
+When Home derives `Today`
 Then that routine no longer appears in the today plan for the canceled day
 
 ### Future Preserves Inner Group Behavior
@@ -204,7 +212,7 @@ Coverage:
 - `Tests/Shared/FocusSessionSupportTests.swift`
 - `Tests/Shared/DayPlanPlannerStateTests.swift`
 
-Given plan focus starts from tasks in `Plan to do today`
+Given plan focus starts from tasks in `Today`
 When focus time is allocated while running or after finish
 Then task allocations are recorded without deleting the unassigned focus session history
 

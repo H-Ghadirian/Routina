@@ -154,7 +154,7 @@ extension HomeTCAView {
     }
 
     private func revealPlannedTodaySection(for taskID: UUID) {
-        let sectionID = "\(HomeTaskListPresentationSectionKind.plannedToday.rawValue):Plan to do today"
+        let sectionID = "\(HomeTaskListPresentationSectionKind.plannedToday.rawValue):plannedToday"
         var collapsedSectionIDs = Set(
             collapsedTagTaskListSectionIDsStorage
                 .split(separator: "\n")

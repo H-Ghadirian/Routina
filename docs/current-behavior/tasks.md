@@ -24,6 +24,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0284](../decisions/0284-hide-filter-query-sections-behind-beta-toggle.md)
 - [0281](../decisions/0281-collapse-mac-future-tasks.md)
 - [0283](../decisions/0283-preserve-mac-future-inner-sections.md)
+- [0285](../decisions/0285-clarify-mac-sidebar-section-surfaces.md)
 
 ## Current Contract
 
@@ -31,9 +32,10 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Todo availability has independent date and time axes. Date bounds, time windows, deadlines, reminders, and planned dates are separate concepts.
 - Planned dates are date-only Home-list planning hints for todos and non-daily routines. They are not availability, deadline, reminder, or completion history.
 - Daily routines already belong to the daily routine area and do not expose stored planned-date controls.
-- Home `Plan to do today` includes active unpinned tasks planned for the current day, plus weekly/month-day calendar routines whose configured occurrence is today. A calendar routine with a canceled occurrence for today is not shown in the today plan. Rolling interval routines such as `Every 7 days` stay in the normal due/status sections unless explicitly planned.
-- On Mac, daily routines are shown inside `Plan to do today`. By default they visually merge into the today list; Settings can restore a nested `Daily Routines` group.
-- On Mac, normal active tasks outside `Plan to do today` are grouped under a collapsed-by-default `Future` section. Existing status, deadline, tag, and ungrouped inner organization and manual ordering are preserved inside `Future`; tag groups keep their color and their own collapsible section behavior.
+- Home `Today` includes active unpinned tasks planned for the current day, plus weekly/month-day calendar routines whose configured occurrence is today. A calendar routine with a canceled occurrence for today is not shown in the today plan. Rolling interval routines such as `Every 7 days` stay in the normal due/status sections unless explicitly planned.
+- On Mac, daily routines are shown inside `Today`. By default they visually merge into the today list; Settings can restore a nested `Daily Routines` group.
+- On Mac, `Today` and `Future` use full-bleed section surfaces for their headers and expanded content so their rows visibly belong to those sections. The `Today` and `Future` top-level surfaces use square horizontal edges without colored left or right borders. Mac sidebar task cards keep a small gap between rows.
+- On Mac, normal active tasks outside `Today` are grouped under a collapsed-by-default `Future` section. Existing status, deadline, tag, and ungrouped inner organization and manual ordering are preserved inside `Future`; tag groups keep their color and their own collapsible section behavior.
 - Routines separate schedule behavior from format. Due/Gentle controls pressure and status; Interval/Calendar controls cadence; Standard/Checklist controls finish behavior.
 - Adding checklist items to a routine that previously had none promotes Standard completion to Checklist completion when no sequential steps would be discarded. Existing Standard routines that already carry checklist items remain editable as legacy optional checklist data.
 - Auto-assume done is opt-in for daily Standard routines without steps/checklists and daily Checklist-completion routines in both Due and Gentle styles. Todos, checklist runout routines, Standard routines with optional checklist items, routines with steps, and non-daily cadences do not qualify.

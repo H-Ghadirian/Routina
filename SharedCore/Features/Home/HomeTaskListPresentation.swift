@@ -211,7 +211,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                 HomeTaskListPresentationSection(
                     kind: .plannedToday,
                     identityKey: "plannedToday",
-                    title: "Plan to do today",
+                    title: "Today",
                     tasks: plannedTodayTasks,
                     rowNumberOffset: offset,
                     includeMarkDone: true,
@@ -398,7 +398,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                 HomeTaskListPresentationSection(
                     kind: .plannedToday,
                     identityKey: "plannedToday",
-                    title: "Plan to do today",
+                    title: "Today",
                     tasks: planTodayTasks,
                     rowNumberOffset: offset,
                     includeMarkDone: true,

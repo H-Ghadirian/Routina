@@ -6,6 +6,8 @@ Date: 2026-06-26
 
 Refines: [0281 Collapse Mac Future Tasks](0281-collapse-mac-future-tasks.md)
 
+Refined by: [0285 Clarify Mac Sidebar Section Surfaces](0285-clarify-mac-sidebar-section-surfaces.md)
+
 ## Context
 
 Decision 0281 made future work less visually dominant by wrapping normal active Mac sidebar tasks in a collapsed `Future` section. The first implementation preserved grouping labels inside `Future`, but tag groups no longer behaved like their previous top-level sections.
