@@ -249,7 +249,7 @@ extension HomeTCAView {
         guard macTimelineSidebarPositionedPresentationID != macTimelineSidebarPresentationID else {
             return
         }
-        guard let latestEntry = timelineEntries.last else {
+        guard let latestEntry = groupedTimelineEntries.first?.entries.first else {
             return
         }
         selectedNoteID = latestEntry.isNote ? latestEntry.id : nil

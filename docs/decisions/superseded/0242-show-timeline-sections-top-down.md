@@ -1,10 +1,12 @@
 # 0242 Show Timeline Sections Top-Down
 
-Status: Accepted
+Status: Superseded
 
 Date: 2026-06-25
 
-Supersedes: [0207 Show Timeline Oldest to Newest](superseded/0207-show-timeline-oldest-to-newest.md)
+Supersedes: [0207 Show Timeline Oldest to Newest](0207-show-timeline-oldest-to-newest.md)
+
+Superseded by: [0280 Show Timeline Newest First](../0280-show-timeline-newest-first.md)
 
 ## Context
 

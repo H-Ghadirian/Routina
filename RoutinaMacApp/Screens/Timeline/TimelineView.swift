@@ -376,7 +376,7 @@ struct TimelineView: View {
     }
 
     private var latestTimelineEntryID: UUID? {
-        groupedByDay.last?.entries.last?.id
+        groupedByDay.first?.entries.first?.id
     }
 
     private var availableTags: [String] {
@@ -472,7 +472,7 @@ struct TimelineView: View {
             items.append("away sessions")
         }
         items.append("sleep records")
-        return "\(items.joined(separator: ", ")) will appear here in chronological order."
+        return "\(items.joined(separator: ", ")) will appear here newest first."
     }
 
     private var showsTypeFilterSection: Bool {

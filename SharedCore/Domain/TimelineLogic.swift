@@ -691,12 +691,12 @@ enum TimelineLogic {
             grouped[day, default: []].append(entry)
         }
         return grouped
-            .sorted { $0.key < $1.key }
+            .sorted { $0.key > $1.key }
             .map {
                 (
                     date: $0.key,
                     entries: $0.value.sorted { lhs, rhs in
-                        lhs.timestamp < rhs.timestamp
+                        lhs.timestamp > rhs.timestamp
                     }
                 )
             }

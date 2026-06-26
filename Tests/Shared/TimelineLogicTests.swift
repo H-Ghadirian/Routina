@@ -1018,14 +1018,14 @@ struct TimelineLogicTests {
         )
 
         #expect(groups.count == 2)
-        #expect(groups[0].date == makeDate("2026-03-19T00:00:00Z"))
-        #expect(groups[0].entries.count == 1)
-        #expect(groups[1].date == makeDate("2026-03-20T00:00:00Z"))
-        #expect(groups[1].entries.map(\.taskName) == ["A", "B"])
+        #expect(groups[0].date == makeDate("2026-03-20T00:00:00Z"))
+        #expect(groups[0].entries.map(\.taskName) == ["B", "A"])
+        #expect(groups[1].date == makeDate("2026-03-19T00:00:00Z"))
+        #expect(groups[1].entries.count == 1)
     }
 
     @Test
-    func groupedByDay_sortsDaysOldestFirst() {
+    func groupedByDay_sortsDaysNewestFirst() {
         let calendar = makeTestCalendar()
         let march18 = TimelineEntry(
             id: UUID(), taskID: nil, timestamp: makeDate("2026-03-18T10:00:00Z"),
@@ -1042,7 +1042,7 @@ struct TimelineLogicTests {
         )
 
         #expect(groups.count == 2)
-        #expect(groups[0].date < groups[1].date)
+        #expect(groups[0].date > groups[1].date)
     }
 
     @Test

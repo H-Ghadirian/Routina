@@ -174,7 +174,7 @@ Then each task ID is claimed once, section and group IDs stay stable, and the UI
 ### Timeline Filters Do Not Auto-Open Row Details
 
 Area: Timeline
-Decision links: [0242](../decisions/0242-show-timeline-sections-top-down.md), [0256](../decisions/0256-move-mac-timeline-row-appearance-to-timeline-filter-detail.md)
+Decision links: [0280](../decisions/0280-show-timeline-newest-first.md), [0256](../decisions/0256-move-mac-timeline-row-appearance-to-timeline-filter-detail.md)
 Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/Shared/TimelineSelectionSupportTests.swift`

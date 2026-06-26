@@ -2,7 +2,7 @@
 
 Status: Superseded
 
-Superseded by: [0242 Show Timeline Sections Top-Down](../0242-show-timeline-sections-top-down.md)
+Superseded by: [0242 Show Timeline Sections Top-Down](0242-show-timeline-sections-top-down.md), then [0280 Show Timeline Newest First](../0280-show-timeline-newest-first.md)
 
 Date: 2026-06-11
 

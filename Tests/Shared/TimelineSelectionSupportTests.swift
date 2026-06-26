@@ -22,7 +22,7 @@ struct TimelineSelectionSupportTests {
     }
 
     @Test
-    func resolvedSelectionKeepsVisibleSidebarSelectionOrFallsBackToLatestVisibleEntry() {
+    func resolvedSelectionKeepsVisibleSidebarSelectionOrFallsBackToFirstVisibleEntry() {
         let first = UUID()
         let second = UUID()
         let missing = UUID()
@@ -39,7 +39,7 @@ struct TimelineSelectionSupportTests {
                 currentSelection: missing,
                 visibleEntryIDs: [first, second],
                 usesSidebarLayout: true
-            ) == second
+            ) == first
         )
     }
 

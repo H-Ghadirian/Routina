@@ -12,6 +12,6 @@ enum TimelineSelectionSupport {
             return currentSelection
         }
         guard allowsFallbackSelection else { return nil }
-        return visibleEntryIDs.last
+        return visibleEntryIDs.first
     }
 }

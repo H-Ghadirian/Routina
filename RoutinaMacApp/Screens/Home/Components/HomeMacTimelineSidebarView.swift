@@ -123,7 +123,7 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
         if showsAway {
             items.append("away sessions")
         }
-        return "\(Self.listText(items).capitalized) will appear here in chronological order."
+        return "\(Self.listText(items).capitalized) will appear here newest first."
     }
 
     private static func listText(_ items: [String]) -> String {
@@ -176,7 +176,7 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
             return requestedEntryID
         }
 
-        return visibleEntryIDs.last
+        return visibleEntryIDs.first
     }
 
     private func selectResolvedTimelineEntry() {
@@ -213,15 +213,15 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
         clearsMatchingRequest: Bool
     ) {
         DispatchQueue.main.async {
-            proxy.scrollTo(entryID, anchor: .bottom)
+            proxy.scrollTo(entryID, anchor: .top)
             DispatchQueue.main.async {
-                proxy.scrollTo(entryID, anchor: .bottom)
+                proxy.scrollTo(entryID, anchor: .top)
                 if clearsMatchingRequest, scrollRequest?.entryID == entryID {
                     scrollRequest = nil
                 }
                 positionedPresentationID = presentationID
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                    proxy.scrollTo(entryID, anchor: .bottom)
+                    proxy.scrollTo(entryID, anchor: .top)
                 }
             }
         }
@@ -229,9 +229,9 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
 
     private func scrollTimelineList(to entryID: UUID, with proxy: ScrollViewProxy) {
         DispatchQueue.main.async {
-            proxy.scrollTo(entryID, anchor: .bottom)
+            proxy.scrollTo(entryID, anchor: .top)
             DispatchQueue.main.async {
-                proxy.scrollTo(entryID, anchor: .bottom)
+                proxy.scrollTo(entryID, anchor: .top)
             }
         }
     }

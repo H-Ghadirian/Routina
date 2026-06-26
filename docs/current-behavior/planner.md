@@ -26,10 +26,12 @@ This page summarizes active Planner, timeline activity, focus, Away, and Sleep b
 - [0271](../decisions/0271-use-probable-times-for-assumed-planner-activity.md)
 - [0273](../decisions/0273-log-sleep-from-planner-away-slot-action.md)
 - [0274](../decisions/0274-present-resizable-planner-slot-draft.md)
+- [0280](../decisions/0280-show-timeline-newest-first.md)
 
 ## Current Contract
 
 - Timeline activity is evidence for completed, missed, canceled, sleep, place, note, emotion, event, and accepted focus activity.
+- Timeline list surfaces show newest activity first in normal, non-inverted lists, with date headers above their rows.
 - Planner can surface timeline activity, but automatic suggestions come only from completed activity and eligible assumed-done routine days, and may be hidden as presentation state.
 - Assumed-done planner activity is synthetic: it uses the routine's probable done time for planner placement, can be hidden from Planner or converted into a planner block, and does not create completion history until the user confirms the routine day.
 - Automatic activity that cannot be placed because planner task or event blocks reserve the usable time appears in the top `Needs Time` lane for that day, where it can be dragged into the timed calendar, hidden, confirmed, or opened like other automatic activity.

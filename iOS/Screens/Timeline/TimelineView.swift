@@ -387,7 +387,7 @@ struct TimelineView: View {
 
     private func selectInitialTimelineEntry() {
         guard usesSidebarLayout else { return }
-        guard let entryID = visibleTimelineEntryIDs.last else { return }
+        guard let entryID = visibleTimelineEntryIDs.first else { return }
         if selectedTimelineEntryID != entryID {
             selectedTimelineEntryID = entryID
         }
@@ -609,7 +609,7 @@ struct TimelineView: View {
             items.append("away sessions")
         }
         items.append("sleep records")
-        return "\(items.joined(separator: ", ")) will appear here in chronological order."
+        return "\(items.joined(separator: ", ")) will appear here newest first."
     }
 
     private var hasActiveFilterChips: Bool {
@@ -790,7 +790,7 @@ struct TimelineView: View {
                 }
                 .id(presentationID)
                 .listStyle(.plain)
-                .defaultScrollAnchor(.bottom)
+                .defaultScrollAnchor(.top)
                 .onAppear {
                     selectInitialTimelineEntry()
                 }
