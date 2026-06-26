@@ -266,6 +266,55 @@ struct HomeFeatureTaskListModeTests {
     }
 
     @Test
+    func macSidebarModeChanged_fromTimelineSelectionPreservesTaskListModeAndFilters() async {
+        let context = makeInMemoryContext()
+        let todo = makeTask(
+            in: context,
+            name: "Buy milk",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🛒",
+            scheduleMode: .oneOff
+        )
+        let persistedState = LockIsolated<TemporaryViewState?>(nil)
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                routineTasks: [todo],
+                selectedTaskID: todo.id,
+                taskListMode: .all,
+                selectedFilter: .all,
+                tabFilterSnapshots: [
+                    HomeFeature.TaskListMode.todos.rawValue: TabFilterStateManager.Snapshot(
+                        selectedTag: nil,
+                        excludedTags: [],
+                        selectedFilter: .due,
+                        selectedManualPlaceFilterID: nil
+                    )
+                ],
+                macSidebarMode: .timeline,
+                macSidebarSelection: .timelineEntry(UUID())
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
+        }
+
+        await store.send(.macSidebarModeChanged(.routines)) {
+            $0.macSidebarMode = .routines
+            $0.macSidebarSelection = .task(todo.id)
+        }
+
+        #expect(store.state.taskListMode == .all)
+        #expect(store.state.selectedFilter == .all)
+        #expect(persistedState.value?.homeTaskListModeRawValue == HomeFeature.TaskListMode.all.rawValue)
+        #expect(persistedState.value?.homeSelectedFilter == .all)
+    }
+
+    @Test
     func macSidebarSelectionChanged_selectingTodoFromAllKeepsAllMode() async {
         let context = makeInMemoryContext()
         let todo = makeTask(

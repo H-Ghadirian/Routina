@@ -308,6 +308,70 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func filteredPlannedTodayTasksExcludesCompletedRows() {
+        let referenceDate = Date(timeIntervalSince1970: 1_714_608_000)
+        let tasks = [
+            TestTaskDisplay(
+                name: "Completed planned routine",
+                plannedDate: referenceDate,
+                isDoneToday: true
+            ),
+            TestTaskDisplay(
+                name: "Completed planned todo",
+                plannedDate: referenceDate,
+                isOneOffTask: true,
+                isCompletedOneOff: true,
+                isDoneToday: true,
+                todoState: .done
+            ),
+            TestTaskDisplay(
+                name: "Active planned task",
+                plannedDate: referenceDate
+            )
+        ]
+
+        let result = makeFiltering(referenceDate: referenceDate)
+            .filteredPlannedTodayTasks(tasks)
+
+        #expect(result.map(\.name) == ["Active planned task"])
+    }
+
+    @Test
+    func sidebarPresentationExcludesCompletedDailyRowsFromPlanToday() {
+        let completedID = UUID()
+        let activeID = UUID()
+        let tasks = [
+            TestTaskDisplay(
+                taskID: completedID,
+                name: "Completed daily",
+                recurrenceRule: .interval(days: 1),
+                isDoneToday: true
+            ),
+            TestTaskDisplay(
+                taskID: activeID,
+                name: "Active daily",
+                recurrenceRule: .interval(days: 1)
+            )
+        ]
+
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(),
+            routineDisplays: tasks,
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(presentation.sections.map(\.title) == ["Today"])
+        #expect(presentation.sections.first?.tasks.map(\.taskID) == [activeID])
+        #expect(presentation.sections.flatMap(\.tasks).contains { $0.taskID == completedID } == false)
+    }
+
+    @Test
     func sidebarPresentationKeepsCanceledCalendarOccurrenceOutOfPlanToday() {
         let referenceDate = makeDate("2026-06-22T10:00:00Z") // Monday
         let canceledID = UUID()

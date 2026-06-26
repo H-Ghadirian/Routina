@@ -347,7 +347,8 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             !claimedTaskIDs.contains($0.taskID)
         }
         let dailyTasks = claimTasks(
-            filtering.filteredDailyRoutineTasks(unplannedActiveDisplays),
+            filtering.filteredDailyRoutineTasks(unplannedActiveDisplays)
+                .filter { filtering.matchesUncompletedTodayClaim($0) },
             claimedTaskIDs: &claimedTaskIDs
         )
         let nonDailyUnplannedActiveDisplays = unplannedActiveDisplays.filter {

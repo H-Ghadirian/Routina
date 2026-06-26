@@ -198,7 +198,7 @@ extension HomeTCAView {
 
         return ScrollViewReader { scrollProxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 8, pinnedViews: []) {
+                LazyVStack(alignment: .leading, spacing: 0, pinnedViews: []) {
                     ForEach(presentation.sections) { section in
                         taskListSectionView(
                             for: section,
@@ -207,9 +207,11 @@ extension HomeTCAView {
                             rowVisibility: rowVisibility,
                             allowsPlannerDrag: allowsPlannerDrag
                         )
+                        .padding(.top, taskListTopLevelSectionSpacing(before: section, in: presentation))
                     }
                 }
-                .padding(10)
+                .padding(.horizontal, 10)
+                .padding(.bottom, 10)
             }
             .onAppear {
                 handleMacTaskSourceScrollEvent(
@@ -357,6 +359,21 @@ extension HomeTCAView {
         _ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     ) -> Bool {
         section.kind == .plannedToday || section.kind == .future
+    }
+
+    private func taskListTopLevelSectionSpacing(
+        before section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>
+    ) -> CGFloat {
+        guard let index = presentation.sections.firstIndex(where: { $0.id == section.id }), index > 0 else {
+            return 0
+        }
+
+        let previous = presentation.sections[index - 1]
+        if taskListSectionUsesContinuousSurface(previous), taskListSectionUsesContinuousSurface(section) {
+            return 0
+        }
+        return 8
     }
 
     private func taskListTopLevelSectionCornerRadius(

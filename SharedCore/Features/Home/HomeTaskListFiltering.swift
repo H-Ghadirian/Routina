@@ -144,6 +144,7 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
         displays
             .filter { task in
                 guard !task.isDailyRoutine,
+                      matchesUncompletedTodayClaim(task),
                       predicate.matchesVisibleTask(task) else { return false }
                 guard !task.isCanceledToday else { return false }
                 if let plannedDate = task.plannedDate {
@@ -158,6 +159,10 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
                 )
             }
             .sorted(by: sorter.plannedTodayTaskSort)
+    }
+
+    func matchesUncompletedTodayClaim(_ task: Display) -> Bool {
+        !task.isDoneToday && !task.isCompletedOneOff
     }
 
     func deadlineBasedSections(from tasks: [Display]) -> [HomeTaskListSection<Display>] {

@@ -10,13 +10,15 @@ struct HomeFeatureMacNavigationRouter {
         state: inout HomeFeature.State
     ) -> Effect<HomeFeature.Action> {
         let resolvedMode: HomeFeature.MacSidebarMode = mode
+        let previousSidebarSelection = state.macSidebarSelection
         state.macSidebarMode = resolvedMode
         state.presentation.isMacFilterDetailPresented = false
         switch resolvedMode {
         case .routines:
             dismissAddRoutineSheet(&state)
             state.macSidebarSelection = state.selection.selectedTaskID.map(HomeFeature.MacSidebarSelection.task)
-            if let effect = taskListModeSyncEffectForSelectedTask(state) {
+            if !previousSidebarSelection.isTimelineEntry,
+               let effect = taskListModeSyncEffectForSelectedTask(state) {
                 return effect
             }
 
@@ -230,5 +232,16 @@ struct HomeFeatureMacNavigationRouter {
         }
         state.taskListMode = newMode
         persistTemporaryViewState(state)
+    }
+}
+
+private extension HomeFeature.MacSidebarSelection? {
+    var isTimelineEntry: Bool {
+        switch self {
+        case .some(.timelineEntry):
+            return true
+        case .some(.task), .none:
+            return false
+        }
     }
 }
