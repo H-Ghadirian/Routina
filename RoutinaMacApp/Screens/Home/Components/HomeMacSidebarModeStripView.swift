@@ -38,7 +38,7 @@ struct HomeMacSidebarModeStripView: View {
         HStack(spacing: 0) {
             ForEach(displayedSidebarStripModes) { mode in
                 if mode == .addTask {
-                    addMenu
+                    addControl
                 } else {
                     Button {
                         selectedMode = mode
@@ -81,87 +81,31 @@ struct HomeMacSidebarModeStripView: View {
         return HomeFeature.MacSidebarMode.sidebarStripModes.filter { $0 != .goals && $0 != .adventure }
     }
 
-    private var addMenu: some View {
-        Menu {
-            if areMacEventEmotionActionsEnabled {
-                Button {
-                    onAddEvent()
-                } label: {
-                    addMenuLabel(for: .event)
-                }
-                .keyboardShortcut(
-                    MacAddMenuShortcut.event.keyEquivalent,
-                    modifiers: MacAddMenuShortcut.event.modifiers
-                )
-
-                Button {
-                    onAddEmotion()
-                } label: {
-                    addMenuLabel(for: .emotion)
-                }
-                .keyboardShortcut(
-                    MacAddMenuShortcut.emotion.keyEquivalent,
-                    modifiers: MacAddMenuShortcut.emotion.modifiers
-                )
-            }
-
-            if isNotesEnabled {
-                Button {
-                    onAddNote()
-                } label: {
-                    addMenuLabel(for: .note)
-                }
-                .keyboardShortcut(
-                    MacAddMenuShortcut.note.keyEquivalent,
-                    modifiers: MacAddMenuShortcut.note.modifiers
-                )
-            }
-
-            if isGoalsTabEnabled {
-                Button {
-                    onAddGoal()
-                } label: {
-                    addMenuLabel(for: .goal)
-                }
-                .keyboardShortcut(
-                    MacAddMenuShortcut.goal.keyEquivalent,
-                    modifiers: MacAddMenuShortcut.goal.modifiers
-                )
-            }
+    @ViewBuilder
+    private var addControl: some View {
+        if let shortcut = onlyVisibleAddMenuShortcut {
             Button {
-                onAddTask()
+                performAddMenuAction(shortcut)
             } label: {
-                addMenuLabel(for: .task)
+                sidebarModeLabel(for: .addTask)
             }
-            .keyboardShortcut(
-                MacAddMenuShortcut.task.keyEquivalent,
-                modifiers: MacAddMenuShortcut.task.modifiers
-            )
+            .keyboardShortcut(shortcut.keyEquivalent, modifiers: shortcut.modifiers)
+            .buttonStyle(.plain)
+            .frame(maxWidth: .infinity)
+            .accessibilityLabel(shortcut.commandTitle)
+            .help(shortcut.commandTitle)
+        } else {
+            addOptionsMenu
+        }
+    }
 
-            if isPlacesEnabled {
-                Divider()
-
-                Button {
-                    onCheckIn()
-                } label: {
-                    addMenuLabel(for: .checkIn)
+    private var addOptionsMenu: some View {
+        Menu {
+            ForEach(visibleAddMenuShortcuts) { shortcut in
+                if shortcut == .checkIn {
+                    Divider()
                 }
-                .keyboardShortcut(
-                    MacAddMenuShortcut.checkIn.keyEquivalent,
-                    modifiers: MacAddMenuShortcut.checkIn.modifiers
-                )
-            }
-
-            if isAwayEnabled {
-                Button {
-                    onStartAway()
-                } label: {
-                    addMenuLabel(for: .away)
-                }
-                .keyboardShortcut(
-                    MacAddMenuShortcut.away.keyEquivalent,
-                    modifiers: MacAddMenuShortcut.away.modifiers
-                )
+                addMenuButton(for: shortcut)
             }
         } label: {
             sidebarModeLabel(for: .addTask)
@@ -170,9 +114,50 @@ struct HomeMacSidebarModeStripView: View {
         .buttonStyle(.plain)
         .frame(maxWidth: .infinity)
         .accessibilityLabel("Add")
-            .help(
-                helpLabelForAddMenu
-            )
+        .help(helpLabelForAddMenu)
+    }
+
+    private var visibleAddMenuShortcuts: [MacAddMenuShortcut] {
+        MacAddMenuShortcut.visibleActions(
+            eventEmotionEnabled: areMacEventEmotionActionsEnabled,
+            notesEnabled: isNotesEnabled,
+            goalsEnabled: isGoalsTabEnabled,
+            placesEnabled: isPlacesEnabled,
+            awayEnabled: isAwayEnabled
+        )
+    }
+
+    private var onlyVisibleAddMenuShortcut: MacAddMenuShortcut? {
+        let shortcuts = visibleAddMenuShortcuts
+        return shortcuts.count == 1 ? shortcuts[0] : nil
+    }
+
+    private func addMenuButton(for shortcut: MacAddMenuShortcut) -> some View {
+        Button {
+            performAddMenuAction(shortcut)
+        } label: {
+            addMenuLabel(for: shortcut)
+        }
+        .keyboardShortcut(shortcut.keyEquivalent, modifiers: shortcut.modifiers)
+    }
+
+    private func performAddMenuAction(_ shortcut: MacAddMenuShortcut) {
+        switch shortcut {
+        case .event:
+            onAddEvent()
+        case .emotion:
+            onAddEmotion()
+        case .note:
+            onAddNote()
+        case .goal:
+            onAddGoal()
+        case .task:
+            onAddTask()
+        case .checkIn:
+            onCheckIn()
+        case .away:
+            onStartAway()
+        }
     }
 
     private func addMenuLabel(for shortcut: MacAddMenuShortcut) -> some View {

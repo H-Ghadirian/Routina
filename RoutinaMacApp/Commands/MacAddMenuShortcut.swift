@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum MacAddMenuShortcut: CaseIterable, Identifiable {
+enum MacAddMenuShortcut: CaseIterable, Identifiable, Equatable {
     case event
     case emotion
     case note
@@ -99,5 +99,33 @@ enum MacAddMenuShortcut: CaseIterable, Identifiable {
         case .checkIn: return "C"
         case .away:    return "A"
         }
+    }
+
+    static func visibleActions(
+        eventEmotionEnabled: Bool,
+        notesEnabled: Bool,
+        goalsEnabled: Bool,
+        placesEnabled: Bool,
+        awayEnabled: Bool
+    ) -> [MacAddMenuShortcut] {
+        var actions: [MacAddMenuShortcut] = []
+        if eventEmotionEnabled {
+            actions.append(.event)
+            actions.append(.emotion)
+        }
+        if notesEnabled {
+            actions.append(.note)
+        }
+        if goalsEnabled {
+            actions.append(.goal)
+        }
+        actions.append(.task)
+        if placesEnabled {
+            actions.append(.checkIn)
+        }
+        if awayEnabled {
+            actions.append(.away)
+        }
+        return actions
     }
 }

@@ -270,22 +270,13 @@ struct SettingsMacShortcutsDetailView: View {
     }
 
     private var addMenuShortcuts: [MacAddMenuShortcut] {
-        MacAddMenuShortcut.allCases.filter { shortcut in
-            switch shortcut {
-            case .event, .emotion:
-                return areMacEventEmotionActionsEnabled
-            case .goal:
-                return isGoalsTabEnabled
-            case .checkIn:
-                return isPlacesEnabled
-            case .note:
-                return isNotesEnabled
-            case .away:
-                return isAwayEnabled
-            case .task:
-                return true
-            }
-        }
+        MacAddMenuShortcut.visibleActions(
+            eventEmotionEnabled: areMacEventEmotionActionsEnabled,
+            notesEnabled: isNotesEnabled,
+            goalsEnabled: isGoalsTabEnabled,
+            placesEnabled: isPlacesEnabled,
+            awayEnabled: isAwayEnabled
+        )
     }
 }
 

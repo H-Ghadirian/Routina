@@ -70,6 +70,32 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func macAddMenuVisibleActions_collapsesToTaskWithDefaultHiddenSurfaces() {
+        #expect(
+            MacAddMenuShortcut.visibleActions(
+                eventEmotionEnabled: false,
+                notesEnabled: false,
+                goalsEnabled: false,
+                placesEnabled: false,
+                awayEnabled: false
+            ) == [.task]
+        )
+    }
+
+    @Test
+    func macAddMenuVisibleActions_preservesMenuOrderWithOptionalSurfacesEnabled() {
+        #expect(
+            MacAddMenuShortcut.visibleActions(
+                eventEmotionEnabled: true,
+                notesEnabled: true,
+                goalsEnabled: true,
+                placesEnabled: true,
+                awayEnabled: true
+            ) == [.event, .emotion, .note, .goal, .task, .checkIn, .away]
+        )
+    }
+
+    @Test
     func openNoteDeepLink_selectsTimelineSidebarEntryAndClearsTimelineFilters() async {
         let noteID = UUID()
         let selectedTaskID = UUID()
