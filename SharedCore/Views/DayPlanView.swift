@@ -4150,10 +4150,9 @@ private struct DayPlanFocusAllocationPresentation: Identifiable {
     var id: UUID { sessionID }
 }
 
-private enum DayPlanSlotActionMode: String, CaseIterable, Hashable {
+enum DayPlanSlotActionMode: String, CaseIterable, Hashable {
     case task
     case away
-    case sleep
 
     var title: String {
         switch self {
@@ -4161,13 +4160,11 @@ private enum DayPlanSlotActionMode: String, CaseIterable, Hashable {
             return "Task"
         case .away:
             return "Away"
-        case .sleep:
-            return "Sleep"
         }
     }
 
     static func visibleCases(includingAway: Bool) -> [DayPlanSlotActionMode] {
-        includingAway ? [.task, .away] : [.task, .sleep]
+        includingAway ? [.task, .away] : [.task]
     }
 }
 
@@ -4178,7 +4175,7 @@ private enum DayPlanAwayLogOption: Hashable, Identifiable {
     static let options: [DayPlanAwayLogOption] = AwaySessionPreset.allCases.map(DayPlanAwayLogOption.away) + [.sleep]
 
     static func options(includingAway: Bool) -> [DayPlanAwayLogOption] {
-        includingAway ? options : [.sleep]
+        includingAway ? options : []
     }
 
     var id: String {
@@ -4312,7 +4309,6 @@ private struct DayPlanSlotActionPopover: View {
         let initialTaskID = defaultTaskID.flatMap { id in tasks.first(where: { $0.id == id })?.id } ?? tasks.first?.id
         _selectedTaskID = State(initialValue: initialTaskID)
         _awayLinkedTaskID = State(initialValue: initialTaskID)
-        _selectedAwayOption = State(initialValue: includesAway ? .away(.custom) : .sleep)
     }
 
     var body: some View {
@@ -4332,7 +4328,7 @@ private struct DayPlanSlotActionPopover: View {
             switch mode {
             case .task:
                 taskBlockContent
-            case .away, .sleep:
+            case .away:
                 awayLogContent
             }
 
@@ -4346,7 +4342,11 @@ private struct DayPlanSlotActionPopover: View {
         .padding(16)
         .frame(width: 440)
         .onAppear {
+            normalizeModeForAwayVisibility()
             setTaskDuration(durationMinutes)
+        }
+        .onChange(of: includesAway) { _, _ in
+            normalizeModeForAwayVisibility()
         }
         .onChange(of: mode) { _, newMode in
             errorText = nil
@@ -4357,9 +4357,6 @@ private struct DayPlanSlotActionPopover: View {
                 if selectedAwayOption.isSleep {
                     selectedAwayOption = .away(.custom)
                 }
-                setAwayDuration(selectedAwayOption.defaultDurationMinutes, for: selectedAwayOption)
-            case .sleep:
-                selectedAwayOption = .sleep
                 setAwayDuration(selectedAwayOption.defaultDurationMinutes, for: selectedAwayOption)
             }
         }
@@ -4497,13 +4494,24 @@ private struct DayPlanSlotActionPopover: View {
     }
 
     private func selectAwayOption(_ option: DayPlanAwayLogOption) {
-        guard includesAway || option.isSleep else { return }
+        guard includesAway else { return }
         selectedAwayOption = option
         errorText = nil
         if option.isSleep {
             awayLinkedTaskID = nil
         }
         setAwayDuration(option.defaultDurationMinutes, for: option)
+    }
+
+    private func normalizeModeForAwayVisibility() {
+        guard !DayPlanSlotActionMode.visibleCases(includingAway: includesAway).contains(mode) else {
+            return
+        }
+
+        mode = .task
+        selectedAwayOption = .away(.custom)
+        awayLinkedTaskID = nil
+        setTaskDuration(durationMinutes)
     }
 
     private var taskSelectionBinding: Binding<UUID?> {

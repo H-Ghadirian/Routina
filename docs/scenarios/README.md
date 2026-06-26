@@ -240,6 +240,18 @@ Given a manual planner block is short, such as a 5- or 15-minute block
 When the user hovers or drags from the middle of the block
 Then the block can still be moved because resize grips stay limited to the block edges
 
+### Planner Slot Actions Hide Away and Sleep When Away Is Off
+
+Area: Planner
+Decision links: [0277](../decisions/0277-hide-notes-and-away-behind-beta-toggles.md), [0279](../decisions/0279-hide-sleep-stats-and-blocking-with-away-toggle.md), [0273](../decisions/0273-log-sleep-from-planner-away-slot-action.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/DayPlanSlotActionPresentationTests.swift`
+
+Given Support & About -> Beta Experiments -> `Show Away` is off
+When the user opens the Planner empty-slot action panel
+Then the panel offers task block creation only and does not expose Away or Sleep logging options
+
 ### Protected Modes Do Not Overlap
 
 Area: Planner
