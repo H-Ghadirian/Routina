@@ -232,11 +232,18 @@ struct StatsFiltersSheet: View {
     let onClose: () -> Void
     let onSelectedTagsPruned: (Set<String>) -> Void
 
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingFilterQuerySectionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var showsFilterQuerySections = false
+
     var body: some View {
         NavigationStack {
             List {
-                Section("Query") {
-                    HomeAdvancedQueryBuilder(query: $advancedQuery, options: advancedQueryOptions)
+                if showsFilterQuerySections {
+                    Section("Query") {
+                        HomeAdvancedQueryBuilder(query: $advancedQuery, options: advancedQueryOptions)
+                    }
                 }
 
                 if showsTaskTypeFilter {

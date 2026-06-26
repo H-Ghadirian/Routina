@@ -71,6 +71,8 @@ struct SettingsFeatureDependencyTests {
                 setNotesEnabled: { _ in },
                 awayEnabled: { true },
                 setAwayEnabled: { _ in },
+                filterQuerySectionsEnabled: { true },
+                setFilterQuerySectionsEnabled: { _ in },
                 showPersianDates: { true },
                 setShowPersianDates: { _ in },
                 automaticPlaceCheckInEnabled: { false },
@@ -137,6 +139,7 @@ struct SettingsFeatureDependencyTests {
             $0.appearance.isPlacesEnabled = true
             $0.appearance.isNotesEnabled = true
             $0.appearance.isAwayEnabled = true
+            $0.appearance.showsFilterQuerySections = true
             $0.appearance.showPersianDates = true
             $0.appearance.showsTimelineTasksInDayPlanner = false
             $0.appearance.separatesDailyRoutinesInTaskList = true

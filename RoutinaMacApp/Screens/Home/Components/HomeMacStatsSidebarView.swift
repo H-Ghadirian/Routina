@@ -1,6 +1,11 @@
 import SwiftUI
 
 struct HomeMacStatsSidebarView: View {
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingFilterQuerySectionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var showsFilterQuerySections = false
+
     let selectedTaskTypeFilter: StatsTaskTypeFilter
     let onSelectTaskTypeFilter: (StatsTaskTypeFilter) -> Void
     let availableDashboardScopes: [StatsDashboardScope]
@@ -33,10 +38,12 @@ struct HomeMacStatsSidebarView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                HomeMacStatsQuerySection(
-                    advancedQuery: $advancedQuery,
-                    queryOptions: queryOptions
-                )
+                if showsFilterQuerySections {
+                    HomeMacStatsQuerySection(
+                        advancedQuery: $advancedQuery,
+                        queryOptions: queryOptions
+                    )
+                }
 
                 if availableDashboardScopes.count > 1 {
                     HomeMacStatsDashboardScopeSection(

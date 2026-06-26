@@ -215,6 +215,16 @@ enum SettingsAppearanceActionHandler {
         return .none
     }
 
+    static func filterQuerySectionsToggled(
+        _ isEnabled: Bool,
+        state: inout SettingsAppearanceState,
+        appSettingsClient: AppSettingsClient
+    ) -> Effect<SettingsFeature.Action> {
+        state.showsFilterQuerySections = isEnabled
+        appSettingsClient.setFilterQuerySectionsEnabled(isEnabled)
+        return .none
+    }
+
     static func showPersianDatesToggled(
         _ isEnabled: Bool,
         state: inout SettingsAppearanceState,

@@ -6,18 +6,25 @@ struct HomeFiltersSheetView: View {
     let tagData: HomeTagFilterData
     let actions: HomeFiltersSheetActions
 
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingFilterQuerySectionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var showsFilterQuerySections = false
+
     var body: some View {
         NavigationStack {
             List {
-                HomeFiltersQuerySection(
-                    advancedQuery: bindings.advancedQuery,
-                    options: HomeAdvancedQueryOptions(
-                        tags: tagData.tagSummaries.map(\.name),
-                        places: configuration.place.isPlacesEnabled
-                            ? configuration.place.sortedRoutinePlaces.map(\.displayName)
-                            : []
+                if showsFilterQuerySections {
+                    HomeFiltersQuerySection(
+                        advancedQuery: bindings.advancedQuery,
+                        options: HomeAdvancedQueryOptions(
+                            tags: tagData.tagSummaries.map(\.name),
+                            places: configuration.place.isPlacesEnabled
+                                ? configuration.place.sortedRoutinePlaces.map(\.displayName)
+                                : []
+                        )
                     )
-                )
+                }
                 HomeFiltersTaskListModeSection(taskListMode: bindings.taskListMode)
                 HomeFiltersVisibilitySection(
                     taskListMode: configuration.taskListMode,

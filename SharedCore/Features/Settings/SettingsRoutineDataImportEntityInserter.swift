@@ -1077,6 +1077,7 @@ enum SettingsRoutineDataImportEntityInserter {
         preferences.placesEnabled = backupPreferences.placesEnabled ?? false
         preferences.notesEnabled = backupPreferences.notesEnabled ?? false
         preferences.awayEnabled = backupPreferences.awayEnabled ?? false
+        preferences.filterQuerySectionsEnabled = backupPreferences.filterQuerySectionsEnabled ?? false
         preferences.showPersianDates = backupPreferences.showPersianDates ?? false
         preferences.batteryRoutineMonitoringEnabled = backupPreferences.batteryRoutineMonitoringEnabled ?? BatteryRoutinePreferences.defaultMonitoringEnabled
         preferences.sleepHomeActionEnabled = backupPreferences.sleepHomeActionEnabled ?? true

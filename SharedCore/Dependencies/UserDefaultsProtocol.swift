@@ -55,6 +55,7 @@ enum AppSettingsDefaults {
         .appSettingPlacesEnabled: false,
         .appSettingNotesEnabled: false,
         .appSettingAwayEnabled: false,
+        .appSettingFilterQuerySectionsEnabled: false,
         .appSettingHomeTaskListModeTabsVisible: false,
         .appSettingMacHomeSectionFocusTimersEnabled: false,
         .appSettingMacTimelineQuickFiltersVisible: false,
@@ -144,6 +145,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingPlacesEnabled
     case appSettingNotesEnabled
     case appSettingAwayEnabled
+    case appSettingFilterQuerySectionsEnabled
     case appSettingGoalsTabEnabled
     case appSettingAdventureMapEnabled
     case appSettingBoardScreenEnabled
@@ -231,6 +233,8 @@ struct AppSettingsClient: Sendable {
     var setNotesEnabled: @Sendable (Bool) -> Void = { _ in }
     var awayEnabled: @Sendable () -> Bool = { false }
     var setAwayEnabled: @Sendable (Bool) -> Void = { _ in }
+    var filterQuerySectionsEnabled: @Sendable () -> Bool = { false }
+    var setFilterQuerySectionsEnabled: @Sendable (Bool) -> Void = { _ in }
     var showPersianDates: @Sendable () -> Bool
     var setShowPersianDates: @Sendable (Bool) -> Void
     var automaticPlaceCheckInEnabled: @Sendable () -> Bool
@@ -471,6 +475,13 @@ extension AppSettingsClient {
             SharedDefaults.app[.appSettingAwayEnabled] = isEnabled
             AppSettingsPersistenceMirror.schedule()
         },
+        filterQuerySectionsEnabled: {
+            SharedDefaults.app[.appSettingFilterQuerySectionsEnabled]
+        },
+        setFilterQuerySectionsEnabled: { isEnabled in
+            SharedDefaults.app[.appSettingFilterQuerySectionsEnabled] = isEnabled
+            AppSettingsPersistenceMirror.schedule()
+        },
         showPersianDates: {
             SharedDefaults.app[.appSettingShowPersianDates]
         },
@@ -692,6 +703,8 @@ extension AppSettingsClient {
         setNotesEnabled: { _ in },
         awayEnabled: { false },
         setAwayEnabled: { _ in },
+        filterQuerySectionsEnabled: { false },
+        setFilterQuerySectionsEnabled: { _ in },
         showPersianDates: { false },
         setShowPersianDates: { _ in },
         automaticPlaceCheckInEnabled: { true },

@@ -552,6 +552,13 @@ private struct SettingsMacBetaExperimentsCard: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 
+            Toggle("Show filter query sections", isOn: filterQuerySectionsBinding)
+                .toggleStyle(.switch)
+
+            Text("Show advanced query controls in Home and Stats filters.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
             Toggle("Show Goals tab", isOn: $isGoalsTabEnabled)
                 .toggleStyle(.switch)
 
@@ -693,6 +700,13 @@ private struct SettingsMacBetaExperimentsCard: View {
         Binding(
             get: { store.appearance.isAwayEnabled },
             set: { store.send(.awayToggled($0)) }
+        )
+    }
+
+    private var filterQuerySectionsBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.showsFilterQuerySections },
+            set: { store.send(.filterQuerySectionsToggled($0)) }
         )
     }
 }

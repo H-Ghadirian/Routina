@@ -120,6 +120,11 @@ private struct SettingsBetaExperimentsSection: View {
             Text("Show Away mode controls, Away planner blocks, Away timeline items, Away stats, and Sleep stats/blocking surfaces.")
                 .foregroundStyle(.secondary)
 
+            Toggle("Show filter query sections", isOn: filterQuerySectionsBinding)
+
+            Text("Show advanced query controls in Home and Stats filters.")
+                .foregroundStyle(.secondary)
+
             Toggle("Show Goals tab", isOn: $isGoalsTabEnabled)
 
             Text("Show Goal navigation, controls, and Stats reports.")
@@ -195,6 +200,13 @@ private struct SettingsBetaExperimentsSection: View {
         Binding(
             get: { store.appearance.isAwayEnabled },
             set: { store.send(.awayToggled($0)) }
+        )
+    }
+
+    private var filterQuerySectionsBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.showsFilterQuerySections },
+            set: { store.send(.filterQuerySectionsToggled($0)) }
         )
     }
 }

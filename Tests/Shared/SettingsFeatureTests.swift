@@ -597,6 +597,24 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func filterQuerySectionsToggled_persistsSelection() async {
+        let persistedValue = LockIsolated<Bool?>(nil)
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setFilterQuerySectionsEnabled = { persistedValue.setValue($0) }
+        }
+
+        await store.send(.filterQuerySectionsToggled(true)) {
+            $0.appearance.showsFilterQuerySections = true
+        }
+
+        #expect(persistedValue.value == true)
+    }
+
+    @Test
     func defaultSettingsKeepTaskSharingOff() {
         #expect(AppSettingsDefaults.boolValues[.appSettingTaskSharingEnabled] == .some(false))
         #expect(!SettingsFeature.State().appearance.isTaskSharingEnabled)
@@ -625,6 +643,13 @@ struct SettingsFeatureTests {
         #expect(!SettingsFeature.State().appearance.isAwayEnabled)
         #expect(!RoutinaUserPreferences().notesEnabled)
         #expect(!RoutinaUserPreferences().awayEnabled)
+    }
+
+    @Test
+    func defaultSettingsKeepFilterQuerySectionsOff() {
+        #expect(AppSettingsDefaults.boolValues[.appSettingFilterQuerySectionsEnabled] == .some(false))
+        #expect(!SettingsFeature.State().appearance.showsFilterQuerySections)
+        #expect(!RoutinaUserPreferences().filterQuerySectionsEnabled)
     }
 
     @Test

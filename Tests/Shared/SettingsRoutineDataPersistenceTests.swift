@@ -139,6 +139,7 @@ struct SettingsRoutineDataPersistenceTests {
         defaults[.appSettingPlacesEnabled] = true
         defaults[.appSettingNotesEnabled] = true
         defaults[.appSettingAwayEnabled] = true
+        defaults[.appSettingFilterQuerySectionsEnabled] = true
         defaults[.appSettingShowPersianDates] = true
         defaults[.appSettingFocusShieldEnabled] = true
         defaults[.appSettingAutomaticPlaceCheckInEnabled] = false
@@ -155,6 +156,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(backup.userPreferences?.placesEnabled == true)
         #expect(backup.userPreferences?.notesEnabled == true)
         #expect(backup.userPreferences?.awayEnabled == true)
+        #expect(backup.userPreferences?.filterQuerySectionsEnabled == true)
 
         let restoreContext = makeInMemoryContext()
         let summary = try SettingsRoutineDataPersistence.replaceAllRoutineData(
@@ -184,6 +186,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(restored.placesEnabled)
         #expect(restored.notesEnabled)
         #expect(restored.awayEnabled)
+        #expect(restored.filterQuerySectionsEnabled)
         #expect(restored.showPersianDates)
         #expect(restored.focusShieldEnabled)
         #expect(!restored.automaticPlaceCheckInEnabled)

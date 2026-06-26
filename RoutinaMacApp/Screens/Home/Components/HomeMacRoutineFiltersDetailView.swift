@@ -2,6 +2,10 @@ import SwiftUI
 
 struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: View {
     @State private var selectedTab: HomeMacRoutineFilterDetailTab = .filter
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingFilterQuerySectionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var showsFilterQuerySections = false
 
     let availableFilters: [RoutineListFilter]
     @Binding var taskListMode: HomeTaskListMode
@@ -50,8 +54,10 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
     private var filterTabContent: some View {
         Group {
-            HomeMacSidebarSectionCard(title: "Query") {
-                queryBuilder
+            if showsFilterQuerySections {
+                HomeMacSidebarSectionCard(title: "Query") {
+                    queryBuilder
+                }
             }
 
             coreFilterCard

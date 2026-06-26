@@ -23,6 +23,7 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - [0236](../decisions/0236-hide-empty-stats-reports.md)
 - [0275](../decisions/0275-hide-places-behind-beta-toggle.md)
 - [0279](../decisions/0279-hide-sleep-stats-and-blocking-with-away-toggle.md)
+- [0284](../decisions/0284-hide-filter-query-sections-behind-beta-toggle.md)
 
 ## Current Contract
 
@@ -34,5 +35,6 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - macOS Event and Emotion reports follow the Mac Event/Emotion beta setting.
 - macOS Focus vs completed work and Estimated vs Actual time reports remain addable but start hidden by default.
 - Wins, Achievements, Sleep scope, Goals UI, and Adventure surfaces remain implemented but are hidden by default behind their related settings; Sleep-specific Stats and Adventure surfaces also stay hidden while `Show Away` is off.
+- Stats filter Query sections are hidden by default behind Support & About -> Beta Experiments -> `Show filter query sections`; existing advanced query state remains compatible and still appears in active filter summaries when nonempty.
 - Stats hero activity previews use range-appropriate buckets: day-level for week, roughly weekly for month, and trailing 12-month framing for year.
 - Adventure derives progression from existing activity history and shares the Mac Stats sidebar tab behind a `Stats / Adventure` segment when enabled.

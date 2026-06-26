@@ -26,6 +26,7 @@ struct SettingsFeature {
         case placesToggled(Bool)
         case notesToggled(Bool)
         case awayToggled(Bool)
+        case filterQuerySectionsToggled(Bool)
         case showPersianDatesToggled(Bool)
         case automaticPlaceCheckInToggled(Bool)
         case showTimelineTasksInDayPlannerToggled(Bool)
@@ -234,6 +235,13 @@ struct SettingsFeature {
 
             case let .awayToggled(isEnabled):
                 return SettingsAppearanceActionHandler.awayToggled(
+                    isEnabled,
+                    state: &state.appearance,
+                    appSettingsClient: self.appSettingsClient
+                )
+
+            case let .filterQuerySectionsToggled(isEnabled):
+                return SettingsAppearanceActionHandler.filterQuerySectionsToggled(
                     isEnabled,
                     state: &state.appearance,
                     appSettingsClient: self.appSettingsClient
@@ -480,6 +488,7 @@ struct SettingsFeature {
                     placesEnabled: appSettingsClient.placesEnabled(),
                     notesEnabled: appSettingsClient.notesEnabled(),
                     awayEnabled: appSettingsClient.awayEnabled(),
+                    filterQuerySectionsEnabled: appSettingsClient.filterQuerySectionsEnabled(),
                     lastRoutineDataBackupDate: appSettingsClient.lastRoutineDataBackupDate(),
                     deviceAuthenticationStatus: deviceAuthenticationClient.status(),
                     state: &state

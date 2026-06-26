@@ -41,6 +41,7 @@ final class RoutinaUserPreferences {
     var placesEnabled: Bool = false
     var notesEnabled: Bool = false
     var awayEnabled: Bool = false
+    var filterQuerySectionsEnabled: Bool = false
     var showPersianDates: Bool = false
     var batteryRoutineMonitoringEnabled: Bool = false
     var sleepHomeActionEnabled: Bool = true
@@ -182,6 +183,7 @@ enum RoutinaUserPreferencesStore {
         preferences.placesEnabled = defaults[.appSettingPlacesEnabled]
         preferences.notesEnabled = defaults[.appSettingNotesEnabled]
         preferences.awayEnabled = defaults[.appSettingAwayEnabled]
+        preferences.filterQuerySectionsEnabled = defaults[.appSettingFilterQuerySectionsEnabled]
         preferences.showPersianDates = defaults[.appSettingShowPersianDates]
         preferences.batteryRoutineMonitoringEnabled = BatteryRoutinePreferences.isMonitoringEnabled
         preferences.sleepHomeActionEnabled = defaults[.appSettingSleepHomeActionEnabled]
@@ -238,6 +240,7 @@ enum RoutinaUserPreferencesStore {
         defaults[.appSettingPlacesEnabled] = preferences.placesEnabled
         defaults[.appSettingNotesEnabled] = preferences.notesEnabled
         defaults[.appSettingAwayEnabled] = preferences.awayEnabled
+        defaults[.appSettingFilterQuerySectionsEnabled] = preferences.filterQuerySectionsEnabled
         defaults[.appSettingShowPersianDates] = preferences.showPersianDates
         defaults[.appSettingBatteryRoutineMonitoringEnabled] = preferences.batteryRoutineMonitoringEnabled
         defaults[.appSettingSleepHomeActionEnabled] = preferences.sleepHomeActionEnabled
