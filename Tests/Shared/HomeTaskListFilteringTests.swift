@@ -928,6 +928,8 @@ struct HomeTaskListFilteringTests {
         #expect(futureSection?.taskGroups.map(\.title) == [String?("On Track")])
         #expect(futureSection?.taskGroups.compactMap(\.moveContext?.sectionKey) == ["onTrack"])
         #expect(futureSection?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs.first) == [regularID])
+        #expect(futureSection?.taskGroups.map(\.kind) == [.regular])
+        #expect(futureSection?.taskGroups.map(\.isCollapsible) == [false])
     }
 
     @Test
@@ -960,6 +962,8 @@ struct HomeTaskListFilteringTests {
         #expect(presentation.sections.first?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs.first) == [dailyID])
         #expect(futureSection?.taskGroups.compactMap(\.moveContext?.sectionKey) == ["onTrack"])
         #expect(futureSection?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs.first) == [regularID])
+        #expect(futureSection?.taskGroups.map(\.kind) == [.regular])
+        #expect(futureSection?.taskGroups.map(\.isCollapsible) == [false])
     }
 
     @Test
@@ -1034,6 +1038,8 @@ struct HomeTaskListFilteringTests {
         #expect(presentation.sections.first?.tasks.map(\.taskID) == [plannedID])
         #expect(presentation.sections.last?.tasks.map(\.taskID) == [tagID])
         #expect(presentation.sections.last?.taskGroups.map(\.title) == [String?("#HSE")])
+        #expect(presentation.sections.last?.taskGroups.map(\.kind) == [.tag])
+        #expect(presentation.sections.last?.taskGroups.map(\.isCollapsible) == [true])
     }
 
     @Test
@@ -1064,6 +1070,8 @@ struct HomeTaskListFilteringTests {
         #expect(presentation.sections.first?.taskGroups.compactMap(\.moveContext?.sectionKey) == ["daily"])
         #expect(presentation.sections.first?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs.first) == [focusID])
         #expect(futureSection?.taskGroups.map(\.title) == [String?("#Admin")])
+        #expect(futureSection?.taskGroups.map(\.kind) == [.tag])
+        #expect(futureSection?.taskGroups.map(\.isCollapsible) == [true])
         #expect(futureSection?.taskGroups.compactMap(\.moveContext?.sectionKey) == ["tag:admin"])
         #expect(futureSection?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs.first) == [adminID])
     }
@@ -1097,6 +1105,8 @@ struct HomeTaskListFilteringTests {
         #expect(presentation.sections.first?.tasks.map(\.taskID) == [plannedID, dailyID])
         #expect(presentation.sections.last?.tasks.map(\.taskID) == [tagID])
         #expect(presentation.sections.last?.taskGroups.map(\.title) == [String?("#HSE")])
+        #expect(presentation.sections.last?.taskGroups.map(\.kind) == [.tag])
+        #expect(presentation.sections.last?.taskGroups.map(\.isCollapsible) == [true])
     }
 
     @Test
@@ -1127,6 +1137,8 @@ struct HomeTaskListFilteringTests {
         #expect(presentation.sections.first?.taskGroups.compactMap(\.moveContext?.sectionKey) == ["daily"])
         #expect(presentation.sections.first?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs) == [[dailyID]])
         #expect(futureSection?.taskGroups.map(\.title) == [nil])
+        #expect(futureSection?.taskGroups.map(\.kind) == [.regular])
+        #expect(futureSection?.taskGroups.map(\.isCollapsible) == [false])
         #expect(futureSection?.taskGroups.compactMap(\.moveContext?.sectionKey) == ["tasks"])
         #expect(futureSection?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs) == [[weeklyID]])
     }

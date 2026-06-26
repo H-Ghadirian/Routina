@@ -6,6 +6,7 @@ struct HomeTaskListMoveContext: Equatable {
 }
 
 struct HomeTaskListPresentationTaskGroup<Display: HomeTaskListDisplay>: Identifiable {
+    let kind: HomeTaskListPresentationSectionKind
     let title: String?
     let tasks: [Display]
     let moveContext: HomeTaskListMoveContext?
@@ -66,6 +67,7 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
         self.moveContext = moveContext
         self.taskGroups = taskGroups ?? [
             HomeTaskListPresentationTaskGroup(
+                kind: kind,
                 title: nil,
                 tasks: tasks,
                 moveContext: moveContext,
@@ -486,6 +488,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         if !plannedTodayTasks.isEmpty {
             groups.append(
                 HomeTaskListPresentationTaskGroup(
+                    kind: .plannedToday,
                     title: nil,
                     tasks: plannedTodayTasks,
                     moveContext: HomeTaskListMoveContext(
@@ -500,6 +503,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         if !dailyTasks.isEmpty {
             groups.append(
                 HomeTaskListPresentationTaskGroup(
+                    kind: .daily,
                     title: separateDailyRoutinesInTaskList ? "Daily Routines" : nil,
                     tasks: dailyTasks,
                     moveContext: HomeTaskListMoveContext(
@@ -521,11 +525,13 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         moveContext: (HomeTaskListSection<Display>) -> HomeTaskListMoveContext?
     ) -> HomeTaskListPresentationSection<Display>? {
         let taskGroups = regularSections.map { section in
-            HomeTaskListPresentationTaskGroup(
+            let kind = sidebarFutureGroupKind(for: section, showsGroupTitles: showsGroupTitles)
+            return HomeTaskListPresentationTaskGroup(
+                kind: kind,
                 title: showsGroupTitles ? section.title : nil,
                 tasks: section.tasks,
                 moveContext: moveContext(section),
-                isCollapsible: false
+                isCollapsible: kind == .tag || kind == .untagged
             )
         }
         let tasks = taskGroups.flatMap(\.tasks)
@@ -542,6 +548,20 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             moveContext: nil,
             taskGroups: taskGroups
         )
+    }
+
+    private static func sidebarFutureGroupKind(
+        for section: HomeTaskListSection<Display>,
+        showsGroupTitles: Bool
+    ) -> HomeTaskListPresentationSectionKind {
+        guard showsGroupTitles else { return .regular }
+        if HomeTaskListTagGrouping.isUntaggedTitle(section.title) {
+            return .untagged
+        }
+        if section.title.hasPrefix("#") {
+            return .tag
+        }
+        return .regular
     }
 
     private static func tagPresentationSections(

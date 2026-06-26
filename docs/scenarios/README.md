@@ -159,6 +159,18 @@ Given a weekly or month-day calendar routine has a canceled occurrence for today
 When Home derives `Plan to do today`
 Then that routine no longer appears in the today plan for the canceled day
 
+### Future Preserves Inner Group Behavior
+
+Area: Tasks
+Decision links: [0283](../decisions/0283-preserve-mac-future-inner-sections.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/HomeTaskListFilteringTests.swift`
+
+Given Mac Home groups regular tasks by tag
+When Home derives the `Future` section
+Then each tag group remains a tagged, colorable, collapsible inner section inside `Future`
+
 ### Home Task Lists Keep Stable Row Identity
 
 Area: Tasks

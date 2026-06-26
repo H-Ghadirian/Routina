@@ -40,6 +40,45 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func dayHourSpacingOnlyExpandsDayModeCalendar() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let planner = DayPlanPlannerState()
+
+        planner.increaseDayHourSpacing()
+
+        #expect(planner.dayHourSpacing == .spacious)
+        #expect(planner.calendarHourHeight == DayPlanHourSpacing.standard.hourHeight)
+
+        planner.setVisibleRangeMode(.day, calendar: calendar, context: context)
+
+        #expect(planner.calendarHourHeight == DayPlanHourSpacing.spacious.hourHeight)
+    }
+
+    @Test
+    func dayHourSpacingControlsClampAtBounds() {
+        let planner = DayPlanPlannerState(visibleRangeMode: .day)
+
+        #expect(planner.canDecreaseDayHourSpacing == false)
+        #expect(planner.canIncreaseDayHourSpacing)
+
+        planner.decreaseDayHourSpacing()
+        #expect(planner.dayHourSpacing == .standard)
+
+        planner.increaseDayHourSpacing()
+        planner.increaseDayHourSpacing()
+        planner.increaseDayHourSpacing()
+
+        #expect(planner.dayHourSpacing == .expanded)
+        #expect(planner.canIncreaseDayHourSpacing == false)
+        #expect(planner.canDecreaseDayHourSpacing)
+
+        planner.decreaseDayHourSpacing()
+
+        #expect(planner.dayHourSpacing == .spacious)
+    }
+
+    @Test
     func editVisibleFutureBlockKeepsVisibleWeekAnchored() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

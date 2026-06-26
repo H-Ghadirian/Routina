@@ -37,6 +37,47 @@ enum DayPlanVisibleRangeMode: String, CaseIterable, Identifiable {
     }
 }
 
+enum DayPlanHourSpacing: String, CaseIterable, Identifiable {
+    case standard
+    case spacious
+    case expanded
+
+    var id: Self { self }
+
+    var hourHeight: Double {
+        switch self {
+        case .standard:
+            return 64
+        case .spacious:
+            return 88
+        case .expanded:
+            return 112
+        }
+    }
+
+    var next: Self {
+        switch self {
+        case .standard:
+            return .spacious
+        case .spacious:
+            return .expanded
+        case .expanded:
+            return .expanded
+        }
+    }
+
+    var previous: Self {
+        switch self {
+        case .standard:
+            return .standard
+        case .spacious:
+            return .standard
+        case .expanded:
+            return .spacious
+        }
+    }
+}
+
 private struct DayPlanPlannerUndoSnapshot: Equatable {
     var dayKey: String
     var blocks: [DayPlanBlock]
@@ -78,6 +119,7 @@ final class DayPlanPlannerState: ObservableObject {
     @Published var focusedUnplannedCompletedDate: Date?
     @Published var focusedSleep: DayPlanFocusedSleep?
     @Published var visibleRangeMode: DayPlanVisibleRangeMode
+    @Published var dayHourSpacing: DayPlanHourSpacing = .standard
     @Published var highlightedBlockID: UUID?
     @Published var highlightedBlockScrollMinute: Int?
 
@@ -121,8 +163,33 @@ final class DayPlanPlannerState: ObservableObject {
         )
     }
 
+    var calendarHourHeight: Double {
+        switch visibleRangeMode {
+        case .day:
+            return dayHourSpacing.hourHeight
+        case .week:
+            return DayPlanHourSpacing.standard.hourHeight
+        }
+    }
+
+    var canIncreaseDayHourSpacing: Bool {
+        dayHourSpacing.next != dayHourSpacing
+    }
+
+    var canDecreaseDayHourSpacing: Bool {
+        dayHourSpacing.previous != dayHourSpacing
+    }
+
     var conflictingBlock: DayPlanBlock? {
         conflict(startMinute: startMinute, durationMinutes: durationMinutes, ignoring: selectedBlockID)
+    }
+
+    func increaseDayHourSpacing() {
+        dayHourSpacing = dayHourSpacing.next
+    }
+
+    func decreaseDayHourSpacing() {
+        dayHourSpacing = dayHourSpacing.previous
     }
 
     func loadBlocks(calendar: Calendar, context: ModelContext) {

@@ -419,6 +419,10 @@ private struct DayPlanHeaderView: View {
             visibleRangeModePicker
                 .frame(width: 128)
 
+            if planner.visibleRangeMode == .day {
+                dayHourSpacingControls
+            }
+
             Spacer(minLength: 16)
 
             DatePicker("Selected day", selection: selectedDateBinding, displayedComponents: [.date])
@@ -451,7 +455,13 @@ private struct DayPlanHeaderView: View {
                     .datePickerStyle(.compact)
             }
 
-            visibleRangeModePicker
+            HStack(spacing: 8) {
+                visibleRangeModePicker
+
+                if planner.visibleRangeMode == .day {
+                    dayHourSpacingControls
+                }
+            }
         }
     }
 
@@ -489,6 +499,37 @@ private struct DayPlanHeaderView: View {
             Text(mode.title)
         }
         .accessibilityLabel("Planner range")
+    }
+
+    private var dayHourSpacingControls: some View {
+        HStack(spacing: 4) {
+            Button {
+                planner.decreaseDayHourSpacing()
+            } label: {
+                Image(systemName: "minus.magnifyingglass")
+                    .frame(width: 20, height: 20)
+                    .contentShape(Rectangle())
+            }
+            .disabled(!planner.canDecreaseDayHourSpacing)
+            .accessibilityLabel("Decrease day hour spacing")
+            .help("Decrease hour spacing")
+
+            Button {
+                planner.increaseDayHourSpacing()
+            } label: {
+                Image(systemName: "plus.magnifyingglass")
+                    .frame(width: 20, height: 20)
+                    .contentShape(Rectangle())
+            }
+            .disabled(!planner.canIncreaseDayHourSpacing)
+            .accessibilityLabel("Increase day hour spacing")
+            .help("Increase hour spacing")
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Day hour spacing")
+        .accessibilityValue("\(Int(planner.dayHourSpacing.hourHeight)) points per hour")
     }
 
     private var visibleRangeModeBinding: Binding<DayPlanVisibleRangeMode> {
@@ -1562,6 +1603,7 @@ private struct DayPlanTimelinePanelContentView: View {
                 focusedUnplannedCompletedDate: activeFocusedUnplannedCompletedDate,
                 focusedSleep: planner.focusedSleep,
                 calendar: calendar,
+                hourHeight: CGFloat(planner.calendarHourHeight),
                 dropDurationMinutes: planner.durationMinutes,
                 showsUnplannedCompletedBadges: !showsTimelineTasksInDayPlanner,
                 blocksForDate: { date in

@@ -14,6 +14,7 @@ struct DayPlanWeekCalendarView: View {
     var focusedUnplannedCompletedDate: Date?
     var focusedSleep: DayPlanFocusedSleep?
     var calendar: Calendar
+    var hourHeight: CGFloat = 64
     var dropDurationMinutes: Int
     var showsUnplannedCompletedBadges: Bool
     var blocksForDate: (Date) -> [DayPlanBlock]
@@ -66,7 +67,6 @@ struct DayPlanWeekCalendarView: View {
     @State private var draftResizeBaseline: DayPlanSelectedSlotPopover?
     @Namespace private var blockAnimationNamespace
 
-    private let hourHeight: CGFloat = 64
     private let timeColumnWidth: CGFloat = 64
 
     var body: some View {
@@ -307,6 +307,9 @@ struct DayPlanWeekCalendarView: View {
                     if !scrollToPlannerHighlight(with: scrollProxy) {
                         scrollToInitialTarget(with: scrollProxy)
                     }
+                }
+                .onChange(of: hourHeight) { _, _ in
+                    scrollToInitialTarget(with: scrollProxy)
                 }
                 .onChange(of: focusedSleep) { _, _ in
                     scrollToFocusedSleep(with: scrollProxy)

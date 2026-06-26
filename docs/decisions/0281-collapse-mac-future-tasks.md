@@ -6,6 +6,8 @@ Date: 2026-06-26
 
 Refines: [0200 Support Task Planned Dates](0200-support-task-planned-dates.md), [0202 Nest Daily Routines Under Mac Plan Today](0202-nest-daily-routines-under-mac-plan-today.md), [0247 Make Mac Daily Routine Grouping Optional](0247-make-mac-daily-routine-grouping-optional.md), [0252 Stabilize Home Task List Presentation Identity](0252-stabilize-home-task-list-presentation-identity.md)
 
+Refined by: [0283 Preserve Mac Future Inner Sections](0283-preserve-mac-future-inner-sections.md)
+
 ## Context
 
 The Mac Home sidebar is meant to keep today's working plan prominent. After `Plan to do today`, normal status, deadline, tag, or ungrouped sections can still take a lot of visual space and compete with today's tasks.

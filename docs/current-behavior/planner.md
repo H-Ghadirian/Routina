@@ -27,6 +27,7 @@ This page summarizes active Planner, timeline activity, focus, Away, and Sleep b
 - [0273](../decisions/0273-log-sleep-from-planner-away-slot-action.md)
 - [0274](../decisions/0274-present-resizable-planner-slot-draft.md)
 - [0280](../decisions/0280-show-timeline-newest-first.md)
+- [0282](../decisions/0282-expand-day-planner-hour-spacing.md)
 
 ## Current Contract
 
@@ -37,6 +38,7 @@ This page summarizes active Planner, timeline activity, focus, Away, and Sleep b
 - Automatic activity that cannot be placed because planner task or event blocks reserve the usable time appears in the top `Needs Time` lane for that day, where it can be dragged into the timed calendar, hidden, confirmed, or opened like other automatic activity.
 - Protected Away, Focus, and Sleep intervals remain separate from the `Needs Time` lane and keep their existing suppression/linking behavior for overlapping automatic activity.
 - Planner supports a default week view and a focused one-day view without changing stored planner data.
+- Planner Day mode can increase or decrease hour-row spacing for more precise block placement, while Week mode keeps the standard compact hour height.
 - Planner all-day lanes accept tasks, timed blocks, and completed activity drops.
 - Single-clicking an empty timed Planner slot selects the clicked 15-minute date/time without starting creation. Double-clicking an empty timed Planner slot shows a temporary resizable draft block and opens a compact action panel anchored to that draft for creating a task block or logging finished screen-away time. On macOS this panel is a native popover so it can remain visible near app edges instead of being clipped by the planner viewport; late-day slots can open the popover above the draft, and the anchor shifts within the visible screen frame so bottom-right fullscreen presentations remain usable. Resizing the draft updates the displayed time range and duration before commit. The Away tab presents Away presets plus Sleep; Away choices create completed `AwaySession` records, while Sleep creates a completed `SleepSession`.
 - Standalone events render as calendar-visible, read-only planner blocks.

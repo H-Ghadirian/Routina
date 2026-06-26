@@ -270,39 +270,71 @@ extension HomeTCAView {
         let isExpanded = taskListSectionIsExpanded(section)
 
         if section.kind.isCollapsible {
-            VStack(alignment: .leading, spacing: 0) {
-                taskListCollapsibleSectionHeader(for: section, isExpanded: isExpanded)
-                    .padding(.bottom, isExpanded ? 6 : 0)
+            if taskListSectionUsesDetachedHeader(section) {
+                VStack(alignment: .leading, spacing: isExpanded ? 8 : 0) {
+                    taskListCollapsibleSectionHeader(for: section, isExpanded: isExpanded)
+                        .routinaGlassCard(
+                            cornerRadius: 8,
+                            tint: taskListSectionHeaderTint(for: section),
+                            tintOpacity: taskListSectionHeaderTintOpacity(for: section, isExpanded: isExpanded),
+                            interactive: true
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .stroke(
+                                    taskListSectionHeaderTint(for: section).opacity(
+                                        taskListSectionHeaderStrokeOpacity(for: section, isExpanded: isExpanded)
+                                    ),
+                                    lineWidth: 0.75
+                                )
+                        )
 
-                if isExpanded {
-                    taskListSectionTaskGroups(
-                        for: section,
-                        in: presentation,
-                        metadataPresenter: metadataPresenter,
-                        rowVisibility: rowVisibility,
-                        allowsPlannerDrag: allowsPlannerDrag
-                    )
-                    .padding(.horizontal, 8)
-                    .padding(.bottom, 8)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    if isExpanded {
+                        taskListSectionTaskGroups(
+                            for: section,
+                            in: presentation,
+                            metadataPresenter: metadataPresenter,
+                            rowVisibility: rowVisibility,
+                            allowsPlannerDrag: allowsPlannerDrag
+                        )
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
                 }
+            } else {
+                VStack(alignment: .leading, spacing: 0) {
+                    taskListCollapsibleSectionHeader(for: section, isExpanded: isExpanded)
+                        .padding(.bottom, isExpanded ? 6 : 0)
+
+                    if isExpanded {
+                        taskListSectionTaskGroups(
+                            for: section,
+                            in: presentation,
+                            metadataPresenter: metadataPresenter,
+                            rowVisibility: rowVisibility,
+                            allowsPlannerDrag: allowsPlannerDrag
+                        )
+                        .padding(.horizontal, 8)
+                        .padding(.bottom, 8)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+                }
+                .routinaGlassCard(
+                    cornerRadius: 8,
+                    tint: taskListSectionHeaderTint(for: section),
+                    tintOpacity: taskListSectionHeaderTintOpacity(for: section, isExpanded: isExpanded),
+                    interactive: true
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(
+                            taskListSectionHeaderTint(for: section).opacity(
+                                taskListSectionHeaderStrokeOpacity(for: section, isExpanded: isExpanded)
+                            ),
+                            lineWidth: 0.75
+                        )
+                )
+                .clipped()
             }
-            .routinaGlassCard(
-                cornerRadius: 8,
-                tint: taskListSectionHeaderTint(for: section),
-                tintOpacity: taskListSectionHeaderTintOpacity(for: section, isExpanded: isExpanded),
-                interactive: true
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(
-                        taskListSectionHeaderTint(for: section).opacity(
-                            taskListSectionHeaderStrokeOpacity(for: section, isExpanded: isExpanded)
-                        ),
-                        lineWidth: 0.75
-                    )
-            )
-            .clipped()
         } else {
             VStack(alignment: .leading, spacing: 6) {
                 taskListSectionHeader(for: section)
@@ -318,6 +350,12 @@ extension HomeTCAView {
                 }
             }
         }
+    }
+
+    private func taskListSectionUsesDetachedHeader(
+        _ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+    ) -> Bool {
+        section.kind == .plannedToday || section.kind == .future
     }
 
     private func taskListCollapsibleSectionHeader(
@@ -345,26 +383,102 @@ extension HomeTCAView {
         rowVisibility: HomeTaskRowVisibility,
         allowsPlannerDrag: Bool
     ) -> some View {
-        ForEach(section.taskGroups) { group in
-            if let groupTitle = group.title {
-                taskListInnerGroupHeader(groupTitle, count: group.tasks.count, group: group)
-            }
+        VStack(alignment: .leading, spacing: taskListGroupStackSpacing(for: section)) {
+            ForEach(section.taskGroups) { group in
+                if taskListGroupUsesSectionSurface(group) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        if let groupTitle = group.title {
+                            taskListInnerGroupHeader(groupTitle, count: group.tasks.count, group: group)
+                                .padding(.bottom, taskListGroupIsExpanded(group) ? 6 : 0)
+                        }
 
-            if taskListGroupIsExpanded(group) {
-                ForEach(group.tasks, id: \.id) { task in
-                    macTaskSourceRow(
-                        for: task,
-                        rowNumber: visibleRowNumber(for: task, in: presentation),
-                        includeMarkDone: section.includeMarkDone,
-                        moveContext: group.moveContext,
-                        metadataPresenter: metadataPresenter,
-                        rowVisibility: rowVisibility,
-                        allowsPlannerDrag: allowsPlannerDrag
+                        if taskListGroupIsExpanded(group) {
+                            taskListGroupRows(
+                                group,
+                                section: section,
+                                in: presentation,
+                                metadataPresenter: metadataPresenter,
+                                rowVisibility: rowVisibility,
+                                allowsPlannerDrag: allowsPlannerDrag
+                            )
+                            .padding(.horizontal, 8)
+                            .padding(.bottom, 8)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
+                    }
+                    .routinaGlassCard(
+                        cornerRadius: 8,
+                        tint: taskListGroupHeaderTint(for: group),
+                        tintOpacity: taskListGroupHeaderTintOpacity(for: group),
+                        interactive: true
                     )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(
+                                taskListGroupHeaderTint(for: group).opacity(
+                                    taskListGroupHeaderStrokeOpacity(for: group)
+                                ),
+                                lineWidth: 0.75
+                            )
+                    )
+                    .clipped()
+                } else {
+                    if let groupTitle = group.title {
+                        taskListInnerGroupHeader(groupTitle, count: group.tasks.count, group: group)
+                    }
+
+                    if taskListGroupIsExpanded(group) {
+                        taskListGroupRows(
+                            group,
+                            section: section,
+                            in: presentation,
+                            metadataPresenter: metadataPresenter,
+                            rowVisibility: rowVisibility,
+                            allowsPlannerDrag: allowsPlannerDrag
+                        )
+                    }
                 }
-                .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
+    }
+
+    private func taskListGroupStackSpacing(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+    ) -> CGFloat {
+        guard section.taskGroups.count > 1 else { return 0 }
+        if section.kind == .plannedToday,
+           section.taskGroups.allSatisfy({ $0.title == nil && !$0.isCollapsible }) {
+            return 0
+        }
+        return 8
+    }
+
+    @ViewBuilder
+    private func taskListGroupRows(
+        _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>,
+        section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>,
+        metadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay>,
+        rowVisibility: HomeTaskRowVisibility,
+        allowsPlannerDrag: Bool
+    ) -> some View {
+        ForEach(group.tasks, id: \.id) { task in
+            macTaskSourceRow(
+                for: task,
+                rowNumber: visibleRowNumber(for: task, in: presentation),
+                includeMarkDone: section.includeMarkDone,
+                moveContext: group.moveContext,
+                metadataPresenter: metadataPresenter,
+                rowVisibility: rowVisibility,
+                allowsPlannerDrag: allowsPlannerDrag
+            )
+        }
+    }
+
+    private func taskListGroupUsesSectionSurface(
+        _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
+    ) -> Bool {
+        group.title != nil && (group.kind == .tag || group.kind == .untagged)
     }
 
     @ViewBuilder
@@ -377,7 +491,16 @@ extension HomeTCAView {
             Button {
                 toggleTaskListGroup(group)
             } label: {
-                taskListInnerGroupHeaderLabel(title, count: count, isExpanded: taskListGroupIsExpanded(group))
+                if taskListGroupUsesSectionSurface(group) {
+                    taskListInnerGroupSectionHeaderContent(
+                        title,
+                        count: count,
+                        group: group,
+                        isExpanded: taskListGroupIsExpanded(group)
+                    )
+                } else {
+                    taskListInnerGroupHeaderLabel(title, count: count, isExpanded: taskListGroupIsExpanded(group))
+                }
             }
             .buttonStyle(.plain)
             .accessibilityLabel(title)
@@ -391,6 +514,51 @@ extension HomeTCAView {
                     taskListGroupFocusContextMenu(for: group)
                 }
         }
+    }
+
+    private func taskListInnerGroupSectionHeaderContent(
+        _ title: String,
+        count: Int,
+        group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>,
+        isExpanded: Bool
+    ) -> some View {
+        let tint = taskListGroupHeaderTint(for: group)
+
+        return HStack(spacing: 7) {
+            Image(systemName: "chevron.right")
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(tint)
+                .frame(width: 12)
+                .rotationEffect(.degrees(isExpanded ? 90 : 0))
+
+            Image(systemName: taskListGroupHeaderIcon(for: group))
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(tint)
+                .frame(width: 18, height: 18)
+                .background(
+                    Circle()
+                        .fill(tint.opacity(0.16))
+                )
+
+            Text(title)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .layoutPriority(1)
+
+            Spacer(minLength: 6)
+
+            Text(count.formatted())
+                .font(.caption2.weight(.bold).monospacedDigit())
+                .foregroundStyle(tint)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .routinaGlassPill(tint: tint, tintOpacity: 0.16)
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 7)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
     private func taskListInnerGroupHeaderLabel(
@@ -555,6 +723,75 @@ extension HomeTCAView {
         }
     }
 
+    private func taskListGroupHeaderTintOpacity(
+        for group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
+    ) -> Double {
+        switch group.kind {
+        case .tag:
+            return 0.12
+        case .untagged:
+            return 0.06
+        case .plannedToday, .daily, .future, .regular, .pinned, .away, .archived:
+            return 0.07
+        }
+    }
+
+    private func taskListGroupHeaderStrokeOpacity(
+        for group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
+    ) -> Double {
+        switch group.kind {
+        case .tag:
+            return 0.30
+        case .untagged:
+            return 0.18
+        case .plannedToday, .daily, .future, .regular, .pinned, .away, .archived:
+            return 0.22
+        }
+    }
+
+    private func taskListGroupHeaderIcon(
+        for group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
+    ) -> String {
+        switch group.kind {
+        case .tag:
+            return "tag.fill"
+        case .untagged:
+            return "tag.slash"
+        case .daily:
+            return "arrow.triangle.2.circlepath"
+        case .plannedToday:
+            return "checklist"
+        case .future:
+            return "calendar"
+        case .archived:
+            return "archivebox.fill"
+        case .pinned:
+            return "pin.fill"
+        case .regular, .away:
+            return "list.bullet"
+        }
+    }
+
+    private func taskListGroupHeaderTint(
+        for group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
+    ) -> Color {
+        switch group.kind {
+        case .tag:
+            if let tag = taskListGroupHeaderTagName(for: group) {
+                return tagTint(for: tag)
+            }
+            return .accentColor
+        case .daily:
+            return .teal
+        case .plannedToday:
+            return .accentColor
+        case .untagged, .future, .regular, .away, .archived:
+            return .secondary
+        case .pinned:
+            return .orange
+        }
+    }
+
     private func taskListSectionHeaderTagName(
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     ) -> String? {
@@ -563,6 +800,16 @@ extension HomeTCAView {
         }
         guard section.title.hasPrefix("#") else { return nil }
         return String(section.title.dropFirst())
+    }
+
+    private func taskListGroupHeaderTagName(
+        for group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
+    ) -> String? {
+        if let firstTag = group.tasks.compactMap(\.taskListPrimaryTag).first {
+            return firstTag
+        }
+        guard let title = group.title, title.hasPrefix("#") else { return nil }
+        return String(title.dropFirst())
     }
 
     @ViewBuilder
@@ -718,7 +965,14 @@ extension HomeTCAView {
         _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
     ) -> Bool {
         guard group.isCollapsible else { return true }
-        return !isMacPlanTodayDailyRoutinesGroupCollapsed
+        switch group.kind {
+        case .daily:
+            return !isMacPlanTodayDailyRoutinesGroupCollapsed
+        case .tag, .untagged:
+            return !collapsedTagTaskListSectionIDs.contains(taskListGroupCollapseID(group))
+        case .plannedToday, .future, .regular, .pinned, .away, .archived:
+            return true
+        }
     }
 
     private func toggleTaskListGroup(
@@ -726,7 +980,14 @@ extension HomeTCAView {
     ) {
         guard group.isCollapsible else { return }
         withAnimation(.easeInOut(duration: 0.24)) {
-            isMacPlanTodayDailyRoutinesGroupCollapsed.toggle()
+            switch group.kind {
+            case .daily:
+                isMacPlanTodayDailyRoutinesGroupCollapsed.toggle()
+            case .tag, .untagged:
+                setTagTaskListGroup(group, collapsed: taskListGroupIsExpanded(group))
+            case .plannedToday, .future, .regular, .pinned, .away, .archived:
+                break
+            }
         }
     }
 
@@ -771,6 +1032,26 @@ extension HomeTCAView {
             ids.insert(section.id)
         } else {
             ids.remove(section.id)
+        }
+        collapsedTagTaskListSectionIDsStorage = ids.sorted().joined(separator: "\n")
+    }
+
+    private func taskListGroupCollapseID(
+        _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
+    ) -> String {
+        "group:\(group.id)"
+    }
+
+    private func setTagTaskListGroup(
+        _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>,
+        collapsed: Bool
+    ) {
+        var ids = collapsedTagTaskListSectionIDs
+        let id = taskListGroupCollapseID(group)
+        if collapsed {
+            ids.insert(id)
+        } else {
+            ids.remove(id)
         }
         collapsedTagTaskListSectionIDsStorage = ids.sorted().joined(separator: "\n")
     }
