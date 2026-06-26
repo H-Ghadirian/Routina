@@ -6,6 +6,10 @@ struct SettingsMacAppearanceDetailView: View {
 
     @AppStorage("macTodoBoardCompactCards", store: SharedDefaults.app)
     private var isMacTodoBoardCompactCards = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingBoardScreenEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isBoardScreenEnabled = false
 
     private let columns = [
         GridItem(.adaptive(minimum: 124), spacing: 12)
@@ -48,17 +52,19 @@ SettingsMacDetailShell(
             .foregroundStyle(.secondary)
     }
 
-    SettingsMacDetailCard(title: "Todo Board") {
-        Toggle("Compact cards", isOn: $isMacTodoBoardCompactCards)
-            .toggleStyle(.switch)
+    if isBoardScreenEnabled {
+        SettingsMacDetailCard(title: "Todo Board") {
+            Toggle("Compact cards", isOn: $isMacTodoBoardCompactCards)
+                .toggleStyle(.switch)
 
-        Text(
-            isMacTodoBoardCompactCards
-                ? "Shows a denser board for longer columns."
-                : "Shows fuller cards with a little more breathing room."
-        )
-        .font(.footnote)
-        .foregroundStyle(.secondary)
+            Text(
+                isMacTodoBoardCompactCards
+                    ? "Shows a denser board for longer columns."
+                    : "Shows fuller cards with a little more breathing room."
+            )
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+        }
     }
 
     SettingsMacDetailCard(title: "Tag Counters") {
