@@ -338,9 +338,7 @@ struct DayPlanWeekCalendarView: View {
             plannerRightSidebar
         }
         .animation(.easeInOut(duration: 0.16), value: selectedSlotDraft)
-        .animation(.easeInOut(duration: 0.16), value: selectedDayTaskListDate)
-        .animation(.easeInOut(duration: 0.16), value: isFilterSidebarPresented.wrappedValue)
-        .animation(.easeInOut(duration: 0.16), value: isDatePickerSidebarPresented.wrappedValue)
+        .animation(.easeInOut(duration: 0.16), value: isRightSidebarPresented)
         .onChange(of: isFilterSidebarPresented.wrappedValue) { _, isPresented in
             guard isPresented else { return }
             isDatePickerSidebarPresented.wrappedValue = false
@@ -571,58 +569,45 @@ struct DayPlanWeekCalendarView: View {
 
     @ViewBuilder
     private var plannerRightSidebar: some View {
+        if isRightSidebarPresented {
+            Divider()
+
+            ScrollView {
+                plannerRightSidebarContent
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
+            .scrollIndicators(.visible)
+            .frame(width: DayPlanSlotSidebarPresentation.width)
+            .background(Color.secondary.opacity(0.045))
+            .transition(.move(edge: .trailing).combined(with: .opacity))
+        }
+    }
+
+    private var isRightSidebarPresented: Bool {
+        (selectedSlotDraft != nil && slotSidebarContent != nil)
+            || (selectedDayTaskListDate != nil && dayTaskListSidebarContent != nil)
+            || (isFilterSidebarPresented.wrappedValue && filterSidebarContent != nil)
+            || (isDatePickerSidebarPresented.wrappedValue && datePickerSidebarContent != nil)
+    }
+
+    @ViewBuilder
+    private var plannerRightSidebarContent: some View {
         if let selectedSlotDraft, let slotSidebarContent {
-            Divider()
-
-            ScrollView {
-                slotSidebarContent(
-                    selectedSlotDraft.date,
-                    selectedSlotDraft.startMinute,
-                    selectedSlotDurationBinding(for: selectedSlotDraft),
-                    dismissSelectedSlotSidebar
-                )
-                .frame(maxWidth: .infinity, alignment: .topLeading)
-            }
-            .scrollIndicators(.visible)
-            .frame(width: DayPlanSlotSidebarPresentation.width)
-            .background(Color.secondary.opacity(0.045))
-            .transition(.move(edge: .trailing).combined(with: .opacity))
+            slotSidebarContent(
+                selectedSlotDraft.date,
+                selectedSlotDraft.startMinute,
+                selectedSlotDurationBinding(for: selectedSlotDraft),
+                dismissSelectedSlotSidebar
+            )
         } else if let selectedDayTaskListDate, let dayTaskListSidebarContent {
-            Divider()
-
-            ScrollView {
-                dayTaskListSidebarContent(
-                    selectedDayTaskListDate,
-                    dismissDayTaskListSidebar
-                )
-                .frame(maxWidth: .infinity, alignment: .topLeading)
-            }
-            .scrollIndicators(.visible)
-            .frame(width: DayPlanSlotSidebarPresentation.width)
-            .background(Color.secondary.opacity(0.045))
-            .transition(.move(edge: .trailing).combined(with: .opacity))
+            dayTaskListSidebarContent(
+                selectedDayTaskListDate,
+                dismissDayTaskListSidebar
+            )
         } else if isFilterSidebarPresented.wrappedValue, let filterSidebarContent {
-            Divider()
-
-            ScrollView {
-                filterSidebarContent(dismissFilterSidebar)
-                    .frame(maxWidth: .infinity, alignment: .topLeading)
-            }
-            .scrollIndicators(.visible)
-            .frame(width: DayPlanSlotSidebarPresentation.width)
-            .background(Color.secondary.opacity(0.045))
-            .transition(.move(edge: .trailing).combined(with: .opacity))
+            filterSidebarContent(dismissFilterSidebar)
         } else if isDatePickerSidebarPresented.wrappedValue, let datePickerSidebarContent {
-            Divider()
-
-            ScrollView {
-                datePickerSidebarContent(dismissDatePickerSidebar)
-                    .frame(maxWidth: .infinity, alignment: .topLeading)
-            }
-            .scrollIndicators(.visible)
-            .frame(width: DayPlanSlotSidebarPresentation.width)
-            .background(Color.secondary.opacity(0.045))
-            .transition(.move(edge: .trailing).combined(with: .opacity))
+            datePickerSidebarContent(dismissDatePickerSidebar)
         }
     }
 
