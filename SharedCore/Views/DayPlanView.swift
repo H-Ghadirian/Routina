@@ -1840,6 +1840,15 @@ private struct DayPlanTimelinePanelContentView: View {
                                     blockedIntervalsByDayKey: blockedIntervalsByDayKey
                                 )
                             },
+                            onCreateTaskAndBlock: { title, durationMinutes in
+                                createTaskAndBlock(
+                                    title: title,
+                                    on: date,
+                                    startMinute: minute,
+                                    durationMinutes: durationMinutes,
+                                    blockedIntervalsByDayKey: blockedIntervalsByDayKey
+                                )
+                            },
                             onLogAway: { preset, title, linkedTaskID, durationMinutes in
                                 logAway(
                                     preset: preset,
@@ -2480,6 +2489,54 @@ private struct DayPlanTimelinePanelContentView: View {
         planner.selectTask(task)
         planner.durationMinutes = clampedDuration
         planner.commitBlock(task: task, calendar: calendar, context: modelContext)
+        return nil
+    }
+
+    private func createTaskAndBlock(
+        title: String,
+        on date: Date,
+        startMinute: Int,
+        durationMinutes: Int,
+        blockedIntervalsByDayKey: [String: [DayPlanBlockedInterval]]
+    ) -> String? {
+        let trimmedTitle = DayPlanSlotTaskPickerPresentation.normalizedNewTaskName(title)
+        guard !trimmedTitle.isEmpty else {
+            return "Name the task."
+        }
+
+        let clampedStart = DayPlanBlock.clampedStartMinute(startMinute)
+        let clampedDuration = DayPlanBlock.clampedDuration(
+            durationMinutes,
+            startMinute: clampedStart
+        )
+
+        if let conflict = plannerBlockConflict(on: date, startMinute: clampedStart, durationMinutes: clampedDuration) {
+            return "Overlaps \(conflict.titleSnapshot)."
+        }
+        if let conflict = protectedIntervalConflict(
+            on: date,
+            startMinute: clampedStart,
+            durationMinutes: clampedDuration,
+            blockedIntervalsByDayKey: blockedIntervalsByDayKey
+        ) {
+            return "Overlaps \(conflict.title)."
+        }
+
+        let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext)
+        let task = RoutineTask(
+            name: trimmedTitle,
+            plannedDate: date,
+            scheduleMode: .oneOff,
+            recurrenceRule: .interval(days: 1),
+            estimatedDurationMinutes: clampedDuration
+        )
+        context.insert(task)
+
+        planner.selectSlot(on: date, startMinute: clampedStart, calendar: calendar, context: context)
+        planner.selectTask(task)
+        planner.durationMinutes = clampedDuration
+        planner.commitBlock(task: task, calendar: calendar, context: context)
+        NotificationCenter.default.postRoutineDidUpdate()
         return nil
     }
 
@@ -4166,6 +4223,49 @@ enum DayPlanSlotActionMode: String, CaseIterable, Hashable {
     static func visibleCases(includingAway: Bool) -> [DayPlanSlotActionMode] {
         includingAway ? [.task, .away] : [.task]
     }
+
+    static func showsModePicker(includingAway: Bool) -> Bool {
+        visibleCases(includingAway: includingAway).count > 1
+    }
+}
+
+enum DayPlanSlotTaskPickerPresentation {
+    static func filteredTasks(
+        _ tasks: [RoutineTask],
+        matching query: String
+    ) -> [RoutineTask] {
+        let normalizedQuery = normalizedSearchText(query)
+        guard !normalizedQuery.isEmpty else { return tasks }
+
+        return tasks.filter { task in
+            normalizedSearchText(DayPlanTaskSorting.title(for: task)).contains(normalizedQuery)
+        }
+    }
+
+    static func creatableTaskName(
+        from query: String,
+        tasks: [RoutineTask]
+    ) -> String? {
+        let name = normalizedNewTaskName(query)
+        guard !name.isEmpty else { return nil }
+        let normalizedName = normalizedSearchText(name)
+        let alreadyExists = tasks.contains { task in
+            normalizedSearchText(DayPlanTaskSorting.title(for: task)) == normalizedName
+        }
+        return alreadyExists ? nil : name
+    }
+
+    static func normalizedNewTaskName(_ value: String) -> String {
+        value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .split(whereSeparator: \.isWhitespace)
+            .joined(separator: " ")
+    }
+
+    private static func normalizedSearchText(_ value: String) -> String {
+        normalizedNewTaskName(value)
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+    }
 }
 
 private enum DayPlanAwayLogOption: Hashable, Identifiable {
@@ -4268,12 +4368,14 @@ private struct DayPlanSlotActionPopover: View {
     let calendar: Calendar
     let includesAway: Bool
     let onCreateTaskBlock: (UUID, Int) -> String?
+    let onCreateTaskAndBlock: (String, Int) -> String?
     let onLogAway: (AwaySessionPreset, String?, UUID?, Int) -> String?
     let onLogSleep: (Int) -> String?
     let onDismiss: () -> Void
 
     @State private var mode: DayPlanSlotActionMode = .task
     @State private var selectedTaskID: UUID?
+    @State private var taskQuery = ""
     @State private var selectedAwayOption: DayPlanAwayLogOption = .away(.custom)
     @State private var awayTitle = ""
     @State private var awayLinkedTaskID: UUID?
@@ -4289,6 +4391,7 @@ private struct DayPlanSlotActionPopover: View {
         calendar: Calendar,
         includesAway: Bool = true,
         onCreateTaskBlock: @escaping (UUID, Int) -> String?,
+        onCreateTaskAndBlock: @escaping (String, Int) -> String?,
         onLogAway: @escaping (AwaySessionPreset, String?, UUID?, Int) -> String?,
         onLogSleep: @escaping (Int) -> String?,
         onDismiss: @escaping () -> Void
@@ -4302,6 +4405,7 @@ private struct DayPlanSlotActionPopover: View {
         self.calendar = calendar
         self.includesAway = includesAway
         self.onCreateTaskBlock = onCreateTaskBlock
+        self.onCreateTaskAndBlock = onCreateTaskAndBlock
         self.onLogAway = onLogAway
         self.onLogSleep = onLogSleep
         self.onDismiss = onDismiss
@@ -4315,14 +4419,16 @@ private struct DayPlanSlotActionPopover: View {
         VStack(alignment: .leading, spacing: 16) {
             header
 
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Slot action",
-                options: DayPlanSlotActionMode.visibleCases(includingAway: includesAway),
-                selection: $mode,
-                minimumSegmentWidth: 92,
-                fillsAvailableWidth: true
-            ) { actionMode in
-                Text(actionMode.title)
+            if DayPlanSlotActionMode.showsModePicker(includingAway: includesAway) {
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Slot action",
+                    options: DayPlanSlotActionMode.visibleCases(includingAway: includesAway),
+                    selection: $mode,
+                    minimumSegmentWidth: 92,
+                    fillsAvailableWidth: true
+                ) { actionMode in
+                    Text(actionMode.title)
+                }
             }
 
             switch mode {
@@ -4340,7 +4446,7 @@ private struct DayPlanSlotActionPopover: View {
             }
         }
         .padding(16)
-        .frame(width: 440)
+        .frame(width: 380)
         .onAppear {
             normalizeModeForAwayVisibility()
             setTaskDuration(durationMinutes)
@@ -4359,6 +4465,10 @@ private struct DayPlanSlotActionPopover: View {
                 }
                 setAwayDuration(selectedAwayOption.defaultDurationMinutes, for: selectedAwayOption)
             }
+        }
+        .onChange(of: taskQuery) { _, _ in
+            selectedTaskID = nil
+            errorText = nil
         }
     }
 
@@ -4395,14 +4505,8 @@ private struct DayPlanSlotActionPopover: View {
     }
 
     private var taskBlockContent: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Picker("Task", selection: taskSelectionBinding) {
-                Text("Choose a task").tag(Optional<UUID>.none)
-                ForEach(tasks) { task in
-                    Text(DayPlanTaskSorting.title(for: task)).tag(Optional(task.id))
-                }
-            }
-            .pickerStyle(.menu)
+        VStack(alignment: .leading, spacing: 12) {
+            taskChooser
 
             DayPlanSlotDurationControl(
                 title: "Duration",
@@ -4416,13 +4520,82 @@ private struct DayPlanSlotActionPopover: View {
             Button {
                 submitTaskBlock()
             } label: {
-                Label("Add Block", systemImage: "calendar.badge.plus")
+                Label(taskSubmitTitle, systemImage: "calendar.badge.plus")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .disabled(selectedTaskID == nil)
+            .disabled(!canSubmitTaskBlock)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var taskChooser: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(.secondary)
+
+                TextField("Find or create task", text: $taskQuery)
+                    .textFieldStyle(.plain)
+
+                if !taskQuery.isEmpty {
+                    Button {
+                        taskQuery = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .symbolRenderingMode(.hierarchical)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("Clear")
+                }
+            }
+            .font(.callout)
+            .padding(.horizontal, 10)
+            .frame(height: 38)
+            .routinaGlassPanel(cornerRadius: 8, interactive: true)
+
+            ScrollView {
+                LazyVStack(spacing: 6) {
+                    if let creatableTaskName {
+                        Button {
+                            selectedTaskID = nil
+                            errorText = nil
+                        } label: {
+                            DayPlanSlotCreateTaskRow(
+                                title: creatableTaskName,
+                                isSelected: selectedTaskID == nil
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    }
+
+                    ForEach(filteredTasks) { task in
+                        Button {
+                            selectTask(task)
+                        } label: {
+                            DayPlanSlotTaskChoiceRow(
+                                task: task,
+                                isSelected: selectedTaskID == task.id
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    }
+
+                    if filteredTasks.isEmpty && creatableTaskName == nil {
+                        Text("No matching tasks")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .center)
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+            .scrollIndicators(.visible)
+            .frame(maxHeight: 164)
+        }
     }
 
     private var awayLogContent: some View {
@@ -4493,6 +4666,30 @@ private struct DayPlanSlotActionPopover: View {
         ]
     }
 
+    private var filteredTasks: [RoutineTask] {
+        DayPlanSlotTaskPickerPresentation.filteredTasks(tasks, matching: taskQuery)
+    }
+
+    private var creatableTaskName: String? {
+        DayPlanSlotTaskPickerPresentation.creatableTaskName(from: taskQuery, tasks: tasks)
+    }
+
+    private var canSubmitTaskBlock: Bool {
+        selectedTaskID != nil || creatableTaskName != nil
+    }
+
+    private var taskSubmitTitle: String {
+        selectedTaskID == nil && creatableTaskName != nil ? "Create Task & Add Block" : "Add Block"
+    }
+
+    private func selectTask(_ task: RoutineTask) {
+        selectedTaskID = task.id
+        errorText = nil
+        if let estimate = task.estimatedDurationMinutes {
+            setTaskDuration(estimate)
+        }
+    }
+
     private func selectAwayOption(_ option: DayPlanAwayLogOption) {
         guard includesAway else { return }
         selectedAwayOption = option
@@ -4512,19 +4709,6 @@ private struct DayPlanSlotActionPopover: View {
         selectedAwayOption = .away(.custom)
         awayLinkedTaskID = nil
         setTaskDuration(durationMinutes)
-    }
-
-    private var taskSelectionBinding: Binding<UUID?> {
-        Binding(
-            get: { selectedTaskID },
-            set: { taskID in
-                selectedTaskID = taskID
-                if let task = tasks.first(where: { $0.id == taskID }),
-                   let estimate = task.estimatedDurationMinutes {
-                    setTaskDuration(estimate)
-                }
-            }
-        )
     }
 
     private var taskDurationBinding: Binding<Int> {
@@ -4626,12 +4810,16 @@ private struct DayPlanSlotActionPopover: View {
     }
 
     private func submitTaskBlock() {
-        guard let selectedTaskID else {
-            errorText = "Choose a task."
-            return
+        let error: String?
+        if let selectedTaskID {
+            error = onCreateTaskBlock(selectedTaskID, clampedTaskDurationMinutes)
+        } else if let creatableTaskName {
+            error = onCreateTaskAndBlock(creatableTaskName, clampedTaskDurationMinutes)
+        } else {
+            error = "Choose or name a task."
         }
 
-        if let error = onCreateTaskBlock(selectedTaskID, clampedTaskDurationMinutes) {
+        if let error {
             errorText = error
         } else {
             errorText = nil
@@ -4712,6 +4900,89 @@ private struct DayPlanSlotActionPopover: View {
             return timeText(endDate)
         }
         return endDate.formatted(.dateTime.weekday(.abbreviated).hour().minute())
+    }
+}
+
+private struct DayPlanSlotTaskChoiceRow: View {
+    let task: RoutineTask
+    let isSelected: Bool
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text(CalendarTaskImportSupport.displayEmoji(for: task.emoji) ?? "*")
+                .font(.callout)
+                .frame(width: 26, height: 26)
+                .background(Color.secondary.opacity(0.14), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(DayPlanTaskSorting.title(for: task))
+                    .font(.callout.weight(.semibold))
+                    .lineLimit(1)
+                    .foregroundStyle(.primary)
+
+                if let estimatedDurationMinutes = task.estimatedDurationMinutes {
+                    Text(DayPlanFormatting.durationText(estimatedDurationMinutes))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+            }
+
+            Spacer(minLength: 8)
+
+            if isSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(Color.accentColor)
+            }
+        }
+        .padding(.horizontal, 10)
+        .frame(minHeight: 46)
+        .background(rowBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(isSelected ? Color.accentColor.opacity(0.55) : Color.secondary.opacity(0.12), lineWidth: 1)
+        }
+    }
+
+    private var rowBackground: some ShapeStyle {
+        isSelected ? Color.accentColor.opacity(0.16) : Color.secondary.opacity(0.08)
+    }
+}
+
+private struct DayPlanSlotCreateTaskRow: View {
+    let title: String
+    let isSelected: Bool
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "plus")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 26, height: 26)
+                .background(Color.accentColor.opacity(0.16), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+
+            Text(title)
+                .font(.callout.weight(.semibold))
+                .lineLimit(1)
+                .foregroundStyle(.primary)
+
+            Spacer(minLength: 8)
+
+            if isSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(Color.accentColor)
+            }
+        }
+        .padding(.horizontal, 10)
+        .frame(minHeight: 46)
+        .background(
+            isSelected ? Color.accentColor.opacity(0.16) : Color.secondary.opacity(0.08),
+            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(isSelected ? Color.accentColor.opacity(0.55) : Color.accentColor.opacity(0.24), lineWidth: 1)
+        }
     }
 }
 

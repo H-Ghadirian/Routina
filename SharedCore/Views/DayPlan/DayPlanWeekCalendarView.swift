@@ -496,8 +496,16 @@ struct DayPlanWeekCalendarView: View {
             let draftHeight = draftBlockHeight(for: selectedSlotPopover, hourHeight: hourHeight)
             let durationBinding = selectedSlotDurationBinding(for: selectedSlotPopover)
 #if os(macOS)
-            let estimatedPopoverSize = CGSize(width: 440, height: 440)
-            let preferredPopoverEdge: NSRectEdge = draftY + draftHeight + estimatedPopoverSize.height > contentHeight ? .maxY : .maxX
+            let estimatedPopoverSize = CGSize(width: 380, height: 420)
+            let preferredPopoverEdge = preferredSlotPopoverEdge(
+                draftX: draftX,
+                draftY: draftY,
+                draftWidth: draftWidth,
+                draftHeight: draftHeight,
+                contentWidth: contentWidth,
+                contentHeight: contentHeight,
+                estimatedPopoverSize: estimatedPopoverSize
+            )
             let popoverPositioningRect = slotPopoverPositioningRect(
                 preferredEdge: preferredPopoverEdge,
                 draftX: draftX,
@@ -673,6 +681,37 @@ struct DayPlanWeekCalendarView: View {
     }
 
 #if os(macOS)
+    private func preferredSlotPopoverEdge(
+        draftX: CGFloat,
+        draftY: CGFloat,
+        draftWidth: CGFloat,
+        draftHeight: CGFloat,
+        contentWidth: CGFloat,
+        contentHeight: CGFloat,
+        estimatedPopoverSize: CGSize
+    ) -> NSRectEdge {
+        let margin: CGFloat = 12
+        let bottomSpace = contentHeight - (draftY + draftHeight)
+        let topSpace = draftY
+        if bottomSpace >= estimatedPopoverSize.height + margin {
+            return .minY
+        }
+        if topSpace >= estimatedPopoverSize.height + margin {
+            return .maxY
+        }
+
+        let rightSpace = contentWidth - (draftX + draftWidth)
+        let leftSpace = draftX
+        if rightSpace >= estimatedPopoverSize.width + margin {
+            return .maxX
+        }
+        if leftSpace >= estimatedPopoverSize.width + margin {
+            return .minX
+        }
+
+        return bottomSpace >= topSpace ? .minY : .maxY
+    }
+
     private func slotPopoverPositioningRect(
         preferredEdge: NSRectEdge,
         draftX: CGFloat,
@@ -817,7 +856,7 @@ private struct DayPlanNativePopoverPresenter<PopoverContent: View>: NSViewRepres
 
         private func normalizedPopoverSize(_ fittingSize: CGSize) -> CGSize {
             CGSize(
-                width: max(fittingSize.width, 440),
+                width: max(fittingSize.width, 380),
                 height: max(fittingSize.height, 240)
             )
         }

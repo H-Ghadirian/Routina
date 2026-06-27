@@ -252,6 +252,10 @@ Given Support & About -> Beta Experiments -> `Show Away` is off
 When the user opens the Planner empty-slot action panel
 Then the panel offers task block creation only and does not expose Away or Sleep logging options
 
+Given the Planner empty-slot action panel has only task block creation available
+When the panel opens beside the draft block
+Then it does not show a single-option `Task` tab, keeps the draft block visible when choosing a popover edge, lets the user select a task from an inline filtered list, and can create a new task before adding the block
+
 ### Protected Modes Do Not Overlap
 
 Area: Planner
