@@ -1,5 +1,40 @@
 import Foundation
 
+struct DayPlanCalendarFilterState: Equatable {
+    var showsPlannedTasks = true
+    var showsAllDayTasks = true
+    var showsTimelineSuggestions = true
+    var showsEvents = true
+    var showsFocus = true
+    var showsAway = true
+    var showsSleep = true
+
+    var hasActiveFilters: Bool {
+        self != Self()
+    }
+
+    mutating func reset() {
+        self = Self()
+    }
+
+    func hiddenLayerCount(includesAway: Bool) -> Int {
+        var count = 0
+        if !showsPlannedTasks { count += 1 }
+        if !showsAllDayTasks { count += 1 }
+        if !showsTimelineSuggestions { count += 1 }
+        if !showsEvents { count += 1 }
+        if !showsFocus { count += 1 }
+        if includesAway, !showsAway { count += 1 }
+        if !showsSleep { count += 1 }
+        return count
+    }
+
+    func summaryText(includesAway: Bool) -> String {
+        let count = hiddenLayerCount(includesAway: includesAway)
+        return count == 0 ? "All layers visible" : "\(count) \(count == 1 ? "layer" : "layers") hidden"
+    }
+}
+
 struct DayPlanVisibleBlockContext {
     var tasksByID: [UUID: RoutineTask]
     var canceledOneOffTaskIDs: Set<UUID>

@@ -351,16 +351,25 @@ struct DayPlanDetailView: View {
     var onSelectUnplannedCompletedDate: ((Date) -> Void)? = nil
     var onOpenTaskDetails: ((UUID) -> Void)? = nil
     var onOpenEventDetails: ((UUID) -> Void)? = nil
+    @State private var calendarFilters = DayPlanCalendarFilterState()
+    @State private var isCalendarFilterSidebarPresented = false
     @Query private var tasks: [RoutineTask]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            DayPlanHeaderView(planner: planner)
+            DayPlanHeaderView(
+                planner: planner,
+                calendarFilters: calendarFilters,
+                isCalendarFilterSidebarPresented: $isCalendarFilterSidebarPresented,
+                showsCalendarFilterButton: true
+            )
             DayPlanTimelinePanelView(
                 planner: planner,
                 onSelectUnplannedCompletedDate: onSelectUnplannedCompletedDate,
                 onOpenTaskDetails: onOpenTaskDetails,
-                onOpenEventDetails: onOpenEventDetails
+                onOpenEventDetails: onOpenEventDetails,
+                calendarFilters: $calendarFilters,
+                isCalendarFilterSidebarPresented: $isCalendarFilterSidebarPresented
             )
         }
         .padding(20)
@@ -392,6 +401,9 @@ private struct DayPlanHeaderView: View {
     @Environment(\.calendar) private var calendar
     @Environment(\.modelContext) private var modelContext
     @ObservedObject var planner: DayPlanPlannerState
+    var calendarFilters = DayPlanCalendarFilterState()
+    var isCalendarFilterSidebarPresented: Binding<Bool> = .constant(false)
+    var showsCalendarFilterButton = false
 
     var body: some View {
 #if os(macOS)
@@ -425,6 +437,10 @@ private struct DayPlanHeaderView: View {
 
             Spacer(minLength: 16)
 
+            if showsCalendarFilterButton {
+                calendarFilterButton
+            }
+
             DatePicker("Selected day", selection: selectedDateBinding, displayedComponents: [.date])
                 .labelsHidden()
                 .datePickerStyle(.compact)
@@ -449,6 +465,10 @@ private struct DayPlanHeaderView: View {
                 }
 
                 Spacer(minLength: 8)
+
+                if showsCalendarFilterButton {
+                    calendarFilterButton
+                }
 
                 DatePicker("Selected day", selection: selectedDateBinding, displayedComponents: [.date])
                     .labelsHidden()
@@ -488,6 +508,35 @@ private struct DayPlanHeaderView: View {
         }
         .buttonStyle(.plain)
         .font(.title3.weight(.medium))
+    }
+
+    private var calendarFilterButton: some View {
+        let isPresented = isCalendarFilterSidebarPresented.wrappedValue
+        let isActive = calendarFilters.hasActiveFilters
+
+        return Button {
+            withAnimation(.easeInOut(duration: 0.16)) {
+                isCalendarFilterSidebarPresented.wrappedValue.toggle()
+            }
+        } label: {
+            Image(
+                systemName: isActive
+                    ? "line.3.horizontal.decrease.circle.fill"
+                    : "line.3.horizontal.decrease.circle"
+            )
+            .font(.title3)
+            .foregroundStyle(isPresented || isActive ? Color.accentColor : Color.secondary)
+            .frame(width: 34, height: 34)
+            .background {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(isPresented ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.07))
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Planner filters")
+        .accessibilityValue(calendarFilters.summaryText(includesAway: true))
+        .help("Planner filters")
     }
 
     private var visibleRangeModePicker: some View {
@@ -562,6 +611,8 @@ private struct DayPlanTimelinePanelView: View {
     var onSelectUnplannedCompletedDate: ((Date) -> Void)? = nil
     var onOpenTaskDetails: ((UUID) -> Void)? = nil
     var onOpenEventDetails: ((UUID) -> Void)? = nil
+    var calendarFilters: Binding<DayPlanCalendarFilterState> = .constant(DayPlanCalendarFilterState())
+    var isCalendarFilterSidebarPresented: Binding<Bool> = .constant(false)
     @State private var dataSnapshot = DayPlanTimelineDataSnapshot()
     @StateObject private var timelinePlacementCache = DayPlanTimelinePlacementCache()
     @StateObject private var allDayBlocksCache = DayPlanAllDayBlocksCache()
@@ -600,7 +651,9 @@ private struct DayPlanTimelinePanelView: View {
             awayBlocksCache: awayBlocksCache,
             completedSprintFocusBlocksCache: completedSprintFocusBlocksCache,
             activeSprintFocusBlocksCache: activeSprintFocusBlocksCache,
-            renderSnapshotCache: renderSnapshotCache
+            renderSnapshotCache: renderSnapshotCache,
+            calendarFilters: calendarFilters,
+            isCalendarFilterSidebarPresented: isCalendarFilterSidebarPresented
         )
         .task {
             refreshTimelineDataSnapshot()
@@ -1523,6 +1576,8 @@ private struct DayPlanTimelinePanelContentView: View {
     @ObservedObject var completedSprintFocusBlocksCache: DayPlanSprintFocusBlocksCache
     @ObservedObject var activeSprintFocusBlocksCache: DayPlanSprintFocusBlocksCache
     @ObservedObject var renderSnapshotCache: DayPlanTimelineRenderSnapshotCache
+    var calendarFilters: Binding<DayPlanCalendarFilterState> = .constant(DayPlanCalendarFilterState())
+    var isCalendarFilterSidebarPresented: Binding<Bool> = .constant(false)
     @State private var selectedEventID: UUID?
     @State private var allocatingPlanFocusSession: DayPlanFocusAllocationPresentation?
     @AppStorage(
@@ -1584,6 +1639,13 @@ private struct DayPlanTimelinePanelContentView: View {
         let activeSprintFocusSessions = renderSnapshot.activeSprintFocusSessions
         let planFocusAllocatedMinutesBySessionID = renderSnapshot.planFocusAllocatedMinutesBySessionID
         let currentTaskIDs = Set(currentTasks.map(\.id))
+        let calendarFilterState = calendarFilters.wrappedValue
+        let timelineSuggestionsVisible = showsTimelineTasksInDayPlanner
+            && calendarFilterState.showsTimelineSuggestions
+        let visibleAllDayBlocks = filteredAllDayBlocks(
+            allDayBlocks,
+            filters: calendarFilterState
+        )
 
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -1606,34 +1668,39 @@ private struct DayPlanTimelinePanelContentView: View {
                 calendar: calendar,
                 hourHeight: CGFloat(planner.calendarHourHeight),
                 dropDurationMinutes: planner.durationMinutes,
-                showsUnplannedCompletedBadges: !showsTimelineTasksInDayPlanner,
+                showsUnplannedCompletedBadges: !timelineSuggestionsVisible,
                 blocksForDate: { date in
+                    guard calendarFilterState.showsPlannedTasks else { return [] }
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
                     return plannedBlocksByDayKey[dayKey] ?? []
                 },
                 automaticTimelineBlocksForDate: { date in
-                    guard showsTimelineTasksInDayPlanner else { return [] }
+                    guard timelineSuggestionsVisible else { return [] }
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
                     return automaticSuggestionBlocksByDayKey[dayKey] ?? []
                 },
                 unplaceableAutomaticTimelineBlocksForDate: { date in
-                    guard showsTimelineTasksInDayPlanner else { return [] }
+                    guard timelineSuggestionsVisible else { return [] }
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
                     return unplaceableAutomaticSuggestionBlocksByDayKey[dayKey] ?? []
                 },
                 eventBlocksForDate: { date in
+                    guard calendarFilterState.showsEvents else { return [] }
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
                     return eventBlocksByDayKey[dayKey] ?? []
                 },
                 sleepBlocksForDate: { date in
+                    guard calendarFilterState.showsSleep else { return [] }
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
                     return sleepBlocksByDayKey[dayKey] ?? []
                 },
                 awayBlocksForDate: { date in
+                    guard calendarFilterState.showsAway else { return [] }
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
                     return linkedAwayBlocksByDayKey[dayKey] ?? []
                 },
                 sprintFocusBlocksForDate: { date in
+                    guard calendarFilterState.showsFocus else { return [] }
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
                     return sprintFocusBlocksByDayKey[dayKey] ?? []
                 },
@@ -1641,9 +1708,10 @@ private struct DayPlanTimelinePanelContentView: View {
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
                     return blockedIntervalsByDayKey[dayKey] ?? []
                 },
-                showsActiveFocusBlocks: !activeFocusRenderSessions.isEmpty,
-                showsActiveSprintFocusBlocks: !activeSprintFocusSessions.isEmpty,
+                showsActiveFocusBlocks: calendarFilterState.showsFocus && !activeFocusRenderSessions.isEmpty,
+                showsActiveSprintFocusBlocks: calendarFilterState.showsFocus && !activeSprintFocusSessions.isEmpty,
                 activeFocusSessionBlocks: { now in
+                    guard calendarFilterState.showsFocus else { return [] }
                     let sessions = activeFocusRenderSessions.filter { session in
                         guard session.isUnassigned else { return true }
                         let allocatedMinutes = planFocusAllocatedMinutesBySessionID[session.id] ?? 0
@@ -1659,7 +1727,8 @@ private struct DayPlanTimelinePanelContentView: View {
                     )
                 },
                 activeSprintFocusBlocks: { now in
-                    activeSprintFocusBlocksCache.blocksByDayKey(
+                    guard calendarFilterState.showsFocus else { return [] }
+                    return activeSprintFocusBlocksCache.blocksByDayKey(
                         on: visibleDates,
                         from: activeSprintFocusSessions,
                         allocations: currentSprintFocusAllocations,
@@ -1671,7 +1740,7 @@ private struct DayPlanTimelinePanelContentView: View {
                     .values
                     .flatMap { $0 }
                 },
-                allDayBlocks: allDayBlocks,
+                allDayBlocks: visibleAllDayBlocks,
                 unplannedCompletedCount: { date in
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
                     return timelineBlocksByDayKey[dayKey]?.count ?? 0
@@ -1698,8 +1767,10 @@ private struct DayPlanTimelinePanelContentView: View {
                 plannedTaskCount: { date in
                     dayTaskListItems(
                         on: date,
-                        plannedBlocksByDayKey: plannedBlocksByDayKey,
-                        allDayBlocks: allDayBlocks
+                        plannedBlocksByDayKey: calendarFilterState.showsPlannedTasks
+                            ? plannedBlocksByDayKey
+                            : [:],
+                        allDayBlocks: visibleAllDayBlocks
                     )
                     .count
                 },
@@ -1890,8 +1961,10 @@ private struct DayPlanTimelinePanelContentView: View {
                             date: date,
                             items: dayTaskListItems(
                                 on: date,
-                                plannedBlocksByDayKey: plannedBlocksByDayKey,
-                                allDayBlocks: allDayBlocks
+                                plannedBlocksByDayKey: calendarFilterState.showsPlannedTasks
+                                    ? plannedBlocksByDayKey
+                                    : [:],
+                                allDayBlocks: visibleAllDayBlocks
                             ),
                             taskTint: { taskID in
                                 tintsByTaskID[taskID] ?? .accentColor
@@ -1903,6 +1976,17 @@ private struct DayPlanTimelinePanelContentView: View {
                             onOpenTaskDetails: { taskID in
                                 onOpenTaskDetails?(taskID)
                             },
+                            onDismiss: dismiss
+                        )
+                    )
+                },
+                isFilterSidebarPresented: isCalendarFilterSidebarPresented,
+                filterSidebarContent: { dismiss in
+                    AnyView(
+                        DayPlanCalendarFilterSidebar(
+                            filters: calendarFilters,
+                            includesAway: includesAway,
+                            timelineSuggestionsAvailable: showsTimelineTasksInDayPlanner,
                             onDismiss: dismiss
                         )
                     )
@@ -1939,6 +2023,18 @@ private struct DayPlanTimelinePanelContentView: View {
         }
         .sheet(item: $allocatingPlanFocusSession) { presentation in
             planFocusAllocationSheet(for: presentation.sessionID)
+        }
+    }
+
+    private func filteredAllDayBlocks(
+        _ blocks: [DayPlanAllDayBlock],
+        filters: DayPlanCalendarFilterState
+    ) -> [DayPlanAllDayBlock] {
+        blocks.filter { block in
+            if block.isEvent {
+                return filters.showsEvents
+            }
+            return filters.showsAllDayTasks
         }
     }
 
@@ -4254,6 +4350,173 @@ private struct DayPlanFocusAllocationPresentation: Identifiable {
     let sessionID: UUID
 
     var id: UUID { sessionID }
+}
+
+private struct DayPlanCalendarFilterSidebar: View {
+    let filters: Binding<DayPlanCalendarFilterState>
+    let includesAway: Bool
+    let timelineSuggestionsAvailable: Bool
+    let onDismiss: () -> Void
+
+    private var currentFilters: DayPlanCalendarFilterState {
+        filters.wrappedValue
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            header
+
+            VStack(alignment: .leading, spacing: 10) {
+                filterToggle(
+                    title: "Planned tasks",
+                    systemImage: "checklist",
+                    isOn: filterBinding(\.showsPlannedTasks)
+                )
+                filterToggle(
+                    title: "All-day tasks",
+                    systemImage: "calendar.badge.clock",
+                    isOn: filterBinding(\.showsAllDayTasks)
+                )
+                filterToggle(
+                    title: "Timeline suggestions",
+                    systemImage: "clock.arrow.circlepath",
+                    isOn: timelineSuggestionsBinding,
+                    subtitle: timelineSuggestionsAvailable ? nil : "Off in Settings",
+                    isEnabled: timelineSuggestionsAvailable
+                )
+                filterToggle(
+                    title: "Events",
+                    systemImage: "calendar",
+                    isOn: filterBinding(\.showsEvents)
+                )
+                filterToggle(
+                    title: "Focus",
+                    systemImage: "timer",
+                    isOn: filterBinding(\.showsFocus)
+                )
+                if includesAway {
+                    filterToggle(
+                        title: "Away",
+                        systemImage: "figure.walk",
+                        isOn: filterBinding(\.showsAway)
+                    )
+                }
+                filterToggle(
+                    title: "Sleep",
+                    systemImage: "bed.double",
+                    isOn: filterBinding(\.showsSleep)
+                )
+            }
+
+            Button {
+                filters.wrappedValue.reset()
+            } label: {
+                Label("Reset", systemImage: "arrow.counterclockwise")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .disabled(!currentFilters.hasActiveFilters)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
+    private var header: some View {
+        HStack(alignment: .center, spacing: 12) {
+            Image(systemName: "line.3.horizontal.decrease.circle")
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(width: 34, height: 34)
+                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Calendar Filters")
+                    .font(.headline.weight(.semibold))
+                Text(currentFilters.summaryText(includesAway: includesAway))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 8)
+
+            Button {
+                onDismiss()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title3)
+                    .symbolRenderingMode(.hierarchical)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .accessibilityLabel("Close")
+            .contentShape(Circle())
+        }
+    }
+
+    private func filterToggle(
+        title: String,
+        systemImage: String,
+        isOn: Binding<Bool>,
+        subtitle: String? = nil,
+        isEnabled: Bool = true
+    ) -> some View {
+        Toggle(isOn: isOn) {
+            HStack(alignment: .center, spacing: 10) {
+                Image(systemName: systemImage)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(isEnabled ? Color.accentColor : Color.secondary)
+                    .frame(width: 22, height: 22)
+                    .background(
+                        Circle()
+                            .fill((isEnabled ? Color.accentColor : Color.secondary).opacity(0.12))
+                    )
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+        .toggleStyle(.switch)
+        .disabled(!isEnabled)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color.secondary.opacity(0.055))
+        }
+    }
+
+    private func filterBinding(
+        _ keyPath: WritableKeyPath<DayPlanCalendarFilterState, Bool>
+    ) -> Binding<Bool> {
+        Binding(
+            get: {
+                filters.wrappedValue[keyPath: keyPath]
+            },
+            set: { isEnabled in
+                filters.wrappedValue[keyPath: keyPath] = isEnabled
+            }
+        )
+    }
+
+    private var timelineSuggestionsBinding: Binding<Bool> {
+        Binding(
+            get: {
+                timelineSuggestionsAvailable && filters.wrappedValue.showsTimelineSuggestions
+            },
+            set: { isEnabled in
+                filters.wrappedValue.showsTimelineSuggestions = isEnabled
+            }
+        )
+    }
 }
 
 private struct DayPlanDayTaskListSidebar: View {
