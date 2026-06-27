@@ -25,7 +25,7 @@ This page summarizes active Planner, timeline activity, focus, Away, and Sleep b
 - [0269](../decisions/0269-support-planner-slot-actions.md)
 - [0271](../decisions/0271-use-probable-times-for-assumed-planner-activity.md)
 - [0273](../decisions/0273-log-sleep-from-planner-away-slot-action.md)
-- [0274](../decisions/0274-present-resizable-planner-slot-draft.md)
+- [0286](../decisions/0286-present-planner-slot-actions-in-sidebar.md)
 - [0277](../decisions/0277-hide-notes-and-away-behind-beta-toggles.md)
 - [0279](../decisions/0279-hide-sleep-stats-and-blocking-with-away-toggle.md)
 - [0280](../decisions/0280-show-timeline-newest-first.md)
@@ -42,7 +42,7 @@ This page summarizes active Planner, timeline activity, focus, Away, and Sleep b
 - Planner supports a default week view and a focused one-day view without changing stored planner data.
 - Planner Day mode can increase or decrease hour-row spacing for more precise block placement, while Week mode keeps the standard compact hour height.
 - Planner all-day lanes accept tasks, timed blocks, and completed activity drops.
-- Single-clicking an empty timed Planner slot selects the clicked 15-minute date/time without starting creation. Double-clicking an empty timed Planner slot shows a temporary resizable draft block and opens a compact action panel anchored to that draft for creating a task block. The task panel uses an inline filtered task list and can create a new one-off task before adding the block; when task creation is the only available action, it does not show a single-option mode tab. When `Show Away` is on, the panel also offers an Away tab for logging finished screen-away time; that tab presents Away presets plus Sleep. Away choices create completed `AwaySession` records, while Sleep creates a completed `SleepSession`. When `Show Away` is off, the empty-slot action panel does not show Away or Sleep options. On macOS this panel is a native popover so it can remain visible near app edges instead of being clipped by the planner viewport; it prefers opening below or above the draft so the draft block remains visible, using side placement only when vertical room is tight. Resizing the draft updates the displayed time range and duration before commit.
+- Single-clicking an empty timed Planner slot selects the clicked 15-minute date/time without starting creation. Double-clicking an empty timed Planner slot shows a temporary resizable draft block and opens a right-side Planner sidebar for creating a task block. The task sidebar uses an inline filtered task list and can create a new one-off task before adding the block; when task creation is the only available action, it does not show a single-option mode tab. When `Show Away` is on, the sidebar also offers an Away tab for logging finished screen-away time; that tab presents Away presets plus Sleep. Away choices create completed `AwaySession` records, while Sleep creates a completed `SleepSession`. When `Show Away` is off, the empty-slot action sidebar does not show Away or Sleep options. While the sidebar is open, selecting another empty timed slot moves the draft and sidebar to that slot. Resizing the draft updates the displayed time range and duration before commit.
 - Standalone events render as calendar-visible, read-only planner blocks.
 - Sleep, Focus, and Away are app-level protected session modes and must not overlap.
 - Task, unassigned, and board focus can pause and resume. Active time, not paused wall-clock time, feeds app history and stats.

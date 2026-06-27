@@ -32,4 +32,9 @@ struct DayPlanSlotActionPresentationTests {
         #expect(DayPlanSlotTaskPickerPresentation.creatableTaskName(from: "write report", tasks: tasks) == nil)
         #expect(DayPlanSlotTaskPickerPresentation.creatableTaskName(from: "   ", tasks: tasks) == nil)
     }
+
+    @Test
+    func slotActionSidebarUsesStableInspectorWidth() {
+        #expect(DayPlanSlotSidebarPresentation.width == 400)
+    }
 }

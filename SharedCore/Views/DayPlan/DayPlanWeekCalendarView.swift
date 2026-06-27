@@ -1,10 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-#if os(macOS)
-import AppKit
-#endif
-
 struct DayPlanWeekCalendarView: View {
     var dates: [Date]
     var selectedBlockID: DayPlanBlock.ID?
@@ -53,7 +49,7 @@ struct DayPlanWeekCalendarView: View {
     var onEndResizeBlock: (DayPlanBlock.ID?) -> Void = { _ in }
     var onDropTask: (UUID, Date, Int) -> Void
     var onDropTaskToAllDay: (UUID, Date) -> Void = { _, _ in }
-    var slotPopoverContent: ((Date, Int, Binding<Int>, @escaping () -> Void) -> AnyView)? = nil
+    var slotSidebarContent: ((Date, Int, Binding<Int>, @escaping () -> Void) -> AnyView)? = nil
 
     @State private var isDropTargeted = false
     @State private var isCompletingDrop = false
@@ -62,139 +58,140 @@ struct DayPlanWeekCalendarView: View {
     @State private var draggedTimelineActivity: DayPlanTimelineActivityBlock?
     @State private var draggedBlockDurationMinutes: Int?
     @State private var resizeSession: DayPlanResizeSession?
-    @State private var selectedSlotPopover: DayPlanSelectedSlotPopover?
-    @State private var isSlotPopoverPresented = false
-    @State private var draftResizeBaseline: DayPlanSelectedSlotPopover?
+    @State private var selectedSlotDraft: DayPlanSelectedSlotDraft?
+    @State private var draftResizeBaseline: DayPlanSelectedSlotDraft?
     @Namespace private var blockAnimationNamespace
 
     private let timeColumnWidth: CGFloat = 64
 
     var body: some View {
-        VStack(spacing: 0) {
-            DayPlanWeekHeaderRow(
-                dates: dates,
-                selectedDate: selectedDate,
-                focusedUnplannedCompletedDate: focusedUnplannedCompletedDate,
-                calendar: calendar,
-                timeColumnWidth: timeColumnWidth,
-                showsUnplannedCompletedBadges: showsUnplannedCompletedBadges,
-                unplannedCompletedCount: unplannedCompletedCount,
-                onSelectUnplannedCompletedDate: onSelectUnplannedCompletedDate
-            )
+        HStack(spacing: 0) {
+            VStack(spacing: 0) {
+                DayPlanWeekHeaderRow(
+                    dates: dates,
+                    selectedDate: selectedDate,
+                    focusedUnplannedCompletedDate: focusedUnplannedCompletedDate,
+                    calendar: calendar,
+                    timeColumnWidth: timeColumnWidth,
+                    showsUnplannedCompletedBadges: showsUnplannedCompletedBadges,
+                    unplannedCompletedCount: unplannedCompletedCount,
+                    onSelectUnplannedCompletedDate: onSelectUnplannedCompletedDate
+                )
 
-            DayPlanUnplaceableActivityLaneView(
-                dates: dates,
-                selectedDate: selectedDate,
-                calendar: calendar,
-                timeColumnWidth: timeColumnWidth,
-                blocksForDate: unplaceableAutomaticTimelineBlocksForDate,
-                taskTint: taskTint,
-                onOpenTimelineTaskDetails: onOpenTimelineTaskDetails,
-                onConfirmTimelineActivity: onConfirmTimelineActivity,
-                onHideTimelineActivity: onHideTimelineActivity,
-                onTimelineDragProvider: { activity, date in
-                    dragProvider(for: activity, on: date)
-                }
-            )
+                DayPlanUnplaceableActivityLaneView(
+                    dates: dates,
+                    selectedDate: selectedDate,
+                    calendar: calendar,
+                    timeColumnWidth: timeColumnWidth,
+                    blocksForDate: unplaceableAutomaticTimelineBlocksForDate,
+                    taskTint: taskTint,
+                    onOpenTimelineTaskDetails: onOpenTimelineTaskDetails,
+                    onConfirmTimelineActivity: onConfirmTimelineActivity,
+                    onHideTimelineActivity: onHideTimelineActivity,
+                    onTimelineDragProvider: { activity, date in
+                        dragProvider(for: activity, on: date)
+                    }
+                )
 
-            DayPlanAllDayLaneView(
-                dates: dates,
-                selectedDate: selectedDate,
-                calendar: calendar,
-                timeColumnWidth: timeColumnWidth,
-                allDayBlocks: allDayBlocks,
-                allDayTint: allDayTint,
-                draggedBlockID: $draggedBlockID,
-                draggedTimelineActivity: $draggedTimelineActivity,
-                onOpenTaskDetails: onOpenAllDayTaskDetails,
-                onOpenEventDetails: onOpenEventDetails,
-                onMoveBlockToAllDay: onMoveBlockToAllDay,
-                onMoveTimelineActivityToAllDay: onMoveTimelineActivityToAllDay,
-                onDropTaskToAllDay: onDropTaskToAllDay
-            )
+                DayPlanAllDayLaneView(
+                    dates: dates,
+                    selectedDate: selectedDate,
+                    calendar: calendar,
+                    timeColumnWidth: timeColumnWidth,
+                    allDayBlocks: allDayBlocks,
+                    allDayTint: allDayTint,
+                    draggedBlockID: $draggedBlockID,
+                    draggedTimelineActivity: $draggedTimelineActivity,
+                    onOpenTaskDetails: onOpenAllDayTaskDetails,
+                    onOpenEventDetails: onOpenEventDetails,
+                    onMoveBlockToAllDay: onMoveBlockToAllDay,
+                    onMoveTimelineActivityToAllDay: onMoveTimelineActivityToAllDay,
+                    onDropTaskToAllDay: onDropTaskToAllDay
+                )
 
-            ScrollViewReader { scrollProxy in
-                ScrollView(.vertical) {
-                    GeometryReader { proxy in
-                        let dayWidth = max((proxy.size.width - timeColumnWidth) / CGFloat(max(dates.count, 1)), 120)
-                        let contentWidth = timeColumnWidth + (CGFloat(dates.count) * dayWidth)
-                        let contentHeight = hourHeight * 24
+                ScrollViewReader { scrollProxy in
+                    ScrollView(.vertical) {
+                        GeometryReader { proxy in
+                            let dayWidth = max((proxy.size.width - timeColumnWidth) / CGFloat(max(dates.count, 1)), 120)
+                            let contentWidth = timeColumnWidth + (CGFloat(dates.count) * dayWidth)
+                            let contentHeight = hourHeight * 24
 
-                        ZStack(alignment: .topLeading) {
-                            DayPlanWeekGridView(
-                                dates: dates,
-                                selectedDate: selectedDate,
-                                calendar: calendar,
-                                dayWidth: dayWidth,
-                                hourHeight: hourHeight,
-                                timeColumnWidth: timeColumnWidth
-                            )
-                            DayPlanSlotSelectionLayer(
-                                dates: dates,
-                                dayWidth: dayWidth,
-                                hourHeight: hourHeight,
-                                timeColumnWidth: timeColumnWidth,
-                                onSelectSlot: { date, minute in
-                                    onSelectSlot(date, minute)
-                                },
-                                onOpenSlotActions: { date, minute in
-                                    presentSlotPopover(on: date, startMinute: minute)
-                                    onSelectSlot(date, minute)
-                                }
-                            )
-                            selectedSlotActionPanel(
-                                dayWidth: dayWidth,
-                                hourHeight: hourHeight,
-                                timeColumnWidth: timeColumnWidth,
-                                contentWidth: contentWidth,
-                                contentHeight: contentHeight
-                            )
-                            DayPlanBlockLayer(
-                                dates: dates,
-                                selectedBlockID: selectedBlockID,
-                                resizingBlockID: resizeSession?.blockID,
-                                resizingContentLayoutHeight: resizeSession?.contentLayoutHeight,
-                                highlightedBlockID: highlightedBlockID,
-                                focusedSleepSessionID: focusedSleep?.sessionID,
-                                calendar: calendar,
-                                dayWidth: dayWidth,
-                                hourHeight: hourHeight,
-                                timeColumnWidth: timeColumnWidth,
-                                blockAnimationNamespace: blockAnimationNamespace,
-                                blocksForDate: blocksForDate,
-                                automaticTimelineBlocksForDate: automaticTimelineBlocksForDate,
-                                eventBlocksForDate: eventBlocksForDate,
-                                sleepBlocksForDate: sleepBlocksForDate,
-                                awayBlocksForDate: awayBlocksForDate,
-                                sprintFocusBlocksForDate: sprintFocusBlocksForDate,
-                                taskTint: taskTint,
-                                onSelectBlock: { block, date in
-                                    selectedSlotPopover = nil
-                                    onSelectBlock(block, date)
-                                },
-                                onOpenBlockDetails: { block, date in
-                                    selectedSlotPopover = nil
-                                    onOpenBlockDetails(block, date)
-                                },
-                                onOpenTimelineTaskDetails: onOpenTimelineTaskDetails,
-                                onOpenEventDetails: onOpenEventDetails,
-                                onConfirmTimelineActivity: onConfirmTimelineActivity,
-                                onHideTimelineActivity: onHideTimelineActivity,
-                                onTimelineDragProvider: { activity, date in
-                                    dragProvider(for: activity, on: date)
-                                },
-                                onDeleteBlock: onDeleteBlock,
-                                onResizeStarted: { block, date in
-                                    beginResize(block, date)
-                                },
-                                onResizeChanged: { block, date, edge, verticalDelta in
-                                    resize(block, date, edge: edge, verticalDelta: verticalDelta)
-                                },
-                                onResizeEnded: endResize,
-                                onDragProvider: { block, date in
-                                    dragProvider(for: block, on: date)
-                                }
-                            )
+                            ZStack(alignment: .topLeading) {
+                                DayPlanWeekGridView(
+                                    dates: dates,
+                                    selectedDate: selectedDate,
+                                    calendar: calendar,
+                                    dayWidth: dayWidth,
+                                    hourHeight: hourHeight,
+                                    timeColumnWidth: timeColumnWidth
+                                )
+                                DayPlanSlotSelectionLayer(
+                                    dates: dates,
+                                    dayWidth: dayWidth,
+                                    hourHeight: hourHeight,
+                                    timeColumnWidth: timeColumnWidth,
+                                    onSelectSlot: { date, minute in
+                                        updateSelectedSlotDraft(on: date, startMinute: minute)
+                                        onSelectSlot(date, minute)
+                                    },
+                                    onOpenSlotActions: { date, minute in
+                                        presentSlotSidebar(on: date, startMinute: minute)
+                                        onSelectSlot(date, minute)
+                                    }
+                                )
+                                selectedSlotDraftLayer(
+                                    dayWidth: dayWidth,
+                                    hourHeight: hourHeight,
+                                    timeColumnWidth: timeColumnWidth,
+                                    contentWidth: contentWidth,
+                                    contentHeight: contentHeight
+                                )
+                                DayPlanBlockLayer(
+                                    dates: dates,
+                                    selectedBlockID: selectedBlockID,
+                                    resizingBlockID: resizeSession?.blockID,
+                                    resizingContentLayoutHeight: resizeSession?.contentLayoutHeight,
+                                    highlightedBlockID: highlightedBlockID,
+                                    focusedSleepSessionID: focusedSleep?.sessionID,
+                                    calendar: calendar,
+                                    dayWidth: dayWidth,
+                                    hourHeight: hourHeight,
+                                    timeColumnWidth: timeColumnWidth,
+                                    blockAnimationNamespace: blockAnimationNamespace,
+                                    blocksForDate: blocksForDate,
+                                    automaticTimelineBlocksForDate: automaticTimelineBlocksForDate,
+                                    eventBlocksForDate: eventBlocksForDate,
+                                    sleepBlocksForDate: sleepBlocksForDate,
+                                    awayBlocksForDate: awayBlocksForDate,
+                                    sprintFocusBlocksForDate: sprintFocusBlocksForDate,
+                                    taskTint: taskTint,
+                                    onSelectBlock: { block, date in
+                                        selectedSlotDraft = nil
+                                        onSelectBlock(block, date)
+                                    },
+                                    onOpenBlockDetails: { block, date in
+                                        selectedSlotDraft = nil
+                                        onOpenBlockDetails(block, date)
+                                    },
+                                    onOpenTimelineTaskDetails: onOpenTimelineTaskDetails,
+                                    onOpenEventDetails: onOpenEventDetails,
+                                    onConfirmTimelineActivity: onConfirmTimelineActivity,
+                                    onHideTimelineActivity: onHideTimelineActivity,
+                                    onTimelineDragProvider: { activity, date in
+                                        dragProvider(for: activity, on: date)
+                                    },
+                                    onDeleteBlock: onDeleteBlock,
+                                    onResizeStarted: { block, date in
+                                        beginResize(block, date)
+                                    },
+                                    onResizeChanged: { block, date, edge, verticalDelta in
+                                        resize(block, date, edge: edge, verticalDelta: verticalDelta)
+                                    },
+                                    onResizeEnded: endResize,
+                                    onDragProvider: { block, date in
+                                        dragProvider(for: block, on: date)
+                                    }
+                                )
                             if let dropPreview, isDropTargeted, !isCompletingDrop {
                                 DayPlanDropIndicator(
                                     preview: dropPreview,
@@ -321,7 +318,12 @@ struct DayPlanWeekCalendarView: View {
                     scrollToPlannerHighlight(with: scrollProxy)
                 }
             }
+            }
+            .frame(minWidth: 420)
+
+            selectedSlotSidebar
         }
+        .animation(.easeInOut(duration: 0.16), value: selectedSlotDraft)
         .background(.background, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -330,7 +332,7 @@ struct DayPlanWeekCalendarView: View {
     }
 
     private func beginResize(_ block: DayPlanBlock, _ date: Date) {
-        selectedSlotPopover = nil
+        selectedSlotDraft = nil
         draftResizeBaseline = nil
         clearDropState()
         draggedBlockID = nil
@@ -405,7 +407,7 @@ struct DayPlanWeekCalendarView: View {
     }
 
     private func dragProvider(for block: DayPlanBlock, on date: Date) -> NSItemProvider {
-        selectedSlotPopover = nil
+        selectedSlotDraft = nil
         draftResizeBaseline = nil
         isCompletingDrop = false
         clearDropState()
@@ -418,7 +420,7 @@ struct DayPlanWeekCalendarView: View {
     }
 
     private func dragProvider(for activity: DayPlanTimelineActivityBlock, on date: Date) -> NSItemProvider {
-        selectedSlotPopover = nil
+        selectedSlotDraft = nil
         draftResizeBaseline = nil
         isCompletingDrop = false
         clearDropState()
@@ -463,149 +465,101 @@ struct DayPlanWeekCalendarView: View {
         return true
     }
 
-    private func presentSlotPopover(on date: Date, startMinute: Int) {
-        guard slotPopoverContent != nil else { return }
+    private func presentSlotSidebar(on date: Date, startMinute: Int) {
+        guard slotSidebarContent != nil else { return }
         draftResizeBaseline = nil
         let clampedStartMinute = DayPlanBlock.clampedStartMinute(startMinute)
-        selectedSlotPopover = DayPlanSelectedSlotPopover(
+        selectedSlotDraft = DayPlanSelectedSlotDraft(
             date: calendar.startOfDay(for: date),
             startMinute: clampedStartMinute,
             durationMinutes: defaultSlotDraftDuration(startMinute: clampedStartMinute)
         )
-        isSlotPopoverPresented = false
-        DispatchQueue.main.async {
-            guard selectedSlotPopover != nil else { return }
-            isSlotPopoverPresented = true
-        }
+    }
+
+    private func updateSelectedSlotDraft(on date: Date, startMinute: Int) {
+        guard var draft = selectedSlotDraft else { return }
+
+        let clampedStartMinute = DayPlanBlock.clampedStartMinute(startMinute)
+        draft.date = calendar.startOfDay(for: date)
+        draft.startMinute = clampedStartMinute
+        draft.durationMinutes = DayPlanBlock.clampedDuration(
+            draft.durationMinutes,
+            startMinute: clampedStartMinute,
+            minimumDurationMinutes: DayPlanBlock.minimumDurationMinutes
+        )
+        selectedSlotDraft = draft
     }
 
     @ViewBuilder
-    private func selectedSlotActionPanel(
+    private func selectedSlotDraftLayer(
         dayWidth: CGFloat,
         hourHeight: CGFloat,
         timeColumnWidth: CGFloat,
         contentWidth: CGFloat,
         contentHeight: CGFloat
     ) -> some View {
-        if let selectedSlotPopover,
-           let slotPopoverContent,
-           let dayIndex = dates.firstIndex(where: { calendar.isDate($0, inSameDayAs: selectedSlotPopover.date) }) {
+        if let selectedSlotDraft,
+           dates.contains(where: { calendar.isDate($0, inSameDayAs: selectedSlotDraft.date) }),
+           let dayIndex = dates.firstIndex(where: { calendar.isDate($0, inSameDayAs: selectedSlotDraft.date) }) {
             let draftX = timeColumnWidth + CGFloat(dayIndex) * dayWidth + 5
             let draftWidth = max(dayWidth - 10, 90)
-            let draftY = yOffset(for: selectedSlotPopover.startMinute, hourHeight: hourHeight)
-            let draftHeight = draftBlockHeight(for: selectedSlotPopover, hourHeight: hourHeight)
-            let durationBinding = selectedSlotDurationBinding(for: selectedSlotPopover)
-#if os(macOS)
-            let estimatedPopoverSize = CGSize(width: 380, height: 420)
-            let preferredPopoverEdge = preferredSlotPopoverEdge(
-                draftX: draftX,
-                draftY: draftY,
-                draftWidth: draftWidth,
-                draftHeight: draftHeight,
-                contentWidth: contentWidth,
-                contentHeight: contentHeight,
-                estimatedPopoverSize: estimatedPopoverSize
-            )
-            let popoverPositioningRect = slotPopoverPositioningRect(
-                preferredEdge: preferredPopoverEdge,
-                draftX: draftX,
-                draftY: draftY,
-                draftWidth: draftWidth,
-                draftHeight: draftHeight,
-                contentWidth: contentWidth,
-                contentHeight: contentHeight,
-                estimatedPopoverSize: estimatedPopoverSize
-            )
-#endif
+            let draftY = yOffset(for: selectedSlotDraft.startMinute, hourHeight: hourHeight)
+            let draftHeight = draftBlockHeight(for: selectedSlotDraft, hourHeight: hourHeight)
 
-            DayPlanSlotDraftBlock(
-                date: selectedSlotPopover.date,
-                startMinute: selectedSlotPopover.startMinute,
-                durationMinutes: selectedSlotPopover.durationMinutes,
-                renderedHeight: draftHeight,
-                calendar: calendar,
-                onResizeStarted: beginDraftResize,
-                onResizeChanged: resizeDraft,
-                onResizeEnded: endDraftResize
-            )
-            .frame(width: draftWidth, height: draftHeight)
-#if os(macOS)
-            .background {
-                DayPlanNativePopoverPresenter(
-                    isPresented: selectedSlotPresentedBinding(),
-                    preferredEdge: preferredPopoverEdge,
-                    positioningRect: popoverPositioningRect,
-                    content: slotPopoverContent(
-                        selectedSlotPopover.date,
-                        selectedSlotPopover.startMinute,
-                        durationBinding,
-                        dismissSelectedSlotPopover
-                    )
+            ZStack(alignment: .topLeading) {
+                DayPlanSlotDraftBlock(
+                    date: selectedSlotDraft.date,
+                    startMinute: selectedSlotDraft.startMinute,
+                    durationMinutes: selectedSlotDraft.durationMinutes,
+                    renderedHeight: draftHeight,
+                    calendar: calendar,
+                    onResizeStarted: beginDraftResize,
+                    onResizeChanged: resizeDraft,
+                    onResizeEnded: endDraftResize
                 )
                 .frame(width: draftWidth, height: draftHeight)
+                .position(x: draftX + (draftWidth / 2), y: draftY + (draftHeight / 2))
             }
-#endif
-            .position(x: draftX + (draftWidth / 2), y: draftY + (draftHeight / 2))
+            .frame(width: contentWidth, height: contentHeight, alignment: .topLeading)
             .zIndex(70)
-
-#if !os(macOS)
-            let panelWidth: CGFloat = 440
-            let estimatedPanelHeight: CGFloat = 380
-            let rightPanelX = draftX + draftWidth + 12
-            let leftPanelX = draftX - panelWidth - 12
-            let inlinePanelPrefersRightSide = rightPanelX + panelWidth + 8 <= contentWidth
-            let desiredX = inlinePanelPrefersRightSide ? rightPanelX : leftPanelX
-            let maxX = max(8, contentWidth - panelWidth - 8)
-            let panelX = min(max(desiredX, 8), maxX)
-            let desiredY = draftY + min(max((draftHeight - estimatedPanelHeight) / 2, -12), 12)
-            let maxY = max(8, contentHeight - estimatedPanelHeight - 8)
-            let panelY = min(max(desiredY, 8), maxY)
-
-            slotPopoverContent(
-                selectedSlotPopover.date,
-                selectedSlotPopover.startMinute,
-                durationBinding,
-                dismissSelectedSlotPopover
-            )
-            .frame(width: panelWidth)
-            .routinaGlassPanel(cornerRadius: 12)
-            .shadow(color: .black.opacity(0.16), radius: 18, x: 0, y: 10)
-            .overlay {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
-            }
-            .offset(x: panelX, y: panelY)
-            .zIndex(80)
-#endif
         }
     }
 
-    private func selectedSlotPresentedBinding() -> Binding<Bool> {
-        Binding(
-            get: { isSlotPopoverPresented && selectedSlotPopover != nil },
-            set: { isPresented in
-                if !isPresented {
-                    dismissSelectedSlotPopover()
-                }
+    @ViewBuilder
+    private var selectedSlotSidebar: some View {
+        if let selectedSlotDraft, let slotSidebarContent {
+            Divider()
+
+            ScrollView {
+                slotSidebarContent(
+                    selectedSlotDraft.date,
+                    selectedSlotDraft.startMinute,
+                    selectedSlotDurationBinding(for: selectedSlotDraft),
+                    dismissSelectedSlotSidebar
+                )
+                .frame(maxWidth: .infinity, alignment: .topLeading)
             }
-        )
+            .scrollIndicators(.visible)
+            .frame(width: DayPlanSlotSidebarPresentation.width)
+            .background(Color.secondary.opacity(0.045))
+            .transition(.move(edge: .trailing).combined(with: .opacity))
+        }
     }
 
-    private func dismissSelectedSlotPopover() {
-        isSlotPopoverPresented = false
-        selectedSlotPopover = nil
+    private func dismissSelectedSlotSidebar() {
+        selectedSlotDraft = nil
         draftResizeBaseline = nil
     }
 
-    private func selectedSlotDurationBinding(for selection: DayPlanSelectedSlotPopover) -> Binding<Int> {
+    private func selectedSlotDurationBinding(for selection: DayPlanSelectedSlotDraft) -> Binding<Int> {
         Binding(
             get: {
-                selectedSlotPopover?.durationMinutes ?? selection.durationMinutes
+                selectedSlotDraft?.durationMinutes ?? selection.durationMinutes
             },
             set: { newValue in
-                guard var draft = selectedSlotPopover else { return }
+                guard var draft = selectedSlotDraft else { return }
                 draft.durationMinutes = clampedSlotDraftDuration(newValue)
-                selectedSlotPopover = draft
+                selectedSlotDraft = draft
             }
         )
     }
@@ -623,11 +577,11 @@ struct DayPlanWeekCalendarView: View {
     }
 
     private func beginDraftResize() {
-        draftResizeBaseline = selectedSlotPopover
+        draftResizeBaseline = selectedSlotDraft
     }
 
     private func resizeDraft(edge: DayPlanResizeEdge, verticalDelta: CGFloat) {
-        guard let baseline = draftResizeBaseline ?? selectedSlotPopover else { return }
+        guard let baseline = draftResizeBaseline ?? selectedSlotDraft else { return }
 
         let deltaMinutes = snappedMinuteDelta(for: verticalDelta)
         let originalStart = baseline.startMinute
@@ -650,10 +604,10 @@ struct DayPlanWeekCalendarView: View {
             durationMinutes = endMinute - originalStart
         }
 
-        guard var draft = selectedSlotPopover else { return }
+        guard var draft = selectedSlotDraft else { return }
         draft.startMinute = DayPlanBlock.clampedStartMinute(startMinute)
         draft.durationMinutes = clampedSlotDraftDuration(durationMinutes)
-        selectedSlotPopover = draft
+        selectedSlotDraft = draft
     }
 
     private func endDraftResize() {
@@ -670,7 +624,7 @@ struct DayPlanWeekCalendarView: View {
     }
 
     private func draftBlockHeight(
-        for selection: DayPlanSelectedSlotPopover,
+        for selection: DayPlanSelectedSlotDraft,
         hourHeight: CGFloat
     ) -> CGFloat {
         let visibleDurationMinutes = min(
@@ -680,325 +634,17 @@ struct DayPlanWeekCalendarView: View {
         return max(CGFloat(visibleDurationMinutes) / 60 * hourHeight, 18)
     }
 
-#if os(macOS)
-    private func preferredSlotPopoverEdge(
-        draftX: CGFloat,
-        draftY: CGFloat,
-        draftWidth: CGFloat,
-        draftHeight: CGFloat,
-        contentWidth: CGFloat,
-        contentHeight: CGFloat,
-        estimatedPopoverSize: CGSize
-    ) -> NSRectEdge {
-        let margin: CGFloat = 12
-        let bottomSpace = contentHeight - (draftY + draftHeight)
-        let topSpace = draftY
-        if bottomSpace >= estimatedPopoverSize.height + margin {
-            return .minY
-        }
-        if topSpace >= estimatedPopoverSize.height + margin {
-            return .maxY
-        }
-
-        let rightSpace = contentWidth - (draftX + draftWidth)
-        let leftSpace = draftX
-        if rightSpace >= estimatedPopoverSize.width + margin {
-            return .maxX
-        }
-        if leftSpace >= estimatedPopoverSize.width + margin {
-            return .minX
-        }
-
-        return bottomSpace >= topSpace ? .minY : .maxY
-    }
-
-    private func slotPopoverPositioningRect(
-        preferredEdge: NSRectEdge,
-        draftX: CGFloat,
-        draftY: CGFloat,
-        draftWidth: CGFloat,
-        draftHeight: CGFloat,
-        contentWidth: CGFloat,
-        contentHeight: CGFloat,
-        estimatedPopoverSize: CGSize
-    ) -> CGRect {
-        let margin: CGFloat = 12
-        switch preferredEdge {
-        case .maxY, .minY:
-            let draftCenterX = draftX + (draftWidth / 2)
-            let minCenterX = (estimatedPopoverSize.width / 2) + margin
-            let maxCenterX = max(minCenterX, contentWidth - (estimatedPopoverSize.width / 2) - margin)
-            let clampedCenterX = min(max(draftCenterX, minCenterX), maxCenterX)
-            let localX = min(max(clampedCenterX - draftX, 0), draftWidth)
-            let localY = preferredEdge == .maxY ? draftHeight : 0
-            return CGRect(x: localX, y: localY, width: 1, height: 1)
-        default:
-            let draftCenterY = draftY + (draftHeight / 2)
-            let minCenterY = (estimatedPopoverSize.height / 2) + margin
-            let maxCenterY = max(minCenterY, contentHeight - (estimatedPopoverSize.height / 2) - margin)
-            let clampedCenterY = min(max(draftCenterY, minCenterY), maxCenterY)
-            let localX = preferredEdge == .maxX ? draftWidth : 0
-            let localY = min(max(clampedCenterY - draftY, 0), draftHeight)
-            return CGRect(x: localX, y: localY, width: 1, height: 1)
-        }
-    }
-#endif
-
 }
 
-private struct DayPlanSelectedSlotPopover: Equatable {
+struct DayPlanSlotSidebarPresentation {
+    static let width: CGFloat = 400
+}
+
+private struct DayPlanSelectedSlotDraft: Equatable {
     var date: Date
     var startMinute: Int
     var durationMinutes: Int
 }
-
-#if os(macOS)
-private struct DayPlanNativePopoverPresenter<PopoverContent: View>: NSViewRepresentable {
-    @Binding var isPresented: Bool
-    var preferredEdge: NSRectEdge
-    var positioningRect: CGRect
-    var content: PopoverContent
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(isPresented: $isPresented)
-    }
-
-    func makeNSView(context: Context) -> NSView {
-        NSView(frame: .zero)
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        context.coordinator.isPresented = $isPresented
-        context.coordinator.update(
-            isPresented: isPresented,
-            preferredEdge: preferredEdge,
-            positioningRect: positioningRect,
-            content: content,
-            anchorView: nsView
-        )
-    }
-
-    @MainActor
-    final class Coordinator: NSObject, NSPopoverDelegate {
-        var isPresented: Binding<Bool>
-        private var popover: NSPopover?
-        private var hostingController: NSHostingController<PopoverContent>?
-
-        init(isPresented: Binding<Bool>) {
-            self.isPresented = isPresented
-        }
-
-        func update(
-            isPresented: Bool,
-            preferredEdge: NSRectEdge,
-            positioningRect: CGRect,
-            content: PopoverContent,
-            anchorView: NSView
-        ) {
-            if let hostingController {
-                hostingController.rootView = content
-            } else {
-                hostingController = NSHostingController(rootView: content)
-            }
-
-            if isPresented {
-                showPopover(
-                    preferredEdge: preferredEdge,
-                    positioningRect: positioningRect,
-                    anchorView: anchorView
-                )
-            } else {
-                popover?.performClose(nil)
-            }
-        }
-
-        private func showPopover(
-            preferredEdge: NSRectEdge,
-            positioningRect: CGRect,
-            anchorView: NSView
-        ) {
-            guard isPresented.wrappedValue else { return }
-            guard anchorView.window != nil else {
-                DispatchQueue.main.async { [weak self, weak anchorView] in
-                    guard let self, let anchorView else { return }
-                    self.showPopover(
-                        preferredEdge: preferredEdge,
-                        positioningRect: positioningRect,
-                        anchorView: anchorView
-                    )
-                }
-                return
-            }
-            guard popover?.isShown != true, let hostingController else { return }
-
-            hostingController.view.layoutSubtreeIfNeeded()
-            let contentSize = normalizedPopoverSize(hostingController.view.fittingSize)
-            let presentation = adjustedPresentation(
-                preferredEdge: preferredEdge,
-                positioningRect: positioningRect,
-                contentSize: contentSize,
-                anchorView: anchorView
-            )
-
-            let popover = NSPopover()
-            popover.behavior = .semitransient
-            popover.animates = true
-            popover.contentSize = contentSize
-            popover.contentViewController = hostingController
-            popover.delegate = self
-            popover.show(
-                relativeTo: presentation.positioningRect,
-                of: anchorView,
-                preferredEdge: presentation.edge
-            )
-            self.popover = popover
-        }
-
-        private func normalizedPopoverSize(_ fittingSize: CGSize) -> CGSize {
-            CGSize(
-                width: max(fittingSize.width, 380),
-                height: max(fittingSize.height, 240)
-            )
-        }
-
-        private func adjustedPresentation(
-            preferredEdge: NSRectEdge,
-            positioningRect: CGRect,
-            contentSize: CGSize,
-            anchorView: NSView
-        ) -> DayPlanPopoverPresentation {
-            guard let window = anchorView.window else {
-                return DayPlanPopoverPresentation(edge: preferredEdge, positioningRect: positioningRect)
-            }
-
-            let visibleFrame = (window.screen ?? NSScreen.main)?.visibleFrame.insetBy(dx: 12, dy: 12)
-            guard let visibleFrame else {
-                return DayPlanPopoverPresentation(edge: preferredEdge, positioningRect: positioningRect)
-            }
-
-            let anchorWindowRect = anchorView.convert(positioningRect, to: nil)
-            let anchorScreenRect = window.convertToScreen(anchorWindowRect)
-            let edge = bestPopoverEdge(
-                preferredEdge: preferredEdge,
-                anchorScreenRect: anchorScreenRect,
-                visibleFrame: visibleFrame,
-                contentSize: contentSize
-            )
-            let rect = clampedPositioningRect(
-                positioningRect,
-                edge: edge,
-                anchorScreenRect: anchorScreenRect,
-                visibleFrame: visibleFrame,
-                contentSize: contentSize
-            )
-            return DayPlanPopoverPresentation(edge: edge, positioningRect: rect)
-        }
-
-        private func bestPopoverEdge(
-            preferredEdge: NSRectEdge,
-            anchorScreenRect: CGRect,
-            visibleFrame: CGRect,
-            contentSize: CGSize
-        ) -> NSRectEdge {
-            let orderedEdges: [NSRectEdge]
-            switch preferredEdge {
-            case .maxY:
-                orderedEdges = [.maxY, .minY, .minX, .maxX]
-            case .minY:
-                orderedEdges = [.minY, .maxY, .minX, .maxX]
-            case .minX:
-                orderedEdges = [.minX, .maxX, .maxY, .minY]
-            default:
-                orderedEdges = [.maxX, .minX, .maxY, .minY]
-            }
-
-            if let fittingEdge = orderedEdges.first(where: {
-                primaryAvailableSpace(
-                    for: $0,
-                    anchorScreenRect: anchorScreenRect,
-                    visibleFrame: visibleFrame
-                ) >= primaryNeededSpace(for: $0, contentSize: contentSize)
-            }) {
-                return fittingEdge
-            }
-
-            return orderedEdges.max {
-                primaryAvailableSpace(for: $0, anchorScreenRect: anchorScreenRect, visibleFrame: visibleFrame)
-                    < primaryAvailableSpace(for: $1, anchorScreenRect: anchorScreenRect, visibleFrame: visibleFrame)
-            } ?? preferredEdge
-        }
-
-        private func primaryAvailableSpace(
-            for edge: NSRectEdge,
-            anchorScreenRect: CGRect,
-            visibleFrame: CGRect
-        ) -> CGFloat {
-            switch edge {
-            case .maxY:
-                return visibleFrame.maxY - anchorScreenRect.maxY
-            case .minY:
-                return anchorScreenRect.minY - visibleFrame.minY
-            case .minX:
-                return anchorScreenRect.minX - visibleFrame.minX
-            default:
-                return visibleFrame.maxX - anchorScreenRect.maxX
-            }
-        }
-
-        private func primaryNeededSpace(for edge: NSRectEdge, contentSize: CGSize) -> CGFloat {
-            switch edge {
-            case .maxY, .minY:
-                return contentSize.height
-            default:
-                return contentSize.width
-            }
-        }
-
-        private func clampedPositioningRect(
-            _ positioningRect: CGRect,
-            edge: NSRectEdge,
-            anchorScreenRect: CGRect,
-            visibleFrame: CGRect,
-            contentSize: CGSize
-        ) -> CGRect {
-            var rect = positioningRect
-            switch edge {
-            case .maxY, .minY:
-                let halfWidth = contentSize.width / 2
-                let minMidX = visibleFrame.minX + halfWidth
-                let maxMidX = max(minMidX, visibleFrame.maxX - halfWidth)
-                let clampedMidX = min(
-                    max(anchorScreenRect.midX, minMidX),
-                    maxMidX
-                )
-                rect.origin.x += clampedMidX - anchorScreenRect.midX
-            default:
-                let halfHeight = contentSize.height / 2
-                let minMidY = visibleFrame.minY + halfHeight
-                let maxMidY = max(minMidY, visibleFrame.maxY - halfHeight)
-                let clampedMidY = min(
-                    max(anchorScreenRect.midY, minMidY),
-                    maxMidY
-                )
-                rect.origin.y += clampedMidY - anchorScreenRect.midY
-            }
-            return rect
-        }
-
-        func popoverDidClose(_ notification: Notification) {
-            popover = nil
-            DispatchQueue.main.async { [isPresented] in
-                isPresented.wrappedValue = false
-            }
-        }
-    }
-}
-
-private struct DayPlanPopoverPresentation {
-    let edge: NSRectEdge
-    let positioningRect: CGRect
-}
-#endif
 
 private struct DayPlanSlotDraftBlock: View {
     var date: Date

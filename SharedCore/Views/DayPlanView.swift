@@ -1820,9 +1820,9 @@ private struct DayPlanTimelinePanelContentView: View {
                 onDropTaskToAllDay: { taskID, date in
                     dropTaskToAllDay(taskID, on: date)
                 },
-                slotPopoverContent: { date, minute, draftDurationMinutes, dismiss in
+                slotSidebarContent: { date, minute, draftDurationMinutes, dismiss in
                     AnyView(
-                        DayPlanSlotActionPopover(
+                        DayPlanSlotActionSidebar(
                             date: date,
                             startMinute: minute,
                             durationMinutes: draftDurationMinutes,
@@ -4358,7 +4358,7 @@ private enum DayPlanAwayLogOption: Hashable, Identifiable {
     }
 }
 
-private struct DayPlanSlotActionPopover: View {
+private struct DayPlanSlotActionSidebar: View {
     let date: Date
     let startMinute: Int
     @Binding var durationMinutes: Int
@@ -4446,7 +4446,7 @@ private struct DayPlanSlotActionPopover: View {
             }
         }
         .padding(16)
-        .frame(width: 380)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
         .onAppear {
             normalizeModeForAwayVisibility()
             setTaskDuration(durationMinutes)

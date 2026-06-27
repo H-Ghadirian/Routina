@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted
+Superseded
+
+## Superseded by
+
+- [0286: Present Planner Slot Actions in a Sidebar](../0286-present-planner-slot-actions-in-sidebar.md)
 
 ## Date
 
@@ -10,9 +14,9 @@ Accepted
 
 ## Refines
 
-- [0089: Prefer Native Apple Platform Patterns](0089-prefer-native-apple-platform-patterns.md)
-- [0269: Support Planner Slot Actions](0269-support-planner-slot-actions.md)
-- [0273: Log Sleep From Planner Away Slot Action](0273-log-sleep-from-planner-away-slot-action.md)
+- [0089: Prefer Native Apple Platform Patterns](../0089-prefer-native-apple-platform-patterns.md)
+- [0269: Support Planner Slot Actions](../0269-support-planner-slot-actions.md)
+- [0273: Log Sleep From Planner Away Slot Action](../0273-log-sleep-from-planner-away-slot-action.md)
 
 ## Context
 
