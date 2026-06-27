@@ -104,16 +104,11 @@ extension HomeTCAView {
 
         if !presentation.moveActions.isEmpty {
             menu.addItem(.separator())
-
-            for action in presentation.moveActions {
-                menu.addActionItem(
-                    title: action.title,
-                    systemImage: action.systemImage,
-                    isEnabled: !action.isDisabled
-                ) {
-                    homeTaskRowCommandHandler.handle(action.command(taskID: task.taskID))
-                }
-            }
+            menu.addMoveToSubmenu(
+                actions: presentation.moveActions,
+                taskID: task.taskID,
+                commandHandler: homeTaskRowCommandHandler
+            )
         }
 
         if !task.isDailyRoutine || presentation.notTodayCommand != nil {
@@ -237,6 +232,33 @@ private extension NSMenu {
         if let notTodayCommand {
             submenu.addActionItem(title: "Not today", systemImage: "moon.zzz") {
                 commandHandler.handle(notTodayCommand)
+            }
+        }
+
+        item.submenu = submenu
+        addItem(item)
+    }
+
+    func addMoveToSubmenu(
+        actions: [HomeTaskRowMoveActionPresentation],
+        taskID: UUID,
+        commandHandler: HomeTaskRowCommandHandler
+    ) {
+        let item = NSMenuItem(title: "Move to", action: nil, keyEquivalent: "")
+        item.image = NSImage(
+            systemSymbolName: "arrow.up.arrow.down",
+            accessibilityDescription: "Move to"
+        )
+
+        let submenu = NSMenu(title: "Move to")
+
+        for action in actions {
+            submenu.addActionItem(
+                title: action.title,
+                systemImage: action.systemImage,
+                isEnabled: !action.isDisabled
+            ) {
+                commandHandler.handle(action.command(taskID: taskID))
             }
         }
 
