@@ -760,6 +760,7 @@ extension TaskDetailFeature {
                 let identifier = task.id.uuidString
                 let taskTitle = RoutineTask.trimmedName(task.name) ?? "Untitled task"
                 let allTasks = (try? context.fetch(FetchDescriptor<RoutineTask>())) ?? []
+                try DayPlanStorage.deleteBlocks(forTaskIDs: Set([taskID]), context: context)
                 RoutineTask.removeRelationships(targeting: Set([taskID]), from: allTasks)
                 context.delete(task)
                 let logs = try context.fetch(TaskDetailFetchDescriptors.allLogs(for: task.id))

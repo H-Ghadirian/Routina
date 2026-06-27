@@ -208,6 +208,7 @@ final class DayPlanPlannerState: ObservableObject {
 
         weekBlocksByDayKey = loadedBlocksByDayKey
         syncSelectedDayBlocks(calendar: calendar, context: context)
+        clearMissingSelectedBlock()
     }
 
     func showExactTimedTasks(
@@ -1046,6 +1047,16 @@ final class DayPlanPlannerState: ObservableObject {
     private func syncSelectedDayBlocks(calendar: Calendar, context: ModelContext) {
         let dayKey = DayPlanStorage.dayKey(for: selectedDate, calendar: calendar)
         blocks = weekBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
+    }
+
+    private func clearMissingSelectedBlock() {
+        guard let selectedBlockID else { return }
+        let isStillLoaded = weekBlocksByDayKey.values.contains { blocks in
+            blocks.contains { $0.id == selectedBlockID }
+        }
+        if !isStillLoaded {
+            self.selectedBlockID = nil
+        }
     }
 
     private struct ExactScheduledBlock {

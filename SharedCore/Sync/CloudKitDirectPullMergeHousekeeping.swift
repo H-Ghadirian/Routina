@@ -50,7 +50,15 @@ enum CloudKitDirectPullMergeHousekeeping {
         let orphanedAttachmentTaskIDs = try context.fetch(FetchDescriptor<RoutineAttachment>())
             .filter { !taskIDs.contains($0.taskID) }
             .map(\.taskID)
-        let orphanedTaskIDs = Set(orphanedLogTaskIDs + orphanedFocusTaskIDs + orphanedAttachmentTaskIDs)
+        let orphanedPlannerBlockTaskIDs = try context.fetch(FetchDescriptor<DayPlanBlockRecord>())
+            .filter { !taskIDs.contains($0.taskID) }
+            .map(\.taskID)
+        let orphanedTaskIDs = Set(
+            orphanedLogTaskIDs
+                + orphanedFocusTaskIDs
+                + orphanedAttachmentTaskIDs
+                + orphanedPlannerBlockTaskIDs
+        )
 
         guard !orphanedTaskIDs.isEmpty else { return }
         try deleteRows(forTaskIDs: orphanedTaskIDs, in: context)
@@ -167,5 +175,7 @@ enum CloudKitDirectPullMergeHousekeeping {
         for attachment in attachments where taskIDs.contains(attachment.taskID) {
             context.delete(attachment)
         }
+
+        try DayPlanStorage.deleteBlocks(forTaskIDs: taskIDs, context: context)
     }
 }

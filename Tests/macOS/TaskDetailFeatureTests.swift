@@ -47,10 +47,32 @@ struct TaskDetailFeatureTests {
     }
 
     @Test
-    func deleteRoutineConfirmed_removesTaskCancelsNotificationAndRequestsDismiss() async throws {
+    func deleteRoutineConfirmed_removesTaskPlannerBlocksCancelsNotificationAndRequestsDismiss() async throws {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Stretch", interval: 3, lastDone: nil, emoji: "🤸")
         _ = makeLog(in: context, task: task, timestamp: Date())
+        let dayKey = "2026-06-27"
+        let deletedPlannerBlock = DayPlanBlock(
+            id: UUID(),
+            taskID: task.id,
+            dayKey: dayKey,
+            startMinute: 9 * 60,
+            durationMinutes: 30,
+            titleSnapshot: "Stretch"
+        )
+        let unrelatedPlannerBlock = DayPlanBlock(
+            id: UUID(),
+            taskID: UUID(),
+            dayKey: dayKey,
+            startMinute: 10 * 60,
+            durationMinutes: 30,
+            titleSnapshot: "Other task"
+        )
+        DayPlanStorage.saveBlocks(
+            [deletedPlannerBlock, unrelatedPlannerBlock],
+            forDayKey: dayKey,
+            context: context
+        )
         try context.save()
 
         let canceledIDs = LockIsolated<[String]>([])
@@ -93,8 +115,10 @@ struct TaskDetailFeatureTests {
 
         let remainingTasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let remainingLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+        let remainingPlannerBlocks = DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
         #expect(remainingTasks.isEmpty)
         #expect(remainingLogs.isEmpty)
+        #expect(remainingPlannerBlocks.map(\.id) == [unrelatedPlannerBlock.id])
         #expect(canceledIDs.value == [expectedIdentifier])
     }
 

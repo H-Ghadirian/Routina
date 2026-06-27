@@ -5339,6 +5339,7 @@ private struct DayPlanLifecycleModifier: ViewModifier {
                 showExactTimedTasks()
             }
             .onChange(of: tasks.map(\.id)) { _, _ in
+                planner.loadBlocks(calendar: calendar, context: modelContext)
                 showExactTimedTasks()
                 planner.selectDefaultTaskIfNeeded(from: tasks)
             }

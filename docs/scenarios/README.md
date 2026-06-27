@@ -240,6 +240,20 @@ Given a manual planner block is short, such as a 5- or 15-minute block
 When the user hovers or drags from the middle of the block
 Then the block can still be moved because resize grips stay limited to the block edges
 
+### Deleting a Task Removes Its Planner Blocks
+
+Area: Planner, Tasks
+Decision links: [0287](../decisions/0287-remove-deleted-task-blocks-from-planner.md)
+Current behavior: [Planner](../current-behavior/planner.md), [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/DayPlanStorageTests.swift`
+- `Tests/iOS/TaskDetailFeatureTests.swift`
+- `Tests/macOS/TaskDetailFeatureTests.swift`
+
+Given a task has a persisted planner block
+When the user deletes that task from edit task
+Then matching planner blocks are removed from Planner storage and unrelated planner blocks remain
+
 ### Planner Slot Actions Hide Away and Sleep When Away Is Off
 
 Area: Planner

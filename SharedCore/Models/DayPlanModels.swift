@@ -260,6 +260,24 @@ enum DayPlanStorage {
         }
     }
 
+    @discardableResult
+    static func deleteBlocks(
+        forTaskIDs taskIDs: Set<UUID>,
+        context: ModelContext
+    ) throws -> Int {
+        guard !taskIDs.isEmpty else { return 0 }
+
+        migrateLegacyDefaultsIfNeeded(to: context)
+
+        let records = try context.fetch(FetchDescriptor<DayPlanBlockRecord>())
+        var deletedCount = 0
+        for record in records where taskIDs.contains(record.taskID) {
+            context.delete(record)
+            deletedCount += 1
+        }
+        return deletedCount
+    }
+
     private static func migrateLegacyDefaultsIfNeeded(
         to context: ModelContext,
         defaults: UserDefaults = SharedDefaults.app

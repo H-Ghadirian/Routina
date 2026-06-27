@@ -106,6 +106,7 @@ enum HomeTaskDeletionSupport {
     ) -> Effect<Action> {
         .run { @MainActor _ in
             let context = modelContext()
+            try DayPlanStorage.deleteBlocks(forTaskIDs: update.idSet, context: context)
             let allTasks = (try? context.fetch(FetchDescriptor<RoutineTask>())) ?? []
             RoutineTask.removeRelationships(targeting: update.idSet, from: allTasks)
             for id in update.uniqueIDs {
