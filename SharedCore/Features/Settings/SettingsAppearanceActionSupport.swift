@@ -225,6 +225,16 @@ enum SettingsAppearanceActionHandler {
         return .none
     }
 
+    static func unlockUnlimitedTasksToggled(
+        _ isEnabled: Bool,
+        state: inout SettingsAppearanceState,
+        appSettingsClient: AppSettingsClient
+    ) -> Effect<SettingsFeature.Action> {
+        state.unlocksUnlimitedTasks = isEnabled
+        appSettingsClient.setUnlockUnlimitedTasks(isEnabled)
+        return .none
+    }
+
     static func showPersianDatesToggled(
         _ isEnabled: Bool,
         state: inout SettingsAppearanceState,

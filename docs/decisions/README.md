@@ -31,6 +31,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0293](0293-add-settings-unlimited-task-override-while-products-unavailable.md) adds a temporary unlimited-task Settings override:** Settings -> Support & About -> Purchases can resolve the testing unlimited-task entitlement in development and production while StoreKit products are unavailable; production defaults the override off.
 - **[0292](0292-unify-planner-header-date-control.md) refines Planner header date navigation:** Planner has one canonical right-side date/range control that opens date selection in the right Planner sidebar, while Today, previous/next, Day/Week, and Day spacing stay grouped as left-side navigation/view controls.
 - **[0291](0291-gate-planner-calendar-filter-options-by-beta-toggles.md) refines Planner calendar filter availability:** The Planner filter sidebar omits Events when Mac Event/Emotion actions are disabled, omits Away and Sleep when Show Away is disabled, and ignores stale hidden state for unavailable beta layers.
 - **[0290](0290-limit-free-active-tasks-behind-subscription.md) adds the freemium active-task limit:** Free Routina allows up to 10 active tasks; creating another active task requires a StoreKit unlimited-task entitlement from weekly, monthly, annual, or lifetime purchase options, while existing tasks are preserved.
@@ -205,6 +206,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0293](0293-add-settings-unlimited-task-override-while-products-unavailable.md) | Add Settings Unlimited Task Override While Products Are Unavailable | Accepted | 2026-06-27 |
 | [0292](0292-unify-planner-header-date-control.md) | Unify Planner Header Date Control | Accepted | 2026-06-27 |
 | [0291](0291-gate-planner-calendar-filter-options-by-beta-toggles.md) | Gate Planner Calendar Filter Options by Beta Toggles | Accepted | 2026-06-27 |
 | [0290](0290-limit-free-active-tasks-behind-subscription.md) | Limit Free Active Tasks Behind Subscription | Accepted | 2026-06-27 |

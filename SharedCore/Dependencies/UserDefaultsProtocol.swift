@@ -56,6 +56,7 @@ enum AppSettingsDefaults {
         .appSettingNotesEnabled: false,
         .appSettingAwayEnabled: false,
         .appSettingFilterQuerySectionsEnabled: false,
+        .appSettingUnlockUnlimitedTasks: AppEnvironment.defaultUnlocksAllTasks,
         .appSettingHomeTaskListModeTabsVisible: false,
         .appSettingMacHomeSectionFocusTimersEnabled: false,
         .appSettingMacTimelineQuickFiltersVisible: false,
@@ -146,6 +147,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingNotesEnabled
     case appSettingAwayEnabled
     case appSettingFilterQuerySectionsEnabled
+    case appSettingUnlockUnlimitedTasks
     case appSettingGoalsTabEnabled
     case appSettingAdventureMapEnabled
     case appSettingBoardScreenEnabled
@@ -235,6 +237,8 @@ struct AppSettingsClient: Sendable {
     var setAwayEnabled: @Sendable (Bool) -> Void = { _ in }
     var filterQuerySectionsEnabled: @Sendable () -> Bool = { false }
     var setFilterQuerySectionsEnabled: @Sendable (Bool) -> Void = { _ in }
+    var unlockUnlimitedTasks: @Sendable () -> Bool = { false }
+    var setUnlockUnlimitedTasks: @Sendable (Bool) -> Void = { _ in }
     var showPersianDates: @Sendable () -> Bool
     var setShowPersianDates: @Sendable (Bool) -> Void
     var automaticPlaceCheckInEnabled: @Sendable () -> Bool
@@ -482,6 +486,13 @@ extension AppSettingsClient {
             SharedDefaults.app[.appSettingFilterQuerySectionsEnabled] = isEnabled
             AppSettingsPersistenceMirror.schedule()
         },
+        unlockUnlimitedTasks: {
+            SharedDefaults.app[.appSettingUnlockUnlimitedTasks]
+        },
+        setUnlockUnlimitedTasks: { isEnabled in
+            SharedDefaults.app[.appSettingUnlockUnlimitedTasks] = isEnabled
+            AppSettingsPersistenceMirror.schedule()
+        },
         showPersianDates: {
             SharedDefaults.app[.appSettingShowPersianDates]
         },
@@ -705,6 +716,8 @@ extension AppSettingsClient {
         setAwayEnabled: { _ in },
         filterQuerySectionsEnabled: { false },
         setFilterQuerySectionsEnabled: { _ in },
+        unlockUnlimitedTasks: { false },
+        setUnlockUnlimitedTasks: { _ in },
         showPersianDates: { false },
         setShowPersianDates: { _ in },
         automaticPlaceCheckInEnabled: { true },

@@ -60,6 +60,8 @@
 	<string>iCloud.ir.hamedgh.Routinam.dev</string>
 	<key>RoutinaSandboxDataMode</key>
 	<true/>
+	<key>RoutinaUnlockAllTasks</key>
+	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

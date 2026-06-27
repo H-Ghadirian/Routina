@@ -426,6 +426,15 @@ SettingsMacDetailShell(
             }
     }
 
+    SettingsMacDetailCard(title: "Purchases") {
+        Toggle("Unlock unlimited tasks", isOn: unlockUnlimitedTasksBinding)
+            .toggleStyle(.switch)
+
+        Text("Bypass the active-task purchase limit while StoreKit products are unavailable.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+    }
+
     if store.diagnostics.isDebugSectionVisible {
         SettingsMacBetaExperimentsCard(store: store)
 
@@ -445,6 +454,13 @@ SettingsMacDetailShell(
         }
     }
 }
+    }
+
+    private var unlockUnlimitedTasksBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.unlocksUnlimitedTasks },
+            set: { store.send(.unlockUnlimitedTasksToggled($0)) }
+        )
     }
 }
 

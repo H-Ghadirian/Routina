@@ -377,6 +377,7 @@ enum SettingsRoutineDataBackupMapping {
             notesEnabled: preferences.notesEnabled,
             awayEnabled: preferences.awayEnabled,
             filterQuerySectionsEnabled: preferences.filterQuerySectionsEnabled,
+            unlockUnlimitedTasks: preferences.unlockUnlimitedTasks,
             showPersianDates: preferences.showPersianDates,
             batteryRoutineMonitoringEnabled: preferences.batteryRoutineMonitoringEnabled,
             sleepHomeActionEnabled: preferences.sleepHomeActionEnabled,

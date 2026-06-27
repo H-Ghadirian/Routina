@@ -34,6 +34,13 @@ List {
         }
     }
 
+    Section("Purchases") {
+        Toggle("Unlock unlimited tasks", isOn: unlockUnlimitedTasksBinding)
+
+        Text("Bypass the active-task purchase limit while StoreKit products are unavailable.")
+            .foregroundStyle(.secondary)
+    }
+
     if store.diagnostics.isDebugSectionVisible {
         SettingsBetaExperimentsSection(store: store)
 
@@ -53,6 +60,13 @@ List {
 .listStyle(.insetGrouped)
 .navigationTitle("Support & About")
 .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var unlockUnlimitedTasksBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.unlocksUnlimitedTasks },
+            set: { store.send(.unlockUnlimitedTasksToggled($0)) }
+        )
     }
 }
 

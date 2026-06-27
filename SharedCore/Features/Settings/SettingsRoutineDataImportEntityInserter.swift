@@ -1078,6 +1078,7 @@ enum SettingsRoutineDataImportEntityInserter {
         preferences.notesEnabled = backupPreferences.notesEnabled ?? false
         preferences.awayEnabled = backupPreferences.awayEnabled ?? false
         preferences.filterQuerySectionsEnabled = backupPreferences.filterQuerySectionsEnabled ?? false
+        preferences.unlockUnlimitedTasks = backupPreferences.unlockUnlimitedTasks ?? false
         preferences.showPersianDates = backupPreferences.showPersianDates ?? false
         preferences.batteryRoutineMonitoringEnabled = backupPreferences.batteryRoutineMonitoringEnabled ?? BatteryRoutinePreferences.defaultMonitoringEnabled
         preferences.sleepHomeActionEnabled = backupPreferences.sleepHomeActionEnabled ?? true

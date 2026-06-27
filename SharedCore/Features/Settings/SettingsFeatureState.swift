@@ -78,6 +78,7 @@ struct SettingsAppearanceState: Equatable {
     var isNotesEnabled: Bool = false
     var isAwayEnabled: Bool = false
     var showsFilterQuerySections: Bool = false
+    var unlocksUnlimitedTasks: Bool = false
     var showPersianDates: Bool = false
     var showsTimelineTasksInDayPlanner: Bool = true
     var separatesDailyRoutinesInTaskList: Bool = false

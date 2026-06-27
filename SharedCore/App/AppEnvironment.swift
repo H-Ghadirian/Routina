@@ -38,7 +38,7 @@ enum AppEnvironment {
         isUITestMode || processEnvironment["XCTestConfigurationFilePath"] != nil
     }()
 
-    static let unlocksAllTasks: Bool = {
+    static let defaultUnlocksAllTasks: Bool = {
         if let value = boolValue(from: processEnvironment["ROUTINA_UNLOCK_ALL_TASKS"]) {
             return value
         }
@@ -54,6 +54,18 @@ enum AppEnvironment {
 
         return false
     }()
+
+    static var unlocksAllTasks: Bool {
+        if let value = boolValue(from: processEnvironment["ROUTINA_UNLOCK_ALL_TASKS"]) {
+            return value
+        }
+
+        let key = UserDefaultBoolValueKey.appSettingUnlockUnlimitedTasks.rawValue
+        guard SharedDefaults.app.object(forKey: key) != nil else {
+            return defaultUnlocksAllTasks
+        }
+        return SharedDefaults.app[.appSettingUnlockUnlimitedTasks]
+    }
 
     static let isSandboxDataMode: Bool = {
         if isAutomatedTestMode {

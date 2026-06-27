@@ -27,11 +27,12 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0285](../decisions/0285-clarify-mac-sidebar-section-surfaces.md)
 - [0287](../decisions/0287-remove-deleted-task-blocks-from-planner.md)
 - [0290](../decisions/0290-limit-free-active-tasks-behind-subscription.md)
+- [0293](../decisions/0293-add-settings-unlimited-task-override-while-products-unavailable.md)
 
 ## Current Contract
 
 - Todos and routines share the task model, but their timing semantics are different.
-- Free Routina allows up to 10 active tasks. Creating another active task requires an unlimited-task entitlement from a subscription or lifetime purchase; existing tasks are preserved even if the account already has more than 10 active tasks.
+- Free Routina allows up to 10 active tasks. Creating another active task requires an unlimited-task entitlement from a subscription or lifetime purchase; existing tasks are preserved even if the account already has more than 10 active tasks. Settings -> Support & About -> Purchases can temporarily unlock unlimited task creation while StoreKit products are unavailable; production defaults this override off.
 - Active-task counting includes todos and routines that are not paused, snoozed, archived, done, or canceled.
 - Todo availability has independent date and time axes. Date bounds, time windows, deadlines, reminders, and planned dates are separate concepts.
 - Planned dates are date-only Home-list planning hints for todos and non-daily routines. They are not availability, deadline, reminder, or completion history.

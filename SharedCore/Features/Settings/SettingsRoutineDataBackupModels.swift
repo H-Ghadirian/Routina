@@ -364,6 +364,7 @@ extension SettingsRoutineDataPersistence {
             var notesEnabled: Bool?
             var awayEnabled: Bool?
             var filterQuerySectionsEnabled: Bool?
+            var unlockUnlimitedTasks: Bool?
             var showPersianDates: Bool?
             var batteryRoutineMonitoringEnabled: Bool?
             var sleepHomeActionEnabled: Bool?

@@ -615,6 +615,24 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func unlockUnlimitedTasksToggled_persistsSelection() async {
+        let persistedValue = LockIsolated<Bool?>(nil)
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setUnlockUnlimitedTasks = { persistedValue.setValue($0) }
+        }
+
+        await store.send(.unlockUnlimitedTasksToggled(true)) {
+            $0.appearance.unlocksUnlimitedTasks = true
+        }
+
+        #expect(persistedValue.value == true)
+    }
+
+    @Test
     func defaultSettingsKeepTaskSharingOff() {
         #expect(AppSettingsDefaults.boolValues[.appSettingTaskSharingEnabled] == .some(false))
         #expect(!SettingsFeature.State().appearance.isTaskSharingEnabled)
@@ -650,6 +668,12 @@ struct SettingsFeatureTests {
         #expect(AppSettingsDefaults.boolValues[.appSettingFilterQuerySectionsEnabled] == .some(false))
         #expect(!SettingsFeature.State().appearance.showsFilterQuerySections)
         #expect(!RoutinaUserPreferences().filterQuerySectionsEnabled)
+    }
+
+    @Test
+    func defaultSettingsKeepUnlimitedTaskUnlockOffWhenNotConfigured() {
+        #expect(SettingsFeature.State().appearance.unlocksUnlimitedTasks == false)
+        #expect(RoutinaUserPreferences().unlockUnlimitedTasks == false)
     }
 
     @Test
