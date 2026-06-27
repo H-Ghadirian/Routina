@@ -40,16 +40,18 @@ struct DayPlanWeekDayHeader: View {
                         .monospacedDigit()
                         .lineLimit(1)
                         .labelStyle(.titleAndIcon)
+                        .foregroundStyle(plannedTaskButtonTint)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .frame(minWidth: 44, minHeight: 28)
+                        .routinaGlassPill(
+                            tint: plannedTaskButtonTint,
+                            tintOpacity: isFocusedForPlannedTasks ? 0.14 : 0.10,
+                            interactive: true
+                        )
+                        .contentShape(Capsule(style: .continuous))
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(isFocusedForPlannedTasks ? Color.accentColor : Color.secondary)
-                .padding(.horizontal, 7)
-                .padding(.vertical, 4)
-                .routinaGlassPill(
-                    tint: isFocusedForPlannedTasks ? .accentColor : .secondary,
-                    tintOpacity: isFocusedForPlannedTasks ? 0.14 : 0.10,
-                    interactive: true
-                )
                 .help("Show planned tasks for \(date.formatted(date: .abbreviated, time: .omitted))")
                 .accessibilityLabel("\(plannedTaskCountText) planned for \(date.formatted(date: .abbreviated, time: .omitted))")
 
@@ -59,16 +61,18 @@ struct DayPlanWeekDayHeader: View {
                             .font(.caption2.weight(.semibold))
                             .lineLimit(1)
                             .labelStyle(.titleAndIcon)
+                            .foregroundStyle(unplannedCompletedButtonTint)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 5)
+                            .frame(minWidth: 44, minHeight: 28)
+                            .routinaGlassPill(
+                                tint: unplannedCompletedButtonTint,
+                                tintOpacity: isFocusedForUnplannedCompleted ? 0.14 : 0.10,
+                                interactive: true
+                            )
+                            .contentShape(Capsule(style: .continuous))
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(isFocusedForUnplannedCompleted ? Color.accentColor : Color.secondary)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 4)
-                    .routinaGlassPill(
-                        tint: isFocusedForUnplannedCompleted ? .accentColor : .secondary,
-                        tintOpacity: isFocusedForUnplannedCompleted ? 0.14 : 0.10,
-                        interactive: true
-                    )
                     .help("Show timeline tasks not planned for \(date.formatted(date: .abbreviated, time: .omitted))")
                     .accessibilityLabel("\(timelineTaskCountText) from the timeline not planned for \(date.formatted(date: .abbreviated, time: .omitted))")
                 }
@@ -96,6 +100,14 @@ struct DayPlanWeekDayHeader: View {
 
     private var plannedTaskCountText: String {
         "\(plannedTaskCount)"
+    }
+
+    private var plannedTaskButtonTint: Color {
+        isFocusedForPlannedTasks ? .accentColor : .secondary
+    }
+
+    private var unplannedCompletedButtonTint: Color {
+        isFocusedForUnplannedCompleted ? .accentColor : .secondary
     }
 
     private var selectedBackgroundTint: Color {
