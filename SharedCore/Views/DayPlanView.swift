@@ -1583,6 +1583,7 @@ private struct DayPlanTimelinePanelContentView: View {
         let activeFocusRenderSessions = renderSnapshot.activeFocusRenderSessions
         let activeSprintFocusSessions = renderSnapshot.activeSprintFocusSessions
         let planFocusAllocatedMinutesBySessionID = renderSnapshot.planFocusAllocatedMinutesBySessionID
+        let currentTaskIDs = Set(currentTasks.map(\.id))
 
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -1693,6 +1694,17 @@ private struct DayPlanTimelinePanelContentView: View {
                 onSelectUnplannedCompletedDate: { date in
                     planner.focusUnplannedCompletedTasks(on: date, calendar: calendar)
                     onSelectUnplannedCompletedDate?(date)
+                },
+                plannedTaskCount: { date in
+                    dayTaskListItems(
+                        on: date,
+                        plannedBlocksByDayKey: plannedBlocksByDayKey,
+                        allDayBlocks: allDayBlocks
+                    )
+                    .count
+                },
+                onSelectDate: { date in
+                    planner.showDate(date, calendar: calendar, context: modelContext)
                 },
                 onSelectSlot: { date, minute in
                     planner.selectSlot(on: date, startMinute: minute, calendar: calendar, context: modelContext)
@@ -1867,6 +1879,29 @@ private struct DayPlanTimelinePanelContentView: View {
                                     durationMinutes: durationMinutes,
                                     blockedIntervalsByDayKey: blockedIntervalsByDayKey
                                 )
+                            },
+                            onDismiss: dismiss
+                        )
+                    )
+                },
+                dayTaskListSidebarContent: { date, dismiss in
+                    AnyView(
+                        DayPlanDayTaskListSidebar(
+                            date: date,
+                            items: dayTaskListItems(
+                                on: date,
+                                plannedBlocksByDayKey: plannedBlocksByDayKey,
+                                allDayBlocks: allDayBlocks
+                            ),
+                            taskTint: { taskID in
+                                tintsByTaskID[taskID] ?? .accentColor
+                            },
+                            calendar: calendar,
+                            isTaskOpenable: { taskID in
+                                onOpenTaskDetails != nil && currentTaskIDs.contains(taskID)
+                            },
+                            onOpenTaskDetails: { taskID in
+                                onOpenTaskDetails?(taskID)
                             },
                             onDismiss: dismiss
                         )
@@ -2125,6 +2160,20 @@ private struct DayPlanTimelinePanelContentView: View {
 
     private var activeFocusedUnplannedCompletedDate: Date? {
         showsTimelineTasksInDayPlanner ? nil : planner.focusedUnplannedCompletedDate
+    }
+
+    private func dayTaskListItems(
+        on date: Date,
+        plannedBlocksByDayKey: [String: [DayPlanBlock]],
+        allDayBlocks: [DayPlanAllDayBlock]
+    ) -> [DayPlanDayTaskListItem] {
+        let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+        return DayPlanDayTaskListPresentation.items(
+            on: date,
+            timedBlocks: plannedBlocksByDayKey[dayKey] ?? [],
+            allDayBlocks: allDayBlocks,
+            calendar: calendar
+        )
     }
 
     private func activeFocusSessions(from sessions: [FocusSession]) -> [FocusSession] {
@@ -4205,6 +4254,159 @@ private struct DayPlanFocusAllocationPresentation: Identifiable {
     let sessionID: UUID
 
     var id: UUID { sessionID }
+}
+
+private struct DayPlanDayTaskListSidebar: View {
+    let date: Date
+    let items: [DayPlanDayTaskListItem]
+    let taskTint: (UUID) -> Color
+    let calendar: Calendar
+    let isTaskOpenable: (UUID) -> Bool
+    let onOpenTaskDetails: (UUID) -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            header
+
+            if items.isEmpty {
+                ContentUnavailableView(
+                    "No planned tasks",
+                    systemImage: "list.bullet.rectangle",
+                    description: Text("Nothing is planned in Planner for this day.")
+                )
+                .frame(maxWidth: .infinity, minHeight: 220)
+            } else {
+                LazyVStack(spacing: 8) {
+                    ForEach(items) { item in
+                        DayPlanDayTaskListRow(
+                            item: item,
+                            tint: taskTint(item.taskID),
+                            date: date,
+                            calendar: calendar,
+                            isOpenable: isTaskOpenable(item.taskID),
+                            onOpenTaskDetails: onOpenTaskDetails
+                        )
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
+    private var header: some View {
+        HStack(alignment: .center, spacing: 12) {
+            Image(systemName: "list.bullet.rectangle")
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(width: 34, height: 34)
+                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Planned Tasks")
+                    .font(.headline.weight(.semibold))
+                Text(headerSubtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 8)
+
+            Button {
+                onDismiss()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title3)
+                    .symbolRenderingMode(.hierarchical)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .accessibilityLabel("Close")
+            .contentShape(Circle())
+        }
+    }
+
+    private var headerSubtitle: String {
+        let countText = "\(items.count) \(items.count == 1 ? "task" : "tasks") planned"
+        let dateText = date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
+        return "\(dateText) - \(countText)"
+    }
+}
+
+private struct DayPlanDayTaskListRow: View {
+    let item: DayPlanDayTaskListItem
+    let tint: Color
+    let date: Date
+    let calendar: Calendar
+    let isOpenable: Bool
+    let onOpenTaskDetails: (UUID) -> Void
+
+    var body: some View {
+        if isOpenable {
+            Button {
+                onOpenTaskDetails(item.taskID)
+            } label: {
+                rowContent
+            }
+            .buttonStyle(.plain)
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .help("Open \(item.title)")
+        } else {
+            rowContent
+        }
+    }
+
+    private var rowContent: some View {
+        HStack(alignment: .top, spacing: 10) {
+            DayPlanTaskAvatar(emoji: item.emoji, tint: tint)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.title)
+                    .font(.callout.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+
+                Label(placementText, systemImage: placementSystemImage)
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+
+            Spacer(minLength: 6)
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .routinaGlassCard(
+            cornerRadius: 8,
+            tint: tint,
+            tintOpacity: 0.08,
+            interactive: isOpenable
+        )
+    }
+
+    private var placementText: String {
+        switch item.placement {
+        case .allDay:
+            return "All day"
+        case let .timed(startMinute, durationMinutes):
+            let endMinute = startMinute + durationMinutes
+            let startText = DayPlanFormatting.timeText(for: startMinute, on: date, calendar: calendar)
+            let endText = DayPlanFormatting.timeText(for: endMinute, on: date, calendar: calendar)
+            return "\(startText) - \(endText), \(DayPlanFormatting.durationText(durationMinutes))"
+        }
+    }
+
+    private var placementSystemImage: String {
+        switch item.placement {
+        case .allDay:
+            return "sun.max"
+        case .timed:
+            return "clock"
+        }
+    }
 }
 
 enum DayPlanSlotActionMode: String, CaseIterable, Hashable {

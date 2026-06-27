@@ -30,6 +30,8 @@ struct DayPlanWeekCalendarView: View {
     var taskTint: (DayPlanBlock) -> Color
     var allDayTint: (DayPlanAllDayBlock) -> Color = { _ in .accentColor }
     var onSelectUnplannedCompletedDate: (Date) -> Void
+    var plannedTaskCount: (Date) -> Int = { _ in 0 }
+    var onSelectDate: (Date) -> Void = { _ in }
     var onSelectSlot: (Date, Int) -> Void
     var onSelectBlock: (DayPlanBlock, Date) -> Void
     var onOpenBlockDetails: (DayPlanBlock, Date) -> Void
@@ -50,6 +52,7 @@ struct DayPlanWeekCalendarView: View {
     var onDropTask: (UUID, Date, Int) -> Void
     var onDropTaskToAllDay: (UUID, Date) -> Void = { _, _ in }
     var slotSidebarContent: ((Date, Int, Binding<Int>, @escaping () -> Void) -> AnyView)? = nil
+    var dayTaskListSidebarContent: ((Date, @escaping () -> Void) -> AnyView)? = nil
 
     @State private var isDropTargeted = false
     @State private var isCompletingDrop = false
@@ -59,6 +62,7 @@ struct DayPlanWeekCalendarView: View {
     @State private var draggedBlockDurationMinutes: Int?
     @State private var resizeSession: DayPlanResizeSession?
     @State private var selectedSlotDraft: DayPlanSelectedSlotDraft?
+    @State private var selectedDayTaskListDate: Date?
     @State private var draftResizeBaseline: DayPlanSelectedSlotDraft?
     @Namespace private var blockAnimationNamespace
 
@@ -71,10 +75,15 @@ struct DayPlanWeekCalendarView: View {
                     dates: dates,
                     selectedDate: selectedDate,
                     focusedUnplannedCompletedDate: focusedUnplannedCompletedDate,
+                    focusedPlannedTasksDate: selectedDayTaskListDate,
                     calendar: calendar,
                     timeColumnWidth: timeColumnWidth,
                     showsUnplannedCompletedBadges: showsUnplannedCompletedBadges,
+                    plannedTaskCount: plannedTaskCount,
                     unplannedCompletedCount: unplannedCompletedCount,
+                    onSelectPlannedTasksDate: { date in
+                        presentDayTaskListSidebar(on: date)
+                    },
                     onSelectUnplannedCompletedDate: onSelectUnplannedCompletedDate
                 )
 
@@ -301,6 +310,7 @@ struct DayPlanWeekCalendarView: View {
                     scrollToInitialTarget(with: scrollProxy)
                 }
                 .onChange(of: dates) { _, _ in
+                    clearDayTaskListIfOutsideVisibleDates()
                     if !scrollToPlannerHighlight(with: scrollProxy) {
                         scrollToInitialTarget(with: scrollProxy)
                     }
@@ -321,9 +331,10 @@ struct DayPlanWeekCalendarView: View {
             }
             .frame(minWidth: 420)
 
-            selectedSlotSidebar
+            plannerRightSidebar
         }
         .animation(.easeInOut(duration: 0.16), value: selectedSlotDraft)
+        .animation(.easeInOut(duration: 0.16), value: selectedDayTaskListDate)
         .background(.background, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -468,6 +479,7 @@ struct DayPlanWeekCalendarView: View {
     private func presentSlotSidebar(on date: Date, startMinute: Int) {
         guard slotSidebarContent != nil else { return }
         draftResizeBaseline = nil
+        selectedDayTaskListDate = nil
         let clampedStartMinute = DayPlanBlock.clampedStartMinute(startMinute)
         selectedSlotDraft = DayPlanSelectedSlotDraft(
             date: calendar.startOfDay(for: date),
@@ -488,6 +500,14 @@ struct DayPlanWeekCalendarView: View {
             minimumDurationMinutes: DayPlanBlock.minimumDurationMinutes
         )
         selectedSlotDraft = draft
+    }
+
+    private func presentDayTaskListSidebar(on date: Date) {
+        guard dayTaskListSidebarContent != nil else { return }
+        selectedSlotDraft = nil
+        draftResizeBaseline = nil
+        selectedDayTaskListDate = calendar.startOfDay(for: date)
+        onSelectDate(date)
     }
 
     @ViewBuilder
@@ -526,7 +546,7 @@ struct DayPlanWeekCalendarView: View {
     }
 
     @ViewBuilder
-    private var selectedSlotSidebar: some View {
+    private var plannerRightSidebar: some View {
         if let selectedSlotDraft, let slotSidebarContent {
             Divider()
 
@@ -543,12 +563,38 @@ struct DayPlanWeekCalendarView: View {
             .frame(width: DayPlanSlotSidebarPresentation.width)
             .background(Color.secondary.opacity(0.045))
             .transition(.move(edge: .trailing).combined(with: .opacity))
+        } else if let selectedDayTaskListDate, let dayTaskListSidebarContent {
+            Divider()
+
+            ScrollView {
+                dayTaskListSidebarContent(
+                    selectedDayTaskListDate,
+                    dismissDayTaskListSidebar
+                )
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
+            .scrollIndicators(.visible)
+            .frame(width: DayPlanSlotSidebarPresentation.width)
+            .background(Color.secondary.opacity(0.045))
+            .transition(.move(edge: .trailing).combined(with: .opacity))
         }
     }
 
     private func dismissSelectedSlotSidebar() {
         selectedSlotDraft = nil
         draftResizeBaseline = nil
+    }
+
+    private func dismissDayTaskListSidebar() {
+        selectedDayTaskListDate = nil
+    }
+
+    private func clearDayTaskListIfOutsideVisibleDates() {
+        guard let selectedDayTaskListDate else { return }
+        guard !dates.contains(where: { calendar.isDate($0, inSameDayAs: selectedDayTaskListDate) }) else {
+            return
+        }
+        self.selectedDayTaskListDate = nil
     }
 
     private func selectedSlotDurationBinding(for selection: DayPlanSelectedSlotDraft) -> Binding<Int> {

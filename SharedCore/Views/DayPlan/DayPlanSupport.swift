@@ -156,6 +156,96 @@ enum DayPlanVisibleBlocks {
     }
 }
 
+struct DayPlanDayTaskListItem: Identifiable, Equatable {
+    enum Placement: Equatable {
+        case allDay
+        case timed(startMinute: Int, durationMinutes: Int)
+    }
+
+    var id: String
+    var taskID: UUID
+    var blockID: UUID?
+    var title: String
+    var emoji: String?
+    var placement: Placement
+}
+
+enum DayPlanDayTaskListPresentation {
+    static func items(
+        on date: Date,
+        timedBlocks: [DayPlanBlock],
+        allDayBlocks: [DayPlanAllDayBlock],
+        calendar: Calendar
+    ) -> [DayPlanDayTaskListItem] {
+        let allDayItems = allDayBlocks
+            .enumerated()
+            .compactMap { offset, allDayBlock -> DayPlanDayTaskListItem? in
+                guard let taskID = allDayBlock.taskID,
+                      !allDayBlock.isEvent,
+                      allDayBlockIntersects(allDayBlock, date: date, calendar: calendar) else {
+                    return nil
+                }
+
+                return DayPlanDayTaskListItem(
+                    id: "all-day-\(taskID.uuidString)-\(offset)",
+                    taskID: taskID,
+                    blockID: nil,
+                    title: allDayBlock.title,
+                    emoji: allDayBlock.emoji,
+                    placement: .allDay
+                )
+            }
+            .sorted { lhs, rhs in
+                let titleComparison = lhs.title.localizedCaseInsensitiveCompare(rhs.title)
+                if titleComparison != .orderedSame {
+                    return titleComparison == .orderedAscending
+                }
+                return lhs.id < rhs.id
+            }
+
+        let timedItems = timedBlocks
+            .map { block in
+                DayPlanDayTaskListItem(
+                    id: "timed-\(block.id.uuidString)",
+                    taskID: block.taskID,
+                    blockID: block.id,
+                    title: block.titleSnapshot,
+                    emoji: block.emojiSnapshot,
+                    placement: .timed(
+                        startMinute: block.startMinute,
+                        durationMinutes: block.durationMinutes
+                    )
+                )
+            }
+            .sorted { lhs, rhs in
+                switch (lhs.placement, rhs.placement) {
+                case let (.timed(lhsStart, _), .timed(rhsStart, _)) where lhsStart != rhsStart:
+                    return lhsStart < rhsStart
+                default:
+                    let titleComparison = lhs.title.localizedCaseInsensitiveCompare(rhs.title)
+                    if titleComparison != .orderedSame {
+                        return titleComparison == .orderedAscending
+                    }
+                    return lhs.id < rhs.id
+                }
+            }
+
+        return allDayItems + timedItems
+    }
+
+    private static func allDayBlockIntersects(
+        _ block: DayPlanAllDayBlock,
+        date: Date,
+        calendar: Calendar
+    ) -> Bool {
+        let dayStart = calendar.startOfDay(for: date)
+        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else {
+            return false
+        }
+        return block.startDate < dayEnd && block.endDate > dayStart
+    }
+}
+
 struct DayPlanTimedBlockColumnItem: Equatable {
     var id: String
     var startMinute: Int

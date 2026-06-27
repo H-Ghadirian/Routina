@@ -270,6 +270,18 @@ Given the Planner empty-slot action sidebar has only task block creation availab
 When the sidebar opens for the draft block
 Then it does not show a single-option `Task` tab, keeps the draft block visible in the grid, lets the user select a task from an inline filtered list, and can create a new task before adding the block
 
+### Planner Day Headers Open Planned Task Lists
+
+Area: Planner
+Decision links: [0288](../decisions/0288-open-planned-day-task-list-from-planner-headers.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/DayPlanDayTaskListPresentationTests.swift`
+
+Given a Planner day has all-day task blocks, timed task blocks, standalone events, and protected-session blocks
+When the user opens the day header's planned-task list
+Then the right sidebar shows task-backed all-day items followed by timed task blocks for that date, and excludes events and protected sessions
+
 ### Protected Modes Do Not Overlap
 
 Area: Planner
