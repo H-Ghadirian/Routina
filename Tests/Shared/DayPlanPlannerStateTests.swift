@@ -175,6 +175,24 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func plannedTaskSidebarOpeningDoesNotSelectDate() throws {
+        let projectRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let calendarSource = try String(
+            contentsOf: projectRoot.appendingPathComponent("SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"),
+            encoding: .utf8
+        )
+        let functionStart = try #require(calendarSource.range(of: "private func presentDayTaskListSidebar(on date: Date) {"))
+        let functionEnd = try #require(calendarSource[functionStart.upperBound...].range(of: "\n    }\n\n    @ViewBuilder"))
+        let functionSource = calendarSource[functionStart.lowerBound..<functionEnd.lowerBound]
+
+        #expect(functionSource.contains("selectedDayTaskListDate = calendar.startOfDay(for: date)"))
+        #expect(!functionSource.contains("onSelectDate"))
+    }
+
+    @Test
     func focusSleepSessionSelectsStartDayAndScrollMinute() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

@@ -31,7 +31,6 @@ struct DayPlanWeekCalendarView: View {
     var allDayTint: (DayPlanAllDayBlock) -> Color = { _ in .accentColor }
     var onSelectUnplannedCompletedDate: (Date) -> Void
     var plannedTaskCount: (Date) -> Int = { _ in 0 }
-    var onSelectDate: (Date) -> Void = { _ in }
     var onSelectSlot: (Date, Int) -> Void
     var onSelectBlock: (DayPlanBlock, Date) -> Void
     var onOpenBlockDetails: (DayPlanBlock, Date) -> Void
@@ -529,7 +528,6 @@ struct DayPlanWeekCalendarView: View {
         selectedSlotDraft = nil
         draftResizeBaseline = nil
         selectedDayTaskListDate = calendar.startOfDay(for: date)
-        onSelectDate(date)
     }
 
     @ViewBuilder

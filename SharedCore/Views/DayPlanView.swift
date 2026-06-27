@@ -1882,9 +1882,6 @@ private struct DayPlanTimelinePanelContentView: View {
                     )
                     .count
                 },
-                onSelectDate: { date in
-                    planner.showDate(date, calendar: calendar, context: modelContext)
-                },
                 onSelectSlot: { date, minute in
                     planner.selectSlot(on: date, startMinute: minute, calendar: calendar, context: modelContext)
                 },
