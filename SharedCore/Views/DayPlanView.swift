@@ -3,6 +3,7 @@ import SwiftUI
 
 struct DayPlanView: View {
     @StateObject private var planner = DayPlanPlannerState()
+    @State private var isDatePickerSidebarPresented = false
 
     var body: some View {
         content
@@ -12,13 +13,19 @@ struct DayPlanView: View {
     private var content: some View {
 #if os(macOS)
         VStack(alignment: .leading, spacing: 16) {
-            DayPlanHeaderView(planner: planner)
+            DayPlanHeaderView(
+                planner: planner,
+                isDatePickerSidebarPresented: $isDatePickerSidebarPresented
+            )
 
             HSplitView {
                 DayPlanSidebarView(planner: planner)
                     .frame(minWidth: 300, idealWidth: 340, maxWidth: 420)
 
-                DayPlanTimelinePanelView(planner: planner)
+                DayPlanTimelinePanelView(
+                    planner: planner,
+                    isDatePickerSidebarPresented: $isDatePickerSidebarPresented
+                )
                     .frame(minWidth: 520)
             }
         }
@@ -26,7 +33,10 @@ struct DayPlanView: View {
 #else
         NavigationStack {
             VStack(alignment: .leading, spacing: 12) {
-                DayPlanHeaderView(planner: planner)
+                DayPlanHeaderView(
+                    planner: planner,
+                    isDatePickerSidebarPresented: $isDatePickerSidebarPresented
+                )
                     .padding(.horizontal)
                     .padding(.top)
 
@@ -34,7 +44,10 @@ struct DayPlanView: View {
                     .frame(maxHeight: 320)
                     .padding(.horizontal)
 
-                DayPlanTimelinePanelView(planner: planner)
+                DayPlanTimelinePanelView(
+                    planner: planner,
+                    isDatePickerSidebarPresented: $isDatePickerSidebarPresented
+                )
                     .padding(.horizontal)
                     .padding(.bottom)
             }
@@ -353,6 +366,7 @@ struct DayPlanDetailView: View {
     var onOpenEventDetails: ((UUID) -> Void)? = nil
     @State private var calendarFilters = DayPlanCalendarFilterState()
     @State private var isCalendarFilterSidebarPresented = false
+    @State private var isDatePickerSidebarPresented = false
     @Query private var tasks: [RoutineTask]
 
     var body: some View {
@@ -361,6 +375,7 @@ struct DayPlanDetailView: View {
                 planner: planner,
                 calendarFilters: calendarFilters,
                 isCalendarFilterSidebarPresented: $isCalendarFilterSidebarPresented,
+                isDatePickerSidebarPresented: $isDatePickerSidebarPresented,
                 showsCalendarFilterButton: true
             )
             DayPlanTimelinePanelView(
@@ -369,7 +384,8 @@ struct DayPlanDetailView: View {
                 onOpenTaskDetails: onOpenTaskDetails,
                 onOpenEventDetails: onOpenEventDetails,
                 calendarFilters: $calendarFilters,
-                isCalendarFilterSidebarPresented: $isCalendarFilterSidebarPresented
+                isCalendarFilterSidebarPresented: $isCalendarFilterSidebarPresented,
+                isDatePickerSidebarPresented: $isDatePickerSidebarPresented
             )
         }
         .padding(20)
@@ -403,7 +419,16 @@ private struct DayPlanHeaderView: View {
     @ObservedObject var planner: DayPlanPlannerState
     var calendarFilters = DayPlanCalendarFilterState()
     var isCalendarFilterSidebarPresented: Binding<Bool> = .constant(false)
+    var isDatePickerSidebarPresented: Binding<Bool> = .constant(false)
     var showsCalendarFilterButton = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isAwayEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var areMacEventEmotionActionsEnabled = false
 
     var body: some View {
 #if os(macOS)
@@ -415,35 +440,11 @@ private struct DayPlanHeaderView: View {
 
     private var macHeader: some View {
         HStack(alignment: .center, spacing: 12) {
-            todayButton
-
-            rangeNavigationButtons
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(planner.visibleRangeTitle(calendar: calendar))
-                    .font(.title2.weight(.semibold))
-
-                Text("\(planner.blocks.count) blocks on selected day, \(DayPlanFormatting.durationText(planner.plannedMinutes)) planned")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            visibleRangeModePicker
-                .frame(width: 128)
-
-            if planner.visibleRangeMode == .day {
-                dayHourSpacingControls
-            }
+            plannerNavigationCluster
 
             Spacer(minLength: 16)
 
-            if showsCalendarFilterButton {
-                calendarFilterButton
-            }
-
-            DatePicker("Selected day", selection: selectedDateBinding, displayedComponents: [.date])
-                .labelsHidden()
-                .datePickerStyle(.compact)
+            plannerUtilityCluster
         }
     }
 
@@ -451,28 +452,11 @@ private struct DayPlanHeaderView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .center, spacing: 10) {
                 todayButton
-
                 rangeNavigationButtons
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(planner.visibleRangeTitle(calendar: calendar))
-                        .font(.title3.weight(.semibold))
-                        .lineLimit(1)
-
-                    Text("\(planner.blocks.count) blocks, \(DayPlanFormatting.durationText(planner.plannedMinutes)) planned")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
 
                 Spacer(minLength: 8)
 
-                if showsCalendarFilterButton {
-                    calendarFilterButton
-                }
-
-                DatePicker("Selected day", selection: selectedDateBinding, displayedComponents: [.date])
-                    .labelsHidden()
-                    .datePickerStyle(.compact)
+                plannerUtilityCluster
             }
 
             HStack(spacing: 8) {
@@ -485,6 +469,29 @@ private struct DayPlanHeaderView: View {
         }
     }
 
+    private var plannerNavigationCluster: some View {
+        HStack(alignment: .center, spacing: 10) {
+            todayButton
+            rangeNavigationButtons
+            visibleRangeModePicker
+                .frame(width: 128)
+
+            if planner.visibleRangeMode == .day {
+                dayHourSpacingControls
+            }
+        }
+    }
+
+    private var plannerUtilityCluster: some View {
+        HStack(alignment: .center, spacing: 8) {
+            if showsCalendarFilterButton {
+                calendarFilterButton
+            }
+
+            plannerDateControl
+        }
+    }
+
     private var todayButton: some View {
         Button("Today") {
             planner.moveToToday(calendar: calendar, context: modelContext)
@@ -494,29 +501,73 @@ private struct DayPlanHeaderView: View {
 
     private var rangeNavigationButtons: some View {
         HStack(spacing: 4) {
-            Button {
+            rangeNavigationButton(
+                systemName: "chevron.left",
+                accessibilityLabel: previousRangeAccessibilityLabel
+            ) {
                 planner.moveVisibleRange(by: -1, calendar: calendar, context: modelContext)
-            } label: {
-                Image(systemName: "chevron.left")
             }
 
-            Button {
+            rangeNavigationButton(
+                systemName: "chevron.right",
+                accessibilityLabel: nextRangeAccessibilityLabel
+            ) {
                 planner.moveVisibleRange(by: 1, calendar: calendar, context: modelContext)
-            } label: {
-                Image(systemName: "chevron.right")
             }
         }
+    }
+
+    private func rangeNavigationButton(
+        systemName: String,
+        accessibilityLabel: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color.secondary)
+                .frame(width: 34, height: 34)
+                .background {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(Color.secondary.opacity(0.07))
+                }
+                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
         .buttonStyle(.plain)
-        .font(.title3.weight(.medium))
+        .accessibilityLabel(accessibilityLabel)
+        .help(accessibilityLabel)
+    }
+
+    private var previousRangeAccessibilityLabel: String {
+        switch planner.visibleRangeMode {
+        case .day:
+            return "Previous day"
+        case .week:
+            return "Previous week"
+        }
+    }
+
+    private var nextRangeAccessibilityLabel: String {
+        switch planner.visibleRangeMode {
+        case .day:
+            return "Next day"
+        case .week:
+            return "Next week"
+        }
     }
 
     private var calendarFilterButton: some View {
         let isPresented = isCalendarFilterSidebarPresented.wrappedValue
-        let isActive = calendarFilters.hasActiveFilters
+        let availability = calendarFilterAvailability
+        let isActive = calendarFilters.hasActiveFilters(availability: availability)
 
         return Button {
             withAnimation(.easeInOut(duration: 0.16)) {
-                isCalendarFilterSidebarPresented.wrappedValue.toggle()
+                let shouldPresent = !isCalendarFilterSidebarPresented.wrappedValue
+                isCalendarFilterSidebarPresented.wrappedValue = shouldPresent
+                if shouldPresent {
+                    isDatePickerSidebarPresented.wrappedValue = false
+                }
             }
         } label: {
             Image(
@@ -535,8 +586,61 @@ private struct DayPlanHeaderView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Planner filters")
-        .accessibilityValue(calendarFilters.summaryText(includesAway: true))
+        .accessibilityValue(calendarFilters.summaryText(availability: availability))
         .help("Planner filters")
+    }
+
+    private var plannerDateControl: some View {
+        let title = planner.visibleRangeTitle(calendar: calendar)
+        let isPresented = isDatePickerSidebarPresented.wrappedValue
+
+        return Button {
+            withAnimation(.easeInOut(duration: 0.16)) {
+                let shouldPresent = !isDatePickerSidebarPresented.wrappedValue
+                isDatePickerSidebarPresented.wrappedValue = shouldPresent
+                if shouldPresent {
+                    isCalendarFilterSidebarPresented.wrappedValue = false
+                }
+            }
+        } label: {
+            HStack(spacing: 7) {
+                Image(systemName: isPresented ? "calendar.circle.fill" : "calendar")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
+
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                    .foregroundStyle(.primary)
+
+                Image(systemName: "chevron.down")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .frame(minHeight: 34)
+            .routinaGlassCard(
+                cornerRadius: 8,
+                tint: isPresented ? Color.accentColor : nil,
+                tintOpacity: 0.14,
+                interactive: true
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Go to date")
+        .accessibilityValue(title)
+        .accessibilityHint("\(planner.blocks.count) blocks on selected day, \(DayPlanFormatting.durationText(planner.plannedMinutes)) planned")
+        .help("Go to date")
+    }
+
+    private var calendarFilterAvailability: DayPlanCalendarFilterAvailability {
+        DayPlanCalendarFilterAvailability(
+            includesEvents: areMacEventEmotionActionsEnabled,
+            includesAway: isAwayEnabled,
+            includesSleep: isAwayEnabled
+        )
     }
 
     private var visibleRangeModePicker: some View {
@@ -592,16 +696,6 @@ private struct DayPlanHeaderView: View {
         )
     }
 
-    private var selectedDateBinding: Binding<Date> {
-        Binding(
-            get: {
-                planner.selectedDate
-            },
-            set: { date in
-                planner.showDate(date, calendar: calendar, context: modelContext)
-            }
-        )
-    }
 }
 
 private struct DayPlanTimelinePanelView: View {
@@ -613,6 +707,7 @@ private struct DayPlanTimelinePanelView: View {
     var onOpenEventDetails: ((UUID) -> Void)? = nil
     var calendarFilters: Binding<DayPlanCalendarFilterState> = .constant(DayPlanCalendarFilterState())
     var isCalendarFilterSidebarPresented: Binding<Bool> = .constant(false)
+    var isDatePickerSidebarPresented: Binding<Bool> = .constant(false)
     @State private var dataSnapshot = DayPlanTimelineDataSnapshot()
     @StateObject private var timelinePlacementCache = DayPlanTimelinePlacementCache()
     @StateObject private var allDayBlocksCache = DayPlanAllDayBlocksCache()
@@ -626,6 +721,10 @@ private struct DayPlanTimelinePanelView: View {
         UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isAwayEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var areMacEventEmotionActionsEnabled = false
 
     var body: some View {
         DayPlanTimelinePanelContentView(
@@ -643,6 +742,7 @@ private struct DayPlanTimelinePanelView: View {
             sprintFocusAllocations: dataSnapshot.sprintFocusAllocations,
             boardSprints: dataSnapshot.boardSprints,
             focusSessions: dataSnapshot.focusSessions,
+            includesEvents: areMacEventEmotionActionsEnabled,
             includesAway: isAwayEnabled,
             timelinePlacementCache: timelinePlacementCache,
             allDayBlocksCache: allDayBlocksCache,
@@ -653,7 +753,8 @@ private struct DayPlanTimelinePanelView: View {
             activeSprintFocusBlocksCache: activeSprintFocusBlocksCache,
             renderSnapshotCache: renderSnapshotCache,
             calendarFilters: calendarFilters,
-            isCalendarFilterSidebarPresented: isCalendarFilterSidebarPresented
+            isCalendarFilterSidebarPresented: isCalendarFilterSidebarPresented,
+            isDatePickerSidebarPresented: isDatePickerSidebarPresented
         )
         .task {
             refreshTimelineDataSnapshot()
@@ -1567,6 +1668,7 @@ private struct DayPlanTimelinePanelContentView: View {
     var sprintFocusAllocations: [SprintFocusAllocationRecord]
     var boardSprints: [BoardSprintRecord]
     var focusSessions: [FocusSession]
+    var includesEvents: Bool
     var includesAway: Bool
     @ObservedObject var timelinePlacementCache: DayPlanTimelinePlacementCache
     @ObservedObject var allDayBlocksCache: DayPlanAllDayBlocksCache
@@ -1578,6 +1680,7 @@ private struct DayPlanTimelinePanelContentView: View {
     @ObservedObject var renderSnapshotCache: DayPlanTimelineRenderSnapshotCache
     var calendarFilters: Binding<DayPlanCalendarFilterState> = .constant(DayPlanCalendarFilterState())
     var isCalendarFilterSidebarPresented: Binding<Bool> = .constant(false)
+    var isDatePickerSidebarPresented: Binding<Bool> = .constant(false)
     @State private var selectedEventID: UUID?
     @State private var allocatingPlanFocusSession: DayPlanFocusAllocationPresentation?
     @AppStorage(
@@ -1639,7 +1742,12 @@ private struct DayPlanTimelinePanelContentView: View {
         let activeSprintFocusSessions = renderSnapshot.activeSprintFocusSessions
         let planFocusAllocatedMinutesBySessionID = renderSnapshot.planFocusAllocatedMinutesBySessionID
         let currentTaskIDs = Set(currentTasks.map(\.id))
-        let calendarFilterState = calendarFilters.wrappedValue
+        let filterAvailability = DayPlanCalendarFilterAvailability(
+            includesEvents: includesEvents,
+            includesAway: includesAway,
+            includesSleep: includesAway
+        )
+        let calendarFilterState = calendarFilters.wrappedValue.normalized(availability: filterAvailability)
         let timelineSuggestionsVisible = showsTimelineTasksInDayPlanner
             && calendarFilterState.showsTimelineSuggestions
         let visibleAllDayBlocks = filteredAllDayBlocks(
@@ -1985,8 +2093,21 @@ private struct DayPlanTimelinePanelContentView: View {
                     AnyView(
                         DayPlanCalendarFilterSidebar(
                             filters: calendarFilters,
-                            includesAway: includesAway,
+                            availability: filterAvailability,
                             timelineSuggestionsAvailable: showsTimelineTasksInDayPlanner,
+                            onDismiss: dismiss
+                        )
+                    )
+                },
+                isDatePickerSidebarPresented: isDatePickerSidebarPresented,
+                datePickerSidebarContent: { dismiss in
+                    AnyView(
+                        DayPlanDatePickerSidebar(
+                            selectedDate: selectedDateBinding,
+                            visibleRangeTitle: planner.visibleRangeTitle(calendar: calendar),
+                            blocksCount: planner.blocks.count,
+                            plannedMinutes: planner.plannedMinutes,
+                            calendar: calendar,
                             onDismiss: dismiss
                         )
                     )
@@ -2024,6 +2145,17 @@ private struct DayPlanTimelinePanelContentView: View {
         .sheet(item: $allocatingPlanFocusSession) { presentation in
             planFocusAllocationSheet(for: presentation.sessionID)
         }
+    }
+
+    private var selectedDateBinding: Binding<Date> {
+        Binding(
+            get: {
+                planner.selectedDate
+            },
+            set: { date in
+                planner.showDate(date, calendar: calendar, context: modelContext)
+            }
+        )
     }
 
     private func filteredAllDayBlocks(
@@ -4352,9 +4484,77 @@ private struct DayPlanFocusAllocationPresentation: Identifiable {
     var id: UUID { sessionID }
 }
 
+private struct DayPlanDatePickerSidebar: View {
+    @Binding var selectedDate: Date
+    let visibleRangeTitle: String
+    let blocksCount: Int
+    let plannedMinutes: Int
+    let calendar: Calendar
+    let onDismiss: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            header
+
+            DatePicker("Selected day", selection: $selectedDate, displayedComponents: [.date])
+                .labelsHidden()
+                .datePickerStyle(.graphical)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button {
+                selectedDate = calendar.startOfDay(for: Date())
+            } label: {
+                Label("Today", systemImage: "location.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
+    private var header: some View {
+        HStack(alignment: .center, spacing: 12) {
+            Image(systemName: "calendar")
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(width: 34, height: 34)
+                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Go to date")
+                    .font(.headline.weight(.semibold))
+                Text(summaryText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 8)
+
+            Button {
+                onDismiss()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title3)
+                    .symbolRenderingMode(.hierarchical)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .accessibilityLabel("Close")
+            .contentShape(Circle())
+        }
+    }
+
+    private var summaryText: String {
+        "\(visibleRangeTitle) - \(blocksCount) blocks, \(DayPlanFormatting.durationText(plannedMinutes)) planned"
+    }
+}
+
 private struct DayPlanCalendarFilterSidebar: View {
     let filters: Binding<DayPlanCalendarFilterState>
-    let includesAway: Bool
+    let availability: DayPlanCalendarFilterAvailability
     let timelineSuggestionsAvailable: Bool
     let onDismiss: () -> Void
 
@@ -4384,28 +4584,32 @@ private struct DayPlanCalendarFilterSidebar: View {
                     subtitle: timelineSuggestionsAvailable ? nil : "Off in Settings",
                     isEnabled: timelineSuggestionsAvailable
                 )
-                filterToggle(
-                    title: "Events",
-                    systemImage: "calendar",
-                    isOn: filterBinding(\.showsEvents)
-                )
+                if availability.includesEvents {
+                    filterToggle(
+                        title: "Events",
+                        systemImage: "calendar",
+                        isOn: filterBinding(\.showsEvents)
+                    )
+                }
                 filterToggle(
                     title: "Focus",
                     systemImage: "timer",
                     isOn: filterBinding(\.showsFocus)
                 )
-                if includesAway {
+                if availability.includesAway {
                     filterToggle(
                         title: "Away",
                         systemImage: "figure.walk",
                         isOn: filterBinding(\.showsAway)
                     )
                 }
-                filterToggle(
-                    title: "Sleep",
-                    systemImage: "bed.double",
-                    isOn: filterBinding(\.showsSleep)
-                )
+                if availability.includesSleep {
+                    filterToggle(
+                        title: "Sleep",
+                        systemImage: "bed.double",
+                        isOn: filterBinding(\.showsSleep)
+                    )
+                }
             }
 
             Button {
@@ -4415,7 +4619,7 @@ private struct DayPlanCalendarFilterSidebar: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
-            .disabled(!currentFilters.hasActiveFilters)
+            .disabled(!currentFilters.hasActiveFilters(availability: availability))
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -4432,7 +4636,7 @@ private struct DayPlanCalendarFilterSidebar: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Calendar Filters")
                     .font(.headline.weight(.semibold))
-                Text(currentFilters.summaryText(includesAway: includesAway))
+                Text(currentFilters.summaryText(availability: availability))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

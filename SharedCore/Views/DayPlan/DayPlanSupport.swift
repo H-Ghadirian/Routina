@@ -10,29 +10,53 @@ struct DayPlanCalendarFilterState: Equatable {
     var showsSleep = true
 
     var hasActiveFilters: Bool {
-        self != Self()
+        hasActiveFilters(availability: DayPlanCalendarFilterAvailability())
     }
 
     mutating func reset() {
         self = Self()
     }
 
-    func hiddenLayerCount(includesAway: Bool) -> Int {
+    func normalized(availability: DayPlanCalendarFilterAvailability) -> Self {
+        var copy = self
+        if !availability.includesEvents {
+            copy.showsEvents = true
+        }
+        if !availability.includesAway {
+            copy.showsAway = true
+        }
+        if !availability.includesSleep {
+            copy.showsSleep = true
+        }
+        return copy
+    }
+
+    func hasActiveFilters(availability: DayPlanCalendarFilterAvailability) -> Bool {
+        normalized(availability: availability) != Self()
+    }
+
+    func hiddenLayerCount(availability: DayPlanCalendarFilterAvailability) -> Int {
         var count = 0
         if !showsPlannedTasks { count += 1 }
         if !showsAllDayTasks { count += 1 }
         if !showsTimelineSuggestions { count += 1 }
-        if !showsEvents { count += 1 }
+        if availability.includesEvents, !showsEvents { count += 1 }
         if !showsFocus { count += 1 }
-        if includesAway, !showsAway { count += 1 }
-        if !showsSleep { count += 1 }
+        if availability.includesAway, !showsAway { count += 1 }
+        if availability.includesSleep, !showsSleep { count += 1 }
         return count
     }
 
-    func summaryText(includesAway: Bool) -> String {
-        let count = hiddenLayerCount(includesAway: includesAway)
+    func summaryText(availability: DayPlanCalendarFilterAvailability) -> String {
+        let count = hiddenLayerCount(availability: availability)
         return count == 0 ? "All layers visible" : "\(count) \(count == 1 ? "layer" : "layers") hidden"
     }
+}
+
+struct DayPlanCalendarFilterAvailability: Equatable {
+    var includesEvents = true
+    var includesAway = true
+    var includesSleep = true
 }
 
 struct DayPlanVisibleBlockContext {

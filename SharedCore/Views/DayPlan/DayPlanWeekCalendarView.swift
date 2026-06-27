@@ -55,6 +55,8 @@ struct DayPlanWeekCalendarView: View {
     var dayTaskListSidebarContent: ((Date, @escaping () -> Void) -> AnyView)? = nil
     var isFilterSidebarPresented: Binding<Bool> = .constant(false)
     var filterSidebarContent: ((@escaping () -> Void) -> AnyView)? = nil
+    var isDatePickerSidebarPresented: Binding<Bool> = .constant(false)
+    var datePickerSidebarContent: ((@escaping () -> Void) -> AnyView)? = nil
 
     @State private var isDropTargeted = false
     @State private var isCompletingDrop = false
@@ -338,8 +340,17 @@ struct DayPlanWeekCalendarView: View {
         .animation(.easeInOut(duration: 0.16), value: selectedSlotDraft)
         .animation(.easeInOut(duration: 0.16), value: selectedDayTaskListDate)
         .animation(.easeInOut(duration: 0.16), value: isFilterSidebarPresented.wrappedValue)
+        .animation(.easeInOut(duration: 0.16), value: isDatePickerSidebarPresented.wrappedValue)
         .onChange(of: isFilterSidebarPresented.wrappedValue) { _, isPresented in
             guard isPresented else { return }
+            isDatePickerSidebarPresented.wrappedValue = false
+            selectedSlotDraft = nil
+            selectedDayTaskListDate = nil
+            draftResizeBaseline = nil
+        }
+        .onChange(of: isDatePickerSidebarPresented.wrappedValue) { _, isPresented in
+            guard isPresented else { return }
+            isFilterSidebarPresented.wrappedValue = false
             selectedSlotDraft = nil
             selectedDayTaskListDate = nil
             draftResizeBaseline = nil
@@ -488,6 +499,7 @@ struct DayPlanWeekCalendarView: View {
     private func presentSlotSidebar(on date: Date, startMinute: Int) {
         guard slotSidebarContent != nil else { return }
         isFilterSidebarPresented.wrappedValue = false
+        isDatePickerSidebarPresented.wrappedValue = false
         draftResizeBaseline = nil
         selectedDayTaskListDate = nil
         let clampedStartMinute = DayPlanBlock.clampedStartMinute(startMinute)
@@ -515,6 +527,7 @@ struct DayPlanWeekCalendarView: View {
     private func presentDayTaskListSidebar(on date: Date) {
         guard dayTaskListSidebarContent != nil else { return }
         isFilterSidebarPresented.wrappedValue = false
+        isDatePickerSidebarPresented.wrappedValue = false
         selectedSlotDraft = nil
         draftResizeBaseline = nil
         selectedDayTaskListDate = calendar.startOfDay(for: date)
@@ -599,6 +612,17 @@ struct DayPlanWeekCalendarView: View {
             .frame(width: DayPlanSlotSidebarPresentation.width)
             .background(Color.secondary.opacity(0.045))
             .transition(.move(edge: .trailing).combined(with: .opacity))
+        } else if isDatePickerSidebarPresented.wrappedValue, let datePickerSidebarContent {
+            Divider()
+
+            ScrollView {
+                datePickerSidebarContent(dismissDatePickerSidebar)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
+            .scrollIndicators(.visible)
+            .frame(width: DayPlanSlotSidebarPresentation.width)
+            .background(Color.secondary.opacity(0.045))
+            .transition(.move(edge: .trailing).combined(with: .opacity))
         }
     }
 
@@ -613,6 +637,10 @@ struct DayPlanWeekCalendarView: View {
 
     private func dismissFilterSidebar() {
         isFilterSidebarPresented.wrappedValue = false
+    }
+
+    private func dismissDatePickerSidebar() {
+        isDatePickerSidebarPresented.wrappedValue = false
     }
 
     private func clearDayTaskListIfOutsideVisibleDates() {

@@ -270,6 +270,26 @@ Given the Planner empty-slot action sidebar has only task block creation availab
 When the sidebar opens for the draft block
 Then it does not show a single-option `Task` tab, keeps the draft block visible in the grid, lets the user select a task from an inline filtered list, and can create a new task before adding the block
 
+### Planner Calendar Filters Respect Beta Toggles
+
+Area: Planner
+Decision links: [0291](../decisions/0291-gate-planner-calendar-filter-options-by-beta-toggles.md), [0289](../decisions/0289-filter-planner-calendar-layers.md), [0277](../decisions/0277-hide-notes-and-away-behind-beta-toggles.md), [0220](../decisions/0220-nest-sleep-and-gate-mac-event-emotion-actions.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/DayPlanCalendarFilterStateTests.swift`
+
+Given Support & About -> Beta Experiments -> `Show Away` is off
+When the user opens the Planner calendar filter sidebar
+Then the panel does not expose Away or Sleep filter options
+
+Given Support & About -> Beta Experiments -> `Show Event and Emotion actions` is off
+When the user opens the Planner calendar filter sidebar
+Then the panel does not expose an Events filter option
+
+Given stale hidden filter state exists for Events, Away, or Sleep from a previous beta-enabled session
+When the relevant beta toggle is off
+Then those unavailable beta layers do not count as active hidden filters or stay hidden without a visible control
+
 ### Planner Day Headers Open Planned Task Lists
 
 Area: Planner

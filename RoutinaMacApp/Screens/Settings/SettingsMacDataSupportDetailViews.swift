@@ -648,7 +648,7 @@ private struct SettingsMacBetaExperimentsCard: View {
             Toggle("Show Event and Emotion actions", isOn: $areMacEventEmotionActionsEnabled)
                 .toggleStyle(.switch)
 
-            Text("Show Event and Emotion in the Mac Add menu, Timeline type filters, and Stats reports.")
+            Text("Show Event and Emotion in the Mac Add menu, Timeline type filters, Planner calendar filters, and Stats reports.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 
