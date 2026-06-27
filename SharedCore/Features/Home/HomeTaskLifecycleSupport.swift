@@ -115,28 +115,31 @@ enum HomeTaskLifecycleSupport {
             return nil
         }
 
+        let task = tasks[index]
         let completionDate: Date
-        if let missedDate = RoutineDateMath.missedExactTimedOccurrenceDate(
-            for: tasks[index],
+        if let missedDate = unresolvedMissedExactTimedOccurrenceDate(
+            for: task,
+            taskID: taskID,
             referenceDate: referenceDate,
-            calendar: calendar
+            calendar: calendar,
+            doneStats: doneStats
         ) {
             completionDate = missedDate
         } else if let exactTimedTarget = RoutineDateMath.completionTargetDate(
-            for: tasks[index],
+            for: task,
             selectedDay: referenceDate,
             referenceDate: referenceDate,
             calendar: calendar
         ) {
             completionDate = exactTimedTarget
-        } else if RoutineDateMath.usesExactTimedOccurrenceTracking(for: tasks[index]) {
+        } else if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
             return nil
         } else {
             completionDate = referenceDate
         }
 
         guard RoutineDateMath.canMarkDone(
-            for: tasks[index],
+            for: task,
             referenceDate: completionDate,
             calendar: calendar
         ) else {
@@ -186,10 +189,12 @@ enum HomeTaskLifecycleSupport {
         }) else {
             return nil
         }
-        guard let missedDate = RoutineDateMath.missedExactTimedOccurrenceDate(
+        guard let missedDate = unresolvedMissedExactTimedOccurrenceDate(
             for: task,
+            taskID: taskID,
             referenceDate: referenceDate,
-            calendar: calendar
+            calendar: calendar,
+            doneStats: doneStats
         ) else {
             return nil
         }
@@ -223,10 +228,12 @@ enum HomeTaskLifecycleSupport {
         }) else {
             return nil
         }
-        guard let canceledDate = RoutineDateMath.missedExactTimedOccurrenceDate(
+        guard let canceledDate = unresolvedMissedExactTimedOccurrenceDate(
             for: task,
+            taskID: taskID,
             referenceDate: referenceDate,
-            calendar: calendar
+            calendar: calendar,
+            doneStats: doneStats
         ) else {
             return nil
         }
@@ -339,6 +346,23 @@ enum HomeTaskLifecycleSupport {
 
         tasks[index].pinnedAt = nil
         return HomeUnpinTaskUpdate(taskID: taskID)
+    }
+
+    private static func unresolvedMissedExactTimedOccurrenceDate(
+        for task: RoutineTask,
+        taskID: UUID,
+        referenceDate: Date,
+        calendar: Calendar,
+        doneStats: HomeDoneStats
+    ) -> Date? {
+        RoutineDateMath.missedExactTimedOccurrenceDates(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        .first {
+            !doneStats.hasResolvedMissedDate(taskID: taskID, missedDate: $0, calendar: calendar)
+        }
     }
 
     private static func removeDate(

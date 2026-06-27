@@ -255,6 +255,22 @@ struct TaskDetailFeatureCompletionTests {
     }
 
     @Test
+    func dueDateMetadataText_hidesTodoAvailabilityWindowWithoutDeadline() {
+        let task = RoutineTask(
+            name: "Watch WWDC 26 Videos",
+            availabilityStartDate: makeDate("2026-06-08T00:00:00Z"),
+            availabilityEndDate: makeDate("2027-06-12T00:00:00Z"),
+            scheduleMode: .oneOff
+        )
+
+        let state = TaskDetailFeature.State(task: task)
+
+        #expect(state.resolvedDueDate == nil)
+        #expect(state.dueDateMetadataText == nil)
+        #expect(state.daysUntilDueIfActive == Int.max)
+    }
+
+    @Test
     func dueDateMetadataText_includesTimeForExactWeeklyRoutine() throws {
         let task = RoutineTask(
             name: "Planning",

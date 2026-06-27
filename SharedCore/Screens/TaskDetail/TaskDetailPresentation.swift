@@ -68,6 +68,9 @@ enum TaskDetailPresentation {
             if task.isChecklistInProgress { return .orange }
             if isDoneToday { return .green }
             if isAssumedDoneToday { return .mint }
+            let hasUnresolvedMissed = hasUnresolvedMissedExactTimedOccurrence
+                ?? (RoutineDateMath.missedExactTimedOccurrenceDate(for: task, referenceDate: referenceDate) != nil)
+            if hasUnresolvedMissed { return .yellow }
             if overdueDays > 0 { return .red }
             if daysUntilDueIfActive(task, referenceDate: referenceDate) == 0 {
                 return TaskDetailPlatformStyle.dueTodayTitleColor

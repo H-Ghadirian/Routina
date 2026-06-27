@@ -65,7 +65,7 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
         self.rowNumberOffset = rowNumberOffset
         self.includeMarkDone = includeMarkDone
         self.moveContext = moveContext
-        self.taskGroups = taskGroups ?? [
+        self.taskGroups = Self.deduplicatedTaskGroups(taskGroups ?? [
             HomeTaskListPresentationTaskGroup(
                 kind: kind,
                 title: nil,
@@ -73,7 +73,7 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
                 moveContext: moveContext,
                 isCollapsible: false
             )
-        ]
+        ])
     }
 
     var id: String {
@@ -86,6 +86,57 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
 
     func rowNumber(forTaskAt index: Int) -> Int {
         rowNumberOffset + index + 1
+    }
+
+    private static func deduplicatedTaskGroups(
+        _ taskGroups: [HomeTaskListPresentationTaskGroup<Display>]
+    ) -> [HomeTaskListPresentationTaskGroup<Display>] {
+        var groups: [HomeTaskListPresentationTaskGroup<Display>] = []
+        var groupIndicesByID: [String: Int] = [:]
+        var seenTaskIDs: Set<UUID> = []
+
+        for group in taskGroups {
+            let uniqueTasks = group.tasks.filter { task in
+                seenTaskIDs.insert(task.taskID).inserted
+            }
+            guard !uniqueTasks.isEmpty else { continue }
+
+            if let existingIndex = groupIndicesByID[group.id] {
+                let existingGroup = groups[existingIndex]
+                let mergedTasks = existingGroup.tasks + uniqueTasks
+                groups[existingIndex] = HomeTaskListPresentationTaskGroup(
+                    kind: existingGroup.kind,
+                    title: existingGroup.title,
+                    tasks: mergedTasks,
+                    moveContext: Self.moveContext(existingGroup.moveContext, orderedBy: mergedTasks),
+                    isCollapsible: existingGroup.isCollapsible || group.isCollapsible
+                )
+            } else {
+                groupIndicesByID[group.id] = groups.count
+                groups.append(
+                    HomeTaskListPresentationTaskGroup(
+                        kind: group.kind,
+                        title: group.title,
+                        tasks: uniqueTasks,
+                        moveContext: Self.moveContext(group.moveContext, orderedBy: uniqueTasks),
+                        isCollapsible: group.isCollapsible
+                    )
+                )
+            }
+        }
+
+        return groups
+    }
+
+    private static func moveContext(
+        _ moveContext: HomeTaskListMoveContext?,
+        orderedBy tasks: [Display]
+    ) -> HomeTaskListMoveContext? {
+        guard let moveContext else { return nil }
+        return HomeTaskListMoveContext(
+            sectionKey: moveContext.sectionKey,
+            orderedTaskIDs: tasks.map(\.taskID)
+        )
     }
 }
 

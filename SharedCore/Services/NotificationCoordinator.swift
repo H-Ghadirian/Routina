@@ -162,7 +162,9 @@ enum NotificationCoordinator {
         referenceDate: Date = Date(),
         calendar: Calendar = .current
     ) -> NotificationPayload {
-        let dueDate = RoutineDateMath.upcomingDueDate(for: task, referenceDate: referenceDate, calendar: calendar)
+        let dueDate: Date? = task.isOneOffTask
+            ? task.deadline
+            : RoutineDateMath.upcomingDueDate(for: task, referenceDate: referenceDate, calendar: calendar)
         let reminderDate = activeReminderDate(for: task, referenceDate: referenceDate)
         let resolvedTriggerDate = triggerDate ?? {
             if let reminderDate {
@@ -174,7 +176,7 @@ enum NotificationCoordinator {
             if task.recurrenceRule.usesTimeConstraint {
                 return dueDate
             }
-            return NotificationPreferences.reminderDate(on: dueDate, calendar: calendar)
+            return dueDate.map { NotificationPreferences.reminderDate(on: $0, calendar: calendar) }
         }()
         let usesExactTime = reminderDate != nil || task.isOneOffTask || task.recurrenceRule.usesTimeConstraint
         return NotificationPayload(

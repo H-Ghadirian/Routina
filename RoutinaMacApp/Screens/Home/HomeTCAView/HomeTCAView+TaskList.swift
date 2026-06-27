@@ -425,8 +425,9 @@ extension HomeTCAView {
         rowVisibility: HomeTaskRowVisibility,
         allowsPlannerDrag: Bool
     ) -> some View {
+        let taskGroups = section.taskGroups
         VStack(alignment: .leading, spacing: taskListGroupStackSpacing(for: section)) {
-            ForEach(section.taskGroups) { group in
+            ForEach(taskGroups) { group in
                 if taskListGroupUsesSectionSurface(group) {
                     VStack(alignment: .leading, spacing: 0) {
                         if let groupTitle = group.title {
@@ -482,6 +483,7 @@ extension HomeTCAView {
                 }
             }
         }
+        .id(taskListTaskGroupsRenderIdentity(taskGroups))
     }
 
     private func taskListGroupStackSpacing(
@@ -521,6 +523,16 @@ extension HomeTCAView {
 
     private func taskListTaskRowSpacing() -> CGFloat {
         5
+    }
+
+    private func taskListTaskGroupsRenderIdentity(
+        _ groups: [HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>]
+    ) -> String {
+        groups.map { group in
+            let taskIDs = group.tasks.map(\.taskID.uuidString).joined(separator: ",")
+            return "\(group.id):\(taskIDs)"
+        }
+        .joined(separator: "|")
     }
 
     private func taskListGroupUsesSectionSurface(

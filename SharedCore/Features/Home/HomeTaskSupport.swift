@@ -27,6 +27,10 @@ struct HomeDoneStats: Equatable {
            canceledDates.contains(where: { calendar.isDate($0, inSameDayAs: missedDate) }) {
             return true
         }
+        if let completedDates = completedDatesByTaskID[taskID],
+           completedDates.contains(where: { calendar.isDate($0, inSameDayAs: missedDate) }) {
+            return true
+        }
         return false
     }
 

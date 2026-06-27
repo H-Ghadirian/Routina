@@ -274,6 +274,25 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func summaryStatusTitlePrefersMissedExactTimedOccurrenceForChecklistCompletionRoutine() throws {
+        let calendar = Calendar.current
+        let threeDaysAgo = try #require(calendar.date(byAdding: .day, value: -3, to: Date()))
+        let anchorDay = calendar.startOfDay(for: threeDaysAgo)
+        let anchor = try #require(calendar.date(bySettingHour: 9, minute: 0, second: 0, of: anchorDay))
+        let task = RoutineTask(
+            name: "Check work emails",
+            checklistItems: [RoutineChecklistItem(title: "Inbox", intervalDays: 1)],
+            scheduleMode: .fixedIntervalChecklist,
+            recurrenceRule: .interval(days: 2, at: RoutineTimeOfDay(hour: 9, minute: 0)),
+            scheduleAnchor: anchor,
+            createdAt: Date()
+        )
+        let state = TaskDetailFeature.State(task: task)
+
+        #expect(state.summaryStatusTitle == "Missed")
+    }
+
+    @Test
     func visibleStatusMetadataRecognizesRoutineAndPlainTodo() {
         let todoState = TaskDetailFeature.State(task: RoutineTask(name: "Buy milk", scheduleMode: .oneOff))
         let routineState = TaskDetailFeature.State(task: RoutineTask(name: "Practice"))
@@ -653,6 +672,45 @@ struct TaskDetailSharedViewSupportTests {
         #expect(todayPresentation.isToday)
         #expect(nextDuePresentation.isDueDate)
         #expect(nextDuePresentation.isHighlightedDay)
+    }
+
+    @Test
+    func calendarPresentationSuppressesOverdueRangeWhenDueDateIsMissed() {
+        let calendar = makeTestCalendar()
+        let missedDate = makeDate("2026-06-25T18:30:00Z")
+        let nextDay = makeDate("2026-06-26T10:00:00Z")
+        let today = makeDate("2026-06-27T10:00:00Z")
+        let missedDates: Set<Date> = [calendar.startOfDay(for: missedDate)]
+
+        let missedPresentation = TaskDetailCalendarPresentation.dayPresentation(
+            day: missedDate,
+            doneDates: [],
+            assumedDates: [],
+            dueDate: missedDate,
+            missedDates: missedDates,
+            createdAt: nil,
+            pausedAt: nil,
+            isOrangeUrgencyToday: false,
+            referenceDate: today,
+            calendar: calendar
+        )
+        let nextDayPresentation = TaskDetailCalendarPresentation.dayPresentation(
+            day: nextDay,
+            doneDates: [],
+            assumedDates: [],
+            dueDate: missedDate,
+            missedDates: missedDates,
+            createdAt: nil,
+            pausedAt: nil,
+            isOrangeUrgencyToday: false,
+            referenceDate: today,
+            calendar: calendar
+        )
+
+        #expect(missedPresentation.isMissedDate)
+        #expect(!missedPresentation.isDueToTodayRangeDate)
+        #expect(!nextDayPresentation.isDueToTodayRangeDate)
+        #expect(nextDayPresentation.backgroundColor == .clear)
     }
 
     @Test

@@ -66,14 +66,14 @@ struct HomeRoutineDisplayFactory {
         let nextDueChecklistItem = task.nextDueChecklistItem(referenceDate: now, calendar: calendar)
         let dueChecklistItems = task.dueChecklistItems(referenceDate: now, calendar: calendar)
         let taskTags = task.tags
-        let missedExactTimedOccurrenceDate = RoutineDateMath.missedExactTimedOccurrenceDate(
+        let missedExactTimedOccurrenceDates = RoutineDateMath.missedExactTimedOccurrenceDates(
             for: task,
             referenceDate: now,
             calendar: calendar
         )
-        let hasMissedExactTimedOccurrence = missedExactTimedOccurrenceDate.map {
+        let hasMissedExactTimedOccurrence = missedExactTimedOccurrenceDates.contains {
             !doneStats.hasResolvedMissedDate(taskID: task.id, missedDate: $0, calendar: calendar)
-        } ?? false
+        }
 
         return HomeRoutineDisplayCore(
             taskID: task.id,
@@ -216,7 +216,7 @@ struct HomeRoutineDisplayFactory {
 
     private func dueDate(for task: RoutineTask, isArchived: Bool) -> Date? {
         if task.isOneOffTask {
-            return task.deadline ?? task.availabilityStartDate
+            return task.deadline
         }
         guard !isArchived,
               !task.isChecklistDriven,

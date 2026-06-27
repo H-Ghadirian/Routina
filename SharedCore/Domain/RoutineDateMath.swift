@@ -44,7 +44,7 @@ enum RoutineDateMath {
         calendar: Calendar = .current
     ) -> Date {
         if task.isOneOffTask {
-            return task.deadline ?? task.availabilityStartDate ?? referenceDate
+            return task.deadline ?? referenceDate
         }
 
         if task.isChecklistDriven,
@@ -154,12 +154,22 @@ enum RoutineDateMath {
         referenceDate: Date,
         calendar: Calendar = .current
     ) -> Date {
-        if let nextDueDate = nextDueDateAfterMissedExactTimedOccurrence(
-            for: task,
-            referenceDate: referenceDate,
-            calendar: calendar
-        ) {
-            return nextDueDate
+        if usesExactTimedOccurrenceTracking(for: task) {
+            var candidate = dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
+            for _ in 0..<10_000 {
+                guard isExactTimedOccurrenceMissed(
+                    candidate,
+                    for: task,
+                    referenceDate: referenceDate,
+                    calendar: calendar
+                ) else {
+                    return candidate
+                }
+                let nextCandidate = nextExactTimedOccurrence(after: candidate, for: task, calendar: calendar)
+                guard nextCandidate > candidate else { return candidate }
+                candidate = nextCandidate
+            }
+            return candidate
         }
         return dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
     }
@@ -174,7 +184,7 @@ enum RoutineDateMath {
         }
         if task.isOneOffTask {
             guard !task.isCompletedOneOff else { return Int.max }
-            guard let targetDate = task.deadline ?? task.availabilityStartDate else { return 0 }
+            guard let targetDate = task.deadline else { return Int.max }
             let todayStart = calendar.startOfDay(for: referenceDate)
             let dueStart = calendar.startOfDay(for: targetDate)
             return calendar.dateComponents([.day], from: todayStart, to: dueStart).day ?? 0
@@ -240,19 +250,39 @@ enum RoutineDateMath {
         referenceDate: Date,
         calendar: Calendar = .current
     ) -> Date? {
-        guard usesExactTimedOccurrenceTracking(for: task) else { return nil }
-        let due = dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
-        if let timeRange = task.recurrenceRule.timeRange {
-            let windowEnd = timeRange.endDate(on: due, calendar: calendar)
-            guard referenceDate >= windowEnd else {
-                return nil
+        missedExactTimedOccurrenceDates(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        .first
+    }
+
+    static func missedExactTimedOccurrenceDates(
+        for task: RoutineTask,
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> [Date] {
+        guard usesExactTimedOccurrenceTracking(for: task) else { return [] }
+        var dates: [Date] = []
+        var candidate = dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
+
+        for _ in 0..<10_000 {
+            guard isExactTimedOccurrenceMissed(
+                candidate,
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) else {
+                return dates
             }
-            return due
+            dates.append(candidate)
+            let nextCandidate = nextExactTimedOccurrence(after: candidate, for: task, calendar: calendar)
+            guard nextCandidate > candidate else { return dates }
+            candidate = nextCandidate
         }
-        guard calendar.startOfDay(for: due) < calendar.startOfDay(for: referenceDate) else {
-            return nil
-        }
-        return due
+
+        return dates
     }
 
     static func isExactTimedMissedOccurrenceAcknowledged(
@@ -275,22 +305,34 @@ enum RoutineDateMath {
         logs: [RoutineLog],
         calendar: Calendar = .current
     ) -> Date? {
-        guard let missedDate = missedExactTimedOccurrenceDate(
+        unresolvedMissedExactTimedOccurrenceDates(
+            for: task,
+            referenceDate: referenceDate,
+            logs: logs,
+            calendar: calendar
+        )
+        .first
+    }
+
+    static func unresolvedMissedExactTimedOccurrenceDates(
+        for task: RoutineTask,
+        referenceDate: Date,
+        logs: [RoutineLog],
+        calendar: Calendar = .current
+    ) -> [Date] {
+        missedExactTimedOccurrenceDates(
             for: task,
             referenceDate: referenceDate,
             calendar: calendar
-        ) else {
-            return nil
+        )
+        .filter { missedDate in
+            !isExactTimedMissedOccurrenceAcknowledged(
+                for: task,
+                missedDate: missedDate,
+                logs: logs,
+                calendar: calendar
+            )
         }
-        guard !isExactTimedMissedOccurrenceAcknowledged(
-            for: task,
-            missedDate: missedDate,
-            logs: logs,
-            calendar: calendar
-        ) else {
-            return nil
-        }
-        return missedDate
     }
 
     static func nextDueDateAfterMissedExactTimedOccurrence(
@@ -298,18 +340,39 @@ enum RoutineDateMath {
         referenceDate: Date,
         calendar: Calendar = .current
     ) -> Date? {
-        guard let missedDate = missedExactTimedOccurrenceDate(
+        guard let missedDate = missedExactTimedOccurrenceDates(
             for: task,
             referenceDate: referenceDate,
             calendar: calendar
-        ) else {
+        ).last else {
             return nil
         }
 
+        return nextExactTimedOccurrence(after: missedDate, for: task, calendar: calendar)
+    }
+
+    private static func isExactTimedOccurrenceMissed(
+        _ occurrence: Date,
+        for task: RoutineTask,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> Bool {
+        if let timeRange = task.recurrenceRule.timeRange {
+            let windowEnd = timeRange.endDate(on: occurrence, calendar: calendar)
+            return referenceDate >= windowEnd
+        }
+        return calendar.startOfDay(for: occurrence) < calendar.startOfDay(for: referenceDate)
+    }
+
+    private static func nextExactTimedOccurrence(
+        after occurrence: Date,
+        for task: RoutineTask,
+        calendar: Calendar
+    ) -> Date {
         switch task.recurrenceRule.kind {
         case .dailyTime:
             return nextDailyOccurrence(
-                after: missedDate,
+                after: occurrence,
                 timeOfDay: scheduledTimeOfDay(for: task.recurrenceRule) ?? RoutineTimeOfDay(hour: 0, minute: 0),
                 includeCurrentDate: false,
                 calendar: calendar
@@ -317,7 +380,7 @@ enum RoutineDateMath {
 
         case .weekly:
             return nextWeeklyOccurrence(
-                after: missedDate,
+                after: occurrence,
                 weekdays: task.recurrenceRule.resolvedWeekdays(calendar: calendar),
                 timeOfDay: scheduledTimeOfDay(for: task.recurrenceRule),
                 includeCurrentDate: false,
@@ -326,7 +389,7 @@ enum RoutineDateMath {
 
         case .monthlyDay:
             return nextMonthlyOccurrence(
-                after: missedDate,
+                after: occurrence,
                 daysOfMonth: task.recurrenceRule.resolvedDaysOfMonth(calendar: calendar),
                 timeOfDay: scheduledTimeOfDay(for: task.recurrenceRule),
                 includeCurrentDate: false,
@@ -337,8 +400,8 @@ enum RoutineDateMath {
             let nextDate = calendar.date(
                 byAdding: .day,
                 value: max(task.recurrenceRule.interval, 1),
-                to: missedDate
-            ) ?? missedDate
+                to: occurrence
+            ) ?? occurrence
             if let timeOfDay = scheduledTimeOfDay(for: task.recurrenceRule) {
                 return timeOfDay.date(on: nextDate, calendar: calendar)
             }

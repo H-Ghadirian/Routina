@@ -574,6 +574,48 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func presentationSectionDeduplicatesRepeatedGroupsAndTasks() {
+        let firstID = UUID()
+        let secondID = UUID()
+        let thirdID = UUID()
+        let first = TestTaskDisplay(taskID: firstID, name: "Check work emails")
+        let second = TestTaskDisplay(taskID: secondID, name: "Call Baba")
+        let third = TestTaskDisplay(taskID: thirdID, name: "Clean inbox")
+        let moveContext = HomeTaskListMoveContext(sectionKey: "dueSoon", orderedTaskIDs: [firstID, secondID])
+        let duplicateMoveContext = HomeTaskListMoveContext(sectionKey: "dueSoon", orderedTaskIDs: [firstID, thirdID])
+
+        let section = HomeTaskListPresentationSection<TestTaskDisplay>(
+            kind: .future,
+            identityKey: "future",
+            title: "Future",
+            tasks: [],
+            rowNumberOffset: 0,
+            includeMarkDone: true,
+            moveContext: nil,
+            taskGroups: [
+                HomeTaskListPresentationTaskGroup(
+                    kind: .regular,
+                    title: "Due Soon",
+                    tasks: [first, second],
+                    moveContext: moveContext,
+                    isCollapsible: false
+                ),
+                HomeTaskListPresentationTaskGroup(
+                    kind: .regular,
+                    title: "Due Soon",
+                    tasks: [first, third],
+                    moveContext: duplicateMoveContext,
+                    isCollapsible: false
+                )
+            ]
+        )
+
+        #expect(section.taskGroups.count == 1)
+        #expect(section.taskGroups.first?.tasks.map(\.taskID) == [firstID, secondID, thirdID])
+        #expect(section.taskGroups.first?.moveContext?.orderedTaskIDs == [firstID, secondID, thirdID])
+    }
+
+    @Test
     func advancedQueryMatchesFieldedTermsAndExclusions() {
         let tasks = [
             TestTaskDisplay(name: "Draft launch plan", placeName: "Office", tags: ["Work"], isOneOffTask: true, todoState: .ready),
@@ -656,6 +698,16 @@ struct HomeTaskListFilteringTests {
         #expect(sections.map(\.identityKey) == ["missed", "overdue", "dueSoon", "onTrack", "doneToday"])
         #expect(sections.map(\.title) == ["Missed", "Overdue", "Due Soon", "On Track", "Done Today"])
         #expect(sections.map { $0.tasks.map(\.name) } == [["Missed"], ["Overdue"], ["Due Today"], ["On Track"], ["Done Today"]])
+    }
+
+    @Test
+    func groupedRoutineSectionsTreatsUnscheduledTodosAsOnTrack() {
+        let sections = makeFiltering().groupedRoutineSections(from: [
+            TestTaskDisplay(name: "Buy phone", daysUntilDue: Int.max, isOneOffTask: true)
+        ])
+
+        #expect(sections.map(\.identityKey) == ["onTrack"])
+        #expect(sections.map { $0.tasks.map(\.name) } == [["Buy phone"]])
     }
 
     @Test

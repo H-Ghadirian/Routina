@@ -119,6 +119,27 @@ struct NotificationCoordinatorTests {
     }
 
     @Test
+    func notificationPayload_doesNotUseTodoAvailabilityAsDueDate() {
+        let reminderAt = makeDate("2026-04-25T14:30:00Z")
+        let task = RoutineTask(
+            name: "Buy phone",
+            availabilityStartDate: makeDate("2026-04-20T00:00:00Z"),
+            availabilityEndDate: makeDate("2026-04-30T00:00:00Z"),
+            reminderAt: reminderAt,
+            scheduleMode: .oneOff
+        )
+
+        let payload = NotificationCoordinator.notificationPayload(
+            for: task,
+            referenceDate: makeDate("2026-04-25T12:00:00Z")
+        )
+
+        #expect(payload.triggerDate == reminderAt)
+        #expect(payload.dueDate == nil)
+        #expect(payload.isCustomReminder)
+    }
+
+    @Test
     func notificationPayload_ignoresExactDateReminderForRoutine() {
         let reminderAt = makeDate("2026-04-25T14:30:00Z")
         let task = RoutineTask(

@@ -118,6 +118,35 @@ struct HomeTaskLifecycleSupportTests {
     }
 
     @Test
+    func markTaskMissed_skipsAcknowledgedEarlierMissedOccurrence() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let firstMissed = makeDate("2026-05-07T18:30:00Z")
+        let secondMissed = makeDate("2026-05-14T18:30:00Z")
+        let task = RoutineTask(
+            name: "Class",
+            recurrenceRule: .weekly(on: 5, at: RoutineTimeOfDay(hour: 18, minute: 30)),
+            scheduleAnchor: makeDate("2026-05-01T10:00:00Z")
+        )
+        var doneStats = HomeDoneStats(missedDatesByTaskID: [task.id: [firstMissed]])
+
+        let update = HomeTaskLifecycleSupport.markTaskMissed(
+            taskID: task.id,
+            referenceDate: makeDate("2026-05-15T10:00:00Z"),
+            calendar: calendar,
+            tasks: [task],
+            doneStats: &doneStats
+        )
+
+        #expect(update == HomeMarkTaskMissedUpdate(
+            taskID: task.id,
+            missedDate: secondMissed,
+            referenceDate: makeDate("2026-05-15T10:00:00Z")
+        ))
+        #expect(doneStats.missedDatesByTaskID[task.id] == [firstMissed, secondMissed])
+    }
+
+    @Test
     func markTaskCanceled_acknowledgesMissedOccurrenceAsCanceledWithoutCompletionCount() {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current

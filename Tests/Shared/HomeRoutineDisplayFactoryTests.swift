@@ -132,6 +132,47 @@ struct HomeRoutineDisplayFactoryTests {
     }
 
     @Test
+    func missedExactTimedDisplaySkipsAcknowledgedEarlierMissedOccurrence() {
+        let firstMissed = makeDate("2026-05-07T18:30:00Z")
+        let task = RoutineTask(
+            name: "Class",
+            recurrenceRule: .weekly(on: 5, at: RoutineTimeOfDay(hour: 18, minute: 30)),
+            scheduleAnchor: makeDate("2026-05-01T10:00:00Z")
+        )
+
+        let display = makeDisplay(
+            task: task,
+            now: makeDate("2026-05-15T10:00:00Z"),
+            places: [],
+            coordinate: LocationCoordinate(latitude: 52.5200, longitude: 13.4050),
+            doneStats: HomeDoneStats(missedDatesByTaskID: [task.id: [firstMissed]])
+        )
+
+        #expect(display.hasMissedExactTimedOccurrence)
+        #expect(display.dueDate == makeDate("2026-05-21T18:30:00Z"))
+    }
+
+    @Test
+    func oneOffAvailabilityWindowWithoutDeadlineHasNoHomeDueDate() {
+        let task = RoutineTask(
+            name: "Watch WWDC 26 Videos",
+            availabilityStartDate: makeDate("2026-06-08T00:00:00Z"),
+            availabilityEndDate: makeDate("2027-06-12T00:00:00Z"),
+            scheduleMode: .oneOff
+        )
+
+        let display = makeDisplay(
+            task: task,
+            now: makeDate("2026-06-27T10:00:00Z"),
+            places: [],
+            coordinate: LocationCoordinate(latitude: 52.5200, longitude: 13.4050)
+        )
+
+        #expect(display.dueDate == nil)
+        #expect(display.daysUntilDue == Int.max)
+    }
+
+    @Test
     func canceledWeeklyTimeWindowOccurrenceMarksDisplayCanceledToday() {
         let now = makeDate("2026-06-22T10:00:00Z")
         let window = RoutineTimeRange(

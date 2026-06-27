@@ -80,6 +80,29 @@ struct RoutineDateMathTests {
     }
 
     @Test
+    func oneOffTodoWithoutDeadlineOrAvailabilityHasNoDueDistance() {
+        let task = RoutineTask(scheduleMode: .oneOff)
+        let referenceDate = makeDate("2026-03-20T10:00:00Z")
+
+        #expect(RoutineDateMath.daysUntilDue(for: task, referenceDate: referenceDate) == Int.max)
+        #expect(RoutineDateMath.overdueDays(for: task, referenceDate: referenceDate) == 0)
+    }
+
+    @Test
+    func oneOffTodoAvailabilityWindowWithoutDeadlineHasNoDueDistance() {
+        let task = RoutineTask(
+            availabilityStartDate: makeDate("2026-06-08T00:00:00Z"),
+            availabilityEndDate: makeDate("2027-06-12T00:00:00Z"),
+            scheduleMode: .oneOff
+        )
+        let referenceDate = makeDate("2026-06-27T10:00:00Z")
+
+        #expect(RoutineDateMath.daysUntilDue(for: task, referenceDate: referenceDate) == Int.max)
+        #expect(RoutineDateMath.overdueDays(for: task, referenceDate: referenceDate) == 0)
+        #expect(RoutineDateMath.dueDate(for: task, referenceDate: referenceDate) == referenceDate)
+    }
+
+    @Test
     func resumedScheduleAnchor_shiftsByPauseDuration() {
         let task = RoutineTask(
             interval: 7,
@@ -686,6 +709,73 @@ struct RoutineDateMathTests {
                 referenceDate: referenceDate,
                 calendar: calendar
             ) == missedDate
+        )
+    }
+
+    @Test
+    func intervalRoutineWithoutTimeDueTomorrowDoesNotBecomeMissed() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let task = RoutineTask(
+            recurrenceRule: .interval(days: 2),
+            scheduleAnchor: makeDate("2026-06-26T10:00:00Z"),
+            createdAt: makeDate("2026-06-26T10:00:00Z")
+        )
+        let referenceDate = makeDate("2026-06-27T10:00:00Z")
+
+        #expect(
+            RoutineDateMath.missedExactTimedOccurrenceDate(
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) == nil
+        )
+        #expect(RoutineDateMath.upcomingDueDate(for: task, referenceDate: referenceDate, calendar: calendar) == makeDate("2026-06-28T10:00:00Z"))
+        #expect(RoutineDateMath.daysUntilDue(for: task, referenceDate: referenceDate, calendar: calendar) == 1)
+    }
+
+    @Test
+    func exactTimedUpcomingDueAdvancesPastConsecutiveMissedOccurrences() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let task = RoutineTask(
+            recurrenceRule: .weekly(
+                on: 5,
+                timeRange: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 18, minute: 30),
+                    end: RoutineTimeOfDay(hour: 20, minute: 0)
+                )
+            ),
+            scheduleAnchor: makeDate("2026-06-12T10:00:00Z"),
+            createdAt: makeDate("2026-06-12T10:00:00Z")
+        )
+        let referenceDate = makeDate("2026-06-27T10:00:00Z")
+        let firstMissed = makeDate("2026-06-18T18:30:00Z")
+        let secondMissed = makeDate("2026-06-25T18:30:00Z")
+
+        #expect(
+            RoutineDateMath.missedExactTimedOccurrenceDates(
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) == [firstMissed, secondMissed]
+        )
+        #expect(
+            RoutineDateMath.upcomingDueDate(
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) == makeDate("2026-07-02T18:30:00Z")
+        )
+        #expect(
+            RoutineDateMath.unresolvedMissedExactTimedOccurrenceDate(
+                for: task,
+                referenceDate: referenceDate,
+                logs: [RoutineLog(timestamp: firstMissed, taskID: task.id, kind: .missed)],
+                calendar: calendar
+            ) == secondMissed
         )
     }
 

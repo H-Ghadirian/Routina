@@ -733,7 +733,9 @@ private struct StatsTaskQueryDisplay: HomeTaskListDisplay {
     let todoState: TodoState?
 
     init(task: RoutineTask, referenceDate: Date, calendar: Calendar) {
-        let dueDate = RoutineDateMath.upcomingDueDate(for: task, referenceDate: referenceDate, calendar: calendar)
+        let dueDate: Date? = task.isOneOffTask
+            ? task.deadline
+            : RoutineDateMath.upcomingDueDate(for: task, referenceDate: referenceDate, calendar: calendar)
 
         self.taskID = task.id
         self.name = task.name ?? "Untitled"
@@ -757,11 +759,11 @@ private struct StatsTaskQueryDisplay: HomeTaskListDisplay {
         self.scheduleAnchor = task.scheduleAnchor
         self.pausedAt = task.pausedAt
         self.pinnedAt = task.pinnedAt
-        self.daysUntilDue = calendar.dateComponents(
-            [.day],
-            from: calendar.startOfDay(for: referenceDate),
-            to: calendar.startOfDay(for: dueDate)
-        ).day ?? 0
+        self.daysUntilDue = RoutineDateMath.daysUntilDue(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
         self.hasMissedExactTimedOccurrence = RoutineDateMath.missedExactTimedOccurrenceDate(
             for: task,
             referenceDate: referenceDate,

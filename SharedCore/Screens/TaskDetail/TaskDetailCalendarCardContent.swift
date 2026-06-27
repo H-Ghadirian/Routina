@@ -56,13 +56,11 @@ struct TaskDetailCalendarCardContent: View {
             return Calendar.current.startOfDay(for: timestamp)
         }
         var dates = Set(loggedMissedDates)
-        if let unresolvedMissedDate = RoutineDateMath.unresolvedMissedExactTimedOccurrenceDate(
+        dates.formUnion(RoutineDateMath.unresolvedMissedExactTimedOccurrenceDates(
             for: task,
             referenceDate: Date(),
             logs: logs
-        ) {
-            dates.insert(Calendar.current.startOfDay(for: unresolvedMissedDate))
-        }
+        ).map { Calendar.current.startOfDay(for: $0) })
         return dates
     }
 
@@ -85,6 +83,7 @@ struct TaskDetailCalendarCardContent: View {
     private var isOverdueRangeVisible: Bool {
         guard let dueDate else { return false }
         let calendar = Calendar.current
+        guard !missedDates.contains(where: { calendar.isDate($0, inSameDayAs: dueDate) }) else { return false }
         return calendar.startOfDay(for: dueDate) < calendar.startOfDay(for: Date())
     }
 }

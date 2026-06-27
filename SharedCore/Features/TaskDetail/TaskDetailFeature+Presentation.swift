@@ -251,7 +251,7 @@ extension TaskDetailFeature.State {
             return nil
         }
         if task.isOneOffTask {
-            return task.deadline ?? task.availabilityStartDate
+            return task.deadline
         }
         return RoutineDateMath.upcomingDueDate(for: task, referenceDate: Date())
     }
@@ -420,6 +420,9 @@ extension TaskDetailFeature.State {
             if task.isChecklistInProgress(referenceDate: resolvedSelectedDate) {
                 return "Checklist \(task.completedChecklistItemCount(referenceDate: resolvedSelectedDate)) of \(task.totalChecklistItemCount) in progress"
             }
+            if missedExactTimedOccurrenceDate != nil {
+                return "Missed"
+            }
             if overdueDays > 0 {
                 return "Overdue by \(overdueDays) \(Self.dayWord(overdueDays))"
             }
@@ -477,9 +480,6 @@ extension TaskDetailFeature.State {
         }
         if isAssumedDoneToday {
             return "Assumed done today"
-        }
-        if missedExactTimedOccurrenceDate != nil {
-            return "Missed"
         }
         if overdueDays > 0 {
             return "Overdue by \(overdueDays) \(Self.dayWord(overdueDays))"

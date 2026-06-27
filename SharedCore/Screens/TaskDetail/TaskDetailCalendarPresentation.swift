@@ -151,7 +151,10 @@ enum TaskDetailCalendarPresentation {
         let isCanceledDate = !isDoneDate && canceledDates.contains { calendar.isDate($0, inSameDayAs: day) }
         let isMissedDate = !isDoneDate && !isCanceledDate && missedDates.contains { calendar.isDate($0, inSameDayAs: day) }
         let isToday = calendar.isDate(day, inSameDayAs: referenceDate)
-        let isDueToTodayRangeDate = isInDueToTodayRange(
+        let isDueDateMissed = dueDate.map { dueDate in
+            missedDates.contains { calendar.isDate($0, inSameDayAs: dueDate) }
+        } ?? false
+        let isDueToTodayRangeDate = !isMissedDate && !isDueDateMissed && isInDueToTodayRange(
             day: day,
             dueDate: dueDate,
             referenceDate: referenceDate,
