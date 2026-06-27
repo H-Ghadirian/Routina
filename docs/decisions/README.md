@@ -31,6 +31,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0290](0290-limit-free-active-tasks-behind-subscription.md) adds the freemium active-task limit:** Free Routina allows up to 10 active tasks; creating another active task requires a StoreKit unlimited-task entitlement from weekly, monthly, annual, or lifetime purchase options, while existing tasks are preserved.
 - **[0289](0289-filter-planner-calendar-layers.md) adds presentation-only Planner calendar layer filters:** A Planner header filter button opens the stable right-side Planner sidebar with layer toggles for planned tasks, all-day tasks, timeline suggestions, events, Focus, Away when enabled, and Sleep, without mutating underlying task, event, session, or planner-block records.
 - **[0288](0288-open-planned-day-task-list-from-planner-headers.md) refines Planner day-header task inspection:** Each Planner day header exposes a compact planned-task list button that opens the stable right-side Planner sidebar with task-backed all-day items followed by timed task blocks for that date, without adding new persistence or including events/protected sessions.
 - **[0287](0287-remove-deleted-task-blocks-from-planner.md) refines task-backed Planner deletion cleanup:** Deleting a task removes persisted `DayPlanBlockRecord` rows for that task and refreshes open Planner state, while preserving automatic timeline suggestions, focus history, Away, Sleep, events, and unrelated planner blocks.
@@ -202,6 +203,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0290](0290-limit-free-active-tasks-behind-subscription.md) | Limit Free Active Tasks Behind Subscription | Accepted | 2026-06-27 |
 | [0289](0289-filter-planner-calendar-layers.md) | Filter Planner Calendar Layers | Accepted | 2026-06-27 |
 | [0288](0288-open-planned-day-task-list-from-planner-headers.md) | Open Planned Day Task List From Planner Headers | Accepted | 2026-06-27 |
 | [0287](0287-remove-deleted-task-blocks-from-planner.md) | Remove Deleted Task Blocks From Planner | Accepted | 2026-06-27 |

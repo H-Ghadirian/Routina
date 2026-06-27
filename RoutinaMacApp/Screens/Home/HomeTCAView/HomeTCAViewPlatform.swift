@@ -542,9 +542,15 @@ extension HomeTCAView {
                 if isQuickAddSheetPresented {
                     MacQuickAddSpotlightOverlay(
                         isPresented: $isQuickAddSheetPresented,
-                        onCreated: handleQuickAddCreated
+                        onCreated: handleQuickAddCreated,
+                        onLimitReached: { snapshot in
+                            store.send(.subscriptionRequired(snapshot, nil))
+                        }
                     )
                 }
+            }
+            .sheet(isPresented: subscriptionPaywallBinding) {
+                subscriptionPaywallContent
             }
     }
 

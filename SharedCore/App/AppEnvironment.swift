@@ -38,6 +38,23 @@ enum AppEnvironment {
         isUITestMode || processEnvironment["XCTestConfigurationFilePath"] != nil
     }()
 
+    static let unlocksAllTasks: Bool = {
+        if let value = boolValue(from: processEnvironment["ROUTINA_UNLOCK_ALL_TASKS"]) {
+            return value
+        }
+
+        if let infoValue = infoDictionary["RoutinaUnlockAllTasks"] as? Bool {
+            return infoValue
+        }
+
+        if let infoString = infoDictionary["RoutinaUnlockAllTasks"] as? String,
+           let value = boolValue(from: infoString) {
+            return value
+        }
+
+        return false
+    }()
+
     static let isSandboxDataMode: Bool = {
         if isAutomatedTestMode {
             return true
@@ -159,6 +176,13 @@ enum AppEnvironment {
         return isCloudSyncEnabled ? "Production (iCloud)" : "Production (local only)"
     }()
 
+    static func subscriptionProductID(for plan: RoutinaSubscriptionPlan) -> String {
+        resolvedString(
+            infoKey: plan.subscriptionInfoKey,
+            envKey: plan.subscriptionEnvironmentKey
+        ) ?? plan.defaultProductID
+    }
+
     static func cleanedURLScheme(_ rawValue: String) -> String {
         rawValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
@@ -193,6 +217,34 @@ private extension AppEnvironment {
             return false
         default:
             return nil
+        }
+    }
+}
+
+private extension RoutinaSubscriptionPlan {
+    var subscriptionInfoKey: String {
+        switch self {
+        case .weekly:
+            return "RoutinaSubscriptionWeeklyProductID"
+        case .monthly:
+            return "RoutinaSubscriptionMonthlyProductID"
+        case .annual:
+            return "RoutinaSubscriptionAnnualProductID"
+        case .lifetime:
+            return "RoutinaSubscriptionLifetimeProductID"
+        }
+    }
+
+    var subscriptionEnvironmentKey: String {
+        switch self {
+        case .weekly:
+            return "ROUTINA_SUBSCRIPTION_WEEKLY_PRODUCT_ID"
+        case .monthly:
+            return "ROUTINA_SUBSCRIPTION_MONTHLY_PRODUCT_ID"
+        case .annual:
+            return "ROUTINA_SUBSCRIPTION_ANNUAL_PRODUCT_ID"
+        case .lifetime:
+            return "ROUTINA_SUBSCRIPTION_LIFETIME_PRODUCT_ID"
         }
     }
 }

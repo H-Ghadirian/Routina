@@ -58,6 +58,11 @@ private enum RoutineDataTransferClientKey: DependencyKey {
     static let testValue = RoutineDataTransferClient.noop
 }
 
+private enum RoutinaSubscriptionClientKey: DependencyKey {
+    static let liveValue = RoutinaSubscriptionClient.live
+    static let testValue = RoutinaSubscriptionClient.unlocked
+}
+
 private enum SprintBoardClientKey: DependencyKey {
     static let liveValue = SprintBoardClient.live
     static let testValue = SprintBoardClient.noop
@@ -127,6 +132,11 @@ extension DependencyValues {
     var routineDataTransferClient: RoutineDataTransferClient {
         get { self[RoutineDataTransferClientKey.self] }
         set { self[RoutineDataTransferClientKey.self] = newValue }
+    }
+
+    var routinaSubscriptionClient: RoutinaSubscriptionClient {
+        get { self[RoutinaSubscriptionClientKey.self] }
+        set { self[RoutinaSubscriptionClientKey.self] = newValue }
     }
 
     var sprintBoardClient: SprintBoardClient {

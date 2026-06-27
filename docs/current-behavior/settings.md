@@ -21,10 +21,12 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0277](../decisions/0277-hide-notes-and-away-behind-beta-toggles.md)
 - [0279](../decisions/0279-hide-sleep-stats-and-blocking-with-away-toggle.md)
 - [0284](../decisions/0284-hide-filter-query-sections-behind-beta-toggle.md)
+- [0290](../decisions/0290-limit-free-active-tasks-behind-subscription.md)
 
 ## Current Contract
 
 - User-owned preferences that should back up, restore, reset, and sync belong in SwiftData.
+- Purchase entitlement is resolved from StoreKit rather than backed up in user data. Weekly, monthly, annual, and lifetime products unlock unlimited active tasks.
 - Temporary, diagnostic, cache, migration, permission, and per-device handoff values can remain in `UserDefaults`.
 - iCloud sync, reset, backup import, and backup export live in one iCloud & Backup settings section.
 - Default `.routinabackup` export/import and destructive reset are complete user-data operations over the SwiftData user model set.

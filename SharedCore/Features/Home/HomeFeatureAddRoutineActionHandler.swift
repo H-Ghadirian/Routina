@@ -13,8 +13,10 @@ struct HomeFeatureAddRoutineActionHandler<State: HomeFeatureAddRoutineActionStat
     var dismissSheet: (inout State) -> Void
     var modelContext: @MainActor @Sendable () -> ModelContext
     var scheduleAnchor: @MainActor @Sendable () -> Date
+    var currentEntitlement: @Sendable () async -> RoutinaSubscriptionEntitlement
     var scheduleNotification: @Sendable (NotificationPayload) async -> Void
     var savedAction: @Sendable (RoutineTask) -> Action
+    var subscriptionRequiredAction: @Sendable (RoutinaTaskLimitSnapshot, AddRoutineSaveRequest) -> Action
     var failedAction: @Sendable () -> Action
     var finishMutation: (Effect<Action>, inout State) -> Effect<Action>
     var loadTasksEffect: () -> Effect<Action>
@@ -27,11 +29,17 @@ struct HomeFeatureAddRoutineActionHandler<State: HomeFeatureAddRoutineActionStat
     }
 
     func save(_ request: AddRoutineSaveRequest) -> Effect<Action> {
-        HomeAddRoutineSupport.saveRoutine(
+        let makeSubscriptionRequiredAction = subscriptionRequiredAction
+        return HomeAddRoutineSupport.saveRoutine(
             from: request,
             scheduleAnchor: scheduleAnchor,
+            calendar: calendar,
             modelContext: modelContext,
+            currentEntitlement: currentEntitlement,
             savedAction: savedAction,
+            subscriptionRequiredAction: { snapshot in
+                makeSubscriptionRequiredAction(snapshot, request)
+            },
             failedAction: failedAction
         )
     }

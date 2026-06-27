@@ -95,9 +95,13 @@ detailContent
 
     @ViewBuilder
     func applyAddRoutinePresentation<Content: View>(to content: Content) -> some View {
-        content.sheet(isPresented: addRoutineSheetBinding) {
-            addRoutineSheetContent
-        }
+        content
+            .sheet(isPresented: addRoutineSheetBinding) {
+                addRoutineSheetContent
+            }
+            .sheet(isPresented: subscriptionPaywallBinding) {
+                subscriptionPaywallContent
+            }
     }
 
     func openAddTask() {

@@ -92,6 +92,12 @@ enum RoutinaQuickAddService {
         draft.tags = try canonicalTags(for: draft.tags, context: context)
         let place = includingPlaces ? try matchedPlace(named: draft.placeName, context: context) : nil
         let request = draft.saveRequest(placeID: place?.id)
+        try RoutinaTaskUsageGate.ensureCanCreateActiveTask(
+            in: context,
+            entitlement: await RoutinaSubscriptionStore.currentEntitlement(),
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
         let goalIDs = try RoutineGoalPersistence.ensureGoals(request.goals, in: context)
         let task = HomeAddRoutineSupport.makeRoutine(
             from: request,

@@ -120,6 +120,17 @@ homeContent
         )
     }
 
+    var subscriptionPaywallBinding: Binding<Bool> {
+        Binding(
+            get: { store.subscriptionPaywallState != nil },
+            set: { isPresented in
+                if !isPresented {
+                    store.send(.subscriptionPaywallDismissed)
+                }
+            }
+        )
+    }
+
     var searchTextBinding: Binding<String> {
         if let externalSearchText {
             externalSearchText
@@ -152,6 +163,16 @@ homeContent
     var addRoutineSheetContent: some View {
         IOSSmartAddTaskSheet(homeStore: store) {
             requestRefresh()
+        }
+    }
+
+    @ViewBuilder
+    var subscriptionPaywallContent: some View {
+        if let paywallStore = store.scope(
+            state: \.subscriptionPaywallState,
+            action: \.subscriptionPaywall
+        ) {
+            SubscriptionPaywallView(store: paywallStore)
         }
     }
 
@@ -446,6 +467,10 @@ private struct IOSSmartAddTaskSheet: View {
                 )
                 onCreated()
                 dismiss()
+            } catch let error as RoutinaTaskLimitError {
+                dismiss()
+                await Task.yield()
+                homeStore.send(.subscriptionRequired(error.snapshot, nil))
             } catch {
                 errorMessage = error.localizedDescription
             }
