@@ -4492,14 +4492,17 @@ private struct DayPlanDatePickerSidebar: View {
     let calendar: Calendar
     let onDismiss: () -> Void
 
+    @State private var displayedMonthStart: Date?
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 18) {
             header
 
-            DatePicker("Selected day", selection: $selectedDate, displayedComponents: [.date])
-                .labelsHidden()
-                .datePickerStyle(.graphical)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            DayPlanSidebarDateGrid(
+                selectedDate: $selectedDate,
+                displayedMonthStart: displayedMonthStartBinding,
+                calendar: calendar
+            )
 
             Button {
                 selectedDate = calendar.startOfDay(for: Date())
@@ -4511,6 +4514,12 @@ private struct DayPlanDatePickerSidebar: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .topLeading)
+        .onAppear {
+            syncDisplayedMonthToSelectedDate(force: true)
+        }
+        .onChange(of: selectedDate) { _, _ in
+            syncDisplayedMonthToSelectedDate()
+        }
     }
 
     private var header: some View {
@@ -4549,6 +4558,203 @@ private struct DayPlanDatePickerSidebar: View {
 
     private var summaryText: String {
         "\(visibleRangeTitle) - \(blocksCount) blocks, \(DayPlanFormatting.durationText(plannedMinutes)) planned"
+    }
+
+    private var displayedMonthStartBinding: Binding<Date> {
+        Binding(
+            get: {
+                displayedMonthStart ?? calendar.dayPlanMonthStart(for: selectedDate)
+            },
+            set: { newValue in
+                displayedMonthStart = calendar.dayPlanMonthStart(for: newValue)
+            }
+        )
+    }
+
+    private func syncDisplayedMonthToSelectedDate(force: Bool = false) {
+        let selectedMonthStart = calendar.dayPlanMonthStart(for: selectedDate)
+        guard force || displayedMonthStart.map({
+            !calendar.isDate($0, equalTo: selectedMonthStart, toGranularity: .month)
+        }) ?? true else {
+            return
+        }
+        displayedMonthStart = selectedMonthStart
+    }
+}
+
+private struct DayPlanSidebarDateGrid: View {
+    @Binding var selectedDate: Date
+    @Binding var displayedMonthStart: Date
+    let calendar: Calendar
+
+    private var columns: [GridItem] {
+        Array(repeating: GridItem(.flexible(minimum: 32), spacing: 8), count: 7)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            monthHeader
+            weekdayHeader
+
+            LazyVGrid(columns: columns, spacing: 8) {
+                ForEach(days) { day in
+                    dayCell(day)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
+    private var monthHeader: some View {
+        HStack(spacing: 8) {
+            Text(displayedMonthStart.formatted(.dateTime.month(.wide).year()))
+                .font(.title2.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .monospacedDigit()
+
+            Spacer(minLength: 8)
+
+            HStack(spacing: 6) {
+                monthNavigationButton(
+                    systemName: "chevron.left",
+                    accessibilityLabel: "Previous month"
+                ) {
+                    moveMonth(by: -1)
+                }
+                monthNavigationButton(
+                    systemName: "chevron.right",
+                    accessibilityLabel: "Next month"
+                ) {
+                    moveMonth(by: 1)
+                }
+            }
+        }
+    }
+
+    private var weekdayHeader: some View {
+        HStack(spacing: 8) {
+            ForEach(Array(calendar.orderedShortStandaloneWeekdaySymbols.enumerated()), id: \.offset) { _, symbol in
+                Text(symbol)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+        .accessibilityHidden(true)
+    }
+
+    private func monthNavigationButton(
+        systemName: String,
+        accessibilityLabel: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.subheadline.weight(.bold))
+                .frame(width: 32, height: 32)
+                .background(Color.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    private func dayCell(_ day: DayPlanSidebarCalendarDay) -> some View {
+        let isSelected = calendar.isDate(day.date, inSameDayAs: selectedDate)
+        let isToday = calendar.isDateInToday(day.date)
+
+        return Button {
+            selectedDate = calendar.startOfDay(for: day.date)
+            displayedMonthStart = calendar.dayPlanMonthStart(for: day.date)
+        } label: {
+            Text(day.date.formatted(.dateTime.day()))
+                .font(.headline.weight(isSelected ? .bold : .semibold))
+                .monospacedDigit()
+                .foregroundStyle(foregroundStyle(isSelected: isSelected, isInDisplayedMonth: day.isInDisplayedMonth))
+                .frame(maxWidth: .infinity)
+                .frame(height: 40)
+                .background {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(backgroundColor(isSelected: isSelected, isToday: isToday))
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .stroke(
+                            isToday && !isSelected ? Color.accentColor.opacity(0.58) : Color.clear,
+                            lineWidth: 1
+                        )
+                }
+                .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(day.date.formatted(.dateTime.weekday(.wide).month(.wide).day().year()))
+        .accessibilityValue(isSelected ? "Selected" : "")
+    }
+
+    private var days: [DayPlanSidebarCalendarDay] {
+        guard
+            let monthInterval = calendar.dateInterval(of: .month, for: displayedMonthStart),
+            let firstGridDate = calendar.date(
+                byAdding: .day,
+                value: -leadingEmptyDays(from: monthInterval.start),
+                to: monthInterval.start
+            )
+        else {
+            return []
+        }
+
+        return (0..<42).compactMap { offset in
+            guard let date = calendar.date(byAdding: .day, value: offset, to: firstGridDate) else {
+                return nil
+            }
+            return DayPlanSidebarCalendarDay(
+                date: date,
+                isInDisplayedMonth: calendar.isDate(date, equalTo: displayedMonthStart, toGranularity: .month)
+            )
+        }
+    }
+
+    private func leadingEmptyDays(from firstDayOfMonth: Date) -> Int {
+        let firstWeekday = calendar.component(.weekday, from: firstDayOfMonth)
+        return (firstWeekday - calendar.firstWeekday + 7) % 7
+    }
+
+    private func moveMonth(by offset: Int) {
+        guard let newMonth = calendar.date(byAdding: .month, value: offset, to: displayedMonthStart) else {
+            return
+        }
+        displayedMonthStart = calendar.dayPlanMonthStart(for: newMonth)
+    }
+
+    private func foregroundStyle(isSelected: Bool, isInDisplayedMonth: Bool) -> Color {
+        if isSelected {
+            return .white
+        }
+        return isInDisplayedMonth ? .primary : .secondary.opacity(0.58)
+    }
+
+    private func backgroundColor(isSelected: Bool, isToday: Bool) -> Color {
+        if isSelected {
+            return .accentColor
+        }
+        return isToday ? Color.accentColor.opacity(0.13) : Color.clear
+    }
+}
+
+private struct DayPlanSidebarCalendarDay: Identifiable {
+    let date: Date
+    let isInDisplayedMonth: Bool
+
+    var id: Date { date }
+}
+
+private extension Calendar {
+    func dayPlanMonthStart(for date: Date) -> Date {
+        dateInterval(of: .month, for: date)?.start ?? startOfDay(for: date)
     }
 }
 
