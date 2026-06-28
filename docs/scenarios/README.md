@@ -293,7 +293,7 @@ Then those unavailable beta layers do not count as active hidden filters or stay
 ### Planner Day Headers Open Planned Task Lists
 
 Area: Planner
-Decision links: [0288](../decisions/0288-open-planned-day-task-list-from-planner-headers.md)
+Decision links: [0288](../decisions/0288-open-planned-day-task-list-from-planner-headers.md), [0300](../decisions/0300-show-plan-to-do-tasks-in-planner-day-agenda.md)
 Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/Shared/DayPlanDayTaskListPresentationTests.swift`
@@ -301,6 +301,10 @@ Coverage:
 Given a Planner day has all-day task blocks, timed task blocks, standalone events, and protected-session blocks
 When the user opens the day header's planned-task list
 Then the right sidebar shows task-backed all-day items followed by timed task blocks for that date, and excludes events and protected sessions
+
+Given a task has only a date-only `Plan to do` value for Monday
+When the user opens Monday's Planner planned-task list
+Then the task appears in the all-day portion of the list without creating a stored Planner block or duplicating any visible all-day or timed item for the same task
 
 ### Protected Modes Do Not Overlap
 

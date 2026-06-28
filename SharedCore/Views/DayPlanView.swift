@@ -1932,7 +1932,10 @@ private struct DayPlanTimelinePanelContentView: View {
                         plannedBlocksByDayKey: calendarFilterState.showsPlannedTasks
                             ? plannedBlocksByDayKey
                             : [:],
-                        allDayBlocks: visibleAllDayBlocks
+                        allDayBlocks: visibleAllDayBlocks,
+                        plannedDateTasks: calendarFilterState.showsAllDayTasks
+                            ? currentTasks
+                            : []
                     )
                     .count
                 },
@@ -2123,7 +2126,10 @@ private struct DayPlanTimelinePanelContentView: View {
                                 plannedBlocksByDayKey: calendarFilterState.showsPlannedTasks
                                     ? plannedBlocksByDayKey
                                     : [:],
-                                allDayBlocks: visibleAllDayBlocks
+                                allDayBlocks: visibleAllDayBlocks,
+                                plannedDateTasks: calendarFilterState.showsAllDayTasks
+                                    ? currentTasks
+                                    : []
                             ),
                             taskTint: { taskID in
                                 tintsByTaskID[taskID] ?? .accentColor
@@ -2447,13 +2453,15 @@ private struct DayPlanTimelinePanelContentView: View {
     private func dayTaskListItems(
         on date: Date,
         plannedBlocksByDayKey: [String: [DayPlanBlock]],
-        allDayBlocks: [DayPlanAllDayBlock]
+        allDayBlocks: [DayPlanAllDayBlock],
+        plannedDateTasks: [RoutineTask]
     ) -> [DayPlanDayTaskListItem] {
         let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
         return DayPlanDayTaskListPresentation.items(
             on: date,
             timedBlocks: plannedBlocksByDayKey[dayKey] ?? [],
             allDayBlocks: allDayBlocks,
+            plannedDateTasks: plannedDateTasks,
             calendar: calendar
         )
     }

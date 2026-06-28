@@ -234,6 +234,7 @@ enum DayPlanDayTaskListPresentation {
         on date: Date,
         timedBlocks: [DayPlanBlock],
         allDayBlocks: [DayPlanAllDayBlock],
+        plannedDateTasks: [RoutineTask] = [],
         calendar: Calendar
     ) -> [DayPlanDayTaskListItem] {
         let allDayItems = allDayBlocks
@@ -251,6 +252,31 @@ enum DayPlanDayTaskListPresentation {
                     blockID: nil,
                     title: allDayBlock.title,
                     emoji: allDayBlock.emoji,
+                    placement: .allDay
+                )
+            }
+            .sorted { lhs, rhs in
+                let titleComparison = lhs.title.localizedCaseInsensitiveCompare(rhs.title)
+                if titleComparison != .orderedSame {
+                    return titleComparison == .orderedAscending
+                }
+                return lhs.id < rhs.id
+            }
+
+        let plannedTaskIDs = Set(allDayItems.map(\.taskID) + timedBlocks.map(\.taskID))
+        let plannedDateItems = plannedDateTasks
+            .compactMap { task -> DayPlanDayTaskListItem? in
+                guard !plannedTaskIDs.contains(task.id),
+                      isVisiblePlannedDateTask(task, on: date, calendar: calendar) else {
+                    return nil
+                }
+
+                return DayPlanDayTaskListItem(
+                    id: "planned-date-\(task.id.uuidString)",
+                    taskID: task.id,
+                    blockID: nil,
+                    title: DayPlanTaskSorting.title(for: task),
+                    emoji: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
                     placement: .allDay
                 )
             }
@@ -289,7 +315,7 @@ enum DayPlanDayTaskListPresentation {
                 }
             }
 
-        return allDayItems + timedItems
+        return allDayItems + plannedDateItems + timedItems
     }
 
     private static func allDayBlockIntersects(
@@ -302,6 +328,21 @@ enum DayPlanDayTaskListPresentation {
             return false
         }
         return block.startDate < dayEnd && block.endDate > dayStart
+    }
+
+    private static func isVisiblePlannedDateTask(
+        _ task: RoutineTask,
+        on date: Date,
+        calendar: Calendar
+    ) -> Bool {
+        guard let plannedDate = task.plannedDate else { return false }
+        let dayStart = calendar.startOfDay(for: date)
+        return !task.isDailyRoutineForTaskList
+            && !task.isCompletedOneOff
+            && !task.isCanceledOneOff
+            && !task.isPinned
+            && !task.isArchived(referenceDate: dayStart, calendar: calendar)
+            && calendar.isDate(plannedDate, inSameDayAs: dayStart)
     }
 }
 

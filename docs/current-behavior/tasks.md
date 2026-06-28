@@ -28,6 +28,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0287](../decisions/0287-remove-deleted-task-blocks-from-planner.md)
 - [0290](../decisions/0290-limit-free-active-tasks-behind-subscription.md)
 - [0293](../decisions/0293-add-settings-unlimited-task-override-while-products-unavailable.md)
+- [0300](../decisions/0300-show-plan-to-do-tasks-in-planner-day-agenda.md)
 
 ## Current Contract
 
@@ -35,7 +36,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Free Routina allows up to 10 active tasks. Creating another active task requires an unlimited-task entitlement from a subscription or lifetime purchase; existing tasks are preserved even if the account already has more than 10 active tasks. Settings -> Support & About -> Purchases can temporarily unlock unlimited task creation while StoreKit products are unavailable; production defaults this override off.
 - Active-task counting includes todos and routines that are not paused, snoozed, archived, done, or canceled.
 - Todo availability has independent date and time axes. Date bounds, time windows, deadlines, reminders, and planned dates are separate concepts.
-- Planned dates are date-only Home-list planning hints for todos and non-daily routines. They are not availability, deadline, reminder, or completion history.
+- Planned dates are date-only Home-list planning hints for todos and non-daily routines. They are not availability, deadline, reminder, completion history, or stored Planner blocks. Planner day agendas surface active date-only planned tasks for the selected day.
 - Deleting a task also removes persisted task-backed Planner blocks for that task so deleted work does not remain on the calendar.
 - Daily routines already belong to the daily routine area and do not expose stored planned-date controls.
 - Home `Today` includes active unpinned tasks planned for the current day, plus weekly/month-day calendar routines whose configured occurrence is today. A calendar routine with a canceled occurrence for today is not shown in the today plan. Rolling interval routines such as `Every 7 days` stay in the normal due/status sections unless explicitly planned.

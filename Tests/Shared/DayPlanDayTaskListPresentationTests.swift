@@ -121,6 +121,173 @@ struct DayPlanDayTaskListPresentationTests {
         #expect(items.map(\.taskID) == [taskID])
     }
 
+    @Test
+    func itemsIncludeDateOnlyPlannedTasksForSelectedDate() throws {
+        let calendar = testCalendar
+        let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))
+        let nextDay = try #require(calendar.date(byAdding: .day, value: 1, to: day))
+        let dayKey = DayPlanStorage.dayKey(for: day, calendar: calendar)
+        let plannedTaskID = try #require(UUID(uuidString: "99999999-9999-9999-9999-999999999999"))
+        let otherDayTaskID = try #require(UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"))
+        let timedTaskID = try #require(UUID(uuidString: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"))
+        let timedBlockID = try #require(UUID(uuidString: "cccccccc-cccc-cccc-cccc-cccccccccccc"))
+
+        let plannedTask = RoutineTask(
+            id: plannedTaskID,
+            name: "Monday plan",
+            scheduleMode: .oneOff
+        )
+        plannedTask.plannedDate = day
+        let otherDayTask = RoutineTask(
+            id: otherDayTaskID,
+            name: "Tuesday plan",
+            scheduleMode: .oneOff
+        )
+        otherDayTask.plannedDate = nextDay
+        let timedBlock = DayPlanBlock(
+            id: timedBlockID,
+            taskID: timedTaskID,
+            dayKey: dayKey,
+            startMinute: 10 * 60,
+            durationMinutes: 30,
+            titleSnapshot: "Timed block"
+        )
+
+        let items = DayPlanDayTaskListPresentation.items(
+            on: day,
+            timedBlocks: [timedBlock],
+            allDayBlocks: [],
+            plannedDateTasks: [otherDayTask, plannedTask],
+            calendar: calendar
+        )
+
+        #expect(items.map(\.title) == ["Monday plan", "Timed block"])
+        #expect(items.map(\.placement) == [
+            .allDay,
+            .timed(startMinute: 10 * 60, durationMinutes: 30),
+        ])
+        #expect(items.map(\.blockID) == [nil, timedBlockID])
+    }
+
+    @Test
+    func itemsDoNotDuplicatePlannedDateTasksAlreadyShownAsPlannerItems() throws {
+        let calendar = testCalendar
+        let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))
+        let nextDay = try #require(calendar.date(byAdding: .day, value: 1, to: day))
+        let dayKey = DayPlanStorage.dayKey(for: day, calendar: calendar)
+        let allDayTaskID = try #require(UUID(uuidString: "dddddddd-dddd-dddd-dddd-dddddddddddd"))
+        let timedTaskID = try #require(UUID(uuidString: "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"))
+        let timedBlockID = try #require(UUID(uuidString: "ffffffff-ffff-ffff-ffff-ffffffffffff"))
+
+        let allDayTask = RoutineTask(
+            id: allDayTaskID,
+            name: "All-day date plan",
+            scheduleMode: .oneOff
+        )
+        allDayTask.plannedDate = day
+        let timedTask = RoutineTask(
+            id: timedTaskID,
+            name: "Timed date plan",
+            scheduleMode: .oneOff
+        )
+        timedTask.plannedDate = day
+
+        let allDayBlock = DayPlanAllDayBlock(
+            id: allDayTaskID,
+            taskID: allDayTaskID,
+            eventID: nil,
+            title: "All-day block",
+            emoji: nil,
+            startDate: day,
+            endDate: nextDay,
+            isLegacyDateOnlyCalendarTask: false,
+            isEvent: false
+        )
+        let timedBlock = DayPlanBlock(
+            id: timedBlockID,
+            taskID: timedTaskID,
+            dayKey: dayKey,
+            startMinute: 11 * 60,
+            durationMinutes: 45,
+            titleSnapshot: "Timed block"
+        )
+
+        let items = DayPlanDayTaskListPresentation.items(
+            on: day,
+            timedBlocks: [timedBlock],
+            allDayBlocks: [allDayBlock],
+            plannedDateTasks: [allDayTask, timedTask],
+            calendar: calendar
+        )
+
+        #expect(items.map(\.title) == ["All-day block", "Timed block"])
+        #expect(items.map(\.taskID) == [allDayTaskID, timedTaskID])
+    }
+
+    @Test
+    func itemsIgnoreInactivePinnedAndDailyPlannedDateTasks() throws {
+        let calendar = testCalendar
+        let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))
+
+        func plannedTask(
+            id: UUID,
+            name: String,
+            scheduleMode: RoutineScheduleMode = .oneOff,
+            lastDone: Date? = nil,
+            canceledAt: Date? = nil,
+            pausedAt: Date? = nil,
+            pinnedAt: Date? = nil
+        ) -> RoutineTask {
+            let task = RoutineTask(
+                id: id,
+                name: name,
+                scheduleMode: scheduleMode,
+                lastDone: lastDone,
+                canceledAt: canceledAt,
+                pausedAt: pausedAt,
+                pinnedAt: pinnedAt
+            )
+            task.plannedDate = day
+            return task
+        }
+
+        let completedTask = plannedTask(
+            id: try #require(UUID(uuidString: "10101010-1010-1010-1010-101010101010")),
+            name: "Completed",
+            lastDone: day
+        )
+        let canceledTask = plannedTask(
+            id: try #require(UUID(uuidString: "20202020-2020-2020-2020-202020202020")),
+            name: "Canceled",
+            canceledAt: day
+        )
+        let pausedTask = plannedTask(
+            id: try #require(UUID(uuidString: "30303030-3030-3030-3030-303030303030")),
+            name: "Paused",
+            pausedAt: day
+        )
+        let pinnedTask = plannedTask(
+            id: try #require(UUID(uuidString: "40404040-4040-4040-4040-404040404040")),
+            name: "Pinned",
+            pinnedAt: day
+        )
+        let dailyRoutine = plannedTask(
+            id: try #require(UUID(uuidString: "50505050-5050-5050-5050-505050505050")),
+            name: "Daily routine",
+            scheduleMode: .fixedInterval
+        )
+
+        let items = DayPlanDayTaskListPresentation.items(
+            on: day,
+            timedBlocks: [],
+            allDayBlocks: [],
+            plannedDateTasks: [completedTask, canceledTask, pausedTask, pinnedTask, dailyRoutine],
+            calendar: calendar
+        )
+
+        #expect(items.isEmpty)
+    }
+
     private var testCalendar: Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
