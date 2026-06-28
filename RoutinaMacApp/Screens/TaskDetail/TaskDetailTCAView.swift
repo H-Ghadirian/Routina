@@ -297,7 +297,7 @@ detailBody
             importance: store.task.importance,
             urgency: store.task.urgency,
             isExpanded: $isMatrixExpanded,
-            summaryLayout: .horizontal,
+            summaryLayout: presentation == .companionPane ? .overallOnly : .horizontal,
             matrixMaxWidth: 420,
             onImportanceChanged: { store.send(.importanceChanged($0)) },
             onUrgencyChanged: { store.send(.urgencyChanged($0)) }

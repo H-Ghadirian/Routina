@@ -3,6 +3,7 @@ import SwiftUI
 enum TaskDetailPrioritySummaryLayout {
     case adaptive
     case horizontal
+    case overallOnly
 }
 
 struct TaskDetailPriorityDisclosureBox: View {
@@ -72,6 +73,8 @@ struct TaskDetailPriorityDisclosureBox: View {
             }
         case .horizontal:
             horizontalPrioritySummary
+        case .overallOnly:
+            priorityFlagChip
         }
     }
 
