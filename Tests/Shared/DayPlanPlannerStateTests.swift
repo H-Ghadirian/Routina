@@ -127,6 +127,84 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func headerRangePickerHidesWhenTaskInspectorUsesDayLayout() {
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldShow(
+                availableWidth: 500,
+                fullControlsWidth: 480,
+                isTaskDetailInspectorPresented: true,
+                visibleRangeMode: .day
+            ) == false
+        )
+    }
+
+    @Test
+    func headerRangePickerCanShowInRoomyTaskInspectorMultiDayLayout() {
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldShow(
+                availableWidth: 700,
+                fullControlsWidth: 620,
+                isTaskDetailInspectorPresented: true,
+                visibleRangeMode: .threeDays
+            )
+        )
+    }
+
+    @Test
+    func headerRangePickerStillHidesWhenFullHeaderDoesNotFit() {
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldShow(
+                availableWidth: 420,
+                fullControlsWidth: 620,
+                isTaskDetailInspectorPresented: false,
+                visibleRangeMode: .day
+            ) == false
+        )
+    }
+
+    @Test
+    func regularPlannerCalendarKeepsExistingMinimumWidth() {
+        #expect(
+            DayPlanWeekCalendarSizing.minimumCalendarWidth(isExternalInspectorPresented: false)
+                == 420
+        )
+        #expect(
+            DayPlanWeekCalendarSizing.dayWidth(
+                availableWidth: 160,
+                dayCount: 1,
+                isExternalInspectorPresented: false
+            ) == 120
+        )
+    }
+
+    @Test
+    func inspectorPlannerCalendarCanUseNarrowerDayColumn() {
+        #expect(
+            DayPlanWeekCalendarSizing.minimumCalendarWidth(isExternalInspectorPresented: true)
+                == 360
+        )
+        #expect(
+            DayPlanWeekCalendarSizing.dayWidth(
+                availableWidth: 160,
+                dayCount: 1,
+                isExternalInspectorPresented: true
+            ) == 96
+        )
+    }
+
+    @Test
+    func inspectorPlannerCalendarFitsFourHundredPointPaneAfterPadding() {
+        let contentWidthAfterPadding: CGFloat = 360
+        let dayWidth = DayPlanWeekCalendarSizing.dayWidth(
+            availableWidth: contentWidthAfterPadding,
+            dayCount: 1,
+            isExternalInspectorPresented: true
+        )
+
+        #expect(dayWidth + DayPlanWeekCalendarSizing.timeColumnWidth == contentWidthAfterPadding)
+    }
+
+    @Test
     func dayHourSpacingOnlyExpandsDayModeCalendar() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

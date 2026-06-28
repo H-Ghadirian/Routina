@@ -1,6 +1,31 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+enum DayPlanWeekCalendarSizing {
+    static let timeColumnWidth: CGFloat = 64
+    static let regularMinimumCalendarWidth: CGFloat = 420
+    static let inspectorMinimumCalendarWidth: CGFloat = 360
+    static let regularMinimumDayWidth: CGFloat = 120
+    static let inspectorMinimumDayWidth: CGFloat = 96
+
+    static func minimumCalendarWidth(isExternalInspectorPresented: Bool) -> CGFloat {
+        isExternalInspectorPresented ? inspectorMinimumCalendarWidth : regularMinimumCalendarWidth
+    }
+
+    static func dayWidth(
+        availableWidth: CGFloat,
+        dayCount: Int,
+        isExternalInspectorPresented: Bool
+    ) -> CGFloat {
+        let dayCount = max(dayCount, 1)
+        let minimumDayWidth = isExternalInspectorPresented
+            ? inspectorMinimumDayWidth
+            : regularMinimumDayWidth
+        let availableDayWidth = max(availableWidth - timeColumnWidth, 0) / CGFloat(dayCount)
+        return max(availableDayWidth, minimumDayWidth)
+    }
+}
+
 struct DayPlanWeekCalendarView: View {
     var dates: [Date]
     var selectedBlockID: DayPlanBlock.ID?
@@ -78,7 +103,7 @@ struct DayPlanWeekCalendarView: View {
     @State private var draftResizeBaseline: DayPlanSelectedSlotDraft?
     @Namespace private var blockAnimationNamespace
 
-    private let timeColumnWidth: CGFloat = 64
+    private let timeColumnWidth: CGFloat = DayPlanWeekCalendarSizing.timeColumnWidth
 
     var body: some View {
         HStack(spacing: 0) {
@@ -139,7 +164,11 @@ struct DayPlanWeekCalendarView: View {
                 ScrollViewReader { scrollProxy in
                     ScrollView(.vertical) {
                         GeometryReader { proxy in
-                            let dayWidth = max((proxy.size.width - timeColumnWidth) / CGFloat(max(dates.count, 1)), 120)
+                            let dayWidth = DayPlanWeekCalendarSizing.dayWidth(
+                                availableWidth: proxy.size.width,
+                                dayCount: max(dates.count, 1),
+                                isExternalInspectorPresented: isExternalInspectorPresented
+                            )
                             let contentWidth = timeColumnWidth + (CGFloat(dates.count) * dayWidth)
                             let contentHeight = hourHeight * 24
 
@@ -347,7 +376,11 @@ struct DayPlanWeekCalendarView: View {
                 }
             }
             }
-            .frame(minWidth: 420)
+            .frame(
+                minWidth: DayPlanWeekCalendarSizing.minimumCalendarWidth(
+                    isExternalInspectorPresented: isExternalInspectorPresented
+                )
+            )
             .background {
                 GeometryReader { proxy in
                     Color.clear

@@ -12,6 +12,7 @@ This page summarizes app-wide UI interaction behavior. Decision records explain 
 - [0297](../decisions/0297-open-mac-task-rows-fullscreen-on-double-click.md)
 - [0299](../decisions/0299-constrain-mac-home-window-size.md)
 - [0302](../decisions/0302-minimize-fullscreen-mac-task-details-to-companion-pane.md)
+- [0306](../decisions/0306-use-day-planner-width-for-task-detail-inspector-fit.md)
 
 ## Current Contract
 
@@ -19,4 +20,4 @@ This page summarizes app-wide UI interaction behavior. Decision records explain 
 - Native SwiftUI button styles may own their native hit areas.
 - Custom or plain buttons must make the intended button surface fill the target and define a matching `contentShape`.
 - Routina glass-backed cards, pills, and panels provide rounded hit shapes through their shared visual modifiers so new glass-backed buttons inherit the rule by default.
-- On Mac, task detail presentation follows the active workspace. Mac Home opens at 1280 x 760 and cannot resize below 1200 x 720. When Planner is active, single-click task-list selection and Planner task selection open a right-side companion detail pane beside the calendar when the detail area can fit both surfaces. The companion pane has close and fullscreen controls, and it is mutually exclusive with Planner's internal right sidebar. Full Details opened from that fullscreen control has a minimize/return control that restores the companion pane; its close control still returns to Planner and clears the pane. Double-clicking a Mac task-list row opens the full Details surface.
+- On Mac, task detail presentation follows the active workspace. Mac Home opens at 1280 x 760 and cannot resize below 1200 x 720. When Planner is active, single-click task-list selection and Planner task selection open a right-side companion detail pane beside the calendar when the detail area can fit the fixed companion pane plus a Day-capable Planner surface. At tight widths, the Planner calendar can adapt down to a compact Day layout to make room for the pane. The companion pane has close and fullscreen controls, and it is mutually exclusive with Planner's internal right sidebar. Full Details opened from that fullscreen control has a minimize/return control that restores the companion pane; its close control still returns to Planner and clears the pane. Double-clicking a Mac task-list row opens the full Details surface.

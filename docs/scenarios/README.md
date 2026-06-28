@@ -306,6 +306,23 @@ Given stale hidden filter state exists for Events, Away, or Sleep from a previou
 When the relevant beta toggle is off
 Then those unavailable beta layers do not count as active hidden filters or stay hidden without a visible control
 
+### Planner Inspector Day Header Hides Range Picker
+
+Area: Planner
+Decision links: [0305](../decisions/0305-hide-planner-range-picker-when-header-cannot-fit.md), [0306](../decisions/0306-use-day-planner-width-for-task-detail-inspector-fit.md), [0307](../decisions/0307-hide-planner-range-picker-in-day-inspector-layout.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/DayPlanPlannerStateTests.swift`
+
+Given the Mac Planner task-detail companion pane is open
+When the effective Planner range has adapted down to Day
+Then the top `Day` / `3 Days` / `Week` segmented picker is hidden while previous/next, filter, and date/range controls remain in the header
+And the calendar grid can use its compact inspector minimum width so the time column and single day column fit inside the Planner surface
+
+Given the Mac Planner task-detail companion pane is open with enough room for a multi-day effective range
+When the full header controls fit on one row
+Then the top range segmented picker can remain visible
+
 ### Planner Day Headers Open Planned Task Lists
 
 Area: Planner

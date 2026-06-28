@@ -378,7 +378,8 @@ struct DayPlanDetailView: View {
                 calendarFilters: calendarFilters,
                 isCalendarFilterSidebarPresented: $isCalendarFilterSidebarPresented,
                 isDatePickerSidebarPresented: $isDatePickerSidebarPresented,
-                showsCalendarFilterButton: true
+                showsCalendarFilterButton: true,
+                isTaskDetailInspectorPresented: isTaskDetailInspectorPresented
             )
             DayPlanTimelinePanelView(
                 planner: planner,
@@ -444,6 +445,7 @@ private struct DayPlanHeaderView: View {
     var isCalendarFilterSidebarPresented: Binding<Bool> = .constant(false)
     var isDatePickerSidebarPresented: Binding<Bool> = .constant(false)
     var showsCalendarFilterButton = false
+    var isTaskDetailInspectorPresented = false
     @AppStorage(
         UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
         store: SharedDefaults.app
@@ -478,8 +480,12 @@ private struct DayPlanHeaderView: View {
     }
 
     private var shouldShowMacHeaderRangePicker: Bool {
-        guard macHeaderAvailableWidth > 0, macHeaderFullControlsWidth > 0 else { return true }
-        return macHeaderFullControlsWidth <= macHeaderAvailableWidth + 0.5
+        DayPlanHeaderRangePickerVisibility.shouldShow(
+            availableWidth: Double(macHeaderAvailableWidth),
+            fullControlsWidth: Double(macHeaderFullControlsWidth),
+            isTaskDetailInspectorPresented: isTaskDetailInspectorPresented,
+            visibleRangeMode: planner.visibleRangeMode
+        )
     }
 
     private func macHeaderRow(showsRangePicker: Bool) -> some View {
@@ -750,6 +756,21 @@ private struct DayPlanHeaderView: View {
         )
     }
 
+}
+
+enum DayPlanHeaderRangePickerVisibility {
+    static func shouldShow(
+        availableWidth: Double,
+        fullControlsWidth: Double,
+        isTaskDetailInspectorPresented: Bool,
+        visibleRangeMode: DayPlanVisibleRangeMode
+    ) -> Bool {
+        if isTaskDetailInspectorPresented, visibleRangeMode == .day {
+            return false
+        }
+        guard availableWidth > 0, fullControlsWidth > 0 else { return true }
+        return fullControlsWidth <= availableWidth + 0.5
+    }
 }
 
 private struct DayPlanHeaderAvailableWidthPreferenceKey: PreferenceKey {

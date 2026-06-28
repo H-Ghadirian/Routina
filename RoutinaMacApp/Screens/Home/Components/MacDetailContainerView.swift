@@ -3,8 +3,9 @@ import SwiftUI
 
 private enum MacDetailContainerSizing {
     static let plannerContentMinWidth: CGFloat = 520
+    static let plannerInspectorContentMinWidth: CGFloat = 400
     static let taskDetailPaneWidth: CGFloat = 420
-    static let plannerTaskDetailMinWidth: CGFloat = plannerContentMinWidth + taskDetailPaneWidth
+    static let plannerTaskDetailMinWidth: CGFloat = plannerInspectorContentMinWidth + taskDetailPaneWidth
     static let boardInspectorWidth: CGFloat = 400
 }
 
@@ -140,7 +141,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
                     onPlannerSidebarPresentationRequested: onCloseTaskDetails
                 )
                 .frame(
-                    minWidth: canShowTaskDetailPane ? MacDetailContainerSizing.plannerContentMinWidth : 0,
+                    minWidth: canShowTaskDetailPane ? MacDetailContainerSizing.plannerInspectorContentMinWidth : 0,
                     maxWidth: .infinity,
                     maxHeight: .infinity
                 )
