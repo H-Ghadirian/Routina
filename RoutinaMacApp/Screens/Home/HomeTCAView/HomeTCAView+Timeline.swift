@@ -114,6 +114,63 @@ extension HomeTCAView {
         TimelineLogic.groupedByDay(entries: timelineEntries, calendar: calendar)
     }
 
+    var plannerTimelineEntries: [TimelineEntry] {
+        basePlannerTimelineEntries
+            .filter(matchesTimelineSearch)
+            .filter(plannerVisibleRangeIntersects)
+    }
+
+    var groupedPlannerTimelineEntries: [(date: Date, entries: [TimelineEntry])] {
+        TimelineLogic.groupedByDay(entries: plannerTimelineEntries, calendar: calendar)
+    }
+
+    var plannerTimelineEntryCount: Int {
+        basePlannerTimelineEntries.count
+    }
+
+    private var basePlannerTimelineEntries: [TimelineEntry] {
+        TimelineLogic.filteredEntries(
+            logs: store.timelineLogs,
+            tasks: store.routineTasks,
+            events: events,
+            emotionLogs: emotionLogs,
+            notes: isNotesEnabled ? notes : [],
+            focusSessions: focusSessions,
+            sprintFocusSessions: sprintFocusSessions,
+            boardSprints: boardSprints,
+            sleepSessions: sleepSessions,
+            placeCheckInSessions: isPlacesEnabled ? placeCheckInSessions : [],
+            awaySessions: isAwayEnabled ? awaySessions : [],
+            fileAttachmentTaskIDs: store.fileAttachmentTaskIDs,
+            noteAttachmentNoteIDs: isNotesEnabled ? noteAttachmentNoteIDs : [],
+            range: .all,
+            filterType: .all,
+            mediaFilter: .all,
+            now: Date(),
+            calendar: calendar
+        )
+    }
+
+    private func plannerVisibleRangeIntersects(_ entry: TimelineEntry) -> Bool {
+        let visibleDates = dayPlanPlanner.visibleDates(calendar: calendar)
+        guard
+            let firstDate = visibleDates.min(),
+            let lastDate = visibleDates.max(),
+            let visibleRangeEnd = calendar.date(
+                byAdding: .day,
+                value: 1,
+                to: calendar.startOfDay(for: lastDate)
+            )
+        else {
+            return true
+        }
+
+        let visibleRangeStart = calendar.startOfDay(for: firstDate)
+        let entryStart = entry.startTimestamp ?? entry.timestamp
+        let entryEnd = entry.endTimestamp ?? entry.timestamp
+        return max(entryStart, entryEnd) >= visibleRangeStart && entryStart < visibleRangeEnd
+    }
+
     var selectedMacTimelineEntry: TimelineEntry? {
         selectedMacTimelineSelection.entry
     }
@@ -214,6 +271,52 @@ extension HomeTCAView {
         selectedNoteID = entry.isNote ? entry.id : nil
         store.send(.macSidebarSelectionChanged(.timelineEntry(entry.id)))
         store.send(.setSelectedTask(entry.taskID))
+    }
+
+    private func openPlannerTimelineEntry(_ entry: TimelineEntry) {
+        if let taskID = entry.taskID,
+           store.routineTasks.contains(where: { $0.id == taskID }) {
+            openDayPlanTaskDetails(taskID)
+            return
+        }
+
+        if entry.isSleep {
+            dayPlanDisplayMode = .calendar
+            openSleepInPlanner(entry.id)
+            return
+        }
+
+        if entry.isNote {
+            openSavedNote(entry.id)
+            return
+        }
+
+        if entry.isEvent {
+            openSavedEvent(entry.id)
+            return
+        }
+
+        if entry.isEmotion {
+            openSavedEmotion(entry.id)
+            return
+        }
+
+        openTimelineEntryInSidebar(entry)
+    }
+
+    private func openTimelineEntryInSidebar(_ entry: TimelineEntry) {
+        isEventEditorPresented = false
+        isEmotionLogEditorPresented = false
+        isNoteEditorPresented = false
+        isAwayStartPresented = false
+        selectedNoteID = entry.isNote ? entry.id : nil
+        searchTextBinding.wrappedValue = ""
+        store.send(.setAddRoutineSheet(false))
+        store.send(.setMacFilterDetailPresented(false))
+        store.send(.macSidebarModeChanged(.timeline))
+        store.send(.macSidebarSelectionChanged(.timelineEntry(entry.id)))
+        store.send(.setSelectedTask(entry.taskID))
+        macTimelineSidebarScrollRequest = MacTimelineSidebarScrollRequest(entryID: entry.id)
     }
 
     func handlePendingSleepPlannerDeepLink(_ sleepID: UUID?) {
@@ -497,6 +600,22 @@ extension HomeTCAView {
             || (isPlacesEnabled && !placeCheckInSessions.isEmpty)
     }
 
+    var macPlannerTimelineListView: some View {
+        HomeMacPlannerTimelineListView(
+            timelineEntryCount: plannerTimelineEntryCount,
+            groupedEntries: groupedPlannerTimelineEntries,
+            visibleRangeTitle: dayPlanPlanner.visibleRangeTitle(calendar: calendar),
+            showsPlaces: isPlacesEnabled,
+            showsNotes: isNotesEnabled,
+            showsAway: isAwayEnabled,
+            sectionTitle: { date in
+                TimelineLogic.daySectionTitle(for: date, calendar: calendar)
+            }
+        ) { entry, rowNumber in
+            plannerTimelineRow(entry, rowNumber: rowNumber)
+        }
+    }
+
     var macTimelineSidebarView: some View {
         VStack(spacing: 0) {
             if areMacTimelineQuickFiltersVisible {
@@ -542,6 +661,60 @@ extension HomeTCAView {
                 timelineSidebarRow(entry, rowNumber: rowNumber)
             }
         }
+    }
+
+    func plannerTimelineRow(_ entry: TimelineEntry, rowNumber: Int) -> some View {
+        let rowVisibility = timelineRowVisibility
+
+        return Button {
+            openPlannerTimelineEntry(entry)
+        } label: {
+            HStack(spacing: 14) {
+                if rowVisibility.shows(.rowNumber) {
+                    Text("\(rowNumber)")
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .frame(minWidth: sidebarRowNumberMinWidth, alignment: .trailing)
+                }
+
+                if rowVisibility.shows(.icon) {
+                    Text(entry.taskEmoji)
+                        .font(.title2)
+                        .frame(width: 38, height: 38)
+                        .routinaGlassCard(cornerRadius: 8, tint: .secondary, tintOpacity: 0.06)
+                }
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(entry.taskName)
+                        .font(.body.weight(.medium))
+                        .lineLimit(1)
+
+                    if rowVisibility.shows(.subtitle) {
+                        Text(timelineSubtitle(for: entry))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+
+                Spacer(minLength: 0)
+
+                if rowVisibility.shows(.kindBadge) {
+                    Text(timelineKindLabel(for: entry))
+                        .font(.caption2.weight(.semibold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .routinaGlassPill(tint: timelineKindColor(for: entry), tintOpacity: 0.15)
+                        .foregroundStyle(timelineKindColor(for: entry))
+                }
+            }
+            .padding(.vertical, 5)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private func timelineKindLabel(for entry: TimelineEntry) -> String {

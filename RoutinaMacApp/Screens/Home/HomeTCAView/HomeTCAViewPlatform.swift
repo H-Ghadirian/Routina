@@ -258,6 +258,7 @@ extension HomeTCAView {
                     adventureProgression: adventureProgression,
                     showsPlaces: isPlacesEnabled,
                     mainDetailMode: mainDetailModeBinding,
+                    dayPlanDisplayMode: $dayPlanDisplayMode,
                     isBoardInspectorPresented: macBoardInspectorPresentedBinding,
                     taskDetailPanePlacement: $taskDetailPanePlacement,
                     placeCheckInSelectedPlaceID: $placeCheckInSelectedPlaceID,
@@ -291,6 +292,8 @@ extension HomeTCAView {
                     )
                 ) {
                     macActiveFiltersDetailView
+                } plannerListView: {
+                    macPlannerTimelineListView
                 } boardView: {
                     macTodoBoardDetailView
                 } boardInspectorView: {

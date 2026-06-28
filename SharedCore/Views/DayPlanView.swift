@@ -362,6 +362,8 @@ struct DayPlanDetailView: View {
     @ObservedObject var planner: DayPlanPlannerState
     var selectedTaskID: UUID? = nil
     var isTaskDetailInspectorPresented = false
+    var displayMode: Binding<DayPlanDisplayMode> = .constant(.calendar)
+    var listContent: (() -> AnyView)? = nil
     var onSelectUnplannedCompletedDate: ((Date) -> Void)? = nil
     var onOpenTaskDetails: ((UUID) -> Void)? = nil
     var onOpenEventDetails: ((UUID) -> Void)? = nil
@@ -379,21 +381,28 @@ struct DayPlanDetailView: View {
                 isCalendarFilterSidebarPresented: $isCalendarFilterSidebarPresented,
                 isDatePickerSidebarPresented: $isDatePickerSidebarPresented,
                 showsCalendarFilterButton: true,
+                displayMode: displayMode,
+                showsDisplayModePicker: listContent != nil,
                 isTaskDetailInspectorPresented: isTaskDetailInspectorPresented
             )
-            DayPlanTimelinePanelView(
-                planner: planner,
-                onSelectUnplannedCompletedDate: onSelectUnplannedCompletedDate,
-                onOpenTaskDetails: onOpenTaskDetails,
-                onOpenEventDetails: onOpenEventDetails,
-                calendarFilters: $calendarFilters,
-                isCalendarFilterSidebarPresented: $isCalendarFilterSidebarPresented,
-                isDatePickerSidebarPresented: $isDatePickerSidebarPresented,
-                isExternalInspectorPresented: isTaskDetailInspectorPresented,
-                onSidebarPresentationRequested: {
-                    onPlannerSidebarPresentationRequested?()
-                }
-            )
+
+            if displayMode.wrappedValue == .list, let listContent {
+                listContent()
+            } else {
+                DayPlanTimelinePanelView(
+                    planner: planner,
+                    onSelectUnplannedCompletedDate: onSelectUnplannedCompletedDate,
+                    onOpenTaskDetails: onOpenTaskDetails,
+                    onOpenEventDetails: onOpenEventDetails,
+                    calendarFilters: $calendarFilters,
+                    isCalendarFilterSidebarPresented: $isCalendarFilterSidebarPresented,
+                    isDatePickerSidebarPresented: $isDatePickerSidebarPresented,
+                    isExternalInspectorPresented: isTaskDetailInspectorPresented,
+                    onSidebarPresentationRequested: {
+                        onPlannerSidebarPresentationRequested?()
+                    }
+                )
+            }
         }
         .padding(20)
         .onAppear {
@@ -408,6 +417,11 @@ struct DayPlanDetailView: View {
         .onChange(of: isTaskDetailInspectorPresented) { _, isPresented in
             guard isPresented else { return }
             dismissPlannerSidebars()
+        }
+        .onChange(of: displayMode.wrappedValue) { _, mode in
+            if mode == .list {
+                dismissPlannerSidebars()
+            }
         }
         .onChange(of: isCalendarFilterSidebarPresented) { _, isPresented in
             guard isPresented else { return }
@@ -445,6 +459,8 @@ private struct DayPlanHeaderView: View {
     var isCalendarFilterSidebarPresented: Binding<Bool> = .constant(false)
     var isDatePickerSidebarPresented: Binding<Bool> = .constant(false)
     var showsCalendarFilterButton = false
+    var displayMode: Binding<DayPlanDisplayMode> = .constant(.calendar)
+    var showsDisplayModePicker = false
     var isTaskDetailInspectorPresented = false
     @AppStorage(
         UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
@@ -545,7 +561,12 @@ private struct DayPlanHeaderView: View {
             }
 
             HStack(spacing: 8) {
-                visibleRangeModePicker
+                if showsDisplayModePicker {
+                    displayModePicker
+                }
+                if effectiveDisplayMode == .calendar {
+                    visibleRangeModePicker
+                }
             }
         }
     }
@@ -556,7 +577,10 @@ private struct DayPlanHeaderView: View {
                 todayButton
             }
             rangeNavigationButtons
-            if showsRangePicker {
+            if showsDisplayModePicker {
+                displayModePicker
+            }
+            if effectiveDisplayMode == .calendar && showsRangePicker {
                 visibleRangeModePicker
             }
         }
@@ -564,7 +588,7 @@ private struct DayPlanHeaderView: View {
 
     private var plannerUtilityCluster: some View {
         HStack(alignment: .center, spacing: 8) {
-            if showsCalendarFilterButton {
+            if showsCalendarFilterButton, effectiveDisplayMode == .calendar {
                 calendarFilterButton
             }
 
@@ -680,7 +704,16 @@ private struct DayPlanHeaderView: View {
         .help("Planner filters")
     }
 
+    @ViewBuilder
     private var plannerDateControl: some View {
+        if effectiveDisplayMode == .calendar {
+            plannerDatePickerButton
+        } else {
+            plannerDateRangeLabel
+        }
+    }
+
+    private var plannerDatePickerButton: some View {
         let title = planner.visibleRangeTitle(calendar: calendar)
         let isPresented = isDatePickerSidebarPresented.wrappedValue
 
@@ -725,6 +758,29 @@ private struct DayPlanHeaderView: View {
         .help("Go to date")
     }
 
+    private var plannerDateRangeLabel: some View {
+        let title = planner.visibleRangeTitle(calendar: calendar)
+
+        return HStack(spacing: 7) {
+            Image(systemName: "calendar")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+                .foregroundStyle(.primary)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .frame(minHeight: 34)
+        .routinaGlassCard(cornerRadius: 8, tint: nil, tintOpacity: 0.10)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Planner date range")
+        .accessibilityValue(title)
+    }
+
     private var calendarFilterAvailability: DayPlanCalendarFilterAvailability {
         DayPlanCalendarFilterAvailability(
             includesEvents: areMacEventEmotionActionsEnabled,
@@ -745,6 +801,21 @@ private struct DayPlanHeaderView: View {
         .accessibilityLabel("Planner range")
     }
 
+    private var displayModePicker: some View {
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Planner view",
+            options: DayPlanDisplayMode.allCases,
+            selection: displayMode,
+            minimumSegmentWidth: 84,
+            horizontalPadding: 11
+        ) { mode in
+            Label(mode.title, systemImage: mode.systemImage)
+                .labelStyle(.titleAndIcon)
+        }
+        .frame(width: 190)
+        .accessibilityLabel("Planner view")
+    }
+
     private var visibleRangeModeBinding: Binding<DayPlanVisibleRangeMode> {
         Binding(
             get: {
@@ -754,6 +825,10 @@ private struct DayPlanHeaderView: View {
                 planner.setVisibleRangeMode(mode, calendar: calendar, context: modelContext)
             }
         )
+    }
+
+    private var effectiveDisplayMode: DayPlanDisplayMode {
+        showsDisplayModePicker ? displayMode.wrappedValue : .calendar
     }
 
 }

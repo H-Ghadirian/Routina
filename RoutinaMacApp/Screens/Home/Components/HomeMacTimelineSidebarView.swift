@@ -236,3 +236,95 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
         }
     }
 }
+
+struct HomeMacPlannerTimelineListView<RowContent: View>: View {
+    let timelineEntryCount: Int
+    let groupedEntries: [(date: Date, entries: [TimelineEntry])]
+    let visibleRangeTitle: String
+    let showsPlaces: Bool
+    let showsNotes: Bool
+    let showsAway: Bool
+    let sectionTitle: (Date) -> String
+    @ViewBuilder let rowContent: (TimelineEntry, Int) -> RowContent
+
+    var body: some View {
+        Group {
+            if timelineEntryCount == 0 {
+                ContentUnavailableView(
+                    "No timeline entries yet",
+                    systemImage: "clock.arrow.circlepath",
+                    description: Text(emptyTimelineDescription)
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if groupedEntries.isEmpty {
+                ContentUnavailableView(
+                    "No timeline entries in \(visibleRangeTitle)",
+                    systemImage: "calendar.badge.clock",
+                    description: Text("Use the planner date controls to choose another range.")
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List {
+                    ForEach(groupedEntries, id: \.date) { section in
+                        Section {
+                            ForEach(section.entries, id: \.id) { entry in
+                                rowContent(entry, rowNumbersByEntryID[entry.id] ?? 1)
+                            }
+                        } header: {
+                            Text(sectionTitle(section.date))
+                        }
+                    }
+                }
+                .listStyle(.inset)
+                .scrollContentBackground(.hidden)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.background, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+        }
+    }
+
+    private var emptyTimelineDescription: String {
+        var items = ["completed items"]
+        if showsNotes {
+            items.append("notes")
+        }
+        if showsPlaces {
+            items.append("place check-ins")
+        }
+        items.append("emotions")
+        items.append("sleep records")
+        if showsAway {
+            items.append("away sessions")
+        }
+        return "\(Self.listText(items).capitalized) will appear here newest first."
+    }
+
+    private static func listText(_ items: [String]) -> String {
+        switch items.count {
+        case 0:
+            return ""
+        case 1:
+            return items[0]
+        case 2:
+            return "\(items[0]) and \(items[1])"
+        default:
+            return items.dropLast().joined(separator: ", ") + ", and \(items.last ?? "")"
+        }
+    }
+
+    private var rowNumbersByEntryID: [UUID: Int] {
+        var result: [UUID: Int] = [:]
+        var rowNumber = 1
+        for section in groupedEntries {
+            for entry in section.entries {
+                result[entry.id] = rowNumber
+                rowNumber += 1
+            }
+        }
+        return result
+    }
+}

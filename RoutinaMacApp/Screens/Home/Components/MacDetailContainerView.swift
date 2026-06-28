@@ -27,7 +27,7 @@ enum MacHomeDetailAnimation {
 /// Inline closures inside `NavigationSplitView.detail` on macOS can lose
 /// observation tracking after several view swaps, causing state changes
 /// (like toggling the filter panel) to stop updating the detail column.
-struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorView: View>: View {
+struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView: View, BoardInspectorView: View>: View {
     let store: StoreOf<HomeFeature>
     let isBoardPresented: Bool
     let isTimelinePresented: Bool
@@ -42,6 +42,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     let adventureProgression: HomeAdventureProgression?
     let showsPlaces: Bool
     @Binding var mainDetailMode: MacHomeDetailMode
+    @Binding var dayPlanDisplayMode: DayPlanDisplayMode
     @Binding var isBoardInspectorPresented: Bool
     @Binding var taskDetailPanePlacement: MacTaskDetailPanePlacement?
     @Binding var placeCheckInSelectedPlaceID: UUID?
@@ -67,6 +68,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     let onCloseFullscreenTaskDetails: () -> Void
     let addRoutineStore: StoreOf<AddRoutineFeature>?
     @ViewBuilder let filterView: () -> FilterView
+    @ViewBuilder let plannerListView: () -> PlannerListView
     @ViewBuilder let boardView: () -> BoardView
     @ViewBuilder let boardInspectorView: () -> BoardInspectorView
     @Namespace private var taskDetailSurfaceNamespace
@@ -161,6 +163,10 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
                     planner: dayPlanPlanner,
                     selectedTaskID: selectedTaskID,
                     isTaskDetailInspectorPresented: canShowTaskDetailPane,
+                    displayMode: $dayPlanDisplayMode,
+                    listContent: {
+                        AnyView(plannerListView())
+                    },
                     onSelectUnplannedCompletedDate: onSelectDayPlanUnplannedCompletedDate,
                     onOpenTaskDetails: onOpenDayPlanTaskDetails,
                     onOpenEventDetails: onOpenEventDetails,

@@ -46,6 +46,31 @@ enum DayPlanVisibleRangeMode: String, CaseIterable, Identifiable {
     }
 }
 
+enum DayPlanDisplayMode: String, CaseIterable, Identifiable {
+    case calendar
+    case list
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .calendar:
+            return "Calendar"
+        case .list:
+            return "List"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .calendar:
+            return "calendar"
+        case .list:
+            return "list.bullet"
+        }
+    }
+}
+
 enum DayPlanHourSpacing: String, CaseIterable, Identifiable {
     case standard
     case spacious
