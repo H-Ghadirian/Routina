@@ -363,6 +363,7 @@ struct DayPlanDetailView: View {
     var selectedTaskID: UUID? = nil
     var isTaskDetailInspectorPresented = false
     var displayMode: Binding<DayPlanDisplayMode> = .constant(.calendar)
+    var calendarSearchText = ""
     var listContent: (() -> AnyView)? = nil
     var onSelectUnplannedCompletedDate: ((Date) -> Void)? = nil
     var onOpenTaskDetails: ((UUID) -> Void)? = nil
@@ -395,6 +396,7 @@ struct DayPlanDetailView: View {
                     onOpenTaskDetails: onOpenTaskDetails,
                     onOpenEventDetails: onOpenEventDetails,
                     calendarFilters: $calendarFilters,
+                    calendarSearchText: calendarSearchText,
                     isCalendarFilterSidebarPresented: $isCalendarFilterSidebarPresented,
                     isDatePickerSidebarPresented: $isDatePickerSidebarPresented,
                     isExternalInspectorPresented: isTaskDetailInspectorPresented,
@@ -848,6 +850,7 @@ private struct DayPlanTimelinePanelView: View {
     var onOpenTaskDetails: ((UUID) -> Void)? = nil
     var onOpenEventDetails: ((UUID) -> Void)? = nil
     var calendarFilters: Binding<DayPlanCalendarFilterState> = .constant(DayPlanCalendarFilterState())
+    var calendarSearchText = ""
     var isCalendarFilterSidebarPresented: Binding<Bool> = .constant(false)
     var isDatePickerSidebarPresented: Binding<Bool> = .constant(false)
     var isExternalInspectorPresented = false
@@ -897,6 +900,7 @@ private struct DayPlanTimelinePanelView: View {
             activeSprintFocusBlocksCache: activeSprintFocusBlocksCache,
             renderSnapshotCache: renderSnapshotCache,
             calendarFilters: calendarFilters,
+            calendarSearchText: calendarSearchText,
             isCalendarFilterSidebarPresented: isCalendarFilterSidebarPresented,
             isDatePickerSidebarPresented: isDatePickerSidebarPresented,
             isExternalInspectorPresented: isExternalInspectorPresented,
@@ -1825,6 +1829,7 @@ private struct DayPlanTimelinePanelContentView: View {
     @ObservedObject var activeSprintFocusBlocksCache: DayPlanSprintFocusBlocksCache
     @ObservedObject var renderSnapshotCache: DayPlanTimelineRenderSnapshotCache
     var calendarFilters: Binding<DayPlanCalendarFilterState> = .constant(DayPlanCalendarFilterState())
+    var calendarSearchText = ""
     var isCalendarFilterSidebarPresented: Binding<Bool> = .constant(false)
     var isDatePickerSidebarPresented: Binding<Bool> = .constant(false)
     var isExternalInspectorPresented = false
@@ -1898,9 +1903,28 @@ private struct DayPlanTimelinePanelContentView: View {
         let calendarFilterState = calendarFilters.wrappedValue.normalized(availability: filterAvailability)
         let timelineSuggestionsVisible = showsTimelineTasksInDayPlanner
             && calendarFilterState.showsTimelineSuggestions
+        let calendarSearchTasks = tasksMatchingCalendarSearch(from: currentTasks)
+        let calendarSearchTaskIDs = Set(calendarSearchTasks.map(\.id))
+        let visiblePlannedBlocksByDayKey = filteredBlocksByDayKey(
+            plannedBlocksByDayKey,
+            matchingTaskIDs: calendarSearchTaskIDs
+        )
+        let visibleAutomaticSuggestionBlocksByDayKey = filteredTimelineBlocksByDayKey(
+            automaticSuggestionBlocksByDayKey,
+            matchingTaskIDs: calendarSearchTaskIDs
+        )
+        let visibleUnplaceableAutomaticSuggestionBlocksByDayKey = filteredTimelineBlocksByDayKey(
+            unplaceableAutomaticSuggestionBlocksByDayKey,
+            matchingTaskIDs: calendarSearchTaskIDs
+        )
+        let visibleTimelineBlocksByDayKey = filteredTimelineBlocksByDayKey(
+            timelineBlocksByDayKey,
+            matchingTaskIDs: calendarSearchTaskIDs
+        )
         let visibleAllDayBlocks = filteredAllDayBlocks(
             allDayBlocks,
-            filters: calendarFilterState
+            filters: calendarFilterState,
+            matchingTaskIDs: calendarSearchTaskIDs
         )
 
         VStack(alignment: .leading, spacing: 12) {
@@ -1923,17 +1947,17 @@ private struct DayPlanTimelinePanelContentView: View {
                 blocksForDate: { date in
                     guard calendarFilterState.showsPlannedTasks else { return [] }
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-                    return plannedBlocksByDayKey[dayKey] ?? []
+                    return visiblePlannedBlocksByDayKey[dayKey] ?? []
                 },
                 automaticTimelineBlocksForDate: { date in
                     guard timelineSuggestionsVisible else { return [] }
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-                    return automaticSuggestionBlocksByDayKey[dayKey] ?? []
+                    return visibleAutomaticSuggestionBlocksByDayKey[dayKey] ?? []
                 },
                 unplaceableAutomaticTimelineBlocksForDate: { date in
                     guard timelineSuggestionsVisible else { return [] }
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-                    return unplaceableAutomaticSuggestionBlocksByDayKey[dayKey] ?? []
+                    return visibleUnplaceableAutomaticSuggestionBlocksByDayKey[dayKey] ?? []
                 },
                 eventBlocksForDate: { date in
                     guard calendarFilterState.showsEvents else { return [] }
@@ -1997,7 +2021,7 @@ private struct DayPlanTimelinePanelContentView: View {
                 allDayBlocks: visibleAllDayBlocks,
                 unplannedCompletedCount: { date in
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-                    return timelineBlocksByDayKey[dayKey]?.count ?? 0
+                    return visibleTimelineBlocksByDayKey[dayKey]?.count ?? 0
                 },
                 taskTint: { block in
                     if block.taskID == FocusSession.unassignedTaskID {
@@ -2022,11 +2046,11 @@ private struct DayPlanTimelinePanelContentView: View {
                     dayTaskListItems(
                         on: date,
                         plannedBlocksByDayKey: calendarFilterState.showsPlannedTasks
-                            ? plannedBlocksByDayKey
+                            ? visiblePlannedBlocksByDayKey
                             : [:],
                         allDayBlocks: visibleAllDayBlocks,
                         plannedDateTasks: calendarFilterState.showsAllDayTasks
-                            ? currentTasks
+                            ? calendarSearchTasks
                             : []
                     )
                     .count
@@ -2222,11 +2246,11 @@ private struct DayPlanTimelinePanelContentView: View {
                             items: dayTaskListItems(
                                 on: date,
                                 plannedBlocksByDayKey: calendarFilterState.showsPlannedTasks
-                                    ? plannedBlocksByDayKey
+                                    ? visiblePlannedBlocksByDayKey
                                     : [:],
                                 allDayBlocks: visibleAllDayBlocks,
                                 plannedDateTasks: calendarFilterState.showsAllDayTasks
-                                    ? currentTasks
+                                    ? calendarSearchTasks
                                     : []
                             ),
                             taskTint: { taskID in
@@ -2328,14 +2352,87 @@ private struct DayPlanTimelinePanelContentView: View {
 
     private func filteredAllDayBlocks(
         _ blocks: [DayPlanAllDayBlock],
-        filters: DayPlanCalendarFilterState
+        filters: DayPlanCalendarFilterState,
+        matchingTaskIDs: Set<UUID>
     ) -> [DayPlanAllDayBlock] {
         blocks.filter { block in
             if block.isEvent {
                 return filters.showsEvents
             }
             return filters.showsAllDayTasks
+                && matchesCalendarSearch(
+                    taskID: block.taskID,
+                    title: block.title,
+                    emoji: block.emoji,
+                    matchingTaskIDs: matchingTaskIDs
+                )
         }
+    }
+
+    private func tasksMatchingCalendarSearch(from tasks: [RoutineTask]) -> [RoutineTask] {
+        guard isCalendarSearchActive else { return tasks }
+        return DayPlanTaskSorting.filteredTasks(from: tasks, query: calendarSearchText)
+    }
+
+    private func filteredBlocksByDayKey(
+        _ blocksByDayKey: [String: [DayPlanBlock]],
+        matchingTaskIDs: Set<UUID>
+    ) -> [String: [DayPlanBlock]] {
+        guard isCalendarSearchActive else { return blocksByDayKey }
+        return blocksByDayKey.mapValues { blocks in
+            blocks.filter { block in
+                matchesCalendarSearch(
+                    taskID: block.taskID,
+                    title: block.titleSnapshot,
+                    emoji: block.emojiSnapshot,
+                    matchingTaskIDs: matchingTaskIDs
+                )
+            }
+        }
+    }
+
+    private func filteredTimelineBlocksByDayKey(
+        _ blocksByDayKey: [String: [DayPlanTimelineActivityBlock]],
+        matchingTaskIDs: Set<UUID>
+    ) -> [String: [DayPlanTimelineActivityBlock]] {
+        guard isCalendarSearchActive else { return blocksByDayKey }
+        return blocksByDayKey.mapValues { blocks in
+            blocks.filter { activity in
+                matchesCalendarSearch(
+                    taskID: activity.block.taskID,
+                    title: activity.block.titleSnapshot,
+                    emoji: activity.block.emojiSnapshot,
+                    matchingTaskIDs: matchingTaskIDs
+                )
+            }
+        }
+    }
+
+    private func matchesCalendarSearch(
+        taskID: UUID?,
+        title: String,
+        emoji: String?,
+        matchingTaskIDs: Set<UUID>
+    ) -> Bool {
+        guard isCalendarSearchActive else { return true }
+        if let taskID, matchingTaskIDs.contains(taskID) {
+            return true
+        }
+
+        let searchableText = [title, emoji ?? ""]
+            .joined(separator: " ")
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+        return searchableText.contains(normalizedCalendarSearchText)
+    }
+
+    private var isCalendarSearchActive: Bool {
+        !normalizedCalendarSearchText.isEmpty
+    }
+
+    private var normalizedCalendarSearchText: String {
+        calendarSearchText
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
     }
 
     private func activatePlannerUndoManager() {

@@ -43,6 +43,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     let showsPlaces: Bool
     @Binding var mainDetailMode: MacHomeDetailMode
     @Binding var dayPlanDisplayMode: DayPlanDisplayMode
+    let plannerSearchText: String
     @Binding var isBoardInspectorPresented: Bool
     @Binding var taskDetailPanePlacement: MacTaskDetailPanePlacement?
     @Binding var placeCheckInSelectedPlaceID: UUID?
@@ -164,6 +165,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                     selectedTaskID: selectedTaskID,
                     isTaskDetailInspectorPresented: canShowTaskDetailPane,
                     displayMode: $dayPlanDisplayMode,
+                    calendarSearchText: plannerSearchText,
                     listContent: {
                         AnyView(plannerListView())
                     },

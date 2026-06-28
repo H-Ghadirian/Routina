@@ -1054,9 +1054,7 @@ extension HomeTCAView {
             onClearFilters: {
                 clearAllMacFilters()
             }
-        ) {
-            platformSearchField(searchText: searchTextBinding)
-        }
+        )
     }
 
     var goalsSearchTextBinding: Binding<String> {

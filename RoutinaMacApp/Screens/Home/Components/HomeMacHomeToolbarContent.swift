@@ -1,3 +1,4 @@
+import AppKit
 import ComposableArchitecture
 import SwiftUI
 
@@ -13,6 +14,7 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     let showsPlaces: Bool
     @Binding var progressMode: MacHomeProgressMode
     let locationSnapshot: LocationSnapshot
+    @Binding var searchText: String
     let focusStartTaskCount: Int
     let activePlanFocusSession: FocusSession?
     let isPlanFocusStartDisabled: Bool
@@ -60,6 +62,10 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
             )
         }
 
+        ToolbarItem(placement: .navigation) {
+            HomeMacToolbarSearchField(text: $searchText)
+        }
+
         if let activePlanFocusSession {
             ToolbarItem(placement: .navigation) {
                 HomeMacActivePlanFocusToolbarButton(
@@ -89,6 +95,129 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
             ToolbarItem(placement: .principal) {
                 MacHomeProgressModePicker(selection: $progressMode)
             }
+        }
+    }
+}
+
+private struct HomeMacToolbarSearchField: View {
+    @Binding var text: String
+
+    var body: some View {
+        HomeMacToolbarSearchTextField(
+            placeholder: "Search tasks and timeline",
+            text: $text
+        )
+        .frame(width: 300, height: 28)
+        .help("Search all tasks and timeline")
+        .accessibilityLabel("Search all tasks and timeline")
+    }
+}
+
+private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
+    let placeholder: String
+    @Binding var text: String
+
+    @MainActor
+    final class Coordinator: NSObject, NSSearchFieldDelegate {
+        var parent: HomeMacToolbarSearchTextField
+        weak var searchField: NSSearchField?
+        private var shouldRestoreFocus = false
+        private var focusGeneration = 0
+
+        init(parent: HomeMacToolbarSearchTextField) {
+            self.parent = parent
+        }
+
+        func controlTextDidEndEditing(_ notification: Notification) {
+            syncSearchText(from: notification.object)
+        }
+
+        func controlTextDidChange(_ notification: Notification) {
+            syncSearchText(from: notification.object)
+            restoreFocusAfterSearchUpdate()
+        }
+
+        @objc func searchAction(_ sender: NSSearchField) {
+            syncSearchText(from: sender)
+            restoreFocusAfterSearchUpdate()
+        }
+
+        private func syncSearchText(from object: Any?) {
+            guard let textField = object as? NSTextField else { return }
+            let nextText = textField.stringValue
+            if parent.text != nextText {
+                parent.text = nextText
+            }
+        }
+
+        private func restoreFocusAfterSearchUpdate() {
+            guard let searchField else { return }
+
+            shouldRestoreFocus = true
+            focusGeneration += 1
+            let generation = focusGeneration
+            let delays: [TimeInterval] = [0, 0.02, 0.08]
+            for (index, delay) in delays.enumerated() {
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self, weak searchField] in
+                    guard let self,
+                          self.shouldRestoreFocus,
+                          self.focusGeneration == generation,
+                          let searchField,
+                          let window = searchField.window else {
+                        return
+                    }
+
+                    if window.firstResponder !== searchField.currentEditor() {
+                        window.makeFirstResponder(searchField)
+                    }
+                    searchField.currentEditor()?.selectedRange = NSRange(
+                        location: searchField.stringValue.count,
+                        length: 0
+                    )
+
+                    if index == delays.indices.last {
+                        self.shouldRestoreFocus = false
+                    }
+                }
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self] in
+                guard let self, self.focusGeneration == generation else { return }
+                self.shouldRestoreFocus = false
+            }
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
+
+    func makeNSView(context: Context) -> NSSearchField {
+        let searchField = NSSearchField(string: text)
+        searchField.placeholderString = placeholder
+        searchField.delegate = context.coordinator
+        searchField.target = context.coordinator
+        searchField.action = #selector(Coordinator.searchAction(_:))
+        searchField.sendsSearchStringImmediately = true
+        searchField.sendsWholeSearchString = false
+        searchField.controlSize = .small
+        searchField.font = NSFont.systemFont(
+            ofSize: NSFont.systemFontSize(for: .small)
+        )
+        searchField.focusRingType = .default
+        searchField.toolTip = "Search all tasks and timeline"
+        context.coordinator.searchField = searchField
+        return searchField
+    }
+
+    func updateNSView(_ nsView: NSSearchField, context: Context) {
+        context.coordinator.parent = self
+        context.coordinator.searchField = nsView
+        nsView.placeholderString = placeholder
+        nsView.toolTip = "Search all tasks and timeline"
+
+        if nsView.currentEditor() == nil, nsView.stringValue != text {
+            nsView.stringValue = text
         }
     }
 }

@@ -1,17 +1,16 @@
 import SwiftUI
 
-struct HomeMacSearchPanelView<SearchField: View>: View {
+struct HomeMacSearchPanelView: View {
     let hasCustomFiltersApplied: Bool
     let activeFiltersSummary: String?
     let isFilterDetailPresented: Bool
     let onToggleFilters: () -> Void
     let onClearFilters: () -> Void
-    @ViewBuilder let searchField: () -> SearchField
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 10) {
-                searchField()
+                Spacer(minLength: 0)
 
                 Button(action: onToggleFilters) {
                     Image(

@@ -258,7 +258,27 @@ final class PerformanceRegressionTests: XCTestCase {
 
     func testMacHomeFocusToolbarUsesSingleTimerSlot() throws {
         let source = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacHomeToolbarContent.swift")
+        let sidebarSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Sidebar.swift")
+        let platformSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift")
+        let detailSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
+        let dayPlanSource = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
 
+        XCTAssertTrue(
+            source.contains("HomeMacToolbarSearchField(text: $searchText)"),
+            "Home should keep the global task and timeline search field visible in the toolbar beside the focus timer controls."
+        )
+        XCTAssertTrue(source.contains("Search tasks and timeline"))
+        XCTAssertTrue(source.contains("NSSearchField"))
+        XCTAssertTrue(source.contains("restoreFocusAfterSearchUpdate()"))
+        XCTAssertTrue(platformSource.contains("plannerSearchText: searchTextBinding.wrappedValue"))
+        XCTAssertTrue(detailSource.contains("calendarSearchText: plannerSearchText"))
+        XCTAssertTrue(dayPlanSource.contains("filteredBlocksByDayKey("))
+        XCTAssertTrue(dayPlanSource.contains("filteredTimelineBlocksByDayKey("))
+        XCTAssertTrue(dayPlanSource.contains("tasksMatchingCalendarSearch(from: currentTasks)"))
+        XCTAssertFalse(
+            sidebarSource.contains("platformSearchField(searchText: searchTextBinding)"),
+            "Task and timeline search should have one active text field. Duplicating the shared search binding in the sidebar steals first responder from the toolbar field."
+        )
         XCTAssertTrue(
             source.contains("} else if isPlanFocusStartDisabled {\n            RoutinaMacFocusTimerToolbarItem(hiddenKinds: [.unassigned])\n        } else if focusStartTaskCount > 0 {"),
             "Home should swap Start Focus Timer for the active timer badge instead of showing a disabled starter beside the running timer."
