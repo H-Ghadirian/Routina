@@ -167,6 +167,10 @@ private enum RoutinaMacHomeWindowChrome {
             window.titlebarAppearsTransparent = true
             window.styleMask.insert(.fullSizeContentView)
             window.toolbarStyle = .unified
+            window.minSize = NSSize(
+                width: RoutinaMacWindowSizing.minWidth,
+                height: RoutinaMacWindowSizing.minHeight
+            )
         }
     }
 }

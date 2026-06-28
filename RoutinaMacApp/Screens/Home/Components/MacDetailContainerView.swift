@@ -1,6 +1,13 @@
 import ComposableArchitecture
 import SwiftUI
 
+private enum MacDetailContainerSizing {
+    static let plannerContentMinWidth: CGFloat = 520
+    static let taskDetailPaneWidth: CGFloat = 420
+    static let plannerTaskDetailMinWidth: CGFloat = plannerContentMinWidth + taskDetailPaneWidth
+    static let boardInspectorWidth: CGFloat = 400
+}
+
 /// Separate View struct so SwiftUI gives it its own observation lifecycle.
 /// Inline closures inside `NavigationSplitView.detail` on macOS can lose
 /// observation tracking after several view swaps, causing state changes
@@ -115,22 +122,31 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     }
 
     private var plannerDetailContent: some View {
-        HStack(spacing: 0) {
-            DayPlanDetailView(
-                planner: dayPlanPlanner,
-                selectedTaskID: selectedTaskID,
-                isTaskDetailInspectorPresented: shouldShowPlannerTaskDetailPane,
-                onSelectUnplannedCompletedDate: onSelectDayPlanUnplannedCompletedDate,
-                onOpenTaskDetails: onOpenDayPlanTaskDetails,
-                onOpenEventDetails: onOpenEventDetails,
-                onPlannerSidebarPresentationRequested: onCloseTaskDetails
-            )
-            .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity)
+        GeometryReader { proxy in
+            let canShowTaskDetailPane = canShowPlannerTaskDetailPane(in: proxy.size.width)
 
-            if shouldShowPlannerTaskDetailPane {
-                taskDetailPane(edge: .trailing)
+            HStack(spacing: 0) {
+                DayPlanDetailView(
+                    planner: dayPlanPlanner,
+                    selectedTaskID: selectedTaskID,
+                    isTaskDetailInspectorPresented: canShowTaskDetailPane,
+                    onSelectUnplannedCompletedDate: onSelectDayPlanUnplannedCompletedDate,
+                    onOpenTaskDetails: onOpenDayPlanTaskDetails,
+                    onOpenEventDetails: onOpenEventDetails,
+                    onPlannerSidebarPresentationRequested: onCloseTaskDetails
+                )
+                .frame(
+                    minWidth: canShowTaskDetailPane ? MacDetailContainerSizing.plannerContentMinWidth : 0,
+                    maxWidth: .infinity,
+                    maxHeight: .infinity
+                )
+
+                if canShowTaskDetailPane {
+                    taskDetailPane(edge: .trailing)
+                }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .animation(.easeInOut(duration: 0.22), value: shouldShowPlannerTaskDetailPane)
     }
 
@@ -147,13 +163,18 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
             && mainDetailMode.visibleSurfaceMode == .planner
     }
 
+    private func canShowPlannerTaskDetailPane(in availableWidth: CGFloat) -> Bool {
+        shouldShowPlannerTaskDetailPane
+            && availableWidth >= MacDetailContainerSizing.plannerTaskDetailMinWidth
+    }
+
     private func taskDetailPane(edge: Edge) -> some View {
         VStack(spacing: 0) {
             taskDetailPaneHeader
             Divider()
             selectedTaskDetailContent(presentation: .companionPane)
         }
-        .frame(width: 420)
+        .frame(width: MacDetailContainerSizing.taskDetailPaneWidth)
         .frame(maxHeight: .infinity)
         .background(Color.secondary.opacity(0.045))
         .overlay(alignment: edge == .leading ? .trailing : .leading) {
@@ -227,7 +248,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
 
             if isBoardInspectorPresented {
                 boardInspectorView()
-                    .frame(width: 400)
+                    .frame(width: MacDetailContainerSizing.boardInspectorWidth)
                     .frame(maxHeight: .infinity)
                     .overlay(alignment: .leading) {
                         Divider()
