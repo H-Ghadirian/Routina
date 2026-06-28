@@ -479,7 +479,7 @@ extension HomeTCAView {
 
     func expandTaskDetailPane() {
         guard store.selectedTaskID != nil, let returnPlacement = taskDetailPanePlacement else { return }
-        withAnimation(.easeInOut(duration: 0.18)) {
+        withAnimation(MacHomeDetailAnimation.taskDetailSurface) {
             fullscreenTaskDetailReturnMode = macHomeDetailMode.visibleSurfaceMode
             fullscreenTaskDetailReturnPlacement = returnPlacement
             taskDetailPanePlacement = nil
@@ -522,7 +522,7 @@ extension HomeTCAView {
             return
         }
 
-        withAnimation(.easeInOut(duration: 0.18)) {
+        withAnimation(MacHomeDetailAnimation.taskDetailSurface) {
             macHomeDetailMode = returnMode.visibleSurfaceMode
             taskDetailPanePlacement = returnPlacement
             fullscreenTaskDetailReturnMode = nil

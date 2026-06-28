@@ -9,6 +9,20 @@ private enum MacDetailContainerSizing {
     static let boardInspectorWidth: CGFloat = 400
 }
 
+enum MacHomeDetailAnimation {
+    static let taskDetailSurface = Animation.spring(
+        response: 0.34,
+        dampingFraction: 0.88,
+        blendDuration: 0.08
+    )
+
+    static let secondaryPane = Animation.spring(
+        response: 0.28,
+        dampingFraction: 0.9,
+        blendDuration: 0.05
+    )
+}
+
 /// Separate View struct so SwiftUI gives it its own observation lifecycle.
 /// Inline closures inside `NavigationSplitView.detail` on macOS can lose
 /// observation tracking after several view swaps, causing state changes
@@ -47,6 +61,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     let onDeleteNote: (UUID) -> Void
     let onToggleBoardInspector: () -> Void
     let onExpandTaskDetails: () -> Void
+    let fullscreenTaskDetailReturnPlacement: MacTaskDetailPanePlacement?
     let onMinimizeFullscreenTaskDetails: (() -> Void)?
     let onCloseTaskDetails: () -> Void
     let onCloseFullscreenTaskDetails: () -> Void
@@ -54,6 +69,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     @ViewBuilder let filterView: () -> FilterView
     @ViewBuilder let boardView: () -> BoardView
     @ViewBuilder let boardInspectorView: () -> BoardInspectorView
+    @Namespace private var taskDetailSurfaceNamespace
 
     var body: some View {
         Group {
@@ -99,7 +115,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
                 .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .animation(.easeInOut(duration: 0.22), value: shouldShowListTaskDetailPane)
+        .animation(MacHomeDetailAnimation.secondaryPane, value: shouldShowListTaskDetailPane)
     }
 
     @ViewBuilder
@@ -111,8 +127,18 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
                     onMinimizeFullscreen: onMinimizeFullscreenTaskDetails,
                     onCloseFullscreen: onCloseFullscreenTaskDetails
                 )
+                .taskDetailSurfaceMotion(
+                    id: taskDetailSurfaceMotionID,
+                    namespace: taskDetailSurfaceNamespace,
+                    edge: fullscreenTaskDetailEdge,
+                    isActive: shouldMatchTaskDetailSurface
+                )
+                .transition(.taskDetailFullscreen(edge: fullscreenTaskDetailEdge))
+                .zIndex(2)
             case .planner:
                 plannerDetailContent
+                    .transition(.taskDetailWorkspace)
+                    .zIndex(0)
             case .board:
                 boardDetailContent
             case .places:
@@ -150,9 +176,10 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
                     taskDetailPane(edge: .trailing)
                 }
             }
+            .clipped()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .animation(.easeInOut(duration: 0.22), value: shouldShowPlannerTaskDetailPane)
+        .animation(MacHomeDetailAnimation.secondaryPane, value: shouldShowPlannerTaskDetailPane)
     }
 
     private var shouldShowListTaskDetailPane: Bool {
@@ -185,7 +212,35 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
         .overlay(alignment: edge == .leading ? .trailing : .leading) {
             Divider()
         }
-        .transition(.move(edge: edge).combined(with: .opacity))
+        .taskDetailSurfaceMotion(
+            id: taskDetailSurfaceMotionID,
+            namespace: taskDetailSurfaceNamespace,
+            edge: edge,
+            isActive: shouldMatchTaskDetailSurface
+        )
+        .transition(.taskDetailPane(edge: edge))
+        .zIndex(1)
+    }
+
+    private var shouldMatchTaskDetailSurface: Bool {
+        selectedTaskID != nil
+    }
+
+    private var fullscreenTaskDetailEdge: Edge {
+        taskDetailEdge(for: fullscreenTaskDetailReturnPlacement ?? taskDetailPanePlacement)
+    }
+
+    private var taskDetailSurfaceMotionID: String {
+        "mac-task-detail-surface-\(selectedTaskID?.uuidString ?? "empty")"
+    }
+
+    private func taskDetailEdge(for placement: MacTaskDetailPanePlacement?) -> Edge {
+        switch placement {
+        case .listAdjacent:
+            return .leading
+        case .plannerAdjacent, nil:
+            return .trailing
+        }
     }
 
     private var taskDetailPaneHeader: some View {
@@ -424,5 +479,149 @@ struct MacHomeProgressModePicker: View {
             Text(mode.rawValue)
         }
         .frame(width: 260)
+    }
+}
+
+private extension View {
+    func taskDetailSurfaceMotion(
+        id: String,
+        namespace: Namespace.ID,
+        edge: Edge,
+        isActive: Bool
+    ) -> some View {
+        modifier(
+            MacTaskDetailSurfaceMotionModifier(
+                id: id,
+                namespace: namespace,
+                edge: edge,
+                isActive: isActive
+            )
+        )
+    }
+}
+
+private struct MacTaskDetailSurfaceMotionModifier: ViewModifier {
+    let id: String
+    let namespace: Namespace.ID
+    let edge: Edge
+    let isActive: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if isActive {
+            content
+                .matchedGeometryEffect(
+                    id: id,
+                    in: namespace,
+                    properties: .frame,
+                    anchor: edge.taskDetailMotionAnchor
+                )
+        } else {
+            content
+        }
+    }
+}
+
+private struct MacTaskDetailDirectionalTransitionModifier: ViewModifier {
+    let edge: Edge
+    let xScale: CGFloat
+    let xOffset: CGFloat
+    let opacity: Double
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(
+                x: xScale,
+                y: 1,
+                anchor: edge.taskDetailMotionAnchor
+            )
+            .offset(x: xOffset * edge.taskDetailMotionDirection)
+            .opacity(opacity)
+    }
+}
+
+private struct MacTaskDetailWorkspaceTransitionModifier: ViewModifier {
+    let scale: CGFloat
+    let opacity: Double
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(scale, anchor: .center)
+            .opacity(opacity)
+    }
+}
+
+private extension AnyTransition {
+    static func taskDetailFullscreen(edge: Edge) -> AnyTransition {
+        .modifier(
+            active: MacTaskDetailDirectionalTransitionModifier(
+                edge: edge,
+                xScale: 0.965,
+                xOffset: 34,
+                opacity: 0.96
+            ),
+            identity: MacTaskDetailDirectionalTransitionModifier(
+                edge: edge,
+                xScale: 1,
+                xOffset: 0,
+                opacity: 1
+            )
+        )
+    }
+
+    static func taskDetailPane(edge: Edge) -> AnyTransition {
+        .modifier(
+            active: MacTaskDetailDirectionalTransitionModifier(
+                edge: edge,
+                xScale: 0.985,
+                xOffset: 24,
+                opacity: 0.98
+            ),
+            identity: MacTaskDetailDirectionalTransitionModifier(
+                edge: edge,
+                xScale: 1,
+                xOffset: 0,
+                opacity: 1
+            )
+        )
+    }
+
+    static var taskDetailWorkspace: AnyTransition {
+        .modifier(
+            active: MacTaskDetailWorkspaceTransitionModifier(
+                scale: 0.992,
+                opacity: 0.88
+            ),
+            identity: MacTaskDetailWorkspaceTransitionModifier(
+                scale: 1,
+                opacity: 1
+            )
+        )
+    }
+}
+
+private extension Edge {
+    var taskDetailMotionAnchor: UnitPoint {
+        switch self {
+        case .leading:
+            return .leading
+        case .trailing:
+            return .trailing
+        case .top:
+            return .top
+        case .bottom:
+            return .bottom
+        }
+    }
+
+    var taskDetailMotionDirection: CGFloat {
+        switch self {
+        case .leading:
+            return -1
+        case .trailing:
+            return 1
+        case .top, .bottom:
+            return 0
+        }
     }
 }
