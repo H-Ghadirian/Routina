@@ -19,6 +19,7 @@ struct TaskDetailTCAView: View {
     let store: StoreOf<TaskDetailFeature>
     var showsPrincipalToolbarTitle = true
     let presentation: Presentation
+    let onMinimizeFullscreen: (() -> Void)?
     let onCloseFullscreen: (() -> Void)?
     let externalBlockingFocusTitle: String?
     let onOpenEventDetails: ((UUID) -> Void)?
@@ -83,6 +84,7 @@ struct TaskDetailTCAView: View {
         store: StoreOf<TaskDetailFeature>,
         showsPrincipalToolbarTitle: Bool = true,
         presentation: Presentation = .fullDetail,
+        onMinimizeFullscreen: (() -> Void)? = nil,
         onCloseFullscreen: (() -> Void)? = nil,
         blockingFocusTitle: String? = nil,
         onOpenEventDetails: ((UUID) -> Void)? = nil
@@ -90,6 +92,7 @@ struct TaskDetailTCAView: View {
         self.store = store
         self.showsPrincipalToolbarTitle = showsPrincipalToolbarTitle
         self.presentation = presentation
+        self.onMinimizeFullscreen = onMinimizeFullscreen
         self.onCloseFullscreen = onCloseFullscreen
         self.externalBlockingFocusTitle = blockingFocusTitle
         self.onOpenEventDetails = onOpenEventDetails
@@ -115,6 +118,7 @@ detailBody
         isInlineEditPresented: isInlineEditPresented,
         canSaveCurrentEdit: canSaveCurrentEdit,
         showsEditToolbarButton: presentation.showsEditingEntryPoints,
+        onMinimizeFullscreen: onMinimizeFullscreen,
         onCloseFullscreen: onCloseFullscreen,
         isTaskSharingEnabled: isTaskSharingEnabled
     )

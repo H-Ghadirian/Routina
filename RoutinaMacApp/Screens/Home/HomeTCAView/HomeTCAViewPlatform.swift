@@ -281,6 +281,7 @@ extension HomeTCAView {
                     onDeleteNote: closeDeletedNote,
                     onToggleBoardInspector: toggleMacBoardTicketInspector,
                     onExpandTaskDetails: expandTaskDetailPane,
+                    onMinimizeFullscreenTaskDetails: minimizeFullscreenTaskDetailsAction,
                     onCloseTaskDetails: closeTaskDetailPane,
                     onCloseFullscreenTaskDetails: closeFullscreenTaskDetails,
                     addRoutineStore: self.store.scope(

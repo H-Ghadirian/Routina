@@ -194,6 +194,8 @@ struct HomeTCAView: View {
     @State var macNavigationHistory = HomeMacNavigationHistory()
     @State var isRestoringMacNavigationHistory = false
     @State var taskDetailPanePlacement: MacTaskDetailPanePlacement?
+    @State var fullscreenTaskDetailReturnMode: MacHomeDetailMode?
+    @State var fullscreenTaskDetailReturnPlacement: MacTaskDetailPanePlacement?
     @StateObject var dayPlanPlanner = DayPlanPlannerState()
     @StateObject var macTaskListPresentationCache = HomeMacTaskListPresentationCache()
     @State var dayPlanUnplannedCompletedFilterDate: Date?

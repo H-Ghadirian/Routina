@@ -478,8 +478,10 @@ extension HomeTCAView {
     }
 
     func expandTaskDetailPane() {
-        guard store.selectedTaskID != nil else { return }
+        guard store.selectedTaskID != nil, let returnPlacement = taskDetailPanePlacement else { return }
         withAnimation(.easeInOut(duration: 0.18)) {
+            fullscreenTaskDetailReturnMode = macHomeDetailMode.visibleSurfaceMode
+            fullscreenTaskDetailReturnPlacement = returnPlacement
             taskDetailPanePlacement = nil
             macHomeDetailMode = .details
         }
@@ -493,8 +495,38 @@ extension HomeTCAView {
 
     func closeFullscreenTaskDetails() {
         withAnimation(.easeInOut(duration: 0.18)) {
+            fullscreenTaskDetailReturnMode = nil
+            fullscreenTaskDetailReturnPlacement = nil
             taskDetailPanePlacement = nil
             macHomeDetailMode = .planner
+        }
+    }
+
+    var canMinimizeFullscreenTaskDetails: Bool {
+        store.selectedTaskID != nil
+            && macHomeDetailMode.visibleSurfaceMode == .details
+            && fullscreenTaskDetailReturnMode != nil
+            && fullscreenTaskDetailReturnPlacement != nil
+    }
+
+    var minimizeFullscreenTaskDetailsAction: (() -> Void)? {
+        guard canMinimizeFullscreenTaskDetails else { return nil }
+        return { minimizeFullscreenTaskDetails() }
+    }
+
+    func minimizeFullscreenTaskDetails() {
+        guard let returnMode = fullscreenTaskDetailReturnMode,
+              let returnPlacement = fullscreenTaskDetailReturnPlacement,
+              store.selectedTaskID != nil else {
+            closeFullscreenTaskDetails()
+            return
+        }
+
+        withAnimation(.easeInOut(duration: 0.18)) {
+            macHomeDetailMode = returnMode.visibleSurfaceMode
+            taskDetailPanePlacement = returnPlacement
+            fullscreenTaskDetailReturnMode = nil
+            fullscreenTaskDetailReturnPlacement = nil
         }
     }
 
@@ -512,9 +544,13 @@ extension HomeTCAView {
         }
         switch presentation {
         case .fullDetail:
+            fullscreenTaskDetailReturnMode = nil
+            fullscreenTaskDetailReturnPlacement = nil
             macHomeDetailMode = .details
             taskDetailPanePlacement = nil
         case .listSelection:
+            fullscreenTaskDetailReturnMode = nil
+            fullscreenTaskDetailReturnPlacement = nil
             switch macHomeDetailMode.visibleSurfaceMode {
             case .details:
                 taskDetailPanePlacement = nil
@@ -524,6 +560,8 @@ extension HomeTCAView {
                 taskDetailPanePlacement = .listAdjacent
             }
         case .plannerPane:
+            fullscreenTaskDetailReturnMode = nil
+            fullscreenTaskDetailReturnPlacement = nil
             macHomeDetailMode = .planner
             taskDetailPanePlacement = .plannerAdjacent
         }
@@ -542,7 +580,14 @@ extension HomeTCAView {
     func normalizeTaskDetailPanePlacement() {
         guard store.selectedTaskID != nil else {
             taskDetailPanePlacement = nil
+            fullscreenTaskDetailReturnMode = nil
+            fullscreenTaskDetailReturnPlacement = nil
             return
+        }
+
+        if macHomeDetailMode.visibleSurfaceMode != .details {
+            fullscreenTaskDetailReturnMode = nil
+            fullscreenTaskDetailReturnPlacement = nil
         }
 
         switch taskDetailPanePlacement {

@@ -46,6 +46,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     let onDeleteNote: (UUID) -> Void
     let onToggleBoardInspector: () -> Void
     let onExpandTaskDetails: () -> Void
+    let onMinimizeFullscreenTaskDetails: (() -> Void)?
     let onCloseTaskDetails: () -> Void
     let onCloseFullscreenTaskDetails: () -> Void
     let addRoutineStore: StoreOf<AddRoutineFeature>?
@@ -105,7 +106,10 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
         Group {
             switch mainDetailMode.visibleSurfaceMode {
             case .details:
-                selectedTaskDetailContent(onCloseFullscreen: onCloseFullscreenTaskDetails)
+                selectedTaskDetailContent(
+                    onMinimizeFullscreen: onMinimizeFullscreenTaskDetails,
+                    onCloseFullscreen: onCloseFullscreenTaskDetails
+                )
             case .planner:
                 plannerDetailContent
             case .board:
@@ -375,6 +379,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     @ViewBuilder
     private func selectedTaskDetailContent(
         presentation: TaskDetailTCAView.Presentation = .fullDetail,
+        onMinimizeFullscreen: (() -> Void)? = nil,
         onCloseFullscreen: (() -> Void)? = nil
     ) -> some View {
         if let detailStore = store.scope(
@@ -385,6 +390,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
                 store: detailStore,
                 showsPrincipalToolbarTitle: false,
                 presentation: presentation,
+                onMinimizeFullscreen: onMinimizeFullscreen,
                 onCloseFullscreen: onCloseFullscreen,
                 onOpenEventDetails: onOpenEventDetails
             )

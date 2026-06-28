@@ -7,6 +7,7 @@ struct TaskDetailToolbarContent: ToolbarContent {
     let isInlineEditPresented: Bool
     let canSaveCurrentEdit: Bool
     let showsEditToolbarButton: Bool
+    let onMinimizeFullscreen: (() -> Void)?
     let onCloseFullscreen: (() -> Void)?
     let isTaskSharingEnabled: Bool
 
@@ -53,6 +54,12 @@ struct TaskDetailToolbarContent: ToolbarContent {
                     } label: {
                         Label("Edit", systemImage: "square.and.pencil")
                     }
+                }
+                if let onMinimizeFullscreen {
+                    Button(action: onMinimizeFullscreen) {
+                        Label("Return to Sidebar", systemImage: "arrow.down.right.and.arrow.up.left")
+                    }
+                    .help("Return to task details sidebar")
                 }
                 if let onCloseFullscreen {
                     Button(action: onCloseFullscreen) {
