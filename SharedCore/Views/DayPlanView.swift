@@ -452,6 +452,8 @@ private struct DayPlanHeaderView: View {
         UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
         store: SharedDefaults.app
     ) private var areMacEventEmotionActionsEnabled = false
+    @State private var macHeaderAvailableWidth: CGFloat = 0
+    @State private var macHeaderFullControlsWidth: CGFloat = 0
 
     var body: some View {
 #if os(macOS)
@@ -462,11 +464,63 @@ private struct DayPlanHeaderView: View {
     }
 
     private var macHeader: some View {
+        macHeaderRow(showsRangePicker: shouldShowMacHeaderRangePicker)
+            .background(macHeaderAvailableWidthReader)
+            .background(macHeaderFullControlsWidthProbe)
+            .onPreferenceChange(DayPlanHeaderAvailableWidthPreferenceKey.self) { width in
+                guard abs(macHeaderAvailableWidth - width) > 0.5 else { return }
+                macHeaderAvailableWidth = width
+            }
+            .onPreferenceChange(DayPlanHeaderFullControlsWidthPreferenceKey.self) { width in
+                guard abs(macHeaderFullControlsWidth - width) > 0.5 else { return }
+                macHeaderFullControlsWidth = width
+            }
+    }
+
+    private var shouldShowMacHeaderRangePicker: Bool {
+        guard macHeaderAvailableWidth > 0, macHeaderFullControlsWidth > 0 else { return true }
+        return macHeaderFullControlsWidth <= macHeaderAvailableWidth + 0.5
+    }
+
+    private func macHeaderRow(showsRangePicker: Bool) -> some View {
         HStack(alignment: .center, spacing: 12) {
-            plannerNavigationCluster
+            plannerNavigationCluster(showsRangePicker: showsRangePicker)
 
             Spacer(minLength: 16)
 
+            plannerUtilityCluster
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var macHeaderAvailableWidthReader: some View {
+        GeometryReader { proxy in
+            Color.clear.preference(
+                key: DayPlanHeaderAvailableWidthPreferenceKey.self,
+                value: proxy.size.width
+            )
+        }
+    }
+
+    private var macHeaderFullControlsWidthProbe: some View {
+        macHeaderFittingControls(showsRangePicker: true)
+            .fixedSize(horizontal: true, vertical: false)
+            .hidden()
+            .accessibilityHidden(true)
+            .background {
+                GeometryReader { proxy in
+                    Color.clear.preference(
+                        key: DayPlanHeaderFullControlsWidthPreferenceKey.self,
+                        value: proxy.size.width
+                    )
+                }
+            }
+    }
+
+    private func macHeaderFittingControls(showsRangePicker: Bool) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            plannerNavigationCluster(showsRangePicker: showsRangePicker)
+            Color.clear.frame(width: 16, height: 1)
             plannerUtilityCluster
         }
     }
@@ -486,24 +540,18 @@ private struct DayPlanHeaderView: View {
 
             HStack(spacing: 8) {
                 visibleRangeModePicker
-
-                if planner.visibleRangeMode == .day {
-                    dayHourSpacingControls
-                }
             }
         }
     }
 
-    private var plannerNavigationCluster: some View {
+    private func plannerNavigationCluster(showsRangePicker: Bool = true) -> some View {
         HStack(alignment: .center, spacing: 10) {
             if shouldShowTodayButton {
                 todayButton
             }
             rangeNavigationButtons
-            visibleRangeModePicker
-
-            if planner.visibleRangeMode == .day {
-                dayHourSpacingControls
+            if showsRangePicker {
+                visibleRangeModePicker
             }
         }
     }
@@ -691,56 +739,6 @@ private struct DayPlanHeaderView: View {
         .accessibilityLabel("Planner range")
     }
 
-    private var dayHourSpacingControls: some View {
-        HStack(spacing: 6) {
-            dayHourSpacingButton(
-                systemName: "minus.magnifyingglass",
-                accessibilityLabel: "Decrease day hour spacing",
-                help: "Decrease hour spacing",
-                isEnabled: planner.canDecreaseDayHourSpacing
-            ) {
-                planner.decreaseDayHourSpacing()
-            }
-
-            dayHourSpacingButton(
-                systemName: "plus.magnifyingglass",
-                accessibilityLabel: "Increase day hour spacing",
-                help: "Increase hour spacing",
-                isEnabled: planner.canIncreaseDayHourSpacing
-            ) {
-                planner.increaseDayHourSpacing()
-            }
-        }
-        .padding(.leading, 4)
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Day hour spacing")
-        .accessibilityValue("\(Int(planner.dayHourSpacing.hourHeight)) points per hour")
-    }
-
-    private func dayHourSpacingButton(
-        systemName: String,
-        accessibilityLabel: String,
-        help: String,
-        isEnabled: Bool,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(isEnabled ? Color.secondary : Color.secondary.opacity(0.45))
-                .frame(width: 32, height: 30)
-                .background {
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .fill(Color.secondary.opacity(isEnabled ? 0.08 : 0.045))
-                }
-                .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .disabled(!isEnabled)
-        .accessibilityLabel(accessibilityLabel)
-        .help(help)
-    }
-
     private var visibleRangeModeBinding: Binding<DayPlanVisibleRangeMode> {
         Binding(
             get: {
@@ -752,6 +750,22 @@ private struct DayPlanHeaderView: View {
         )
     }
 
+}
+
+private struct DayPlanHeaderAvailableWidthPreferenceKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
+private struct DayPlanHeaderFullControlsWidthPreferenceKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
 }
 
 private struct DayPlanTimelinePanelView: View {
@@ -1818,11 +1832,6 @@ private struct DayPlanTimelinePanelContentView: View {
         )
 
         VStack(alignment: .leading, spacing: 12) {
-            Text("\(DayPlanFormatting.durationText(max(planner.unplannedMinutes - renderSnapshot.selectedDayBlockedMinutes, 0))) open on selected day")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-
             DayPlanWeekCalendarView(
                 dates: visibleDates,
                 selectedBlockID: planner.selectedBlockID,
@@ -1835,6 +1844,10 @@ private struct DayPlanTimelinePanelContentView: View {
                 hourHeight: CGFloat(planner.calendarHourHeight),
                 dropDurationMinutes: planner.durationMinutes,
                 showsUnplannedCompletedBadges: !timelineSuggestionsVisible,
+                showsHourSpacingControls: planner.visibleRangeMode == .day,
+                canDecreaseHourSpacing: planner.canDecreaseDayHourSpacing,
+                canIncreaseHourSpacing: planner.canIncreaseDayHourSpacing,
+                hourSpacingAccessibilityValue: "\(Int(planner.dayHourSpacing.hourHeight)) points per hour",
                 blocksForDate: { date in
                     guard calendarFilterState.showsPlannedTasks else { return [] }
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
@@ -1989,6 +2002,12 @@ private struct DayPlanTimelinePanelContentView: View {
                 },
                 onDeleteBlock: { block in
                     planner.deleteBlock(block.id, calendar: calendar, context: modelContext)
+                },
+                onDecreaseHourSpacing: {
+                    planner.decreaseDayHourSpacing()
+                },
+                onIncreaseHourSpacing: {
+                    planner.increaseDayHourSpacing()
                 },
                 onConfirmTimelineActivity: { activity, date in
                     guard !hasSleepConflict(

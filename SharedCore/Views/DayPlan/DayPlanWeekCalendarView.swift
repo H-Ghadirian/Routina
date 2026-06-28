@@ -13,6 +13,10 @@ struct DayPlanWeekCalendarView: View {
     var hourHeight: CGFloat = 64
     var dropDurationMinutes: Int
     var showsUnplannedCompletedBadges: Bool
+    var showsHourSpacingControls = false
+    var canDecreaseHourSpacing = false
+    var canIncreaseHourSpacing = false
+    var hourSpacingAccessibilityValue = ""
     var blocksForDate: (Date) -> [DayPlanBlock]
     var automaticTimelineBlocksForDate: (Date) -> [DayPlanTimelineActivityBlock] = { _ in [] }
     var unplaceableAutomaticTimelineBlocksForDate: (Date) -> [DayPlanTimelineActivityBlock] = { _ in [] }
@@ -40,6 +44,8 @@ struct DayPlanWeekCalendarView: View {
     var onOpenFocusTaskDetails: (UUID) -> Void = { _ in }
     var onOpenAllDayTaskDetails: (UUID) -> Void = { _ in }
     var onDeleteBlock: (DayPlanBlock) -> Void
+    var onDecreaseHourSpacing: () -> Void = {}
+    var onIncreaseHourSpacing: () -> Void = {}
     var onConfirmTimelineActivity: (DayPlanTimelineActivityBlock, Date) -> Void = { _, _ in }
     var onHideTimelineActivity: (DayPlanTimelineActivityBlock, Date) -> Void = { _, _ in }
     var onMoveBlock: (DayPlanBlock.ID, Date, Int) -> Void
@@ -85,8 +91,14 @@ struct DayPlanWeekCalendarView: View {
                     calendar: calendar,
                     timeColumnWidth: timeColumnWidth,
                     showsUnplannedCompletedBadges: showsUnplannedCompletedBadges,
+                    showsHourSpacingControls: showsHourSpacingControls,
+                    canDecreaseHourSpacing: canDecreaseHourSpacing,
+                    canIncreaseHourSpacing: canIncreaseHourSpacing,
+                    hourSpacingAccessibilityValue: hourSpacingAccessibilityValue,
                     plannedTaskCount: plannedTaskCount,
                     unplannedCompletedCount: unplannedCompletedCount,
+                    onDecreaseHourSpacing: onDecreaseHourSpacing,
+                    onIncreaseHourSpacing: onIncreaseHourSpacing,
                     onSelectPlannedTasksDate: { date in
                         presentDayTaskListSidebar(on: date)
                     },
