@@ -27,10 +27,8 @@ extension HomeTCAView {
     var homeToolbarContent: some ToolbarContent {
         HomeMacHomeToolbarContent(
             mode: homeToolbarMode,
-            showsDetailModePicker: showsDetailModePickerInToolbar,
             showsProgressModePicker: showsProgressModePickerInToolbar,
             showsPlaces: isPlacesEnabled,
-            detailMode: mainDetailModeBinding,
             progressMode: macHomeProgressModeBinding,
             locationSnapshot: store.locationSnapshot,
             focusStartTaskCount: homeToolbarFocusStartTaskCount,
@@ -55,21 +53,6 @@ extension HomeTCAView {
                 abandonHomeToolbarPlanFocus(session)
             }
         )
-    }
-
-    private var showsDetailModePickerInToolbar: Bool {
-        !store.isMacFilterDetailPresented
-            && !isMacBoardMode
-            && !isMacTimelineMode
-            && !isMacStatsMode
-            && !isMacSettingsMode
-            && !isMacGoalsMode
-            && !isMacAdventureMode
-            && !isMacAddTaskMode
-            && !isEmotionLogEditorPresented
-            && !isNoteEditorPresented
-            && !isAwayStartPresented
-            && store.addRoutineState == nil
     }
 
     private var showsProgressModePickerInToolbar: Bool {
@@ -299,6 +282,7 @@ extension HomeTCAView {
                     onToggleBoardInspector: toggleMacBoardTicketInspector,
                     onExpandTaskDetails: expandTaskDetailPane,
                     onCloseTaskDetails: closeTaskDetailPane,
+                    onCloseFullscreenTaskDetails: closeFullscreenTaskDetails,
                     addRoutineStore: self.store.scope(
                         state: \.addRoutineState,
                         action: \.addRoutineSheet

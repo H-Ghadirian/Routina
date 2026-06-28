@@ -3,8 +3,23 @@ import ComposableArchitecture
 import SwiftData
 
 struct TaskDetailTCAView: View {
+    enum Presentation {
+        case fullDetail
+        case companionPane
+
+        var showsEditingEntryPoints: Bool {
+            self == .fullDetail
+        }
+
+        var showsOptionalActionsSection: Bool {
+            self == .fullDetail
+        }
+    }
+
     let store: StoreOf<TaskDetailFeature>
     var showsPrincipalToolbarTitle = true
+    let presentation: Presentation
+    let onCloseFullscreen: (() -> Void)?
     let externalBlockingFocusTitle: String?
     let onOpenEventDetails: ((UUID) -> Void)?
     @Dependency(\.appSettingsClient) private var appSettingsClient
@@ -67,11 +82,15 @@ struct TaskDetailTCAView: View {
     init(
         store: StoreOf<TaskDetailFeature>,
         showsPrincipalToolbarTitle: Bool = true,
+        presentation: Presentation = .fullDetail,
+        onCloseFullscreen: (() -> Void)? = nil,
         blockingFocusTitle: String? = nil,
         onOpenEventDetails: ((UUID) -> Void)? = nil
     ) {
         self.store = store
         self.showsPrincipalToolbarTitle = showsPrincipalToolbarTitle
+        self.presentation = presentation
+        self.onCloseFullscreen = onCloseFullscreen
         self.externalBlockingFocusTitle = blockingFocusTitle
         self.onOpenEventDetails = onOpenEventDetails
 
@@ -95,6 +114,8 @@ detailBody
         showsPrincipalToolbarTitle: showsPrincipalToolbarTitle,
         isInlineEditPresented: isInlineEditPresented,
         canSaveCurrentEdit: canSaveCurrentEdit,
+        showsEditToolbarButton: presentation.showsEditingEntryPoints,
+        onCloseFullscreen: onCloseFullscreen,
         isTaskSharingEnabled: isTaskSharingEnabled
     )
 }
@@ -507,7 +528,7 @@ detailBody
     }
 
     private var shouldShowOptionalActionsSection: Bool {
-        !optionalDetailActions.isEmpty
+        presentation.showsOptionalActionsSection && !optionalDetailActions.isEmpty
     }
 
     private var optionalDetailActions: [TaskDetailOptionalAction] {
@@ -751,7 +772,7 @@ detailBody
     }
 
     var isInlineEditPresented: Bool {
-        platformIsInlineEditPresented
+        presentation.showsEditingEntryPoints && platformIsInlineEditPresented
     }
 
     @ViewBuilder

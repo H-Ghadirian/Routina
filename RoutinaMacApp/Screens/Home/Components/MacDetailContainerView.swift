@@ -40,6 +40,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     let onToggleBoardInspector: () -> Void
     let onExpandTaskDetails: () -> Void
     let onCloseTaskDetails: () -> Void
+    let onCloseFullscreenTaskDetails: () -> Void
     let addRoutineStore: StoreOf<AddRoutineFeature>?
     @ViewBuilder let filterView: () -> FilterView
     @ViewBuilder let boardView: () -> BoardView
@@ -97,7 +98,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
         Group {
             switch mainDetailMode.visibleSurfaceMode {
             case .details:
-                selectedTaskDetailContent
+                selectedTaskDetailContent(onCloseFullscreen: onCloseFullscreenTaskDetails)
             case .planner:
                 plannerDetailContent
             case .board:
@@ -106,7 +107,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
                 if showsPlaces {
                     placesDetailContent
                 } else {
-                    selectedTaskDetailContent
+                    selectedTaskDetailContent()
                 }
             }
         }
@@ -150,7 +151,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
         VStack(spacing: 0) {
             taskDetailPaneHeader
             Divider()
-            selectedTaskDetailContent
+            selectedTaskDetailContent(presentation: .companionPane)
         }
         .frame(width: 420)
         .frame(maxHeight: .infinity)
@@ -351,7 +352,10 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     }
 
     @ViewBuilder
-    private var selectedTaskDetailContent: some View {
+    private func selectedTaskDetailContent(
+        presentation: TaskDetailTCAView.Presentation = .fullDetail,
+        onCloseFullscreen: (() -> Void)? = nil
+    ) -> some View {
         if let detailStore = store.scope(
             state: \.taskDetailState,
             action: \.taskDetail
@@ -359,6 +363,8 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
             TaskDetailTCAView(
                 store: detailStore,
                 showsPrincipalToolbarTitle: false,
+                presentation: presentation,
+                onCloseFullscreen: onCloseFullscreen,
                 onOpenEventDetails: onOpenEventDetails
             )
         } else {
@@ -373,23 +379,6 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-    }
-}
-
-struct MacHomeDetailModePicker: View {
-    @Binding var selection: MacHomeDetailMode
-
-    var body: some View {
-        RoutinaGlassSegmentedControl(
-            accessibilityLabel: "Detail mode",
-            options: MacHomeDetailMode.visibleModes,
-            selection: $selection,
-            minimumSegmentWidth: 92,
-            fillsAvailableWidth: true
-        ) { mode in
-            Text(mode.rawValue)
-        }
-        .frame(width: max(240, CGFloat(MacHomeDetailMode.visibleModes.count) * 110))
     }
 }
 

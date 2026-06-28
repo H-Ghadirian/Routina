@@ -6,6 +6,8 @@ struct TaskDetailToolbarContent: ToolbarContent {
     let showsPrincipalToolbarTitle: Bool
     let isInlineEditPresented: Bool
     let canSaveCurrentEdit: Bool
+    let showsEditToolbarButton: Bool
+    let onCloseFullscreen: (() -> Void)?
     let isTaskSharingEnabled: Bool
 
     var body: some ToolbarContent {
@@ -45,10 +47,18 @@ struct TaskDetailToolbarContent: ToolbarContent {
                 if isTaskSharingEnabled {
                     CloudSharingToolbarButton(task: store.task)
                 }
-                Button {
-                    store.send(.setEditSheet(true))
-                } label: {
-                    Label("Edit", systemImage: "square.and.pencil")
+                if showsEditToolbarButton {
+                    Button {
+                        store.send(.setEditSheet(true))
+                    } label: {
+                        Label("Edit", systemImage: "square.and.pencil")
+                    }
+                }
+                if let onCloseFullscreen {
+                    Button(action: onCloseFullscreen) {
+                        Label("Close Details", systemImage: "xmark")
+                    }
+                    .help("Close details and show Planner")
                 }
             }
         }

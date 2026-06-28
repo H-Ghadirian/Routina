@@ -491,6 +491,13 @@ extension HomeTCAView {
         }
     }
 
+    func closeFullscreenTaskDetails() {
+        withAnimation(.easeInOut(duration: 0.18)) {
+            taskDetailPanePlacement = nil
+            macHomeDetailMode = .planner
+        }
+    }
+
     func openMacTaskDetails(
         _ taskID: UUID,
         presentation: MacTaskDetailPresentation = .fullDetail,

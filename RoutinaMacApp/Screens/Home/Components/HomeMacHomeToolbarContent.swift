@@ -9,10 +9,8 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     }
 
     let mode: Mode
-    let showsDetailModePicker: Bool
     let showsProgressModePicker: Bool
     let showsPlaces: Bool
-    @Binding var detailMode: MacHomeDetailMode
     @Binding var progressMode: MacHomeProgressMode
     let locationSnapshot: LocationSnapshot
     let focusStartTaskCount: Int
@@ -39,7 +37,7 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     @ToolbarContentBuilder
     private var boardToolbar: some ToolbarContent {
         navigationToolbarItems
-        detailModeToolbarItem
+        progressModeToolbarItem
     }
 
     @ToolbarContentBuilder
@@ -50,7 +48,7 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     @ToolbarContentBuilder
     private var standardToolbar: some ToolbarContent {
         navigationToolbarItems
-        detailModeToolbarItem
+        progressModeToolbarItem
     }
 
     @ToolbarContentBuilder
@@ -86,12 +84,8 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     }
 
     @ToolbarContentBuilder
-    private var detailModeToolbarItem: some ToolbarContent {
-        if showsDetailModePicker {
-            ToolbarItem(placement: .principal) {
-                MacHomeDetailModePicker(selection: $detailMode)
-            }
-        } else if showsProgressModePicker {
+    private var progressModeToolbarItem: some ToolbarContent {
+        if showsProgressModePicker {
             ToolbarItem(placement: .principal) {
                 MacHomeProgressModePicker(selection: $progressMode)
             }
