@@ -496,7 +496,9 @@ private struct DayPlanHeaderView: View {
     }
 
     private var shouldShowMacHeaderRangePicker: Bool {
-        DayPlanHeaderRangePickerVisibility.shouldShow(
+        guard effectiveDisplayMode == .calendar else { return false }
+
+        return DayPlanHeaderRangePickerVisibility.shouldShow(
             availableWidth: Double(macHeaderAvailableWidth),
             fullControlsWidth: Double(macHeaderFullControlsWidth),
             isTaskDetailInspectorPresented: isTaskDetailInspectorPresented,
@@ -549,15 +551,17 @@ private struct DayPlanHeaderView: View {
 
     private var compactHeader: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .center, spacing: 10) {
-                if shouldShowTodayButton {
-                    todayButton
+            if effectiveDisplayMode == .calendar {
+                HStack(alignment: .center, spacing: 10) {
+                    if shouldShowTodayButton {
+                        todayButton
+                    }
+                    rangeNavigationButtons
+
+                    Spacer(minLength: 8)
+
+                    plannerUtilityCluster
                 }
-                rangeNavigationButtons
-
-                Spacer(minLength: 8)
-
-                plannerUtilityCluster
             }
 
             HStack(spacing: 8) {
@@ -573,10 +577,12 @@ private struct DayPlanHeaderView: View {
 
     private func plannerNavigationCluster(showsRangePicker: Bool = true) -> some View {
         HStack(alignment: .center, spacing: 10) {
-            if shouldShowTodayButton {
-                todayButton
+            if effectiveDisplayMode == .calendar {
+                if shouldShowTodayButton {
+                    todayButton
+                }
+                rangeNavigationButtons
             }
-            rangeNavigationButtons
             if showsDisplayModePicker {
                 displayModePicker
             }
@@ -588,11 +594,13 @@ private struct DayPlanHeaderView: View {
 
     private var plannerUtilityCluster: some View {
         HStack(alignment: .center, spacing: 8) {
-            if showsCalendarFilterButton, effectiveDisplayMode == .calendar {
-                calendarFilterButton
-            }
+            if effectiveDisplayMode == .calendar {
+                if showsCalendarFilterButton {
+                    calendarFilterButton
+                }
 
-            plannerDateControl
+                plannerDatePickerButton
+            }
         }
     }
 
@@ -704,15 +712,6 @@ private struct DayPlanHeaderView: View {
         .help("Planner filters")
     }
 
-    @ViewBuilder
-    private var plannerDateControl: some View {
-        if effectiveDisplayMode == .calendar {
-            plannerDatePickerButton
-        } else {
-            plannerDateRangeLabel
-        }
-    }
-
     private var plannerDatePickerButton: some View {
         let title = planner.visibleRangeTitle(calendar: calendar)
         let isPresented = isDatePickerSidebarPresented.wrappedValue
@@ -756,29 +755,6 @@ private struct DayPlanHeaderView: View {
         .accessibilityValue(title)
         .accessibilityHint("\(planner.blocks.count) blocks on selected day, \(DayPlanFormatting.durationText(planner.plannedMinutes)) planned")
         .help("Go to date")
-    }
-
-    private var plannerDateRangeLabel: some View {
-        let title = planner.visibleRangeTitle(calendar: calendar)
-
-        return HStack(spacing: 7) {
-            Image(systemName: "calendar")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.accentColor)
-
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
-                .foregroundStyle(.primary)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
-        .frame(minHeight: 34)
-        .routinaGlassCard(cornerRadius: 8, tint: nil, tintOpacity: 0.10)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Planner date range")
-        .accessibilityValue(title)
     }
 
     private var calendarFilterAvailability: DayPlanCalendarFilterAvailability {

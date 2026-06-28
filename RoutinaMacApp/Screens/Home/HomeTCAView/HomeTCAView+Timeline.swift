@@ -117,7 +117,6 @@ extension HomeTCAView {
     var plannerTimelineEntries: [TimelineEntry] {
         basePlannerTimelineEntries
             .filter(matchesTimelineSearch)
-            .filter(plannerVisibleRangeIntersects)
     }
 
     var groupedPlannerTimelineEntries: [(date: Date, entries: [TimelineEntry])] {
@@ -149,26 +148,6 @@ extension HomeTCAView {
             now: Date(),
             calendar: calendar
         )
-    }
-
-    private func plannerVisibleRangeIntersects(_ entry: TimelineEntry) -> Bool {
-        let visibleDates = dayPlanPlanner.visibleDates(calendar: calendar)
-        guard
-            let firstDate = visibleDates.min(),
-            let lastDate = visibleDates.max(),
-            let visibleRangeEnd = calendar.date(
-                byAdding: .day,
-                value: 1,
-                to: calendar.startOfDay(for: lastDate)
-            )
-        else {
-            return true
-        }
-
-        let visibleRangeStart = calendar.startOfDay(for: firstDate)
-        let entryStart = entry.startTimestamp ?? entry.timestamp
-        let entryEnd = entry.endTimestamp ?? entry.timestamp
-        return max(entryStart, entryEnd) >= visibleRangeStart && entryStart < visibleRangeEnd
     }
 
     var selectedMacTimelineEntry: TimelineEntry? {
@@ -604,7 +583,6 @@ extension HomeTCAView {
         HomeMacPlannerTimelineListView(
             timelineEntryCount: plannerTimelineEntryCount,
             groupedEntries: groupedPlannerTimelineEntries,
-            visibleRangeTitle: dayPlanPlanner.visibleRangeTitle(calendar: calendar),
             showsPlaces: isPlacesEnabled,
             showsNotes: isNotesEnabled,
             showsAway: isAwayEnabled,

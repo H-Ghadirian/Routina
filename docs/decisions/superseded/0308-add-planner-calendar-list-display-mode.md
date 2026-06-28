@@ -2,17 +2,21 @@
 
 ## Status
 
-Accepted
+Superseded
 
 ## Date
 
 2026-06-28
 
+## Superseded By
+
+- [0309: Show Full Timeline in Planner List Mode](../0309-show-full-timeline-in-planner-list-mode.md)
+
 ## Refines
 
-- [0280: Show Timeline Newest First](0280-show-timeline-newest-first.md)
-- [0292: Unify Planner Header Date Control](0292-unify-planner-header-date-control.md)
-- [0303: Align Mac Planner Range Picker with Adaptive Days](0303-align-mac-planner-range-picker-with-adaptive-days.md)
+- [0280: Show Timeline Newest First](../0280-show-timeline-newest-first.md)
+- [0292: Unify Planner Header Date Control](../0292-unify-planner-header-date-control.md)
+- [0303: Align Mac Planner Range Picker with Adaptive Days](../0303-align-mac-planner-range-picker-with-adaptive-days.md)
 
 ## Context
 

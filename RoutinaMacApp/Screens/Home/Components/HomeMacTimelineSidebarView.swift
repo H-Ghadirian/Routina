@@ -240,7 +240,6 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
 struct HomeMacPlannerTimelineListView<RowContent: View>: View {
     let timelineEntryCount: Int
     let groupedEntries: [(date: Date, entries: [TimelineEntry])]
-    let visibleRangeTitle: String
     let showsPlaces: Bool
     let showsNotes: Bool
     let showsAway: Bool
@@ -258,9 +257,9 @@ struct HomeMacPlannerTimelineListView<RowContent: View>: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if groupedEntries.isEmpty {
                 ContentUnavailableView(
-                    "No timeline entries in \(visibleRangeTitle)",
-                    systemImage: "calendar.badge.clock",
-                    description: Text("Use the planner date controls to choose another range.")
+                    "No matching timeline entries",
+                    systemImage: "line.3.horizontal.decrease.circle",
+                    description: Text("Try a different timeline search.")
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
