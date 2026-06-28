@@ -574,8 +574,10 @@ private struct DayPlanHeaderView: View {
         switch planner.visibleRangeMode {
         case .day:
             return "Previous day"
+        case .threeDays:
+            return "Previous 3 days"
         case .week:
-            return weekNavigationAccessibilityLabel(prefix: "Previous")
+            return "Previous week"
         }
     }
 
@@ -583,19 +585,10 @@ private struct DayPlanHeaderView: View {
         switch planner.visibleRangeMode {
         case .day:
             return "Next day"
+        case .threeDays:
+            return "Next 3 days"
         case .week:
-            return weekNavigationAccessibilityLabel(prefix: "Next")
-        }
-    }
-
-    private func weekNavigationAccessibilityLabel(prefix: String) -> String {
-        switch planner.adaptiveWeekDayCount {
-        case 1:
-            return "\(prefix) day"
-        case 3:
-            return "\(prefix) 3 days"
-        default:
-            return "\(prefix) week"
+            return "Next week"
         }
     }
 
@@ -694,7 +687,7 @@ private struct DayPlanHeaderView: View {
         ) { mode in
             Text(mode.title)
         }
-        .frame(width: 156)
+        .frame(width: 234)
         .accessibilityLabel("Planner range")
     }
 
@@ -1884,7 +1877,7 @@ private struct DayPlanTimelinePanelContentView: View {
                 showsActiveFocusBlocks: calendarFilterState.showsFocus && !activeFocusRenderSessions.isEmpty,
                 showsActiveSprintFocusBlocks: calendarFilterState.showsFocus && !activeSprintFocusSessions.isEmpty,
                 onCalendarWidthChanged: { width in
-                    updateAdaptiveWeekDayCount(for: width)
+                    updateAdaptiveVisibleRangeMode(for: width)
                 },
                 activeFocusSessionBlocks: { now in
                     guard calendarFilterState.showsFocus else { return [] }
@@ -2232,9 +2225,9 @@ private struct DayPlanTimelinePanelContentView: View {
         )
     }
 
-    private func updateAdaptiveWeekDayCount(for width: CGFloat) {
+    private func updateAdaptiveVisibleRangeMode(for width: CGFloat) {
 #if os(macOS)
-        planner.setAdaptiveWeekDayCount(
+        planner.setAdaptiveVisibleRangeMode(
             forAvailableWidth: Double(width),
             calendar: calendar,
             context: modelContext

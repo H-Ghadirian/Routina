@@ -216,17 +216,21 @@ Given plan focus starts from tasks in `Today`
 When focus time is allocated while running or after finish
 Then task allocations are recorded without deleting the unassigned focus session history
 
-### Planner Week Adapts To Available Width
+### Planner Range Picker Follows Adaptive Visible Days
 
 Area: Planner
-Decision links: [0301](../decisions/0301-adapt-mac-planner-week-visible-days.md)
+Decision links: [0303](../decisions/0303-align-mac-planner-range-picker-with-adaptive-days.md)
 Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/Shared/DayPlanPlannerStateTests.swift`
 
-Given Mac Planner is in Week mode
+Given Mac Planner prefers Week mode
 When the calendar column becomes wide, medium, or narrow
-Then Week mode renders seven, three, or one visible day respectively and previous/next navigation moves by that effective visible range
+Then the selected range segment and rendered calendar become Week, 3 Days, or Day respectively and previous/next navigation moves by that effective visible range
+
+Given the user explicitly selects Day
+When the calendar column grows from narrow to wide
+Then Planner keeps Day selected and continues rendering one day
 
 ### Planner Block Resize Stays Continuous Across Layout Changes
 

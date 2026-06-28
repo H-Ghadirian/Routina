@@ -2,16 +2,20 @@
 
 ## Status
 
-Accepted
+Superseded
 
 ## Date
 
 2026-06-28
 
+## Superseded by
+
+- [0303: Align Mac Planner Range Picker with Adaptive Days](../0303-align-mac-planner-range-picker-with-adaptive-days.md)
+
 ## Refines
 
-- [0191: Support One-Day Planner View](0191-support-one-day-planner-view.md)
-- [0299: Constrain Mac Home Window Size for Planner Inspector](0299-constrain-mac-home-window-size.md)
+- [0191: Support One-Day Planner View](../0191-support-one-day-planner-view.md)
+- [0299: Constrain Mac Home Window Size for Planner Inspector](../0299-constrain-mac-home-window-size.md)
 
 ## Context
 

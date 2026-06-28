@@ -14,6 +14,7 @@ struct DayPlanFocusedSleep: Equatable {
 
 enum DayPlanVisibleRangeMode: String, CaseIterable, Identifiable {
     case day
+    case threeDays
     case week
 
     var id: Self { self }
@@ -22,15 +23,23 @@ enum DayPlanVisibleRangeMode: String, CaseIterable, Identifiable {
         switch self {
         case .day:
             return "Day"
+        case .threeDays:
+            return "3 Days"
         case .week:
             return "Week"
         }
     }
 
     var navigationDayCount: Int {
+        visibleDayCount
+    }
+
+    var visibleDayCount: Int {
         switch self {
         case .day:
             return 1
+        case .threeDays:
+            return 3
         case .week:
             return 7
         }
@@ -118,13 +127,14 @@ final class DayPlanPlannerState: ObservableObject {
     @Published var durationMinutes = 60
     @Published var focusedUnplannedCompletedDate: Date?
     @Published var focusedSleep: DayPlanFocusedSleep?
-    @Published var visibleRangeMode: DayPlanVisibleRangeMode
-    @Published private(set) var adaptiveWeekDayCount = 7
+    @Published private(set) var visibleRangeMode: DayPlanVisibleRangeMode
     @Published var dayHourSpacing: DayPlanHourSpacing = .standard
     @Published var highlightedBlockID: UUID?
     @Published var highlightedBlockScrollMinute: Int?
 
     @Published private var visibleDate: Date
+    private var preferredVisibleRangeMode: DayPlanVisibleRangeMode
+    private var maximumAdaptiveVisibleRangeMode: DayPlanVisibleRangeMode = .week
     private var pendingResizeUndo: DayPlanPendingResizeUndo?
     private var plannerUndoChange: DayPlanPlannerUndoChange?
     private var plannerRedoChange: DayPlanPlannerUndoChange?
@@ -137,6 +147,7 @@ final class DayPlanPlannerState: ObservableObject {
         self.selectedDate = selectedDate
         self.visibleDate = selectedDate
         self.visibleRangeMode = visibleRangeMode
+        self.preferredVisibleRangeMode = visibleRangeMode
         undoTarget.planner = self
     }
 
@@ -168,18 +179,13 @@ final class DayPlanPlannerState: ObservableObject {
         switch visibleRangeMode {
         case .day:
             return dayHourSpacing.hourHeight
-        case .week:
+        case .threeDays, .week:
             return DayPlanHourSpacing.standard.hourHeight
         }
     }
 
     var visibleRangeNavigationDayCount: Int {
-        switch visibleRangeMode {
-        case .day:
-            return 1
-        case .week:
-            return adaptiveWeekDayCount
-        }
+        visibleRangeMode.navigationDayCount
     }
 
     var canIncreaseDayHourSpacing: Bool {
@@ -202,44 +208,48 @@ final class DayPlanPlannerState: ObservableObject {
         dayHourSpacing = dayHourSpacing.previous
     }
 
-    static func adaptiveWeekDayCount(forAvailableWidth width: Double) -> Int {
-        guard width > 0 else { return 7 }
+    static func adaptiveVisibleRangeMode(forAvailableWidth width: Double) -> DayPlanVisibleRangeMode {
+        guard width > 0 else { return .week }
 
         let availableDayWidth = max(width - 64, 0)
         if availableDayWidth >= 7 * 150 {
-            return 7
+            return .week
         }
         if availableDayWidth >= 3 * 150 {
-            return 3
+            return .threeDays
         }
-        return 1
+        return .day
     }
 
-    func setAdaptiveWeekDayCount(
+    func setAdaptiveVisibleRangeMode(
         forAvailableWidth width: Double,
         calendar: Calendar,
         context: ModelContext
     ) {
         guard width > 0 else { return }
-        setAdaptiveWeekDayCount(
-            Self.adaptiveWeekDayCount(forAvailableWidth: width),
+        setAdaptiveVisibleRangeMode(
+            Self.adaptiveVisibleRangeMode(forAvailableWidth: width),
             calendar: calendar,
             context: context
         )
     }
 
-    func setAdaptiveWeekDayCount(
-        _ dayCount: Int,
+    func setAdaptiveVisibleRangeMode(
+        _ maximumMode: DayPlanVisibleRangeMode,
         calendar: Calendar,
         context: ModelContext
     ) {
-        let normalizedDayCount = Self.normalizedAdaptiveWeekDayCount(dayCount)
-        guard adaptiveWeekDayCount != normalizedDayCount else { return }
-
-        adaptiveWeekDayCount = normalizedDayCount
-        if visibleRangeMode == .week {
-            loadBlocks(calendar: calendar, context: context)
-        }
+        guard maximumAdaptiveVisibleRangeMode != maximumMode else { return }
+        maximumAdaptiveVisibleRangeMode = maximumMode
+        applyEffectiveVisibleRangeMode(
+            Self.effectiveVisibleRangeMode(
+                preferred: preferredVisibleRangeMode,
+                maximum: maximumAdaptiveVisibleRangeMode
+            ),
+            resetsVisibleDate: false,
+            calendar: calendar,
+            context: context
+        )
     }
 
     func loadBlocks(calendar: Calendar, context: ModelContext) {
@@ -977,6 +987,12 @@ final class DayPlanPlannerState: ObservableObject {
         switch visibleRangeMode {
         case .day:
             return [calendar.startOfDay(for: selectedDate)]
+        case .threeDays:
+            return rangeDates(
+                containing: visibleDate,
+                dayCount: DayPlanVisibleRangeMode.threeDays.visibleDayCount,
+                calendar: calendar
+            )
         case .week:
             return weekDates(calendar: calendar)
         }
@@ -992,7 +1008,11 @@ final class DayPlanPlannerState: ObservableObject {
     }
 
     func weekDates(calendar: Calendar) -> [Date] {
-        weekDates(containing: visibleDate, calendar: calendar)
+        rangeDates(
+            containing: visibleDate,
+            dayCount: DayPlanVisibleRangeMode.week.visibleDayCount,
+            calendar: calendar
+        )
     }
 
     func setVisibleRangeMode(
@@ -1000,10 +1020,16 @@ final class DayPlanPlannerState: ObservableObject {
         calendar: Calendar,
         context: ModelContext
     ) {
-        guard visibleRangeMode != mode else { return }
-        visibleRangeMode = mode
-        visibleDate = selectedDate
-        loadBlocks(calendar: calendar, context: context)
+        preferredVisibleRangeMode = mode
+        applyEffectiveVisibleRangeMode(
+            Self.effectiveVisibleRangeMode(
+                preferred: preferredVisibleRangeMode,
+                maximum: maximumAdaptiveVisibleRangeMode
+            ),
+            resetsVisibleDate: true,
+            calendar: calendar,
+            context: context
+        )
     }
 
     func moveVisibleRange(by value: Int, calendar: Calendar, context: ModelContext) {
@@ -1041,13 +1067,25 @@ final class DayPlanPlannerState: ObservableObject {
         switch visibleRangeMode {
         case .day:
             return selectedDate.formatted(.dateTime.weekday(.wide).month(.abbreviated).day().year())
+        case .threeDays:
+            return rangeTitle(
+                rangeDates(
+                    containing: visibleDate,
+                    dayCount: DayPlanVisibleRangeMode.threeDays.visibleDayCount,
+                    calendar: calendar
+                ),
+                calendar: calendar
+            )
         case .week:
             return weekTitle(calendar: calendar)
         }
     }
 
     func weekTitle(calendar: Calendar) -> String {
-        let dates = weekDates(calendar: calendar)
+        rangeTitle(weekDates(calendar: calendar), calendar: calendar)
+    }
+
+    func rangeTitle(_ dates: [Date], calendar: Calendar) -> String {
         guard let first = dates.first, let last = dates.last else {
             return selectedDate.formatted(date: .abbreviated, time: .omitted)
         }
@@ -1280,16 +1318,45 @@ final class DayPlanPlannerState: ObservableObject {
         }
     }
 
-    private func weekDates(containing date: Date, calendar: Calendar) -> [Date] {
+    @discardableResult
+    private func applyEffectiveVisibleRangeMode(
+        _ mode: DayPlanVisibleRangeMode,
+        resetsVisibleDate: Bool,
+        calendar: Calendar,
+        context: ModelContext
+    ) -> Bool {
+        let shouldResetVisibleDate = resetsVisibleDate || visibleRangeMode == .day || mode == .day
+        if shouldResetVisibleDate {
+            visibleDate = selectedDate
+        }
+
+        guard visibleRangeMode != mode else { return false }
+        visibleRangeMode = mode
+        loadBlocks(calendar: calendar, context: context)
+        return true
+    }
+
+    private func rangeDates(containing date: Date, dayCount: Int, calendar: Calendar) -> [Date] {
         let selectedDay = calendar.startOfDay(for: date)
-        let leadingDayCount = min(1, adaptiveWeekDayCount - 1)
+        let normalizedDayCount = Self.normalizedVisibleDayCount(dayCount)
+        let leadingDayCount = min(1, normalizedDayCount - 1)
         let startDay = calendar.date(byAdding: .day, value: -leadingDayCount, to: selectedDay) ?? selectedDay
-        return (0..<adaptiveWeekDayCount).compactMap { offset in
+        return (0..<normalizedDayCount).compactMap { offset in
             calendar.date(byAdding: .day, value: offset, to: startDay)
         }
     }
 
-    private static func normalizedAdaptiveWeekDayCount(_ dayCount: Int) -> Int {
+    private static func effectiveVisibleRangeMode(
+        preferred: DayPlanVisibleRangeMode,
+        maximum: DayPlanVisibleRangeMode
+    ) -> DayPlanVisibleRangeMode {
+        if preferred.visibleDayCount <= maximum.visibleDayCount {
+            return preferred
+        }
+        return maximum
+    }
+
+    private static func normalizedVisibleDayCount(_ dayCount: Int) -> Int {
         if dayCount <= 1 {
             return 1
         }
