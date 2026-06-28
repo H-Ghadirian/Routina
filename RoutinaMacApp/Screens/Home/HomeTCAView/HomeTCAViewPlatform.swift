@@ -33,11 +33,16 @@ extension HomeTCAView {
             selectedSidebarMode: macSidebarModeBinding,
             locationSnapshot: store.locationSnapshot,
             searchText: searchTextBinding,
+            hasHomeFiltersApplied: macHasAnyHomeFiltersApplied,
+            isHomeFilterDetailPresented: store.isMacFilterDetailPresented,
             focusStartTaskCount: homeToolbarFocusStartTaskCount,
             activePlanFocusSession: homeToolbarActivePlanFocusSession,
             isPlanFocusStartDisabled: homeToolbarIsPlanFocusStartDisabled,
             onPlaceCheckInMapRequested: {
                 openMacPlacesWorkspace()
+            },
+            onToggleHomeFilters: {
+                toggleMacHomeFilterDetailFromToolbar()
             },
             onAddEvent: openAddEvent,
             onAddEmotion: openAddEmotion,

@@ -16,10 +16,13 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     @Binding var selectedSidebarMode: HomeFeature.MacSidebarMode
     let locationSnapshot: LocationSnapshot
     @Binding var searchText: String
+    let hasHomeFiltersApplied: Bool
+    let isHomeFilterDetailPresented: Bool
     let focusStartTaskCount: Int
     let activePlanFocusSession: FocusSession?
     let isPlanFocusStartDisabled: Bool
     let onPlaceCheckInMapRequested: () -> Void
+    let onToggleHomeFilters: () -> Void
     let onAddEvent: () -> Void
     let onAddEmotion: () -> Void
     let onAddNote: () -> Void
@@ -72,6 +75,14 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
 
         ToolbarItem(placement: .navigation) {
             HomeMacToolbarSearchField(text: $searchText)
+        }
+
+        ToolbarItem(placement: .navigation) {
+            HomeMacToolbarFilterButton(
+                hasActiveFilters: hasHomeFiltersApplied,
+                isPresented: isHomeFilterDetailPresented,
+                onToggle: onToggleHomeFilters
+            )
         }
 
         if let activePlanFocusSession {
@@ -132,6 +143,29 @@ private struct HomeMacToolbarSearchField: View {
         .frame(width: 300, height: 28)
         .help("Search all tasks and timeline")
         .accessibilityLabel("Search all tasks and timeline")
+    }
+}
+
+private struct HomeMacToolbarFilterButton: View {
+    let hasActiveFilters: Bool
+    let isPresented: Bool
+    let onToggle: () -> Void
+
+    var body: some View {
+        Button(action: onToggle) {
+            Image(systemName: hasActiveFilters ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(isPresented || hasActiveFilters ? Color.accentColor : Color.secondary)
+                .frame(width: 30, height: 28)
+                .background {
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(isPresented ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.07))
+                }
+                .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Filters")
+        .help("Filters")
     }
 }
 

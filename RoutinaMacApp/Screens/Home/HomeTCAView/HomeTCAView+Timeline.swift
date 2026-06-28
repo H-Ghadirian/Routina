@@ -487,84 +487,91 @@ extension HomeTCAView {
             onAvailableTagsChange: { validateSelectedTimelineTag() },
             availableTags: availableTimelineTags
         ) {
-            HomeMacTimelineFiltersDetailView(
-                selectedRange: Binding(
-                    get: { store.selectedTimelineRange },
-                    set: { store.send(.selectedTimelineRangeChanged($0)) }
-                ),
-                selectedType: Binding(
-                    get: { effectiveMacTimelineFilterType },
-                    set: {
-                        store.send(.selectedTimelineFilterTypeChanged(
-                            $0.normalized(
-                                includingEventEmotion: areMacEventEmotionActionsEnabled,
-                                includingPlaces: isPlacesEnabled,
-                                includingNotes: isNotesEnabled,
-                                includingAway: isAwayEnabled
-                            )
-                        ))
-                    }
-                ),
-                selectedImportanceUrgencyFilter: Binding(
-                    get: { store.selectedTimelineImportanceUrgencyFilter },
-                    set: { store.send(.selectedTimelineImportanceUrgencyFilterChanged($0)) }
-                ),
-                selectedMediaFilter: Binding(
-                    get: { store.selectedTimelineMediaFilter },
-                    set: { store.send(.selectedTimelineMediaFilterChanged($0)) }
-                ),
-                timelineRowVisibility: timelineRowVisibility,
-                showsTypeSection: showsMacTimelineTypeFilterSection,
-                importanceUrgencySummary: timelineImportanceUrgencySummary,
-                allTagsCount: filteredTimelineEntriesForTagging.count,
-                availableTags: availableTimelineTags,
-                suggestedRelatedTags: suggestedRelatedTimelineTags,
-                availableExcludeTags: availableTimelineExcludeTags,
-                selectedTags: store.selectedTimelineTags,
-                includeTagMatchMode: store.selectedTimelineIncludeTagMatchMode,
-                excludeTagMatchMode: store.selectedTimelineExcludeTagMatchMode,
-                selectedExcludedTags: store.selectedTimelineExcludedTags,
-                tagSelectionSummary: timelineTagSelectionSummary,
-                excludedTagSummary: timelineExcludedTagSummary,
-                tagCount: { tag in
-                    timelineTagCount(for: tag)
-                },
-                tagColor: { tag in
-                    timelineTagColor(for: tag)
-                },
-                onSelectTags: { tags in
-                    relatedTimelineTagSuggestionAnchor = tags.sorted().last
-                    store.send(.selectedTimelineTagsChanged(tags))
-                },
-                onIncludeTagMatchModeChange: { mode in
-                    store.send(.selectedTimelineIncludeTagMatchModeChanged(mode))
-                },
-                onSelectSuggestedTag: { tag in
-                    var selected = store.selectedTimelineTags
-                    selected.insert(tag)
-                    store.send(.selectedTimelineTagsChanged(selected))
-                },
-                onExcludeTagMatchModeChange: { mode in
-                    store.send(.selectedTimelineExcludeTagMatchModeChanged(mode))
-                },
-                onToggleExcludedTag: { tag in
-                    if store.selectedTimelineExcludedTags.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
-                        store.send(.selectedTimelineExcludedTagsChanged(store.selectedTimelineExcludedTags.filter { $0 != tag }))
-                    } else {
-                        var newTags = store.selectedTimelineExcludedTags
-                        newTags.insert(tag)
-                        store.send(.selectedTimelineExcludedTagsChanged(newTags))
-                        store.send(.selectedTimelineTagsChanged(store.selectedTimelineTags.filter { !RoutineTag.contains($0, in: [tag]) }))
-                    }
-                },
-                onTimelineRowFieldVisibilityChanged: { field, isVisible in
-                    settingsStore.send(.timelineRowFieldVisibilityChanged(field, isVisible))
-                },
-                includesEventEmotionFilters: areMacEventEmotionActionsEnabled,
-                includesPlaceFilters: isPlacesEnabled,
-                includesNoteFilters: isNotesEnabled,
-                includesAwayFilters: isAwayEnabled
-            )
+            macTimelineFiltersDetailContent
+        }
+    }
+
+    var macTimelineFiltersDetailContent: some View {
+        HomeMacTimelineFiltersDetailView(
+            selectedRange: Binding(
+                get: { store.selectedTimelineRange },
+                set: { store.send(.selectedTimelineRangeChanged($0)) }
+            ),
+            selectedType: Binding(
+                get: { effectiveMacTimelineFilterType },
+                set: {
+                    store.send(.selectedTimelineFilterTypeChanged(
+                        $0.normalized(
+                            includingEventEmotion: areMacEventEmotionActionsEnabled,
+                            includingPlaces: isPlacesEnabled,
+                            includingNotes: isNotesEnabled,
+                            includingAway: isAwayEnabled
+                        )
+                    ))
+                }
+            ),
+            selectedImportanceUrgencyFilter: Binding(
+                get: { store.selectedTimelineImportanceUrgencyFilter },
+                set: { store.send(.selectedTimelineImportanceUrgencyFilterChanged($0)) }
+            ),
+            selectedMediaFilter: Binding(
+                get: { store.selectedTimelineMediaFilter },
+                set: { store.send(.selectedTimelineMediaFilterChanged($0)) }
+            ),
+            timelineRowVisibility: timelineRowVisibility,
+            showsTypeSection: showsMacTimelineTypeFilterSection,
+            importanceUrgencySummary: timelineImportanceUrgencySummary,
+            allTagsCount: filteredTimelineEntriesForTagging.count,
+            availableTags: availableTimelineTags,
+            suggestedRelatedTags: suggestedRelatedTimelineTags,
+            availableExcludeTags: availableTimelineExcludeTags,
+            selectedTags: store.selectedTimelineTags,
+            includeTagMatchMode: store.selectedTimelineIncludeTagMatchMode,
+            excludeTagMatchMode: store.selectedTimelineExcludeTagMatchMode,
+            selectedExcludedTags: store.selectedTimelineExcludedTags,
+            tagSelectionSummary: timelineTagSelectionSummary,
+            excludedTagSummary: timelineExcludedTagSummary,
+            tagCount: { tag in
+                timelineTagCount(for: tag)
+            },
+            tagColor: { tag in
+                timelineTagColor(for: tag)
+            },
+            onSelectTags: { tags in
+                relatedTimelineTagSuggestionAnchor = tags.sorted().last
+                store.send(.selectedTimelineTagsChanged(tags))
+            },
+            onIncludeTagMatchModeChange: { mode in
+                store.send(.selectedTimelineIncludeTagMatchModeChanged(mode))
+            },
+            onSelectSuggestedTag: { tag in
+                var selected = store.selectedTimelineTags
+                selected.insert(tag)
+                store.send(.selectedTimelineTagsChanged(selected))
+            },
+            onExcludeTagMatchModeChange: { mode in
+                store.send(.selectedTimelineExcludeTagMatchModeChanged(mode))
+            },
+            onToggleExcludedTag: { tag in
+                if store.selectedTimelineExcludedTags.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
+                    store.send(.selectedTimelineExcludedTagsChanged(store.selectedTimelineExcludedTags.filter { $0 != tag }))
+                } else {
+                    var newTags = store.selectedTimelineExcludedTags
+                    newTags.insert(tag)
+                    store.send(.selectedTimelineExcludedTagsChanged(newTags))
+                    store.send(.selectedTimelineTagsChanged(store.selectedTimelineTags.filter { !RoutineTag.contains($0, in: [tag]) }))
+                }
+            },
+            onTimelineRowFieldVisibilityChanged: { field, isVisible in
+                settingsStore.send(.timelineRowFieldVisibilityChanged(field, isVisible))
+            },
+            includesEventEmotionFilters: areMacEventEmotionActionsEnabled,
+            includesPlaceFilters: isPlacesEnabled,
+            includesNoteFilters: isNotesEnabled,
+            includesAwayFilters: isAwayEnabled
+        )
+        .onChange(of: availableTimelineTags) { _, _ in
+            validateSelectedTimelineTag()
         }
     }
 

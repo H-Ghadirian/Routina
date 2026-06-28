@@ -24,7 +24,7 @@ extension HomeTCAView {
 
     var macSidebarNavigationTitle: String {
         if store.isMacFilterDetailPresented {
-            return macFilterDetailTitle
+            return "Filters"
         }
 
         if isMacSegmentedBoardMode {
@@ -113,19 +113,31 @@ extension HomeTCAView {
     var macHasCustomFiltersApplied: Bool {
         switch visibleMacSidebarMode {
         case .timeline:
-            return store.selectedTimelineRange != .all
-                || store.selectedTimelineFilterType != .all
-                || !store.selectedTimelineTags.isEmpty
-                || store.selectedTimelineImportanceUrgencyFilter != nil
-                || store.selectedTimelineMediaFilter != .all
-                || !store.selectedTimelineExcludedTags.isEmpty
+            return macHasTimelineFiltersApplied
         case .routines, .board:
-            return store.taskListMode != .all
-                || store.selectedFilter != .all
-                || macHomeFilterPresentation.hasActiveOptionalFilters
+            return macHasTaskListFiltersApplied
         case .goals, .adventure, .stats, .settings, .addTask:
             return false
         }
+    }
+
+    var macHasAnyHomeFiltersApplied: Bool {
+        macHasTaskListFiltersApplied || macHasTimelineFiltersApplied
+    }
+
+    private var macHasTaskListFiltersApplied: Bool {
+        store.taskListMode != .all
+            || store.selectedFilter != .all
+            || macHomeFilterPresentation.hasActiveOptionalFilters
+    }
+
+    private var macHasTimelineFiltersApplied: Bool {
+        store.selectedTimelineRange != .all
+            || store.selectedTimelineFilterType != .all
+            || !store.selectedTimelineTags.isEmpty
+            || store.selectedTimelineImportanceUrgencyFilter != nil
+            || store.selectedTimelineMediaFilter != .all
+            || !store.selectedTimelineExcludedTags.isEmpty
     }
 
     var macExcludeTagsForCurrentMode: Binding<Set<String>> {
@@ -211,6 +223,16 @@ extension HomeTCAView {
             store.send(.selectedFilterChanged(.all))
             store.send(.clearOptionalFilters)
         }
+    }
+
+    func toggleMacHomeFilterDetailFromToolbar() {
+        if store.isMacFilterDetailPresented {
+            store.send(.setMacFilterDetailPresented(false))
+            return
+        }
+
+        macFilterDetailScope = isMacTimelineMode ? .timeline : .taskList
+        store.send(.setMacFilterDetailPresented(true))
     }
 
     var macSidebarModeBinding: Binding<MacSidebarMode> {
@@ -840,6 +862,7 @@ extension HomeTCAView {
             isBoardMode: isMacBoardSidebarPresented,
             isGoalsMode: isMacGoalsMode,
             isTimelineMode: isMacTimelineMode,
+            showsSearchPanelContent: isMacGoalsMode || macHasCustomFiltersApplied,
             onSelectTaskListMode: { mode in
                 store.send(.taskListModeChanged(mode))
             }
@@ -1018,10 +1041,6 @@ extension HomeTCAView {
         HomeMacSearchPanelView(
             hasCustomFiltersApplied: macHasCustomFiltersApplied,
             activeFiltersSummary: macSidebarSearchFiltersSummary,
-            isFilterDetailPresented: store.isMacFilterDetailPresented,
-            onToggleFilters: {
-                store.send(.setMacFilterDetailPresented(!store.isMacFilterDetailPresented))
-            },
             onClearFilters: {
                 clearAllMacFilters()
             }
@@ -1037,11 +1056,33 @@ extension HomeTCAView {
 
     @ViewBuilder
     var macActiveFiltersDetailView: some View {
-        if isMacTimelineMode {
-            macTimelineFiltersDetailView
-        } else {
-            macFiltersDetailView
+        HomeMacFilterDetailContainerView(
+            title: "Filters",
+            showsTitle: false
+        ) {
+            macHomeFilterScopePicker
+
+            switch macFilterDetailScope {
+            case .taskList:
+                macFiltersDetailContent
+            case .timeline:
+                macTimelineFiltersDetailContent
+            }
         }
+    }
+
+    private var macHomeFilterScopePicker: some View {
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Filter scope",
+            options: HomeMacFilterDetailScope.allCases,
+            selection: $macFilterDetailScope,
+            minimumSegmentWidth: 136,
+            fillsAvailableWidth: true
+        ) { scope in
+            Label(scope.title, systemImage: scope.systemImage)
+        }
+        .frame(width: 360)
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 
     var macFiltersDetailView: some View {
@@ -1049,49 +1090,53 @@ extension HomeTCAView {
             title: macFilterDetailTitle,
             showsTitle: false
         ) {
-            HomeMacRoutineFiltersDetailView(
-                availableFilters: macAvailableFilters,
-                taskListMode: macFilterTaskListModeBinding,
-                selectedFilter: homeFilterBindings.selectedFilter,
-                advancedQuery: homeFilterBindings.advancedQuery,
-                taskListViewMode: homeFilterBindings.taskListViewMode,
-                routineListSectioningMode: homeFilterBindings.routineListSectioningMode,
-                taskListSortOrder: homeFilterBindings.taskListSortOrder,
-                createdDateFilter: homeFilterBindings.createdDateFilter,
-                hideAssumedDoneTasks: homeFilterBindings.hideAssumedDoneTasks,
-                showArchivedTasks: homeFilterBindings.showArchivedTasks,
-                selectedImportanceUrgencyFilter: homeFilterBindings.selectedImportanceUrgencyFilter,
-                selectedPressureFilter: homeFilterBindings.selectedPressureFilter,
-                selectedGoalFilter: homeFilterBindings.selectedGoalFilter,
-                selectedMediaFilter: homeFilterBindings.selectedMediaFilter,
-                selectedTodoStateFilter: homeFilterBindings.selectedTodoStateFilter,
-                taskRowVisibility: taskRowVisibility,
-                queryOptions: HomeAdvancedQueryOptions(
-                    tags: homeTagFilterData.tagSummaries.map(\.name),
-                    places: isPlacesEnabled ? sortedRoutinePlaces.map(\.displayName) : []
-                ),
-                importanceUrgencySummary: importanceUrgencyFilterSummary,
-                showsGoalFilter: isGoalsTabEnabled,
-                showsTagSection: homeTagFilterData.hasTags,
-                showsPlaceSection: isPlacesEnabled && hasPlaceAwareContent,
-                onTaskRowFieldVisibilityChanged: { field, isVisible in
-                    settingsStore.send(.taskRowFieldVisibilityChanged(field, isVisible))
-                }
-            ) {
-                tagFilterBar
-            } placeSectionContent: {
-                MacPlaceFilterPanel(
-                    options: macPlaceFilterOptions,
-                    selectedPlaceID: homeFilterBindings.selectedPlaceID,
-                    hideUnavailableRoutines: homeFilterBindings.hideUnavailableRoutines,
-                    showAvailabilityToggle: hasPlaceLinkedRoutines && store.locationSnapshot.authorizationStatus.isAuthorized,
-                    currentLocation: store.locationSnapshot.coordinate,
-                    taskListMode: store.taskListMode,
-                    manualPlaceFilterDescription: manualPlaceFilterDescription,
-                    locationStatusText: hasPlaceLinkedRoutines ? locationStatusText : nil,
-                    onManagePlaces: { openSettingsPlacesInSidebar() }
-                )
+            macFiltersDetailContent
+        }
+    }
+
+    var macFiltersDetailContent: some View {
+        HomeMacRoutineFiltersDetailView(
+            availableFilters: macAvailableFilters,
+            taskListMode: macFilterTaskListModeBinding,
+            selectedFilter: homeFilterBindings.selectedFilter,
+            advancedQuery: homeFilterBindings.advancedQuery,
+            taskListViewMode: homeFilterBindings.taskListViewMode,
+            routineListSectioningMode: homeFilterBindings.routineListSectioningMode,
+            taskListSortOrder: homeFilterBindings.taskListSortOrder,
+            createdDateFilter: homeFilterBindings.createdDateFilter,
+            hideAssumedDoneTasks: homeFilterBindings.hideAssumedDoneTasks,
+            showArchivedTasks: homeFilterBindings.showArchivedTasks,
+            selectedImportanceUrgencyFilter: homeFilterBindings.selectedImportanceUrgencyFilter,
+            selectedPressureFilter: homeFilterBindings.selectedPressureFilter,
+            selectedGoalFilter: homeFilterBindings.selectedGoalFilter,
+            selectedMediaFilter: homeFilterBindings.selectedMediaFilter,
+            selectedTodoStateFilter: homeFilterBindings.selectedTodoStateFilter,
+            taskRowVisibility: taskRowVisibility,
+            queryOptions: HomeAdvancedQueryOptions(
+                tags: homeTagFilterData.tagSummaries.map(\.name),
+                places: isPlacesEnabled ? sortedRoutinePlaces.map(\.displayName) : []
+            ),
+            importanceUrgencySummary: importanceUrgencyFilterSummary,
+            showsGoalFilter: isGoalsTabEnabled,
+            showsTagSection: homeTagFilterData.hasTags,
+            showsPlaceSection: isPlacesEnabled && hasPlaceAwareContent,
+            onTaskRowFieldVisibilityChanged: { field, isVisible in
+                settingsStore.send(.taskRowFieldVisibilityChanged(field, isVisible))
             }
+        ) {
+            tagFilterBar
+        } placeSectionContent: {
+            MacPlaceFilterPanel(
+                options: macPlaceFilterOptions,
+                selectedPlaceID: homeFilterBindings.selectedPlaceID,
+                hideUnavailableRoutines: homeFilterBindings.hideUnavailableRoutines,
+                showAvailabilityToggle: hasPlaceLinkedRoutines && store.locationSnapshot.authorizationStatus.isAuthorized,
+                currentLocation: store.locationSnapshot.coordinate,
+                taskListMode: store.taskListMode,
+                manualPlaceFilterDescription: manualPlaceFilterDescription,
+                locationStatusText: hasPlaceLinkedRoutines ? locationStatusText : nil,
+                onManagePlaces: { openSettingsPlacesInSidebar() }
+            )
         }
     }
 

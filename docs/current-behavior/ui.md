@@ -13,6 +13,7 @@ This page summarizes app-wide UI interaction behavior. Decision records explain 
 - [0299](../decisions/0299-constrain-mac-home-window-size.md)
 - [0302](../decisions/0302-minimize-fullscreen-mac-task-details-to-companion-pane.md)
 - [0306](../decisions/0306-use-day-planner-width-for-task-detail-inspector-fit.md)
+- [0312](../decisions/0312-move-mac-task-timeline-filter-entry-to-toolbar.md)
 
 ## Current Contract
 
@@ -20,5 +21,5 @@ This page summarizes app-wide UI interaction behavior. Decision records explain 
 - Native SwiftUI button styles may own their native hit areas.
 - Custom or plain buttons must make the intended button surface fill the target and define a matching `contentShape`.
 - Routina glass-backed cards, pills, and panels provide rounded hit shapes through their shared visual modifiers so new glass-backed buttons inherit the rule by default.
-- Mac Home shows an AppKit-backed toolbar search field beside the Focus Timer controls. It uses the shared Home search text so task lists, Timeline-style lists, Planner List mode's full Timeline surface, and task-backed Planner Calendar items can be searched from the top of the window. Task and Timeline sidebar filter surfaces do not render a second text field for that same shared search binding, and the toolbar field restores first responder after search updates so typing stays focused there.
+- Mac Home shows an AppKit-backed toolbar search field beside the Focus Timer controls. It uses the shared Home search text so task lists, Timeline-style lists, Planner List mode's full Timeline surface, and task-backed Planner Calendar items can be searched from the top of the window. A single toolbar filter button beside search opens Home-level Task List and Timeline filters in one segmented detail screen. Task and Timeline sidebars do not render duplicate search fields or filter icon buttons for that same toolbar area, though they may show active-filter summaries and clear actions. The toolbar field restores first responder after search updates so typing stays focused there.
 - On Mac, task detail presentation follows the active workspace. Mac Home opens at 1280 x 760 and cannot resize below 1200 x 720. When Planner is active, single-click task-list selection and Planner task selection open a right-side companion detail pane beside the calendar when the detail area can fit the fixed companion pane plus a Day-capable Planner surface. At tight widths, the Planner calendar can adapt down to a compact Day layout to make room for the pane. The companion pane has close and fullscreen controls, and it is mutually exclusive with Planner's internal right sidebar. Full Details opened from that fullscreen control has a minimize/return control that restores the companion pane; its close control still returns to Planner and clears the pane. Double-clicking a Mac task-list row opens the full Details surface.

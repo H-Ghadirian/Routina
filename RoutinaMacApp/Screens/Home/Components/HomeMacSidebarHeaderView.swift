@@ -6,6 +6,7 @@ struct HomeMacSidebarHeaderView<SearchPanel: View>: View {
     let isBoardMode: Bool
     let isGoalsMode: Bool
     let isTimelineMode: Bool
+    let showsSearchPanelContent: Bool
     let onSelectTaskListMode: (HomeFeature.TaskListMode) -> Void
     @AppStorage(
         UserDefaultBoolValueKey.appSettingHomeTaskListModeTabsVisible.rawValue,
@@ -41,6 +42,6 @@ struct HomeMacSidebarHeaderView<SearchPanel: View>: View {
     }
 
     private var showsSearchPanel: Bool {
-        isRoutinesMode || isBoardMode || isGoalsMode || isTimelineMode
+        showsSearchPanelContent && (isRoutinesMode || isBoardMode || isGoalsMode || isTimelineMode)
     }
 }

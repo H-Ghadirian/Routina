@@ -46,6 +46,31 @@ enum MacHomeProgressMode: String, CaseIterable, Identifiable {
     }
 }
 
+enum HomeMacFilterDetailScope: String, CaseIterable, Identifiable {
+    case taskList
+    case timeline
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .taskList:
+            return "Task List"
+        case .timeline:
+            return "Timeline"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .taskList:
+            return "checklist"
+        case .timeline:
+            return "clock.arrow.circlepath"
+        }
+    }
+}
+
 struct MacSidebarTaskScrollRequest: Equatable {
     enum Anchor: Equatable {
         case center
@@ -190,6 +215,7 @@ struct HomeTCAView: View {
     @State var draggedSection: FormSection?
     @State var macHomeDetailMode: MacHomeDetailMode = .defaultLandingMode
     @State var macHomeProgressMode: MacHomeProgressMode = .stats
+    @State var macFilterDetailScope: HomeMacFilterDetailScope = .taskList
     @State var selectedStatsDashboardScope: StatsDashboardScope = .all
     @State var macNavigationHistory = HomeMacNavigationHistory()
     @State var isRestoringMacNavigationHistory = false
