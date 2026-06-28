@@ -13,12 +13,20 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     let showsProgressModePicker: Bool
     let showsPlaces: Bool
     @Binding var progressMode: MacHomeProgressMode
+    @Binding var selectedSidebarMode: HomeFeature.MacSidebarMode
     let locationSnapshot: LocationSnapshot
     @Binding var searchText: String
     let focusStartTaskCount: Int
     let activePlanFocusSession: FocusSession?
     let isPlanFocusStartDisabled: Bool
     let onPlaceCheckInMapRequested: () -> Void
+    let onAddEvent: () -> Void
+    let onAddEmotion: () -> Void
+    let onAddNote: () -> Void
+    let onAddGoal: () -> Void
+    let onAddTask: () -> Void
+    let onCheckIn: () -> Void
+    let onStartAway: () -> Void
     let onTaskFocusDurationSelected: (TimeInterval) -> Void
     let onPausePlanFocus: (FocusSession) -> Void
     let onResumePlanFocus: (FocusSession) -> Void
@@ -86,6 +94,20 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
                     onTaskFocusDurationSelected: onTaskFocusDurationSelected
                 )
             }
+        }
+
+        ToolbarItem(placement: .navigation) {
+            HomeMacSidebarModeStripView(
+                selectedMode: $selectedSidebarMode,
+                presentationStyle: .toolbar,
+                onAddEvent: onAddEvent,
+                onAddEmotion: onAddEmotion,
+                onAddNote: onAddNote,
+                onAddGoal: onAddGoal,
+                onAddTask: onAddTask,
+                onCheckIn: onCheckIn,
+                onStartAway: onStartAway
+            )
         }
     }
 

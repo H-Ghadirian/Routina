@@ -759,9 +759,6 @@ extension HomeTCAView {
 
     private var macPlacesSidebarView: some View {
         VStack(spacing: 0) {
-            macPlacesSidebarHeader
-            Divider()
-
             PlaceCheckInMapSheet(
                 showsNavigationChrome: false,
                 showsInlineHeader: false,
@@ -772,24 +769,6 @@ extension HomeTCAView {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    }
-
-    private var macPlacesSidebarHeader: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HomeMacSidebarModeStripView(
-                selectedMode: macSidebarModeBinding,
-                onAddEvent: openAddEvent,
-                onAddEmotion: openAddEmotion,
-                onAddNote: openAddNote,
-                onAddGoal: openAddGoal,
-                onAddTask: openAddTask,
-                onCheckIn: openCheckInFromAddMenu,
-                onStartAway: openAwayFromAddMenu
-            )
-        }
-        .padding(.horizontal, 14)
-        .padding(.top, 10)
-        .padding(.bottom, 12)
     }
 
     var macFormSectionNav: some View {
@@ -856,7 +835,6 @@ extension HomeTCAView {
 
     var macSidebarHeader: some View {
         HomeMacSidebarHeaderView(
-            selectedSidebarMode: macSidebarModeBinding,
             selectedTaskListMode: store.taskListMode,
             isRoutinesMode: isMacRoutinesMode && !isMacSegmentedBoardMode,
             isBoardMode: isMacBoardSidebarPresented,
@@ -864,14 +842,7 @@ extension HomeTCAView {
             isTimelineMode: isMacTimelineMode,
             onSelectTaskListMode: { mode in
                 store.send(.taskListModeChanged(mode))
-            },
-            onAddEvent: openAddEvent,
-            onAddEmotion: openAddEmotion,
-            onAddNote: openAddNote,
-            onAddGoal: openAddGoal,
-            onAddTask: openAddTask,
-            onCheckIn: openCheckInFromAddMenu,
-            onStartAway: openAwayFromAddMenu
+            }
         ) {
             if isMacGoalsMode {
                 platformSearchField(searchText: goalsSearchTextBinding)

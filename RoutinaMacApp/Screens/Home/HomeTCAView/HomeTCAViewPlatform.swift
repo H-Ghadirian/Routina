@@ -30,6 +30,7 @@ extension HomeTCAView {
             showsProgressModePicker: showsProgressModePickerInToolbar,
             showsPlaces: isPlacesEnabled,
             progressMode: macHomeProgressModeBinding,
+            selectedSidebarMode: macSidebarModeBinding,
             locationSnapshot: store.locationSnapshot,
             searchText: searchTextBinding,
             focusStartTaskCount: homeToolbarFocusStartTaskCount,
@@ -38,6 +39,13 @@ extension HomeTCAView {
             onPlaceCheckInMapRequested: {
                 openMacPlacesWorkspace()
             },
+            onAddEvent: openAddEvent,
+            onAddEmotion: openAddEmotion,
+            onAddNote: openAddNote,
+            onAddGoal: openAddGoal,
+            onAddTask: openAddTask,
+            onCheckIn: openCheckInFromAddMenu,
+            onStartAway: openAwayFromAddMenu,
             onTaskFocusDurationSelected: { duration in
                 presentHomeToolbarFocusPicker(duration: duration)
             },
