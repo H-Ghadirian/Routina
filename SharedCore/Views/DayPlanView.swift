@@ -474,7 +474,9 @@ private struct DayPlanHeaderView: View {
     private var compactHeader: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .center, spacing: 10) {
-                todayButton
+                if shouldShowTodayButton {
+                    todayButton
+                }
                 rangeNavigationButtons
 
                 Spacer(minLength: 8)
@@ -494,10 +496,11 @@ private struct DayPlanHeaderView: View {
 
     private var plannerNavigationCluster: some View {
         HStack(alignment: .center, spacing: 10) {
-            todayButton
+            if shouldShowTodayButton {
+                todayButton
+            }
             rangeNavigationButtons
             visibleRangeModePicker
-                .frame(width: 128)
 
             if planner.visibleRangeMode == .day {
                 dayHourSpacingControls
@@ -516,10 +519,16 @@ private struct DayPlanHeaderView: View {
     }
 
     private var todayButton: some View {
-        Button("Today") {
+        Button("Show today") {
             planner.moveToToday(calendar: calendar, context: modelContext)
         }
         .buttonStyle(.bordered)
+    }
+
+    private var shouldShowTodayButton: Bool {
+        !planner.visibleDates(calendar: calendar).contains { date in
+            calendar.isDateInToday(date)
+        }
     }
 
     private var rangeNavigationButtons: some View {
@@ -674,38 +683,58 @@ private struct DayPlanHeaderView: View {
         ) { mode in
             Text(mode.title)
         }
+        .frame(width: 156)
         .accessibilityLabel("Planner range")
     }
 
     private var dayHourSpacingControls: some View {
-        HStack(spacing: 4) {
-            Button {
+        HStack(spacing: 6) {
+            dayHourSpacingButton(
+                systemName: "minus.magnifyingglass",
+                accessibilityLabel: "Decrease day hour spacing",
+                help: "Decrease hour spacing",
+                isEnabled: planner.canDecreaseDayHourSpacing
+            ) {
                 planner.decreaseDayHourSpacing()
-            } label: {
-                Image(systemName: "minus.magnifyingglass")
-                    .frame(width: 20, height: 20)
-                    .contentShape(Rectangle())
             }
-            .disabled(!planner.canDecreaseDayHourSpacing)
-            .accessibilityLabel("Decrease day hour spacing")
-            .help("Decrease hour spacing")
 
-            Button {
+            dayHourSpacingButton(
+                systemName: "plus.magnifyingglass",
+                accessibilityLabel: "Increase day hour spacing",
+                help: "Increase hour spacing",
+                isEnabled: planner.canIncreaseDayHourSpacing
+            ) {
                 planner.increaseDayHourSpacing()
-            } label: {
-                Image(systemName: "plus.magnifyingglass")
-                    .frame(width: 20, height: 20)
-                    .contentShape(Rectangle())
             }
-            .disabled(!planner.canIncreaseDayHourSpacing)
-            .accessibilityLabel("Increase day hour spacing")
-            .help("Increase hour spacing")
         }
-        .buttonStyle(.bordered)
-        .controlSize(.small)
+        .padding(.leading, 4)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Day hour spacing")
         .accessibilityValue("\(Int(planner.dayHourSpacing.hourHeight)) points per hour")
+    }
+
+    private func dayHourSpacingButton(
+        systemName: String,
+        accessibilityLabel: String,
+        help: String,
+        isEnabled: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(isEnabled ? Color.secondary : Color.secondary.opacity(0.45))
+                .frame(width: 32, height: 30)
+                .background {
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(Color.secondary.opacity(isEnabled ? 0.08 : 0.045))
+                }
+                .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .accessibilityLabel(accessibilityLabel)
+        .help(help)
     }
 
     private var visibleRangeModeBinding: Binding<DayPlanVisibleRangeMode> {
@@ -1785,14 +1814,10 @@ private struct DayPlanTimelinePanelContentView: View {
         )
 
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text(planner.visibleRangeMode.title)
-                    .font(.headline)
-                Spacer()
-                Text("\(DayPlanFormatting.durationText(max(planner.unplannedMinutes - renderSnapshot.selectedDayBlockedMinutes, 0))) open on selected day")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
+            Text("\(DayPlanFormatting.durationText(max(planner.unplannedMinutes - renderSnapshot.selectedDayBlockedMinutes, 0))) open on selected day")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .trailing)
 
             DayPlanWeekCalendarView(
                 dates: visibleDates,
