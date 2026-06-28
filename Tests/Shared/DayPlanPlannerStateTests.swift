@@ -40,6 +40,54 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func weekModeAdaptsVisibleDaysToAvailableWidth() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let selectedDate = try #require(date("2026-05-03T12:00:00Z"))
+        let planner = DayPlanPlannerState(selectedDate: selectedDate)
+
+        planner.setAdaptiveWeekDayCount(forAvailableWidth: 1_200, calendar: calendar, context: context)
+
+        #expect(planner.adaptiveWeekDayCount == 7)
+        #expect(planner.visibleDates(calendar: calendar).count == 7)
+
+        planner.setAdaptiveWeekDayCount(forAvailableWidth: 650, calendar: calendar, context: context)
+
+        #expect(planner.adaptiveWeekDayCount == 3)
+        #expect(planner.visibleDates(calendar: calendar) == [
+            try #require(date("2026-05-02T00:00:00Z")),
+            try #require(date("2026-05-03T00:00:00Z")),
+            try #require(date("2026-05-04T00:00:00Z")),
+        ])
+
+        planner.setAdaptiveWeekDayCount(forAvailableWidth: 420, calendar: calendar, context: context)
+
+        #expect(planner.adaptiveWeekDayCount == 1)
+        #expect(planner.visibleDates(calendar: calendar) == [
+            try #require(date("2026-05-03T00:00:00Z")),
+        ])
+    }
+
+    @Test
+    func weekModeNavigationUsesAdaptiveVisibleDayCount() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let selectedDate = try #require(date("2026-05-03T12:00:00Z"))
+        let expectedSelectedDate = try #require(date("2026-05-06T12:00:00Z"))
+        let planner = DayPlanPlannerState(selectedDate: selectedDate)
+
+        planner.setAdaptiveWeekDayCount(forAvailableWidth: 650, calendar: calendar, context: context)
+        planner.moveVisibleRange(by: 1, calendar: calendar, context: context)
+
+        #expect(planner.selectedDate == expectedSelectedDate)
+        #expect(planner.visibleDates(calendar: calendar) == [
+            try #require(date("2026-05-05T00:00:00Z")),
+            try #require(date("2026-05-06T00:00:00Z")),
+            try #require(date("2026-05-07T00:00:00Z")),
+        ])
+    }
+
+    @Test
     func dayHourSpacingOnlyExpandsDayModeCalendar() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

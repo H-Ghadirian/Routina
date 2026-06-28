@@ -575,7 +575,7 @@ private struct DayPlanHeaderView: View {
         case .day:
             return "Previous day"
         case .week:
-            return "Previous week"
+            return weekNavigationAccessibilityLabel(prefix: "Previous")
         }
     }
 
@@ -584,7 +584,18 @@ private struct DayPlanHeaderView: View {
         case .day:
             return "Next day"
         case .week:
-            return "Next week"
+            return weekNavigationAccessibilityLabel(prefix: "Next")
+        }
+    }
+
+    private func weekNavigationAccessibilityLabel(prefix: String) -> String {
+        switch planner.adaptiveWeekDayCount {
+        case 1:
+            return "\(prefix) day"
+        case 3:
+            return "\(prefix) 3 days"
+        default:
+            return "\(prefix) week"
         }
     }
 
@@ -1872,6 +1883,9 @@ private struct DayPlanTimelinePanelContentView: View {
                 },
                 showsActiveFocusBlocks: calendarFilterState.showsFocus && !activeFocusRenderSessions.isEmpty,
                 showsActiveSprintFocusBlocks: calendarFilterState.showsFocus && !activeSprintFocusSessions.isEmpty,
+                onCalendarWidthChanged: { width in
+                    updateAdaptiveWeekDayCount(for: width)
+                },
                 activeFocusSessionBlocks: { now in
                     guard calendarFilterState.showsFocus else { return [] }
                     let sessions = activeFocusRenderSessions.filter { session in
@@ -2216,6 +2230,16 @@ private struct DayPlanTimelinePanelContentView: View {
                 planner.showDate(date, calendar: calendar, context: modelContext)
             }
         )
+    }
+
+    private func updateAdaptiveWeekDayCount(for width: CGFloat) {
+#if os(macOS)
+        planner.setAdaptiveWeekDayCount(
+            forAvailableWidth: Double(width),
+            calendar: calendar,
+            context: modelContext
+        )
+#endif
     }
 
     private func filteredAllDayBlocks(

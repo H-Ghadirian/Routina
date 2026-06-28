@@ -23,6 +23,7 @@ struct DayPlanWeekCalendarView: View {
     var blockedIntervalsForDate: (Date) -> [DayPlanBlockedInterval] = { _ in [] }
     var showsActiveFocusBlocks = false
     var showsActiveSprintFocusBlocks = false
+    var onCalendarWidthChanged: (CGFloat) -> Void = { _ in }
     var activeFocusSessionBlocks: (Date) -> [DayPlanFocusSessionBlock] = { _ in [] }
     var activeSprintFocusBlocks: (Date) -> [DayPlanSprintFocusBlock] = { _ in [] }
     var allDayBlocks: [DayPlanAllDayBlock] = []
@@ -335,6 +336,17 @@ struct DayPlanWeekCalendarView: View {
             }
             }
             .frame(minWidth: 420)
+            .background {
+                GeometryReader { proxy in
+                    Color.clear
+                        .onAppear {
+                            onCalendarWidthChanged(proxy.size.width)
+                        }
+                        .onChange(of: proxy.size.width) { _, width in
+                            onCalendarWidthChanged(width)
+                        }
+                }
+            }
 
             plannerRightSidebar
         }

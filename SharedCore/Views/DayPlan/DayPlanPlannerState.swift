@@ -119,6 +119,7 @@ final class DayPlanPlannerState: ObservableObject {
     @Published var focusedUnplannedCompletedDate: Date?
     @Published var focusedSleep: DayPlanFocusedSleep?
     @Published var visibleRangeMode: DayPlanVisibleRangeMode
+    @Published private(set) var adaptiveWeekDayCount = 7
     @Published var dayHourSpacing: DayPlanHourSpacing = .standard
     @Published var highlightedBlockID: UUID?
     @Published var highlightedBlockScrollMinute: Int?
@@ -172,6 +173,15 @@ final class DayPlanPlannerState: ObservableObject {
         }
     }
 
+    var visibleRangeNavigationDayCount: Int {
+        switch visibleRangeMode {
+        case .day:
+            return 1
+        case .week:
+            return adaptiveWeekDayCount
+        }
+    }
+
     var canIncreaseDayHourSpacing: Bool {
         dayHourSpacing.next != dayHourSpacing
     }
@@ -190,6 +200,46 @@ final class DayPlanPlannerState: ObservableObject {
 
     func decreaseDayHourSpacing() {
         dayHourSpacing = dayHourSpacing.previous
+    }
+
+    static func adaptiveWeekDayCount(forAvailableWidth width: Double) -> Int {
+        guard width > 0 else { return 7 }
+
+        let availableDayWidth = max(width - 64, 0)
+        if availableDayWidth >= 7 * 150 {
+            return 7
+        }
+        if availableDayWidth >= 3 * 150 {
+            return 3
+        }
+        return 1
+    }
+
+    func setAdaptiveWeekDayCount(
+        forAvailableWidth width: Double,
+        calendar: Calendar,
+        context: ModelContext
+    ) {
+        guard width > 0 else { return }
+        setAdaptiveWeekDayCount(
+            Self.adaptiveWeekDayCount(forAvailableWidth: width),
+            calendar: calendar,
+            context: context
+        )
+    }
+
+    func setAdaptiveWeekDayCount(
+        _ dayCount: Int,
+        calendar: Calendar,
+        context: ModelContext
+    ) {
+        let normalizedDayCount = Self.normalizedAdaptiveWeekDayCount(dayCount)
+        guard adaptiveWeekDayCount != normalizedDayCount else { return }
+
+        adaptiveWeekDayCount = normalizedDayCount
+        if visibleRangeMode == .week {
+            loadBlocks(calendar: calendar, context: context)
+        }
     }
 
     func loadBlocks(calendar: Calendar, context: ModelContext) {
@@ -957,7 +1007,7 @@ final class DayPlanPlannerState: ObservableObject {
     }
 
     func moveVisibleRange(by value: Int, calendar: Calendar, context: ModelContext) {
-        let dayDelta = value * visibleRangeMode.navigationDayCount
+        let dayDelta = value * visibleRangeNavigationDayCount
         selectedDate = calendar.date(byAdding: .day, value: dayDelta, to: selectedDate) ?? selectedDate
         visibleDate = calendar.date(byAdding: .day, value: dayDelta, to: visibleDate) ?? visibleDate
         focusedSleep = nil
@@ -1000,6 +1050,10 @@ final class DayPlanPlannerState: ObservableObject {
         let dates = weekDates(calendar: calendar)
         guard let first = dates.first, let last = dates.last else {
             return selectedDate.formatted(date: .abbreviated, time: .omitted)
+        }
+
+        if calendar.isDate(first, inSameDayAs: last) {
+            return first.formatted(.dateTime.weekday(.wide).month(.abbreviated).day().year())
         }
 
         let firstText = first.formatted(.dateTime.month(.abbreviated).day())
@@ -1228,10 +1282,21 @@ final class DayPlanPlannerState: ObservableObject {
 
     private func weekDates(containing date: Date, calendar: Calendar) -> [Date] {
         let selectedDay = calendar.startOfDay(for: date)
-        let startDay = calendar.date(byAdding: .day, value: -1, to: selectedDay) ?? selectedDay
-        return (0..<7).compactMap { offset in
+        let leadingDayCount = min(1, adaptiveWeekDayCount - 1)
+        let startDay = calendar.date(byAdding: .day, value: -leadingDayCount, to: selectedDay) ?? selectedDay
+        return (0..<adaptiveWeekDayCount).compactMap { offset in
             calendar.date(byAdding: .day, value: offset, to: startDay)
         }
+    }
+
+    private static func normalizedAdaptiveWeekDayCount(_ dayCount: Int) -> Int {
+        if dayCount <= 1 {
+            return 1
+        }
+        if dayCount <= 3 {
+            return 3
+        }
+        return 7
     }
 
     private static func defaultSelectedDate(
