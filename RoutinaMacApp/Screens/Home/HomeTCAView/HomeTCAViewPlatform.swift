@@ -276,6 +276,7 @@ extension HomeTCAView {
                     showsPlaces: isPlacesEnabled,
                     mainDetailMode: mainDetailModeBinding,
                     isBoardInspectorPresented: macBoardInspectorPresentedBinding,
+                    taskDetailPanePlacement: $taskDetailPanePlacement,
                     placeCheckInSelectedPlaceID: $placeCheckInSelectedPlaceID,
                     placeCheckInSelectedHistoryMarkerID: $placeCheckInSelectedHistoryMarkerID,
                     selectedTaskID: store.selectedTaskID,
@@ -296,6 +297,8 @@ extension HomeTCAView {
                     onEditNote: openEditNote,
                     onDeleteNote: closeDeletedNote,
                     onToggleBoardInspector: toggleMacBoardTicketInspector,
+                    onExpandTaskDetails: expandTaskDetailPane,
+                    onCloseTaskDetails: closeTaskDetailPane,
                     addRoutineStore: self.store.scope(
                         state: \.addRoutineState,
                         action: \.addRoutineSheet
@@ -445,6 +448,9 @@ extension HomeTCAView {
                 isEmotionLogEditorPresented = false
                 isNoteEditorPresented = false
                 isAwayStartPresented = false
+                normalizeTaskDetailPanePlacement()
+            } else {
+                taskDetailPanePlacement = nil
             }
         }
         .onChange(of: store.macSidebarMode) { _, mode in
@@ -477,6 +483,7 @@ extension HomeTCAView {
         switch deepLink {
         case .task:
             macHomeDetailMode = .details
+            taskDetailPanePlacement = nil
         case .goal:
             break
         case let .note(noteID):
@@ -485,8 +492,10 @@ extension HomeTCAView {
             macTimelineSidebarScrollRequest = MacTimelineSidebarScrollRequest(entryID: eventID)
         case .sprint:
             macHomeDetailMode = MacHomeDetailMode.board.visibleSurfaceMode
+            taskDetailPanePlacement = nil
         case .sleep:
             macHomeDetailMode = .planner
+            taskDetailPanePlacement = nil
         }
     }
 
@@ -567,6 +576,7 @@ extension HomeTCAView {
     private func openQuickAddCreatedTask(_ toast: MacQuickAddCreatedToast) {
         quickAddCreatedToast = nil
         macHomeDetailMode = .details
+        taskDetailPanePlacement = nil
         RoutinaDeepLinkDispatcher.open(.task(toast.taskID))
     }
 

@@ -233,6 +233,7 @@ extension HomeTCAView {
         selectedNoteID = nil
         dayPlanUnplannedCompletedFilterDate = nil
         macHomeDetailMode = .planner
+        taskDetailPanePlacement = nil
         store.send(.setSelectedTask(nil))
         store.send(.macSidebarModeChanged(.routines))
         dayPlanPlanner.focusSleepSession(session, calendar: calendar, context: modelContext)

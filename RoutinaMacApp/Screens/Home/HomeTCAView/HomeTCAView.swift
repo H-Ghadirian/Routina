@@ -193,6 +193,7 @@ struct HomeTCAView: View {
     @State var selectedStatsDashboardScope: StatsDashboardScope = .all
     @State var macNavigationHistory = HomeMacNavigationHistory()
     @State var isRestoringMacNavigationHistory = false
+    @State var taskDetailPanePlacement: MacTaskDetailPanePlacement?
     @StateObject var dayPlanPlanner = DayPlanPlannerState()
     @StateObject var macTaskListPresentationCache = HomeMacTaskListPresentationCache()
     @State var dayPlanUnplannedCompletedFilterDate: Date?
@@ -327,6 +328,7 @@ homeContent
                     if mode.visibleSurfaceMode != .planner {
                         dayPlanPlanner.clearPlannerUndo()
                     }
+                    normalizeTaskDetailPanePlacement()
                 }
                 .onChange(of: store.macSidebarMode) { _, mode in
                     if mode != .routines {
@@ -370,10 +372,13 @@ homeContent
         switch deepLink {
         case .task:
             macHomeDetailMode = .details
+            taskDetailPanePlacement = nil
         case .sprint:
             macHomeDetailMode = MacHomeDetailMode.board.visibleSurfaceMode
+            taskDetailPanePlacement = nil
         case .sleep:
             macHomeDetailMode = .planner
+            taskDetailPanePlacement = nil
         case .goal, .note, .event:
             break
         }

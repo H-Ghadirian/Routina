@@ -361,9 +361,11 @@ struct DayPlanDetailView: View {
     @Environment(\.calendar) private var calendar
     @ObservedObject var planner: DayPlanPlannerState
     var selectedTaskID: UUID? = nil
+    var isTaskDetailInspectorPresented = false
     var onSelectUnplannedCompletedDate: ((Date) -> Void)? = nil
     var onOpenTaskDetails: ((UUID) -> Void)? = nil
     var onOpenEventDetails: ((UUID) -> Void)? = nil
+    var onPlannerSidebarPresentationRequested: (() -> Void)? = nil
     @State private var calendarFilters = DayPlanCalendarFilterState()
     @State private var isCalendarFilterSidebarPresented = false
     @State private var isDatePickerSidebarPresented = false
@@ -385,7 +387,11 @@ struct DayPlanDetailView: View {
                 onOpenEventDetails: onOpenEventDetails,
                 calendarFilters: $calendarFilters,
                 isCalendarFilterSidebarPresented: $isCalendarFilterSidebarPresented,
-                isDatePickerSidebarPresented: $isDatePickerSidebarPresented
+                isDatePickerSidebarPresented: $isDatePickerSidebarPresented,
+                isExternalInspectorPresented: isTaskDetailInspectorPresented,
+                onSidebarPresentationRequested: {
+                    onPlannerSidebarPresentationRequested?()
+                }
             )
         }
         .padding(20)
@@ -397,6 +403,18 @@ struct DayPlanDetailView: View {
         }
         .onChange(of: tasks.map(\.id)) { _, _ in
             syncSelectedTask()
+        }
+        .onChange(of: isTaskDetailInspectorPresented) { _, isPresented in
+            guard isPresented else { return }
+            dismissPlannerSidebars()
+        }
+        .onChange(of: isCalendarFilterSidebarPresented) { _, isPresented in
+            guard isPresented else { return }
+            onPlannerSidebarPresentationRequested?()
+        }
+        .onChange(of: isDatePickerSidebarPresented) { _, isPresented in
+            guard isPresented else { return }
+            onPlannerSidebarPresentationRequested?()
         }
     }
 
@@ -410,6 +428,11 @@ struct DayPlanDetailView: View {
             planner.selectedBlockID = nil
         }
         planner.selectTask(task)
+    }
+
+    private func dismissPlannerSidebars() {
+        isCalendarFilterSidebarPresented = false
+        isDatePickerSidebarPresented = false
     }
 }
 
@@ -708,6 +731,8 @@ private struct DayPlanTimelinePanelView: View {
     var calendarFilters: Binding<DayPlanCalendarFilterState> = .constant(DayPlanCalendarFilterState())
     var isCalendarFilterSidebarPresented: Binding<Bool> = .constant(false)
     var isDatePickerSidebarPresented: Binding<Bool> = .constant(false)
+    var isExternalInspectorPresented = false
+    var onSidebarPresentationRequested: (() -> Void)? = nil
     @State private var dataSnapshot = DayPlanTimelineDataSnapshot()
     @StateObject private var timelinePlacementCache = DayPlanTimelinePlacementCache()
     @StateObject private var allDayBlocksCache = DayPlanAllDayBlocksCache()
@@ -754,7 +779,9 @@ private struct DayPlanTimelinePanelView: View {
             renderSnapshotCache: renderSnapshotCache,
             calendarFilters: calendarFilters,
             isCalendarFilterSidebarPresented: isCalendarFilterSidebarPresented,
-            isDatePickerSidebarPresented: isDatePickerSidebarPresented
+            isDatePickerSidebarPresented: isDatePickerSidebarPresented,
+            isExternalInspectorPresented: isExternalInspectorPresented,
+            onSidebarPresentationRequested: onSidebarPresentationRequested
         )
         .task {
             refreshTimelineDataSnapshot()
@@ -1681,6 +1708,8 @@ private struct DayPlanTimelinePanelContentView: View {
     var calendarFilters: Binding<DayPlanCalendarFilterState> = .constant(DayPlanCalendarFilterState())
     var isCalendarFilterSidebarPresented: Binding<Bool> = .constant(false)
     var isDatePickerSidebarPresented: Binding<Bool> = .constant(false)
+    var isExternalInspectorPresented = false
+    var onSidebarPresentationRequested: (() -> Void)? = nil
     @State private var selectedEventID: UUID?
     @State private var allocatingPlanFocusSession: DayPlanFocusAllocationPresentation?
     @AppStorage(
@@ -2079,6 +2108,7 @@ private struct DayPlanTimelinePanelContentView: View {
                                 onOpenTaskDetails != nil && currentTaskIDs.contains(taskID)
                             },
                             onOpenTaskDetails: { taskID in
+                                dismiss()
                                 onOpenTaskDetails?(taskID)
                             },
                             onDismiss: dismiss
@@ -2108,7 +2138,9 @@ private struct DayPlanTimelinePanelContentView: View {
                             onDismiss: dismiss
                         )
                     )
-                }
+                },
+                isExternalInspectorPresented: isExternalInspectorPresented,
+                onSidebarPresentationRequested: onSidebarPresentationRequested
             )
         }
         .dayPlanLifecycle(

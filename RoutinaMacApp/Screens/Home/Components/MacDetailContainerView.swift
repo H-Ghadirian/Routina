@@ -21,6 +21,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     let showsPlaces: Bool
     @Binding var mainDetailMode: MacHomeDetailMode
     @Binding var isBoardInspectorPresented: Bool
+    @Binding var taskDetailPanePlacement: MacTaskDetailPanePlacement?
     @Binding var placeCheckInSelectedPlaceID: UUID?
     @Binding var placeCheckInSelectedHistoryMarkerID: PlaceCheckInHistoryMapMarker.ID?
     let selectedTaskID: UUID?
@@ -37,6 +38,8 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
     let onEditNote: (UUID) -> Void
     let onDeleteNote: (UUID) -> Void
     let onToggleBoardInspector: () -> Void
+    let onExpandTaskDetails: () -> Void
+    let onCloseTaskDetails: () -> Void
     let addRoutineStore: StoreOf<AddRoutineFeature>?
     @ViewBuilder let filterView: () -> FilterView
     @ViewBuilder let boardView: () -> BoardView
@@ -77,8 +80,16 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
 
     @ViewBuilder
     private var mainDetailContent: some View {
-        mainDetailBody
+        HStack(spacing: 0) {
+            if shouldShowListTaskDetailPane {
+                taskDetailPane(edge: .leading)
+            }
+
+            mainDetailBody
+                .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity)
+        }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .animation(.easeInOut(duration: 0.22), value: shouldShowListTaskDetailPane)
     }
 
     @ViewBuilder
@@ -88,13 +99,7 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
             case .details:
                 selectedTaskDetailContent
             case .planner:
-                DayPlanDetailView(
-                    planner: dayPlanPlanner,
-                    selectedTaskID: selectedTaskID,
-                    onSelectUnplannedCompletedDate: onSelectDayPlanUnplannedCompletedDate,
-                    onOpenTaskDetails: onOpenDayPlanTaskDetails,
-                    onOpenEventDetails: onOpenEventDetails
-                )
+                plannerDetailContent
             case .board:
                 boardDetailContent
             case .places:
@@ -106,6 +111,101 @@ struct MacDetailContainerView<FilterView: View, BoardView: View, BoardInspectorV
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var plannerDetailContent: some View {
+        HStack(spacing: 0) {
+            DayPlanDetailView(
+                planner: dayPlanPlanner,
+                selectedTaskID: selectedTaskID,
+                isTaskDetailInspectorPresented: shouldShowPlannerTaskDetailPane,
+                onSelectUnplannedCompletedDate: onSelectDayPlanUnplannedCompletedDate,
+                onOpenTaskDetails: onOpenDayPlanTaskDetails,
+                onOpenEventDetails: onOpenEventDetails,
+                onPlannerSidebarPresentationRequested: onCloseTaskDetails
+            )
+            .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity)
+
+            if shouldShowPlannerTaskDetailPane {
+                taskDetailPane(edge: .trailing)
+            }
+        }
+        .animation(.easeInOut(duration: 0.22), value: shouldShowPlannerTaskDetailPane)
+    }
+
+    private var shouldShowListTaskDetailPane: Bool {
+        taskDetailPanePlacement == .listAdjacent
+            && selectedTaskID != nil
+            && mainDetailMode.visibleSurfaceMode != .details
+            && mainDetailMode.visibleSurfaceMode != .planner
+    }
+
+    private var shouldShowPlannerTaskDetailPane: Bool {
+        taskDetailPanePlacement == .plannerAdjacent
+            && selectedTaskID != nil
+            && mainDetailMode.visibleSurfaceMode == .planner
+    }
+
+    private func taskDetailPane(edge: Edge) -> some View {
+        VStack(spacing: 0) {
+            taskDetailPaneHeader
+            Divider()
+            selectedTaskDetailContent
+        }
+        .frame(width: 420)
+        .frame(maxHeight: .infinity)
+        .background(Color.secondary.opacity(0.045))
+        .overlay(alignment: edge == .leading ? .trailing : .leading) {
+            Divider()
+        }
+        .transition(.move(edge: edge).combined(with: .opacity))
+    }
+
+    private var taskDetailPaneHeader: some View {
+        HStack(spacing: 10) {
+            Label("Task Details", systemImage: "sidebar.right")
+                .font(.headline)
+                .lineLimit(1)
+
+            Spacer(minLength: 8)
+
+            taskDetailPaneButton(
+                systemName: "arrow.up.left.and.arrow.down.right",
+                title: "Open Fullscreen"
+            ) {
+                onExpandTaskDetails()
+            }
+
+            taskDetailPaneButton(
+                systemName: "xmark",
+                title: "Close"
+            ) {
+                onCloseTaskDetails()
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+    }
+
+    private func taskDetailPaneButton(
+        systemName: String,
+        title: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.secondary)
+                .frame(width: 30, height: 30)
+                .background {
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(Color.secondary.opacity(0.08))
+                }
+                .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .help(title)
     }
 
     private var placesDetailContent: some View {

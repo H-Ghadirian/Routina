@@ -104,6 +104,57 @@ struct HomeMacNavigationHistoryTests {
         #expect(board.detailMode == .details)
     }
 
+    @Test
+    func taskDetailPanePlacementRequiresSelectedTaskAndCompatibleDetailMode() {
+        let key = UserDefaultBoolValueKey.appSettingBoardScreenEnabled.rawValue
+        let previousValue = SharedDefaults.app.object(forKey: key)
+        defer {
+            if let previousValue {
+                SharedDefaults.app.set(previousValue, forKey: key)
+            } else {
+                SharedDefaults.app.removeObject(forKey: key)
+            }
+        }
+
+        SharedDefaults.app[.appSettingBoardScreenEnabled] = true
+        let taskID = UUID()
+
+        let plannerPane = snapshot(
+            sidebarSelection: .task(taskID),
+            selectedTaskID: taskID,
+            detailMode: .planner,
+            taskDetailPanePlacement: .plannerAdjacent
+        )
+        let listPane = snapshot(
+            sidebarSelection: .task(taskID),
+            selectedTaskID: taskID,
+            detailMode: .board,
+            taskDetailPanePlacement: .listAdjacent
+        )
+        let listPaneInPlanner = snapshot(
+            sidebarSelection: .task(taskID),
+            selectedTaskID: taskID,
+            detailMode: .planner,
+            taskDetailPanePlacement: .listAdjacent
+        )
+        let detailsPane = snapshot(
+            sidebarSelection: .task(taskID),
+            selectedTaskID: taskID,
+            detailMode: .details,
+            taskDetailPanePlacement: .listAdjacent
+        )
+        let plannerWithoutTask = snapshot(
+            detailMode: .planner,
+            taskDetailPanePlacement: .plannerAdjacent
+        )
+
+        #expect(plannerPane.taskDetailPanePlacement == .plannerAdjacent)
+        #expect(listPane.taskDetailPanePlacement == .listAdjacent)
+        #expect(listPaneInPlanner.taskDetailPanePlacement == .plannerAdjacent)
+        #expect(detailsPane.taskDetailPanePlacement == nil)
+        #expect(plannerWithoutTask.taskDetailPanePlacement == nil)
+    }
+
     private func snapshot(
         sidebarMode: HomeFeature.MacSidebarMode = .routines,
         sidebarSelection: HomeFeature.MacSidebarSelection? = nil,
@@ -111,7 +162,8 @@ struct HomeMacNavigationHistoryTests {
         selectedSettingsSection: SettingsMacSection = .notifications,
         selectedBoardScope: HomeFeature.BoardScope = .backlog,
         detailMode: MacHomeDetailMode,
-        progressMode: MacHomeProgressMode = .stats
+        progressMode: MacHomeProgressMode = .stats,
+        taskDetailPanePlacement: MacTaskDetailPanePlacement? = nil
     ) -> HomeMacNavigationSnapshot {
         HomeMacNavigationSnapshot(
             sidebarMode: sidebarMode,
@@ -120,7 +172,8 @@ struct HomeMacNavigationHistoryTests {
             selectedSettingsSection: selectedSettingsSection,
             selectedBoardScope: selectedBoardScope,
             detailMode: detailMode,
-            progressMode: progressMode
+            progressMode: progressMode,
+            taskDetailPanePlacement: taskDetailPanePlacement
         )
     }
 }

@@ -958,6 +958,7 @@ extension HomeTCAView {
                 context: modelContext
             )
             macHomeDetailMode = .planner
+            taskDetailPanePlacement = nil
         } catch {
             NSLog("Failed to start section focus: \(error.localizedDescription)")
         }
@@ -975,6 +976,7 @@ extension HomeTCAView {
                 context: modelContext
             )
             macHomeDetailMode = .planner
+            taskDetailPanePlacement = nil
         } catch {
             NSLog("Failed to start group focus: \(error.localizedDescription)")
         }
@@ -1210,8 +1212,12 @@ extension HomeTCAView {
             .onTapGesture {
                 selectMacTaskSourceListTask(task.taskID, scrollAnchor: nil)
             }
-            .onMacDoubleClick(enabled: allowsPlannerDrag) {
-                openDayPlanTaskDetails(task.taskID)
+            .onMacDoubleClick {
+                openMacTaskDetails(
+                    task.taskID,
+                    presentation: .fullDetail,
+                    scrollAnchor: nil
+                )
             }
             .routinaMacContextMenu {
                 routineNativeContextMenu(
@@ -1274,13 +1280,11 @@ extension HomeTCAView {
         scrollAnchor: MacSidebarTaskScrollRequest.Anchor?
     ) {
         isMacTaskSourceListFocused = true
-        if let scrollAnchor {
-            macSidebarTaskScrollRequest = MacSidebarTaskScrollRequest(
-                taskID: taskID,
-                anchor: scrollAnchor
-            )
-        }
-        store.send(.macSidebarSelectionChanged(.task(taskID)))
+        openMacTaskDetails(
+            taskID,
+            presentation: .listSelection,
+            scrollAnchor: scrollAnchor
+        )
     }
 
     private func macTaskSourceRowBackground(
@@ -1389,6 +1393,8 @@ extension HomeTCAView {
     }
 
     func platformOpenTask(_ taskID: UUID) {
+        macHomeDetailMode = .details
+        taskDetailPanePlacement = nil
         store.send(.macSidebarSelectionChanged(.task(taskID)))
     }
 

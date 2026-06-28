@@ -9,7 +9,8 @@ extension HomeTCAView {
             selectedSettingsSection: store.selectedSettingsSection,
             selectedBoardScope: store.selectedBoardScope,
             detailMode: macHomeDetailMode,
-            progressMode: macHomeProgressMode
+            progressMode: macHomeProgressMode,
+            taskDetailPanePlacement: taskDetailPanePlacement
         )
     }
 
@@ -49,6 +50,7 @@ extension HomeTCAView {
         withAnimation(.easeInOut(duration: 0.18)) {
             macHomeDetailMode = snapshot.detailMode.visibleSurfaceMode
             macHomeProgressMode = snapshot.progressMode.visibleSurfaceMode
+            taskDetailPanePlacement = snapshot.taskDetailPanePlacement
         }
 
         if snapshot.sidebarMode == .settings,

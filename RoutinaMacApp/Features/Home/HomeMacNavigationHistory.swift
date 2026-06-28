@@ -1,5 +1,10 @@
 import Foundation
 
+enum MacTaskDetailPanePlacement: Equatable {
+    case listAdjacent
+    case plannerAdjacent
+}
+
 struct HomeMacNavigationSnapshot: Equatable {
     var sidebarMode: HomeFeature.MacSidebarMode
     var sidebarSelection: HomeFeature.MacSidebarSelection?
@@ -8,6 +13,7 @@ struct HomeMacNavigationSnapshot: Equatable {
     var selectedBoardScope: HomeFeature.BoardScope
     var detailMode: MacHomeDetailMode
     var progressMode: MacHomeProgressMode
+    var taskDetailPanePlacement: MacTaskDetailPanePlacement?
 
     init(
         sidebarMode: HomeFeature.MacSidebarMode,
@@ -16,7 +22,8 @@ struct HomeMacNavigationSnapshot: Equatable {
         selectedSettingsSection: SettingsMacSection?,
         selectedBoardScope: HomeFeature.BoardScope,
         detailMode: MacHomeDetailMode,
-        progressMode: MacHomeProgressMode = .stats
+        progressMode: MacHomeProgressMode = .stats,
+        taskDetailPanePlacement: MacTaskDetailPanePlacement? = nil
     ) {
         self.sidebarMode = sidebarMode
         self.sidebarSelection = sidebarSelection
@@ -30,6 +37,11 @@ struct HomeMacNavigationSnapshot: Equatable {
         self.selectedBoardScope = selectedBoardScope
         self.detailMode = detailMode.visibleSurfaceMode
         self.progressMode = progressMode.visibleSurfaceMode
+        self.taskDetailPanePlacement = Self.normalizedTaskDetailPanePlacement(
+            detailMode: self.detailMode,
+            selectedTaskID: self.selectedTaskID,
+            placement: taskDetailPanePlacement
+        )
     }
 
     private static func normalizedSelectedTaskID(
@@ -40,6 +52,26 @@ struct HomeMacNavigationSnapshot: Equatable {
             return selectedTaskID
         }
         return taskID
+    }
+
+    private static func normalizedTaskDetailPanePlacement(
+        detailMode: MacHomeDetailMode,
+        selectedTaskID: UUID?,
+        placement: MacTaskDetailPanePlacement?
+    ) -> MacTaskDetailPanePlacement? {
+        guard selectedTaskID != nil else { return nil }
+
+        switch placement {
+        case .plannerAdjacent:
+            return detailMode.visibleSurfaceMode == .planner ? .plannerAdjacent : nil
+        case .listAdjacent:
+            if detailMode.visibleSurfaceMode == .planner {
+                return .plannerAdjacent
+            }
+            return detailMode.visibleSurfaceMode == .details ? nil : .listAdjacent
+        case nil:
+            return nil
+        }
     }
 }
 

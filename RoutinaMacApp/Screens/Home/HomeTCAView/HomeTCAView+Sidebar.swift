@@ -1,6 +1,12 @@
 import ComposableArchitecture
 import SwiftUI
 
+enum MacTaskDetailPresentation {
+    case fullDetail
+    case listSelection
+    case plannerPane
+}
+
 extension HomeTCAView {
     var isMacTimelineMode: Bool { visibleMacSidebarMode == .timeline }
     var isMacStatsMode: Bool { visibleMacSidebarMode == .stats || visibleMacSidebarMode == .adventure }
@@ -234,6 +240,7 @@ extension HomeTCAView {
                 if visibleMode != .planner {
                     dayPlanPlanner.clearPlannerUndo()
                 }
+                normalizeTaskDetailPanePlacement()
                 if visibleMode == .places {
                     clearDayPlanUnplannedCompletedFilter()
                 }
@@ -452,6 +459,7 @@ extension HomeTCAView {
         isNoteEditorPresented = false
         dayPlanUnplannedCompletedFilterDate = calendar.startOfDay(for: date)
         macHomeDetailMode = .planner
+        taskDetailPanePlacement = nil
         store.send(.macSidebarModeChanged(.routines))
         store.send(.setMacFilterDetailPresented(false))
     }
@@ -462,14 +470,32 @@ extension HomeTCAView {
     }
 
     func openDayPlanTaskDetails(_ taskID: UUID) {
-        openMacTaskDetails(taskID)
+        openMacTaskDetails(taskID, presentation: .plannerPane)
     }
 
     func openBoardTaskDetails(_ taskID: UUID) {
         openMacTaskDetails(taskID)
     }
 
-    private func openMacTaskDetails(_ taskID: UUID) {
+    func expandTaskDetailPane() {
+        guard store.selectedTaskID != nil else { return }
+        withAnimation(.easeInOut(duration: 0.18)) {
+            taskDetailPanePlacement = nil
+            macHomeDetailMode = .details
+        }
+    }
+
+    func closeTaskDetailPane() {
+        withAnimation(.easeInOut(duration: 0.18)) {
+            taskDetailPanePlacement = nil
+        }
+    }
+
+    func openMacTaskDetails(
+        _ taskID: UUID,
+        presentation: MacTaskDetailPresentation = .fullDetail,
+        scrollAnchor: MacSidebarTaskScrollRequest.Anchor? = .center
+    ) {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
@@ -477,12 +503,51 @@ extension HomeTCAView {
         if shouldShowTaskInRegularSidebar(taskID) {
             clearDayPlanUnplannedCompletedFilter()
         }
-        macHomeDetailMode = .details
-        macSidebarTaskScrollRequest = MacSidebarTaskScrollRequest(taskID: taskID)
+        switch presentation {
+        case .fullDetail:
+            macHomeDetailMode = .details
+            taskDetailPanePlacement = nil
+        case .listSelection:
+            switch macHomeDetailMode.visibleSurfaceMode {
+            case .details:
+                taskDetailPanePlacement = nil
+            case .planner:
+                taskDetailPanePlacement = .plannerAdjacent
+            case .board, .places:
+                taskDetailPanePlacement = .listAdjacent
+            }
+        case .plannerPane:
+            macHomeDetailMode = .planner
+            taskDetailPanePlacement = .plannerAdjacent
+        }
+        if let scrollAnchor {
+            macSidebarTaskScrollRequest = MacSidebarTaskScrollRequest(
+                taskID: taskID,
+                anchor: scrollAnchor
+            )
+        }
         if visibleMacSidebarMode == .board {
             store.send(.macSidebarModeChanged(.routines))
         }
         store.send(.macSidebarSelectionChanged(.task(taskID)))
+    }
+
+    func normalizeTaskDetailPanePlacement() {
+        guard store.selectedTaskID != nil else {
+            taskDetailPanePlacement = nil
+            return
+        }
+
+        switch taskDetailPanePlacement {
+        case .plannerAdjacent where macHomeDetailMode.visibleSurfaceMode != .planner:
+            taskDetailPanePlacement = nil
+        case .listAdjacent where macHomeDetailMode.visibleSurfaceMode == .planner:
+            taskDetailPanePlacement = .plannerAdjacent
+        case .listAdjacent where macHomeDetailMode.visibleSurfaceMode == .details:
+            taskDetailPanePlacement = nil
+        case .plannerAdjacent, .listAdjacent, nil:
+            break
+        }
     }
 
     private func shouldShowTaskInRegularSidebar(_ taskID: UUID) -> Bool {
