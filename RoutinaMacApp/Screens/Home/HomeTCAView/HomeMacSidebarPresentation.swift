@@ -49,8 +49,7 @@ struct HomeMacSidebarPresentation {
 
     var hasCustomFiltersApplied: Bool {
         if mode == .timeline {
-            return selectedTimelineRange != .all
-                || selectedTimelineFilterType != .all
+            return selectedTimelineFilterType != .all
                 || !selectedTimelineTags.isEmpty
                 || selectedTimelineImportanceUrgencyFilter != nil
                 || !selectedTimelineExcludedTags.isEmpty

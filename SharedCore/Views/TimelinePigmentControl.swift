@@ -6,6 +6,7 @@ struct TimelinePigmentControl: View {
     var includesPlaces = true
     var includesNotes = true
     var includesAway = true
+    var includesSleep = true
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -14,7 +15,8 @@ struct TimelinePigmentControl: View {
                     includingEventEmotion: includesEventEmotion,
                     includingPlaces: includesPlaces,
                     includingNotes: includesNotes,
-                    includingAway: includesAway
+                    includingAway: includesAway,
+                    includingSleep: includesSleep
                 )) { type in
                     pigmentButton(for: type)
                 }

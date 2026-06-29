@@ -3,35 +3,16 @@ import SwiftUI
 struct HomeMacTimelineFiltersDetailView: View {
     @State private var selectedTab: HomeMacTimelineFilterDetailTab = .filter
 
-    @Binding var selectedRange: TimelineRange
     @Binding var selectedType: TimelineFilterType
-    @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     @Binding var selectedMediaFilter: TaskMediaFilter
     let timelineRowVisibility: HomeTimelineRowVisibility
     let showsTypeSection: Bool
-    let importanceUrgencySummary: String
-    let allTagsCount: Int
-    let availableTags: [String]
-    let suggestedRelatedTags: [String]
-    let availableExcludeTags: [String]
-    let selectedTags: Set<String>
-    let includeTagMatchMode: RoutineTagMatchMode
-    let excludeTagMatchMode: RoutineTagMatchMode
-    let selectedExcludedTags: Set<String>
-    let tagSelectionSummary: String
-    let excludedTagSummary: String
-    let tagCount: (String) -> Int
-    let tagColor: (String) -> Color?
-    let onSelectTags: (Set<String>) -> Void
-    let onIncludeTagMatchModeChange: (RoutineTagMatchMode) -> Void
-    let onSelectSuggestedTag: (String) -> Void
-    let onExcludeTagMatchModeChange: (RoutineTagMatchMode) -> Void
-    let onToggleExcludedTag: (String) -> Void
     let onTimelineRowFieldVisibilityChanged: (HomeTimelineRowField, Bool) -> Void
     let includesEventEmotionFilters: Bool
     let includesPlaceFilters: Bool
     let includesNoteFilters: Bool
     let includesAwayFilters: Bool
+    let includesSleepFilters: Bool
 
     var body: some View {
         Group {
@@ -55,10 +36,6 @@ struct HomeMacTimelineFiltersDetailView: View {
         Group {
             HomeMacSidebarSectionCard {
                 VStack(alignment: .leading, spacing: 18) {
-                    filterControlSection("Range") {
-                        rangePicker
-                    }
-
                     if showsTypeSection {
                         filterControlSection("Type") {
                             typePicker
@@ -72,40 +49,6 @@ struct HomeMacTimelineFiltersDetailView: View {
                     filterControlSection("Media") {
                         mediaPicker
                     }
-                }
-            }
-
-            HomeMacImportanceUrgencyDisclosureSection(
-                selectedFilter: $selectedImportanceUrgencyFilter,
-                summaryText: importanceUrgencySummary
-            )
-
-            if !availableTags.isEmpty {
-                HomeMacCollapsibleFilterSection(
-                    title: "Tags",
-                    summaryText: timelineTagsSummary,
-                    systemImage: "tag.fill",
-                    tint: .teal
-                ) {
-                    HomeMacTimelineTagFiltersView(
-                        allTagsCount: allTagsCount,
-                        availableTags: availableTags,
-                        suggestedRelatedTags: suggestedRelatedTags,
-                        availableExcludeTags: availableExcludeTags,
-                        selectedTags: selectedTags,
-                        includeTagMatchMode: includeTagMatchMode,
-                        excludeTagMatchMode: excludeTagMatchMode,
-                        selectedExcludedTags: selectedExcludedTags,
-                        tagSelectionSummary: tagSelectionSummary,
-                        excludedTagSummary: excludedTagSummary,
-                        tagCount: tagCount,
-                        tagColor: tagColor,
-                        onSelectTags: onSelectTags,
-                        onIncludeTagMatchModeChange: onIncludeTagMatchModeChange,
-                        onSelectSuggestedTag: onSelectSuggestedTag,
-                        onExcludeTagMatchModeChange: onExcludeTagMatchModeChange,
-                        onToggleExcludedTag: onToggleExcludedTag
-                    )
                 }
             }
         }
@@ -144,28 +87,6 @@ struct HomeMacTimelineFiltersDetailView: View {
         }
     }
 
-    private var timelineTagsSummary: String {
-        if !selectedTags.isEmpty {
-            return tagSelectionSummary
-        }
-
-        if !selectedExcludedTags.isEmpty {
-            return excludedTagSummary
-        }
-
-        return "\(availableTags.count) available tags"
-    }
-
-    private var rangePicker: some View {
-        RoutinaGlassSegmentedControl(
-            accessibilityLabel: "Range",
-            options: TimelineRange.allCases,
-            selection: $selectedRange
-        ) { range in
-            Text(range.rawValue)
-        }
-    }
-
     private var typePicker: some View {
         RoutinaGlassSegmentedControl(
             accessibilityLabel: "Type",
@@ -173,7 +94,8 @@ struct HomeMacTimelineFiltersDetailView: View {
                 includingEventEmotion: includesEventEmotionFilters,
                 includingPlaces: includesPlaceFilters,
                 includingNotes: includesNoteFilters,
-                includingAway: includesAwayFilters
+                includingAway: includesAwayFilters,
+                includingSleep: includesSleepFilters
             ),
             selection: contentTypeBinding
         ) { type in
@@ -210,7 +132,8 @@ struct HomeMacTimelineFiltersDetailView: View {
                         includingEventEmotion: includesEventEmotionFilters,
                         includingPlaces: includesPlaceFilters,
                         includingNotes: includesNoteFilters,
-                        includingAway: includesAwayFilters
+                        includingAway: includesAwayFilters,
+                        includingSleep: includesSleepFilters
                     )
             },
             set: { selectedType = $0 }

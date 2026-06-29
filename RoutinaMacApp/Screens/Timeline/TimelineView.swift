@@ -44,6 +44,10 @@ struct TimelineView: View {
         UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isAwayEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingStatsSleepTabEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var isStatsSleepTabEnabled = false
     @State private var editingAwaySession: AwaySession?
 
     var body: some View {
@@ -357,7 +361,8 @@ struct TimelineView: View {
                         includingEventEmotion: areMacEventEmotionActionsEnabled,
                         includingPlaces: isPlacesEnabled,
                         includingNotes: isNotesEnabled,
-                        includingAway: isAwayEnabled
+                        includingAway: isAwayEnabled,
+                        includingSleep: includesSleepTimelineFilters
                     )
                 ))
             }
@@ -443,8 +448,13 @@ struct TimelineView: View {
             includingEventEmotion: areMacEventEmotionActionsEnabled,
             includingPlaces: isPlacesEnabled,
             includingNotes: isNotesEnabled,
-            includingAway: isAwayEnabled
+            includingAway: isAwayEnabled,
+            includingSleep: includesSleepTimelineFilters
         )
+    }
+
+    private var includesSleepTimelineFilters: Bool {
+        isAwayEnabled && isStatsSleepTabEnabled
     }
 
     private var hasAnyTimelineRecords: Bool {
@@ -454,7 +464,7 @@ struct TimelineView: View {
             || (isNotesEnabled && !notes.isEmpty)
             || !focusSessions.isEmpty
             || !sprintFocusSessions.isEmpty
-            || !sleepSessions.isEmpty
+            || (includesSleepTimelineFilters && !sleepSessions.isEmpty)
             || (isAwayEnabled && !awaySessions.isEmpty)
             || (isPlacesEnabled && !placeCheckInSessions.isEmpty)
     }
@@ -481,7 +491,7 @@ struct TimelineView: View {
             || (isNotesEnabled && !notes.isEmpty)
             || !focusSessions.isEmpty
             || !sprintFocusSessions.isEmpty
-            || !sleepSessions.isEmpty
+            || (includesSleepTimelineFilters && !sleepSessions.isEmpty)
             || (isAwayEnabled && !awaySessions.isEmpty)
             || (isPlacesEnabled && !placeCheckInSessions.isEmpty)
     }
@@ -495,7 +505,8 @@ struct TimelineView: View {
             includingEventEmotion: areMacEventEmotionActionsEnabled,
             includingPlaces: isPlacesEnabled,
             includingNotes: isNotesEnabled,
-            includingAway: isAwayEnabled
+            includingAway: isAwayEnabled,
+            includingSleep: includesSleepTimelineFilters
         )
         if normalized != store.filterType {
             store.send(.filterTypeChanged(normalized))
@@ -508,7 +519,8 @@ struct TimelineView: View {
             includesEventEmotion: areMacEventEmotionActionsEnabled,
             includesPlaces: isPlacesEnabled,
             includesNotes: isNotesEnabled,
-            includesAway: isAwayEnabled
+            includesAway: isAwayEnabled,
+            includesSleep: includesSleepTimelineFilters
         )
     }
 
@@ -594,7 +606,8 @@ struct TimelineView: View {
                                 includingEventEmotion: areMacEventEmotionActionsEnabled,
                                 includingPlaces: isPlacesEnabled,
                                 includingNotes: isNotesEnabled,
-                                includingAway: isAwayEnabled
+                                includingAway: isAwayEnabled,
+                                includingSleep: includesSleepTimelineFilters
                             ),
                             selection: filterTypeBinding
                         ) { type in

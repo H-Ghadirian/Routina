@@ -26,6 +26,7 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     let queryOptions: HomeAdvancedQueryOptions
     let importanceUrgencySummary: String
     let showsGoalFilter: Bool
+    let showsImportanceUrgencySection: Bool
     let showsTagSection: Bool
     let showsPlaceSection: Bool
     let onTaskRowFieldVisibilityChanged: (HomeTaskRowField, Bool) -> Void
@@ -62,10 +63,12 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
             coreFilterCard
 
-            HomeMacImportanceUrgencyDisclosureSection(
-                selectedFilter: $selectedImportanceUrgencyFilter,
-                summaryText: importanceUrgencySummary
-            )
+            if showsImportanceUrgencySection {
+                HomeMacImportanceUrgencyDisclosureSection(
+                    selectedFilter: $selectedImportanceUrgencyFilter,
+                    summaryText: importanceUrgencySummary
+                )
+            }
 
             if showsTagSection {
                 HomeMacCollapsibleFilterSection(

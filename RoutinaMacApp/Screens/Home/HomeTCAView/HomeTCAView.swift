@@ -47,6 +47,7 @@ enum MacHomeProgressMode: String, CaseIterable, Identifiable {
 }
 
 enum HomeMacFilterDetailScope: String, CaseIterable, Identifiable {
+    case both
     case taskList
     case timeline
 
@@ -54,6 +55,8 @@ enum HomeMacFilterDetailScope: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
+        case .both:
+            return "Both"
         case .taskList:
             return "Task List"
         case .timeline:
@@ -63,6 +66,8 @@ enum HomeMacFilterDetailScope: String, CaseIterable, Identifiable {
 
     var systemImage: String {
         switch self {
+        case .both:
+            return "slider.horizontal.3"
         case .taskList:
             return "checklist"
         case .timeline:
@@ -212,6 +217,7 @@ struct HomeTCAView: View {
     @State var relatedFilterTagSuggestionAnchor: String?
     @State var relatedTimelineTagSuggestionAnchor: String?
     @State var relatedStatsTagSuggestionAnchor: String?
+    @State var macSharedFiltersPresentationCache: HomeMacSharedFiltersPresentationCache?
     @State var draggedSection: FormSection?
     @State var macHomeDetailMode: MacHomeDetailMode = .defaultLandingMode
     @State var macHomeProgressMode: MacHomeProgressMode = .stats
@@ -385,7 +391,8 @@ homeContent
             includingEventEmotion: areMacEventEmotionActionsEnabled,
             includingPlaces: isPlacesEnabled,
             includingNotes: isNotesEnabled,
-            includingAway: isAwayEnabled
+            includingAway: isAwayEnabled,
+            includingSleep: includesMacSleepTimelineFilters
         )
         if normalized != store.selectedTimelineFilterType {
             store.send(.selectedTimelineFilterTypeChanged(normalized))

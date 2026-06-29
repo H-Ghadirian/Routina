@@ -132,8 +132,7 @@ extension HomeTCAView {
     }
 
     private var macHasTimelineFiltersApplied: Bool {
-        store.selectedTimelineRange != .all
-            || store.selectedTimelineFilterType != .all
+        store.selectedTimelineFilterType != .all
             || !store.selectedTimelineTags.isEmpty
             || store.selectedTimelineImportanceUrgencyFilter != nil
             || store.selectedTimelineMediaFilter != .all
@@ -1063,6 +1062,8 @@ extension HomeTCAView {
             macHomeFilterScopePicker
 
             switch macFilterDetailScope {
+            case .both:
+                macSharedFiltersDetailContent
             case .taskList:
                 macFiltersDetailContent
             case .timeline:
@@ -1076,12 +1077,12 @@ extension HomeTCAView {
             accessibilityLabel: "Filter scope",
             options: HomeMacFilterDetailScope.allCases,
             selection: $macFilterDetailScope,
-            minimumSegmentWidth: 136,
+            minimumSegmentWidth: 132,
             fillsAvailableWidth: true
         ) { scope in
             Label(scope.title, systemImage: scope.systemImage)
         }
-        .frame(width: 360)
+        .frame(width: 520)
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
@@ -1118,7 +1119,8 @@ extension HomeTCAView {
             ),
             importanceUrgencySummary: importanceUrgencyFilterSummary,
             showsGoalFilter: isGoalsTabEnabled,
-            showsTagSection: homeTagFilterData.hasTags,
+            showsImportanceUrgencySection: false,
+            showsTagSection: false,
             showsPlaceSection: isPlacesEnabled && hasPlaceAwareContent,
             onTaskRowFieldVisibilityChanged: { field, isVisible in
                 settingsStore.send(.taskRowFieldVisibilityChanged(field, isVisible))

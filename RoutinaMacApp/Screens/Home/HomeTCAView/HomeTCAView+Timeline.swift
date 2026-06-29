@@ -60,7 +60,7 @@ extension HomeTCAView {
             awaySessions: isAwayEnabled ? awaySessions : [],
             fileAttachmentTaskIDs: store.fileAttachmentTaskIDs,
             noteAttachmentNoteIDs: isNotesEnabled ? noteAttachmentNoteIDs : [],
-            range: store.selectedTimelineRange,
+            range: .all,
             filterType: effectiveMacTimelineFilterType,
             mediaFilter: store.selectedTimelineMediaFilter,
             now: Date(),
@@ -73,8 +73,13 @@ extension HomeTCAView {
             includingEventEmotion: areMacEventEmotionActionsEnabled,
             includingPlaces: isPlacesEnabled,
             includingNotes: isNotesEnabled,
-            includingAway: isAwayEnabled
+            includingAway: isAwayEnabled,
+            includingSleep: includesMacSleepTimelineFilters
         )
+    }
+
+    var includesMacSleepTimelineFilters: Bool {
+        isAwayEnabled && isStatsSleepTabEnabled
     }
 
     var availableTimelineTags: [String] {
@@ -83,7 +88,7 @@ extension HomeTCAView {
         )
     }
 
-    private var filteredTimelineEntriesForTagging: [TimelineEntry] {
+    var filteredTimelineEntriesForTagging: [TimelineEntry] {
         baseTimelineEntries.filter { entry in
             HomeFeature.matchesImportanceUrgencyFilter(
                 store.selectedTimelineImportanceUrgencyFilter,
@@ -411,36 +416,8 @@ extension HomeTCAView {
         )
     }
 
-    var timelineImportanceUrgencySummary: String {
-        guard let filter = ImportanceUrgencyFilterCell.normalized(store.selectedTimelineImportanceUrgencyFilter) else {
-            return "Showing done items across all importance and urgency levels."
-        }
-        return "Showing done items from tasks with at least \(filter.importance.title.lowercased()) importance and \(filter.urgency.title.lowercased()) urgency."
-    }
-
-    var timelineTagSelectionSummary: String {
-        if !store.selectedTimelineTags.isEmpty {
-            return "\(store.selectedTimelineIncludeTagMatchMode.rawValue) of \(store.selectedTimelineTags.sorted().map { "#\($0)" }.joined(separator: ", "))"
-        }
-
-        let tagCount = availableTimelineTags.count
-        return "\(tagCount) \(tagCount == 1 ? "tag" : "tags") available"
-    }
-
-    var timelineExcludedTagSummary: String {
-        if !store.selectedTimelineExcludedTags.isEmpty {
-            return "Hiding items tagged: \(store.selectedTimelineExcludedTags.sorted().map { "#\($0)" }.joined(separator: ", "))"
-        }
-
-        return "Select tags to hide done items that have them."
-    }
-
     var macActiveTimelineFiltersSummary: String? {
         var labels: [String] = []
-
-        if store.selectedTimelineRange != .all {
-            labels.append(store.selectedTimelineRange.rawValue)
-        }
 
         if effectiveMacTimelineFilterType != .all {
             labels.append(effectiveMacTimelineFilterType.rawValue)
@@ -470,22 +447,10 @@ extension HomeTCAView {
         return summaryWithResultCount(summary, resultCount: timelineEntries.count)
     }
 
-    private func timelineTagCount(for tag: String) -> Int {
-        filteredTimelineEntriesForTagging.filter { entry in
-            RoutineTag.contains(tag, in: entry.tags)
-        }.count
-    }
-
-    private func timelineTagColor(for tag: String) -> Color? {
-        Color(routineTagHex: RoutineTagColors.colorHex(for: tag, in: store.tagColors))
-    }
-
     var macTimelineFiltersDetailView: some View {
-        HomeMacTimelineFilterDetailContainerView(
+        HomeMacFilterDetailContainerView(
             title: macFilterDetailTitle,
-            showsTitle: false,
-            onAvailableTagsChange: { validateSelectedTimelineTag() },
-            availableTags: availableTimelineTags
+            showsTitle: false
         ) {
             macTimelineFiltersDetailContent
         }
@@ -493,10 +458,6 @@ extension HomeTCAView {
 
     var macTimelineFiltersDetailContent: some View {
         HomeMacTimelineFiltersDetailView(
-            selectedRange: Binding(
-                get: { store.selectedTimelineRange },
-                set: { store.send(.selectedTimelineRangeChanged($0)) }
-            ),
             selectedType: Binding(
                 get: { effectiveMacTimelineFilterType },
                 set: {
@@ -505,14 +466,11 @@ extension HomeTCAView {
                             includingEventEmotion: areMacEventEmotionActionsEnabled,
                             includingPlaces: isPlacesEnabled,
                             includingNotes: isNotesEnabled,
-                            includingAway: isAwayEnabled
+                            includingAway: isAwayEnabled,
+                            includingSleep: includesMacSleepTimelineFilters
                         )
                     ))
                 }
-            ),
-            selectedImportanceUrgencyFilter: Binding(
-                get: { store.selectedTimelineImportanceUrgencyFilter },
-                set: { store.send(.selectedTimelineImportanceUrgencyFilterChanged($0)) }
             ),
             selectedMediaFilter: Binding(
                 get: { store.selectedTimelineMediaFilter },
@@ -520,59 +478,15 @@ extension HomeTCAView {
             ),
             timelineRowVisibility: timelineRowVisibility,
             showsTypeSection: showsMacTimelineTypeFilterSection,
-            importanceUrgencySummary: timelineImportanceUrgencySummary,
-            allTagsCount: filteredTimelineEntriesForTagging.count,
-            availableTags: availableTimelineTags,
-            suggestedRelatedTags: suggestedRelatedTimelineTags,
-            availableExcludeTags: availableTimelineExcludeTags,
-            selectedTags: store.selectedTimelineTags,
-            includeTagMatchMode: store.selectedTimelineIncludeTagMatchMode,
-            excludeTagMatchMode: store.selectedTimelineExcludeTagMatchMode,
-            selectedExcludedTags: store.selectedTimelineExcludedTags,
-            tagSelectionSummary: timelineTagSelectionSummary,
-            excludedTagSummary: timelineExcludedTagSummary,
-            tagCount: { tag in
-                timelineTagCount(for: tag)
-            },
-            tagColor: { tag in
-                timelineTagColor(for: tag)
-            },
-            onSelectTags: { tags in
-                relatedTimelineTagSuggestionAnchor = tags.sorted().last
-                store.send(.selectedTimelineTagsChanged(tags))
-            },
-            onIncludeTagMatchModeChange: { mode in
-                store.send(.selectedTimelineIncludeTagMatchModeChanged(mode))
-            },
-            onSelectSuggestedTag: { tag in
-                var selected = store.selectedTimelineTags
-                selected.insert(tag)
-                store.send(.selectedTimelineTagsChanged(selected))
-            },
-            onExcludeTagMatchModeChange: { mode in
-                store.send(.selectedTimelineExcludeTagMatchModeChanged(mode))
-            },
-            onToggleExcludedTag: { tag in
-                if store.selectedTimelineExcludedTags.contains(where: { RoutineTag.contains($0, in: [tag]) }) {
-                    store.send(.selectedTimelineExcludedTagsChanged(store.selectedTimelineExcludedTags.filter { $0 != tag }))
-                } else {
-                    var newTags = store.selectedTimelineExcludedTags
-                    newTags.insert(tag)
-                    store.send(.selectedTimelineExcludedTagsChanged(newTags))
-                    store.send(.selectedTimelineTagsChanged(store.selectedTimelineTags.filter { !RoutineTag.contains($0, in: [tag]) }))
-                }
-            },
             onTimelineRowFieldVisibilityChanged: { field, isVisible in
                 settingsStore.send(.timelineRowFieldVisibilityChanged(field, isVisible))
             },
             includesEventEmotionFilters: areMacEventEmotionActionsEnabled,
             includesPlaceFilters: isPlacesEnabled,
             includesNoteFilters: isNotesEnabled,
-            includesAwayFilters: isAwayEnabled
+            includesAwayFilters: isAwayEnabled,
+            includesSleepFilters: includesMacSleepTimelineFilters
         )
-        .onChange(of: availableTimelineTags) { _, _ in
-            validateSelectedTimelineTag()
-        }
     }
 
     private var showsMacTimelineTypeFilterSection: Bool {
@@ -581,7 +495,7 @@ extension HomeTCAView {
             || (isNotesEnabled && !notes.isEmpty)
             || !focusSessions.isEmpty
             || !sprintFocusSessions.isEmpty
-            || !sleepSessions.isEmpty
+            || (includesMacSleepTimelineFilters && !sleepSessions.isEmpty)
             || (isAwayEnabled && !awaySessions.isEmpty)
             || (isPlacesEnabled && !placeCheckInSessions.isEmpty)
     }
@@ -613,7 +527,8 @@ extension HomeTCAView {
                                     includingEventEmotion: areMacEventEmotionActionsEnabled,
                                     includingPlaces: isPlacesEnabled,
                                     includingNotes: isNotesEnabled,
-                                    includingAway: isAwayEnabled
+                                    includingAway: isAwayEnabled,
+                                    includingSleep: includesMacSleepTimelineFilters
                                 )
                             ))
                         }
@@ -621,7 +536,8 @@ extension HomeTCAView {
                     includesEventEmotion: areMacEventEmotionActionsEnabled,
                     includesPlaces: isPlacesEnabled,
                     includesNotes: isNotesEnabled,
-                    includesAway: isAwayEnabled
+                    includesAway: isAwayEnabled,
+                    includesSleep: includesMacSleepTimelineFilters
                 )
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)

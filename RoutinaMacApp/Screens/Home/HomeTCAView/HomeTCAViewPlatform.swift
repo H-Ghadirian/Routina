@@ -677,7 +677,8 @@ extension HomeTCAView {
                             includingEventEmotion: areMacEventEmotionActionsEnabled,
                             includingPlaces: isPlacesEnabled,
                             includingNotes: isNotesEnabled,
-                            includingAway: isAwayEnabled
+                            includingAway: isAwayEnabled,
+                            includingSleep: includesMacSleepTimelineFilters
                         )
                     },
                     set: {
@@ -686,7 +687,8 @@ extension HomeTCAView {
                                 includingEventEmotion: areMacEventEmotionActionsEnabled,
                                 includingPlaces: isPlacesEnabled,
                                 includingNotes: isNotesEnabled,
-                                includingAway: isAwayEnabled
+                                includingAway: isAwayEnabled,
+                                includingSleep: includesMacSleepTimelineFilters
                             )
                         ))
                     }
@@ -694,7 +696,8 @@ extension HomeTCAView {
                 includesEventEmotion: areMacEventEmotionActionsEnabled,
                 includesPlaces: isPlacesEnabled,
                 includesNotes: isNotesEnabled,
-                includesAway: isAwayEnabled
+                includesAway: isAwayEnabled,
+                includesSleep: includesMacSleepTimelineFilters
             )
         }
     }

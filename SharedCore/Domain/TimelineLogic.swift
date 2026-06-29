@@ -64,14 +64,16 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
         includingEventEmotion includeEventEmotion: Bool,
         includingPlaces includePlaces: Bool = true,
         includingNotes includeNotes: Bool = true,
-        includingAway includeAway: Bool = true
+        includingAway includeAway: Bool = true,
+        includingSleep includeSleep: Bool = true
     ) -> [TimelineFilterType] {
         visibleCases(
             from: allCases,
             includingEventEmotion: includeEventEmotion,
             includingPlaces: includePlaces,
             includingNotes: includeNotes,
-            includingAway: includeAway
+            includingAway: includeAway,
+            includingSleep: includeSleep
         )
     }
 
@@ -79,14 +81,16 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
         includingEventEmotion includeEventEmotion: Bool,
         includingPlaces includePlaces: Bool = true,
         includingNotes includeNotes: Bool = true,
-        includingAway includeAway: Bool = true
+        includingAway includeAway: Bool = true,
+        includingSleep includeSleep: Bool = true
     ) -> [TimelineFilterType] {
         visibleCases(
             from: contentTypeCases,
             includingEventEmotion: includeEventEmotion,
             includingPlaces: includePlaces,
             includingNotes: includeNotes,
-            includingAway: includeAway
+            includingAway: includeAway,
+            includingSleep: includeSleep
         )
     }
 
@@ -94,14 +98,16 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
         includingEventEmotion includeEventEmotion: Bool,
         includingPlaces includePlaces: Bool = true,
         includingNotes includeNotes: Bool = true,
-        includingAway includeAway: Bool = true
+        includingAway includeAway: Bool = true,
+        includingSleep includeSleep: Bool = true
     ) -> [TimelineFilterType] {
         visibleCases(
             from: timelinePigmentCases,
             includingEventEmotion: includeEventEmotion,
             includingPlaces: includePlaces,
             includingNotes: includeNotes,
-            includingAway: includeAway
+            includingAway: includeAway,
+            includingSleep: includeSleep
         )
     }
 
@@ -110,13 +116,15 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
         includingEventEmotion includeEventEmotion: Bool,
         includingPlaces includePlaces: Bool = true,
         includingNotes includeNotes: Bool = true,
-        includingAway includeAway: Bool = true
+        includingAway includeAway: Bool = true,
+        includingSleep includeSleep: Bool = true
     ) -> [TimelineFilterType] {
         cases.filter { type in
             (includeEventEmotion || !type.isEventOrEmotion)
                 && (includePlaces || type != .places)
                 && (includeNotes || type != .notes)
                 && (includeAway || type != .away)
+                && (includeSleep || type != .sleep)
         }
     }
 
@@ -132,12 +140,14 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
         includingEventEmotion includeEventEmotion: Bool,
         includingPlaces includePlaces: Bool = true,
         includingNotes includeNotes: Bool = true,
-        includingAway includeAway: Bool = true
+        includingAway includeAway: Bool = true,
+        includingSleep includeSleep: Bool = true
     ) -> TimelineFilterType {
         guard includeEventEmotion || !isEventOrEmotion else { return .all }
         guard includePlaces || self != .places else { return .all }
         guard includeNotes || self != .notes else { return .all }
         guard includeAway || self != .away else { return .all }
+        guard includeSleep || self != .sleep else { return .all }
         return self
     }
 }

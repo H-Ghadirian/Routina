@@ -23,7 +23,11 @@ With search and global Home navigation now in the toolbar, task-list and Timelin
 
 ## Decision
 
-Mac Home renders one filter button beside the toolbar search field for Home-level task-list and Timeline filters. Pressing it opens the Mac Home filter detail screen with a top-level `Task List` / `Timeline` segmented picker. The picker defaults to `Timeline` when opened from the Timeline sidebar and to `Task List` otherwise.
+Mac Home renders one filter button beside the toolbar search field for Home-level task-list and Timeline filters. Pressing it opens the Mac Home filter detail screen with a top-level `Both` / `Task List` / `Timeline` segmented picker. The picker defaults to `Timeline` when opened from the Timeline sidebar and to `Task List` otherwise.
+
+Tags and importance/urgency are shared Home filters in the `Both` tab. Editing them there writes the selected tags, excluded tags, tag match modes, and importance/urgency threshold to both the task-list filter state and the Timeline filter state. The Task List tab keeps task-list-only controls such as task kind, created date, status, pressure, goals, media, places, sorting, and task-row appearance. The Timeline tab keeps Timeline-only controls such as type, status, media, and timeline-row appearance.
+
+Mac Home Timeline filters do not expose or apply a range filter; Timeline stays all-range in the Home sidebar and Planner List's Timeline-style surface. Timeline type filters omit Sleep whenever the Sleep stats/timeline toggle is disabled, while preserving stored Sleep records and stale filter state compatibility by normalizing hidden Sleep selections back to `All`.
 
 The toolbar filter button shows active state when either task-list or Timeline filters are active. Task and Timeline sidebar headers no longer render their own filter icon buttons; when filters are active, those headers may still show a compact clear action and active-filter summary.
 
@@ -31,6 +35,7 @@ Planner Calendar keeps its existing header filter button and right-side Planner 
 
 ## Consequences
 
-- Task-list and Timeline filters have one toolbar entry point beside shared search.
+- Task-list and Timeline filters have one toolbar entry point beside shared search, with shared tag and priority filters centralized under `Both`.
 - The sidebar stays quieter while preserving active-filter visibility and clearing.
+- Mac Home Timeline filtering no longer has a visible or effective range option.
 - Planner Calendar filtering remains discoverable in the Planner header and keeps its right-sidebar behavior unchanged.
