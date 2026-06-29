@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		2A5DD63E2F965A91009F0331 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A5DD63D2F965A91009F0331 /* WidgetKit.framework */; };
 		2A5DD6402F965A91009F0331 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A5DD63F2F965A91009F0331 /* SwiftUI.framework */; };
-		2A5DD64B2F965A93009F0331 /* RoutinaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2A5DD63C2F965A91009F0331 /* RoutinaWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		2C0000102E60000100000001 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 2A4B56AD2D8DB48D00760BCA /* ComposableArchitecture */; };
 		2C0000112E60000100000001 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001012E5F000100000001 /* Dependencies */; };
 		2C0000122E60000100000001 /* CasePaths in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001022E5F000100000001 /* CasePaths */; };
@@ -24,17 +23,9 @@
 		6B1000052F10000100000001 /* ConcurrencyExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1001082E5F000100000001 /* ConcurrencyExtras */; };
 		AA000101PLUGINKIT00000001 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A5DD63D2F965A91009F0331 /* WidgetKit.framework */; };
 		AA000102PLUGINKIT00000001 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A5DD63F2F965A91009F0331 /* SwiftUI.framework */; };
-		AA000103PLUGINKIT00000001 /* RoutinaWidgetDevExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AA000104PLUGINKIT00000001 /* RoutinaWidgetDevExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		2A5DD6492F965A93009F0331 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2A5A74B52D7B92F600E91075 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 2A5DD63B2F965A91009F0331;
-			remoteInfo = RoutinaWidgetExtension;
-		};
 		6B1000102F10000100000001 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2A5A74B52D7B92F600E91075 /* Project object */;
@@ -42,38 +33,9 @@
 			remoteGlobalIDString = 4E0000012E80000100000001;
 			remoteInfo = RoutinaMacOSDev;
 		};
-		AA000003PLUGINKIT00000001 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2A5A74B52D7B92F600E91075 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = AA000108PLUGINKIT00000001;
-			remoteInfo = RoutinaWidgetDevExtension;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		2A5DD6502F965A93009F0331 /* Embed Foundation Extensions */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
-			files = (
-				2A5DD64B2F965A93009F0331 /* RoutinaWidgetExtension.appex in Embed Foundation Extensions */,
-			);
-			name = "Embed Foundation Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		AA000105PLUGINKIT00000001 /* Embed Foundation Extensions */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
-			files = (
-				AA000103PLUGINKIT00000001 /* RoutinaWidgetDevExtension.appex in Embed Foundation Extensions */,
-			);
-			name = "Embed Foundation Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -306,13 +268,10 @@
 				2C0000052E60000100000001 /* Sources */,
 				2C0000032E60000100000001 /* Frameworks */,
 				2C0000042E60000100000001 /* Resources */,
-				2A5DD6502F965A93009F0331 /* Embed Foundation Extensions */,
-				AA000001PLUGINKIT00000001 /* Register Widget Extension */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				2A5DD64A2F965A93009F0331 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				2A5A74BF2D7B92F600E91075 /* macOSConfig */,
@@ -338,13 +297,10 @@
 				4E0000052E80000100000001 /* Sources */,
 				4E0000032E80000100000001 /* Frameworks */,
 				4E0000042E80000100000001 /* Resources */,
-				AA000105PLUGINKIT00000001 /* Embed Foundation Extensions */,
-				AA000005PLUGINKIT00000001 /* Register Widget Extension */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				AA000006PLUGINKIT00000001 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				2A5A74BF2D7B92F600E91075 /* macOSConfig */,
@@ -509,44 +465,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		AA000001PLUGINKIT00000001 /* Register Widget Extension */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Register Widget Extension";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "killall RoutinaWidgetExtension 2>/dev/null || true\npluginkit -r \"${BUILT_PRODUCTS_DIR}/${PLUGINS_FOLDER_PATH}/RoutinaWidgetExtension.appex\" 2>/dev/null || true\npluginkit -a \"${BUILT_PRODUCTS_DIR}/${PLUGINS_FOLDER_PATH}/RoutinaWidgetExtension.appex\"\n";
-		};
-		AA000005PLUGINKIT00000001 /* Register Widget Extension */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Register Widget Extension";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "killall RoutinaWidgetDevExtension 2>/dev/null || true\npluginkit -r \"${BUILT_PRODUCTS_DIR}/${PLUGINS_FOLDER_PATH}/RoutinaWidgetDevExtension.appex\" 2>/dev/null || true\npluginkit -a \"${BUILT_PRODUCTS_DIR}/${PLUGINS_FOLDER_PATH}/RoutinaWidgetDevExtension.appex\"\n";
-		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -588,20 +506,10 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		2A5DD64A2F965A93009F0331 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 2A5DD63B2F965A91009F0331 /* RoutinaWidgetExtension */;
-			targetProxy = 2A5DD6492F965A93009F0331 /* PBXContainerItemProxy */;
-		};
 		6B1000162F10000100000001 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 4E0000012E80000100000001 /* RoutinaMacOSDev */;
 			targetProxy = 6B1000102F10000100000001 /* PBXContainerItemProxy */;
-		};
-		AA000006PLUGINKIT00000001 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = AA000108PLUGINKIT00000001 /* RoutinaWidgetDevExtension */;
-			targetProxy = AA000003PLUGINKIT00000001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 

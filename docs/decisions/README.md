@@ -31,6 +31,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0313](0313-disable-mac-app-widgets-in-app-targets.md) refines [0135](0135-show-today-focus-widget.md) and [0210](0210-store-durable-preferences-in-swiftdata.md) for Mac widgets:** Mac widget source and extension targets remain in the repo, but Mac app targets do not build, embed, or register widget extensions, and Mac widget refresh behavior is hard-disabled so users do not see Routina widgets or disabled placeholders.
 - **[0312](0312-move-mac-task-timeline-filter-entry-to-toolbar.md) refines [0216](0216-move-mac-home-task-type-tabs-to-filter-screen.md), [0289](0289-filter-planner-calendar-layers.md), [0310](0310-show-mac-home-toolbar-search.md), and [0311](0311-move-mac-home-mode-strip-to-toolbar.md) for Mac Home filter entry:** Mac Home renders one toolbar filter button beside search for Task List and Timeline filters, opening a segmented Both / Task List / Timeline filter detail where shared tag and importance/urgency filters live under Both. Task and Timeline sidebar headers no longer render filter icon buttons, Timeline has no range filter in Mac Home, hidden Sleep type options normalize to All, and Planner Calendar keeps its own header filter button and right-side filter sidebar.
 - **[0311](0311-move-mac-home-mode-strip-to-toolbar.md) refines [0022](0022-own-mac-home-toolbar-at-split-shell.md), [0278](0278-open-single-mac-add-action-directly.md), and [0310](0310-show-mac-home-toolbar-search.md) for Mac Home mode strip placement:** Mac Home renders the primary Tasks/Timeline/Goals/Stats/Settings/Add mode strip as a compact toolbar control beside the Focus Timer branch; sidebar headers no longer render that global strip, while surface-local sidebar filters, search panels, form sections, Places controls, and Add menu behavior remain unchanged.
 - **[0310](0310-show-mac-home-toolbar-search.md) refines [0022](0022-own-mac-home-toolbar-at-split-shell.md), [0244](0244-start-mac-toolbar-focus-with-task-picker.md), and [0309](0309-show-full-timeline-in-planner-list-mode.md) for Mac Home search placement:** Mac Home shows an AppKit-backed toolbar search field beside the Focus Timer controls, backed by the shared Home search binding so task lists, Planner List's full Timeline surface, and task-backed Planner Calendar items can be searched from the top of the window while preserving the mutually exclusive focus timer slot; task/timeline sidebars avoid a duplicate text field for the same binding.
@@ -220,6 +221,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0313](0313-disable-mac-app-widgets-in-app-targets.md) | Disable Mac App Widgets in App Targets | Accepted | 2026-06-29 |
 | [0312](0312-move-mac-task-timeline-filter-entry-to-toolbar.md) | Move Mac Task and Timeline Filter Entry to Toolbar | Accepted | 2026-06-28 |
 | [0311](0311-move-mac-home-mode-strip-to-toolbar.md) | Move Mac Home Mode Strip to Toolbar | Accepted | 2026-06-28 |
 | [0310](0310-show-mac-home-toolbar-search.md) | Show Mac Home Toolbar Search | Accepted | 2026-06-28 |

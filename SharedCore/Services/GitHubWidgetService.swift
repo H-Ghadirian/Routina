@@ -15,6 +15,8 @@ enum GitHubWidgetService {
     }
 
     static func write(_ data: GitHubWidgetData) {
+        guard MacAppWidgetAvailability.isEnabled else { return }
+
         guard let url = fileURL else {
             NSLog("GitHubWidgetService: app group container unavailable (check entitlement \(appGroupID))")
             return
@@ -37,6 +39,8 @@ enum GitHubWidgetService {
     }
 
     static func writeAndReload(_ data: GitHubWidgetData) {
+        guard MacAppWidgetAvailability.isEnabled else { return }
+
         write(data)
         reload()
     }

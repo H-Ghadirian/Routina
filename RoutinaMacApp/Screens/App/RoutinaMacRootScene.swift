@@ -1,7 +1,6 @@
 import AppKit
 import SwiftUI
 import SwiftData
-import WidgetKit
 
 struct RoutinaMacRootScene: Scene {
     private let persistence: PersistenceController
@@ -92,6 +91,8 @@ private final class RoutinaMacWidgetRefreshScheduler {
     }
 
     func scheduleLaunchRefresh() {
+        guard MacAppWidgetAvailability.isEnabled else { return }
+
         scheduleFocusRefresh(delayNanoseconds: 300_000_000)
         scheduleStatsRefresh(delayNanoseconds: 2_000_000_000)
     }
@@ -115,8 +116,7 @@ private final class RoutinaMacWidgetRefreshScheduler {
     }
 
     private func refreshFocusTimerWidget() {
-        FocusTimerWidgetService.refresh(using: persistence.container)
-        WidgetCenter.shared.reloadTimelines(ofKind: FocusTimerWidgetService.widgetKind)
+        FocusTimerWidgetService.refreshAndReload(using: persistence.container)
     }
 
     private func refreshStatsWidget() {

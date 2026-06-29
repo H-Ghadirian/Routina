@@ -23,6 +23,7 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0284](../decisions/0284-hide-filter-query-sections-behind-beta-toggle.md)
 - [0290](../decisions/0290-limit-free-active-tasks-behind-subscription.md)
 - [0293](../decisions/0293-add-settings-unlimited-task-override-while-products-unavailable.md)
+- [0313](../decisions/0313-disable-mac-app-widgets-in-app-targets.md)
 
 ## Current Contract
 
@@ -42,4 +43,5 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - Task sharing is off by default and hidden in task details until enabled from Support & About -> Beta Experiments.
 - The linked-task Visualize button is off by default and hidden in task details until enabled from Support & About -> Beta Experiments.
 - Home and Stats Query sections are hidden in filter panels until enabled from Support & About -> Beta Experiments.
+- Mac app widget source remains in the repository, but the Mac app targets do not build, embed, or register widget extensions, so Routina widgets are not exposed on macOS.
 - macOS development runs use `script/build_and_run.sh` by default. Production launches use the explicit `--prod` path.

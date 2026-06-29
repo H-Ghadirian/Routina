@@ -23,6 +23,8 @@ public enum FocusTimerWidgetService {
 
     @MainActor
     public static func refresh(using context: ModelContext) {
+        guard MacAppWidgetAvailability.isEnabled else { return }
+
         do {
             let session = try activeFocusSession(in: context)
             let activeTask = try session.flatMap { session in
@@ -40,6 +42,8 @@ public enum FocusTimerWidgetService {
 
     @MainActor
     public static func refreshAndReload(using context: ModelContext) {
+        guard MacAppWidgetAvailability.isEnabled else { return }
+
         refresh(using: context)
 #if canImport(WidgetKit)
         WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)

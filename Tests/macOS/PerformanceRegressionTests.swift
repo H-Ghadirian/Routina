@@ -188,6 +188,32 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testMacAppTargetsDoNotShipWidgetExtensions() throws {
+        let project = try Self.sourceFile("RoutinaMacOS.xcodeproj/project.pbxproj")
+        let prodTarget = try Self.projectBlock(
+            named: "RoutinaMacOSProd",
+            in: project,
+            endingBefore: "RoutinaMacOSDev"
+        )
+        let devTarget = try Self.projectBlock(
+            named: "RoutinaMacOSDev",
+            in: project,
+            endingBefore: "RoutinaMacOSTests"
+        )
+
+        for target in [prodTarget, devTarget] {
+            XCTAssertFalse(target.contains("Embed Foundation Extensions"))
+            XCTAssertFalse(target.contains("Register Widget Extension"))
+            XCTAssertFalse(target.contains("RoutinaWidgetExtension.appex"))
+            XCTAssertFalse(target.contains("RoutinaWidgetDevExtension.appex"))
+            XCTAssertFalse(target.contains("RoutinaWidgetExtension */"))
+            XCTAssertFalse(target.contains("RoutinaWidgetDevExtension */"))
+        }
+
+        XCTAssertTrue(project.contains("/* RoutinaWidgetExtension */ = {"))
+        XCTAssertTrue(project.contains("/* RoutinaWidgetDevExtension */ = {"))
+    }
+
     func testMacRawSwiftDataSavesDoNotDuplicateWidgetRefreshWork() throws {
         let rootSource = try Self.sourceFile("RoutinaMacApp/Screens/App/RoutinaMacRootScene.swift")
         let statusStoreSource = try Self.sourceFile("RoutinaMacApp/Screens/App/RoutinaMacFocusTimerStatusStore.swift")
@@ -506,6 +532,23 @@ private extension PerformanceRegressionTests {
             .deletingLastPathComponent()
             .appendingPathComponent(relativePath)
         return try String(contentsOf: sourceURL, encoding: .utf8)
+    }
+
+    static func projectBlock(
+        named targetName: String,
+        in source: String,
+        endingBefore nextTargetName: String
+    ) throws -> String {
+        guard
+            let start = source.range(of: "/* \(targetName) */ = {"),
+            let end = source.range(
+                of: "/* \(nextTargetName) */ = {",
+                range: start.upperBound..<source.endIndex
+            )
+        else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        return String(source[start.lowerBound..<end.lowerBound])
     }
 
     static func makeStatsDerivedState(

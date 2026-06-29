@@ -15,6 +15,8 @@ enum GitLabWidgetService {
     }
 
     static func write(_ data: GitLabWidgetData) {
+        guard MacAppWidgetAvailability.isEnabled else { return }
+
         guard let url = fileURL else {
             NSLog("GitLabWidgetService: app group container unavailable (check entitlement \(appGroupID))")
             return
@@ -37,6 +39,8 @@ enum GitLabWidgetService {
     }
 
     static func writeAndReload(_ data: GitLabWidgetData) {
+        guard MacAppWidgetAvailability.isEnabled else { return }
+
         write(data)
         reload()
     }

@@ -505,6 +505,7 @@ let package = Package(
                 "SharedCore/Services/GitLabStatsClient.swift",
                 "SharedCore/Services/GitLabStatsSupport.swift",
                 "SharedCore/Services/GitLabWidgetService.swift",
+                "SharedCore/Services/MacAppWidgetAvailability.swift",
                 "SharedCore/Views/AppLockGate.swift",
             ]
         ),

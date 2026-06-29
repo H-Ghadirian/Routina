@@ -51,17 +51,24 @@ private enum RoutineWidgetRefreshScheduler {
 
     static func schedule(delayMilliseconds: Int64? = nil) {
         pendingTask?.cancel()
+        guard MacAppWidgetAvailability.isEnabled else { return }
+
         pendingTask = Task { @MainActor in
             let quietWindowMilliseconds = delayMilliseconds ?? defaultWidgetRefreshQuietWindowMilliseconds
             try? await Task.sleep(for: .milliseconds(quietWindowMilliseconds))
             guard !Task.isCancelled else { return }
+            guard MacAppWidgetAvailability.isEnabled else { return }
 
             WidgetStatsService.refresh(using: PersistenceController.shared.container)
             FocusTimerWidgetService.refresh(using: PersistenceController.shared.container)
 #if os(iOS) && canImport(ActivityKit)
             await FocusTimerLiveActivityService.sync(using: PersistenceController.shared.container)
 #endif
+#if os(macOS)
+            MacAppWidgetAvailability.reloadTimelines()
+#else
             WidgetCenter.shared.reloadAllTimelines()
+#endif
         }
     }
 }

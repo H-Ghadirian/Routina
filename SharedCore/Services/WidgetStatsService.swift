@@ -32,6 +32,8 @@ public enum WidgetStatsService {
 
     @MainActor
     public static func refresh(using context: ModelContext) {
+        guard MacAppWidgetAvailability.isEnabled else { return }
+
         do {
             let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
             let completedKindRawValue = RoutineLogKind.completed.rawValue
@@ -62,6 +64,8 @@ public enum WidgetStatsService {
 
     @MainActor
     public static func refreshAndReload(using context: ModelContext) {
+        guard MacAppWidgetAvailability.isEnabled else { return }
+
         refresh(using: context)
 #if canImport(WidgetKit)
         reloadTimelines()
@@ -81,7 +85,7 @@ public enum WidgetStatsService {
     }
 
 #if canImport(WidgetKit)
-    private static func reloadTimelines() {
+    static func reloadTimelines() {
         for kind in reloadWidgetKinds {
             WidgetCenter.shared.reloadTimelines(ofKind: kind)
         }
