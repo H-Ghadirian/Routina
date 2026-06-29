@@ -223,6 +223,11 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
                         return
                     }
 
+                    if self.shouldLeaveCurrentTextEditorFocused(searchField, in: window) {
+                        self.shouldRestoreFocus = false
+                        return
+                    }
+
                     if window.firstResponder !== searchField.currentEditor() {
                         window.makeFirstResponder(searchField)
                     }
@@ -241,6 +246,17 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
                 guard let self, self.focusGeneration == generation else { return }
                 self.shouldRestoreFocus = false
             }
+        }
+
+        private func shouldLeaveCurrentTextEditorFocused(
+            _ searchField: NSSearchField,
+            in window: NSWindow
+        ) -> Bool {
+            guard let activeEditor = window.firstResponder as? NSTextView else {
+                return false
+            }
+
+            return activeEditor !== searchField.currentEditor()
         }
     }
 

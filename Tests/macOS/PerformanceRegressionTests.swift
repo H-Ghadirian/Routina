@@ -296,6 +296,12 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(source.contains("Search tasks and timeline"))
         XCTAssertTrue(source.contains("NSSearchField"))
         XCTAssertTrue(source.contains("restoreFocusAfterSearchUpdate()"))
+        XCTAssertTrue(
+            source.contains("shouldLeaveCurrentTextEditorFocused"),
+            "Toolbar search may restore focus after filtering, but it must not steal focus from an intentionally focused comment, note, or other text editor."
+        )
+        XCTAssertTrue(source.contains("window.firstResponder as? NSTextView"))
+        XCTAssertTrue(source.contains("activeEditor !== searchField.currentEditor()"))
         XCTAssertTrue(platformSource.contains("plannerSearchText: searchTextBinding.wrappedValue"))
         XCTAssertTrue(detailSource.contains("calendarSearchText: plannerSearchText"))
         XCTAssertTrue(dayPlanSource.contains("filteredBlocksByDayKey("))

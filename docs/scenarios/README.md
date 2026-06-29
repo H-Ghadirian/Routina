@@ -41,6 +41,18 @@ Given a custom or plain SwiftUI button has a visible padded card, chip, row, or 
 When the user taps or clicks inside that visible surface but outside the text, emoji, or icon glyphs
 Then the button action still runs
 
+### Mac Toolbar Search Does Not Steal Editor Focus
+
+Area: Other
+Decision links: [0310](../decisions/0310-show-mac-home-toolbar-search.md)
+Current behavior: [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/macOS/PerformanceRegressionTests.swift`
+
+Given Mac Home search has triggered a toolbar search update
+When the user moves focus into a task comment, note, or other text editor before the delayed search-focus repair completes
+Then typing stays in that editor instead of jumping back to the toolbar search field
+
 ### Daily Checklist Progress Resets
 
 Area: Tasks
