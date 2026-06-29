@@ -364,6 +364,9 @@ final class PerformanceRegressionTests: XCTestCase {
 
     func testMacHomeFiltersUseRightSideCompanionPane() throws {
         let detailSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
+        let filterContainerSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacFilterDetailContainerView.swift")
+        let routineFilterSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacRoutineFiltersDetailView.swift")
+        let timelineFilterSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacTimelineFiltersDetailView.swift")
         let sidebarSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Sidebar.swift")
         let platformSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift")
         let boardSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Board.swift")
@@ -374,6 +377,17 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(detailSource.contains("private var fullscreenFilterDetailContent: some View"))
         XCTAssertTrue(detailSource.contains("onMinimizeFullscreenFilterDetail"))
         XCTAssertTrue(detailSource.contains("onCloseTaskDetails()\n                        onCloseFilterDetail()"))
+        XCTAssertTrue(filterContainerSource.contains("GeometryReader"))
+        XCTAssertTrue(filterContainerSource.contains(".frame(width: proxy.size.width, alignment: .topLeading)"))
+        XCTAssertTrue(filterContainerSource.contains("compactHorizontalPadding"))
+        XCTAssertTrue(sidebarSource.contains("minimumSegmentWidth: 96"))
+        XCTAssertTrue(sidebarSource.contains("horizontalPadding: 10"))
+        XCTAssertFalse(sidebarSource.contains("minimumSegmentWidth: 132"))
+        XCTAssertFalse(sidebarSource.contains(".frame(maxWidth: 520)"))
+        XCTAssertFalse(routineFilterSource.contains(".frame(width: 520)"))
+        XCTAssertTrue(routineFilterSource.contains(".frame(maxWidth: .infinity)"))
+        XCTAssertFalse(timelineFilterSource.contains(".frame(width: 420)"))
+        XCTAssertTrue(timelineFilterSource.contains(".frame(maxWidth: .infinity)"))
         XCTAssertFalse(
             detailSource.contains("if store.isMacFilterDetailPresented {\n                filterView()"),
             "Home filters should no longer replace the full detail area when opened from the toolbar."

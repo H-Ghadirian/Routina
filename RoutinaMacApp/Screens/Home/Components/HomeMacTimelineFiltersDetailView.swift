@@ -176,10 +176,11 @@ private struct HomeMacTimelineFilterDetailTabStrip: View {
                     segmentButton(for: tab)
                 }
             }
+            .frame(maxWidth: .infinity)
             .padding(5)
             .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16))
         }
-        .frame(width: 420)
+        .frame(maxWidth: .infinity)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Timeline tabs")
     }
@@ -193,7 +194,7 @@ private struct HomeMacTimelineFilterDetailTabStrip: View {
             }
         } label: {
             Text(tab.title)
-                .font(.system(size: 16, weight: isSelected ? .semibold : .medium))
+                .font(.system(size: 15, weight: isSelected ? .semibold : .medium))
                 .foregroundStyle(isSelected ? .primary : .secondary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)

@@ -1,5 +1,11 @@
 import SwiftUI
 
+private enum HomeMacFilterDetailContainerLayout {
+    static let regularPadding: CGFloat = 24
+    static let compactHorizontalPadding: CGFloat = 16
+    static let compactWidthThreshold: CGFloat = 460
+}
+
 struct HomeMacFilterDetailContainerView<Content: View>: View {
     let title: String
     let showsTitle: Bool
@@ -16,17 +22,27 @@ struct HomeMacFilterDetailContainerView<Content: View>: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                if showsTitle {
-                    HomeMacFilterDetailTitleView(title: title)
+        GeometryReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    if showsTitle {
+                        HomeMacFilterDetailTitleView(title: title)
+                    }
+                    content()
                 }
-                content()
+                .padding(.horizontal, horizontalPadding(for: proxy.size.width))
+                .padding(.vertical, HomeMacFilterDetailContainerLayout.regularPadding)
+                .frame(width: proxy.size.width, alignment: .topLeading)
             }
-            .padding(24)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private func horizontalPadding(for width: CGFloat) -> CGFloat {
+        width <= HomeMacFilterDetailContainerLayout.compactWidthThreshold
+            ? HomeMacFilterDetailContainerLayout.compactHorizontalPadding
+            : HomeMacFilterDetailContainerLayout.regularPadding
     }
 }
 

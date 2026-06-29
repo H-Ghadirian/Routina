@@ -384,10 +384,11 @@ private struct HomeMacRoutineFilterDetailTabStrip: View {
                     segmentButton(for: tab)
                 }
             }
+            .frame(maxWidth: .infinity)
             .padding(5)
             .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16))
         }
-        .frame(width: 520)
+        .frame(maxWidth: .infinity)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Task list tabs")
     }
@@ -401,7 +402,7 @@ private struct HomeMacRoutineFilterDetailTabStrip: View {
             }
         } label: {
             Text(tab.title)
-                .font(.system(size: 16, weight: isSelected ? .semibold : .medium))
+                .font(.system(size: 15, weight: isSelected ? .semibold : .medium))
                 .foregroundStyle(isSelected ? .primary : .secondary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)

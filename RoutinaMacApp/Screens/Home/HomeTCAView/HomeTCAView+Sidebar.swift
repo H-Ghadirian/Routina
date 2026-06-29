@@ -1102,12 +1102,12 @@ extension HomeTCAView {
             accessibilityLabel: "Filter scope",
             options: HomeMacFilterDetailScope.allCases,
             selection: $macFilterDetailScope,
-            minimumSegmentWidth: 132,
+            minimumSegmentWidth: 96,
+            horizontalPadding: 10,
             fillsAvailableWidth: true
         ) { scope in
             Label(scope.title, systemImage: scope.systemImage)
         }
-        .frame(maxWidth: 520)
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
