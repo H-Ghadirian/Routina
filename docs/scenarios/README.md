@@ -119,7 +119,7 @@ Then manual partial checklist progress suppresses assumed-done presentation unti
 
 Area: Planner
 Decision links: [0268](../decisions/0268-show-assumed-done-routines-in-planner.md)
-Current behavior: [Planner](../current-behavior/planner.md)
+Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/Shared/DayPlanPlannerStateTests.swift`
 
@@ -231,17 +231,33 @@ Given task data briefly appears in overlapping active, away, archived, planned, 
 When Home task-list presentation is derived
 Then each task ID is claimed once, section and group IDs stay stable, and the UI updates existing rows instead of replacing them
 
+### Home Toolbar Filters Use a Companion Pane
+
+Area: UI
+Decision links: [0312](../decisions/0312-move-mac-task-timeline-filter-entry-to-toolbar.md), [0316](../decisions/0316-present-mac-home-filters-as-companion-pane.md)
+Current behavior: [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/macOS/PerformanceRegressionTests.swift`
+
+Given Mac Home is showing Planner, Board, Timeline, Details, or Places
+When the toolbar filter button beside search is pressed
+Then the `Both` / `Task List` / `Timeline` filter surface opens in a right-side companion pane while the current workspace remains visible
+And task-detail panes, the board inspector, and Planner-local right sidebars do not remain open beside it
+When the user expands the filter pane fullscreen and then minimizes it
+Then the filter surface returns to the right-side companion pane
+
 ### Timeline Filters Do Not Auto-Open Row Details
 
 Area: Timeline
-Decision links: [0280](../decisions/0280-show-timeline-newest-first.md), [0256](../decisions/0256-move-mac-timeline-row-appearance-to-timeline-filter-detail.md)
+Decision links: [0280](../decisions/0280-show-timeline-newest-first.md), [0256](../decisions/0256-move-mac-timeline-row-appearance-to-timeline-filter-detail.md), [0316](../decisions/0316-present-mac-home-filters-as-companion-pane.md)
 Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/Shared/TimelineSelectionSupportTests.swift`
+- `Tests/macOS/PerformanceRegressionTests.swift`
 
-Given Mac Home is showing the Timeline filter detail
+Given Mac Home is showing the Timeline filter companion pane
 When a filter change updates the visible timeline rows
-Then the sidebar does not automatically select a fallback row or close the filter detail until the user explicitly leaves the filter detail or selects a row
+Then the sidebar does not automatically select a fallback row or close the filter pane until the user explicitly leaves the filter pane or selects a row
 
 ### Plan Focus Allocation Preserves Focus History
 

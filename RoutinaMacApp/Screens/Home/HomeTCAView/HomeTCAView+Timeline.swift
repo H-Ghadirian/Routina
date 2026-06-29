@@ -562,7 +562,7 @@ extension HomeTCAView {
                 timelineEntryCount: store.timelineLogs.count + events.count + emotionLogs.count + (isNotesEnabled ? notes.count : 0) + focusSessions.count + sprintFocusSessions.count + sleepSessions.count + (isAwayEnabled ? awaySessions.count : 0) + (isPlacesEnabled ? placeCheckInSessions.count : 0),
                 groupedEntries: groupedTimelineEntries,
                 presentationID: macTimelineSidebarPresentationID,
-                isActive: isMacTimelineMode && !store.isMacFilterDetailPresented,
+                isActive: isMacTimelineMode,
                 allowsFallbackSelection: !store.isMacFilterDetailPresented,
                 showsPlaces: isPlacesEnabled,
                 showsNotes: isNotesEnabled,

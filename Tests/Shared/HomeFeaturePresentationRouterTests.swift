@@ -56,7 +56,7 @@ struct HomeFeaturePresentationRouterTests {
     }
 
     @Test
-    func showingFilterDetailClosesAddSheetAndClearsSelectionIdentity() {
+    func showingFilterDetailClosesAddSheetAndPreservesSelectionIdentity() {
         let taskID = UUID()
         var state = TestPresentationRoutingState(
             selection: HomeSelectionState(selectedTaskID: taskID),
@@ -71,7 +71,7 @@ struct HomeFeaturePresentationRouterTests {
         #expect(state.presentation.isMacFilterDetailPresented)
         #expect(!state.presentation.isAddRoutineSheetPresented)
         #expect(state.presentation.addRoutineState == nil)
-        #expect(state.selection.selectedTaskID == nil)
+        #expect(state.selection.selectedTaskID == taskID)
     }
 }
 

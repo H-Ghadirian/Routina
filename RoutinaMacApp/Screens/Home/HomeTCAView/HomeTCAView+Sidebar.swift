@@ -23,10 +23,6 @@ extension HomeTCAView {
     }
 
     var macSidebarNavigationTitle: String {
-        if store.isMacFilterDetailPresented {
-            return "Filters"
-        }
-
         if isMacSegmentedBoardMode {
             return boardPresentation.scopeTitle
         }
@@ -226,12 +222,16 @@ extension HomeTCAView {
 
     func toggleMacHomeFilterDetailFromToolbar() {
         if store.isMacFilterDetailPresented {
-            store.send(.setMacFilterDetailPresented(false))
+            closeMacFilterDetailPane()
             return
         }
 
         macFilterDetailScope = isMacTimelineMode ? .timeline : .taskList
-        store.send(.setMacFilterDetailPresented(true))
+        withAnimation(MacHomeDetailAnimation.secondaryPane) {
+            isMacFilterDetailFullscreen = false
+            taskDetailPanePlacement = nil
+            store.send(.setMacFilterDetailPresented(true))
+        }
     }
 
     var macSidebarModeBinding: Binding<MacSidebarMode> {
@@ -320,18 +320,12 @@ extension HomeTCAView {
                     selectedNoteID = nil
                     store.send(.macSidebarSelectionChanged(.task(taskID)))
                 case let .timelineEntry(entryID):
-                    guard !store.isMacFilterDetailPresented || !isMacTimelineMode else {
-                        return
-                    }
                     store.send(.macSidebarSelectionChanged(.timelineEntry(entryID)))
                     let entry = timelineEntries.first { $0.id == entryID }
                     selectedNoteID = entry?.isNote == true ? entryID : nil
                     let taskID = entry?.taskID
                     store.send(.setSelectedTask(taskID))
                 case nil:
-                    guard !store.isMacFilterDetailPresented || !isMacTimelineMode else {
-                        return
-                    }
                     selectedNoteID = nil
                     store.send(.macSidebarSelectionChanged(nil))
                 }
@@ -548,6 +542,37 @@ extension HomeTCAView {
             taskDetailPanePlacement = returnPlacement
             fullscreenTaskDetailReturnMode = nil
             fullscreenTaskDetailReturnPlacement = nil
+        }
+    }
+
+    func expandMacFilterDetailPane() {
+        guard store.isMacFilterDetailPresented else { return }
+
+        withAnimation(MacHomeDetailAnimation.taskDetailSurface) {
+            isMacFilterDetailFullscreen = true
+        }
+    }
+
+    func closeMacFilterDetailPane() {
+        withAnimation(.easeInOut(duration: 0.18)) {
+            isMacFilterDetailFullscreen = false
+            store.send(.setMacFilterDetailPresented(false))
+        }
+    }
+
+    var minimizeFullscreenMacFilterDetailAction: (() -> Void)? {
+        guard store.isMacFilterDetailPresented && isMacFilterDetailFullscreen else { return nil }
+        return { minimizeFullscreenMacFilterDetail() }
+    }
+
+    func minimizeFullscreenMacFilterDetail() {
+        guard store.isMacFilterDetailPresented else {
+            closeMacFilterDetailPane()
+            return
+        }
+
+        withAnimation(MacHomeDetailAnimation.taskDetailSurface) {
+            isMacFilterDetailFullscreen = false
         }
     }
 
@@ -1082,7 +1107,7 @@ extension HomeTCAView {
         ) { scope in
             Label(scope.title, systemImage: scope.systemImage)
         }
-        .frame(width: 520)
+        .frame(maxWidth: 520)
         .frame(maxWidth: .infinity, alignment: .center)
     }
 

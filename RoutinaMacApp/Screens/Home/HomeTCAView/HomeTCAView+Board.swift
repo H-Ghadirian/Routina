@@ -51,11 +51,7 @@ extension HomeTCAView {
 
     @ViewBuilder
     var macBoardCenterContent: some View {
-        if store.isMacFilterDetailPresented {
-            macActiveFiltersDetailView
-        } else {
-            macTodoBoardContent
-        }
+        macTodoBoardContent
     }
 
     private func macTodoBoardColumns(

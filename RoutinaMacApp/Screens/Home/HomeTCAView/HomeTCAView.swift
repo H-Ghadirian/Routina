@@ -223,6 +223,7 @@ struct HomeTCAView: View {
     @State var macHomeDetailMode: MacHomeDetailMode = .defaultLandingMode
     @State var macHomeProgressMode: MacHomeProgressMode = .stats
     @State var macFilterDetailScope: HomeMacFilterDetailScope = .taskList
+    @State var isMacFilterDetailFullscreen = false
     @State var selectedStatsDashboardScope: StatsDashboardScope = .all
     @State var macNavigationHistory = HomeMacNavigationHistory()
     @State var isRestoringMacNavigationHistory = false

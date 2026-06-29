@@ -32,9 +32,6 @@ struct HomeFeaturePresentationRouter<State: HomeFeaturePresentationRoutingState>
         if isPresented {
             state.presentation.isAddRoutineSheetPresented = false
             state.presentation.addRoutineState = nil
-            // Keep existing behavior: clear the list selection identity so tapping
-            // the same task can still trigger a fresh selection event later.
-            state.selection.selectedTaskID = nil
         }
     }
 }

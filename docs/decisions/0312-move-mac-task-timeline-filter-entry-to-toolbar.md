@@ -15,6 +15,10 @@ Accepted
 - [0310: Show Mac Home Toolbar Search](0310-show-mac-home-toolbar-search.md)
 - [0311: Move Mac Home Mode Strip to Toolbar](0311-move-mac-home-mode-strip-to-toolbar.md)
 
+## Refined By
+
+- [0316: Present Mac Home Filters as a Companion Pane](0316-present-mac-home-filters-as-companion-pane.md)
+
 ## Context
 
 Mac Home had separate filter buttons for the task list and Timeline sidebar surfaces, while the Planner Calendar kept its own header filter button for calendar layers.

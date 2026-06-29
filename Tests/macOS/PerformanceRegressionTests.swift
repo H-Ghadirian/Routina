@@ -337,6 +337,30 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testMacHomeFiltersUseRightSideCompanionPane() throws {
+        let detailSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
+        let sidebarSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Sidebar.swift")
+        let platformSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift")
+        let boardSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Board.swift")
+        let timelineSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift")
+
+        XCTAssertTrue(detailSource.contains("static let filterDetailPaneWidth: CGFloat = 420"))
+        XCTAssertTrue(detailSource.contains("private var filterDetailPane: some View"))
+        XCTAssertTrue(detailSource.contains("private var fullscreenFilterDetailContent: some View"))
+        XCTAssertTrue(detailSource.contains("onMinimizeFullscreenFilterDetail"))
+        XCTAssertTrue(detailSource.contains("onCloseTaskDetails()\n                        onCloseFilterDetail()"))
+        XCTAssertFalse(
+            detailSource.contains("if store.isMacFilterDetailPresented {\n                filterView()"),
+            "Home filters should no longer replace the full detail area when opened from the toolbar."
+        )
+        XCTAssertTrue(sidebarSource.contains("func expandMacFilterDetailPane()"))
+        XCTAssertTrue(sidebarSource.contains("isMacFilterDetailFullscreen = true"))
+        XCTAssertTrue(sidebarSource.contains("taskDetailPanePlacement = nil\n            store.send(.setMacFilterDetailPresented(true))"))
+        XCTAssertTrue(platformSource.contains("isFilterDetailFullscreen: isMacFilterDetailFullscreen"))
+        XCTAssertTrue(boardSource.contains("var macBoardCenterContent: some View {\n        macTodoBoardContent\n    }"))
+        XCTAssertTrue(timelineSource.contains("isActive: isMacTimelineMode,\n                allowsFallbackSelection: !store.isMacFilterDetailPresented"))
+    }
+
     func testMacToolbarStatusBadgeKeepsStableTextWidth() throws {
         let source = try Self.sourceFile("RoutinaMacApp/Screens/Shared/MacToolbarComponents.swift")
 

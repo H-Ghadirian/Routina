@@ -303,6 +303,10 @@ extension HomeTCAView {
                     onMinimizeFullscreenTaskDetails: minimizeFullscreenTaskDetailsAction,
                     onCloseTaskDetails: closeTaskDetailPane,
                     onCloseFullscreenTaskDetails: closeFullscreenTaskDetails,
+                    isFilterDetailFullscreen: isMacFilterDetailFullscreen,
+                    onExpandFilterDetail: expandMacFilterDetailPane,
+                    onMinimizeFullscreenFilterDetail: minimizeFullscreenMacFilterDetailAction,
+                    onCloseFilterDetail: closeMacFilterDetailPane,
                     addRoutineStore: self.store.scope(
                         state: \.addRoutineState,
                         action: \.addRoutineSheet

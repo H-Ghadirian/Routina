@@ -5,6 +5,7 @@ private enum MacDetailContainerSizing {
     static let plannerContentMinWidth: CGFloat = 520
     static let plannerInspectorContentMinWidth: CGFloat = 400
     static let taskDetailPaneWidth: CGFloat = 420
+    static let filterDetailPaneWidth: CGFloat = 420
     static let plannerTaskDetailMinWidth: CGFloat = plannerInspectorContentMinWidth + taskDetailPaneWidth
     static let boardInspectorWidth: CGFloat = 400
 }
@@ -67,6 +68,10 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     let onMinimizeFullscreenTaskDetails: (() -> Void)?
     let onCloseTaskDetails: () -> Void
     let onCloseFullscreenTaskDetails: () -> Void
+    let isFilterDetailFullscreen: Bool
+    let onExpandFilterDetail: () -> Void
+    let onMinimizeFullscreenFilterDetail: (() -> Void)?
+    let onCloseFilterDetail: () -> Void
     let addRoutineStore: StoreOf<AddRoutineFeature>?
     @ViewBuilder let filterView: () -> FilterView
     @ViewBuilder let plannerListView: () -> PlannerListView
@@ -75,38 +80,149 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     @Namespace private var taskDetailSurfaceNamespace
 
     var body: some View {
-        Group {
-            if store.isMacFilterDetailPresented {
-                filterView()
-            } else if isBoardPresented {
-                boardDetailContent
-            } else if let addRoutineStore {
-                AddRoutineTCAView(store: addRoutineStore)
-            } else if isStatsPresented {
-                progressDetailContent
-            } else if isSettingsPresented {
-                EmbeddedSettingsMacDetailView(
-                    store: settingsStore,
-                    section: selectedSettingsSection
-                )
-            } else if isTimelinePresented {
-                timelineDetailContent
-            } else {
-                mainDetailContent
+        detailContent
+            .toolbar {
+                if shouldShowBoardInspectorToolbarButton {
+                    ToolbarItem(placement: .primaryAction) {
+                        HomeMacBoardInspectorToolbarButton(
+                            isPresented: isBoardInspectorPresented,
+                            onToggle: onToggleBoardInspector
+                        )
+                    }
+                }
             }
-        }
-        .toolbar {
-            if shouldShowBoardInspectorToolbarButton {
-                ToolbarItem(placement: .primaryAction) {
-                    HomeMacBoardInspectorToolbarButton(
-                        isPresented: isBoardInspectorPresented,
-                        onToggle: onToggleBoardInspector
-                    )
+    }
+
+    @ViewBuilder
+    private var detailContent: some View {
+        Group {
+            if shouldShowFullscreenFilterDetail {
+                fullscreenFilterDetailContent
+            } else if isBoardPresented {
+                detailContentWithOptionalFilterPane {
+                    boardDetailContent
+                }
+            } else {
+                detailContentWithOptionalFilterPane {
+                    if let addRoutineStore {
+                        AddRoutineTCAView(store: addRoutineStore)
+                    } else if isStatsPresented {
+                        progressDetailContent
+                    } else if isSettingsPresented {
+                        EmbeddedSettingsMacDetailView(
+                            store: settingsStore,
+                            section: selectedSettingsSection
+                        )
+                    } else if isTimelinePresented {
+                        timelineDetailContent
+                    } else {
+                        mainDetailContent
+                    }
                 }
             }
         }
     }
 
+    private var shouldShowFullscreenFilterDetail: Bool {
+        store.isMacFilterDetailPresented && isFilterDetailFullscreen
+    }
+
+    private var shouldShowFilterDetailPane: Bool {
+        store.isMacFilterDetailPresented && !isFilterDetailFullscreen
+    }
+
+    private func detailContentWithOptionalFilterPane<Content: View>(
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        HStack(spacing: 0) {
+            content()
+                .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity)
+
+            if shouldShowFilterDetailPane {
+                filterDetailPane
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .animation(MacHomeDetailAnimation.secondaryPane, value: shouldShowFilterDetailPane)
+    }
+
+    private var filterDetailPane: some View {
+        VStack(spacing: 0) {
+            filterDetailPaneHeader
+            Divider()
+            filterView()
+        }
+        .frame(width: MacDetailContainerSizing.filterDetailPaneWidth)
+        .frame(maxHeight: .infinity)
+        .background(Color.secondary.opacity(0.045))
+        .overlay(alignment: .leading) {
+            Divider()
+        }
+        .transition(.taskDetailPane(edge: .trailing))
+        .zIndex(1)
+    }
+
+    private var filterDetailPaneHeader: some View {
+        HStack(spacing: 10) {
+            Label("Filters", systemImage: "line.3.horizontal.decrease.circle")
+                .font(.headline)
+                .lineLimit(1)
+
+            Spacer(minLength: 8)
+
+            secondaryPaneButton(
+                systemName: "arrow.up.left.and.arrow.down.right",
+                title: "Open Fullscreen"
+            ) {
+                onExpandFilterDetail()
+            }
+
+            secondaryPaneButton(
+                systemName: "xmark",
+                title: "Close"
+            ) {
+                onCloseFilterDetail()
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+    }
+
+    private var fullscreenFilterDetailContent: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Label("Filters", systemImage: "line.3.horizontal.decrease.circle")
+                    .font(.headline)
+                    .lineLimit(1)
+
+                Spacer(minLength: 8)
+
+                if let onMinimizeFullscreenFilterDetail {
+                    secondaryPaneButton(
+                        systemName: "arrow.down.right.and.arrow.up.left",
+                        title: "Minimize"
+                    ) {
+                        onMinimizeFullscreenFilterDetail()
+                    }
+                }
+
+                secondaryPaneButton(
+                    systemName: "xmark",
+                    title: "Close"
+                ) {
+                    onCloseFilterDetail()
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+
+            Divider()
+
+            filterView()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .transition(.taskDetailFullscreen(edge: .trailing))
+    }
     @ViewBuilder
     private var mainDetailContent: some View {
         HStack(spacing: 0) {
@@ -158,12 +274,14 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     private var plannerDetailContent: some View {
         GeometryReader { proxy in
             let canShowTaskDetailPane = canShowPlannerTaskDetailPane(in: proxy.size.width)
+            let isHomeFilterPanePresented = shouldShowFilterDetailPane
+            let isPlannerExternalPanePresented = canShowTaskDetailPane || isHomeFilterPanePresented
 
             HStack(spacing: 0) {
                 DayPlanDetailView(
                     planner: dayPlanPlanner,
                     selectedTaskID: selectedTaskID,
-                    isTaskDetailInspectorPresented: canShowTaskDetailPane,
+                    isTaskDetailInspectorPresented: isPlannerExternalPanePresented,
                     displayMode: $dayPlanDisplayMode,
                     calendarSearchText: plannerSearchText,
                     listContent: {
@@ -172,7 +290,10 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                     onSelectUnplannedCompletedDate: onSelectDayPlanUnplannedCompletedDate,
                     onOpenTaskDetails: onOpenDayPlanTaskDetails,
                     onOpenEventDetails: onOpenEventDetails,
-                    onPlannerSidebarPresentationRequested: onCloseTaskDetails
+                    onPlannerSidebarPresentationRequested: {
+                        onCloseTaskDetails()
+                        onCloseFilterDetail()
+                    }
                 )
                 .frame(
                     minWidth: canShowTaskDetailPane ? MacDetailContainerSizing.plannerInspectorContentMinWidth : 0,
@@ -193,6 +314,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     private var shouldShowListTaskDetailPane: Bool {
         taskDetailPanePlacement == .listAdjacent
             && selectedTaskID != nil
+            && !store.isMacFilterDetailPresented
             && mainDetailMode.visibleSurfaceMode != .details
             && mainDetailMode.visibleSurfaceMode != .planner
     }
@@ -200,6 +322,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     private var shouldShowPlannerTaskDetailPane: Bool {
         taskDetailPanePlacement == .plannerAdjacent
             && selectedTaskID != nil
+            && !store.isMacFilterDetailPresented
             && mainDetailMode.visibleSurfaceMode == .planner
     }
 
@@ -259,14 +382,14 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
 
             Spacer(minLength: 8)
 
-            taskDetailPaneButton(
+            secondaryPaneButton(
                 systemName: "arrow.up.left.and.arrow.down.right",
                 title: "Open Fullscreen"
             ) {
                 onExpandTaskDetails()
             }
 
-            taskDetailPaneButton(
+            secondaryPaneButton(
                 systemName: "xmark",
                 title: "Close"
             ) {
@@ -277,7 +400,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
         .padding(.vertical, 10)
     }
 
-    private func taskDetailPaneButton(
+    private func secondaryPaneButton(
         systemName: String,
         title: String,
         action: @escaping () -> Void
@@ -314,7 +437,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
             boardView()
                 .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity)
 
-            if isBoardInspectorPresented {
+            if isBoardInspectorPresented && !store.isMacFilterDetailPresented {
                 boardInspectorView()
                     .frame(width: MacDetailContainerSizing.boardInspectorWidth)
                     .frame(maxHeight: .infinity)
@@ -325,6 +448,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
             }
         }
         .animation(.easeInOut(duration: 0.22), value: isBoardInspectorPresented)
+        .animation(MacHomeDetailAnimation.secondaryPane, value: store.isMacFilterDetailPresented)
     }
 
     private var shouldShowDetailModePicker: Bool {
