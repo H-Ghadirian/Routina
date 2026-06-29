@@ -137,6 +137,7 @@ enum TaskDetailCalendarPresentation {
         pausedAt: Date?,
         ongoingSince: Date? = nil,
         isOrangeUrgencyToday: Bool,
+        resolvesOverdueBeforeDueDate: Bool = false,
         referenceDate: Date = Date(),
         calendar: Calendar = .current
     ) -> TaskDetailCalendarDayPresentation {
@@ -154,9 +155,12 @@ enum TaskDetailCalendarPresentation {
         let isDueDateMissed = dueDate.map { dueDate in
             missedDates.contains { calendar.isDate($0, inSameDayAs: dueDate) }
         } ?? false
+        let overdueResolutionDates = doneDates.union(canceledDates).union(missedDates)
         let isDueToTodayRangeDate = !isMissedDate && !isDueDateMissed && isInDueToTodayRange(
             day: day,
             dueDate: dueDate,
+            resolutionDates: overdueResolutionDates,
+            resolvesBeforeDueDate: resolvesOverdueBeforeDueDate,
             referenceDate: referenceDate,
             calendar: calendar
         )
@@ -193,6 +197,8 @@ enum TaskDetailCalendarPresentation {
     static func isInDueToTodayRange(
         day: Date,
         dueDate: Date?,
+        resolutionDates: Set<Date> = [],
+        resolvesBeforeDueDate: Bool = false,
         referenceDate: Date = Date(),
         calendar: Calendar = .current
     ) -> Bool {
@@ -202,7 +208,51 @@ enum TaskDetailCalendarPresentation {
         let referenceStart = calendar.startOfDay(for: referenceDate)
 
         guard dueStart < referenceStart else { return false }
-        return dayStart >= dueStart && dayStart <= referenceStart
+        let rangeEnd = dueToTodayRangeEndDate(
+            dueStart: dueStart,
+            referenceStart: referenceStart,
+            resolutionDates: resolutionDates,
+            resolvesBeforeDueDate: resolvesBeforeDueDate,
+            calendar: calendar
+        )
+        return dayStart >= dueStart && dayStart <= rangeEnd
+    }
+
+    static func hasVisibleOverdueRange(
+        dueDate: Date?,
+        doneDates: Set<Date>,
+        missedDates: Set<Date>,
+        canceledDates: Set<Date>,
+        resolvesBeforeDueDate: Bool = false,
+        referenceDate: Date = Date(),
+        calendar: Calendar = .current
+    ) -> Bool {
+        guard let dueDate else { return false }
+        let dueStart = calendar.startOfDay(for: dueDate)
+        let referenceStart = calendar.startOfDay(for: referenceDate)
+        guard dueStart < referenceStart else { return false }
+        guard !containsDate(missedDates, matching: dueStart, calendar: calendar) else { return false }
+
+        let resolutionDates = doneDates.union(missedDates).union(canceledDates)
+        let rangeEnd = dueToTodayRangeEndDate(
+            dueStart: dueStart,
+            referenceStart: referenceStart,
+            resolutionDates: resolutionDates,
+            resolvesBeforeDueDate: resolvesBeforeDueDate,
+            calendar: calendar
+        )
+        var currentDay = dueStart
+        while currentDay <= rangeEnd {
+            let isResolved = containsDate(doneDates, matching: currentDay, calendar: calendar)
+                || containsDate(missedDates, matching: currentDay, calendar: calendar)
+                || containsDate(canceledDates, matching: currentDay, calendar: calendar)
+            if !isResolved {
+                return true
+            }
+            guard let nextDay = calendar.date(byAdding: .day, value: 1, to: currentDay) else { break }
+            currentDay = nextDay
+        }
+        return false
     }
 
     static func isInPausedRange(
@@ -246,5 +296,27 @@ enum TaskDetailCalendarPresentation {
             currentDay = nextDay
         }
         return days
+    }
+
+    private static func dueToTodayRangeEndDate(
+        dueStart: Date,
+        referenceStart: Date,
+        resolutionDates: Set<Date>,
+        resolvesBeforeDueDate: Bool,
+        calendar: Calendar
+    ) -> Date {
+        let lowerBound = resolvesBeforeDueDate ? Date.distantPast : dueStart
+        return resolutionDates
+            .map { calendar.startOfDay(for: $0) }
+            .filter { $0 >= lowerBound && $0 <= referenceStart }
+            .min() ?? referenceStart
+    }
+
+    private static func containsDate(
+        _ dates: Set<Date>,
+        matching day: Date,
+        calendar: Calendar
+    ) -> Bool {
+        dates.contains { calendar.isDate($0, inSameDayAs: day) }
     }
 }

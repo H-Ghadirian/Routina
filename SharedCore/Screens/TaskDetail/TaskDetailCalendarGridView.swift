@@ -13,6 +13,7 @@ struct TaskDetailCalendarGridView: View {
     let pausedAt: Date?
     let ongoingSince: Date?
     let isOrangeUrgencyToday: Bool
+    let resolvesOverdueBeforeDueDate: Bool
     let selectedDate: Date
     let onSelectDate: (Date) -> Void
     var calendar: Calendar = .current
@@ -61,6 +62,7 @@ struct TaskDetailCalendarGridView: View {
             pausedAt: pausedAt,
             ongoingSince: ongoingSince,
             isOrangeUrgencyToday: isOrangeUrgencyToday,
+            resolvesOverdueBeforeDueDate: resolvesOverdueBeforeDueDate,
             calendar: calendar
         )
 

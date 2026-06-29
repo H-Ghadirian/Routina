@@ -39,6 +39,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Todo availability has independent date and time axes. Date bounds, time windows, deadlines, reminders, and planned dates are separate concepts.
 - Planned dates are date-only Home-list planning hints for todos and non-daily routines. They are not availability, deadline, reminder, completion history, or stored Planner blocks. Planner day agendas surface active date-only planned tasks for the selected day.
 - Deleting a task also removes persisted task-backed Planner blocks for that task so deleted work does not remain on the calendar.
+- Task Detail calendar overdue markers run only while an overdue task is unresolved. If a completion, cancellation, or missed log resolves the task, later days stop showing as overdue.
 - Daily routines already belong to the daily routine area and do not expose stored planned-date controls.
 - Home `Today` includes active unpinned tasks planned for the current day, plus weekly/month-day calendar routines whose configured occurrence is today. A calendar routine with a canceled occurrence for today is not shown in the today plan. Rolling interval routines such as `Every 7 days` stay in the normal due/status sections unless explicitly planned.
 - On Mac, daily routines are shown inside `Today`. By default they visually merge into the today list; Settings can restore a nested `Daily Routines` group.

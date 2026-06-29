@@ -136,6 +136,18 @@ Given an existing Standard routine already has checklist items from legacy optio
 When the user saves it from Task Details
 Then the app preserves the Standard completion mode unless the user explicitly changes it
 
+### Late Completion Stops Overdue Calendar Markers
+
+Area: Tasks
+Decision links: [0200](../decisions/0200-support-task-planned-dates.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDetailCalendarGridSupportTests.swift`
+
+Given a todo was due on June 25 and is logged done on June 26 after the fact
+When Task Detail renders the June calendar on June 29
+Then June 25 can remain overdue, June 26 shows done, and June 27 through June 29 do not stay overdue
+
 ### Multi-Day Routine Lifecycle
 
 Area: Tasks

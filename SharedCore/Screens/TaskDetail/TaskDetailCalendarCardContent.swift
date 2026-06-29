@@ -14,6 +14,8 @@ struct TaskDetailCalendarCardContent: View {
     let onToday: () -> Void
 
     var body: some View {
+        let doneDates = TaskDetailCalendarPresentation.doneDates(from: logs, task: task)
+        let assumedDates = TaskDetailCalendarPresentation.assumedDates(from: logs, task: task)
         TaskDetailCalendarSectionView(
             displayedMonthStart: displayedMonthStart,
             onPreviousMonth: onPreviousMonth,
@@ -33,8 +35,8 @@ struct TaskDetailCalendarCardContent: View {
         ) {
             TaskDetailCalendarGridView(
                 displayedMonthStart: displayedMonthStart,
-                doneDates: TaskDetailCalendarPresentation.doneDates(from: logs, task: task),
-                assumedDates: TaskDetailCalendarPresentation.assumedDates(from: logs, task: task),
+                doneDates: doneDates,
+                assumedDates: assumedDates,
                 dueDate: dueDate,
                 softDueDate: softDueDate,
                 missedDates: missedDates,
@@ -44,6 +46,7 @@ struct TaskDetailCalendarCardContent: View {
                 pausedAt: task.pausedAt,
                 ongoingSince: task.ongoingSince,
                 isOrangeUrgencyToday: isOrangeUrgencyToday,
+                resolvesOverdueBeforeDueDate: task.isOneOffTask,
                 selectedDate: selectedDate,
                 onSelectDate: onSelectDate
             )
@@ -81,9 +84,12 @@ struct TaskDetailCalendarCardContent: View {
     }
 
     private var isOverdueRangeVisible: Bool {
-        guard let dueDate else { return false }
-        let calendar = Calendar.current
-        guard !missedDates.contains(where: { calendar.isDate($0, inSameDayAs: dueDate) }) else { return false }
-        return calendar.startOfDay(for: dueDate) < calendar.startOfDay(for: Date())
+        TaskDetailCalendarPresentation.hasVisibleOverdueRange(
+            dueDate: dueDate,
+            doneDates: TaskDetailCalendarPresentation.doneDates(from: logs, task: task),
+            missedDates: missedDates,
+            canceledDates: canceledDates,
+            resolvesBeforeDueDate: task.isOneOffTask
+        )
     }
 }
