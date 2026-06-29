@@ -17,6 +17,7 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     let locationSnapshot: LocationSnapshot
     @Binding var searchText: String
     let isCreatingSearchTask: Bool
+    let canCreateSearchTask: Bool
     let hasHomeFiltersApplied: Bool
     let isHomeFilterDetailPresented: Bool
     let focusStartTaskCount: Int
@@ -75,6 +76,7 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
             HomeMacToolbarSearchField(
                 text: $searchText,
                 isCreatingTask: isCreatingSearchTask,
+                canCreateTaskFromQuery: canCreateSearchTask,
                 onSubmit: onSearchSubmit
             )
         }
@@ -144,27 +146,216 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     }
 }
 
-private struct HomeMacToolbarSearchField: View {
-    private enum Layout {
-        static let width: CGFloat = 760
-        static let height: CGFloat = 44
-    }
+enum HomeMacToolbarSearchLayout {
+    static let width: CGFloat = 760
+    static let height: CGFloat = 44
+    static let parserPreviewTopPadding: CGFloat = 12
+}
 
+private struct HomeMacToolbarSearchField: View {
     @Binding var text: String
     let isCreatingTask: Bool
+    let canCreateTaskFromQuery: Bool
     let onSubmit: (String) -> Void
 
     var body: some View {
-        HomeMacToolbarSearchTextField(
-            placeholder: "Search tasks and timeline",
-            text: $text,
-            isCreatingTask: isCreatingTask,
-            onSubmit: onSubmit
-        )
-        .frame(width: Layout.width, height: Layout.height)
-        .help("Search tasks and timeline, or create a task when there are no results")
-        .accessibilityLabel("Search tasks and timeline, or create a task")
+        HStack(spacing: 8) {
+            HomeMacToolbarSearchTextField(
+                placeholder: HomeMacToolbarSearchCopy.placeholder,
+                text: $text,
+                isCreatingTask: isCreatingTask,
+                onSubmit: onSubmit
+            )
+            .frame(maxWidth: .infinity, maxHeight: HomeMacToolbarSearchLayout.height)
+
+            if showsCreateHint {
+                createHint
+                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
+            }
+        }
+        .frame(width: HomeMacToolbarSearchLayout.width, height: HomeMacToolbarSearchLayout.height)
+        .animation(.easeOut(duration: 0.12), value: showsCreateHint)
+        .help(HomeMacToolbarSearchCopy.help)
+        .accessibilityLabel(HomeMacToolbarSearchCopy.accessibilityLabel)
     }
+
+    private var showsCreateHint: Bool {
+        isCreatingTask || canCreateTaskFromQuery
+    }
+
+    private var createHint: some View {
+        HStack(spacing: 6) {
+            if isCreatingTask {
+                ProgressView()
+                    .controlSize(.small)
+                    .scaleEffect(0.72)
+
+                Text(HomeMacToolbarSearchCopy.creatingHint)
+            } else {
+                Text(HomeMacToolbarSearchCopy.returnKeyHint)
+                    .font(.caption2.monospaced().weight(.semibold))
+                    .foregroundStyle(Color.secondary)
+                    .padding(.horizontal, 6)
+                    .frame(height: 18)
+                    .background {
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(Color.secondary.opacity(0.14))
+                    }
+
+                Text(HomeMacToolbarSearchCopy.createHint)
+            }
+        }
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(isCreatingTask ? Color.accentColor : Color.secondary)
+        .lineLimit(1)
+        .fixedSize(horizontal: true, vertical: false)
+        .padding(.horizontal, 10)
+        .frame(height: 28)
+        .background {
+            Capsule(style: .continuous)
+                .fill(Color(nsColor: .controlBackgroundColor).opacity(0.9))
+        }
+        .overlay {
+            Capsule(style: .continuous)
+                .stroke(Color.secondary.opacity(0.16), lineWidth: 1)
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+struct HomeMacToolbarSearchParserPreview: View {
+    @Environment(\.calendar) private var calendar
+    let draft: RoutinaQuickAddDraft
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label(HomeMacToolbarSearchCopy.parserPreviewTitle, systemImage: "sparkles")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Image(systemName: "textformat")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.accentColor)
+                    .frame(width: 16)
+
+                Text(draft.name)
+                    .font(.headline)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(parsedRows) { row in
+                    parsedRow(row)
+                }
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color(nsColor: .controlBackgroundColor).opacity(0.96))
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+        }
+        .allowsHitTesting(false)
+    }
+
+    private var parsedRows: [ParsedRow] {
+        var rows: [ParsedRow] = []
+
+        if draft.scheduleMode != .oneOff {
+            rows.append(ParsedRow(
+                title: draft.scheduleMode.isSoftIntervalRoutine ? "Gentle routine" : "Repeats",
+                value: draft.recurrenceRule.displayText(calendar: calendar),
+                systemImage: "calendar"
+            ))
+        } else if let deadline = draft.deadline {
+            rows.append(ParsedRow(
+                title: "Due",
+                value: deadline.formatted(date: .abbreviated, time: .shortened),
+                systemImage: "calendar"
+            ))
+        }
+
+        if !draft.tags.isEmpty {
+            rows.append(ParsedRow(
+                title: "Tags",
+                value: draft.tags.map { "#\($0)" }.joined(separator: " "),
+                systemImage: "tag"
+            ))
+        }
+
+        if let placeName = draft.placeName {
+            rows.append(ParsedRow(
+                title: "Place",
+                value: "@\(placeName)",
+                systemImage: "mappin.and.ellipse"
+            ))
+        }
+
+        if draft.importance != .level2 || draft.urgency != .level2 {
+            rows.append(ParsedRow(
+                title: "Priority",
+                value: "\(draft.importance.title) / \(draft.urgency.title)",
+                systemImage: "exclamationmark.triangle"
+            ))
+        }
+
+        if let estimatedDurationMinutes = draft.estimatedDurationMinutes {
+            rows.append(ParsedRow(
+                title: "Focus",
+                value: "\(estimatedDurationMinutes)m",
+                systemImage: "timer"
+            ))
+        }
+
+        return rows
+    }
+
+    private func parsedRow(_ row: ParsedRow) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Image(systemName: row.systemImage)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 16)
+
+            Text(row.title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 88, alignment: .leading)
+
+            Text(row.value)
+                .font(.caption)
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+
+            Spacer(minLength: 0)
+        }
+    }
+
+    private struct ParsedRow: Identifiable {
+        let title: String
+        let value: String
+        let systemImage: String
+
+        var id: String { "\(title):\(value)" }
+    }
+}
+
+private enum HomeMacToolbarSearchCopy {
+    static let placeholder = "Search tasks and timeline, or create a task"
+    static let help = "Search tasks and timeline, or press Return to create a task when there are no results"
+    static let accessibilityLabel = "Search tasks and timeline, or create a task"
+    static let returnKeyHint = "Return"
+    static let createHint = "Create task"
+    static let creatingHint = "Creating task"
+    static let parserPreviewTitle = "Detected details"
 }
 
 private struct HomeMacToolbarFilterButton: View {
@@ -349,7 +540,7 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
             weight: .semibold
         )
         searchField.focusRingType = .none
-        searchField.toolTip = "Search all tasks and timeline"
+        searchField.toolTip = HomeMacToolbarSearchCopy.help
         context.coordinator.searchField = searchField
         context.coordinator.installFocusObserver()
         return searchField
@@ -359,7 +550,7 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
         context.coordinator.parent = self
         context.coordinator.searchField = nsView
         nsView.placeholderString = placeholder
-        nsView.toolTip = "Search tasks and timeline, or create a task when there are no results"
+        nsView.toolTip = HomeMacToolbarSearchCopy.help
         nsView.controlSize = .large
         nsView.focusRingType = .none
         nsView.font = NSFont.systemFont(

@@ -64,6 +64,8 @@ Coverage:
 Given the configurable Mac Quick Add shortcut has focused the Home toolbar search field
 When the user enters a non-empty query and presses Return
 Then Routina creates a task through Quick Add only if that query has no matching task or Timeline-style result
+And the toolbar shows a visible Return-to-create hint for that no-result query
+And if the query includes quick-add syntax such as `today`, `every day`, or `#home`, the toolbar shows a flat same-width parser preview below the field before creation without duplicating the Return-to-create hint
 
 ### Daily Checklist Progress Resets
 

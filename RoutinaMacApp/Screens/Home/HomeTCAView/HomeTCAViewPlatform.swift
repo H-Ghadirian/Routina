@@ -34,6 +34,7 @@ extension HomeTCAView {
             locationSnapshot: store.locationSnapshot,
             searchText: searchTextBinding,
             isCreatingSearchTask: isToolbarSearchCreateInProgress,
+            canCreateSearchTask: canCreateTaskFromToolbarSearch,
             hasHomeFiltersApplied: macHasAnyHomeFiltersApplied,
             isHomeFilterDetailPresented: store.isMacFilterDetailPresented,
             focusStartTaskCount: homeToolbarFocusStartTaskCount,
@@ -530,6 +531,19 @@ extension HomeTCAView {
 
     func applyAddRoutinePresentation<Content: View>(to content: Content) -> some View {
         content
+            .overlay(alignment: .top) {
+                if let toolbarSearchCreateDraft {
+                    HomeMacToolbarSearchParserPreview(draft: toolbarSearchCreateDraft)
+                        .frame(
+                            width: HomeMacToolbarSearchLayout.width,
+                            alignment: .leading
+                        )
+                        .padding(.top, HomeMacToolbarSearchLayout.parserPreviewTopPadding)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                        .zIndex(20)
+                        .allowsHitTesting(false)
+                }
+            }
             .overlay(alignment: .topTrailing) {
                 if let quickAddCreatedToast {
                     MacQuickAddCreatedToastView(
@@ -556,6 +570,10 @@ extension HomeTCAView {
                     }
                 }
             }
+            .animation(
+                .easeOut(duration: 0.12),
+                value: toolbarSearchCreateDraft
+            )
             .sheet(isPresented: subscriptionPaywallBinding) {
                 subscriptionPaywallContent
             }
@@ -579,6 +597,27 @@ extension HomeTCAView {
                 }
             }
         )
+    }
+
+    private var canCreateTaskFromToolbarSearch: Bool {
+        let trimmedText = searchTextBinding.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !trimmedText.isEmpty
+            && !isToolbarSearchCreateInProgress
+            && !hasToolbarSearchResult(for: trimmedText)
+    }
+
+    private var toolbarSearchCreateDraft: RoutinaQuickAddDraft? {
+        guard canCreateTaskFromToolbarSearch,
+              let draft = RoutinaQuickAddParser.parse(
+                searchTextBinding.wrappedValue,
+                calendar: calendar,
+                includingPlaces: isPlacesEnabled
+              ),
+              draft.hasDetectedMetadata else {
+            return nil
+        }
+
+        return draft
     }
 
     private func createTaskFromToolbarSearch(_ rawText: String) {
