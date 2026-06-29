@@ -33,6 +33,7 @@ extension HomeTCAView {
             selectedSidebarMode: macSidebarModeBinding,
             locationSnapshot: store.locationSnapshot,
             searchText: searchTextBinding,
+            isCreatingSearchTask: isToolbarSearchCreateInProgress,
             hasHomeFiltersApplied: macHasAnyHomeFiltersApplied,
             isHomeFilterDetailPresented: store.isMacFilterDetailPresented,
             focusStartTaskCount: homeToolbarFocusStartTaskCount,
@@ -51,6 +52,7 @@ extension HomeTCAView {
             onAddTask: openAddTask,
             onCheckIn: openCheckInFromAddMenu,
             onStartAway: openAwayFromAddMenu,
+            onSearchSubmit: createTaskFromToolbarSearch,
             onTaskFocusDurationSelected: { duration in
                 presentHomeToolbarFocusPicker(duration: duration)
             },
@@ -430,7 +432,6 @@ extension HomeTCAView {
             onOpenAddGoal: openAddGoal,
             onOpenCheckIn: openCheckInFromAddMenu,
             onOpenAway: openAwayFromAddMenu,
-            onOpenQuickAdd: showQuickAddSpotlight,
             onOpenTimeline: openTimelineInSidebar,
             onOpenStats: openStatsInSidebar
         ) { mode in
@@ -551,20 +552,88 @@ extension HomeTCAView {
                     }
                 }
             }
-            .overlay {
-                if isQuickAddSheetPresented {
-                    MacQuickAddSpotlightOverlay(
-                        isPresented: $isQuickAddSheetPresented,
-                        onCreated: handleQuickAddCreated,
-                        onLimitReached: { snapshot in
-                            store.send(.subscriptionRequired(snapshot, nil))
-                        }
-                    )
-                }
-            }
             .sheet(isPresented: subscriptionPaywallBinding) {
                 subscriptionPaywallContent
             }
+            .alert("Could Not Create Task", isPresented: toolbarSearchCreateErrorBinding) {
+                Button("OK", role: .cancel) {
+                    toolbarSearchCreateErrorMessage = nil
+                }
+            } message: {
+                if let toolbarSearchCreateErrorMessage {
+                    Text(toolbarSearchCreateErrorMessage)
+                }
+            }
+    }
+
+    private var toolbarSearchCreateErrorBinding: Binding<Bool> {
+        Binding(
+            get: { toolbarSearchCreateErrorMessage != nil },
+            set: { isPresented in
+                if !isPresented {
+                    toolbarSearchCreateErrorMessage = nil
+                }
+            }
+        )
+    }
+
+    private func createTaskFromToolbarSearch(_ rawText: String) {
+        let trimmedText = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedText.isEmpty,
+              !isToolbarSearchCreateInProgress,
+              !hasToolbarSearchResult(for: trimmedText) else {
+            return
+        }
+
+        toolbarSearchCreateErrorMessage = nil
+        isToolbarSearchCreateInProgress = true
+
+        Task { @MainActor in
+            defer { isToolbarSearchCreateInProgress = false }
+
+            do {
+                let result = try await RoutinaQuickAddService.createTask(
+                    from: trimmedText,
+                    context: modelContext,
+                    calendar: calendar,
+                    includingPlaces: isPlacesEnabled
+                )
+                searchTextBinding.wrappedValue = ""
+                handleQuickAddCreated(result)
+            } catch let error as RoutinaTaskLimitError {
+                store.send(.subscriptionRequired(error.snapshot, nil))
+            } catch {
+                toolbarSearchCreateErrorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func hasToolbarSearchResult(for searchText: String) -> Bool {
+        hasTaskSearchResult(for: searchText)
+            || hasTimelineSearchResult(for: searchText)
+    }
+
+    private func hasTaskSearchResult(for searchText: String) -> Bool {
+        let displays = store.routineDisplays
+            + store.awayRoutineDisplays
+            + store.archivedRoutineDisplays
+            + store.boardTodoDisplays
+
+        return displays.contains { task in
+            taskMatchesToolbarSearch(task, searchText: searchText)
+        }
+    }
+
+    private func taskMatchesToolbarSearch(
+        _ task: HomeFeature.RoutineDisplay,
+        searchText: String
+    ) -> Bool {
+        task.name.localizedCaseInsensitiveContains(searchText)
+            || task.emoji.localizedCaseInsensitiveContains(searchText)
+            || (task.notes?.localizedCaseInsensitiveContains(searchText) ?? false)
+            || (task.placeName?.localizedCaseInsensitiveContains(searchText) ?? false)
+            || RoutineTag.matchesQuery(searchText, in: task.tags)
+            || task.goalTitles.contains { $0.localizedCaseInsensitiveContains(searchText) }
     }
 
     private func handleQuickAddCreated(_ result: RoutinaQuickAddCreateResult) {
@@ -582,10 +651,6 @@ extension HomeTCAView {
         macHomeDetailMode = .details
         taskDetailPanePlacement = nil
         RoutinaDeepLinkDispatcher.open(.task(toast.taskID))
-    }
-
-    func showQuickAddSpotlight() {
-        isQuickAddSheetPresented = true
     }
 
     func openAddTask() {

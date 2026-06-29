@@ -132,6 +132,17 @@ extension HomeTCAView {
         basePlannerTimelineEntries.count
     }
 
+    func hasTimelineSearchResult(for searchText: String) -> Bool {
+        let trimmedSearch = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedSearch.isEmpty else { return true }
+
+        return baseTimelineEntries.contains { entry in
+            matchesTimelineSearch(entry, searchText: trimmedSearch)
+        } || basePlannerTimelineEntries.contains { entry in
+            matchesTimelineSearch(entry, searchText: trimmedSearch)
+        }
+    }
+
     private var basePlannerTimelineEntries: [TimelineEntry] {
         TimelineLogic.filteredEntries(
             logs: store.timelineLogs,
@@ -402,8 +413,12 @@ extension HomeTCAView {
     private func matchesTimelineSearch(_ entry: TimelineEntry) -> Bool {
         let trimmedSearch = searchTextBinding.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedSearch.isEmpty else { return true }
-        return entry.searchableText.localizedCaseInsensitiveContains(trimmedSearch)
-            || timelineKindLabel(for: entry).localizedCaseInsensitiveContains(trimmedSearch)
+        return matchesTimelineSearch(entry, searchText: trimmedSearch)
+    }
+
+    private func matchesTimelineSearch(_ entry: TimelineEntry, searchText: String) -> Bool {
+        return entry.searchableText.localizedCaseInsensitiveContains(searchText)
+            || timelineKindLabel(for: entry).localizedCaseInsensitiveContains(searchText)
     }
 
     func validateSelectedTimelineTag() {

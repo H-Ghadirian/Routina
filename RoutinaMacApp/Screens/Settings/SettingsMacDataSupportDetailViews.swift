@@ -201,7 +201,7 @@ struct SettingsMacShortcutsDetailView: View {
             title: "Shortcuts",
             subtitle: "Review keyboard shortcuts and Apple Shortcuts that Routina exposes."
         ) {
-            SettingsMacDetailCard(title: "Quick Add") {
+            SettingsMacDetailCard(title: "Search or Create") {
                 Picker("Shortcut", selection: quickAddShortcutBinding) {
                     ForEach(MacQuickAddShortcut.allCases) { shortcut in
                         Text("\(shortcut.title) · \(shortcut.detail)")
@@ -210,7 +210,7 @@ struct SettingsMacShortcutsDetailView: View {
                 }
                 .pickerStyle(.menu)
 
-                Text("Opens the Spotlight-style Quick Add overlay.")
+                Text("Focuses the Home toolbar search field. Press Return with a new query to create a task.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -257,7 +257,7 @@ struct SettingsMacShortcutsDetailView: View {
 
     private var keyboardShortcuts: [SettingsMacShortcutRowModel] {
         [
-            SettingsMacShortcutRowModel(title: "Quick Add", detail: "Open quick task creation.", shortcut: quickAddShortcut.title),
+            SettingsMacShortcutRowModel(title: "Search or Create", detail: "Focus Home search and create a task from a new query.", shortcut: quickAddShortcut.title),
             SettingsMacShortcutRowModel(title: "Back", detail: "Return to the previous Home view.", shortcut: "⌘←"),
             SettingsMacShortcutRowModel(title: "Forward", detail: "Move forward after going back.", shortcut: "⌘→"),
             SettingsMacShortcutRowModel(title: "Routines", detail: "Switch the sidebar back to routines.", shortcut: "⌥⌘1"),

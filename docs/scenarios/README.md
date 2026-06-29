@@ -53,6 +53,18 @@ Given Mac Home search has triggered a toolbar search update
 When the user moves focus into a task comment, note, or other text editor before the delayed search-focus repair completes
 Then typing stays in that editor instead of jumping back to the toolbar search field
 
+### Mac Toolbar Search Creates Only When Search Has No Result
+
+Area: Other
+Decision links: [0315](../decisions/0315-merge-mac-quick-add-into-toolbar-search.md)
+Current behavior: [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/macOS/PerformanceRegressionTests.swift`
+
+Given the configurable Mac Quick Add shortcut has focused the Home toolbar search field
+When the user enters a non-empty query and presses Return
+Then Routina creates a task through Quick Add only if that query has no matching task or Timeline-style result
+
 ### Daily Checklist Progress Resets
 
 Area: Tasks

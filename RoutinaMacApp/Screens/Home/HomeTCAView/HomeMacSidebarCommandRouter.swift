@@ -11,7 +11,6 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
     let onOpenAddGoal: () -> Void
     let onOpenCheckIn: () -> Void
     let onOpenAway: () -> Void
-    let onOpenQuickAdd: () -> Void
     let onOpenTimeline: () -> Void
     let onOpenStats: () -> Void
     let onModeChanged: (HomeFeature.MacSidebarMode) -> Void
@@ -27,7 +26,6 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
         onOpenAddGoal: @escaping () -> Void,
         onOpenCheckIn: @escaping () -> Void,
         onOpenAway: @escaping () -> Void,
-        onOpenQuickAdd: @escaping () -> Void,
         onOpenTimeline: @escaping () -> Void,
         onOpenStats: @escaping () -> Void,
         onModeChanged: @escaping (HomeFeature.MacSidebarMode) -> Void
@@ -42,7 +40,6 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
         self.onOpenAddGoal = onOpenAddGoal
         self.onOpenCheckIn = onOpenCheckIn
         self.onOpenAway = onOpenAway
-        self.onOpenQuickAdd = onOpenQuickAdd
         self.onOpenTimeline = onOpenTimeline
         self.onOpenStats = onOpenStats
         self.onModeChanged = onModeChanged
@@ -73,9 +70,6 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenAway)) { _ in
                 onOpenAway()
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenQuickAdd)) { _ in
-                onOpenQuickAdd()
             }
             .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenTimelineInSidebar)) { _ in
                 onOpenTimeline()

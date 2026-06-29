@@ -290,11 +290,16 @@ final class PerformanceRegressionTests: XCTestCase {
         let dayPlanSource = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
 
         XCTAssertTrue(
-            source.contains("HomeMacToolbarSearchField(text: $searchText)"),
+            source.contains("HomeMacToolbarSearchField("),
             "Home should keep the global task and timeline search field visible in the toolbar beside the focus timer controls."
         )
+        XCTAssertTrue(source.contains("static let width: CGFloat = 620"))
+        XCTAssertTrue(source.contains("static let height: CGFloat = 56"))
+        XCTAssertTrue(source.contains("searchField.controlSize = .large"))
         XCTAssertTrue(source.contains("Search tasks and timeline"))
         XCTAssertTrue(source.contains("NSSearchField"))
+        XCTAssertTrue(source.contains("routinaMacFocusSearchOrCreate"))
+        XCTAssertTrue(source.contains("parent.onSubmit"))
         XCTAssertTrue(source.contains("restoreFocusAfterSearchUpdate()"))
         XCTAssertTrue(
             source.contains("shouldLeaveCurrentTextEditorFocused"),
@@ -302,6 +307,12 @@ final class PerformanceRegressionTests: XCTestCase {
         )
         XCTAssertTrue(source.contains("window.firstResponder as? NSTextView"))
         XCTAssertTrue(source.contains("activeEditor !== searchField.currentEditor()"))
+        XCTAssertTrue(platformSource.contains("createTaskFromToolbarSearch"))
+        XCTAssertTrue(platformSource.contains("hasToolbarSearchResult"))
+        XCTAssertFalse(
+            platformSource.contains("MacQuickAddSpotlightOverlay"),
+            "The configurable quick-add shortcut should now be merged into the toolbar search field instead of opening a separate overlay."
+        )
         XCTAssertTrue(platformSource.contains("plannerSearchText: searchTextBinding.wrappedValue"))
         XCTAssertTrue(detailSource.contains("calendarSearchText: plannerSearchText"))
         XCTAssertTrue(dayPlanSource.contains("filteredBlocksByDayKey("))

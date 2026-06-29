@@ -31,6 +31,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0315](0315-merge-mac-quick-add-into-toolbar-search.md) refines [0074](0074-parse-mac-add-task-title.md), [0278](0278-open-single-mac-add-action-directly.md), and [0310](0310-show-mac-home-toolbar-search.md) for Mac search-or-create:** The configurable Mac Quick Add shortcut focuses the Home toolbar search field, typing still live-searches tasks and Timeline-style results, and Return creates through the shared Quick Add parser only when the query has no current task or timeline result.
 - **[0314](0314-remove-status-grouping-and-collapse-deadline-groups.md) refines [0064](0064-group-home-task-list-by-tags.md), [0088](0088-support-ungrouped-home-task-list.md), and [0283](0283-preserve-mac-future-inner-sections.md) for Home task-list grouping:** Home task-list grouping exposes None, Deadline Date, and Tags; legacy stored Status grouping preferences normalize to Deadline Date, and Mac `Future` deadline-date groups are independently collapsible while retaining deadline/manual-order section keys.
 - **[0313](0313-disable-mac-app-widgets-in-app-targets.md) refines [0135](0135-show-today-focus-widget.md) and [0210](0210-store-durable-preferences-in-swiftdata.md) for Mac widgets:** Mac widget source and extension targets remain in the repo, but Mac app targets do not build, embed, or register widget extensions, and Mac widget refresh behavior is hard-disabled so users do not see Routina widgets or disabled placeholders.
 - **[0312](0312-move-mac-task-timeline-filter-entry-to-toolbar.md) refines [0216](0216-move-mac-home-task-type-tabs-to-filter-screen.md), [0289](0289-filter-planner-calendar-layers.md), [0310](0310-show-mac-home-toolbar-search.md), and [0311](0311-move-mac-home-mode-strip-to-toolbar.md) for Mac Home filter entry:** Mac Home renders one toolbar filter button beside search for Task List and Timeline filters, opening a segmented Both / Task List / Timeline filter detail where shared tag and importance/urgency filters live under Both. Task and Timeline sidebar headers no longer render filter icon buttons, Timeline has no range filter in Mac Home, hidden Sleep type options normalize to All, and Planner Calendar keeps its own header filter button and right-side filter sidebar.
@@ -222,6 +223,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0315](0315-merge-mac-quick-add-into-toolbar-search.md) | Merge Mac Quick Add Into Toolbar Search | Accepted | 2026-06-29 |
 | [0314](0314-remove-status-grouping-and-collapse-deadline-groups.md) | Remove Status Grouping and Collapse Deadline Groups | Accepted | 2026-06-29 |
 | [0313](0313-disable-mac-app-widgets-in-app-targets.md) | Disable Mac App Widgets in App Targets | Accepted | 2026-06-29 |
 | [0312](0312-move-mac-task-timeline-filter-entry-to-toolbar.md) | Move Mac Task and Timeline Filter Entry to Toolbar | Accepted | 2026-06-28 |

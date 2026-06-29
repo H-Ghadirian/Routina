@@ -185,7 +185,7 @@ final class RoutinaMacGlobalHotKeyManager {
 
             DispatchQueue.main.async {
                 RoutinaMacWindowRouter.shared.openHomeAndActivate()
-                NotificationCenter.default.post(name: .routinaMacOpenQuickAdd, object: nil)
+                RoutinaMacSearchOrCreateFocus.request(retryAfterWindowOpen: true)
             }
 
             return noErr

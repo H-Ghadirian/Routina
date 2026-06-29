@@ -12,9 +12,27 @@ extension Notification.Name {
     static let routinaMacOpenAddGoal = Notification.Name("routina.mac.openAddGoal")
     static let routinaMacOpenCheckIn = Notification.Name("routina.mac.openCheckIn")
     static let routinaMacOpenAway = Notification.Name("routina.mac.openAway")
-    static let routinaMacOpenQuickAdd = Notification.Name("routina.mac.openQuickAdd")
+    static let routinaMacFocusSearchOrCreate = Notification.Name("routina.mac.focusSearchOrCreate")
     static let routinaMacNavigateBack = Notification.Name("routina.mac.navigateBack")
     static let routinaMacNavigateForward = Notification.Name("routina.mac.navigateForward")
+}
+
+@MainActor
+enum RoutinaMacSearchOrCreateFocus {
+    static func request(retryAfterWindowOpen: Bool = false) {
+        postFocusRequest()
+
+        guard retryAfterWindowOpen else { return }
+        [0.05, 0.15, 0.35, 0.7].forEach { delay in
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                postFocusRequest()
+            }
+        }
+    }
+
+    private static func postFocusRequest() {
+        NotificationCenter.default.post(name: .routinaMacFocusSearchOrCreate, object: nil)
+    }
 }
 
 struct RoutineCommands: Commands {
@@ -70,8 +88,8 @@ struct RoutineCommands: Commands {
             Divider()
             #endif
 
-            Button("Quick Add") {
-                NotificationCenter.default.post(name: .routinaMacOpenQuickAdd, object: nil)
+            Button("Search or Create") {
+                RoutinaMacSearchOrCreateFocus.request()
             }
             .keyboardShortcut(quickAddShortcut.keyEquivalent, modifiers: quickAddShortcut.modifiers)
 

@@ -16,6 +16,7 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     @Binding var selectedSidebarMode: HomeFeature.MacSidebarMode
     let locationSnapshot: LocationSnapshot
     @Binding var searchText: String
+    let isCreatingSearchTask: Bool
     let hasHomeFiltersApplied: Bool
     let isHomeFilterDetailPresented: Bool
     let focusStartTaskCount: Int
@@ -30,6 +31,7 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     let onAddTask: () -> Void
     let onCheckIn: () -> Void
     let onStartAway: () -> Void
+    let onSearchSubmit: (String) -> Void
     let onTaskFocusDurationSelected: (TimeInterval) -> Void
     let onPausePlanFocus: (FocusSession) -> Void
     let onResumePlanFocus: (FocusSession) -> Void
@@ -74,7 +76,11 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
         }
 
         ToolbarItem(placement: .navigation) {
-            HomeMacToolbarSearchField(text: $searchText)
+            HomeMacToolbarSearchField(
+                text: $searchText,
+                isCreatingTask: isCreatingSearchTask,
+                onSubmit: onSearchSubmit
+            )
         }
 
         ToolbarItem(placement: .navigation) {
@@ -133,16 +139,25 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
 }
 
 private struct HomeMacToolbarSearchField: View {
+    private enum Layout {
+        static let width: CGFloat = 620
+        static let height: CGFloat = 56
+    }
+
     @Binding var text: String
+    let isCreatingTask: Bool
+    let onSubmit: (String) -> Void
 
     var body: some View {
         HomeMacToolbarSearchTextField(
             placeholder: "Search tasks and timeline",
-            text: $text
+            text: $text,
+            isCreatingTask: isCreatingTask,
+            onSubmit: onSubmit
         )
-        .frame(width: 300, height: 28)
-        .help("Search all tasks and timeline")
-        .accessibilityLabel("Search all tasks and timeline")
+        .frame(width: Layout.width, height: Layout.height)
+        .help("Search tasks and timeline, or create a task when there are no results")
+        .accessibilityLabel("Search tasks and timeline, or create a task")
     }
 }
 
@@ -172,6 +187,8 @@ private struct HomeMacToolbarFilterButton: View {
 private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
     let placeholder: String
     @Binding var text: String
+    let isCreatingTask: Bool
+    let onSubmit: (String) -> Void
 
     @MainActor
     final class Coordinator: NSObject, NSSearchFieldDelegate {
@@ -179,9 +196,29 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
         weak var searchField: NSSearchField?
         private var shouldRestoreFocus = false
         private var focusGeneration = 0
+        private var isFocusObserverInstalled = false
 
         init(parent: HomeMacToolbarSearchTextField) {
             self.parent = parent
+        }
+
+        deinit {
+            NotificationCenter.default.removeObserver(self)
+        }
+
+        func installFocusObserver() {
+            guard !isFocusObserverInstalled else { return }
+            isFocusObserverInstalled = true
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(focusSearchOrCreate),
+                name: .routinaMacFocusSearchOrCreate,
+                object: nil
+            )
+        }
+
+        @objc private func focusSearchOrCreate() {
+            focusSearchField(selectingText: true)
         }
 
         func controlTextDidEndEditing(_ notification: Notification) {
@@ -196,6 +233,22 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
         @objc func searchAction(_ sender: NSSearchField) {
             syncSearchText(from: sender)
             restoreFocusAfterSearchUpdate()
+        }
+
+        func control(
+            _ control: NSControl,
+            textView: NSTextView,
+            doCommandBy commandSelector: Selector
+        ) -> Bool {
+            guard commandSelector == #selector(NSResponder.insertNewline(_:)) else {
+                return false
+            }
+
+            syncSearchText(from: control)
+            guard !parent.isCreatingTask else { return true }
+            parent.onSubmit((control as? NSTextField)?.stringValue ?? parent.text)
+            restoreFocusAfterSearchUpdate()
+            return true
         }
 
         private func syncSearchText(from object: Any?) {
@@ -248,6 +301,18 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
             }
         }
 
+        private func focusSearchField(selectingText: Bool) {
+            guard let searchField,
+                  let window = searchField.window else { return }
+
+            window.makeFirstResponder(searchField)
+            let length = searchField.stringValue.count
+            searchField.currentEditor()?.selectedRange = NSRange(
+                location: selectingText ? 0 : length,
+                length: selectingText ? length : 0
+            )
+        }
+
         private func shouldLeaveCurrentTextEditorFocused(
             _ searchField: NSSearchField,
             in window: NSWindow
@@ -272,13 +337,15 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
         searchField.action = #selector(Coordinator.searchAction(_:))
         searchField.sendsSearchStringImmediately = true
         searchField.sendsWholeSearchString = false
-        searchField.controlSize = .small
+        searchField.controlSize = .large
         searchField.font = NSFont.systemFont(
-            ofSize: NSFont.systemFontSize(for: .small)
+            ofSize: NSFont.systemFontSize(for: .large),
+            weight: .semibold
         )
         searchField.focusRingType = .default
         searchField.toolTip = "Search all tasks and timeline"
         context.coordinator.searchField = searchField
+        context.coordinator.installFocusObserver()
         return searchField
     }
 
@@ -286,7 +353,12 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
         context.coordinator.parent = self
         context.coordinator.searchField = nsView
         nsView.placeholderString = placeholder
-        nsView.toolTip = "Search all tasks and timeline"
+        nsView.toolTip = "Search tasks and timeline, or create a task when there are no results"
+        nsView.controlSize = .large
+        nsView.font = NSFont.systemFont(
+            ofSize: NSFont.systemFontSize(for: .large),
+            weight: .semibold
+        )
 
         if nsView.currentEditor() == nil, nsView.stringValue != text {
             nsView.stringValue = text
@@ -407,7 +479,7 @@ private struct HomeMacPlanFocusToolbarButton: View {
                 Image(systemName: "play.fill")
                     .font(.caption.weight(.semibold))
 
-                Text("Start Focus Timer")
+                Text("Focus")
                     .font(.caption.weight(.semibold))
             }
         }
