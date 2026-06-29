@@ -23,6 +23,7 @@ enum HomeTaskListPresentationSectionKind: String, Equatable {
     case daily
     case future
     case regular
+    case deadlineDate
     case tag
     case untagged
     case away
@@ -34,7 +35,7 @@ extension HomeTaskListPresentationSectionKind {
         switch self {
         case .plannedToday, .daily, .future, .tag, .untagged, .archived:
             return true
-        case .pinned, .regular, .away:
+        case .pinned, .regular, .deadlineDate, .away:
             return false
         }
     }
@@ -583,7 +584,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                 title: showsGroupTitles ? section.title : nil,
                 tasks: section.tasks,
                 moveContext: moveContext(section),
-                isCollapsible: kind == .tag || kind == .untagged
+                isCollapsible: kind == .tag || kind == .untagged || kind == .deadlineDate
             )
         }
         let tasks = taskGroups.flatMap(\.tasks)
@@ -612,6 +613,9 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         }
         if section.title.hasPrefix("#") {
             return .tag
+        }
+        if section.identityKey.hasPrefix("deadline:") {
+            return .deadlineDate
         }
         return .regular
     }

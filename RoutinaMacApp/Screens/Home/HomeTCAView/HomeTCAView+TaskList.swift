@@ -382,7 +382,7 @@ extension HomeTCAView {
         switch section.kind {
         case .plannedToday, .future:
             return 0
-        case .daily, .tag, .untagged, .archived, .pinned, .regular, .away:
+        case .daily, .tag, .untagged, .archived, .pinned, .regular, .deadlineDate, .away:
             return 8
         }
     }
@@ -713,7 +713,7 @@ extension HomeTCAView {
             return 0.08
         case .untagged, .archived:
             return 0.06
-        case .pinned, .regular, .away:
+        case .pinned, .regular, .deadlineDate, .away:
             return 0.07
         }
     }
@@ -731,7 +731,7 @@ extension HomeTCAView {
             return 0.22
         case .untagged, .archived:
             return 0.18
-        case .pinned, .regular, .away:
+        case .pinned, .regular, .deadlineDate, .away:
             return 0.22
         }
     }
@@ -754,7 +754,7 @@ extension HomeTCAView {
             return "archivebox.fill"
         case .pinned:
             return "pin.fill"
-        case .regular, .away:
+        case .regular, .deadlineDate, .away:
             return "list.bullet"
         }
     }
@@ -778,7 +778,7 @@ extension HomeTCAView {
             return .secondary
         case .pinned:
             return .orange
-        case .regular, .away:
+        case .regular, .deadlineDate, .away:
             return .secondary
         }
     }
@@ -791,7 +791,7 @@ extension HomeTCAView {
             return 0.12
         case .untagged:
             return 0.06
-        case .plannedToday, .daily, .future, .regular, .pinned, .away, .archived:
+        case .plannedToday, .daily, .future, .regular, .deadlineDate, .pinned, .away, .archived:
             return 0.07
         }
     }
@@ -804,7 +804,7 @@ extension HomeTCAView {
             return 0.30
         case .untagged:
             return 0.18
-        case .plannedToday, .daily, .future, .regular, .pinned, .away, .archived:
+        case .plannedToday, .daily, .future, .regular, .deadlineDate, .pinned, .away, .archived:
             return 0.22
         }
     }
@@ -829,6 +829,8 @@ extension HomeTCAView {
             return "pin.fill"
         case .regular, .away:
             return "list.bullet"
+        case .deadlineDate:
+            return "calendar"
         }
     }
 
@@ -845,7 +847,7 @@ extension HomeTCAView {
             return .teal
         case .plannedToday:
             return .accentColor
-        case .untagged, .future, .regular, .away, .archived:
+        case .untagged, .future, .regular, .deadlineDate, .away, .archived:
             return .secondary
         case .pinned:
             return .orange
@@ -996,7 +998,7 @@ extension HomeTCAView {
             return !collapsedTagTaskListSectionIDs.contains(section.id)
         case .archived:
             return !isArchivedSectionCollapsed
-        case .pinned, .regular, .away:
+        case .pinned, .regular, .deadlineDate, .away:
             return true
         }
     }
@@ -1017,7 +1019,7 @@ extension HomeTCAView {
                 setTagTaskListSection(section, collapsed: taskListSectionIsExpanded(section))
             case .archived:
                 isArchivedSectionCollapsed.toggle()
-            case .pinned, .regular, .away:
+            case .pinned, .regular, .deadlineDate, .away:
                 break
             }
         }
@@ -1030,7 +1032,7 @@ extension HomeTCAView {
         switch group.kind {
         case .daily:
             return !isMacPlanTodayDailyRoutinesGroupCollapsed
-        case .tag, .untagged:
+        case .deadlineDate, .tag, .untagged:
             return !collapsedTagTaskListSectionIDs.contains(taskListGroupCollapseID(group))
         case .plannedToday, .future, .regular, .pinned, .away, .archived:
             return true
@@ -1045,7 +1047,7 @@ extension HomeTCAView {
             switch group.kind {
             case .daily:
                 isMacPlanTodayDailyRoutinesGroupCollapsed.toggle()
-            case .tag, .untagged:
+            case .deadlineDate, .tag, .untagged:
                 setTagTaskListGroup(group, collapsed: taskListGroupIsExpanded(group))
             case .plannedToday, .future, .regular, .pinned, .away, .archived:
                 break
@@ -1439,7 +1441,7 @@ private extension HomeTaskListPresentationSection where Display == HomeFeature.R
     var canStartFocusTimer: Bool {
         guard !tasks.isEmpty else { return false }
         switch kind {
-        case .plannedToday, .daily, .future, .tag, .untagged, .regular, .pinned:
+        case .plannedToday, .daily, .future, .tag, .untagged, .regular, .deadlineDate, .pinned:
             return true
         case .away, .archived:
             return false

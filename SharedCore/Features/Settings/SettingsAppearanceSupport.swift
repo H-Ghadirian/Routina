@@ -12,7 +12,7 @@ enum SettingsAppearanceEditor {
         _ mode: RoutineListSectioningMode,
         state: inout SettingsAppearanceState
     ) {
-        state.routineListSectioningMode = mode
+        state.routineListSectioningMode = mode.availableValue
     }
 
     static func updateTagCounterDisplayMode(

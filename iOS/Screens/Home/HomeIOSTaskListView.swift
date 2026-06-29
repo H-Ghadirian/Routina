@@ -140,7 +140,7 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
             return !collapsedTagTaskListSectionIDs.contains(section.id)
         case .archived:
             return !isArchivedSectionCollapsed
-        case .pinned, .regular, .away:
+        case .pinned, .regular, .deadlineDate, .away:
             return true
         }
     }
@@ -159,7 +159,7 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
                 setTagTaskListSection(section, collapsed: isSectionExpanded(section))
             case .archived:
                 isArchivedSectionCollapsed.toggle()
-            case .pinned, .regular, .away:
+            case .pinned, .regular, .deadlineDate, .away:
                 break
             }
         }

@@ -531,12 +531,12 @@ extension AppSettingsClient {
             AppSettingsPersistenceMirror.schedule()
         },
         routineListSectioningMode: {
-            RoutineListSectioningMode(
-                rawValue: SharedDefaults.app[.appSettingRoutineListSectioningMode] ?? ""
-            ) ?? .defaultValue
+            RoutineListSectioningMode.preferenceValue(
+                rawValue: SharedDefaults.app[.appSettingRoutineListSectioningMode]
+            )
         },
         setRoutineListSectioningMode: { mode in
-            SharedDefaults.app[.appSettingRoutineListSectioningMode] = mode.rawValue
+            SharedDefaults.app[.appSettingRoutineListSectioningMode] = mode.availableValue.rawValue
             AppSettingsPersistenceMirror.schedule()
         },
         tagCounterDisplayMode: {

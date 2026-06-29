@@ -11,6 +11,13 @@ import Testing
 @MainActor
 struct HomeTaskListFilteringTests {
     @Test
+    func routineListSectioningModeRemovesStatusFromActiveChoices() {
+        #expect(RoutineListSectioningMode.allCases == [.none, .deadlineDate, .tags])
+        #expect(RoutineListSectioningMode.defaultValue == .deadlineDate)
+        #expect(RoutineListSectioningMode.preferenceValue(rawValue: "status") == .deadlineDate)
+    }
+
+    @Test
     func filteredTasksAppliesSearchTagsPlaceAndImportanceFilters() {
         let placeID = UUID()
         let otherPlaceID = UUID()
@@ -999,6 +1006,43 @@ struct HomeTaskListFilteringTests {
         #expect(futureSection.taskGroups.compactMap(\.moveContext?.orderedTaskIDs.first) == [regularID])
         #expect(presentation.visibleTaskCount == 3)
         #expect(presentation.emptyState == nil)
+    }
+
+    @Test
+    func sidebarPresentationDeadlineDateGroupsAreCollapsibleInsideFuture() {
+        let mondayID = UUID()
+        let tuesdayID = UUID()
+        let unscheduledID = UUID()
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(routineListSectioningMode: .deadlineDate),
+            routineDisplays: [
+                TestTaskDisplay(taskID: mondayID, name: "Monday task", daysUntilDue: 4),
+                TestTaskDisplay(taskID: tuesdayID, name: "Tuesday task", daysUntilDue: 5),
+                TestTaskDisplay(taskID: unscheduledID, name: "Unscheduled todo", daysUntilDue: Int.max, isOneOffTask: true)
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        let futureSection = presentation.sections.first
+        #expect(futureSection?.kind == .future)
+        #expect(futureSection?.taskGroups.map(\.kind) == [.deadlineDate, .deadlineDate, .regular])
+        #expect(futureSection?.taskGroups.map(\.isCollapsible) == [true, true, false])
+        #expect(futureSection?.taskGroups.compactMap(\.moveContext?.sectionKey) == [
+            "onTrack:2024-05-06",
+            "onTrack:2024-05-07",
+            "onTrack"
+        ])
+        #expect(futureSection?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs) == [
+            [mondayID],
+            [tuesdayID],
+            [unscheduledID]
+        ])
     }
 
     @Test

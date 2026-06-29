@@ -6,9 +6,24 @@ enum RoutineListSectioningMode: String, CaseIterable, Equatable, Identifiable {
     case deadlineDate
     case tags
 
-    static let defaultValue: Self = .status
+    static let allCases: [Self] = [.none, .deadlineDate, .tags]
+    static let defaultValue: Self = .deadlineDate
+
+    static func preferenceValue(rawValue: String?) -> Self {
+        let value = rawValue.flatMap(Self.init(rawValue:)) ?? .defaultValue
+        return value.availableValue
+    }
 
     var id: Self { self }
+
+    var availableValue: Self {
+        switch self {
+        case .status:
+            return .deadlineDate
+        case .none, .deadlineDate, .tags:
+            return self
+        }
+    }
 
     var title: String {
         switch self {

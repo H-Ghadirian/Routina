@@ -8,6 +8,8 @@ Accepted
 
 2026-05-27
 
+Refined by: [0314 Remove Status Grouping and Collapse Deadline Groups](0314-remove-status-grouping-and-collapse-deadline-groups.md)
+
 ## Context
 
 Home list grouping helps users scan by status, deadline, or tag, but sometimes those section headers add friction when the user wants one continuous list that still respects the active search and filters.

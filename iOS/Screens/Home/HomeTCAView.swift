@@ -141,10 +141,10 @@ homeContent
 
     var routineListSectioningMode: RoutineListSectioningMode {
         get {
-            RoutineListSectioningMode(rawValue: routineListSectioningModeRawValue) ?? .defaultValue
+            RoutineListSectioningMode.preferenceValue(rawValue: routineListSectioningModeRawValue)
         }
         nonmutating set {
-            routineListSectioningModeRawValue = newValue.rawValue
+            routineListSectioningModeRawValue = newValue.availableValue.rawValue
         }
     }
 

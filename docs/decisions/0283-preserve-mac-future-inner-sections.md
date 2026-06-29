@@ -6,7 +6,7 @@ Date: 2026-06-26
 
 Refines: [0281 Collapse Mac Future Tasks](0281-collapse-mac-future-tasks.md)
 
-Refined by: [0285 Clarify Mac Sidebar Section Surfaces](0285-clarify-mac-sidebar-section-surfaces.md)
+Refined by: [0285 Clarify Mac Sidebar Section Surfaces](0285-clarify-mac-sidebar-section-surfaces.md), [0314 Remove Status Grouping and Collapse Deadline Groups](0314-remove-status-grouping-and-collapse-deadline-groups.md)
 
 ## Context
 

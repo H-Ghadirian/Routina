@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-05-26
+- **Refined by:** [0314 Remove Status Grouping and Collapse Deadline Groups](0314-remove-status-grouping-and-collapse-deadline-groups.md)
 
 ## Context
 

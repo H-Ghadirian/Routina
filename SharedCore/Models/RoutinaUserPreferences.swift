@@ -151,7 +151,9 @@ enum RoutinaUserPreferencesStore {
         let defaults = SharedDefaults.app
         preferences.selectedAppIcon = defaults[.selectedMacAppIcon]
         preferences.appColorScheme = defaults[.appSettingAppColorScheme]
-        preferences.routineListSectioningMode = defaults[.appSettingRoutineListSectioningMode]
+        preferences.routineListSectioningMode = RoutineListSectioningMode.preferenceValue(
+            rawValue: defaults[.appSettingRoutineListSectioningMode]
+        ).rawValue
         preferences.tagCounterDisplayMode = defaults[.appSettingTagCounterDisplayMode]
         preferences.homeTaskRowHiddenFields = defaults[.appSettingHomeTaskRowHiddenFields]
         preferences.homeTimelineRowHiddenFields = defaults[.appSettingHomeTimelineRowHiddenFields]
@@ -204,7 +206,9 @@ enum RoutinaUserPreferencesStore {
     private static func copy(_ preferences: RoutinaUserPreferences, to defaults: UserDefaults) {
         defaults[.selectedMacAppIcon] = preferences.selectedAppIcon
         defaults[.appSettingAppColorScheme] = preferences.appColorScheme
-        defaults[.appSettingRoutineListSectioningMode] = preferences.routineListSectioningMode
+        defaults[.appSettingRoutineListSectioningMode] = RoutineListSectioningMode.preferenceValue(
+            rawValue: preferences.routineListSectioningMode
+        ).rawValue
         defaults[.appSettingTagCounterDisplayMode] = preferences.tagCounterDisplayMode
         defaults[.appSettingHomeTaskRowHiddenFields] = preferences.homeTaskRowHiddenFields
         defaults[.appSettingHomeTimelineRowHiddenFields] = preferences.homeTimelineRowHiddenFields
