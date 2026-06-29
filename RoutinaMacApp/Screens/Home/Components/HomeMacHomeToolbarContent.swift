@@ -51,19 +51,33 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
 
     @ToolbarContentBuilder
     private var boardToolbar: some ToolbarContent {
+        searchToolbarItem
         navigationToolbarItems
         progressModeToolbarItem
     }
 
     @ToolbarContentBuilder
     private var goalsToolbar: some ToolbarContent {
+        searchToolbarItem
         navigationToolbarItems
     }
 
     @ToolbarContentBuilder
     private var standardToolbar: some ToolbarContent {
+        searchToolbarItem
         navigationToolbarItems
         progressModeToolbarItem
+    }
+
+    @ToolbarContentBuilder
+    private var searchToolbarItem: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            HomeMacToolbarSearchField(
+                text: $searchText,
+                isCreatingTask: isCreatingSearchTask,
+                onSubmit: onSearchSubmit
+            )
+        }
     }
 
     @ToolbarContentBuilder
@@ -72,14 +86,6 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
             RoutinaMacPlaceCheckInToolbarItem(
                 locationSnapshot: locationSnapshot,
                 onMapRequested: onPlaceCheckInMapRequested
-            )
-        }
-
-        ToolbarItem(placement: .navigation) {
-            HomeMacToolbarSearchField(
-                text: $searchText,
-                isCreatingTask: isCreatingSearchTask,
-                onSubmit: onSearchSubmit
             )
         }
 
@@ -131,7 +137,7 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     @ToolbarContentBuilder
     private var progressModeToolbarItem: some ToolbarContent {
         if showsProgressModePicker {
-            ToolbarItem(placement: .principal) {
+            ToolbarItem(placement: .navigation) {
                 MacHomeProgressModePicker(selection: $progressMode)
             }
         }
@@ -140,8 +146,8 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
 
 private struct HomeMacToolbarSearchField: View {
     private enum Layout {
-        static let width: CGFloat = 620
-        static let height: CGFloat = 56
+        static let width: CGFloat = 760
+        static let height: CGFloat = 44
     }
 
     @Binding var text: String
@@ -342,7 +348,7 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
             ofSize: NSFont.systemFontSize(for: .large),
             weight: .semibold
         )
-        searchField.focusRingType = .default
+        searchField.focusRingType = .none
         searchField.toolTip = "Search all tasks and timeline"
         context.coordinator.searchField = searchField
         context.coordinator.installFocusObserver()
@@ -355,6 +361,7 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
         nsView.placeholderString = placeholder
         nsView.toolTip = "Search tasks and timeline, or create a task when there are no results"
         nsView.controlSize = .large
+        nsView.focusRingType = .none
         nsView.font = NSFont.systemFont(
             ofSize: NSFont.systemFontSize(for: .large),
             weight: .semibold

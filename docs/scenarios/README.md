@@ -240,7 +240,7 @@ Coverage:
 - `Tests/macOS/PerformanceRegressionTests.swift`
 
 Given Mac Home is showing Planner, Board, Timeline, Details, or Places
-When the toolbar filter button beside search is pressed
+When the toolbar command-row filter button is pressed
 Then the `Both` / `Task List` / `Timeline` filter surface opens in a right-side companion pane while the current workspace remains visible
 And task-detail panes, the board inspector, and Planner-local right sidebars do not remain open beside it
 When the user expands the filter pane fullscreen and then minimizes it

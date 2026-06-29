@@ -284,6 +284,7 @@ final class PerformanceRegressionTests: XCTestCase {
 
     func testMacHomeFocusToolbarUsesSingleTimerSlot() throws {
         let source = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacHomeToolbarContent.swift")
+        let rootSceneSource = try Self.sourceFile("RoutinaMacApp/Screens/App/RoutinaMacRootScene.swift")
         let sidebarSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Sidebar.swift")
         let platformSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift")
         let detailSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
@@ -291,11 +292,17 @@ final class PerformanceRegressionTests: XCTestCase {
 
         XCTAssertTrue(
             source.contains("HomeMacToolbarSearchField("),
-            "Home should keep the global task and timeline search field visible in the toolbar beside the focus timer controls."
+            "Home should keep the global task and timeline search field visible as the centered toolbar search affordance."
         )
-        XCTAssertTrue(source.contains("static let width: CGFloat = 620"))
-        XCTAssertTrue(source.contains("static let height: CGFloat = 56"))
+        XCTAssertTrue(source.contains("ToolbarItem(placement: .principal)"))
+        XCTAssertTrue(source.contains("static let width: CGFloat = 760"))
+        XCTAssertTrue(source.contains("static let height: CGFloat = 44"))
+        XCTAssertTrue(rootSceneSource.contains("window.toolbarStyle = .expanded"))
+        XCTAssertTrue(rootSceneSource.contains("window.toolbar?.sizeMode = .regular"))
         XCTAssertTrue(source.contains("searchField.controlSize = .large"))
+        XCTAssertTrue(source.contains("searchField.focusRingType = .none"))
+        XCTAssertTrue(source.contains("nsView.focusRingType = .none"))
+        XCTAssertFalse(source.contains("focusRingType = .default"))
         XCTAssertTrue(source.contains("Search tasks and timeline"))
         XCTAssertTrue(source.contains("NSSearchField"))
         XCTAssertTrue(source.contains("routinaMacFocusSearchOrCreate"))

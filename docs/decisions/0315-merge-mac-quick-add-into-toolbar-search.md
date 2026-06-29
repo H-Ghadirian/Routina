@@ -14,6 +14,10 @@ Accepted
 - [0278: Open Single Mac Add Action Directly](0278-open-single-mac-add-action-directly.md)
 - [0310: Show Mac Home Toolbar Search](0310-show-mac-home-toolbar-search.md)
 
+## Refined By
+
+- [0317: Use Principal Search in the Mac Home Toolbar](0317-use-principal-search-in-mac-home-toolbar.md)
+
 ## Context
 
 Mac Home had two fast text entry surfaces: the global toolbar search field for finding tasks and timeline entries, and a separate Spotlight-style Quick Add overlay opened by the configurable Quick Add shortcut. Both started with typing into a search-like field, but they forced users to choose search versus creation before entering the text.

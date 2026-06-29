@@ -14,6 +14,10 @@ Accepted
 - [0278: Open Single Mac Add Action Directly](0278-open-single-mac-add-action-directly.md)
 - [0310: Show Mac Home Toolbar Search](0310-show-mac-home-toolbar-search.md)
 
+## Refined By
+
+- [0317: Use Principal Search in the Mac Home Toolbar](0317-use-principal-search-in-mac-home-toolbar.md)
+
 ## Context
 
 Mac Home's primary mode strip for Tasks, Timeline, Goals, Stats, Settings, and Add lived at the top of the left sidebar. That made global navigation depend visually on the sidebar area even though Home's other global controls, including search and Focus Timer, live in the root-owned toolbar.

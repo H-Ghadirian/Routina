@@ -14,6 +14,10 @@ Accepted
 - [0244: Start Mac Toolbar Focus With Task Picker](0244-start-mac-toolbar-focus-with-task-picker.md)
 - [0309: Show Full Timeline in Planner List Mode](0309-show-full-timeline-in-planner-list-mode.md)
 
+## Refined By
+
+- [0317: Use Principal Search in the Mac Home Toolbar](0317-use-principal-search-in-mac-home-toolbar.md)
+
 ## Context
 
 Mac Home already had search fields in contextual sidebar surfaces, and the Search tab can bind Home to an external search query. That kept search available, but it made the affordance dependent on the current surface instead of being visible near the main Home actions.
