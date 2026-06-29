@@ -531,7 +531,7 @@ extension HomeTCAView {
 
     func applyAddRoutinePresentation<Content: View>(to content: Content) -> some View {
         content
-            .overlay(alignment: .top) {
+            .overlay(alignment: .topTrailing) {
                 if let toolbarSearchCreateDraft {
                     HomeMacToolbarSearchParserPreview(draft: toolbarSearchCreateDraft)
                         .frame(
@@ -539,6 +539,7 @@ extension HomeTCAView {
                             alignment: .leading
                         )
                         .padding(.top, HomeMacToolbarSearchLayout.parserPreviewTopPadding)
+                        .padding(.trailing, HomeMacToolbarSearchLayout.parserPreviewTrailingPadding)
                         .transition(.opacity.combined(with: .move(edge: .top)))
                         .zIndex(20)
                         .allowsHitTesting(false)

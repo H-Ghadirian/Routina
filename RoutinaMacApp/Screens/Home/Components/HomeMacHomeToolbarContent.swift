@@ -150,6 +150,7 @@ enum HomeMacToolbarSearchLayout {
     static let width: CGFloat = 760
     static let height: CGFloat = 44
     static let parserPreviewTopPadding: CGFloat = 12
+    static let parserPreviewTrailingPadding: CGFloat = 22
 }
 
 private struct HomeMacToolbarSearchField: View {

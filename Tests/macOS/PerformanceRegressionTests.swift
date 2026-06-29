@@ -332,6 +332,9 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(platformSource.contains("HomeMacToolbarSearchParserPreview(draft: toolbarSearchCreateDraft)"))
         XCTAssertTrue(platformSource.contains("HomeMacToolbarSearchLayout.width"))
         XCTAssertTrue(platformSource.contains("HomeMacToolbarSearchLayout.parserPreviewTopPadding"))
+        XCTAssertTrue(source.contains("static let parserPreviewTrailingPadding: CGFloat = 22"))
+        XCTAssertTrue(platformSource.contains(".overlay(alignment: .topTrailing)"))
+        XCTAssertTrue(platformSource.contains("HomeMacToolbarSearchLayout.parserPreviewTrailingPadding"))
         XCTAssertTrue(platformSource.contains("hasToolbarSearchResult"))
         XCTAssertTrue(platformSource.contains("!hasToolbarSearchResult(for: trimmedText)"))
         XCTAssertFalse(
