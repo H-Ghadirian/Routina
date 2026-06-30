@@ -236,7 +236,9 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
             accessibilityLabel: "Status filter",
             options: availableFilters,
             selection: $selectedFilter,
-            minimumSegmentWidth: 92
+            minimumSegmentWidth: 92,
+            fillsAvailableWidth: true,
+            maximumSegmentsPerRow: availableFilters.count > 3 ? 2 : nil
         ) { filter in
             Text(filter.rawValue)
         }
@@ -279,7 +281,9 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
             accessibilityLabel: "Pressure",
             options: pressureOptions,
             selection: $selectedPressureFilter,
-            minimumSegmentWidth: 92
+            minimumSegmentWidth: 92,
+            fillsAvailableWidth: true,
+            maximumSegmentsPerRow: 2
         ) { pressure in
             Text(pressure?.title ?? "All")
         }
@@ -301,7 +305,9 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
             accessibilityLabel: "Media",
             options: TaskMediaFilter.allCases,
             selection: $selectedMediaFilter,
-            minimumSegmentWidth: 104
+            minimumSegmentWidth: 104,
+            fillsAvailableWidth: true,
+            maximumSegmentsPerRow: 2
         ) { filter in
             Label(filter.title, systemImage: filter.systemImage)
         }
@@ -312,7 +318,9 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
             accessibilityLabel: "Created",
             options: HomeTaskCreatedDateFilter.allCases,
             selection: $createdDateFilter,
-            minimumSegmentWidth: 126
+            minimumSegmentWidth: 126,
+            fillsAvailableWidth: true,
+            maximumSegmentsPerRow: 2
         ) { filter in
             Label(filter.title, systemImage: filter.systemImage)
         }
@@ -340,7 +348,9 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
             accessibilityLabel: "Todo State",
             options: todoStateOptions,
             selection: $selectedTodoStateFilter,
-            minimumSegmentWidth: 80
+            minimumSegmentWidth: 80,
+            fillsAvailableWidth: true,
+            maximumSegmentsPerRow: 2
         ) { state in
             Text(state?.displayTitle ?? "Any State")
         }

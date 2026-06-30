@@ -141,6 +141,8 @@ struct RoutinaGlassSegmentedControl<Option: Hashable, Label: View>: View {
             label(option)
                 .font(.system(size: 13, weight: isSelected ? .semibold : .medium))
                 .lineLimit(1)
+                .minimumScaleFactor(0.86)
+                .allowsTightening(true)
                 .foregroundStyle(foregroundColor(option, isSelected))
                 .padding(.horizontal, horizontalPadding)
                 .padding(.vertical, verticalPadding)
