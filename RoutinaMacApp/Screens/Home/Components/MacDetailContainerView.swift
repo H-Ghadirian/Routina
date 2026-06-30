@@ -44,6 +44,8 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     let showsPlaces: Bool
     @Binding var mainDetailMode: MacHomeDetailMode
     @Binding var dayPlanDisplayMode: DayPlanDisplayMode
+    @Binding var dayPlanCalendarFilters: DayPlanCalendarFilterState
+    let isDayPlanCalendarFilterDetailPresented: Bool
     let plannerSearchText: String
     @Binding var isBoardInspectorPresented: Bool
     @Binding var taskDetailPanePlacement: MacTaskDetailPanePlacement?
@@ -60,6 +62,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     let onSelectDayPlanUnplannedCompletedDate: (Date) -> Void
     let onOpenDayPlanTaskDetails: (UUID) -> Void
     let onOpenEventDetails: (UUID) -> Void
+    let onToggleDayPlanCalendarFilters: () -> Void
     let onEditNote: (UUID) -> Void
     let onDeleteNote: (UUID) -> Void
     let onToggleBoardInspector: () -> Void
@@ -283,6 +286,8 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                     selectedTaskID: selectedTaskID,
                     isTaskDetailInspectorPresented: isPlannerExternalPanePresented,
                     displayMode: $dayPlanDisplayMode,
+                    calendarFilters: $dayPlanCalendarFilters,
+                    isCalendarFilterDetailPresented: isDayPlanCalendarFilterDetailPresented,
                     calendarSearchText: plannerSearchText,
                     listContent: {
                         AnyView(plannerListView())
@@ -290,6 +295,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                     onSelectUnplannedCompletedDate: onSelectDayPlanUnplannedCompletedDate,
                     onOpenTaskDetails: onOpenDayPlanTaskDetails,
                     onOpenEventDetails: onOpenEventDetails,
+                    onCalendarFilterButtonPressed: onToggleDayPlanCalendarFilters,
                     onPlannerSidebarPresentationRequested: {
                         onCloseTaskDetails()
                         onCloseFilterDetail()

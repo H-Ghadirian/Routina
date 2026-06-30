@@ -50,6 +50,7 @@ enum HomeMacFilterDetailScope: String, CaseIterable, Identifiable {
     case both
     case taskList
     case timeline
+    case calendar
 
     var id: Self { self }
 
@@ -61,6 +62,8 @@ enum HomeMacFilterDetailScope: String, CaseIterable, Identifiable {
             return "Task List"
         case .timeline:
             return "Timeline"
+        case .calendar:
+            return "Calendar"
         }
     }
 
@@ -72,6 +75,8 @@ enum HomeMacFilterDetailScope: String, CaseIterable, Identifiable {
             return "checklist"
         case .timeline:
             return "clock.arrow.circlepath"
+        case .calendar:
+            return "calendar"
         }
     }
 }
@@ -229,6 +234,7 @@ struct HomeTCAView: View {
     @State var isRestoringMacNavigationHistory = false
     @State var taskDetailPanePlacement: MacTaskDetailPanePlacement?
     @State var dayPlanDisplayMode: DayPlanDisplayMode = .calendar
+    @State var dayPlanCalendarFilters = DayPlanCalendarFilterState()
     @State var fullscreenTaskDetailReturnMode: MacHomeDetailMode?
     @State var fullscreenTaskDetailReturnPlacement: MacTaskDetailPanePlacement?
     @StateObject var dayPlanPlanner = DayPlanPlannerState()

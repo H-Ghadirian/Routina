@@ -220,13 +220,13 @@ extension HomeTCAView {
         }
     }
 
-    func toggleMacHomeFilterDetailFromToolbar() {
-        if store.isMacFilterDetailPresented {
+    func toggleMacCalendarFilterDetailFromPlanner() {
+        if store.isMacFilterDetailPresented && macFilterDetailScope == .calendar {
             closeMacFilterDetailPane()
             return
         }
 
-        macFilterDetailScope = isMacTimelineMode ? .timeline : .taskList
+        macFilterDetailScope = .calendar
         withAnimation(MacHomeDetailAnimation.secondaryPane) {
             isMacFilterDetailFullscreen = false
             taskDetailPanePlacement = nil
@@ -1093,6 +1093,8 @@ extension HomeTCAView {
                 macFiltersDetailContent
             case .timeline:
                 macTimelineFiltersDetailContent
+            case .calendar:
+                macCalendarFiltersDetailContent
             }
         }
     }
@@ -1102,13 +1104,24 @@ extension HomeTCAView {
             accessibilityLabel: "Filter scope",
             options: HomeMacFilterDetailScope.allCases,
             selection: $macFilterDetailScope,
-            minimumSegmentWidth: 96,
-            horizontalPadding: 10,
+            minimumSegmentWidth: 82,
+            horizontalPadding: 8,
             fillsAvailableWidth: true
         ) { scope in
             Label(scope.title, systemImage: scope.systemImage)
         }
         .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    var macCalendarFiltersDetailContent: some View {
+        HomeMacCalendarFiltersDetailView(
+            filters: $dayPlanCalendarFilters,
+            availability: DayPlanCalendarFilterAvailability(
+                includesEvents: areMacEventEmotionActionsEnabled,
+                includesAway: isAwayEnabled,
+                includesSleep: isAwayEnabled
+            )
+        )
     }
 
     var macFiltersDetailView: some View {

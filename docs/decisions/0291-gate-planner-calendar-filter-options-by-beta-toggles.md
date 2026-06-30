@@ -6,6 +6,8 @@ Date: 2026-06-27
 
 Refines: [0289 Filter Planner Calendar Layers](0289-filter-planner-calendar-layers.md), [0277 Hide Notes and Away Behind Beta Toggles](0277-hide-notes-and-away-behind-beta-toggles.md), and [0220 Nest Sleep and Gate Mac Event and Emotion Actions](0220-nest-sleep-and-gate-mac-event-emotion-actions.md)
 
+Refined by: [0319 Open Planner Filters in the Home Filter Pane](0319-open-planner-filters-in-home-filter-pane.md)
+
 ## Context
 
 The Planner calendar filter sidebar exposes presentation-only layer toggles. Away and Sleep are controlled by the `Show Away` beta experiment, while Mac Event and Emotion actions and matching filter surfaces are controlled by the `Show Event and Emotion actions` beta experiment.

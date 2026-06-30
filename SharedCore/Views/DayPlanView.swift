@@ -363,13 +363,15 @@ struct DayPlanDetailView: View {
     var selectedTaskID: UUID? = nil
     var isTaskDetailInspectorPresented = false
     var displayMode: Binding<DayPlanDisplayMode> = .constant(.calendar)
+    var calendarFilters: Binding<DayPlanCalendarFilterState> = .constant(DayPlanCalendarFilterState())
+    var isCalendarFilterDetailPresented = false
     var calendarSearchText = ""
     var listContent: (() -> AnyView)? = nil
     var onSelectUnplannedCompletedDate: ((Date) -> Void)? = nil
     var onOpenTaskDetails: ((UUID) -> Void)? = nil
     var onOpenEventDetails: ((UUID) -> Void)? = nil
+    var onCalendarFilterButtonPressed: (() -> Void)? = nil
     var onPlannerSidebarPresentationRequested: (() -> Void)? = nil
-    @State private var calendarFilters = DayPlanCalendarFilterState()
     @State private var isCalendarFilterSidebarPresented = false
     @State private var isDatePickerSidebarPresented = false
     @Query private var tasks: [RoutineTask]
@@ -378,13 +380,15 @@ struct DayPlanDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             DayPlanHeaderView(
                 planner: planner,
-                calendarFilters: calendarFilters,
+                calendarFilters: calendarFilters.wrappedValue,
                 isCalendarFilterSidebarPresented: $isCalendarFilterSidebarPresented,
                 isDatePickerSidebarPresented: $isDatePickerSidebarPresented,
+                isCalendarFilterDetailPresented: isCalendarFilterDetailPresented,
                 showsCalendarFilterButton: true,
                 displayMode: displayMode,
                 showsDisplayModePicker: listContent != nil,
-                isTaskDetailInspectorPresented: isTaskDetailInspectorPresented
+                isTaskDetailInspectorPresented: isTaskDetailInspectorPresented,
+                onCalendarFilterButtonPressed: onCalendarFilterButtonPressed
             )
 
             if displayMode.wrappedValue == .list, let listContent {
@@ -395,7 +399,7 @@ struct DayPlanDetailView: View {
                     onSelectUnplannedCompletedDate: onSelectUnplannedCompletedDate,
                     onOpenTaskDetails: onOpenTaskDetails,
                     onOpenEventDetails: onOpenEventDetails,
-                    calendarFilters: $calendarFilters,
+                    calendarFilters: calendarFilters,
                     calendarSearchText: calendarSearchText,
                     isCalendarFilterSidebarPresented: $isCalendarFilterSidebarPresented,
                     isDatePickerSidebarPresented: $isDatePickerSidebarPresented,
@@ -460,10 +464,12 @@ private struct DayPlanHeaderView: View {
     var calendarFilters = DayPlanCalendarFilterState()
     var isCalendarFilterSidebarPresented: Binding<Bool> = .constant(false)
     var isDatePickerSidebarPresented: Binding<Bool> = .constant(false)
+    var isCalendarFilterDetailPresented = false
     var showsCalendarFilterButton = false
     var displayMode: Binding<DayPlanDisplayMode> = .constant(.calendar)
     var showsDisplayModePicker = false
     var isTaskDetailInspectorPresented = false
+    var onCalendarFilterButtonPressed: (() -> Void)? = nil
     @AppStorage(
         UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
         store: SharedDefaults.app
@@ -596,11 +602,11 @@ private struct DayPlanHeaderView: View {
 
     private var plannerUtilityCluster: some View {
         HStack(alignment: .center, spacing: 8) {
-            if effectiveDisplayMode == .calendar {
-                if showsCalendarFilterButton {
-                    calendarFilterButton
-                }
+            if showsCalendarFilterButton {
+                calendarFilterButton
+            }
 
+            if effectiveDisplayMode == .calendar {
                 plannerDatePickerButton
             }
         }
@@ -681,12 +687,18 @@ private struct DayPlanHeaderView: View {
     }
 
     private var calendarFilterButton: some View {
-        let isPresented = isCalendarFilterSidebarPresented.wrappedValue
+        let isPresented = onCalendarFilterButtonPressed == nil
+            ? isCalendarFilterSidebarPresented.wrappedValue
+            : isCalendarFilterDetailPresented
         let availability = calendarFilterAvailability
         let isActive = calendarFilters.hasActiveFilters(availability: availability)
 
         return Button {
             withAnimation(.easeInOut(duration: 0.16)) {
+                if let onCalendarFilterButtonPressed {
+                    onCalendarFilterButtonPressed()
+                    return
+                }
                 let shouldPresent = !isCalendarFilterSidebarPresented.wrappedValue
                 isCalendarFilterSidebarPresented.wrappedValue = shouldPresent
                 if shouldPresent {

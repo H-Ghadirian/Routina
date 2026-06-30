@@ -3,6 +3,8 @@
 Status: Accepted
 Date: 2026-06-27
 
+Refined by: [0319: Open Planner Filters in the Home Filter Pane](0319-open-planner-filters-in-home-filter-pane.md)
+
 ## Context
 
 The Planner calendar combines several visible layers: timed planned task blocks, all-day task and event pills, automatic timeline suggestions, standalone events, Focus, Away, and Sleep. Users sometimes need to temporarily reduce visual density without changing task, event, session, or planner-block data.

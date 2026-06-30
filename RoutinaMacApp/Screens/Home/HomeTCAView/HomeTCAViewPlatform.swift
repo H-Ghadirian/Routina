@@ -35,16 +35,11 @@ extension HomeTCAView {
             searchText: searchTextBinding,
             isCreatingSearchTask: isToolbarSearchCreateInProgress,
             canCreateSearchTask: canCreateTaskFromToolbarSearch,
-            hasHomeFiltersApplied: macHasAnyHomeFiltersApplied,
-            isHomeFilterDetailPresented: store.isMacFilterDetailPresented,
             focusStartTaskCount: homeToolbarFocusStartTaskCount,
             activePlanFocusSession: homeToolbarActivePlanFocusSession,
             isPlanFocusStartDisabled: homeToolbarIsPlanFocusStartDisabled,
             onPlaceCheckInMapRequested: {
                 openMacPlacesWorkspace()
-            },
-            onToggleHomeFilters: {
-                toggleMacHomeFilterDetailFromToolbar()
             },
             onAddEvent: openAddEvent,
             onAddEmotion: openAddEmotion,
@@ -276,6 +271,8 @@ extension HomeTCAView {
                     showsPlaces: isPlacesEnabled,
                     mainDetailMode: mainDetailModeBinding,
                     dayPlanDisplayMode: $dayPlanDisplayMode,
+                    dayPlanCalendarFilters: $dayPlanCalendarFilters,
+                    isDayPlanCalendarFilterDetailPresented: store.isMacFilterDetailPresented && macFilterDetailScope == .calendar,
                     plannerSearchText: searchTextBinding.wrappedValue,
                     isBoardInspectorPresented: macBoardInspectorPresentedBinding,
                     taskDetailPanePlacement: $taskDetailPanePlacement,
@@ -296,6 +293,7 @@ extension HomeTCAView {
                         openDayPlanTaskDetails(taskID)
                     },
                     onOpenEventDetails: openSavedEvent,
+                    onToggleDayPlanCalendarFilters: toggleMacCalendarFilterDetailFromPlanner,
                     onEditNote: openEditNote,
                     onDeleteNote: closeDeletedNote,
                     onToggleBoardInspector: toggleMacBoardTicketInspector,

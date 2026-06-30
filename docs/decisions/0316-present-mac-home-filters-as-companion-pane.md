@@ -14,6 +14,10 @@ Accepted
 - [0296: Present Mac Task Details as a Planner Inspector](0296-present-mac-task-details-as-planner-inspector.md)
 - [0302: Minimize Fullscreen Mac Task Details to the Companion Pane](0302-minimize-fullscreen-mac-task-details-to-companion-pane.md)
 
+## Refined By
+
+- [0319: Open Planner Filters in the Home Filter Pane](0319-open-planner-filters-in-home-filter-pane.md)
+
 ## Context
 
 [0312](0312-move-mac-task-timeline-filter-entry-to-toolbar.md) moved Home-level Task List and Timeline filters into one toolbar entry point. The first implementation opened that filter detail as the main detail screen, which hid the active Home workspace.

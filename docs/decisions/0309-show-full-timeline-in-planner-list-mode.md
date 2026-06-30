@@ -21,6 +21,7 @@ Accepted
 ## Refined By
 
 - [0318: Remove Mac Home Timeline Toolbar Segment](0318-remove-mac-home-timeline-toolbar-segment.md)
+- [0319: Open Planner Filters in the Home Filter Pane](0319-open-planner-filters-in-home-filter-pane.md)
 
 ## Context
 

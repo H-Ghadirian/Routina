@@ -245,17 +245,17 @@ Given task data briefly appears in overlapping active, away, archived, planned, 
 When Home task-list presentation is derived
 Then each task ID is claimed once, section and group IDs stay stable, and the UI updates existing rows instead of replacing them
 
-### Home Toolbar Filters Use a Companion Pane
+### Planner Filter Button Uses a Companion Pane
 
 Area: UI
-Decision links: [0312](../decisions/0312-move-mac-task-timeline-filter-entry-to-toolbar.md), [0316](../decisions/0316-present-mac-home-filters-as-companion-pane.md)
+Decision links: [0312](../decisions/0312-move-mac-task-timeline-filter-entry-to-toolbar.md), [0316](../decisions/0316-present-mac-home-filters-as-companion-pane.md), [0319](../decisions/0319-open-planner-filters-in-home-filter-pane.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/macOS/PerformanceRegressionTests.swift`
 
-Given Mac Home is showing Planner, Board, Timeline, Details, or Places
-When the toolbar command-row filter button is pressed
-Then the `Both` / `Task List` / `Timeline` filter surface opens in a right-side companion pane while the current workspace remains visible
+Given Mac Home is showing Planner in Calendar or List mode
+When the Planner header filter button is pressed
+Then the `Both` / `Task List` / `Timeline` / `Calendar` filter surface opens in a right-side companion pane while the current workspace remains visible
 And task-detail panes, the board inspector, and Planner-local right sidebars do not remain open beside it
 When the user expands the filter pane fullscreen and then minimizes it
 Then the filter surface returns to the right-side companion pane
@@ -282,7 +282,7 @@ Coverage:
 - `Tests/macOS/PerformanceRegressionTests.swift`
 
 Given Mac Planner is in `List` mode
-When the Home toolbar filter pane changes shared `Both` filters or Timeline-specific filters
+When the companion filter pane changes shared `Both` filters or Timeline-specific filters
 Then the Planner List timeline rows use the same filtered entry set as the Timeline sidebar
 And an empty filtered list explains that search or filters may be hiding entries
 
@@ -372,17 +372,17 @@ Then it does not show a single-option `Task` tab, keeps the draft block visible 
 ### Planner Calendar Filters Respect Beta Toggles
 
 Area: Planner
-Decision links: [0291](../decisions/0291-gate-planner-calendar-filter-options-by-beta-toggles.md), [0289](../decisions/0289-filter-planner-calendar-layers.md), [0277](../decisions/0277-hide-notes-and-away-behind-beta-toggles.md), [0220](../decisions/0220-nest-sleep-and-gate-mac-event-emotion-actions.md)
+Decision links: [0291](../decisions/0291-gate-planner-calendar-filter-options-by-beta-toggles.md), [0289](../decisions/0289-filter-planner-calendar-layers.md), [0319](../decisions/0319-open-planner-filters-in-home-filter-pane.md), [0277](../decisions/0277-hide-notes-and-away-behind-beta-toggles.md), [0220](../decisions/0220-nest-sleep-and-gate-mac-event-emotion-actions.md)
 Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/Shared/DayPlanCalendarFilterStateTests.swift`
 
 Given Support & About -> Beta Experiments -> `Show Away` is off
-When the user opens the Planner calendar filter sidebar
+When the user opens the companion filter pane's `Calendar` tab
 Then the panel does not expose Away or Sleep filter options
 
 Given Support & About -> Beta Experiments -> `Show Event and Emotion actions` is off
-When the user opens the Planner calendar filter sidebar
+When the user opens the companion filter pane's `Calendar` tab
 Then the panel does not expose an Events filter option
 
 Given stale hidden filter state exists for Events, Away, or Sleep from a previous beta-enabled session
