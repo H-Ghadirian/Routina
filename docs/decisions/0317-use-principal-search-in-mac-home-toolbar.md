@@ -15,6 +15,10 @@ Accepted
 - [0312: Move Mac Task and Timeline Filter Entry to Toolbar](0312-move-mac-task-timeline-filter-entry-to-toolbar.md)
 - [0315: Merge Mac Quick Add Into Toolbar Search](0315-merge-mac-quick-add-into-toolbar-search.md)
 
+## Refined By
+
+- [0318: Remove Mac Home Timeline Toolbar Segment](0318-remove-mac-home-timeline-toolbar-segment.md)
+
 ## Context
 
 After search, Home navigation, filters, Focus, and Add all moved into the Mac Home toolbar, placing every control in one horizontal navigation cluster made the top chrome crowded. Increasing the native toolbar height alone made the row taller but did not fix the visual hierarchy.

@@ -47,12 +47,13 @@ This page summarizes active Planner, timeline activity, focus, Away, and Sleep b
 - [0307](../decisions/0307-hide-planner-range-picker-in-day-inspector-layout.md)
 - [0309](../decisions/0309-show-full-timeline-in-planner-list-mode.md)
 - [0312](../decisions/0312-move-mac-task-timeline-filter-entry-to-toolbar.md)
+- [0318](../decisions/0318-remove-mac-home-timeline-toolbar-segment.md)
 
 ## Current Contract
 
 - Timeline activity is evidence for completed, missed, canceled, sleep, place, note, emotion, event, and accepted focus activity.
 - Timeline list surfaces show newest activity first in normal, non-inverted lists, with date headers above their rows.
-- Mac Planner can switch its main area between `Calendar` and `List`. Calendar mode preserves the editable Planner grid, calendar filters, slot actions, date picker sidebar, all-day lane, and range controls. List mode replaces the main area with all Timeline-style entries, using newest-first Timeline ordering without changing stored Planner blocks or timeline records.
+- Mac Planner can switch its main area between `Calendar` and `List`. Calendar mode preserves the editable Planner grid, calendar filters, slot actions, date picker sidebar, all-day lane, and range controls. List mode replaces the main area with Timeline-style entries, using newest-first Timeline ordering and the Home Timeline filters without changing stored Planner blocks or timeline records. On Mac, Planner `List` is the normal toolbar route for reviewing the full timeline; Timeline is no longer a visible Home toolbar mode-strip segment.
 - On Mac, the Home toolbar search filters task-backed Planner Calendar presentation, including planned task blocks, all-day task items, day-header planned-task counts, and automatic task timeline suggestions, without mutating Planner storage or calendar layer filter state.
 - Planner can surface timeline activity, but automatic suggestions come only from completed activity and eligible assumed-done routine days, and may be hidden as presentation state.
 - Assumed-done planner activity is synthetic: it uses the routine's probable done time for planner placement, can be hidden from Planner or converted into a planner block, and does not create completion history until the user confirms the routine day.

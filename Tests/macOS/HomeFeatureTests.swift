@@ -9,15 +9,15 @@ import Testing
 @MainActor
 struct HomeFeatureTests {
     @Test
-    func macSidebarModeStripModes_excludesBoardMode() {
+    func macSidebarModeStripModes_excludesTimelineAndBoardModes() {
         #expect(HomeFeature.MacSidebarMode.sidebarStripModes == [
             .routines,
             .goals,
-            .timeline,
             .stats,
             .settings,
             .addTask
         ])
+        #expect(!HomeFeature.MacSidebarMode.sidebarStripModes.contains(.timeline))
         #expect(!HomeFeature.MacSidebarMode.sidebarStripModes.contains(.board))
         #expect(!HomeFeature.MacSidebarMode.sidebarStripModes.contains(.adventure))
     }

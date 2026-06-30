@@ -342,18 +342,16 @@ extension HomeTCAView {
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
-        store.send(.macSidebarModeChanged(.timeline))
+        isAwayStartPresented = false
+        selectedNoteID = nil
+        dayPlanUnplannedCompletedFilterDate = nil
+        macHomeDetailMode = .planner
+        dayPlanDisplayMode = .list
+        taskDetailPanePlacement = nil
+        store.send(.macSidebarModeChanged(.routines))
+        store.send(.setSelectedTask(nil))
         validateSelectedTimelineTag()
         macTimelineSidebarScrollRequest = nil
-        guard macTimelineSidebarPositionedPresentationID != macTimelineSidebarPresentationID else {
-            return
-        }
-        guard let latestEntry = groupedTimelineEntries.first?.entries.first else {
-            return
-        }
-        selectedNoteID = latestEntry.isNote ? latestEntry.id : nil
-        store.send(.macSidebarSelectionChanged(.timelineEntry(latestEntry.id)))
-        store.send(.setSelectedTask(latestEntry.taskID))
     }
 
     func timelineSidebarRow(_ entry: TimelineEntry, rowNumber: Int) -> some View {

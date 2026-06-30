@@ -17,6 +17,7 @@ Accepted
 ## Refined By
 
 - [0317: Use Principal Search in the Mac Home Toolbar](0317-use-principal-search-in-mac-home-toolbar.md)
+- [0318: Remove Mac Home Timeline Toolbar Segment](0318-remove-mac-home-timeline-toolbar-segment.md)
 
 ## Context
 

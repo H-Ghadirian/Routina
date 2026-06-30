@@ -46,7 +46,6 @@ struct HomeFeature {
 
         static let sidebarStripModes: [Self] = [
             .routines,
-            .timeline,
             .goals,
             .adventure,
             .stats,

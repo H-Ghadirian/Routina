@@ -262,7 +262,7 @@ struct SettingsMacShortcutsDetailView: View {
             SettingsMacShortcutRowModel(title: "Forward", detail: "Move forward after going back.", shortcut: "⌘→"),
             SettingsMacShortcutRowModel(title: "Routines", detail: "Switch the sidebar back to routines.", shortcut: "⌥⌘1"),
             SettingsMacShortcutRowModel(title: "Stats", detail: "Open stats from anywhere in the app.", shortcut: "⌥⌘2"),
-            SettingsMacShortcutRowModel(title: "Timeline", detail: "Open the done timeline.", shortcut: "⌥⌘3"),
+            SettingsMacShortcutRowModel(title: "Timeline", detail: "Open Planner List.", shortcut: "⌥⌘3"),
             SettingsMacShortcutRowModel(title: "Save", detail: "Confirm supported edit sheets and dialogs.", shortcut: "Return"),
             SettingsMacShortcutRowModel(title: "Cancel", detail: "Dismiss supported edit sheets and dialogs.", shortcut: "Esc"),
             SettingsMacShortcutRowModel(title: "Quit", detail: "Quit Routina from the menu bar extra or app menu.", shortcut: "⌘Q")

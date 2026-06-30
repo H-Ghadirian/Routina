@@ -18,6 +18,10 @@ Accepted
 - [0292: Unify Planner Header Date Control](0292-unify-planner-header-date-control.md)
 - [0303: Align Mac Planner Range Picker with Adaptive Days](0303-align-mac-planner-range-picker-with-adaptive-days.md)
 
+## Refined By
+
+- [0318: Remove Mac Home Timeline Toolbar Segment](0318-remove-mac-home-timeline-toolbar-segment.md)
+
 ## Context
 
 Planner List mode was first introduced as a timeline-style view scoped to the Planner's current visible date range. That made the list depend on Calendar range controls even though the user's intent for List mode is to review the whole timeline in the Planner surface.
