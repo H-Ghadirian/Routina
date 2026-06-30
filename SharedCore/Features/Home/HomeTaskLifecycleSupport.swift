@@ -138,12 +138,40 @@ enum HomeTaskLifecycleSupport {
             completionDate = referenceDate
         }
 
-        guard RoutineDateMath.canMarkDone(
-            for: task,
-            referenceDate: completionDate,
-            calendar: calendar
-        ) else {
-            return nil
+        if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
+            let missedDates = RoutineDateMath.missedExactTimedOccurrenceDates(
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+            let hasUnresolvedPriorMissedDate = missedDates.contains { missedDate in
+                missedDate < completionDate
+                    && !doneStats.hasResolvedMissedDate(
+                        taskID: taskID,
+                        missedDate: missedDate,
+                        calendar: calendar
+                    )
+            }
+            let isSelectedMissedDate = missedDates.contains {
+                calendar.isDate($0, inSameDayAs: completionDate)
+            }
+            guard !hasUnresolvedPriorMissedDate,
+                  isSelectedMissedDate
+                    || RoutineDateMath.canMarkDone(
+                        for: task,
+                        referenceDate: completionDate,
+                        calendar: calendar
+                    ) else {
+                return nil
+            }
+        } else {
+            guard RoutineDateMath.canMarkDone(
+                for: task,
+                referenceDate: completionDate,
+                calendar: calendar
+            ) else {
+                return nil
+            }
         }
 
         let previousTodoStateTitle = tasks[index].isOneOffTask ? tasks[index].todoState?.displayTitle : nil

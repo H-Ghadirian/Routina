@@ -162,6 +162,18 @@ Given a todo was due on June 25 and is logged done on June 26 after the fact
 When Task Detail renders the June calendar on June 29
 Then June 25 can remain overdue, June 26 shows done, and June 27 through June 29 do not stay overdue
 
+### Selected Timed Occurrence Can Be Resolved After Prior Occurrence
+
+Area: Tasks
+Decision links: [0003](../decisions/0003-resolve-exact-time-missed-assumptions.md), [0009](../decisions/0009-support-routine-time-ranges.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDetailFeatureCompletionTests.swift`
+
+Given a weekly time-window routine has an earlier occurrence already resolved as canceled
+When the user selects a later missed occurrence in Task Detail and presses Done
+Then Routina records a completed log for the selected occurrence without treating the earlier resolved occurrence as a blocker
+
 ### Multi-Day Routine Lifecycle
 
 Area: Tasks

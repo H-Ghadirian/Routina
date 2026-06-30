@@ -245,6 +245,51 @@ enum RoutineDateMath {
         return dueDate(for: task, referenceDate: referenceDate, calendar: calendar) <= referenceDate
     }
 
+    static func canMarkSelectedExactTimedOccurrenceDone(
+        for task: RoutineTask,
+        completionDate: Date,
+        referenceDate: Date,
+        logs: [RoutineLog],
+        calendar: Calendar = .current
+    ) -> Bool {
+        guard usesExactTimedOccurrenceTracking(for: task) else { return false }
+        guard completionDate <= referenceDate else { return false }
+        guard let occurrence = scheduledOccurrence(for: task, on: completionDate, calendar: calendar),
+              occurrence == completionDate else {
+            return false
+        }
+
+        let missedDates = missedExactTimedOccurrenceDates(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let hasUnresolvedPriorMissedDate = missedDates.contains { missedDate in
+            missedDate < occurrence
+                && !isExactTimedMissedOccurrenceAcknowledged(
+                    for: task,
+                    missedDate: missedDate,
+                    logs: logs,
+                    calendar: calendar
+                )
+        }
+        guard !hasUnresolvedPriorMissedDate else { return false }
+
+        let isSelectedMissedDate = missedDates.contains {
+            calendar.isDate($0, inSameDayAs: occurrence)
+        }
+        if isSelectedMissedDate {
+            return true
+        }
+
+        return canMarkDone(
+            for: task,
+            referenceDate: completionDate,
+            calendar: calendar,
+            ignoreArchiveAtReferenceDate: true
+        )
+    }
+
     static func missedExactTimedOccurrenceDate(
         for task: RoutineTask,
         referenceDate: Date,

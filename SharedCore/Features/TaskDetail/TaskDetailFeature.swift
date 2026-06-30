@@ -589,13 +589,25 @@ struct TaskDetailFeature: Reducer {
             }
             let isHistoricalCompletion = completionDate < now && !calendar.isDate(completionDate, inSameDayAs: now)
             let previousTodoStateTitle = state.task.isOneOffTask ? state.task.todoState?.displayTitle : nil
-            guard RoutineDateMath.canMarkDone(
-                for: state.task,
-                referenceDate: completionDate,
-                calendar: calendar,
-                ignoreArchiveAtReferenceDate: isHistoricalCompletion
-            ) else {
-                return .none
+            if RoutineDateMath.usesExactTimedOccurrenceTracking(for: state.task) {
+                guard RoutineDateMath.canMarkSelectedExactTimedOccurrenceDone(
+                    for: state.task,
+                    completionDate: completionDate,
+                    referenceDate: now,
+                    logs: state.logs,
+                    calendar: calendar
+                ) else {
+                    return .none
+                }
+            } else {
+                guard RoutineDateMath.canMarkDone(
+                    for: state.task,
+                    referenceDate: completionDate,
+                    calendar: calendar,
+                    ignoreArchiveAtReferenceDate: isHistoricalCompletion
+                ) else {
+                    return .none
+                }
             }
             state.task.preserveCurrentScheduleAnchorForBackfill(
                 completedAt: completionDate,

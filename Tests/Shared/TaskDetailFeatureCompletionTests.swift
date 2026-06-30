@@ -1434,6 +1434,95 @@ struct TaskDetailFeatureCompletionTests {
     }
 
     @Test
+    func markAsDone_forPastWeeklyTimeWindowAfterEarlierCanceledOccurrence_persistsLog() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-06-30T10:00:00Z")
+        let selectedDate = makeDate("2026-06-29T00:00:00Z")
+        let previousCanceledOccurrence = makeDate("2026-06-22T17:00:00Z")
+        let expectedCompletion = makeDate("2026-06-29T17:00:00Z")
+
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 17, minute: 0),
+            end: RoutineTimeOfDay(hour: 17, minute: 55)
+        )
+        let task = makeTask(
+            in: context,
+            name: "Lehr session",
+            interval: 7,
+            lastDone: nil,
+            emoji: nil,
+            recurrenceRule: .weekly(on: 2, timeRange: window),
+            scheduleAnchor: makeDate("2026-06-20T10:00:00Z"),
+            createdAt: makeDate("2026-06-20T10:00:00Z")
+        )
+        let canceledLog = makeLog(
+            in: context,
+            task: task,
+            timestamp: previousCanceledOccurrence,
+            kind: .canceled
+        )
+        try context.save()
+
+        let scheduledIDs = LockIsolated<[String]>([])
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                logs: [canceledLog],
+                selectedDate: selectedDate
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+            $0.notificationClient.schedule = { payload in
+                scheduledIDs.withValue { $0.append(payload.identifier) }
+            }
+            $0.notificationClient.cancel = { _ in }
+        }
+
+        _ = await store.withExhaustivity(.off) {
+            await store.send(.markAsDone) {
+                $0.task.lastDone = expectedCompletion
+                $0.taskRefreshID = 1
+                $0.daysSinceLastRoutine = 1
+                $0.pendingLocalCompletionDates = [expectedCompletion]
+            }
+        }
+        #expect(store.state.logs.contains { $0.kind == .completed && $0.timestamp == expectedCompletion })
+
+        await store.receive { action in
+            guard case let .logsLoaded(logs) = action else { return false }
+            return logs.contains { $0.kind == .completed && $0.timestamp == expectedCompletion }
+        } assert: {
+            $0.logs = RoutineLogHistory.detailLogs(taskID: task.id, context: context)
+            $0.pendingLocalCompletionDates = []
+            $0.daysSinceLastRoutine = 1
+        }
+
+        let persistedTaskID = task.id
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { persistedTask in
+                        persistedTask.id == persistedTaskID
+                    }
+                )
+            ).first
+        )
+        let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(persistedTask.lastDone == expectedCompletion)
+        #expect(persistedLogs.contains { $0.kind == .canceled && $0.timestamp == previousCanceledOccurrence })
+        #expect(persistedLogs.contains { $0.kind == .completed && $0.timestamp == expectedCompletion })
+        #expect(scheduledIDs.value == [task.id.uuidString])
+    }
+
+    @Test
     func selectedDateDone_forExactTimedWeeklyRoutine_ignoresNonOccurrenceDays() {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current

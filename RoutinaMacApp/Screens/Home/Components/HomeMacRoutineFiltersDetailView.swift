@@ -248,7 +248,9 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                 accessibilityLabel: "Grouping",
                 options: RoutineListSectioningMode.allCases,
                 selection: $routineListSectioningMode,
-                minimumSegmentWidth: 126
+                minimumSegmentWidth: 126,
+                fillsAvailableWidth: true,
+                maximumSegmentsPerRow: 2
             ) { mode in
                 Label(mode.title, systemImage: mode.systemImage)
             }
@@ -264,7 +266,9 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
             accessibilityLabel: "Sort",
             options: HomeTaskListSortOrder.allCases,
             selection: $taskListSortOrder,
-            minimumSegmentWidth: 126
+            minimumSegmentWidth: 126,
+            fillsAvailableWidth: true,
+            maximumSegmentsPerRow: 2
         ) { order in
             Label(order.title, systemImage: order.systemImage)
         }

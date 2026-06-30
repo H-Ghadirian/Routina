@@ -240,7 +240,15 @@ extension TaskDetailFeature.State {
         }
         if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
             guard let completionTargetDate else { return true }
-            return task.isArchived() || completionTargetDate > Date() || isStepRoutineOffToday
+            return task.isArchived()
+                || !RoutineDateMath.canMarkSelectedExactTimedOccurrenceDone(
+                    for: task,
+                    completionDate: completionTargetDate,
+                    referenceDate: Date(),
+                    logs: logs,
+                    calendar: .current
+                )
+                || isStepRoutineOffToday
         }
         return isSelectedDateInFuture || task.isArchived() || isStepRoutineOffToday
     }
