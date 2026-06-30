@@ -6,16 +6,62 @@ import UIKit
 #endif
 
 struct RoutinaDeepLinkShareMenu: View {
+    enum Presentation {
+        case automatic
+        case plainToolbar
+    }
+
+    private enum PlainToolbarMetrics {
+        static let controlWidth: CGFloat = 42
+        static let controlHeight: CGFloat = 34
+        static let cornerRadius: CGFloat = 8
+    }
+
     let title: String
     let deepLink: RoutinaDeepLink
+    var presentation: Presentation = .automatic
 
+    @ViewBuilder
     var body: some View {
+        switch presentation {
+        case .automatic:
+            shareMenu {
+                Label("Link", systemImage: "link")
+            }
+        case .plainToolbar:
+            shareMenu {
+                HStack(spacing: 5) {
+                    Image(systemName: "link")
+                        .font(.system(size: 14, weight: .semibold))
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 8, weight: .semibold))
+                }
+                .foregroundStyle(.secondary)
+                .frame(width: PlainToolbarMetrics.controlWidth, height: PlainToolbarMetrics.controlHeight)
+                .background(
+                    RoundedRectangle(cornerRadius: PlainToolbarMetrics.cornerRadius, style: .continuous)
+                        .fill(Color.secondary.opacity(0.10))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: PlainToolbarMetrics.cornerRadius, style: .continuous)
+                        .stroke(Color.secondary.opacity(0.14), lineWidth: 1)
+                )
+                .contentShape(RoundedRectangle(cornerRadius: PlainToolbarMetrics.cornerRadius, style: .continuous))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func shareMenu<LabelContent: View>(
+        @ViewBuilder label: () -> LabelContent
+    ) -> some View {
         Menu {
             RoutinaDeepLinkShareActions(title: title, deepLink: deepLink)
         } label: {
-            Label("Link", systemImage: "link")
+            label()
         }
         .accessibilityLabel("Share link to \(title)")
+        .help("Link")
     }
 }
 

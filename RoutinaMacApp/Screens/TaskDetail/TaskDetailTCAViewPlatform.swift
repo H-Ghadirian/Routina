@@ -107,9 +107,20 @@ struct CloudSharingToolbarButton: NSViewRepresentable {
         )
         button.imagePosition = .imageOnly
         button.bezelStyle = .toolbar
-        button.isBordered = true
+        button.isBordered = false
         button.toolTip = "Share"
+        button.contentTintColor = .secondaryLabelColor
         button.setButtonType(.momentaryPushIn)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            button.widthAnchor.constraint(equalToConstant: 42),
+            button.heightAnchor.constraint(equalToConstant: 34)
+        ])
+        button.wantsLayer = true
+        button.layer?.cornerRadius = 8
+        button.layer?.backgroundColor = NSColor.secondaryLabelColor.withAlphaComponent(0.10).cgColor
+        button.layer?.borderWidth = 1
+        button.layer?.borderColor = NSColor.secondaryLabelColor.withAlphaComponent(0.14).cgColor
         button.coordinator = context.coordinator
         return button
     }
