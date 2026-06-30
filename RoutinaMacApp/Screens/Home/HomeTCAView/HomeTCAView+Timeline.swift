@@ -120,8 +120,7 @@ extension HomeTCAView {
     }
 
     var plannerTimelineEntries: [TimelineEntry] {
-        basePlannerTimelineEntries
-            .filter(matchesTimelineSearch)
+        timelineEntries
     }
 
     var groupedPlannerTimelineEntries: [(date: Date, entries: [TimelineEntry])] {
@@ -129,7 +128,7 @@ extension HomeTCAView {
     }
 
     var plannerTimelineEntryCount: Int {
-        basePlannerTimelineEntries.count
+        unfilteredPlannerTimelineEntries.count
     }
 
     func hasTimelineSearchResult(for searchText: String) -> Bool {
@@ -138,12 +137,12 @@ extension HomeTCAView {
 
         return baseTimelineEntries.contains { entry in
             matchesTimelineSearch(entry, searchText: trimmedSearch)
-        } || basePlannerTimelineEntries.contains { entry in
+        } || unfilteredPlannerTimelineEntries.contains { entry in
             matchesTimelineSearch(entry, searchText: trimmedSearch)
         }
     }
 
-    private var basePlannerTimelineEntries: [TimelineEntry] {
+    private var unfilteredPlannerTimelineEntries: [TimelineEntry] {
         TimelineLogic.filteredEntries(
             logs: store.timelineLogs,
             tasks: store.routineTasks,

@@ -273,6 +273,19 @@ Given Mac Home is showing the Timeline filter companion pane
 When a filter change updates the visible timeline rows
 Then the sidebar does not automatically select a fallback row or close the filter pane until the user explicitly leaves the filter pane or selects a row
 
+### Planner List Honors Home Timeline Filters
+
+Area: Timeline
+Decision links: [0309](../decisions/0309-show-full-timeline-in-planner-list-mode.md), [0312](../decisions/0312-move-mac-task-timeline-filter-entry-to-toolbar.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/macOS/PerformanceRegressionTests.swift`
+
+Given Mac Planner is in `List` mode
+When the Home toolbar filter pane changes shared `Both` filters or Timeline-specific filters
+Then the Planner List timeline rows use the same filtered entry set as the Timeline sidebar
+And an empty filtered list explains that search or filters may be hiding entries
+
 ### Plan Focus Allocation Preserves Focus History
 
 Area: Planner

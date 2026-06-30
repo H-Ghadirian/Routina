@@ -403,6 +403,35 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(timelineSource.contains("isActive: isMacTimelineMode,\n                allowsFallbackSelection: !store.isMacFilterDetailPresented"))
     }
 
+    func testPlannerTimelineListUsesHomeTimelineFilters() throws {
+        let source = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift")
+        let listSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacTimelineSidebarView.swift")
+        guard
+            let start = source.range(of: "var plannerTimelineEntries: [TimelineEntry] {"),
+            let end = source.range(
+                of: "var groupedPlannerTimelineEntries: [(date: Date, entries: [TimelineEntry])] {",
+                range: start.upperBound..<source.endIndex
+            )
+        else {
+            XCTFail("Expected planner timeline entry derivation to be present")
+            return
+        }
+        let plannerEntriesSource = String(source[start.lowerBound..<end.lowerBound])
+
+        XCTAssertTrue(
+            plannerEntriesSource.contains("timelineEntries"),
+            "Planner List mode should use the same Home timeline entries as the Timeline sidebar so Both/Timeline filters apply consistently."
+        )
+        XCTAssertFalse(
+            plannerEntriesSource.contains("unfilteredPlannerTimelineEntries"),
+            "The unfiltered Planner Timeline source is only for empty-state counting and toolbar search result detection, not visible rows."
+        )
+        XCTAssertTrue(
+            listSource.contains("Try a different timeline search or filters."),
+            "Planner List's empty state should mention filters now that Home Timeline filters affect its visible rows."
+        )
+    }
+
     func testMacToolbarStatusBadgeKeepsStableTextWidth() throws {
         let source = try Self.sourceFile("RoutinaMacApp/Screens/Shared/MacToolbarComponents.swift")
 

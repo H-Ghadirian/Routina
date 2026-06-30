@@ -259,7 +259,7 @@ struct HomeMacPlannerTimelineListView<RowContent: View>: View {
                 ContentUnavailableView(
                     "No matching timeline entries",
                     systemImage: "line.3.horizontal.decrease.circle",
-                    description: Text("Try a different timeline search.")
+                    description: Text("Try a different timeline search or filters.")
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
