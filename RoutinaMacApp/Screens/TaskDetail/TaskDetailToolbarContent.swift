@@ -49,11 +49,7 @@ struct TaskDetailToolbarContent: ToolbarContent {
             ToolbarItem(placement: .primaryAction) {
                 HStack(spacing: 8) {
                     actionButtons
-                    RoutinaDeepLinkShareMenu(
-                        title: RoutineTask.trimmedName(store.task.name) ?? "Untitled task",
-                        deepLink: .task(store.task.id),
-                        presentation: .plainToolbar
-                    )
+                    linkToolbarMenu
                     if isTaskSharingEnabled {
                         CloudSharingToolbarButton(task: store.task)
                     }
@@ -157,6 +153,16 @@ struct TaskDetailToolbarContent: ToolbarContent {
         .help(title)
     }
 
+    private var linkToolbarMenu: some View {
+        toolbarIconChrome {
+            RoutinaDeepLinkShareMenu(
+                title: RoutineTask.trimmedName(store.task.name) ?? "Untitled task",
+                deepLink: .task(store.task.id),
+                presentation: .plainToolbar
+            )
+        }
+    }
+
     private var completionActionLabel: some View {
         HStack(spacing: 6) {
             if let systemImage = store.completionButtonSystemImage {
@@ -205,9 +211,17 @@ struct TaskDetailToolbarContent: ToolbarContent {
     }
 
     private func toolbarIconLabel(systemImage: String) -> some View {
-        Image(systemName: systemImage)
-            .font(.system(size: 14, weight: .semibold))
-            .foregroundStyle(.secondary)
+        toolbarIconChrome {
+            Image(systemName: systemImage)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func toolbarIconChrome<Content: View>(
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        content()
             .frame(width: ToolbarMetrics.iconControlWidth, height: ToolbarMetrics.controlHeight)
             .background(
                 RoundedRectangle(cornerRadius: ToolbarMetrics.iconCornerRadius, style: .continuous)

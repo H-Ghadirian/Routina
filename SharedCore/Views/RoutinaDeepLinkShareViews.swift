@@ -11,12 +11,6 @@ struct RoutinaDeepLinkShareMenu: View {
         case plainToolbar
     }
 
-    private enum PlainToolbarMetrics {
-        static let controlWidth: CGFloat = 42
-        static let controlHeight: CGFloat = 34
-        static let cornerRadius: CGFloat = 8
-    }
-
     let title: String
     let deepLink: RoutinaDeepLink
     var presentation: Presentation = .automatic
@@ -37,16 +31,6 @@ struct RoutinaDeepLinkShareMenu: View {
                         .font(.system(size: 8, weight: .semibold))
                 }
                 .foregroundStyle(.secondary)
-                .frame(width: PlainToolbarMetrics.controlWidth, height: PlainToolbarMetrics.controlHeight)
-                .background(
-                    RoundedRectangle(cornerRadius: PlainToolbarMetrics.cornerRadius, style: .continuous)
-                        .fill(Color.secondary.opacity(0.10))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: PlainToolbarMetrics.cornerRadius, style: .continuous)
-                        .stroke(Color.secondary.opacity(0.14), lineWidth: 1)
-                )
-                .contentShape(RoundedRectangle(cornerRadius: PlainToolbarMetrics.cornerRadius, style: .continuous))
             }
             .buttonStyle(.plain)
         }
