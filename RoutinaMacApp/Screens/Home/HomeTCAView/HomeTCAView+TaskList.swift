@@ -538,7 +538,7 @@ extension HomeTCAView {
     private func taskListGroupUsesSectionSurface(
         _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
     ) -> Bool {
-        group.title != nil && (group.kind == .tag || group.kind == .untagged)
+        group.title != nil && (group.kind == .tag || group.kind == .untagged || group.kind == .deadlineDate)
     }
 
     @ViewBuilder

@@ -1010,12 +1010,23 @@ struct HomeTaskListFilteringTests {
 
     @Test
     func sidebarPresentationDeadlineDateGroupsAreCollapsibleInsideFuture() {
+        let missedID = UUID()
+        let overdueID = UUID()
+        let dueSoonID = UUID()
         let mondayID = UUID()
         let tuesdayID = UUID()
         let unscheduledID = UUID()
         let presentation = HomeTaskListPresentation.sidebar(
             filtering: makeFiltering(routineListSectioningMode: .deadlineDate),
             routineDisplays: [
+                TestTaskDisplay(
+                    taskID: missedID,
+                    name: "Missed task",
+                    daysUntilDue: 0,
+                    hasMissedExactTimedOccurrence: true
+                ),
+                TestTaskDisplay(taskID: overdueID, name: "Overdue task", daysUntilDue: -2),
+                TestTaskDisplay(taskID: dueSoonID, name: "Due soon task", daysUntilDue: 1),
                 TestTaskDisplay(taskID: mondayID, name: "Monday task", daysUntilDue: 4),
                 TestTaskDisplay(taskID: tuesdayID, name: "Tuesday task", daysUntilDue: 5),
                 TestTaskDisplay(taskID: unscheduledID, name: "Unscheduled todo", daysUntilDue: Int.max, isOneOffTask: true)
@@ -1030,15 +1041,24 @@ struct HomeTaskListFilteringTests {
         )
 
         let futureSection = presentation.sections.first
+        let taskGroups = futureSection?.taskGroups ?? []
         #expect(futureSection?.kind == .future)
-        #expect(futureSection?.taskGroups.map(\.kind) == [.deadlineDate, .deadlineDate, .regular])
-        #expect(futureSection?.taskGroups.map(\.isCollapsible) == [true, true, false])
-        #expect(futureSection?.taskGroups.compactMap(\.moveContext?.sectionKey) == [
+        #expect(Array(taskGroups.prefix(3).map(\.title)) == ["Missed", "Overdue", "Due Soon"])
+        #expect(taskGroups.last?.title == "On Track")
+        #expect(taskGroups.map(\.kind) == Array(repeating: .deadlineDate, count: 6))
+        #expect(taskGroups.map(\.isCollapsible) == Array(repeating: true, count: 6))
+        #expect(taskGroups.compactMap(\.moveContext?.sectionKey) == [
+            "missed",
+            "overdue",
+            "dueSoon",
             "onTrack:2024-05-06",
             "onTrack:2024-05-07",
             "onTrack"
         ])
-        #expect(futureSection?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs) == [
+        #expect(taskGroups.compactMap(\.moveContext?.orderedTaskIDs) == [
+            [missedID],
+            [overdueID],
+            [dueSoonID],
             [mondayID],
             [tuesdayID],
             [unscheduledID]

@@ -467,6 +467,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                 from: regularSections,
                 offset: &offset,
                 showsGroupTitles: true,
+                usesDeadlineDateSectioning: false,
                 moveContext: { section in
                     HomeTaskListMoveContext(
                         sectionKey: section.tasks.first.map { filtering.regularManualOrderSectionKey(for: $0) }
@@ -482,6 +483,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                 from: regularSections,
                 offset: &offset,
                 showsGroupTitles: false,
+                usesDeadlineDateSectioning: false,
                 moveContext: { section in
                     HomeTaskListMoveContext(
                         sectionKey: HomeTaskListFiltering<Display>.ungroupedManualOrderSectionKey,
@@ -496,6 +498,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                 from: regularSections,
                 offset: &offset,
                 showsGroupTitles: true,
+                usesDeadlineDateSectioning: filtering.usesDeadlineDateSectioning,
                 moveContext: { section in
                     HomeTaskListMoveContext(
                         sectionKey: section.tasks.first.map { filtering.regularManualOrderSectionKey(for: $0) } ?? "onTrack",
@@ -575,10 +578,15 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         from regularSections: [HomeTaskListSection<Display>],
         offset: inout Int,
         showsGroupTitles: Bool,
+        usesDeadlineDateSectioning: Bool,
         moveContext: (HomeTaskListSection<Display>) -> HomeTaskListMoveContext?
     ) -> HomeTaskListPresentationSection<Display>? {
         let taskGroups = regularSections.map { section in
-            let kind = sidebarFutureGroupKind(for: section, showsGroupTitles: showsGroupTitles)
+            let kind = sidebarFutureGroupKind(
+                for: section,
+                showsGroupTitles: showsGroupTitles,
+                usesDeadlineDateSectioning: usesDeadlineDateSectioning
+            )
             return HomeTaskListPresentationTaskGroup(
                 kind: kind,
                 title: showsGroupTitles ? section.title : nil,
@@ -605,7 +613,8 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
 
     private static func sidebarFutureGroupKind(
         for section: HomeTaskListSection<Display>,
-        showsGroupTitles: Bool
+        showsGroupTitles: Bool,
+        usesDeadlineDateSectioning: Bool
     ) -> HomeTaskListPresentationSectionKind {
         guard showsGroupTitles else { return .regular }
         if HomeTaskListTagGrouping.isUntaggedTitle(section.title) {
@@ -613,6 +622,9 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         }
         if section.title.hasPrefix("#") {
             return .tag
+        }
+        if usesDeadlineDateSectioning {
+            return .deadlineDate
         }
         if section.identityKey.hasPrefix("deadline:") {
             return .deadlineDate

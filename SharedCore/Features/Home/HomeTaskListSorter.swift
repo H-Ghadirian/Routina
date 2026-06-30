@@ -186,6 +186,9 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
             return sortKey?.tagManualOrderSectionKey ?? task.taskListTagManualOrderSectionKey
         }
 
+        if sortKey?.hasMissedExactTimedOccurrence ?? metrics.hasMissedExactTimedOccurrence(for: task) {
+            return "missed"
+        }
         if task.isDoneToday {
             return "doneToday"
         }
@@ -232,6 +235,7 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
                 : nil
 
             sortKeys[task.taskID] = HomeTaskListSortKey(
+                hasMissedExactTimedOccurrence: metrics.hasMissedExactTimedOccurrence(for: task),
                 overdueDays: overdueDays,
                 urgencyLevel: urgencyLevel,
                 isYellowUrgency: isYellowUrgency,
@@ -276,6 +280,7 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
 }
 
 private struct HomeTaskListSortKey {
+    let hasMissedExactTimedOccurrence: Bool
     let overdueDays: Int
     let urgencyLevel: Int
     let isYellowUrgency: Bool
