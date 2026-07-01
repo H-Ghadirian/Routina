@@ -533,7 +533,7 @@ extension HomeTCAView {
                 if let toolbarSearchCreateDraft {
                     HomeMacToolbarSearchParserPreview(draft: toolbarSearchCreateDraft)
                         .frame(
-                            width: HomeMacToolbarSearchLayout.width,
+                            width: HomeMacToolbarSearchLayout.focusedWidth,
                             alignment: .leading
                         )
                         .padding(.top, HomeMacToolbarSearchLayout.parserPreviewTopPadding)

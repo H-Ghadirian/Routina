@@ -136,7 +136,8 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
 }
 
 enum HomeMacToolbarSearchLayout {
-    static let width: CGFloat = 760
+    static let compactWidth: CGFloat = 540
+    static let focusedWidth: CGFloat = 1040
     static let height: CGFloat = 44
     static let parserPreviewTopPadding: CGFloat = 12
     static let parserPreviewTrailingPadding: CGFloat = 22
@@ -147,6 +148,8 @@ private struct HomeMacToolbarSearchField: View {
     let isCreatingTask: Bool
     let canCreateTaskFromQuery: Bool
     let onSubmit: (String) -> Void
+    @State private var isFocused = false
+    @State private var focusDismissRequestID = 0
 
     var body: some View {
         HStack(spacing: 8) {
@@ -154,6 +157,8 @@ private struct HomeMacToolbarSearchField: View {
                 placeholder: HomeMacToolbarSearchCopy.placeholder,
                 text: $text,
                 isCreatingTask: isCreatingTask,
+                isFocused: $isFocused,
+                focusDismissRequestID: focusDismissRequestID,
                 onSubmit: onSubmit
             )
             .frame(maxWidth: .infinity, maxHeight: HomeMacToolbarSearchLayout.height)
@@ -162,15 +167,47 @@ private struct HomeMacToolbarSearchField: View {
                 createHint
                     .transition(.opacity.combined(with: .scale(scale: 0.98)))
             }
+
+            if isFocused {
+                closeButton
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+            }
         }
-        .frame(width: HomeMacToolbarSearchLayout.width, height: HomeMacToolbarSearchLayout.height)
+        .frame(width: targetWidth, height: HomeMacToolbarSearchLayout.height)
+        .animation(
+            .spring(response: 0.28, dampingFraction: 0.9, blendDuration: 0.05),
+            value: isFocused
+        )
         .animation(.easeOut(duration: 0.12), value: showsCreateHint)
         .help(HomeMacToolbarSearchCopy.help)
         .accessibilityLabel(HomeMacToolbarSearchCopy.accessibilityLabel)
     }
 
+    private var closeButton: some View {
+        Button {
+            focusDismissRequestID += 1
+        } label: {
+            Text("Esc")
+                .font(.caption2.monospaced().weight(.semibold))
+                .foregroundStyle(Color.secondary)
+                .frame(width: 34, height: 28)
+                .background {
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(Color.secondary.opacity(0.10))
+                }
+                .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(HomeMacToolbarSearchCopy.closeAccessibilityLabel)
+        .help(HomeMacToolbarSearchCopy.closeHelp)
+    }
+
+    private var targetWidth: CGFloat {
+        isFocused ? HomeMacToolbarSearchLayout.focusedWidth : HomeMacToolbarSearchLayout.compactWidth
+    }
+
     private var showsCreateHint: Bool {
-        isCreatingTask || canCreateTaskFromQuery
+        isFocused && (isCreatingTask || canCreateTaskFromQuery)
     }
 
     private var createHint: some View {
@@ -346,12 +383,16 @@ private enum HomeMacToolbarSearchCopy {
     static let createHint = "Create task"
     static let creatingHint = "Creating task"
     static let parserPreviewTitle = "Detected details"
+    static let closeAccessibilityLabel = "Dismiss search focus"
+    static let closeHelp = "Dismiss search focus"
 }
 
 private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
     let placeholder: String
     @Binding var text: String
     let isCreatingTask: Bool
+    @Binding var isFocused: Bool
+    let focusDismissRequestID: Int
     let onSubmit: (String) -> Void
 
     @MainActor
@@ -361,9 +402,11 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
         private var shouldRestoreFocus = false
         private var focusGeneration = 0
         private var isFocusObserverInstalled = false
+        private var handledFocusDismissRequestID: Int
 
         init(parent: HomeMacToolbarSearchTextField) {
             self.parent = parent
+            self.handledFocusDismissRequestID = parent.focusDismissRequestID
         }
 
         deinit {
@@ -385,8 +428,13 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
             focusSearchField(selectingText: true)
         }
 
+        func controlTextDidBeginEditing(_ notification: Notification) {
+            parent.isFocused = true
+        }
+
         func controlTextDidEndEditing(_ notification: Notification) {
             syncSearchText(from: notification.object)
+            parent.isFocused = false
         }
 
         func controlTextDidChange(_ notification: Notification) {
@@ -404,6 +452,12 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
             textView: NSTextView,
             doCommandBy commandSelector: Selector
         ) -> Bool {
+            if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
+                syncSearchText(from: control)
+                dismissSearchFocus()
+                return true
+            }
+
             guard commandSelector == #selector(NSResponder.insertNewline(_:)) else {
                 return false
             }
@@ -421,6 +475,12 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
             if parent.text != nextText {
                 parent.text = nextText
             }
+        }
+
+        func dismissFocusIfNeeded(for requestID: Int) {
+            guard requestID != handledFocusDismissRequestID else { return }
+            handledFocusDismissRequestID = requestID
+            dismissSearchFocus()
         }
 
         private func restoreFocusAfterSearchUpdate() {
@@ -465,11 +525,29 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
             }
         }
 
+        private func dismissSearchFocus() {
+            guard let searchField else {
+                parent.isFocused = false
+                return
+            }
+
+            syncSearchText(from: searchField)
+            shouldRestoreFocus = false
+            focusGeneration += 1
+            let currentEditor = searchField.currentEditor()
+            if let window = searchField.window,
+               window.firstResponder === currentEditor || window.firstResponder === searchField {
+                window.makeFirstResponder(nil)
+            }
+            parent.isFocused = false
+        }
+
         private func focusSearchField(selectingText: Bool) {
             guard let searchField,
                   let window = searchField.window else { return }
 
             window.makeFirstResponder(searchField)
+            parent.isFocused = true
             let length = searchField.stringValue.count
             searchField.currentEditor()?.selectedRange = NSRange(
                 location: selectingText ? 0 : length,
@@ -516,6 +594,7 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
     func updateNSView(_ nsView: NSSearchField, context: Context) {
         context.coordinator.parent = self
         context.coordinator.searchField = nsView
+        context.coordinator.dismissFocusIfNeeded(for: focusDismissRequestID)
         nsView.placeholderString = placeholder
         nsView.toolTip = HomeMacToolbarSearchCopy.help
         nsView.controlSize = .large

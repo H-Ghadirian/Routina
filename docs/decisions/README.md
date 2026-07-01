@@ -31,6 +31,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0321](0321-use-focus-expanded-mac-home-toolbar-search.md) refines [0022](0022-own-mac-home-toolbar-at-split-shell.md), [0310](0310-show-mac-home-toolbar-search.md), and [0317](0317-use-principal-search-in-mac-home-toolbar.md) for Mac Home toolbar width:** Mac Home keeps search in the centered principal toolbar slot, but renders it compact while idle and smoothly expands it while focused so full task-detail actions can remain visible when the sidebar is open.
 - **[0320](0320-hide-planner-range-picker-in-tight-inspector-layouts.md) refines [0305](0305-hide-planner-range-picker-when-header-cannot-fit.md), [0306](0306-use-day-planner-width-for-task-detail-inspector-fit.md), and [0307](0307-hide-planner-range-picker-in-day-inspector-layout.md) for tight Planner inspector headers:** When a right-side companion pane is open, the Mac Planner header hides Day/3 Days/Week unless the header has roomy inspector width and the full control row fits, keeping previous/next, Calendar/List, filter, and date controls clear.
 - **[0319](0319-open-planner-filters-in-home-filter-pane.md) refines [0289](0289-filter-planner-calendar-layers.md), [0291](0291-gate-planner-calendar-filter-options-by-beta-toggles.md), [0309](0309-show-full-timeline-in-planner-list-mode.md), [0312](0312-move-mac-task-timeline-filter-entry-to-toolbar.md), [0316](0316-present-mac-home-filters-as-companion-pane.md), and [0317](0317-use-principal-search-in-mac-home-toolbar.md) for Mac filter entry:** Mac Home removes the top toolbar filter icon; the Planner header filter button remains visible in Calendar and List modes and opens the right-side companion filter pane with `Both` / `Task List` / `Timeline` / `Calendar` scopes. Calendar layer filters keep their presentation-only semantics and beta gating inside the new `Calendar` scope.
 - **[0318](0318-remove-mac-home-timeline-toolbar-segment.md) refines [0309](0309-show-full-timeline-in-planner-list-mode.md), [0311](0311-move-mac-home-mode-strip-to-toolbar.md), and [0317](0317-use-principal-search-in-mac-home-toolbar.md) for Mac timeline navigation:** Mac Home removes Timeline from the visible toolbar mode strip because Planner `List` now shows the full Timeline in the main Planner area; commands or legacy actions that ask to open Timeline route to Planner with `List` selected.
@@ -228,6 +229,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0321](0321-use-focus-expanded-mac-home-toolbar-search.md) | Use Focus-Expanded Mac Home Toolbar Search | Accepted | 2026-07-01 |
 | [0320](0320-hide-planner-range-picker-in-tight-inspector-layouts.md) | Hide Planner Range Picker in Tight Inspector Layouts | Accepted | 2026-07-01 |
 | [0317](0317-use-principal-search-in-mac-home-toolbar.md) | Use Principal Search in the Mac Home Toolbar | Accepted | 2026-06-29 |
 | [0316](0316-present-mac-home-filters-as-companion-pane.md) | Present Mac Home Filters as a Companion Pane | Accepted | 2026-06-29 |
