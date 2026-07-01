@@ -151,6 +151,32 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testMacPlannerCompanionLayoutKeepsHeaderInsidePlannerColumn() throws {
+        XCTAssertEqual(
+            MacDetailContainerSizing.plannerInspectorContentMinWidth,
+            DayPlanWeekCalendarSizing.minimumDetailWidth(isExternalInspectorPresented: true)
+        )
+        XCTAssertEqual(
+            MacDetailContainerSizing.plannerTaskDetailMinWidth,
+            MacDetailContainerSizing.plannerInspectorContentMinWidth + MacDetailContainerSizing.taskDetailPaneWidth
+        )
+
+        let detailSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
+        let dayPlanSource = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
+
+        XCTAssertTrue(
+            detailSource.contains(".clipped()\n\n                if canShowTaskDetailPane"),
+            "Planner content should clip at its own column boundary instead of drawing underneath a right companion pane."
+        )
+        XCTAssertTrue(dayPlanSource.contains(".background(macHeaderAvailableWidthReader)"))
+        XCTAssertFalse(
+            dayPlanSource.contains("macHeaderRow(showsRangePicker: shouldShowMacHeaderRangePicker)\n            .background(macHeaderAvailableWidthReader)"),
+            "Header available width should be measured from the bounded container, not the potentially overflowing controls row."
+        )
+        XCTAssertTrue(dayPlanSource.contains("usesCompactMacInspectorControls"))
+        XCTAssertTrue(dayPlanSource.contains("plannerDatePickerButtonMaximumWidth"))
+    }
+
     func testHomeDoneStatsDoesNotRewalkLogsForEachOutcome() throws {
         let source = try Self.sourceFile("SharedCore/Features/Home/HomeTaskSupport.swift")
 

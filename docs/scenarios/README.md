@@ -315,6 +315,19 @@ Given the user explicitly selects Day
 When the calendar column grows from narrow to wide
 Then Planner keeps Day selected and continues rendering one day
 
+### Planner Companion Panes Do Not Overlap Calendar
+
+Area: Planner
+Decision links: [0296](../decisions/0296-present-mac-task-details-as-planner-inspector.md), [0299](../decisions/0299-constrain-mac-home-window-size.md), [0306](../decisions/0306-use-day-planner-width-for-task-detail-inspector-fit.md), [0307](../decisions/0307-hide-planner-range-picker-in-day-inspector-layout.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/DayPlanPlannerStateTests.swift`
+- `Tests/macOS/PerformanceRegressionTests.swift`
+
+Given Mac Planner is visible beside a right-side companion pane
+When the available Planner column becomes tight
+Then Planner measures its header against the actual column width, keeps controls clipped inside the Planner column, and hides or compacts nonessential header controls before they can overlap the companion pane
+
 ### Planner Block Resize Stays Continuous Across Layout Changes
 
 Area: Planner

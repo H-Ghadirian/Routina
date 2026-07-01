@@ -169,6 +169,10 @@ struct DayPlanPlannerStateTests {
                 == 420
         )
         #expect(
+            DayPlanWeekCalendarSizing.minimumDetailWidth(isExternalInspectorPresented: false)
+                == 460
+        )
+        #expect(
             DayPlanWeekCalendarSizing.dayWidth(
                 availableWidth: 160,
                 dayCount: 1,
@@ -182,6 +186,10 @@ struct DayPlanPlannerStateTests {
         #expect(
             DayPlanWeekCalendarSizing.minimumCalendarWidth(isExternalInspectorPresented: true)
                 == 360
+        )
+        #expect(
+            DayPlanWeekCalendarSizing.minimumDetailWidth(isExternalInspectorPresented: true)
+                == 400
         )
         #expect(
             DayPlanWeekCalendarSizing.dayWidth(
@@ -202,6 +210,15 @@ struct DayPlanPlannerStateTests {
         )
 
         #expect(dayWidth + DayPlanWeekCalendarSizing.timeColumnWidth == contentWidthAfterPadding)
+    }
+
+    @Test
+    func inspectorPlannerDetailMinimumMatchesCalendarPaddingContract() {
+        #expect(
+            DayPlanWeekCalendarSizing.minimumDetailWidth(isExternalInspectorPresented: true)
+                == DayPlanWeekCalendarSizing.minimumCalendarWidth(isExternalInspectorPresented: true)
+                    + DayPlanWeekCalendarSizing.detailHorizontalPadding
+        )
     }
 
     @Test

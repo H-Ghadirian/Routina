@@ -1,9 +1,13 @@
 import ComposableArchitecture
 import SwiftUI
 
-private enum MacDetailContainerSizing {
-    static let plannerContentMinWidth: CGFloat = 520
-    static let plannerInspectorContentMinWidth: CGFloat = 400
+enum MacDetailContainerSizing {
+    static let plannerContentMinWidth: CGFloat = DayPlanWeekCalendarSizing.minimumDetailWidth(
+        isExternalInspectorPresented: false
+    )
+    static let plannerInspectorContentMinWidth: CGFloat = DayPlanWeekCalendarSizing.minimumDetailWidth(
+        isExternalInspectorPresented: true
+    )
     static let taskDetailPaneWidth: CGFloat = 420
     static let filterDetailPaneWidth: CGFloat = 420
     static let plannerTaskDetailMinWidth: CGFloat = plannerInspectorContentMinWidth + taskDetailPaneWidth
@@ -302,10 +306,13 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                     }
                 )
                 .frame(
-                    minWidth: canShowTaskDetailPane ? MacDetailContainerSizing.plannerInspectorContentMinWidth : 0,
+                    minWidth: canShowTaskDetailPane
+                        ? MacDetailContainerSizing.plannerInspectorContentMinWidth
+                        : MacDetailContainerSizing.plannerContentMinWidth,
                     maxWidth: .infinity,
                     maxHeight: .infinity
                 )
+                .clipped()
 
                 if canShowTaskDetailPane {
                     taskDetailPane(edge: .trailing)

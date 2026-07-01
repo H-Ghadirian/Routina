@@ -29,7 +29,7 @@ struct DayPlanView: View {
                     .frame(minWidth: 520)
             }
         }
-        .padding(20)
+        .padding(DayPlanWeekCalendarSizing.detailPadding)
 #else
         NavigationStack {
             VStack(alignment: .leading, spacing: 12) {
@@ -490,9 +490,13 @@ private struct DayPlanHeaderView: View {
     }
 
     private var macHeader: some View {
-        macHeaderRow(showsRangePicker: shouldShowMacHeaderRangePicker)
+        ZStack(alignment: .leading) {
+            macHeaderRow(showsRangePicker: shouldShowMacHeaderRangePicker)
+                .background(macHeaderFullControlsWidthProbe)
+        }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .clipped()
             .background(macHeaderAvailableWidthReader)
-            .background(macHeaderFullControlsWidthProbe)
             .onPreferenceChange(DayPlanHeaderAvailableWidthPreferenceKey.self) { width in
                 guard abs(macHeaderAvailableWidth - width) > 0.5 else { return }
                 macHeaderAvailableWidth = width
@@ -747,6 +751,7 @@ private struct DayPlanHeaderView: View {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(1)
+                    .truncationMode(.middle)
                     .minimumScaleFactor(0.85)
                     .foregroundStyle(.primary)
 
@@ -757,6 +762,7 @@ private struct DayPlanHeaderView: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 7)
             .frame(minHeight: 34)
+            .frame(maxWidth: plannerDatePickerButtonMaximumWidth, alignment: .leading)
             .routinaGlassCard(
                 cornerRadius: 8,
                 tint: isPresented ? Color.accentColor : nil,
@@ -769,6 +775,10 @@ private struct DayPlanHeaderView: View {
         .accessibilityValue(title)
         .accessibilityHint("\(planner.blocks.count) blocks on selected day, \(DayPlanFormatting.durationText(planner.plannedMinutes)) planned")
         .help("Go to date")
+    }
+
+    private var plannerDatePickerButtonMaximumWidth: CGFloat {
+        usesCompactMacInspectorControls ? 154 : 280
     }
 
     private var calendarFilterAvailability: DayPlanCalendarFilterAvailability {
@@ -796,13 +806,19 @@ private struct DayPlanHeaderView: View {
             accessibilityLabel: "Planner view",
             options: DayPlanDisplayMode.allCases,
             selection: displayMode,
-            minimumSegmentWidth: 84,
-            horizontalPadding: 11
+            minimumSegmentWidth: usesCompactMacInspectorControls ? 42 : 84,
+            horizontalPadding: usesCompactMacInspectorControls ? 8 : 11
         ) { mode in
-            Label(mode.title, systemImage: mode.systemImage)
-                .labelStyle(.titleAndIcon)
+            if usesCompactMacInspectorControls {
+                Image(systemName: mode.systemImage)
+                    .accessibilityLabel(mode.title)
+                    .help(mode.title)
+            } else {
+                Label(mode.title, systemImage: mode.systemImage)
+                    .labelStyle(.titleAndIcon)
+            }
         }
-        .frame(width: 190)
+        .frame(width: usesCompactMacInspectorControls ? 100 : 190)
         .accessibilityLabel("Planner view")
     }
 
@@ -819,6 +835,14 @@ private struct DayPlanHeaderView: View {
 
     private var effectiveDisplayMode: DayPlanDisplayMode {
         showsDisplayModePicker ? displayMode.wrappedValue : .calendar
+    }
+
+    private var usesCompactMacInspectorControls: Bool {
+#if os(macOS)
+        isTaskDetailInspectorPresented && planner.visibleRangeMode == .day
+#else
+        false
+#endif
     }
 
 }

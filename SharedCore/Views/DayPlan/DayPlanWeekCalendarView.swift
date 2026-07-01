@@ -7,9 +7,15 @@ enum DayPlanWeekCalendarSizing {
     static let inspectorMinimumCalendarWidth: CGFloat = 360
     static let regularMinimumDayWidth: CGFloat = 120
     static let inspectorMinimumDayWidth: CGFloat = 96
+    static let detailPadding: CGFloat = 20
+    static let detailHorizontalPadding: CGFloat = detailPadding * 2
 
     static func minimumCalendarWidth(isExternalInspectorPresented: Bool) -> CGFloat {
         isExternalInspectorPresented ? inspectorMinimumCalendarWidth : regularMinimumCalendarWidth
+    }
+
+    static func minimumDetailWidth(isExternalInspectorPresented: Bool) -> CGFloat {
+        minimumCalendarWidth(isExternalInspectorPresented: isExternalInspectorPresented) + detailHorizontalPadding
     }
 
     static func dayWidth(
