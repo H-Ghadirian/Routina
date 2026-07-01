@@ -112,6 +112,8 @@ struct StatsView: View {
     private var dashboardItemOrderIDsRaw = ""
     @AppStorage(UserDefaultStringValueKey.appSettingMacStatsSummaryDisplayMode.rawValue, store: SharedDefaults.app)
     private var summaryDisplayModeRaw = StatsSummaryDisplayMode.cards.rawValue
+    @AppStorage(UserDefaultBoolValueKey.appSettingMacStatsDashboardControlsEnabled.rawValue, store: SharedDefaults.app)
+    private var areMacStatsDashboardControlsEnabled = false
     @AppStorage(UserDefaultBoolValueKey.appSettingStatsWinsEnabled.rawValue, store: SharedDefaults.app)
     private var isStatsWinsEnabled = false
     @AppStorage(UserDefaultBoolValueKey.appSettingStatsSleepTabEnabled.rawValue, store: SharedDefaults.app)
@@ -359,11 +361,18 @@ struct StatsView: View {
                     RoutinaMacFocusTimerToolbarItem()
                 }
 
-                ToolbarItemGroup(placement: .primaryAction) {
-                    summaryDisplayModeMenu
-                    dashboardEditButton
+                if areMacStatsDashboardControlsEnabled {
+                    ToolbarItemGroup(placement: .primaryAction) {
+                        summaryDisplayModeMenu
+                        dashboardEditButton
+                    }
                 }
             }
+        }
+        .onChange(of: areMacStatsDashboardControlsEnabled) { _, isEnabled in
+            guard !isEnabled else { return }
+            isEditingDashboard = false
+            isAddDashboardItemSheetPresented = false
         }
         .sheet(isPresented: $isAddDashboardItemSheetPresented) {
             addDashboardItemSheet

@@ -15,6 +15,16 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testMacStatsDashboardToolbarControlsAreBetaGated() throws {
+        let statsSource = try Self.sourceFile("RoutinaMacApp/Screens/StatsView.swift")
+        let settingsSource = try Self.sourceFile("RoutinaMacApp/Screens/Settings/SettingsMacDataSupportDetailViews.swift")
+
+        XCTAssertTrue(statsSource.contains("appSettingMacStatsDashboardControlsEnabled"))
+        XCTAssertTrue(statsSource.contains("if areMacStatsDashboardControlsEnabled {\n                    ToolbarItemGroup(placement: .primaryAction)"))
+        XCTAssertTrue(statsSource.contains("summaryDisplayModeMenu\n                        dashboardEditButton"))
+        XCTAssertTrue(settingsSource.contains("Toggle(\"Show Stats dashboard controls\""))
+    }
+
     func testMacHomeToolbarDoesNotScanRoutineTaskModelsForStatsModeBadges() throws {
         let source = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift")
 

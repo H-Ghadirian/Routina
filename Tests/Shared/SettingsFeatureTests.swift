@@ -671,6 +671,11 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func defaultSettingsKeepMacStatsDashboardControlsOff() {
+        #expect(AppSettingsDefaults.boolValues[.appSettingMacStatsDashboardControlsEnabled] == .some(false))
+    }
+
+    @Test
     func defaultSettingsKeepUnlimitedTaskUnlockOffWhenNotConfigured() {
         #expect(SettingsFeature.State().appearance.unlocksUnlimitedTasks == false)
         #expect(RoutinaUserPreferences().unlockUnlimitedTasks == false)

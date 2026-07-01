@@ -70,6 +70,7 @@ enum AppSettingsDefaults {
         .appSettingStatsWinsEnabled: false,
         .appSettingStatsSleepTabEnabled: false,
         .appSettingStatsAchievementsEnabled: false,
+        .appSettingMacStatsDashboardControlsEnabled: false,
         .appSettingShowPersianDates: false,
         .appSettingBatteryRoutineMonitoringEnabled: BatteryRoutinePreferences.defaultMonitoringEnabled,
         .appSettingSleepHomeActionEnabled: true,
@@ -154,6 +155,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingStatsWinsEnabled
     case appSettingStatsSleepTabEnabled
     case appSettingStatsAchievementsEnabled
+    case appSettingMacStatsDashboardControlsEnabled
     case appSettingHomeTaskListModeTabsVisible
     case appSettingMacHomeSectionFocusTimersEnabled
     case appSettingMacTimelineQuickFiltersVisible

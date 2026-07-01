@@ -492,6 +492,10 @@ private struct SettingsMacBetaExperimentsCard: View {
         store: SharedDefaults.app
     ) private var isStatsAchievementsEnabled = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacStatsDashboardControlsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var areMacStatsDashboardControlsEnabled = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingHomeTaskListModeTabsVisible.rawValue,
         store: SharedDefaults.app
     ) private var areHomeTaskListModeTabsVisible = false
@@ -616,6 +620,13 @@ private struct SettingsMacBetaExperimentsCard: View {
                 .toggleStyle(.switch)
 
             Text("Show achievement badges and progress in Stats.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Toggle("Show Stats dashboard controls", isOn: $areMacStatsDashboardControlsEnabled)
+                .toggleStyle(.switch)
+
+            Text("Show Summary view and Edit controls in the Mac Stats toolbar.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 
