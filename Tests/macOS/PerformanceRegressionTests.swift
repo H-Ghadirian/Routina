@@ -173,11 +173,16 @@ final class PerformanceRegressionTests: XCTestCase {
             dayPlanSource.contains("macHeaderRow(showsRangePicker: shouldShowMacHeaderRangePicker)\n            .background(macHeaderAvailableWidthReader)"),
             "Header available width should be measured from the bounded container, not the potentially overflowing controls row."
         )
-        XCTAssertTrue(dayPlanSource.contains("usesCompactMacInspectorControls"))
+        XCTAssertTrue(dayPlanSource.contains("usesIconOnlyMacDisplayModePicker"))
+        XCTAssertTrue(dayPlanSource.contains("usesCompactMacDatePickerButton"))
+        XCTAssertTrue(dayPlanSource.contains("plannerDatePickerButtonMinimumWidth"))
         XCTAssertTrue(dayPlanSource.contains("plannerDatePickerButtonMaximumWidth"))
+        XCTAssertTrue(dayPlanSource.contains(".layoutPriority(3)"))
         XCTAssertTrue(dayPlanSource.contains("inspectorRangePickerMinimumAvailableWidth"))
-        XCTAssertTrue(dayPlanSource.contains("compactInspectorControlsMaximumAvailableWidth"))
-        XCTAssertTrue(dayPlanSource.contains("shouldUseCompactInspectorControls"))
+        XCTAssertTrue(dayPlanSource.contains("iconOnlyDisplayModePickerMaximumAvailableWidth"))
+        XCTAssertTrue(dayPlanSource.contains("compactDatePickerButtonMaximumAvailableWidth"))
+        XCTAssertTrue(dayPlanSource.contains("shouldUseIconOnlyDisplayModePicker"))
+        XCTAssertTrue(dayPlanSource.contains("shouldUseCompactDatePickerButton"))
     }
 
     func testHomeDoneStatsDoesNotRewalkLogsForEachOutcome() throws {

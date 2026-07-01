@@ -26,11 +26,12 @@ When the Mac Planner is in an external companion-pane layout, the header hides t
 
 The existing Day-inspector rule remains: if a companion pane is open and the effective Planner range is Day, the range picker is hidden even if the row would otherwise fit.
 
-Calendar/List, previous/next, Planner filters, and the date/range control stay available on one row. This roomy-width rule only hides the range picker; Calendar/List labels and the full date/range text remain in their regular presentation until a separate narrower compact-controls threshold is crossed. Range preference, adaptive visible range, Planner storage, and task-detail presentation are unchanged.
+Calendar/List, previous/next, Planner filters, and the date/range control stay available on one row. This roomy-width rule only hides the range picker. If the companion header tightens further, Calendar/List labels collapse to icon-only before the date/range button is allowed to use its compact width. Range preference, adaptive visible range, Planner storage, and task-detail presentation are unchanged.
 
 ## Consequences
 
 - Tight Planner-plus-companion layouts no longer let the range picker crowd or overlap the date control or right pane.
 - Intermediate-width companion layouts can hide only the secondary range picker without unnecessarily truncating the date/range button or making Calendar/List icon-only.
+- Narrower companion layouts free date/range space by hiding Calendar/List text before shortening the date/range button.
 - Roomy multi-day inspector layouts can still show the range picker when there is enough space.
 - The user's selected/preferred range remains intact while the picker is temporarily hidden.

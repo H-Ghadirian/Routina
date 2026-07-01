@@ -762,7 +762,11 @@ private struct DayPlanHeaderView: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 7)
             .frame(minHeight: 34)
-            .frame(maxWidth: plannerDatePickerButtonMaximumWidth, alignment: .leading)
+            .frame(
+                minWidth: plannerDatePickerButtonMinimumWidth,
+                maxWidth: plannerDatePickerButtonMaximumWidth,
+                alignment: .leading
+            )
             .routinaGlassCard(
                 cornerRadius: 8,
                 tint: isPresented ? Color.accentColor : nil,
@@ -770,6 +774,7 @@ private struct DayPlanHeaderView: View {
                 interactive: true
             )
         }
+        .layoutPriority(3)
         .buttonStyle(.plain)
         .accessibilityLabel("Go to date")
         .accessibilityValue(title)
@@ -777,8 +782,12 @@ private struct DayPlanHeaderView: View {
         .help("Go to date")
     }
 
+    private var plannerDatePickerButtonMinimumWidth: CGFloat? {
+        usesCompactMacDatePickerButton ? nil : 210
+    }
+
     private var plannerDatePickerButtonMaximumWidth: CGFloat? {
-        usesCompactMacInspectorControls ? 154 : nil
+        usesCompactMacDatePickerButton ? 154 : 320
     }
 
     private var calendarFilterAvailability: DayPlanCalendarFilterAvailability {
@@ -802,14 +811,16 @@ private struct DayPlanHeaderView: View {
     }
 
     private var displayModePicker: some View {
-        RoutinaGlassSegmentedControl(
+        let usesIconOnlySegments = usesIconOnlyMacDisplayModePicker
+
+        return RoutinaGlassSegmentedControl(
             accessibilityLabel: "Planner view",
             options: DayPlanDisplayMode.allCases,
             selection: displayMode,
-            minimumSegmentWidth: usesCompactMacInspectorControls ? 42 : 84,
-            horizontalPadding: usesCompactMacInspectorControls ? 8 : 11
+            minimumSegmentWidth: usesIconOnlySegments ? 42 : 84,
+            horizontalPadding: usesIconOnlySegments ? 8 : 11
         ) { mode in
-            if usesCompactMacInspectorControls {
+            if usesIconOnlySegments {
                 Image(systemName: mode.systemImage)
                     .accessibilityLabel(mode.title)
                     .help(mode.title)
@@ -818,7 +829,7 @@ private struct DayPlanHeaderView: View {
                     .labelStyle(.titleAndIcon)
             }
         }
-        .frame(width: usesCompactMacInspectorControls ? 100 : 190)
+        .frame(width: usesIconOnlySegments ? 100 : 190)
         .accessibilityLabel("Planner view")
     }
 
@@ -837,9 +848,20 @@ private struct DayPlanHeaderView: View {
         showsDisplayModePicker ? displayMode.wrappedValue : .calendar
     }
 
-    private var usesCompactMacInspectorControls: Bool {
+    private var usesIconOnlyMacDisplayModePicker: Bool {
 #if os(macOS)
-        DayPlanHeaderRangePickerVisibility.shouldUseCompactInspectorControls(
+        DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDisplayModePicker(
+            availableWidth: Double(macHeaderAvailableWidth),
+            isTaskDetailInspectorPresented: isTaskDetailInspectorPresented
+        )
+#else
+        false
+#endif
+    }
+
+    private var usesCompactMacDatePickerButton: Bool {
+#if os(macOS)
+        DayPlanHeaderRangePickerVisibility.shouldUseCompactDatePickerButton(
             availableWidth: Double(macHeaderAvailableWidth),
             isTaskDetailInspectorPresented: isTaskDetailInspectorPresented
         )
@@ -852,7 +874,8 @@ private struct DayPlanHeaderView: View {
 
 enum DayPlanHeaderRangePickerVisibility {
     static let inspectorRangePickerMinimumAvailableWidth: Double = 860
-    static let compactInspectorControlsMaximumAvailableWidth: Double = 640
+    static let iconOnlyDisplayModePickerMaximumAvailableWidth: Double = 860
+    static let compactDatePickerButtonMaximumAvailableWidth: Double = 660
 
     static func shouldShow(
         availableWidth: Double,
@@ -870,12 +893,20 @@ enum DayPlanHeaderRangePickerVisibility {
         return fullControlsWidth <= availableWidth + 0.5
     }
 
-    static func shouldUseCompactInspectorControls(
+    static func shouldUseIconOnlyDisplayModePicker(
         availableWidth: Double,
         isTaskDetailInspectorPresented: Bool
     ) -> Bool {
         guard isTaskDetailInspectorPresented, availableWidth > 0 else { return false }
-        return availableWidth < compactInspectorControlsMaximumAvailableWidth
+        return availableWidth < iconOnlyDisplayModePickerMaximumAvailableWidth
+    }
+
+    static func shouldUseCompactDatePickerButton(
+        availableWidth: Double,
+        isTaskDetailInspectorPresented: Bool
+    ) -> Bool {
+        guard isTaskDetailInspectorPresented, availableWidth > 0 else { return false }
+        return availableWidth < compactDatePickerButtonMaximumAvailableWidth
     }
 }
 

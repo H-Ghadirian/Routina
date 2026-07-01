@@ -415,6 +415,10 @@ When the effective Planner range has adapted down to Day
 Then the top `Day` / `3 Days` / `Week` segmented picker is hidden while Calendar/List, previous/next, filter, and the full date/range controls remain in the header
 And the calendar grid can use its compact inspector minimum width so the time column and single day column fit inside the Planner surface
 
+Given the Mac Planner task-detail companion pane is open and the range picker is already hidden
+When the Planner header becomes narrower
+Then the Calendar/List segment hides text before the date/range button switches to compact width
+
 Given the Mac Planner task-detail companion pane is open with enough room for a multi-day effective range
 When the full header controls fit on one row
 Then the top range segmented picker can remain visible

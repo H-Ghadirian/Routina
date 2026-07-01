@@ -163,22 +163,34 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
-    func inspectorHeaderDoesNotCompactOtherControlsWhenOnlyRangePickerIsTight() {
+    func inspectorHeaderCompactsDisplayModeBeforeDateButton() {
         #expect(
-            DayPlanHeaderRangePickerVisibility.shouldUseCompactInspectorControls(
+            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDisplayModePicker(
+                availableWidth: 900,
+                isTaskDetailInspectorPresented: true
+            ) == false
+        )
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDisplayModePicker(
+                availableWidth: 820,
+                isTaskDetailInspectorPresented: true
+            )
+        )
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldUseCompactDatePickerButton(
                 availableWidth: 820,
                 isTaskDetailInspectorPresented: true
             ) == false
         )
         #expect(
-            DayPlanHeaderRangePickerVisibility.shouldUseCompactInspectorControls(
+            DayPlanHeaderRangePickerVisibility.shouldUseCompactDatePickerButton(
                 availableWidth: 620,
                 isTaskDetailInspectorPresented: true
             )
         )
         #expect(
-            DayPlanHeaderRangePickerVisibility.shouldUseCompactInspectorControls(
-                availableWidth: 620,
+            DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDisplayModePicker(
+                availableWidth: 820,
                 isTaskDetailInspectorPresented: false
             ) == false
         )
