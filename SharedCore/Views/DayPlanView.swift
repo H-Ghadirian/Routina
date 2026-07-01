@@ -362,6 +362,7 @@ struct DayPlanDetailView: View {
     @ObservedObject var planner: DayPlanPlannerState
     var selectedTaskID: UUID? = nil
     var isTaskDetailInspectorPresented = false
+    var macHeaderAvailableWidth: CGFloat? = nil
     var displayMode: Binding<DayPlanDisplayMode> = .constant(.calendar)
     var calendarFilters: Binding<DayPlanCalendarFilterState> = .constant(DayPlanCalendarFilterState())
     var isCalendarFilterDetailPresented = false
@@ -388,11 +389,13 @@ struct DayPlanDetailView: View {
                 displayMode: displayMode,
                 showsDisplayModePicker: listContent != nil,
                 isTaskDetailInspectorPresented: isTaskDetailInspectorPresented,
+                parentAvailableWidth: macHeaderAvailableWidth,
                 onCalendarFilterButtonPressed: onCalendarFilterButtonPressed
             )
 
             if displayMode.wrappedValue == .list, let listContent {
                 listContent()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             } else {
                 DayPlanTimelinePanelView(
                     planner: planner,
@@ -408,9 +411,11 @@ struct DayPlanDetailView: View {
                         onPlannerSidebarPresentationRequested?()
                     }
                 )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
         }
         .padding(20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .onAppear {
             syncSelectedTask()
         }
@@ -469,6 +474,7 @@ private struct DayPlanHeaderView: View {
     var displayMode: Binding<DayPlanDisplayMode> = .constant(.calendar)
     var showsDisplayModePicker = false
     var isTaskDetailInspectorPresented = false
+    var parentAvailableWidth: CGFloat? = nil
     var onCalendarFilterButtonPressed: (() -> Void)? = nil
     @AppStorage(
         UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
@@ -511,7 +517,7 @@ private struct DayPlanHeaderView: View {
         guard effectiveDisplayMode == .calendar else { return false }
 
         return DayPlanHeaderRangePickerVisibility.shouldShow(
-            availableWidth: Double(macHeaderAvailableWidth),
+            availableWidth: Double(effectiveMacHeaderAvailableWidth),
             fullControlsWidth: Double(macHeaderFullControlsWidth),
             isTaskDetailInspectorPresented: isTaskDetailInspectorPresented,
             visibleRangeMode: planner.visibleRangeMode
@@ -851,7 +857,7 @@ private struct DayPlanHeaderView: View {
     private var usesIconOnlyMacDisplayModePicker: Bool {
 #if os(macOS)
         DayPlanHeaderRangePickerVisibility.shouldUseIconOnlyDisplayModePicker(
-            availableWidth: Double(macHeaderAvailableWidth),
+            availableWidth: Double(effectiveMacHeaderAvailableWidth),
             isTaskDetailInspectorPresented: isTaskDetailInspectorPresented
         )
 #else
@@ -862,12 +868,19 @@ private struct DayPlanHeaderView: View {
     private var usesCompactMacDatePickerButton: Bool {
 #if os(macOS)
         DayPlanHeaderRangePickerVisibility.shouldUseCompactDatePickerButton(
-            availableWidth: Double(macHeaderAvailableWidth),
+            availableWidth: Double(effectiveMacHeaderAvailableWidth),
             isTaskDetailInspectorPresented: isTaskDetailInspectorPresented
         )
 #else
         false
 #endif
+    }
+
+    private var effectiveMacHeaderAvailableWidth: CGFloat {
+        if let parentAvailableWidth, parentAvailableWidth > 0 {
+            return parentAvailableWidth
+        }
+        return macHeaderAvailableWidth
     }
 
 }
@@ -990,6 +1003,7 @@ private struct DayPlanTimelinePanelView: View {
             isExternalInspectorPresented: isExternalInspectorPresented,
             onSidebarPresentationRequested: onSidebarPresentationRequested
         )
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .task {
             refreshTimelineDataSnapshot()
         }
@@ -2379,7 +2393,9 @@ private struct DayPlanTimelinePanelContentView: View {
                 isExternalInspectorPresented: isExternalInspectorPresented,
                 onSidebarPresentationRequested: onSidebarPresentationRequested
             )
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .dayPlanLifecycle(
             planner: planner,
             tasks: currentTasks,
@@ -2428,6 +2444,7 @@ private struct DayPlanTimelinePanelContentView: View {
 #if os(macOS)
         planner.setAdaptiveVisibleRangeMode(
             forAvailableWidth: Double(width),
+            isExternalInspectorPresented: isExternalInspectorPresented,
             calendar: calendar,
             context: modelContext
         )

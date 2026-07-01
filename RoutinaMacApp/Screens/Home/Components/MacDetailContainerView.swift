@@ -88,6 +88,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
 
     var body: some View {
         detailContent
+            .clipped()
             .toolbar {
                 if shouldShowBoardInspectorToolbarButton {
                     ToolbarItem(placement: .primaryAction) {
@@ -139,15 +140,26 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     }
 
     private func detailContentWithOptionalFilterPane<Content: View>(
-        @ViewBuilder content: () -> Content
+        @ViewBuilder content: @escaping () -> Content
     ) -> some View {
-        HStack(spacing: 0) {
-            content()
-                .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity)
+        GeometryReader { proxy in
+            let filterPaneWidth = shouldShowFilterDetailPane
+                ? MacDetailContainerSizing.filterDetailPaneWidth
+                : 0
+            let contentWidth = max(proxy.size.width - filterPaneWidth, 0)
 
-            if shouldShowFilterDetailPane {
-                filterDetailPane
+            HStack(spacing: 0) {
+                content()
+                    .frame(width: contentWidth)
+                    .frame(maxHeight: .infinity)
+                    .clipped()
+
+                if shouldShowFilterDetailPane {
+                    filterDetailPane
+                }
             }
+            .frame(width: proxy.size.width, height: proxy.size.height, alignment: .leading)
+            .clipped()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .animation(MacHomeDetailAnimation.secondaryPane, value: shouldShowFilterDetailPane)
@@ -283,12 +295,20 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
             let canShowTaskDetailPane = canShowPlannerTaskDetailPane(in: proxy.size.width)
             let isHomeFilterPanePresented = shouldShowFilterDetailPane
             let isPlannerExternalPanePresented = canShowTaskDetailPane || isHomeFilterPanePresented
+            let plannerContentWidth = plannerContentWidth(
+                in: proxy.size.width,
+                canShowTaskDetailPane: canShowTaskDetailPane
+            )
 
             HStack(spacing: 0) {
                 DayPlanDetailView(
                     planner: dayPlanPlanner,
                     selectedTaskID: selectedTaskID,
                     isTaskDetailInspectorPresented: isPlannerExternalPanePresented,
+                    macHeaderAvailableWidth: max(
+                        plannerContentWidth - DayPlanWeekCalendarSizing.detailHorizontalPadding,
+                        0
+                    ),
                     displayMode: $dayPlanDisplayMode,
                     calendarFilters: $dayPlanCalendarFilters,
                     isCalendarFilterDetailPresented: isDayPlanCalendarFilterDetailPresented,
@@ -305,23 +325,27 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                         onCloseFilterDetail()
                     }
                 )
-                .frame(
-                    minWidth: canShowTaskDetailPane
-                        ? MacDetailContainerSizing.plannerInspectorContentMinWidth
-                        : MacDetailContainerSizing.plannerContentMinWidth,
-                    maxWidth: .infinity,
-                    maxHeight: .infinity
-                )
+                .frame(width: plannerContentWidth)
+                .frame(maxHeight: .infinity)
                 .clipped()
 
                 if canShowTaskDetailPane {
                     taskDetailPane(edge: .trailing)
                 }
             }
+            .frame(width: proxy.size.width, height: proxy.size.height, alignment: .leading)
             .clipped()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .animation(MacHomeDetailAnimation.secondaryPane, value: shouldShowPlannerTaskDetailPane)
+    }
+
+    private func plannerContentWidth(
+        in availableWidth: CGFloat,
+        canShowTaskDetailPane: Bool
+    ) -> CGFloat {
+        guard canShowTaskDetailPane else { return availableWidth }
+        return max(availableWidth - MacDetailContainerSizing.taskDetailPaneWidth, 0)
     }
 
     private var shouldShowListTaskDetailPane: Bool {

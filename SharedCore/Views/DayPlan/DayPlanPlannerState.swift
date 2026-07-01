@@ -233,8 +233,16 @@ final class DayPlanPlannerState: ObservableObject {
         dayHourSpacing = dayHourSpacing.previous
     }
 
-    static func adaptiveVisibleRangeMode(forAvailableWidth width: Double) -> DayPlanVisibleRangeMode {
+    static func adaptiveVisibleRangeMode(
+        forAvailableWidth width: Double,
+        isExternalInspectorPresented: Bool = false
+    ) -> DayPlanVisibleRangeMode {
         guard width > 0 else { return .week }
+
+        if isExternalInspectorPresented,
+           width < Double(DayPlanWeekCalendarSizing.inspectorMultiDayMinimumCalendarWidth) {
+            return .day
+        }
 
         let availableDayWidth = max(width - 64, 0)
         if availableDayWidth >= 7 * 150 {
@@ -248,12 +256,16 @@ final class DayPlanPlannerState: ObservableObject {
 
     func setAdaptiveVisibleRangeMode(
         forAvailableWidth width: Double,
+        isExternalInspectorPresented: Bool = false,
         calendar: Calendar,
         context: ModelContext
     ) {
         guard width > 0 else { return }
         setAdaptiveVisibleRangeMode(
-            Self.adaptiveVisibleRangeMode(forAvailableWidth: width),
+            Self.adaptiveVisibleRangeMode(
+                forAvailableWidth: width,
+                isExternalInspectorPresented: isExternalInspectorPresented
+            ),
             calendar: calendar,
             context: context
         )

@@ -69,6 +69,40 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func taskInspectorAdaptiveRangeUsesDayUntilPlannerColumnIsRoomy() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let selectedDate = try #require(date("2026-05-03T12:00:00Z"))
+        let planner = DayPlanPlannerState(selectedDate: selectedDate)
+
+        planner.setAdaptiveVisibleRangeMode(
+            forAvailableWidth: Double(DayPlanWeekCalendarSizing.inspectorMultiDayMinimumCalendarWidth - 1),
+            isExternalInspectorPresented: true,
+            calendar: calendar,
+            context: context
+        )
+
+        #expect(planner.visibleRangeMode == .day)
+        #expect(planner.visibleDates(calendar: calendar) == [
+            try #require(date("2026-05-03T00:00:00Z")),
+        ])
+
+        planner.setAdaptiveVisibleRangeMode(
+            forAvailableWidth: Double(DayPlanWeekCalendarSizing.inspectorMultiDayMinimumCalendarWidth),
+            isExternalInspectorPresented: true,
+            calendar: calendar,
+            context: context
+        )
+
+        #expect(planner.visibleRangeMode == .threeDays)
+        #expect(planner.visibleDates(calendar: calendar) == [
+            try #require(date("2026-05-02T00:00:00Z")),
+            try #require(date("2026-05-03T00:00:00Z")),
+            try #require(date("2026-05-04T00:00:00Z")),
+        ])
+    }
+
+    @Test
     func navigationUsesEffectiveVisibleRangeDayCount() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

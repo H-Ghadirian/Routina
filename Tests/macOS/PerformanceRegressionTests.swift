@@ -165,10 +165,40 @@ final class PerformanceRegressionTests: XCTestCase {
         let dayPlanSource = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
 
         XCTAssertTrue(
+            detailSource.contains("detailContent\n            .clipped()"),
+            "Mac detail content should clip oversized child surfaces at the NavigationSplitView detail boundary."
+        )
+        XCTAssertTrue(detailSource.contains("let contentWidth = max(proxy.size.width - filterPaneWidth, 0)"))
+        XCTAssertTrue(detailSource.contains(".frame(width: contentWidth)"))
+        XCTAssertTrue(detailSource.contains("let plannerContentWidth = plannerContentWidth("))
+        XCTAssertTrue(detailSource.contains(".frame(width: plannerContentWidth)"))
+        XCTAssertTrue(detailSource.contains("availableWidth - MacDetailContainerSizing.taskDetailPaneWidth"))
+        XCTAssertTrue(
+            dayPlanSource.contains("isExternalInspectorPresented: isExternalInspectorPresented"),
+            "Planner adaptive range should know when a companion pane is consuming horizontal space."
+        )
+        XCTAssertTrue(
+            detailSource.contains("macHeaderAvailableWidth: max(")
+                && detailSource.contains("plannerContentWidth - DayPlanWeekCalendarSizing.detailHorizontalPadding"),
+            "Mac Planner should pass its bounded column width to the header so tight inspector density is deterministic."
+        )
+        XCTAssertTrue(dayPlanSource.contains("parentAvailableWidth: macHeaderAvailableWidth"))
+        XCTAssertTrue(dayPlanSource.contains("private var effectiveMacHeaderAvailableWidth: CGFloat"))
+        XCTAssertTrue(
             detailSource.contains(".clipped()\n\n                if canShowTaskDetailPane"),
             "Planner content should clip at its own column boundary instead of drawing underneath a right companion pane."
         )
         XCTAssertTrue(dayPlanSource.contains(".background(macHeaderAvailableWidthReader)"))
+        XCTAssertTrue(
+            dayPlanSource.contains("DayPlanTimelinePanelView(\n                    planner: planner")
+                && dayPlanSource.contains(".frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)"),
+            "The bounded Planner column width should be forwarded through the detail and timeline panel stack."
+        )
+        XCTAssertTrue(
+            dayPlanSource.contains("DayPlanWeekCalendarView(\n                dates: visibleDates")
+                && dayPlanSource.contains(".dayPlanLifecycle("),
+            "The calendar should remain in the filling Planner content stack so width proposals reach the grid."
+        )
         XCTAssertFalse(
             dayPlanSource.contains("macHeaderRow(showsRangePicker: shouldShowMacHeaderRangePicker)\n            .background(macHeaderAvailableWidthReader)"),
             "Header available width should be measured from the bounded container, not the potentially overflowing controls row."

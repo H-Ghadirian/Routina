@@ -326,7 +326,7 @@ Coverage:
 
 Given Mac Planner is visible beside a right-side companion pane
 When the available Planner column becomes tight
-Then Planner measures its header against the actual column width, keeps controls clipped inside the Planner column, and hides the `Day` / `3 Days` / `Week` picker unless the inspector layout is roomy enough to keep it clear of the companion pane
+Then Mac Home subtracts the fixed companion pane before sizing the Planner column, clips Planner content to that column, and caps the adaptive Planner range to Day until the remaining calendar column is roomy enough for multi-day inspector layout
 
 ### Planner Block Resize Stays Continuous Across Layout Changes
 

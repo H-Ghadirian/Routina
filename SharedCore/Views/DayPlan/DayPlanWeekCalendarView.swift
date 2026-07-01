@@ -5,6 +5,7 @@ enum DayPlanWeekCalendarSizing {
     static let timeColumnWidth: CGFloat = 64
     static let regularMinimumCalendarWidth: CGFloat = 420
     static let inspectorMinimumCalendarWidth: CGFloat = 360
+    static let inspectorMultiDayMinimumCalendarWidth: CGFloat = 860
     static let regularMinimumDayWidth: CGFloat = 120
     static let inspectorMinimumDayWidth: CGFloat = 96
     static let detailPadding: CGFloat = 20
