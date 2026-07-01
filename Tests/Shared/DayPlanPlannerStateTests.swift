@@ -12,6 +12,12 @@ import Testing
 @MainActor
 struct DayPlanPlannerStateTests {
     @Test
+    func displayModeTitlesUseTimelineForListMode() {
+        #expect(DayPlanDisplayMode.calendar.title == "Calendar")
+        #expect(DayPlanDisplayMode.list.title == "Timeline")
+    }
+
+    @Test
     func dayModeShowsOnlySelectedDate() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

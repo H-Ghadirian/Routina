@@ -57,7 +57,7 @@ enum DayPlanDisplayMode: String, CaseIterable, Identifiable {
         case .calendar:
             return "Calendar"
         case .list:
-            return "List"
+            return "Timeline"
         }
     }
 
