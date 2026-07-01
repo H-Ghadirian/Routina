@@ -9,6 +9,11 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
         case standard
     }
 
+    fileprivate enum ClusterMetrics {
+        static let edgePadding: CGFloat = 12
+        static let spacerHeight: CGFloat = 28
+    }
+
     let mode: Mode
     let showsProgressModePicker: Bool
     let showsPlaces: Bool
@@ -50,21 +55,33 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     @ToolbarContentBuilder
     private var boardToolbar: some ToolbarContent {
         searchToolbarItem
-        navigationToolbarItems
-        progressModeToolbarItem
+        commandToolbarItems
     }
 
     @ToolbarContentBuilder
     private var goalsToolbar: some ToolbarContent {
         searchToolbarItem
-        navigationToolbarItems
+        commandToolbarItems
     }
 
     @ToolbarContentBuilder
     private var standardToolbar: some ToolbarContent {
         searchToolbarItem
+        commandToolbarItems
+    }
+
+    @ToolbarContentBuilder
+    private var commandToolbarItems: some ToolbarContent {
+        ToolbarItem(placement: .navigation) {
+            HomeMacToolbarClusterEdgeSpacer()
+        }
+
         navigationToolbarItems
         progressModeToolbarItem
+
+        ToolbarItem(placement: .navigation) {
+            HomeMacToolbarClusterEdgeSpacer()
+        }
     }
 
     @ToolbarContentBuilder
@@ -132,6 +149,18 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
                 MacHomeProgressModePicker(selection: $progressMode)
             }
         }
+    }
+}
+
+private struct HomeMacToolbarClusterEdgeSpacer: View {
+    var body: some View {
+        Color.clear
+            .frame(
+                width: HomeMacHomeToolbarContent.ClusterMetrics.edgePadding,
+                height: HomeMacHomeToolbarContent.ClusterMetrics.spacerHeight
+            )
+            .accessibilityHidden(true)
+            .allowsHitTesting(false)
     }
 }
 

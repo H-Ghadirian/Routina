@@ -5,6 +5,7 @@ struct TaskDetailToolbarContent: ToolbarContent {
     private enum ToolbarMetrics {
         static let controlHeight: CGFloat = 34
         static let iconControlWidth: CGFloat = 42
+        static let clusterHorizontalPadding: CGFloat = 12
         static let textCornerRadius: CGFloat = 10
         static let iconCornerRadius: CGFloat = 8
     }
@@ -76,6 +77,7 @@ struct TaskDetailToolbarContent: ToolbarContent {
                         )
                     }
                 }
+                .padding(.horizontal, ToolbarMetrics.clusterHorizontalPadding)
             }
         }
     }
