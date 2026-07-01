@@ -777,8 +777,8 @@ private struct DayPlanHeaderView: View {
         .help("Go to date")
     }
 
-    private var plannerDatePickerButtonMaximumWidth: CGFloat {
-        usesCompactMacInspectorControls ? 154 : 280
+    private var plannerDatePickerButtonMaximumWidth: CGFloat? {
+        usesCompactMacInspectorControls ? 154 : nil
     }
 
     private var calendarFilterAvailability: DayPlanCalendarFilterAvailability {
@@ -839,7 +839,10 @@ private struct DayPlanHeaderView: View {
 
     private var usesCompactMacInspectorControls: Bool {
 #if os(macOS)
-        isTaskDetailInspectorPresented && planner.visibleRangeMode == .day
+        DayPlanHeaderRangePickerVisibility.shouldUseCompactInspectorControls(
+            availableWidth: Double(macHeaderAvailableWidth),
+            isTaskDetailInspectorPresented: isTaskDetailInspectorPresented
+        )
 #else
         false
 #endif
@@ -848,17 +851,31 @@ private struct DayPlanHeaderView: View {
 }
 
 enum DayPlanHeaderRangePickerVisibility {
+    static let inspectorRangePickerMinimumAvailableWidth: Double = 860
+    static let compactInspectorControlsMaximumAvailableWidth: Double = 640
+
     static func shouldShow(
         availableWidth: Double,
         fullControlsWidth: Double,
         isTaskDetailInspectorPresented: Bool,
         visibleRangeMode: DayPlanVisibleRangeMode
     ) -> Bool {
-        if isTaskDetailInspectorPresented, visibleRangeMode == .day {
-            return false
+        if isTaskDetailInspectorPresented {
+            guard visibleRangeMode != .day else { return false }
+            guard availableWidth >= inspectorRangePickerMinimumAvailableWidth else { return false }
         }
-        guard availableWidth > 0, fullControlsWidth > 0 else { return true }
+        guard availableWidth > 0, fullControlsWidth > 0 else {
+            return !isTaskDetailInspectorPresented
+        }
         return fullControlsWidth <= availableWidth + 0.5
+    }
+
+    static func shouldUseCompactInspectorControls(
+        availableWidth: Double,
+        isTaskDetailInspectorPresented: Bool
+    ) -> Bool {
+        guard isTaskDetailInspectorPresented, availableWidth > 0 else { return false }
+        return availableWidth < compactInspectorControlsMaximumAvailableWidth
     }
 }
 

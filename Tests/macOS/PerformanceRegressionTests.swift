@@ -175,6 +175,9 @@ final class PerformanceRegressionTests: XCTestCase {
         )
         XCTAssertTrue(dayPlanSource.contains("usesCompactMacInspectorControls"))
         XCTAssertTrue(dayPlanSource.contains("plannerDatePickerButtonMaximumWidth"))
+        XCTAssertTrue(dayPlanSource.contains("inspectorRangePickerMinimumAvailableWidth"))
+        XCTAssertTrue(dayPlanSource.contains("compactInspectorControlsMaximumAvailableWidth"))
+        XCTAssertTrue(dayPlanSource.contains("shouldUseCompactInspectorControls"))
     }
 
     func testHomeDoneStatsDoesNotRewalkLogsForEachOutcome() throws {

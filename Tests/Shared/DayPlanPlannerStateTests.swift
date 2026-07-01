@@ -142,11 +142,45 @@ struct DayPlanPlannerStateTests {
     func headerRangePickerCanShowInRoomyTaskInspectorMultiDayLayout() {
         #expect(
             DayPlanHeaderRangePickerVisibility.shouldShow(
-                availableWidth: 700,
-                fullControlsWidth: 620,
+                availableWidth: 900,
+                fullControlsWidth: 760,
                 isTaskDetailInspectorPresented: true,
                 visibleRangeMode: .threeDays
             )
+        )
+    }
+
+    @Test
+    func headerRangePickerHidesInTightTaskInspectorMultiDayLayout() {
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldShow(
+                availableWidth: 820,
+                fullControlsWidth: 620,
+                isTaskDetailInspectorPresented: true,
+                visibleRangeMode: .threeDays
+            ) == false
+        )
+    }
+
+    @Test
+    func inspectorHeaderDoesNotCompactOtherControlsWhenOnlyRangePickerIsTight() {
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldUseCompactInspectorControls(
+                availableWidth: 820,
+                isTaskDetailInspectorPresented: true
+            ) == false
+        )
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldUseCompactInspectorControls(
+                availableWidth: 620,
+                isTaskDetailInspectorPresented: true
+            )
+        )
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldUseCompactInspectorControls(
+                availableWidth: 620,
+                isTaskDetailInspectorPresented: false
+            ) == false
         )
     }
 

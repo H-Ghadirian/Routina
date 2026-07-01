@@ -326,7 +326,7 @@ Coverage:
 
 Given Mac Planner is visible beside a right-side companion pane
 When the available Planner column becomes tight
-Then Planner measures its header against the actual column width, keeps controls clipped inside the Planner column, and hides or compacts nonessential header controls before they can overlap the companion pane
+Then Planner measures its header against the actual column width, keeps controls clipped inside the Planner column, and hides the `Day` / `3 Days` / `Week` picker unless the inspector layout is roomy enough to keep it clear of the companion pane
 
 ### Planner Block Resize Stays Continuous Across Layout Changes
 
@@ -412,7 +412,7 @@ Coverage:
 
 Given the Mac Planner task-detail companion pane is open
 When the effective Planner range has adapted down to Day
-Then the top `Day` / `3 Days` / `Week` segmented picker is hidden while previous/next, filter, and date/range controls remain in the header
+Then the top `Day` / `3 Days` / `Week` segmented picker is hidden while Calendar/List, previous/next, filter, and the full date/range controls remain in the header
 And the calendar grid can use its compact inspector minimum width so the time column and single day column fit inside the Planner surface
 
 Given the Mac Planner task-detail companion pane is open with enough room for a multi-day effective range
