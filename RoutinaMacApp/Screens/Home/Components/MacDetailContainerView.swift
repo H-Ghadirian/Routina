@@ -157,7 +157,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
         }
         .frame(width: MacDetailContainerSizing.filterDetailPaneWidth)
         .frame(maxHeight: .infinity)
-        .background(Color.secondary.opacity(0.045))
+        .background(Color.secondary.opacity(0.045), ignoresSafeAreaEdges: [])
         .overlay(alignment: .leading) {
             Divider()
         }
@@ -345,7 +345,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
         }
         .frame(width: MacDetailContainerSizing.taskDetailPaneWidth)
         .frame(maxHeight: .infinity)
-        .background(Color.secondary.opacity(0.045))
+        .background(Color.secondary.opacity(0.045), ignoresSafeAreaEdges: [])
         .overlay(alignment: edge == .leading ? .trailing : .leading) {
             Divider()
         }

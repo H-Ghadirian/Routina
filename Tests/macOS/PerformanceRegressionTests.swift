@@ -382,6 +382,11 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(detailSource.contains("private var filterDetailPane: some View"))
         XCTAssertTrue(detailSource.contains("private var fullscreenFilterDetailContent: some View"))
         XCTAssertTrue(detailSource.contains("onMinimizeFullscreenFilterDetail"))
+        XCTAssertEqual(
+            detailSource.components(separatedBy: ".background(Color.secondary.opacity(0.045), ignoresSafeAreaEdges: [])").count - 1,
+            2,
+            "Right-side companion pane backgrounds should stop at the toolbar safe area instead of tinting behind the principal search field."
+        )
         XCTAssertTrue(detailSource.contains("onCloseTaskDetails()\n                        onCloseFilterDetail()"))
         XCTAssertTrue(filterContainerSource.contains("GeometryReader"))
         XCTAssertTrue(filterContainerSource.contains(".frame(width: proxy.size.width, alignment: .topLeading)"))
