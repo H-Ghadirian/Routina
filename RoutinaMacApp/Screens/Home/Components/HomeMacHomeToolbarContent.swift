@@ -279,9 +279,9 @@ private struct HomeMacToolbarSearchField: View {
     private var outsideClickDismissLayer: some View {
         HomeMacToolbarSearchOutsideClickDismissView(
             isFocused: $isFocused,
+            focusRequestID: $focusRequestID,
             focusDismissRequestID: $focusDismissRequestID
         )
-        .allowsHitTesting(false)
         .accessibilityHidden(true)
     }
 
@@ -560,8 +560,13 @@ private enum HomeMacToolbarSearchCopy {
     static let clearHelp = "Clear search"
 }
 
+private extension Notification.Name {
+    static let routinaMacToolbarSearchDismissFocus = Notification.Name("routina.mac.toolbarSearchDismissFocus")
+}
+
 private struct HomeMacToolbarSearchOutsideClickDismissView: NSViewRepresentable {
     @Binding var isFocused: Bool
+    @Binding var focusRequestID: Int
     @Binding var focusDismissRequestID: Int
 
     @MainActor
@@ -580,27 +585,47 @@ private struct HomeMacToolbarSearchOutsideClickDismissView: NSViewRepresentable 
                 matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]
             ) { [weak self] event in
                 MainActor.assumeIsolated {
-                    self?.dismissSearchIfClickIsOutsideVisiblePill(event)
+                    self?.handleMouseDown(event)
                 }
                 return event
             }
         }
 
-        private func dismissSearchIfClickIsOutsideVisiblePill(_ event: NSEvent) {
-            guard parent.isFocused,
-                  let view,
-                  let window = view.window,
-                  event.window === window else {
+        private func handleMouseDown(_ event: NSEvent) {
+            guard let view,
+                  let window = view.window else {
                 return
             }
 
-            let clickLocation = view.convert(event.locationInWindow, from: nil)
-            guard !view.bounds.insetBy(dx: -2, dy: -2).contains(clickLocation) else {
+            if clickIsInsideVisiblePill(event, in: view) {
+                if !parent.isFocused {
+                    parent.focusRequestID += 1
+                }
                 return
             }
 
+            guard parent.isFocused else { return }
             parent.isFocused = false
             parent.focusDismissRequestID += 1
+            NotificationCenter.default.post(
+                name: .routinaMacToolbarSearchDismissFocus,
+                object: window
+            )
+        }
+
+        private func clickIsInsideVisiblePill(
+            _ event: NSEvent,
+            in view: HomeMacToolbarSearchOutsideClickDismissNSView
+        ) -> Bool {
+            guard let viewWindow = view.window,
+                  let eventWindow = event.window else {
+                return false
+            }
+
+            let screenLocation = eventWindow.convertPoint(toScreen: event.locationInWindow)
+            let viewWindowLocation = viewWindow.convertPoint(fromScreen: screenLocation)
+            let viewLocation = view.convert(viewWindowLocation, from: nil)
+            return view.bounds.insetBy(dx: -2, dy: -2).contains(viewLocation)
         }
 
         func removeMouseDownMonitor() {
@@ -684,10 +709,24 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
                 name: .routinaMacFocusSearchOrCreate,
                 object: nil
             )
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(dismissSearchOrCreate),
+                name: .routinaMacToolbarSearchDismissFocus,
+                object: nil
+            )
         }
 
         @objc private func focusSearchOrCreate() {
             focusTextField(selectingText: true)
+        }
+
+        @objc private func dismissSearchOrCreate(_ notification: Notification) {
+            if let targetWindow = notification.object as? NSWindow,
+               textField?.window !== targetWindow {
+                return
+            }
+            dismissSearchFocus()
         }
 
         func controlTextDidBeginEditing(_ notification: Notification) {
