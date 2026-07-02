@@ -221,6 +221,23 @@ Given a weekly time-window routine has an earlier occurrence already resolved as
 When the user selects a later missed occurrence in Task Detail and presses Done
 Then Routina records a completed log for the selected occurrence without treating the earlier resolved occurrence as a blocker
 
+### Editing Calendar Weekday Routines Preserves All Selected Days
+
+Area: Tasks
+Decision links: [0009](../decisions/0009-support-routine-time-ranges.md), [0177](../decisions/0177-separate-interval-and-calendar-repeat-controls.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/macOS/TaskDetailFeatureTests.swift`
+- `Tests/Shared/TaskDetailEditSaveTests.swift`
+
+Given a routine repeats on multiple weekdays such as Monday through Friday
+When the user reopens the edit form
+Then every saved weekday remains selected instead of only the first weekday
+
+Given the user saves that routine from Task Details
+When Routina persists the recurrence rule
+Then the full weekday set remains on the saved weekly calendar recurrence
+
 ### Multi-Day Routine Lifecycle
 
 Area: Tasks

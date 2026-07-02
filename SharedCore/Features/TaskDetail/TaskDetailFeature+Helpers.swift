@@ -56,7 +56,7 @@ extension TaskDetailFeature {
             )
         case .weekly:
             return .weekly(
-                on: state.editRecurrenceWeekday,
+                on: state.effectiveEditRecurrenceWeekdays,
                 at: usesAvailabilityTiming && state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )

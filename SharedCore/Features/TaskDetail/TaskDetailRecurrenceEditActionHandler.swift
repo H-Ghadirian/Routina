@@ -227,7 +227,20 @@ struct TaskDetailRecurrenceEditActionHandler {
 
     func editRecurrenceWeekdayChanged(_ weekday: Int, state: inout State) -> Effect<Action> {
         rebaseEditReminderIfUsingLeadTime(&state) { state in
-            state.editRecurrenceWeekday = min(max(weekday, 1), 7)
+            let selectedWeekday = min(max(weekday, 1), 7)
+            state.editRecurrenceWeekday = selectedWeekday
+            state.editRecurrenceWeekdays = [selectedWeekday]
+        }
+        return .none
+    }
+
+    func editRecurrenceWeekdaysChanged(_ weekdays: [Int], state: inout State) -> Effect<Action> {
+        rebaseEditReminderIfUsingLeadTime(&state) { state in
+            let selectedWeekdays = Array(Set(weekdays.map { min(max($0, 1), 7) })).sorted()
+            state.editRecurrenceWeekdays = selectedWeekdays
+            if let firstWeekday = selectedWeekdays.first {
+                state.editRecurrenceWeekday = firstWeekday
+            }
         }
         return .none
     }

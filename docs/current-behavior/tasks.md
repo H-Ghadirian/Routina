@@ -50,7 +50,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Routines separate schedule behavior from format. Due/Gentle controls pressure and status; Interval/Calendar controls cadence; Standard/Checklist controls finish behavior.
 - Adding checklist items to a routine that previously had none promotes Standard completion to Checklist completion when no sequential steps would be discarded. Existing Standard routines that already carry checklist items remain editable as legacy optional checklist data.
 - Auto-assume done is opt-in for daily Standard routines without steps/checklists and daily Checklist-completion routines in both Due and Gentle styles. Todos, checklist runout routines, Standard routines with optional checklist items, routines with steps, and non-daily cadences do not qualify.
-- Calendar repeats offer weekday and month-day choices. Interval repeats own the single daily-repeat path.
+- Calendar repeats offer weekday and month-day choices, and editing a weekly calendar routine preserves every selected weekday. Interval repeats own the single daily-repeat path.
 - Multi-day routines use a `Start` -> in-progress -> `Stop` lifecycle. Their detail calendar shows an ongoing range while active and a completed span after stopping.
 - Checklist runout item actions are item-scoped. Task Details can update today or a selected past day, using the selected day as the runout reset date; future dates remain read-only. Completing all currently due items for that selected day records routine completion.
 - Checklist item intervals are stored as meaningful cadence only for checklist runout routines. Checklist-completion routines and optional checklist data normalize item intervals to a neutral one-day value.

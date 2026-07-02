@@ -75,6 +75,7 @@ struct TaskDetailFeature: Reducer {
         var editRecurrenceTimeRangeStart: RoutineTimeOfDay = RoutineTimeRange.defaultValue.start
         var editRecurrenceTimeRangeEnd: RoutineTimeOfDay = RoutineTimeRange.defaultValue.end
         var editRecurrenceWeekday: Int = Calendar.current.component(.weekday, from: Date())
+        var editRecurrenceWeekdays: [Int] = []
         var editRecurrenceDayOfMonth: Int = Calendar.current.component(.day, from: Date())
         var editAutoAssumeDailyDone: Bool = false
         var editAutoAssumeDoneTimeOfDay: RoutineTimeOfDay = RoutineAssumedCompletion.defaultDoneTimeOfDay
@@ -135,7 +136,7 @@ struct TaskDetailFeature: Reducer {
                 )
             case .weekly:
                 return .weekly(
-                    on: editRecurrenceWeekday,
+                    on: effectiveEditRecurrenceWeekdays,
                     at: usesAvailabilityTiming && editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil,
                     timeRange: timeRange
                 )
@@ -146,6 +147,11 @@ struct TaskDetailFeature: Reducer {
                     timeRange: timeRange
                 )
             }
+        }
+
+        var effectiveEditRecurrenceWeekdays: [Int] {
+            let selectedWeekdays = Array(Set(editRecurrenceWeekdays.map { min(max($0, 1), 7) })).sorted()
+            return selectedWeekdays.isEmpty ? [min(max(editRecurrenceWeekday, 1), 7)] : selectedWeekdays
         }
 
         var editRecurrenceTimeRange: RoutineTimeRange? {
@@ -297,6 +303,7 @@ struct TaskDetailFeature: Reducer {
         case editRecurrenceTimeRangeStartChanged(RoutineTimeOfDay)
         case editRecurrenceTimeRangeEndChanged(RoutineTimeOfDay)
         case editRecurrenceWeekdayChanged(Int)
+        case editRecurrenceWeekdaysChanged([Int])
         case editRecurrenceDayOfMonthChanged(Int)
         case editAutoAssumeDailyDoneChanged(Bool)
         case editAutoAssumeDoneTimeOfDayChanged(RoutineTimeOfDay)
@@ -1268,6 +1275,12 @@ struct TaskDetailFeature: Reducer {
         case let .editRecurrenceWeekdayChanged(weekday):
             return recurrenceEditActionHandler().editRecurrenceWeekdayChanged(
                 weekday,
+                state: &state
+            )
+
+        case let .editRecurrenceWeekdaysChanged(weekdays):
+            return recurrenceEditActionHandler().editRecurrenceWeekdaysChanged(
+                weekdays,
                 state: &state
             )
 

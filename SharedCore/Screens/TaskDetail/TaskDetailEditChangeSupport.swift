@@ -46,6 +46,7 @@ struct TaskDetailEditChangeRequest {
     let recurrenceTimeRangeStart: RoutineTimeOfDay
     let recurrenceTimeRangeEnd: RoutineTimeOfDay
     let recurrenceWeekday: Int
+    let recurrenceWeekdays: [Int]
     let recurrenceDayOfMonth: Int
     let autoAssumeDailyDone: Bool
     let autoAssumeDoneTimeOfDay: RoutineTimeOfDay
@@ -99,6 +100,7 @@ struct TaskDetailEditChangeRequest {
         self.recurrenceTimeRangeStart = state.editRecurrenceTimeRangeStart
         self.recurrenceTimeRangeEnd = state.editRecurrenceTimeRangeEnd
         self.recurrenceWeekday = state.editRecurrenceWeekday
+        self.recurrenceWeekdays = state.effectiveEditRecurrenceWeekdays
         self.recurrenceDayOfMonth = state.editRecurrenceDayOfMonth
         self.autoAssumeDailyDone = state.editAutoAssumeDailyDone
         self.autoAssumeDoneTimeOfDay = state.editAutoAssumeDoneTimeOfDay
@@ -246,7 +248,7 @@ enum TaskDetailEditChangeDetector {
             )
         case .weekly:
             return .weekly(
-                on: request.recurrenceWeekday,
+                on: effectiveRecurrenceWeekdays(for: request),
                 at: usesAvailabilityTiming && request.recurrenceHasExplicitTime ? request.recurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
@@ -257,6 +259,11 @@ enum TaskDetailEditChangeDetector {
                 timeRange: timeRange
             )
         }
+    }
+
+    private static func effectiveRecurrenceWeekdays(for request: TaskDetailEditChangeRequest) -> [Int] {
+        let selectedWeekdays = Array(Set(request.recurrenceWeekdays.map { min(max($0, 1), 7) })).sorted()
+        return selectedWeekdays.isEmpty ? [min(max(request.recurrenceWeekday, 1), 7)] : selectedWeekdays
     }
 }
 

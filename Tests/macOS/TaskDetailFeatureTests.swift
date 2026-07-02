@@ -398,6 +398,47 @@ struct TaskDetailFeatureTests {
     }
 
     @Test
+    func setEditSheetTrue_syncsEditFormFromTask_multipleWeeklyWeekdays() async {
+        let context = makeInMemoryContext()
+        let workingDays = [2, 3, 4, 5, 6]
+        let timeRange = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 10, minute: 0),
+            end: RoutineTimeOfDay(hour: 10, minute: 15)
+        )
+        let task = makeTask(
+            in: context,
+            name: "Daily",
+            interval: 7,
+            lastDone: nil,
+            emoji: "✨",
+            recurrenceRule: .weekly(on: workingDays, timeRange: timeRange),
+            scheduleAnchor: makeDate("2026-03-10T06:00:00Z")
+        )
+
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.setEditSheet(true)) {
+            $0.isEditSheetPresented = true
+            $0.editRoutineName = "Daily"
+            $0.editRoutineEmoji = "✨"
+            $0.editScheduleMode = .fixedInterval
+            $0.editRecurrenceKind = .weekly
+            $0.editRecurrenceHasTimeRange = true
+            $0.editRecurrenceTimeRangeStart = timeRange.start
+            $0.editRecurrenceTimeRangeEnd = timeRange.end
+            $0.editRecurrenceWeekday = 2
+            $0.editRecurrenceWeekdays = workingDays
+        }
+    }
+
+    @Test
     func editAddTagTapped_parsesMultipleTagsAndDeduplicates() async {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Read", interval: 1, lastDone: nil, emoji: "📚")

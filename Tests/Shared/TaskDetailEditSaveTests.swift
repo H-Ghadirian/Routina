@@ -1134,6 +1134,71 @@ struct TaskDetailEditSaveTests {
     }
 
     @Test
+    func editSaveTapped_persistsMultipleWeeklyWeekdays() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let workingDays = [2, 3, 4, 5, 6]
+        let task = makeTask(
+            in: context,
+            name: "Daily",
+            interval: 7,
+            lastDone: nil,
+            emoji: "✨",
+            recurrenceRule: .weekly(on: workingDays),
+            scheduleAnchor: makeDate("2026-03-10T06:00:00Z")
+        )
+        let timeRange = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 10, minute: 0),
+            end: RoutineTimeOfDay(hour: 10, minute: 15)
+        )
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Daily",
+                editRoutineEmoji: "✨",
+                editScheduleMode: .fixedInterval,
+                editRecurrenceKind: .weekly,
+                editRecurrenceHasExplicitTime: false,
+                editRecurrenceHasTimeRange: true,
+                editRecurrenceTimeRangeStart: timeRange.start,
+                editRecurrenceTimeRangeEnd: timeRange.end,
+                editRecurrenceWeekday: 2,
+                editRecurrenceWeekdays: workingDays
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+        await store.receive(.onAppear) {
+            $0.selectedDate = calendar.startOfDay(for: now)
+        }
+
+        let taskID = task.id
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { task in
+                        task.id == taskID
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.recurrenceRule == .weekly(on: workingDays, timeRange: timeRange))
+    }
+
+    @Test
     func editSaveTapped_persistsIntervalAvailability() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()
