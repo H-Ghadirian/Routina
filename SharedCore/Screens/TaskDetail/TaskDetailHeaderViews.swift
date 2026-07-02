@@ -42,11 +42,7 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
             }
 
             ForEach(Array(badgeRows.enumerated()), id: \.offset) { _, row in
-                HStack(alignment: .top, spacing: 8) {
-                    ForEach(row) { badge in
-                        TaskDetailHeaderBadgeView(item: badge)
-                    }
-                }
+                TaskDetailHeaderBadgeRowView(row: row)
             }
 
             additionalContent()
@@ -81,6 +77,7 @@ extension TaskDetailHeaderSectionView where AdditionalContent == EmptyView {
 
 struct TaskDetailHeaderBadgeView: View {
     let item: TaskDetailHeaderBadgeItem
+    var minHeight: CGFloat? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -104,6 +101,7 @@ struct TaskDetailHeaderBadgeView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 10)
         .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, minHeight: minHeight, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(item.tint.opacity(0.12))
@@ -112,6 +110,48 @@ struct TaskDetailHeaderBadgeView: View {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .stroke(item.tint.opacity(0.24), lineWidth: 1)
         )
+    }
+}
+
+private struct TaskDetailHeaderBadgeRowView: View {
+    let row: [TaskDetailHeaderBadgeItem]
+    @State private var measuredHeight: CGFloat = 0
+
+    var body: some View {
+        let rowHeight = measuredHeight > 0 ? measuredHeight : nil
+
+        HStack(alignment: .top, spacing: 8) {
+            ForEach(row) { badge in
+                TaskDetailHeaderBadgeView(item: badge, minHeight: rowHeight)
+                    .background(TaskDetailHeaderBadgeHeightReader(id: badge.id))
+            }
+        }
+        .onPreferenceChange(TaskDetailHeaderBadgeHeightPreferenceKey.self) { heights in
+            let maxHeight = heights.values.max() ?? 0
+            guard abs(maxHeight - measuredHeight) > 0.5 else { return }
+            measuredHeight = maxHeight
+        }
+    }
+}
+
+private struct TaskDetailHeaderBadgeHeightReader: View {
+    let id: UUID
+
+    var body: some View {
+        GeometryReader { proxy in
+            Color.clear.preference(
+                key: TaskDetailHeaderBadgeHeightPreferenceKey.self,
+                value: [id: proxy.size.height]
+            )
+        }
+    }
+}
+
+private struct TaskDetailHeaderBadgeHeightPreferenceKey: PreferenceKey {
+    nonisolated(unsafe) static var defaultValue: [UUID: CGFloat] = [:]
+
+    static func reduce(value: inout [UUID: CGFloat], nextValue: () -> [UUID: CGFloat]) {
+        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
     }
 }
 
