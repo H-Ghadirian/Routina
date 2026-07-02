@@ -18,6 +18,15 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func displayModePickerReservesRoomForTimelineLabel() {
+        #expect(DayPlanHeaderRangePickerVisibility.displayModePickerWidth >= 220)
+        #expect(
+            DayPlanHeaderRangePickerVisibility.displayModePickerWidth
+                > DayPlanHeaderRangePickerVisibility.iconOnlyDisplayModePickerWidth
+        )
+    }
+
+    @Test
     func dayModeShowsOnlySelectedDate() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

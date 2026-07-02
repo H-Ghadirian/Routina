@@ -812,7 +812,7 @@ private struct DayPlanHeaderView: View {
         ) { mode in
             Text(mode.title)
         }
-        .frame(width: 234)
+        .frame(width: DayPlanHeaderRangePickerVisibility.visibleRangeModePickerWidth)
         .accessibilityLabel("Planner range")
     }
 
@@ -835,7 +835,11 @@ private struct DayPlanHeaderView: View {
                     .labelStyle(.titleAndIcon)
             }
         }
-        .frame(width: usesIconOnlySegments ? 100 : 190)
+        .frame(
+            width: usesIconOnlySegments
+                ? DayPlanHeaderRangePickerVisibility.iconOnlyDisplayModePickerWidth
+                : DayPlanHeaderRangePickerVisibility.displayModePickerWidth
+        )
         .accessibilityLabel("Planner view")
     }
 
@@ -886,6 +890,9 @@ private struct DayPlanHeaderView: View {
 }
 
 enum DayPlanHeaderRangePickerVisibility {
+    static let displayModePickerWidth: CGFloat = 220
+    static let iconOnlyDisplayModePickerWidth: CGFloat = 100
+    static let visibleRangeModePickerWidth: CGFloat = 234
     static let inspectorRangePickerMinimumAvailableWidth: Double = 860
     static let iconOnlyDisplayModePickerMaximumAvailableWidth: Double = 860
     static let compactDatePickerButtonMaximumAvailableWidth: Double = 660
