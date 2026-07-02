@@ -14,6 +14,11 @@ Accepted
 - [0310: Show Mac Home Toolbar Search](0310-show-mac-home-toolbar-search.md)
 - [0317: Use Principal Search in the Mac Home Toolbar](0317-use-principal-search-in-mac-home-toolbar.md)
 
+## Refined By
+
+- [0323: Draw Mac Toolbar Search Shell in SwiftUI](0323-draw-mac-toolbar-search-shell-in-swiftui.md)
+- [0327: Animate Mac Toolbar Search as One Visible Pill](0327-animate-mac-toolbar-search-as-one-visible-pill.md)
+
 ## Context
 
 The centered Mac Home search field gives search a stable global place, but its wide default size can crowd trailing task-detail toolbar actions when the left sidebar is open. Full task details still need Pause, Done, link, edit, minimize, and close controls to remain visible during ordinary review.
