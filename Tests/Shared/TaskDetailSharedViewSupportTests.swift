@@ -901,6 +901,34 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func taskDetailStateMarksRunoutItemDoneForSelectedResetDay() {
+        let itemID = UUID()
+        let doneAt = makeDate("2026-04-25T10:00:00Z")
+        let task = RoutineTask(
+            name: "Groceries",
+            checklistItems: [
+                RoutineChecklistItem(
+                    id: itemID,
+                    title: "Coffee",
+                    intervalDays: 3,
+                    lastPurchasedAt: doneAt
+                )
+            ],
+            scheduleMode: .derivedFromChecklist
+        )
+        var state = TaskDetailFeature.State(
+            task: task,
+            selectedDate: makeDate("2026-04-25T08:00:00Z")
+        )
+
+        #expect(state.isChecklistItemMarkedDone(state.task.checklistItems[0]))
+
+        state.selectedDate = makeDate("2026-04-26T08:00:00Z")
+
+        #expect(!state.isChecklistItemMarkedDone(state.task.checklistItems[0]))
+    }
+
+    @Test
     func checklistPresentationHidesDoneItemsUntilRequested() {
         let doneID = UUID()
         let pendingID = UUID()

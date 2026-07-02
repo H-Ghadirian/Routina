@@ -634,6 +634,53 @@ struct HomeTaskHelperTests {
     }
 
     @Test
+    func selectedDetailRefreshPreservesPastRunoutItemDuringStaleListRefresh() {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-06-18T10:00:00Z")
+        let selectedDate = makeDate("2026-06-17T08:00:00Z")
+        let doneAt = makeDate("2026-06-17T12:00:00Z")
+        let taskID = UUID()
+        let breadID = UUID()
+        let milkID = UUID()
+        let staleTask = RoutineTask(
+            id: taskID,
+            name: "Groceries",
+            checklistItems: [
+                RoutineChecklistItem(id: breadID, title: "Bread", intervalDays: 3, createdAt: makeDate("2026-06-10T10:00:00Z")),
+                RoutineChecklistItem(id: milkID, title: "Milk", intervalDays: 3, createdAt: makeDate("2026-06-10T10:00:00Z"))
+            ],
+            scheduleMode: .derivedFromChecklist
+        )
+        let checkedDetailTask = staleTask.detachedCopy()
+        _ = checkedDetailTask.markChecklistItemsDone([breadID], doneAt: doneAt, calendar: calendar)
+        var selection = HomeSelectionState(
+            selectedTaskID: taskID,
+            taskDetailState: TaskDetailFeature.State(
+                task: checkedDetailTask,
+                selectedDate: calendar.startOfDay(for: selectedDate)
+            )
+        )
+
+        HomeDetailSelectionSupport.updatePendingChecklistReloadGuard(
+            for: breadID,
+            selection: &selection,
+            now: now,
+            calendar: calendar
+        )
+        HomeDetailSelectionSupport.refreshSelectedTaskDetailState(
+            selection: &selection,
+            tasks: [staleTask],
+            now: now,
+            calendar: calendar,
+            makeTaskDetailState: { TaskDetailFeature.State(task: $0) }
+        )
+
+        let item = selection.taskDetailState?.task.checklistItems.first { $0.id == breadID }
+        #expect(item?.lastPurchasedAt == doneAt)
+        #expect(selection.selectedTaskReloadGuard?.checklistItems.first { $0.id == breadID }?.lastPurchasedAt == doneAt)
+    }
+
+    @Test
     func pendingChecklistReloadGuardPreservesUncheckedDetailDuringStaleReload() {
         let now = makeDate("2026-06-17T10:00:00Z")
         let taskID = UUID()

@@ -37,18 +37,22 @@ enum HomeReloadGuardSupport {
               let detailState,
               detailState.task.id == selectedTaskID,
               !detailState.task.isArchived(),
-              detailState.task.checklistItems.contains(where: { $0.id == itemID }),
-              calendar.isDate(detailState.selectedDate ?? now, inSameDayAs: now) else {
+              detailState.task.checklistItems.contains(where: { $0.id == itemID }) else {
             return nil
         }
 
         let task = detailState.task
+        let selectedDay = calendar.startOfDay(for: detailState.selectedDate ?? now)
+        let today = calendar.startOfDay(for: now)
+        guard selectedDay <= today else { return nil }
+
         if task.isChecklistDriven {
             return task.id
         }
 
         // Final checklist completion clears item progress after writing lastDone, so the
         // completed state needs the same stale-reload guard as partial progress.
+        guard calendar.isDate(selectedDay, inSameDayAs: today) else { return nil }
         return task.isChecklistCompletionRoutine ? task.id : nil
     }
 

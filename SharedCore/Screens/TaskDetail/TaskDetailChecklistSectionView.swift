@@ -297,19 +297,25 @@ struct TaskDetailChecklistSectionView: View {
                         Text(TaskDetailChecklistPresentation.statusText(
                             for: item,
                             task: task,
-                            isMarkedDone: isDone
+                            isMarkedDone: isDone,
+                            referenceDate: selectedDate
                         ))
                         .font(.caption)
-                        .foregroundStyle(TaskDetailChecklistPresentation.statusColor(for: item, task: task, isMarkedDone: isDone))
+                        .foregroundStyle(TaskDetailChecklistPresentation.statusColor(
+                            for: item,
+                            task: task,
+                            isMarkedDone: isDone,
+                            referenceDate: selectedDate
+                        ))
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .disabled(!isRunoutCheckboxInteractive && !isDone)
+            .disabled(!isRunoutCheckboxInteractive)
             .accessibilityLabel(item.title)
-            .accessibilityValue(isDone ? "Done today" : "Not done today")
+            .accessibilityValue(isDone ? "Done on selected day" : "Not done on selected day")
 
             Spacer(minLength: 0)
 
@@ -318,7 +324,7 @@ struct TaskDetailChecklistSectionView: View {
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
-            .disabled(isDone || task.isArchived() || !Calendar.current.isDateInToday(selectedDate))
+            .disabled(isDone || task.isArchived() || isSelectedDateInFuture)
 
             editChecklistItemButton(for: item)
         }
@@ -338,7 +344,12 @@ struct TaskDetailChecklistSectionView: View {
     }
 
     private var isRunoutCheckboxInteractive: Bool {
-        !task.isArchived() && Calendar.current.isDateInToday(selectedDate)
+        !task.isArchived() && !isSelectedDateInFuture
+    }
+
+    private var isSelectedDateInFuture: Bool {
+        let calendar = Calendar.current
+        return calendar.startOfDay(for: selectedDate) > calendar.startOfDay(for: Date())
     }
 
     private func beginChecklistItemEditing(_ item: RoutineChecklistItem) {

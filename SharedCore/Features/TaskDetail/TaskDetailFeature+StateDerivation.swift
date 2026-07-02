@@ -92,6 +92,16 @@ extension TaskDetailFeature {
         return resolvedCompletionDate(for: selectedDate, task: task)
     }
 
+    func resolvedRunoutActionDate(for selectedDate: Date?) -> Date? {
+        let selectedDay = calendar.startOfDay(for: selectedDate ?? now)
+        let today = calendar.startOfDay(for: now)
+        guard selectedDay <= today else { return nil }
+        if calendar.isDate(selectedDay, inSameDayAs: today) {
+            return now
+        }
+        return calendar.date(bySettingHour: 12, minute: 0, second: 0, of: selectedDay) ?? selectedDay
+    }
+
     func resolvedSelectedDay(for selectedDate: Date?) -> Date {
         calendar.startOfDay(for: selectedDate ?? now)
     }

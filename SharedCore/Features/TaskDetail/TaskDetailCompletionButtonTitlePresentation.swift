@@ -59,13 +59,13 @@ struct TaskDetailCompletionButtonTitlePresentation {
         if task.isChecklistCompletionRoutine {
             return "Complete checklist items below"
         }
-        if task.isChecklistDriven && !calendar.isDateInToday(selectedDate) {
-            return "Checklist routines can only be updated today"
-        }
         if task.isChecklistDriven {
-            let dueItems = task.dueChecklistItems(referenceDate: referenceDate)
+            if isSelectedDateInFuture {
+                return "Future dates can't be marked done"
+            }
+            let dueItems = task.dueChecklistItems(referenceDate: selectedDate, calendar: calendar)
             if dueItems.isEmpty {
-                return "No due items right now"
+                return calendar.isDateInToday(selectedDate) ? "No due items right now" : "No due items on selected day"
             }
             if dueItems.count == 1, let title = dueItems.first?.title {
                 return "Done: \(title)"

@@ -60,6 +60,30 @@ struct TaskDetailCompletionButtonTitlePresentationTests {
         #expect(title == "Complete checklist items first")
     }
 
+    @Test
+    func titleUsesSelectedPastDayForRunoutDueItems() {
+        let selectedDate = makeDate("2026-07-01T08:00:00Z")
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(
+            name: "Groceries",
+            checklistItems: [
+                RoutineChecklistItem(
+                    title: "Bread",
+                    intervalDays: 3,
+                    createdAt: makeDate("2026-06-28T10:00:00Z")
+                )
+            ],
+            scheduleMode: .derivedFromChecklist
+        )
+        var presentation = makePresentation(
+            task: task,
+            selectedDate: selectedDate
+        )
+        presentation.calendar = calendar
+
+        #expect(presentation.title == "Done: Bread")
+    }
+
     private func makePresentation(
         task: RoutineTask,
         selectedDate: Date = Date(),

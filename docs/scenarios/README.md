@@ -112,6 +112,20 @@ Given a daily checklist-completion routine has a completed log for today and sta
 When the app derives Home or Task Detail checklist state for today, receives the final checklist item tap followed by a stale Home task reload, receives a duplicate checklist item toggle, or receives stale completed task/log evidence after Undo
 Then stale or cleared in-progress IDs are ignored, completed-day checklist rows stay checked/read-only without blinking unchecked first, and Undo keeps rows unchecked without flashing back to completed
 
+### Checklist Runout Past-Day Updates
+
+Area: Tasks
+Decision links: [0240](../decisions/0240-keep-checklist-runout-item-actions-item-scoped.md), [0328](../decisions/0328-allow-past-day-checklist-runout-updates.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/HomeTaskHelperTests.swift`
+- `Tests/Shared/TaskDetailFeatureCompletionTests.swift`
+- `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
+
+Given a checklist runout routine has an item due yesterday
+When the user selects yesterday in Task Details and checks that item
+Then the item is reset using yesterday as the done date, the selected-day row appears checked, and future selected dates remain unavailable for runout updates
+
 ### Daily Checklist Auto-Assume Uses Day-Level Completion
 
 Area: Tasks

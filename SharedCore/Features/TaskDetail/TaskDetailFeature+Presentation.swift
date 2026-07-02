@@ -118,7 +118,7 @@ extension TaskDetailFeature.State {
     }
 
     var checklistDueItemCount: Int {
-        task.dueChecklistItems(referenceDate: Date()).count
+        task.dueChecklistItems(referenceDate: resolvedSelectedDate).count
     }
 
     var isSelectedDateInFuture: Bool {
@@ -235,7 +235,7 @@ extension TaskDetailFeature.State {
         }
         if task.isChecklistDriven {
             return task.isArchived()
-                || !Calendar.current.isDateInToday(resolvedSelectedDate)
+                || isSelectedDateInFuture
                 || checklistDueItemCount == 0
         }
         if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
@@ -550,7 +550,7 @@ extension TaskDetailFeature.State {
         if task.isChecklistDriven {
             return TaskDetailChecklistPresentation.isRunoutItemMarkedDone(
                 item,
-                referenceDate: Date(),
+                referenceDate: resolvedSelectedDate,
                 calendar: .current
             )
         }

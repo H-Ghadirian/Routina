@@ -539,10 +539,7 @@ struct TaskDetailFeature: Reducer {
             guard !state.task.isCompletedOneOff else { return .none }
             guard !state.task.isCanceledOneOff else { return .none }
             if state.task.isChecklistDriven {
-                guard calendar.isDate(state.selectedDate ?? now, inSameDayAs: now) else {
-                    return .none
-                }
-                let completionDate = now
+                guard let completionDate = resolvedRunoutActionDate(for: state.selectedDate) else { return .none }
                 guard RoutineDateMath.canMarkDone(
                     for: state.task,
                     referenceDate: completionDate,
@@ -653,15 +650,16 @@ struct TaskDetailFeature: Reducer {
 
         case let .toggleChecklistRunoutItemDone(itemID):
             guard !state.task.isArchived(referenceDate: now, calendar: calendar) else { return .none }
+            guard let actionDate = resolvedRunoutActionDate(for: state.selectedDate) else { return .none }
             if let item = state.task.checklistItems.first(where: { $0.id == itemID }),
                TaskDetailChecklistPresentation.isRunoutItemMarkedDone(
                 item,
-                referenceDate: now,
+                referenceDate: actionDate,
                 calendar: calendar
                ) {
                 let undoUpdate = state.task.undoChecklistItemRunoutDone(
                     itemID,
-                    referenceDate: now,
+                    referenceDate: actionDate,
                     calendar: calendar
                 )
                 guard undoUpdate.restoredItemCount > 0 else { return .none }
@@ -675,11 +673,11 @@ struct TaskDetailFeature: Reducer {
                 return handleChecklistItemRunoutDoneUndone(
                     taskID: state.task.id,
                     itemID: itemID,
-                    undoneAt: now
+                    undoneAt: actionDate
                 )
             }
 
-            let doneAt = now
+            let doneAt = actionDate
             let update = state.task.markChecklistItemsDone(
                 [itemID],
                 doneAt: doneAt,
@@ -699,9 +697,10 @@ struct TaskDetailFeature: Reducer {
 
         case let .extendChecklistItemRunout(itemID):
             guard !state.task.isArchived(referenceDate: now, calendar: calendar) else { return .none }
+            guard let actionDate = resolvedRunoutActionDate(for: state.selectedDate) else { return .none }
             let extendedCount = state.task.extendChecklistItemsRunout(
                 [itemID],
-                referenceDate: now,
+                referenceDate: actionDate,
                 calendar: calendar
             )
             guard extendedCount > 0 else { return .none }
@@ -710,7 +709,7 @@ struct TaskDetailFeature: Reducer {
             return handleChecklistItemRunoutExtended(
                 taskID: state.task.id,
                 itemID: itemID,
-                extendedAt: now
+                extendedAt: actionDate
             )
 
         case let .toggleChecklistItemCompletion(itemID):

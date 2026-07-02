@@ -52,7 +52,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Auto-assume done is opt-in for daily Standard routines without steps/checklists and daily Checklist-completion routines in both Due and Gentle styles. Todos, checklist runout routines, Standard routines with optional checklist items, routines with steps, and non-daily cadences do not qualify.
 - Calendar repeats offer weekday and month-day choices. Interval repeats own the single daily-repeat path.
 - Multi-day routines use a `Start` -> in-progress -> `Stop` lifecycle. Their detail calendar shows an ongoing range while active and a completed span after stopping.
-- Checklist runout item actions are item-scoped. Completing all currently due items records routine completion.
+- Checklist runout item actions are item-scoped. Task Details can update today or a selected past day, using the selected day as the runout reset date; future dates remain read-only. Completing all currently due items for that selected day records routine completion.
 - Checklist item intervals are stored as meaningful cadence only for checklist runout routines. Checklist-completion routines and optional checklist data normalize item intervals to a neutral one-day value.
 - Daily checklist-completion progress lasts for the current day only. Tomorrow starts unchecked unless the routine was completed and recorded in history.
 - Daily Checklist-completion routines with auto-assume done use day-level assumption only; assumed completion does not fake completed checklist item IDs, and current-day partial checklist progress suppresses assumed presentation until the routine is fully completed or progress is cleared.

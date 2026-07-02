@@ -1192,6 +1192,128 @@ struct TaskDetailFeatureCompletionTests {
     }
 
     @Test
+    func toggleChecklistRunoutItemDone_usesSelectedPastDate() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-07-02T10:00:00Z")
+        let selectedDate = makeDate("2026-07-01T08:00:00Z")
+        let expectedDoneAt = makeDate("2026-07-01T12:00:00Z")
+        let breadID = UUID()
+        let task = RoutineTask(
+            name: "Groceries",
+            checklistItems: [
+                RoutineChecklistItem(
+                    id: breadID,
+                    title: "Bread",
+                    intervalDays: 3,
+                    createdAt: makeDate("2026-06-25T10:00:00Z")
+                )
+            ],
+            scheduleMode: .derivedFromChecklist
+        )
+        context.insert(task)
+        try context.save()
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                selectedDate: calendar.startOfDay(for: selectedDate)
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        #expect(!store.state.isChecklistItemMarkedDone(store.state.task.checklistItems[0]))
+
+        _ = await store.withExhaustivity(.off) {
+            await store.send(.toggleChecklistRunoutItemDone(breadID)) {
+                $0.taskRefreshID = 1
+                $0.daysSinceLastRoutine = 1
+                $0.overdueDays = 0
+                $0.isDoneToday = false
+            }
+        }
+
+        let selectedItem = try #require(store.state.task.checklistItems.first { $0.id == breadID })
+        #expect(selectedItem.lastPurchasedAt == expectedDoneAt)
+        #expect(store.state.task.lastDone == expectedDoneAt)
+        #expect(store.state.isChecklistItemMarkedDone(selectedItem))
+
+        await store.receive {
+            guard case let .logsLoaded(logs) = $0 else { return false }
+            return logs.contains {
+                guard let timestamp = $0.timestamp else { return false }
+                return timestamp == expectedDoneAt
+            }
+        } assert: {
+            let logs = RoutineLogHistory.detailLogs(taskID: task.id, context: context)
+            $0.logs = logs
+            #expect(logs.count == 1)
+            #expect(logs.first?.timestamp == expectedDoneAt)
+            $0.daysSinceLastRoutine = 1
+            $0.overdueDays = 0
+            $0.isDoneToday = false
+        }
+
+        let persistedTask = try #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
+        let persistedItem = try #require(persistedTask.checklistItems.first { $0.id == breadID })
+        let persistedLogs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(persistedItem.lastPurchasedAt == expectedDoneAt)
+        #expect(persistedTask.lastDone == expectedDoneAt)
+        #expect(persistedLogs.count == 1)
+        #expect(persistedLogs.first?.timestamp == expectedDoneAt)
+    }
+
+    @Test
+    func toggleChecklistRunoutItemDone_ignoresFutureSelectedDate() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-07-02T10:00:00Z")
+        let futureDate = makeDate("2026-07-03T08:00:00Z")
+        let breadID = UUID()
+        let task = RoutineTask(
+            name: "Groceries",
+            checklistItems: [
+                RoutineChecklistItem(
+                    id: breadID,
+                    title: "Bread",
+                    intervalDays: 3,
+                    createdAt: makeDate("2026-06-25T10:00:00Z")
+                )
+            ],
+            scheduleMode: .derivedFromChecklist
+        )
+        context.insert(task)
+        try context.save()
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                selectedDate: calendar.startOfDay(for: futureDate)
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+
+        await store.send(.toggleChecklistRunoutItemDone(breadID))
+
+        let persistedTask = try #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
+        let persistedItem = try #require(persistedTask.checklistItems.first { $0.id == breadID })
+
+        #expect(persistedItem.lastPurchasedAt == nil)
+        #expect(persistedTask.lastDone == nil)
+    }
+
+    @Test
     func confirmAssumedPastDays_includesTodayWhenTodayIsAssumedDone() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-02-25T21:30:00Z")
