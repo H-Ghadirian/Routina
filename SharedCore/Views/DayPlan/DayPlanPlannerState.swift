@@ -1191,6 +1191,7 @@ final class DayPlanPlannerState: ObservableObject {
     private struct ExactScheduledBlock {
         var startDate: Date
         var durationMinutes: Int?
+        var fallbackDurationMinutes: Int? = nil
     }
 
     private func scheduledDurationMinutes(
@@ -1199,7 +1200,10 @@ final class DayPlanPlannerState: ObservableObject {
         startMinute: Int
     ) -> Int {
         DayPlanBlock.clampedDuration(
-            scheduledBlock.durationMinutes ?? task.estimatedDurationMinutes ?? 60,
+            scheduledBlock.durationMinutes
+                ?? task.estimatedDurationMinutes
+                ?? scheduledBlock.fallbackDurationMinutes
+                ?? 60,
             startMinute: startMinute,
             minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
         )
@@ -1282,8 +1286,20 @@ final class DayPlanPlannerState: ObservableObject {
             return ExactScheduledBlock(startDate: deadline, durationMinutes: nil)
         }
 
-        return RoutineDateMath.scheduledOccurrence(for: task, on: date, calendar: calendar)
-            .map { ExactScheduledBlock(startDate: $0, durationMinutes: nil) }
+        guard let occurrence = RoutineDateMath.scheduledOccurrence(for: task, on: date, calendar: calendar) else {
+            return nil
+        }
+        let windowDuration = task.recurrenceRule.timeRange.flatMap { timeRange in
+            availabilityWindowDuration(
+                start: occurrence,
+                end: timeRange.endDate(on: occurrence, calendar: calendar)
+            )
+        }
+        return ExactScheduledBlock(
+            startDate: occurrence,
+            durationMinutes: nil,
+            fallbackDurationMinutes: windowDuration
+        )
     }
 
     private func availabilityWindowDuration(start: Date, end: Date) -> Int? {

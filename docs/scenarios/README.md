@@ -164,6 +164,22 @@ Given the user hides that assumed-done planner activity
 When Planner derives automatic activity again
 Then the synthetic assumed-done activity stays hidden for that task and day
 
+### Planner Time-Window Routine Blocks Use Window Fallback
+
+Area: Planner
+Decision links: [0009](../decisions/0009-support-routine-time-ranges.md), [0199](../decisions/0199-support-multiday-routine-start-flow.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/DayPlanPlannerStateTests.swift`
+
+Given a routine is scheduled with a 10:00-10:15 time window and no duration estimate
+When Planner creates its timed calendar block
+Then the block starts at 10:00 and lasts 15 minutes instead of falling back to one hour
+
+Given the same routine has an explicit duration estimate
+When Planner creates its timed calendar block
+Then the estimate controls the block duration while the window start controls placement
+
 ### New Routine Checklists Use Checklist Completion
 
 Area: Tasks

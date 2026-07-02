@@ -1697,6 +1697,75 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func timeWindowRoutineWithoutEstimateUsesWindowDurationForPlannerBlock() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let occurrence = try #require(date("2026-05-11T12:00:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Daily",
+            emoji: "✨",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(
+                in: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 10, minute: 0),
+                    end: RoutineTimeOfDay(hour: 10, minute: 15)
+                )
+            )
+        )
+        context.insert(task)
+        try context.save()
+        let planner = DayPlanPlannerState(selectedDate: occurrence)
+
+        planner.showExactTimedTasks(
+            from: [task],
+            calendar: calendar,
+            context: context
+        )
+
+        let block = try #require(planner.weekBlocksByDayKey.values.flatMap { $0 }.first)
+        #expect(block.taskID == taskID)
+        #expect(block.startMinute == 10 * 60)
+        #expect(block.durationMinutes == 15)
+    }
+
+    @Test
+    func timeWindowRoutineEstimateOverridesWindowFallbackForPlannerBlock() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let occurrence = try #require(date("2026-05-11T12:00:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Daily",
+            emoji: "✨",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(
+                in: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 10, minute: 0),
+                    end: RoutineTimeOfDay(hour: 10, minute: 15)
+                )
+            ),
+            estimatedDurationMinutes: 30
+        )
+        context.insert(task)
+        try context.save()
+        let planner = DayPlanPlannerState(selectedDate: occurrence)
+
+        planner.showExactTimedTasks(
+            from: [task],
+            calendar: calendar,
+            context: context
+        )
+
+        let block = try #require(planner.weekBlocksByDayKey.values.flatMap { $0 }.first)
+        #expect(block.taskID == taskID)
+        #expect(block.startMinute == 10 * 60)
+        #expect(block.durationMinutes == 30)
+    }
+
+    @Test
     func exactTimedRoutineRefreshesStaleDefaultDurationWhenEstimateChanges() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()
