@@ -356,6 +356,7 @@ struct TaskDetailFeatureTests {
         } withDependencies: {
             setTestDateDependencies(&$0)
             $0.modelContext = { context }
+            $0.appSettingsClient.tagCounterDisplayMode = { .combinedTotal }
             $0.notificationClient.schedule = { _ in }
         }
 
@@ -374,6 +375,7 @@ struct TaskDetailFeatureTests {
             $0.editFrequencyValue = 2
             $0.editRecurrenceWeekday = expectedWeekday
             $0.editRecurrenceDayOfMonth = expectedDayOfMonth
+            $0.tagCounterDisplayMode = .combinedTotal
         }
         await store.receive(.availablePlacesLoaded([
             RoutinePlaceSummary(id: place.id, name: "Gym", radiusMeters: place.radiusMeters, linkedRoutineCount: 1)
@@ -382,8 +384,15 @@ struct TaskDetailFeatureTests {
                 RoutinePlaceSummary(id: place.id, name: "Gym", radiusMeters: place.radiusMeters, linkedRoutineCount: 1)
             ]
         }
-        await store.receive(.availableTagsLoaded(["Evening", "Mobility"])) {
+        await store.receive(.availableTagSummariesLoaded([
+            RoutineTagSummary(name: "Evening", linkedRoutineCount: 1),
+            RoutineTagSummary(name: "Mobility", linkedRoutineCount: 1)
+        ])) {
             $0.availableTags = ["Evening", "Mobility"]
+            $0.availableTagSummaries = [
+                RoutineTagSummary(name: "Evening", linkedRoutineCount: 1),
+                RoutineTagSummary(name: "Mobility", linkedRoutineCount: 1)
+            ]
         }
         await store.receive(.availableGoalsLoaded([]))
         await store.receive(.relatedTagRulesLoaded([
@@ -433,6 +442,10 @@ struct TaskDetailFeatureTests {
 
         await store.send(.availableTagsLoaded([" focus ", "Morning", "focus"])) {
             $0.availableTags = ["focus", "Morning"]
+            $0.availableTagSummaries = [
+                RoutineTagSummary(name: "focus", linkedRoutineCount: 0),
+                RoutineTagSummary(name: "Morning", linkedRoutineCount: 0)
+            ]
         }
     }
 
@@ -639,8 +652,15 @@ struct TaskDetailFeatureTests {
             $0.selectedDate = calendar.startOfDay(for: now)
         }
         await store.receive(.availablePlacesLoaded([]))
-        await store.receive(.availableTagsLoaded(["Focus", "Night"])) {
+        await store.receive(.availableTagSummariesLoaded([
+            RoutineTagSummary(name: "Focus", linkedRoutineCount: 1),
+            RoutineTagSummary(name: "Night", linkedRoutineCount: 1)
+        ])) {
             $0.availableTags = ["Focus", "Night"]
+            $0.availableTagSummaries = [
+                RoutineTagSummary(name: "Focus", linkedRoutineCount: 1),
+                RoutineTagSummary(name: "Night", linkedRoutineCount: 1)
+            ]
         }
         await store.receive(.availableGoalsLoaded([]))
         await store.receive(.relatedTagRulesLoaded([
@@ -706,7 +726,7 @@ struct TaskDetailFeatureTests {
             $0.selectedDate = makeTestCalendar().startOfDay(for: now)
         }
         await store.receive(.availablePlacesLoaded([]))
-        await store.receive(.availableTagsLoaded([]))
+        await store.receive(.availableTagSummariesLoaded([]))
         await store.receive(.availableGoalsLoaded([]))
         await store.receive(.relatedTagRulesLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
@@ -763,7 +783,7 @@ struct TaskDetailFeatureTests {
             $0.selectedDate = calendar.startOfDay(for: now)
         }
         await store.receive(.availablePlacesLoaded([]))
-        await store.receive(.availableTagsLoaded([]))
+        await store.receive(.availableTagSummariesLoaded([]))
         await store.receive(.availableGoalsLoaded([]))
         await store.receive(.relatedTagRulesLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
@@ -886,7 +906,7 @@ struct TaskDetailFeatureTests {
                 RoutinePlaceSummary(id: office.id, name: "Office", radiusMeters: office.radiusMeters, linkedRoutineCount: 1)
             ]
         }
-        await store.receive(.availableTagsLoaded([]))
+        await store.receive(.availableTagSummariesLoaded([]))
         await store.receive(.availableGoalsLoaded([]))
         await store.receive(.relatedTagRulesLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
@@ -953,7 +973,7 @@ struct TaskDetailFeatureTests {
             $0.selectedDate = calendar.startOfDay(for: now)
         }
         await store.receive(.availablePlacesLoaded([]))
-        await store.receive(.availableTagsLoaded([]))
+        await store.receive(.availableTagSummariesLoaded([]))
         await store.receive(.availableGoalsLoaded([]))
         await store.receive(.relatedTagRulesLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
@@ -1027,7 +1047,7 @@ struct TaskDetailFeatureTests {
             $0.selectedDate = calendar.startOfDay(for: now)
         }
         await store.receive(.availablePlacesLoaded([]))
-        await store.receive(.availableTagsLoaded([]))
+        await store.receive(.availableTagSummariesLoaded([]))
         await store.receive(.availableGoalsLoaded([]))
         await store.receive(.relatedTagRulesLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
@@ -1100,7 +1120,7 @@ struct TaskDetailFeatureTests {
             $0.selectedDate = calendar.startOfDay(for: now)
         }
         await store.receive(.availablePlacesLoaded([]))
-        await store.receive(.availableTagsLoaded([]))
+        await store.receive(.availableTagSummariesLoaded([]))
         await store.receive(.availableGoalsLoaded([]))
         await store.receive(.relatedTagRulesLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))
@@ -1210,7 +1230,7 @@ struct TaskDetailFeatureTests {
         }
 
         await store.receive(.availablePlacesLoaded([]))
-        await store.receive(.availableTagsLoaded([]))
+        await store.receive(.availableTagSummariesLoaded([]))
         await store.receive(.availableGoalsLoaded([]))
         await store.receive(.relatedTagRulesLoaded([]))
         await store.receive(.availableRelationshipTasksLoaded([]))

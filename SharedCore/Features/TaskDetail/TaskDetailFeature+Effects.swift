@@ -736,8 +736,15 @@ extension TaskDetailFeature {
             let places = (try? context.fetch(FetchDescriptor<RoutinePlace>())) ?? []
             let tasks = (try? context.fetch(FetchDescriptor<RoutineTask>())) ?? []
             let goals = (try? context.fetch(FetchDescriptor<RoutineGoal>())) ?? []
+            let logs = (try? context.fetch(FetchDescriptor<RoutineLog>())) ?? []
+            let doneStats = HomeTaskSupport.makeDoneStats(tasks: tasks, logs: logs)
             send(.availablePlacesLoaded(RoutinePlace.summaries(from: places, linkedTo: tasks)))
-            send(.availableTagsLoaded(RoutineTag.allTags(from: tasks.map(\.tags))))
+            send(.availableTagSummariesLoaded(
+                RoutineTag.summaries(
+                    from: tasks,
+                    countsByTaskID: doneStats.countsByTaskID
+                )
+            ))
             send(.availableGoalsLoaded(RoutineGoalSummary.summaries(from: goals)))
             send(.relatedTagRulesLoaded(
                 RoutineTagRelations.sanitized(

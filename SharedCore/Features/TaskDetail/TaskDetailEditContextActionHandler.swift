@@ -18,6 +18,22 @@ struct TaskDetailEditContextActionHandler {
 
     func availableTagsLoaded(_ tags: [String], state: inout State) -> Effect<Action> {
         state.availableTags = RoutineTag.allTags(from: [tags])
+        state.availableTagSummaries = state.availableTags.map {
+            RoutineTagSummary(name: $0, linkedRoutineCount: 0)
+        }
+        state.editRoutineTags = RoutineTag.deduplicated(
+            state.editRoutineTags,
+            preferredTags: state.availableTags
+        )
+        return .none
+    }
+
+    func availableTagSummariesLoaded(
+        _ summaries: [RoutineTagSummary],
+        state: inout State
+    ) -> Effect<Action> {
+        state.availableTagSummaries = AddRoutineOrganizationEditor.sortedTagSummaries(summaries)
+        state.availableTags = state.availableTagSummaries.map(\.name)
         state.editRoutineTags = RoutineTag.deduplicated(
             state.editRoutineTags,
             preferredTags: state.availableTags

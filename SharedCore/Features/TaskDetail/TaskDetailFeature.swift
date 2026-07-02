@@ -60,10 +60,12 @@ struct TaskDetailFeature: Reducer {
         var editChecklistValidationMessage: String?
         var availablePlaces: [RoutinePlaceSummary] = []
         var availableTags: [String] = []
+        var availableTagSummaries: [RoutineTagSummary] = []
         var availableGoals: [RoutineGoalSummary] = []
         var availableEvents: [RoutineEventLinkCandidate] = []
         var relatedTagRules: [RoutineRelatedTagRule] = []
         var availableRelationshipTasks: [RoutineTaskRelationshipCandidate] = []
+        var tagCounterDisplayMode: TagCounterDisplayMode = .defaultValue
         var editSelectedPlaceID: UUID?
         var editSelectedPlaceIDs: [UUID] = []
         var editFrequency: EditFrequency = .day
@@ -281,6 +283,7 @@ struct TaskDetailFeature: Reducer {
         case editRemoveChecklistItem(UUID)
         case availablePlacesLoaded([RoutinePlaceSummary])
         case availableTagsLoaded([String])
+        case availableTagSummariesLoaded([RoutineTagSummary])
         case availableGoalsLoaded([RoutineGoalSummary])
         case availableEventsLoaded([RoutineEventLinkCandidate])
         case relatedTagRulesLoaded([RoutineRelatedTagRule])
@@ -1172,6 +1175,9 @@ struct TaskDetailFeature: Reducer {
 
         case let .availableTagsLoaded(tags):
             return editContextActionHandler().availableTagsLoaded(tags, state: &state)
+
+        case let .availableTagSummariesLoaded(summaries):
+            return editContextActionHandler().availableTagSummariesLoaded(summaries, state: &state)
 
         case let .availableGoalsLoaded(goals):
             return editContextActionHandler().availableGoalsLoaded(goals, state: &state)
