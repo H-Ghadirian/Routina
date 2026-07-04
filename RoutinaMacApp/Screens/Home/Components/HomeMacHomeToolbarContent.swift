@@ -155,7 +155,7 @@ enum HomeMacToolbarSearchLayout {
     static let iconSize: CGFloat = 18
     static let textFieldHeight: CGFloat = 26
     static let clearButtonSize: CGFloat = 22
-    static let createHintMaxWidth: CGFloat = 164
+    static let createHintWidth: CGFloat = 154
     static let animationDuration: TimeInterval = 0.22
     static let toolbarActionRestoreDelay: TimeInterval = animationDuration
     static let parserPreviewTopPadding: CGFloat = 12
@@ -234,7 +234,7 @@ struct HomeMacToolbarSearchField: View {
                 if showsCreateHint {
                     createHint
                         .transition(.opacity.combined(with: .scale(scale: 0.98)))
-                        .layoutPriority(0)
+                        .layoutPriority(3)
                 }
 
                 if isTextFocused {
@@ -447,7 +447,7 @@ struct HomeMacToolbarSearchField: View {
         .lineLimit(1)
         .truncationMode(.tail)
         .padding(.horizontal, 10)
-        .frame(maxWidth: HomeMacToolbarSearchLayout.createHintMaxWidth, alignment: .leading)
+        .frame(width: HomeMacToolbarSearchLayout.createHintWidth, alignment: .leading)
         .frame(height: 28)
         .background {
             Capsule(style: .continuous)

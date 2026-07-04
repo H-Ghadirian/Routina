@@ -579,6 +579,15 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(source.contains("canCreateTaskFromQuery"))
         XCTAssertTrue(source.contains("Return"))
         XCTAssertTrue(source.contains("Create task"))
+        XCTAssertTrue(source.contains("static let createHintWidth: CGFloat = 154"))
+        XCTAssertTrue(
+            source.contains(".frame(width: HomeMacToolbarSearchLayout.createHintWidth, alignment: .leading)"),
+            "The Return/Create task hint needs a reserved width so the transparent text editor cannot compress it out of view."
+        )
+        XCTAssertTrue(
+            source.contains("createHint\n                        .transition(.opacity.combined(with: .scale(scale: 0.98)))\n                        .layoutPriority(3)"),
+            "The create hint should outrank the flexible text editor during toolbar search layout."
+        )
         XCTAssertTrue(source.contains("HomeMacToolbarSearchParserPreview"))
         XCTAssertTrue(source.contains("Detected details"))
         XCTAssertTrue(source.contains("RoutinaQuickAddDraft"))
