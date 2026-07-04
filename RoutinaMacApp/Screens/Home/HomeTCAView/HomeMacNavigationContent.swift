@@ -5,9 +5,7 @@ struct HomeMacNavigationContent<
     BoardCenterContent: View,
     BoardInspectorContent: View,
     GoalsDetailContent: View,
-    MainDetailContent: View,
-    HomeToolbarContent: ToolbarContent,
-    BoardToolbarContent: ToolbarContent
+    MainDetailContent: View
 >: View {
     let isBoardMode: Bool
     let isGoalsMode: Bool
@@ -18,8 +16,6 @@ struct HomeMacNavigationContent<
     let boardInspectorContent: () -> BoardInspectorContent
     let goalsDetailContent: () -> GoalsDetailContent
     let mainDetailContent: () -> MainDetailContent
-    let homeToolbarContent: () -> HomeToolbarContent
-    let boardToolbarContent: () -> BoardToolbarContent
 
     init(
         isBoardMode: Bool,
@@ -30,9 +26,7 @@ struct HomeMacNavigationContent<
         @ViewBuilder boardCenterContent: @escaping () -> BoardCenterContent,
         @ViewBuilder boardInspectorContent: @escaping () -> BoardInspectorContent,
         @ViewBuilder goalsDetailContent: @escaping () -> GoalsDetailContent,
-        @ViewBuilder mainDetailContent: @escaping () -> MainDetailContent,
-        @ToolbarContentBuilder homeToolbarContent: @escaping () -> HomeToolbarContent,
-        @ToolbarContentBuilder boardToolbarContent: @escaping () -> BoardToolbarContent
+        @ViewBuilder mainDetailContent: @escaping () -> MainDetailContent
     ) {
         self.isBoardMode = isBoardMode
         self.isGoalsMode = isGoalsMode
@@ -43,8 +37,6 @@ struct HomeMacNavigationContent<
         self.boardInspectorContent = boardInspectorContent
         self.goalsDetailContent = goalsDetailContent
         self.mainDetailContent = mainDetailContent
-        self.homeToolbarContent = homeToolbarContent
-        self.boardToolbarContent = boardToolbarContent
     }
 
     var body: some View {
@@ -57,14 +49,12 @@ struct HomeMacNavigationContent<
                 mainNavigation
             }
         }
-        .toolbar {
-            homeToolbarContent()
-        }
     }
 
     private var boardNavigation: some View {
         NavigationSplitView {
             sidebarContent()
+                .toolbar(removing: .sidebarToggle)
         } detail: {
             HStack(spacing: 0) {
                 boardCenterContent()
@@ -81,9 +71,6 @@ struct HomeMacNavigationContent<
                 }
             }
             .navigationTitle("")
-            .toolbar {
-                boardToolbarContent()
-            }
             .animation(.easeInOut(duration: 0.22), value: isBoardInspectorPresented)
             .environment(\.addEditFormCoordinator, addEditFormCoordinator)
         }
@@ -92,6 +79,7 @@ struct HomeMacNavigationContent<
     private var goalsNavigation: some View {
         NavigationSplitView {
             sidebarContent()
+                .toolbar(removing: .sidebarToggle)
         } detail: {
             goalsDetailContent()
         }
@@ -100,6 +88,7 @@ struct HomeMacNavigationContent<
     private var mainNavigation: some View {
         NavigationSplitView {
             sidebarContent()
+                .toolbar(removing: .sidebarToggle)
         } detail: {
             mainDetailContent()
                 .navigationTitle("")

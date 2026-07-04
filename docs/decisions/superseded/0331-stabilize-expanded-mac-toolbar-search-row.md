@@ -14,7 +14,7 @@ Superseded
 
 ## Superseded By
 
-- [0334: Keep Expanded Mac Toolbar Search in the Principal Item](../0334-keep-expanded-mac-toolbar-search-in-principal-item.md)
+- [0334: Keep Expanded Mac Toolbar Search in the Principal Item](0334-keep-expanded-mac-toolbar-search-in-principal-item.md)
 
 ## Context
 

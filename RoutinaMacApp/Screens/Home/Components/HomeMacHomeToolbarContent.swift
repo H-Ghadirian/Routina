@@ -1,24 +1,20 @@
 import AppKit
 import SwiftUI
 
-struct HomeMacHomeToolbarContent: ToolbarContent {
+struct HomeMacTopToolbarChrome: View {
     enum Mode {
         case board
         case goals
         case standard
     }
 
-    fileprivate enum ClusterMetrics {
-        static let edgePadding: CGFloat = 12
-        static let spacerHeight: CGFloat = 28
-    }
-
     let mode: Mode
+    let doneCount: Int
+    let isDevelopmentAppVariant: Bool
     let showsProgressModePicker: Bool
     let showsPlaces: Bool
     @Binding var progressMode: MacHomeProgressMode
     @Binding var selectedSidebarMode: HomeFeature.MacSidebarMode
-    let locationSnapshot: LocationSnapshot
     @Binding var searchText: String
     @Binding var isSearchTextFocused: Bool
     @Binding var isSearchExpanded: Bool
@@ -26,9 +22,11 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     @Binding var searchExpansionTransitionID: Int
     @Binding var searchFocusRequestID: Int
     @Binding var searchFocusDismissRequestID: Int
-    let isCreatingSearchTask: Bool
-    let canCreateSearchTask: Bool
+    let locationSnapshot: LocationSnapshot
     let onPlaceCheckInMapRequested: () -> Void
+    let isCreatingTaskFromSearch: Bool
+    let canCreateTaskFromSearch: Bool
+    let onSearchSubmit: (String) -> Void
     let onAddEvent: () -> Void
     let onAddEmotion: () -> Void
     let onAddNote: () -> Void
@@ -36,56 +34,25 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     let onAddTask: () -> Void
     let onCheckIn: () -> Void
     let onStartAway: () -> Void
-    let onSearchSubmit: (String) -> Void
+    let isBoardInspectorPresented: Bool
+    let onToggleBoardInspector: () -> Void
 
-    var body: some ToolbarContent {
-        switch mode {
-        case .board:
-            boardToolbar
-        case .goals:
-            goalsToolbar
-        case .standard:
-            standardToolbar
+    var body: some View {
+        VStack(spacing: 0) {
+            searchRow
+            commandRow
+        }
+        .frame(height: HomeMacToolbarSearchLayout.topToolbarHeight)
+        .frame(maxWidth: .infinity)
+        .background(HomeMacToolbarSearchLayout.toolbarBackground)
+        .overlay(alignment: .bottom) {
+            Divider()
+                .opacity(0.55)
         }
     }
 
-    @ToolbarContentBuilder
-    private var boardToolbar: some ToolbarContent {
-        searchToolbarItem
-        commandToolbarItems
-    }
-
-    @ToolbarContentBuilder
-    private var goalsToolbar: some ToolbarContent {
-        searchToolbarItem
-        commandToolbarItems
-    }
-
-    @ToolbarContentBuilder
-    private var standardToolbar: some ToolbarContent {
-        searchToolbarItem
-        commandToolbarItems
-    }
-
-    @ToolbarContentBuilder
-    private var commandToolbarItems: some ToolbarContent {
-        if !isSearchExpanded {
-            ToolbarItem(placement: .navigation) {
-                HomeMacToolbarClusterEdgeSpacer()
-            }
-
-            navigationToolbarItems
-            progressModeToolbarItem
-
-            ToolbarItem(placement: .navigation) {
-                HomeMacToolbarClusterEdgeSpacer()
-            }
-        }
-    }
-
-    @ToolbarContentBuilder
-    private var searchToolbarItem: some ToolbarContent {
-        ToolbarItem(placement: .principal) {
+    private var searchRow: some View {
+        ZStack {
             HomeMacToolbarSearchField(
                 text: $searchText,
                 isTextFocused: $isSearchTextFocused,
@@ -94,62 +61,94 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
                 searchExpansionTransitionID: $searchExpansionTransitionID,
                 focusRequestID: $searchFocusRequestID,
                 focusDismissRequestID: $searchFocusDismissRequestID,
-                isCreatingTask: isCreatingSearchTask,
-                canCreateTaskFromQuery: canCreateSearchTask,
+                isCreatingTask: isCreatingTaskFromSearch,
+                canCreateTaskFromQuery: canCreateTaskFromSearch,
                 onSubmit: onSearchSubmit
             )
+            .frame(width: HomeMacToolbarSearchLayout.focusedWidth, alignment: .center)
         }
+        .padding(.horizontal, HomeMacToolbarSearchLayout.topToolbarHorizontalPadding)
+        .frame(height: HomeMacToolbarSearchLayout.searchRowHeight)
+        .frame(maxWidth: .infinity)
     }
 
-    @ToolbarContentBuilder
-    private var navigationToolbarItems: some ToolbarContent {
-        if showsPlaces {
-            RoutinaMacPlaceCheckInToolbarItem(
-                locationSnapshot: locationSnapshot,
-                onMapRequested: onPlaceCheckInMapRequested
-            )
-        }
+    private var commandRow: some View {
+        ZStack {
+            HStack(spacing: 10) {
+                statusBadges
+                    .frame(
+                        width: HomeMacToolbarSearchLayout.leadingCommandWidth,
+                        alignment: .leading
+                    )
 
-        ToolbarItem(placement: .navigation) {
-            HomeMacSidebarModeStripView(
-                selectedMode: $selectedSidebarMode,
-                presentationStyle: .toolbar,
-                onAddEvent: onAddEvent,
-                onAddEmotion: onAddEmotion,
-                onAddNote: onAddNote,
-                onAddGoal: onAddGoal,
-                onAddTask: onAddTask,
-                onCheckIn: onCheckIn,
-                onStartAway: onStartAway
-            )
-        }
-    }
+                Spacer(minLength: 0)
+            }
 
-    @ToolbarContentBuilder
-    private var progressModeToolbarItem: some ToolbarContent {
-        if showsProgressModePicker {
-            ToolbarItem(placement: .navigation) {
-                MacHomeProgressModePicker(selection: $progressMode)
+            HStack(spacing: 10) {
+                if showsPlaces {
+                    RoutinaMacPlaceCheckInToolbarButton(
+                        locationSnapshot: locationSnapshot,
+                        onMapRequested: onPlaceCheckInMapRequested
+                    )
+                }
+
+                HomeMacSidebarModeStripView(
+                    selectedMode: $selectedSidebarMode,
+                    presentationStyle: .toolbar,
+                    onAddEvent: onAddEvent,
+                    onAddEmotion: onAddEmotion,
+                    onAddNote: onAddNote,
+                    onAddGoal: onAddGoal,
+                    onAddTask: onAddTask,
+                    onCheckIn: onCheckIn,
+                    onStartAway: onStartAway
+                )
+
+                if showsProgressModePicker {
+                    MacHomeProgressModePicker(selection: $progressMode)
+                }
+            }
+
+            if mode == .board {
+                HStack {
+                    Spacer()
+                    HomeMacBoardInspectorToolbarButton(
+                        isPresented: isBoardInspectorPresented,
+                        onToggle: onToggleBoardInspector
+                    )
+                }
             }
         }
+        .padding(.horizontal, HomeMacToolbarSearchLayout.commandRowHorizontalPadding)
+        .frame(height: HomeMacToolbarSearchLayout.commandRowHeight)
+        .frame(maxWidth: .infinity)
+        .background(HomeMacToolbarSearchLayout.commandRowBackground)
     }
-}
 
-private struct HomeMacToolbarClusterEdgeSpacer: View {
-    var body: some View {
-        Color.clear
-            .frame(
-                width: HomeMacHomeToolbarContent.ClusterMetrics.edgePadding,
-                height: HomeMacHomeToolbarContent.ClusterMetrics.spacerHeight
+    private var statusBadges: some View {
+        HStack(spacing: 8) {
+            if isDevelopmentAppVariant {
+                MacToolbarStatusBadge(
+                    title: "Dev Version",
+                    systemImage: "hammer.fill",
+                    tintColor: .systemOrange
+                )
+                .help("Development version")
+            }
+
+            MacToolbarStatusBadge(
+                title: "\(doneCount) done",
+                systemImage: "checkmark.seal.fill",
+                tintColor: .systemGreen
             )
-            .accessibilityHidden(true)
-            .allowsHitTesting(false)
+            .help("\(doneCount) total done")
+        }
     }
 }
 
 enum HomeMacToolbarSearchLayout {
-    static let compactWidth: CGFloat = 460
-    static let focusedWidth: CGFloat = 720
+    static let compactWidth: CGFloat = 740
+    static let focusedWidth: CGFloat = 920
     static let height: CGFloat = 44
     static let cornerRadius: CGFloat = 22
     static let horizontalPadding: CGFloat = 18
@@ -161,9 +160,23 @@ enum HomeMacToolbarSearchLayout {
     static let toolbarActionRestoreDelay: TimeInterval = animationDuration
     static let parserPreviewTopPadding: CGFloat = 12
     static let parserPreviewTrailingPadding: CGFloat = 22
+    static let searchRowHeight: CGFloat = 62
+    static let commandRowHeight: CGFloat = 54
+    static let topToolbarHeight: CGFloat = searchRowHeight + commandRowHeight
+    static let topToolbarHorizontalPadding: CGFloat = 104
+    static let commandRowHorizontalPadding: CGFloat = 18
+    static let leadingCommandWidth: CGFloat = 320
+
+    static var toolbarBackground: Color {
+        Color(nsColor: .windowBackgroundColor).opacity(0.98)
+    }
+
+    static var commandRowBackground: Color {
+        Color(nsColor: .controlBackgroundColor).opacity(0.28)
+    }
 }
 
-private struct HomeMacToolbarSearchField: View {
+struct HomeMacToolbarSearchField: View {
     @Binding var text: String
     @Binding var isTextFocused: Bool
     @Binding var isSearchExpanded: Bool

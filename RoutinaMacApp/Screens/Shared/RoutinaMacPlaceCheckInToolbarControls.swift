@@ -16,7 +16,7 @@ struct RoutinaMacPlaceCheckInToolbarItem: ToolbarContent {
     }
 }
 
-private struct RoutinaMacPlaceCheckInToolbarButton: View {
+struct RoutinaMacPlaceCheckInToolbarButton: View {
     let locationSnapshot: LocationSnapshot
     let onMapRequested: () -> Void
 
@@ -117,6 +117,7 @@ private struct RoutinaMacPlaceCheckInToolbarButton: View {
             interactive: true
         )
         .overlay(toolbarBorder)
+        .contentShape(Capsule(style: .continuous))
         .fixedSize(horizontal: true, vertical: false)
     }
 

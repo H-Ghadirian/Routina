@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded
 
 ## Date
 
@@ -10,14 +10,20 @@ Accepted
 
 ## Supersedes
 
-- [0330: Hoist Expanded Mac Toolbar Search Out of the Principal Item](superseded/0330-hoist-expanded-mac-toolbar-search.md)
-- [0331: Stabilize Expanded Mac Toolbar Search in a Top Row](superseded/0331-stabilize-expanded-mac-toolbar-search-row.md)
+- [0330: Hoist Expanded Mac Toolbar Search Out of the Principal Item](0330-hoist-expanded-mac-toolbar-search.md)
+- [0331: Stabilize Expanded Mac Toolbar Search in a Top Row](0331-stabilize-expanded-mac-toolbar-search-row.md)
+
+## Superseded By
+
+- [0337: Use Separate Mac Home Top Search Toolbar](0337-use-separate-mac-home-top-search-toolbar.md)
+- [0338: Use Titlebar Principal Mac Home Search](0338-use-titlebar-principal-mac-home-search.md)
+- [0339: Host Mac Home Search in the Window Titlebar](0339-host-mac-home-search-in-window-titlebar.md)
 
 ## Refines
 
-- [0321: Use Focus-Expanded Mac Home Toolbar Search](0321-use-focus-expanded-mac-home-toolbar-search.md)
-- [0323: Draw Mac Toolbar Search Shell in SwiftUI](0323-draw-mac-toolbar-search-shell-in-swiftui.md)
-- [0329: Hide Mac Toolbar Actions During Search Focus](0329-hide-mac-toolbar-actions-during-search-focus.md)
+- [0321: Use Focus-Expanded Mac Home Toolbar Search](../0321-use-focus-expanded-mac-home-toolbar-search.md)
+- [0323: Draw Mac Toolbar Search Shell in SwiftUI](../0323-draw-mac-toolbar-search-shell-in-swiftui.md)
+- [0329: Hide Mac Toolbar Actions During Search Focus](../0329-hide-mac-toolbar-actions-during-search-focus.md)
 
 ## Context
 

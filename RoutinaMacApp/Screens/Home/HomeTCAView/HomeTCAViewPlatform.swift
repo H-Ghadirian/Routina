@@ -23,15 +23,15 @@ extension HomeTCAView {
     typealias MacSidebarMode = HomeFeature.MacSidebarMode
     typealias MacSidebarSelection = HomeFeature.MacSidebarSelection
 
-    @ToolbarContentBuilder
-    var homeToolbarContent: some ToolbarContent {
-        HomeMacHomeToolbarContent(
+    private var homeTopToolbarChrome: some View {
+        HomeMacTopToolbarChrome(
             mode: homeToolbarMode,
+            doneCount: store.doneStats.totalCount,
+            isDevelopmentAppVariant: isDevelopmentAppVariant,
             showsProgressModePicker: showsProgressModePickerInToolbar,
             showsPlaces: isPlacesEnabled,
             progressMode: macHomeProgressModeBinding,
             selectedSidebarMode: macSidebarModeBinding,
-            locationSnapshot: store.locationSnapshot,
             searchText: searchTextBinding,
             isSearchTextFocused: $isToolbarSearchTextFocused,
             isSearchExpanded: $isToolbarSearchExpanded,
@@ -39,11 +39,13 @@ extension HomeTCAView {
             searchExpansionTransitionID: $toolbarSearchExpansionTransitionID,
             searchFocusRequestID: $toolbarSearchFocusRequestID,
             searchFocusDismissRequestID: $toolbarSearchFocusDismissRequestID,
-            isCreatingSearchTask: isToolbarSearchCreateInProgress,
-            canCreateSearchTask: canCreateTaskFromToolbarSearch,
+            locationSnapshot: store.locationSnapshot,
             onPlaceCheckInMapRequested: {
                 openMacPlacesWorkspace()
             },
+            isCreatingTaskFromSearch: isToolbarSearchCreateInProgress,
+            canCreateTaskFromSearch: canCreateTaskFromToolbarSearch,
+            onSearchSubmit: createTaskFromToolbarSearch,
             onAddEvent: openAddEvent,
             onAddEmotion: openAddEmotion,
             onAddNote: openAddNote,
@@ -51,7 +53,8 @@ extension HomeTCAView {
             onAddTask: openAddTask,
             onCheckIn: openCheckInFromAddMenu,
             onStartAway: openAwayFromAddMenu,
-            onSearchSubmit: createTaskFromToolbarSearch
+            isBoardInspectorPresented: isMacBoardTicketInspectorPresented,
+            onToggleBoardInspector: toggleMacBoardTicketInspector
         )
     }
 
@@ -65,7 +68,7 @@ extension HomeTCAView {
             && store.addRoutineState == nil
     }
 
-    private var homeToolbarMode: HomeMacHomeToolbarContent.Mode {
+    private var homeToolbarMode: HomeMacTopToolbarChrome.Mode {
         if isMacBoardSidebarPresented {
             return .board
         }
@@ -177,197 +180,164 @@ extension HomeTCAView {
 
     @ViewBuilder
     var platformNavigationContent: some View {
-        HomeMacNavigationContent(
-            isBoardMode: isMacBoardMode,
-            isGoalsMode: isMacGoalsMode,
-            isBoardInspectorPresented: macBoardInspectorPresentedBinding,
-            addEditFormCoordinator: addEditFormCoordinator
-        ) {
-            macSidebarContent
-                .toolbar {
-                    macSidebarDoneToolbarContent
-                }
-        } boardCenterContent: {
-            macBoardCenterContent
-        } boardInspectorContent: {
-            macBoardTaskInspector
-        } goalsDetailContent: {
-            MacGoalsDetailView(store: goalsStore)
-        } mainDetailContent: {
-            if isEmotionLogEditorPresented {
-                EmotionLogEditorView(
-                    onCancel: closeAddEmotion,
-                    onSaved: openSavedEmotion
-                )
-            } else if isEventEditorPresented {
-                RoutineEventEditorView(
-                    onCancel: closeAddEvent,
-                    onSaved: openSavedEvent
-                )
-            } else if isNotesEnabled && isNoteEditorPresented {
-                if editingNoteID != nil {
-                    if let editingNote {
+        ZStack(alignment: .top) {
+            HomeMacNavigationContent(
+                isBoardMode: isMacBoardMode,
+                isGoalsMode: isMacGoalsMode,
+                isBoardInspectorPresented: macBoardInspectorPresentedBinding,
+                addEditFormCoordinator: addEditFormCoordinator
+            ) {
+                macSidebarContent
+            } boardCenterContent: {
+                macBoardCenterContent
+            } boardInspectorContent: {
+                macBoardTaskInspector
+            } goalsDetailContent: {
+                MacGoalsDetailView(store: goalsStore)
+            } mainDetailContent: {
+                if isEmotionLogEditorPresented {
+                    EmotionLogEditorView(
+                        onCancel: closeAddEmotion,
+                        onSaved: openSavedEmotion
+                    )
+                } else if isEventEditorPresented {
+                    RoutineEventEditorView(
+                        onCancel: closeAddEvent,
+                        onSaved: openSavedEvent
+                    )
+                } else if isNotesEnabled && isNoteEditorPresented {
+                    if editingNoteID != nil {
+                        if let editingNote {
+                            RoutineNoteEditorView(
+                                note: editingNote,
+                                attachments: noteAttachments(for: editingNote),
+                                onCancel: closeAddNote,
+                                onSaved: openSavedNote
+                            )
+                        } else {
+                            ContentUnavailableView(
+                                "Note unavailable",
+                                systemImage: "note.text",
+                                description: Text("The note being edited is no longer available.")
+                            )
+                        }
+                    } else {
                         RoutineNoteEditorView(
-                            note: editingNote,
-                            attachments: noteAttachments(for: editingNote),
                             onCancel: closeAddNote,
                             onSaved: openSavedNote
                         )
-                    } else {
-                        ContentUnavailableView(
-                            "Note unavailable",
-                            systemImage: "note.text",
-                            description: Text("The note being edited is no longer available.")
-                        )
                     }
+                } else if isAwayEnabled && isAwayStartPresented {
+                    AwaySessionStartSheet(
+                        presentation: .inline,
+                        onCancel: closeAwayStart,
+                        onStarted: closeAwayStart,
+                        onStartSleep: startSleepFromAway,
+                        dismissOnCompletion: false
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    RoutineNoteEditorView(
-                        onCancel: closeAddNote,
-                        onSaved: openSavedNote
-                    )
-                }
-            } else if isAwayEnabled && isAwayStartPresented {
-                AwaySessionStartSheet(
-                    presentation: .inline,
-                    onCancel: closeAwayStart,
-                    onStarted: closeAwayStart,
-                    onStartSleep: startSleepFromAway,
-                    dismissOnCompletion: false
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                let timelineSelection = isMacTimelineMode
-                    ? selectedMacTimelineSelection
-                    : .empty
-                let adventureProgression = isMacStatsMode && macHomeProgressMode.visibleSurfaceMode == .adventure
-                    ? homeAdventureProgression
-                    : nil
+                    let timelineSelection = isMacTimelineMode
+                        ? selectedMacTimelineSelection
+                        : .empty
+                    let adventureProgression = isMacStatsMode && macHomeProgressMode.visibleSurfaceMode == .adventure
+                        ? homeAdventureProgression
+                        : nil
 
-                MacDetailContainerView(
-                    store: store,
-                    isBoardPresented: isMacBoardMode,
-                    isTimelinePresented: isMacTimelineMode,
-                    isStatsPresented: isMacStatsMode,
-                    currentProgressMode: macHomeProgressMode,
-                    isSettingsPresented: isMacSettingsMode,
-                    settingsStore: settingsStore,
-                    statsStore: statsStore,
-                    selectedStatsDashboardScope: $selectedStatsDashboardScope,
-                    selectedSettingsSection: currentSelectedSettingsSection,
-                    dayPlanPlanner: dayPlanPlanner,
-                    adventureProgression: adventureProgression,
-                    showsPlaces: isPlacesEnabled,
-                    mainDetailMode: mainDetailModeBinding,
-                    dayPlanDisplayMode: $dayPlanDisplayMode,
-                    dayPlanCalendarFilters: $dayPlanCalendarFilters,
-                    isDayPlanCalendarFilterDetailPresented: store.isMacFilterDetailPresented && macFilterDetailScope == .calendar,
-                    plannerSearchText: searchTextBinding.wrappedValue,
-                    focusStartTaskCount: homeToolbarFocusStartTaskCount,
-                    activePlanFocusSession: homeToolbarActivePlanFocusSession,
-                    isPlanFocusStartDisabled: homeToolbarIsPlanFocusStartDisabled,
-                    isBoardInspectorPresented: macBoardInspectorPresentedBinding,
-                    taskDetailPanePlacement: $taskDetailPanePlacement,
-                    placeCheckInSelectedPlaceID: $placeCheckInSelectedPlaceID,
-                    placeCheckInSelectedHistoryMarkerID: $placeCheckInSelectedHistoryMarkerID,
-                    selectedTaskID: store.selectedTaskID,
-                    selectedTimelineEntry: timelineSelection.entry,
-                    selectedTimelineEmotion: timelineSelection.emotion,
-                    selectedTimelineEvent: timelineSelection.event,
-                    selectedTimelineNote: isNotesEnabled ? timelineSelection.note : nil,
-                    selectedTimelineNoteAttachments: isNotesEnabled ? timelineSelection.noteAttachments : [],
-                    selectedTimelinePlaceCheckInSession: isPlacesEnabled ? timelineSelection.placeCheckInSession : nil,
-                    selectedTimelineAwaySession: isAwayEnabled ? timelineSelection.awaySession : nil,
-                    onSelectDayPlanUnplannedCompletedDate: { date in
-                        focusMacSidebarOnDayPlanUnplannedCompletedTasks(on: date)
-                    },
-                    onOpenDayPlanTaskDetails: { taskID in
-                        openDayPlanTaskDetails(taskID)
-                    },
-                    onOpenEventDetails: openSavedEvent,
-                    onToggleDayPlanCalendarFilters: toggleMacCalendarFilterDetailFromPlanner,
-                    onTaskFocusDurationSelected: { duration in
-                        presentHomeToolbarFocusPicker(duration: duration)
-                    },
-                    onPausePlanFocus: { session in
-                        pauseHomeToolbarPlanFocus(session)
-                    },
-                    onResumePlanFocus: { session in
-                        resumeHomeToolbarPlanFocus(session)
-                    },
-                    onFinishPlanFocus: { session in
-                        finishHomeToolbarPlanFocus(session)
-                    },
-                    onAbandonPlanFocus: { session in
-                        abandonHomeToolbarPlanFocus(session)
-                    },
-                    onEditNote: openEditNote,
-                    onDeleteNote: closeDeletedNote,
-                    onToggleBoardInspector: toggleMacBoardTicketInspector,
-                    onExpandTaskDetails: expandTaskDetailPane,
-                    fullscreenTaskDetailReturnPlacement: fullscreenTaskDetailReturnPlacement,
-                    onMinimizeFullscreenTaskDetails: minimizeFullscreenTaskDetailsAction,
-                    onCloseTaskDetails: closeTaskDetailPane,
-                    onCloseFullscreenTaskDetails: closeFullscreenTaskDetails,
-                    isFilterDetailFullscreen: isMacFilterDetailFullscreen,
-                    onExpandFilterDetail: expandMacFilterDetailPane,
-                    onMinimizeFullscreenFilterDetail: minimizeFullscreenMacFilterDetailAction,
-                    onCloseFilterDetail: closeMacFilterDetailPane,
-                    addRoutineStore: self.store.scope(
-                        state: \.addRoutineState,
-                        action: \.addRoutineSheet
-                    )
-                ) {
-                    macActiveFiltersDetailView
-                } plannerListView: {
-                    macPlannerTimelineListView
-                } boardView: {
-                    macTodoBoardDetailView
-                } boardInspectorView: {
-                    macBoardTaskInspector
+                    MacDetailContainerView(
+                        store: store,
+                        isBoardPresented: isMacBoardMode,
+                        isTimelinePresented: isMacTimelineMode,
+                        isStatsPresented: isMacStatsMode,
+                        currentProgressMode: macHomeProgressMode,
+                        isSettingsPresented: isMacSettingsMode,
+                        settingsStore: settingsStore,
+                        statsStore: statsStore,
+                        selectedStatsDashboardScope: $selectedStatsDashboardScope,
+                        selectedSettingsSection: currentSelectedSettingsSection,
+                        dayPlanPlanner: dayPlanPlanner,
+                        adventureProgression: adventureProgression,
+                        showsPlaces: isPlacesEnabled,
+                        mainDetailMode: mainDetailModeBinding,
+                        dayPlanDisplayMode: $dayPlanDisplayMode,
+                        dayPlanCalendarFilters: $dayPlanCalendarFilters,
+                        isDayPlanCalendarFilterDetailPresented: store.isMacFilterDetailPresented && macFilterDetailScope == .calendar,
+                        plannerSearchText: searchTextBinding.wrappedValue,
+                        focusStartTaskCount: homeToolbarFocusStartTaskCount,
+                        activePlanFocusSession: homeToolbarActivePlanFocusSession,
+                        isPlanFocusStartDisabled: homeToolbarIsPlanFocusStartDisabled,
+                        isBoardInspectorPresented: macBoardInspectorPresentedBinding,
+                        taskDetailPanePlacement: $taskDetailPanePlacement,
+                        placeCheckInSelectedPlaceID: $placeCheckInSelectedPlaceID,
+                        placeCheckInSelectedHistoryMarkerID: $placeCheckInSelectedHistoryMarkerID,
+                        selectedTaskID: store.selectedTaskID,
+                        selectedTimelineEntry: timelineSelection.entry,
+                        selectedTimelineEmotion: timelineSelection.emotion,
+                        selectedTimelineEvent: timelineSelection.event,
+                        selectedTimelineNote: isNotesEnabled ? timelineSelection.note : nil,
+                        selectedTimelineNoteAttachments: isNotesEnabled ? timelineSelection.noteAttachments : [],
+                        selectedTimelinePlaceCheckInSession: isPlacesEnabled ? timelineSelection.placeCheckInSession : nil,
+                        selectedTimelineAwaySession: isAwayEnabled ? timelineSelection.awaySession : nil,
+                        onSelectDayPlanUnplannedCompletedDate: { date in
+                            focusMacSidebarOnDayPlanUnplannedCompletedTasks(on: date)
+                        },
+                        onOpenDayPlanTaskDetails: { taskID in
+                            openDayPlanTaskDetails(taskID)
+                        },
+                        onOpenEventDetails: openSavedEvent,
+                        onToggleDayPlanCalendarFilters: toggleMacCalendarFilterDetailFromPlanner,
+                        onTaskFocusDurationSelected: { duration in
+                            presentHomeToolbarFocusPicker(duration: duration)
+                        },
+                        onPausePlanFocus: { session in
+                            pauseHomeToolbarPlanFocus(session)
+                        },
+                        onResumePlanFocus: { session in
+                            resumeHomeToolbarPlanFocus(session)
+                        },
+                        onFinishPlanFocus: { session in
+                            finishHomeToolbarPlanFocus(session)
+                        },
+                        onAbandonPlanFocus: { session in
+                            abandonHomeToolbarPlanFocus(session)
+                        },
+                        onEditNote: openEditNote,
+                        onDeleteNote: closeDeletedNote,
+                        onToggleBoardInspector: toggleMacBoardTicketInspector,
+                        onExpandTaskDetails: expandTaskDetailPane,
+                        fullscreenTaskDetailReturnPlacement: fullscreenTaskDetailReturnPlacement,
+                        onMinimizeFullscreenTaskDetails: minimizeFullscreenTaskDetailsAction,
+                        onCloseTaskDetails: closeTaskDetailPane,
+                        onCloseFullscreenTaskDetails: closeFullscreenTaskDetails,
+                        isFilterDetailFullscreen: isMacFilterDetailFullscreen,
+                        onExpandFilterDetail: expandMacFilterDetailPane,
+                        onMinimizeFullscreenFilterDetail: minimizeFullscreenMacFilterDetailAction,
+                        onCloseFilterDetail: closeMacFilterDetailPane,
+                        addRoutineStore: self.store.scope(
+                            state: \.addRoutineState,
+                            action: \.addRoutineSheet
+                        )
+                    ) {
+                        macActiveFiltersDetailView
+                    } plannerListView: {
+                        macPlannerTimelineListView
+                    } boardView: {
+                        macTodoBoardDetailView
+                    } boardInspectorView: {
+                        macBoardTaskInspector
+                    }
                 }
             }
-        } homeToolbarContent: {
-            homeToolbarContent
-        } boardToolbarContent: {
-            macBoardDetailToolbarContent
-        }
-    }
+            .padding(.top, HomeMacToolbarSearchLayout.topToolbarHeight)
 
-    @ToolbarContentBuilder
-    private var macSidebarDoneToolbarContent: some ToolbarContent {
-        ToolbarItemGroup(placement: .primaryAction) {
-            if isDevelopmentAppVariant {
-                MacToolbarStatusBadge(
-                    title: "Dev Version",
-                    systemImage: "hammer.fill",
-                    tintColor: .systemOrange
-                )
-                .help("Development version")
-            }
-
-            MacToolbarStatusBadge(
-                title: "\(store.doneStats.totalCount) done",
-                systemImage: "checkmark.seal.fill",
-                tintColor: .systemGreen
-            )
-            .help("\(store.doneStats.totalCount) total done")
+            homeTopToolbarChrome
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea(edges: .top)
     }
 
     private var isDevelopmentAppVariant: Bool {
         Bundle.main.object(forInfoDictionaryKey: "RoutinaSandboxDataMode") as? Bool == true
-    }
-
-    @ToolbarContentBuilder
-    var macBoardDetailToolbarContent: some ToolbarContent {
-        if !isToolbarSearchExpanded {
-            ToolbarItem(placement: .primaryAction) {
-                HomeMacBoardInspectorToolbarButton(
-                    isPresented: isMacBoardTicketInspectorPresented,
-                    onToggle: toggleMacBoardTicketInspector
-                )
-            }
-        }
     }
 
     private func toggleMacBoardTicketInspector() {
@@ -562,15 +532,18 @@ extension HomeTCAView {
 
     func applyAddRoutinePresentation<Content: View>(to content: Content) -> some View {
         content
-            .overlay(alignment: .topTrailing) {
+            .overlay(alignment: .top) {
                 if let toolbarSearchCreateDraft, isToolbarSearchExpanded {
                     HomeMacToolbarSearchParserPreview(draft: toolbarSearchCreateDraft)
                         .frame(
-                            maxWidth: HomeMacToolbarSearchLayout.focusedWidth,
+                            width: HomeMacToolbarSearchLayout.focusedWidth,
                             alignment: .leading
                         )
-                        .padding(.top, HomeMacToolbarSearchLayout.parserPreviewTopPadding)
-                        .padding(.trailing, HomeMacToolbarSearchLayout.parserPreviewTrailingPadding)
+                        .padding(
+                            .top,
+                            HomeMacToolbarSearchLayout.topToolbarHeight
+                                + HomeMacToolbarSearchLayout.parserPreviewTopPadding
+                        )
                         .transition(.opacity.combined(with: .move(edge: .top)))
                         .zIndex(20)
                         .allowsHitTesting(false)
@@ -587,7 +560,7 @@ extension HomeTCAView {
                             self.quickAddCreatedToast = nil
                         }
                     )
-                    .padding(.top, 18)
+                    .padding(.top, HomeMacToolbarSearchLayout.topToolbarHeight + 18)
                     .padding(.trailing, 22)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .task(id: quickAddCreatedToast.id) {

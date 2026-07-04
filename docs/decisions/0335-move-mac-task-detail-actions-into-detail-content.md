@@ -13,7 +13,7 @@ Accepted
 - [0298: Close Fullscreen Mac Task Details to Planner](0298-close-fullscreen-mac-task-details-to-planner.md)
 - [0302: Minimize Fullscreen Mac Task Details to the Companion Pane](0302-minimize-fullscreen-mac-task-details-to-companion-pane.md)
 - [0329: Hide Mac Toolbar Actions During Search Focus](0329-hide-mac-toolbar-actions-during-search-focus.md)
-- [0334: Keep Expanded Mac Toolbar Search in the Principal Item](0334-keep-expanded-mac-toolbar-search-in-principal-item.md)
+- [0340: Use a SwiftUI Outlook-Style Mac Home Top Toolbar](0340-use-swiftui-outlook-style-mac-home-top-toolbar.md)
 
 ## Refined By
 
