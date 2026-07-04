@@ -367,6 +367,7 @@ struct DayPlanDetailView: View {
     var calendarFilters: Binding<DayPlanCalendarFilterState> = .constant(DayPlanCalendarFilterState())
     var isCalendarFilterDetailPresented = false
     var calendarSearchText = ""
+    var macHeaderFocusControl: (() -> AnyView)? = nil
     var listContent: (() -> AnyView)? = nil
     var onSelectUnplannedCompletedDate: ((Date) -> Void)? = nil
     var onOpenTaskDetails: ((UUID) -> Void)? = nil
@@ -390,6 +391,7 @@ struct DayPlanDetailView: View {
                 showsDisplayModePicker: listContent != nil,
                 isTaskDetailInspectorPresented: isTaskDetailInspectorPresented,
                 parentAvailableWidth: macHeaderAvailableWidth,
+                macFocusControl: macHeaderFocusControl,
                 onCalendarFilterButtonPressed: onCalendarFilterButtonPressed
             )
 
@@ -475,6 +477,7 @@ private struct DayPlanHeaderView: View {
     var showsDisplayModePicker = false
     var isTaskDetailInspectorPresented = false
     var parentAvailableWidth: CGFloat? = nil
+    var macFocusControl: (() -> AnyView)? = nil
     var onCalendarFilterButtonPressed: (() -> Void)? = nil
     @AppStorage(
         UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
@@ -612,6 +615,12 @@ private struct DayPlanHeaderView: View {
 
     private var plannerUtilityCluster: some View {
         HStack(alignment: .center, spacing: 8) {
+#if os(macOS)
+            if effectiveDisplayMode == .calendar, let macFocusControl {
+                macFocusControl()
+            }
+#endif
+
             if showsCalendarFilterButton {
                 calendarFilterButton
             }

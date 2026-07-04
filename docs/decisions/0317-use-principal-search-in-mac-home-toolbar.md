@@ -19,6 +19,7 @@ Accepted
 
 - [0318: Remove Mac Home Timeline Toolbar Segment](0318-remove-mac-home-timeline-toolbar-segment.md)
 - [0319: Open Planner Filters in the Home Filter Pane](0319-open-planner-filters-in-home-filter-pane.md)
+- [0333: Move Mac Focus Control to Planner Calendar Header](0333-move-mac-focus-control-to-planner-calendar-header.md)
 
 ## Context
 
@@ -30,13 +31,13 @@ Outlook-style Mac toolbar layouts separate global search from command controls: 
 
 Mac Home renders the AppKit-backed search-or-create field as the toolbar principal item. The Home window uses expanded regular toolbar chrome so the principal search field can sit in the centered top area while compact command controls stay in the toolbar command row.
 
-The command row keeps Home-level controls: Places when enabled, Home filters, the mutually exclusive Focus Timer branch, the primary Home mode strip, Add, and the Stats/Adventure progress picker when available. The search field keeps the same shared Home search binding, AppKit focus restoration, `Command+Option+N` focus behavior, and no-results Return-to-create guard from [0315](0315-merge-mac-quick-add-into-toolbar-search.md).
+The command row keeps Home-level controls: Places when enabled, Home filters, the mutually exclusive Focus Timer branch, the primary Home mode strip, Add, and the Stats/Adventure progress picker when available. The search field keeps the same shared Home search binding, AppKit focus restoration, `Command+Option+N` focus behavior, and no-results Return-to-create guard from [0315](0315-merge-mac-quick-add-into-toolbar-search.md). [0333](0333-move-mac-focus-control-to-planner-calendar-header.md) later moves the Focus branch from this command row to the Planner Calendar header.
 
 The search field uses Outlook-like proportions instead of the previous Quick Add overlay height. It remains large enough to be the primary global search affordance, but does not consume the command row or force the command controls into the same pill.
 
 ## Consequences
 
 - Search has a stable, centered titlebar position that reads as the primary global search affordance.
-- Filter, Focus, mode, and Add controls remain available in the toolbar without crowding the search field.
+- Filter, mode, and Add controls remain available without crowding the search field; [0333](0333-move-mac-focus-control-to-planner-calendar-header.md) moves Focus to the Planner Calendar header.
 - The Quick Add shortcut and search-or-create semantics remain unchanged.
 - Future toolbar changes should keep search in the principal slot and use the command row for compact action controls unless a later decision explicitly revises this layout.

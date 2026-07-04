@@ -17,7 +17,7 @@ Accepted
 ## Refined By
 
 - [0323: Draw Mac Toolbar Search Shell in SwiftUI](0323-draw-mac-toolbar-search-shell-in-swiftui.md)
-- [0327: Animate Mac Toolbar Search as One Visible Pill](0327-animate-mac-toolbar-search-as-one-visible-pill.md)
+- [0329: Hide Mac Toolbar Actions During Search Focus](0329-hide-mac-toolbar-actions-during-search-focus.md)
 
 ## Context
 

@@ -15,7 +15,7 @@ Superseded
 
 ## Superseded By
 
-- [0327: Animate Mac Toolbar Search as One Visible Pill](../0327-animate-mac-toolbar-search-as-one-visible-pill.md)
+- [0327: Animate Mac Toolbar Search as One Visible Pill](0327-animate-mac-toolbar-search-as-one-visible-pill.md)
 
 ## Context
 
@@ -36,4 +36,4 @@ The clear affordance, create hint, and `Esc` focus-dismiss keycap live inside th
 
 ## Supersession Note
 
-This approach still exposed a giant toolbar oval in practice because the principal toolbar hosting view could receive a visible treatment across the focused-width stage. [0327](../0327-animate-mac-toolbar-search-as-one-visible-pill.md) replaces it by removing the separate stage and keeping only one visible search pill.
+This approach still exposed a giant toolbar oval in practice because the principal toolbar hosting view could receive a visible treatment across the focused-width stage. [0327](0327-animate-mac-toolbar-search-as-one-visible-pill.md) replaced it by removing the separate stage and keeping only one visible search pill.

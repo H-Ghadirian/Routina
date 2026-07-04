@@ -1,5 +1,4 @@
 import AppKit
-import ComposableArchitecture
 import SwiftUI
 
 struct HomeMacHomeToolbarContent: ToolbarContent {
@@ -21,11 +20,14 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     @Binding var selectedSidebarMode: HomeFeature.MacSidebarMode
     let locationSnapshot: LocationSnapshot
     @Binding var searchText: String
+    @Binding var isSearchTextFocused: Bool
+    @Binding var isSearchExpanded: Bool
+    @Binding var searchVisiblePillWidth: CGFloat
+    @Binding var searchExpansionTransitionID: Int
+    @Binding var searchFocusRequestID: Int
+    @Binding var searchFocusDismissRequestID: Int
     let isCreatingSearchTask: Bool
     let canCreateSearchTask: Bool
-    let focusStartTaskCount: Int
-    let activePlanFocusSession: FocusSession?
-    let isPlanFocusStartDisabled: Bool
     let onPlaceCheckInMapRequested: () -> Void
     let onAddEvent: () -> Void
     let onAddEmotion: () -> Void
@@ -35,11 +37,6 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
     let onCheckIn: () -> Void
     let onStartAway: () -> Void
     let onSearchSubmit: (String) -> Void
-    let onTaskFocusDurationSelected: (TimeInterval) -> Void
-    let onPausePlanFocus: (FocusSession) -> Void
-    let onResumePlanFocus: (FocusSession) -> Void
-    let onFinishPlanFocus: (FocusSession) -> Void
-    let onAbandonPlanFocus: (FocusSession) -> Void
 
     var body: some ToolbarContent {
         switch mode {
@@ -72,15 +69,17 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
 
     @ToolbarContentBuilder
     private var commandToolbarItems: some ToolbarContent {
-        ToolbarItem(placement: .navigation) {
-            HomeMacToolbarClusterEdgeSpacer()
-        }
+        if !isSearchExpanded {
+            ToolbarItem(placement: .navigation) {
+                HomeMacToolbarClusterEdgeSpacer()
+            }
 
-        navigationToolbarItems
-        progressModeToolbarItem
+            navigationToolbarItems
+            progressModeToolbarItem
 
-        ToolbarItem(placement: .navigation) {
-            HomeMacToolbarClusterEdgeSpacer()
+            ToolbarItem(placement: .navigation) {
+                HomeMacToolbarClusterEdgeSpacer()
+            }
         }
     }
 
@@ -89,6 +88,12 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
         ToolbarItem(placement: .principal) {
             HomeMacToolbarSearchField(
                 text: $searchText,
+                isTextFocused: $isSearchTextFocused,
+                isSearchExpanded: $isSearchExpanded,
+                visiblePillWidth: $searchVisiblePillWidth,
+                searchExpansionTransitionID: $searchExpansionTransitionID,
+                focusRequestID: $searchFocusRequestID,
+                focusDismissRequestID: $searchFocusDismissRequestID,
                 isCreatingTask: isCreatingSearchTask,
                 canCreateTaskFromQuery: canCreateSearchTask,
                 onSubmit: onSearchSubmit
@@ -103,28 +108,6 @@ struct HomeMacHomeToolbarContent: ToolbarContent {
                 locationSnapshot: locationSnapshot,
                 onMapRequested: onPlaceCheckInMapRequested
             )
-        }
-
-        if let activePlanFocusSession {
-            ToolbarItem(placement: .navigation) {
-                HomeMacActivePlanFocusToolbarButton(
-                    session: activePlanFocusSession,
-                    onPause: onPausePlanFocus,
-                    onResume: onResumePlanFocus,
-                    onFinish: onFinishPlanFocus,
-                    onAbandon: onAbandonPlanFocus
-                )
-            }
-        } else if isPlanFocusStartDisabled {
-            RoutinaMacFocusTimerToolbarItem(hiddenKinds: [.unassigned])
-        } else if focusStartTaskCount > 0 {
-            ToolbarItem(placement: .navigation) {
-                HomeMacPlanFocusToolbarButton(
-                    focusStartTaskCount: focusStartTaskCount,
-                    isDisabled: isPlanFocusStartDisabled,
-                    onTaskFocusDurationSelected: onTaskFocusDurationSelected
-                )
-            }
         }
 
         ToolbarItem(placement: .navigation) {
@@ -165,51 +148,49 @@ private struct HomeMacToolbarClusterEdgeSpacer: View {
 }
 
 enum HomeMacToolbarSearchLayout {
-    static let compactWidth: CGFloat = 540
-    static let focusedWidth: CGFloat = 1040
-    static let activeHostWidth: CGFloat = focusedWidth
+    static let compactWidth: CGFloat = 460
+    static let focusedWidth: CGFloat = 720
     static let height: CGFloat = 44
     static let cornerRadius: CGFloat = 22
     static let horizontalPadding: CGFloat = 18
     static let iconSize: CGFloat = 18
     static let textFieldHeight: CGFloat = 26
     static let clearButtonSize: CGFloat = 22
-    static let hostReleaseDelay: TimeInterval = 0.26
+    static let createHintMaxWidth: CGFloat = 164
+    static let animationDuration: TimeInterval = 0.22
+    static let toolbarActionRestoreDelay: TimeInterval = animationDuration
     static let parserPreviewTopPadding: CGFloat = 12
     static let parserPreviewTrailingPadding: CGFloat = 22
 }
 
 private struct HomeMacToolbarSearchField: View {
     @Binding var text: String
+    @Binding var isTextFocused: Bool
+    @Binding var isSearchExpanded: Bool
+    @Binding var visiblePillWidth: CGFloat
+    @Binding var searchExpansionTransitionID: Int
+    @Binding var focusRequestID: Int
+    @Binding var focusDismissRequestID: Int
     let isCreatingTask: Bool
     let canCreateTaskFromQuery: Bool
     let onSubmit: (String) -> Void
-    @State private var isFocused = false
-    @State private var keepsActiveHost = false
-    @State private var hostTransitionID = 0
-    @State private var focusRequestID = 0
-    @State private var focusDismissRequestID = 0
 
     var body: some View {
-        ZStack {
-            searchShell
-        }
-        .frame(
-            width: hostWidth,
-            height: HomeMacToolbarSearchLayout.height
-        )
-        .animation(
-            .easeInOut(duration: 0.22),
-            value: isFocused
-        )
-        .animation(.easeOut(duration: 0.12), value: showsCreateHint)
-        .onChange(of: isFocused) { _, isFocused in
-            updateHostExpansion(isFocused: isFocused)
-        }
+        searchShell(width: visiblePillWidth)
+            .frame(
+                width: visiblePillWidth,
+                height: HomeMacToolbarSearchLayout.height,
+                alignment: .center
+            )
+            .allowsHitTesting(true)
+            .animation(
+                .easeInOut(duration: HomeMacToolbarSearchLayout.animationDuration),
+                value: visiblePillWidth
+            )
     }
 
-    private var searchShell: some View {
-        HStack(spacing: 10) {
+    private func searchShell(width: CGFloat) -> some View {
+        ZStack(alignment: .leading) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: HomeMacToolbarSearchLayout.iconSize, weight: .medium))
                 .foregroundStyle(.secondary)
@@ -217,34 +198,43 @@ private struct HomeMacToolbarSearchField: View {
                     width: HomeMacToolbarSearchLayout.iconSize,
                     height: HomeMacToolbarSearchLayout.iconSize
                 )
+                .offset(x: HomeMacToolbarSearchLayout.horizontalPadding)
                 .allowsHitTesting(false)
 
-            ZStack(alignment: .leading) {
-                if text.isEmpty {
-                    placeholderLabel
+            HStack(spacing: 10) {
+                ZStack(alignment: .leading) {
+                    if text.isEmpty {
+                        placeholderLabel
+                    }
+
+                    textEditor
+                }
+                .layoutPriority(1)
+
+                if !text.isEmpty {
+                    clearSearchButton
+                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                        .layoutPriority(2)
+                        .zIndex(2)
                 }
 
-                textEditor
-            }
+                if showsCreateHint {
+                    createHint
+                        .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                        .layoutPriority(0)
+                }
 
-            if !text.isEmpty {
-                clearSearchButton
-                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                if isTextFocused {
+                    closeButton
+                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                        .layoutPriority(2)
+                }
             }
-
-            if showsCreateHint {
-                createHint
-                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
-            }
-
-            if isFocused {
-                closeButton
-                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
-            }
+            .padding(.leading, textLeading)
+            .padding(.trailing, 12)
+            .frame(width: width, height: HomeMacToolbarSearchLayout.height, alignment: .leading)
         }
-        .padding(.leading, HomeMacToolbarSearchLayout.horizontalPadding)
-        .padding(.trailing, 12)
-        .frame(width: targetWidth, height: HomeMacToolbarSearchLayout.height)
+        .frame(width: width, height: HomeMacToolbarSearchLayout.height)
         .background {
             RoundedRectangle(
                 cornerRadius: HomeMacToolbarSearchLayout.cornerRadius,
@@ -257,10 +247,11 @@ private struct HomeMacToolbarSearchField: View {
                 cornerRadius: HomeMacToolbarSearchLayout.cornerRadius,
                 style: .continuous
             )
-            .stroke(Color.secondary.opacity(isFocused ? 0.22 : 0.16), lineWidth: 1)
+            .stroke(Color.secondary.opacity(isTextFocused ? 0.22 : 0.16), lineWidth: 1)
         }
         .overlay {
             outsideClickDismissLayer
+                .allowsHitTesting(false)
         }
         .contentShape(
             RoundedRectangle(
@@ -269,16 +260,17 @@ private struct HomeMacToolbarSearchField: View {
             )
         )
         .onTapGesture {
-            focusRequestID += 1
+            beginSearchFocusRequest()
         }
         .animation(.easeOut(duration: 0.12), value: text.isEmpty)
+        .animation(.easeOut(duration: 0.12), value: showsCreateHint)
         .help(HomeMacToolbarSearchCopy.help)
         .accessibilityLabel(HomeMacToolbarSearchCopy.accessibilityLabel)
     }
 
     private var outsideClickDismissLayer: some View {
         HomeMacToolbarSearchOutsideClickDismissView(
-            isFocused: $isFocused,
+            isFocused: searchFocusBinding,
             focusRequestID: $focusRequestID,
             focusDismissRequestID: $focusDismissRequestID
         )
@@ -298,19 +290,19 @@ private struct HomeMacToolbarSearchField: View {
         HomeMacToolbarSearchTextField(
             text: $text,
             isCreatingTask: isCreatingTask,
-            isFocused: $isFocused,
+            isFocused: searchFocusBinding,
             focusRequestID: focusRequestID,
             focusDismissRequestID: focusDismissRequestID,
             onSubmit: onSubmit
         )
         .frame(maxWidth: .infinity)
         .frame(height: HomeMacToolbarSearchLayout.textFieldHeight)
+        .layoutPriority(1)
     }
 
     private var clearSearchButton: some View {
         Button {
-            text = ""
-            focusRequestID += 1
+            clearSearchText()
         } label: {
             Image(systemName: "xmark.circle.fill")
                 .font(.system(size: 14, weight: .medium))
@@ -346,39 +338,73 @@ private struct HomeMacToolbarSearchField: View {
         .help(HomeMacToolbarSearchCopy.closeHelp)
     }
 
-    private var targetWidth: CGFloat {
-        isFocused ? HomeMacToolbarSearchLayout.focusedWidth : HomeMacToolbarSearchLayout.compactWidth
+    private var textLeading: CGFloat {
+        HomeMacToolbarSearchLayout.horizontalPadding
+            + HomeMacToolbarSearchLayout.iconSize
+            + 10
     }
 
-    private var hostWidth: CGFloat {
-        (isFocused || keepsActiveHost) ? HomeMacToolbarSearchLayout.activeHostWidth : HomeMacToolbarSearchLayout.compactWidth
+    private var searchFocusBinding: Binding<Bool> {
+        Binding(
+            get: { isTextFocused },
+            set: { setSearchFocused($0) }
+        )
     }
 
-    private func updateHostExpansion(isFocused: Bool) {
-        hostTransitionID += 1
-        let transitionID = hostTransitionID
+    private func beginSearchFocusRequest() {
+        focusRequestID += 1
+        setSearchFocused(true)
+    }
 
-        if isFocused {
-            var transaction = Transaction()
-            transaction.disablesAnimations = true
-            withTransaction(transaction) {
-                keepsActiveHost = true
+    private func clearSearchText() {
+        text = ""
+        focusRequestID += 1
+        setSearchFocused(true)
+
+        DispatchQueue.main.async {
+            text = ""
+            focusRequestID += 1
+        }
+    }
+
+    private func setSearchFocused(_ nextValue: Bool) {
+        if nextValue {
+            searchExpansionTransitionID += 1
+            let transitionID = searchExpansionTransitionID
+            if !isSearchExpanded {
+                visiblePillWidth = HomeMacToolbarSearchLayout.compactWidth
+                isSearchExpanded = true
+                DispatchQueue.main.async {
+                    guard searchExpansionTransitionID == transitionID else { return }
+                    animateVisiblePillWidth(to: HomeMacToolbarSearchLayout.focusedWidth)
+                }
+            } else {
+                animateVisiblePillWidth(to: HomeMacToolbarSearchLayout.focusedWidth)
+            }
+            if !isTextFocused {
+                isTextFocused = true
             }
             return
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + HomeMacToolbarSearchLayout.hostReleaseDelay) {
-            guard hostTransitionID == transitionID, !self.isFocused else { return }
-            var transaction = Transaction()
-            transaction.disablesAnimations = true
-            withTransaction(transaction) {
-                keepsActiveHost = false
-            }
+        guard isTextFocused || isSearchExpanded else { return }
+        isTextFocused = false
+        animateVisiblePillWidth(to: HomeMacToolbarSearchLayout.compactWidth)
+        let transitionID = searchExpansionTransitionID
+        DispatchQueue.main.asyncAfter(deadline: .now() + HomeMacToolbarSearchLayout.toolbarActionRestoreDelay) {
+            guard searchExpansionTransitionID == transitionID else { return }
+            isSearchExpanded = false
+        }
+    }
+
+    private func animateVisiblePillWidth(to width: CGFloat) {
+        withAnimation(.easeInOut(duration: HomeMacToolbarSearchLayout.animationDuration)) {
+            visiblePillWidth = width
         }
     }
 
     private var showsCreateHint: Bool {
-        isFocused && (isCreatingTask || canCreateTaskFromQuery)
+        isTextFocused && (isCreatingTask || canCreateTaskFromQuery)
     }
 
     private var createHint: some View {
@@ -406,8 +432,9 @@ private struct HomeMacToolbarSearchField: View {
         .font(.caption.weight(.semibold))
         .foregroundStyle(isCreatingTask ? Color.accentColor : Color.secondary)
         .lineLimit(1)
-        .fixedSize(horizontal: true, vertical: false)
+        .truncationMode(.tail)
         .padding(.horizontal, 10)
+        .frame(maxWidth: HomeMacToolbarSearchLayout.createHintMaxWidth, alignment: .leading)
         .frame(height: 28)
         .background {
             Capsule(style: .continuous)
@@ -574,6 +601,7 @@ private struct HomeMacToolbarSearchOutsideClickDismissView: NSViewRepresentable 
         var parent: HomeMacToolbarSearchOutsideClickDismissView
         weak var view: HomeMacToolbarSearchOutsideClickDismissNSView?
         private var mouseDownMonitor: Any?
+        private var keyDownMonitor: Any?
 
         init(parent: HomeMacToolbarSearchOutsideClickDismissView) {
             self.parent = parent
@@ -588,6 +616,18 @@ private struct HomeMacToolbarSearchOutsideClickDismissView: NSViewRepresentable 
                     self?.handleMouseDown(event)
                 }
                 return event
+            }
+            installKeyDownMonitorIfNeeded()
+        }
+
+        private func installKeyDownMonitorIfNeeded() {
+            guard keyDownMonitor == nil else { return }
+            keyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                var didConsumeEvent = false
+                MainActor.assumeIsolated {
+                    didConsumeEvent = self?.handleKeyDown(event) ?? false
+                }
+                return didConsumeEvent ? nil : event
             }
         }
 
@@ -605,6 +645,21 @@ private struct HomeMacToolbarSearchOutsideClickDismissView: NSViewRepresentable 
             }
 
             guard parent.isFocused else { return }
+            dismissFocusedSearch(in: window)
+        }
+
+        private func handleKeyDown(_ event: NSEvent) -> Bool {
+            guard event.keyCode == 53,
+                  parent.isFocused,
+                  let window = view?.window else {
+                return false
+            }
+
+            dismissFocusedSearch(in: window)
+            return true
+        }
+
+        private func dismissFocusedSearch(in window: NSWindow) {
             parent.isFocused = false
             parent.focusDismissRequestID += 1
             NotificationCenter.default.post(
@@ -629,9 +684,14 @@ private struct HomeMacToolbarSearchOutsideClickDismissView: NSViewRepresentable 
         }
 
         func removeMouseDownMonitor() {
-            guard let mouseDownMonitor else { return }
-            NSEvent.removeMonitor(mouseDownMonitor)
+            if let mouseDownMonitor {
+                NSEvent.removeMonitor(mouseDownMonitor)
+            }
+            if let keyDownMonitor {
+                NSEvent.removeMonitor(keyDownMonitor)
+            }
             self.mouseDownMonitor = nil
+            self.keyDownMonitor = nil
         }
     }
 
@@ -692,7 +752,7 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
 
         init(parent: HomeMacToolbarSearchTextField) {
             self.parent = parent
-            self.handledFocusRequestID = parent.focusRequestID
+            self.handledFocusRequestID = parent.focusRequestID - 1
             self.handledFocusDismissRequestID = parent.focusDismissRequestID
         }
 
@@ -733,8 +793,13 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
             parent.isFocused = true
         }
 
+        func pointerFocusRequested() {
+            parent.isFocused = true
+        }
+
         func controlTextDidEndEditing(_ notification: Notification) {
             syncSearchText(from: notification.object)
+            guard handledFocusRequestID == parent.focusRequestID else { return }
             parent.isFocused = false
         }
 
@@ -775,8 +840,12 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
 
         func focusIfNeeded(for requestID: Int) {
             guard requestID != handledFocusRequestID else { return }
+            guard parent.isFocused else {
+                handledFocusRequestID = requestID
+                return
+            }
+            guard focusTextField(selectingText: false) else { return }
             handledFocusRequestID = requestID
-            focusTextField(selectingText: false)
         }
 
         func dismissFocusIfNeeded(for requestID: Int) {
@@ -844,9 +913,10 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
             parent.isFocused = false
         }
 
-        private func focusTextField(selectingText: Bool) {
+        @discardableResult
+        private func focusTextField(selectingText: Bool) -> Bool {
             guard let textField,
-                  let window = textField.window else { return }
+                  let window = textField.window else { return false }
 
             window.makeFirstResponder(textField)
             parent.isFocused = true
@@ -855,6 +925,7 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
                 location: selectingText ? 0 : length,
                 length: selectingText ? length : 0
             )
+            return true
         }
 
         private func shouldLeaveCurrentTextEditorFocused(
@@ -874,7 +945,10 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
     }
 
     func makeNSView(context: Context) -> HomeMacToolbarSearchTextEditorView {
-        let textField = NSTextField(string: text)
+        let textField = HomeMacToolbarSearchClickableTextField(string: text)
+        textField.onMouseDown = { [weak coordinator = context.coordinator] in
+            coordinator?.pointerFocusRequested()
+        }
         textField.delegate = context.coordinator
         configure(textField)
         context.coordinator.textField = textField
@@ -886,6 +960,9 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
         let textField = nsView.textField
         context.coordinator.parent = self
         context.coordinator.textField = textField
+        (textField as? HomeMacToolbarSearchClickableTextField)?.onMouseDown = { [weak coordinator = context.coordinator] in
+            coordinator?.pointerFocusRequested()
+        }
         context.coordinator.dismissFocusIfNeeded(for: focusDismissRequestID)
         context.coordinator.focusIfNeeded(for: focusRequestID)
         configure(textField)
@@ -915,6 +992,15 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
         textField.cell?.lineBreakMode = .byTruncatingTail
         textField.setContentHuggingPriority(.defaultLow, for: .horizontal)
         textField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+    }
+}
+
+private final class HomeMacToolbarSearchClickableTextField: NSTextField {
+    var onMouseDown: (() -> Void)?
+
+    override func mouseDown(with event: NSEvent) {
+        onMouseDown?()
+        super.mouseDown(with: event)
     }
 }
 
@@ -956,12 +1042,13 @@ private final class HomeMacToolbarSearchTextEditorView: NSView {
     }
 }
 
-private struct HomeMacActivePlanFocusToolbarButton: View {
+struct HomeMacActivePlanFocusToolbarButton: View {
     let session: FocusSession
     let onPause: (FocusSession) -> Void
     let onResume: (FocusSession) -> Void
     let onFinish: (FocusSession) -> Void
     let onAbandon: (FocusSession) -> Void
+    var trailingPadding: CGFloat = 8
 
     var body: some View {
         Menu {
@@ -1011,7 +1098,7 @@ private struct HomeMacActivePlanFocusToolbarButton: View {
         .buttonStyle(.plain)
         .controlSize(.small)
         .help("Start Focus Timer running")
-        .padding(.trailing, 8)
+        .padding(.trailing, trailingPadding)
     }
 
     private func activeTimeText(at date: Date) -> String {
@@ -1036,10 +1123,11 @@ private struct HomeMacActivePlanFocusToolbarButton: View {
     }
 }
 
-private struct HomeMacPlanFocusToolbarButton: View {
+struct HomeMacPlanFocusToolbarButton: View {
     let focusStartTaskCount: Int
     let isDisabled: Bool
     let onTaskFocusDurationSelected: (TimeInterval) -> Void
+    var trailingPadding: CGFloat = 8
 
     private let durationOptions: [TimeInterval] = [
         15 * 60,
@@ -1078,7 +1166,7 @@ private struct HomeMacPlanFocusToolbarButton: View {
         .controlSize(.small)
         .disabled(isDisabled)
         .help(planFocusHelpTitle)
-        .padding(.trailing, 8)
+        .padding(.trailing, trailingPadding)
     }
 
     private var planFocusHelpTitle: String {

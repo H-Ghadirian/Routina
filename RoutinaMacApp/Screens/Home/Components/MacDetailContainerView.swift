@@ -51,6 +51,9 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     @Binding var dayPlanCalendarFilters: DayPlanCalendarFilterState
     let isDayPlanCalendarFilterDetailPresented: Bool
     let plannerSearchText: String
+    let focusStartTaskCount: Int
+    let activePlanFocusSession: FocusSession?
+    let isPlanFocusStartDisabled: Bool
     @Binding var isBoardInspectorPresented: Bool
     @Binding var taskDetailPanePlacement: MacTaskDetailPanePlacement?
     @Binding var placeCheckInSelectedPlaceID: UUID?
@@ -67,6 +70,11 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     let onOpenDayPlanTaskDetails: (UUID) -> Void
     let onOpenEventDetails: (UUID) -> Void
     let onToggleDayPlanCalendarFilters: () -> Void
+    let onTaskFocusDurationSelected: (TimeInterval) -> Void
+    let onPausePlanFocus: (FocusSession) -> Void
+    let onResumePlanFocus: (FocusSession) -> Void
+    let onFinishPlanFocus: (FocusSession) -> Void
+    let onAbandonPlanFocus: (FocusSession) -> Void
     let onEditNote: (UUID) -> Void
     let onDeleteNote: (UUID) -> Void
     let onToggleBoardInspector: () -> Void
@@ -313,6 +321,9 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                     calendarFilters: $dayPlanCalendarFilters,
                     isCalendarFilterDetailPresented: isDayPlanCalendarFilterDetailPresented,
                     calendarSearchText: plannerSearchText,
+                    macHeaderFocusControl: {
+                        AnyView(plannerHeaderFocusControl)
+                    },
                     listContent: {
                         AnyView(plannerListView())
                     },
@@ -348,6 +359,31 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
         return max(availableWidth - MacDetailContainerSizing.taskDetailPaneWidth, 0)
     }
 
+    @ViewBuilder
+    private var plannerHeaderFocusControl: some View {
+        if let activePlanFocusSession {
+            HomeMacActivePlanFocusToolbarButton(
+                session: activePlanFocusSession,
+                onPause: onPausePlanFocus,
+                onResume: onResumePlanFocus,
+                onFinish: onFinishPlanFocus,
+                onAbandon: onAbandonPlanFocus,
+                trailingPadding: 0
+            )
+        } else if isPlanFocusStartDisabled {
+            RoutinaMacFocusTimerToolbarBadge(
+                hiddenKinds: [.unassigned]
+            )
+        } else if focusStartTaskCount > 0 {
+            HomeMacPlanFocusToolbarButton(
+                focusStartTaskCount: focusStartTaskCount,
+                isDisabled: isPlanFocusStartDisabled,
+                onTaskFocusDurationSelected: onTaskFocusDurationSelected,
+                trailingPadding: 0
+            )
+        }
+    }
+
     private var shouldShowListTaskDetailPane: Bool {
         taskDetailPanePlacement == .listAdjacent
             && selectedTaskID != nil
@@ -369,11 +405,11 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     }
 
     private func taskDetailPane(edge: Edge) -> some View {
-        VStack(spacing: 0) {
-            taskDetailPaneHeader
-            Divider()
-            selectedTaskDetailContent(presentation: .companionPane)
-        }
+        selectedTaskDetailContent(
+            presentation: .companionPane,
+            onExpandCompanion: onExpandTaskDetails,
+            onCloseCompanion: onCloseTaskDetails
+        )
         .frame(width: MacDetailContainerSizing.taskDetailPaneWidth)
         .frame(maxHeight: .infinity)
         .background(Color.secondary.opacity(0.045), ignoresSafeAreaEdges: [])
@@ -409,32 +445,6 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
         case .plannerAdjacent, nil:
             return .trailing
         }
-    }
-
-    private var taskDetailPaneHeader: some View {
-        HStack(spacing: 10) {
-            Label("Task Details", systemImage: "sidebar.right")
-                .font(.headline)
-                .lineLimit(1)
-
-            Spacer(minLength: 8)
-
-            secondaryPaneButton(
-                systemName: "arrow.up.left.and.arrow.down.right",
-                title: "Open Fullscreen"
-            ) {
-                onExpandTaskDetails()
-            }
-
-            secondaryPaneButton(
-                systemName: "xmark",
-                title: "Close"
-            ) {
-                onCloseTaskDetails()
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
     }
 
     private func secondaryPaneButton(
@@ -604,6 +614,8 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     @ViewBuilder
     private func selectedTaskDetailContent(
         presentation: TaskDetailTCAView.Presentation = .fullDetail,
+        onExpandCompanion: (() -> Void)? = nil,
+        onCloseCompanion: (() -> Void)? = nil,
         onMinimizeFullscreen: (() -> Void)? = nil,
         onCloseFullscreen: (() -> Void)? = nil
     ) -> some View {
@@ -615,6 +627,8 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                 store: detailStore,
                 showsPrincipalToolbarTitle: false,
                 presentation: presentation,
+                onExpandCompanion: onExpandCompanion,
+                onCloseCompanion: onCloseCompanion,
                 onMinimizeFullscreen: onMinimizeFullscreen,
                 onCloseFullscreen: onCloseFullscreen,
                 onOpenEventDetails: onOpenEventDetails

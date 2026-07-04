@@ -74,6 +74,6 @@ This page summarizes active Planner, timeline activity, focus, Away, and Sleep b
 - Sleep, Focus, and Away are app-level protected session modes and must not overlap.
 - Task, unassigned, and board focus can pause and resume. Active time, not paused wall-clock time, feeds app history and stats.
 - Plan focus starts from `Today`, runs as unassigned focus, and can be allocated to planned tasks while running or after finishing.
-- Mac Home toolbar focus duration choices open a picker where users can select a tag to filter tasks, start tag-backed focus, or select a task to start task-backed focus.
+- The Mac Planner Calendar header Focus control opens a picker where users can select a tag to filter tasks, start tag-backed focus, or select a task to start task-backed focus.
 - The Mac toolbar no longer offers pending focus assignment, and Stats no longer shows the unassigned focus assignment card by default.
 - Away has dedicated history and stats, supports fixed-duration and count-up sessions, and can optionally link to a task.

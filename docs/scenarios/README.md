@@ -56,18 +56,21 @@ Then typing stays in that editor instead of jumping back to the toolbar search f
 ### Mac Toolbar Search Expands as One Visible Pill
 
 Area: Other
-Decision links: [0321](../decisions/0321-use-focus-expanded-mac-home-toolbar-search.md), [0323](../decisions/0323-draw-mac-toolbar-search-shell-in-swiftui.md), [0327](../decisions/0327-animate-mac-toolbar-search-as-one-visible-pill.md)
+Decision links: [0321](../decisions/0321-use-focus-expanded-mac-home-toolbar-search.md), [0323](../decisions/0323-draw-mac-toolbar-search-shell-in-swiftui.md), [0329](../decisions/0329-hide-mac-toolbar-actions-during-search-focus.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/macOS/PerformanceRegressionTests.swift`
 
 Given the Mac Home toolbar search field is compact and idle
 When the user focuses the field and it expands to the focused width
-Then the principal toolbar item keeps an active invisible host so AppKit does not keep old and new search placements onscreen
-And idle search shows only the compact pill instead of drawing a second full-width oval behind it
+Then the default toolbar shows the compact search pill and normal toolbar actions without a full-width host behind it
+And clicking the search icon or any empty area inside the visible pill keeps the field expanded and focuses the editor
+And non-search toolbar actions hide while the search field is expanded/focused
+And the focused search state survives the toolbar rebuild caused by hiding those actions
+And no separate focused-width toolbar reservation appears before or behind the animated pill
 And the SwiftUI search shell, icon, typed text, placeholder, clear button, create hint, and `Esc` keycap animate as one visible search surface
-And clicking outside the visible search pill dismisses focus and collapses search without making the invisible host steal nearby toolbar clicks
-And the host releases back to compact width after collapse so task-detail toolbar actions remain visible
+And clicking outside the visible search pill dismisses focus and collapses search without clearing the query
+And task-detail toolbar actions return after the search pill has collapsed to compact width
 And the field remains clickable and editable throughout the animation
 
 ### Mac Toolbar Search Creates Only When Search Has No Result

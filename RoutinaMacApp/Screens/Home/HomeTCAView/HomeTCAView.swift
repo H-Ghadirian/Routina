@@ -211,6 +211,12 @@ struct HomeTCAView: View {
     @State private var localSearchText = ""
     @State var isCompactHeaderHidden = false
     @State var quickAddCreatedToast: MacQuickAddCreatedToast?
+    @State var isToolbarSearchTextFocused = false
+    @State var isToolbarSearchExpanded = false
+    @State var toolbarSearchVisiblePillWidth = HomeMacToolbarSearchLayout.compactWidth
+    @State var toolbarSearchExpansionTransitionID = 0
+    @State var toolbarSearchFocusRequestID = 0
+    @State var toolbarSearchFocusDismissRequestID = 0
     @State var isToolbarSearchCreateInProgress = false
     @State var toolbarSearchCreateErrorMessage: String?
     @State var isEventEditorPresented = false

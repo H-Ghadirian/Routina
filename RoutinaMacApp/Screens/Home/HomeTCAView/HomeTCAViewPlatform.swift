@@ -33,11 +33,14 @@ extension HomeTCAView {
             selectedSidebarMode: macSidebarModeBinding,
             locationSnapshot: store.locationSnapshot,
             searchText: searchTextBinding,
+            isSearchTextFocused: $isToolbarSearchTextFocused,
+            isSearchExpanded: $isToolbarSearchExpanded,
+            searchVisiblePillWidth: $toolbarSearchVisiblePillWidth,
+            searchExpansionTransitionID: $toolbarSearchExpansionTransitionID,
+            searchFocusRequestID: $toolbarSearchFocusRequestID,
+            searchFocusDismissRequestID: $toolbarSearchFocusDismissRequestID,
             isCreatingSearchTask: isToolbarSearchCreateInProgress,
             canCreateSearchTask: canCreateTaskFromToolbarSearch,
-            focusStartTaskCount: homeToolbarFocusStartTaskCount,
-            activePlanFocusSession: homeToolbarActivePlanFocusSession,
-            isPlanFocusStartDisabled: homeToolbarIsPlanFocusStartDisabled,
             onPlaceCheckInMapRequested: {
                 openMacPlacesWorkspace()
             },
@@ -48,22 +51,7 @@ extension HomeTCAView {
             onAddTask: openAddTask,
             onCheckIn: openCheckInFromAddMenu,
             onStartAway: openAwayFromAddMenu,
-            onSearchSubmit: createTaskFromToolbarSearch,
-            onTaskFocusDurationSelected: { duration in
-                presentHomeToolbarFocusPicker(duration: duration)
-            },
-            onPausePlanFocus: { session in
-                pauseHomeToolbarPlanFocus(session)
-            },
-            onResumePlanFocus: { session in
-                resumeHomeToolbarPlanFocus(session)
-            },
-            onFinishPlanFocus: { session in
-                finishHomeToolbarPlanFocus(session)
-            },
-            onAbandonPlanFocus: { session in
-                abandonHomeToolbarPlanFocus(session)
-            }
+            onSearchSubmit: createTaskFromToolbarSearch
         )
     }
 
@@ -274,6 +262,9 @@ extension HomeTCAView {
                     dayPlanCalendarFilters: $dayPlanCalendarFilters,
                     isDayPlanCalendarFilterDetailPresented: store.isMacFilterDetailPresented && macFilterDetailScope == .calendar,
                     plannerSearchText: searchTextBinding.wrappedValue,
+                    focusStartTaskCount: homeToolbarFocusStartTaskCount,
+                    activePlanFocusSession: homeToolbarActivePlanFocusSession,
+                    isPlanFocusStartDisabled: homeToolbarIsPlanFocusStartDisabled,
                     isBoardInspectorPresented: macBoardInspectorPresentedBinding,
                     taskDetailPanePlacement: $taskDetailPanePlacement,
                     placeCheckInSelectedPlaceID: $placeCheckInSelectedPlaceID,
@@ -294,6 +285,21 @@ extension HomeTCAView {
                     },
                     onOpenEventDetails: openSavedEvent,
                     onToggleDayPlanCalendarFilters: toggleMacCalendarFilterDetailFromPlanner,
+                    onTaskFocusDurationSelected: { duration in
+                        presentHomeToolbarFocusPicker(duration: duration)
+                    },
+                    onPausePlanFocus: { session in
+                        pauseHomeToolbarPlanFocus(session)
+                    },
+                    onResumePlanFocus: { session in
+                        resumeHomeToolbarPlanFocus(session)
+                    },
+                    onFinishPlanFocus: { session in
+                        finishHomeToolbarPlanFocus(session)
+                    },
+                    onAbandonPlanFocus: { session in
+                        abandonHomeToolbarPlanFocus(session)
+                    },
                     onEditNote: openEditNote,
                     onDeleteNote: closeDeletedNote,
                     onToggleBoardInspector: toggleMacBoardTicketInspector,
@@ -354,11 +360,13 @@ extension HomeTCAView {
 
     @ToolbarContentBuilder
     var macBoardDetailToolbarContent: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) {
-            HomeMacBoardInspectorToolbarButton(
-                isPresented: isMacBoardTicketInspectorPresented,
-                onToggle: toggleMacBoardTicketInspector
-            )
+        if !isToolbarSearchExpanded {
+            ToolbarItem(placement: .primaryAction) {
+                HomeMacBoardInspectorToolbarButton(
+                    isPresented: isMacBoardTicketInspectorPresented,
+                    onToggle: toggleMacBoardTicketInspector
+                )
+            }
         }
     }
 
@@ -481,8 +489,33 @@ extension HomeTCAView {
         .onReceive(NotificationCenter.default.publisher(for: .routinaMacNavigateForward)) { _ in
             goForwardInMacNavigationHistory()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .routinaMacFocusSearchOrCreate)) { _ in
+            focusExpandedToolbarSearchFromCommand()
+        }
         .onReceive(NotificationCenter.default.publisher(for: .routinaOpenDeepLink)) { notification in
             alignMacDetailModeForDeepLinkNotification(notification)
+        }
+    }
+
+    private func focusExpandedToolbarSearchFromCommand() {
+        toolbarSearchFocusRequestID += 1
+        toolbarSearchExpansionTransitionID += 1
+        let transitionID = toolbarSearchExpansionTransitionID
+
+        if !isToolbarSearchExpanded {
+            toolbarSearchVisiblePillWidth = HomeMacToolbarSearchLayout.compactWidth
+            isToolbarSearchExpanded = true
+        }
+
+        if !isToolbarSearchTextFocused {
+            isToolbarSearchTextFocused = true
+        }
+
+        DispatchQueue.main.async {
+            guard toolbarSearchExpansionTransitionID == transitionID else { return }
+            withAnimation(.easeInOut(duration: HomeMacToolbarSearchLayout.animationDuration)) {
+                toolbarSearchVisiblePillWidth = HomeMacToolbarSearchLayout.focusedWidth
+            }
         }
     }
 
@@ -530,10 +563,10 @@ extension HomeTCAView {
     func applyAddRoutinePresentation<Content: View>(to content: Content) -> some View {
         content
             .overlay(alignment: .topTrailing) {
-                if let toolbarSearchCreateDraft {
+                if let toolbarSearchCreateDraft, isToolbarSearchExpanded {
                     HomeMacToolbarSearchParserPreview(draft: toolbarSearchCreateDraft)
                         .frame(
-                            width: HomeMacToolbarSearchLayout.focusedWidth,
+                            maxWidth: HomeMacToolbarSearchLayout.focusedWidth,
                             alignment: .leading
                         )
                         .padding(.top, HomeMacToolbarSearchLayout.parserPreviewTopPadding)

@@ -6,15 +6,17 @@ Date: 2026-06-22
 
 Refines: [0244 Start Mac Toolbar Focus With Task Picker](0244-start-mac-toolbar-focus-with-task-picker.md), [0205 Run Plan Focus From Planner](0205-run-plan-focus-from-planner.md)
 
+Refined By: [0333 Move Mac Focus Control to Planner Calendar Header](0333-move-mac-focus-control-to-planner-calendar-header.md)
+
 ## Context
 
-The Mac toolbar focus picker already lets users choose a task before starting focus. Users also need a lighter attribution target when they are working in an area such as `#Admin` or `#Deep Work` without committing to one task first.
+The Mac Focus picker already lets users choose a task before starting focus. Users also need a lighter attribution target when they are working in an area such as `#Admin` or `#Deep Work` without committing to one task first.
 
 Plan focus remains intentionally unassigned because it starts from `Plan to do today` and can be allocated across multiple tasks later. Tag focus is different: the user chooses the tag before work starts, so it should not enter the pending unassigned allocation flow.
 
 ## Decision
 
-The Mac toolbar focus picker supports selecting a tag below the search field. Selecting a tag filters the task list by that tag. Starting from the tag starts a tag-backed `FocusSession`; selecting a task from the filtered list still starts normal task-backed focus.
+The Mac Focus picker supports selecting a tag below the search field. Selecting a tag filters the task list by that tag. Starting from the tag starts a tag-backed `FocusSession`; selecting a task from the filtered list still starts normal task-backed focus. [0333](0333-move-mac-focus-control-to-planner-calendar-header.md) later moves this picker entry from the Home toolbar to the Planner Calendar header.
 
 Tag focus stores the selected tag on the focus session while keeping the legacy task sentinel for compatibility. A tag focus session is not considered unassigned. It appears in running timer surfaces as `#Tag`, participates in focus stats and timeline history as tag-attributed time, and is preserved by backup/import.
 

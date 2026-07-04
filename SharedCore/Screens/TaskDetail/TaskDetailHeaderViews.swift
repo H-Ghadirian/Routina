@@ -1,18 +1,20 @@
 import SwiftUI
 
-struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View>: View {
+struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View, HeaderAccessory: View>: View {
     let title: String
     let statusContextMessage: String?
     let badgeRows: [[TaskDetailHeaderBadgeItem]]
     let tags: [String]
     let tagChip: (String) -> TagChipContent
     let additionalContent: () -> AdditionalContent
+    let headerAccessory: () -> HeaderAccessory
 
     init(
         title: String,
         statusContextMessage: String?,
         badgeRows: [[TaskDetailHeaderBadgeItem]],
         tags: [String],
+        @ViewBuilder headerAccessory: @escaping () -> HeaderAccessory,
         @ViewBuilder tagChip: @escaping (String) -> TagChipContent,
         @ViewBuilder additionalContent: @escaping () -> AdditionalContent
     ) {
@@ -22,23 +24,18 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
         self.tags = tags
         self.tagChip = tagChip
         self.additionalContent = additionalContent
+        self.headerAccessory = headerAccessory
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(title)
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .taskDetailCopyableText(title)
+            HStack(alignment: .top, spacing: 12) {
+                titleBlock
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .layoutPriority(1)
 
-                if let statusContextMessage {
-                    Text(statusContextMessage)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                headerAccessory()
+                    .fixedSize(horizontal: true, vertical: false)
             }
 
             ForEach(Array(badgeRows.enumerated()), id: \.offset) { _, row in
@@ -54,9 +51,47 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
         .padding(16)
         .detailCardStyle(cornerRadius: 16)
     }
+
+    private var titleBlock: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.title2.weight(.bold))
+                .foregroundStyle(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+                .taskDetailCopyableText(title)
+
+            if let statusContextMessage {
+                Text(statusContextMessage)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
 }
 
-extension TaskDetailHeaderSectionView where AdditionalContent == EmptyView {
+extension TaskDetailHeaderSectionView where HeaderAccessory == EmptyView {
+    init(
+        title: String,
+        statusContextMessage: String?,
+        badgeRows: [[TaskDetailHeaderBadgeItem]],
+        tags: [String],
+        @ViewBuilder tagChip: @escaping (String) -> TagChipContent,
+        @ViewBuilder additionalContent: @escaping () -> AdditionalContent
+    ) {
+        self.init(
+            title: title,
+            statusContextMessage: statusContextMessage,
+            badgeRows: badgeRows,
+            tags: tags,
+            headerAccessory: { EmptyView() },
+            tagChip: tagChip,
+            additionalContent: additionalContent
+        )
+    }
+}
+
+extension TaskDetailHeaderSectionView where AdditionalContent == EmptyView, HeaderAccessory == EmptyView {
     init(
         title: String,
         statusContextMessage: String?,
@@ -69,6 +104,7 @@ extension TaskDetailHeaderSectionView where AdditionalContent == EmptyView {
             statusContextMessage: statusContextMessage,
             badgeRows: badgeRows,
             tags: tags,
+            headerAccessory: { EmptyView() },
             tagChip: tagChip,
             additionalContent: { EmptyView() }
         )

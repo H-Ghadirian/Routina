@@ -2,22 +2,10 @@ import SwiftUI
 import ComposableArchitecture
 
 struct TaskDetailToolbarContent: ToolbarContent {
-    private enum ToolbarMetrics {
-        static let controlHeight: CGFloat = 34
-        static let iconControlWidth: CGFloat = 42
-        static let clusterHorizontalPadding: CGFloat = 12
-        static let textCornerRadius: CGFloat = 10
-        static let iconCornerRadius: CGFloat = 8
-    }
-
     let store: StoreOf<TaskDetailFeature>
     let showsPrincipalToolbarTitle: Bool
     let isInlineEditPresented: Bool
     let canSaveCurrentEdit: Bool
-    let showsEditToolbarButton: Bool
-    let onMinimizeFullscreen: (() -> Void)?
-    let onCloseFullscreen: (() -> Void)?
-    let isTaskSharingEnabled: Bool
 
     var body: some ToolbarContent {
         if showsPrincipalToolbarTitle {
@@ -46,39 +34,6 @@ struct TaskDetailToolbarContent: ToolbarContent {
                 }
                 .disabled(!canSaveCurrentEdit)
             }
-        } else {
-            ToolbarItem(placement: .primaryAction) {
-                HStack(spacing: 8) {
-                    actionButtons
-                    linkToolbarMenu
-                    if isTaskSharingEnabled {
-                        CloudSharingToolbarButton(task: store.task)
-                    }
-                    if showsEditToolbarButton {
-                        toolbarIconButton(
-                            title: "Edit",
-                            systemImage: "square.and.pencil"
-                        ) {
-                            store.send(.setEditSheet(true))
-                        }
-                    }
-                    if let onMinimizeFullscreen {
-                        toolbarIconButton(
-                            title: "Return to task details sidebar",
-                            systemImage: "arrow.down.right.and.arrow.up.left",
-                            action: onMinimizeFullscreen
-                        )
-                    }
-                    if let onCloseFullscreen {
-                        toolbarIconButton(
-                            title: "Close details and show Planner",
-                            systemImage: "xmark",
-                            action: onCloseFullscreen
-                        )
-                    }
-                }
-                .padding(.horizontal, ToolbarMetrics.clusterHorizontalPadding)
-            }
         }
     }
 
@@ -97,10 +52,78 @@ struct TaskDetailToolbarContent: ToolbarContent {
                 .stroke(Color.white.opacity(0.16), lineWidth: 1)
         )
     }
+}
+
+struct TaskDetailActionClusterView: View {
+    enum Style {
+        case fullDetail
+        case companionPane
+    }
+
+    private enum Metrics {
+        static let controlHeight: CGFloat = 34
+        static let iconControlWidth: CGFloat = 42
+        static let clusterHorizontalPadding: CGFloat = 12
+        static let textCornerRadius: CGFloat = 10
+        static let iconCornerRadius: CGFloat = 8
+    }
+
+    let store: StoreOf<TaskDetailFeature>
+    let style: Style
+    let showsEditButton: Bool
+    let onExpandCompanion: (() -> Void)?
+    let onMinimizeFullscreen: (() -> Void)?
+    let onClose: (() -> Void)?
+    let isTaskSharingEnabled: Bool
+
+    var body: some View {
+        HStack(spacing: 8) {
+            actionButtons
+            if showsFullDetailActions {
+                linkToolbarMenu
+            }
+            if showsFullDetailActions && isTaskSharingEnabled {
+                CloudSharingToolbarButton(task: store.task)
+            }
+            if showsFullDetailActions && showsEditButton {
+                toolbarIconButton(
+                    title: "Edit",
+                    systemImage: "square.and.pencil"
+                ) {
+                    store.send(.setEditSheet(true))
+                }
+            }
+            if let onExpandCompanion {
+                toolbarIconButton(
+                    title: "Open Fullscreen",
+                    systemImage: "arrow.up.left.and.arrow.down.right",
+                    action: onExpandCompanion
+                )
+            }
+            if let onMinimizeFullscreen {
+                toolbarIconButton(
+                    title: "Return to task details sidebar",
+                    systemImage: "arrow.down.right.and.arrow.up.left",
+                    action: onMinimizeFullscreen
+                )
+            }
+            if let onClose {
+                toolbarIconButton(
+                    title: closeButtonTitle,
+                    systemImage: "xmark",
+                    action: onClose
+                )
+            }
+        }
+        .padding(.horizontal, Metrics.clusterHorizontalPadding)
+        .padding(.vertical, 4)
+        .routinaGlassPill(tint: .secondary, tintOpacity: 0.05, interactive: true)
+        .contentShape(Capsule(style: .continuous))
+    }
 
     @ViewBuilder
     private var actionButtons: some View {
-        if !store.task.isOneOffTask {
+        if showsFullDetailActions && !store.task.isOneOffTask {
             Button {
                 store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped)
             } label: {
@@ -125,7 +148,7 @@ struct TaskDetailToolbarContent: ToolbarContent {
         .help(store.completionButtonTitle)
         .accessibilityLabel(store.completionButtonTitle)
 
-        if showsCancelTodoButton {
+        if showsFullDetailActions && showsCancelTodoButton {
             Button {
                 store.send(.cancelTodo)
             } label: {
@@ -139,6 +162,19 @@ struct TaskDetailToolbarContent: ToolbarContent {
             .disabled(store.isCancelTodoButtonDisabled)
             .help(store.cancelTodoButtonTitle)
             .accessibilityLabel(store.cancelTodoButtonTitle)
+        }
+    }
+
+    private var showsFullDetailActions: Bool {
+        style == .fullDetail
+    }
+
+    private var closeButtonTitle: String {
+        switch style {
+        case .fullDetail:
+            return "Close details and show Planner"
+        case .companionPane:
+            return "Close details"
         }
     }
 
@@ -177,12 +213,12 @@ struct TaskDetailToolbarContent: ToolbarContent {
         .lineLimit(1)
         .fixedSize(horizontal: true, vertical: false)
         .padding(.horizontal, 16)
-        .frame(minWidth: 68, minHeight: ToolbarMetrics.controlHeight)
+        .frame(minWidth: 68, minHeight: Metrics.controlHeight)
         .background(
-            RoundedRectangle(cornerRadius: ToolbarMetrics.textCornerRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: Metrics.textCornerRadius, style: .continuous)
                 .fill(completionTint)
         )
-        .contentShape(RoundedRectangle(cornerRadius: ToolbarMetrics.textCornerRadius, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: Metrics.textCornerRadius, style: .continuous))
         .opacity(store.isCompletionButtonDisabled ? 0.55 : 1)
     }
 
@@ -200,16 +236,16 @@ struct TaskDetailToolbarContent: ToolbarContent {
         .lineLimit(1)
         .fixedSize(horizontal: true, vertical: false)
         .padding(.horizontal, 12)
-        .frame(minHeight: ToolbarMetrics.controlHeight)
+        .frame(minHeight: Metrics.controlHeight)
         .background(
-            RoundedRectangle(cornerRadius: ToolbarMetrics.textCornerRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: Metrics.textCornerRadius, style: .continuous)
                 .fill(tint.opacity(0.10))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: ToolbarMetrics.textCornerRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: Metrics.textCornerRadius, style: .continuous)
                 .stroke(tint.opacity(0.24), lineWidth: 1)
         )
-        .contentShape(RoundedRectangle(cornerRadius: ToolbarMetrics.textCornerRadius, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: Metrics.textCornerRadius, style: .continuous))
     }
 
     private func toolbarIconLabel(systemImage: String) -> some View {
@@ -224,16 +260,16 @@ struct TaskDetailToolbarContent: ToolbarContent {
         @ViewBuilder content: () -> Content
     ) -> some View {
         content()
-            .frame(width: ToolbarMetrics.iconControlWidth, height: ToolbarMetrics.controlHeight)
+            .frame(width: Metrics.iconControlWidth, height: Metrics.controlHeight)
             .background(
-                RoundedRectangle(cornerRadius: ToolbarMetrics.iconCornerRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: Metrics.iconCornerRadius, style: .continuous)
                     .fill(Color.secondary.opacity(0.10))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: ToolbarMetrics.iconCornerRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: Metrics.iconCornerRadius, style: .continuous)
                     .stroke(Color.secondary.opacity(0.14), lineWidth: 1)
             )
-            .contentShape(RoundedRectangle(cornerRadius: ToolbarMetrics.iconCornerRadius, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: Metrics.iconCornerRadius, style: .continuous))
     }
 
     private var showsCancelTodoButton: Bool {

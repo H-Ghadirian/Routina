@@ -17,6 +17,10 @@ Accepted
 - [0316: Present Mac Home Filters as a Companion Pane](0316-present-mac-home-filters-as-companion-pane.md)
 - [0317: Use Principal Search in the Mac Home Toolbar](0317-use-principal-search-in-mac-home-toolbar.md)
 
+## Refined By
+
+- [0333: Move Mac Focus Control to Planner Calendar Header](0333-move-mac-focus-control-to-planner-calendar-header.md)
+
 ## Context
 
 Mac Home had two filter entry points: a top toolbar filter button for Home task-list and Timeline filters, and a Planner header filter button for calendar layers. That split made the toolbar busier and made Planner List mode lose an obvious way to reach filters, even though Planner List uses the same Timeline-style filter state as the Timeline surface.
@@ -25,7 +29,7 @@ The Planner header already has a compact filter button beside the date/range uti
 
 ## Decision
 
-Mac Home removes the top toolbar command-row filter icon. The centered search field, Focus controls, mode strip, Add controls, Places when enabled, and optional Progress controls remain in the toolbar command row.
+Mac Home removes the top toolbar command-row filter icon. The centered search field, mode strip, Add controls, Places when enabled, and optional Progress controls remain in the toolbar command row. [0333](0333-move-mac-focus-control-to-planner-calendar-header.md) later moves Focus controls beside the Planner Calendar filter button.
 
 The Planner header filter button remains visible in Calendar mode and is also visible in Planner List mode. Pressing it opens the existing right-side Home filter companion pane and selects a new top-level `Calendar` scope. The companion pane scope picker is now `Both` / `Task List` / `Timeline` / `Calendar`.
 

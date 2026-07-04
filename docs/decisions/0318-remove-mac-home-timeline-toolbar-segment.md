@@ -14,6 +14,10 @@ Accepted
 - [0311: Move Mac Home Mode Strip to Toolbar](0311-move-mac-home-mode-strip-to-toolbar.md)
 - [0317: Use Principal Search in the Mac Home Toolbar](0317-use-principal-search-in-mac-home-toolbar.md)
 
+## Refined By
+
+- [0332: Remove Settings From Mac Home Toolbar Strip](0332-remove-settings-from-mac-home-toolbar-strip.md)
+
 ## Context
 
 Planner List mode now shows the full Timeline inside the primary Planner surface. Keeping a separate Timeline segment in the Mac Home toolbar made the toolbar offer two nearby routes to the same timeline review job: Planner `List` in the main area and Timeline in the left sidebar.

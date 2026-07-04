@@ -17,6 +17,7 @@ Accepted
 ## Refined By
 
 - [0317: Use Principal Search in the Mac Home Toolbar](0317-use-principal-search-in-mac-home-toolbar.md)
+- [0333: Move Mac Focus Control to Planner Calendar Header](0333-move-mac-focus-control-to-planner-calendar-header.md)
 
 ## Context
 
@@ -28,9 +29,9 @@ Rendering a second task/timeline search `TextField` in the sidebar with the same
 
 ## Decision
 
-Mac Home shows an AppKit-backed search field in the window toolbar navigation area beside the Focus Timer controls. The field uses the existing Home search binding so the same query filters task lists, Timeline-style lists, Planner List mode's full Timeline surface, and task-backed Planner Calendar items. Planner Calendar search filtering is presentation-only: it hides non-matching planned task blocks, all-day task items, planned-date task counts, and automatic task timeline suggestions without changing stored Planner blocks or layer filter state. The bridge lets `NSSearchField` own the active editor and restores first responder after Home re-filters. The task/timeline sidebar keeps filter controls but does not render a duplicate text input for that same binding. Goals may keep its separate sidebar search because it uses independent Goals search state.
+Mac Home shows an AppKit-backed search field in the window toolbar navigation area. The field uses the existing Home search binding so the same query filters task lists, Timeline-style lists, Planner List mode's full Timeline surface, and task-backed Planner Calendar items. Planner Calendar search filtering is presentation-only: it hides non-matching planned task blocks, all-day task items, planned-date task counts, and automatic task timeline suggestions without changing stored Planner blocks or layer filter state. The bridge lets `NSSearchField` own the active editor and restores first responder after Home re-filters. The task/timeline sidebar keeps filter controls but does not render a duplicate text input for that same binding. Goals may keep its separate sidebar search because it uses independent Goals search state. [0333](0333-move-mac-focus-control-to-planner-calendar-header.md) later moves the Focus controls out of the toolbar and into the Planner Calendar header.
 
-The Focus Timer toolbar branch remains the single timer slot: active timers, disabled timer badges, and the `Start Focus Timer` menu still occupy the same mutually exclusive branch.
+The Focus control remains one mutually exclusive slot in its current placement: active timers, disabled timer badges, and the `Start Focus Timer` menu occupy the same branch.
 
 ## Consequences
 

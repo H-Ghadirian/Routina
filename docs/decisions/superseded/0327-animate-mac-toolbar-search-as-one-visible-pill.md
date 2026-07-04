@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded
 
 ## Date
 
@@ -10,12 +10,16 @@ Accepted
 
 ## Refines
 
-- [0321: Use Focus-Expanded Mac Home Toolbar Search](0321-use-focus-expanded-mac-home-toolbar-search.md)
-- [0323: Draw Mac Toolbar Search Shell in SwiftUI](0323-draw-mac-toolbar-search-shell-in-swiftui.md)
+- [0321: Use Focus-Expanded Mac Home Toolbar Search](../0321-use-focus-expanded-mac-home-toolbar-search.md)
+- [0323: Draw Mac Toolbar Search Shell in SwiftUI](../0323-draw-mac-toolbar-search-shell-in-swiftui.md)
 
 ## Supersedes
 
-- [0326: Stabilize Mac Toolbar Search Animation Stage](superseded/0326-stabilize-mac-toolbar-search-animation-stage.md)
+- [0326: Stabilize Mac Toolbar Search Animation Stage](0326-stabilize-mac-toolbar-search-animation-stage.md)
+
+## Superseded By
+
+- [0329: Hide Mac Toolbar Actions During Search Focus](../0329-hide-mac-toolbar-actions-during-search-focus.md)
 
 ## Context
 

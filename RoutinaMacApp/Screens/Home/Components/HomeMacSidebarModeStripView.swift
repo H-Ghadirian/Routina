@@ -128,7 +128,7 @@ struct HomeMacSidebarModeStripView: View {
                     .help(mode.sidebarStripTitle)
                 }
 
-                if mode == .settings {
+                if shouldShowAddSeparator(after: mode) {
                     Rectangle()
                         .fill(Color.white.opacity(0.1))
                         .frame(width: 1)
@@ -151,16 +151,30 @@ struct HomeMacSidebarModeStripView: View {
     }
 
     private var displayedSidebarStripModes: [HomeFeature.MacSidebarMode] {
+        var modes = HomeFeature.MacSidebarMode.sidebarStripModes
+        if presentationStyle == .toolbar {
+            modes.removeAll { $0 == .settings }
+        }
+
         if isGoalsTabEnabled && isAdventureMapEnabled {
-            return HomeFeature.MacSidebarMode.sidebarStripModes
+            return modes
         }
         if isGoalsTabEnabled {
-            return HomeFeature.MacSidebarMode.sidebarStripModes.filter { $0 != .adventure }
+            return modes.filter { $0 != .adventure }
         }
         if isAdventureMapEnabled {
-            return HomeFeature.MacSidebarMode.sidebarStripModes.filter { $0 != .goals }
+            return modes.filter { $0 != .goals }
         }
-        return HomeFeature.MacSidebarMode.sidebarStripModes.filter { $0 != .goals && $0 != .adventure }
+        return modes.filter { $0 != .goals && $0 != .adventure }
+    }
+
+    private var addSeparatorAnchorMode: HomeFeature.MacSidebarMode? {
+        displayedSidebarStripModes.last { $0 != .addTask }
+    }
+
+    private func shouldShowAddSeparator(after mode: HomeFeature.MacSidebarMode) -> Bool {
+        displayedSidebarStripModes.contains(.addTask)
+            && mode == addSeparatorAnchorMode
     }
 
     @ViewBuilder

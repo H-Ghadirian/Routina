@@ -19,6 +19,8 @@ struct TaskDetailTCAView: View {
     let store: StoreOf<TaskDetailFeature>
     var showsPrincipalToolbarTitle = true
     let presentation: Presentation
+    let onExpandCompanion: (() -> Void)?
+    let onCloseCompanion: (() -> Void)?
     let onMinimizeFullscreen: (() -> Void)?
     let onCloseFullscreen: (() -> Void)?
     let externalBlockingFocusTitle: String?
@@ -84,6 +86,8 @@ struct TaskDetailTCAView: View {
         store: StoreOf<TaskDetailFeature>,
         showsPrincipalToolbarTitle: Bool = true,
         presentation: Presentation = .fullDetail,
+        onExpandCompanion: (() -> Void)? = nil,
+        onCloseCompanion: (() -> Void)? = nil,
         onMinimizeFullscreen: (() -> Void)? = nil,
         onCloseFullscreen: (() -> Void)? = nil,
         blockingFocusTitle: String? = nil,
@@ -92,6 +96,8 @@ struct TaskDetailTCAView: View {
         self.store = store
         self.showsPrincipalToolbarTitle = showsPrincipalToolbarTitle
         self.presentation = presentation
+        self.onExpandCompanion = onExpandCompanion
+        self.onCloseCompanion = onCloseCompanion
         self.onMinimizeFullscreen = onMinimizeFullscreen
         self.onCloseFullscreen = onCloseFullscreen
         self.externalBlockingFocusTitle = blockingFocusTitle
@@ -109,126 +115,122 @@ struct TaskDetailTCAView: View {
     }
 
     var body: some View {
-detailBody
-.routinaInlineTitleDisplayMode()
-.toolbar {
-    TaskDetailToolbarContent(
-        store: store,
-        showsPrincipalToolbarTitle: showsPrincipalToolbarTitle,
-        isInlineEditPresented: isInlineEditPresented,
-        canSaveCurrentEdit: canSaveCurrentEdit,
-        showsEditToolbarButton: presentation.showsEditingEntryPoints,
-        onMinimizeFullscreen: onMinimizeFullscreen,
-        onCloseFullscreen: onCloseFullscreen,
-        isTaskSharingEnabled: isTaskSharingEnabled
-    )
-}
-.routinaPlatformEditPresentation(
-    isPresented: presentationRouting.editSheet,
-    store: store,
-    isEditEmojiPickerPresented: $isEditEmojiPickerPresented,
-    emojiOptions: emojiOptions,
-    canSaveCurrentEdit: canSaveCurrentEdit
-)
-.sheet(isPresented: $isEditEmojiPickerPresented) {
-    EmojiPickerSheet(
-        selectedEmoji: presentationRouting.editRoutineEmoji,
-        emojis: allEmojiOptions
-    )
-}
-.sheet(isPresented: $isRelationshipGraphPresented) {
-    TaskRelationshipGraphSheet(
-        centerTask: store.task,
-        relationships: store.resolvedRelationships,
-        statusColor: TaskDetailPresentation.statusColor(for:),
-        onSelectTask: { taskID in
-            isRelationshipGraphPresented = false
-            store.send(.openLinkedTask(taskID))
+        detailBody
+            .routinaInlineTitleDisplayMode()
+            .toolbar {
+                TaskDetailToolbarContent(
+                    store: store,
+                    showsPrincipalToolbarTitle: showsPrincipalToolbarTitle,
+                    isInlineEditPresented: isInlineEditPresented,
+                    canSaveCurrentEdit: canSaveCurrentEdit
+                )
+            }
+            .routinaPlatformEditPresentation(
+                isPresented: presentationRouting.editSheet,
+                store: store,
+                isEditEmojiPickerPresented: $isEditEmojiPickerPresented,
+                emojiOptions: emojiOptions,
+                canSaveCurrentEdit: canSaveCurrentEdit
+            )
+            .sheet(isPresented: $isEditEmojiPickerPresented) {
+                EmojiPickerSheet(
+                    selectedEmoji: presentationRouting.editRoutineEmoji,
+                    emojis: allEmojiOptions
+                )
+            }
+            .sheet(isPresented: $isRelationshipGraphPresented) {
+                TaskRelationshipGraphSheet(
+                    centerTask: store.task,
+                    relationships: store.resolvedRelationships,
+                    statusColor: TaskDetailPresentation.statusColor(for:),
+                    onSelectTask: { taskID in
+                        isRelationshipGraphPresented = false
+                        store.send(.openLinkedTask(taskID))
+                    }
+                )
+            }
+            .sheet(item: $selectedLinkedEventPresentation) { presentation in
+                linkedEventDetailSheet(eventID: presentation.id)
+            }
+            .sheet(item: $timeEditing.editingLog) { log in
+                TaskDetailLogTimeSpentSheet(
+                    minutes: $timeEditing.editingMinutes,
+                    showsClearButton: log.actualDurationMinutes != nil,
+                    onClear: {
+                        store.send(.updateLogDuration(log.id, nil))
+                        timeEditing.dismissLog()
+                    },
+                    onCancel: {
+                        timeEditing.dismissLog()
+                    },
+                    onSave: {
+                        store.send(.updateLogDuration(log.id, timeEditing.editingMinutes))
+                        timeEditing.dismissLog()
+                    }
+                )
+            }
+            .task {
+                await refreshFocusBlockingContext()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
+                Task {
+                    await refreshFocusBlockingContext()
+                }
+            }
+            .taskDetailDeleteConfirmationAlert(store: store)
+            .taskDetailUndoCompletionConfirmationAlert(store: store, mode: .undoOnly)
+            .onAppear {
+                referenceDate = Date()
+                displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)
+                syncAvailableEvents()
+                collapseDefaultSections()
+            }
+            .onChange(of: availableEventCandidates) { _, _ in
+                syncAvailableEvents()
+            }
+            .onChange(of: store.task.id) { _, _ in
+                referenceDate = Date()
+                activeBlockingTask = nil
+                isCommentComposerVisible = false
+                resetRevealedOptionalControls()
+                syncAvailableEvents()
+                Task {
+                    await refreshFocusBlockingContext()
+                }
+                collapseDefaultSections()
+                displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)
+            }
+            .onChange(of: store.shouldDismissAfterDelete) { _, shouldDismiss in
+                guard shouldDismiss else { return }
+                dismiss()
+                store.send(.deleteDismissHandled)
+            }
+            .onChange(of: store.resolvedSelectedDate) { _, newValue in
+                displayedMonthStart = Calendar.current.startOfMonth(for: newValue)
+            }
+            .onChange(of: store.task.actualDurationMinutes) { _, _ in
+                isTimeControlRevealed = false
+            }
+            .onChange(of: store.task.pressure) { oldValue, newValue in
+                if oldValue != newValue {
+                    isPressureControlRevealed = false
+                }
+            }
+            .onChange(of: store.task.todoStateRawValue) { _, newValue in
+                if newValue != nil {
+                    isTodoStateControlRevealed = false
+                }
+            }
+            .routinaAttachmentShareSheet(url: $attachmentTempURL)
+            .fileExporter(
+                isPresented: TaskDetailAttachmentExportPresentation.isPresentedBinding(fileToSave: $fileToSave),
+                document: fileToSave.map { RoutineAttachmentFileDocument(data: $0.data) },
+                contentType: .data,
+                defaultFilename: fileToSave?.fileName
+            ) { _ in
+                fileToSave = nil
+            }
         }
-    )
-}
-.sheet(item: $selectedLinkedEventPresentation) { presentation in
-    linkedEventDetailSheet(eventID: presentation.id)
-}
-.sheet(item: $timeEditing.editingLog) { log in
-    TaskDetailLogTimeSpentSheet(
-        minutes: $timeEditing.editingMinutes,
-        showsClearButton: log.actualDurationMinutes != nil,
-        onClear: {
-            store.send(.updateLogDuration(log.id, nil))
-            timeEditing.dismissLog()
-        },
-        onCancel: {
-            timeEditing.dismissLog()
-        },
-        onSave: {
-            store.send(.updateLogDuration(log.id, timeEditing.editingMinutes))
-            timeEditing.dismissLog()
-        }
-    )
-}
-.task {
-    await refreshFocusBlockingContext()
-}
-.onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
-    Task {
-        await refreshFocusBlockingContext()
-    }
-}
-.taskDetailDeleteConfirmationAlert(store: store)
-.taskDetailUndoCompletionConfirmationAlert(store: store, mode: .undoOnly)
-.onAppear {
-    referenceDate = Date()
-    displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)
-    syncAvailableEvents()
-    collapseDefaultSections()
-}
-.onChange(of: availableEventCandidates) { _, _ in
-    syncAvailableEvents()
-}
-.onChange(of: store.task.id) { _, _ in
-    referenceDate = Date()
-    activeBlockingTask = nil
-    isCommentComposerVisible = false
-    resetRevealedOptionalControls()
-    syncAvailableEvents()
-    Task {
-        await refreshFocusBlockingContext()
-    }
-    collapseDefaultSections()
-    displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)
-}
-.onChange(of: store.shouldDismissAfterDelete) { _, shouldDismiss in
-    guard shouldDismiss else { return }
-    dismiss()
-    store.send(.deleteDismissHandled)
-}
-.onChange(of: store.resolvedSelectedDate) { _, newValue in
-    displayedMonthStart = Calendar.current.startOfMonth(for: newValue)
-}
-.onChange(of: store.task.actualDurationMinutes) { _, _ in
-    isTimeControlRevealed = false
-}
-.onChange(of: store.task.pressure) { oldValue, newValue in
-    if oldValue != newValue {
-        isPressureControlRevealed = false
-    }
-}
-.onChange(of: store.task.todoStateRawValue) { _, newValue in
-    if newValue != nil {
-        isTodoStateControlRevealed = false
-    }
-}
-.routinaAttachmentShareSheet(url: $attachmentTempURL)
-.fileExporter(
-    isPresented: TaskDetailAttachmentExportPresentation.isPresentedBinding(fileToSave: $fileToSave),
-    document: fileToSave.map { RoutineAttachmentFileDocument(data: $0.data) },
-    contentType: .data,
-    defaultFilename: fileToSave?.fileName
-) { _ in
-    fileToSave = nil
-}
-    }
 
     @ViewBuilder
     private var detailBody: some View {
@@ -479,6 +481,18 @@ detailBody
             .padding(TaskDetailPlatformStyle.detailContentPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    private var taskDetailActionCluster: some View {
+        TaskDetailActionClusterView(
+            store: store,
+            style: presentation == .companionPane ? .companionPane : .fullDetail,
+            showsEditButton: presentation.showsEditingEntryPoints,
+            onExpandCompanion: presentation == .companionPane ? onExpandCompanion : nil,
+            onMinimizeFullscreen: presentation == .fullDetail ? onMinimizeFullscreen : nil,
+            onClose: presentation == .companionPane ? onCloseCompanion : onCloseFullscreen,
+            isTaskSharingEnabled: presentation == .fullDetail && isTaskSharingEnabled
+        )
     }
 
     private var focusSessionSection: some View {
@@ -847,7 +861,10 @@ detailBody
             title: store.task.name ?? "Task",
             statusContextMessage: statusContextMessage,
             badgeRows: todoHeaderBadgeRows,
-            tags: []
+            tags: [],
+            headerAccessory: {
+                taskDetailActionCluster
+            }
         ) { tag in
             statusTagChip(tag)
         } additionalContent: {
@@ -863,7 +880,10 @@ detailBody
             title: store.task.name ?? "Routine",
             statusContextMessage: statusContextMessage,
             badgeRows: routineHeaderBadgeRows,
-            tags: []
+            tags: [],
+            headerAccessory: {
+                taskDetailActionCluster
+            }
         ) { tag in
             statusTagChip(tag)
         } additionalContent: {
