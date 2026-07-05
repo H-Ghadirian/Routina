@@ -217,6 +217,13 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(dayPlanSource.contains("usesCompactMacDatePickerButton"))
         XCTAssertTrue(dayPlanSource.contains("plannerDatePickerButtonMinimumWidth"))
         XCTAssertTrue(dayPlanSource.contains("plannerDatePickerButtonMaximumWidth"))
+        XCTAssertTrue(dayPlanSource.contains("if displayMode.wrappedValue == .list, let listContent {\n                plannerListContent(listContent)"))
+        XCTAssertTrue(dayPlanSource.contains("private var showsPlannerDatePickerButton: Bool"))
+        XCTAssertTrue(dayPlanSource.contains("effectiveDisplayMode == .calendar || effectiveDisplayMode == .list"))
+        XCTAssertTrue(
+            dayPlanSource.contains("DayPlanDatePickerSidebar(\n                        selectedDate: selectedDateBinding"),
+            "Planner Timeline should render the same Go to date sidebar as Calendar when the date button is pressed."
+        )
         XCTAssertTrue(
             dayPlanSource.contains("usesCompactMacDatePickerButton ? 154 : nil"),
             "The date/range button should hug its content by default and only cap width in compact inspector layouts."
@@ -409,12 +416,15 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertFalse(platformSource.contains(".safeAreaInset(edge: .top, spacing: 0)"))
         XCTAssertFalse(source.contains("ToolbarItem(placement: .principal)"))
         XCTAssertFalse(source.contains("struct HomeMacExpandedToolbarSearchOverlay: View"))
-        XCTAssertTrue(source.contains("static let compactWidth: CGFloat = 740"))
-        XCTAssertTrue(source.contains("static let focusedWidth: CGFloat = 920"))
-        XCTAssertTrue(source.contains("static let searchRowHeight: CGFloat = 62"))
-        XCTAssertTrue(source.contains("static let commandRowHeight: CGFloat = 54"))
-        XCTAssertTrue(source.contains("static let topToolbarHeight: CGFloat = searchRowHeight + commandRowHeight"))
-        XCTAssertTrue(source.contains("static let topToolbarHorizontalPadding: CGFloat = 104"))
+        XCTAssertTrue(source.contains("static let compactWidth: CGFloat = 620"))
+        XCTAssertTrue(source.contains("static let focusedWidth: CGFloat = 740"))
+        XCTAssertTrue(source.contains("static let topToolbarHeight: CGFloat = 62"))
+        XCTAssertTrue(source.contains("static let topToolbarHorizontalPadding: CGFloat = 18"))
+        XCTAssertTrue(source.contains("static let trafficLightReservedLeadingPadding: CGFloat = 142"))
+        XCTAssertTrue(source.contains("private var toolbarCommandCluster: some View"))
+        XCTAssertFalse(source.contains("private var commandRow: some View"))
+        XCTAssertFalse(source.contains("static let commandRowHeight"))
+        XCTAssertFalse(source.contains("commandRowBackground"))
         XCTAssertFalse(source.contains("static let titlebarHostWidth"))
         XCTAssertFalse(source.contains("static let titlebarToolbarGapHeight"))
         XCTAssertFalse(source.contains("titlebarTopPadding"))

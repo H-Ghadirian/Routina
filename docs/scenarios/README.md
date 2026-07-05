@@ -353,6 +353,19 @@ When the companion filter pane changes shared `Both` filters or Timeline-specifi
 Then the Planner List timeline rows use the same filtered entry set as the Timeline sidebar
 And an empty filtered list explains that search or filters may be hiding entries
 
+### Planner Timeline Keeps Go To Date
+
+Area: Planner
+Decision links: [0341](../decisions/0341-consolidate-mac-home-toolbar-row.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/macOS/PerformanceRegressionTests.swift`
+
+Given Mac Planner is in `Timeline` mode
+When the user presses the `Go to date` header button
+Then the Planner date picker opens in the right-side Planner sidebar
+And choosing a date updates the Planner selected date without scoping the Timeline list to that date
+
 ### Plan Focus Allocation Preserves Focus History
 
 Area: Planner

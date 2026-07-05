@@ -359,6 +359,7 @@ struct DayPlanSidebarView: View {
 
 struct DayPlanDetailView: View {
     @Environment(\.calendar) private var calendar
+    @Environment(\.modelContext) private var modelContext
     @ObservedObject var planner: DayPlanPlannerState
     var selectedTaskID: UUID? = nil
     var isTaskDetailInspectorPresented = false
@@ -396,8 +397,7 @@ struct DayPlanDetailView: View {
             )
 
             if displayMode.wrappedValue == .list, let listContent {
-                listContent()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                plannerListContent(listContent)
             } else {
                 DayPlanTimelinePanelView(
                     planner: planner,
@@ -433,7 +433,7 @@ struct DayPlanDetailView: View {
         }
         .onChange(of: displayMode.wrappedValue) { _, mode in
             if mode == .list {
-                dismissPlannerSidebars()
+                isCalendarFilterSidebarPresented = false
             }
         }
         .onChange(of: isCalendarFilterSidebarPresented) { _, isPresented in
@@ -461,6 +461,48 @@ struct DayPlanDetailView: View {
     private func dismissPlannerSidebars() {
         isCalendarFilterSidebarPresented = false
         isDatePickerSidebarPresented = false
+    }
+
+    private func plannerListContent(_ listContent: () -> AnyView) -> some View {
+        HStack(spacing: 0) {
+            listContent()
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+            if isDatePickerSidebarPresented {
+                Divider()
+
+                ScrollView {
+                    DayPlanDatePickerSidebar(
+                        selectedDate: selectedDateBinding,
+                        visibleRangeTitle: planner.visibleRangeTitle(calendar: calendar),
+                        blocksCount: planner.blocks.count,
+                        plannedMinutes: planner.plannedMinutes,
+                        calendar: calendar,
+                        onDismiss: {
+                            isDatePickerSidebarPresented = false
+                        }
+                    )
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                }
+                .scrollIndicators(.visible)
+                .frame(width: DayPlanSlotSidebarPresentation.width)
+                .background(Color.secondary.opacity(0.045))
+                .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .animation(.easeInOut(duration: 0.16), value: isDatePickerSidebarPresented)
+    }
+
+    private var selectedDateBinding: Binding<Date> {
+        Binding(
+            get: {
+                planner.selectedDate
+            },
+            set: { date in
+                planner.showDate(date, calendar: calendar, context: modelContext)
+            }
+        )
     }
 }
 
@@ -625,10 +667,14 @@ private struct DayPlanHeaderView: View {
                 calendarFilterButton
             }
 
-            if effectiveDisplayMode == .calendar {
+            if showsPlannerDatePickerButton {
                 plannerDatePickerButton
             }
         }
+    }
+
+    private var showsPlannerDatePickerButton: Bool {
+        effectiveDisplayMode == .calendar || effectiveDisplayMode == .list
     }
 
     private var todayButton: some View {

@@ -38,10 +38,7 @@ struct HomeMacTopToolbarChrome: View {
     let onToggleBoardInspector: () -> Void
 
     var body: some View {
-        VStack(spacing: 0) {
-            searchRow
-            commandRow
-        }
+        toolbarRow
         .frame(height: HomeMacToolbarSearchLayout.topToolbarHeight)
         .frame(maxWidth: .infinity)
         .background(HomeMacToolbarSearchLayout.toolbarBackground)
@@ -51,8 +48,14 @@ struct HomeMacTopToolbarChrome: View {
         }
     }
 
-    private var searchRow: some View {
-        ZStack {
+    private var toolbarRow: some View {
+        HStack(alignment: .center, spacing: 12) {
+            statusBadges
+                .fixedSize(horizontal: true, vertical: false)
+                .layoutPriority(3)
+
+            Spacer(minLength: 8)
+
             HomeMacToolbarSearchField(
                 text: $searchText,
                 isTextFocused: $isSearchTextFocused,
@@ -66,63 +69,51 @@ struct HomeMacTopToolbarChrome: View {
                 onSubmit: onSearchSubmit
             )
             .frame(width: HomeMacToolbarSearchLayout.focusedWidth, alignment: .center)
+            .layoutPriority(2)
+
+            toolbarCommandCluster
+                .layoutPriority(4)
+
+            if mode == .board {
+                HomeMacBoardInspectorToolbarButton(
+                    isPresented: isBoardInspectorPresented,
+                    onToggle: onToggleBoardInspector
+                )
+                .layoutPriority(4)
+            }
         }
-        .padding(.horizontal, HomeMacToolbarSearchLayout.topToolbarHorizontalPadding)
-        .frame(height: HomeMacToolbarSearchLayout.searchRowHeight)
+        .padding(.leading, HomeMacToolbarSearchLayout.trafficLightReservedLeadingPadding)
+        .padding(.trailing, HomeMacToolbarSearchLayout.topToolbarHorizontalPadding)
+        .frame(height: HomeMacToolbarSearchLayout.topToolbarHeight)
         .frame(maxWidth: .infinity)
     }
 
-    private var commandRow: some View {
-        ZStack {
-            HStack(spacing: 10) {
-                statusBadges
-                    .frame(
-                        width: HomeMacToolbarSearchLayout.leadingCommandWidth,
-                        alignment: .leading
-                    )
+    private var toolbarCommandCluster: some View {
+        HStack(spacing: 10) {
+            HomeMacSidebarModeStripView(
+                selectedMode: $selectedSidebarMode,
+                presentationStyle: .toolbar,
+                onAddEvent: onAddEvent,
+                onAddEmotion: onAddEmotion,
+                onAddNote: onAddNote,
+                onAddGoal: onAddGoal,
+                onAddTask: onAddTask,
+                onCheckIn: onCheckIn,
+                onStartAway: onStartAway
+            )
 
-                Spacer(minLength: 0)
+            if showsProgressModePicker {
+                MacHomeProgressModePicker(selection: $progressMode)
             }
 
-            HStack(spacing: 10) {
-                if showsPlaces {
-                    RoutinaMacPlaceCheckInToolbarButton(
-                        locationSnapshot: locationSnapshot,
-                        onMapRequested: onPlaceCheckInMapRequested
-                    )
-                }
-
-                HomeMacSidebarModeStripView(
-                    selectedMode: $selectedSidebarMode,
-                    presentationStyle: .toolbar,
-                    onAddEvent: onAddEvent,
-                    onAddEmotion: onAddEmotion,
-                    onAddNote: onAddNote,
-                    onAddGoal: onAddGoal,
-                    onAddTask: onAddTask,
-                    onCheckIn: onCheckIn,
-                    onStartAway: onStartAway
+            if showsPlaces {
+                RoutinaMacPlaceCheckInToolbarButton(
+                    locationSnapshot: locationSnapshot,
+                    onMapRequested: onPlaceCheckInMapRequested
                 )
-
-                if showsProgressModePicker {
-                    MacHomeProgressModePicker(selection: $progressMode)
-                }
-            }
-
-            if mode == .board {
-                HStack {
-                    Spacer()
-                    HomeMacBoardInspectorToolbarButton(
-                        isPresented: isBoardInspectorPresented,
-                        onToggle: onToggleBoardInspector
-                    )
-                }
             }
         }
-        .padding(.horizontal, HomeMacToolbarSearchLayout.commandRowHorizontalPadding)
-        .frame(height: HomeMacToolbarSearchLayout.commandRowHeight)
-        .frame(maxWidth: .infinity)
-        .background(HomeMacToolbarSearchLayout.commandRowBackground)
+        .fixedSize(horizontal: true, vertical: false)
     }
 
     private var statusBadges: some View {
@@ -147,8 +138,8 @@ struct HomeMacTopToolbarChrome: View {
 }
 
 enum HomeMacToolbarSearchLayout {
-    static let compactWidth: CGFloat = 740
-    static let focusedWidth: CGFloat = 920
+    static let compactWidth: CGFloat = 620
+    static let focusedWidth: CGFloat = 740
     static let height: CGFloat = 44
     static let cornerRadius: CGFloat = 22
     static let horizontalPadding: CGFloat = 18
@@ -160,19 +151,12 @@ enum HomeMacToolbarSearchLayout {
     static let toolbarActionRestoreDelay: TimeInterval = animationDuration
     static let parserPreviewTopPadding: CGFloat = 12
     static let parserPreviewTrailingPadding: CGFloat = 22
-    static let searchRowHeight: CGFloat = 62
-    static let commandRowHeight: CGFloat = 54
-    static let topToolbarHeight: CGFloat = searchRowHeight + commandRowHeight
-    static let topToolbarHorizontalPadding: CGFloat = 104
-    static let commandRowHorizontalPadding: CGFloat = 18
-    static let leadingCommandWidth: CGFloat = 320
+    static let topToolbarHeight: CGFloat = 62
+    static let topToolbarHorizontalPadding: CGFloat = 18
+    static let trafficLightReservedLeadingPadding: CGFloat = 142
 
     static var toolbarBackground: Color {
         Color(nsColor: .windowBackgroundColor).opacity(0.98)
-    }
-
-    static var commandRowBackground: Color {
-        Color(nsColor: .controlBackgroundColor).opacity(0.28)
     }
 }
 

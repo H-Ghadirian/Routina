@@ -21,6 +21,10 @@ Accepted
 - [0323: Draw Mac Toolbar Search Shell in SwiftUI](0323-draw-mac-toolbar-search-shell-in-swiftui.md)
 - [0329: Hide Mac Toolbar Actions During Search Focus](0329-hide-mac-toolbar-actions-during-search-focus.md)
 
+## Refined By
+
+- [0341: Consolidate Mac Home Toolbar Row](0341-consolidate-mac-home-toolbar-row.md)
+
 ## Context
 
 The titlebar-host approach in [0339](superseded/0339-host-mac-home-search-in-window-titlebar.md) visually targeted the Outlook-style search placement, but in live builds the detached AppKit host clipped at the top of the window, covered command controls, and broke normal typing/focus and animation behavior.
