@@ -89,7 +89,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     let onCloseFilterDetail: () -> Void
     let addRoutineStore: StoreOf<AddRoutineFeature>?
     @ViewBuilder let filterView: () -> FilterView
-    @ViewBuilder let plannerListView: () -> PlannerListView
+    @ViewBuilder let plannerListView: (DayPlanTimelineDateJumpRequest?) -> PlannerListView
     @ViewBuilder let boardView: () -> BoardView
     @ViewBuilder let boardInspectorView: () -> BoardInspectorView
     @Namespace private var taskDetailSurfaceNamespace
@@ -324,8 +324,8 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                     macHeaderFocusControl: {
                         AnyView(plannerHeaderFocusControl)
                     },
-                    listContent: {
-                        AnyView(plannerListView())
+                    listContent: { dateJumpRequest in
+                        AnyView(plannerListView(dateJumpRequest))
                     },
                     onSelectUnplannedCompletedDate: onSelectDayPlanUnplannedCompletedDate,
                     onOpenTaskDetails: onOpenDayPlanTaskDetails,

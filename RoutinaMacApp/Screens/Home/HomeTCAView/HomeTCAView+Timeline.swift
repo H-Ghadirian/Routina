@@ -512,13 +512,15 @@ extension HomeTCAView {
             || (isPlacesEnabled && !placeCheckInSessions.isEmpty)
     }
 
-    var macPlannerTimelineListView: some View {
+    func macPlannerTimelineListView(dateJumpRequest: DayPlanTimelineDateJumpRequest?) -> some View {
         HomeMacPlannerTimelineListView(
             timelineEntryCount: plannerTimelineEntryCount,
             groupedEntries: groupedPlannerTimelineEntries,
             showsPlaces: isPlacesEnabled,
             showsNotes: isNotesEnabled,
             showsAway: isAwayEnabled,
+            dateJumpRequest: dateJumpRequest,
+            calendar: calendar,
             sectionTitle: { date in
                 TimelineLogic.daySectionTitle(for: date, calendar: calendar)
             }

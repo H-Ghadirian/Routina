@@ -27,6 +27,37 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func timelineDateJumpTargetsOnlyMatchingVisibleSection() throws {
+        let calendar = gregorianCalendar
+        let newerSection = try #require(date("2026-05-04T00:00:00Z"))
+        let matchingSection = try #require(date("2026-05-02T00:00:00Z"))
+        let requestedDate = try #require(date("2026-05-02T18:30:00Z"))
+        let missingDate = try #require(date("2026-05-03T12:00:00Z"))
+
+        #expect(
+            DayPlanTimelineDateJumpTarget.matchingSectionDate(
+                for: requestedDate,
+                in: [newerSection, matchingSection],
+                calendar: calendar
+            ) == matchingSection
+        )
+        #expect(
+            DayPlanTimelineDateJumpTarget.matchingSectionDate(
+                for: missingDate,
+                in: [newerSection, matchingSection],
+                calendar: calendar
+            ) == nil
+        )
+        #expect(
+            DayPlanTimelineDateJumpTarget.matchingSectionDate(
+                for: nil,
+                in: [newerSection, matchingSection],
+                calendar: calendar
+            ) == nil
+        )
+    }
+
+    @Test
     func dayModeShowsOnlySelectedDate() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

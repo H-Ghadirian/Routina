@@ -319,8 +319,8 @@ extension HomeTCAView {
                         )
                     ) {
                         macActiveFiltersDetailView
-                    } plannerListView: {
-                        macPlannerTimelineListView
+                    } plannerListView: { dateJumpRequest in
+                        macPlannerTimelineListView(dateJumpRequest: dateJumpRequest)
                     } boardView: {
                         macTodoBoardDetailView
                     } boardInspectorView: {

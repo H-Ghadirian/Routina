@@ -1,6 +1,25 @@
 import SwiftData
 import SwiftUI
 
+struct DayPlanTimelineDateJumpRequest: Equatable, Identifiable {
+    let id = UUID()
+    let date: Date
+}
+
+enum DayPlanTimelineDateJumpTarget {
+    static func matchingSectionDate(
+        for requestedDate: Date?,
+        in sectionDates: [Date],
+        calendar: Calendar
+    ) -> Date? {
+        guard let requestedDate else { return nil }
+        let requestedDay = calendar.startOfDay(for: requestedDate)
+        return sectionDates.first { sectionDate in
+            calendar.isDate(sectionDate, inSameDayAs: requestedDay)
+        }
+    }
+}
+
 struct DayPlanView: View {
     @StateObject private var planner = DayPlanPlannerState()
     @State private var isDatePickerSidebarPresented = false
@@ -369,7 +388,7 @@ struct DayPlanDetailView: View {
     var isCalendarFilterDetailPresented = false
     var calendarSearchText = ""
     var macHeaderFocusControl: (() -> AnyView)? = nil
-    var listContent: (() -> AnyView)? = nil
+    var listContent: ((DayPlanTimelineDateJumpRequest?) -> AnyView)? = nil
     var onSelectUnplannedCompletedDate: ((Date) -> Void)? = nil
     var onOpenTaskDetails: ((UUID) -> Void)? = nil
     var onOpenEventDetails: ((UUID) -> Void)? = nil
@@ -377,6 +396,7 @@ struct DayPlanDetailView: View {
     var onPlannerSidebarPresentationRequested: (() -> Void)? = nil
     @State private var isCalendarFilterSidebarPresented = false
     @State private var isDatePickerSidebarPresented = false
+    @State private var timelineDateJumpRequest: DayPlanTimelineDateJumpRequest?
     @Query private var tasks: [RoutineTask]
 
     var body: some View {
@@ -463,9 +483,9 @@ struct DayPlanDetailView: View {
         isDatePickerSidebarPresented = false
     }
 
-    private func plannerListContent(_ listContent: () -> AnyView) -> some View {
+    private func plannerListContent(_ listContent: (DayPlanTimelineDateJumpRequest?) -> AnyView) -> some View {
         HStack(spacing: 0) {
-            listContent()
+            listContent(timelineDateJumpRequest)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
             if isDatePickerSidebarPresented {
@@ -474,7 +494,7 @@ struct DayPlanDetailView: View {
                 ScrollView {
                     DayPlanDatePickerSidebar(
                         selectedDate: selectedDateBinding,
-                        visibleRangeTitle: planner.visibleRangeTitle(calendar: calendar),
+                        summaryTitle: planner.selectedDate.formatted(date: .abbreviated, time: .omitted),
                         blocksCount: planner.blocks.count,
                         plannedMinutes: planner.plannedMinutes,
                         calendar: calendar,
@@ -500,7 +520,11 @@ struct DayPlanDetailView: View {
                 planner.selectedDate
             },
             set: { date in
-                planner.showDate(date, calendar: calendar, context: modelContext)
+                let selectedDay = calendar.startOfDay(for: date)
+                planner.showDate(selectedDay, calendar: calendar, context: modelContext)
+                if displayMode.wrappedValue == .list {
+                    timelineDateJumpRequest = DayPlanTimelineDateJumpRequest(date: selectedDay)
+                }
             }
         )
     }
@@ -792,7 +816,7 @@ private struct DayPlanHeaderView: View {
     }
 
     private var plannerDatePickerButton: some View {
-        let title = planner.visibleRangeTitle(calendar: calendar)
+        let title = plannerDatePickerButtonTitle
         let isPresented = isDatePickerSidebarPresented.wrappedValue
 
         return Button {
@@ -839,8 +863,27 @@ private struct DayPlanHeaderView: View {
         .buttonStyle(.plain)
         .accessibilityLabel("Go to date")
         .accessibilityValue(title)
-        .accessibilityHint("\(planner.blocks.count) blocks on selected day, \(DayPlanFormatting.durationText(planner.plannedMinutes)) planned")
+        .accessibilityHint(plannerDatePickerAccessibilityHint)
         .help("Go to date")
+    }
+
+    private var plannerDatePickerButtonTitle: String {
+        switch effectiveDisplayMode {
+        case .calendar:
+            return planner.visibleRangeTitle(calendar: calendar)
+        case .list:
+            return planner.selectedDate.formatted(date: .abbreviated, time: .omitted)
+        }
+    }
+
+    private var plannerDatePickerAccessibilityHint: String {
+        let plannedText = DayPlanFormatting.durationText(planner.plannedMinutes)
+        switch effectiveDisplayMode {
+        case .calendar:
+            return "\(planner.blocks.count) blocks on selected day, \(plannedText) planned"
+        case .list:
+            return "\(planner.selectedDate.formatted(date: .abbreviated, time: .omitted)), \(planner.blocks.count) blocks, \(plannedText) planned"
+        }
     }
 
     private var plannerDatePickerButtonMinimumWidth: CGFloat? {
@@ -2444,7 +2487,7 @@ private struct DayPlanTimelinePanelContentView: View {
                     AnyView(
                         DayPlanDatePickerSidebar(
                             selectedDate: selectedDateBinding,
-                            visibleRangeTitle: planner.visibleRangeTitle(calendar: calendar),
+                            summaryTitle: planner.visibleRangeTitle(calendar: calendar),
                             blocksCount: planner.blocks.count,
                             plannedMinutes: planner.plannedMinutes,
                             calendar: calendar,
@@ -4916,7 +4959,7 @@ private struct DayPlanFocusAllocationPresentation: Identifiable {
 
 private struct DayPlanDatePickerSidebar: View {
     @Binding var selectedDate: Date
-    let visibleRangeTitle: String
+    let summaryTitle: String
     let blocksCount: Int
     let plannedMinutes: Int
     let calendar: Calendar
@@ -4987,7 +5030,7 @@ private struct DayPlanDatePickerSidebar: View {
     }
 
     private var summaryText: String {
-        "\(visibleRangeTitle) - \(blocksCount) blocks, \(DayPlanFormatting.durationText(plannedMinutes)) planned"
+        "\(summaryTitle) - \(blocksCount) blocks, \(DayPlanFormatting.durationText(plannedMinutes)) planned"
     }
 
     private var displayedMonthStartBinding: Binding<Date> {

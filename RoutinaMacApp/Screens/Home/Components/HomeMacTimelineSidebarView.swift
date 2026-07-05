@@ -243,6 +243,8 @@ struct HomeMacPlannerTimelineListView<RowContent: View>: View {
     let showsPlaces: Bool
     let showsNotes: Bool
     let showsAway: Bool
+    let dateJumpRequest: DayPlanTimelineDateJumpRequest?
+    let calendar: Calendar
     let sectionTitle: (Date) -> String
     @ViewBuilder let rowContent: (TimelineEntry, Int) -> RowContent
 
@@ -263,19 +265,28 @@ struct HomeMacPlannerTimelineListView<RowContent: View>: View {
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List {
-                    ForEach(groupedEntries, id: \.date) { section in
-                        Section {
-                            ForEach(section.entries, id: \.id) { entry in
-                                rowContent(entry, rowNumbersByEntryID[entry.id] ?? 1)
+                ScrollViewReader { scrollProxy in
+                    List {
+                        ForEach(groupedEntries, id: \.date) { section in
+                            Section {
+                                ForEach(section.entries, id: \.id) { entry in
+                                    rowContent(entry, rowNumbersByEntryID[entry.id] ?? 1)
+                                }
+                            } header: {
+                                Text(sectionTitle(section.date))
+                                    .id(section.date)
                             }
-                        } header: {
-                            Text(sectionTitle(section.date))
                         }
                     }
+                    .listStyle(.inset)
+                    .scrollContentBackground(.hidden)
+                    .onAppear {
+                        scrollToDateJumpTarget(with: scrollProxy)
+                    }
+                    .onChange(of: dateJumpRequest?.id) { _, _ in
+                        scrollToDateJumpTarget(with: scrollProxy)
+                    }
                 }
-                .listStyle(.inset)
-                .scrollContentBackground(.hidden)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -325,5 +336,21 @@ struct HomeMacPlannerTimelineListView<RowContent: View>: View {
             }
         }
         return result
+    }
+
+    private var sectionDates: [Date] {
+        groupedEntries.map(\.date)
+    }
+
+    private func scrollToDateJumpTarget(with proxy: ScrollViewProxy) {
+        guard let targetDate = DayPlanTimelineDateJumpTarget.matchingSectionDate(
+            for: dateJumpRequest?.date,
+            in: sectionDates,
+            calendar: calendar
+        ) else { return }
+
+        withAnimation(.easeInOut(duration: 0.16)) {
+            proxy.scrollTo(targetDate, anchor: .top)
+        }
     }
 }
