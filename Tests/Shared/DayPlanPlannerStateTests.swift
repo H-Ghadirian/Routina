@@ -58,6 +58,24 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func sidebarDateAvailabilityNormalizesTimelineDatesToDays() throws {
+        let calendar = gregorianCalendar
+        let activityDate = try #require(date("2026-05-02T18:30:00Z"))
+        let sameDayDate = try #require(date("2026-05-02T04:00:00Z"))
+        let missingDate = try #require(date("2026-05-03T04:00:00Z"))
+
+        let dayStarts = DayPlanSidebarDateAvailability.dayStarts(
+            for: [activityDate],
+            calendar: calendar
+        )
+
+        #expect(dayStarts.count == 1)
+        #expect(dayStarts.contains(calendar.startOfDay(for: activityDate)))
+        #expect(DayPlanSidebarDateAvailability.contains(sameDayDate, in: dayStarts, calendar: calendar))
+        #expect(!DayPlanSidebarDateAvailability.contains(missingDate, in: dayStarts, calendar: calendar))
+    }
+
+    @Test
     func dayModeShowsOnlySelectedDate() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

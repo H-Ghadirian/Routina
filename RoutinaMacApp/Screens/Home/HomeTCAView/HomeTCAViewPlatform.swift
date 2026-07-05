@@ -322,6 +322,9 @@ extension HomeTCAView {
                         dayPlanDisplayMode: $dayPlanDisplayMode,
                         dayPlanCalendarFilters: $dayPlanCalendarFilters,
                         isDayPlanCalendarFilterDetailPresented: store.isMacFilterDetailPresented && macFilterDetailScope == .calendar,
+                        plannerTimelineActivityDates: dayPlanDisplayMode == .list
+                            ? groupedPlannerTimelineEntries.map(\.date)
+                            : [],
                         plannerSearchText: searchTextBinding.wrappedValue,
                         focusStartTaskCount: homeToolbarFocusStartTaskCount,
                         activePlanFocusSession: homeToolbarActivePlanFocusSession,

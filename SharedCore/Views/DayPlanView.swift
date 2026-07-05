@@ -20,6 +20,16 @@ enum DayPlanTimelineDateJumpTarget {
     }
 }
 
+enum DayPlanSidebarDateAvailability {
+    static func dayStarts(for activityDates: [Date], calendar: Calendar) -> Set<Date> {
+        Set(activityDates.map { calendar.startOfDay(for: $0) })
+    }
+
+    static func contains(_ date: Date, in activityDayStarts: Set<Date>, calendar: Calendar) -> Bool {
+        activityDayStarts.contains(calendar.startOfDay(for: date))
+    }
+}
+
 struct DayPlanView: View {
     @StateObject private var planner = DayPlanPlannerState()
     @State private var isDatePickerSidebarPresented = false
@@ -389,6 +399,7 @@ struct DayPlanDetailView: View {
     var calendarSearchText = ""
     var macHeaderFocusControl: (() -> AnyView)? = nil
     var listContent: ((DayPlanTimelineDateJumpRequest?) -> AnyView)? = nil
+    var timelineActivityDates: [Date] = []
     var onSelectUnplannedCompletedDate: ((Date) -> Void)? = nil
     var onOpenTaskDetails: ((UUID) -> Void)? = nil
     var onOpenEventDetails: ((UUID) -> Void)? = nil
@@ -498,6 +509,8 @@ struct DayPlanDetailView: View {
                         blocksCount: planner.blocks.count,
                         plannedMinutes: planner.plannedMinutes,
                         calendar: calendar,
+                        activityDates: timelineActivityDates,
+                        showsActivityAvailability: true,
                         onDismiss: {
                             isDatePickerSidebarPresented = false
                         }
@@ -4963,6 +4976,8 @@ private struct DayPlanDatePickerSidebar: View {
     let blocksCount: Int
     let plannedMinutes: Int
     let calendar: Calendar
+    var activityDates: [Date] = []
+    var showsActivityAvailability = false
     let onDismiss: () -> Void
 
     @State private var displayedMonthStart: Date?
@@ -4974,7 +4989,9 @@ private struct DayPlanDatePickerSidebar: View {
             DayPlanSidebarDateGrid(
                 selectedDate: $selectedDate,
                 displayedMonthStart: displayedMonthStartBinding,
-                calendar: calendar
+                calendar: calendar,
+                activityDayStarts: activityDayStarts,
+                showsActivityAvailability: showsActivityAvailability
             )
 
             Button {
@@ -5033,6 +5050,10 @@ private struct DayPlanDatePickerSidebar: View {
         "\(summaryTitle) - \(blocksCount) blocks, \(DayPlanFormatting.durationText(plannedMinutes)) planned"
     }
 
+    private var activityDayStarts: Set<Date> {
+        DayPlanSidebarDateAvailability.dayStarts(for: activityDates, calendar: calendar)
+    }
+
     private var displayedMonthStartBinding: Binding<Date> {
         Binding(
             get: {
@@ -5059,6 +5080,8 @@ private struct DayPlanSidebarDateGrid: View {
     @Binding var selectedDate: Date
     @Binding var displayedMonthStart: Date
     let calendar: Calendar
+    let activityDayStarts: Set<Date>
+    let showsActivityAvailability: Bool
 
     private var columns: [GridItem] {
         Array(repeating: GridItem(.flexible(minimum: 32), spacing: 8), count: 7)
@@ -5139,6 +5162,8 @@ private struct DayPlanSidebarDateGrid: View {
     private func dayCell(_ day: DayPlanSidebarCalendarDay) -> some View {
         let isSelected = calendar.isDate(day.date, inSameDayAs: selectedDate)
         let isToday = calendar.isDateInToday(day.date)
+        let hasActivity = showsActivityAvailability
+            && DayPlanSidebarDateAvailability.contains(day.date, in: activityDayStarts, calendar: calendar)
 
         return Button {
             selectedDate = calendar.startOfDay(for: day.date)
@@ -5147,25 +5172,41 @@ private struct DayPlanSidebarDateGrid: View {
             Text(day.date.formatted(.dateTime.day()))
                 .font(.headline.weight(isSelected ? .bold : .semibold))
                 .monospacedDigit()
-                .foregroundStyle(foregroundStyle(isSelected: isSelected, isInDisplayedMonth: day.isInDisplayedMonth))
+                .foregroundStyle(
+                    foregroundStyle(
+                        isSelected: isSelected,
+                        isInDisplayedMonth: day.isInDisplayedMonth,
+                        hasActivity: hasActivity
+                    )
+                )
                 .frame(maxWidth: .infinity)
                 .frame(height: 40)
                 .background {
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .fill(backgroundColor(isSelected: isSelected, isToday: isToday))
+                        .fill(
+                            backgroundColor(
+                                isSelected: isSelected,
+                                isToday: isToday,
+                                hasActivity: hasActivity
+                            )
+                        )
                 }
                 .overlay {
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .stroke(
-                            isToday && !isSelected ? Color.accentColor.opacity(0.58) : Color.clear,
-                            lineWidth: 1
+                        .strokeBorder(
+                            borderColor(
+                                isSelected: isSelected,
+                                isToday: isToday,
+                                hasActivity: hasActivity
+                            ),
+                            lineWidth: hasActivity && !isSelected ? 1.4 : 1
                         )
                 }
                 .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(day.date.formatted(.dateTime.weekday(.wide).month(.wide).day().year()))
-        .accessibilityValue(isSelected ? "Selected" : "")
+        .accessibilityValue(accessibilityValue(isSelected: isSelected, hasActivity: hasActivity))
     }
 
     private var days: [DayPlanSidebarCalendarDay] {
@@ -5203,18 +5244,58 @@ private struct DayPlanSidebarDateGrid: View {
         displayedMonthStart = calendar.dayPlanMonthStart(for: newMonth)
     }
 
-    private func foregroundStyle(isSelected: Bool, isInDisplayedMonth: Bool) -> Color {
+    private func foregroundStyle(
+        isSelected: Bool,
+        isInDisplayedMonth: Bool,
+        hasActivity: Bool
+    ) -> Color {
         if isSelected {
             return .white
         }
-        return isInDisplayedMonth ? .primary : .secondary.opacity(0.58)
+        if showsActivityAvailability && !hasActivity {
+            return isInDisplayedMonth ? .secondary.opacity(0.52) : .secondary.opacity(0.32)
+        }
+        if !isInDisplayedMonth {
+            return .secondary.opacity(hasActivity ? 0.72 : 0.58)
+        }
+        return .primary
     }
 
-    private func backgroundColor(isSelected: Bool, isToday: Bool) -> Color {
+    private func backgroundColor(isSelected: Bool, isToday: Bool, hasActivity: Bool) -> Color {
         if isSelected {
             return .accentColor
         }
-        return isToday ? Color.accentColor.opacity(0.13) : Color.clear
+        if hasActivity {
+            return Color.accentColor.opacity(0.07)
+        }
+        if isToday {
+            return showsActivityAvailability ? Color.secondary.opacity(0.08) : Color.accentColor.opacity(0.13)
+        }
+        return Color.clear
+    }
+
+    private func borderColor(isSelected: Bool, isToday: Bool, hasActivity: Bool) -> Color {
+        if isSelected {
+            return .clear
+        }
+        if hasActivity {
+            return Color.accentColor.opacity(0.72)
+        }
+        if isToday {
+            return showsActivityAvailability ? Color.secondary.opacity(0.34) : Color.accentColor.opacity(0.58)
+        }
+        return .clear
+    }
+
+    private func accessibilityValue(isSelected: Bool, hasActivity: Bool) -> String {
+        var values: [String] = []
+        if isSelected {
+            values.append("Selected")
+        }
+        if showsActivityAvailability {
+            values.append(hasActivity ? "Timeline activity available" : "No timeline activity")
+        }
+        return values.joined(separator: ", ")
     }
 }
 

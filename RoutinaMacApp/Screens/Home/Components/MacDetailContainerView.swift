@@ -50,6 +50,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     @Binding var dayPlanDisplayMode: DayPlanDisplayMode
     @Binding var dayPlanCalendarFilters: DayPlanCalendarFilterState
     let isDayPlanCalendarFilterDetailPresented: Bool
+    let plannerTimelineActivityDates: [Date]
     let plannerSearchText: String
     let focusStartTaskCount: Int
     let activePlanFocusSession: FocusSession?
@@ -327,6 +328,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                     listContent: { dateJumpRequest in
                         AnyView(plannerListView(dateJumpRequest))
                     },
+                    timelineActivityDates: plannerTimelineActivityDates,
                     onSelectUnplannedCompletedDate: onSelectDayPlanUnplannedCompletedDate,
                     onOpenTaskDetails: onOpenDayPlanTaskDetails,
                     onOpenEventDetails: onOpenEventDetails,
