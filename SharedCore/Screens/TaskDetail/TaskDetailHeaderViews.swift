@@ -1,5 +1,9 @@
 import SwiftUI
 
+private enum TaskDetailHeaderSectionMetrics {
+    static let titleAccessorySpacing: CGFloat = 12
+}
+
 struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View, HeaderAccessory: View>: View {
     let title: String
     let statusContextMessage: String?
@@ -8,6 +12,7 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
     let tagChip: (String) -> TagChipContent
     let additionalContent: () -> AdditionalContent
     let headerAccessory: () -> HeaderAccessory
+    @State private var headerMetrics: [TaskDetailHeaderSectionViewMetric: CGFloat] = [:]
 
     init(
         title: String,
@@ -29,14 +34,14 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top, spacing: 12) {
-                titleBlock
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .layoutPriority(1)
-
-                headerAccessory()
-                    .fixedSize(horizontal: true, vertical: false)
-            }
+            headerLayout
+                .background(headerMetricReader(.availableWidth))
+                .overlay(alignment: .topLeading) {
+                    titleWidthProbe
+                }
+                .onPreferenceChange(TaskDetailHeaderMetricPreferenceKey.self) { metrics in
+                    headerMetrics = metrics
+                }
 
             ForEach(Array(badgeRows.enumerated()), id: \.offset) { _, row in
                 TaskDetailHeaderBadgeRowView(row: row)
@@ -50,6 +55,29 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
         }
         .padding(16)
         .detailCardStyle(cornerRadius: 16)
+    }
+
+    @ViewBuilder
+    private var headerLayout: some View {
+        if usesStackedHeaderLayout {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Spacer(minLength: 0)
+                    measuredHeaderAccessory
+                }
+
+                titleBlock
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        } else {
+            HStack(alignment: .top, spacing: TaskDetailHeaderSectionMetrics.titleAccessorySpacing) {
+                titleBlock
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .layoutPriority(1)
+
+                measuredHeaderAccessory
+            }
+        }
     }
 
     private var titleBlock: some View {
@@ -68,6 +96,66 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
             }
         }
     }
+
+    private var measuredHeaderAccessory: some View {
+        headerAccessory()
+            .fixedSize(horizontal: true, vertical: false)
+            .background(headerMetricReader(.accessoryWidth))
+    }
+
+    private var titleWidthProbe: some View {
+        Text(title)
+            .font(.title2.weight(.bold))
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .background(headerMetricReader(.titleWidth))
+            .opacity(0)
+            .accessibilityHidden(true)
+            .allowsHitTesting(false)
+    }
+
+    private var usesStackedHeaderLayout: Bool {
+        guard
+            let availableWidth = headerMetrics[.availableWidth],
+            let titleWidth = headerMetrics[.titleWidth],
+            availableWidth > 0
+        else {
+            return false
+        }
+
+        let accessoryWidth = headerMetrics[.accessoryWidth] ?? 0
+        guard accessoryWidth > 0.5 else {
+            return false
+        }
+
+        return titleWidth + accessoryWidth + TaskDetailHeaderSectionMetrics.titleAccessorySpacing > availableWidth
+    }
+
+    private func headerMetricReader(_ metric: TaskDetailHeaderSectionViewMetric) -> some View {
+        GeometryReader { proxy in
+            Color.clear.preference(
+                key: TaskDetailHeaderMetricPreferenceKey.self,
+                value: [metric: proxy.size.width]
+            )
+        }
+    }
+}
+
+private struct TaskDetailHeaderMetricPreferenceKey: PreferenceKey {
+    nonisolated(unsafe) static var defaultValue: [TaskDetailHeaderSectionViewMetric: CGFloat] = [:]
+
+    static func reduce(
+        value: inout [TaskDetailHeaderSectionViewMetric: CGFloat],
+        nextValue: () -> [TaskDetailHeaderSectionViewMetric: CGFloat]
+    ) {
+        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
+    }
+}
+
+private enum TaskDetailHeaderSectionViewMetric: Hashable {
+    case availableWidth
+    case titleWidth
+    case accessoryWidth
 }
 
 extension TaskDetailHeaderSectionView where HeaderAccessory == EmptyView {

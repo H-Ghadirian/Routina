@@ -250,6 +250,18 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(source.contains("for log in logs"))
     }
 
+    func testTaskDetailHeaderStacksLongTitlesAwayFromActionCluster() throws {
+        let source = try Self.sourceFile("SharedCore/Screens/TaskDetail/TaskDetailHeaderViews.swift")
+
+        XCTAssertTrue(source.contains("private var usesStackedHeaderLayout"))
+        XCTAssertTrue(source.contains("guard accessoryWidth > 0.5 else"))
+        XCTAssertTrue(source.contains("titleWidth + accessoryWidth + TaskDetailHeaderSectionMetrics.titleAccessorySpacing > availableWidth"))
+        XCTAssertTrue(source.contains("HStack {\n                    Spacer(minLength: 0)\n                    measuredHeaderAccessory"))
+        XCTAssertTrue(source.contains("titleWidthProbe"))
+        XCTAssertTrue(source.contains(".background(headerMetricReader(.accessoryWidth))"))
+        XCTAssertTrue(source.contains(".allowsHitTesting(false)"))
+    }
+
     func testMacHomeBoardReusesColumnOrderedTaskIDs() throws {
         let source = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacTodoBoardView.swift")
 
