@@ -90,14 +90,16 @@ And if the query includes quick-add syntax such as `today`, `every day`, or `#ho
 ### Mac Home Sidebar Toggle Keeps Detail Panes Stable
 
 Area: Other
-Decision links: [0343](../decisions/0343-add-mac-home-sidebar-collapse-control.md), [0344](../decisions/0344-clamp-mac-home-sidebar-width.md)
+Decision links: [0343](../decisions/0343-add-mac-home-sidebar-collapse-control.md), [0344](../decisions/0344-clamp-mac-home-sidebar-width.md), [0345](../decisions/0345-raise-mac-home-minimum-width-for-sidebar-restore.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/macOS/PerformanceRegressionTests.swift`
 
-Given Mac Home is showing Planner beside a right-side companion pane
+Given Mac Home is showing Planner beside a right-side companion pane at its minimum window width
 When the user expands the collapsed left sidebar from the top toolbar control
-Then the Home split view restores the clamped left sidebar without animating the entire detail area off the right edge
+Then the Home split view restores the clamped left sidebar with the normal sidebar animation
+And the Home window frame does not grow or jump during that animated restore
+And the detail area does not animate off the right edge
 And the right-side companion pane remains inside the window while the sidebar visibility changes
 
 ### Daily Checklist Progress Resets

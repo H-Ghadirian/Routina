@@ -61,7 +61,6 @@ struct RoutinaMacRootScene: Scene {
             width: RoutinaMacWindowSizing.defaultWidth,
             height: RoutinaMacWindowSizing.defaultHeight
         )
-        .windowResizability(.contentMinSize)
         .defaultLaunchBehavior(.presented)
         .commands {
             RoutineCommands()

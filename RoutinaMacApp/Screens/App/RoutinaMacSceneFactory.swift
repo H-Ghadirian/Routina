@@ -106,9 +106,9 @@ private extension AppColorScheme {
 }
 
 enum RoutinaMacWindowSizing {
-    static let defaultWidth: CGFloat = 1280
+    static let defaultWidth: CGFloat = 1440
     static let defaultHeight: CGFloat = 760
-    static let minWidth: CGFloat = 1200
+    static let minWidth: CGFloat = 1440
     static let minHeight: CGFloat = 720
 }
 

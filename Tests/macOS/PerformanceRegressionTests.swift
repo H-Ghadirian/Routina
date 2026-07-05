@@ -170,6 +170,13 @@ final class PerformanceRegressionTests: XCTestCase {
             MacDetailContainerSizing.plannerTaskDetailMinWidth,
             MacDetailContainerSizing.plannerInspectorContentMinWidth + MacDetailContainerSizing.taskDetailPaneWidth
         )
+        XCTAssertEqual(RoutinaMacWindowSizing.minWidth, 1440)
+        XCTAssertGreaterThanOrEqual(RoutinaMacWindowSizing.defaultWidth, RoutinaMacWindowSizing.minWidth)
+        XCTAssertGreaterThanOrEqual(
+            RoutinaMacWindowSizing.minWidth,
+            MacDetailContainerSizing.plannerTaskDetailMinWidth + 360 + 80,
+            "Mac Home should not resize below the expanded-sidebar plus Planner companion layout, with transition breathing room."
+        )
 
         let detailSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
         let dayPlanSource = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
@@ -432,12 +439,9 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(platformSource.contains("!sidebarItem.isCollapsed"))
         XCTAssertTrue(platformSource.contains("sidebarView.frame.width > 1"))
         XCTAssertTrue(platformSource.contains("context.allowsImplicitAnimation = false"))
-        XCTAssertTrue(platformSource.contains("transaction.disablesAnimations = true"))
-        XCTAssertTrue(platformSource.contains("withTransaction(transaction)"))
-        XCTAssertFalse(
-            platformSource.contains("withAnimation(.easeInOut(duration: 0.22)) {\n            macHomeSidebarColumnVisibility"),
-            "The top-toolbar sidebar toggle should not animate the NavigationSplitView column swap; that pushes right-side detail panes offscreen before the split view settles."
-        )
+        XCTAssertTrue(platformSource.contains("withAnimation(.easeInOut(duration: 0.22)) {\n            macHomeSidebarColumnVisibility"))
+        XCTAssertFalse(platformSource.contains("transaction.disablesAnimations = true"))
+        XCTAssertFalse(rootSceneSource.contains(".windowResizability(.contentMinSize)"))
         XCTAssertTrue(source.contains("HomeMacSidebarVisibilityToolbarButton("))
         XCTAssertTrue(source.contains("Collapse Sidebar"))
         XCTAssertTrue(source.contains("Expand Sidebar"))

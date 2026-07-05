@@ -423,9 +423,7 @@ extension HomeTCAView {
     }
 
     private func toggleMacHomeSidebar() {
-        var transaction = Transaction()
-        transaction.disablesAnimations = true
-        withTransaction(transaction) {
+        withAnimation(.easeInOut(duration: 0.22)) {
             macHomeSidebarColumnVisibility = isMacHomeSidebarCollapsed ? .all : .detailOnly
         }
     }
