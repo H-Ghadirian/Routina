@@ -798,11 +798,11 @@ private struct DayPlanHeaderView: View {
     }
 
     private var plannerDatePickerButtonMinimumWidth: CGFloat? {
-        usesCompactMacDatePickerButton ? nil : 210
+        nil
     }
 
     private var plannerDatePickerButtonMaximumWidth: CGFloat? {
-        usesCompactMacDatePickerButton ? 154 : 320
+        usesCompactMacDatePickerButton ? 154 : nil
     }
 
     private var calendarFilterAvailability: DayPlanCalendarFilterAvailability {

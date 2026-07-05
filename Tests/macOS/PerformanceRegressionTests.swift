@@ -217,6 +217,14 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(dayPlanSource.contains("usesCompactMacDatePickerButton"))
         XCTAssertTrue(dayPlanSource.contains("plannerDatePickerButtonMinimumWidth"))
         XCTAssertTrue(dayPlanSource.contains("plannerDatePickerButtonMaximumWidth"))
+        XCTAssertTrue(
+            dayPlanSource.contains("usesCompactMacDatePickerButton ? 154 : nil"),
+            "The date/range button should hug its content by default and only cap width in compact inspector layouts."
+        )
+        XCTAssertFalse(
+            dayPlanSource.contains("usesCompactMacDatePickerButton ? nil : 210"),
+            "The regular date/range button should not reserve blank horizontal space beyond its content."
+        )
         XCTAssertTrue(dayPlanSource.contains(".layoutPriority(3)"))
         XCTAssertTrue(dayPlanSource.contains("inspectorRangePickerMinimumAvailableWidth"))
         XCTAssertTrue(dayPlanSource.contains("iconOnlyDisplayModePickerMaximumAvailableWidth"))
