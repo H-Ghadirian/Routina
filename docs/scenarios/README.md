@@ -98,6 +98,7 @@ Coverage:
 Given Mac Home is showing Planner beside a right-side companion pane at its minimum window width
 When the user expands the collapsed left sidebar from the top toolbar control
 Then the Home split view restores the clamped left sidebar with the normal sidebar animation
+And clicking anywhere inside the toolbar control's fixed target triggers the sidebar action
 And the Home window frame does not grow or jump during that animated restore
 And the detail area does not animate off the right edge
 And the right-side companion pane remains inside the window while the sidebar visibility changes

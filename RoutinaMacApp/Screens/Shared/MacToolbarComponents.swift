@@ -7,7 +7,7 @@ struct MacToolbarIconButton: NSViewRepresentable {
     let action: () -> Void
 
     func makeNSView(context: Context) -> NSView {
-        let button = NSButton(
+        let button = RoutinaMacToolbarIconButton(
             image: NSImage(systemSymbolName: systemImage, accessibilityDescription: title) ?? NSImage(),
             target: context.coordinator,
             action: #selector(Coordinator.performAction)
@@ -44,6 +44,20 @@ struct MacToolbarIconButton: NSViewRepresentable {
         @objc func performAction() {
             action()
         }
+    }
+}
+
+private final class RoutinaMacToolbarIconButton: NSButton {
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        true
+    }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        guard isEnabled, !isHidden, alphaValue > 0.01, bounds.contains(point) else {
+            return nil
+        }
+
+        return self
     }
 }
 

@@ -407,6 +407,7 @@ final class PerformanceRegressionTests: XCTestCase {
         let taskDetailSource = try Self.sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift")
         let taskToolbarSource = try Self.sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailToolbarContent.swift")
         let dayPlanSource = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
+        let toolbarComponentsSource = try Self.sourceFile("RoutinaMacApp/Screens/Shared/MacToolbarComponents.swift")
 
         XCTAssertTrue(
             source.contains("HomeMacToolbarSearchField("),
@@ -448,6 +449,25 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(source.contains("static let sidebarToggleButtonSize: CGFloat = 28"))
         XCTAssertTrue(source.contains("width: HomeMacToolbarSearchLayout.sidebarToggleButtonSize"))
         XCTAssertTrue(source.contains("height: HomeMacToolbarSearchLayout.sidebarToggleButtonSize"))
+        guard
+            let sidebarToggleStart = source.range(of: "private struct HomeMacSidebarVisibilityToolbarButton: View"),
+            let toolbarLayoutStart = source.range(of: "enum HomeMacToolbarSearchLayout")
+        else {
+            XCTFail("Expected the Mac Home sidebar toggle and toolbar layout definitions to exist.")
+            return
+        }
+        let sidebarToggleSource = String(source[sidebarToggleStart.lowerBound..<toolbarLayoutStart.lowerBound])
+        XCTAssertTrue(
+            sidebarToggleSource.contains(".contentShape(Rectangle())"),
+            "The sidebar visibility button should make the whole fixed toolbar target clickable."
+        )
+        XCTAssertTrue(toolbarComponentsSource.contains("private final class RoutinaMacToolbarIconButton: NSButton"))
+        XCTAssertTrue(toolbarComponentsSource.contains("override func acceptsFirstMouse(for event: NSEvent?) -> Bool"))
+        XCTAssertTrue(toolbarComponentsSource.contains("override func hitTest(_ point: NSPoint) -> NSView?"))
+        XCTAssertTrue(
+            toolbarComponentsSource.contains("bounds.contains(point)"),
+            "AppKit-backed toolbar icons should claim their entire NSButton bounds, not just the drawn symbol."
+        )
         XCTAssertFalse(source.contains("struct HomeMacTitlebarSearchInstaller"))
         XCTAssertFalse(platformSource.contains("HomeMacTitlebarSearchInstaller("))
         XCTAssertFalse(source.contains("NSTitlebarAccessoryViewController"))

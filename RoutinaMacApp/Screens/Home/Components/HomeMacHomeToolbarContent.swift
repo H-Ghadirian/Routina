@@ -161,6 +161,7 @@ private struct HomeMacSidebarVisibilityToolbarButton: View {
             width: HomeMacToolbarSearchLayout.sidebarToggleButtonSize,
             height: HomeMacToolbarSearchLayout.sidebarToggleButtonSize
         )
+        .contentShape(Rectangle())
         .fixedSize()
         .help(title)
         .accessibilityLabel(title)
