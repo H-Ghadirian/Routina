@@ -87,6 +87,19 @@ Then Routina creates a task through Quick Add only if that query has no matching
 And the toolbar shows a visible Return-to-create hint for that no-result query
 And if the query includes quick-add syntax such as `today`, `every day`, or `#home`, the toolbar shows a flat same-width parser preview below the field before creation without duplicating the Return-to-create hint
 
+### Mac Home Sidebar Toggle Keeps Detail Panes Stable
+
+Area: Other
+Decision links: [0343](../decisions/0343-add-mac-home-sidebar-collapse-control.md), [0344](../decisions/0344-clamp-mac-home-sidebar-width.md)
+Current behavior: [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/macOS/PerformanceRegressionTests.swift`
+
+Given Mac Home is showing Planner beside a right-side companion pane
+When the user expands the collapsed left sidebar from the top toolbar control
+Then the Home split view restores the clamped left sidebar without animating the entire detail area off the right edge
+And the right-side companion pane remains inside the window while the sidebar visibility changes
+
 ### Daily Checklist Progress Resets
 
 Area: Tasks

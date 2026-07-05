@@ -424,11 +424,20 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(platformSource.contains("private func toggleMacHomeSidebar()"))
         XCTAssertTrue(navigationSource.contains("NavigationSplitView(columnVisibility: $sidebarColumnVisibility)"))
         XCTAssertTrue(platformSource.contains("HomeMacSidebarSplitViewConfigurator("))
+        XCTAssertTrue(platformSource.contains("func routinaHomeSidebarSplitViewConstraints() -> some View"))
+        XCTAssertTrue(navigationSource.contains(".routinaHomeSidebarSplitViewConstraints()"))
         XCTAssertTrue(platformSource.contains("minimumWidth: HomeSidebarSizing.minWidth"))
         XCTAssertTrue(platformSource.contains("maximumWidth: HomeSidebarSizing.maxWidth"))
         XCTAssertTrue(platformSource.contains("sidebarItem.maximumThickness = maximumWidth"))
         XCTAssertTrue(platformSource.contains("!sidebarItem.isCollapsed"))
         XCTAssertTrue(platformSource.contains("sidebarView.frame.width > 1"))
+        XCTAssertTrue(platformSource.contains("context.allowsImplicitAnimation = false"))
+        XCTAssertTrue(platformSource.contains("transaction.disablesAnimations = true"))
+        XCTAssertTrue(platformSource.contains("withTransaction(transaction)"))
+        XCTAssertFalse(
+            platformSource.contains("withAnimation(.easeInOut(duration: 0.22)) {\n            macHomeSidebarColumnVisibility"),
+            "The top-toolbar sidebar toggle should not animate the NavigationSplitView column swap; that pushes right-side detail panes offscreen before the split view settles."
+        )
         XCTAssertTrue(source.contains("HomeMacSidebarVisibilityToolbarButton("))
         XCTAssertTrue(source.contains("Collapse Sidebar"))
         XCTAssertTrue(source.contains("Expand Sidebar"))

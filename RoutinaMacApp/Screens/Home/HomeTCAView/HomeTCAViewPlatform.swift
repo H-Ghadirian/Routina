@@ -16,7 +16,11 @@ extension View {
             ideal: HomeSidebarSizing.idealWidth,
             max: HomeSidebarSizing.maxWidth
         )
-        .background(
+        .routinaHomeSidebarSplitViewConstraints()
+    }
+
+    func routinaHomeSidebarSplitViewConstraints() -> some View {
+        self.background(
             HomeMacSidebarSplitViewConfigurator(
                 minimumWidth: HomeSidebarSizing.minWidth,
                 maximumWidth: HomeSidebarSizing.maxWidth
@@ -62,7 +66,12 @@ private struct HomeMacSidebarSplitViewConfigurator: NSViewRepresentable {
             let clampedWidth = min(max(sidebarView.frame.width, minimumWidth), maximumWidth)
             guard sidebarView.frame.width != clampedWidth else { return }
 
-            splitView.setPosition(clampedWidth, ofDividerAt: 0)
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0
+                context.allowsImplicitAnimation = false
+                splitView.setPosition(clampedWidth, ofDividerAt: 0)
+                splitView.layoutSubtreeIfNeeded()
+            }
         }
     }
 }
@@ -414,7 +423,9 @@ extension HomeTCAView {
     }
 
     private func toggleMacHomeSidebar() {
-        withAnimation(.easeInOut(duration: 0.22)) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
             macHomeSidebarColumnVisibility = isMacHomeSidebarCollapsed ? .all : .detailOnly
         }
     }

@@ -74,6 +74,7 @@ struct HomeMacNavigationContent<
                 }
             }
             .navigationTitle("")
+            .routinaHomeSidebarSplitViewConstraints()
             .animation(.easeInOut(duration: 0.22), value: isBoardInspectorPresented)
             .environment(\.addEditFormCoordinator, addEditFormCoordinator)
         }
@@ -85,6 +86,7 @@ struct HomeMacNavigationContent<
                 .toolbar(removing: .sidebarToggle)
         } detail: {
             goalsDetailContent()
+                .routinaHomeSidebarSplitViewConstraints()
         }
     }
 
@@ -95,6 +97,7 @@ struct HomeMacNavigationContent<
         } detail: {
             mainDetailContent()
                 .navigationTitle("")
+                .routinaHomeSidebarSplitViewConstraints()
                 .environment(\.addEditFormCoordinator, addEditFormCoordinator)
         }
     }
