@@ -11,6 +11,7 @@ struct HomeMacNavigationContent<
     let isGoalsMode: Bool
     let addEditFormCoordinator: AddEditFormCoordinator
     @Binding var isBoardInspectorPresented: Bool
+    @Binding var sidebarColumnVisibility: NavigationSplitViewVisibility
     let sidebarContent: () -> SidebarContent
     let boardCenterContent: () -> BoardCenterContent
     let boardInspectorContent: () -> BoardInspectorContent
@@ -21,6 +22,7 @@ struct HomeMacNavigationContent<
         isBoardMode: Bool,
         isGoalsMode: Bool,
         isBoardInspectorPresented: Binding<Bool>,
+        sidebarColumnVisibility: Binding<NavigationSplitViewVisibility>,
         addEditFormCoordinator: AddEditFormCoordinator,
         @ViewBuilder sidebarContent: @escaping () -> SidebarContent,
         @ViewBuilder boardCenterContent: @escaping () -> BoardCenterContent,
@@ -31,6 +33,7 @@ struct HomeMacNavigationContent<
         self.isBoardMode = isBoardMode
         self.isGoalsMode = isGoalsMode
         self._isBoardInspectorPresented = isBoardInspectorPresented
+        self._sidebarColumnVisibility = sidebarColumnVisibility
         self.addEditFormCoordinator = addEditFormCoordinator
         self.sidebarContent = sidebarContent
         self.boardCenterContent = boardCenterContent
@@ -52,7 +55,7 @@ struct HomeMacNavigationContent<
     }
 
     private var boardNavigation: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $sidebarColumnVisibility) {
             sidebarContent()
                 .toolbar(removing: .sidebarToggle)
         } detail: {
@@ -77,7 +80,7 @@ struct HomeMacNavigationContent<
     }
 
     private var goalsNavigation: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $sidebarColumnVisibility) {
             sidebarContent()
                 .toolbar(removing: .sidebarToggle)
         } detail: {
@@ -86,7 +89,7 @@ struct HomeMacNavigationContent<
     }
 
     private var mainNavigation: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $sidebarColumnVisibility) {
             sidebarContent()
                 .toolbar(removing: .sidebarToggle)
         } detail: {

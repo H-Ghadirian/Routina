@@ -39,6 +39,7 @@ extension HomeTCAView {
             searchExpansionTransitionID: $toolbarSearchExpansionTransitionID,
             searchFocusRequestID: $toolbarSearchFocusRequestID,
             searchFocusDismissRequestID: $toolbarSearchFocusDismissRequestID,
+            isSidebarCollapsed: isMacHomeSidebarCollapsed,
             locationSnapshot: store.locationSnapshot,
             onPlaceCheckInMapRequested: {
                 openMacPlacesWorkspace()
@@ -54,7 +55,8 @@ extension HomeTCAView {
             onCheckIn: openCheckInFromAddMenu,
             onStartAway: openAwayFromAddMenu,
             isBoardInspectorPresented: isMacBoardTicketInspectorPresented,
-            onToggleBoardInspector: toggleMacBoardTicketInspector
+            onToggleBoardInspector: toggleMacBoardTicketInspector,
+            onToggleSidebar: toggleMacHomeSidebar
         )
     }
 
@@ -185,6 +187,7 @@ extension HomeTCAView {
                 isBoardMode: isMacBoardMode,
                 isGoalsMode: isMacGoalsMode,
                 isBoardInspectorPresented: macBoardInspectorPresentedBinding,
+                sidebarColumnVisibility: $macHomeSidebarColumnVisibility,
                 addEditFormCoordinator: addEditFormCoordinator
             ) {
                 macSidebarContent
@@ -343,6 +346,16 @@ extension HomeTCAView {
     private func toggleMacBoardTicketInspector() {
         withAnimation(.easeInOut(duration: 0.22)) {
             isMacBoardTicketInspectorPresented.toggle()
+        }
+    }
+
+    private var isMacHomeSidebarCollapsed: Bool {
+        macHomeSidebarColumnVisibility == .detailOnly
+    }
+
+    private func toggleMacHomeSidebar() {
+        withAnimation(.easeInOut(duration: 0.22)) {
+            macHomeSidebarColumnVisibility = isMacHomeSidebarCollapsed ? .all : .detailOnly
         }
     }
 

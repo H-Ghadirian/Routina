@@ -233,6 +233,7 @@ struct HomeTCAView: View {
     @State var draggedSection: FormSection?
     @State var macHomeDetailMode: MacHomeDetailMode = .defaultLandingMode
     @State var macHomeProgressMode: MacHomeProgressMode = .stats
+    @State var macHomeSidebarColumnVisibility: NavigationSplitViewVisibility = .all
     @State var macFilterDetailScope: HomeMacFilterDetailScope = .taskList
     @State var isMacFilterDetailFullscreen = false
     @State var selectedStatsDashboardScope: StatsDashboardScope = .all

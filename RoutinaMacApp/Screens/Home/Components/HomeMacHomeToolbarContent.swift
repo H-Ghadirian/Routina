@@ -22,6 +22,7 @@ struct HomeMacTopToolbarChrome: View {
     @Binding var searchExpansionTransitionID: Int
     @Binding var searchFocusRequestID: Int
     @Binding var searchFocusDismissRequestID: Int
+    let isSidebarCollapsed: Bool
     let locationSnapshot: LocationSnapshot
     let onPlaceCheckInMapRequested: () -> Void
     let isCreatingTaskFromSearch: Bool
@@ -36,11 +37,19 @@ struct HomeMacTopToolbarChrome: View {
     let onStartAway: () -> Void
     let isBoardInspectorPresented: Bool
     let onToggleBoardInspector: () -> Void
+    let onToggleSidebar: () -> Void
 
     var body: some View {
         toolbarRow
         .frame(height: HomeMacToolbarSearchLayout.topToolbarHeight)
         .frame(maxWidth: .infinity)
+        .overlay(alignment: .leading) {
+            HomeMacSidebarVisibilityToolbarButton(
+                isCollapsed: isSidebarCollapsed,
+                onToggle: onToggleSidebar
+            )
+            .padding(.leading, HomeMacToolbarSearchLayout.sidebarToggleLeadingPadding)
+        }
         .background(HomeMacToolbarSearchLayout.toolbarBackground)
         .overlay(alignment: .bottom) {
             Divider()
@@ -137,6 +146,26 @@ struct HomeMacTopToolbarChrome: View {
     }
 }
 
+private struct HomeMacSidebarVisibilityToolbarButton: View {
+    let isCollapsed: Bool
+    let onToggle: () -> Void
+
+    var body: some View {
+        MacToolbarIconButton(
+            title: title,
+            systemImage: "sidebar.left"
+        ) {
+            onToggle()
+        }
+        .help(title)
+        .accessibilityLabel(title)
+    }
+
+    private var title: String {
+        isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"
+    }
+}
+
 enum HomeMacToolbarSearchLayout {
     static let compactWidth: CGFloat = 620
     static let focusedWidth: CGFloat = 740
@@ -154,6 +183,7 @@ enum HomeMacToolbarSearchLayout {
     static let topToolbarHeight: CGFloat = 62
     static let topToolbarHorizontalPadding: CGFloat = 18
     static let trafficLightReservedLeadingPadding: CGFloat = 142
+    static let sidebarToggleLeadingPadding: CGFloat = 104
 
     static var toolbarBackground: Color {
         Color(nsColor: .windowBackgroundColor).opacity(0.98)
