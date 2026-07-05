@@ -31,6 +31,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0344](0344-clamp-mac-home-sidebar-width.md) refines [0343](0343-add-mac-home-sidebar-collapse-control.md) for Mac Home sidebar sizing:** Mac Home enforces the existing left-sidebar minimum and maximum widths through the underlying split-view item while the sidebar is visible, so divider dragging cannot make the sidebar consume the main workspace; explicit toolbar collapse remains allowed.
 - **[0343](0343-add-mac-home-sidebar-collapse-control.md) refines [0021](0021-keep-mac-places-in-home-split-shell.md) and [0341](0341-consolidate-mac-home-toolbar-row.md) for Mac Home sidebar visibility:** Mac Home adds an explicit leading top-toolbar control that collapses or expands the shared left sidebar by driving `NavigationSplitView` column visibility, keeping the restore control available after collapse and preserving the shared split shell across Home surfaces.
 - **[0342](0342-use-single-date-jump-in-planner-timeline.md) refines [0309](0309-show-full-timeline-in-planner-list-mode.md) and [0341](0341-consolidate-mac-home-toolbar-row.md) for Planner Timeline date access:** Planner Timeline `Go to date` presents one selected date rather than the Calendar visible range. Selecting a date updates the Planner selected date and scrolls to the matching visible Timeline day when one exists, while keeping the Timeline list full, newest-first, and unscoped by Planner date.
 - **[0341](0341-consolidate-mac-home-toolbar-row.md) refines [0340](0340-use-swiftui-outlook-style-mac-home-top-toolbar.md), [0309](0309-show-full-timeline-in-planner-list-mode.md), [0311](0311-move-mac-home-mode-strip-to-toolbar.md), and [0319](0319-open-planner-filters-in-home-filter-pane.md), for Mac Home toolbar density and Planner Timeline date access:** Mac Home keeps the root-owned SwiftUI top toolbar chrome but consolidates search, Done status, the compact Tasks/Stats/Add mode strip, Places when enabled, optional Progress, and board inspector controls into one titlebar-height row. The old second command row is removed. Planner Timeline remains a full newest-first, non-date-scoped Timeline list, but its header keeps `Go to date` visible beside filters and opens the same right-side Planner date picker used by Calendar mode so returning to Calendar lands on the chosen date.
@@ -242,6 +243,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0344](0344-clamp-mac-home-sidebar-width.md) | Clamp Mac Home Sidebar Width | Accepted | 2026-07-05 |
 | [0343](0343-add-mac-home-sidebar-collapse-control.md) | Add Mac Home Sidebar Collapse Control | Accepted | 2026-07-05 |
 | [0342](0342-use-single-date-jump-in-planner-timeline.md) | Use Single-Date Jump in Planner Timeline | Accepted | 2026-07-05 |
 | [0341](0341-consolidate-mac-home-toolbar-row.md) | Consolidate Mac Home Toolbar Row | Accepted | 2026-07-05 |
