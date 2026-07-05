@@ -157,6 +157,11 @@ private struct HomeMacSidebarVisibilityToolbarButton: View {
         ) {
             onToggle()
         }
+        .frame(
+            width: HomeMacToolbarSearchLayout.sidebarToggleButtonSize,
+            height: HomeMacToolbarSearchLayout.sidebarToggleButtonSize
+        )
+        .fixedSize()
         .help(title)
         .accessibilityLabel(title)
     }
@@ -184,6 +189,7 @@ enum HomeMacToolbarSearchLayout {
     static let topToolbarHorizontalPadding: CGFloat = 18
     static let trafficLightReservedLeadingPadding: CGFloat = 142
     static let sidebarToggleLeadingPadding: CGFloat = 104
+    static let sidebarToggleButtonSize: CGFloat = 28
 
     static var toolbarBackground: Color {
         Color(nsColor: .windowBackgroundColor).opacity(0.98)
