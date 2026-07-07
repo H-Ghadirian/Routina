@@ -202,6 +202,7 @@ extension TaskDetailHeaderSectionView where AdditionalContent == EmptyView, Head
 struct TaskDetailHeaderBadgeView: View {
     let item: TaskDetailHeaderBadgeItem
     var minHeight: CGFloat? = nil
+    var fillsAvailableHeight = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -225,7 +226,12 @@ struct TaskDetailHeaderBadgeView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 10)
         .padding(.vertical, 10)
-        .frame(maxWidth: .infinity, minHeight: minHeight, alignment: .topLeading)
+        .frame(
+            maxWidth: .infinity,
+            minHeight: minHeight,
+            maxHeight: fillsAvailableHeight ? .infinity : nil,
+            alignment: .topLeading
+        )
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(item.tint.opacity(0.12))
@@ -239,43 +245,68 @@ struct TaskDetailHeaderBadgeView: View {
 
 private struct TaskDetailHeaderBadgeRowView: View {
     let row: [TaskDetailHeaderBadgeItem]
-    @State private var measuredHeight: CGFloat = 0
 
     var body: some View {
-        let rowHeight = measuredHeight > 0 ? measuredHeight : nil
-
-        HStack(alignment: .top, spacing: 8) {
+        TaskDetailHeaderBadgeRowLayout(spacing: 8) {
             ForEach(row) { badge in
-                TaskDetailHeaderBadgeView(item: badge, minHeight: rowHeight)
-                    .background(TaskDetailHeaderBadgeHeightReader(id: badge.id))
+                TaskDetailHeaderBadgeView(item: badge, fillsAvailableHeight: true)
             }
-        }
-        .onPreferenceChange(TaskDetailHeaderBadgeHeightPreferenceKey.self) { heights in
-            let maxHeight = heights.values.max() ?? 0
-            guard abs(maxHeight - measuredHeight) > 0.5 else { return }
-            measuredHeight = maxHeight
         }
     }
 }
 
-private struct TaskDetailHeaderBadgeHeightReader: View {
-    let id: UUID
+private struct TaskDetailHeaderBadgeRowLayout: Layout {
+    let spacing: CGFloat
 
-    var body: some View {
-        GeometryReader { proxy in
-            Color.clear.preference(
-                key: TaskDetailHeaderBadgeHeightPreferenceKey.self,
-                value: [id: proxy.size.height]
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) -> CGSize {
+        guard !subviews.isEmpty else { return .zero }
+
+        let totalSpacing = totalSpacing(for: subviews.count)
+        if let proposedWidth = proposal.width {
+            let itemWidth = itemWidth(in: proposedWidth, subviewCount: subviews.count)
+            let rowHeight = subviews
+                .map { $0.sizeThatFits(ProposedViewSize(width: itemWidth, height: nil)).height }
+                .max() ?? 0
+
+            return CGSize(width: proposedWidth, height: rowHeight)
+        }
+
+        let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
+        let rowWidth = sizes.reduce(totalSpacing) { $0 + $1.width }
+        let rowHeight = sizes.map(\.height).max() ?? 0
+        return CGSize(width: rowWidth, height: rowHeight)
+    }
+
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) {
+        guard !subviews.isEmpty else { return }
+
+        let itemWidth = itemWidth(in: bounds.width, subviewCount: subviews.count)
+        for index in subviews.indices {
+            let x = bounds.minX + CGFloat(index) * (itemWidth + spacing)
+            subviews[index].place(
+                at: CGPoint(x: x, y: bounds.minY),
+                anchor: .topLeading,
+                proposal: ProposedViewSize(width: itemWidth, height: bounds.height)
             )
         }
     }
-}
 
-private struct TaskDetailHeaderBadgeHeightPreferenceKey: PreferenceKey {
-    nonisolated(unsafe) static var defaultValue: [UUID: CGFloat] = [:]
+    private func totalSpacing(for subviewCount: Int) -> CGFloat {
+        spacing * CGFloat(max(0, subviewCount - 1))
+    }
 
-    static func reduce(value: inout [UUID: CGFloat], nextValue: () -> [UUID: CGFloat]) {
-        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
+    private func itemWidth(in width: CGFloat, subviewCount: Int) -> CGFloat {
+        let totalSpacing = totalSpacing(for: subviewCount)
+        return max(0, width - totalSpacing) / CGFloat(subviewCount)
     }
 }
 
