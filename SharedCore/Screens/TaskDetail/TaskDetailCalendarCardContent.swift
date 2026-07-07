@@ -20,7 +20,10 @@ struct TaskDetailCalendarCardContent: View {
             displayedMonthStart: displayedMonthStart,
             onPreviousMonth: onPreviousMonth,
             onNextMonth: onNextMonth,
-            isTodaySelected: Calendar.current.isDateInToday(selectedDate),
+            showsTodayButton: TaskDetailCalendarTodayButtonVisibility.showsButton(
+                selectedDate: selectedDate,
+                displayedMonthStart: displayedMonthStart
+            ),
             onToday: onToday,
             showsAssumedLegend: task.autoAssumeDailyDone,
             showsMissedLegend: !missedDates.isEmpty,

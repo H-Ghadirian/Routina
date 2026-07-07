@@ -31,6 +31,49 @@ struct TaskDetailCalendarGridSupportTests {
     }
 
     @Test
+    func todayButtonShowsWhenSelectedTodayIsNotVisibleInDisplayedMonth() {
+        let calendar = gregorianUTC
+        let today = date(year: 2026, month: 7, day: 7, calendar: calendar)
+        let displayedMonthStart = date(year: 2026, month: 8, day: 1, calendar: calendar)
+
+        #expect(TaskDetailCalendarTodayButtonVisibility.showsButton(
+            selectedDate: today,
+            displayedMonthStart: displayedMonthStart,
+            referenceDate: today,
+            calendar: calendar
+        ))
+    }
+
+    @Test
+    func todayButtonHidesWhenSelectedTodayIsVisibleInDisplayedMonth() {
+        let calendar = gregorianUTC
+        let today = date(year: 2026, month: 7, day: 7, calendar: calendar)
+        let displayedMonthStart = date(year: 2026, month: 7, day: 1, calendar: calendar)
+
+        #expect(!TaskDetailCalendarTodayButtonVisibility.showsButton(
+            selectedDate: today,
+            displayedMonthStart: displayedMonthStart,
+            referenceDate: today,
+            calendar: calendar
+        ))
+    }
+
+    @Test
+    func todayButtonShowsWhenAnotherDateIsSelected() {
+        let calendar = gregorianUTC
+        let today = date(year: 2026, month: 7, day: 7, calendar: calendar)
+        let selectedDate = date(year: 2026, month: 7, day: 8, calendar: calendar)
+        let displayedMonthStart = date(year: 2026, month: 7, day: 1, calendar: calendar)
+
+        #expect(TaskDetailCalendarTodayButtonVisibility.showsButton(
+            selectedDate: selectedDate,
+            displayedMonthStart: displayedMonthStart,
+            referenceDate: today,
+            calendar: calendar
+        ))
+    }
+
+    @Test
     func overdueRangeStopsAfterLateCompletion() {
         let calendar = gregorianUTC
         let dueDate = date(year: 2026, month: 6, day: 25, calendar: calendar)

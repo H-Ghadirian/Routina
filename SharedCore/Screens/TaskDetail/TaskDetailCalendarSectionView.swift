@@ -4,7 +4,7 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
     let displayedMonthStart: Date
     let onPreviousMonth: () -> Void
     let onNextMonth: () -> Void
-    let isTodaySelected: Bool
+    let showsTodayButton: Bool
     let onToday: () -> Void
     let showsAssumedLegend: Bool
     let showsMissedLegend: Bool
@@ -22,7 +22,7 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
         displayedMonthStart: Date,
         onPreviousMonth: @escaping () -> Void,
         onNextMonth: @escaping () -> Void,
-        isTodaySelected: Bool,
+        showsTodayButton: Bool,
         onToday: @escaping () -> Void,
         showsAssumedLegend: Bool,
         showsMissedLegend: Bool = false,
@@ -39,7 +39,7 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
         self.displayedMonthStart = displayedMonthStart
         self.onPreviousMonth = onPreviousMonth
         self.onNextMonth = onNextMonth
-        self.isTodaySelected = isTodaySelected
+        self.showsTodayButton = showsTodayButton
         self.onToday = onToday
         self.showsAssumedLegend = showsAssumedLegend
         self.showsMissedLegend = showsMissedLegend
@@ -60,7 +60,7 @@ struct TaskDetailCalendarSectionView<CalendarContent: View>: View {
                 displayedMonthStart: displayedMonthStart,
                 onPreviousMonth: onPreviousMonth,
                 onNextMonth: onNextMonth,
-                isTodaySelected: isTodaySelected,
+                showsTodayButton: showsTodayButton,
                 onToday: onToday
             )
             .padding(.bottom, 8)
@@ -94,7 +94,7 @@ private struct TaskDetailCalendarSectionHeaderView: View {
     let displayedMonthStart: Date
     let onPreviousMonth: () -> Void
     let onNextMonth: () -> Void
-    let isTodaySelected: Bool
+    let showsTodayButton: Bool
     let onToday: () -> Void
 
     var body: some View {
@@ -112,7 +112,9 @@ private struct TaskDetailCalendarSectionHeaderView: View {
 
             Button("Today", action: onToday)
                 .controlSize(.small)
-                .disabled(isTodaySelected)
+                .opacity(showsTodayButton ? 1 : 0)
+                .disabled(!showsTodayButton)
+                .accessibilityHidden(!showsTodayButton)
                 .accessibilityHint("Select today")
 
             Button(action: onNextMonth) {

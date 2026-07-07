@@ -352,6 +352,7 @@ let package = Package(
                 "SharedCore/Screens/TaskDetail/TaskDetailCalendarNavigation.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailCalendarPresentation.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailCalendarSectionView.swift",
+                "SharedCore/Screens/TaskDetail/TaskDetailCalendarTodayButtonVisibility.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailChecklistPresentation.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailChecklistSectionView.swift",
                 "SharedCore/Screens/TaskDetail/TaskDetailCommentsSectionView.swift",
