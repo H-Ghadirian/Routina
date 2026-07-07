@@ -233,6 +233,7 @@ final class PerformanceRegressionTests: XCTestCase {
         )
         XCTAssertTrue(dayPlanSource.contains("usesIconOnlyMacDisplayModePicker"))
         XCTAssertTrue(dayPlanSource.contains("usesCompactMacDatePickerButton"))
+        XCTAssertTrue(dayPlanSource.contains("macHeaderCollapsedRegularDateControlsWidthProbe"))
         XCTAssertTrue(dayPlanSource.contains("plannerDatePickerButtonMinimumWidth"))
         XCTAssertTrue(dayPlanSource.contains("plannerDatePickerButtonMaximumWidth"))
         XCTAssertTrue(dayPlanSource.contains("if displayMode.wrappedValue == .list, let listContent {\n                plannerListContent(listContent)"))
@@ -243,7 +244,7 @@ final class PerformanceRegressionTests: XCTestCase {
             "Planner Timeline should render the same Go to date sidebar as Calendar when the date button is pressed."
         )
         XCTAssertTrue(
-            dayPlanSource.contains("usesCompactMacDatePickerButton ? 154 : nil"),
+            dayPlanSource.contains("usesCompactWidth ? 154 : nil"),
             "The date/range button should hug its content by default and only cap width in compact inspector layouts."
         )
         XCTAssertFalse(

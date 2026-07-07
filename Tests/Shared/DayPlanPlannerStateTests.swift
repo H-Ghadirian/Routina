@@ -277,13 +277,22 @@ struct DayPlanPlannerStateTests {
         #expect(
             DayPlanHeaderRangePickerVisibility.shouldUseCompactDatePickerButton(
                 availableWidth: 820,
-                isTaskDetailInspectorPresented: true
+                isTaskDetailInspectorPresented: true,
+                collapsedRegularDateControlsWidth: 760
             ) == false
         )
         #expect(
             DayPlanHeaderRangePickerVisibility.shouldUseCompactDatePickerButton(
                 availableWidth: 620,
-                isTaskDetailInspectorPresented: true
+                isTaskDetailInspectorPresented: true,
+                collapsedRegularDateControlsWidth: 580
+            ) == false
+        )
+        #expect(
+            DayPlanHeaderRangePickerVisibility.shouldUseCompactDatePickerButton(
+                availableWidth: 620,
+                isTaskDetailInspectorPresented: true,
+                collapsedRegularDateControlsWidth: 700
             )
         )
         #expect(
