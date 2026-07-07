@@ -719,6 +719,12 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(source.contains("routinaMacFocusSearchOrCreate"))
         XCTAssertTrue(source.contains("parent.onSubmit"))
         XCTAssertTrue(source.contains("restoreFocusAfterSearchUpdate()"))
+        XCTAssertTrue(source.contains("let selectedRange = textField.currentEditor()?.selectedRange"))
+        XCTAssertTrue(source.contains("editor.selectedRange = HomeMacToolbarSearchTextField.clampedSelectionRange("))
+        XCTAssertFalse(
+            source.contains("location: textField.stringValue.count"),
+            "Toolbar search focus restore must preserve the field editor selection so mid-string typing does not jump to the end."
+        )
         XCTAssertTrue(
             source.contains("shouldLeaveCurrentTextEditorFocused"),
             "Toolbar search may restore focus after filtering, but it must not steal focus from an intentionally focused comment, note, or other text editor."

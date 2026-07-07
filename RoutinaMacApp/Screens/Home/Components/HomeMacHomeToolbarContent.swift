@@ -906,6 +906,7 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
         private func restoreFocusAfterSearchUpdate() {
             guard let textField else { return }
 
+            let selectedRange = textField.currentEditor()?.selectedRange
             shouldRestoreFocus = true
             focusGeneration += 1
             let generation = focusGeneration
@@ -928,10 +929,16 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
                     if window.firstResponder !== textField.currentEditor() {
                         window.makeFirstResponder(textField)
                     }
-                    textField.currentEditor()?.selectedRange = NSRange(
-                        location: textField.stringValue.count,
-                        length: 0
-                    )
+                    if let editor = textField.currentEditor() {
+                        let fallbackRange = NSRange(
+                            location: (editor.string as NSString).length,
+                            length: 0
+                        )
+                        editor.selectedRange = HomeMacToolbarSearchTextField.clampedSelectionRange(
+                            selectedRange ?? fallbackRange,
+                            in: editor.string
+                        )
+                    }
 
                     if index == delays.indices.last {
                         self.shouldRestoreFocus = false
@@ -969,7 +976,7 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
 
             window.makeFirstResponder(textField)
             parent.isFocused = true
-            let length = textField.stringValue.count
+            let length = (textField.stringValue as NSString).length
             textField.currentEditor()?.selectedRange = NSRange(
                 location: selectingText ? 0 : length,
                 length: selectingText ? length : 0
@@ -1017,9 +1024,22 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
         configure(textField)
 
         if textField.stringValue != text {
+            let selectedRange = textField.currentEditor()?.selectedRange
             textField.stringValue = text
-            textField.currentEditor()?.string = text
+            if let editor = textField.currentEditor() {
+                editor.string = text
+                if let selectedRange {
+                    editor.selectedRange = Self.clampedSelectionRange(selectedRange, in: text)
+                }
+            }
         }
+    }
+
+    private static func clampedSelectionRange(_ range: NSRange, in text: String) -> NSRange {
+        let textLength = (text as NSString).length
+        let location = min(max(range.location, 0), textLength)
+        let length = min(max(range.length, 0), textLength - location)
+        return NSRange(location: location, length: length)
     }
 
     private func configure(_ textField: NSTextField) {
