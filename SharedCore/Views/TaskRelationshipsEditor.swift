@@ -145,20 +145,7 @@ private struct TaskRelationshipPickerSheet<SearchField: View>: View {
     }
 
     private var filteredCandidates: [RoutineTaskRelationshipCandidate] {
-        let trimmedSearch = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedSearch.isEmpty else { return availableCandidates }
-        let normalizedSearch = trimmedSearch.folding(
-            options: [.caseInsensitive, .diacriticInsensitive],
-            locale: .current
-        )
-        return availableCandidates.filter { candidate in
-            let normalizedName = candidate.displayName.folding(
-                options: [.caseInsensitive, .diacriticInsensitive],
-                locale: .current
-            )
-            return normalizedName.contains(normalizedSearch)
-                || candidate.emoji.contains(trimmedSearch)
-        }
+        TaskRelationshipCandidateSearch.filteredCandidates(availableCandidates, matching: searchText)
     }
 
     var body: some View {
@@ -209,7 +196,7 @@ private struct TaskRelationshipPickerSheet<SearchField: View>: View {
                                 .foregroundStyle(.secondary)
 
                             if !availableCandidates.isEmpty && !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                Text("Try part of the task name.")
+                                Text("Try part of the task name or a copied task link.")
                                     .font(.caption)
                                     .foregroundStyle(.tertiary)
                             }
@@ -264,5 +251,45 @@ private struct TaskRelationshipPickerSheet<SearchField: View>: View {
                 }
             }
         }
+    }
+}
+
+enum TaskRelationshipCandidateSearch {
+    static func filteredCandidates(
+        _ candidates: [RoutineTaskRelationshipCandidate],
+        matching query: String
+    ) -> [RoutineTaskRelationshipCandidate] {
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedQuery.isEmpty else { return candidates }
+
+        if let taskID = taskID(from: trimmedQuery) {
+            return candidates.filter { $0.id == taskID }
+        }
+
+        let normalizedQuery = trimmedQuery.folding(
+            options: [.caseInsensitive, .diacriticInsensitive],
+            locale: .current
+        )
+        return candidates.filter { candidate in
+            let normalizedName = candidate.displayName.folding(
+                options: [.caseInsensitive, .diacriticInsensitive],
+                locale: .current
+            )
+            return normalizedName.contains(normalizedQuery)
+                || candidate.emoji.contains(trimmedQuery)
+        }
+    }
+
+    private static func taskID(from query: String) -> UUID? {
+        if let id = UUID(uuidString: query) {
+            return id
+        }
+
+        guard let url = URL(string: query),
+              case let .some(.task(taskID)) = RoutinaDeepLink(url: url)
+        else {
+            return nil
+        }
+        return taskID
     }
 }
