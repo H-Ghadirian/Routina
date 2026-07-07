@@ -1089,6 +1089,7 @@ enum SettingsRoutineDataImportEntityInserter {
         preferences.automaticPlaceCheckInEnabled = backupPreferences.automaticPlaceCheckInEnabled ?? true
         preferences.showTimelineTasksInDayPlanner = backupPreferences.showTimelineTasksInDayPlanner ?? true
         preferences.separateDailyRoutinesInTaskList = backupPreferences.separateDailyRoutinesInTaskList ?? false
+        preferences.showTomorrowInTaskList = backupPreferences.showTomorrowInTaskList ?? false
         preferences.separateTodosAndRoutinesInTagTaskListSections = backupPreferences
             .separateTodosAndRoutinesInTagTaskListSections ?? false
         preferences.notificationReminderHour = backupPreferences.notificationReminderHour ?? NotificationPreferences.defaultReminderHour

@@ -1184,6 +1184,95 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func sidebarPresentationKeepsPlannedTomorrowTasksInFutureWhenToggleIsOff() {
+        let referenceDate = makeDate("2026-06-22T10:00:00Z") // Monday
+        let tomorrow = makeDate("2026-06-23T10:00:00Z")
+        let plannedTomorrowID = UUID()
+        let regularID = UUID()
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(referenceDate: referenceDate),
+            routineDisplays: [
+                TestTaskDisplay(taskID: plannedTomorrowID, name: "Plan tomorrow", plannedDate: tomorrow),
+                TestTaskDisplay(taskID: regularID, name: "Weekly", recurrenceRule: .interval(days: 7), daysUntilDue: 4)
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(presentation.sections.map(\.kind) == [.future])
+        #expect(presentation.sections.map(\.title) == ["Future"])
+        #expect(Set(presentation.sections.first?.tasks.map(\.taskID) ?? []) == Set([plannedTomorrowID, regularID]))
+    }
+
+    @Test
+    func sidebarPresentationShowsTomorrowSectionWhenEnabled() {
+        let referenceDate = makeDate("2026-06-22T10:00:00Z") // Monday
+        let tomorrow = makeDate("2026-06-23T10:00:00Z")
+        let plannedTodayID = UUID()
+        let plannedTomorrowLaterID = UUID()
+        let plannedTomorrowEarlierID = UUID()
+        let scheduledTomorrowID = UUID()
+        let regularID = UUID()
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(referenceDate: referenceDate),
+            routineDisplays: [
+                TestTaskDisplay(taskID: plannedTodayID, name: "Plan today", plannedDate: referenceDate),
+                TestTaskDisplay(
+                    taskID: plannedTomorrowLaterID,
+                    name: "Later tomorrow",
+                    plannedDate: tomorrow,
+                    manualSectionOrders: ["plannedTomorrow": 1]
+                ),
+                TestTaskDisplay(
+                    taskID: plannedTomorrowEarlierID,
+                    name: "Earlier tomorrow",
+                    plannedDate: tomorrow,
+                    manualSectionOrders: ["plannedTomorrow": 0]
+                ),
+                TestTaskDisplay(
+                    taskID: scheduledTomorrowID,
+                    name: "Tuesday routine",
+                    recurrenceRule: .weekly(on: 3),
+                    daysUntilDue: 1
+                ),
+                TestTaskDisplay(taskID: regularID, name: "Weekly", recurrenceRule: .interval(days: 7), daysUntilDue: 4)
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            showTomorrowSection: true,
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        let tomorrowSection = presentation.sections.first { $0.kind == .plannedTomorrow }
+        let futureSection = presentation.sections.last
+        #expect(presentation.sections.map(\.kind) == [.plannedToday, .plannedTomorrow, .future])
+        #expect(presentation.sections.map(\.title) == ["Today", "Tomorrow", "Future"])
+        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 1, 4])
+        #expect(tomorrowSection?.tasks.map(\.taskID) == [
+            plannedTomorrowEarlierID,
+            plannedTomorrowLaterID,
+            scheduledTomorrowID
+        ])
+        #expect(tomorrowSection?.moveContext?.sectionKey == "plannedTomorrow")
+        #expect(tomorrowSection?.moveContext?.orderedTaskIDs == [
+            plannedTomorrowEarlierID,
+            plannedTomorrowLaterID,
+            scheduledTomorrowID
+        ])
+        #expect(futureSection?.kind == .future)
+        #expect(futureSection?.tasks.map(\.taskID) == [regularID])
+    }
+
+    @Test
     func sidebarPresentationKeepsInProgressPlannedTaskInPlanToday() {
         let referenceDate = Date(timeIntervalSince1970: 1_714_608_000)
         let plannedID = UUID()

@@ -9,6 +9,10 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
         HomeTaskListSorter<Display>.plannedTodayManualOrderSectionKey
     }
 
+    static var plannedTomorrowManualOrderSectionKey: String {
+        HomeTaskListSorter<Display>.plannedTomorrowManualOrderSectionKey
+    }
+
     static var ungroupedManualOrderSectionKey: String {
         HomeTaskListSorter<Display>.ungroupedManualOrderSectionKey
     }
@@ -145,24 +149,55 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
     }
 
     func filteredPlannedTodayTasks(_ displays: [Display]) -> [Display] {
-        displays
+        filteredPlannedTasks(
+            displays,
+            on: metrics.configuration.referenceDate,
+            sortedBy: sorter.plannedTodayTaskSort
+        )
+    }
+
+    func filteredPlannedTomorrowTasks(_ displays: [Display]) -> [Display] {
+        guard let tomorrow = metrics.configuration.calendar.date(
+            byAdding: .day,
+            value: 1,
+            to: metrics.configuration.calendar.startOfDay(for: metrics.configuration.referenceDate)
+        ) else {
+            return []
+        }
+
+        return filteredPlannedTasks(
+            displays,
+            on: tomorrow,
+            sortedBy: sorter.plannedTomorrowTaskSort
+        )
+    }
+
+    private func filteredPlannedTasks(
+        _ displays: [Display],
+        on day: Date,
+        sortedBy sort: (Display, Display) -> Bool
+    ) -> [Display] {
+        let calendar = metrics.configuration.calendar
+        let isReferenceDay = calendar.isDate(day, inSameDayAs: metrics.configuration.referenceDate)
+
+        return displays
             .filter { task in
                 guard !task.isDailyRoutine,
                       matchesUncompletedTodayClaim(task),
                       predicate.matchesVisibleTask(task) else { return false }
-                guard !task.isCanceledToday else { return false }
+                guard !isReferenceDay || !task.isCanceledToday else { return false }
                 if let plannedDate = task.plannedDate {
-                    return metrics.configuration.calendar.isDate(
+                    return calendar.isDate(
                         plannedDate,
-                        inSameDayAs: metrics.configuration.referenceDate
+                        inSameDayAs: day
                     )
                 }
                 return task.isFixedCalendarRoutineScheduled(
-                    on: metrics.configuration.referenceDate,
-                    calendar: metrics.configuration.calendar
+                    on: day,
+                    calendar: calendar
                 )
             }
-            .sorted(by: sorter.plannedTodayTaskSort)
+            .sorted(by: sort)
     }
 
     func matchesUncompletedTodayClaim(_ task: Display) -> Bool {

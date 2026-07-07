@@ -67,6 +67,7 @@ extension HomeTCAView {
             archivedRoutineDisplays: archivedRoutineDisplays,
             showArchivedTasks: store.showArchivedTasks,
             separateDailyRoutinesInTaskList: separatesDailyRoutinesInTaskList,
+            showTomorrowSection: showsTomorrowInTaskList,
             separateTodosAndRoutinesInTagSections: separatesTodosAndRoutinesInTagTaskListSections,
             emptyState: emptyState,
             taskListMode: store.taskListMode,
@@ -101,6 +102,7 @@ extension HomeTCAView {
                 archivedRoutineDisplays: archivedRoutineDisplays,
                 showArchivedTasks: store.showArchivedTasks,
                 separateDailyRoutinesInTaskList: separatesDailyRoutinesInTaskList,
+                showTomorrowSection: showsTomorrowInTaskList,
                 separateTodosAndRoutinesInTagSections: separatesTodosAndRoutinesInTagTaskListSections,
                 emptyState: emptyState
             )
@@ -212,6 +214,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
     let archivedRoutineDisplays: [HomeFeature.RoutineDisplay]
     let showArchivedTasks: Bool
     let separateDailyRoutinesInTaskList: Bool
+    let showTomorrowSection: Bool
     let separateTodosAndRoutinesInTagSections: Bool
     let emptyState: HomeTaskListEmptyState
     let taskListMode: HomeFeature.TaskListMode
@@ -246,6 +249,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         archivedRoutineDisplays: [HomeFeature.RoutineDisplay],
         showArchivedTasks: Bool,
         separateDailyRoutinesInTaskList: Bool,
+        showTomorrowSection: Bool,
         separateTodosAndRoutinesInTagSections: Bool,
         emptyState: HomeTaskListEmptyState,
         taskListMode: HomeFeature.TaskListMode,
@@ -276,6 +280,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         self.archivedRoutineDisplays = archivedRoutineDisplays
         self.showArchivedTasks = showArchivedTasks
         self.separateDailyRoutinesInTaskList = separateDailyRoutinesInTaskList
+        self.showTomorrowSection = showTomorrowSection
         self.separateTodosAndRoutinesInTagSections = separateTodosAndRoutinesInTagSections
         self.emptyState = emptyState
         self.taskListMode = taskListMode

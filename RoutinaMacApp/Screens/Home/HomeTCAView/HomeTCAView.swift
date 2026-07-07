@@ -201,6 +201,10 @@ struct HomeTCAView: View {
         store: SharedDefaults.app
     ) var separatesDailyRoutinesInTaskList = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingShowTomorrowInTaskList.rawValue,
+        store: SharedDefaults.app
+    ) var showsTomorrowInTaskList = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingSeparateTodosAndRoutinesInTagTaskListSections.rawValue,
         store: SharedDefaults.app
     ) var separatesTodosAndRoutinesInTagTaskListSections = false

@@ -36,6 +36,7 @@ enum SettingsDiagnosticsLoader {
             automaticPlaceCheckInEnabled: appSettingsClient.automaticPlaceCheckInEnabled(),
             showTimelineTasksInDayPlanner: appSettingsClient.showTimelineTasksInDayPlanner(),
             separateDailyRoutinesInTaskList: appSettingsClient.separateDailyRoutinesInTaskList(),
+            showTomorrowInTaskList: appSettingsClient.showTomorrowInTaskList(),
             deviceAuthenticationStatus: deviceAuthenticationClient.status(),
             selectedAppIcon: appSettingsClient.selectedAppIcon(),
             hasTemporaryViewStateToReset: SettingsExecutionSupport.hasTemporaryViewStateToReset(

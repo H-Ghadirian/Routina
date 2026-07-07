@@ -209,6 +209,9 @@ SettingsMacDetailShell(
     }
 
     SettingsMacDetailCard(title: "Task List") {
+        Toggle("Show Tomorrow section", isOn: showTomorrowInTaskListBinding)
+            .toggleStyle(.switch)
+
         Toggle("Separate daily routines in task list", isOn: separateDailyRoutinesInTaskListBinding)
             .toggleStyle(.switch)
     }
@@ -241,6 +244,13 @@ SettingsMacDetailShell(
         Binding(
             get: { store.appearance.separatesDailyRoutinesInTaskList },
             set: { store.send(.separateDailyRoutinesInTaskListToggled($0)) }
+        )
+    }
+
+    private var showTomorrowInTaskListBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.showsTomorrowInTaskList },
+            set: { store.send(.showTomorrowInTaskListToggled($0)) }
         )
     }
 

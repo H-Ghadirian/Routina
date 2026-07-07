@@ -358,7 +358,7 @@ extension HomeTCAView {
     private func taskListSectionUsesContinuousSurface(
         _ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     ) -> Bool {
-        section.kind == .plannedToday || section.kind == .future
+        section.kind == .plannedToday || section.kind == .plannedTomorrow || section.kind == .future
     }
 
     private func taskListTopLevelSectionSpacing(
@@ -380,7 +380,7 @@ extension HomeTCAView {
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     ) -> CGFloat {
         switch section.kind {
-        case .plannedToday, .future:
+        case .plannedToday, .plannedTomorrow, .future:
             return 0
         case .daily, .tag, .untagged, .archived, .pinned, .regular, .deadlineDate, .away:
             return 8
@@ -779,7 +779,7 @@ extension HomeTCAView {
             return 0.12
         case .future:
             return 0.07
-        case .plannedToday, .daily:
+        case .plannedToday, .plannedTomorrow, .daily:
             return 0.08
         case .untagged, .archived:
             return 0.06
@@ -797,7 +797,7 @@ extension HomeTCAView {
             return 0.30
         case .future:
             return 0.20
-        case .plannedToday, .daily:
+        case .plannedToday, .plannedTomorrow, .daily:
             return 0.22
         case .untagged, .archived:
             return 0.18
@@ -812,6 +812,8 @@ extension HomeTCAView {
         switch section.kind {
         case .plannedToday:
             return "checklist"
+        case .plannedTomorrow:
+            return "calendar.badge.clock"
         case .daily:
             return "arrow.triangle.2.circlepath"
         case .future:
@@ -835,6 +837,8 @@ extension HomeTCAView {
         switch section.kind {
         case .plannedToday:
             return .accentColor
+        case .plannedTomorrow:
+            return .blue
         case .daily:
             return .teal
         case .future:
@@ -861,7 +865,7 @@ extension HomeTCAView {
             return 0.12
         case .untagged:
             return 0.06
-        case .plannedToday, .daily, .future, .regular, .deadlineDate, .pinned, .away, .archived:
+        case .plannedToday, .plannedTomorrow, .daily, .future, .regular, .deadlineDate, .pinned, .away, .archived:
             return 0.07
         }
     }
@@ -874,7 +878,7 @@ extension HomeTCAView {
             return 0.30
         case .untagged:
             return 0.18
-        case .plannedToday, .daily, .future, .regular, .deadlineDate, .pinned, .away, .archived:
+        case .plannedToday, .plannedTomorrow, .daily, .future, .regular, .deadlineDate, .pinned, .away, .archived:
             return 0.22
         }
     }
@@ -891,6 +895,8 @@ extension HomeTCAView {
             return "arrow.triangle.2.circlepath"
         case .plannedToday:
             return "checklist"
+        case .plannedTomorrow:
+            return "calendar.badge.clock"
         case .future:
             return "calendar"
         case .archived:
@@ -917,6 +923,8 @@ extension HomeTCAView {
             return .teal
         case .plannedToday:
             return .accentColor
+        case .plannedTomorrow:
+            return .blue
         case .untagged, .future, .regular, .deadlineDate, .away, .archived:
             return .secondary
         case .pinned:
@@ -1078,7 +1086,7 @@ extension HomeTCAView {
         _ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     ) -> Bool {
         switch section.kind {
-        case .plannedToday:
+        case .plannedToday, .plannedTomorrow:
             return !collapsedTagTaskListSectionIDs.contains(section.id)
         case .daily:
             return !isDailyRoutinesSectionCollapsed
@@ -1099,7 +1107,7 @@ extension HomeTCAView {
         guard section.kind.isCollapsible else { return }
         withAnimation(.easeInOut(duration: 0.24)) {
             switch section.kind {
-            case .plannedToday:
+            case .plannedToday, .plannedTomorrow:
                 setTagTaskListSection(section, collapsed: taskListSectionIsExpanded(section))
             case .daily:
                 isDailyRoutinesSectionCollapsed.toggle()
@@ -1124,8 +1132,8 @@ extension HomeTCAView {
             return !isMacPlanTodayDailyRoutinesGroupCollapsed
         case .deadlineDate, .tag, .untagged:
             return !collapsedTagTaskListSectionIDs.contains(taskListGroupCollapseID(group))
-        case .plannedToday, .future, .regular, .pinned, .away, .archived:
-            return true
+            case .plannedToday, .plannedTomorrow, .future, .regular, .pinned, .away, .archived:
+                return true
         }
     }
 
@@ -1139,7 +1147,7 @@ extension HomeTCAView {
                 isMacPlanTodayDailyRoutinesGroupCollapsed.toggle()
             case .deadlineDate, .tag, .untagged:
                 setTagTaskListGroup(group, collapsed: taskListGroupIsExpanded(group))
-            case .plannedToday, .future, .regular, .pinned, .away, .archived:
+            case .plannedToday, .plannedTomorrow, .future, .regular, .pinned, .away, .archived:
                 break
             }
         }
@@ -1584,7 +1592,7 @@ private extension HomeTaskListPresentationSection where Display == HomeFeature.R
     var canStartFocusTimer: Bool {
         guard !tasks.isEmpty else { return false }
         switch kind {
-        case .plannedToday, .daily, .future, .tag, .untagged, .regular, .deadlineDate, .pinned:
+        case .plannedToday, .plannedTomorrow, .daily, .future, .tag, .untagged, .regular, .deadlineDate, .pinned:
             return true
         case .away, .archived:
             return false

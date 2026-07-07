@@ -3,6 +3,7 @@ import Foundation
 struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
     static var pinnedManualOrderSectionKey: String { "pinned" }
     static var plannedTodayManualOrderSectionKey: String { "plannedToday" }
+    static var plannedTomorrowManualOrderSectionKey: String { "plannedTomorrow" }
     static var ungroupedManualOrderSectionKey: String { "tasks" }
     static var dailyManualOrderSectionKey: String { "daily" }
     static var archivedManualOrderSectionKey: String { "archived" }
@@ -146,6 +147,19 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
             rhs,
             sectionKey: Self.plannedTodayManualOrderSectionKey,
             otherSectionKey: Self.plannedTodayManualOrderSectionKey
+        ) {
+            return manualOrderComparison
+        }
+
+        return regularTaskSort(lhs, rhs)
+    }
+
+    func plannedTomorrowTaskSort(_ lhs: Display, _ rhs: Display) -> Bool {
+        if let manualOrderComparison = manualOrderSortResult(
+            lhs,
+            rhs,
+            sectionKey: Self.plannedTomorrowManualOrderSectionKey,
+            otherSectionKey: Self.plannedTomorrowManualOrderSectionKey
         ) {
             return manualOrderComparison
         }

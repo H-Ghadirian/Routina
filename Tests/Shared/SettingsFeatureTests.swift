@@ -718,9 +718,34 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func showTomorrowInTaskListToggled_persistsSelection() async {
+        let persistedValue = LockIsolated<Bool?>(nil)
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setShowTomorrowInTaskList = { persistedValue.setValue($0) }
+        }
+
+        await store.send(.showTomorrowInTaskListToggled(true)) {
+            $0.appearance.showsTomorrowInTaskList = true
+        }
+
+        #expect(persistedValue.value == true)
+    }
+
+    @Test
     func defaultSettingsKeepDailyRoutinesMergedInTaskList() {
         #expect(!SettingsFeature.State().appearance.separatesDailyRoutinesInTaskList)
         #expect(!RoutinaUserPreferences().separateDailyRoutinesInTaskList)
+    }
+
+    @Test
+    func defaultSettingsKeepTomorrowTaskListSectionOff() {
+        #expect(AppSettingsDefaults.boolValues[.appSettingShowTomorrowInTaskList] == .some(false))
+        #expect(!SettingsFeature.State().appearance.showsTomorrowInTaskList)
+        #expect(!RoutinaUserPreferences().showTomorrowInTaskList)
     }
 
     @Test

@@ -53,6 +53,7 @@ final class RoutinaUserPreferences {
     var automaticPlaceCheckInEnabled: Bool = true
     var showTimelineTasksInDayPlanner: Bool = true
     var separateDailyRoutinesInTaskList: Bool = false
+    var showTomorrowInTaskList: Bool = false
     var separateTodosAndRoutinesInTagTaskListSections: Bool = false
     var notificationReminderHour: Int = NotificationPreferences.defaultReminderHour
     var notificationReminderMinute: Int = NotificationPreferences.defaultReminderMinute
@@ -199,6 +200,7 @@ enum RoutinaUserPreferencesStore {
         preferences.automaticPlaceCheckInEnabled = defaults[.appSettingAutomaticPlaceCheckInEnabled]
         preferences.showTimelineTasksInDayPlanner = defaults[.appSettingShowTimelineTasksInDayPlanner]
         preferences.separateDailyRoutinesInTaskList = defaults[.appSettingSeparateDailyRoutinesInTaskList]
+        preferences.showTomorrowInTaskList = defaults[.appSettingShowTomorrowInTaskList]
         preferences.separateTodosAndRoutinesInTagTaskListSections = defaults[
             .appSettingSeparateTodosAndRoutinesInTagTaskListSections
         ]
@@ -262,6 +264,7 @@ enum RoutinaUserPreferencesStore {
         defaults[.appSettingAutomaticPlaceCheckInEnabled] = preferences.automaticPlaceCheckInEnabled
         defaults[.appSettingShowTimelineTasksInDayPlanner] = preferences.showTimelineTasksInDayPlanner
         defaults[.appSettingSeparateDailyRoutinesInTaskList] = preferences.separateDailyRoutinesInTaskList
+        defaults[.appSettingShowTomorrowInTaskList] = preferences.showTomorrowInTaskList
         defaults[.appSettingSeparateTodosAndRoutinesInTagTaskListSections] = preferences
             .separateTodosAndRoutinesInTagTaskListSections
         defaults.set(preferences.notificationReminderHour, forKey: NotificationPreferences.reminderHourDefaultsKey)

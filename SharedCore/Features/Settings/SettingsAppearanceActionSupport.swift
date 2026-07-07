@@ -265,6 +265,16 @@ enum SettingsAppearanceActionHandler {
         return .none
     }
 
+    static func showTomorrowInTaskListToggled(
+        _ isEnabled: Bool,
+        state: inout SettingsAppearanceState,
+        appSettingsClient: AppSettingsClient
+    ) -> Effect<SettingsFeature.Action> {
+        state.showsTomorrowInTaskList = isEnabled
+        appSettingsClient.setShowTomorrowInTaskList(isEnabled)
+        return .none
+    }
+
     static func resetTemporaryViewStateTapped(
         state: inout SettingsAppearanceState,
         appSettingsClient: AppSettingsClient

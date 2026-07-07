@@ -34,6 +34,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0347](../decisions/0347-split-mac-future-tag-groups-by-task-kind.md)
 - [0348](../decisions/0348-allow-selected-past-exact-time-backfills.md)
 - [0349](../decisions/0349-preserve-interval-anchor-on-frequency-edits.md)
+- [0350](../decisions/0350-add-optional-mac-tomorrow-task-section.md)
 
 ## Current Contract
 
@@ -48,6 +49,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Daily routines already belong to the daily routine area and do not expose stored planned-date controls.
 - Home `Today` includes active unpinned tasks planned for the current day, plus weekly/month-day calendar routines whose configured occurrence is today. A calendar routine with a canceled occurrence for today is not shown in the today plan. Rolling interval routines such as `Every 7 days` stay in the normal due/status sections unless explicitly planned.
 - On Mac, daily routines are shown inside `Today`. By default they visually merge into the today list; Settings can restore a nested `Daily Routines` group.
+- On Mac, Settings -> General -> Task List can enable `Tomorrow` between `Today` and `Future`. When enabled, `Tomorrow` contains active unpinned todos and non-daily routines explicitly planned for tomorrow, plus weekly/month-day calendar routines scheduled tomorrow, and removes those rows from `Future`. Right-clicking a task row exposes `Plan to do -> Tomorrow`, which stores tomorrow as a date-only planned date.
 - On Mac, `Today` and `Future` use full-bleed section surfaces for their headers and expanded content so their rows visibly belong to those sections. The `Today` and `Future` top-level surfaces use square horizontal edges without colored left or right borders. Mac sidebar task cards keep a small gap between rows.
 - Home task-list grouping offers `None`, `Deadline Date`, and `Tags`; legacy saved `Status` grouping preferences normalize to `Deadline Date`.
 - On Mac, normal active tasks outside `Today` are grouped under a collapsed-by-default `Future` section. Existing deadline, tag, and ungrouped inner organization and manual ordering are preserved inside `Future`; when Deadline Date is active, all titled `Future` buckets use the same collapsible inner-section surface, while tag groups keep their color treatment. When grouping by Tags, the Task List Sort panel can split mixed `Future` tag and untagged groups into `Todos` and `Routines` child subsections without changing the parent tag collapse or manual-order identity. Right-clicking the `Future` header exposes `Expand All` and `Collapse All Subsections` when collapsible inner groups exist; these actions open `Future` and batch-expand or batch-collapse only its inner groups.

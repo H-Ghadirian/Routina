@@ -66,6 +66,7 @@ enum SettingsAppearanceEditor {
         showPersianDates: Bool,
         showTimelineTasksInDayPlanner: Bool,
         separateDailyRoutinesInTaskList: Bool,
+        showTomorrowInTaskList: Bool,
         taskRowVisibility: HomeTaskRowVisibility,
         timelineRowVisibility: HomeTimelineRowVisibility,
         deviceAuthenticationStatus: DeviceAuthenticationStatus,
@@ -86,6 +87,7 @@ enum SettingsAppearanceEditor {
         state.showPersianDates = showPersianDates
         state.showsTimelineTasksInDayPlanner = showTimelineTasksInDayPlanner
         state.separatesDailyRoutinesInTaskList = separateDailyRoutinesInTaskList
+        state.showsTomorrowInTaskList = showTomorrowInTaskList
         state.taskRowVisibility = taskRowVisibility
         state.isAppLockToggleInProgress = false
         state.appLockMethodDescription = deviceAuthenticationStatus.methodDescription

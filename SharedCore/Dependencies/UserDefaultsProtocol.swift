@@ -82,6 +82,7 @@ enum AppSettingsDefaults {
         .appSettingAutomaticPlaceCheckInEnabled: true,
         .appSettingShowTimelineTasksInDayPlanner: true,
         .appSettingSeparateDailyRoutinesInTaskList: false,
+        .appSettingShowTomorrowInTaskList: false,
         .appSettingSeparateTodosAndRoutinesInTagTaskListSections: false,
         .appSettingDailyRoutinesSectionCollapsed: false,
         .appSettingMacPlanTodayDailyRoutinesGroupCollapsed: true,
@@ -175,6 +176,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingAutomaticPlaceCheckInEnabled
     case appSettingShowTimelineTasksInDayPlanner = "appSettingShowDayPlanUnplannedDoneBadges"
     case appSettingSeparateDailyRoutinesInTaskList
+    case appSettingShowTomorrowInTaskList
     case appSettingSeparateTodosAndRoutinesInTagTaskListSections
     case appSettingDailyRoutinesSectionCollapsed
     case appSettingMacPlanTodayDailyRoutinesGroupCollapsed
@@ -251,6 +253,8 @@ struct AppSettingsClient: Sendable {
     var setShowTimelineTasksInDayPlanner: @Sendable (Bool) -> Void
     var separateDailyRoutinesInTaskList: @Sendable () -> Bool
     var setSeparateDailyRoutinesInTaskList: @Sendable (Bool) -> Void
+    var showTomorrowInTaskList: @Sendable () -> Bool = { false }
+    var setShowTomorrowInTaskList: @Sendable (Bool) -> Void = { _ in }
     var appColorScheme: @Sendable () -> AppColorScheme
     var setAppColorScheme: @Sendable (AppColorScheme) -> Void
     var routineListSectioningMode: @Sendable () -> RoutineListSectioningMode
@@ -525,6 +529,13 @@ extension AppSettingsClient {
             SharedDefaults.app[.appSettingSeparateDailyRoutinesInTaskList] = isEnabled
             AppSettingsPersistenceMirror.schedule()
         },
+        showTomorrowInTaskList: {
+            SharedDefaults.app[.appSettingShowTomorrowInTaskList]
+        },
+        setShowTomorrowInTaskList: { isEnabled in
+            SharedDefaults.app[.appSettingShowTomorrowInTaskList] = isEnabled
+            AppSettingsPersistenceMirror.schedule()
+        },
         appColorScheme: {
             AppColorScheme(
                 rawValue: SharedDefaults.app[.appSettingAppColorScheme] ?? ""
@@ -730,6 +741,8 @@ extension AppSettingsClient {
         setShowTimelineTasksInDayPlanner: { _ in },
         separateDailyRoutinesInTaskList: { false },
         setSeparateDailyRoutinesInTaskList: { _ in },
+        showTomorrowInTaskList: { false },
+        setShowTomorrowInTaskList: { _ in },
         appColorScheme: { .system },
         setAppColorScheme: { _ in },
         routineListSectioningMode: { .defaultValue },

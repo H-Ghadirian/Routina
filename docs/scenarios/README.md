@@ -302,6 +302,14 @@ Given a weekly or month-day calendar routine has a canceled occurrence for today
 When Home derives `Today`
 Then that routine no longer appears in the today plan for the canceled day
 
+Given the Mac `Show Tomorrow section` task-list setting is off
+When a task is planned for tomorrow
+Then it remains inside `Future` instead of creating a top-level `Tomorrow` section
+
+Given the Mac `Show Tomorrow section` task-list setting is on
+When Home derives tasks planned for tomorrow or calendar routines scheduled tomorrow
+Then `Tomorrow` appears between `Today` and `Future`, uses the `plannedTomorrow` manual-order bucket, and removes those rows from `Future`
+
 ### Future Preserves Inner Group Behavior
 
 Area: Tasks

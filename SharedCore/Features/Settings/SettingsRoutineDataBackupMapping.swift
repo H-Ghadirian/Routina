@@ -388,6 +388,7 @@ enum SettingsRoutineDataBackupMapping {
             automaticPlaceCheckInEnabled: preferences.automaticPlaceCheckInEnabled,
             showTimelineTasksInDayPlanner: preferences.showTimelineTasksInDayPlanner,
             separateDailyRoutinesInTaskList: preferences.separateDailyRoutinesInTaskList,
+            showTomorrowInTaskList: preferences.showTomorrowInTaskList,
             separateTodosAndRoutinesInTagTaskListSections: preferences
                 .separateTodosAndRoutinesInTagTaskListSections,
             notificationReminderHour: preferences.notificationReminderHour,

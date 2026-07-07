@@ -68,6 +68,13 @@ extension HomeTCAView {
         store.send(.planTask(taskID, calendar.startOfDay(for: Date())))
     }
 
+    func planTaskForTomorrowFromContextMenu(_ taskID: UUID) {
+        let today = calendar.startOfDay(for: Date())
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) ?? today.addingTimeInterval(86_400)
+        revealPlannedTomorrowDestination(for: taskID)
+        store.send(.planTask(taskID, calendar.startOfDay(for: tomorrow)))
+    }
+
     func dismissPlanningDatePicker() {
         planningDateTaskID = nil
     }
@@ -120,6 +127,9 @@ extension HomeTCAView {
                 planToday: {
                     planTaskForTodayFromContextMenu(task.taskID)
                 },
+                planTomorrow: {
+                    planTaskForTomorrowFromContextMenu(task.taskID)
+                },
                 chooseDate: {
                     presentPlanningDatePicker(for: task)
                 },
@@ -150,6 +160,20 @@ extension HomeTCAView {
 
     private func revealPlannedTodaySection(for taskID: UUID) {
         let sectionID = "\(HomeTaskListPresentationSectionKind.plannedToday.rawValue):plannedToday"
+        revealTaskListSection(sectionID: sectionID, taskID: taskID)
+    }
+
+    private func revealPlannedTomorrowDestination(for taskID: UUID) {
+        if showsTomorrowInTaskList {
+            let sectionID = "\(HomeTaskListPresentationSectionKind.plannedTomorrow.rawValue):plannedTomorrow"
+            revealTaskListSection(sectionID: sectionID, taskID: taskID)
+        } else {
+            isMacFutureTasksSectionCollapsed = false
+            macSidebarTaskScrollRequest = MacSidebarTaskScrollRequest(taskID: taskID, anchor: .center)
+        }
+    }
+
+    private func revealTaskListSection(sectionID: String, taskID: UUID) {
         var collapsedSectionIDs = Set(
             collapsedTagTaskListSectionIDsStorage
                 .split(separator: "\n")
@@ -197,6 +221,7 @@ private extension NSMenu {
         notTodayCommand: HomeTaskRowCommand?,
         commandHandler: HomeTaskRowCommandHandler,
         planToday: @escaping () -> Void,
+        planTomorrow: @escaping () -> Void,
         chooseDate: @escaping () -> Void,
         clearPlan: @escaping () -> Void
     ) {
@@ -210,6 +235,7 @@ private extension NSMenu {
 
         if !task.isDailyRoutine {
             submenu.addActionItem(title: "Today", systemImage: "calendar", action: planToday)
+            submenu.addActionItem(title: "Tomorrow", systemImage: "calendar.badge.clock", action: planTomorrow)
             submenu.addActionItem(
                 title: "Choose Date...",
                 systemImage: "calendar.badge.plus",

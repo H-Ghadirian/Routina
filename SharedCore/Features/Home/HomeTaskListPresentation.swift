@@ -37,6 +37,7 @@ struct HomeTaskListPresentationTaskGroup<Display: HomeTaskListDisplay>: Identifi
 enum HomeTaskListPresentationSectionKind: String, Equatable {
     case pinned
     case plannedToday
+    case plannedTomorrow
     case daily
     case future
     case regular
@@ -50,7 +51,7 @@ enum HomeTaskListPresentationSectionKind: String, Equatable {
 extension HomeTaskListPresentationSectionKind {
     var isCollapsible: Bool {
         switch self {
-        case .plannedToday, .daily, .future, .tag, .untagged, .archived:
+        case .plannedToday, .plannedTomorrow, .daily, .future, .tag, .untagged, .archived:
             return true
         case .pinned, .regular, .deadlineDate, .away:
             return false
@@ -418,6 +419,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         archivedRoutineDisplays: [Display],
         showArchivedTasks: Bool = true,
         separateDailyRoutinesInTaskList: Bool = false,
+        showTomorrowSection: Bool = false,
         separateTodosAndRoutinesInTagSections: Bool = false,
         emptyState: HomeTaskListEmptyState
     ) -> Self {
@@ -438,7 +440,16 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             filtering.filteredPlannedTodayTasks(unpinnedActiveDisplays),
             claimedTaskIDs: &claimedTaskIDs
         )
-        let unplannedActiveDisplays = unpinnedActiveDisplays.filter {
+        let activeDisplaysAfterTodayClaim = unpinnedActiveDisplays.filter {
+            !claimedTaskIDs.contains($0.taskID)
+        }
+        let plannedTomorrowTasks = showTomorrowSection
+            ? claimTasks(
+                filtering.filteredPlannedTomorrowTasks(activeDisplaysAfterTodayClaim),
+                claimedTaskIDs: &claimedTaskIDs
+            )
+            : []
+        let unplannedActiveDisplays = activeDisplaysAfterTodayClaim.filter {
             !claimedTaskIDs.contains($0.taskID)
         }
         let dailyTasks = claimTasks(
@@ -503,6 +514,24 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                 )
             )
             offset += planTodayTasks.count
+        }
+
+        if !plannedTomorrowTasks.isEmpty {
+            presentationSections.append(
+                HomeTaskListPresentationSection(
+                    kind: .plannedTomorrow,
+                    identityKey: "plannedTomorrow",
+                    title: "Tomorrow",
+                    tasks: plannedTomorrowTasks,
+                    rowNumberOffset: offset,
+                    includeMarkDone: true,
+                    moveContext: HomeTaskListMoveContext(
+                        sectionKey: HomeTaskListFiltering<Display>.plannedTomorrowManualOrderSectionKey,
+                        orderedTaskIDs: plannedTomorrowTasks.map(\.taskID)
+                    )
+                )
+            )
+            offset += plannedTomorrowTasks.count
         }
 
         if filtering.usesTagSectioning {

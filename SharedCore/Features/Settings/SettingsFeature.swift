@@ -32,6 +32,7 @@ struct SettingsFeature {
         case automaticPlaceCheckInToggled(Bool)
         case showTimelineTasksInDayPlannerToggled(Bool)
         case separateDailyRoutinesInTaskListToggled(Bool)
+        case showTomorrowInTaskListToggled(Bool)
         case notificationAuthorizationFinished(Bool)
         case notificationReminderTimeChanged(Date)
         case openAppSettingsTapped
@@ -279,6 +280,13 @@ struct SettingsFeature {
 
             case let .separateDailyRoutinesInTaskListToggled(isEnabled):
                 return SettingsAppearanceActionHandler.separateDailyRoutinesInTaskListToggled(
+                    isEnabled,
+                    state: &state.appearance,
+                    appSettingsClient: self.appSettingsClient
+                )
+
+            case let .showTomorrowInTaskListToggled(isEnabled):
+                return SettingsAppearanceActionHandler.showTomorrowInTaskListToggled(
                     isEnabled,
                     state: &state.appearance,
                     appSettingsClient: self.appSettingsClient
