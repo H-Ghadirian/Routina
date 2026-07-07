@@ -93,7 +93,6 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     @ViewBuilder let plannerListView: (DayPlanTimelineDateJumpRequest?) -> PlannerListView
     @ViewBuilder let boardView: () -> BoardView
     @ViewBuilder let boardInspectorView: () -> BoardInspectorView
-    @Namespace private var taskDetailSurfaceNamespace
 
     var body: some View {
         detailContent
@@ -274,12 +273,6 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                     onMinimizeFullscreen: onMinimizeFullscreenTaskDetails,
                     onCloseFullscreen: onCloseFullscreenTaskDetails
                 )
-                .taskDetailSurfaceMotion(
-                    id: taskDetailSurfaceMotionID,
-                    namespace: taskDetailSurfaceNamespace,
-                    edge: fullscreenTaskDetailEdge,
-                    isActive: shouldMatchTaskDetailSurface
-                )
                 .transition(.taskDetailFullscreen(edge: fullscreenTaskDetailEdge))
                 .zIndex(2)
             case .planner:
@@ -418,26 +411,12 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
         .overlay(alignment: edge == .leading ? .trailing : .leading) {
             Divider()
         }
-        .taskDetailSurfaceMotion(
-            id: taskDetailSurfaceMotionID,
-            namespace: taskDetailSurfaceNamespace,
-            edge: edge,
-            isActive: shouldMatchTaskDetailSurface
-        )
         .transition(.taskDetailPane(edge: edge))
         .zIndex(1)
     }
 
-    private var shouldMatchTaskDetailSurface: Bool {
-        selectedTaskID != nil
-    }
-
     private var fullscreenTaskDetailEdge: Edge {
         taskDetailEdge(for: fullscreenTaskDetailReturnPlacement ?? taskDetailPanePlacement)
-    }
-
-    private var taskDetailSurfaceMotionID: String {
-        "mac-task-detail-surface-\(selectedTaskID?.uuidString ?? "empty")"
     }
 
     private func taskDetailEdge(for placement: MacTaskDetailPanePlacement?) -> Edge {
@@ -667,146 +646,16 @@ struct MacHomeProgressModePicker: View {
     }
 }
 
-private extension View {
-    func taskDetailSurfaceMotion(
-        id: String,
-        namespace: Namespace.ID,
-        edge: Edge,
-        isActive: Bool
-    ) -> some View {
-        modifier(
-            MacTaskDetailSurfaceMotionModifier(
-                id: id,
-                namespace: namespace,
-                edge: edge,
-                isActive: isActive
-            )
-        )
-    }
-}
-
-private struct MacTaskDetailSurfaceMotionModifier: ViewModifier {
-    let id: String
-    let namespace: Namespace.ID
-    let edge: Edge
-    let isActive: Bool
-
-    @ViewBuilder
-    func body(content: Content) -> some View {
-        if isActive {
-            content
-                .matchedGeometryEffect(
-                    id: id,
-                    in: namespace,
-                    properties: .frame,
-                    anchor: edge.taskDetailMotionAnchor
-                )
-        } else {
-            content
-        }
-    }
-}
-
-private struct MacTaskDetailDirectionalTransitionModifier: ViewModifier {
-    let edge: Edge
-    let xScale: CGFloat
-    let xOffset: CGFloat
-    let opacity: Double
-
-    func body(content: Content) -> some View {
-        content
-            .scaleEffect(
-                x: xScale,
-                y: 1,
-                anchor: edge.taskDetailMotionAnchor
-            )
-            .offset(x: xOffset * edge.taskDetailMotionDirection)
-            .opacity(opacity)
-    }
-}
-
-private struct MacTaskDetailWorkspaceTransitionModifier: ViewModifier {
-    let scale: CGFloat
-    let opacity: Double
-
-    func body(content: Content) -> some View {
-        content
-            .scaleEffect(scale, anchor: .center)
-            .opacity(opacity)
-    }
-}
-
 private extension AnyTransition {
     static func taskDetailFullscreen(edge: Edge) -> AnyTransition {
-        .modifier(
-            active: MacTaskDetailDirectionalTransitionModifier(
-                edge: edge,
-                xScale: 0.965,
-                xOffset: 34,
-                opacity: 0.96
-            ),
-            identity: MacTaskDetailDirectionalTransitionModifier(
-                edge: edge,
-                xScale: 1,
-                xOffset: 0,
-                opacity: 1
-            )
-        )
+        .identity
     }
 
     static func taskDetailPane(edge: Edge) -> AnyTransition {
-        .modifier(
-            active: MacTaskDetailDirectionalTransitionModifier(
-                edge: edge,
-                xScale: 0.985,
-                xOffset: 24,
-                opacity: 0.98
-            ),
-            identity: MacTaskDetailDirectionalTransitionModifier(
-                edge: edge,
-                xScale: 1,
-                xOffset: 0,
-                opacity: 1
-            )
-        )
+        .identity
     }
 
     static var taskDetailWorkspace: AnyTransition {
-        .modifier(
-            active: MacTaskDetailWorkspaceTransitionModifier(
-                scale: 0.992,
-                opacity: 0.88
-            ),
-            identity: MacTaskDetailWorkspaceTransitionModifier(
-                scale: 1,
-                opacity: 1
-            )
-        )
-    }
-}
-
-private extension Edge {
-    var taskDetailMotionAnchor: UnitPoint {
-        switch self {
-        case .leading:
-            return .leading
-        case .trailing:
-            return .trailing
-        case .top:
-            return .top
-        case .bottom:
-            return .bottom
-        }
-    }
-
-    var taskDetailMotionDirection: CGFloat {
-        switch self {
-        case .leading:
-            return -1
-        case .trailing:
-            return 1
-        case .top, .bottom:
-            return 0
-        }
+        .identity
     }
 }

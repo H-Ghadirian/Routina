@@ -508,6 +508,21 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(platformSource.contains("searchExpansionTransitionID: $toolbarSearchExpansionTransitionID"))
         XCTAssertTrue(platformSource.contains("searchFocusRequestID: $toolbarSearchFocusRequestID"))
         XCTAssertTrue(platformSource.contains("searchFocusDismissRequestID: $toolbarSearchFocusDismissRequestID"))
+        XCTAssertFalse(detailSource.contains("matchedGeometryEffect("))
+        XCTAssertFalse(detailSource.contains("taskDetailSurfaceMotion("))
+        XCTAssertFalse(detailSource.contains("MacTaskDetailSurfaceMotionModifier"))
+        XCTAssertTrue(
+            detailSource.contains("static func taskDetailFullscreen(edge: Edge) -> AnyTransition {\n        .identity\n    }"),
+            "Task details should not duplicate translucent surfaces while expanding into Full Details."
+        )
+        XCTAssertTrue(
+            detailSource.contains("static func taskDetailPane(edge: Edge) -> AnyTransition {\n        .identity\n    }"),
+            "Task detail companion panes should enter and leave without opacity/scale compositing."
+        )
+        XCTAssertTrue(
+            detailSource.contains("static var taskDetailWorkspace: AnyTransition {\n        .identity\n    }"),
+            "The workspace behind task details should not fade under duplicated detail cards."
+        )
         XCTAssertTrue(platformSource.contains("private func focusExpandedToolbarSearchFromCommand()"))
         XCTAssertTrue(platformSource.contains("focusExpandedToolbarSearchFromCommand()"))
         XCTAssertTrue(platformSource.contains("toolbarSearchVisiblePillWidth = HomeMacToolbarSearchLayout.compactWidth\n            isToolbarSearchExpanded = true"))

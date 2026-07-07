@@ -102,6 +102,8 @@ And clicking anywhere inside the toolbar control's fixed target triggers the sid
 And the Home window frame does not grow or jump during that animated restore
 And the detail area does not animate off the right edge
 And the right-side companion pane remains inside the window while the sidebar visibility changes
+And the right-side companion pane keeps a stable background brightness while the sidebar visibility changes
+And task-detail surfaces do not brighten, duplicate, or ghost while the pane expands to Full Details or minimizes back
 
 ### Daily Checklist Progress Resets
 
