@@ -259,23 +259,11 @@ enum RoutineDateMath {
             return false
         }
 
-        let missedDates = missedExactTimedOccurrenceDates(
+        let isSelectedMissedDate = missedExactTimedOccurrenceDates(
             for: task,
             referenceDate: referenceDate,
             calendar: calendar
-        )
-        let hasUnresolvedPriorMissedDate = missedDates.contains { missedDate in
-            missedDate < occurrence
-                && !isExactTimedMissedOccurrenceAcknowledged(
-                    for: task,
-                    missedDate: missedDate,
-                    logs: logs,
-                    calendar: calendar
-                )
-        }
-        guard !hasUnresolvedPriorMissedDate else { return false }
-
-        let isSelectedMissedDate = missedDates.contains {
+        ).contains {
             calendar.isDate($0, inSameDayAs: occurrence)
         }
         if isSelectedMissedDate {

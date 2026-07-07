@@ -1673,6 +1673,39 @@ struct TaskDetailFeatureCompletionTests {
     }
 
     @Test
+    func completionButtonAllowsBackfillingSelectedPastExactTimedOccurrenceAfterEarlierMisses() {
+        let calendar = Calendar.current
+        let selectedDay = calendar.startOfDay(for: calendar.date(byAdding: .day, value: -7, to: Date()) ?? Date())
+        let selectedOccurrence = RoutineTimeOfDay(hour: 18, minute: 30).date(on: selectedDay, calendar: calendar)
+        let scheduleAnchor = calendar.date(byAdding: .day, value: -28, to: selectedOccurrence) ?? selectedOccurrence
+        let selectedWeekday = calendar.component(.weekday, from: selectedDay)
+
+        let task = RoutineTask(
+            name: "Group session",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .weekly(
+                on: selectedWeekday,
+                timeRange: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 18, minute: 30),
+                    end: RoutineTimeOfDay(hour: 20, minute: 0)
+                )
+            ),
+            scheduleAnchor: scheduleAnchor,
+            createdAt: scheduleAnchor
+        )
+
+        let state = TaskDetailFeature.State(
+            task: task,
+            logs: [],
+            selectedDate: selectedDay
+        )
+
+        #expect(state.completionTargetDate == selectedOccurrence)
+        #expect(!state.isCompletionButtonDisabled)
+        #expect(state.completionButtonAction == TaskDetailFeature.Action.markAsDone)
+    }
+
+    @Test
     func markAsDone_forTodayOnMissedWeeklyExactTimeRoutineDoesNothing() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-04-24T10:00:00Z")

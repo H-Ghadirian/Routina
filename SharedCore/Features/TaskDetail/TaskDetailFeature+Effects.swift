@@ -478,6 +478,7 @@ extension TaskDetailFeature {
                 }
                 let previousScheduleMode = task.scheduleMode
                 let previousRecurrenceRule = task.recurrenceRule
+                let previousRollingScheduleAnchor = task.scheduleAnchor ?? task.lastDone
                 let previousRelationships = task.relationships
                 let previousActualDurationMinutes = task.actualDurationMinutes
                 let previousCreatedAt = task.createdAt
@@ -567,7 +568,14 @@ extension TaskDetailFeature {
                     task.scheduleAnchor = task.lastDone
                     task.interval = 1
                 } else if previousScheduleMode != scheduleMode || previousRecurrenceRule != recurrenceRule {
-                    task.scheduleAnchor = now
+                    if previousScheduleMode != .oneOff,
+                       previousRecurrenceRule.kind == .intervalDays,
+                       recurrenceRule.kind == .intervalDays,
+                       let previousRollingScheduleAnchor {
+                        task.scheduleAnchor = previousRollingScheduleAnchor
+                    } else {
+                        task.scheduleAnchor = now
+                    }
                 } else if task.scheduleAnchor == nil, let existingAnchor = task.lastDone ?? task.createdAt {
                     task.scheduleAnchor = existingAnchor
                 }

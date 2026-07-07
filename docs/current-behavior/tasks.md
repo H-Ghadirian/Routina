@@ -32,6 +32,8 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0312](../decisions/0312-move-mac-task-timeline-filter-entry-to-toolbar.md)
 - [0314](../decisions/0314-remove-status-grouping-and-collapse-deadline-groups.md)
 - [0347](../decisions/0347-split-mac-future-tag-groups-by-task-kind.md)
+- [0348](../decisions/0348-allow-selected-past-exact-time-backfills.md)
+- [0349](../decisions/0349-preserve-interval-anchor-on-frequency-edits.md)
 
 ## Current Contract
 
@@ -42,6 +44,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Planned dates are date-only Home-list planning hints for todos and non-daily routines. They are not availability, deadline, reminder, completion history, or stored Planner blocks. Planner day agendas surface active date-only planned tasks for the selected day.
 - Deleting a task also removes persisted task-backed Planner blocks for that task so deleted work does not remain on the calendar.
 - Task Detail calendar overdue markers run only while an overdue task is unresolved. If a completion, cancellation, or missed log resolves the task, later days stop showing as overdue.
+- Task Details can backfill a selected past exact-time routine occurrence, such as a weekly routine with a time window, even when older missed exact-time occurrences remain unresolved. Future dates and non-occurrence days still cannot be marked done.
 - Daily routines already belong to the daily routine area and do not expose stored planned-date controls.
 - Home `Today` includes active unpinned tasks planned for the current day, plus weekly/month-day calendar routines whose configured occurrence is today. A calendar routine with a canceled occurrence for today is not shown in the today plan. Rolling interval routines such as `Every 7 days` stay in the normal due/status sections unless explicitly planned.
 - On Mac, daily routines are shown inside `Today`. By default they visually merge into the today list; Settings can restore a nested `Daily Routines` group.
@@ -52,6 +55,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Adding checklist items to a routine that previously had none promotes Standard completion to Checklist completion when no sequential steps would be discarded. Existing Standard routines that already carry checklist items remain editable as legacy optional checklist data.
 - Auto-assume done is opt-in for daily Standard routines without steps/checklists and daily Checklist-completion routines in both Due and Gentle styles. Todos, checklist runout routines, Standard routines with optional checklist items, routines with steps, and non-daily cadences do not qualify.
 - Calendar repeats offer weekday and month-day choices, and editing a weekly calendar routine preserves every selected weekday. Interval repeats own the single daily-repeat path.
+- Editing an existing interval routine from one interval frequency to another preserves its current rolling schedule anchor, so the new cadence recalculates from the existing completion/history anchor rather than from the edit timestamp.
 - Multi-day routines use a `Start` -> in-progress -> `Stop` lifecycle. Their detail calendar shows an ongoing range while active and a completed span after stopping.
 - Checklist runout item actions are item-scoped. Task Details can update today or a selected past day, using the selected day as the runout reset date; future dates remain read-only. Completing all currently due items for that selected day records routine completion.
 - Checklist item intervals are stored as meaningful cadence only for checklist runout routines. Checklist-completion routines and optional checklist data normalize item intervals to a neutral one-day value.

@@ -780,6 +780,43 @@ struct RoutineDateMathTests {
     }
 
     @Test
+    func selectedPastExactTimedOccurrenceCanBeMarkedDoneWithEarlierUnresolvedMisses() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let task = RoutineTask(
+            recurrenceRule: .weekly(
+                on: 5,
+                timeRange: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 18, minute: 30),
+                    end: RoutineTimeOfDay(hour: 20, minute: 0)
+                )
+            ),
+            scheduleAnchor: makeDate("2026-06-12T10:00:00Z"),
+            createdAt: makeDate("2026-06-12T10:00:00Z")
+        )
+        let selectedOccurrence = makeDate("2026-07-02T18:30:00Z")
+        let referenceDate = makeDate("2026-07-07T15:00:00Z")
+
+        #expect(RoutineDateMath.missedExactTimedOccurrenceDates(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        ) == [
+            makeDate("2026-06-18T18:30:00Z"),
+            makeDate("2026-06-25T18:30:00Z"),
+            selectedOccurrence
+        ])
+        #expect(RoutineDateMath.canMarkSelectedExactTimedOccurrenceDone(
+            for: task,
+            completionDate: selectedOccurrence,
+            referenceDate: referenceDate,
+            logs: [],
+            calendar: calendar
+        ))
+    }
+
+    @Test
     func canceledExactTimedOccurrenceAcknowledgesMissedAssumption() {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
