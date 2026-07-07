@@ -73,6 +73,19 @@ And clicking outside the visible search pill dismisses focus and collapses searc
 And task-detail toolbar actions return after the search pill has collapsed to compact width
 And the field remains clickable and editable throughout the animation
 
+### Mac Fullscreen Window Chrome Does Not Cover Home Toolbar
+
+Area: Other
+Decision links: [0022](../decisions/0022-own-mac-home-toolbar-at-split-shell.md), [0340](../decisions/0340-use-swiftui-outlook-style-mac-home-top-toolbar.md), [0341](../decisions/0341-consolidate-mac-home-toolbar-row.md)
+Current behavior: [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/macOS/PerformanceRegressionTests.swift`
+
+Given Mac Home is in fullscreen
+When the macOS menu/titlebar controls are revealed at the top edge
+Then the native window chrome stays compact and transparent instead of painting a separate long strip over Routina's SwiftUI-owned Home toolbar
+And the custom Home toolbar remains the single visible top app row under the traffic-light area
+
 ### Mac Toolbar Search Creates Only When Search Has No Result
 
 Area: Other

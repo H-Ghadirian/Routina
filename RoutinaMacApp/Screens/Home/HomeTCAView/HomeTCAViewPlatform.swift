@@ -406,6 +406,7 @@ extension HomeTCAView {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea(edges: .top)
+        .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
     }
 
     private var isDevelopmentAppVariant: Bool {

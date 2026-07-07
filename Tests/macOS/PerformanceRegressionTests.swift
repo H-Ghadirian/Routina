@@ -690,8 +690,21 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(source.contains("Text(\"Esc\")"))
         XCTAssertTrue(source.contains("Dismiss search focus"))
         XCTAssertFalse(source.contains("Image(systemName: \"xmark\")"))
-        XCTAssertTrue(rootSceneSource.contains("window.toolbarStyle = .expanded"))
-        XCTAssertTrue(rootSceneSource.contains("window.toolbar?.sizeMode = .regular"))
+        XCTAssertTrue(
+            rootSceneSource.contains("window.toolbarStyle = .unifiedCompact"),
+            "The native Mac window chrome should stay compact because Home draws its own titlebar-height toolbar row."
+        )
+        XCTAssertTrue(rootSceneSource.contains("window.titlebarSeparatorStyle = .none"))
+        XCTAssertTrue(rootSceneSource.contains("window.toolbar?.sizeMode = .small"))
+        XCTAssertFalse(rootSceneSource.contains("showsBaselineSeparator"))
+        XCTAssertFalse(
+            rootSceneSource.contains("window.toolbarStyle = .expanded"),
+            "Expanded native toolbar chrome creates a separate fullscreen strip over the custom Home toolbar."
+        )
+        XCTAssertTrue(
+            platformSource.contains(".toolbarBackgroundVisibility(.hidden, for: .windowToolbar)"),
+            "The native window toolbar background should not paint an opaque strip over the SwiftUI-owned Home toolbar in fullscreen."
+        )
         XCTAssertTrue(source.contains("textField.controlSize = .large"))
         XCTAssertTrue(source.contains("textField.focusRingType = .none"))
         XCTAssertFalse(source.contains("focusRingType = .default"))
