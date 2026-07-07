@@ -3,6 +3,7 @@
 ## User Permission Preferences
 
 - Always ask the user before taking screenshots, screen captures, or recording the screen. Never capture the screen without explicit permission in the current conversation.
+- Project-local verification `DerivedData` cleanup is pre-approved. Remove generated project-local `DerivedData` folders when useful without asking first, and tell the user afterward when cleanup was performed.
 
 ## Project Decision Log
 
