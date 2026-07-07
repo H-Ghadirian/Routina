@@ -58,43 +58,58 @@ struct HomeMacTopToolbarChrome: View {
     }
 
     private var toolbarRow: some View {
-        HStack(alignment: .center, spacing: 12) {
-            statusBadges
-                .fixedSize(horizontal: true, vertical: false)
-                .layoutPriority(3)
+        ZStack(alignment: .center) {
+            HStack(alignment: .center, spacing: 12) {
+                statusBadges
+                    .fixedSize(horizontal: true, vertical: false)
+                    .layoutPriority(3)
 
-            Spacer(minLength: 8)
+                Spacer(minLength: 8)
 
-            HomeMacToolbarSearchField(
-                text: $searchText,
-                isTextFocused: $isSearchTextFocused,
-                isSearchExpanded: $isSearchExpanded,
-                visiblePillWidth: $searchVisiblePillWidth,
-                searchExpansionTransitionID: $searchExpansionTransitionID,
-                focusRequestID: $searchFocusRequestID,
-                focusDismissRequestID: $searchFocusDismissRequestID,
-                isCreatingTask: isCreatingTaskFromSearch,
-                canCreateTaskFromQuery: canCreateTaskFromSearch,
-                onSubmit: onSearchSubmit
-            )
-            .frame(width: HomeMacToolbarSearchLayout.focusedWidth, alignment: .center)
-            .layoutPriority(2)
+                toolbarTrailingCluster
+                    .layoutPriority(4)
+            }
+            .padding(.leading, HomeMacToolbarSearchLayout.trafficLightReservedLeadingPadding)
+            .padding(.trailing, HomeMacToolbarSearchLayout.topToolbarHorizontalPadding)
+            .frame(height: HomeMacToolbarSearchLayout.topToolbarHeight)
+            .frame(maxWidth: .infinity)
 
+            toolbarSearch
+                .frame(maxWidth: .infinity, alignment: .center)
+        }
+        .frame(height: HomeMacToolbarSearchLayout.topToolbarHeight)
+        .frame(maxWidth: .infinity)
+    }
+
+    private var toolbarSearch: some View {
+        HomeMacToolbarSearchField(
+            text: $searchText,
+            isTextFocused: $isSearchTextFocused,
+            isSearchExpanded: $isSearchExpanded,
+            visiblePillWidth: $searchVisiblePillWidth,
+            searchExpansionTransitionID: $searchExpansionTransitionID,
+            focusRequestID: $searchFocusRequestID,
+            focusDismissRequestID: $searchFocusDismissRequestID,
+            isCreatingTask: isCreatingTaskFromSearch,
+            canCreateTaskFromQuery: canCreateTaskFromSearch,
+            onSubmit: onSearchSubmit
+        )
+        .frame(width: HomeMacToolbarSearchLayout.focusedWidth, alignment: .center)
+        .layoutPriority(2)
+    }
+
+    private var toolbarTrailingCluster: some View {
+        HStack(spacing: 12) {
             toolbarCommandCluster
-                .layoutPriority(4)
 
             if mode == .board {
                 HomeMacBoardInspectorToolbarButton(
                     isPresented: isBoardInspectorPresented,
                     onToggle: onToggleBoardInspector
                 )
-                .layoutPriority(4)
             }
         }
-        .padding(.leading, HomeMacToolbarSearchLayout.trafficLightReservedLeadingPadding)
-        .padding(.trailing, HomeMacToolbarSearchLayout.topToolbarHorizontalPadding)
-        .frame(height: HomeMacToolbarSearchLayout.topToolbarHeight)
-        .frame(maxWidth: .infinity)
+        .fixedSize(horizontal: true, vertical: false)
     }
 
     private var toolbarCommandCluster: some View {

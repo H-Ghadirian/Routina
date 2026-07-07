@@ -494,6 +494,20 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(source.contains("static let topToolbarHeight: CGFloat = 62"))
         XCTAssertTrue(source.contains("static let topToolbarHorizontalPadding: CGFloat = 18"))
         XCTAssertTrue(source.contains("static let trafficLightReservedLeadingPadding: CGFloat = 142"))
+        XCTAssertTrue(
+            source.contains("ZStack(alignment: .center) {"),
+            "The toolbar row should center search independently of asymmetric leading and trailing controls."
+        )
+        XCTAssertTrue(source.contains("private var toolbarSearch: some View"))
+        XCTAssertTrue(
+            source.contains("toolbarSearch\n                .frame(maxWidth: .infinity, alignment: .center)"),
+            "The search field should stay centered against the full toolbar width, not the remaining space in an HStack."
+        )
+        XCTAssertTrue(source.contains("private var toolbarTrailingCluster: some View"))
+        XCTAssertFalse(
+            source.contains("Spacer(minLength: 8)\n\n            HomeMacToolbarSearchField("),
+            "Search should not be pushed by a leading spacer in the same HStack as the command controls."
+        )
         XCTAssertTrue(source.contains("private var toolbarCommandCluster: some View"))
         XCTAssertFalse(source.contains("private var commandRow: some View"))
         XCTAssertFalse(source.contains("static let commandRowHeight"))
