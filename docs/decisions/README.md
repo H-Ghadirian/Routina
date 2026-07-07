@@ -31,6 +31,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0346](0346-add-mac-future-bulk-subsection-actions.md) refines [0283](0283-preserve-mac-future-inner-sections.md) and [0314](0314-remove-status-grouping-and-collapse-deadline-groups.md) for Mac Future bulk controls:** Mac Home adds `Expand All` and `Collapse All Subsections` context-menu actions to the `Future` header when it has collapsible inner groups. These actions batch-update existing inner-group collapse state while keeping the top-level `Future` wrapper state separate.
 - **[0345](0345-raise-mac-home-minimum-width-for-sidebar-restore.md) refines [0299](0299-constrain-mac-home-window-size.md), [0343](0343-add-mac-home-sidebar-collapse-control.md), and [0344](0344-clamp-mac-home-sidebar-width.md) for Mac Home minimum width:** Mac Home uses a 1440 x 760 default size and a 1440 x 720 minimum size so the expanded sidebar, Planner, and right-side companion pane have room during sidebar restore animation.
 - **[0344](0344-clamp-mac-home-sidebar-width.md) refines [0343](0343-add-mac-home-sidebar-collapse-control.md) for Mac Home sidebar sizing:** Mac Home enforces the existing left-sidebar minimum and maximum widths through the underlying split-view item while the sidebar is visible, so divider dragging cannot make the sidebar consume the main workspace; explicit toolbar collapse remains allowed.
 - **[0343](0343-add-mac-home-sidebar-collapse-control.md) refines [0021](0021-keep-mac-places-in-home-split-shell.md) and [0341](0341-consolidate-mac-home-toolbar-row.md) for Mac Home sidebar visibility:** Mac Home adds an explicit leading top-toolbar control that collapses or expands the shared left sidebar by driving `NavigationSplitView` column visibility, keeping the restore control available after collapse and preserving the shared split shell across Home surfaces.
@@ -244,6 +245,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0346](0346-add-mac-future-bulk-subsection-actions.md) | Add Mac Future Bulk Subsection Actions | Accepted | 2026-07-07 |
 | [0345](0345-raise-mac-home-minimum-width-for-sidebar-restore.md) | Raise Mac Home Minimum Width for Sidebar Restore | Accepted | 2026-07-05 |
 | [0344](0344-clamp-mac-home-sidebar-width.md) | Clamp Mac Home Sidebar Width | Accepted | 2026-07-05 |
 | [0343](0343-add-mac-home-sidebar-collapse-control.md) | Add Mac Home Sidebar Collapse Control | Accepted | 2026-07-05 |

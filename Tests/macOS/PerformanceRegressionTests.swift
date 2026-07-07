@@ -36,6 +36,17 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(source.contains("homeToolbarTodoCount"))
     }
 
+    func testMacFutureSectionContextMenuBulkTogglesInnerGroups() throws {
+        let source = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+TaskList.swift")
+
+        XCTAssertTrue(source.contains("Label(\"Expand All\""))
+        XCTAssertTrue(source.contains("Label(\"Collapse All Subsections\""))
+        XCTAssertTrue(source.contains("section.kind == .future && section.taskGroups.contains { $0.isCollapsible }"))
+        XCTAssertTrue(source.contains("isMacFutureTasksSectionCollapsed = false"))
+        XCTAssertTrue(source.contains("ids.formUnion(subsectionIDs)"))
+        XCTAssertTrue(source.contains("ids.subtract(subsectionIDs)"))
+    }
+
     func testHomeRefreshUsesCentralCloudSyncFanIn() throws {
         let source = try Self.sourceFile("SharedCore/Screens/Home/HomeTCAView+Refresh.swift")
 

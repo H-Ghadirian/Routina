@@ -318,6 +318,14 @@ Given Mac Home groups regular tasks by deadline date
 When Home derives the `Future` section
 Then each deadline-date group remains independently collapsible inside `Future`
 
+Given Mac Home shows `Future` with collapsible inner groups
+When the user right-clicks the `Future` header and chooses `Expand All`
+Then the `Future` wrapper opens and each collapsible inner group expands
+
+Given Mac Home shows `Future` with collapsible inner groups
+When the user right-clicks the `Future` header and chooses `Collapse All Subsections`
+Then the `Future` wrapper stays open and each collapsible inner group collapses
+
 ### Home Task Lists Keep Stable Row Identity
 
 Area: Tasks

@@ -413,7 +413,7 @@ extension HomeTCAView {
         .accessibilityLabel(section.title)
         .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
         .contextMenu {
-            taskListSectionFocusContextMenu(for: section)
+            taskListSectionContextMenu(for: section)
         }
     }
 
@@ -875,9 +875,29 @@ extension HomeTCAView {
     }
 
     @ViewBuilder
-    private func taskListSectionFocusContextMenu(
+    private func taskListSectionContextMenu(
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     ) -> some View {
+        let showsFutureSubsectionActions = section.kind == .future && section.taskGroups.contains { $0.isCollapsible }
+
+        if showsFutureSubsectionActions {
+            Button {
+                expandAllFutureTaskListSubsections(in: section)
+            } label: {
+                Label("Expand All", systemImage: "chevron.down.2")
+            }
+
+            Button {
+                collapseAllFutureTaskListSubsections(in: section)
+            } label: {
+                Label("Collapse All Subsections", systemImage: "chevron.right.2")
+            }
+        }
+
+        if showsFutureSubsectionActions, areMacHomeSectionFocusTimersEnabled, section.canStartFocusTimer {
+            Divider()
+        }
+
         if areMacHomeSectionFocusTimersEnabled, section.canStartFocusTimer {
             Section("Focus Timer") {
                 taskListSectionFocusContextMenuItems(for: section)
@@ -1053,6 +1073,47 @@ extension HomeTCAView {
                 break
             }
         }
+    }
+
+    private func expandAllFutureTaskListSubsections(
+        in section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+    ) {
+        setAllFutureTaskListSubsections(in: section, collapsed: false)
+    }
+
+    private func collapseAllFutureTaskListSubsections(
+        in section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+    ) {
+        setAllFutureTaskListSubsections(in: section, collapsed: true)
+    }
+
+    private func setAllFutureTaskListSubsections(
+        in section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        collapsed: Bool
+    ) {
+        let subsectionIDs = futureTaskListSubsectionCollapseIDs(in: section)
+        guard section.kind == .future, !subsectionIDs.isEmpty else { return }
+
+        withAnimation(.easeInOut(duration: 0.24)) {
+            isMacFutureTasksSectionCollapsed = false
+            var ids = collapsedTagTaskListSectionIDs
+            if collapsed {
+                ids.formUnion(subsectionIDs)
+            } else {
+                ids.subtract(subsectionIDs)
+            }
+            collapsedTagTaskListSectionIDsStorage = ids.sorted().joined(separator: "\n")
+        }
+    }
+
+    private func futureTaskListSubsectionCollapseIDs(
+        in section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+    ) -> Set<String> {
+        Set(
+            section.taskGroups
+                .filter(\.isCollapsible)
+                .map(taskListGroupCollapseID)
+        )
     }
 
     private func visibleRowNumber(
