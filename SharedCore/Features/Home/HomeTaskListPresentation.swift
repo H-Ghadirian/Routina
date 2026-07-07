@@ -11,6 +11,23 @@ struct HomeTaskListPresentationTaskGroup<Display: HomeTaskListDisplay>: Identifi
     let tasks: [Display]
     let moveContext: HomeTaskListMoveContext?
     let isCollapsible: Bool
+    let childGroups: [HomeTaskListPresentationTaskGroup<Display>]
+
+    init(
+        kind: HomeTaskListPresentationSectionKind,
+        title: String?,
+        tasks: [Display],
+        moveContext: HomeTaskListMoveContext?,
+        isCollapsible: Bool,
+        childGroups: [HomeTaskListPresentationTaskGroup<Display>] = []
+    ) {
+        self.kind = kind
+        self.title = title
+        self.tasks = tasks
+        self.moveContext = moveContext
+        self.isCollapsible = isCollapsible
+        self.childGroups = childGroups
+    }
 
     var id: String {
         moveContext?.sectionKey ?? title ?? "primary"
@@ -101,6 +118,8 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
                 seenTaskIDs.insert(task.taskID).inserted
             }
             guard !uniqueTasks.isEmpty else { continue }
+            let uniqueTaskIDs = Set(uniqueTasks.map(\.taskID))
+            let uniqueChildGroups = childGroups(group.childGroups, limitedTo: uniqueTaskIDs)
 
             if let existingIndex = groupIndicesByID[group.id] {
                 let existingGroup = groups[existingIndex]
@@ -110,7 +129,8 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
                     title: existingGroup.title,
                     tasks: mergedTasks,
                     moveContext: Self.moveContext(existingGroup.moveContext, orderedBy: mergedTasks),
-                    isCollapsible: existingGroup.isCollapsible || group.isCollapsible
+                    isCollapsible: existingGroup.isCollapsible || group.isCollapsible,
+                    childGroups: deduplicatedTaskGroups(existingGroup.childGroups + uniqueChildGroups)
                 )
             } else {
                 groupIndicesByID[group.id] = groups.count
@@ -120,13 +140,35 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
                         title: group.title,
                         tasks: uniqueTasks,
                         moveContext: Self.moveContext(group.moveContext, orderedBy: uniqueTasks),
-                        isCollapsible: group.isCollapsible
+                        isCollapsible: group.isCollapsible,
+                        childGroups: uniqueChildGroups
                     )
                 )
             }
         }
 
         return groups
+    }
+
+    private static func childGroups(
+        _ childGroups: [HomeTaskListPresentationTaskGroup<Display>],
+        limitedTo taskIDs: Set<UUID>
+    ) -> [HomeTaskListPresentationTaskGroup<Display>] {
+        childGroups.compactMap { childGroup in
+            let uniqueTasks = childGroup.tasks.filter { taskIDs.contains($0.taskID) }
+            guard !uniqueTasks.isEmpty else { return nil }
+            return HomeTaskListPresentationTaskGroup(
+                kind: childGroup.kind,
+                title: childGroup.title,
+                tasks: uniqueTasks,
+                moveContext: Self.moveContext(childGroup.moveContext, orderedBy: uniqueTasks),
+                isCollapsible: childGroup.isCollapsible,
+                childGroups: Self.childGroups(
+                    childGroup.childGroups,
+                    limitedTo: Set(uniqueTasks.map(\.taskID))
+                )
+            )
+        }
     }
 
     private static func moveContext(
@@ -376,6 +418,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         archivedRoutineDisplays: [Display],
         showArchivedTasks: Bool = true,
         separateDailyRoutinesInTaskList: Bool = false,
+        separateTodosAndRoutinesInTagSections: Bool = false,
         emptyState: HomeTaskListEmptyState
     ) -> Self {
         let visibleArchivedDisplays = showArchivedTasks ? archivedRoutineDisplays : []
@@ -468,6 +511,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                 offset: &offset,
                 showsGroupTitles: true,
                 usesDeadlineDateSectioning: false,
+                separateTodosAndRoutinesInTagSections: separateTodosAndRoutinesInTagSections,
                 moveContext: { section in
                     HomeTaskListMoveContext(
                         sectionKey: section.tasks.first.map { filtering.regularManualOrderSectionKey(for: $0) }
@@ -484,6 +528,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                 offset: &offset,
                 showsGroupTitles: false,
                 usesDeadlineDateSectioning: false,
+                separateTodosAndRoutinesInTagSections: false,
                 moveContext: { section in
                     HomeTaskListMoveContext(
                         sectionKey: HomeTaskListFiltering<Display>.ungroupedManualOrderSectionKey,
@@ -499,6 +544,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                 offset: &offset,
                 showsGroupTitles: true,
                 usesDeadlineDateSectioning: filtering.usesDeadlineDateSectioning,
+                separateTodosAndRoutinesInTagSections: false,
                 moveContext: { section in
                     HomeTaskListMoveContext(
                         sectionKey: section.tasks.first.map { filtering.regularManualOrderSectionKey(for: $0) } ?? "onTrack",
@@ -579,6 +625,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         offset: inout Int,
         showsGroupTitles: Bool,
         usesDeadlineDateSectioning: Bool,
+        separateTodosAndRoutinesInTagSections: Bool,
         moveContext: (HomeTaskListSection<Display>) -> HomeTaskListMoveContext?
     ) -> HomeTaskListPresentationSection<Display>? {
         let taskGroups = regularSections.map { section in
@@ -587,12 +634,18 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                 showsGroupTitles: showsGroupTitles,
                 usesDeadlineDateSectioning: usesDeadlineDateSectioning
             )
+            let childGroups = sidebarFutureTagTaskKindGroups(
+                from: section,
+                parentKind: kind,
+                separateTodosAndRoutinesInTagSections: separateTodosAndRoutinesInTagSections
+            )
             return HomeTaskListPresentationTaskGroup(
                 kind: kind,
                 title: showsGroupTitles ? section.title : nil,
                 tasks: section.tasks,
                 moveContext: moveContext(section),
-                isCollapsible: kind == .tag || kind == .untagged || kind == .deadlineDate
+                isCollapsible: kind == .tag || kind == .untagged || kind == .deadlineDate,
+                childGroups: childGroups
             )
         }
         let tasks = taskGroups.flatMap(\.tasks)
@@ -630,6 +683,38 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             return .deadlineDate
         }
         return .regular
+    }
+
+    private static func sidebarFutureTagTaskKindGroups(
+        from section: HomeTaskListSection<Display>,
+        parentKind: HomeTaskListPresentationSectionKind,
+        separateTodosAndRoutinesInTagSections: Bool
+    ) -> [HomeTaskListPresentationTaskGroup<Display>] {
+        guard separateTodosAndRoutinesInTagSections,
+              parentKind == .tag || parentKind == .untagged else {
+            return []
+        }
+
+        let todos = section.tasks.filter(\.isOneOffTask)
+        let routines = section.tasks.filter { !$0.isOneOffTask }
+        guard !todos.isEmpty, !routines.isEmpty else { return [] }
+
+        return [
+            HomeTaskListPresentationTaskGroup(
+                kind: .regular,
+                title: "Todos",
+                tasks: todos,
+                moveContext: nil,
+                isCollapsible: false
+            ),
+            HomeTaskListPresentationTaskGroup(
+                kind: .regular,
+                title: "Routines",
+                tasks: routines,
+                moveContext: nil,
+                isCollapsible: false
+            )
+        ]
     }
 
     private static func tagPresentationSections(

@@ -106,6 +106,7 @@ struct SettingsRoutineDataPersistenceTests {
             UserDefaultBoolValueKey.appSettingFocusShieldEnabled.rawValue,
             UserDefaultBoolValueKey.appSettingAutomaticPlaceCheckInEnabled.rawValue,
             UserDefaultBoolValueKey.appSettingSeparateDailyRoutinesInTaskList.rawValue,
+            UserDefaultBoolValueKey.appSettingSeparateTodosAndRoutinesInTagTaskListSections.rawValue,
             BatteryRoutinePreferences.thresholdPercentDefaultsKey
         ]
         let previousValues = Dictionary(uniqueKeysWithValues: keysToRestore.map { ($0, defaults.object(forKey: $0)) })
@@ -146,6 +147,7 @@ struct SettingsRoutineDataPersistenceTests {
         defaults[.appSettingFocusShieldEnabled] = true
         defaults[.appSettingAutomaticPlaceCheckInEnabled] = false
         defaults[.appSettingSeparateDailyRoutinesInTaskList] = true
+        defaults[.appSettingSeparateTodosAndRoutinesInTagTaskListSections] = true
         defaults.set(35, forKey: BatteryRoutinePreferences.thresholdPercentDefaultsKey)
 
         let package = try SettingsRoutineDataPersistence.buildBackupPackage(from: context)
@@ -160,6 +162,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(backup.userPreferences?.awayEnabled == true)
         #expect(backup.userPreferences?.filterQuerySectionsEnabled == true)
         #expect(backup.userPreferences?.unlockUnlimitedTasks == true)
+        #expect(backup.userPreferences?.separateTodosAndRoutinesInTagTaskListSections == true)
 
         let restoreContext = makeInMemoryContext()
         let summary = try SettingsRoutineDataPersistence.replaceAllRoutineData(
@@ -195,6 +198,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(restored.focusShieldEnabled)
         #expect(!restored.automaticPlaceCheckInEnabled)
         #expect(restored.separateDailyRoutinesInTaskList)
+        #expect(restored.separateTodosAndRoutinesInTagTaskListSections)
         #expect(restored.batteryRoutineThresholdPercent == 35)
     }
 

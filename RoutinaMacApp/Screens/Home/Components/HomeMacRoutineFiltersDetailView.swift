@@ -13,6 +13,7 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     @Binding var advancedQuery: String
     @Binding var taskListViewMode: HomeTaskListViewMode
     @Binding var routineListSectioningMode: RoutineListSectioningMode
+    @Binding var separateTodosAndRoutinesInTagSections: Bool
     @Binding var taskListSortOrder: HomeTaskListSortOrder
     @Binding var createdDateFilter: HomeTaskCreatedDateFilter
     @Binding var hideAssumedDoneTasks: Bool
@@ -260,6 +261,12 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
             Text(routineListSectioningMode.subtitle)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+
+            if routineListSectioningMode == .tags {
+                Toggle("Separate todos and routines", isOn: $separateTodosAndRoutinesInTagSections)
+                    .toggleStyle(.switch)
+                    .padding(.top, 4)
+            }
         }
     }
 

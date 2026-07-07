@@ -375,6 +375,7 @@ extension SettingsRoutineDataPersistence {
             var automaticPlaceCheckInEnabled: Bool?
             var showTimelineTasksInDayPlanner: Bool?
             var separateDailyRoutinesInTaskList: Bool?
+            var separateTodosAndRoutinesInTagTaskListSections: Bool?
             var notificationReminderHour: Int?
             var notificationReminderMinute: Int?
             var batteryRoutineThresholdPercent: Int?

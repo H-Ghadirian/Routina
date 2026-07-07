@@ -724,6 +724,12 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func defaultSettingsKeepTagTaskKindSubsectionsOff() {
+        #expect(AppSettingsDefaults.boolValues[.appSettingSeparateTodosAndRoutinesInTagTaskListSections] == .some(false))
+        #expect(!RoutinaUserPreferences().separateTodosAndRoutinesInTagTaskListSections)
+    }
+
+    @Test
     func automaticPlaceCheckInToggled_persistsSelection() async {
         let persistedValue = LockIsolated<Bool?>(nil)
 

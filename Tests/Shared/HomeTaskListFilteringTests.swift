@@ -1257,6 +1257,38 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func sidebarPresentationTagGroupingCanSplitFutureTagsByTaskKind() {
+        let todoID = UUID()
+        let routineID = UUID()
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(routineListSectioningMode: .tags),
+            routineDisplays: [
+                TestTaskDisplay(taskID: routineID, name: "Stretch", tags: ["Focus"], daysUntilDue: 4),
+                TestTaskDisplay(taskID: todoID, name: "Book appointment", tags: ["Focus"], daysUntilDue: 4, isOneOffTask: true)
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            separateTodosAndRoutinesInTagSections: true,
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        let futureSection = presentation.sections.first
+        let tagGroup = futureSection?.taskGroups.first
+        #expect(futureSection?.kind == .future)
+        #expect(tagGroup?.title == "#Focus")
+        #expect(tagGroup?.kind == .tag)
+        #expect(tagGroup?.isCollapsible == true)
+        #expect(tagGroup?.moveContext?.sectionKey == "tag:focus")
+        #expect(tagGroup?.childGroups.map(\.title) == [String?("Todos"), String?("Routines")])
+        #expect(tagGroup?.childGroups.map(\.isCollapsible) == [false, false])
+        #expect(tagGroup?.childGroups.map { $0.tasks.map(\.taskID) } == [[todoID], [routineID]])
+    }
+
+    @Test
     func sidebarPresentationTagGroupingMovesPlannedTodayTaskAheadOfMergedDailyRoutines() {
         let referenceDate = Date(timeIntervalSince1970: 1_714_608_000)
         let plannedID = UUID()

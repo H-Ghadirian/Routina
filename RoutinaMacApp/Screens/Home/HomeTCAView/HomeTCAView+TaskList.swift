@@ -436,7 +436,7 @@ extension HomeTCAView {
                         }
 
                         if taskListGroupIsExpanded(group) {
-                            taskListGroupRows(
+                            taskListGroupContent(
                                 group,
                                 section: section,
                                 in: presentation,
@@ -471,7 +471,7 @@ extension HomeTCAView {
                     }
 
                     if taskListGroupIsExpanded(group) {
-                        taskListGroupRows(
+                        taskListGroupContent(
                             group,
                             section: section,
                             in: presentation,
@@ -495,6 +495,69 @@ extension HomeTCAView {
             return taskListTaskRowSpacing()
         }
         return 8
+    }
+
+    @ViewBuilder
+    private func taskListGroupContent(
+        _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>,
+        section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>,
+        metadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay>,
+        rowVisibility: HomeTaskRowVisibility,
+        allowsPlannerDrag: Bool
+    ) -> some View {
+        if group.childGroups.isEmpty {
+            taskListGroupRows(
+                group,
+                section: section,
+                in: presentation,
+                metadataPresenter: metadataPresenter,
+                rowVisibility: rowVisibility,
+                allowsPlannerDrag: allowsPlannerDrag
+            )
+        } else {
+            taskListChildGroups(
+                for: group,
+                section: section,
+                in: presentation,
+                metadataPresenter: metadataPresenter,
+                rowVisibility: rowVisibility,
+                allowsPlannerDrag: allowsPlannerDrag
+            )
+        }
+    }
+
+    @ViewBuilder
+    private func taskListChildGroups(
+        for group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>,
+        section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>,
+        metadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay>,
+        rowVisibility: HomeTaskRowVisibility,
+        allowsPlannerDrag: Bool
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(group.childGroups) { childGroup in
+                VStack(alignment: .leading, spacing: 5) {
+                    if let title = childGroup.title {
+                        taskListInnerGroupHeaderLabel(
+                            title,
+                            count: childGroup.tasks.count,
+                            isExpanded: nil
+                        )
+                    }
+
+                    taskListGroupRows(
+                        childGroup,
+                        section: section,
+                        in: presentation,
+                        metadataPresenter: metadataPresenter,
+                        rowVisibility: rowVisibility,
+                        allowsPlannerDrag: allowsPlannerDrag
+                    )
+                }
+            }
+        }
     }
 
     @ViewBuilder
@@ -529,10 +592,17 @@ extension HomeTCAView {
         _ groups: [HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>]
     ) -> String {
         groups.map { group in
-            let taskIDs = group.tasks.map(\.taskID.uuidString).joined(separator: ",")
-            return "\(group.id):\(taskIDs)"
+            taskListTaskGroupRenderIdentity(group)
         }
         .joined(separator: "|")
+    }
+
+    private func taskListTaskGroupRenderIdentity(
+        _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
+    ) -> String {
+        let taskIDs = group.tasks.map(\.taskID.uuidString).joined(separator: ",")
+        let childIDs = taskListTaskGroupsRenderIdentity(group.childGroups)
+        return "\(group.id):\(taskIDs):\(childIDs)"
     }
 
     private func taskListGroupUsesSectionSurface(
@@ -1136,7 +1206,19 @@ extension HomeTCAView {
     ) -> [UUID] {
         guard taskListSectionIsExpanded(section) else { return [] }
         return section.taskGroups.flatMap { group in
-            taskListGroupIsExpanded(group) ? group.tasks.map(\.taskID) : []
+            visibleTaskIDs(in: group)
+        }
+    }
+
+    private func visibleTaskIDs(
+        in group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
+    ) -> [UUID] {
+        guard taskListGroupIsExpanded(group) else { return [] }
+        guard !group.childGroups.isEmpty else {
+            return group.tasks.map(\.taskID)
+        }
+        return group.childGroups.flatMap { childGroup in
+            visibleTaskIDs(in: childGroup)
         }
     }
 

@@ -82,6 +82,7 @@ enum AppSettingsDefaults {
         .appSettingAutomaticPlaceCheckInEnabled: true,
         .appSettingShowTimelineTasksInDayPlanner: true,
         .appSettingSeparateDailyRoutinesInTaskList: false,
+        .appSettingSeparateTodosAndRoutinesInTagTaskListSections: false,
         .appSettingDailyRoutinesSectionCollapsed: false,
         .appSettingMacPlanTodayDailyRoutinesGroupCollapsed: true,
         .appSettingMacFutureTasksSectionCollapsed: true,
@@ -174,6 +175,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingAutomaticPlaceCheckInEnabled
     case appSettingShowTimelineTasksInDayPlanner = "appSettingShowDayPlanUnplannedDoneBadges"
     case appSettingSeparateDailyRoutinesInTaskList
+    case appSettingSeparateTodosAndRoutinesInTagTaskListSections
     case appSettingDailyRoutinesSectionCollapsed
     case appSettingMacPlanTodayDailyRoutinesGroupCollapsed
     case appSettingMacFutureTasksSectionCollapsed

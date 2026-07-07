@@ -305,7 +305,7 @@ Then that routine no longer appears in the today plan for the canceled day
 ### Future Preserves Inner Group Behavior
 
 Area: Tasks
-Decision links: [0283](../decisions/0283-preserve-mac-future-inner-sections.md), [0314](../decisions/0314-remove-status-grouping-and-collapse-deadline-groups.md)
+Decision links: [0283](../decisions/0283-preserve-mac-future-inner-sections.md), [0314](../decisions/0314-remove-status-grouping-and-collapse-deadline-groups.md), [0347](../decisions/0347-split-mac-future-tag-groups-by-task-kind.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/HomeTaskListFilteringTests.swift`
@@ -313,6 +313,10 @@ Coverage:
 Given Mac Home groups regular tasks by tag
 When Home derives the `Future` section
 Then each tag group remains a tagged, colorable, collapsible inner section inside `Future`
+
+Given Mac Home groups regular tasks by tag and the tag task-kind split is enabled
+When a `Future` tag group contains both todos and routines
+Then the parent tag group stays collapsible and renders non-collapsible `Todos` and `Routines` child subsections
 
 Given Mac Home groups regular tasks by deadline date
 When Home derives the `Future` section

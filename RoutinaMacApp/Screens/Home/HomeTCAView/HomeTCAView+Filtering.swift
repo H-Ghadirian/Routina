@@ -67,6 +67,7 @@ extension HomeTCAView {
             archivedRoutineDisplays: archivedRoutineDisplays,
             showArchivedTasks: store.showArchivedTasks,
             separateDailyRoutinesInTaskList: separatesDailyRoutinesInTaskList,
+            separateTodosAndRoutinesInTagSections: separatesTodosAndRoutinesInTagTaskListSections,
             emptyState: emptyState,
             taskListMode: store.taskListMode,
             selectedFilter: store.selectedFilter,
@@ -100,6 +101,7 @@ extension HomeTCAView {
                 archivedRoutineDisplays: archivedRoutineDisplays,
                 showArchivedTasks: store.showArchivedTasks,
                 separateDailyRoutinesInTaskList: separatesDailyRoutinesInTaskList,
+                separateTodosAndRoutinesInTagSections: separatesTodosAndRoutinesInTagTaskListSections,
                 emptyState: emptyState
             )
         }
@@ -210,6 +212,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
     let archivedRoutineDisplays: [HomeFeature.RoutineDisplay]
     let showArchivedTasks: Bool
     let separateDailyRoutinesInTaskList: Bool
+    let separateTodosAndRoutinesInTagSections: Bool
     let emptyState: HomeTaskListEmptyState
     let taskListMode: HomeFeature.TaskListMode
     let selectedFilter: RoutineListFilter
@@ -243,6 +246,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         archivedRoutineDisplays: [HomeFeature.RoutineDisplay],
         showArchivedTasks: Bool,
         separateDailyRoutinesInTaskList: Bool,
+        separateTodosAndRoutinesInTagSections: Bool,
         emptyState: HomeTaskListEmptyState,
         taskListMode: HomeFeature.TaskListMode,
         selectedFilter: RoutineListFilter,
@@ -272,6 +276,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         self.archivedRoutineDisplays = archivedRoutineDisplays
         self.showArchivedTasks = showArchivedTasks
         self.separateDailyRoutinesInTaskList = separateDailyRoutinesInTaskList
+        self.separateTodosAndRoutinesInTagSections = separateTodosAndRoutinesInTagSections
         self.emptyState = emptyState
         self.taskListMode = taskListMode
         self.selectedFilter = selectedFilter
