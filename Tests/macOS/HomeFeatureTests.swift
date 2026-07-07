@@ -2936,6 +2936,13 @@ struct HomeFeatureTests {
             $0.routineDisplays[0].scheduleAnchor = now
             $0.routineDisplays[0].isDoneToday = true
             $0.routineDisplays[0].doneCount = 1
+            $0.timelineLogs = [
+                RoutineLog(
+                    id: HomeOptimisticTimelineLogID.make(taskID: task.id, completionDate: now),
+                    timestamp: now,
+                    taskID: task.id
+                )
+            ]
             $0.doneStats = HomeFeature.DoneStats(totalCount: 1, countsByTaskID: [task.id: 1])
         }
 
@@ -3018,6 +3025,13 @@ struct HomeFeatureTests {
                 )
             ]
             $0.boardTodoDisplays[0].todoState = .done
+            $0.timelineLogs = [
+                RoutineLog(
+                    id: HomeOptimisticTimelineLogID.make(taskID: task.id, completionDate: now),
+                    timestamp: now,
+                    taskID: task.id
+                )
+            ]
             $0.doneStats = HomeFeature.DoneStats(totalCount: 1, countsByTaskID: [task.id: 1])
         }
 
@@ -3110,6 +3124,7 @@ struct HomeFeatureTests {
         let afterFirstLogs = try context.fetch(FetchDescriptor<RoutineLog>())
         let afterFirstTask = try #require(try context.fetch(FetchDescriptor<RoutineTask>()).first)
         #expect(afterFirstLogs.isEmpty)
+        #expect(store.state.timelineLogs.isEmpty)
         #expect(afterFirstTask.completedStepCount == 1)
         #expect(afterFirstTask.lastDone == nil)
     }
