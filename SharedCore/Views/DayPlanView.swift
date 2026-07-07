@@ -608,7 +608,7 @@ private struct DayPlanHeaderView: View {
 
     private func macHeaderRow(showsRangePicker: Bool) -> some View {
         HStack(alignment: .center, spacing: 12) {
-            plannerNavigationCluster(showsRangePicker: showsRangePicker)
+            plannerViewControlsCluster(showsRangePicker: showsRangePicker)
 
             Spacer(minLength: 16)
 
@@ -643,7 +643,7 @@ private struct DayPlanHeaderView: View {
 
     private func macHeaderFittingControls(showsRangePicker: Bool) -> some View {
         HStack(alignment: .center, spacing: 12) {
-            plannerNavigationCluster(showsRangePicker: showsRangePicker)
+            plannerViewControlsCluster(showsRangePicker: showsRangePicker)
             Color.clear.frame(width: 16, height: 1)
             plannerUtilityCluster
         }
@@ -653,10 +653,7 @@ private struct DayPlanHeaderView: View {
         VStack(alignment: .leading, spacing: 10) {
             if effectiveDisplayMode == .calendar {
                 HStack(alignment: .center, spacing: 10) {
-                    if shouldShowTodayButton {
-                        todayButton
-                    }
-                    rangeNavigationButtons
+                    plannerDateNavigationCluster
 
                     Spacer(minLength: 8)
 
@@ -675,14 +672,8 @@ private struct DayPlanHeaderView: View {
         }
     }
 
-    private func plannerNavigationCluster(showsRangePicker: Bool = true) -> some View {
+    private func plannerViewControlsCluster(showsRangePicker: Bool = true) -> some View {
         HStack(alignment: .center, spacing: 10) {
-            if effectiveDisplayMode == .calendar {
-                if shouldShowTodayButton {
-                    todayButton
-                }
-                rangeNavigationButtons
-            }
             if showsDisplayModePicker {
                 displayModePicker
             }
@@ -704,6 +695,12 @@ private struct DayPlanHeaderView: View {
                 calendarFilterButton
             }
 
+#if os(macOS)
+            if effectiveDisplayMode == .calendar {
+                plannerDateNavigationCluster
+            }
+#endif
+
             if showsPlannerDatePickerButton {
                 plannerDatePickerButton
             }
@@ -724,6 +721,15 @@ private struct DayPlanHeaderView: View {
     private var shouldShowTodayButton: Bool {
         !planner.visibleDates(calendar: calendar).contains { date in
             calendar.isDateInToday(date)
+        }
+    }
+
+    private var plannerDateNavigationCluster: some View {
+        HStack(alignment: .center, spacing: 10) {
+            if shouldShowTodayButton {
+                todayButton
+            }
+            rangeNavigationButtons
         }
     }
 
