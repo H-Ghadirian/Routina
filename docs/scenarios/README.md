@@ -255,6 +255,10 @@ Given a weekly time-window routine has an earlier occurrence already resolved as
 When the user selects a later missed occurrence in Task Detail and presses Done
 Then Routina records a completed log for the selected occurrence without treating the earlier resolved occurrence as a blocker
 
+Given a weekly time-window routine has unresolved missed occurrences on June 18 and June 25, 2026
+When the user selects the later July 2, 2026 occurrence and presses Done
+Then Routina keeps June 18 and June 25 visible as unresolved missed days and still lets either selected missed day be resolved directly
+
 ### Editing Calendar Weekday Routines Preserves All Selected Days
 
 Area: Tasks

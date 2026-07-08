@@ -383,14 +383,14 @@ enum HomeTaskLifecycleSupport {
         calendar: Calendar,
         doneStats: HomeDoneStats
     ) -> Date? {
-        RoutineDateMath.missedExactTimedOccurrenceDates(
+        RoutineDateMath.unresolvedMissedExactTimedOccurrenceDates(
             for: task,
             referenceDate: referenceDate,
             calendar: calendar
-        )
-        .first {
-            !doneStats.hasResolvedMissedDate(taskID: taskID, missedDate: $0, calendar: calendar)
+        ) { missedDate in
+            doneStats.hasResolvedMissedDate(taskID: taskID, missedDate: missedDate, calendar: calendar)
         }
+        .first
     }
 
     private static func removeDate(

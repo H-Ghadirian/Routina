@@ -259,9 +259,10 @@ enum RoutineDateMath {
             return false
         }
 
-        let isSelectedMissedDate = missedExactTimedOccurrenceDates(
+        let isSelectedMissedDate = unresolvedMissedExactTimedOccurrenceDates(
             for: task,
             referenceDate: referenceDate,
+            logs: logs,
             calendar: calendar
         ).contains {
             calendar.isDate($0, inSameDayAs: occurrence)
@@ -353,18 +354,38 @@ enum RoutineDateMath {
         logs: [RoutineLog],
         calendar: Calendar = .current
     ) -> [Date] {
-        missedExactTimedOccurrenceDates(
+        unresolvedMissedExactTimedOccurrenceDates(
             for: task,
             referenceDate: referenceDate,
             calendar: calendar
-        )
-        .filter { missedDate in
-            !isExactTimedMissedOccurrenceAcknowledged(
+        ) { missedDate in
+            isExactTimedMissedOccurrenceAcknowledged(
                 for: task,
                 missedDate: missedDate,
                 logs: logs,
                 calendar: calendar
             )
+        }
+    }
+
+    static func unresolvedMissedExactTimedOccurrenceDates(
+        for task: RoutineTask,
+        referenceDate: Date,
+        calendar: Calendar = .current,
+        isAcknowledged: (Date) -> Bool
+    ) -> [Date] {
+        mergedMissedExactTimedOccurrenceDates(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        .filter { missedDate in
+            !isExactTimedMissedOccurrenceAcknowledgedByTaskState(
+                for: task,
+                missedDate: missedDate,
+                calendar: calendar
+            )
+            && !isAcknowledged(missedDate)
         }
     }
 
@@ -382,6 +403,160 @@ enum RoutineDateMath {
         }
 
         return nextExactTimedOccurrence(after: missedDate, for: task, calendar: calendar)
+    }
+
+    private static func mergedMissedExactTimedOccurrenceDates(
+        for task: RoutineTask,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> [Date] {
+        var dates: [Date] = []
+        for missedDate in historicalMissedExactTimedOccurrenceDates(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        ) {
+            appendUnique(missedDate, to: &dates, calendar: calendar)
+        }
+        for missedDate in missedExactTimedOccurrenceDates(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        ) {
+            appendUnique(missedDate, to: &dates, calendar: calendar)
+        }
+        return dates.sorted()
+    }
+
+    private static func historicalMissedExactTimedOccurrenceDates(
+        for task: RoutineTask,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> [Date] {
+        guard usesExactTimedOccurrenceTracking(for: task) else { return [] }
+        var dates: [Date] = []
+        var candidate = firstHistoricalExactTimedOccurrence(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        for _ in 0..<10_000 {
+            guard isExactTimedOccurrenceMissed(
+                candidate,
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) else {
+                return dates
+            }
+            dates.append(candidate)
+            let nextCandidate = nextExactTimedOccurrence(after: candidate, for: task, calendar: calendar)
+            guard nextCandidate > candidate else { return dates }
+            candidate = nextCandidate
+        }
+
+        return dates
+    }
+
+    private static func firstHistoricalExactTimedOccurrence(
+        for task: RoutineTask,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> Date {
+        let base = task.scheduleAnchor ?? task.createdAt ?? task.lastDone ?? referenceDate
+        let timeOfDay = scheduledTimeOfDay(for: task.recurrenceRule) ?? RoutineTimeOfDay(hour: 0, minute: 0)
+
+        switch task.recurrenceRule.kind {
+        case .intervalDays:
+            let firstDueDate = calendar.date(
+                byAdding: .day,
+                value: max(task.recurrenceRule.interval, 1),
+                to: base
+            ) ?? base
+            return timeOfDay.date(on: firstDueDate, calendar: calendar)
+
+        case .dailyTime:
+            let searchBase: Date
+            if let timeRange = task.recurrenceRule.timeRange,
+               !timeRange.contains(base, calendar: calendar),
+               base >= timeRange.endDate(on: base, calendar: calendar) {
+                searchBase = base
+            } else {
+                searchBase = calendar.startOfDay(for: base)
+            }
+            return nextDailyOccurrence(
+                after: searchBase,
+                timeOfDay: timeOfDay,
+                includeCurrentDate: true,
+                calendar: calendar
+            )
+
+        case .weekly:
+            let weekdays = task.recurrenceRule.resolvedWeekdays(calendar: calendar)
+            let searchBase: Date
+            if isWeeklyOccurrenceDay(base, weekdays: weekdays, calendar: calendar) {
+                if let timeRange = task.recurrenceRule.timeRange,
+                   !timeRange.contains(base, calendar: calendar),
+                   base >= timeRange.endDate(on: base, calendar: calendar) {
+                    searchBase = base
+                } else {
+                    searchBase = calendar.startOfDay(for: base)
+                }
+            } else {
+                searchBase = base
+            }
+            return nextWeeklyOccurrence(
+                after: searchBase,
+                weekdays: weekdays,
+                timeOfDay: timeOfDay,
+                includeCurrentDate: true,
+                calendar: calendar
+            )
+
+        case .monthlyDay:
+            let daysOfMonth = task.recurrenceRule.resolvedDaysOfMonth(calendar: calendar)
+            let searchBase: Date
+            if isMonthlyOccurrenceDay(base, daysOfMonth: daysOfMonth, calendar: calendar) {
+                if let timeRange = task.recurrenceRule.timeRange,
+                   !timeRange.contains(base, calendar: calendar),
+                   base >= timeRange.endDate(on: base, calendar: calendar) {
+                    searchBase = base
+                } else {
+                    searchBase = calendar.startOfDay(for: base)
+                }
+            } else {
+                searchBase = base
+            }
+            return nextMonthlyOccurrence(
+                after: searchBase,
+                daysOfMonth: daysOfMonth,
+                timeOfDay: timeOfDay,
+                includeCurrentDate: true,
+                calendar: calendar
+            )
+        }
+    }
+
+    private static func appendUnique(_ date: Date, to dates: inout [Date], calendar: Calendar) {
+        guard !dates.contains(where: { calendar.isDate($0, inSameDayAs: date) }) else { return }
+        dates.append(date)
+    }
+
+    private static func isExactTimedMissedOccurrenceAcknowledgedByTaskState(
+        for task: RoutineTask,
+        missedDate: Date,
+        calendar: Calendar
+    ) -> Bool {
+        if let lastDone = task.lastDone,
+           calendar.isDate(lastDone, inSameDayAs: missedDate) {
+            return true
+        }
+        if let canceledAt = task.canceledAt,
+           calendar.isDate(canceledAt, inSameDayAs: missedDate) {
+            return true
+        }
+        return false
     }
 
     private static func isExactTimedOccurrenceMissed(

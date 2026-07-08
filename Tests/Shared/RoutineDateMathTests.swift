@@ -817,6 +817,76 @@ struct RoutineDateMathTests {
     }
 
     @Test
+    func unresolvedMissedExactTimedOccurrencesRemainAfterLaterCompletionLog() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let firstMissed = makeDate("2026-06-18T18:30:00Z")
+        let secondMissed = makeDate("2026-06-25T18:30:00Z")
+        let completedLater = makeDate("2026-07-02T18:30:00Z")
+        let task = RoutineTask(
+            recurrenceRule: .weekly(
+                on: 5,
+                timeRange: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 18, minute: 30),
+                    end: RoutineTimeOfDay(hour: 20, minute: 0)
+                )
+            ),
+            lastDone: completedLater,
+            scheduleAnchor: makeDate("2026-06-12T10:00:00Z"),
+            createdAt: makeDate("2026-06-12T10:00:00Z")
+        )
+        let logs = [
+            RoutineLog(timestamp: completedLater, taskID: task.id, kind: .completed)
+        ]
+        let referenceDate = makeDate("2026-07-07T15:00:00Z")
+
+        #expect(RoutineDateMath.missedExactTimedOccurrenceDates(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        ) == [])
+        #expect(RoutineDateMath.unresolvedMissedExactTimedOccurrenceDates(
+            for: task,
+            referenceDate: referenceDate,
+            logs: logs,
+            calendar: calendar
+        ) == [firstMissed, secondMissed])
+    }
+
+    @Test
+    func selectedEarlierMissedExactTimedOccurrenceCanBeMarkedDoneAfterLaterCompletion() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let selectedMissed = makeDate("2026-06-25T18:30:00Z")
+        let completedLater = makeDate("2026-07-02T18:30:00Z")
+        let task = RoutineTask(
+            recurrenceRule: .weekly(
+                on: 5,
+                timeRange: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 18, minute: 30),
+                    end: RoutineTimeOfDay(hour: 20, minute: 0)
+                )
+            ),
+            lastDone: completedLater,
+            scheduleAnchor: makeDate("2026-06-12T10:00:00Z"),
+            createdAt: makeDate("2026-06-12T10:00:00Z")
+        )
+        let logs = [
+            RoutineLog(timestamp: completedLater, taskID: task.id, kind: .completed)
+        ]
+
+        #expect(RoutineDateMath.canMarkSelectedExactTimedOccurrenceDone(
+            for: task,
+            completionDate: selectedMissed,
+            referenceDate: makeDate("2026-07-07T15:00:00Z"),
+            logs: logs,
+            calendar: calendar
+        ))
+    }
+
+    @Test
     func canceledExactTimedOccurrenceAcknowledgesMissedAssumption() {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
