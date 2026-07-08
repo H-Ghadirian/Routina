@@ -4,21 +4,25 @@ import SwiftUI
 struct AddRoutineNavigationChromeModifier: ViewModifier {
     let store: StoreOf<AddRoutineFeature>
     let isSaveDisabled: Bool
+    var showsToolbarActions = true
 
     func body(content: Content) -> some View {
         content
             .navigationTitle("Add Task")
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        store.send(.cancelTapped)
+                if showsToolbarActions {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") {
+                            store.send(.cancelTapped)
+                        }
                     }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        store.send(.saveTapped)
+
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Save") {
+                            store.send(.saveTapped)
+                        }
+                        .disabled(isSaveDisabled)
                     }
-                    .disabled(isSaveDisabled)
                 }
             }
     }
@@ -49,12 +53,14 @@ struct AddRoutineTagNotificationsModifier: ViewModifier {
 extension View {
     func routinaAddRoutineNavigationChrome(
         store: StoreOf<AddRoutineFeature>,
-        isSaveDisabled: Bool
+        isSaveDisabled: Bool,
+        showsToolbarActions: Bool = true
     ) -> some View {
         modifier(
             AddRoutineNavigationChromeModifier(
                 store: store,
-                isSaveDisabled: isSaveDisabled
+                isSaveDisabled: isSaveDisabled,
+                showsToolbarActions: showsToolbarActions
             )
         )
     }

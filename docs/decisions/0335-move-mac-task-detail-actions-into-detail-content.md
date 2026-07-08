@@ -18,6 +18,7 @@ Accepted
 ## Refined By
 
 - [0336: Compact Mac Task Detail Companion Actions](0336-compact-mac-task-detail-companion-actions.md)
+- [0353: Move Mac Task Form Actions Into Identity](0353-move-mac-task-form-actions-into-identity.md)
 
 ## Context
 
@@ -29,7 +30,7 @@ These controls act on the selected detail item rather than the whole Home worksp
 
 Mac task detail actions render as a top-trailing action cluster inside the task detail header card. The cluster keeps the existing explicit spacing and button hierarchy: `Done` remains the prominent task action, routine Pause/Resume and one-off `Cancel todo` remain secondary text actions, and link, sharing, edit, minimize, and close remain equal-size icon actions.
 
-The app toolbar no longer owns or hides these task-specific actions during Home toolbar search expansion. It may still show principal title content and inline edit Cancel/Save actions when needed.
+The app toolbar no longer owns or hides these task-specific actions during Home toolbar search expansion. It may still show principal title content when needed. The former inline edit Cancel/Save toolbar exception is refined by [0353](0353-move-mac-task-form-actions-into-identity.md).
 
 ## Consequences
 

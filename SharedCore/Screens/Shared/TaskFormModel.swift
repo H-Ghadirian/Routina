@@ -147,6 +147,9 @@ struct TaskFormModel {
     var nameFocus: FocusState<Bool>.Binding? = nil
     var nameFocusRequestID: Int = 0
     var visibilityMode: TaskFormVisibilityMode = .full
+    var onCancel: (() -> Void)? = nil
+    var onSave: (() -> Void)? = nil
+    var isSaveDisabled = false
 
     // MARK: Extras
     var autofocusName: Bool = false

@@ -162,6 +162,9 @@ struct AddRoutineTaskFormModelFactory {
             nameFocus: nameFocus,
             nameFocusRequestID: nameFocusRequestID,
             visibilityMode: .progressiveCreate,
+            onCancel: { store.send(.cancelTapped) },
+            onSave: { store.send(.saveTapped) },
+            isSaveDisabled: store.isSaveDisabled,
             autofocusName: true,
             onDelete: nil
         )

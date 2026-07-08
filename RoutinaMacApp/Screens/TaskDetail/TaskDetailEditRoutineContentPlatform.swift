@@ -5,6 +5,7 @@ struct TaskDetailEditRoutineContent: View {
     let store: StoreOf<TaskDetailFeature>
     @Binding var isEditEmojiPickerPresented: Bool
     let emojiOptions: [String]
+    let canSaveCurrentEdit: Bool
     @Environment(\.calendar) private var calendar
 
     var body: some View {
@@ -186,6 +187,9 @@ struct TaskDetailEditRoutineContent: View {
                 set: { store.send(.editColorChanged($0)) }
             ),
             visibilityMode: .progressiveEdit,
+            onCancel: { store.send(.setEditSheet(false)) },
+            onSave: { store.send(.editSaveTapped) },
+            isSaveDisabled: !canSaveCurrentEdit,
             autofocusName: false,
             onDelete: { store.send(.setDeleteConfirmation(true)) },
             pauseResumeAction: showsPauseResume

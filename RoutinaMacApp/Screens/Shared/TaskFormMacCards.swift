@@ -1,20 +1,48 @@
 import SwiftUI
 
-struct TaskFormMacSectionCard<Content: View>: View {
+struct TaskFormMacSectionCard<Content: View, HeaderAccessory: View>: View {
     let title: String
     var subtitle: String?
+    @ViewBuilder let headerAccessory: HeaderAccessory
     @ViewBuilder let content: Content
+
+    init(
+        title: String,
+        subtitle: String? = nil,
+        @ViewBuilder content: () -> Content
+    ) where HeaderAccessory == EmptyView {
+        self.title = title
+        self.subtitle = subtitle
+        self.headerAccessory = EmptyView()
+        self.content = content()
+    }
+
+    init(
+        title: String,
+        subtitle: String? = nil,
+        @ViewBuilder headerAccessory: () -> HeaderAccessory,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.headerAccessory = headerAccessory()
+        self.content = content()
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.headline.weight(.semibold))
-                if let subtitle {
-                    Text(subtitle)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.headline.weight(.semibold))
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
                 }
+                Spacer(minLength: 12)
+                headerAccessory
             }
             content
         }
@@ -199,7 +227,12 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
     @ViewBuilder let nameField: NameField
 
     var body: some View {
-        TaskFormMacSectionCard(title: "Identity") {
+        TaskFormMacSectionCard(
+            title: "Identity",
+            headerAccessory: {
+                actionButtons
+            }
+        ) {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .top, spacing: 14) {
                     selectedEmojiButton
@@ -213,6 +246,30 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
                 }
 
                 emojiPickerRow
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var actionButtons: some View {
+        if model.onCancel != nil || model.onSave != nil {
+            HStack(spacing: 8) {
+                if let onCancel = model.onCancel {
+                    Button("Cancel") {
+                        onCancel()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.regular)
+                }
+
+                if let onSave = model.onSave {
+                    Button("Save") {
+                        onSave()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.regular)
+                    .disabled(model.isSaveDisabled)
+                }
             }
         }
     }

@@ -121,8 +121,7 @@ struct TaskDetailTCAView: View {
                 TaskDetailToolbarContent(
                     store: store,
                     showsPrincipalToolbarTitle: showsPrincipalToolbarTitle,
-                    isInlineEditPresented: isInlineEditPresented,
-                    canSaveCurrentEdit: canSaveCurrentEdit
+                    isInlineEditPresented: isInlineEditPresented
                 )
             }
             .routinaPlatformEditPresentation(
@@ -238,7 +237,8 @@ struct TaskDetailTCAView: View {
             TaskDetailEditRoutineContent(
                 store: store,
                 isEditEmojiPickerPresented: $isEditEmojiPickerPresented,
-                emojiOptions: emojiOptions
+                emojiOptions: emojiOptions,
+                canSaveCurrentEdit: canSaveCurrentEdit
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         } else if store.task.isOneOffTask {

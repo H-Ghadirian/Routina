@@ -5,7 +5,6 @@ struct TaskDetailToolbarContent: ToolbarContent {
     let store: StoreOf<TaskDetailFeature>
     let showsPrincipalToolbarTitle: Bool
     let isInlineEditPresented: Bool
-    let canSaveCurrentEdit: Bool
 
     var body: some ToolbarContent {
         if showsPrincipalToolbarTitle {
@@ -18,21 +17,6 @@ struct TaskDetailToolbarContent: ToolbarContent {
                     Text(store.routineEmoji)
                         .font(TaskDetailPlatformStyle.principalTitleFont)
                 }
-            }
-        }
-
-        if isInlineEditPresented {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel") {
-                    store.send(.setEditSheet(false))
-                }
-            }
-
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Save") {
-                    store.send(.editSaveTapped)
-                }
-                .disabled(!canSaveCurrentEdit)
             }
         }
     }
