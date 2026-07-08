@@ -405,8 +405,16 @@ extension HomeTCAView {
             homeTopToolbarChrome
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(HomeMacWindowFullscreenObserver(isFullscreen: $isMacWindowFullscreen))
+        .background(
+            HomeMacWindowFullscreenObserver(
+                isFullscreen: $isMacWindowFullscreen,
+                isTitlebarRevealed: $isMacFullscreenTitlebarRevealed
+            )
+        )
         .routinaMacFullscreenTitlebarSafeArea(isFullscreen: isMacWindowFullscreen)
+        .routinaMacFullscreenTitlebarSpacing(
+            isVisible: isMacWindowFullscreen && isMacFullscreenTitlebarRevealed
+        )
         .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
     }
 
@@ -1015,10 +1023,28 @@ private extension View {
             ignoresSafeArea(edges: .top)
         }
     }
+
+    @ViewBuilder
+    func routinaMacFullscreenTitlebarSpacing(isVisible: Bool) -> some View {
+        if isVisible {
+            padding(.top, HomeMacFullscreenChrome.revealedTitlebarHeight)
+        } else {
+            self
+        }
+    }
+}
+
+private enum HomeMacFullscreenChrome {
+    static let revealedTitlebarHeight: CGFloat = 36
+    static let revealTriggerDistance: CGFloat = 6
+    static let revealRetainDistance: CGFloat = 78
+    static let revealPollingIntervalNanoseconds: UInt64 = 100_000_000
+    static let hideDelayNanoseconds: UInt64 = 1_200_000_000
 }
 
 private struct HomeMacWindowFullscreenObserver: NSViewRepresentable {
     @Binding var isFullscreen: Bool
+    @Binding var isTitlebarRevealed: Bool
 
     func makeNSView(context: Context) -> NSView {
         NSView(frame: .zero)
@@ -1026,11 +1052,15 @@ private struct HomeMacWindowFullscreenObserver: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSView, context: Context) {
         context.coordinator.isFullscreen = $isFullscreen
+        context.coordinator.isTitlebarRevealed = $isTitlebarRevealed
         context.coordinator.attach(to: nsView)
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(isFullscreen: $isFullscreen)
+        Coordinator(
+            isFullscreen: $isFullscreen,
+            isTitlebarRevealed: $isTitlebarRevealed
+        )
     }
 
     static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
@@ -1040,12 +1070,19 @@ private struct HomeMacWindowFullscreenObserver: NSViewRepresentable {
     @MainActor
     final class Coordinator: @unchecked Sendable {
         var isFullscreen: Binding<Bool>
+        var isTitlebarRevealed: Binding<Bool>
         private weak var observedWindow: NSWindow?
         private var notificationObservers: [NSObjectProtocol] = []
         private var isAttachRetryScheduled = false
+        private var titlebarRevealPollingTask: Task<Void, Never>?
+        private var titlebarHideTask: Task<Void, Never>?
 
-        init(isFullscreen: Binding<Bool>) {
+        init(
+            isFullscreen: Binding<Bool>,
+            isTitlebarRevealed: Binding<Bool>
+        ) {
             self.isFullscreen = isFullscreen
+            self.isTitlebarRevealed = isTitlebarRevealed
         }
 
         func attach(to view: NSView) {
@@ -1115,11 +1152,22 @@ private struct HomeMacWindowFullscreenObserver: NSViewRepresentable {
         func detach() {
             notificationObservers.forEach(NotificationCenter.default.removeObserver)
             notificationObservers.removeAll()
+            stopTitlebarRevealPolling()
             observedWindow = nil
+            setTitlebarRevealed(false)
         }
 
         private func update(from window: NSWindow) {
-            setFullscreen(window.styleMask.contains(.fullScreen))
+            let windowIsFullscreen = window.styleMask.contains(.fullScreen)
+            setFullscreen(windowIsFullscreen)
+
+            if windowIsFullscreen {
+                startTitlebarRevealPollingIfNeeded()
+                updateTitlebarRevealFromPointer(in: window)
+            } else {
+                stopTitlebarRevealPolling()
+                setTitlebarRevealed(false)
+            }
         }
 
         private func setFullscreen(_ value: Bool) {
@@ -1129,5 +1177,88 @@ private struct HomeMacWindowFullscreenObserver: NSViewRepresentable {
                 self.isFullscreen.wrappedValue = value
             }
         }
+
+        private func startTitlebarRevealPollingIfNeeded() {
+            guard titlebarRevealPollingTask == nil else { return }
+
+            titlebarRevealPollingTask = Task { @MainActor [weak self] in
+                while !Task.isCancelled {
+                    self?.updateTitlebarRevealFromPointer()
+                    try? await Task.sleep(
+                        nanoseconds: HomeMacFullscreenChrome.revealPollingIntervalNanoseconds
+                    )
+                }
+            }
+        }
+
+        private func stopTitlebarRevealPolling() {
+            titlebarRevealPollingTask?.cancel()
+            titlebarRevealPollingTask = nil
+            cancelScheduledTitlebarHide()
+        }
+
+        private func updateTitlebarRevealFromPointer() {
+            guard let observedWindow else {
+                setTitlebarRevealed(false)
+                return
+            }
+
+            updateTitlebarRevealFromPointer(in: observedWindow)
+        }
+
+        private func updateTitlebarRevealFromPointer(in window: NSWindow) {
+            guard
+                window.styleMask.contains(.fullScreen),
+                let screen = window.screen
+            else {
+                setTitlebarRevealed(false)
+                return
+            }
+
+            let mouseLocation = NSEvent.mouseLocation
+            let topDistance = screen.frame.maxY - mouseLocation.y
+            let isOverFullscreenScreen = (screen.frame.minX...screen.frame.maxX).contains(mouseLocation.x)
+            let isNearTopEdge = isOverFullscreenScreen
+                && topDistance <= HomeMacFullscreenChrome.revealTriggerDistance
+            let isWithinRevealedChrome = isOverFullscreenScreen
+                && topDistance <= HomeMacFullscreenChrome.revealRetainDistance
+            let shouldShowTitlebarSpacing = isTitlebarRevealed.wrappedValue
+                ? isWithinRevealedChrome
+                : isNearTopEdge
+
+            if shouldShowTitlebarSpacing {
+                cancelScheduledTitlebarHide()
+                setTitlebarRevealed(true)
+            } else if isTitlebarRevealed.wrappedValue {
+                scheduleTitlebarHide()
+            }
+        }
+
+        private func scheduleTitlebarHide() {
+            guard titlebarHideTask == nil else { return }
+
+            titlebarHideTask = Task { @MainActor [weak self] in
+                try? await Task.sleep(
+                    nanoseconds: HomeMacFullscreenChrome.hideDelayNanoseconds
+                )
+                guard let self, !Task.isCancelled else { return }
+                self.titlebarHideTask = nil
+                self.setTitlebarRevealed(false)
+            }
+        }
+
+        private func cancelScheduledTitlebarHide() {
+            titlebarHideTask?.cancel()
+            titlebarHideTask = nil
+        }
+
+        private func setTitlebarRevealed(_ value: Bool) {
+            guard isTitlebarRevealed.wrappedValue != value else { return }
+            Task { @MainActor [weak self] in
+                guard let self, self.isTitlebarRevealed.wrappedValue != value else { return }
+                self.isTitlebarRevealed.wrappedValue = value
+            }
+        }
+
     }
 }

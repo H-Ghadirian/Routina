@@ -76,15 +76,16 @@ And the field remains clickable and editable throughout the animation
 ### Mac Fullscreen Window Chrome Does Not Cover Home Toolbar
 
 Area: Other
-Decision links: [0022](../decisions/0022-own-mac-home-toolbar-at-split-shell.md), [0340](../decisions/0340-use-swiftui-outlook-style-mac-home-top-toolbar.md), [0341](../decisions/0341-consolidate-mac-home-toolbar-row.md), [0352](../decisions/0352-respect-mac-home-fullscreen-titlebar-safe-area.md)
+Decision links: [0022](../decisions/0022-own-mac-home-toolbar-at-split-shell.md), [0340](../decisions/0340-use-swiftui-outlook-style-mac-home-top-toolbar.md), [0341](../decisions/0341-consolidate-mac-home-toolbar-row.md), [0352](../decisions/0352-respect-mac-home-fullscreen-titlebar-safe-area.md), [0354](../decisions/0354-reserve-revealed-mac-fullscreen-titlebar-space.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/macOS/PerformanceRegressionTests.swift`
 
 Given Mac Home is in fullscreen
 When the macOS menu/titlebar controls are revealed at the top edge
-Then the Home shell respects the fullscreen top safe area instead of drawing the custom toolbar underneath the revealed system titlebar
+Then the Home shell reserves the revealed fullscreen titlebar height instead of drawing the custom toolbar underneath the system titlebar
 And the native window chrome stays compact and transparent rather than painting a separate opaque strip over Routina's SwiftUI-owned Home toolbar
+And when the pointer leaves the top edge and the system titlebar hides, Home removes the extra reserve instead of keeping a blank fullscreen band
 And normal non-fullscreen windows keep the custom toolbar aligned to the traffic-light titlebar band
 
 ### Mac Toolbar Search Creates Only When Search Has No Result

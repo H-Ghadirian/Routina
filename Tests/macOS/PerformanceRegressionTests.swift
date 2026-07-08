@@ -530,6 +530,7 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(homeSource.contains("@State var toolbarSearchFocusRequestID = 0"))
         XCTAssertTrue(homeSource.contains("@State var toolbarSearchFocusDismissRequestID = 0"))
         XCTAssertTrue(homeSource.contains("@State var isMacWindowFullscreen = false"))
+        XCTAssertTrue(homeSource.contains("@State var isMacFullscreenTitlebarRevealed = false"))
         XCTAssertTrue(platformSource.contains("isSearchTextFocused: $isToolbarSearchTextFocused"))
         XCTAssertTrue(platformSource.contains("searchVisiblePillWidth: $toolbarSearchVisiblePillWidth"))
         XCTAssertTrue(platformSource.contains("searchExpansionTransitionID: $toolbarSearchExpansionTransitionID"))
@@ -710,16 +711,44 @@ final class PerformanceRegressionTests: XCTestCase {
             platformSource.contains(".toolbarBackgroundVisibility(.hidden, for: .windowToolbar)"),
             "The native window toolbar background should not paint an opaque strip over the SwiftUI-owned Home toolbar in fullscreen."
         )
-        XCTAssertTrue(platformSource.contains("HomeMacWindowFullscreenObserver(isFullscreen: $isMacWindowFullscreen)"))
+        XCTAssertTrue(
+            platformSource.contains(
+                "HomeMacWindowFullscreenObserver(\n                isFullscreen: $isMacWindowFullscreen,\n                isTitlebarRevealed: $isMacFullscreenTitlebarRevealed\n            )"
+            )
+        )
         XCTAssertTrue(platformSource.contains(".routinaMacFullscreenTitlebarSafeArea(isFullscreen: isMacWindowFullscreen)"))
+        XCTAssertTrue(
+            platformSource.contains(
+                ".routinaMacFullscreenTitlebarSpacing(\n            isVisible: isMacWindowFullscreen && isMacFullscreenTitlebarRevealed\n        )"
+            ),
+            "Mac Home should only reserve extra fullscreen titlebar height while the native titlebar is actually revealed."
+        )
         XCTAssertTrue(platformSource.contains("func routinaMacFullscreenTitlebarSafeArea(isFullscreen: Bool) -> some View"))
+        XCTAssertTrue(platformSource.contains("func routinaMacFullscreenTitlebarSpacing(isVisible: Bool) -> some View"))
+        XCTAssertTrue(platformSource.contains("static let revealedTitlebarHeight: CGFloat = 36"))
+        XCTAssertTrue(platformSource.contains("static let revealTriggerDistance: CGFloat = 6"))
+        XCTAssertTrue(platformSource.contains("static let revealRetainDistance: CGFloat = 78"))
+        XCTAssertTrue(platformSource.contains("static let revealPollingIntervalNanoseconds: UInt64 = 100_000_000"))
+        XCTAssertTrue(platformSource.contains("static let hideDelayNanoseconds: UInt64 = 1_200_000_000"))
         XCTAssertTrue(
             platformSource.contains("if isFullscreen {\n            self\n        } else {\n            ignoresSafeArea(edges: .top)\n        }"),
             "Mac Home should stop ignoring the top safe area in fullscreen so the revealed system titlebar cannot cover the custom toolbar."
         )
+        XCTAssertTrue(
+            platformSource.contains("if isVisible {\n            padding(.top, HomeMacFullscreenChrome.revealedTitlebarHeight)"),
+            "The revealed fullscreen titlebar offset should be explicit and separate from the safe-area choice."
+        )
         XCTAssertTrue(platformSource.contains("NSWindow.willEnterFullScreenNotification"))
         XCTAssertTrue(platformSource.contains("NSWindow.didExitFullScreenNotification"))
         XCTAssertTrue(platformSource.contains("private var isAttachRetryScheduled = false"))
+        XCTAssertTrue(platformSource.contains("private var titlebarRevealPollingTask: Task<Void, Never>?"))
+        XCTAssertTrue(platformSource.contains("private var titlebarHideTask: Task<Void, Never>?"))
+        XCTAssertTrue(platformSource.contains("NSEvent.mouseLocation"))
+        XCTAssertTrue(platformSource.contains("screen.frame.maxY - mouseLocation.y"))
+        XCTAssertTrue(platformSource.contains("shouldShowTitlebarSpacing"))
+        XCTAssertTrue(platformSource.contains("setTitlebarRevealed(true)"))
+        XCTAssertTrue(platformSource.contains("scheduleTitlebarHide()"))
+        XCTAssertTrue(platformSource.contains("setTitlebarRevealed(false)"))
         XCTAssertTrue(platformSource.contains("final class Coordinator: @unchecked Sendable"))
         XCTAssertTrue(platformSource.contains("Task { @MainActor [weak self] in\n                        self?.setFullscreen(true)"))
         XCTAssertTrue(
