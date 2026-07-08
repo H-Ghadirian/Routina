@@ -529,6 +529,7 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(homeSource.contains("@State var toolbarSearchExpansionTransitionID = 0"))
         XCTAssertTrue(homeSource.contains("@State var toolbarSearchFocusRequestID = 0"))
         XCTAssertTrue(homeSource.contains("@State var toolbarSearchFocusDismissRequestID = 0"))
+        XCTAssertTrue(homeSource.contains("@State var isMacWindowFullscreen = false"))
         XCTAssertTrue(platformSource.contains("isSearchTextFocused: $isToolbarSearchTextFocused"))
         XCTAssertTrue(platformSource.contains("searchVisiblePillWidth: $toolbarSearchVisiblePillWidth"))
         XCTAssertTrue(platformSource.contains("searchExpansionTransitionID: $toolbarSearchExpansionTransitionID"))
@@ -704,6 +705,22 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(
             platformSource.contains(".toolbarBackgroundVisibility(.hidden, for: .windowToolbar)"),
             "The native window toolbar background should not paint an opaque strip over the SwiftUI-owned Home toolbar in fullscreen."
+        )
+        XCTAssertTrue(platformSource.contains("HomeMacWindowFullscreenObserver(isFullscreen: $isMacWindowFullscreen)"))
+        XCTAssertTrue(platformSource.contains(".routinaMacFullscreenTitlebarSafeArea(isFullscreen: isMacWindowFullscreen)"))
+        XCTAssertTrue(platformSource.contains("func routinaMacFullscreenTitlebarSafeArea(isFullscreen: Bool) -> some View"))
+        XCTAssertTrue(
+            platformSource.contains("if isFullscreen {\n            self\n        } else {\n            ignoresSafeArea(edges: .top)\n        }"),
+            "Mac Home should stop ignoring the top safe area in fullscreen so the revealed system titlebar cannot cover the custom toolbar."
+        )
+        XCTAssertTrue(platformSource.contains("NSWindow.willEnterFullScreenNotification"))
+        XCTAssertTrue(platformSource.contains("NSWindow.didExitFullScreenNotification"))
+        XCTAssertTrue(platformSource.contains("private var isAttachRetryScheduled = false"))
+        XCTAssertTrue(platformSource.contains("final class Coordinator: @unchecked Sendable"))
+        XCTAssertTrue(platformSource.contains("Task { @MainActor [weak self] in\n                        self?.setFullscreen(true)"))
+        XCTAssertTrue(
+            platformSource.contains("Task { @MainActor [weak self] in\n                guard let self, self.isFullscreen.wrappedValue != value else { return }\n                self.isFullscreen.wrappedValue = value"),
+            "The fullscreen observer should not mutate SwiftUI state synchronously during representable updates."
         )
         XCTAssertTrue(source.contains("textField.controlSize = .large"))
         XCTAssertTrue(source.contains("textField.focusRingType = .none"))
