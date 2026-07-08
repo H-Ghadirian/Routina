@@ -73,10 +73,10 @@ And clicking outside the visible search pill dismisses focus and collapses searc
 And task-detail toolbar actions return after the search pill has collapsed to compact width
 And the field remains clickable and editable throughout the animation
 
-### Mac Fullscreen Traffic Lights Stay Integrated With Home Toolbar
+### Mac Fullscreen Traffic Lights Stay Above Home Content
 
 Area: Other
-Decision links: [0022](../decisions/0022-own-mac-home-toolbar-at-split-shell.md), [0340](../decisions/0340-use-swiftui-outlook-style-mac-home-top-toolbar.md), [0341](../decisions/0341-consolidate-mac-home-toolbar-row.md), [0355](../decisions/0355-integrate-mac-fullscreen-traffic-lights-into-home-toolbar.md)
+Decision links: [0022](../decisions/0022-own-mac-home-toolbar-at-split-shell.md), [0340](../decisions/0340-use-swiftui-outlook-style-mac-home-top-toolbar.md), [0341](../decisions/0341-consolidate-mac-home-toolbar-row.md), [0356](../decisions/0356-reserve-stable-mac-fullscreen-titlebar-space.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/macOS/PerformanceRegressionTests.swift`
@@ -84,8 +84,8 @@ Coverage:
 Given Mac Home is in fullscreen
 When the macOS menu/titlebar controls are revealed at the top edge
 Then the Home shell keeps the same custom toolbar position instead of moving the layout up or down
-And the native traffic lights occupy the toolbar's reserved leading region rather than overlapping Routina toolbar controls
-And the Home sidebar and main content remain below the custom toolbar row instead of appearing underneath the traffic lights
+And the Home toolbar, sidebar, and main content remain below the native traffic-light/titlebar area
+And the top of the Home sidebar does not appear behind or underneath the traffic lights
 And normal non-fullscreen windows keep the same custom toolbar alignment
 
 ### Mac Toolbar Search Creates Only When Search Has No Result

@@ -2,11 +2,11 @@
 
 Date: 2026-07-08
 
-Status: Accepted
+Status: Superseded by [0356 Reserve Stable Mac Fullscreen Titlebar Space](../0356-reserve-stable-mac-fullscreen-titlebar-space.md)
 
-Supersedes: [0352 Respect Mac Home Fullscreen Titlebar Safe Area](superseded/0352-respect-mac-home-fullscreen-titlebar-safe-area.md), [0354 Reserve Revealed Mac Fullscreen Titlebar Space](superseded/0354-reserve-revealed-mac-fullscreen-titlebar-space.md)
+Supersedes: [0352 Respect Mac Home Fullscreen Titlebar Safe Area](0352-respect-mac-home-fullscreen-titlebar-safe-area.md), [0354 Reserve Revealed Mac Fullscreen Titlebar Space](0354-reserve-revealed-mac-fullscreen-titlebar-space.md)
 
-Refines: [0022 Own Mac Home Toolbar at the Split Shell](0022-own-mac-home-toolbar-at-split-shell.md), [0341 Consolidate Mac Home Toolbar Row](0341-consolidate-mac-home-toolbar-row.md)
+Refines: [0022 Own Mac Home Toolbar at the Split Shell](../0022-own-mac-home-toolbar-at-split-shell.md), [0341 Consolidate Mac Home Toolbar Row](../0341-consolidate-mac-home-toolbar-row.md)
 
 ## Context
 

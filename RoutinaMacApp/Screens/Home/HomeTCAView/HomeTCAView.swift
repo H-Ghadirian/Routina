@@ -227,6 +227,7 @@ struct HomeTCAView: View {
     @State var toolbarSearchFocusDismissRequestID = 0
     @State var isToolbarSearchCreateInProgress = false
     @State var toolbarSearchCreateErrorMessage: String?
+    @State var isMacWindowFullscreen = false
     @State var isEventEditorPresented = false
     @State var isEmotionLogEditorPresented = false
     @State var isNoteEditorPresented = false

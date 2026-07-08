@@ -2,7 +2,7 @@
 
 Date: 2026-07-08
 
-Status: Superseded by [0355 Integrate Mac Fullscreen Traffic Lights Into Home Toolbar](../0355-integrate-mac-fullscreen-traffic-lights-into-home-toolbar.md)
+Status: Superseded by [0355 Integrate Mac Fullscreen Traffic Lights Into Home Toolbar](0355-integrate-mac-fullscreen-traffic-lights-into-home-toolbar.md), then [0356 Reserve Stable Mac Fullscreen Titlebar Space](../0356-reserve-stable-mac-fullscreen-titlebar-space.md)
 
 Refines: [0352 Respect Mac Home Fullscreen Titlebar Safe Area](0352-respect-mac-home-fullscreen-titlebar-safe-area.md), [0341 Consolidate Mac Home Toolbar Row](../0341-consolidate-mac-home-toolbar-row.md)
 

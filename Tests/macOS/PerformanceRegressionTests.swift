@@ -529,7 +529,7 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(homeSource.contains("@State var toolbarSearchExpansionTransitionID = 0"))
         XCTAssertTrue(homeSource.contains("@State var toolbarSearchFocusRequestID = 0"))
         XCTAssertTrue(homeSource.contains("@State var toolbarSearchFocusDismissRequestID = 0"))
-        XCTAssertFalse(homeSource.contains("isMacWindowFullscreen"))
+        XCTAssertTrue(homeSource.contains("@State var isMacWindowFullscreen = false"))
         XCTAssertFalse(homeSource.contains("isMacFullscreenTitlebarRevealed"))
         XCTAssertTrue(platformSource.contains("isSearchTextFocused: $isToolbarSearchTextFocused"))
         XCTAssertTrue(platformSource.contains("searchVisiblePillWidth: $toolbarSearchVisiblePillWidth"))
@@ -711,11 +711,16 @@ final class PerformanceRegressionTests: XCTestCase {
             platformSource.contains(".toolbarBackgroundVisibility(.hidden, for: .windowToolbar)"),
             "The native window toolbar background should not paint an opaque strip over the SwiftUI-owned Home toolbar in fullscreen."
         )
-        XCTAssertTrue(platformSource.contains(".routinaMacHomeToolbarTitlebarIntegration()"))
+        XCTAssertTrue(platformSource.contains("HomeMacWindowFullscreenObserver(isFullscreen: $isMacWindowFullscreen)"))
+        XCTAssertTrue(platformSource.contains(".routinaMacHomeToolbarTitlebarIntegration(isFullscreen: isMacWindowFullscreen)"))
         XCTAssertTrue(
-            platformSource.contains("func routinaMacHomeToolbarTitlebarIntegration() -> some View {\n        ignoresSafeArea(edges: .top)\n    }"),
-            "Mac Home should keep its custom toolbar as the stable titlebar row in normal windows and fullscreen."
+            platformSource.contains("func routinaMacHomeToolbarTitlebarIntegration(isFullscreen: Bool) -> some View"),
+            "Mac Home should keep a stable fullscreen-only native titlebar reserve."
         )
+        XCTAssertTrue(platformSource.contains("static let stableTitlebarHeight: CGFloat = 36"))
+        XCTAssertTrue(platformSource.contains("padding(.top, HomeMacFullscreenChrome.stableTitlebarHeight)"))
+        XCTAssertTrue(platformSource.contains("if isFullscreen {\n            padding(.top, HomeMacFullscreenChrome.stableTitlebarHeight)"))
+        XCTAssertTrue(platformSource.contains("} else {\n            ignoresSafeArea(edges: .top)\n        }"))
         XCTAssertTrue(platformSource.contains(".padding(.top, HomeMacToolbarSearchLayout.topToolbarHeight)"))
         XCTAssertTrue(source.contains("static let trafficLightReservedLeadingPadding: CGFloat = 142"))
         XCTAssertTrue(source.contains("static let sidebarToggleLeadingPadding: CGFloat = 104"))
@@ -723,14 +728,20 @@ final class PerformanceRegressionTests: XCTestCase {
             source.contains(".padding(.leading, HomeMacToolbarSearchLayout.trafficLightReservedLeadingPadding)"),
             "Toolbar controls should start after the native traffic-light region instead of relying on fullscreen top offsets."
         )
-        XCTAssertFalse(platformSource.contains("HomeMacWindowFullscreenObserver"))
         XCTAssertFalse(platformSource.contains("routinaMacFullscreenTitlebarSafeArea"))
         XCTAssertFalse(platformSource.contains("routinaMacFullscreenTitlebarSpacing"))
-        XCTAssertFalse(platformSource.contains("HomeMacFullscreenChrome"))
         XCTAssertFalse(platformSource.contains("NSEvent.mouseLocation"))
         XCTAssertFalse(platformSource.contains("titlebarRevealPollingTask"))
         XCTAssertFalse(platformSource.contains("titlebarHideTask"))
-        XCTAssertFalse(platformSource.contains("NSWindow.willEnterFullScreenNotification"))
+        XCTAssertFalse(platformSource.contains("isTitlebarRevealed"))
+        XCTAssertFalse(platformSource.contains("setTitlebarRevealed"))
+        XCTAssertTrue(platformSource.contains("NSWindow.willEnterFullScreenNotification"))
+        XCTAssertTrue(platformSource.contains("NSWindow.didExitFullScreenNotification"))
+        XCTAssertTrue(platformSource.contains("private var isAttachRetryScheduled = false"))
+        XCTAssertFalse(
+            platformSource.contains("observedWindow = nil\n            setFullscreen(false)"),
+            "Detaching the helper NSView must not clear fullscreen state; SwiftUI detach/reattach can otherwise make the fullscreen titlebar reserve blink."
+        )
         XCTAssertTrue(source.contains("textField.controlSize = .large"))
         XCTAssertTrue(source.contains("textField.focusRingType = .none"))
         XCTAssertFalse(source.contains("focusRingType = .default"))
