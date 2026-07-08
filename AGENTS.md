@@ -3,7 +3,7 @@
 ## User Permission Preferences
 
 - Always ask the user before taking screenshots, screen captures, or recording the screen. Never capture the screen without explicit permission in the current conversation.
-- Project-local generated build cleanup is pre-approved for verification artifacts, including `DerivedData` and other macOS build files generated under the project-local `.codex/` folder. Remove these project-local generated files when useful without asking first, and tell the user afterward exactly what cleanup was performed.
+- Project-local generated build cleanup is pre-approved for verification artifacts, including `DerivedData` and other macOS build files generated under the project-local `.codex/` folder. Treat cleanup commands like `rm -rf .codex/DerivedDataTaskDetailTodayIOS`, `rm -rf .codex/DerivedDataTaskDetailTodayMac`, or any other `rm -rf .codex/DerivedData*` command as already approved by the user when they remove generated build output. Do not ask the user again before running those project-local cleanup commands; run them when useful and tell the user afterward exactly what cleanup was performed.
 
 ## Project Decision Log
 
