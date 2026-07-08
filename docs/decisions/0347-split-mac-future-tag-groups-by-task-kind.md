@@ -6,6 +6,8 @@ Date: 2026-07-07
 
 Refines: [0283 Preserve Mac Future Inner Sections](0283-preserve-mac-future-inner-sections.md), [0314 Remove Status Grouping and Collapse Deadline Groups](0314-remove-status-grouping-and-collapse-deadline-groups.md), [0346 Add Mac Future Bulk Subsection Actions](0346-add-mac-future-bulk-subsection-actions.md)
 
+Refined by: [0351 Collapse Mac Future Tag Task Kind Subsections](0351-collapse-mac-future-tag-task-kind-subsections.md)
+
 ## Context
 
 Mac `Future` already preserves tag groups inside the collapsed Future wrapper. A tag can still mix one-off todos and recurring routines, which makes dense future work harder to scan when the user wants to separate capture-style todos from cadence-based routines.

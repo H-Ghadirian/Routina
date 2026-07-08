@@ -331,7 +331,7 @@ Then `Tomorrow` appears between `Today` and `Future`, uses the `plannedTomorrow`
 ### Future Preserves Inner Group Behavior
 
 Area: Tasks
-Decision links: [0283](../decisions/0283-preserve-mac-future-inner-sections.md), [0314](../decisions/0314-remove-status-grouping-and-collapse-deadline-groups.md), [0347](../decisions/0347-split-mac-future-tag-groups-by-task-kind.md)
+Decision links: [0283](../decisions/0283-preserve-mac-future-inner-sections.md), [0314](../decisions/0314-remove-status-grouping-and-collapse-deadline-groups.md), [0347](../decisions/0347-split-mac-future-tag-groups-by-task-kind.md), [0351](../decisions/0351-collapse-mac-future-tag-task-kind-subsections.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/HomeTaskListFilteringTests.swift`
@@ -342,7 +342,7 @@ Then each tag group remains a tagged, colorable, collapsible inner section insid
 
 Given Mac Home groups regular tasks by tag and the tag task-kind split is enabled
 When a `Future` tag group contains both todos and routines
-Then the parent tag group stays collapsible and renders non-collapsible `Todos` and `Routines` child subsections
+Then the parent tag group stays collapsible and renders collapsible `Todos` and `Routines` child subsections
 
 Given Mac Home groups regular tasks by deadline date
 When Home derives the `Future` section
@@ -350,11 +350,11 @@ Then each deadline-date group remains independently collapsible inside `Future`
 
 Given Mac Home shows `Future` with collapsible inner groups
 When the user right-clicks the `Future` header and chooses `Expand All`
-Then the `Future` wrapper opens and each collapsible inner group expands
+Then the `Future` wrapper opens and each collapsible inner group expands, including task-kind child subsections
 
 Given Mac Home shows `Future` with collapsible inner groups
 When the user right-clicks the `Future` header and chooses `Collapse All Subsections`
-Then the `Future` wrapper stays open and each collapsible inner group collapses
+Then the `Future` wrapper stays open and each collapsible inner group collapses, including task-kind child subsections
 
 ### Home Task Lists Keep Stable Row Identity
 

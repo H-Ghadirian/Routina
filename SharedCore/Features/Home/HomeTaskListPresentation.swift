@@ -7,6 +7,7 @@ struct HomeTaskListMoveContext: Equatable {
 
 struct HomeTaskListPresentationTaskGroup<Display: HomeTaskListDisplay>: Identifiable {
     let kind: HomeTaskListPresentationSectionKind
+    let identityKey: String?
     let title: String?
     let tasks: [Display]
     let moveContext: HomeTaskListMoveContext?
@@ -15,6 +16,7 @@ struct HomeTaskListPresentationTaskGroup<Display: HomeTaskListDisplay>: Identifi
 
     init(
         kind: HomeTaskListPresentationSectionKind,
+        identityKey: String? = nil,
         title: String?,
         tasks: [Display],
         moveContext: HomeTaskListMoveContext?,
@@ -22,6 +24,7 @@ struct HomeTaskListPresentationTaskGroup<Display: HomeTaskListDisplay>: Identifi
         childGroups: [HomeTaskListPresentationTaskGroup<Display>] = []
     ) {
         self.kind = kind
+        self.identityKey = identityKey
         self.title = title
         self.tasks = tasks
         self.moveContext = moveContext
@@ -30,7 +33,7 @@ struct HomeTaskListPresentationTaskGroup<Display: HomeTaskListDisplay>: Identifi
     }
 
     var id: String {
-        moveContext?.sectionKey ?? title ?? "primary"
+        identityKey ?? moveContext?.sectionKey ?? title ?? "primary"
     }
 }
 
@@ -127,6 +130,7 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
                 let mergedTasks = existingGroup.tasks + uniqueTasks
                 groups[existingIndex] = HomeTaskListPresentationTaskGroup(
                     kind: existingGroup.kind,
+                    identityKey: existingGroup.identityKey,
                     title: existingGroup.title,
                     tasks: mergedTasks,
                     moveContext: Self.moveContext(existingGroup.moveContext, orderedBy: mergedTasks),
@@ -138,6 +142,7 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
                 groups.append(
                     HomeTaskListPresentationTaskGroup(
                         kind: group.kind,
+                        identityKey: group.identityKey,
                         title: group.title,
                         tasks: uniqueTasks,
                         moveContext: Self.moveContext(group.moveContext, orderedBy: uniqueTasks),
@@ -160,6 +165,7 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
             guard !uniqueTasks.isEmpty else { return nil }
             return HomeTaskListPresentationTaskGroup(
                 kind: childGroup.kind,
+                identityKey: childGroup.identityKey,
                 title: childGroup.title,
                 tasks: uniqueTasks,
                 moveContext: Self.moveContext(childGroup.moveContext, orderedBy: uniqueTasks),
@@ -731,17 +737,19 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         return [
             HomeTaskListPresentationTaskGroup(
                 kind: .regular,
+                identityKey: "\(section.identityKey):todos",
                 title: "Todos",
                 tasks: todos,
                 moveContext: nil,
-                isCollapsible: false
+                isCollapsible: true
             ),
             HomeTaskListPresentationTaskGroup(
                 kind: .regular,
+                identityKey: "\(section.identityKey):routines",
                 title: "Routines",
                 tasks: routines,
                 moveContext: nil,
-                isCollapsible: false
+                isCollapsible: true
             )
         ]
     }

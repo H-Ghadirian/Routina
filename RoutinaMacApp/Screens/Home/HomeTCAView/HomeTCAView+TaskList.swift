@@ -540,21 +540,24 @@ extension HomeTCAView {
             ForEach(group.childGroups) { childGroup in
                 VStack(alignment: .leading, spacing: 5) {
                     if let title = childGroup.title {
-                        taskListInnerGroupHeaderLabel(
+                        taskListInnerGroupHeader(
                             title,
                             count: childGroup.tasks.count,
-                            isExpanded: nil
+                            group: childGroup
                         )
                     }
 
-                    taskListGroupRows(
-                        childGroup,
-                        section: section,
-                        in: presentation,
-                        metadataPresenter: metadataPresenter,
-                        rowVisibility: rowVisibility,
-                        allowsPlannerDrag: allowsPlannerDrag
-                    )
+                    if taskListGroupIsExpanded(childGroup) {
+                        taskListGroupRows(
+                            childGroup,
+                            section: section,
+                            in: presentation,
+                            metadataPresenter: metadataPresenter,
+                            rowVisibility: rowVisibility,
+                            allowsPlannerDrag: allowsPlannerDrag
+                        )
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
                 }
             }
         }
@@ -1130,10 +1133,10 @@ extension HomeTCAView {
         switch group.kind {
         case .daily:
             return !isMacPlanTodayDailyRoutinesGroupCollapsed
-        case .deadlineDate, .tag, .untagged:
+        case .deadlineDate, .tag, .untagged, .regular:
             return !collapsedTagTaskListSectionIDs.contains(taskListGroupCollapseID(group))
-            case .plannedToday, .plannedTomorrow, .future, .regular, .pinned, .away, .archived:
-                return true
+        case .plannedToday, .plannedTomorrow, .future, .pinned, .away, .archived:
+            return true
         }
     }
 
@@ -1145,9 +1148,9 @@ extension HomeTCAView {
             switch group.kind {
             case .daily:
                 isMacPlanTodayDailyRoutinesGroupCollapsed.toggle()
-            case .deadlineDate, .tag, .untagged:
+            case .deadlineDate, .tag, .untagged, .regular:
                 setTagTaskListGroup(group, collapsed: taskListGroupIsExpanded(group))
-            case .plannedToday, .plannedTomorrow, .future, .regular, .pinned, .away, .archived:
+            case .plannedToday, .plannedTomorrow, .future, .pinned, .away, .archived:
                 break
             }
         }
@@ -1187,11 +1190,14 @@ extension HomeTCAView {
     private func futureTaskListSubsectionCollapseIDs(
         in section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     ) -> Set<String> {
-        Set(
-            section.taskGroups
-                .filter(\.isCollapsible)
-                .map(taskListGroupCollapseID)
-        )
+        Set(section.taskGroups.flatMap(taskListGroupCollapseIDs))
+    }
+
+    private func taskListGroupCollapseIDs(
+        _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
+    ) -> [String] {
+        let currentIDs = group.isCollapsible ? [taskListGroupCollapseID(group)] : []
+        return currentIDs + group.childGroups.flatMap(taskListGroupCollapseIDs)
     }
 
     private func visibleRowNumber(

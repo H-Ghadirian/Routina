@@ -1373,7 +1373,8 @@ struct HomeTaskListFilteringTests {
         #expect(tagGroup?.isCollapsible == true)
         #expect(tagGroup?.moveContext?.sectionKey == "tag:focus")
         #expect(tagGroup?.childGroups.map(\.title) == [String?("Todos"), String?("Routines")])
-        #expect(tagGroup?.childGroups.map(\.isCollapsible) == [false, false])
+        #expect(tagGroup?.childGroups.map(\.id) == ["tag:focus:todos", "tag:focus:routines"])
+        #expect(tagGroup?.childGroups.map(\.isCollapsible) == [true, true])
         #expect(tagGroup?.childGroups.map { $0.tasks.map(\.taskID) } == [[todoID], [routineID]])
     }
 
