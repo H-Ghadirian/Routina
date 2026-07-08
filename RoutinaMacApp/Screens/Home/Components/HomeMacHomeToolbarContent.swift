@@ -240,6 +240,8 @@ struct HomeMacToolbarSearchField: View {
 
     private func searchShell(width: CGFloat) -> some View {
         ZStack(alignment: .leading) {
+            searchFocusTarget(width: width)
+
             Image(systemName: "magnifyingglass")
                 .font(.system(size: HomeMacToolbarSearchLayout.iconSize, weight: .medium))
                 .foregroundStyle(.secondary)
@@ -308,13 +310,27 @@ struct HomeMacToolbarSearchField: View {
                 style: .continuous
             )
         )
-        .onTapGesture {
-            beginSearchFocusRequest()
-        }
         .animation(.easeOut(duration: 0.12), value: text.isEmpty)
         .animation(.easeOut(duration: 0.12), value: showsCreateHint)
         .help(HomeMacToolbarSearchCopy.help)
         .accessibilityLabel(HomeMacToolbarSearchCopy.accessibilityLabel)
+    }
+
+    private func searchFocusTarget(width: CGFloat) -> some View {
+        Button {
+            beginSearchFocusRequest()
+        } label: {
+            Color.clear
+                .frame(width: width, height: HomeMacToolbarSearchLayout.height)
+                .contentShape(
+                    RoundedRectangle(
+                        cornerRadius: HomeMacToolbarSearchLayout.cornerRadius,
+                        style: .continuous
+                    )
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityHidden(true)
     }
 
     private var outsideClickDismissLayer: some View {
@@ -370,19 +386,19 @@ struct HomeMacToolbarSearchField: View {
 
     private var closeButton: some View {
         Button {
-            focusDismissRequestID += 1
+            dismissSearchFocusFromKeycap()
         } label: {
             Text("Esc")
                 .font(.caption2.monospaced().weight(.semibold))
                 .foregroundStyle(Color.secondary)
-                .frame(width: 34, height: 28)
-                .background {
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .fill(Color.secondary.opacity(0.10))
-                }
-                .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
         }
         .buttonStyle(.plain)
+        .frame(width: 34, height: 28)
+        .background {
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(Color.secondary.opacity(0.10))
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
         .accessibilityLabel(HomeMacToolbarSearchCopy.closeAccessibilityLabel)
         .help(HomeMacToolbarSearchCopy.closeHelp)
     }
@@ -414,6 +430,11 @@ struct HomeMacToolbarSearchField: View {
             text = ""
             focusRequestID += 1
         }
+    }
+
+    private func dismissSearchFocusFromKeycap() {
+        setSearchFocused(false)
+        focusDismissRequestID += 1
     }
 
     private func setSearchFocused(_ nextValue: Bool) {
