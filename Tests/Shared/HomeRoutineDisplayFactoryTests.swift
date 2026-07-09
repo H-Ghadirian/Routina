@@ -312,6 +312,26 @@ struct HomeRoutineDisplayFactoryTests {
     }
 
     @Test
+    func optionalChecklistBlockerCarriesToHomeDisplay() {
+        let task = RoutineTask(
+            name: "Pack bag",
+            checklistItems: [
+                RoutineChecklistItem(title: "Laptop", intervalDays: 1),
+                RoutineChecklistItem(title: "Charger", intervalDays: 1)
+            ],
+            scheduleMode: .fixedInterval
+        )
+
+        let display = makeDisplay(
+            task: task,
+            places: [],
+            coordinate: LocationCoordinate(latitude: 52.5200, longitude: 13.4050)
+        )
+
+        #expect(display.blocksManualCompletionForIncompleteChecklist)
+    }
+
+    @Test
     func creationDayAllDayAutoAssumedRoutinePresentsAsAssumedInHome() {
         let now = makeDate("2026-06-09T08:00:00Z")
         let task = RoutineTask(

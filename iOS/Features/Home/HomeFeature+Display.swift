@@ -129,6 +129,7 @@ private extension HomeFeature.RoutineDisplay {
             hasPassedSoftThreshold: core.hasPassedSoftThreshold,
             completedStepCount: core.completedStepCount,
             isInProgress: core.isInProgress,
+            blocksManualCompletionForIncompleteChecklist: core.blocksManualCompletionForIncompleteChecklist,
             nextStepTitle: core.nextStepTitle,
             checklistItemCount: core.checklistItemCount,
             completedChecklistItemCount: core.completedChecklistItemCount,

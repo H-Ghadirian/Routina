@@ -38,6 +38,7 @@ protocol HomeTaskListDisplay {
     var isPaused: Bool { get }
     var isPinned: Bool { get }
     var isInProgress: Bool { get }
+    var blocksManualCompletionForIncompleteChecklist: Bool { get }
     var completedChecklistItemCount: Int { get }
     var hasDailyRunoutChecklistItem: Bool { get }
     var manualSectionOrders: [String: Int] { get }
@@ -70,6 +71,10 @@ extension HomeTaskListDisplay {
     }
 
     var isCanceledToday: Bool {
+        false
+    }
+
+    var blocksManualCompletionForIncompleteChecklist: Bool {
         false
     }
 

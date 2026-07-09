@@ -88,6 +88,42 @@ struct HomeTaskLifecycleSupportTests {
     }
 
     @Test
+    func markTaskDone_forSameDayMissedTimeWindowCompletesCurrentOccurrenceBeforeOlderMisses() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let task = RoutineTask(
+            name: "Class",
+            recurrenceRule: .weekly(
+                on: 5,
+                timeRange: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 18, minute: 30),
+                    end: RoutineTimeOfDay(hour: 20, minute: 0)
+                )
+            ),
+            scheduleAnchor: makeDate("2026-06-25T10:00:00Z"),
+            createdAt: makeDate("2026-06-25T10:00:00Z")
+        )
+        var tasks = [task]
+        var doneStats = HomeDoneStats()
+
+        let update = HomeTaskLifecycleSupport.markTaskDone(
+            taskID: task.id,
+            referenceDate: makeDate("2026-07-09T22:00:00Z"),
+            calendar: calendar,
+            tasks: &tasks,
+            doneStats: &doneStats
+        )
+
+        #expect(update == .advance(HomeAdvanceTaskUpdate(
+            taskID: task.id,
+            completionDate: makeDate("2026-07-09T18:30:00Z"),
+            previousTodoStateTitle: nil
+        )))
+        #expect(tasks[0].lastDone == makeDate("2026-07-09T18:30:00Z"))
+        #expect(doneStats.completedDatesByTaskID[task.id] == [makeDate("2026-07-09T18:30:00Z")])
+    }
+
+    @Test
     func markTaskMissed_acknowledgesMissedOccurrenceWithoutCompletionCount() {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current

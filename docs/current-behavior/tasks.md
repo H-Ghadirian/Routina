@@ -35,6 +35,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0348](../decisions/0348-allow-selected-past-exact-time-backfills.md)
 - [0349](../decisions/0349-preserve-interval-anchor-on-frequency-edits.md)
 - [0350](../decisions/0350-add-optional-mac-tomorrow-task-section.md)
+- [0358](../decisions/0358-prefer-current-day-missed-window-resolution-from-home.md)
 
 ## Current Contract
 
@@ -46,6 +47,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Deleting a task also removes persisted task-backed Planner blocks for that task so deleted work does not remain on the calendar.
 - Task Detail calendar overdue markers run only while an overdue task is unresolved. If a completion, cancellation, or missed log resolves the task, later days stop showing as overdue.
 - Task Details can backfill a selected past exact-time routine occurrence, such as a weekly routine with a time window, even when older missed exact-time occurrences remain unresolved. Resolving that selected later occurrence does not hide older unresolved missed dates in the detail calendar. Future dates and non-occurrence days still cannot be marked done.
+- Home row actions that resolve missed exact-time or time-window occurrences prefer an unresolved occurrence on the current reference day. Choosing `I did it` after today's time window has ended records the just-finished occurrence before older unresolved missed history.
 - Daily routines already belong to the daily routine area and do not expose stored planned-date controls.
 - Home `Today` includes active unpinned tasks planned for the current day, plus weekly/month-day calendar routines whose configured occurrence is today. A calendar routine with a canceled occurrence for today is not shown in the today plan. Rolling interval routines such as `Every 7 days` stay in the normal due/status sections unless explicitly planned.
 - On Mac, daily routines are shown inside `Today`. By default they visually merge into the today list; Settings can restore a nested `Daily Routines` group.

@@ -98,6 +98,29 @@ struct HomeTaskRowActionPresentationTests {
     }
 
     @Test
+    func missedExactTimeRoutineWithIncompleteOptionalChecklistDisablesCompletionResolution() {
+        let referenceDate = Date(timeIntervalSince1970: 1_700_000_000)
+        let presentation = HomeTaskRowActionPresentation.make(
+            for: TestTaskRowDisplay(
+                recurrenceRule: .weekly(on: 5, at: RoutineTimeOfDay(hour: 18, minute: 30)),
+                dueDate: referenceDate.addingTimeInterval(86_400),
+                hasMissedExactTimedOccurrence: true,
+                blocksManualCompletionForIncompleteChecklist: true
+            ),
+            includeMarkDone: true,
+            allowsPinning: false,
+            referenceDate: referenceDate
+        )
+
+        #expect(presentation.lifecycleActions == [
+            .markDone(title: "Complete Checklist First", isDisabled: true),
+            .markMissed,
+            .markCanceled,
+            .pause
+        ])
+    }
+
+    @Test
     func moveActionsDisableAtSectionBoundaries() {
         let taskID = UUID()
         let context = HomeTaskListMoveContext(
@@ -182,6 +205,7 @@ private struct TestTaskRowDisplay: HomeTaskRowDisplay, Equatable {
     var isPaused: Bool = false
     var isPinned: Bool = false
     var isInProgress: Bool = false
+    var blocksManualCompletionForIncompleteChecklist: Bool = false
     var completedChecklistItemCount: Int = 0
     var dueChecklistItemCount: Int = 0
     var manualSectionOrders: [String: Int] = [:]

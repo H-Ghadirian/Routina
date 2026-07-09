@@ -128,6 +128,7 @@ struct HomeRoutineDisplayFactory {
             ),
             completedStepCount: task.completedSteps,
             isInProgress: task.isInProgress,
+            blocksManualCompletionForIncompleteChecklist: task.blocksManualCompletionForIncompleteChecklist,
             nextStepTitle: task.nextStepTitle,
             checklistItemCount: task.checklistItems.count,
             completedChecklistItemCount: presentsCompletedChecklistDay

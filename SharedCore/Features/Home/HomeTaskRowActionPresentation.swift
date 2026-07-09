@@ -19,6 +19,9 @@ enum HomeTaskRowCompletionPresentation {
         if task.scheduleMode.isChecklistCompletionMode {
             return "Checklist"
         }
+        if task.blocksManualCompletionForIncompleteChecklist {
+            return "Complete Checklist First"
+        }
         return task.steps.isEmpty ? "Mark Done" : "Complete Next Step"
     }
 
@@ -33,6 +36,9 @@ enum HomeTaskRowCompletionPresentation {
             return task.isPaused || task.dueChecklistItemCount == 0
         }
         if task.scheduleMode.isChecklistCompletionMode {
+            return true
+        }
+        if task.blocksManualCompletionForIncompleteChecklist {
             return true
         }
         if task.hasMissedExactTimedOccurrence {
@@ -266,6 +272,7 @@ struct HomeTaskRowActionPresentation: Equatable {
             actions.append(
                 .markDone(
                     title: task.hasMissedExactTimedOccurrence
+                        && !task.blocksManualCompletionForIncompleteChecklist
                         ? "I did it"
                         : HomeTaskRowCompletionPresentation.markDoneLabel(for: task),
                     isDisabled: HomeTaskRowCompletionPresentation.isMarkDoneDisabled(

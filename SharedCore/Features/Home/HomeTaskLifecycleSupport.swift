@@ -155,7 +155,9 @@ enum HomeTaskLifecycleSupport {
             let isSelectedMissedDate = missedDates.contains {
                 calendar.isDate($0, inSameDayAs: completionDate)
             }
-            guard !hasUnresolvedPriorMissedDate,
+            let isReferenceDayMissedDate = isSelectedMissedDate
+                && calendar.isDate(completionDate, inSameDayAs: referenceDate)
+            guard (!hasUnresolvedPriorMissedDate || isReferenceDayMissedDate),
                   isSelectedMissedDate
                     || RoutineDateMath.canMarkDone(
                         for: task,
@@ -383,14 +385,21 @@ enum HomeTaskLifecycleSupport {
         calendar: Calendar,
         doneStats: HomeDoneStats
     ) -> Date? {
-        RoutineDateMath.unresolvedMissedExactTimedOccurrenceDates(
+        let unresolvedDates = RoutineDateMath.unresolvedMissedExactTimedOccurrenceDates(
             for: task,
             referenceDate: referenceDate,
             calendar: calendar
         ) { missedDate in
             doneStats.hasResolvedMissedDate(taskID: taskID, missedDate: missedDate, calendar: calendar)
         }
-        .first
+
+        if let referenceDayDate = unresolvedDates.first(where: {
+            calendar.isDate($0, inSameDayAs: referenceDate)
+        }) {
+            return referenceDayDate
+        }
+
+        return unresolvedDates.first
     }
 
     private static func removeDate(
