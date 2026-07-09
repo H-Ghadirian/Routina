@@ -1478,13 +1478,19 @@ struct HomeFeature {
     }
 
     private func syncSelectedTaskLogs(_ logs: [RoutineLog], state: inout State) {
-        guard let taskID = state.selection.taskDetailState?.task.id else { return }
+        guard let detailTask = state.selection.taskDetailState?.task else { return }
+        let taskID = detailTask.id
         let resolvedLogs = state.selection.taskDetailState?.logs ?? logs
-        state.doneStats.replaceLogs(for: taskID, with: resolvedLogs)
+        let timelineLogs = TimelineLogic.logsIncludingLastDoneFallbacks(
+            logs: resolvedLogs,
+            tasks: [detailTask],
+            calendar: calendar
+        )
+        state.doneStats.replaceLogs(for: taskID, with: timelineLogs)
         state.timelineLogs = HomeTaskSupport.replacingTimelineLogs(
             for: taskID,
             in: state.timelineLogs,
-            with: resolvedLogs
+            with: timelineLogs
         )
         refreshDisplays(&state)
     }

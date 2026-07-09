@@ -91,6 +91,43 @@ enum HomeTaskSupport {
             }
     }
 
+    static func timelineTasksIncludingSelectedDetail(
+        tasks: [RoutineTask],
+        detailTask: RoutineTask?
+    ) -> [RoutineTask] {
+        guard let detailTask else { return tasks }
+
+        var resolvedTasks = tasks
+        let resolvedDetailTask = detailTask.detachedCopy()
+        if let index = resolvedTasks.firstIndex(where: { $0.id == detailTask.id }) {
+            resolvedTasks[index] = resolvedDetailTask
+        } else {
+            resolvedTasks.append(resolvedDetailTask)
+        }
+        return resolvedTasks
+    }
+
+    static func timelineLogsIncludingSelectedDetailFallback(
+        timelineLogs: [RoutineLog],
+        detailTask: RoutineTask?,
+        detailLogs: [RoutineLog]?,
+        calendar: Calendar
+    ) -> [RoutineLog] {
+        guard let detailTask else { return timelineLogs }
+
+        let selectedTaskLogs = detailLogs ?? timelineLogs.filter { $0.taskID == detailTask.id }
+        let resolvedSelectedLogs = TimelineLogic.logsIncludingLastDoneFallbacks(
+            logs: selectedTaskLogs,
+            tasks: [detailTask],
+            calendar: calendar
+        )
+        return replacingTimelineLogs(
+            for: detailTask.id,
+            in: timelineLogs,
+            with: resolvedSelectedLogs
+        )
+    }
+
     static func taskDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineTask> {
         FetchDescriptor<RoutineTask>(
             predicate: #Predicate { task in

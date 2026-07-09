@@ -296,6 +296,11 @@ enum TimelineLogic {
         calendar: Calendar
         ) -> [TimelineEntry] {
         let lookup = Dictionary(tasks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let resolvedLogs = logsIncludingLastDoneFallbacks(
+            logs: logs,
+            tasks: tasks,
+            calendar: calendar
+        )
         let cutoff: Date? = {
             switch range {
             case .today: return calendar.startOfDay(for: now)
@@ -305,7 +310,7 @@ enum TimelineLogic {
             }
         }()
 
-        let logEntries = logs.compactMap { log -> TimelineEntry? in
+        let logEntries = resolvedLogs.compactMap { log -> TimelineEntry? in
             guard let timestamp = log.timestamp else { return nil }
             if let cutoff, timestamp < cutoff { return nil }
 
@@ -670,6 +675,38 @@ enum TimelineLogic {
             + awayEntries
     }
 
+    static func logsIncludingLastDoneFallbacks(
+        logs: [RoutineLog],
+        tasks: [RoutineTask],
+        calendar: Calendar
+    ) -> [RoutineLog] {
+        var resolvedLogs = logs
+
+        for task in tasks {
+            guard let lastDone = task.lastDone else { continue }
+            let hasCompletionLog = resolvedLogs.contains { log in
+                guard log.taskID == task.id,
+                      log.kind == .completed,
+                      let timestamp = log.timestamp else {
+                    return false
+                }
+                return calendar.isDate(timestamp, inSameDayAs: lastDone)
+            }
+            guard !hasCompletionLog else { continue }
+
+            resolvedLogs.append(
+                RoutineLog(
+                    id: TimelineSyntheticLogID.completion(taskID: task.id, completedAt: lastDone),
+                    timestamp: lastDone,
+                    taskID: task.id,
+                    kind: .completed
+                )
+            )
+        }
+
+        return resolvedLogs
+    }
+
     private static func searchableText(for awaySession: AwaySession, linkedTask: RoutineTask?) -> String {
         [
             awaySession.displayTitle,
@@ -766,5 +803,34 @@ enum TimelineLogic {
         } else {
             return date.formatted(.dateTime.weekday(.wide).day().month(.wide).year())
         }
+    }
+}
+
+enum TimelineSyntheticLogID {
+    static func completion(taskID: UUID, completedAt: Date) -> UUID {
+        let uuid = taskID.uuid
+        let timestampBits = completedAt.timeIntervalSinceReferenceDate.bitPattern
+        return UUID(uuid: (
+            uuid.0 ^ byte(timestampBits, shift: 56),
+            uuid.1 ^ byte(timestampBits, shift: 48),
+            uuid.2 ^ byte(timestampBits, shift: 40),
+            uuid.3 ^ byte(timestampBits, shift: 32),
+            uuid.4 ^ byte(timestampBits, shift: 24),
+            uuid.5 ^ byte(timestampBits, shift: 16),
+            uuid.6 ^ byte(timestampBits, shift: 8),
+            uuid.7 ^ byte(timestampBits, shift: 0),
+            uuid.8 ^ byte(timestampBits, shift: 56),
+            uuid.9 ^ byte(timestampBits, shift: 48),
+            uuid.10 ^ byte(timestampBits, shift: 40),
+            uuid.11 ^ byte(timestampBits, shift: 32),
+            uuid.12 ^ byte(timestampBits, shift: 24),
+            uuid.13 ^ byte(timestampBits, shift: 16),
+            uuid.14 ^ byte(timestampBits, shift: 8),
+            uuid.15 ^ byte(timestampBits, shift: 0)
+        ))
+    }
+
+    private static func byte(_ value: UInt64, shift: Int) -> UInt8 {
+        UInt8(truncatingIfNeeded: value >> UInt64(shift))
     }
 }

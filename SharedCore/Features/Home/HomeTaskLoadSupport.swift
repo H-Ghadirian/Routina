@@ -60,31 +60,11 @@ enum HomeTaskLoadSupport {
         logs: [RoutineLog],
         calendar: Calendar
     ) -> [RoutineLog] {
-        var resolvedLogs = logs
-
-        for task in tasks {
-            guard let lastDone = task.lastDone else { continue }
-            let hasCompletionLog = resolvedLogs.contains { log in
-                guard log.taskID == task.id,
-                      log.kind == .completed,
-                      let timestamp = log.timestamp else {
-                    return false
-                }
-                return calendar.isDate(timestamp, inSameDayAs: lastDone)
-            }
-            guard !hasCompletionLog else { continue }
-
-            resolvedLogs.append(
-                RoutineLog(
-                    id: HomeOptimisticTimelineLogID.make(taskID: task.id, completionDate: lastDone),
-                    timestamp: lastDone,
-                    taskID: task.id,
-                    kind: .completed
-                )
-            )
-        }
-
-        return resolvedLogs
+        TimelineLogic.logsIncludingLastDoneFallbacks(
+            logs: logs,
+            tasks: tasks,
+            calendar: calendar
+        )
     }
 
     private static func sortedTimelineLogs(_ logs: [RoutineLog]) -> [RoutineLog] {

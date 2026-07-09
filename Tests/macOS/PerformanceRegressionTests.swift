@@ -899,6 +899,9 @@ final class PerformanceRegressionTests: XCTestCase {
     func testPlannerTimelineListUsesHomeTimelineFilters() throws {
         let source = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift")
         let listSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacTimelineSidebarView.swift")
+        let sidebarSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Sidebar.swift")
+        let platformSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift")
+        let dayPlanSource = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
         guard
             let start = source.range(of: "var plannerTimelineEntries: [TimelineEntry] {"),
             let end = source.range(
@@ -922,6 +925,30 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(
             listSource.contains("Try a different timeline search or filters."),
             "Planner List's empty state should mention filters now that Home Timeline filters affect its visible rows."
+        )
+        XCTAssertTrue(
+            listSource.contains("HomeMacPlannerTimelineFilterNotice"),
+            "Planner Timeline should show active Timeline filters above older matching rows so hidden recent activity is discoverable."
+        )
+        XCTAssertTrue(
+            listSource.contains("Clear Filters"),
+            "Planner Timeline should expose a direct clear action for active Timeline filters."
+        )
+        XCTAssertTrue(
+            source.contains("Newer activity hidden by filters"),
+            "Planner Timeline should call out the specific case where filters hide newer activity while older rows remain visible."
+        )
+        XCTAssertTrue(
+            sidebarSource.contains("dayPlanDisplayMode == .list ? .timeline : .calendar"),
+            "The Planner filter button should open Timeline scope while Planner Timeline is selected."
+        )
+        XCTAssertTrue(
+            platformSource.contains("isPlannerTimelineFilterActive: macHasActiveTimelineFilters"),
+            "Planner Timeline filter state should drive the header filter button's active treatment."
+        )
+        XCTAssertTrue(
+            dayPlanSource.contains("let isListMode = effectiveDisplayMode == .list"),
+            "The shared Planner header should distinguish Timeline filters from Calendar layer filters."
         )
     }
 

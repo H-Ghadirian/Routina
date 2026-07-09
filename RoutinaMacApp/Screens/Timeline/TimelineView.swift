@@ -145,6 +145,10 @@ struct TimelineView: View {
                 task.importanceRawValue,
                 task.urgencyRawValue,
                 task.scheduleModeRawValue,
+                task.lastDone?.timeIntervalSinceReferenceDate.description ?? "",
+                task.canceledAt?.timeIntervalSinceReferenceDate.description ?? "",
+                task.scheduleAnchor?.timeIntervalSinceReferenceDate.description ?? "",
+                task.todoStateRawValue ?? "",
                 task.imageData?.count.description ?? "",
                 task.voiceNoteData?.count.description ?? "",
             ].joined(separator: ":")
@@ -459,6 +463,7 @@ struct TimelineView: View {
 
     private var hasAnyTimelineRecords: Bool {
         !logs.isEmpty
+            || tasks.contains { $0.lastDone != nil }
             || !events.isEmpty
             || !emotionLogs.isEmpty
             || (isNotesEnabled && !notes.isEmpty)

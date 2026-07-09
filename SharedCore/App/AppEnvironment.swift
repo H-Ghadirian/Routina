@@ -180,6 +180,22 @@ enum AppEnvironment {
         return rawValue
     }()
 
+    static let exitsAfterUITestSeed: Bool = {
+        guard isUITestMode else { return false }
+        return boolValue(from: processEnvironment["ROUTINA_UI_TEST_EXIT_AFTER_SEED"]) ?? false
+    }()
+
+    static let uiTestReportPath: String? = {
+        guard isUITestMode,
+              let rawValue = processEnvironment["ROUTINA_UI_TEST_REPORT_PATH"]?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !rawValue.isEmpty
+        else {
+            return nil
+        }
+
+        return rawValue
+    }()
+
     static let dataModeLabel: String = {
         if isSandboxDataMode {
             return isCloudSyncEnabled ? "Sandbox (separate iCloud)" : "Sandbox (local only)"

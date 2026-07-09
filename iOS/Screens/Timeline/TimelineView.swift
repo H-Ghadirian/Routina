@@ -50,6 +50,7 @@ struct TimelineView: View {
         timelineRootWithSheets
             .task(timelineTask)
             .onChange(of: tasks) { _, _ in refreshTimelineData() }
+            .onChange(of: taskChangeToken) { _, _ in refreshTimelineData() }
             .onChange(of: logs) { _, _ in refreshTimelineData() }
             .onChange(of: focusSessionChangeToken) { _, _ in refreshTimelineData() }
             .onChange(of: sprintFocusSessionChangeToken) { _, _ in refreshTimelineData() }
@@ -132,6 +133,26 @@ struct TimelineView: View {
 
     private var visibleTimelineEntryIDs: [UUID] {
         groupedByDay.flatMap { $0.entries.map(\.id) }
+    }
+
+    private var taskChangeToken: [String] {
+        tasks.map { task in
+            [
+                task.id.uuidString,
+                task.name ?? "",
+                task.emoji ?? "",
+                task.tagsStorage,
+                task.importanceRawValue,
+                task.urgencyRawValue,
+                task.scheduleModeRawValue,
+                task.lastDone?.timeIntervalSinceReferenceDate.description ?? "",
+                task.canceledAt?.timeIntervalSinceReferenceDate.description ?? "",
+                task.scheduleAnchor?.timeIntervalSinceReferenceDate.description ?? "",
+                task.todoStateRawValue ?? "",
+                task.imageData?.count.description ?? "",
+                task.voiceNoteData?.count.description ?? "",
+            ].joined(separator: ":")
+        }
     }
 
     private var sleepSessionChangeToken: [String] {
@@ -586,6 +607,7 @@ struct TimelineView: View {
 
     private var hasAnyTimelineRecords: Bool {
         !logs.isEmpty
+            || tasks.contains { $0.lastDone != nil }
             || !events.isEmpty
             || !emotionLogs.isEmpty
             || (isNotesEnabled && !notes.isEmpty)

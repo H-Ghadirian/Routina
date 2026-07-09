@@ -312,6 +312,8 @@ extension HomeTCAView {
                     let adventureProgression = isMacStatsMode && macHomeProgressMode.visibleSurfaceMode == .adventure
                         ? homeAdventureProgression
                         : nil
+                    let isPlannerFilterDetailPresented = store.isMacFilterDetailPresented
+                        && macFilterDetailScope == (dayPlanDisplayMode == .list ? .timeline : .calendar)
 
                     MacDetailContainerView(
                         store: store,
@@ -330,10 +332,12 @@ extension HomeTCAView {
                         mainDetailMode: mainDetailModeBinding,
                         dayPlanDisplayMode: $dayPlanDisplayMode,
                         dayPlanCalendarFilters: $dayPlanCalendarFilters,
-                        isDayPlanCalendarFilterDetailPresented: store.isMacFilterDetailPresented && macFilterDetailScope == .calendar,
+                        isDayPlanCalendarFilterDetailPresented: isPlannerFilterDetailPresented,
                         plannerTimelineActivityDates: dayPlanDisplayMode == .list
                             ? groupedPlannerTimelineEntries.map(\.date)
                             : [],
+                        isPlannerTimelineFilterActive: macHasActiveTimelineFilters,
+                        plannerTimelineFilterSummary: macActiveTimelineFiltersSummary,
                         plannerSearchText: searchTextBinding.wrappedValue,
                         focusStartTaskCount: homeToolbarFocusStartTaskCount,
                         activePlanFocusSession: homeToolbarActivePlanFocusSession,

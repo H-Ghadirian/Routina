@@ -130,30 +130,7 @@ struct HomeFeatureTaskLifecycleCommandRouter<State: HomeFeatureTaskLifecycleComm
 
 enum HomeOptimisticTimelineLogID {
     static func make(taskID: UUID, completionDate: Date) -> UUID {
-        let uuid = taskID.uuid
-        let timestampBits = completionDate.timeIntervalSinceReferenceDate.bitPattern
-        return UUID(uuid: (
-            uuid.0 ^ byte(timestampBits, shift: 56),
-            uuid.1 ^ byte(timestampBits, shift: 48),
-            uuid.2 ^ byte(timestampBits, shift: 40),
-            uuid.3 ^ byte(timestampBits, shift: 32),
-            uuid.4 ^ byte(timestampBits, shift: 24),
-            uuid.5 ^ byte(timestampBits, shift: 16),
-            uuid.6 ^ byte(timestampBits, shift: 8),
-            uuid.7 ^ byte(timestampBits, shift: 0),
-            uuid.8 ^ byte(timestampBits, shift: 56),
-            uuid.9 ^ byte(timestampBits, shift: 48),
-            uuid.10 ^ byte(timestampBits, shift: 40),
-            uuid.11 ^ byte(timestampBits, shift: 32),
-            uuid.12 ^ byte(timestampBits, shift: 24),
-            uuid.13 ^ byte(timestampBits, shift: 16),
-            uuid.14 ^ byte(timestampBits, shift: 8),
-            uuid.15 ^ byte(timestampBits, shift: 0)
-        ))
-    }
-
-    private static func byte(_ value: UInt64, shift: Int) -> UInt8 {
-        UInt8(truncatingIfNeeded: value >> UInt64(shift))
+        TimelineSyntheticLogID.completion(taskID: taskID, completedAt: completionDate)
     }
 }
 

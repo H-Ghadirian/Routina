@@ -534,6 +534,55 @@ struct HomeTaskHelperTests {
     }
 
     @Test
+    func timelineSourceUsesSelectedDetailLastDoneWhenParentTaskIsStale() {
+        let calendar = makeTestCalendar()
+        let taskID = UUID()
+        let oldCompletion = makeDate("2026-07-07T09:00:00Z")
+        let latestCompletion = makeDate("2026-07-09T10:00:00Z")
+        let staleTask = RoutineTask(
+            id: taskID,
+            name: "Exercise",
+            emoji: "🏃",
+            lastDone: oldCompletion,
+            scheduleAnchor: oldCompletion
+        )
+        let detailTask = staleTask.detachedCopy()
+        detailTask.lastDone = latestCompletion
+        detailTask.scheduleAnchor = latestCompletion
+        let oldLog = RoutineLog(
+            timestamp: oldCompletion,
+            taskID: taskID,
+            kind: .completed
+        )
+        let unrelatedLog = RoutineLog(
+            timestamp: makeDate("2026-07-08T12:00:00Z"),
+            taskID: UUID(),
+            kind: .completed
+        )
+
+        let tasks = HomeTaskSupport.timelineTasksIncludingSelectedDetail(
+            tasks: [staleTask],
+            detailTask: detailTask
+        )
+        let logs = HomeTaskSupport.timelineLogsIncludingSelectedDetailFallback(
+            timelineLogs: [oldLog, unrelatedLog],
+            detailTask: detailTask,
+            detailLogs: [oldLog],
+            calendar: calendar
+        )
+
+        let fallbackLogID = TimelineSyntheticLogID.completion(
+            taskID: taskID,
+            completedAt: latestCompletion
+        )
+        #expect(tasks.first?.lastDone == latestCompletion)
+        #expect(logs.first?.id == fallbackLogID)
+        #expect(logs.first?.timestamp == latestCompletion)
+        #expect(logs.map(\.id).contains(oldLog.id))
+        #expect(logs.map(\.id).contains(unrelatedLog.id))
+    }
+
+    @Test
     func pendingChecklistReloadGuardPreservesCheckedDetailDuringStaleReload() {
         let now = makeDate("2026-06-17T10:00:00Z")
         let taskID = UUID()

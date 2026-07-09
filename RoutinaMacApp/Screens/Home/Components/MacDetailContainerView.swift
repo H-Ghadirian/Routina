@@ -51,6 +51,8 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     @Binding var dayPlanCalendarFilters: DayPlanCalendarFilterState
     let isDayPlanCalendarFilterDetailPresented: Bool
     let plannerTimelineActivityDates: [Date]
+    let isPlannerTimelineFilterActive: Bool
+    let plannerTimelineFilterSummary: String?
     let plannerSearchText: String
     let focusStartTaskCount: Int
     let activePlanFocusSession: FocusSession?
@@ -314,6 +316,8 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                     displayMode: $dayPlanDisplayMode,
                     calendarFilters: $dayPlanCalendarFilters,
                     isCalendarFilterDetailPresented: isDayPlanCalendarFilterDetailPresented,
+                    listFilterButtonIsActive: isPlannerTimelineFilterActive,
+                    listFilterButtonAccessibilityValue: plannerTimelineFilterSummary,
                     calendarSearchText: plannerSearchText,
                     macHeaderFocusControl: {
                         AnyView(plannerHeaderFocusControl)

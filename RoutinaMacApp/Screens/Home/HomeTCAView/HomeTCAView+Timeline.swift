@@ -45,10 +45,26 @@ extension HomeTCAView {
             .filter(matchesTimelineSearch)
     }
 
+    private var timelineSourceTasks: [RoutineTask] {
+        HomeTaskSupport.timelineTasksIncludingSelectedDetail(
+            tasks: store.routineTasks,
+            detailTask: store.taskDetailState?.task
+        )
+    }
+
+    private var timelineSourceLogs: [RoutineLog] {
+        HomeTaskSupport.timelineLogsIncludingSelectedDetailFallback(
+            timelineLogs: store.timelineLogs,
+            detailTask: store.taskDetailState?.task,
+            detailLogs: store.taskDetailState?.logs,
+            calendar: calendar
+        )
+    }
+
     private var baseTimelineEntries: [TimelineEntry] {
         TimelineLogic.filteredEntries(
-            logs: store.timelineLogs,
-            tasks: store.routineTasks,
+            logs: timelineSourceLogs,
+            tasks: timelineSourceTasks,
             events: events,
             emotionLogs: emotionLogs,
             notes: isNotesEnabled ? notes : [],
@@ -131,6 +147,32 @@ extension HomeTCAView {
         unfilteredPlannerTimelineEntries.count
     }
 
+    var macHasActiveTimelineFilters: Bool {
+        effectiveMacTimelineFilterType != .all
+            || !store.selectedTimelineTags.isEmpty
+            || store.selectedTimelineImportanceUrgencyFilter != nil
+            || store.selectedTimelineMediaFilter != .all
+            || !store.selectedTimelineExcludedTags.isEmpty
+    }
+
+    var macPlannerTimelineFilterNoticeTitle: String? {
+        guard macHasActiveTimelineFilters else { return nil }
+        guard let newestUnfilteredEntry = unfilteredPlannerTimelineEntries
+            .filter(matchesTimelineSearch)
+            .max(by: { $0.timestamp < $1.timestamp })
+        else {
+            return "Timeline filters active"
+        }
+
+        guard let newestFilteredEntry = plannerTimelineEntries.max(by: { $0.timestamp < $1.timestamp }) else {
+            return "Newer activity hidden by filters"
+        }
+
+        return newestUnfilteredEntry.timestamp > newestFilteredEntry.timestamp
+            ? "Newer activity hidden by filters"
+            : "Timeline filters active"
+    }
+
     func hasTimelineSearchResult(for searchText: String) -> Bool {
         let trimmedSearch = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedSearch.isEmpty else { return true }
@@ -144,8 +186,8 @@ extension HomeTCAView {
 
     private var unfilteredPlannerTimelineEntries: [TimelineEntry] {
         TimelineLogic.filteredEntries(
-            logs: store.timelineLogs,
-            tasks: store.routineTasks,
+            logs: timelineSourceLogs,
+            tasks: timelineSourceTasks,
             events: events,
             emotionLogs: emotionLogs,
             notes: isNotesEnabled ? notes : [],
@@ -269,7 +311,7 @@ extension HomeTCAView {
 
     private func openPlannerTimelineEntry(_ entry: TimelineEntry) {
         if let taskID = entry.taskID,
-           store.routineTasks.contains(where: { $0.id == taskID }) {
+           timelineSourceTasks.contains(where: { $0.id == taskID }) {
             openDayPlanTaskDetails(taskID)
             return
         }
@@ -448,15 +490,27 @@ extension HomeTCAView {
         }
 
         if !store.selectedTimelineExcludedTags.isEmpty {
-            if store.selectedTimelineExcludedTags.count == 1, let tag = store.selectedTimelineExcludedTags.first {
-                labels.append("not #\(tag)")
-            } else {
-                labels.append("not \(store.selectedTimelineExcludedTags.count) tags")
+            if let excludedTagsSummary = macTimelineExcludedTagsSummary {
+                labels.append(excludedTagsSummary)
             }
         }
 
         let summary = summarizedFilterLabels(from: labels, maxVisibleCount: 4)
         return summaryWithResultCount(summary, resultCount: timelineEntries.count)
+    }
+
+    private var macTimelineExcludedTagsSummary: String? {
+        let tags = store.selectedTimelineExcludedTags.sorted()
+        guard !tags.isEmpty else { return nil }
+        if tags.count == 1, let tag = tags.first {
+            return "not #\(tag)"
+        }
+        if tags.count <= 6 {
+            return "not \(tags.map { "#\($0)" }.joined(separator: ", "))"
+        }
+
+        let visibleTags = tags.prefix(4).map { "#\($0)" }.joined(separator: ", ")
+        return "not \(visibleTags) +\(tags.count - 4) tags"
     }
 
     var macTimelineFiltersDetailView: some View {
@@ -502,7 +556,7 @@ extension HomeTCAView {
     }
 
     private var showsMacTimelineTypeFilterSection: Bool {
-        store.routineTasks.contains(where: \.isOneOffTask)
+        timelineSourceTasks.contains(where: \.isOneOffTask)
             || (areMacEventEmotionActionsEnabled && (!events.isEmpty || !emotionLogs.isEmpty))
             || (isNotesEnabled && !notes.isEmpty)
             || !focusSessions.isEmpty
@@ -516,6 +570,8 @@ extension HomeTCAView {
         HomeMacPlannerTimelineListView(
             timelineEntryCount: plannerTimelineEntryCount,
             groupedEntries: groupedPlannerTimelineEntries,
+            activeFiltersTitle: macPlannerTimelineFilterNoticeTitle,
+            activeFiltersSummary: macActiveTimelineFiltersSummary,
             showsPlaces: isPlacesEnabled,
             showsNotes: isNotesEnabled,
             showsAway: isAwayEnabled,
@@ -523,6 +579,9 @@ extension HomeTCAView {
             calendar: calendar,
             sectionTitle: { date in
                 TimelineLogic.daySectionTitle(for: date, calendar: calendar)
+            },
+            onClearFilters: {
+                clearAllMacTimelineFilters()
             }
         ) { entry, rowNumber in
             plannerTimelineRow(entry, rowNumber: rowNumber)
@@ -558,7 +617,7 @@ extension HomeTCAView {
             }
 
             HomeMacTimelineSidebarView(
-                timelineEntryCount: store.timelineLogs.count + events.count + emotionLogs.count + (isNotesEnabled ? notes.count : 0) + focusSessions.count + sprintFocusSessions.count + sleepSessions.count + (isAwayEnabled ? awaySessions.count : 0) + (isPlacesEnabled ? placeCheckInSessions.count : 0),
+                timelineEntryCount: timelineSourceLogs.count + events.count + emotionLogs.count + (isNotesEnabled ? notes.count : 0) + focusSessions.count + sprintFocusSessions.count + sleepSessions.count + (isAwayEnabled ? awaySessions.count : 0) + (isPlacesEnabled ? placeCheckInSessions.count : 0),
                 groupedEntries: groupedTimelineEntries,
                 presentationID: macTimelineSidebarPresentationID,
                 isActive: isMacTimelineMode,

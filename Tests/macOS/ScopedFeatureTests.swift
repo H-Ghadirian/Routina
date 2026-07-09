@@ -78,6 +78,54 @@ struct TimelineFeatureTests {
     }
 
     @Test
+    func setData_usesLastDoneFallbackWhenCompletionLogIsMissing() async {
+        let context = makeInMemoryContext()
+        let doneAt = makeDate("2026-07-09T08:15:00Z")
+        let calendar = makeTestCalendar()
+        let task = makeTask(
+            in: context,
+            name: "Dr appointment",
+            interval: 1,
+            lastDone: doneAt,
+            emoji: "🩺",
+            tags: ["Health"]
+        )
+        let fallbackLogID = TimelineSyntheticLogID.completion(taskID: task.id, completedAt: doneAt)
+
+        let store = TestStore(initialState: TimelineFeature.State()) {
+            TimelineFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: doneAt, calendar: calendar)
+        }
+
+        await store.send(.setData(tasks: [task], logs: [])) {
+            $0.tasks = [task]
+            $0.logs = []
+            $0.availableTags = ["Health"]
+            $0.groupedEntries = [
+                TimelineFeature.TimelineSection(
+                    date: calendar.startOfDay(for: doneAt),
+                    entries: [
+                        TimelineEntry(
+                            id: fallbackLogID,
+                            taskID: task.id,
+                            timestamp: doneAt,
+                            taskName: "Dr appointment",
+                            taskEmoji: "🩺",
+                            tags: ["Health"],
+                            isOneOff: false,
+                            kind: .completed
+                        ),
+                    ]
+                )
+            ]
+        }
+
+        #expect(store.state.groupedEntries.first?.entries.first?.taskID == task.id)
+        #expect(store.state.groupedEntries.first?.entries.first?.timestamp == doneAt)
+    }
+
+    @Test
     func selectedRangeChanged_clearsSelectedTagWhenItFallsOutOfScope() async {
         let context = makeInMemoryContext()
         let now = makeDate("2026-03-20T10:00:00Z")

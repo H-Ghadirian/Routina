@@ -24,10 +24,24 @@ struct HomeFeatureTaskDetailActionRouter<State, Action> {
              let .toggleChecklistItemCompletion(itemID),
              let .markChecklistItemCompleted(itemID):
             updatePendingChecklistReloadGuard(itemID, &state)
+            syncSelectedTaskAndLogs(&state)
             return .none
 
         case .undoSelectedDateCompletion:
             updatePendingChecklistUndoReloadGuard(&state)
+            syncSelectedTaskAndLogs(&state)
+            return .none
+
+        case .markAsDone,
+             .cancelTodo,
+             .removeLogEntry(_),
+             .updateTaskDuration(_),
+             .updateLogDuration(_, _),
+             .confirmAssumedPastDays,
+             .confirmUndoCompletion,
+             .todoStateChanged(_),
+             .confirmBlockedStateCompletion:
+            syncSelectedTaskAndLogs(&state)
             return .none
 
         case let .logsLoaded(logs):
@@ -45,5 +59,10 @@ struct HomeFeatureTaskDetailActionRouter<State, Action> {
         default:
             return nil
         }
+    }
+
+    private func syncSelectedTaskAndLogs(_ state: inout State) {
+        syncSelectedTaskFromTaskDetail(&state)
+        syncSelectedTaskLogs([], &state)
     }
 }

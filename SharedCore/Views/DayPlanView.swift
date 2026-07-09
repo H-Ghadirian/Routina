@@ -396,6 +396,8 @@ struct DayPlanDetailView: View {
     var displayMode: Binding<DayPlanDisplayMode> = .constant(.calendar)
     var calendarFilters: Binding<DayPlanCalendarFilterState> = .constant(DayPlanCalendarFilterState())
     var isCalendarFilterDetailPresented = false
+    var listFilterButtonIsActive = false
+    var listFilterButtonAccessibilityValue: String? = nil
     var calendarSearchText = ""
     var macHeaderFocusControl: (() -> AnyView)? = nil
     var listContent: ((DayPlanTimelineDateJumpRequest?) -> AnyView)? = nil
@@ -423,6 +425,8 @@ struct DayPlanDetailView: View {
                 showsDisplayModePicker: listContent != nil,
                 isTaskDetailInspectorPresented: isTaskDetailInspectorPresented,
                 parentAvailableWidth: macHeaderAvailableWidth,
+                listFilterButtonIsActive: listFilterButtonIsActive,
+                listFilterButtonAccessibilityValue: listFilterButtonAccessibilityValue,
                 macFocusControl: macHeaderFocusControl,
                 onCalendarFilterButtonPressed: onCalendarFilterButtonPressed
             )
@@ -556,6 +560,8 @@ private struct DayPlanHeaderView: View {
     var showsDisplayModePicker = false
     var isTaskDetailInspectorPresented = false
     var parentAvailableWidth: CGFloat? = nil
+    var listFilterButtonIsActive = false
+    var listFilterButtonAccessibilityValue: String? = nil
     var macFocusControl: (() -> AnyView)? = nil
     var onCalendarFilterButtonPressed: (() -> Void)? = nil
     @AppStorage(
@@ -842,7 +848,14 @@ private struct DayPlanHeaderView: View {
             ? isCalendarFilterSidebarPresented.wrappedValue
             : isCalendarFilterDetailPresented
         let availability = calendarFilterAvailability
-        let isActive = calendarFilters.hasActiveFilters(availability: availability)
+        let isListMode = effectiveDisplayMode == .list
+        let isActive = isListMode
+            ? listFilterButtonIsActive
+            : calendarFilters.hasActiveFilters(availability: availability)
+        let accessibilityLabel = isListMode ? "Timeline filters" : "Planner filters"
+        let accessibilityValue = isListMode
+            ? (listFilterButtonAccessibilityValue ?? "No timeline filters")
+            : calendarFilters.summaryText(availability: availability)
 
         return Button {
             withAnimation(.easeInOut(duration: 0.16)) {
@@ -872,9 +885,9 @@ private struct DayPlanHeaderView: View {
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Planner filters")
-        .accessibilityValue(calendarFilters.summaryText(availability: availability))
-        .help("Planner filters")
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityValue(accessibilityValue)
+        .help(accessibilityLabel)
     }
 
     private var plannerDatePickerButton: some View {

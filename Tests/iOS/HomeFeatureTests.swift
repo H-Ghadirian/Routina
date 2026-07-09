@@ -730,6 +730,89 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func taskDetailLogsLoaded_addsLastDoneFallbackWhenLoadedLogsMissLatestCompletion() async {
+        let now = makeDate("2026-07-09T10:00:00Z")
+        let olderCompletion = makeDate("2026-07-07T09:00:00Z")
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(
+            name: "Exercise",
+            emoji: "🏋️",
+            scheduleMode: .fixedInterval,
+            lastDone: now,
+            scheduleAnchor: now
+        )
+        let olderLog = RoutineLog(timestamp: olderCompletion, taskID: task.id, kind: .completed)
+        let fallbackLogID = TimelineSyntheticLogID.completion(taskID: task.id, completedAt: now)
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                routineTasks: [task],
+                timelineLogs: [olderLog],
+                selectedTaskID: task.id,
+                taskDetailState: TaskDetailFeature.State(
+                    task: task.detachedCopy(),
+                    logs: [olderLog],
+                    selectedDate: calendar.startOfDay(for: now),
+                    isDoneToday: true
+                )
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+        }
+        store.exhaustivity = .off
+
+        await store.send(.taskDetail(.logsLoaded([olderLog])))
+
+        #expect(store.state.timelineLogs.map(\.id).contains(fallbackLogID))
+        #expect(store.state.timelineLogs.map(\.id).contains(olderLog.id))
+        #expect(store.state.timelineLogs.first?.id == fallbackLogID)
+        #expect(store.state.doneStats.hasCompletedDate(taskID: task.id, date: now, calendar: calendar))
+        #expect(store.state.doneStats.hasCompletedDate(taskID: task.id, date: olderCompletion, calendar: calendar))
+    }
+
+    @Test
+    func taskDetailMarkAsDoneImmediatelySyncsParentTimelineBeforeLogsReload() async {
+        let now = makeDate("2026-07-09T10:00:00Z")
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(
+            name: "Exercise",
+            emoji: "🏋️",
+            scheduleMode: .fixedInterval
+        )
+        let selectedDate = calendar.startOfDay(for: now)
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                routineTasks: [task],
+                timelineLogs: [],
+                selectedTaskID: task.id,
+                taskDetailState: TaskDetailFeature.State(
+                    task: task.detachedCopy(),
+                    logs: [],
+                    selectedDate: selectedDate,
+                    isDoneToday: false
+                )
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { makeInMemoryContext() }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.taskDetail(.markAsDone))
+
+        #expect(store.state.routineTasks.first?.lastDone == now)
+        #expect(store.state.timelineLogs.first?.taskID == task.id)
+        #expect(store.state.timelineLogs.first?.kind == .completed)
+        #expect(store.state.timelineLogs.first?.timestamp == now)
+        #expect(store.state.doneStats.hasCompletedDate(taskID: task.id, date: now, calendar: calendar))
+    }
+
+    @Test
     func tasksLoadedSuccessfully_preservesSelectedChecklistProgressDuringReload() async {
         let context = makeInMemoryContext()
         let now = makeDate("2026-03-24T10:00:00Z")

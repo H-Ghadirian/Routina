@@ -240,15 +240,43 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
 struct HomeMacPlannerTimelineListView<RowContent: View>: View {
     let timelineEntryCount: Int
     let groupedEntries: [(date: Date, entries: [TimelineEntry])]
+    let activeFiltersTitle: String?
+    let activeFiltersSummary: String?
     let showsPlaces: Bool
     let showsNotes: Bool
     let showsAway: Bool
     let dateJumpRequest: DayPlanTimelineDateJumpRequest?
     let calendar: Calendar
     let sectionTitle: (Date) -> String
+    let onClearFilters: () -> Void
     @ViewBuilder let rowContent: (TimelineEntry, Int) -> RowContent
 
     var body: some View {
+        VStack(spacing: 10) {
+            if let activeFiltersTitle,
+               let activeFiltersSummary,
+               !activeFiltersSummary.isEmpty {
+                HomeMacPlannerTimelineFilterNotice(
+                    title: activeFiltersTitle,
+                    summary: activeFiltersSummary,
+                    onClearFilters: onClearFilters
+                )
+                .padding(.horizontal, 12)
+                .padding(.top, 12)
+            }
+
+            timelineContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.background, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+        }
+    }
+
+    private var timelineContent: some View {
         Group {
             if timelineEntryCount == 0 {
                 ContentUnavailableView(
@@ -288,12 +316,6 @@ struct HomeMacPlannerTimelineListView<RowContent: View>: View {
                     }
                 }
             }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.background, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
         }
     }
 
@@ -351,6 +373,62 @@ struct HomeMacPlannerTimelineListView<RowContent: View>: View {
 
         withAnimation(.easeInOut(duration: 0.16)) {
             proxy.scrollTo(targetDate, anchor: .top)
+        }
+    }
+}
+
+private struct HomeMacPlannerTimelineFilterNotice: View {
+    let title: String
+    let summary: String
+    let onClearFilters: () -> Void
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 10) {
+            Image(systemName: "line.3.horizontal.decrease.circle.fill")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+
+                Text(summary)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+
+            Spacer(minLength: 8)
+
+            Button(action: onClearFilters) {
+                Label("Clear Filters", systemImage: "xmark.circle")
+                    .font(.caption.weight(.semibold))
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 5)
+                    .frame(minHeight: 26)
+                    .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Color.accentColor)
+            .background {
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(Color.accentColor.opacity(0.12))
+            }
+            .help("Clear timeline filters")
+            .accessibilityLabel("Clear timeline filters")
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .background {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color.accentColor.opacity(0.08))
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(Color.accentColor.opacity(0.2), lineWidth: 1)
         }
     }
 }

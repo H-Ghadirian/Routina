@@ -203,14 +203,7 @@ extension HomeTCAView {
 
     func clearAllMacFilters() {
         if visibleMacSidebarMode == .timeline {
-            store.send(.selectedTimelineRangeChanged(.all))
-            store.send(.selectedTimelineFilterTypeChanged(.all))
-            store.send(.selectedTimelineTagsChanged([]))
-            store.send(.selectedTimelineIncludeTagMatchModeChanged(.all))
-            store.send(.selectedTimelineImportanceUrgencyFilterChanged(nil))
-            store.send(.selectedTimelineMediaFilterChanged(.all))
-            store.send(.selectedTimelineExcludedTagsChanged([]))
-            store.send(.selectedTimelineExcludeTagMatchModeChanged(.any))
+            clearAllMacTimelineFilters()
         } else {
             if store.taskListMode != .all {
                 store.send(.taskListModeFilterChanged(.all))
@@ -220,13 +213,25 @@ extension HomeTCAView {
         }
     }
 
+    func clearAllMacTimelineFilters() {
+        store.send(.selectedTimelineRangeChanged(.all))
+        store.send(.selectedTimelineFilterTypeChanged(.all))
+        store.send(.selectedTimelineTagsChanged([]))
+        store.send(.selectedTimelineIncludeTagMatchModeChanged(.all))
+        store.send(.selectedTimelineImportanceUrgencyFilterChanged(nil))
+        store.send(.selectedTimelineMediaFilterChanged(.all))
+        store.send(.selectedTimelineExcludedTagsChanged([]))
+        store.send(.selectedTimelineExcludeTagMatchModeChanged(.any))
+    }
+
     func toggleMacCalendarFilterDetailFromPlanner() {
-        if store.isMacFilterDetailPresented && macFilterDetailScope == .calendar {
+        let targetScope: HomeMacFilterDetailScope = dayPlanDisplayMode == .list ? .timeline : .calendar
+        if store.isMacFilterDetailPresented && macFilterDetailScope == targetScope {
             closeMacFilterDetailPane()
             return
         }
 
-        macFilterDetailScope = .calendar
+        macFilterDetailScope = targetScope
         withAnimation(MacHomeDetailAnimation.secondaryPane) {
             isMacFilterDetailFullscreen = false
             taskDetailPanePlacement = nil

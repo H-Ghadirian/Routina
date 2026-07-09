@@ -411,6 +411,9 @@ Given Mac Planner is in `List` mode
 When the companion filter pane changes shared `Both` filters or Timeline-specific filters
 Then the Planner List timeline rows use the same filtered entry set as the Timeline sidebar
 And an empty filtered list explains that search or filters may be hiding entries
+When active Timeline filters hide newer activity while older matching rows remain visible
+Then Planner Timeline shows an active-filter notice with a direct clear action above the rows
+And the Planner header filter button is highlighted and opens the `Timeline` scope in the companion filter pane
 
 ### Planner Timeline Keeps Go To Date
 
