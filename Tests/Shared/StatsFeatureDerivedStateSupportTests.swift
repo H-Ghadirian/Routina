@@ -170,6 +170,66 @@ struct StatsFeatureDerivedStateSupportTests {
     }
 
     @Test
+    func build_countsAssumedDoneDaysAndEstimatedTimeForFilteredDailyRoutines() {
+        let calendar = makeTestCalendar()
+        let estimatedRoutine = RoutineTask(
+            name: "Hydrate",
+            tags: ["Health"],
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 1),
+            createdAt: makeDate("2026-05-07T08:00:00Z"),
+            autoAssumeDailyDone: true,
+            estimatedDurationMinutes: 10
+        )
+        let noEstimateRoutine = RoutineTask(
+            name: "Stretch",
+            tags: ["Health"],
+            scheduleMode: .softInterval,
+            recurrenceRule: .interval(days: 1),
+            createdAt: makeDate("2026-05-09T08:00:00Z"),
+            autoAssumeDailyDone: true
+        )
+        let hiddenRoutine = RoutineTask(
+            name: "Read",
+            tags: ["Hidden"],
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 1),
+            createdAt: makeDate("2026-05-07T08:00:00Z"),
+            autoAssumeDailyDone: true,
+            estimatedDurationMinutes: 60
+        )
+        let referenceDate = makeDate("2026-05-09T10:00:00Z")
+        let logs = [
+            RoutineLog(
+                timestamp: makeDate("2026-05-08T10:00:00Z"),
+                taskID: estimatedRoutine.id,
+                kind: .completed
+            )
+        ]
+
+        let state = StatsFeatureDerivedStateBuilder.build(
+            tasks: [estimatedRoutine, noEstimateRoutine, hiddenRoutine],
+            logs: logs,
+            focusSessions: [],
+            selectedRange: .week,
+            taskTypeFilter: .routines,
+            selectedImportanceUrgencyFilter: nil,
+            advancedQuery: "",
+            selectedTags: ["Health"],
+            includeTagMatchMode: .all,
+            excludedTags: [],
+            excludeTagMatchMode: .any,
+            tagColors: [:],
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(state.metrics.assumedDoneCount == 3)
+        #expect(state.metrics.totalAssumedEstimatedMinutes == 20)
+        #expect(state.metrics.totalDoneCount == 1)
+    }
+
+    @Test
     func build_countsSleepSessionStats() {
         let calendar = makeTestCalendar()
         let referenceDate = makeDate("2026-05-09T10:00:00Z")
@@ -580,6 +640,28 @@ struct StatsFeatureDerivedStateSupportTests {
         )
 
         #expect(items.isEmpty)
+    }
+
+    @Test
+    func summaryItemsIncludeAssumedDoneCardsWhenAssumedMetricsHaveData() {
+        var metrics = StatsFeatureMetrics()
+        metrics.assumedDoneCount = 2
+        metrics.totalAssumedEstimatedMinutes = 75
+
+        let items = StatsSummaryCardItemBuilder.items(
+            metrics: metrics,
+            selectedRange: .week,
+            chartPresentation: StatsChartPresentation(selectedRange: .week, isCompact: false),
+            taskTypeFilter: .all,
+            filteredTaskCount: 0
+        )
+
+        #expect(items.map(\.accessibilityIdentifier) == [
+            "stats.summary.assumedDones",
+            "stats.summary.assumedEstimatedTime"
+        ])
+        #expect(items.first { $0.accessibilityIdentifier == "stats.summary.assumedDones" }?.value == "2")
+        #expect(items.first { $0.accessibilityIdentifier == "stats.summary.assumedEstimatedTime" }?.value == "1h 15m")
     }
 
     @Test

@@ -14,6 +14,8 @@ struct StatsFeatureMetrics: Equatable {
     var totalDoneCount: Int = 0
     var totalCanceledCount: Int = 0
     var totalMissedCount: Int = 0
+    var assumedDoneCount: Int = 0
+    var totalAssumedEstimatedMinutes: Int = 0
     var createdTotalCount: Int = 0
     var totalFocusSeconds: TimeInterval = 0
     var averageFocusSecondsPerDay: TimeInterval = 0
@@ -219,6 +221,13 @@ enum StatsFeatureDerivedStateBuilder {
         let missedDates = filteredLogs
             .filter { $0.kind == .missed }
             .compactMap(\.timestamp)
+        let assumedCompletionSummary = assumedCompletions(
+            tasks: filteredTasks,
+            logs: filteredLogs,
+            selectedRange: selectedRange,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
         let activityDates = completionDates + canceledDates + missedDates
         let createdDates = createdChartFilteredTasks.compactMap(\.createdAt)
         let emotionLogsInRange = emotionLogs.filter { emotion in
@@ -447,6 +456,8 @@ enum StatsFeatureDerivedStateBuilder {
                 totalDoneCount: completionDates.count,
                 totalCanceledCount: canceledDates.count,
                 totalMissedCount: missedDates.count,
+                assumedDoneCount: assumedCompletionSummary.count,
+                totalAssumedEstimatedMinutes: assumedCompletionSummary.estimatedMinutes,
                 createdTotalCount: createdTotalCount,
                 totalFocusSeconds: totalFocusSeconds,
                 averageFocusSecondsPerDay: averageFocusSecondsPerDay,
@@ -570,6 +581,45 @@ enum StatsFeatureDerivedStateBuilder {
                 counts.archived += 1
             } else {
                 counts.active += 1
+            }
+        }
+    }
+
+    private static func assumedCompletions(
+        tasks: [RoutineTask],
+        logs: [RoutineLog],
+        selectedRange: DoneChartRange,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> (count: Int, estimatedMinutes: Int) {
+        let endDay = calendar.startOfDay(for: referenceDate)
+        let startDay = calendar.date(
+            byAdding: .day,
+            value: -(selectedRange.trailingDayCount - 1),
+            to: endDay
+        ) ?? endDay
+        let logsByTaskID = Dictionary(grouping: logs, by: \.taskID)
+
+        return tasks.reduce(into: (count: 0, estimatedMinutes: 0)) { summary, task in
+            let taskLogs = logsByTaskID[task.id, default: []]
+            var day = startDay
+
+            while day <= endDay {
+                if RoutineAssumedCompletion.isAssumedDone(
+                    for: task,
+                    on: day,
+                    referenceDate: referenceDate,
+                    logs: taskLogs,
+                    calendar: calendar
+                ) {
+                    summary.count += 1
+                    summary.estimatedMinutes += task.estimatedDurationMinutes ?? 0
+                }
+
+                guard let nextDay = calendar.date(byAdding: .day, value: 1, to: day) else {
+                    break
+                }
+                day = nextDay
             }
         }
     }

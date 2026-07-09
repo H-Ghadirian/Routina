@@ -25,6 +25,7 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - [0279](../decisions/0279-hide-sleep-stats-and-blocking-with-away-toggle.md)
 - [0284](../decisions/0284-hide-filter-query-sections-behind-beta-toggle.md)
 - [0324](../decisions/0324-hide-mac-stats-dashboard-controls-behind-beta-toggle.md)
+- [0359](../decisions/0359-show-assumed-done-stats-summary.md)
 
 ## Current Contract
 
@@ -39,4 +40,5 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - Wins, Achievements, Sleep scope, Goals UI, and Adventure surfaces remain implemented but are hidden by default behind their related settings; Sleep-specific Stats and Adventure surfaces also stay hidden while `Show Away` is off.
 - Stats filter Query sections are hidden by default behind Support & About -> Beta Experiments -> `Show filter query sections`; existing advanced query state remains compatible and still appears in active filter summaries when nonempty.
 - Stats hero activity previews use range-appropriate buckets: day-level for week, roughly weekly for month, and trailing 12-month framing for year.
+- Stats summary cards show assumed-done daily routine counts and summed estimated time for eligible auto-assumed days in the selected range and active task filters. These assumed totals stay separate from recorded Done counts, charts, achievements, and completion history until the user confirms the assumed day.
 - Adventure derives progression from existing activity history and shares the Mac Stats sidebar tab behind a `Stats / Adventure` segment when enabled.

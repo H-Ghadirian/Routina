@@ -32,6 +32,8 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
     case focusAverage
     case bestDay
     case totalDones
+    case assumedDones
+    case assumedEstimatedTime
     case totalCancels
     case totalMissed
     case routineCount
@@ -88,6 +90,10 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
             self = .bestDay
         case "stats.summary.totalDones":
             self = .totalDones
+        case "stats.summary.assumedDones":
+            self = .assumedDones
+        case "stats.summary.assumedEstimatedTime":
+            self = .assumedEstimatedTime
         case "stats.summary.totalCancels":
             self = .totalCancels
         case "stats.summary.totalMissed":
@@ -141,6 +147,10 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "Best day"
         case .totalDones:
             return "Done"
+        case .assumedDones:
+            return "Assumed done"
+        case .assumedEstimatedTime:
+            return "Assumed time"
         case .totalCancels:
             return "Canceled"
         case .totalMissed:
@@ -186,7 +196,7 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
         switch self {
         case .hero:
             return "The large stats summary at the top of the screen."
-        case .dailyAverage, .healthSteps, .healthActiveCalories, .healthDistance, .healthExercise, .focusTime, .sleepTime, .sleepSessions, .awayTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
+        case .dailyAverage, .healthSteps, .healthActiveCalories, .healthDistance, .healthExercise, .focusTime, .sleepTime, .sleepSessions, .awayTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .assumedDones, .assumedEstimatedTime, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
             return "A compact stats card in the summary grid."
         case .unassignedFocus:
             return "Focus sessions waiting to be assigned."
@@ -253,6 +263,10 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
             return "bolt.fill"
         case .totalDones:
             return "checkmark.seal.fill"
+        case .assumedDones:
+            return "calendar.badge.checkmark"
+        case .assumedEstimatedTime:
+            return "clock.fill"
         case .totalCancels:
             return "xmark.seal.fill"
         case .totalMissed:
@@ -296,7 +310,7 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
 
     var isSummaryCard: Bool {
         switch self {
-        case .dailyAverage, .healthSteps, .healthActiveCalories, .healthDistance, .healthExercise, .focusTime, .sleepTime, .sleepSessions, .awayTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
+        case .dailyAverage, .healthSteps, .healthActiveCalories, .healthDistance, .healthExercise, .focusTime, .sleepTime, .sleepSessions, .awayTime, .emotions, .notes, .events, .goals, .focusAverage, .bestDay, .totalDones, .assumedDones, .assumedEstimatedTime, .totalCancels, .totalMissed, .routineCount, .todoCount, .activeItems, .archivedItems:
             return true
         default:
             return false

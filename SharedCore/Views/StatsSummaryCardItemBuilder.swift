@@ -163,6 +163,28 @@ enum StatsSummaryCardItemBuilder {
 
         items.append(
             StatsSummaryCardItem(
+                icon: "calendar.badge.checkmark",
+                accent: .green,
+                title: "Assumed done",
+                value: metrics.assumedDoneCount.formatted(),
+                caption: assumedDoneCaption(metrics: metrics),
+                accessibilityIdentifier: "stats.summary.assumedDones"
+            )
+        )
+
+        items.append(
+            StatsSummaryCardItem(
+                icon: "clock.fill",
+                accent: .teal,
+                title: "Assumed time",
+                value: estimatedMinutesText(metrics.totalAssumedEstimatedMinutes),
+                caption: "Estimated daily assumed work",
+                accessibilityIdentifier: "stats.summary.assumedEstimatedTime"
+            )
+        )
+
+        items.append(
+            StatsSummaryCardItem(
                 icon: "xmark.seal.fill",
                 accent: .orange,
                 title: "Canceled",
@@ -339,8 +361,18 @@ enum StatsSummaryCardItemBuilder {
         "\(metrics.goalsCreatedCount) new, \(metrics.archivedGoalCount) archived"
     }
 
+    private static func assumedDoneCaption(metrics: StatsFeatureMetrics) -> String {
+        let noun = metrics.assumedDoneCount == 1 ? "completion" : "completions"
+        return "Daily auto-assumed \(noun)"
+    }
+
     private static func healthCaption(for selectedRange: DoneChartRange) -> String {
         "From Apple Health, \(selectedRange.periodDescription.lowercased())"
+    }
+
+    private static func estimatedMinutesText(_ minutes: Int) -> String {
+        guard minutes > 0 else { return "0m" }
+        return FocusSessionFormatting.compactDurationText(seconds: TimeInterval(minutes * 60))
     }
 
     private static func wholeNumberText(_ value: Double) -> String {
@@ -371,6 +403,9 @@ enum StatsDashboardReportAvailability {
              "totalMissed",
              "completionChart":
             return metrics.totalCount > 0
+        case "assumedDones",
+             "assumedEstimatedTime":
+            return metrics.assumedDoneCount > 0
         case "healthSteps":
             return (healthSummary?.steps ?? 0) > 0
         case "healthActiveCalories":
@@ -473,6 +508,9 @@ enum StatsDashboardReportAvailability {
             return isReportable(itemID: "bestDay", metrics: metrics, healthSummary: healthSummary)
         case "stats.summary.totalDones":
             return metrics.totalDoneCount > 0
+        case "stats.summary.assumedDones",
+             "stats.summary.assumedEstimatedTime":
+            return metrics.assumedDoneCount > 0
         case "stats.summary.totalCancels":
             return metrics.totalCanceledCount > 0
         case "stats.summary.totalMissed":
