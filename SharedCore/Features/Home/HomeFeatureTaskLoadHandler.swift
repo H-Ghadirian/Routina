@@ -18,6 +18,7 @@ protocol HomeFeatureTaskLoadState {
 struct HomeFeatureTaskLoadHandler<State: HomeFeatureTaskLoadState, Action> {
     var relatedTagRules: () -> [RoutineRelatedTagRule]
     var tagColors: () -> [String: String]
+    var calendar: () -> Calendar = { .current }
     var refreshDisplays: (inout State) -> Void
     var syncSelectedTaskDetailState: (inout State) -> Void
     var validateFilterState: (inout State) -> Void
@@ -42,7 +43,8 @@ struct HomeFeatureTaskLoadHandler<State: HomeFeatureTaskLoadState, Action> {
             selectedTaskID: state.selection.selectedTaskID,
             detailTask: state.selection.taskDetailState?.task,
             selectedTaskReloadGuard: state.selection.selectedTaskReloadGuard,
-            persistedRelatedTagRules: relatedTagRules()
+            persistedRelatedTagRules: relatedTagRules(),
+            calendar: calendar()
         )
         state.relatedTagRules = snapshot.relatedTagRules
         state.tagColors = tagColors()

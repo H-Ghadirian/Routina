@@ -214,6 +214,41 @@ struct HomeTaskHelperTests {
     }
 
     @Test
+    func replacingTimelineLogsRefreshesSelectedTaskLogsAndPreservesOtherTasks() {
+        let taskID = UUID()
+        let otherTaskID = UUID()
+        let staleLog = RoutineLog(
+            timestamp: makeDate("2026-06-15T08:00:00Z"),
+            taskID: taskID,
+            kind: .completed
+        )
+        let otherLog = RoutineLog(
+            timestamp: makeDate("2026-06-18T08:00:00Z"),
+            taskID: otherTaskID,
+            kind: .completed
+        )
+        let refreshedLog = RoutineLog(
+            timestamp: makeDate("2026-06-20T08:00:00Z"),
+            taskID: taskID,
+            kind: .completed
+        )
+        let nilTimestampLog = RoutineLog(
+            timestamp: nil,
+            taskID: taskID,
+            kind: .missed
+        )
+
+        let logs = HomeTaskSupport.replacingTimelineLogs(
+            for: taskID,
+            in: [staleLog, otherLog],
+            with: [nilTimestampLog, refreshedLog]
+        )
+
+        #expect(logs.map(\.id) == [refreshedLog.id, otherLog.id, nilTimestampLog.id])
+        #expect(!logs.contains { $0.id == staleLog.id })
+    }
+
+    @Test
     func rowToneResolverUsesDisplayFieldsForScrollPathColor() {
         let referenceDate = makeDate("2026-05-25T08:00:00Z")
 
@@ -426,6 +461,76 @@ struct HomeTaskHelperTests {
         #expect(snapshot.relatedTagRules.contains(
             RoutineRelatedTagRule(tag: "Focus", relatedTags: ["Health", "Writing"])
         ))
+    }
+
+    @Test
+    func makeSnapshotAddsLastDoneFallbackWhenTimelineLogIsMissing() {
+        let calendar = makeTestCalendar()
+        let completedAt = makeDate("2026-07-08T10:00:00Z")
+        let completedTask = RoutineTask(
+            name: "Dr appointment",
+            emoji: "🩺",
+            lastDone: completedAt,
+            scheduleAnchor: completedAt
+        )
+        let otherTaskID = UUID()
+        let existingLog = RoutineLog(
+            timestamp: makeDate("2026-07-07T09:00:00Z"),
+            taskID: otherTaskID,
+            kind: .completed
+        )
+
+        let snapshot = HomeTaskLoadSupport.makeSnapshot(
+            tasks: [completedTask],
+            places: [],
+            goals: [],
+            logs: [existingLog],
+            doneStats: HomeTaskSupport.makeDoneStats(tasks: [completedTask], logs: [existingLog]),
+            selectedTaskID: nil,
+            detailTask: nil,
+            selectedTaskReloadGuard: nil,
+            persistedRelatedTagRules: [],
+            calendar: calendar
+        )
+
+        #expect(snapshot.timelineLogs.count == 2)
+        #expect(snapshot.timelineLogs.first?.taskID == completedTask.id)
+        #expect(snapshot.timelineLogs.first?.kind == .completed)
+        #expect(snapshot.timelineLogs.first?.timestamp == completedAt)
+        #expect(snapshot.timelineLogs.map(\.id).contains(existingLog.id))
+        #expect(snapshot.doneStats.hasCompletedDate(taskID: completedTask.id, date: completedAt, calendar: calendar))
+    }
+
+    @Test
+    func makeSnapshotDoesNotDuplicateLastDoneWhenSameDayLogExists() {
+        let calendar = makeTestCalendar()
+        let completedAt = makeDate("2026-07-08T10:00:00Z")
+        let completedTask = RoutineTask(
+            name: "Dr appointment",
+            emoji: "🩺",
+            lastDone: completedAt,
+            scheduleAnchor: completedAt
+        )
+        let existingLog = RoutineLog(
+            timestamp: makeDate("2026-07-08T09:00:00Z"),
+            taskID: completedTask.id,
+            kind: .completed
+        )
+
+        let snapshot = HomeTaskLoadSupport.makeSnapshot(
+            tasks: [completedTask],
+            places: [],
+            goals: [],
+            logs: [existingLog],
+            doneStats: HomeTaskSupport.makeDoneStats(tasks: [completedTask], logs: [existingLog]),
+            selectedTaskID: nil,
+            detailTask: nil,
+            selectedTaskReloadGuard: nil,
+            persistedRelatedTagRules: [],
+            calendar: calendar
+        )
+
+        #expect(snapshot.timelineLogs.map(\.id) == [existingLog.id])
     }
 
     @Test

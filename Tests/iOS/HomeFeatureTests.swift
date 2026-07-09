@@ -685,6 +685,51 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func taskDetailLogsLoaded_syncsResolvedOptimisticLogsToTimeline() async {
+        let now = makeDate("2026-07-08T10:00:00Z")
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(
+            name: "Dr appointment",
+            emoji: "🩺",
+            scheduleMode: .fixedInterval,
+            lastDone: now,
+            scheduleAnchor: now
+        )
+        let otherLog = RoutineLog(
+            timestamp: makeDate("2026-07-07T09:00:00Z"),
+            taskID: UUID(),
+            kind: .completed
+        )
+        let optimisticLog = RoutineLog(timestamp: now, taskID: task.id, kind: .completed)
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                routineTasks: [task],
+                timelineLogs: [otherLog],
+                selectedTaskID: task.id,
+                taskDetailState: TaskDetailFeature.State(
+                    task: task.detachedCopy(),
+                    logs: [optimisticLog],
+                    pendingLocalCompletionDates: [now],
+                    selectedDate: calendar.startOfDay(for: now),
+                    isDoneToday: true
+                )
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+        }
+        store.exhaustivity = .off
+
+        await store.send(.taskDetail(.logsLoaded([])))
+
+        #expect(store.state.timelineLogs.map(\.id).contains(optimisticLog.id))
+        #expect(store.state.timelineLogs.map(\.id).contains(otherLog.id))
+        #expect(store.state.doneStats.hasCompletedDate(taskID: task.id, date: now, calendar: calendar))
+    }
+
+    @Test
     func tasksLoadedSuccessfully_preservesSelectedChecklistProgressDuringReload() async {
         let context = makeInMemoryContext()
         let now = makeDate("2026-03-24T10:00:00Z")

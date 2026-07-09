@@ -529,6 +529,7 @@ struct HomeFeature {
         HomeFeatureTaskLoadHandler(
             relatedTagRules: { appSettingsClient.relatedTagRules() },
             tagColors: { appSettingsClient.tagColors() },
+            calendar: { calendar },
             refreshDisplays: { state in refreshDisplays(&state) },
             syncSelectedTaskDetailState: { state in selectionRouter().refreshSelectedTaskDetailState(&state) },
             validateFilterState: { state in filterMutationHandler().validateFilterState(&state) },
@@ -1094,7 +1095,13 @@ struct HomeFeature {
 
     private func syncSelectedTaskLogs(_ logs: [RoutineLog], state: inout State) {
         guard let taskID = state.selection.taskDetailState?.task.id else { return }
-        state.doneStats.replaceLogs(for: taskID, with: logs)
+        let resolvedLogs = state.selection.taskDetailState?.logs ?? logs
+        state.doneStats.replaceLogs(for: taskID, with: resolvedLogs)
+        state.timelineLogs = HomeTaskSupport.replacingTimelineLogs(
+            for: taskID,
+            in: state.timelineLogs,
+            with: resolvedLogs
+        )
         refreshDisplays(&state)
     }
 

@@ -78,6 +78,19 @@ struct HomeDoneStats: Equatable {
 }
 
 enum HomeTaskSupport {
+    static func replacingTimelineLogs(
+        for taskID: UUID,
+        in timelineLogs: [RoutineLog],
+        with logs: [RoutineLog]
+    ) -> [RoutineLog] {
+        (timelineLogs.filter { $0.taskID != taskID } + logs)
+            .sorted {
+                let lhs = $0.timestamp ?? .distantPast
+                let rhs = $1.timestamp ?? .distantPast
+                return lhs > rhs
+            }
+    }
+
     static func taskDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineTask> {
         FetchDescriptor<RoutineTask>(
             predicate: #Predicate { task in
