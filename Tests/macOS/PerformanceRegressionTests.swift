@@ -700,6 +700,16 @@ final class PerformanceRegressionTests: XCTestCase {
             rootSceneSource.contains("window.toolbarStyle = .unifiedCompact"),
             "The native Mac window chrome should stay compact because Home draws its own titlebar-height toolbar row."
         )
+        XCTAssertTrue(
+            rootSceneSource.contains("setFullSizeContentView(\n                isEnabled: !window.styleMask.contains(.fullScreen),\n                for: window\n            )"),
+            "Normal Home windows should keep full-size transparent titlebar content, while fullscreen should not let split/sidebar backing draw behind traffic lights."
+        )
+        XCTAssertTrue(rootSceneSource.contains("NSWindow.didEnterFullScreenNotification"))
+        XCTAssertTrue(rootSceneSource.contains("NSWindow.didExitFullScreenNotification"))
+        XCTAssertTrue(rootSceneSource.contains("configureFullscreenTitlebarMode(\n                    isFullscreen: true"))
+        XCTAssertTrue(rootSceneSource.contains("configureFullscreenTitlebarMode(\n                    isFullscreen: false"))
+        XCTAssertTrue(rootSceneSource.contains("window.styleMask.insert(.fullSizeContentView)"))
+        XCTAssertTrue(rootSceneSource.contains("window.styleMask.remove(.fullSizeContentView)"))
         XCTAssertTrue(rootSceneSource.contains("window.titlebarSeparatorStyle = .none"))
         XCTAssertTrue(rootSceneSource.contains("window.toolbar?.sizeMode = .small"))
         XCTAssertFalse(rootSceneSource.contains("showsBaselineSeparator"))
@@ -719,6 +729,11 @@ final class PerformanceRegressionTests: XCTestCase {
         )
         XCTAssertTrue(platformSource.contains("static let stableTitlebarHeight: CGFloat = 36"))
         XCTAssertTrue(platformSource.contains("padding(.top, HomeMacFullscreenChrome.stableTitlebarHeight)"))
+        XCTAssertFalse(platformSource.contains("padding(.top, HomeMacFullscreenChrome.stableTitlebarHeight)\n                .ignoresSafeArea(edges: .top)"))
+        XCTAssertTrue(platformSource.contains(".overlay(alignment: .top) {\n                    HomeMacFullscreenTitlebarReserveBackground()"))
+        XCTAssertTrue(platformSource.contains("private struct HomeMacFullscreenTitlebarReserveBackground: View"))
+        XCTAssertTrue(platformSource.contains("HomeMacToolbarSearchLayout.toolbarBackground\n            .frame(height: HomeMacFullscreenChrome.stableTitlebarHeight)"))
+        XCTAssertTrue(platformSource.contains(".allowsHitTesting(false)"))
         XCTAssertTrue(platformSource.contains("if isFullscreen {\n            padding(.top, HomeMacFullscreenChrome.stableTitlebarHeight)"))
         XCTAssertTrue(platformSource.contains("} else {\n            ignoresSafeArea(edges: .top)\n        }"))
         XCTAssertTrue(platformSource.contains(".padding(.top, HomeMacToolbarSearchLayout.topToolbarHeight)"))

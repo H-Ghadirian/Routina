@@ -85,7 +85,7 @@ Given Mac Home is in fullscreen
 When the macOS menu/titlebar controls are revealed at the top edge
 Then the Home shell keeps the same custom toolbar position instead of moving the layout up or down
 And the Home toolbar, sidebar, and main content remain below the native traffic-light/titlebar area
-And the top of the Home sidebar does not appear behind or underneath the traffic lights
+And the traffic lights sit over native titlebar space, not a rounded sidebar or split-view surface
 And normal non-fullscreen windows keep the same custom toolbar alignment
 
 ### Mac Toolbar Search Creates Only When Search Has No Result

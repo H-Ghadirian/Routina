@@ -20,7 +20,9 @@ Mac Home observes only whether its window is fullscreen.
 
 When Home is fullscreen, it reserves a stable native-titlebar-height area above the SwiftUI toolbar for the whole fullscreen session. The reserve is not tied to pointer location or to whether macOS has currently revealed the fullscreen titlebar strip.
 
-Normal non-fullscreen windows keep the existing traffic-light-band toolbar alignment. Fullscreen windows keep the toolbar, sidebar, and main content below the native traffic-light/titlebar area.
+Normal non-fullscreen windows keep the existing traffic-light-band toolbar alignment and keep using full-size transparent titlebar content. Fullscreen windows keep the toolbar, sidebar, and main content below the native traffic-light/titlebar area.
+
+While the window is fullscreen, the Home window chrome disables `.fullSizeContentView` so the `NavigationSplitView` sidebar and split-view backing cannot draw into the native titlebar band. The fullscreen branch also avoids ignoring the top safe area. Sidebar or split-view surfaces must not show a rounded top edge behind the native traffic lights when macOS reveals them.
 
 The fullscreen observer treats SwiftUI helper-view detach as a lifecycle cleanup only. It must not clear the fullscreen binding on detach, because fullscreen windows can recompose helper views while remaining fullscreen; only actual fullscreen enter/exit notifications or a live `NSWindow` style-mask read should change the state.
 
@@ -28,6 +30,8 @@ The fullscreen observer treats SwiftUI helper-view detach as a lifecycle cleanup
 
 - Moving the pointer to the top of a fullscreen window does not move Routina's layout up or down.
 - The Home toolbar, sidebar, and main content do not draw underneath the native fullscreen traffic lights.
+- The revealed fullscreen traffic lights sit over native titlebar space instead of a rounded sidebar or split-view surface.
+- Normal non-fullscreen windows keep full-size transparent titlebar content for the custom Home toolbar alignment.
 - Fullscreen keeps a stable top titlebar area even while macOS hides its transient titlebar chrome.
 - Future fullscreen chrome changes must not use pointer polling or revealed-titlebar state to add/remove layout offsets.
 - Helper-view detach/reattach does not make the fullscreen titlebar reserve blink.

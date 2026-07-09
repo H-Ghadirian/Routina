@@ -152,9 +152,54 @@ private struct RoutinaMacHomeWindowConfigurator: NSViewRepresentable {
 }
 
 private final class RoutinaMacHomeWindowConfigurationView: NSView {
+    private weak var observedWindow: NSWindow?
+    private var windowNotificationTokens: [NSObjectProtocol] = []
+
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+        observeWindowIfNeeded(window)
         RoutinaMacHomeWindowChrome.configure(window)
+    }
+
+    private func observeWindowIfNeeded(_ window: NSWindow?) {
+        guard observedWindow !== window else { return }
+
+        removeWindowObservers()
+        observedWindow = window
+
+        guard let window else { return }
+
+        let center = NotificationCenter.default
+        windowNotificationTokens = [
+            center.addObserver(
+                forName: NSWindow.didEnterFullScreenNotification,
+                object: window,
+                queue: .main
+            ) { [weak window] _ in
+                RoutinaMacHomeWindowChrome.configureFullscreenTitlebarMode(
+                    isFullscreen: true,
+                    for: window
+                )
+            },
+            center.addObserver(
+                forName: NSWindow.didExitFullScreenNotification,
+                object: window,
+                queue: .main
+            ) { [weak window] _ in
+                RoutinaMacHomeWindowChrome.configureFullscreenTitlebarMode(
+                    isFullscreen: false,
+                    for: window
+                )
+            },
+        ]
+    }
+
+    private func removeWindowObservers() {
+        for token in windowNotificationTokens {
+            NotificationCenter.default.removeObserver(token)
+        }
+        windowNotificationTokens.removeAll()
+        observedWindow = nil
     }
 }
 
@@ -164,7 +209,10 @@ private enum RoutinaMacHomeWindowChrome {
             guard let window else { return }
             window.titleVisibility = .hidden
             window.titlebarAppearsTransparent = true
-            window.styleMask.insert(.fullSizeContentView)
+            setFullSizeContentView(
+                isEnabled: !window.styleMask.contains(.fullScreen),
+                for: window
+            )
             window.toolbarStyle = .unifiedCompact
             window.titlebarSeparatorStyle = .none
             window.toolbar?.sizeMode = .small
@@ -172,6 +220,22 @@ private enum RoutinaMacHomeWindowChrome {
                 width: RoutinaMacWindowSizing.minWidth,
                 height: RoutinaMacWindowSizing.minHeight
             )
+        }
+    }
+
+    static func configureFullscreenTitlebarMode(isFullscreen: Bool, for window: NSWindow?) {
+        MainActor.assumeIsolated {
+            guard let window else { return }
+            setFullSizeContentView(isEnabled: !isFullscreen, for: window)
+        }
+    }
+
+    @MainActor
+    private static func setFullSizeContentView(isEnabled: Bool, for window: NSWindow) {
+        if isEnabled {
+            window.styleMask.insert(.fullSizeContentView)
+        } else {
+            window.styleMask.remove(.fullSizeContentView)
         }
     }
 }

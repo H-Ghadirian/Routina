@@ -1013,7 +1013,9 @@ private extension View {
     func routinaMacHomeToolbarTitlebarIntegration(isFullscreen: Bool) -> some View {
         if isFullscreen {
             padding(.top, HomeMacFullscreenChrome.stableTitlebarHeight)
-                .ignoresSafeArea(edges: .top)
+                .overlay(alignment: .top) {
+                    HomeMacFullscreenTitlebarReserveBackground()
+                }
         } else {
             ignoresSafeArea(edges: .top)
         }
@@ -1022,6 +1024,15 @@ private extension View {
 
 private enum HomeMacFullscreenChrome {
     static let stableTitlebarHeight: CGFloat = 36
+}
+
+private struct HomeMacFullscreenTitlebarReserveBackground: View {
+    var body: some View {
+        HomeMacToolbarSearchLayout.toolbarBackground
+            .frame(height: HomeMacFullscreenChrome.stableTitlebarHeight)
+            .frame(maxWidth: .infinity)
+            .allowsHitTesting(false)
+    }
 }
 
 private struct HomeMacWindowFullscreenObserver: NSViewRepresentable {
