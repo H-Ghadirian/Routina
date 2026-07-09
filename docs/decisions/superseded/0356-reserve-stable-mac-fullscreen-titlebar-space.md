@@ -2,11 +2,11 @@
 
 Date: 2026-07-09
 
-Status: Accepted
+Status: Superseded by [0357 Integrate Mac Fullscreen Titlebar Reserve Into Toolbar](../0357-integrate-mac-fullscreen-titlebar-reserve-into-toolbar.md)
 
-Supersedes: [0355 Integrate Mac Fullscreen Traffic Lights Into Home Toolbar](superseded/0355-integrate-mac-fullscreen-traffic-lights-into-home-toolbar.md)
+Supersedes: [0355 Integrate Mac Fullscreen Traffic Lights Into Home Toolbar](0355-integrate-mac-fullscreen-traffic-lights-into-home-toolbar.md)
 
-Refines: [0022 Own Mac Home Toolbar at the Split Shell](0022-own-mac-home-toolbar-at-split-shell.md), [0341 Consolidate Mac Home Toolbar Row](0341-consolidate-mac-home-toolbar-row.md)
+Refines: [0022 Own Mac Home Toolbar at the Split Shell](../0022-own-mac-home-toolbar-at-split-shell.md), [0341 Consolidate Mac Home Toolbar Row](../0341-consolidate-mac-home-toolbar-row.md)
 
 ## Context
 

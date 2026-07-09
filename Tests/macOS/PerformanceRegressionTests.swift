@@ -725,23 +725,24 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(platformSource.contains(".routinaMacHomeToolbarTitlebarIntegration(isFullscreen: isMacWindowFullscreen)"))
         XCTAssertTrue(
             platformSource.contains("func routinaMacHomeToolbarTitlebarIntegration(isFullscreen: Bool) -> some View"),
-            "Mac Home should keep a stable fullscreen-only native titlebar reserve."
+            "Mac Home should keep fullscreen titlebar behavior centralized instead of scattering safe-area tweaks through Home content."
         )
-        XCTAssertTrue(platformSource.contains("static let stableTitlebarHeight: CGFloat = 36"))
-        XCTAssertTrue(platformSource.contains("padding(.top, HomeMacFullscreenChrome.stableTitlebarHeight)"))
-        XCTAssertFalse(platformSource.contains("padding(.top, HomeMacFullscreenChrome.stableTitlebarHeight)\n                .ignoresSafeArea(edges: .top)"))
-        XCTAssertTrue(platformSource.contains(".overlay(alignment: .top) {\n                    HomeMacFullscreenTitlebarReserveBackground()"))
-        XCTAssertTrue(platformSource.contains("private struct HomeMacFullscreenTitlebarReserveBackground: View"))
-        XCTAssertTrue(platformSource.contains("HomeMacToolbarSearchLayout.toolbarBackground\n            .frame(height: HomeMacFullscreenChrome.stableTitlebarHeight)"))
-        XCTAssertTrue(platformSource.contains(".allowsHitTesting(false)"))
-        XCTAssertTrue(platformSource.contains("if isFullscreen {\n            padding(.top, HomeMacFullscreenChrome.stableTitlebarHeight)"))
+        XCTAssertTrue(platformSource.contains("if isFullscreen {\n            self"))
         XCTAssertTrue(platformSource.contains("} else {\n            ignoresSafeArea(edges: .top)\n        }"))
+        XCTAssertFalse(platformSource.contains("static let stableTitlebarHeight"))
+        XCTAssertFalse(platformSource.contains("HomeMacFullscreenChrome"))
+        XCTAssertFalse(platformSource.contains("HomeMacFullscreenTitlebarReserveBackground"))
+        XCTAssertFalse(platformSource.contains("padding(.top, HomeMacFullscreenChrome.stableTitlebarHeight)"))
+        XCTAssertFalse(
+            platformSource.contains(".overlay(alignment: .top) {\n                    HomeMacFullscreenTitlebarReserveBackground()"),
+            "Fullscreen must not add a separate visible reserve band above the integrated Home toolbar."
+        )
         XCTAssertTrue(platformSource.contains(".padding(.top, HomeMacToolbarSearchLayout.topToolbarHeight)"))
         XCTAssertTrue(source.contains("static let trafficLightReservedLeadingPadding: CGFloat = 142"))
         XCTAssertTrue(source.contains("static let sidebarToggleLeadingPadding: CGFloat = 104"))
         XCTAssertTrue(
             source.contains(".padding(.leading, HomeMacToolbarSearchLayout.trafficLightReservedLeadingPadding)"),
-            "Toolbar controls should start after the native traffic-light region instead of relying on fullscreen top offsets."
+            "Toolbar controls should start after the native traffic-light region so fullscreen can avoid a separate vertical dead band."
         )
         XCTAssertFalse(platformSource.contains("routinaMacFullscreenTitlebarSafeArea"))
         XCTAssertFalse(platformSource.contains("routinaMacFullscreenTitlebarSpacing"))
@@ -755,7 +756,7 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(platformSource.contains("private var isAttachRetryScheduled = false"))
         XCTAssertFalse(
             platformSource.contains("observedWindow = nil\n            setFullscreen(false)"),
-            "Detaching the helper NSView must not clear fullscreen state; SwiftUI detach/reattach can otherwise make the fullscreen titlebar reserve blink."
+            "Detaching the helper NSView must not clear fullscreen state; SwiftUI detach/reattach can otherwise make fullscreen chrome blink."
         )
         XCTAssertTrue(source.contains("textField.controlSize = .large"))
         XCTAssertTrue(source.contains("textField.focusRingType = .none"))

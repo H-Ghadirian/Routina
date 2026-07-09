@@ -2,7 +2,7 @@
 
 Date: 2026-07-08
 
-Status: Superseded by [0356 Reserve Stable Mac Fullscreen Titlebar Space](../0356-reserve-stable-mac-fullscreen-titlebar-space.md)
+Status: Superseded by [0357 Integrate Mac Fullscreen Titlebar Reserve Into Toolbar](../0357-integrate-mac-fullscreen-titlebar-reserve-into-toolbar.md)
 
 Supersedes: [0352 Respect Mac Home Fullscreen Titlebar Safe Area](0352-respect-mac-home-fullscreen-titlebar-safe-area.md), [0354 Reserve Revealed Mac Fullscreen Titlebar Space](0354-reserve-revealed-mac-fullscreen-titlebar-space.md)
 

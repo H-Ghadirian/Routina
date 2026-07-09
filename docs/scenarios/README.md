@@ -76,7 +76,7 @@ And the field remains clickable and editable throughout the animation
 ### Mac Fullscreen Traffic Lights Stay Above Home Content
 
 Area: Other
-Decision links: [0022](../decisions/0022-own-mac-home-toolbar-at-split-shell.md), [0340](../decisions/0340-use-swiftui-outlook-style-mac-home-top-toolbar.md), [0341](../decisions/0341-consolidate-mac-home-toolbar-row.md), [0356](../decisions/0356-reserve-stable-mac-fullscreen-titlebar-space.md)
+Decision links: [0022](../decisions/0022-own-mac-home-toolbar-at-split-shell.md), [0340](../decisions/0340-use-swiftui-outlook-style-mac-home-top-toolbar.md), [0341](../decisions/0341-consolidate-mac-home-toolbar-row.md), [0357](../decisions/0357-integrate-mac-fullscreen-titlebar-reserve-into-toolbar.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/macOS/PerformanceRegressionTests.swift`
@@ -84,7 +84,9 @@ Coverage:
 Given Mac Home is in fullscreen
 When the macOS menu/titlebar controls are revealed at the top edge
 Then the Home shell keeps the same custom toolbar position instead of moving the layout up or down
-And the Home toolbar, sidebar, and main content remain below the native traffic-light/titlebar area
+And the Home toolbar owns the fullscreen-safe chrome row without a separate blank strip above it
+And the Home toolbar controls start after the leading native traffic-light region
+And the sidebar and main content remain below the custom toolbar row
 And the traffic lights sit over native titlebar space, not a rounded sidebar or split-view surface
 And normal non-fullscreen windows keep the same custom toolbar alignment
 
