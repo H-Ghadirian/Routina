@@ -741,7 +741,7 @@ final class PerformanceRegressionTests: XCTestCase {
         )
         XCTAssertTrue(platformSource.contains(".padding(.top, HomeMacToolbarSearchLayout.topToolbarHeight)"))
         XCTAssertTrue(source.contains("static let trafficLightReservedLeadingPadding: CGFloat = 142"))
-        XCTAssertTrue(source.contains("static let sidebarToggleLeadingPadding: CGFloat = 104"))
+        XCTAssertTrue(source.contains("static let sidebarToggleLeadingPadding: CGFloat = 28"))
         XCTAssertTrue(
             source.contains(".padding(.leading, HomeMacToolbarSearchLayout.trafficLightReservedLeadingPadding)"),
             "Toolbar controls should start after the native traffic-light region so fullscreen can avoid a separate vertical dead band."

@@ -207,7 +207,7 @@ enum HomeMacToolbarSearchLayout {
     static let topToolbarHeight: CGFloat = 62
     static let topToolbarHorizontalPadding: CGFloat = 18
     static let trafficLightReservedLeadingPadding: CGFloat = 142
-    static let sidebarToggleLeadingPadding: CGFloat = 104
+    static let sidebarToggleLeadingPadding: CGFloat = 28
     static let sidebarToggleButtonSize: CGFloat = 28
 
     static var toolbarBackground: Color {
