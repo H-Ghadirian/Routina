@@ -190,7 +190,7 @@ struct TaskDetailRoutinePrimaryActionSection: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
 
-        if store.task.isChecklistCompletionRoutine && !store.canUndoSelectedDate && !store.isSelectedDateAssumedDone {
+        if store.isChecklistCompletionFromStoredItems && !store.canUndoSelectedDate && !store.isSelectedDateAssumedDone {
             Text("Complete checklist items below to finish this routine.")
                 .font(.caption)
                 .foregroundColor(.secondary)

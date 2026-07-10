@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TaskDetailChecklistSectionView: View {
     let task: RoutineTask
+    let checklistItems: [RoutineChecklistItem]
     let selectedDate: Date
     let isSelectedDateDone: Bool
     let background: Color
@@ -24,11 +25,21 @@ struct TaskDetailChecklistSectionView: View {
     @State private var editingChecklistItemIntervalDays = 3
 
     private var sortedItems: [RoutineChecklistItem] {
-        TaskDetailChecklistPresentation.sortedItems(for: task)
+        TaskDetailChecklistPresentation.sortedItems(checklistItems)
     }
 
-    private var visibleItems: [RoutineChecklistItem] {
-        if !TaskDetailChecklistPresentation.usesDoneVisibilityFilter(for: task) {
+    private var hasStoredChecklistItems: Bool {
+        !checklistItems.isEmpty
+    }
+
+    private var supportsOptionalChecklistProgress: Bool {
+        hasStoredChecklistItems
+            && !task.scheduleMode.isChecklistDrivenMode
+            && !task.scheduleMode.isChecklistCompletionMode
+    }
+
+    private func visibleItems(from sortedItems: [RoutineChecklistItem]) -> [RoutineChecklistItem] {
+        if !supportsOptionalChecklistProgress {
             return sortedItems
         }
         return TaskDetailChecklistPresentation.visibleItems(
@@ -38,24 +49,26 @@ struct TaskDetailChecklistSectionView: View {
         )
     }
 
-    private var doneItemCount: Int {
-        guard TaskDetailChecklistPresentation.usesDoneVisibilityFilter(for: task) else { return 0 }
+    private func doneItemCount(in sortedItems: [RoutineChecklistItem]) -> Int {
+        guard supportsOptionalChecklistProgress else { return 0 }
         return sortedItems.filter(isMarkedDone).count
     }
 
-    private var hiddenDoneItemCount: Int {
-        max(0, sortedItems.count - visibleItems.count)
-    }
-
-    private var shouldShowDoneToggle: Bool {
-        doneItemCount > 0
-    }
-
     private var showsItemIntervalControls: Bool {
-        TaskDetailChecklistPresentation.showsItemIntervalControls(for: task)
+        task.scheduleMode.isChecklistDrivenMode && hasStoredChecklistItems
     }
 
     var body: some View {
+        let sortedItems = self.sortedItems
+        let visibleItems = visibleItems(from: sortedItems)
+        let doneItemCount = doneItemCount(in: sortedItems)
+        let hiddenDoneItemCount = max(0, sortedItems.count - visibleItems.count)
+        let shouldShowDoneToggle = doneItemCount > 0
+        let lastVisibleItemID = visibleItems.last?.id
+        let isChecklistDriven = task.scheduleMode.isChecklistDrivenMode && !sortedItems.isEmpty
+        let isRunoutCheckboxInteractive = self.isRunoutCheckboxInteractive
+        let isSelectedDateInFuture = self.isSelectedDateInFuture
+
         TaskDetailSectionCardView(background: background, stroke: stroke) {
             VStack(alignment: .leading, spacing: 12) {
                 checklistHeader
@@ -66,10 +79,13 @@ struct TaskDetailChecklistSectionView: View {
                 }
 
                 if shouldShowDoneToggle {
-                    doneVisibilityControl
+                    doneVisibilityControl(
+                        doneItemCount: doneItemCount,
+                        hiddenDoneItemCount: hiddenDoneItemCount
+                    )
                 }
 
-                if task.checklistItems.isEmpty {
+                if sortedItems.isEmpty {
                     Text("No checklist items yet")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
@@ -79,9 +95,14 @@ struct TaskDetailChecklistSectionView: View {
                         .foregroundColor(.secondary)
                 } else {
                     ForEach(visibleItems, id: \.id) { item in
-                        checklistRow(for: item)
+                        checklistRow(
+                            for: item,
+                            isChecklistDriven: isChecklistDriven,
+                            isRunoutCheckboxInteractive: isRunoutCheckboxInteractive,
+                            isSelectedDateInFuture: isSelectedDateInFuture
+                        )
 
-                        if item.id != visibleItems.last?.id {
+                        if item.id != lastVisibleItemID {
                             Divider()
                         }
                     }
@@ -168,9 +189,15 @@ struct TaskDetailChecklistSectionView: View {
         .disabled(isAddItemDisabled)
     }
 
-    private var doneVisibilityControl: some View {
+    private func doneVisibilityControl(doneItemCount: Int, hiddenDoneItemCount: Int) -> some View {
         HStack(spacing: 8) {
-            Label(doneSummaryText, systemImage: "checkmark.circle")
+            Label(
+                doneSummaryText(
+                    doneItemCount: doneItemCount,
+                    hiddenDoneItemCount: hiddenDoneItemCount
+                ),
+                systemImage: "checkmark.circle"
+            )
                 .foregroundStyle(.secondary)
 
             Spacer(minLength: 8)
@@ -188,10 +215,15 @@ struct TaskDetailChecklistSectionView: View {
         .font(.caption.weight(.semibold))
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
-        .routinaGlassCard(cornerRadius: 8, tint: .secondary, tintOpacity: 0.07)
+        .taskDetailScrollCardSurface(
+            cornerRadius: 8,
+            tint: .secondary,
+            tintOpacity: 0.07,
+            stroke: .clear
+        )
     }
 
-    private var doneSummaryText: String {
+    private func doneSummaryText(doneItemCount: Int, hiddenDoneItemCount: Int) -> String {
         if isShowingDoneItems {
             return "\(doneItemCount) done shown"
         }
@@ -199,11 +231,20 @@ struct TaskDetailChecklistSectionView: View {
     }
 
     @ViewBuilder
-    private func checklistRow(for item: RoutineChecklistItem) -> some View {
+    private func checklistRow(
+        for item: RoutineChecklistItem,
+        isChecklistDriven: Bool,
+        isRunoutCheckboxInteractive: Bool,
+        isSelectedDateInFuture: Bool
+    ) -> some View {
         if editingChecklistItemID == item.id {
             checklistItemEditor(for: item)
-        } else if task.isChecklistDriven {
-            dueChecklistRow(for: item)
+        } else if isChecklistDriven {
+            dueChecklistRow(
+                for: item,
+                isRunoutCheckboxInteractive: isRunoutCheckboxInteractive,
+                isSelectedDateInFuture: isSelectedDateInFuture
+            )
         } else {
             completionChecklistRow(for: item)
         }
@@ -276,8 +317,24 @@ struct TaskDetailChecklistSectionView: View {
         }
     }
 
-    private func dueChecklistRow(for item: RoutineChecklistItem) -> some View {
+    private func dueChecklistRow(
+        for item: RoutineChecklistItem,
+        isRunoutCheckboxInteractive: Bool,
+        isSelectedDateInFuture: Bool
+    ) -> some View {
         let isDone = isMarkedDone(item)
+        let statusText = TaskDetailChecklistPresentation.statusText(
+            for: item,
+            isChecklistDriven: true,
+            isMarkedDone: isDone,
+            referenceDate: selectedDate
+        )
+        let statusColor = TaskDetailChecklistPresentation.statusColor(
+            for: item,
+            isChecklistDriven: true,
+            isMarkedDone: isDone,
+            referenceDate: selectedDate
+        )
 
         return HStack(alignment: .center, spacing: 12) {
             Button {
@@ -294,19 +351,9 @@ struct TaskDetailChecklistSectionView: View {
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(isDone ? .secondary : .primary)
                             .strikethrough(isDone, color: .secondary)
-                        Text(TaskDetailChecklistPresentation.statusText(
-                            for: item,
-                            task: task,
-                            isMarkedDone: isDone,
-                            referenceDate: selectedDate
-                        ))
+                        Text(statusText)
                         .font(.caption)
-                        .foregroundStyle(TaskDetailChecklistPresentation.statusColor(
-                            for: item,
-                            task: task,
-                            isMarkedDone: isDone,
-                            referenceDate: selectedDate
-                        ))
+                        .foregroundStyle(statusColor)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }

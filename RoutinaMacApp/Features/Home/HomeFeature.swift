@@ -66,6 +66,7 @@ struct HomeFeature {
         var routineDisplays: [RoutineDisplay] = []
         var awayRoutineDisplays: [RoutineDisplay] = []
         var archivedRoutineDisplays: [RoutineDisplay] = []
+        var routineDisplaysRevision = 0
         var board = HomeBoardState()
         var doneStats: DoneStats = DoneStats()
         var isLoading = false
@@ -166,6 +167,12 @@ struct HomeFeature {
             self.routineDisplays = routineDisplays
             self.awayRoutineDisplays = awayRoutineDisplays
             self.archivedRoutineDisplays = archivedRoutineDisplays
+            self.routineDisplaysRevision = routineDisplays.isEmpty
+                && awayRoutineDisplays.isEmpty
+                && archivedRoutineDisplays.isEmpty
+                && boardTodoDisplays.isEmpty
+                ? 0
+                : 1
             self.board = HomeBoardState(
                 todoDisplays: boardTodoDisplays,
                 sprintBoardData: sprintBoardData,
@@ -1490,7 +1497,16 @@ struct HomeFeature {
             tasks: [detailTask],
             calendar: calendar
         )
-        state.doneStats.replaceLogs(for: taskID, with: timelineLogs)
+
+        var updatedDoneStats = state.doneStats
+        updatedDoneStats.replaceLogs(for: taskID, with: timelineLogs)
+        let existingTimelineLogs = state.timelineLogs.filter { $0.taskID == taskID }
+        guard updatedDoneStats != state.doneStats
+            || !HomeTaskSupport.logsHaveSamePayload(existingTimelineLogs, timelineLogs) else {
+            return
+        }
+
+        state.doneStats = updatedDoneStats
         state.timelineLogs = HomeTaskSupport.replacingTimelineLogs(
             for: taskID,
             in: state.timelineLogs,

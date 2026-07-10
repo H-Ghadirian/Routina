@@ -1102,7 +1102,16 @@ struct HomeFeature {
             tasks: [detailTask],
             calendar: calendar
         )
-        state.doneStats.replaceLogs(for: taskID, with: timelineLogs)
+
+        var updatedDoneStats = state.doneStats
+        updatedDoneStats.replaceLogs(for: taskID, with: timelineLogs)
+        let existingTimelineLogs = state.timelineLogs.filter { $0.taskID == taskID }
+        guard updatedDoneStats != state.doneStats
+            || !HomeTaskSupport.logsHaveSamePayload(existingTimelineLogs, timelineLogs) else {
+            return
+        }
+
+        state.doneStats = updatedDoneStats
         state.timelineLogs = HomeTaskSupport.replacingTimelineLogs(
             for: taskID,
             in: state.timelineLogs,

@@ -192,7 +192,9 @@ extension HomeTCAView {
         _ presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>,
         allowsPlannerDrag: Bool
     ) -> some View {
-        let visibleTaskIDs = visibleTaskIDs(in: presentation)
+        let collapsedTagIDs = collapsedTagTaskListSectionIDs
+        let visibleTaskIDs = visibleTaskIDs(in: presentation, collapsedTagIDs: collapsedTagIDs)
+        let rowNumbersByTaskID = rowNumbersByTaskID(for: visibleTaskIDs)
         let metadataPresenter = routineMetadataPresenter
         let rowVisibility = taskRowVisibility
 
@@ -203,6 +205,8 @@ extension HomeTCAView {
                         taskListSectionView(
                             for: section,
                             in: presentation,
+                            collapsedTagIDs: collapsedTagIDs,
+                            rowNumbersByTaskID: rowNumbersByTaskID,
                             metadataPresenter: metadataPresenter,
                             rowVisibility: rowVisibility,
                             allowsPlannerDrag: allowsPlannerDrag
@@ -265,11 +269,13 @@ extension HomeTCAView {
     private func taskListSectionView(
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
         in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>,
+        collapsedTagIDs: Set<String>,
+        rowNumbersByTaskID: [UUID: Int],
         metadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay>,
         rowVisibility: HomeTaskRowVisibility,
         allowsPlannerDrag: Bool
     ) -> some View {
-        let isExpanded = taskListSectionIsExpanded(section)
+        let isExpanded = taskListSectionIsExpanded(section, collapsedTagIDs: collapsedTagIDs)
 
         if section.kind.isCollapsible {
             if taskListSectionUsesContinuousSurface(section) {
@@ -280,6 +286,8 @@ extension HomeTCAView {
                         taskListSectionTaskGroups(
                             for: section,
                             in: presentation,
+                            collapsedTagIDs: collapsedTagIDs,
+                            rowNumbersByTaskID: rowNumbersByTaskID,
                             metadataPresenter: metadataPresenter,
                             rowVisibility: rowVisibility,
                             allowsPlannerDrag: allowsPlannerDrag
@@ -312,6 +320,8 @@ extension HomeTCAView {
                         taskListSectionTaskGroups(
                             for: section,
                             in: presentation,
+                            collapsedTagIDs: collapsedTagIDs,
+                            rowNumbersByTaskID: rowNumbersByTaskID,
                             metadataPresenter: metadataPresenter,
                             rowVisibility: rowVisibility,
                             allowsPlannerDrag: allowsPlannerDrag
@@ -346,6 +356,8 @@ extension HomeTCAView {
                     taskListSectionTaskGroups(
                         for: section,
                         in: presentation,
+                        collapsedTagIDs: collapsedTagIDs,
+                        rowNumbersByTaskID: rowNumbersByTaskID,
                         metadataPresenter: metadataPresenter,
                         rowVisibility: rowVisibility,
                         allowsPlannerDrag: allowsPlannerDrag
@@ -422,6 +434,8 @@ extension HomeTCAView {
     private func taskListSectionTaskGroups(
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
         in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>,
+        collapsedTagIDs: Set<String>,
+        rowNumbersByTaskID: [UUID: Int],
         metadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay>,
         rowVisibility: HomeTaskRowVisibility,
         allowsPlannerDrag: Bool
@@ -432,15 +446,23 @@ extension HomeTCAView {
                 if taskListGroupUsesSectionSurface(group) {
                     VStack(alignment: .leading, spacing: 0) {
                         if let groupTitle = group.title {
-                            taskListInnerGroupHeader(groupTitle, count: group.tasks.count, group: group)
-                                .padding(.bottom, taskListGroupIsExpanded(group) ? 6 : 0)
+                            let isExpanded = taskListGroupIsExpanded(group, collapsedTagIDs: collapsedTagIDs)
+                            taskListInnerGroupHeader(
+                                groupTitle,
+                                count: group.tasks.count,
+                                group: group,
+                                collapsedTagIDs: collapsedTagIDs
+                            )
+                            .padding(.bottom, isExpanded ? 6 : 0)
                         }
 
-                        if taskListGroupIsExpanded(group) {
+                        if taskListGroupIsExpanded(group, collapsedTagIDs: collapsedTagIDs) {
                             taskListGroupContent(
                                 group,
                                 section: section,
                                 in: presentation,
+                                collapsedTagIDs: collapsedTagIDs,
+                                rowNumbersByTaskID: rowNumbersByTaskID,
                                 metadataPresenter: metadataPresenter,
                                 rowVisibility: rowVisibility,
                                 allowsPlannerDrag: allowsPlannerDrag
@@ -468,14 +490,21 @@ extension HomeTCAView {
                     .clipped()
                 } else {
                     if let groupTitle = group.title {
-                        taskListInnerGroupHeader(groupTitle, count: group.tasks.count, group: group)
+                        taskListInnerGroupHeader(
+                            groupTitle,
+                            count: group.tasks.count,
+                            group: group,
+                            collapsedTagIDs: collapsedTagIDs
+                        )
                     }
 
-                    if taskListGroupIsExpanded(group) {
+                    if taskListGroupIsExpanded(group, collapsedTagIDs: collapsedTagIDs) {
                         taskListGroupContent(
                             group,
                             section: section,
                             in: presentation,
+                            collapsedTagIDs: collapsedTagIDs,
+                            rowNumbersByTaskID: rowNumbersByTaskID,
                             metadataPresenter: metadataPresenter,
                             rowVisibility: rowVisibility,
                             allowsPlannerDrag: allowsPlannerDrag
@@ -503,6 +532,8 @@ extension HomeTCAView {
         _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>,
         section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
         in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>,
+        collapsedTagIDs: Set<String>,
+        rowNumbersByTaskID: [UUID: Int],
         metadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay>,
         rowVisibility: HomeTaskRowVisibility,
         allowsPlannerDrag: Bool
@@ -512,6 +543,7 @@ extension HomeTCAView {
                 group,
                 section: section,
                 in: presentation,
+                rowNumbersByTaskID: rowNumbersByTaskID,
                 metadataPresenter: metadataPresenter,
                 rowVisibility: rowVisibility,
                 allowsPlannerDrag: allowsPlannerDrag
@@ -521,6 +553,8 @@ extension HomeTCAView {
                 for: group,
                 section: section,
                 in: presentation,
+                collapsedTagIDs: collapsedTagIDs,
+                rowNumbersByTaskID: rowNumbersByTaskID,
                 metadataPresenter: metadataPresenter,
                 rowVisibility: rowVisibility,
                 allowsPlannerDrag: allowsPlannerDrag
@@ -533,6 +567,8 @@ extension HomeTCAView {
         for group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>,
         section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
         in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>,
+        collapsedTagIDs: Set<String>,
+        rowNumbersByTaskID: [UUID: Int],
         metadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay>,
         rowVisibility: HomeTaskRowVisibility,
         allowsPlannerDrag: Bool
@@ -544,15 +580,17 @@ extension HomeTCAView {
                         taskListInnerGroupHeader(
                             title,
                             count: childGroup.tasks.count,
-                            group: childGroup
+                            group: childGroup,
+                            collapsedTagIDs: collapsedTagIDs
                         )
                     }
 
-                    if taskListGroupIsExpanded(childGroup) {
+                    if taskListGroupIsExpanded(childGroup, collapsedTagIDs: collapsedTagIDs) {
                         taskListGroupRows(
                             childGroup,
                             section: section,
                             in: presentation,
+                            rowNumbersByTaskID: rowNumbersByTaskID,
                             metadataPresenter: metadataPresenter,
                             rowVisibility: rowVisibility,
                             allowsPlannerDrag: allowsPlannerDrag
@@ -569,6 +607,7 @@ extension HomeTCAView {
         _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>,
         section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
         in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>,
+        rowNumbersByTaskID: [UUID: Int],
         metadataPresenter: HomeRoutineDisplayMetadataPresenter<HomeFeature.RoutineDisplay>,
         rowVisibility: HomeTaskRowVisibility,
         allowsPlannerDrag: Bool
@@ -577,7 +616,7 @@ extension HomeTCAView {
             ForEach(group.tasks, id: \.id) { task in
                 macTaskSourceRow(
                     for: task,
-                    rowNumber: visibleRowNumber(for: task, in: presentation),
+                    rowNumber: rowNumbersByTaskID[task.taskID] ?? 1,
                     includeMarkDone: section.includeMarkDone,
                     moveContext: group.moveContext,
                     metadataPresenter: metadataPresenter,
@@ -619,9 +658,11 @@ extension HomeTCAView {
     private func taskListInnerGroupHeader(
         _ title: String,
         count: Int,
-        group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
+        group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>,
+        collapsedTagIDs: Set<String>
     ) -> some View {
         if group.isCollapsible {
+            let isExpanded = taskListGroupIsExpanded(group, collapsedTagIDs: collapsedTagIDs)
             Button {
                 toggleTaskListGroup(group)
             } label: {
@@ -630,15 +671,15 @@ extension HomeTCAView {
                         title,
                         count: count,
                         group: group,
-                        isExpanded: taskListGroupIsExpanded(group)
+                        isExpanded: isExpanded
                     )
                 } else {
-                    taskListInnerGroupHeaderLabel(title, count: count, isExpanded: taskListGroupIsExpanded(group))
+                    taskListInnerGroupHeaderLabel(title, count: count, isExpanded: isExpanded)
                 }
             }
             .buttonStyle(.plain)
             .accessibilityLabel(title)
-            .accessibilityValue(taskListGroupIsExpanded(group) ? "Expanded" : "Collapsed")
+            .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
             .contextMenu {
                 taskListGroupFocusContextMenu(for: group)
             }
@@ -1201,48 +1242,82 @@ extension HomeTCAView {
         return currentIDs + group.childGroups.flatMap(taskListGroupCollapseIDs)
     }
 
-    private func visibleRowNumber(
-        for task: HomeFeature.RoutineDisplay,
-        in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>
-    ) -> Int {
-        visibleTaskIDs(in: presentation).firstIndex(of: task.taskID).map { $0 + 1 } ?? 1
-    }
-
     private func visibleTaskIDs(
-        in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>
+        in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>,
+        collapsedTagIDs: Set<String>
     ) -> [UUID] {
         presentation.sections.flatMap { section in
-            visibleTaskIDs(in: section)
+            visibleTaskIDs(in: section, collapsedTagIDs: collapsedTagIDs)
         }
     }
 
     private func visibleTaskIDs(
-        in section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+        in section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        collapsedTagIDs: Set<String>
     ) -> [UUID] {
-        guard taskListSectionIsExpanded(section) else { return [] }
+        guard taskListSectionIsExpanded(section, collapsedTagIDs: collapsedTagIDs) else { return [] }
         return section.taskGroups.flatMap { group in
-            visibleTaskIDs(in: group)
+            visibleTaskIDs(in: group, collapsedTagIDs: collapsedTagIDs)
         }
     }
 
     private func visibleTaskIDs(
-        in group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
+        in group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>,
+        collapsedTagIDs: Set<String>
     ) -> [UUID] {
-        guard taskListGroupIsExpanded(group) else { return [] }
+        guard taskListGroupIsExpanded(group, collapsedTagIDs: collapsedTagIDs) else { return [] }
         guard !group.childGroups.isEmpty else {
             return group.tasks.map(\.taskID)
         }
         return group.childGroups.flatMap { childGroup in
-            visibleTaskIDs(in: childGroup)
+            visibleTaskIDs(in: childGroup, collapsedTagIDs: collapsedTagIDs)
         }
     }
 
-    private var collapsedTagTaskListSectionIDs: Set<String> {
-        Set(
-            collapsedTagTaskListSectionIDsStorage
-                .split(separator: "\n")
-                .map(String.init)
-        )
+    private func taskListSectionIsExpanded(
+        _ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        collapsedTagIDs: Set<String>
+    ) -> Bool {
+        switch section.kind {
+        case .plannedToday, .plannedTomorrow, .tag, .untagged:
+            return !collapsedTagIDs.contains(section.id)
+        case .daily:
+            return !isDailyRoutinesSectionCollapsed
+        case .future:
+            return !isMacFutureTasksSectionCollapsed
+        case .archived:
+            return !isArchivedSectionCollapsed
+        case .pinned, .regular, .deadlineDate, .away:
+            return true
+        }
+    }
+
+    private func taskListGroupIsExpanded(
+        _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>,
+        collapsedTagIDs: Set<String>
+    ) -> Bool {
+        guard group.isCollapsible else { return true }
+        switch group.kind {
+        case .daily:
+            return !isMacPlanTodayDailyRoutinesGroupCollapsed
+        case .deadlineDate, .tag, .untagged, .regular:
+            return !collapsedTagIDs.contains(taskListGroupCollapseID(group))
+        case .plannedToday, .plannedTomorrow, .future, .pinned, .away, .archived:
+            return true
+        }
+    }
+
+    private func rowNumbersByTaskID(for visibleTaskIDs: [UUID]) -> [UUID: Int] {
+        var rowNumbers: [UUID: Int] = [:]
+        rowNumbers.reserveCapacity(visibleTaskIDs.count)
+        for (index, taskID) in visibleTaskIDs.enumerated() where rowNumbers[taskID] == nil {
+            rowNumbers[taskID] = index + 1
+        }
+        return rowNumbers
+    }
+
+    var collapsedTagTaskListSectionIDs: Set<String> {
+        collapsedTagTaskListSectionIDsCache.ids(for: collapsedTagTaskListSectionIDsStorage)
     }
 
     private func setTagTaskListSection(

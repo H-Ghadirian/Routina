@@ -94,7 +94,8 @@ struct TaskDetailCompletionButtonTitlePresentationTests {
         isSelectedDateAssumedDone: Bool = false,
         completionTargetDate: Date? = nil
     ) -> TaskDetailCompletionButtonTitlePresentation {
-        TaskDetailCompletionButtonTitlePresentation(
+        let checklistItems = task.checklistItems
+        return TaskDetailCompletionButtonTitlePresentation(
             task: task,
             selectedDate: selectedDate,
             isSelectedDateTerminal: isSelectedDateTerminal,
@@ -102,7 +103,11 @@ struct TaskDetailCompletionButtonTitlePresentationTests {
             shouldUseBulkConfirmAsPrimaryAction: shouldUseBulkConfirmAsPrimaryAction,
             bulkConfirmAssumedDaysTitle: bulkConfirmAssumedDaysTitle,
             isSelectedDateAssumedDone: isSelectedDateAssumedDone,
-            completionTargetDate: completionTargetDate
+            completionTargetDate: completionTargetDate,
+            isChecklistDriven: task.scheduleMode.isChecklistDrivenMode && !checklistItems.isEmpty,
+            isChecklistCompletionRoutine: task.scheduleMode.isChecklistCompletionMode && !checklistItems.isEmpty,
+            blocksManualCompletionForIncompleteChecklist: task.blocksManualCompletionForIncompleteChecklist,
+            dueChecklistItems: task.dueChecklistItems(referenceDate: selectedDate)
         )
     }
 }

@@ -204,10 +204,11 @@ struct TaskDetailMacHeaderSupplementaryContent<CalendarContent: View>: View {
             if isCalendarExpanded {
                 Divider()
                 calendarContent
-                    .routinaGlassCard(cornerRadius: 12, tint: .secondary, tintOpacity: 0.06)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(sectionCardStroke, lineWidth: 1)
+                    .taskDetailScrollCardSurface(
+                        cornerRadius: 12,
+                        tint: .secondary,
+                        tintOpacity: 0.06,
+                        stroke: sectionCardStroke
                     )
             }
         }

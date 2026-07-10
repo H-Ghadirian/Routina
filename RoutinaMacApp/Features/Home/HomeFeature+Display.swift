@@ -66,10 +66,18 @@ extension HomeFeature {
             }
         }
 
+        let didChangeDisplays = state.routineDisplays != active
+            || state.awayRoutineDisplays != away
+            || state.archivedRoutineDisplays != archived
+            || state.boardTodoDisplays != boardTodos
+
         state.routineDisplays = active
         state.awayRoutineDisplays = away
         state.archivedRoutineDisplays = archived
         state.boardTodoDisplays = boardTodos
+        if didChangeDisplays {
+            state.routineDisplaysRevision = state.routineDisplaysRevision &+ 1
+        }
     }
 
     func makeTaskDetailState(for task: RoutineTask) -> TaskDetailFeature.State {

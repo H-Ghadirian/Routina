@@ -116,6 +116,7 @@ enum TaskDetailHeaderBadgePresentation {
 
     static func routineBadgeRows(
         state: TaskDetailFeature.State,
+        summaryStatusTitle: String? = nil,
         summaryStatusColor: Color,
         dueDateMetadataDisplayText: String?,
         layout: Layout,
@@ -124,7 +125,7 @@ enum TaskDetailHeaderBadgePresentation {
         var rows: [[TaskDetailHeaderBadgeItem]] = [[
             TaskDetailHeaderBadgeItem(
                 title: "Status",
-                value: state.summaryStatusTitle,
+                value: summaryStatusTitle ?? state.summaryStatusTitle,
                 systemImage: nil,
                 tint: summaryStatusColor
             ),
@@ -422,7 +423,7 @@ enum TaskDetailStatusMetadataPresentation {
             || state.task.hasImage
             || (showsNotes && state.task.hasVoiceNote)
             || !state.taskAttachments.isEmpty
-            || state.task.hasChecklistItems
+            || state.hasStoredChecklistItems
             || state.task.hasSequentialSteps
     }
 
@@ -503,29 +504,31 @@ enum TaskDetailStatusMetadataPresentation {
         state: TaskDetailFeature.State,
         referenceDate: Date
     ) {
-        if state.task.isChecklistDriven {
+        if state.isChecklistDrivenFromStoredItems {
+            let checklistItemCount = state.totalChecklistItemCount
             items.append(
                 .init(
                     id: "checklist",
                     label: "Checklist",
-                    value: "\(state.task.checklistItems.count) \(state.task.checklistItems.count == 1 ? "item" : "items")"
+                    value: "\(checklistItemCount) \(checklistItemCount == 1 ? "item" : "items")"
                 )
             )
-            if let nextDueChecklistItemTitle = state.task.nextDueChecklistItem(referenceDate: referenceDate)?.title {
+            if let nextDueChecklistItemTitle = state.nextDueChecklistItem(referenceDate: referenceDate)?.title {
                 items.append(.init(id: "nextDueChecklistItem", label: "Next Due", value: nextDueChecklistItemTitle))
             }
-        } else if state.task.isChecklistCompletionRoutine || state.task.supportsOptionalChecklistProgress {
+        } else if state.isChecklistCompletionFromStoredItems || state.supportsOptionalChecklistProgressFromStoredItems {
+            let checklistItemCount = state.totalChecklistItemCount
             items.append(
                 .init(
                     id: "checklist",
                     label: "Checklist",
-                    value: "\(state.task.totalChecklistItemCount) \(state.task.totalChecklistItemCount == 1 ? "item" : "items")"
+                    value: "\(checklistItemCount) \(checklistItemCount == 1 ? "item" : "items")"
                 )
             )
             items.append(.init(id: "checklistProgress", label: "Progress", value: state.checklistProgressText))
-            if state.task.isChecklistCompletionRoutine,
+            if state.isChecklistCompletionFromStoredItems,
                !state.isDoneToday,
-               let nextPendingChecklistItemTitle = state.task.nextPendingChecklistItemTitle(referenceDate: referenceDate) {
+               let nextPendingChecklistItemTitle = state.nextPendingChecklistItemTitle(referenceDate: referenceDate) {
                 items.append(.init(id: "nextChecklistItem", label: "Next Item", value: nextPendingChecklistItemTitle))
             }
         } else if state.task.hasSequentialSteps {

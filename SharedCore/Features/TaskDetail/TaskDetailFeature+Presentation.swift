@@ -4,10 +4,36 @@ import Foundation
 // Keep pure (no SwiftUI types) so these can be exercised from tests and used
 // by any platform view via `store.<property>` dynamic member lookup.
 extension TaskDetailFeature.State {
+    mutating func refreshChecklistItemsCache() {
+        let storage = task.checklistItemsStorage
+        guard checklistItemsCache.storage != storage else { return }
+        checklistItemsCache.items = RoutineChecklistItemStorage.deserialize(storage)
+        checklistItemsCache.storage = storage
+    }
+
+    var detailChecklistItems: [RoutineChecklistItem] {
+        if checklistItemsCache.storage == task.checklistItemsStorage {
+            return checklistItemsCache.items
+        }
+        return task.checklistItems
+    }
+
     /// Resolves the optional `selectedDate` to a concrete start-of-day value.
     var resolvedSelectedDate: Date {
         let calendar = Calendar.current
         return calendar.startOfDay(for: selectedDate ?? Date())
+    }
+
+    var hasStoredChecklistItems: Bool {
+        !detailChecklistItems.isEmpty
+    }
+
+    var isChecklistDrivenFromStoredItems: Bool {
+        task.scheduleMode.isChecklistDrivenMode && hasStoredChecklistItems
+    }
+
+    var isChecklistCompletionFromStoredItems: Bool {
+        task.scheduleMode.isChecklistCompletionMode && hasStoredChecklistItems
     }
 
     var selectedScheduledOccurrenceDate: Date? {
@@ -118,7 +144,7 @@ extension TaskDetailFeature.State {
     }
 
     var checklistDueItemCount: Int {
-        task.dueChecklistItems(referenceDate: resolvedSelectedDate).count
+        dueChecklistItems(referenceDate: resolvedSelectedDate).count
     }
 
     var isSelectedDateInFuture: Bool {
@@ -180,7 +206,7 @@ extension TaskDetailFeature.State {
     }
 
     var canUndoSelectedDate: Bool {
-        !task.isChecklistDriven && isSelectedDateTerminal
+        !isChecklistDrivenFromStoredItems && isSelectedDateTerminal
     }
 
     var completionButtonAction: TaskDetailFeature.Action {
@@ -227,13 +253,13 @@ extension TaskDetailFeature.State {
         if isSelectedDateAssumedDone {
             return task.isArchived()
         }
-        if task.blocksManualCompletionForIncompleteChecklist {
+        if blocksManualCompletionForIncompleteChecklist {
             return true
         }
-        if task.isChecklistCompletionRoutine {
+        if isChecklistCompletionFromStoredItems {
             return true
         }
-        if task.isChecklistDriven {
+        if isChecklistDrivenFromStoredItems {
             return task.isArchived()
                 || isSelectedDateInFuture
                 || checklistDueItemCount == 0
@@ -261,7 +287,19 @@ extension TaskDetailFeature.State {
         if task.isOneOffTask {
             return task.deadline
         }
-        return RoutineDateMath.upcomingDueDate(for: task, referenceDate: Date())
+        let referenceDate = Date()
+        if isChecklistDrivenFromStoredItems {
+            return detailChecklistItems
+                .map {
+                    RoutineDateMath.dueDate(
+                        for: $0,
+                        referenceDate: referenceDate,
+                        calendar: .current
+                    )
+                }
+                .min()
+        }
+        return RoutineDateMath.upcomingDueDate(for: task, referenceDate: referenceDate)
     }
 
     /// Soft routines use a threshold date instead of a hard overdue date.
@@ -336,7 +374,7 @@ extension TaskDetailFeature.State {
         if task.isOneOffTask {
             return "One-off todo"
         }
-        if task.isChecklistDriven {
+        if isChecklistDrivenFromStoredItems {
             return "Checklist-driven"
         }
         return task.recurrenceRule.displayText()
@@ -357,13 +395,13 @@ extension TaskDetailFeature.State {
             }
             return "All items completed on selected day"
         }
-        let completed = task.completedChecklistItemCount(referenceDate: resolvedSelectedDate)
-        let total = max(task.totalChecklistItemCount, 1)
+        let completed = completedChecklistItemCount(referenceDate: resolvedSelectedDate)
+        let total = max(totalChecklistItemCount, 1)
         return "\(completed) of \(total) items completed"
     }
 
     var isSelectedChecklistCompletionDateDone: Bool {
-        task.isChecklistCompletionRoutine && isSelectedDateDone
+        isChecklistCompletionFromStoredItems && isSelectedDateDone
     }
 
     var completedLogCountText: String {
@@ -381,6 +419,10 @@ extension TaskDetailFeature.State {
     // MARK: - Summary status title
 
     var summaryStatusTitle: String {
+        summaryStatusTitle(daysUntilDueIfActive: daysUntilDueIfActive)
+    }
+
+    func summaryStatusTitle(daysUntilDueIfActive: Int?) -> String {
         let pausedAt = task.pausedAt
         let snoozedUntil = task.isSnoozed() ? task.snoozedUntil : nil
         let overdueDays = self.overdueDays
@@ -418,15 +460,15 @@ extension TaskDetailFeature.State {
             }
             return "To do"
         }
-        if task.isChecklistCompletionRoutine {
+        if isChecklistCompletionFromStoredItems {
             if isDoneToday {
                 return "Done today"
             }
             if isAssumedDoneToday {
                 return "Assumed done today"
             }
-            if task.isChecklistInProgress(referenceDate: resolvedSelectedDate) {
-                return "Checklist \(task.completedChecklistItemCount(referenceDate: resolvedSelectedDate)) of \(task.totalChecklistItemCount) in progress"
+            if isChecklistInProgress(referenceDate: resolvedSelectedDate) {
+                return "Checklist \(completedChecklistItemCount(referenceDate: resolvedSelectedDate)) of \(totalChecklistItemCount) in progress"
             }
             if missedExactTimedOccurrenceDate != nil {
                 return "Missed"
@@ -445,7 +487,7 @@ extension TaskDetailFeature.State {
             }
             return "Overdue by \(-daysUntilDue) \(Self.dayWord(-daysUntilDue))"
         }
-        if task.isChecklistDriven {
+        if isChecklistDrivenFromStoredItems {
             if overdueDays > 0 {
                 return "Overdue by \(overdueDays) \(Self.dayWord(overdueDays))"
             }
@@ -516,6 +558,10 @@ extension TaskDetailFeature.State {
             bulkConfirmAssumedDaysTitle: bulkConfirmAssumedDaysTitle,
             isSelectedDateAssumedDone: isSelectedDateAssumedDone,
             completionTargetDate: completionTargetDate,
+            isChecklistDriven: isChecklistDrivenFromStoredItems,
+            isChecklistCompletionRoutine: isChecklistCompletionFromStoredItems,
+            blocksManualCompletionForIncompleteChecklist: blocksManualCompletionForIncompleteChecklist,
+            dueChecklistItems: dueChecklistItems(referenceDate: resolvedSelectedDate),
             hasUnresolvedMissedExactTimedOccurrence: missedExactTimedOccurrenceDate != nil
         ).title
     }
@@ -547,7 +593,7 @@ extension TaskDetailFeature.State {
     }
 
     func isChecklistItemMarkedDone(_ item: RoutineChecklistItem) -> Bool {
-        if task.isChecklistDriven {
+        if isChecklistDrivenFromStoredItems {
             return TaskDetailChecklistPresentation.isRunoutItemMarkedDone(
                 item,
                 referenceDate: resolvedSelectedDate,
@@ -558,5 +604,100 @@ extension TaskDetailFeature.State {
             return true
         }
         return task.isChecklistItemCompleted(item.id, referenceDate: resolvedSelectedDate)
+    }
+
+    var supportsOptionalChecklistProgressFromStoredItems: Bool {
+        hasStoredChecklistItems
+            && !task.scheduleMode.isChecklistDrivenMode
+            && !task.scheduleMode.isChecklistCompletionMode
+    }
+
+    var totalChecklistItemCount: Int {
+        detailChecklistItems.count
+    }
+
+    var blocksManualCompletionForIncompleteChecklist: Bool {
+        supportsOptionalChecklistProgressFromStoredItems
+            && totalChecklistItemCount > completedChecklistItemCount(referenceDate: Date())
+    }
+
+    func completedChecklistItemCount(
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> Int {
+        let validIDs = Set(detailChecklistItems.map(\.id))
+        return currentCompletedChecklistItemIDs(referenceDate: referenceDate, calendar: calendar)
+            .intersection(validIDs)
+            .count
+    }
+
+    func isChecklistInProgress(
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> Bool {
+        let completedCount = completedChecklistItemCount(referenceDate: referenceDate, calendar: calendar)
+        return isChecklistCompletionFromStoredItems
+            && completedCount > 0
+            && completedCount < totalChecklistItemCount
+    }
+
+    func nextDueChecklistItem(
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> RoutineChecklistItem? {
+        guard isChecklistDrivenFromStoredItems else { return nil }
+        return detailChecklistItems.min {
+            RoutineDateMath.dueDate(for: $0, referenceDate: referenceDate, calendar: calendar)
+                < RoutineDateMath.dueDate(for: $1, referenceDate: referenceDate, calendar: calendar)
+        }
+    }
+
+    func dueChecklistItems(
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> [RoutineChecklistItem] {
+        guard isChecklistDrivenFromStoredItems else { return [] }
+        let dueBoundary = calendar.startOfDay(for: referenceDate)
+        return detailChecklistItems
+            .filter { item in
+                let dueDate = RoutineDateMath.dueDate(for: item, referenceDate: referenceDate, calendar: calendar)
+                return calendar.startOfDay(for: dueDate) <= dueBoundary
+            }
+            .sorted {
+                RoutineDateMath.dueDate(for: $0, referenceDate: referenceDate, calendar: calendar)
+                    < RoutineDateMath.dueDate(for: $1, referenceDate: referenceDate, calendar: calendar)
+            }
+    }
+
+    func nextPendingChecklistItemTitle(
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> String? {
+        guard isChecklistCompletionFromStoredItems else { return nil }
+        let completedIDs = currentCompletedChecklistItemIDs(referenceDate: referenceDate, calendar: calendar)
+        return detailChecklistItems.first(where: { !completedIDs.contains($0.id) })?.title
+    }
+
+    private func currentCompletedChecklistItemIDs(
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> Set<UUID> {
+        if isChecklistCompletionFromStoredItems,
+           let lastDone = task.lastDone,
+           calendar.isDate(lastDone, inSameDayAs: referenceDate) {
+            return []
+        }
+
+        guard isChecklistCompletionFromStoredItems && task.recurrenceRule.isDaily,
+              !task.completedChecklistItemIDs.isEmpty
+        else {
+            return task.completedChecklistItemIDs
+        }
+
+        guard let progressStartedAt = task.completedChecklistProgressStartedAt,
+              calendar.isDate(progressStartedAt, inSameDayAs: referenceDate) else {
+            return []
+        }
+        return task.completedChecklistItemIDs
     }
 }

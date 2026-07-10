@@ -12,8 +12,18 @@ struct TaskDetailFeature: Reducer {
 
     @ObservableState
     struct State: Equatable {
+        struct ChecklistItemsCache: Equatable {
+            var storage: String = ""
+            var items: [RoutineChecklistItem] = []
+
+            static func == (_ lhs: ChecklistItemsCache, _ rhs: ChecklistItemsCache) -> Bool {
+                true
+            }
+        }
+
         var task: RoutineTask
         var taskRefreshID: UInt64 = 0
+        @ObservationStateIgnored var checklistItemsCache = ChecklistItemsCache()
         var logs: [RoutineLog] = []
         var pendingLocalCompletionDates: [Date] = []
         var pendingLocalRemovalDates: [Date] = []

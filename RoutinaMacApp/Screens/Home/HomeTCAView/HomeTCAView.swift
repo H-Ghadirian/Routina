@@ -2,6 +2,18 @@ import ComposableArchitecture
 import SwiftData
 import SwiftUI
 
+final class HomeCollapsedTagTaskListSectionIDsCache: ObservableObject {
+    private var cachedStorage: String?
+    private var cachedIDs: Set<String> = []
+
+    func ids(for storage: String) -> Set<String> {
+        guard cachedStorage != storage else { return cachedIDs }
+        cachedStorage = storage
+        cachedIDs = Set(storage.split(separator: "\n").map(String.init))
+        return cachedIDs
+    }
+}
+
 enum MacHomeDetailMode: String, CaseIterable, Identifiable {
     case details = "Details"
     case planner = "Planner"
@@ -220,6 +232,7 @@ struct HomeTCAView: View {
         UserDefaultStringValueKey.appSettingCollapsedTagTaskListSections.rawValue,
         store: SharedDefaults.app
     ) var collapsedTagTaskListSectionIDsStorage = ""
+    @StateObject var collapsedTagTaskListSectionIDsCache = HomeCollapsedTagTaskListSectionIDsCache()
     @State private var localSearchText = ""
     @State var isCompactHeaderHidden = false
     @State var quickAddCreatedToast: MacQuickAddCreatedToast?
@@ -239,6 +252,8 @@ struct HomeTCAView: View {
     @State var isAwayStartPresented = false
     @State var selectedNoteID: UUID?
     @State var isRefreshScheduled = false
+    @State var hasDeferredRoutineUpdateRefresh = false
+    @State var deferredRoutineUpdateRefreshTask: Task<Void, Never>?
     @State var relatedFilterTagSuggestionAnchor: String?
     @State var relatedTimelineTagSuggestionAnchor: String?
     @State var relatedStatsTagSuggestionAnchor: String?
@@ -276,6 +291,20 @@ struct HomeTCAView: View {
     @FocusState var isMacTaskSourceListFocused: Bool
     @Query(sort: \FocusSession.startedAt, order: .reverse) var focusSessions: [FocusSession]
     @Query(sort: \SprintFocusSessionRecord.startedAt, order: .reverse) var sprintFocusSessions: [SprintFocusSessionRecord]
+    @Query(
+        filter: #Predicate<FocusSession> { session in
+            session.completedAt == nil && session.abandonedAt == nil
+        },
+        sort: \FocusSession.startedAt,
+        order: .reverse
+    ) var activeToolbarFocusSessions: [FocusSession]
+    @Query(
+        filter: #Predicate<SprintFocusSessionRecord> { session in
+            session.stoppedAt == nil
+        },
+        sort: \SprintFocusSessionRecord.startedAt,
+        order: .reverse
+    ) var activeToolbarSprintFocusSessions: [SprintFocusSessionRecord]
     @Query(sort: \BoardSprintRecord.createdAt, order: .reverse) var boardSprints: [BoardSprintRecord]
     @Query(sort: \DayPlanBlockRecord.createdAt, order: .reverse) var dayPlanBlocks: [DayPlanBlockRecord]
     @Query(sort: \SleepSession.startedAt, order: .reverse) var sleepSessions: [SleepSession]

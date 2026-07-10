@@ -77,7 +77,33 @@ struct HomeDoneStats: Equatable {
     }
 }
 
+private struct HomeTaskLogPayloadSignature: Comparable, Equatable {
+    let id: UUID
+    let timestamp: Date?
+    let taskID: UUID
+    let kindRawValue: String
+    let actualDurationMinutes: Int?
+
+    init(log: RoutineLog) {
+        id = log.id
+        timestamp = log.timestamp
+        taskID = log.taskID
+        kindRawValue = log.kindRawValue
+        actualDurationMinutes = log.actualDurationMinutes
+    }
+
+    static func < (lhs: Self, rhs: Self) -> Bool {
+        lhs.id.uuidString < rhs.id.uuidString
+    }
+}
+
 enum HomeTaskSupport {
+    static func logsHaveSamePayload(_ lhs: [RoutineLog], _ rhs: [RoutineLog]) -> Bool {
+        guard lhs.count == rhs.count else { return false }
+        return lhs.map(HomeTaskLogPayloadSignature.init(log:)).sorted()
+            == rhs.map(HomeTaskLogPayloadSignature.init(log:)).sorted()
+    }
+
     static func replacingTimelineLogs(
         for taskID: UUID,
         in timelineLogs: [RoutineLog],
@@ -166,7 +192,7 @@ enum HomeTaskSupport {
         let defaultSelectedDate = (detailTask.isCompletedOneOff || detailTask.isCanceledOneOff)
             ? calendar.startOfDay(for: detailTask.lastDone ?? detailTask.canceledAt ?? now)
             : calendar.startOfDay(for: now)
-        return TaskDetailFeature.State(
+        var state = TaskDetailFeature.State(
             task: detailTask,
             logs: [],
             selectedDate: defaultSelectedDate,
@@ -184,6 +210,8 @@ enum HomeTaskSupport {
                 logs: []
             )
         )
+        state.refreshChecklistItemsCache()
+        return state
     }
 
     static func populateTaskDetailDisplayContext(

@@ -123,6 +123,7 @@ enum HomeDetailSelectionSupport {
         calendar: Calendar
     ) {
         detailState.task = task.detachedCopy()
+        detailState.refreshChecklistItemsCache()
         detailState.taskRefreshID &+= 1
         detailState.daysSinceLastRoutine = RoutineDateMath.elapsedDaysSinceLastDone(
             from: detailState.task.lastDone,

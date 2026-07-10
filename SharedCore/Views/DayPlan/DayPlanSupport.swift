@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 
 struct DayPlanCalendarFilterState: Equatable {
@@ -57,6 +58,49 @@ struct DayPlanCalendarFilterAvailability: Equatable {
     var includesEvents = true
     var includesAway = true
     var includesSleep = true
+}
+
+struct DayPlanDayTaskListVisibilitySignature: Hashable {
+    var showsPlannedTasks: Bool
+    var showsAllDayTasks: Bool
+    var showsTimelineSuggestions: Bool
+    var showsEvents: Bool
+    var showsFocus: Bool
+    var showsAway: Bool
+    var showsSleep: Bool
+    var includesEvents: Bool
+    var includesAway: Bool
+    var includesSleep: Bool
+    var calendarSearchText: String
+    var calendarTaskFilterCacheSeed: Int
+
+    static let unfiltered = DayPlanDayTaskListVisibilitySignature(
+        filters: DayPlanCalendarFilterState(),
+        availability: DayPlanCalendarFilterAvailability(),
+        calendarSearchText: "",
+        calendarTaskFilterCacheSeed: 0
+    )
+
+    init(
+        filters: DayPlanCalendarFilterState,
+        availability: DayPlanCalendarFilterAvailability,
+        calendarSearchText: String,
+        calendarTaskFilterCacheSeed: Int
+    ) {
+        let normalizedFilters = filters.normalized(availability: availability)
+        showsPlannedTasks = normalizedFilters.showsPlannedTasks
+        showsAllDayTasks = normalizedFilters.showsAllDayTasks
+        showsTimelineSuggestions = normalizedFilters.showsTimelineSuggestions
+        showsEvents = normalizedFilters.showsEvents
+        showsFocus = normalizedFilters.showsFocus
+        showsAway = normalizedFilters.showsAway
+        showsSleep = normalizedFilters.showsSleep
+        includesEvents = availability.includesEvents
+        includesAway = availability.includesAway
+        includesSleep = availability.includesSleep
+        self.calendarSearchText = calendarSearchText
+        self.calendarTaskFilterCacheSeed = calendarTaskFilterCacheSeed
+    }
 }
 
 struct DayPlanVisibleBlockContext {
@@ -235,7 +279,8 @@ enum DayPlanDayTaskListPresentation {
         timedBlocks: [DayPlanBlock],
         allDayBlocks: [DayPlanAllDayBlock],
         plannedDateTasks: [RoutineTask] = [],
-        calendar: Calendar
+        calendar: Calendar,
+        visibilityCache: DayPlanPlannedDateTaskVisibilityCache? = nil
     ) -> [DayPlanDayTaskListItem] {
         let allDayItems = allDayBlocks
             .enumerated()
@@ -267,7 +312,12 @@ enum DayPlanDayTaskListPresentation {
         let plannedDateItems = plannedDateTasks
             .compactMap { task -> DayPlanDayTaskListItem? in
                 guard !plannedTaskIDs.contains(task.id),
-                      isVisiblePlannedDateTask(task, on: date, calendar: calendar) else {
+                      isVisiblePlannedDateTask(
+                        task,
+                        on: date,
+                        calendar: calendar,
+                        visibilityCache: visibilityCache
+                      ) else {
                     return nil
                 }
 
@@ -333,16 +383,158 @@ enum DayPlanDayTaskListPresentation {
     private static func isVisiblePlannedDateTask(
         _ task: RoutineTask,
         on date: Date,
-        calendar: Calendar
+        calendar: Calendar,
+        visibilityCache: DayPlanPlannedDateTaskVisibilityCache?
     ) -> Bool {
         guard let plannedDate = task.plannedDate else { return false }
         let dayStart = calendar.startOfDay(for: date)
-        return !task.isDailyRoutineForTaskList
+        let isDailyRoutineForTaskList = visibilityCache?.isDailyRoutineForTaskList(task)
+            ?? task.isDailyRoutineForTaskList
+        return !isDailyRoutineForTaskList
             && !task.isCompletedOneOff
             && !task.isCanceledOneOff
             && !task.isPinned
             && !task.isArchived(referenceDate: dayStart, calendar: calendar)
             && calendar.isDate(plannedDate, inSameDayAs: dayStart)
+    }
+}
+
+final class DayPlanDayTaskListItemsCache: ObservableObject {
+    private struct Signature: Hashable {
+        var dataSnapshotID: UUID
+        var dayKey: String
+        var calendarIdentifier: String
+        var timeZoneIdentifier: String
+        var firstWeekday: Int
+        var minimumDaysInFirstWeek: Int
+        var visibilitySignature: DayPlanDayTaskListVisibilitySignature
+        var timedBlocks: [TimedBlockSignature]
+
+        init(
+            dataSnapshotID: UUID,
+            date: Date,
+            timedBlocks: [DayPlanBlock],
+            calendar: Calendar,
+            visibilitySignature: DayPlanDayTaskListVisibilitySignature
+        ) {
+            self.dataSnapshotID = dataSnapshotID
+            dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+            calendarIdentifier = String(describing: calendar.identifier)
+            timeZoneIdentifier = calendar.timeZone.identifier
+            firstWeekday = calendar.firstWeekday
+            minimumDaysInFirstWeek = calendar.minimumDaysInFirstWeek
+            self.visibilitySignature = visibilitySignature
+            self.timedBlocks = timedBlocks.map(TimedBlockSignature.init(block:))
+        }
+    }
+
+    private struct TimedBlockSignature: Hashable {
+        var id: UUID
+        var taskID: UUID
+        var dayKey: String
+        var startMinute: Int
+        var durationMinutes: Int
+        var titleSnapshot: String
+        var emojiSnapshot: String?
+
+        init(block: DayPlanBlock) {
+            id = block.id
+            taskID = block.taskID
+            dayKey = block.dayKey
+            startMinute = block.startMinute
+            durationMinutes = block.durationMinutes
+            titleSnapshot = block.titleSnapshot
+            emojiSnapshot = block.emojiSnapshot
+        }
+    }
+
+    private var itemsBySignature: [Signature: [DayPlanDayTaskListItem]] = [:]
+
+    func items(
+        dataSnapshotID: UUID,
+        on date: Date,
+        timedBlocks: [DayPlanBlock],
+        allDayBlocks: [DayPlanAllDayBlock],
+        plannedDateTasks: [RoutineTask],
+        calendar: Calendar,
+        visibilitySignature: DayPlanDayTaskListVisibilitySignature = .unfiltered,
+        visibilityCache: DayPlanPlannedDateTaskVisibilityCache? = nil
+    ) -> [DayPlanDayTaskListItem] {
+        let signature = Signature(
+            dataSnapshotID: dataSnapshotID,
+            date: date,
+            timedBlocks: timedBlocks,
+            calendar: calendar,
+            visibilitySignature: visibilitySignature
+        )
+        if let items = itemsBySignature[signature] {
+            return items
+        }
+
+        let items = DayPlanDayTaskListPresentation.items(
+            on: date,
+            timedBlocks: timedBlocks,
+            allDayBlocks: allDayBlocks,
+            plannedDateTasks: plannedDateTasks,
+            calendar: calendar,
+            visibilityCache: visibilityCache
+        )
+        if itemsBySignature.count > 96 {
+            itemsBySignature.removeAll(keepingCapacity: true)
+        }
+        itemsBySignature[signature] = items
+        return items
+    }
+}
+
+final class DayPlanPlannedDateTaskVisibilityCache: ObservableObject {
+    private struct Signature: Equatable {
+        var scheduleModeRawValue: String
+        var recurrenceStorageVersion: Int16
+        var recurrenceKindRawValue: String?
+        var recurrenceTimeOfDayHour: Int?
+        var recurrenceTimeOfDayMinute: Int?
+        var recurrenceTimeRangeStartHour: Int?
+        var recurrenceTimeRangeStartMinute: Int?
+        var recurrenceTimeRangeEndHour: Int?
+        var recurrenceTimeRangeEndMinute: Int?
+        var recurrenceWeekday: Int?
+        var recurrenceDayOfMonth: Int?
+        var recurrenceRuleStorage: String
+        var checklistItemsStorage: String
+
+        init(task: RoutineTask) {
+            scheduleModeRawValue = task.scheduleModeRawValue
+            recurrenceStorageVersion = task.recurrenceStorageVersion
+            recurrenceKindRawValue = task.recurrenceKindRawValue
+            recurrenceTimeOfDayHour = task.recurrenceTimeOfDayHour
+            recurrenceTimeOfDayMinute = task.recurrenceTimeOfDayMinute
+            recurrenceTimeRangeStartHour = task.recurrenceTimeRangeStartHour
+            recurrenceTimeRangeStartMinute = task.recurrenceTimeRangeStartMinute
+            recurrenceTimeRangeEndHour = task.recurrenceTimeRangeEndHour
+            recurrenceTimeRangeEndMinute = task.recurrenceTimeRangeEndMinute
+            recurrenceWeekday = task.recurrenceWeekday
+            recurrenceDayOfMonth = task.recurrenceDayOfMonth
+            recurrenceRuleStorage = task.recurrenceRuleStorage
+            checklistItemsStorage = task.checklistItemsStorage
+        }
+    }
+
+    private struct Entry {
+        var signature: Signature
+        var isDailyRoutineForTaskList: Bool
+    }
+
+    private var entries: [UUID: Entry] = [:]
+
+    func isDailyRoutineForTaskList(_ task: RoutineTask) -> Bool {
+        let signature = Signature(task: task)
+        if let entry = entries[task.id], entry.signature == signature {
+            return entry.isDailyRoutineForTaskList
+        }
+        let value = task.isDailyRoutineForTaskList
+        entries[task.id] = Entry(signature: signature, isDailyRoutineForTaskList: value)
+        return value
     }
 }
 

@@ -471,6 +471,8 @@ extension HomeTCAView {
     }
 
     var macActiveTimelineFiltersSummary: String? {
+        guard macHasActiveTimelineFilters else { return nil }
+
         var labels: [String] = []
 
         if effectiveMacTimelineFilterType != .all {

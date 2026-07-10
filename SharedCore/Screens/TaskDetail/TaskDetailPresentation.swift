@@ -102,6 +102,68 @@ enum TaskDetailPresentation {
         return .primary
     }
 
+    static func summaryTitleColor(
+        pausedAt: Date?,
+        isSnoozed: Bool,
+        usesOngoingLifecycle: Bool,
+        isOngoing: Bool,
+        isOneOffTask: Bool,
+        isInProgress: Bool,
+        isCompletedOneOff: Bool,
+        isCanceledOneOff: Bool,
+        isChecklistCompletionRoutine: Bool,
+        isChecklistInProgress: Bool,
+        isChecklistDriven: Bool,
+        isDoneToday: Bool,
+        isAssumedDoneToday: Bool,
+        overdueDays: Int,
+        daysUntilDueIfActive: Int?,
+        hasUnresolvedMissedExactTimedOccurrence: Bool,
+        isOrangeUrgency: Bool
+    ) -> Color {
+        if isSnoozed { return .indigo }
+        if pausedAt != nil { return .teal }
+        if usesOngoingLifecycle && isOngoing { return .orange }
+        if isOneOffTask {
+            if isInProgress { return .orange }
+            if isCompletedOneOff || isDoneToday { return .green }
+            if isCanceledOneOff { return TaskDetailStatusPalette.canceled }
+            return .primary
+        }
+        if isChecklistCompletionRoutine {
+            if isChecklistInProgress { return .orange }
+            if isDoneToday { return .green }
+            if isAssumedDoneToday { return .mint }
+            if hasUnresolvedMissedExactTimedOccurrence { return .yellow }
+            if overdueDays > 0 { return .red }
+            if daysUntilDueIfActive == 0 {
+                return TaskDetailPlatformStyle.dueTodayTitleColor
+            }
+            if isOrangeUrgency { return .orange }
+            return .primary
+        }
+        if isChecklistDriven {
+            if overdueDays > 0 { return .red }
+            if daysUntilDueIfActive == 0 {
+                return TaskDetailPlatformStyle.dueTodayTitleColor
+            }
+            if isDoneToday { return .green }
+            return .primary
+        }
+        if isInProgress { return .orange }
+        if isDoneToday { return .green }
+        if isAssumedDoneToday { return .mint }
+        if hasUnresolvedMissedExactTimedOccurrence {
+            return .yellow
+        }
+        if overdueDays > 0 { return .red }
+        if daysUntilDueIfActive == 0 {
+            return TaskDetailPlatformStyle.dueTodayTitleColor
+        }
+        if isOrangeUrgency { return .orange }
+        return .primary
+    }
+
     // MARK: - Urgency helpers
 
     static func isOrangeUrgency(_ task: RoutineTask, referenceDate: Date = Date()) -> Bool {

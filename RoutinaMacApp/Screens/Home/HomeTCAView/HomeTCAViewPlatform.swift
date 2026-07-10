@@ -148,26 +148,11 @@ extension HomeTCAView {
     }
 
     private var homeToolbarActiveFocusSessions: [FocusSession] {
-        focusSessions
-            .filter { $0.completedAt == nil && $0.abandonedAt == nil }
-            .sorted { ($0.startedAt ?? .distantPast) > ($1.startedAt ?? .distantPast) }
+        activeToolbarFocusSessions
     }
 
-    private var homeToolbarIsPlanFocusStartDisabled: Bool {
-        homeToolbarActiveFocusSessions.contains { !$0.isUnassigned }
-            || sprintFocusSessions.contains(where: \.isActive)
-            || homeToolbarActiveFocusSessions.contains(where: \.isUnassigned)
-    }
-
-    private var homeToolbarActivePlanFocusSession: FocusSession? {
-        homeToolbarActiveFocusSessions.first(where: \.isUnassigned)
-    }
-
-    private var homeToolbarFocusStartTaskCount: Int {
-        guard homeToolbarActivePlanFocusSession == nil else {
-            return 0
-        }
-        return homeToolbarFocusStartTasks.count
+    private var homeToolbarFocusStartDisplayCount: Int {
+        store.routineDisplays.count + store.awayRoutineDisplays.count
     }
 
     var homeToolbarFocusStartTasks: [RoutineTask] {
@@ -315,6 +300,22 @@ extension HomeTCAView {
                         : nil
                     let isPlannerFilterDetailPresented = store.isMacFilterDetailPresented
                         && macFilterDetailScope == (dayPlanDisplayMode == .list ? .timeline : .calendar)
+                    let detailSurfaceMode = macHomeDetailMode.visibleSurfaceMode
+                    let isPlannerSurfaceVisible = !isMacBoardMode
+                        && !isMacTimelineMode
+                        && !isMacStatsMode
+                        && !isMacSettingsMode
+                        && detailSurfaceMode == .planner
+                    let isPlannerTimelineListVisible = isPlannerSurfaceVisible
+                        && dayPlanDisplayMode == .list
+                    let toolbarActiveFocusSessions = homeToolbarActiveFocusSessions
+                    let toolbarActivePlanFocusSession = toolbarActiveFocusSessions.first(where: \.isUnassigned)
+                    let toolbarIsPlanFocusStartDisabled = toolbarActivePlanFocusSession != nil
+                        || toolbarActiveFocusSessions.contains { !$0.isUnassigned }
+                        || !activeToolbarSprintFocusSessions.isEmpty
+                    let toolbarFocusStartTaskCount = toolbarActivePlanFocusSession == nil
+                        ? homeToolbarFocusStartDisplayCount
+                        : 0
 
                     MacDetailContainerView(
                         store: store,
@@ -334,15 +335,15 @@ extension HomeTCAView {
                         dayPlanDisplayMode: $dayPlanDisplayMode,
                         dayPlanCalendarFilters: $dayPlanCalendarFilters,
                         isDayPlanCalendarFilterDetailPresented: isPlannerFilterDetailPresented,
-                        plannerTimelineActivityDates: dayPlanDisplayMode == .list
+                        plannerTimelineActivityDates: isPlannerTimelineListVisible
                             ? groupedPlannerTimelineEntries.map(\.date)
                             : [],
-                        isPlannerTimelineFilterActive: macHasActiveTimelineFilters,
-                        plannerTimelineFilterSummary: macActiveTimelineFiltersSummary,
+                        isPlannerTimelineFilterActive: isPlannerTimelineListVisible && macHasActiveTimelineFilters,
+                        plannerTimelineFilterSummary: isPlannerTimelineListVisible ? macActiveTimelineFiltersSummary : nil,
                         plannerSearchText: searchTextBinding.wrappedValue,
-                        focusStartTaskCount: homeToolbarFocusStartTaskCount,
-                        activePlanFocusSession: homeToolbarActivePlanFocusSession,
-                        isPlanFocusStartDisabled: homeToolbarIsPlanFocusStartDisabled,
+                        focusStartTaskCount: toolbarFocusStartTaskCount,
+                        activePlanFocusSession: toolbarActivePlanFocusSession,
+                        isPlanFocusStartDisabled: toolbarIsPlanFocusStartDisabled,
                         isBoardInspectorPresented: macBoardInspectorPresentedBinding,
                         taskDetailPanePlacement: $taskDetailPanePlacement,
                         placeCheckInSelectedPlaceID: $placeCheckInSelectedPlaceID,

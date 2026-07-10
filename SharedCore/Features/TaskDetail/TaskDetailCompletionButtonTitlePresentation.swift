@@ -9,12 +9,16 @@ struct TaskDetailCompletionButtonTitlePresentation {
     let bulkConfirmAssumedDaysTitle: String
     let isSelectedDateAssumedDone: Bool
     let completionTargetDate: Date?
+    let isChecklistDriven: Bool
+    let isChecklistCompletionRoutine: Bool
+    let blocksManualCompletionForIncompleteChecklist: Bool
+    let dueChecklistItems: [RoutineChecklistItem]
     var hasUnresolvedMissedExactTimedOccurrence: Bool? = nil
     var referenceDate: Date = Date()
     var calendar: Calendar = .current
 
     var title: String {
-        if !task.isChecklistDriven && isSelectedDateTerminal {
+        if !isChecklistDriven && isSelectedDateTerminal {
             return "Undo"
         }
         if task.isCanceledOneOff {
@@ -44,7 +48,7 @@ struct TaskDetailCompletionButtonTitlePresentation {
             }
             return "Confirm for \(selectedDate.formatted(date: .abbreviated, time: .omitted))"
         }
-        if task.blocksManualCompletionForIncompleteChecklist {
+        if blocksManualCompletionForIncompleteChecklist {
             return "Complete checklist items first"
         }
         if task.isOneOffTask {
@@ -53,17 +57,17 @@ struct TaskDetailCompletionButtonTitlePresentation {
             }
             return "Done for \(selectedDate.formatted(date: .abbreviated, time: .omitted))"
         }
-        if task.isChecklistCompletionRoutine && !calendar.isDateInToday(selectedDate) {
+        if isChecklistCompletionRoutine && !calendar.isDateInToday(selectedDate) {
             return "Checklist progress can only be updated today"
         }
-        if task.isChecklistCompletionRoutine {
+        if isChecklistCompletionRoutine {
             return "Complete checklist items below"
         }
-        if task.isChecklistDriven {
+        if isChecklistDriven {
             if isSelectedDateInFuture {
                 return "Future dates can't be marked done"
             }
-            let dueItems = task.dueChecklistItems(referenceDate: selectedDate, calendar: calendar)
+            let dueItems = dueChecklistItems
             if dueItems.isEmpty {
                 return calendar.isDateInToday(selectedDate) ? "No due items right now" : "No due items on selected day"
             }

@@ -170,11 +170,7 @@ extension HomeTCAView {
     }
 
     private func revealTaskListSection(sectionID: String, taskID: UUID) {
-        var collapsedSectionIDs = Set(
-            collapsedTagTaskListSectionIDsStorage
-                .split(separator: "\n")
-                .map(String.init)
-        )
+        var collapsedSectionIDs = collapsedTagTaskListSectionIDs
         collapsedSectionIDs.remove(sectionID)
         collapsedTagTaskListSectionIDsStorage = collapsedSectionIDs.sorted().joined(separator: "\n")
         macSidebarTaskScrollRequest = MacSidebarTaskScrollRequest(taskID: taskID, anchor: .center)

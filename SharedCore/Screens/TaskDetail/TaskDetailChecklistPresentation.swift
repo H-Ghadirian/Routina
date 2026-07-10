@@ -10,6 +10,10 @@ enum TaskDetailChecklistPresentation {
         task.checklistItems
     }
 
+    static func sortedItems(_ items: [RoutineChecklistItem]) -> [RoutineChecklistItem] {
+        items
+    }
+
     static func visibleItems(
         _ items: [RoutineChecklistItem],
         showDone: Bool,
@@ -43,7 +47,23 @@ enum TaskDetailChecklistPresentation {
         referenceDate: Date = Date(),
         calendar: Calendar = .current
     ) -> String {
-        if !task.isChecklistDriven {
+        statusText(
+            for: item,
+            isChecklistDriven: task.isChecklistDriven,
+            isMarkedDone: isMarkedDone,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+    }
+
+    static func statusText(
+        for item: RoutineChecklistItem,
+        isChecklistDriven: Bool,
+        isMarkedDone: Bool,
+        referenceDate: Date = Date(),
+        calendar: Calendar = .current
+    ) -> String {
+        if !isChecklistDriven {
             return isMarkedDone ? "Done" : "Pending"
         }
         let dueDate = RoutineDateMath.dueDate(for: item, referenceDate: referenceDate, calendar: calendar)
@@ -102,7 +122,23 @@ enum TaskDetailChecklistPresentation {
         referenceDate: Date = Date(),
         calendar: Calendar = .current
     ) -> Color {
-        if !task.isChecklistDriven {
+        statusColor(
+            for: item,
+            isChecklistDriven: task.isChecklistDriven,
+            isMarkedDone: isMarkedDone,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+    }
+
+    static func statusColor(
+        for item: RoutineChecklistItem,
+        isChecklistDriven: Bool,
+        isMarkedDone: Bool,
+        referenceDate: Date = Date(),
+        calendar: Calendar = .current
+    ) -> Color {
+        if !isChecklistDriven {
             return isMarkedDone ? .green : .secondary
         }
         let dueDate = RoutineDateMath.dueDate(for: item, referenceDate: referenceDate, calendar: calendar)

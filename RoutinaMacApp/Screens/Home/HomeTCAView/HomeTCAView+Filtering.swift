@@ -65,6 +65,7 @@ extension HomeTCAView {
             routineDisplays: routineDisplays,
             awayRoutineDisplays: awayRoutineDisplays,
             archivedRoutineDisplays: archivedRoutineDisplays,
+            routineDisplaysRevision: store.routineDisplaysRevision,
             showArchivedTasks: store.showArchivedTasks,
             separateDailyRoutinesInTaskList: separatesDailyRoutinesInTaskList,
             showTomorrowSection: showsTomorrowInTaskList,
@@ -209,9 +210,9 @@ final class HomeMacTaskListPresentationCache: ObservableObject {
 }
 
 struct HomeMacTaskListPresentationSignature: Equatable {
-    let routineDisplays: [HomeFeature.RoutineDisplay]
-    let awayRoutineDisplays: [HomeFeature.RoutineDisplay]
-    let archivedRoutineDisplays: [HomeFeature.RoutineDisplay]
+    let routineDisplays: HomeMacTaskListDisplayCollectionSignature
+    let awayRoutineDisplays: HomeMacTaskListDisplayCollectionSignature
+    let archivedRoutineDisplays: HomeMacTaskListDisplayCollectionSignature
     let showArchivedTasks: Bool
     let separateDailyRoutinesInTaskList: Bool
     let showTomorrowSection: Bool
@@ -247,6 +248,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         routineDisplays: [HomeFeature.RoutineDisplay],
         awayRoutineDisplays: [HomeFeature.RoutineDisplay],
         archivedRoutineDisplays: [HomeFeature.RoutineDisplay],
+        routineDisplaysRevision: Int,
         showArchivedTasks: Bool,
         separateDailyRoutinesInTaskList: Bool,
         showTomorrowSection: Bool,
@@ -275,9 +277,18 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         referenceDate: Date,
         routineTasks: [RoutineTask]
     ) {
-        self.routineDisplays = routineDisplays
-        self.awayRoutineDisplays = awayRoutineDisplays
-        self.archivedRoutineDisplays = archivedRoutineDisplays
+        self.routineDisplays = HomeMacTaskListDisplayCollectionSignature(
+            routineDisplays,
+            revision: routineDisplaysRevision
+        )
+        self.awayRoutineDisplays = HomeMacTaskListDisplayCollectionSignature(
+            awayRoutineDisplays,
+            revision: routineDisplaysRevision
+        )
+        self.archivedRoutineDisplays = HomeMacTaskListDisplayCollectionSignature(
+            archivedRoutineDisplays,
+            revision: routineDisplaysRevision
+        )
         self.showArchivedTasks = showArchivedTasks
         self.separateDailyRoutinesInTaskList = separateDailyRoutinesInTaskList
         self.showTomorrowSection = showTomorrowSection
@@ -317,6 +328,20 @@ struct HomeMacTaskListPresentationSignature: Equatable {
 
     static func referenceMinute(for date: Date, calendar: Calendar) -> Date {
         calendar.dateInterval(of: .minute, for: date)?.start ?? date
+    }
+}
+
+struct HomeMacTaskListDisplayCollectionSignature: Equatable {
+    let revision: Int
+    let count: Int
+    let firstTaskID: UUID?
+    let lastTaskID: UUID?
+
+    init(_ displays: [HomeFeature.RoutineDisplay], revision: Int) {
+        self.revision = revision
+        count = displays.count
+        firstTaskID = displays.first?.taskID
+        lastTaskID = displays.last?.taskID
     }
 }
 

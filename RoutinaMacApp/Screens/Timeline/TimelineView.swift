@@ -1104,7 +1104,7 @@ struct TimelineView: View {
             ? calendar.startOfDay(for: detailTask.lastDone ?? detailTask.canceledAt ?? now)
             : calendar.startOfDay(for: now)
 
-        return TaskDetailFeature.State(
+        var state = TaskDetailFeature.State(
             task: detailTask,
             logs: [],
             selectedDate: defaultSelectedDate,
@@ -1117,6 +1117,8 @@ struct TimelineView: View {
                 : RoutineDateMath.overdueDays(for: detailTask, referenceDate: now, calendar: calendar),
             isDoneToday: detailTask.lastDone.map { calendar.isDate($0, inSameDayAs: now) } ?? false
         )
+        state.refreshChecklistItemsCache()
+        return state
     }
 
     private func timelineTagButton(

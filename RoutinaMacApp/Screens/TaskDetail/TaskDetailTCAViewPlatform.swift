@@ -58,36 +58,26 @@ extension TaskDetailTCAView {
     ) -> some View {
         HStack(alignment: .top, spacing: 20) {
             calendarSection
-                .background(heightReader(id: "calendar"))
                 .frame(
                     maxWidth: .infinity,
-                    minHeight: syncedMacOverviewHeight > 0 ? syncedMacOverviewHeight : nil,
                     alignment: .topLeading
                 )
-                .routinaGlassCard(cornerRadius: 16, tint: .secondary, tintOpacity: 0.06)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
+                .taskDetailScrollCardSurface(
+                    cornerRadius: 16,
+                    tint: .secondary,
+                    tintOpacity: 0.06,
+                    stroke: TaskDetailPlatformStyle.sectionCardStroke
                 )
                 .layoutPriority(1)
 
             macStatusSection(pauseArchivePresentation: pauseArchivePresentation)
-                .background(heightReader(id: "status"))
-                .frame(width: 320)
-                .frame(
-                    minHeight: syncedMacOverviewHeight > 0 ? syncedMacOverviewHeight : nil,
-                    alignment: .topLeading
+                .frame(width: 320, alignment: .topLeading)
+                .taskDetailScrollCardSurface(
+                    cornerRadius: 16,
+                    tint: .secondary,
+                    tintOpacity: 0.06,
+                    stroke: TaskDetailPlatformStyle.sectionCardStroke
                 )
-                .routinaGlassCard(cornerRadius: 16, tint: .secondary, tintOpacity: 0.06)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(TaskDetailPlatformStyle.sectionCardStroke, lineWidth: 1)
-                )
-        }
-        .onPreferenceChange(TaskDetailOverviewHeightsPreferenceKey.self) { heights in
-            let maxHeight = heights.values.max() ?? 0
-            guard abs(maxHeight - syncedMacOverviewHeight) > 0.5 else { return }
-            syncedMacOverviewHeight = maxHeight
         }
     }
 }

@@ -1,5 +1,41 @@
 import SwiftData
+#if os(macOS)
+import AppKit
+#endif
 import SwiftUI
+
+#if os(macOS)
+@MainActor
+enum RoutinaMacScrollInteractionGate {
+    private static let quietWindowMilliseconds: Int64 = 1_200
+    private static var eventMonitor: Any?
+    private static var lastScrollEventAt = Date.distantPast
+
+    static func start() {
+        guard eventMonitor == nil else { return }
+
+        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { event in
+            lastScrollEventAt = Date()
+            return event
+        }
+    }
+
+    static var isScrollActive: Bool {
+        start()
+        return Date().timeIntervalSince(lastScrollEventAt) < quietWindow
+    }
+
+    static var quietRetryDelayMilliseconds: Int64 {
+        start()
+        let elapsedMilliseconds = Int64((Date().timeIntervalSince(lastScrollEventAt) * 1_000).rounded(.down))
+        return max(120, quietWindowMilliseconds - elapsedMilliseconds)
+    }
+
+    private static var quietWindow: TimeInterval {
+        TimeInterval(quietWindowMilliseconds) / 1_000
+    }
+}
+#endif
 
 struct DayPlanTimelineDateJumpRequest: Equatable, Identifiable {
     let id = UUID()
@@ -386,11 +422,22 @@ struct DayPlanSidebarView: View {
     }
 }
 
+private struct DayPlanSelectedTaskSyncToken: Equatable {
+    var id: UUID?
+    var estimatedDurationMinutes: Int?
+
+    init(task: RoutineTask?) {
+        id = task?.id
+        estimatedDurationMinutes = task?.estimatedDurationMinutes
+    }
+}
+
 struct DayPlanDetailView: View {
     @Environment(\.calendar) private var calendar
     @Environment(\.modelContext) private var modelContext
     @ObservedObject var planner: DayPlanPlannerState
     var selectedTaskID: UUID? = nil
+    var selectedTask: RoutineTask? = nil
     var isTaskDetailInspectorPresented = false
     var macHeaderAvailableWidth: CGFloat? = nil
     var displayMode: Binding<DayPlanDisplayMode> = .constant(.calendar)
@@ -400,6 +447,7 @@ struct DayPlanDetailView: View {
     var listFilterButtonAccessibilityValue: String? = nil
     var calendarSearchText = ""
     var calendarTaskFilter: (RoutineTask) -> Bool = { _ in true }
+    var calendarTaskFilterCacheSeed = 0
     var macHeaderFocusControl: (() -> AnyView)? = nil
     var listContent: ((DayPlanTimelineDateJumpRequest?) -> AnyView)? = nil
     var timelineActivityDates: [Date] = []
@@ -411,7 +459,6 @@ struct DayPlanDetailView: View {
     @State private var isCalendarFilterSidebarPresented = false
     @State private var isDatePickerSidebarPresented = false
     @State private var timelineDateJumpRequest: DayPlanTimelineDateJumpRequest?
-    @Query private var tasks: [RoutineTask]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -443,6 +490,7 @@ struct DayPlanDetailView: View {
                     calendarFilters: calendarFilters,
                     calendarSearchText: calendarSearchText,
                     calendarTaskFilter: calendarTaskFilter,
+                    calendarTaskFilterCacheSeed: calendarTaskFilterCacheSeed,
                     isCalendarFilterSidebarPresented: $isCalendarFilterSidebarPresented,
                     isDatePickerSidebarPresented: $isDatePickerSidebarPresented,
                     isExternalInspectorPresented: isTaskDetailInspectorPresented,
@@ -461,7 +509,7 @@ struct DayPlanDetailView: View {
         .onChange(of: selectedTaskID) { _, _ in
             syncSelectedTask()
         }
-        .onChange(of: tasks.map(\.id)) { _, _ in
+        .onChange(of: selectedTaskSyncToken) { _, _ in
             syncSelectedTask()
         }
         .onChange(of: isTaskDetailInspectorPresented) { _, isPresented in
@@ -486,13 +534,18 @@ struct DayPlanDetailView: View {
     private func syncSelectedTask() {
         guard
             let selectedTaskID,
-            let task = tasks.first(where: { $0.id == selectedTaskID })
+            let selectedTask,
+            selectedTask.id == selectedTaskID
         else { return }
 
         if planner.selectedTaskID != selectedTaskID {
             planner.selectedBlockID = nil
         }
-        planner.selectTask(task)
+        planner.selectTask(selectedTask)
+    }
+
+    private var selectedTaskSyncToken: DayPlanSelectedTaskSyncToken {
+        DayPlanSelectedTaskSyncToken(task: selectedTask)
     }
 
     private func dismissPlannerSidebars() {
@@ -1165,11 +1218,16 @@ private struct DayPlanTimelinePanelView: View {
     var calendarFilters: Binding<DayPlanCalendarFilterState> = .constant(DayPlanCalendarFilterState())
     var calendarSearchText = ""
     var calendarTaskFilter: (RoutineTask) -> Bool = { _ in true }
+    var calendarTaskFilterCacheSeed = 0
     var isCalendarFilterSidebarPresented: Binding<Bool> = .constant(false)
     var isDatePickerSidebarPresented: Binding<Bool> = .constant(false)
     var isExternalInspectorPresented = false
     var onSidebarPresentationRequested: (() -> Void)? = nil
     @State private var dataSnapshot = DayPlanTimelineDataSnapshot()
+    @State private var hasDeferredTimelineDataSnapshotRefresh = false
+#if os(macOS)
+    @State private var deferredTimelineDataSnapshotRefreshTask: Task<Void, Never>?
+#endif
     @StateObject private var timelinePlacementCache = DayPlanTimelinePlacementCache()
     @StateObject private var allDayBlocksCache = DayPlanAllDayBlocksCache()
     @StateObject private var visibleBlockContextCache = DayPlanVisibleBlockContextCache()
@@ -1178,6 +1236,8 @@ private struct DayPlanTimelinePanelView: View {
     @StateObject private var completedSprintFocusBlocksCache = DayPlanSprintFocusBlocksCache()
     @StateObject private var activeSprintFocusBlocksCache = DayPlanSprintFocusBlocksCache()
     @StateObject private var renderSnapshotCache = DayPlanTimelineRenderSnapshotCache()
+    @StateObject private var plannedDateTaskVisibilityCache = DayPlanPlannedDateTaskVisibilityCache()
+    @StateObject private var dayTaskListItemsCache = DayPlanDayTaskListItemsCache()
     @AppStorage(
         UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue,
         store: SharedDefaults.app
@@ -1213,9 +1273,12 @@ private struct DayPlanTimelinePanelView: View {
             completedSprintFocusBlocksCache: completedSprintFocusBlocksCache,
             activeSprintFocusBlocksCache: activeSprintFocusBlocksCache,
             renderSnapshotCache: renderSnapshotCache,
+            plannedDateTaskVisibilityCache: plannedDateTaskVisibilityCache,
+            dayTaskListItemsCache: dayTaskListItemsCache,
             calendarFilters: calendarFilters,
             calendarSearchText: calendarSearchText,
             calendarTaskFilter: calendarTaskFilter,
+            calendarTaskFilterCacheSeed: calendarTaskFilterCacheSeed,
             isCalendarFilterSidebarPresented: isCalendarFilterSidebarPresented,
             isDatePickerSidebarPresented: isDatePickerSidebarPresented,
             isExternalInspectorPresented: isExternalInspectorPresented,
@@ -1226,14 +1289,69 @@ private struct DayPlanTimelinePanelView: View {
             refreshTimelineDataSnapshot()
         }
         .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
-            refreshTimelineDataSnapshot()
+            requestTimelineDataSnapshotRefresh()
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 refreshTimelineDataSnapshot()
             }
         }
+        .onChange(of: isExternalInspectorPresented) { _, isPresented in
+            guard !isPresented else { return }
+            refreshDeferredTimelineDataSnapshotIfNeeded()
+        }
     }
+
+    private func requestTimelineDataSnapshotRefresh() {
+#if os(macOS)
+        guard !isExternalInspectorPresented else {
+            hasDeferredTimelineDataSnapshotRefresh = true
+            return
+        }
+        guard !RoutinaMacScrollInteractionGate.isScrollActive else {
+            hasDeferredTimelineDataSnapshotRefresh = true
+            scheduleDeferredTimelineDataSnapshotRefreshRetry()
+            return
+        }
+#else
+        guard !isExternalInspectorPresented else {
+            hasDeferredTimelineDataSnapshotRefresh = true
+            return
+        }
+#endif
+
+        hasDeferredTimelineDataSnapshotRefresh = false
+        refreshTimelineDataSnapshot()
+    }
+
+    private func refreshDeferredTimelineDataSnapshotIfNeeded() {
+        guard hasDeferredTimelineDataSnapshotRefresh else { return }
+#if os(macOS)
+        guard !isExternalInspectorPresented else { return }
+        guard !RoutinaMacScrollInteractionGate.isScrollActive else {
+            scheduleDeferredTimelineDataSnapshotRefreshRetry()
+            return
+        }
+#endif
+        hasDeferredTimelineDataSnapshotRefresh = false
+#if os(macOS)
+        deferredTimelineDataSnapshotRefreshTask?.cancel()
+        deferredTimelineDataSnapshotRefreshTask = nil
+#endif
+        refreshTimelineDataSnapshot()
+    }
+
+#if os(macOS)
+    private func scheduleDeferredTimelineDataSnapshotRefreshRetry() {
+        deferredTimelineDataSnapshotRefreshTask?.cancel()
+        let delayMilliseconds = RoutinaMacScrollInteractionGate.quietRetryDelayMilliseconds
+        deferredTimelineDataSnapshotRefreshTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(delayMilliseconds))
+            guard !Task.isCancelled else { return }
+            refreshDeferredTimelineDataSnapshotIfNeeded()
+        }
+    }
+#endif
 
     private func refreshTimelineDataSnapshot() {
         do {
@@ -2144,9 +2262,12 @@ private struct DayPlanTimelinePanelContentView: View {
     @ObservedObject var completedSprintFocusBlocksCache: DayPlanSprintFocusBlocksCache
     @ObservedObject var activeSprintFocusBlocksCache: DayPlanSprintFocusBlocksCache
     @ObservedObject var renderSnapshotCache: DayPlanTimelineRenderSnapshotCache
+    @ObservedObject var plannedDateTaskVisibilityCache: DayPlanPlannedDateTaskVisibilityCache
+    @ObservedObject var dayTaskListItemsCache: DayPlanDayTaskListItemsCache
     var calendarFilters: Binding<DayPlanCalendarFilterState> = .constant(DayPlanCalendarFilterState())
     var calendarSearchText = ""
     var calendarTaskFilter: (RoutineTask) -> Bool = { _ in true }
+    var calendarTaskFilterCacheSeed = 0
     var isCalendarFilterSidebarPresented: Binding<Bool> = .constant(false)
     var isDatePickerSidebarPresented: Binding<Bool> = .constant(false)
     var isExternalInspectorPresented = false
@@ -2220,6 +2341,12 @@ private struct DayPlanTimelinePanelContentView: View {
             includesSleep: includesAway
         )
         let calendarFilterState = calendarFilters.wrappedValue.normalized(availability: filterAvailability)
+        let dayTaskListVisibilitySignature = DayPlanDayTaskListVisibilitySignature(
+            filters: calendarFilterState,
+            availability: filterAvailability,
+            calendarSearchText: calendarSearchText,
+            calendarTaskFilterCacheSeed: calendarTaskFilterCacheSeed
+        )
         let timelineSuggestionsVisible = showsTimelineTasksInDayPlanner
             && calendarFilterState.showsTimelineSuggestions
         let calendarSearchTasks = tasksMatchingCalendarSearch(from: currentTasks)
@@ -2380,7 +2507,8 @@ private struct DayPlanTimelinePanelContentView: View {
                         allDayBlocks: visibleAllDayBlocks,
                         plannedDateTasks: calendarFilterState.showsAllDayTasks
                             ? calendarSearchTasks
-                            : []
+                            : [],
+                        visibilitySignature: dayTaskListVisibilitySignature
                     )
                     .count
                 },
@@ -2580,7 +2708,8 @@ private struct DayPlanTimelinePanelContentView: View {
                                 allDayBlocks: visibleAllDayBlocks,
                                 plannedDateTasks: calendarFilterState.showsAllDayTasks
                                     ? calendarSearchTasks
-                                    : []
+                                    : [],
+                                visibilitySignature: dayTaskListVisibilitySignature
                             ),
                             taskTint: { taskID in
                                 tintsByTaskID[taskID] ?? .accentColor
@@ -3008,15 +3137,19 @@ private struct DayPlanTimelinePanelContentView: View {
         on date: Date,
         plannedBlocksByDayKey: [String: [DayPlanBlock]],
         allDayBlocks: [DayPlanAllDayBlock],
-        plannedDateTasks: [RoutineTask]
+        plannedDateTasks: [RoutineTask],
+        visibilitySignature: DayPlanDayTaskListVisibilitySignature
     ) -> [DayPlanDayTaskListItem] {
         let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-        return DayPlanDayTaskListPresentation.items(
+        return dayTaskListItemsCache.items(
+            dataSnapshotID: dataSnapshotID,
             on: date,
             timedBlocks: plannedBlocksByDayKey[dayKey] ?? [],
             allDayBlocks: allDayBlocks,
             plannedDateTasks: plannedDateTasks,
-            calendar: calendar
+            calendar: calendar,
+            visibilitySignature: visibilitySignature,
+            visibilityCache: plannedDateTaskVisibilityCache
         )
     }
 
@@ -3061,7 +3194,7 @@ private struct DayPlanTimelinePanelContentView: View {
                     return false
                 }
 
-                if task.isDailyRoutineForTaskList {
+                if plannedDateTaskVisibilityCache.isDailyRoutineForTaskList(task) {
                     return true
                 }
 

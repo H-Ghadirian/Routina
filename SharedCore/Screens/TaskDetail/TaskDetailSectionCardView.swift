@@ -18,16 +18,44 @@ struct TaskDetailSectionCardView<Content: View>: View {
     var body: some View {
         content
             .padding(12)
-            .routinaGlassCard(
+            .taskDetailScrollCardSurface(
                 cornerRadius: 12,
                 tint: background,
                 tintOpacity: 0.18,
-                interactive: false
+                stroke: stroke
             )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(stroke, lineWidth: 1)
-            )
+    }
+}
+
+extension View {
+    @ViewBuilder
+    func taskDetailScrollCardSurface(
+        cornerRadius: CGFloat,
+        tint: Color,
+        tintOpacity: Double,
+        stroke: Color
+    ) -> some View {
+        #if os(macOS)
+        background(
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .fill(tint.opacity(tintOpacity))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .stroke(stroke, lineWidth: 1)
+        )
+        #else
+        routinaGlassCard(
+            cornerRadius: cornerRadius,
+            tint: tint,
+            tintOpacity: tintOpacity,
+            interactive: false
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .stroke(stroke, lineWidth: 1)
+        )
+        #endif
     }
 }
 

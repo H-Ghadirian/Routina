@@ -303,11 +303,17 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                 in: proxy.size.width,
                 canShowTaskDetailPane: canShowTaskDetailPane
             )
+            let calendarTaskFilter = plannerCalendarSharedFilter
+            let calendarTaskFilterCacheSeed = plannerCalendarSharedFilterCacheSeed
+            let selectedPlannerTask = selectedTaskID.flatMap { taskID in
+                store.routineTasks.first { $0.id == taskID }
+            }
 
             HStack(spacing: 0) {
                 DayPlanDetailView(
                     planner: dayPlanPlanner,
                     selectedTaskID: selectedTaskID,
+                    selectedTask: selectedPlannerTask,
                     isTaskDetailInspectorPresented: isPlannerExternalPanePresented,
                     macHeaderAvailableWidth: max(
                         plannerContentWidth - DayPlanWeekCalendarSizing.detailHorizontalPadding,
@@ -319,7 +325,8 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                     listFilterButtonIsActive: isPlannerTimelineFilterActive,
                     listFilterButtonAccessibilityValue: plannerTimelineFilterSummary,
                     calendarSearchText: plannerSearchText,
-                    calendarTaskFilter: matchesPlannerCalendarSharedFilters,
+                    calendarTaskFilter: calendarTaskFilter,
+                    calendarTaskFilterCacheSeed: calendarTaskFilterCacheSeed,
                     macHeaderFocusControl: {
                         AnyView(plannerHeaderFocusControl)
                     },
@@ -359,22 +366,65 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
         return max(availableWidth - MacDetailContainerSizing.taskDetailPaneWidth, 0)
     }
 
-    private func matchesPlannerCalendarSharedFilters(_ task: RoutineTask) -> Bool {
-        HomeDisplayFilterSupport.matchesImportanceUrgencyFilter(
-            store.selectedImportanceUrgencyFilter,
-            importance: task.importance,
-            urgency: task.urgency
-        )
-            && HomeDisplayFilterSupport.matchesSelectedTags(
-                store.selectedTags,
-                mode: store.includeTagMatchMode,
-                in: task.tags
+    private var plannerCalendarSharedFilter: (RoutineTask) -> Bool {
+        let selectedImportanceUrgencyFilter = store.selectedImportanceUrgencyFilter
+        let selectedTags = store.selectedTags
+        let includeTagMatchMode = store.includeTagMatchMode
+        let excludedTags = store.excludedTags
+        let excludeTagMatchMode = store.excludeTagMatchMode
+        let hasSelectedTags = !selectedTags.isEmpty
+        let hasExcludedTags = !excludedTags.isEmpty
+
+        guard selectedImportanceUrgencyFilter != nil || hasSelectedTags || hasExcludedTags else {
+            return { _ in true }
+        }
+
+        return { task in
+            if !HomeDisplayFilterSupport.matchesImportanceUrgencyFilter(
+                selectedImportanceUrgencyFilter,
+                importance: task.importance,
+                urgency: task.urgency
+            ) {
+                return false
+            }
+
+            guard hasSelectedTags || hasExcludedTags else { return true }
+
+            let tags = task.tags
+            if !HomeDisplayFilterSupport.matchesSelectedTags(
+                selectedTags,
+                mode: includeTagMatchMode,
+                in: tags
+            ) {
+                return false
+            }
+
+            return HomeDisplayFilterSupport.matchesExcludedTags(
+                excludedTags,
+                mode: excludeTagMatchMode,
+                in: tags
             )
-            && HomeDisplayFilterSupport.matchesExcludedTags(
-                store.excludedTags,
-                mode: store.excludeTagMatchMode,
-                in: task.tags
-            )
+        }
+    }
+
+    private var plannerCalendarSharedFilterCacheSeed: Int {
+        let selectedImportanceUrgencyFilter = store.selectedImportanceUrgencyFilter
+        let selectedTags = store.selectedTags
+        let includeTagMatchMode = store.includeTagMatchMode
+        let excludedTags = store.excludedTags
+        let excludeTagMatchMode = store.excludeTagMatchMode
+
+        guard selectedImportanceUrgencyFilter != nil || !selectedTags.isEmpty || !excludedTags.isEmpty else {
+            return 0
+        }
+
+        var hasher = Hasher()
+        hasher.combine(selectedImportanceUrgencyFilter)
+        hasher.combine(selectedTags.sorted())
+        hasher.combine(includeTagMatchMode.rawValue)
+        hasher.combine(excludedTags.sorted())
+        hasher.combine(excludeTagMatchMode.rawValue)
+        return hasher.finalize()
     }
 
     @ViewBuilder

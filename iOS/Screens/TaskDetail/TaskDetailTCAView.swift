@@ -460,7 +460,7 @@ detailBody
     }
 
     private var shouldShowChecklistSection: Bool {
-        isChecklistSectionRevealed || store.task.hasChecklistItems
+        isChecklistSectionRevealed || store.hasStoredChecklistItems
     }
 
     private var shouldShowTodoStateAddAction: Bool {
@@ -850,7 +850,7 @@ detailBody
             isArchived: store.task.isArchived(),
             isCompletionButtonDisabled: store.isCompletionButtonDisabled,
             isStepRoutineOffToday: store.isStepRoutineOffToday,
-            isChecklistCompletionRoutine: store.task.isChecklistCompletionRoutine,
+            isChecklistCompletionRoutine: store.isChecklistCompletionFromStoredItems,
             canUndoSelectedDate: store.canUndoSelectedDate,
             isSelectedDateAssumedDone: store.isSelectedDateAssumedDone,
             shouldShowBulkConfirmAssumedDays: false,
@@ -983,6 +983,7 @@ detailBody
     private var checklistItemsSection: some View {
         TaskDetailChecklistSectionView(
             task: store.task,
+            checklistItems: store.detailChecklistItems,
             selectedDate: store.resolvedSelectedDate,
             isSelectedDateDone: store.isSelectedDateDone,
             background: routineLogsBackground,
@@ -996,7 +997,7 @@ detailBody
                 set: { store.send(.editChecklistItemDraftIntervalChanged($0)) }
             ),
             isAddItemDisabled: RoutineChecklistItem.normalizedTitle(store.editChecklistItemDraftTitle) == nil,
-            isComposerInitiallyExpanded: isChecklistSectionRevealed && !store.task.hasChecklistItems,
+            isComposerInitiallyExpanded: isChecklistSectionRevealed && !store.hasStoredChecklistItems,
             isMarkedDone: { store.state.isChecklistItemMarkedDone($0) },
             onAddItem: { store.send(.detailAddChecklistItemTapped) },
             onToggleCompletion: { store.send(.toggleChecklistItemCompletion($0)) },

@@ -162,6 +162,11 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(source.contains("private struct DayPlanTimelineDataSnapshotSignature: Equatable"))
         XCTAssertTrue(source.contains("var signature = DayPlanTimelineDataSnapshotSignature()"))
         XCTAssertTrue(source.contains("if refreshedSnapshot.signature != dataSnapshot.signature"))
+        XCTAssertTrue(source.contains("@State private var hasDeferredTimelineDataSnapshotRefresh = false"))
+        XCTAssertTrue(source.contains("requestTimelineDataSnapshotRefresh()"))
+        XCTAssertTrue(source.contains("guard !isExternalInspectorPresented else"))
+        XCTAssertTrue(source.contains("RoutinaMacScrollInteractionGate.isScrollActive"))
+        XCTAssertTrue(source.contains("scheduleDeferredTimelineDataSnapshotRefreshRetry()"))
         XCTAssertTrue(
             source.contains("colorRawValue = task.colorRawValue"),
             "The planner snapshot signature should include fields that change visible block presentation, not just task IDs."
@@ -267,6 +272,26 @@ final class PerformanceRegressionTests: XCTestCase {
             "Home refresh should scan logs once when building done stats; repeated reductions are noticeable with large Home histories."
         )
         XCTAssertTrue(source.contains("for log in logs"))
+    }
+
+    func testMacTaskDetailDefersRoutineUpdateRefreshWhileInspectorIsOpen() throws {
+        let refreshSource = try Self.sourceFile("SharedCore/Screens/Home/HomeTCAView+Refresh.swift")
+        let dayPlanSource = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
+        let macHomeSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView.swift")
+
+        XCTAssertTrue(refreshSource.contains("requestRoutineUpdateRefresh()"))
+        XCTAssertTrue(refreshSource.contains("shouldDeferRoutineUpdateRefresh"))
+        XCTAssertTrue(refreshSource.contains("RoutinaMacScrollInteractionGate"))
+        XCTAssertTrue(dayPlanSource.contains("NSEvent.addLocalMonitorForEvents(matching: .scrollWheel)"))
+        XCTAssertTrue(refreshSource.contains("scheduleDeferredRoutineUpdateRefreshRetry()"))
+        XCTAssertTrue(refreshSource.contains("hasDeferredRoutineUpdateRefresh = true"))
+        XCTAssertTrue(refreshSource.contains("requestDeferredRoutineUpdateRefreshIfNeeded()"))
+        XCTAssertTrue(macHomeSource.contains("@State var hasDeferredRoutineUpdateRefresh = false"))
+        XCTAssertTrue(macHomeSource.contains("@State var deferredRoutineUpdateRefreshTask: Task<Void, Never>?"))
+        XCTAssertFalse(
+            refreshSource.contains("publisher(for: .routineDidUpdate)\n                    .receive(on: RunLoop.main)\n            ) { _ in\n                requestRefresh()"),
+            "Cloud routine-update pulses should not synchronously reload Home while a Mac task detail pane is being scrolled."
+        )
     }
 
     func testTaskDetailHeaderStacksLongTitlesAwayFromActionCluster() throws {

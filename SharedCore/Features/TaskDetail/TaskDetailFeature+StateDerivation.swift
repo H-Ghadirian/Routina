@@ -5,6 +5,7 @@ extension TaskDetailFeature {
     func updateDerivedState(_ state: inout State) {
         let nowStart = calendar.startOfDay(for: now)
         state.task.resetStaleDailyChecklistProgressIfNeeded(referenceDate: now, calendar: calendar)
+        state.refreshChecklistItemsCache()
 
         if let lastDone = state.task.lastDone {
             let lastDoneStart = calendar.startOfDay(for: lastDone)
@@ -50,6 +51,7 @@ extension TaskDetailFeature {
     }
 
     func refreshTaskView(_ state: inout State) {
+        state.refreshChecklistItemsCache()
         state.taskRefreshID &+= 1
     }
 

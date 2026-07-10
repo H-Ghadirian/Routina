@@ -45,7 +45,6 @@ struct TaskDetailTCAView: View {
     @State private var taskTimeEntryMinutes = 25
     @State private var taskTimeEntryResetToken = 0
     @State var isEditEmojiPickerPresented = false
-    @State var syncedMacOverviewHeight: CGFloat = 0
     @State var attachmentTempURL: URL?
     @State var fileToSave: AttachmentItem?
     @State private var isRelationshipGraphPresented = false
@@ -312,6 +311,10 @@ struct TaskDetailTCAView: View {
     }
 
     private var headerSupplementaryContent: some View {
+        headerSupplementaryContent(dueDate: store.resolvedDueDate)
+    }
+
+    private func headerSupplementaryContent(dueDate: Date?) -> some View {
         TaskDetailMacHeaderSupplementaryContent(
             task: store.task,
             goals: store.taskGoalSummaries,
@@ -321,7 +324,7 @@ struct TaskDetailTCAView: View {
             sectionCardStroke: TaskDetailPlatformStyle.sectionCardStroke,
             tagTint: { tagTint(for: $0) }
         ) {
-            calendarSection
+            calendarSection(dueDate: dueDate)
         }
     }
 
@@ -399,7 +402,7 @@ struct TaskDetailTCAView: View {
     }
 
     private var shouldShowChecklistSection: Bool {
-        isChecklistSectionRevealed || store.task.hasChecklistItems
+        isChecklistSectionRevealed || store.hasStoredChecklistItems
     }
 
     private var shouldShowTodoStateAddAction: Bool {
@@ -839,6 +842,10 @@ struct TaskDetailTCAView: View {
     }
 
     var calendarSection: some View {
+        calendarSection(dueDate: store.resolvedDueDate)
+    }
+
+    func calendarSection(dueDate: Date?) -> some View {
         TaskDetailCalendarCardContent(
             displayedMonthStart: displayedMonthStart,
             onPreviousMonth: {
@@ -849,9 +856,9 @@ struct TaskDetailTCAView: View {
             },
             logs: store.logs,
             task: store.task,
-            dueDate: store.resolvedDueDate,
+            dueDate: dueDate,
             softDueDate: store.resolvedSoftDueDate,
-            isOrangeUrgencyToday: TaskDetailPresentation.isOrangeUrgency(store.task),
+            isOrangeUrgencyToday: calendarIsOrangeUrgencyToday,
             selectedDate: store.resolvedSelectedDate,
             onSelectDate: { store.send(.selectedDateChanged($0)) },
             onToday: {
@@ -862,16 +869,6 @@ struct TaskDetailTCAView: View {
             }
         )
         .routinaPlatformCalendarCardStyle()
-    }
-
-    func heightReader(id: String) -> some View {
-        GeometryReader { proxy in
-            Color.clear
-                .preference(
-                    key: TaskDetailOverviewHeightsPreferenceKey.self,
-                    value: [id: proxy.size.height]
-                )
-        }
     }
 
     private func collapseDefaultSections() {
@@ -914,10 +911,24 @@ struct TaskDetailTCAView: View {
     }
 
     private var routineHeaderSection: some View {
-        TaskDetailHeaderSectionView(
+        let dueDate = store.resolvedDueDate
+        let daysUntilDueIfActive = daysUntilDueIfActive(from: dueDate)
+        let dueDateMetadataDisplayText = dueDateMetadataDisplayText(for: dueDate)
+        let summaryStatusColor = summaryStatusColor(
+            daysUntilDueIfActive: daysUntilDueIfActive
+        )
+        let summaryStatusTitle = summaryStatusTitle(
+            daysUntilDueIfActive: daysUntilDueIfActive
+        )
+
+        return TaskDetailHeaderSectionView(
             title: store.task.name ?? "Routine",
             statusContextMessage: statusContextMessage,
-            badgeRows: routineHeaderBadgeRows,
+            badgeRows: routineHeaderBadgeRows(
+                summaryStatusTitle: summaryStatusTitle,
+                summaryStatusColor: summaryStatusColor,
+                dueDateMetadataDisplayText: dueDateMetadataDisplayText
+            ),
             tags: [],
             headerAccessory: {
                 taskDetailActionCluster
@@ -927,7 +938,7 @@ struct TaskDetailTCAView: View {
         } additionalContent: {
             VStack(alignment: .leading, spacing: 8) {
                 routineHeaderControls
-                headerSupplementaryContent
+                headerSupplementaryContent(dueDate: dueDate)
             }
         }
     }
@@ -956,8 +967,23 @@ struct TaskDetailTCAView: View {
     }
 
     private var routineHeaderBadgeRows: [[TaskDetailHeaderBadgeItem]] {
+        let dueDate = store.resolvedDueDate
+        let daysUntilDueIfActive = daysUntilDueIfActive(from: dueDate)
+        return routineHeaderBadgeRows(
+            summaryStatusTitle: summaryStatusTitle(daysUntilDueIfActive: daysUntilDueIfActive),
+            summaryStatusColor: summaryStatusColor(daysUntilDueIfActive: daysUntilDueIfActive),
+            dueDateMetadataDisplayText: dueDateMetadataDisplayText(for: dueDate)
+        )
+    }
+
+    private func routineHeaderBadgeRows(
+        summaryStatusTitle: String,
+        summaryStatusColor: Color,
+        dueDateMetadataDisplayText: String?
+    ) -> [[TaskDetailHeaderBadgeItem]] {
         TaskDetailHeaderBadgePresentation.routineBadgeRows(
             state: store.state,
+            summaryStatusTitle: summaryStatusTitle,
             summaryStatusColor: summaryStatusColor,
             dueDateMetadataDisplayText: dueDateMetadataDisplayText,
             layout: .desktop,
@@ -1061,8 +1087,18 @@ struct TaskDetailTCAView: View {
         cardBackground: Color? = nil,
         cardStroke: Color? = nil
     ) -> some View {
-        TaskDetailStatusSectionView(
-            title: store.summaryStatusTitle,
+        let dueDate = store.resolvedDueDate
+        let daysUntilDueIfActive = daysUntilDueIfActive(from: dueDate)
+        let dueDateMetadataDisplayText = dueDateMetadataDisplayText(for: dueDate)
+        let summaryStatusColor = summaryStatusColor(
+            daysUntilDueIfActive: daysUntilDueIfActive
+        )
+        let summaryStatusTitle = summaryStatusTitle(
+            daysUntilDueIfActive: daysUntilDueIfActive
+        )
+
+        return TaskDetailStatusSectionView(
+            title: summaryStatusTitle,
             titleColor: summaryStatusColor,
             statusContextMessage: statusContextMessage,
             titleFont: titleFont,
@@ -1081,7 +1117,7 @@ struct TaskDetailTCAView: View {
             isArchived: store.task.isArchived(),
             isCompletionButtonDisabled: store.isCompletionButtonDisabled,
             isStepRoutineOffToday: store.isStepRoutineOffToday,
-            isChecklistCompletionRoutine: store.task.isChecklistCompletionRoutine,
+            isChecklistCompletionRoutine: store.isChecklistCompletionFromStoredItems,
             canUndoSelectedDate: store.canUndoSelectedDate,
             isSelectedDateAssumedDone: store.isSelectedDateAssumedDone,
             shouldShowBulkConfirmAssumedDays: store.shouldShowBulkConfirmAssumedDays,
@@ -1137,9 +1173,18 @@ struct TaskDetailTCAView: View {
     }
 
     private var dueDateMetadataDisplayText: String? {
-        TaskDetailStatusMetadataPresentation.dueDateMetadataDisplayText(
-            rawText: store.dueDateMetadataText,
-            dueDate: store.resolvedDueDate,
+        dueDateMetadataDisplayText(for: store.resolvedDueDate)
+    }
+
+    private func dueDateMetadataDisplayText(for dueDate: Date?) -> String? {
+        let rawText = TaskDetailDateMetadataPresentation.dueDateMetadataText(
+            dueDate: dueDate,
+            isOneOffTask: store.task.isOneOffTask,
+            usesExplicitTimeOfDay: store.task.recurrenceRule.usesTimeConstraint
+        )
+        return TaskDetailStatusMetadataPresentation.dueDateMetadataDisplayText(
+            rawText: rawText,
+            dueDate: dueDate,
             showPersianDates: showPersianDates
         )
     }
@@ -1246,6 +1291,7 @@ struct TaskDetailTCAView: View {
     private var checklistItemsSection: some View {
         TaskDetailChecklistSectionView(
             task: store.task,
+            checklistItems: store.detailChecklistItems,
             selectedDate: store.resolvedSelectedDate,
             isSelectedDateDone: store.isSelectedDateDone,
             background: routineLogsBackground,
@@ -1259,7 +1305,7 @@ struct TaskDetailTCAView: View {
                 set: { store.send(.editChecklistItemDraftIntervalChanged($0)) }
             ),
             isAddItemDisabled: RoutineChecklistItem.normalizedTitle(store.editChecklistItemDraftTitle) == nil,
-            isComposerInitiallyExpanded: isChecklistSectionRevealed && !store.task.hasChecklistItems,
+            isComposerInitiallyExpanded: isChecklistSectionRevealed && !store.hasStoredChecklistItems,
             isMarkedDone: { store.state.isChecklistItemMarkedDone($0) },
             onAddItem: { store.send(.detailAddChecklistItemTapped) },
             onToggleCompletion: { store.send(.toggleChecklistItemCompletion($0)) },
@@ -1272,14 +1318,55 @@ struct TaskDetailTCAView: View {
     }
 
     private var summaryStatusColor: Color {
-        TaskDetailPresentation.summaryTitleColor(
+        summaryStatusColor(daysUntilDueIfActive: store.daysUntilDueIfActive)
+    }
+
+    private func summaryStatusColor(daysUntilDueIfActive: Int?) -> Color {
+        let isChecklistCompletion = store.isChecklistCompletionFromStoredItems
+        let isChecklistDriven = store.isChecklistDrivenFromStoredItems
+
+        return TaskDetailPresentation.summaryTitleColor(
             pausedAt: store.task.pausedAt,
+            isSnoozed: store.task.isSnoozed(),
+            usesOngoingLifecycle: store.task.usesOngoingLifecycle,
+            isOngoing: store.task.isOngoing,
+            isOneOffTask: store.task.isOneOffTask,
+            isInProgress: store.task.isInProgress,
+            isCompletedOneOff: store.task.isCompletedOneOff,
+            isCanceledOneOff: store.task.isCanceledOneOff,
+            isChecklistCompletionRoutine: isChecklistCompletion,
+            isChecklistInProgress: isChecklistCompletion && store.state.isChecklistInProgress(referenceDate: store.resolvedSelectedDate),
+            isChecklistDriven: isChecklistDriven,
             isDoneToday: store.isDoneToday,
             isAssumedDoneToday: store.isAssumedDoneToday,
             overdueDays: store.overdueDays,
-            task: store.task,
-            hasUnresolvedMissedExactTimedOccurrence: store.missedExactTimedOccurrenceDate != nil
+            daysUntilDueIfActive: daysUntilDueIfActive,
+            hasUnresolvedMissedExactTimedOccurrence: store.missedExactTimedOccurrenceDate != nil,
+            isOrangeUrgency: !isChecklistCompletion
+                && !isChecklistDriven
+                && TaskDetailPresentation.isOrangeUrgency(store.task)
         )
+    }
+
+    private func summaryStatusTitle(daysUntilDueIfActive: Int?) -> String {
+        store.state.summaryStatusTitle(daysUntilDueIfActive: daysUntilDueIfActive)
+    }
+
+    private var calendarIsOrangeUrgencyToday: Bool {
+        guard !store.isChecklistDrivenFromStoredItems else { return false }
+        return TaskDetailPresentation.isOrangeUrgency(store.task)
+    }
+
+    private func daysUntilDueIfActive(from dueDate: Date?) -> Int? {
+        guard !store.task.isArchived(),
+              !store.task.isSoftIntervalRoutine,
+              let dueDate else { return nil }
+        let calendar = Calendar.current
+        return calendar.dateComponents(
+            [.day],
+            from: calendar.startOfDay(for: Date()),
+            to: calendar.startOfDay(for: dueDate)
+        ).day
     }
 
     private var routineLogsBackground: Color {
