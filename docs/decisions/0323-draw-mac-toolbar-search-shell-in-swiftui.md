@@ -17,6 +17,7 @@ Accepted
 ## Refined By
 
 - [0329: Hide Mac Toolbar Actions During Search Focus](0329-hide-mac-toolbar-actions-during-search-focus.md)
+- [0365: Refine Mac Toolbar Search Outlook States](0365-refine-mac-toolbar-search-outlook-states.md)
 
 ## Context
 

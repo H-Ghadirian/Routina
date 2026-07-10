@@ -56,7 +56,7 @@ Then typing stays in that editor instead of jumping back to the toolbar search f
 ### Mac Toolbar Search Expands as One Visible Pill
 
 Area: Other
-Decision links: [0321](../decisions/0321-use-focus-expanded-mac-home-toolbar-search.md), [0323](../decisions/0323-draw-mac-toolbar-search-shell-in-swiftui.md), [0329](../decisions/0329-hide-mac-toolbar-actions-during-search-focus.md)
+Decision links: [0321](../decisions/0321-use-focus-expanded-mac-home-toolbar-search.md), [0323](../decisions/0323-draw-mac-toolbar-search-shell-in-swiftui.md), [0329](../decisions/0329-hide-mac-toolbar-actions-during-search-focus.md), [0365](../decisions/0365-refine-mac-toolbar-search-outlook-states.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/macOS/PerformanceRegressionTests.swift`
@@ -64,7 +64,9 @@ Coverage:
 Given the Mac Home toolbar search field is compact and idle
 When the user focuses the field and it expands to the focused width
 Then the default toolbar shows the compact search pill and normal toolbar actions without a full-width host behind it
+And the idle empty pill centers the icon and placeholder with the closed-state color treatment
 And clicking the search icon or any empty area inside the visible pill keeps the field expanded and focuses the editor
+And the expanded pill uses the active color treatment, wider focused width, and an I-beam cursor across the visible search surface
 And non-search toolbar actions hide while the search field is expanded/focused
 And the focused search state survives the toolbar rebuild caused by hiding those actions
 And no separate focused-width toolbar reservation appears before or behind the animated pill

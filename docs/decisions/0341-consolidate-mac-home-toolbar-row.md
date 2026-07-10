@@ -18,6 +18,7 @@ Accepted
 ## Refined By
 
 - [0361: Make Mac Done Toolbar Count Optional](0361-make-mac-done-toolbar-count-optional.md)
+- [0365: Refine Mac Toolbar Search Outlook States](0365-refine-mac-toolbar-search-outlook-states.md)
 
 ## Context
 

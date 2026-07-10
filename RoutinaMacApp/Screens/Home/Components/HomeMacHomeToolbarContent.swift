@@ -192,7 +192,7 @@ private struct HomeMacSidebarVisibilityToolbarButton: View {
 
 enum HomeMacToolbarSearchLayout {
     static let compactWidth: CGFloat = 620
-    static let focusedWidth: CGFloat = 740
+    static let focusedWidth: CGFloat = 860
     static let height: CGFloat = 44
     static let cornerRadius: CGFloat = 22
     static let horizontalPadding: CGFloat = 18
@@ -212,6 +212,18 @@ enum HomeMacToolbarSearchLayout {
 
     static var toolbarBackground: Color {
         Color(nsColor: .windowBackgroundColor).opacity(0.98)
+    }
+
+    static func searchBackgroundColor(isFocused: Bool) -> Color {
+        if isFocused {
+            Color(nsColor: .textBackgroundColor).opacity(0.98)
+        } else {
+            Color(nsColor: .controlBackgroundColor).opacity(0.82)
+        }
+    }
+
+    static func searchStrokeColor(isFocused: Bool) -> Color {
+        Color.secondary.opacity(isFocused ? 0.24 : 0.14)
     }
 }
 
@@ -245,6 +257,16 @@ struct HomeMacToolbarSearchField: View {
         ZStack(alignment: .leading) {
             searchFocusTarget(width: width)
 
+            if usesCenteredIdleContent {
+                centeredIdleContent
+                    .frame(
+                        width: width,
+                        height: HomeMacToolbarSearchLayout.height,
+                        alignment: .center
+                    )
+                    .transition(.opacity)
+            }
+
             Image(systemName: "magnifyingglass")
                 .font(.system(size: HomeMacToolbarSearchLayout.iconSize, weight: .medium))
                 .foregroundStyle(.secondary)
@@ -253,6 +275,7 @@ struct HomeMacToolbarSearchField: View {
                     height: HomeMacToolbarSearchLayout.iconSize
                 )
                 .offset(x: HomeMacToolbarSearchLayout.horizontalPadding)
+                .opacity(usesCenteredIdleContent ? 0 : 1)
                 .allowsHitTesting(false)
 
             HStack(spacing: 10) {
@@ -287,6 +310,8 @@ struct HomeMacToolbarSearchField: View {
             .padding(.leading, textLeading)
             .padding(.trailing, 12)
             .frame(width: width, height: HomeMacToolbarSearchLayout.height, alignment: .leading)
+            .opacity(usesCenteredIdleContent ? 0 : 1)
+            .allowsHitTesting(!usesCenteredIdleContent)
         }
         .frame(width: width, height: HomeMacToolbarSearchLayout.height)
         .background {
@@ -294,14 +319,14 @@ struct HomeMacToolbarSearchField: View {
                 cornerRadius: HomeMacToolbarSearchLayout.cornerRadius,
                 style: .continuous
             )
-            .fill(Color(nsColor: .controlBackgroundColor).opacity(0.92))
+            .fill(HomeMacToolbarSearchLayout.searchBackgroundColor(isFocused: isTextFocused))
         }
         .overlay {
             RoundedRectangle(
                 cornerRadius: HomeMacToolbarSearchLayout.cornerRadius,
                 style: .continuous
             )
-            .stroke(Color.secondary.opacity(isTextFocused ? 0.22 : 0.16), lineWidth: 1)
+            .stroke(HomeMacToolbarSearchLayout.searchStrokeColor(isFocused: isTextFocused), lineWidth: 1)
         }
         .overlay {
             outsideClickDismissLayer
@@ -315,6 +340,7 @@ struct HomeMacToolbarSearchField: View {
         )
         .animation(.easeOut(duration: 0.12), value: text.isEmpty)
         .animation(.easeOut(duration: 0.12), value: showsCreateHint)
+        .animation(.easeOut(duration: 0.12), value: usesCenteredIdleContent)
         .help(HomeMacToolbarSearchCopy.help)
         .accessibilityLabel(HomeMacToolbarSearchCopy.accessibilityLabel)
     }
@@ -333,6 +359,13 @@ struct HomeMacToolbarSearchField: View {
                 )
         }
         .buttonStyle(.plain)
+        .frame(width: width, height: HomeMacToolbarSearchLayout.height)
+        .contentShape(
+            RoundedRectangle(
+                cornerRadius: HomeMacToolbarSearchLayout.cornerRadius,
+                style: .continuous
+            )
+        )
         .accessibilityHidden(true)
     }
 
@@ -352,6 +385,22 @@ struct HomeMacToolbarSearchField: View {
             .lineLimit(1)
             .truncationMode(.tail)
             .allowsHitTesting(false)
+    }
+
+    private var centeredIdleContent: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: HomeMacToolbarSearchLayout.iconSize, weight: .medium))
+                .foregroundStyle(.secondary)
+
+            Text(HomeMacToolbarSearchCopy.placeholder)
+                .font(Font.body.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+        }
+        .padding(.horizontal, HomeMacToolbarSearchLayout.horizontalPadding)
+        .allowsHitTesting(false)
     }
 
     private var textEditor: some View {
@@ -410,6 +459,10 @@ struct HomeMacToolbarSearchField: View {
         HomeMacToolbarSearchLayout.horizontalPadding
             + HomeMacToolbarSearchLayout.iconSize
             + 10
+    }
+
+    private var usesCenteredIdleContent: Bool {
+        !isTextFocused && text.isEmpty
     }
 
     private var searchFocusBinding: Binding<Bool> {
@@ -647,9 +700,9 @@ struct HomeMacToolbarSearchParserPreview: View {
 }
 
 private enum HomeMacToolbarSearchCopy {
-    static let placeholder = "Search tasks and timeline, or create a task"
+    static let placeholder = "Search or create a task"
     static let help = "Search tasks and timeline, or press Return to create a task when there are no results"
-    static let accessibilityLabel = "Search tasks and timeline, or create a task"
+    static let accessibilityLabel = "Search or create a task"
     static let returnKeyHint = "Return"
     static let createHint = "Create task"
     static let creatingHint = "Creating task"
@@ -711,9 +764,8 @@ private struct HomeMacToolbarSearchOutsideClickDismissView: NSViewRepresentable 
             }
 
             if clickIsInsideVisiblePill(event, in: view) {
-                if !parent.isFocused {
-                    parent.focusRequestID += 1
-                }
+                parent.isFocused = true
+                parent.focusRequestID += 1
                 return
             }
 
@@ -774,6 +826,7 @@ private struct HomeMacToolbarSearchOutsideClickDismissView: NSViewRepresentable 
 
     func makeNSView(context: Context) -> HomeMacToolbarSearchOutsideClickDismissNSView {
         let view = HomeMacToolbarSearchOutsideClickDismissNSView()
+        view.setPrefersIBeamCursor(isFocused)
         context.coordinator.view = view
         context.coordinator.installMouseDownMonitorIfNeeded()
         return view
@@ -785,6 +838,7 @@ private struct HomeMacToolbarSearchOutsideClickDismissView: NSViewRepresentable 
     ) {
         context.coordinator.parent = self
         context.coordinator.view = nsView
+        nsView.setPrefersIBeamCursor(isFocused)
         context.coordinator.installMouseDownMonitorIfNeeded()
     }
 
@@ -798,10 +852,31 @@ private struct HomeMacToolbarSearchOutsideClickDismissView: NSViewRepresentable 
 }
 
 private final class HomeMacToolbarSearchOutsideClickDismissNSView: NSView {
+    private var prefersIBeamCursor = false
+
     override var isOpaque: Bool { false }
 
     override func hitTest(_ point: NSPoint) -> NSView? {
         nil
+    }
+
+    func setPrefersIBeamCursor(_ nextValue: Bool) {
+        guard prefersIBeamCursor != nextValue else { return }
+        prefersIBeamCursor = nextValue
+
+        if let window {
+            window.invalidateCursorRects(for: self)
+            let pointerLocation = convert(window.mouseLocationOutsideOfEventStream, from: nil)
+            if bounds.contains(pointerLocation) {
+                (nextValue ? NSCursor.iBeam : NSCursor.arrow).set()
+            }
+        }
+    }
+
+    override func resetCursorRects() {
+        super.resetCursorRects()
+        guard prefersIBeamCursor else { return }
+        addCursorRect(bounds, cursor: .iBeam)
     }
 }
 
