@@ -1,3 +1,4 @@
+import AppKit
 import CloudKit
 import ComposableArchitecture
 import ConcurrencyExtras
@@ -93,6 +94,45 @@ struct HomeFeatureTests {
                 awayEnabled: true
             ) == [.event, .emotion, .note, .goal, .task, .checkIn, .away]
         )
+    }
+
+    @Test
+    func macPlanToDoMenuHidesTomorrowWhenTomorrowSectionSettingIsOff() throws {
+        let key = UserDefaultBoolValueKey.appSettingShowTomorrowInTaskList.rawValue
+        let previousValue = SharedDefaults.app.object(forKey: key)
+        defer {
+            if let previousValue {
+                SharedDefaults.app.set(previousValue, forKey: key)
+            } else {
+                SharedDefaults.app.removeObject(forKey: key)
+            }
+        }
+
+        let task = makeDisplay(
+            taskID: UUID(),
+            name: "Read",
+            emoji: "📚",
+            interval: 3,
+            scheduleMode: .oneOff,
+            lastDone: nil,
+            isOneOffTask: true,
+            isDoneToday: false
+        )
+        var view = makeHomeViewForContextMenu()
+
+        SharedDefaults.app[.appSettingShowTomorrowInTaskList] = false
+        view.showsTomorrowInTaskList = false
+        let hiddenTitles = try planToDoSubmenuTitles(
+            in: view.routineNativeContextMenu(for: task, includeMarkDone: true)
+        )
+        #expect(!hiddenTitles.contains("Tomorrow"))
+
+        SharedDefaults.app[.appSettingShowTomorrowInTaskList] = true
+        view.showsTomorrowInTaskList = true
+        let visibleTitles = try planToDoSubmenuTitles(
+            in: view.routineNativeContextMenu(for: task, includeMarkDone: true)
+        )
+        #expect(visibleTitles.contains("Tomorrow"))
     }
 
     @Test
@@ -3519,4 +3559,27 @@ struct HomeFeatureTests {
         #expect(logs.first?.timestamp == lastDone)
     }
 
+}
+
+@MainActor
+private func makeHomeViewForContextMenu() -> HomeTCAView {
+    HomeTCAView(
+        store: Store(initialState: HomeFeature.State()) {
+            HomeFeature()
+        },
+        settingsStore: Store(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        },
+        goalsStore: Store(initialState: GoalsFeature.State()) {
+            GoalsFeature()
+        }
+    )
+}
+
+private func planToDoSubmenuTitles(in menu: NSMenu) throws -> [String] {
+    let planToDoItem = try #require(menu.items.first { $0.title == "Plan to do" })
+    let submenu = try #require(planToDoItem.submenu)
+    return submenu.items.compactMap { item in
+        item.isSeparatorItem ? nil : item.title
+    }
 }

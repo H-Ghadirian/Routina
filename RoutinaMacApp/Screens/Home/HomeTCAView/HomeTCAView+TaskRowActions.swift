@@ -122,6 +122,7 @@ extension HomeTCAView {
             menu.addItem(.separator())
             menu.addPlanToDoSubmenu(
                 for: task,
+                includesTomorrow: showsTomorrowInTaskList,
                 notTodayCommand: presentation.notTodayCommand,
                 commandHandler: homeTaskRowCommandHandler,
                 planToday: {
@@ -164,13 +165,8 @@ extension HomeTCAView {
     }
 
     private func revealPlannedTomorrowDestination(for taskID: UUID) {
-        if showsTomorrowInTaskList {
-            let sectionID = "\(HomeTaskListPresentationSectionKind.plannedTomorrow.rawValue):plannedTomorrow"
-            revealTaskListSection(sectionID: sectionID, taskID: taskID)
-        } else {
-            isMacFutureTasksSectionCollapsed = false
-            macSidebarTaskScrollRequest = MacSidebarTaskScrollRequest(taskID: taskID, anchor: .center)
-        }
+        let sectionID = "\(HomeTaskListPresentationSectionKind.plannedTomorrow.rawValue):plannedTomorrow"
+        revealTaskListSection(sectionID: sectionID, taskID: taskID)
     }
 
     private func revealTaskListSection(sectionID: String, taskID: UUID) {
@@ -218,6 +214,7 @@ private extension NSMenu {
 
     func addPlanToDoSubmenu(
         for task: HomeFeature.RoutineDisplay,
+        includesTomorrow: Bool,
         notTodayCommand: HomeTaskRowCommand?,
         commandHandler: HomeTaskRowCommandHandler,
         planToday: @escaping () -> Void,
@@ -235,7 +232,9 @@ private extension NSMenu {
 
         if !task.isDailyRoutine {
             submenu.addActionItem(title: "Today", systemImage: "calendar", action: planToday)
-            submenu.addActionItem(title: "Tomorrow", systemImage: "calendar.badge.clock", action: planTomorrow)
+            if includesTomorrow {
+                submenu.addActionItem(title: "Tomorrow", systemImage: "calendar.badge.clock", action: planTomorrow)
+            }
             submenu.addActionItem(
                 title: "Choose Date...",
                 systemImage: "calendar.badge.plus",

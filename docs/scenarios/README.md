@@ -327,9 +327,17 @@ Given the Mac `Show Tomorrow section` task-list setting is off
 When a task is planned for tomorrow
 Then it remains inside `Future` instead of creating a top-level `Tomorrow` section
 
+Given the Mac `Show Tomorrow section` task-list setting is off
+When a task row context menu opens its `Plan to do` submenu
+Then the direct `Tomorrow` shortcut is hidden
+
 Given the Mac `Show Tomorrow section` task-list setting is on
 When Home derives tasks planned for tomorrow or calendar routines scheduled tomorrow
 Then `Tomorrow` appears between `Today` and `Future`, uses the `plannedTomorrow` manual-order bucket, and removes those rows from `Future`
+
+Given the Mac `Show Tomorrow section` task-list setting is on
+When a task row context menu opens its `Plan to do` submenu
+Then the direct `Tomorrow` shortcut is available
 
 ### Future Preserves Inner Group Behavior
 

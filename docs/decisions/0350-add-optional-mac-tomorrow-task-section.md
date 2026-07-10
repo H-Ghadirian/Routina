@@ -6,6 +6,8 @@ Status: Accepted
 
 Refines: [0200 Support Task Planned Dates](0200-support-task-planned-dates.md), [0202 Nest Daily Routines Under Mac Plan Today](0202-nest-daily-routines-under-mac-plan-today.md), [0281 Collapse Mac Future Tasks](0281-collapse-mac-future-tasks.md)
 
+Refined by: [0363 Gate Mac Plan Tomorrow Menu Item](0363-gate-mac-plan-tomorrow-menu-item.md)
+
 ## Context
 
 Mac Home previously grouped active unpinned work into `Today` and a collapsed-by-default `Future` wrapper. That kept the sidebar compact, but tomorrow-planned work still mixed with the larger Future set. Users who plan one day ahead need a quick review surface without changing the default compact behavior for everyone.
