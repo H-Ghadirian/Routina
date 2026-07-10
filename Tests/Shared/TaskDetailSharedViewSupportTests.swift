@@ -204,6 +204,22 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func addEventsActionRequiresEventActionsEnabledAndNoLinkedEvents() {
+        #expect(TaskDetailEventActionVisibility.shouldShowAddEventsAction(
+            hasLinkedEvents: false,
+            areEventActionsEnabled: true
+        ))
+        #expect(!TaskDetailEventActionVisibility.shouldShowAddEventsAction(
+            hasLinkedEvents: false,
+            areEventActionsEnabled: false
+        ))
+        #expect(!TaskDetailEventActionVisibility.shouldShowAddEventsAction(
+            hasLinkedEvents: true,
+            areEventActionsEnabled: true
+        ))
+    }
+
+    @Test
     func focusSectionShowsForEnabledTaskOrActiveTaskFocus() {
         let task = RoutineTask(name: "Book flights", scheduleMode: .oneOff)
         let otherTask = RoutineTask(name: "Pay rent", scheduleMode: .oneOff)

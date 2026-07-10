@@ -558,6 +558,22 @@ Given stale hidden filter state exists for Events, Away, or Sleep from a previou
 When the relevant beta toggle is off
 Then those unavailable beta layers do not count as active hidden filters or stay hidden without a visible control
 
+### Mac Task Details Hide Event Add Action When Event Actions Are Off
+
+Area: Tasks
+Decision links: [0220](../decisions/0220-nest-sleep-and-gate-mac-event-emotion-actions.md), [0195](../decisions/0195-support-task-event-links.md)
+Current behavior: [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
+
+Given Support & About -> Beta Experiments -> `Show Event and Emotion actions` is off
+When the user opens full Mac Task Details for a task with no linked events
+Then the `Add more details` section does not expose an Events action
+
+Given Support & About -> Beta Experiments -> `Show Event and Emotion actions` is on
+When the user opens full Mac Task Details for a task with no linked events
+Then the `Add more details` section can expose an Events action
+
 ### Planner Inspector Day Header Hides Range Picker
 
 Area: Planner

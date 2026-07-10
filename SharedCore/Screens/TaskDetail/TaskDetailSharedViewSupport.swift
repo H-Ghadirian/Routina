@@ -6,6 +6,15 @@ import UIKit
 #endif
 import UniformTypeIdentifiers
 
+enum TaskDetailEventActionVisibility {
+    static func shouldShowAddEventsAction(
+        hasLinkedEvents: Bool,
+        areEventActionsEnabled: Bool
+    ) -> Bool {
+        areEventActionsEnabled && !hasLinkedEvents
+    }
+}
+
 struct TaskDetailHeaderBadgeItem: Identifiable {
     let id = UUID()
     let title: String

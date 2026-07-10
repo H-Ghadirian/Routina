@@ -79,6 +79,10 @@ struct TaskDetailTCAView: View {
         UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue,
         store: SharedDefaults.app
     ) private var isNotesEnabled = false
+    @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacEventEmotionActionsEnabled.rawValue,
+        store: SharedDefaults.app
+    ) private var areMacEventEmotionActionsEnabled = false
     let emojiOptions = EmojiCatalog.uniqueQuick
     let allEmojiOptions = EmojiCatalog.searchableAll
 
@@ -607,7 +611,10 @@ struct TaskDetailTCAView: View {
             actions.append(inlineEditSectionAction(title: "Goals", section: .goals))
         }
 
-        if store.taskEventCandidates.isEmpty && !isInlineEditSectionRevealed(.events) {
+        if TaskDetailEventActionVisibility.shouldShowAddEventsAction(
+            hasLinkedEvents: !store.taskEventCandidates.isEmpty,
+            areEventActionsEnabled: areMacEventEmotionActionsEnabled
+        ), !isInlineEditSectionRevealed(.events) {
             actions.append(inlineEditSectionAction(title: "Events", section: .events))
         }
 
