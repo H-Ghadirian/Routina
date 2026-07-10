@@ -20,6 +20,7 @@ Accepted
 ## Refined By
 
 - [0333: Move Mac Focus Control to Planner Calendar Header](0333-move-mac-focus-control-to-planner-calendar-header.md)
+- [0364: Rename Shared Mac Filter Scope to All](0364-rename-shared-mac-filter-scope-to-all.md)
 
 ## Context
 

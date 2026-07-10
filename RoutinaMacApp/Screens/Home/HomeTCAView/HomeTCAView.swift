@@ -57,7 +57,7 @@ enum HomeMacFilterDetailScope: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .both:
-            return "Both"
+            return "All"
         case .taskList:
             return "Task List"
         case .timeline:

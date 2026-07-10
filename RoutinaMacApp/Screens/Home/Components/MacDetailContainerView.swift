@@ -319,6 +319,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                     listFilterButtonIsActive: isPlannerTimelineFilterActive,
                     listFilterButtonAccessibilityValue: plannerTimelineFilterSummary,
                     calendarSearchText: plannerSearchText,
+                    calendarTaskFilter: matchesPlannerCalendarSharedFilters,
                     macHeaderFocusControl: {
                         AnyView(plannerHeaderFocusControl)
                     },
@@ -356,6 +357,24 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     ) -> CGFloat {
         guard canShowTaskDetailPane else { return availableWidth }
         return max(availableWidth - MacDetailContainerSizing.taskDetailPaneWidth, 0)
+    }
+
+    private func matchesPlannerCalendarSharedFilters(_ task: RoutineTask) -> Bool {
+        HomeDisplayFilterSupport.matchesImportanceUrgencyFilter(
+            store.selectedImportanceUrgencyFilter,
+            importance: task.importance,
+            urgency: task.urgency
+        )
+            && HomeDisplayFilterSupport.matchesSelectedTags(
+                store.selectedTags,
+                mode: store.includeTagMatchMode,
+                in: task.tags
+            )
+            && HomeDisplayFilterSupport.matchesExcludedTags(
+                store.excludedTags,
+                mode: store.excludeTagMatchMode,
+                in: task.tags
+            )
     }
 
     @ViewBuilder

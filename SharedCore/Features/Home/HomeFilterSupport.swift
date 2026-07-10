@@ -5,6 +5,97 @@ struct HomeFilterMutationResult: Equatable {
     var shouldPersistTemporaryViewState: Bool = true
 }
 
+struct HomeSharedFilterState: Equatable {
+    var selectedTags: Set<String>
+    var excludedTags: Set<String>
+    var includeTagMatchMode: RoutineTagMatchMode
+    var excludeTagMatchMode: RoutineTagMatchMode
+    var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
+}
+
+enum HomeSharedFilterStateResolver {
+    static func resolvedState(
+        taskSelectedTags: Set<String>,
+        timelineSelectedTags: Set<String>,
+        taskExcludedTags: Set<String>,
+        timelineExcludedTags: Set<String>,
+        taskIncludeTagMatchMode: RoutineTagMatchMode,
+        timelineIncludeTagMatchMode: RoutineTagMatchMode,
+        taskExcludeTagMatchMode: RoutineTagMatchMode,
+        timelineExcludeTagMatchMode: RoutineTagMatchMode,
+        taskImportanceUrgencyFilter: ImportanceUrgencyFilterCell?,
+        timelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell?,
+        preferredTags: [String]
+    ) -> HomeSharedFilterState {
+        let selectedTags = mergedTagSet(
+            taskSelectedTags,
+            timelineSelectedTags,
+            preferredTags: preferredTags
+        )
+        let excludedTags = mergedTagSet(
+            taskExcludedTags,
+            timelineExcludedTags,
+            preferredTags: preferredTags
+        )
+        .filter { excludedTag in
+            !HomeTagFilterMutationSupport.contains(excludedTag, in: selectedTags)
+        }
+
+        return HomeSharedFilterState(
+            selectedTags: selectedTags,
+            excludedTags: excludedTags,
+            includeTagMatchMode: resolvedMatchMode(
+                taskIncludeTagMatchMode,
+                timelineIncludeTagMatchMode,
+                taskHasSelection: !taskSelectedTags.isEmpty,
+                timelineHasSelection: !timelineSelectedTags.isEmpty,
+                fallback: .all
+            ),
+            excludeTagMatchMode: resolvedMatchMode(
+                taskExcludeTagMatchMode,
+                timelineExcludeTagMatchMode,
+                taskHasSelection: !taskExcludedTags.isEmpty,
+                timelineHasSelection: !timelineExcludedTags.isEmpty,
+                fallback: .any
+            ),
+            selectedImportanceUrgencyFilter: resolvedImportanceUrgencyFilter(
+                taskImportanceUrgencyFilter,
+                timelineImportanceUrgencyFilter
+            )
+        )
+    }
+
+    private static func mergedTagSet(
+        _ sets: Set<String>...,
+        preferredTags: [String]
+    ) -> Set<String> {
+        Set(RoutineTag.deduplicated(sets.flatMap { Array($0) }, preferredTags: preferredTags))
+    }
+
+    private static func resolvedMatchMode(
+        _ taskMode: RoutineTagMatchMode,
+        _ timelineMode: RoutineTagMatchMode,
+        taskHasSelection: Bool,
+        timelineHasSelection: Bool,
+        fallback: RoutineTagMatchMode
+    ) -> RoutineTagMatchMode {
+        if taskMode == timelineMode { return taskMode }
+        if taskHasSelection && !timelineHasSelection { return taskMode }
+        if timelineHasSelection && !taskHasSelection { return timelineMode }
+        return fallback
+    }
+
+    private static func resolvedImportanceUrgencyFilter(
+        _ taskFilter: ImportanceUrgencyFilterCell?,
+        _ timelineFilter: ImportanceUrgencyFilterCell?
+    ) -> ImportanceUrgencyFilterCell? {
+        let normalizedTaskFilter = ImportanceUrgencyFilterCell.normalized(taskFilter)
+        let normalizedTimelineFilter = ImportanceUrgencyFilterCell.normalized(timelineFilter)
+        guard normalizedTaskFilter != normalizedTimelineFilter else { return normalizedTaskFilter }
+        return normalizedTaskFilter ?? normalizedTimelineFilter
+    }
+}
+
 enum HomeTaskFilterMutation: Equatable {
     case selectedFilter(RoutineListFilter)
     case advancedQuery(String)
@@ -108,6 +199,27 @@ enum HomeFilterEditor {
         }
 
         return false
+    }
+
+    @discardableResult
+    static func clearTaskListAndSharedFilters(
+        taskFilters: inout HomeTaskFiltersState,
+        timelineFilters: inout HomeTimelineFiltersState,
+        hideUnavailableRoutines: inout Bool
+    ) -> HomeFilterMutationResult {
+        let didResetHideUnavailableRoutines = clearOptionalFilters(
+            taskFilters: &taskFilters,
+            hideUnavailableRoutines: &hideUnavailableRoutines
+        )
+        taskFilters.selectedFilter = .all
+
+        timelineFilters.setSelectedTags([])
+        timelineFilters.includeTagMatchMode = .all
+        timelineFilters.selectedExcludedTags = []
+        timelineFilters.excludeTagMatchMode = .any
+        timelineFilters.selectedImportanceUrgencyFilter = nil
+
+        return HomeFilterMutationResult(didResetHideUnavailableRoutines: didResetHideUnavailableRoutines)
     }
 
     @discardableResult

@@ -208,8 +208,7 @@ extension HomeTCAView {
             if store.taskListMode != .all {
                 store.send(.taskListModeFilterChanged(.all))
             }
-            store.send(.selectedFilterChanged(.all))
-            store.send(.clearOptionalFilters)
+            store.send(.clearTaskListAndSharedFilters)
         }
     }
 

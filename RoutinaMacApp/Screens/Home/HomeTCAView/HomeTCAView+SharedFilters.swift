@@ -68,9 +68,12 @@ extension HomeTCAView {
         )
         .onAppear {
             refreshMacSharedFiltersPresentationCache(for: signature)
+            synchronizeMacSharedFilters(preferredTags: presentation.availableTags)
         }
         .onChange(of: signature) { _, newSignature in
             refreshMacSharedFiltersPresentationCache(for: newSignature)
+            let updatedPresentation = cachedMacSharedFiltersPresentation(for: newSignature)
+            synchronizeMacSharedFilters(preferredTags: updatedPresentation.availableTags)
         }
     }
 
@@ -113,25 +116,11 @@ extension HomeTCAView {
             homeData.tagSummaries.map(\.name),
             timelineTagNames
         )
-        let selectedTags = macMergedTagSet(
-            store.selectedTags,
-            store.selectedTimelineTags,
-            preferredTags: availableTags
-        )
-        let selectedExcludedTags = macMergedTagSet(
-            store.excludedTags,
-            store.selectedTimelineExcludedTags,
-            preferredTags: availableTags
-        )
-        .filter { excludedTag in
-            !HomeTagFilterMutationSupport.contains(excludedTag, in: selectedTags)
-        }
-        let includeMode = store.includeTagMatchMode == store.selectedTimelineIncludeTagMatchMode
-            ? store.includeTagMatchMode
-            : .all
-        let excludeMode = store.excludeTagMatchMode == store.selectedTimelineExcludeTagMatchMode
-            ? store.excludeTagMatchMode
-            : .any
+        let sharedFilterState = macSharedFilterState(preferredTags: availableTags)
+        let selectedTags = sharedFilterState.selectedTags
+        let selectedExcludedTags = sharedFilterState.excludedTags
+        let includeMode = sharedFilterState.includeTagMatchMode
+        let excludeMode = sharedFilterState.excludeTagMatchMode
         let suggestionSource = (relatedFilterTagSuggestionAnchor ?? relatedTimelineTagSuggestionAnchor)
             .map { [$0] } ?? Array(selectedTags)
         let suggestedRelatedTags = selectedTags.isEmpty ? [] : RoutineTagRelations.relatedTags(
@@ -347,10 +336,7 @@ extension HomeTCAView {
     }
 
     private var macSharedImportanceUrgencyFilter: ImportanceUrgencyFilterCell? {
-        let taskFilter = ImportanceUrgencyFilterCell.normalized(store.selectedImportanceUrgencyFilter)
-        let timelineFilter = ImportanceUrgencyFilterCell.normalized(store.selectedTimelineImportanceUrgencyFilter)
-        guard taskFilter != timelineFilter else { return taskFilter }
-        return taskFilter ?? timelineFilter
+        macSharedFilterState(preferredTags: []).selectedImportanceUrgencyFilter
     }
 
     private var macSharedImportanceUrgencySummary: String {
@@ -358,6 +344,60 @@ extension HomeTCAView {
             return "Showing tasks and done items across all importance and urgency levels."
         }
         return "Showing tasks and done items with at least \(filter.importance.title.lowercased()) importance and \(filter.urgency.title.lowercased()) urgency."
+    }
+
+    private func macSharedFilterState(preferredTags: [String]) -> HomeSharedFilterState {
+        HomeSharedFilterStateResolver.resolvedState(
+            taskSelectedTags: store.selectedTags,
+            timelineSelectedTags: store.selectedTimelineTags,
+            taskExcludedTags: store.excludedTags,
+            timelineExcludedTags: store.selectedTimelineExcludedTags,
+            taskIncludeTagMatchMode: store.includeTagMatchMode,
+            timelineIncludeTagMatchMode: store.selectedTimelineIncludeTagMatchMode,
+            taskExcludeTagMatchMode: store.excludeTagMatchMode,
+            timelineExcludeTagMatchMode: store.selectedTimelineExcludeTagMatchMode,
+            taskImportanceUrgencyFilter: store.selectedImportanceUrgencyFilter,
+            timelineImportanceUrgencyFilter: store.selectedTimelineImportanceUrgencyFilter,
+            preferredTags: preferredTags
+        )
+    }
+
+    private func synchronizeMacSharedFilters(preferredTags: [String]) {
+        let sharedState = macSharedFilterState(preferredTags: preferredTags)
+
+        if store.selectedTags != sharedState.selectedTags {
+            store.send(.selectedTagsChanged(sharedState.selectedTags))
+        }
+        if store.selectedTimelineTags != sharedState.selectedTags {
+            store.send(.selectedTimelineTagsChanged(sharedState.selectedTags))
+        }
+        if store.excludedTags != sharedState.excludedTags {
+            store.send(.excludedTagsChanged(sharedState.excludedTags))
+        }
+        if store.selectedTimelineExcludedTags != sharedState.excludedTags {
+            store.send(.selectedTimelineExcludedTagsChanged(sharedState.excludedTags))
+        }
+        if store.includeTagMatchMode != sharedState.includeTagMatchMode {
+            store.send(.includeTagMatchModeChanged(sharedState.includeTagMatchMode))
+        }
+        if store.selectedTimelineIncludeTagMatchMode != sharedState.includeTagMatchMode {
+            store.send(.selectedTimelineIncludeTagMatchModeChanged(sharedState.includeTagMatchMode))
+        }
+        if store.excludeTagMatchMode != sharedState.excludeTagMatchMode {
+            store.send(.excludeTagMatchModeChanged(sharedState.excludeTagMatchMode))
+        }
+        if store.selectedTimelineExcludeTagMatchMode != sharedState.excludeTagMatchMode {
+            store.send(.selectedTimelineExcludeTagMatchModeChanged(sharedState.excludeTagMatchMode))
+        }
+
+        let taskFilter = ImportanceUrgencyFilterCell.normalized(store.selectedImportanceUrgencyFilter)
+        let timelineFilter = ImportanceUrgencyFilterCell.normalized(store.selectedTimelineImportanceUrgencyFilter)
+        if taskFilter != sharedState.selectedImportanceUrgencyFilter {
+            store.send(.selectedImportanceUrgencyFilterChanged(sharedState.selectedImportanceUrgencyFilter))
+        }
+        if timelineFilter != sharedState.selectedImportanceUrgencyFilter {
+            store.send(.selectedTimelineImportanceUrgencyFilterChanged(sharedState.selectedImportanceUrgencyFilter))
+        }
     }
 
     private func applyMacSharedTags(

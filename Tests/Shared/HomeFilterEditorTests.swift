@@ -199,6 +199,57 @@ struct HomeFilterEditorTests {
     }
 
     @Test
+    func clearTaskListAndSharedFiltersClearsSharedTimelineFiltersOnly() {
+        var taskFilters = HomeTaskFiltersState(
+            selectedFilter: .doneToday,
+            advancedQuery: "tag:amazon",
+            selectedTag: "amazon",
+            selectedTags: ["amazon"],
+            includeTagMatchMode: .any,
+            excludedTags: ["admin"],
+            excludeTagMatchMode: .all,
+            selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2)
+        )
+        var timelineFilters = HomeTimelineFiltersState(
+            selectedRange: .week,
+            selectedFilterType: .done,
+            selectedTag: "amazon",
+            selectedTags: ["amazon"],
+            includeTagMatchMode: .any,
+            selectedExcludedTags: ["admin"],
+            excludeTagMatchMode: .all,
+            selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2),
+            selectedMediaFilter: .withImage
+        )
+        var hideUnavailableRoutines = true
+
+        let result = HomeFilterEditor.clearTaskListAndSharedFilters(
+            taskFilters: &taskFilters,
+            timelineFilters: &timelineFilters,
+            hideUnavailableRoutines: &hideUnavailableRoutines
+        )
+
+        #expect(taskFilters.selectedFilter == .all)
+        #expect(taskFilters.advancedQuery.isEmpty)
+        #expect(taskFilters.effectiveSelectedTags.isEmpty)
+        #expect(taskFilters.includeTagMatchMode == .all)
+        #expect(taskFilters.excludedTags.isEmpty)
+        #expect(taskFilters.excludeTagMatchMode == .any)
+        #expect(taskFilters.selectedImportanceUrgencyFilter == nil)
+        #expect(timelineFilters.selectedRange == .week)
+        #expect(timelineFilters.selectedFilterType == .done)
+        #expect(timelineFilters.effectiveSelectedTags.isEmpty)
+        #expect(timelineFilters.includeTagMatchMode == .all)
+        #expect(timelineFilters.selectedExcludedTags.isEmpty)
+        #expect(timelineFilters.excludeTagMatchMode == .any)
+        #expect(timelineFilters.selectedImportanceUrgencyFilter == nil)
+        #expect(timelineFilters.selectedMediaFilter == .withImage)
+        #expect(!hideUnavailableRoutines)
+        #expect(result.didResetHideUnavailableRoutines)
+        #expect(result.shouldPersistTemporaryViewState)
+    }
+
+    @Test
     func transitionTaskListModePreservesFullFilterSnapshot() {
         let placeID = UUID()
         var taskFilters = HomeTaskFiltersState(
@@ -332,5 +383,51 @@ struct HomeFilterEditorTests {
 
         #expect(statsFilters.effectiveSelectedTags == ["Focus", "Health"])
         #expect(statsFilters.selectedTag == "Focus")
+    }
+
+    @Test
+    func sharedFilterStateResolverMirrorsTimelineOnlyTagsIntoBothScope() {
+        let state = HomeSharedFilterStateResolver.resolvedState(
+            taskSelectedTags: [],
+            timelineSelectedTags: ["amazon"],
+            taskExcludedTags: [],
+            timelineExcludedTags: ["admin"],
+            taskIncludeTagMatchMode: .all,
+            timelineIncludeTagMatchMode: .any,
+            taskExcludeTagMatchMode: .any,
+            timelineExcludeTagMatchMode: .all,
+            taskImportanceUrgencyFilter: nil,
+            timelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2),
+            preferredTags: ["Amazon", "Admin"]
+        )
+
+        #expect(state.selectedTags == ["Amazon"])
+        #expect(state.excludedTags == ["Admin"])
+        #expect(state.includeTagMatchMode == .any)
+        #expect(state.excludeTagMatchMode == .all)
+        #expect(state.selectedImportanceUrgencyFilter == ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2))
+    }
+
+    @Test
+    func sharedFilterStateResolverFallsBackWhenBothScopesDisagreeOnMatchMode() {
+        let state = HomeSharedFilterStateResolver.resolvedState(
+            taskSelectedTags: ["work"],
+            timelineSelectedTags: ["amazon"],
+            taskExcludedTags: ["low"],
+            timelineExcludedTags: ["admin"],
+            taskIncludeTagMatchMode: .all,
+            timelineIncludeTagMatchMode: .any,
+            taskExcludeTagMatchMode: .all,
+            timelineExcludeTagMatchMode: .any,
+            taskImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level4, urgency: .level1),
+            timelineImportanceUrgencyFilter: ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2),
+            preferredTags: ["Amazon", "Work", "Admin", "Low"]
+        )
+
+        #expect(state.selectedTags == ["Amazon", "Work"])
+        #expect(state.excludedTags == ["Admin", "Low"])
+        #expect(state.includeTagMatchMode == .all)
+        #expect(state.excludeTagMatchMode == .any)
+        #expect(state.selectedImportanceUrgencyFilter == ImportanceUrgencyFilterCell(importance: .level4, urgency: .level1))
     }
 }

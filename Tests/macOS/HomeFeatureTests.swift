@@ -10,6 +10,17 @@ import Testing
 @MainActor
 struct HomeFeatureTests {
     @Test
+    func macFilterDetailScopeTitlesUseAllForSharedScope() {
+        #expect(HomeMacFilterDetailScope.both.title == "All")
+        #expect(HomeMacFilterDetailScope.allCases.map(\.title) == [
+            "All",
+            "Task List",
+            "Timeline",
+            "Calendar",
+        ])
+    }
+
+    @Test
     func macSidebarModeStripModes_excludesTimelineAndBoardModes() {
         #expect(HomeFeature.MacSidebarMode.sidebarStripModes == [
             .routines,
@@ -300,6 +311,68 @@ struct HomeFeatureTests {
                 selectedImportanceUrgencyFilter: nil
             )
         )
+    }
+
+    @Test
+    func clearTaskListAndSharedFilters_resetsSharedTimelineFiltersAndPersistsState() async {
+        let context = makeInMemoryContext()
+        let persistedState = LockIsolated<TemporaryViewState?>(nil)
+        let hideUnavailableUpdates = LockIsolated<[Bool]>([])
+        let matrixFilter = ImportanceUrgencyFilterCell(importance: .level3, urgency: .level2)
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                hideUnavailableRoutines: true,
+                selectedFilter: .doneToday,
+                selectedTags: ["amazon"],
+                includeTagMatchMode: .any,
+                excludedTags: ["admin"],
+                excludeTagMatchMode: .all,
+                selectedImportanceUrgencyFilter: matrixFilter,
+                selectedTimelineRange: .week,
+                selectedTimelineFilterType: .done,
+                selectedTimelineTags: ["amazon"],
+                selectedTimelineIncludeTagMatchMode: .any,
+                selectedTimelineExcludedTags: ["admin"],
+                selectedTimelineExcludeTagMatchMode: .all,
+                selectedTimelineImportanceUrgencyFilter: matrixFilter,
+                selectedTimelineMediaFilter: .withImage
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.appSettingsClient.temporaryViewState = { .default }
+            $0.appSettingsClient.setHideUnavailableRoutines = { value in
+                hideUnavailableUpdates.withValue { $0.append(value) }
+            }
+            $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
+        }
+
+        await store.send(.clearTaskListAndSharedFilters) {
+            $0.hideUnavailableRoutines = false
+            $0.selectedFilter = .all
+            $0.selectedTags = []
+            $0.includeTagMatchMode = .all
+            $0.excludedTags = []
+            $0.excludeTagMatchMode = .any
+            $0.selectedImportanceUrgencyFilter = nil
+            $0.selectedTimelineTags = []
+            $0.selectedTimelineIncludeTagMatchMode = .all
+            $0.selectedTimelineExcludedTags = []
+            $0.selectedTimelineExcludeTagMatchMode = .any
+            $0.selectedTimelineImportanceUrgencyFilter = nil
+        }
+
+        #expect(store.state.selectedTimelineRange == .week)
+        #expect(store.state.selectedTimelineFilterType == .done)
+        #expect(store.state.selectedTimelineMediaFilter == .withImage)
+        #expect(hideUnavailableUpdates.value == [false])
+        #expect(persistedState.value?.homeSelectedTags == [])
+        #expect(persistedState.value?.homeSelectedTimelineTags == [])
+        #expect(persistedState.value?.homeSelectedTimelineRange == .week)
+        #expect(persistedState.value?.homeSelectedTimelineFilterType == .done)
+        #expect(persistedState.value?.homeSelectedTimelineMediaFilter == .withImage)
     }
 
     @Test

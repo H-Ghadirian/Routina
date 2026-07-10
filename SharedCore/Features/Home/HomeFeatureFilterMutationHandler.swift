@@ -51,6 +51,27 @@ struct HomeFeatureFilterMutationHandler<State: HomeFeatureFilterMutationState, A
         return .none
     }
 
+    func clearTaskListAndSharedFilters(state: inout State) -> Effect<Action> {
+        var taskFilters = state.taskFilters
+        var timelineFilters = state.timelineFilters
+        var hideUnavailableRoutines = state.hideUnavailableRoutines
+        let result = HomeFilterEditor.clearTaskListAndSharedFilters(
+            taskFilters: &taskFilters,
+            timelineFilters: &timelineFilters,
+            hideUnavailableRoutines: &hideUnavailableRoutines
+        )
+        state.taskFilters = taskFilters
+        state.timelineFilters = timelineFilters
+        state.hideUnavailableRoutines = hideUnavailableRoutines
+        if result.didResetHideUnavailableRoutines {
+            setHideUnavailableRoutines(false)
+        }
+        if result.shouldPersistTemporaryViewState {
+            persistTemporaryViewState(state)
+        }
+        return .none
+    }
+
     func applyTimelineFilterMutation(
         _ mutation: HomeTimelineFilterMutation,
         state: inout State
