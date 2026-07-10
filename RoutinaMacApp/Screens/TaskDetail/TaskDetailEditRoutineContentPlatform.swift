@@ -6,10 +6,13 @@ struct TaskDetailEditRoutineContent: View {
     @Binding var isEditEmojiPickerPresented: Bool
     let emojiOptions: [String]
     let canSaveCurrentEdit: Bool
+    var layout: TaskFormContentLayout = .fullForm
+    var onCancel: (() -> Void)?
+    var onSave: (() -> Void)?
     @Environment(\.calendar) private var calendar
 
     var body: some View {
-        TaskFormContent(model: makeTaskFormModel())
+        TaskFormContent(model: makeTaskFormModel(), layout: layout)
             .onReceive(
                 NotificationCenter.default.publisher(for: .routineTagDidRename)
                     .receive(on: RunLoop.main)
@@ -187,8 +190,8 @@ struct TaskDetailEditRoutineContent: View {
                 set: { store.send(.editColorChanged($0)) }
             ),
             visibilityMode: .progressiveEdit,
-            onCancel: { store.send(.setEditSheet(false)) },
-            onSave: { store.send(.editSaveTapped) },
+            onCancel: onCancel ?? { store.send(.setEditSheet(false)) },
+            onSave: onSave ?? { store.send(.editSaveTapped) },
             isSaveDisabled: !canSaveCurrentEdit,
             autofocusName: false,
             onDelete: { store.send(.setDeleteConfirmation(true)) },

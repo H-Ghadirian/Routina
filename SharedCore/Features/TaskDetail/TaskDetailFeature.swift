@@ -230,6 +230,7 @@ struct TaskDetailFeature: Reducer {
         case finishOngoingTapped
         case selectedDateChanged(Date)
         case setEditSheet(Bool)
+        case prepareInlineEdit
         case editRoutineNameChanged(String)
         case editRoutineEmojiChanged(String)
         case editRoutineNotesChanged(String)
@@ -949,6 +950,9 @@ struct TaskDetailFeature: Reducer {
 
         case let .setEditSheet(isPresented):
             return dialogLifecycleActionHandler().setEditSheet(isPresented, state: &state)
+
+        case .prepareInlineEdit:
+            return dialogLifecycleActionHandler().prepareInlineEdit(state: &state)
 
         case let .editRoutineNameChanged(name):
             return basicEditActionHandler().editRoutineNameChanged(name, state: &state)

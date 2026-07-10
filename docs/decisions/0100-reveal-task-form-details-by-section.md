@@ -12,6 +12,10 @@ Accepted
 
 [0058: Use Progressive Task Forms](0058-use-progressive-task-forms.md) for the optional-detail reveal mechanism only.
 
+## Refined By
+
+[0366: Keep Mac Task Detail Add More Inline](0366-keep-mac-task-detail-add-more-inline.md) for Mac Task Detail metadata actions.
+
 ## Context
 
 Task creation and editing used one More Details action to expose every optional section at once. That preserved progressive disclosure, but it made a focused action such as adding notes, tags, media, or a place feel like opening a large configuration surface.

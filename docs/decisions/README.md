@@ -31,6 +31,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0366](0366-keep-mac-task-detail-add-more-inline.md) refines [0100](0100-reveal-task-form-details-by-section.md) and [0335](0335-move-mac-task-detail-actions-into-detail-content.md) for Mac Task Detail Add More actions:** Full Mac Task Details keeps Add More metadata actions in the detail screen by revealing form-backed editor cards inline with local Cancel/Save controls instead of switching the whole surface into Edit Task.
 - **[0365](0365-refine-mac-toolbar-search-outlook-states.md) refines [0321](0321-use-focus-expanded-mac-home-toolbar-search.md), [0323](0323-draw-mac-toolbar-search-shell-in-swiftui.md), and [0341](0341-consolidate-mac-home-toolbar-row.md) for Mac Home toolbar search states:** Mac Home gives the idle and focused search pill distinct color treatments, centers the idle empty icon/placeholder, expands the focused pill wider, focuses editing from every visible in-pill area, and uses an I-beam cursor across the focused pill.
 - **[0364](0364-rename-shared-mac-filter-scope-to-all.md) refines [0319](0319-open-planner-filters-in-home-filter-pane.md) for Mac filter scope labels:** Mac Home labels the shared Task List, Timeline, and task-backed Calendar filter scope `All` instead of `Both`, while preserving the same underlying shared filter behavior.
 - **[0363](0363-gate-mac-plan-tomorrow-menu-item.md) refines [0350](0350-add-optional-mac-tomorrow-task-section.md) for Mac task-list planning menus:** Mac Home exposes `Plan to do -> Tomorrow` in row context menus only while Settings -> General -> Task List -> `Show Tomorrow section` is enabled, so turning the optional section off also hides the direct Tomorrow planning shortcut.
@@ -260,6 +261,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0366](0366-keep-mac-task-detail-add-more-inline.md) | Keep Mac Task Detail Add More Inline | Accepted | 2026-07-10 |
 | [0365](0365-refine-mac-toolbar-search-outlook-states.md) | Refine Mac Toolbar Search Outlook States | Accepted | 2026-07-10 |
 | [0364](0364-rename-shared-mac-filter-scope-to-all.md) | Rename Shared Mac Filter Scope to All | Accepted | 2026-07-10 |
 | [0363](0363-gate-mac-plan-tomorrow-menu-item.md) | Gate Mac Plan Tomorrow Menu Item | Accepted | 2026-07-10 |

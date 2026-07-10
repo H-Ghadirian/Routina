@@ -407,6 +407,55 @@ struct TaskDetailFeatureTests {
     }
 
     @Test
+    func prepareInlineEdit_syncsEditFormWithoutPresentingEditSheet() async {
+        let context = makeInMemoryContext()
+        let place = makePlace(in: context, name: "Studio")
+        let task = makeTask(
+            in: context,
+            name: "Sketch",
+            interval: 21,
+            lastDone: nil,
+            emoji: "✏️",
+            placeID: place.id,
+            tags: ["Creative"]
+        )
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Stale",
+                editRoutineEmoji: "✨"
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+            $0.modelContext = { context }
+            $0.appSettingsClient.tagCounterDisplayMode = { .combinedTotal }
+        }
+        store.exhaustivity = .off
+
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let expectedWeekday = calendar.component(.weekday, from: now)
+        let expectedDayOfMonth = calendar.component(.day, from: now)
+
+        await store.send(.prepareInlineEdit) {
+            $0.isEditSheetPresented = false
+            $0.editRoutineName = "Sketch"
+            $0.editRoutineEmoji = "✏️"
+            $0.editRoutineTags = ["Creative"]
+            $0.editSelectedPlaceID = place.id
+            $0.editFrequency = .week
+            $0.editFrequencyValue = 3
+            $0.editRecurrenceWeekday = expectedWeekday
+            $0.editRecurrenceDayOfMonth = expectedDayOfMonth
+            $0.tagCounterDisplayMode = .combinedTotal
+        }
+    }
+
+    @Test
     func setEditSheetTrue_syncsEditFormFromTask_multipleWeeklyWeekdays() async {
         let context = makeInMemoryContext()
         let workingDays = [2, 3, 4, 5, 6]

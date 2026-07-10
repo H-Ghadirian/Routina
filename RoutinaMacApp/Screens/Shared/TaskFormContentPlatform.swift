@@ -3,8 +3,14 @@ import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
 
+enum TaskFormContentLayout {
+    case fullForm
+    case embeddedSections([FormSection])
+}
+
 struct TaskFormContent: View {
     let model: TaskFormModel
+    let layout: TaskFormContentLayout
 
     @FocusState private var fallbackNameFocused: Bool
     @State private var selectedPhotoItem: PhotosPickerItem?
@@ -39,11 +45,51 @@ struct TaskFormContent: View {
         store: SharedDefaults.app
     ) private var isNotesEnabled = false
 
+    init(
+        model: TaskFormModel,
+        layout: TaskFormContentLayout = .fullForm
+    ) {
+        self.model = model
+        self.layout = layout
+    }
+
     private var nameFocusBinding: FocusState<Bool>.Binding {
         model.nameFocus ?? $fallbackNameFocused
     }
 
     var body: some View {
+        content
+            .sheet(isPresented: $isTagManagerPresented) {
+                SettingsTagManagerPresentationView(store: tagManagerStore)
+            }
+            .sheet(isPresented: $isPlaceManagerPresented) {
+                SettingsPlaceManagerPresentationView(store: placeManagerStore)
+            }
+            .onChange(of: selectedPhotoItem) { _, newItem in
+                guard let newItem else { return }
+                loadPickedImage(from: newItem)
+            }
+            .onAppear {
+                guard model.autofocusName, !hasAppliedInitialNameAutofocus else { return }
+                hasAppliedInitialNameAutofocus = true
+                Task { @MainActor in
+                    await Task.yield()
+                    nameFocusBinding.wrappedValue = true
+                }
+            }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch layout {
+        case .fullForm:
+            fullFormContent
+        case let .embeddedSections(sections):
+            embeddedSectionsContent(sections)
+        }
+    }
+
+    private var fullFormContent: some View {
         ScrollViewReader { proxy in
             VStack(spacing: 0) {
                 identityCard
@@ -71,23 +117,43 @@ struct TaskFormContent: View {
                 formCoordinator.scrollTarget = nil
             }
         }
-        .sheet(isPresented: $isTagManagerPresented) {
-            SettingsTagManagerPresentationView(store: tagManagerStore)
-        }
-        .sheet(isPresented: $isPlaceManagerPresented) {
-            SettingsPlaceManagerPresentationView(store: placeManagerStore)
-        }
-        .onChange(of: selectedPhotoItem) { _, newItem in
-            guard let newItem else { return }
-            loadPickedImage(from: newItem)
-        }
-        .onAppear {
-            guard model.autofocusName, !hasAppliedInitialNameAutofocus else { return }
-            hasAppliedInitialNameAutofocus = true
-            Task { @MainActor in
-                await Task.yield()
-                nameFocusBinding.wrappedValue = true
+    }
+
+    private func embeddedSectionsContent(_ sections: [FormSection]) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ForEach(sections, id: \.self) { section in
+                formSectionView(for: section)
             }
+
+            embeddedActionButtons
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private var embeddedActionButtons: some View {
+        if model.onCancel != nil || model.onSave != nil {
+            HStack(spacing: 8) {
+                Spacer(minLength: 0)
+
+                if let onCancel = model.onCancel {
+                    Button("Cancel") {
+                        onCancel()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.regular)
+                }
+
+                if let onSave = model.onSave {
+                    Button("Save") {
+                        onSave()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.regular)
+                    .disabled(model.isSaveDisabled)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .trailing)
         }
     }
 

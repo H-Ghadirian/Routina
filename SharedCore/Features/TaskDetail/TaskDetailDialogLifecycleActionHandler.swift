@@ -23,6 +23,12 @@ struct TaskDetailDialogLifecycleActionHandler {
         return .none
     }
 
+    func prepareInlineEdit(state: inout State) -> Effect<Action> {
+        state.isEditSheetPresented = false
+        syncEditFormFromTask(&state)
+        return loadEditContext(state.task.id)
+    }
+
     func requestUndoSelectedDateCompletion(state: inout State) -> Effect<Action> {
         state.pendingLogRemovalTimestamp = nil
         state.isUndoCompletionConfirmationPresented = true

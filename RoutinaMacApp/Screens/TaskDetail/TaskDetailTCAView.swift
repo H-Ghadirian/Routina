@@ -28,7 +28,6 @@ struct TaskDetailTCAView: View {
     @Dependency(\.appSettingsClient) private var appSettingsClient
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.addEditFormCoordinator) private var formCoordinator
     @Query(sort: \FocusSession.startedAt, order: .reverse) private var focusSessions: [FocusSession]
     @Query(sort: \RoutineEvent.startedAt, order: .reverse) private var events: [RoutineEvent]
     @State var displayedMonthStart = Calendar.current.startOfMonth(for: Date())
@@ -39,6 +38,7 @@ struct TaskDetailTCAView: View {
     @State private var isTodoStateControlRevealed = false
     @State private var isPressureControlRevealed = false
     @State private var isChecklistSectionRevealed = false
+    @State private var inlineEditSections: [FormSection] = []
     @State private var isTimeSectionExpanded = false
     @State private var timeEditing = TaskDetailTimeEditingState()
     @State private var taskTimeEntryHours = 0
@@ -278,6 +278,7 @@ struct TaskDetailTCAView: View {
                 if hasTaskExtras {
                     taskExtrasSection
                 }
+                inlineEditSectionsView
                 optionalActionsSection
             }
             .padding(TaskDetailPlatformStyle.detailContentPadding)
@@ -476,6 +477,7 @@ struct TaskDetailTCAView: View {
                 if hasTaskExtras {
                     taskExtrasSection
                 }
+                inlineEditSectionsView
                 optionalActionsSection
             }
             .padding(TaskDetailPlatformStyle.detailContentPadding)
@@ -586,7 +588,7 @@ struct TaskDetailTCAView: View {
         }
 
         if shouldShowEstimationAddAction {
-            actions.append(editSectionAction(title: "Estimate", section: .estimation))
+            actions.append(inlineEditSectionAction(title: "Estimate", section: .estimation))
         }
 
         if !shouldShowChecklistSection {
@@ -597,50 +599,48 @@ struct TaskDetailTCAView: View {
             })
         }
 
-        if store.task.tags.isEmpty {
-            actions.append(editSectionAction(title: "Tags", section: .tags))
+        if store.task.tags.isEmpty && !isInlineEditSectionRevealed(.tags) {
+            actions.append(inlineEditSectionAction(title: "Tags", section: .tags))
         }
 
-        if shouldShowGoalSectionInAddMore && store.taskGoalSummaries.isEmpty {
-            actions.append(editSectionAction(title: "Goals", section: .goals))
+        if shouldShowGoalSectionInAddMore && store.taskGoalSummaries.isEmpty && !isInlineEditSectionRevealed(.goals) {
+            actions.append(inlineEditSectionAction(title: "Goals", section: .goals))
         }
 
-        if store.taskEventCandidates.isEmpty {
-            actions.append(editSectionAction(title: "Events", section: .events))
+        if store.taskEventCandidates.isEmpty && !isInlineEditSectionRevealed(.events) {
+            actions.append(inlineEditSectionAction(title: "Events", section: .events))
         }
 
-        if !shouldShowRelationshipsSection {
-            actions.append(TaskDetailOptionalAction(title: "Linked Task", systemImage: "link.badge.plus") {
-                store.send(.openAddLinkedTask)
-            })
+        if !shouldShowRelationshipsSection && !isInlineEditSectionRevealed(.linkedTasks) {
+            actions.append(inlineEditSectionAction(title: "Linked Task", section: .linkedTasks))
         }
 
-        if isPlacesEnabled {
-            actions.append(editSectionAction(title: "Places", section: .places))
+        if isPlacesEnabled && !isInlineEditSectionRevealed(.places) {
+            actions.append(inlineEditSectionAction(title: "Places", section: .places))
         }
 
-        if isNotesEnabled && !store.task.hasNotes {
-            actions.append(editSectionAction(title: "Notes", section: .notes))
+        if isNotesEnabled && !store.task.hasNotes && !isInlineEditSectionRevealed(.notes) {
+            actions.append(inlineEditSectionAction(title: "Notes", section: .notes))
         }
 
-        if store.task.resolvedLinkURLs.isEmpty {
-            actions.append(editSectionAction(title: "Links", section: .linkURL))
+        if store.task.resolvedLinkURLs.isEmpty && !isInlineEditSectionRevealed(.linkURL) {
+            actions.append(inlineEditSectionAction(title: "Links", section: .linkURL))
         }
 
-        if store.task.color == .none {
-            actions.append(editSectionAction(title: "Color", section: .color))
+        if store.task.color == .none && !isInlineEditSectionRevealed(.color) {
+            actions.append(inlineEditSectionAction(title: "Color", section: .color))
         }
 
-        if !store.task.hasImage {
-            actions.append(editSectionAction(title: "Image", section: .image))
+        if !store.task.hasImage && !isInlineEditSectionRevealed(.image) {
+            actions.append(inlineEditSectionAction(title: "Image", section: .image))
         }
 
-        if isNotesEnabled && !store.task.hasVoiceNote {
-            actions.append(editSectionAction(title: "Voice Note", section: .voiceNote))
+        if isNotesEnabled && !store.task.hasVoiceNote && !isInlineEditSectionRevealed(.voiceNote) {
+            actions.append(inlineEditSectionAction(title: "Voice Note", section: .voiceNote))
         }
 
-        if store.taskAttachments.isEmpty {
-            actions.append(editSectionAction(title: "File", section: .attachment))
+        if store.taskAttachments.isEmpty && !isInlineEditSectionRevealed(.attachment) {
+            actions.append(inlineEditSectionAction(title: "File", section: .attachment))
         }
 
         return actions
@@ -650,30 +650,60 @@ struct TaskDetailTCAView: View {
         store.task.estimatedDurationMinutes == nil
             && store.task.storyPoints == nil
             && !store.task.focusModeEnabled
+            && !isInlineEditSectionRevealed(.estimation)
     }
 
     private var shouldShowGoalSectionInAddMore: Bool {
         isGoalsTabEnabled
     }
 
-    private func editSectionAction(title: String, section: FormSection) -> TaskDetailOptionalAction {
+    private func inlineEditSectionAction(title: String, section: FormSection) -> TaskDetailOptionalAction {
         TaskDetailOptionalAction(title: title, systemImage: section.icon) {
-            openEditSection(section)
+            revealInlineEditSection(section)
         }
     }
 
-    private func openEditSection(_ section: FormSection) {
-        withAnimation(.easeInOut(duration: 0.18)) {
-            formCoordinator.revealTaskFormSection(section)
+    private func revealInlineEditSection(_ section: FormSection) {
+        guard !inlineEditSections.contains(section) else { return }
+        let shouldPrepareEditDraft = inlineEditSections.isEmpty
+        if shouldPrepareEditDraft {
+            store.send(.prepareInlineEdit)
         }
-        store.send(.setEditSheet(true))
+        withAnimation(.easeInOut(duration: 0.18)) {
+            inlineEditSections.append(section)
+        }
+    }
 
-        Task { @MainActor in
-            await Task.yield()
-            await Task.yield()
-            withAnimation(.easeInOut(duration: 0.25)) {
-                formCoordinator.scrollTarget = section
-            }
+    @ViewBuilder
+    private var inlineEditSectionsView: some View {
+        if !inlineEditSections.isEmpty {
+            TaskDetailEditRoutineContent(
+                store: store,
+                isEditEmojiPickerPresented: $isEditEmojiPickerPresented,
+                emojiOptions: emojiOptions,
+                canSaveCurrentEdit: canSaveCurrentEdit,
+                layout: .embeddedSections(inlineEditSections),
+                onCancel: cancelInlineEditSections,
+                onSave: saveInlineEditSections
+            )
+        }
+    }
+
+    private func isInlineEditSectionRevealed(_ section: FormSection) -> Bool {
+        inlineEditSections.contains(section)
+    }
+
+    private func cancelInlineEditSections() {
+        withAnimation(.easeInOut(duration: 0.18)) {
+            inlineEditSections.removeAll()
+        }
+    }
+
+    private func saveInlineEditSections() {
+        guard canSaveCurrentEdit else { return }
+        store.send(.editSaveTapped)
+        withAnimation(.easeInOut(duration: 0.18)) {
+            inlineEditSections.removeAll()
         }
     }
 
@@ -704,6 +734,7 @@ struct TaskDetailTCAView: View {
         isTodoStateControlRevealed = false
         isPressureControlRevealed = false
         isChecklistSectionRevealed = false
+        inlineEditSections.removeAll()
     }
 
     private var blockingFocusTitle: String? {
