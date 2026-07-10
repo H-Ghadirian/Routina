@@ -359,6 +359,7 @@ extension HomeTCAView {
         _ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     ) -> Bool {
         section.kind == .plannedToday || section.kind == .plannedTomorrow || section.kind == .future
+            || section.kind == .archived
     }
 
     private func taskListTopLevelSectionSpacing(
@@ -380,9 +381,9 @@ extension HomeTCAView {
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     ) -> CGFloat {
         switch section.kind {
-        case .plannedToday, .plannedTomorrow, .future:
+        case .plannedToday, .plannedTomorrow, .future, .archived:
             return 0
-        case .daily, .tag, .untagged, .archived, .pinned, .regular, .deadlineDate, .away:
+        case .daily, .tag, .untagged, .pinned, .regular, .deadlineDate, .away:
             return 8
         }
     }
