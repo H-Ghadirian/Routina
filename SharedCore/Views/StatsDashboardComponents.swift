@@ -87,7 +87,7 @@ struct StatsSummaryCard<Accessory: View>: View {
     let accent: Color
     let title: String
     let value: String
-    let caption: String
+    let caption: String?
     let accessibilityIdentifier: String
     let colorScheme: ColorScheme
     let surfaceGradient: LinearGradient
@@ -99,7 +99,7 @@ struct StatsSummaryCard<Accessory: View>: View {
         accent: Color,
         title: String,
         value: String,
-        caption: String,
+        caption: String? = nil,
         accessibilityIdentifier: String,
         colorScheme: ColorScheme,
         surfaceGradient: LinearGradient,
@@ -139,9 +139,11 @@ struct StatsSummaryCard<Accessory: View>: View {
                 Text(value)
                     .font(.system(size: 28, weight: .bold, design: .rounded))
 
-                Text(caption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if let caption {
+                    Text(caption)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .frame(maxWidth: .infinity, minHeight: 160, alignment: .topLeading)
@@ -153,8 +155,13 @@ struct StatsSummaryCard<Accessory: View>: View {
         )
         .accessibilityElement(children: accessibilityChildren)
         .accessibilityLabel(title)
-        .accessibilityValue("\(value). \(caption)")
+        .accessibilityValue(accessibilityValue)
         .accessibilityIdentifier(accessibilityIdentifier)
+    }
+
+    private var accessibilityValue: String {
+        guard let caption else { return value }
+        return "\(value). \(caption)"
     }
 }
 
@@ -163,7 +170,7 @@ struct StatsCompactSummaryCard<Accessory: View>: View {
     let accent: Color
     let title: String
     let value: String
-    let caption: String
+    let caption: String?
     let accessibilityIdentifier: String
     let colorScheme: ColorScheme
     let surfaceGradient: LinearGradient
@@ -175,7 +182,7 @@ struct StatsCompactSummaryCard<Accessory: View>: View {
         accent: Color,
         title: String,
         value: String,
-        caption: String,
+        caption: String? = nil,
         accessibilityIdentifier: String,
         colorScheme: ColorScheme,
         surfaceGradient: LinearGradient,
@@ -204,15 +211,17 @@ struct StatsCompactSummaryCard<Accessory: View>: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.caption.weight(.semibold))
+                    .font((caption == nil ? Font.subheadline : Font.caption).weight(.semibold))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
 
-                Text(caption)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
+                if let caption {
+                    Text(caption)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
 
             Spacer(minLength: 8)
@@ -237,8 +246,13 @@ struct StatsCompactSummaryCard<Accessory: View>: View {
         )
         .accessibilityElement(children: accessibilityChildren)
         .accessibilityLabel(title)
-        .accessibilityValue("\(value). \(caption)")
+        .accessibilityValue(accessibilityValue)
         .accessibilityIdentifier(accessibilityIdentifier)
+    }
+
+    private var accessibilityValue: String {
+        guard let caption else { return value }
+        return "\(value). \(caption)"
     }
 }
 
@@ -281,7 +295,7 @@ extension StatsSummaryCard where Accessory == EmptyView {
         accent: Color,
         title: String,
         value: String,
-        caption: String,
+        caption: String? = nil,
         accessibilityIdentifier: String,
         colorScheme: ColorScheme,
         surfaceGradient: LinearGradient

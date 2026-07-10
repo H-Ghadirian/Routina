@@ -142,7 +142,7 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
         case .goals:
             return "Goals"
         case .focusAverage:
-            return "Focus average"
+            return "Focus per day"
         case .bestDay:
             return "Best day"
         case .totalDones:
@@ -158,7 +158,7 @@ enum StatsDashboardItem: String, CaseIterable, Identifiable {
         case .routineCount:
             return "Routines"
         case .todoCount:
-            return "Todos"
+            return "Open todos"
         case .activeItems:
             return "Active items"
         case .archivedItems:

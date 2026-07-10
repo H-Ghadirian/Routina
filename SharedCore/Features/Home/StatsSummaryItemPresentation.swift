@@ -69,15 +69,15 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
         switch taskTypeFilter {
         case .all:
             return archivedItemCount == 1
-                ? "1 archived item excluded"
+                ? "1 archived excluded"
                 : "\(archivedItemCount) archived items excluded"
         case .routines:
             return archivedItemCount == 1
-                ? "1 paused routine excluded"
+                ? "1 paused excluded"
                 : "\(archivedItemCount) paused routines excluded"
         case .todos:
             return archivedItemCount == 1
-                ? "1 archived todo excluded"
+                ? "1 archived excluded"
                 : "\(archivedItemCount) archived todos excluded"
         }
     }
@@ -107,17 +107,11 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
 
         switch taskTypeFilter {
         case .all:
-            return archivedItemCount == 1
-                ? "1 item is archived and hidden from Home"
-                : "\(archivedItemCount) items are archived and hidden from Home"
+            return "Hidden from Home"
         case .routines:
-            return archivedItemCount == 1
-                ? "1 routine is paused and hidden from Home"
-                : "\(archivedItemCount) routines are paused and hidden from Home"
+            return "Paused and hidden from Home"
         case .todos:
-            return archivedItemCount == 1
-                ? "1 todo is archived and hidden from Home"
-                : "\(archivedItemCount) todos are archived and hidden from Home"
+            return "Hidden from Home"
         }
     }
 }

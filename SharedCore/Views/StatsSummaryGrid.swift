@@ -5,7 +5,7 @@ struct StatsSummaryCardItem: Identifiable {
     let accent: Color
     let title: String
     let value: String
-    let caption: String
+    let caption: String?
     let accessibilityIdentifier: String
     let showsAccessory: Bool
 
@@ -16,7 +16,7 @@ struct StatsSummaryCardItem: Identifiable {
         accent: Color,
         title: String,
         value: String,
-        caption: String,
+        caption: String? = nil,
         accessibilityIdentifier: String,
         showsAccessory: Bool = false
     ) {

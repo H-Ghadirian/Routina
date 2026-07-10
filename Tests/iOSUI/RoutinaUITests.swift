@@ -77,8 +77,8 @@ struct RoutinaUITests {
 
         let activeRoutinesTitle = app.staticTexts["Active routines"].firstMatch
         let archivedRoutinesTitle = app.staticTexts["Archived routines"].firstMatch
-        let activeRoutinesCaption = app.staticTexts["1 paused routine excluded"].firstMatch
-        let archivedRoutinesCaption = app.staticTexts["1 routine is paused and hidden from Home"].firstMatch
+        let activeRoutinesCaption = app.staticTexts["1 paused excluded"].firstMatch
+        let archivedRoutinesCaption = app.staticTexts["Paused and hidden from Home"].firstMatch
 
         #expect(reveal(activeRoutinesTitle, in: app))
         #expect(reveal(archivedRoutinesTitle, in: app))

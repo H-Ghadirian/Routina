@@ -25,7 +25,6 @@ enum StatsSummaryCardItemBuilder {
                     accent: .mint,
                     title: "Daily average",
                     value: chartPresentation.averagePerDayText(for: metrics.averagePerDay),
-                    caption: "Across \(metrics.chartPoints.count) days",
                     accessibilityIdentifier: "stats.summary.dailyAverage"
                 )
             )
@@ -131,9 +130,8 @@ enum StatsSummaryCardItemBuilder {
                 StatsSummaryCardItem(
                     icon: "stopwatch.fill",
                     accent: .purple,
-                    title: "Focus average",
+                    title: "Focus per day",
                     value: chartPresentation.focusDurationText(metrics.averageFocusSecondsPerDay),
-                    caption: "Per day in this range",
                     accessibilityIdentifier: "stats.summary.focusAverage"
                 )
             )
@@ -156,7 +154,7 @@ enum StatsSummaryCardItemBuilder {
                 accent: .blue,
                 title: "Done",
                 value: metrics.totalDoneCount.formatted(),
-                caption: "Recorded completions",
+                caption: "Recorded",
                 accessibilityIdentifier: "stats.summary.totalDones"
             )
         )
@@ -167,7 +165,6 @@ enum StatsSummaryCardItemBuilder {
                 accent: .green,
                 title: "Assumed done",
                 value: metrics.assumedDoneCount.formatted(),
-                caption: assumedDoneCaption(metrics: metrics),
                 accessibilityIdentifier: "stats.summary.assumedDones"
             )
         )
@@ -178,7 +175,6 @@ enum StatsSummaryCardItemBuilder {
                 accent: .teal,
                 title: "Assumed time",
                 value: estimatedMinutesText(metrics.totalAssumedEstimatedMinutes),
-                caption: "Estimated daily assumed work",
                 accessibilityIdentifier: "stats.summary.assumedEstimatedTime"
             )
         )
@@ -189,7 +185,6 @@ enum StatsSummaryCardItemBuilder {
                 accent: .orange,
                 title: "Canceled",
                 value: metrics.totalCanceledCount.formatted(),
-                caption: "Resolved cancellations",
                 accessibilityIdentifier: "stats.summary.totalCancels"
             )
         )
@@ -200,7 +195,6 @@ enum StatsSummaryCardItemBuilder {
                 accent: .yellow,
                 title: "Missed",
                 value: metrics.totalMissedCount.formatted(),
-                caption: "Confirmed missed occurrences",
                 accessibilityIdentifier: "stats.summary.totalMissed"
             )
         )
@@ -211,7 +205,6 @@ enum StatsSummaryCardItemBuilder {
                 accent: .indigo,
                 title: "Routines",
                 value: metrics.routineCount.formatted(),
-                caption: "Total matching routines",
                 accessibilityIdentifier: "stats.summary.routineCount"
             )
         )
@@ -220,9 +213,8 @@ enum StatsSummaryCardItemBuilder {
             StatsSummaryCardItem(
                 icon: "checkmark.circle",
                 accent: .cyan,
-                title: "Todos",
+                title: "Open todos",
                 value: metrics.openTodoCount.formatted(),
-                caption: "Open matching todos",
                 accessibilityIdentifier: "stats.summary.todoCount"
             )
         )
@@ -277,7 +269,6 @@ enum StatsSummaryCardItemBuilder {
                 accent: .orange,
                 title: "Active calories",
                 value: "\(wholeNumberText(summary.activeEnergyKilocalories)) kcal",
-                caption: "Burned in \(selectedRange.periodDescription.lowercased())",
                 accessibilityIdentifier: "stats.summary.health.activeCalories"
             ),
             StatsSummaryCardItem(
@@ -285,7 +276,7 @@ enum StatsSummaryCardItemBuilder {
                 accent: .mint,
                 title: "Distance",
                 value: distanceText(summary.walkingRunningDistanceMeters),
-                caption: "Walking and running",
+                caption: "Walking/running",
                 accessibilityIdentifier: "stats.summary.health.distance"
             ),
             StatsSummaryCardItem(
@@ -293,7 +284,6 @@ enum StatsSummaryCardItemBuilder {
                 accent: .cyan,
                 title: "Exercise",
                 value: "\(wholeNumberText(summary.exerciseMinutes)) min",
-                caption: "Exercise minutes",
                 accessibilityIdentifier: "stats.summary.health.exercise"
             )
         ]
@@ -361,13 +351,8 @@ enum StatsSummaryCardItemBuilder {
         "\(metrics.goalsCreatedCount) new, \(metrics.archivedGoalCount) archived"
     }
 
-    private static func assumedDoneCaption(metrics: StatsFeatureMetrics) -> String {
-        let noun = metrics.assumedDoneCount == 1 ? "completion" : "completions"
-        return "Daily auto-assumed \(noun)"
-    }
-
     private static func healthCaption(for selectedRange: DoneChartRange) -> String {
-        "From Apple Health, \(selectedRange.periodDescription.lowercased())"
+        "Apple Health, \(selectedRange.periodDescription.lowercased())"
     }
 
     private static func estimatedMinutesText(_ minutes: Int) -> String {
