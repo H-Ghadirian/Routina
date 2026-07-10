@@ -328,15 +328,23 @@ final class DayPlanPlannerState: ObservableObject {
                 guard let scheduledBlock = exactScheduledBlock(for: task, on: date, calendar: calendar) else {
                     continue
                 }
-                guard !task.isArchived(referenceDate: scheduledBlock.startDate, calendar: calendar) else {
-                    continue
-                }
                 let startMinute = startMinute(for: scheduledBlock.startDate, calendar: calendar)
                 let durationMinutes = scheduledDurationMinutes(
                     for: scheduledBlock,
                     task: task,
                     startMinute: startMinute
                 )
+                guard !task.isArchived(referenceDate: scheduledBlock.startDate, calendar: calendar) else {
+                    if removeStaleScheduledBlocks(
+                        from: &dayBlocks,
+                        taskID: task.id,
+                        scheduledStartMinute: startMinute,
+                        scheduledDurationMinutes: durationMinutes
+                    ) {
+                        didChangeDay = true
+                    }
+                    continue
+                }
 
                 if let existingIndex = dayBlocks.firstIndex(where: { $0.taskID == task.id }) {
                     let existingBlock = dayBlocks[existingIndex]
@@ -416,6 +424,7 @@ final class DayPlanPlannerState: ObservableObject {
 
         weekBlocksByDayKey = updatedBlocksByDayKey
         syncSelectedDayBlocks(calendar: calendar, context: context)
+        clearMissingSelectedBlock()
     }
 
     func handleSelectedDateChanged(calendar: Calendar, context: ModelContext) {
@@ -1225,6 +1234,21 @@ final class DayPlanPlannerState: ObservableObject {
                 scheduledDurationMinutes < DayPlanBlock.minimumDurationMinutes
                     && block.durationMinutes == DayPlanBlock.minimumDurationMinutes
             )
+    }
+
+    private func removeStaleScheduledBlocks(
+        from dayBlocks: inout [DayPlanBlock],
+        taskID: UUID,
+        scheduledStartMinute: Int,
+        scheduledDurationMinutes: Int
+    ) -> Bool {
+        let originalCount = dayBlocks.count
+        dayBlocks.removeAll { block in
+            block.taskID == taskID
+                && block.startMinute == scheduledStartMinute
+                && block.durationMinutes == scheduledDurationMinutes
+        }
+        return dayBlocks.count != originalCount
     }
 
     private func hasConflict(

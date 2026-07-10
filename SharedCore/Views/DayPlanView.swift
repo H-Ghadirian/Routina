@@ -6863,7 +6863,7 @@ private struct DayPlanLifecycleModifier: ViewModifier {
                 planner.loadBlocks(calendar: calendar, context: modelContext)
                 showExactTimedTasks()
             }
-            .onChange(of: tasks.map(\.id)) { _, _ in
+            .onChange(of: taskChangeToken) { _, _ in
                 planner.loadBlocks(calendar: calendar, context: modelContext)
                 showExactTimedTasks()
                 planner.selectDefaultTaskIfNeeded(from: tasks)
@@ -6888,6 +6888,38 @@ private struct DayPlanLifecycleModifier: ViewModifier {
 
     private var focusSessionChangeToken: [String] {
         DayPlanFocusSessionChangeToken.tokens(from: focusSessions)
+    }
+
+    private var taskChangeToken: [String] {
+        tasks.map { task in
+            [
+                task.id.uuidString,
+                task.scheduleModeRawValue,
+                task.isAllDay.description,
+                task.deadline?.timeIntervalSinceReferenceDate.description ?? "",
+                task.availabilityStartDate?.timeIntervalSinceReferenceDate.description ?? "",
+                task.availabilityEndDate?.timeIntervalSinceReferenceDate.description ?? "",
+                task.recurrenceStorageVersion.description,
+                task.recurrenceKindRawValue,
+                task.recurrenceTimeOfDayHour?.description ?? "",
+                task.recurrenceTimeOfDayMinute?.description ?? "",
+                task.recurrenceTimeRangeStartHour?.description ?? "",
+                task.recurrenceTimeRangeStartMinute?.description ?? "",
+                task.recurrenceTimeRangeEndHour?.description ?? "",
+                task.recurrenceTimeRangeEndMinute?.description ?? "",
+                task.recurrenceWeekday?.description ?? "",
+                task.recurrenceDayOfMonth?.description ?? "",
+                task.recurrenceRuleStorage,
+                task.interval.description,
+                task.lastDone?.timeIntervalSinceReferenceDate.description ?? "",
+                task.canceledAt?.timeIntervalSinceReferenceDate.description ?? "",
+                task.scheduleAnchor?.timeIntervalSinceReferenceDate.description ?? "",
+                task.pausedAt?.timeIntervalSinceReferenceDate.description ?? "",
+                task.snoozedUntil?.timeIntervalSinceReferenceDate.description ?? "",
+                task.estimatedDurationMinutes?.description ?? "",
+            ].joined(separator: ":")
+        }
+        .sorted()
     }
 
     private var sleepSessionChangeToken: [String] {

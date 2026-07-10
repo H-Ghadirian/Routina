@@ -1833,6 +1833,99 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func pausedTimeWindowRoutineRemovesStaleScheduledPlannerBlock() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let pausedAt = try #require(date("2026-07-09T12:00:00Z"))
+        let occurrence = try #require(date("2026-07-10T12:00:00Z"))
+        let dayKey = DayPlanStorage.dayKey(for: occurrence, calendar: calendar)
+        let taskID = UUID()
+        let blockID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Daily",
+            emoji: "✨",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(
+                in: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 10, minute: 0),
+                    end: RoutineTimeOfDay(hour: 10, minute: 15)
+                )
+            ),
+            pausedAt: pausedAt
+        )
+        let staleBlock = DayPlanBlock(
+            id: blockID,
+            taskID: taskID,
+            dayKey: dayKey,
+            startMinute: 10 * 60,
+            durationMinutes: 15,
+            titleSnapshot: "Daily",
+            emojiSnapshot: "✨"
+        )
+        context.insert(task)
+        DayPlanStorage.saveBlocks([staleBlock], forDayKey: dayKey, context: context)
+        let planner = DayPlanPlannerState(selectedDate: occurrence)
+
+        planner.showExactTimedTasks(
+            from: [task],
+            calendar: calendar,
+            context: context
+        )
+
+        #expect(planner.weekBlocksByDayKey[dayKey]?.isEmpty == true)
+        #expect(DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context).isEmpty)
+    }
+
+    @Test
+    func pausedTimeWindowRoutineKeepsManuallyMovedPlannerBlock() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let pausedAt = try #require(date("2026-07-09T12:00:00Z"))
+        let occurrence = try #require(date("2026-07-10T12:00:00Z"))
+        let dayKey = DayPlanStorage.dayKey(for: occurrence, calendar: calendar)
+        let taskID = UUID()
+        let movedBlockID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Daily",
+            emoji: "✨",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(
+                in: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 10, minute: 0),
+                    end: RoutineTimeOfDay(hour: 10, minute: 15)
+                )
+            ),
+            pausedAt: pausedAt
+        )
+        let movedBlock = DayPlanBlock(
+            id: movedBlockID,
+            taskID: taskID,
+            dayKey: dayKey,
+            startMinute: 11 * 60,
+            durationMinutes: 30,
+            titleSnapshot: "Daily",
+            emojiSnapshot: "✨"
+        )
+        context.insert(task)
+        DayPlanStorage.saveBlocks([movedBlock], forDayKey: dayKey, context: context)
+        let planner = DayPlanPlannerState(selectedDate: occurrence)
+
+        planner.showExactTimedTasks(
+            from: [task],
+            calendar: calendar,
+            context: context
+        )
+
+        let block = try #require(planner.weekBlocksByDayKey[dayKey]?.first)
+        #expect(block.id == movedBlockID)
+        #expect(block.startMinute == 11 * 60)
+        #expect(block.durationMinutes == 30)
+        #expect(DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context).map(\.id) == [movedBlockID])
+    }
+
+    @Test
     func exactTimedRoutineRefreshesStaleDefaultDurationWhenEstimateChanges() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

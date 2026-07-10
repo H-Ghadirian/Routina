@@ -218,6 +218,10 @@ Given the same routine has an explicit duration estimate
 When Planner creates its timed calendar block
 Then the estimate controls the block duration while the window start controls placement
 
+Given a time-window routine is paused after Planner already created a matching scheduled block for a later day
+When Planner refreshes that later day
+Then the stale scheduled block is removed while manually moved or resized blocks for that routine remain
+
 ### New Routine Checklists Use Checklist Completion
 
 Area: Tasks
