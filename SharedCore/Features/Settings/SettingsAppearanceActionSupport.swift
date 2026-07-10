@@ -275,6 +275,16 @@ enum SettingsAppearanceActionHandler {
         return .none
     }
 
+    static func showDoneCountInToolbarToggled(
+        _ isEnabled: Bool,
+        state: inout SettingsAppearanceState,
+        appSettingsClient: AppSettingsClient
+    ) -> Effect<SettingsFeature.Action> {
+        state.showsDoneCountInToolbar = isEnabled
+        appSettingsClient.setShowDoneCountInToolbar(isEnabled)
+        return .none
+    }
+
     static func resetTemporaryViewStateTapped(
         state: inout SettingsAppearanceState,
         appSettingsClient: AppSettingsClient

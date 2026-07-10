@@ -15,6 +15,10 @@ Accepted
 - [0319: Open Planner Filters in the Home Filter Pane](0319-open-planner-filters-in-home-filter-pane.md)
 - [0340: Use a SwiftUI Outlook-Style Mac Home Top Toolbar](0340-use-swiftui-outlook-style-mac-home-top-toolbar.md)
 
+## Refined By
+
+- [0361: Make Mac Done Toolbar Count Optional](0361-make-mac-done-toolbar-count-optional.md)
+
 ## Context
 
 The two-row Mac Home top chrome kept search editable and prevented command controls from overlapping the Planner header, but it also left a visually empty command strip underneath the search row in common Planner Timeline layouts. The Done count and primary mode strip were useful there, but their separate row made the top of the window feel taller than the controls required.

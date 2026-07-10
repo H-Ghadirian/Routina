@@ -389,6 +389,7 @@ enum SettingsRoutineDataBackupMapping {
             showTimelineTasksInDayPlanner: preferences.showTimelineTasksInDayPlanner,
             separateDailyRoutinesInTaskList: preferences.separateDailyRoutinesInTaskList,
             showTomorrowInTaskList: preferences.showTomorrowInTaskList,
+            macShowDoneCountInToolbar: preferences.macShowDoneCountInToolbar,
             separateTodosAndRoutinesInTagTaskListSections: preferences
                 .separateTodosAndRoutinesInTagTaskListSections,
             notificationReminderHour: preferences.notificationReminderHour,

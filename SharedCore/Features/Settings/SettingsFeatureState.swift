@@ -83,6 +83,7 @@ struct SettingsAppearanceState: Equatable {
     var showsTimelineTasksInDayPlanner: Bool = true
     var separatesDailyRoutinesInTaskList: Bool = false
     var showsTomorrowInTaskList: Bool = false
+    var showsDoneCountInToolbar: Bool = false
     var appIconStatusMessage: String = ""
     var selectedAppIcon: AppIconOption = .orange
     var hasTemporaryViewStateToReset: Bool = false

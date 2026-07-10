@@ -1090,6 +1090,7 @@ enum SettingsRoutineDataImportEntityInserter {
         preferences.showTimelineTasksInDayPlanner = backupPreferences.showTimelineTasksInDayPlanner ?? true
         preferences.separateDailyRoutinesInTaskList = backupPreferences.separateDailyRoutinesInTaskList ?? false
         preferences.showTomorrowInTaskList = backupPreferences.showTomorrowInTaskList ?? false
+        preferences.macShowDoneCountInToolbar = backupPreferences.macShowDoneCountInToolbar ?? false
         preferences.separateTodosAndRoutinesInTagTaskListSections = backupPreferences
             .separateTodosAndRoutinesInTagTaskListSections ?? false
         preferences.notificationReminderHour = backupPreferences.notificationReminderHour ?? NotificationPreferences.defaultReminderHour

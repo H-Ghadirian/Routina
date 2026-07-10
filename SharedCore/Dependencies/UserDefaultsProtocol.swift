@@ -61,6 +61,7 @@ enum AppSettingsDefaults {
         .appSettingMacHomeSectionFocusTimersEnabled: false,
         .appSettingMacTimelineQuickFiltersVisible: false,
         .appSettingMacStatusComposerEnabled: false,
+        .appSettingMacShowDoneCountInToolbar: false,
         .appSettingSettingsDevicesSectionEnabled: false,
         .appSettingMacEventEmotionActionsEnabled: false,
         .appSettingRelatedTagRulesEnabled: false,
@@ -162,6 +163,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingMacHomeSectionFocusTimersEnabled
     case appSettingMacTimelineQuickFiltersVisible
     case appSettingMacStatusComposerEnabled
+    case appSettingMacShowDoneCountInToolbar
     case appSettingSettingsDevicesSectionEnabled
     case appSettingRelatedTagRulesEnabled
     case appSettingMacEventEmotionActionsEnabled
@@ -255,6 +257,8 @@ struct AppSettingsClient: Sendable {
     var setSeparateDailyRoutinesInTaskList: @Sendable (Bool) -> Void
     var showTomorrowInTaskList: @Sendable () -> Bool = { false }
     var setShowTomorrowInTaskList: @Sendable (Bool) -> Void = { _ in }
+    var showDoneCountInToolbar: @Sendable () -> Bool = { false }
+    var setShowDoneCountInToolbar: @Sendable (Bool) -> Void = { _ in }
     var appColorScheme: @Sendable () -> AppColorScheme
     var setAppColorScheme: @Sendable (AppColorScheme) -> Void
     var routineListSectioningMode: @Sendable () -> RoutineListSectioningMode
@@ -536,6 +540,13 @@ extension AppSettingsClient {
             SharedDefaults.app[.appSettingShowTomorrowInTaskList] = isEnabled
             AppSettingsPersistenceMirror.schedule()
         },
+        showDoneCountInToolbar: {
+            SharedDefaults.app[.appSettingMacShowDoneCountInToolbar]
+        },
+        setShowDoneCountInToolbar: { isEnabled in
+            SharedDefaults.app[.appSettingMacShowDoneCountInToolbar] = isEnabled
+            AppSettingsPersistenceMirror.schedule()
+        },
         appColorScheme: {
             AppColorScheme(
                 rawValue: SharedDefaults.app[.appSettingAppColorScheme] ?? ""
@@ -743,6 +754,8 @@ extension AppSettingsClient {
         setSeparateDailyRoutinesInTaskList: { _ in },
         showTomorrowInTaskList: { false },
         setShowTomorrowInTaskList: { _ in },
+        showDoneCountInToolbar: { false },
+        setShowDoneCountInToolbar: { _ in },
         appColorScheme: { .system },
         setAppColorScheme: { _ in },
         routineListSectioningMode: { .defaultValue },

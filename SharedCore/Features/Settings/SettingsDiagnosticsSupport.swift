@@ -37,6 +37,7 @@ enum SettingsDiagnosticsLoader {
             showTimelineTasksInDayPlanner: appSettingsClient.showTimelineTasksInDayPlanner(),
             separateDailyRoutinesInTaskList: appSettingsClient.separateDailyRoutinesInTaskList(),
             showTomorrowInTaskList: appSettingsClient.showTomorrowInTaskList(),
+            showDoneCountInToolbar: appSettingsClient.showDoneCountInToolbar(),
             deviceAuthenticationStatus: deviceAuthenticationClient.status(),
             selectedAppIcon: appSettingsClient.selectedAppIcon(),
             hasTemporaryViewStateToReset: SettingsExecutionSupport.hasTemporaryViewStateToReset(

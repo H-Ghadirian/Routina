@@ -10,6 +10,7 @@ struct HomeMacTopToolbarChrome: View {
 
     let mode: Mode
     let doneCount: Int
+    let showsDoneCount: Bool
     let isDevelopmentAppVariant: Bool
     let showsProgressModePicker: Bool
     let showsPlaces: Bool
@@ -151,12 +152,14 @@ struct HomeMacTopToolbarChrome: View {
                 .help("Development version")
             }
 
-            MacToolbarStatusBadge(
-                title: "\(doneCount) done",
-                systemImage: "checkmark.seal.fill",
-                tintColor: .systemGreen
-            )
-            .help("\(doneCount) total done")
+            if showsDoneCount {
+                MacToolbarStatusBadge(
+                    title: "\(doneCount) done",
+                    systemImage: "checkmark.seal.fill",
+                    tintColor: .systemGreen
+                )
+                .help("\(doneCount) total done")
+            }
         }
     }
 }

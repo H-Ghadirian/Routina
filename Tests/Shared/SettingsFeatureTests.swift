@@ -736,6 +736,24 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func showDoneCountInToolbarToggled_persistsSelection() async {
+        let persistedValue = LockIsolated<Bool?>(nil)
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.modelContext = { makeInMemoryContext() }
+            $0.appSettingsClient.setShowDoneCountInToolbar = { persistedValue.setValue($0) }
+        }
+
+        await store.send(.showDoneCountInToolbarToggled(true)) {
+            $0.appearance.showsDoneCountInToolbar = true
+        }
+
+        #expect(persistedValue.value == true)
+    }
+
+    @Test
     func defaultSettingsKeepDailyRoutinesMergedInTaskList() {
         #expect(!SettingsFeature.State().appearance.separatesDailyRoutinesInTaskList)
         #expect(!RoutinaUserPreferences().separateDailyRoutinesInTaskList)
@@ -746,6 +764,13 @@ struct SettingsFeatureTests {
         #expect(AppSettingsDefaults.boolValues[.appSettingShowTomorrowInTaskList] == .some(false))
         #expect(!SettingsFeature.State().appearance.showsTomorrowInTaskList)
         #expect(!RoutinaUserPreferences().showTomorrowInTaskList)
+    }
+
+    @Test
+    func defaultSettingsKeepDoneToolbarCountOff() {
+        #expect(AppSettingsDefaults.boolValues[.appSettingMacShowDoneCountInToolbar] == .some(false))
+        #expect(!SettingsFeature.State().appearance.showsDoneCountInToolbar)
+        #expect(!RoutinaUserPreferences().macShowDoneCountInToolbar)
     }
 
     @Test

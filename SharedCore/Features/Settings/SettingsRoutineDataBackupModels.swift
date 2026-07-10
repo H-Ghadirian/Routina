@@ -376,6 +376,7 @@ extension SettingsRoutineDataPersistence {
             var showTimelineTasksInDayPlanner: Bool?
             var separateDailyRoutinesInTaskList: Bool?
             var showTomorrowInTaskList: Bool?
+            var macShowDoneCountInToolbar: Bool?
             var separateTodosAndRoutinesInTagTaskListSections: Bool?
             var notificationReminderHour: Int?
             var notificationReminderMinute: Int?

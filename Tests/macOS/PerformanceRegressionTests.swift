@@ -585,6 +585,8 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertFalse(source.contains("ToolbarItem(placement: .principal) {\n            HomeMacToolbarSearchField("))
         XCTAssertTrue(source.contains("RoutinaMacPlaceCheckInToolbarButton("))
         XCTAssertTrue(source.contains("MacToolbarStatusBadge("))
+        XCTAssertTrue(source.contains("let showsDoneCount: Bool"))
+        XCTAssertTrue(source.contains("if showsDoneCount {\n                MacToolbarStatusBadge("))
         XCTAssertTrue(source.contains("HomeMacBoardInspectorToolbarButton("))
         XCTAssertFalse(source.contains("let titlebarContainerView = closeButton.superview"))
         XCTAssertFalse(source.contains("containerView.addSubview(hostingView, positioned: .above, relativeTo: nil)"))

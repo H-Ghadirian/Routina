@@ -28,6 +28,7 @@ struct SettingsOnAppearSnapshot: Equatable {
     var showTimelineTasksInDayPlanner: Bool
     var separateDailyRoutinesInTaskList: Bool
     var showTomorrowInTaskList: Bool
+    var showDoneCountInToolbar: Bool
     var deviceAuthenticationStatus: DeviceAuthenticationStatus
     var selectedAppIcon: AppIconOption
     var hasTemporaryViewStateToReset: Bool
@@ -104,6 +105,7 @@ enum SettingsRefreshEditor {
             showTimelineTasksInDayPlanner: snapshot.showTimelineTasksInDayPlanner,
             separateDailyRoutinesInTaskList: snapshot.separateDailyRoutinesInTaskList,
             showTomorrowInTaskList: snapshot.showTomorrowInTaskList,
+            showDoneCountInToolbar: snapshot.showDoneCountInToolbar,
             taskRowVisibility: snapshot.taskRowVisibility,
             timelineRowVisibility: snapshot.timelineRowVisibility,
             deviceAuthenticationStatus: snapshot.deviceAuthenticationStatus,

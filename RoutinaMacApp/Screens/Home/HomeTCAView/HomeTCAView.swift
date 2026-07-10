@@ -205,6 +205,10 @@ struct HomeTCAView: View {
         store: SharedDefaults.app
     ) var showsTomorrowInTaskList = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingMacShowDoneCountInToolbar.rawValue,
+        store: SharedDefaults.app
+    ) var showsDoneCountInToolbar = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingSeparateTodosAndRoutinesInTagTaskListSections.rawValue,
         store: SharedDefaults.app
     ) var separatesTodosAndRoutinesInTagTaskListSections = false

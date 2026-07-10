@@ -67,6 +67,15 @@ SettingsMacDetailShell(
         }
     }
 
+    SettingsMacDetailCard(title: "Toolbar") {
+        Toggle("Show Done count in toolbar", isOn: showDoneCountInToolbarBinding)
+            .toggleStyle(.switch)
+
+        Text("When enabled, the Home toolbar shows your total Done count.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+    }
+
     SettingsMacDetailCard(title: "Tag Counters") {
         RoutinaGlassSegmentedControl(
             accessibilityLabel: "Tag counter display",
@@ -133,6 +142,13 @@ SettingsMacDetailShell(
         Binding(
             get: { store.appearance.tagCounterDisplayMode },
             set: { store.send(.tagCounterDisplayModeChanged($0)) }
+        )
+    }
+
+    private var showDoneCountInToolbarBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.showsDoneCountInToolbar },
+            set: { store.send(.showDoneCountInToolbarToggled($0)) }
         )
     }
 

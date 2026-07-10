@@ -93,6 +93,7 @@ extension HomeTCAView {
         HomeMacTopToolbarChrome(
             mode: homeToolbarMode,
             doneCount: store.doneStats.totalCount,
+            showsDoneCount: showsDoneCountInToolbar,
             isDevelopmentAppVariant: isDevelopmentAppVariant,
             showsProgressModePicker: showsProgressModePickerInToolbar,
             showsPlaces: isPlacesEnabled,

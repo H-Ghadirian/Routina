@@ -54,6 +54,7 @@ final class RoutinaUserPreferences {
     var showTimelineTasksInDayPlanner: Bool = true
     var separateDailyRoutinesInTaskList: Bool = false
     var showTomorrowInTaskList: Bool = false
+    var macShowDoneCountInToolbar: Bool = false
     var separateTodosAndRoutinesInTagTaskListSections: Bool = false
     var notificationReminderHour: Int = NotificationPreferences.defaultReminderHour
     var notificationReminderMinute: Int = NotificationPreferences.defaultReminderMinute
@@ -201,6 +202,7 @@ enum RoutinaUserPreferencesStore {
         preferences.showTimelineTasksInDayPlanner = defaults[.appSettingShowTimelineTasksInDayPlanner]
         preferences.separateDailyRoutinesInTaskList = defaults[.appSettingSeparateDailyRoutinesInTaskList]
         preferences.showTomorrowInTaskList = defaults[.appSettingShowTomorrowInTaskList]
+        preferences.macShowDoneCountInToolbar = defaults[.appSettingMacShowDoneCountInToolbar]
         preferences.separateTodosAndRoutinesInTagTaskListSections = defaults[
             .appSettingSeparateTodosAndRoutinesInTagTaskListSections
         ]
@@ -265,6 +267,7 @@ enum RoutinaUserPreferencesStore {
         defaults[.appSettingShowTimelineTasksInDayPlanner] = preferences.showTimelineTasksInDayPlanner
         defaults[.appSettingSeparateDailyRoutinesInTaskList] = preferences.separateDailyRoutinesInTaskList
         defaults[.appSettingShowTomorrowInTaskList] = preferences.showTomorrowInTaskList
+        defaults[.appSettingMacShowDoneCountInToolbar] = preferences.macShowDoneCountInToolbar
         defaults[.appSettingSeparateTodosAndRoutinesInTagTaskListSections] = preferences
             .separateTodosAndRoutinesInTagTaskListSections
         defaults.set(preferences.notificationReminderHour, forKey: NotificationPreferences.reminderHourDefaultsKey)

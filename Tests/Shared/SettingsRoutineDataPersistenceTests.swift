@@ -107,6 +107,7 @@ struct SettingsRoutineDataPersistenceTests {
             UserDefaultBoolValueKey.appSettingAutomaticPlaceCheckInEnabled.rawValue,
             UserDefaultBoolValueKey.appSettingSeparateDailyRoutinesInTaskList.rawValue,
             UserDefaultBoolValueKey.appSettingShowTomorrowInTaskList.rawValue,
+            UserDefaultBoolValueKey.appSettingMacShowDoneCountInToolbar.rawValue,
             UserDefaultBoolValueKey.appSettingSeparateTodosAndRoutinesInTagTaskListSections.rawValue,
             BatteryRoutinePreferences.thresholdPercentDefaultsKey
         ]
@@ -149,6 +150,7 @@ struct SettingsRoutineDataPersistenceTests {
         defaults[.appSettingAutomaticPlaceCheckInEnabled] = false
         defaults[.appSettingSeparateDailyRoutinesInTaskList] = true
         defaults[.appSettingShowTomorrowInTaskList] = true
+        defaults[.appSettingMacShowDoneCountInToolbar] = true
         defaults[.appSettingSeparateTodosAndRoutinesInTagTaskListSections] = true
         defaults.set(35, forKey: BatteryRoutinePreferences.thresholdPercentDefaultsKey)
 
@@ -166,6 +168,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(backup.userPreferences?.unlockUnlimitedTasks == true)
         #expect(backup.userPreferences?.separateTodosAndRoutinesInTagTaskListSections == true)
         #expect(backup.userPreferences?.showTomorrowInTaskList == true)
+        #expect(backup.userPreferences?.macShowDoneCountInToolbar == true)
 
         let restoreContext = makeInMemoryContext()
         let summary = try SettingsRoutineDataPersistence.replaceAllRoutineData(
@@ -202,6 +205,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(!restored.automaticPlaceCheckInEnabled)
         #expect(restored.separateDailyRoutinesInTaskList)
         #expect(restored.showTomorrowInTaskList)
+        #expect(restored.macShowDoneCountInToolbar)
         #expect(restored.separateTodosAndRoutinesInTagTaskListSections)
         #expect(restored.batteryRoutineThresholdPercent == 35)
     }
