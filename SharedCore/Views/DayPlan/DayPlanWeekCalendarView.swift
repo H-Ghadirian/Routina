@@ -1087,6 +1087,7 @@ struct DayPlanDayTaskListContentView: View {
     let onOpenTaskDetails: (UUID) -> Void
     let onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
     let onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
+    var onDragProvider: ((DayPlanDayTaskListItem) -> NSItemProvider)? = nil
     var availableRowWidth: CGFloat? = nil
     var sectionSpacing: CGFloat = 14
 
@@ -1106,6 +1107,7 @@ struct DayPlanDayTaskListContentView: View {
                         onOpenTaskDetails: onOpenTaskDetails,
                         onConfirmAssumedDayTask: onConfirmAssumedDayTask,
                         onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed,
+                        onDragProvider: onDragProvider,
                         availableRowWidth: availableRowWidth
                     )
                 }
@@ -1129,6 +1131,7 @@ private struct DayPlanDayTaskListContentSectionView: View {
     let onOpenTaskDetails: (UUID) -> Void
     let onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
     let onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
+    let onDragProvider: ((DayPlanDayTaskListItem) -> NSItemProvider)?
     let availableRowWidth: CGFloat?
 
     var body: some View {
@@ -1162,6 +1165,7 @@ private struct DayPlanDayTaskListContentSectionView: View {
                     onOpenTaskDetails: onOpenTaskDetails,
                     onConfirmAssumedDayTask: onConfirmAssumedDayTask,
                     onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed,
+                    onDragProvider: onDragProvider,
                     availableRowWidth: availableRowWidth
                 )
             }
@@ -1179,32 +1183,36 @@ private struct DayPlanDayTaskListContentRow: View {
     let onOpenTaskDetails: (UUID) -> Void
     let onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
     let onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
+    let onDragProvider: ((DayPlanDayTaskListItem) -> NSItemProvider)?
     let availableRowWidth: CGFloat?
 
     @State private var isHovered = false
 
     var body: some View {
-        if isOpenable && item.section != .assumedDone {
-            Button {
-                onOpenTaskDetails(item.taskID)
-            } label: {
-                rowContent
-            }
-            .buttonStyle(.plain)
-            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .help("Open \(item.title)")
-            .onHover { isHovered = $0 }
-        } else {
-            rowContent
-                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .onTapGesture {
-                    if isOpenable {
-                        onOpenTaskDetails(item.taskID)
-                    }
+        Group {
+            if isOpenable && item.section != .assumedDone {
+                Button {
+                    onOpenTaskDetails(item.taskID)
+                } label: {
+                    rowContent
                 }
-                .help(isOpenable ? "Open \(item.title)" : "")
+                .buttonStyle(.plain)
+                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .help("Open \(item.title)")
                 .onHover { isHovered = $0 }
+            } else {
+                rowContent
+                    .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .onTapGesture {
+                        if isOpenable {
+                            onOpenTaskDetails(item.taskID)
+                        }
+                    }
+                    .help(isOpenable ? "Open \(item.title)" : "")
+                    .onHover { isHovered = $0 }
+            }
         }
+        .dayPlanDayTaskDrag(dragProvider)
     }
 
     private var rowContent: some View {
@@ -1247,6 +1255,13 @@ private struct DayPlanDayTaskListContentRow: View {
 
     private var showsAvatar: Bool {
         DayPlanWeekCalendarSizing.showsDayTaskListAvatar(rowWidth: availableRowWidth)
+    }
+
+    private var dragProvider: (() -> NSItemProvider)? {
+        guard let onDragProvider else { return nil }
+        return {
+            onDragProvider(item)
+        }
     }
 
     private var assumedDoneActions: some View {
@@ -1312,6 +1327,17 @@ private struct DayPlanDayTaskListContentRow: View {
             return "sun.max"
         case .timed:
             return "clock"
+        }
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func dayPlanDayTaskDrag(_ provider: (() -> NSItemProvider)?) -> some View {
+        if let provider {
+            onDrag(provider)
+        } else {
+            self
         }
     }
 }

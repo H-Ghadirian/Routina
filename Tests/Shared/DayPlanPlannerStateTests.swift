@@ -564,6 +564,33 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func rightSidebarDayTaskRowsDragButCalendarListColumnsStayReadOnly() throws {
+        let projectRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let calendarSource = try String(
+            contentsOf: projectRoot.appendingPathComponent("SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"),
+            encoding: .utf8
+        )
+        let dayPlanSource = try String(
+            contentsOf: projectRoot.appendingPathComponent("SharedCore/Views/DayPlanView.swift"),
+            encoding: .utf8
+        )
+        let columnStart = try #require(calendarSource.range(of: "private struct DayPlanDayTaskColumnView: View {"))
+        let columnEnd = try #require(calendarSource[columnStart.upperBound...].range(of: "\nstruct DayPlanDayTaskListContentView: View {"))
+        let columnSource = calendarSource[columnStart.lowerBound..<columnEnd.lowerBound]
+        let sidebarStart = try #require(dayPlanSource.range(of: "private struct DayPlanDayTaskListSidebar: View {"))
+        let sidebarSource = dayPlanSource[sidebarStart.lowerBound...]
+
+        #expect(calendarSource.contains(".dayPlanDayTaskDrag(dragProvider)"))
+        #expect(columnSource.contains("DayPlanDayTaskListContentView("))
+        #expect(!columnSource.contains("onDragProvider:"))
+        #expect(sidebarSource.contains("onDragProvider: { item in"))
+        #expect(sidebarSource.contains("NSItemProvider(object: item.taskID.uuidString as NSString)"))
+    }
+
+    @Test
     func focusSleepSessionSelectsStartDayAndScrollMinute() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

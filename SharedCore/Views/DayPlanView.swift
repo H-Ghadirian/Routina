@@ -5954,7 +5954,10 @@ private struct DayPlanDayTaskListSidebar: View {
                     isTaskOpenable: isTaskOpenable,
                     onOpenTaskDetails: onOpenTaskDetails,
                     onConfirmAssumedDayTask: onConfirmAssumedDayTask,
-                    onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed
+                    onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed,
+                    onDragProvider: { item in
+                        NSItemProvider(object: item.taskID.uuidString as NSString)
+                    }
                 )
             }
         }
