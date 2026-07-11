@@ -44,6 +44,7 @@ struct DayPlanWeekCalendarView: View {
     var calendar: Calendar
     var hourHeight: CGFloat = 64
     var dropDurationMinutes: Int
+    var calendarTaskViewMode: DayPlanCalendarTaskViewMode = .schedule
     var showsUnplannedCompletedBadges: Bool
     var showsHourSpacingControls = false
     var canDecreaseHourSpacing = false
@@ -68,6 +69,10 @@ struct DayPlanWeekCalendarView: View {
     var allDayTint: (DayPlanAllDayBlock) -> Color = { _ in .accentColor }
     var onSelectUnplannedCompletedDate: (Date) -> Void
     var dayTaskCounts: (Date) -> DayPlanDayTaskCounts = { _ in DayPlanDayTaskCounts() }
+    var dayTaskListItems: (Date) -> [DayPlanDayTaskListItem] = { _ in [] }
+    var dayTaskTint: (UUID) -> Color = { _ in .accentColor }
+    var isDayTaskOpenable: (UUID) -> Bool = { _ in false }
+    var onOpenDayTaskDetails: (UUID) -> Void = { _ in }
     var onSelectSlot: (Date, Int) -> Void
     var onSelectBlock: (DayPlanBlock, Date) -> Void
     var onOpenBlockDetails: (DayPlanBlock, Date) -> Void
@@ -122,8 +127,10 @@ struct DayPlanWeekCalendarView: View {
                     focusedPlannedTasksDate: selectedDayTaskListDate,
                     calendar: calendar,
                     timeColumnWidth: timeColumnWidth,
+                    timeHeaderTitle: calendarTaskViewMode == .list ? "Tasks" : "Time",
+                    showsDayTaskButtons: calendarTaskViewMode == .schedule,
                     showsUnplannedCompletedBadges: showsUnplannedCompletedBadges,
-                    showsHourSpacingControls: showsHourSpacingControls,
+                    showsHourSpacingControls: calendarTaskViewMode == .schedule && showsHourSpacingControls,
                     canDecreaseHourSpacing: canDecreaseHourSpacing,
                     canIncreaseHourSpacing: canIncreaseHourSpacing,
                     hourSpacingAccessibilityValue: hourSpacingAccessibilityValue,
@@ -137,6 +144,19 @@ struct DayPlanWeekCalendarView: View {
                     onSelectUnplannedCompletedDate: onSelectUnplannedCompletedDate
                 )
 
+                if calendarTaskViewMode == .list {
+                    DayPlanDayTaskColumnsView(
+                        dates: dates,
+                        selectedDate: selectedDate,
+                        calendar: calendar,
+                        timeColumnWidth: timeColumnWidth,
+                        isExternalInspectorPresented: isExternalInspectorPresented,
+                        dayTaskListItems: dayTaskListItems,
+                        taskTint: dayTaskTint,
+                        isTaskOpenable: isDayTaskOpenable,
+                        onOpenTaskDetails: onOpenDayTaskDetails
+                    )
+                } else {
                 DayPlanUnplaceableActivityLaneView(
                     dates: dates,
                     selectedDate: selectedDate,
@@ -382,6 +402,7 @@ struct DayPlanWeekCalendarView: View {
                     scrollToPlannerHighlight(with: scrollProxy)
                 }
             }
+                }
             }
             .frame(
                 minWidth: DayPlanWeekCalendarSizing.minimumCalendarWidth(
@@ -423,6 +444,10 @@ struct DayPlanWeekCalendarView: View {
         .onChange(of: isExternalInspectorPresented) { _, isPresented in
             guard isPresented else { return }
             dismissPlannerRightSidebar()
+        }
+        .onChange(of: calendarTaskViewMode) { _, mode in
+            guard mode == .list else { return }
+            dismissScheduleInteractionState()
         }
         .background(.background, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay {
@@ -504,6 +529,17 @@ struct DayPlanWeekCalendarView: View {
     private func clearDropState() {
         isDropTargeted = false
         dropPreview = nil
+    }
+
+    private func dismissScheduleInteractionState() {
+        selectedSlotDraft = nil
+        draftResizeBaseline = nil
+        isCompletingDrop = false
+        draggedBlockID = nil
+        draggedTimelineActivity = nil
+        draggedBlockDurationMinutes = nil
+        clearDropState()
+        endResize()
     }
 
     private func dragProvider(for block: DayPlanBlock, on date: Date) -> NSItemProvider {
@@ -899,6 +935,264 @@ private struct DayPlanSlotDraftBlock: View {
         }
 
         return max(5, (renderedHeight - minimumMoveDragArea) / 2)
+    }
+}
+
+private struct DayPlanDayTaskColumnsView: View {
+    var dates: [Date]
+    var selectedDate: Date
+    var calendar: Calendar
+    var timeColumnWidth: CGFloat
+    var isExternalInspectorPresented: Bool
+    var dayTaskListItems: (Date) -> [DayPlanDayTaskListItem]
+    var taskTint: (UUID) -> Color
+    var isTaskOpenable: (UUID) -> Bool
+    var onOpenTaskDetails: (UUID) -> Void
+
+    var body: some View {
+        GeometryReader { proxy in
+            let dayWidth = DayPlanWeekCalendarSizing.dayWidth(
+                availableWidth: proxy.size.width,
+                dayCount: max(dates.count, 1),
+                isExternalInspectorPresented: isExternalInspectorPresented
+            )
+            let contentWidth = timeColumnWidth + (CGFloat(dates.count) * dayWidth)
+
+            ScrollView(.vertical) {
+                HStack(alignment: .top, spacing: 0) {
+                    Color.clear
+                        .frame(width: timeColumnWidth)
+                        .frame(minHeight: proxy.size.height)
+                        .overlay(alignment: .trailing) {
+                            Rectangle()
+                                .fill(Color.secondary.opacity(0.18))
+                                .frame(width: 1)
+                        }
+
+                    ForEach(dates, id: \.self) { date in
+                        DayPlanDayTaskColumnView(
+                            date: date,
+                            isSelected: calendar.isDate(date, inSameDayAs: selectedDate),
+                            items: dayTaskListItems(date),
+                            taskTint: taskTint,
+                            calendar: calendar,
+                            isTaskOpenable: isTaskOpenable,
+                            onOpenTaskDetails: onOpenTaskDetails
+                        )
+                        .frame(width: dayWidth, alignment: .topLeading)
+                        .frame(minHeight: proxy.size.height, alignment: .topLeading)
+                    }
+                }
+                .frame(width: contentWidth, alignment: .topLeading)
+                .frame(minHeight: proxy.size.height, alignment: .topLeading)
+            }
+            .background(Color.secondary.opacity(0.035))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct DayPlanDayTaskColumnView: View {
+    var date: Date
+    var isSelected: Bool
+    var items: [DayPlanDayTaskListItem]
+    var taskTint: (UUID) -> Color
+    var calendar: Calendar
+    var isTaskOpenable: (UUID) -> Bool
+    var onOpenTaskDetails: (UUID) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if items.isEmpty {
+                emptyState
+            } else {
+                DayPlanDayTaskListContentView(
+                    items: items,
+                    taskTint: taskTint,
+                    date: date,
+                    calendar: calendar,
+                    isTaskOpenable: isTaskOpenable,
+                    onOpenTaskDetails: onOpenTaskDetails,
+                    sectionSpacing: 12
+                )
+            }
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(isSelected ? Color.secondary.opacity(0.045) : Color.clear)
+        .overlay(alignment: .trailing) {
+            Rectangle()
+                .fill(Color.secondary.opacity(0.18))
+                .frame(width: 1)
+        }
+    }
+
+    private var emptyState: some View {
+        VStack(alignment: .center, spacing: 8) {
+            Image(systemName: "list.bullet.rectangle")
+                .font(.title3)
+                .foregroundStyle(.tertiary)
+
+            Text("No tasks")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, minHeight: 140)
+    }
+}
+
+struct DayPlanDayTaskListContentView: View {
+    let items: [DayPlanDayTaskListItem]
+    let taskTint: (UUID) -> Color
+    let date: Date
+    let calendar: Calendar
+    let isTaskOpenable: (UUID) -> Bool
+    let onOpenTaskDetails: (UUID) -> Void
+    var sectionSpacing: CGFloat = 14
+
+    var body: some View {
+        LazyVStack(alignment: .leading, spacing: sectionSpacing) {
+            ForEach(DayPlanDayTaskListItem.Section.allCases, id: \.self) { section in
+                let sectionItems = items(in: section)
+                if !sectionItems.isEmpty {
+                    DayPlanDayTaskListContentSectionView(
+                        title: section.title,
+                        count: sectionItems.count,
+                        items: sectionItems,
+                        taskTint: taskTint,
+                        date: date,
+                        calendar: calendar,
+                        isTaskOpenable: isTaskOpenable,
+                        onOpenTaskDetails: onOpenTaskDetails
+                    )
+                }
+            }
+        }
+    }
+
+    private func items(in section: DayPlanDayTaskListItem.Section) -> [DayPlanDayTaskListItem] {
+        items.filter { $0.section == section }
+    }
+}
+
+private struct DayPlanDayTaskListContentSectionView: View {
+    let title: String
+    let count: Int
+    let items: [DayPlanDayTaskListItem]
+    let taskTint: (UUID) -> Color
+    let date: Date
+    let calendar: Calendar
+    let isTaskOpenable: (UUID) -> Bool
+    let onOpenTaskDetails: (UUID) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                Text("\(count)")
+                    .font(.caption2.weight(.bold))
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(Color.secondary.opacity(0.10))
+                    )
+
+                Spacer(minLength: 0)
+            }
+
+            ForEach(items) { item in
+                DayPlanDayTaskListContentRow(
+                    item: item,
+                    tint: taskTint(item.taskID),
+                    date: date,
+                    calendar: calendar,
+                    isOpenable: isTaskOpenable(item.taskID),
+                    onOpenTaskDetails: onOpenTaskDetails
+                )
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct DayPlanDayTaskListContentRow: View {
+    let item: DayPlanDayTaskListItem
+    let tint: Color
+    let date: Date
+    let calendar: Calendar
+    let isOpenable: Bool
+    let onOpenTaskDetails: (UUID) -> Void
+
+    var body: some View {
+        if isOpenable {
+            Button {
+                onOpenTaskDetails(item.taskID)
+            } label: {
+                rowContent
+            }
+            .buttonStyle(.plain)
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .help("Open \(item.title)")
+        } else {
+            rowContent
+        }
+    }
+
+    private var rowContent: some View {
+        HStack(alignment: .top, spacing: 10) {
+            DayPlanTaskAvatar(emoji: item.emoji, tint: tint)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.title)
+                    .font(.callout.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+
+                Label(placementText, systemImage: placementSystemImage)
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+
+            Spacer(minLength: 6)
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .routinaGlassCard(
+            cornerRadius: 8,
+            tint: tint,
+            tintOpacity: 0.08,
+            interactive: isOpenable
+        )
+    }
+
+    private var placementText: String {
+        switch item.placement {
+        case .allDay:
+            return "All day"
+        case let .timed(startMinute, durationMinutes):
+            let endMinute = startMinute + durationMinutes
+            let startText = DayPlanFormatting.timeText(for: startMinute, on: date, calendar: calendar)
+            let endText = DayPlanFormatting.timeText(for: endMinute, on: date, calendar: calendar)
+            return "\(startText) - \(endText), \(DayPlanFormatting.durationText(durationMinutes))"
+        }
+    }
+
+    private var placementSystemImage: String {
+        switch item.placement {
+        case .allDay:
+            return "sun.max"
+        case .timed:
+            return "clock"
+        }
     }
 }
 

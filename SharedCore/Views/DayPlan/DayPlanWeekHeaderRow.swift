@@ -7,6 +7,8 @@ struct DayPlanWeekHeaderRow: View {
     var focusedPlannedTasksDate: Date?
     var calendar: Calendar
     var timeColumnWidth: CGFloat
+    var timeHeaderTitle = "Time"
+    var showsDayTaskButtons = true
     var showsUnplannedCompletedBadges: Bool
     var showsHourSpacingControls = false
     var canDecreaseHourSpacing = false
@@ -30,6 +32,7 @@ struct DayPlanWeekHeaderRow: View {
                     isFocusedForUnplannedCompleted: focusedUnplannedCompletedDate.map { calendar.isDate(date, inSameDayAs: $0) } ?? false,
                     isFocusedForPlannedTasks: focusedPlannedTasksDate.map { calendar.isDate(date, inSameDayAs: $0) } ?? false,
                     isToday: calendar.isDateInToday(date),
+                    showsDayTaskButton: showsDayTaskButtons,
                     dayTaskCounts: dayTaskCounts(date),
                     unplannedCompletedCount: showsUnplannedCompletedBadges ? unplannedCompletedCount(date) : 0,
                     onSelectPlannedTasks: {
@@ -46,7 +49,7 @@ struct DayPlanWeekHeaderRow: View {
 
     private var timeHeaderCell: some View {
         HStack(alignment: .center, spacing: showsHourSpacingControls ? 4 : 0) {
-            Text("Time")
+            Text(timeHeaderTitle)
                 .font(.caption.weight(.medium))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
@@ -75,7 +78,7 @@ struct DayPlanWeekHeaderRow: View {
         .padding(.horizontal, showsHourSpacingControls ? 5 : 0)
         .frame(width: timeColumnWidth, height: 64)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(showsHourSpacingControls ? "Time and day hour spacing" : "Time")
+        .accessibilityLabel(showsHourSpacingControls ? "Time and day hour spacing" : timeHeaderTitle)
         .accessibilityValue(showsHourSpacingControls ? hourSpacingAccessibilityValue : "")
     }
 

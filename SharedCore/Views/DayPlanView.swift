@@ -69,6 +69,7 @@ enum DayPlanSidebarDateAvailability {
 struct DayPlanView: View {
     @StateObject private var planner = DayPlanPlannerState()
     @State private var isDatePickerSidebarPresented = false
+    @State private var calendarTaskViewMode: DayPlanCalendarTaskViewMode = .schedule
 
     var body: some View {
         content
@@ -80,7 +81,8 @@ struct DayPlanView: View {
         VStack(alignment: .leading, spacing: 16) {
             DayPlanHeaderView(
                 planner: planner,
-                isDatePickerSidebarPresented: $isDatePickerSidebarPresented
+                isDatePickerSidebarPresented: $isDatePickerSidebarPresented,
+                calendarTaskViewMode: $calendarTaskViewMode
             )
 
             HSplitView {
@@ -89,6 +91,7 @@ struct DayPlanView: View {
 
                 DayPlanTimelinePanelView(
                     planner: planner,
+                    calendarTaskViewMode: calendarTaskViewMode,
                     isDatePickerSidebarPresented: $isDatePickerSidebarPresented
                 )
                     .frame(minWidth: 520)
@@ -100,7 +103,8 @@ struct DayPlanView: View {
             VStack(alignment: .leading, spacing: 12) {
                 DayPlanHeaderView(
                     planner: planner,
-                    isDatePickerSidebarPresented: $isDatePickerSidebarPresented
+                    isDatePickerSidebarPresented: $isDatePickerSidebarPresented,
+                    calendarTaskViewMode: $calendarTaskViewMode
                 )
                     .padding(.horizontal)
                     .padding(.top)
@@ -111,6 +115,7 @@ struct DayPlanView: View {
 
                 DayPlanTimelinePanelView(
                     planner: planner,
+                    calendarTaskViewMode: calendarTaskViewMode,
                     isDatePickerSidebarPresented: $isDatePickerSidebarPresented
                 )
                     .padding(.horizontal)
@@ -456,6 +461,7 @@ struct DayPlanDetailView: View {
     var onOpenEventDetails: ((UUID) -> Void)? = nil
     var onCalendarFilterButtonPressed: (() -> Void)? = nil
     var onPlannerSidebarPresentationRequested: (() -> Void)? = nil
+    @State private var calendarTaskViewMode: DayPlanCalendarTaskViewMode = .schedule
     @State private var isCalendarFilterSidebarPresented = false
     @State private var isDatePickerSidebarPresented = false
     @State private var timelineDateJumpRequest: DayPlanTimelineDateJumpRequest?
@@ -470,6 +476,7 @@ struct DayPlanDetailView: View {
                 isCalendarFilterDetailPresented: isCalendarFilterDetailPresented,
                 showsCalendarFilterButton: true,
                 displayMode: displayMode,
+                calendarTaskViewMode: $calendarTaskViewMode,
                 showsDisplayModePicker: listContent != nil,
                 isTaskDetailInspectorPresented: isTaskDetailInspectorPresented,
                 parentAvailableWidth: macHeaderAvailableWidth,
@@ -491,6 +498,7 @@ struct DayPlanDetailView: View {
                     calendarSearchText: calendarSearchText,
                     calendarTaskFilter: calendarTaskFilter,
                     calendarTaskFilterCacheSeed: calendarTaskFilterCacheSeed,
+                    calendarTaskViewMode: calendarTaskViewMode,
                     isCalendarFilterSidebarPresented: $isCalendarFilterSidebarPresented,
                     isDatePickerSidebarPresented: $isDatePickerSidebarPresented,
                     isExternalInspectorPresented: isTaskDetailInspectorPresented,
@@ -612,6 +620,7 @@ private struct DayPlanHeaderView: View {
     var isCalendarFilterDetailPresented = false
     var showsCalendarFilterButton = false
     var displayMode: Binding<DayPlanDisplayMode> = .constant(.calendar)
+    var calendarTaskViewMode: Binding<DayPlanCalendarTaskViewMode> = .constant(.schedule)
     var showsDisplayModePicker = false
     var isTaskDetailInspectorPresented = false
     var parentAvailableWidth: CGFloat? = nil
@@ -763,6 +772,7 @@ private struct DayPlanHeaderView: View {
                     displayModePicker
                 }
                 if effectiveDisplayMode == .calendar {
+                    calendarTaskViewModePicker
                     visibleRangeModePicker
                 }
             }
@@ -777,8 +787,11 @@ private struct DayPlanHeaderView: View {
             if showsDisplayModePicker {
                 displayModePicker(forceIconOnly: forceIconOnlyDisplayModePicker)
             }
-            if effectiveDisplayMode == .calendar && showsRangePicker {
-                visibleRangeModePicker
+            if effectiveDisplayMode == .calendar {
+                calendarTaskViewModePicker(forceIconOnly: forceIconOnlyDisplayModePicker)
+                if showsRangePicker {
+                    visibleRangeModePicker
+                }
             }
         }
     }
@@ -1080,6 +1093,37 @@ private struct DayPlanHeaderView: View {
         .accessibilityLabel("Planner view")
     }
 
+    private var calendarTaskViewModePicker: some View {
+        calendarTaskViewModePicker(forceIconOnly: nil)
+    }
+
+    private func calendarTaskViewModePicker(forceIconOnly: Bool?) -> some View {
+        let usesIconOnlySegments = forceIconOnly ?? usesIconOnlyMacDisplayModePicker
+
+        return RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Calendar task view",
+            options: DayPlanCalendarTaskViewMode.allCases,
+            selection: calendarTaskViewMode,
+            minimumSegmentWidth: usesIconOnlySegments ? 42 : 74,
+            horizontalPadding: usesIconOnlySegments ? 8 : 11
+        ) { mode in
+            if usesIconOnlySegments {
+                Image(systemName: mode.systemImage)
+                    .accessibilityLabel(mode.title)
+                    .help(mode.title)
+            } else {
+                Label(mode.title, systemImage: mode.systemImage)
+                    .labelStyle(.titleAndIcon)
+            }
+        }
+        .frame(
+            width: usesIconOnlySegments
+                ? DayPlanHeaderRangePickerVisibility.iconOnlyCalendarTaskViewModePickerWidth
+                : DayPlanHeaderRangePickerVisibility.calendarTaskViewModePickerWidth
+        )
+        .accessibilityLabel("Calendar task view")
+    }
+
     private var visibleRangeModeBinding: Binding<DayPlanVisibleRangeMode> {
         Binding(
             get: {
@@ -1130,6 +1174,8 @@ private struct DayPlanHeaderView: View {
 enum DayPlanHeaderRangePickerVisibility {
     static let displayModePickerWidth: CGFloat = 220
     static let iconOnlyDisplayModePickerWidth: CGFloat = 100
+    static let calendarTaskViewModePickerWidth: CGFloat = 178
+    static let iconOnlyCalendarTaskViewModePickerWidth: CGFloat = 100
     static let visibleRangeModePickerWidth: CGFloat = 234
     static let inspectorRangePickerMinimumAvailableWidth: Double = 860
     static let iconOnlyDisplayModePickerMaximumAvailableWidth: Double = 860
@@ -1219,6 +1265,7 @@ private struct DayPlanTimelinePanelView: View {
     var calendarSearchText = ""
     var calendarTaskFilter: (RoutineTask) -> Bool = { _ in true }
     var calendarTaskFilterCacheSeed = 0
+    var calendarTaskViewMode: DayPlanCalendarTaskViewMode = .schedule
     var isCalendarFilterSidebarPresented: Binding<Bool> = .constant(false)
     var isDatePickerSidebarPresented: Binding<Bool> = .constant(false)
     var isExternalInspectorPresented = false
@@ -1279,6 +1326,7 @@ private struct DayPlanTimelinePanelView: View {
             calendarSearchText: calendarSearchText,
             calendarTaskFilter: calendarTaskFilter,
             calendarTaskFilterCacheSeed: calendarTaskFilterCacheSeed,
+            calendarTaskViewMode: calendarTaskViewMode,
             isCalendarFilterSidebarPresented: isCalendarFilterSidebarPresented,
             isDatePickerSidebarPresented: isDatePickerSidebarPresented,
             isExternalInspectorPresented: isExternalInspectorPresented,
@@ -2268,6 +2316,7 @@ private struct DayPlanTimelinePanelContentView: View {
     var calendarSearchText = ""
     var calendarTaskFilter: (RoutineTask) -> Bool = { _ in true }
     var calendarTaskFilterCacheSeed = 0
+    var calendarTaskViewMode: DayPlanCalendarTaskViewMode = .schedule
     var isCalendarFilterSidebarPresented: Binding<Bool> = .constant(false)
     var isDatePickerSidebarPresented: Binding<Bool> = .constant(false)
     var isExternalInspectorPresented = false
@@ -2401,6 +2450,28 @@ private struct DayPlanTimelinePanelContentView: View {
             allTaskIDs: allTaskIDs,
             isTaskFilterActive: isCalendarTaskFilterActive
         )
+        let calendarDayTaskListItems: (Date) -> [DayPlanDayTaskListItem] = { date in
+            dayTaskListItems(
+                on: date,
+                plannedBlocksByDayKey: calendarFilterState.showsPlannedTasks
+                    ? visiblePlannedBlocksByDayKey
+                    : [:],
+                allDayBlocks: visibleAllDayBlocks,
+                plannedDateTasks: calendarFilterState.showsAllDayTasks
+                    ? calendarSearchTasks
+                    : [],
+                tasks: currentTasks,
+                logs: logs,
+                timelineActivityBlocks: timelineSuggestionsVisible
+                    ? dayTimelineActivityBlocks(
+                        on: date,
+                        automaticSuggestionBlocksByDayKey: dayTaskListAutomaticSuggestionBlocksByDayKey,
+                        unplaceableAutomaticSuggestionBlocksByDayKey: dayTaskListUnplaceableAutomaticSuggestionBlocksByDayKey
+                    )
+                    : [],
+                visibilitySignature: dayTaskListVisibilitySignature
+            )
+        }
 
         VStack(alignment: .leading, spacing: 12) {
             DayPlanWeekCalendarView(
@@ -2414,6 +2485,7 @@ private struct DayPlanTimelinePanelContentView: View {
                 calendar: calendar,
                 hourHeight: CGFloat(planner.calendarHourHeight),
                 dropDurationMinutes: planner.durationMinutes,
+                calendarTaskViewMode: calendarTaskViewMode,
                 showsUnplannedCompletedBadges: !timelineSuggestionsVisible,
                 showsHourSpacingControls: planner.visibleRangeMode == .day,
                 canDecreaseHourSpacing: planner.canDecreaseDayHourSpacing,
@@ -2518,26 +2590,17 @@ private struct DayPlanTimelinePanelContentView: View {
                     onSelectUnplannedCompletedDate?(date)
                 },
                 dayTaskCounts: { date in
-                    DayPlanDayTaskCounts(items: dayTaskListItems(
-                        on: date,
-                        plannedBlocksByDayKey: calendarFilterState.showsPlannedTasks
-                            ? visiblePlannedBlocksByDayKey
-                            : [:],
-                        allDayBlocks: visibleAllDayBlocks,
-                        plannedDateTasks: calendarFilterState.showsAllDayTasks
-                            ? calendarSearchTasks
-                            : [],
-                        tasks: currentTasks,
-                        logs: logs,
-                        timelineActivityBlocks: timelineSuggestionsVisible
-                            ? dayTimelineActivityBlocks(
-                                on: date,
-                                automaticSuggestionBlocksByDayKey: dayTaskListAutomaticSuggestionBlocksByDayKey,
-                                unplaceableAutomaticSuggestionBlocksByDayKey: dayTaskListUnplaceableAutomaticSuggestionBlocksByDayKey
-                            )
-                            : [],
-                        visibilitySignature: dayTaskListVisibilitySignature
-                    ))
+                    DayPlanDayTaskCounts(items: calendarDayTaskListItems(date))
+                },
+                dayTaskListItems: calendarDayTaskListItems,
+                dayTaskTint: { taskID in
+                    tintsByTaskID[taskID] ?? .accentColor
+                },
+                isDayTaskOpenable: { taskID in
+                    onOpenTaskDetails != nil && currentTaskIDs.contains(taskID)
+                },
+                onOpenDayTaskDetails: { taskID in
+                    onOpenTaskDetails?(taskID)
                 },
                 onSelectSlot: { date, minute in
                     planner.selectSlot(on: date, startMinute: minute, calendar: calendar, context: modelContext)
@@ -2727,26 +2790,7 @@ private struct DayPlanTimelinePanelContentView: View {
                     AnyView(
                         DayPlanDayTaskListSidebar(
                             date: date,
-                            items: dayTaskListItems(
-                                on: date,
-                                plannedBlocksByDayKey: calendarFilterState.showsPlannedTasks
-                                    ? visiblePlannedBlocksByDayKey
-                                    : [:],
-                                allDayBlocks: visibleAllDayBlocks,
-                                plannedDateTasks: calendarFilterState.showsAllDayTasks
-                                    ? calendarSearchTasks
-                                    : [],
-                                tasks: currentTasks,
-                                logs: logs,
-                                timelineActivityBlocks: timelineSuggestionsVisible
-                                    ? dayTimelineActivityBlocks(
-                                        on: date,
-                                        automaticSuggestionBlocksByDayKey: dayTaskListAutomaticSuggestionBlocksByDayKey,
-                                        unplaceableAutomaticSuggestionBlocksByDayKey: dayTaskListUnplaceableAutomaticSuggestionBlocksByDayKey
-                                    )
-                                    : [],
-                                visibilitySignature: dayTaskListVisibilitySignature
-                            ),
+                            items: calendarDayTaskListItems(date),
                             taskTint: { taskID in
                                 tintsByTaskID[taskID] ?? .accentColor
                             },
@@ -5830,23 +5874,14 @@ private struct DayPlanDayTaskListSidebar: View {
                 )
                 .frame(maxWidth: .infinity, minHeight: 220)
             } else {
-                LazyVStack(alignment: .leading, spacing: 14) {
-                    ForEach(DayPlanDayTaskListItem.Section.allCases, id: \.self) { section in
-                        let sectionItems = items(in: section)
-                        if !sectionItems.isEmpty {
-                            DayPlanDayTaskListSectionView(
-                                title: section.title,
-                                count: sectionItems.count,
-                                items: sectionItems,
-                                taskTint: taskTint,
-                                date: date,
-                                calendar: calendar,
-                                isTaskOpenable: isTaskOpenable,
-                                onOpenTaskDetails: onOpenTaskDetails
-                            )
-                        }
-                    }
-                }
+                DayPlanDayTaskListContentView(
+                    items: items,
+                    taskTint: taskTint,
+                    date: date,
+                    calendar: calendar,
+                    isTaskOpenable: isTaskOpenable,
+                    onOpenTaskDetails: onOpenTaskDetails
+                )
             }
         }
         .padding(16)
@@ -5891,133 +5926,8 @@ private struct DayPlanDayTaskListSidebar: View {
         return "\(dateText) - \(countText)"
     }
 
-    private func items(in section: DayPlanDayTaskListItem.Section) -> [DayPlanDayTaskListItem] {
-        items.filter { $0.section == section }
-    }
-
     private func taskCountText(_ count: Int) -> String {
         "\(count) \(count == 1 ? "task" : "tasks")"
-    }
-}
-
-private struct DayPlanDayTaskListSectionView: View {
-    let title: String
-    let count: Int
-    let items: [DayPlanDayTaskListItem]
-    let taskTint: (UUID) -> Color
-    let date: Date
-    let calendar: Calendar
-    let isTaskOpenable: (UUID) -> Bool
-    let onOpenTaskDetails: (UUID) -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(title)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-
-                Text("\(count)")
-                    .font(.caption2.weight(.bold))
-                    .monospacedDigit()
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(Color.secondary.opacity(0.10))
-                    )
-
-                Spacer(minLength: 0)
-            }
-
-            ForEach(items) { item in
-                DayPlanDayTaskListRow(
-                    item: item,
-                    tint: taskTint(item.taskID),
-                    date: date,
-                    calendar: calendar,
-                    isOpenable: isTaskOpenable(item.taskID),
-                    onOpenTaskDetails: onOpenTaskDetails
-                )
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-private struct DayPlanDayTaskListRow: View {
-    let item: DayPlanDayTaskListItem
-    let tint: Color
-    let date: Date
-    let calendar: Calendar
-    let isOpenable: Bool
-    let onOpenTaskDetails: (UUID) -> Void
-
-    var body: some View {
-        if isOpenable {
-            Button {
-                onOpenTaskDetails(item.taskID)
-            } label: {
-                rowContent
-            }
-            .buttonStyle(.plain)
-            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .help("Open \(item.title)")
-        } else {
-            rowContent
-        }
-    }
-
-    private var rowContent: some View {
-        HStack(alignment: .top, spacing: 10) {
-            DayPlanTaskAvatar(emoji: item.emoji, tint: tint)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(item.title)
-                    .font(.callout.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-
-                Label(placementText, systemImage: placementSystemImage)
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-            }
-
-            Spacer(minLength: 6)
-        }
-        .padding(10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .routinaGlassCard(
-            cornerRadius: 8,
-            tint: tint,
-            tintOpacity: 0.08,
-            interactive: isOpenable
-        )
-    }
-
-    private var placementText: String {
-        switch item.placement {
-        case .allDay:
-            return "All day"
-        case let .timed(startMinute, durationMinutes):
-            let endMinute = startMinute + durationMinutes
-            let startText = DayPlanFormatting.timeText(for: startMinute, on: date, calendar: calendar)
-            let endText = DayPlanFormatting.timeText(for: endMinute, on: date, calendar: calendar)
-            return "\(startText) - \(endText), \(DayPlanFormatting.durationText(durationMinutes))"
-        }
-    }
-
-    private var placementSystemImage: String {
-        switch item.placement {
-        case .allDay:
-            return "sun.max"
-        case .timed:
-            return "clock"
-        }
     }
 }
 

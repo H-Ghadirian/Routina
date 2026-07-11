@@ -18,11 +18,26 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func calendarTaskViewModeTitlesUseScheduleAndList() {
+        #expect(DayPlanCalendarTaskViewMode.schedule.title == "Schedule")
+        #expect(DayPlanCalendarTaskViewMode.list.title == "List")
+    }
+
+    @Test
     func displayModePickerReservesRoomForTimelineLabel() {
         #expect(DayPlanHeaderRangePickerVisibility.displayModePickerWidth >= 220)
         #expect(
             DayPlanHeaderRangePickerVisibility.displayModePickerWidth
                 > DayPlanHeaderRangePickerVisibility.iconOnlyDisplayModePickerWidth
+        )
+    }
+
+    @Test
+    func calendarTaskViewModePickerReservesRoomForScheduleLabel() {
+        #expect(DayPlanHeaderRangePickerVisibility.calendarTaskViewModePickerWidth >= 178)
+        #expect(
+            DayPlanHeaderRangePickerVisibility.calendarTaskViewModePickerWidth
+                > DayPlanHeaderRangePickerVisibility.iconOnlyCalendarTaskViewModePickerWidth
         )
     }
 

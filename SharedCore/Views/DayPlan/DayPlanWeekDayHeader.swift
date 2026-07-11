@@ -6,6 +6,7 @@ struct DayPlanWeekDayHeader: View {
     var isFocusedForUnplannedCompleted: Bool
     var isFocusedForPlannedTasks: Bool
     var isToday: Bool
+    var showsDayTaskButton = true
     var dayTaskCounts: DayPlanDayTaskCounts
     var unplannedCompletedCount: Int
     var onSelectPlannedTasks: () -> Void
@@ -34,7 +35,7 @@ struct DayPlanWeekDayHeader: View {
             Spacer(minLength: 4)
 
             VStack(alignment: .trailing, spacing: 4) {
-                if dayTaskCounts.total > 0 {
+                if showsDayTaskButton, dayTaskCounts.total > 0 {
                     Button(action: onSelectPlannedTasks) {
                         Label(dayTaskTotalText, systemImage: "list.bullet")
                             .font(.caption2.weight(.semibold))
