@@ -188,17 +188,30 @@ Given the user starts checking checklist items for that daily occurrence
 When the app derives assumed completion state
 Then manual partial checklist progress suppresses assumed-done presentation until the routine is fully completed or progress is cleared
 
-### Planner Shows Assumed Done Routines
+### Planner Can Show Assumed Done Routines
 
 Area: Planner
-Decision links: [0268](../decisions/0268-show-assumed-done-routines-in-planner.md)
-Current behavior: [UI](../current-behavior/ui.md)
+Decision links: [0268](../decisions/0268-show-assumed-done-routines-in-planner.md), [0368](../decisions/0368-hide-assumed-done-calendar-layer-by-default.md)
+Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
+- `Tests/Shared/DayPlanCalendarFilterStateTests.swift`
 - `Tests/Shared/DayPlanPlannerStateTests.swift`
 
 Given an eligible daily routine has auto-assume done enabled
 When Planner derives automatic activity for an assumed-done day
-Then the routine appears as completed planner activity without creating a completion log
+Then the routine is available as synthetic completed planner activity without creating a completion log
+
+Given Planner Calendar filters are at their defaults
+When Calendar filters automatic activity for display
+Then synthetic assumed-done activity is hidden from the timed Calendar while recorded completed activity remains visible
+
+Given Planner Calendar filters are at their defaults
+When the user opens the right-side day task list for an assumed-done day
+Then the sidebar can show the synthetic activity in its `Assumed done` section
+
+Given the user enables the Calendar `Assumed done` layer
+When Calendar filters automatic activity for display
+Then synthetic assumed-done activity can appear in the Planner grid and Needs Time lane
 
 Given the user hides that assumed-done planner activity
 When Planner derives automatic activity again

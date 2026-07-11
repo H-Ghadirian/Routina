@@ -2359,18 +2359,37 @@ private struct DayPlanTimelinePanelContentView: View {
         )
         let visibleAutomaticSuggestionBlocksByDayKey = filteredTimelineBlocksByDayKey(
             automaticSuggestionBlocksByDayKey,
+            filters: calendarFilterState,
+            matchingTaskIDs: calendarSearchTaskIDs,
+            allTaskIDs: allTaskIDs,
+            isTaskFilterActive: isCalendarTaskFilterActive
+        )
+        let dayTaskListAutomaticSuggestionBlocksByDayKey = filteredTimelineBlocksByDayKey(
+            automaticSuggestionBlocksByDayKey,
+            filters: calendarFilterState,
+            includesAssumedDone: true,
             matchingTaskIDs: calendarSearchTaskIDs,
             allTaskIDs: allTaskIDs,
             isTaskFilterActive: isCalendarTaskFilterActive
         )
         let visibleUnplaceableAutomaticSuggestionBlocksByDayKey = filteredTimelineBlocksByDayKey(
             unplaceableAutomaticSuggestionBlocksByDayKey,
+            filters: calendarFilterState,
+            matchingTaskIDs: calendarSearchTaskIDs,
+            allTaskIDs: allTaskIDs,
+            isTaskFilterActive: isCalendarTaskFilterActive
+        )
+        let dayTaskListUnplaceableAutomaticSuggestionBlocksByDayKey = filteredTimelineBlocksByDayKey(
+            unplaceableAutomaticSuggestionBlocksByDayKey,
+            filters: calendarFilterState,
+            includesAssumedDone: true,
             matchingTaskIDs: calendarSearchTaskIDs,
             allTaskIDs: allTaskIDs,
             isTaskFilterActive: isCalendarTaskFilterActive
         )
         let visibleTimelineBlocksByDayKey = filteredTimelineBlocksByDayKey(
             timelineBlocksByDayKey,
+            filters: calendarFilterState,
             matchingTaskIDs: calendarSearchTaskIDs,
             allTaskIDs: allTaskIDs,
             isTaskFilterActive: isCalendarTaskFilterActive
@@ -2511,8 +2530,8 @@ private struct DayPlanTimelinePanelContentView: View {
                         timelineActivityBlocks: timelineSuggestionsVisible
                             ? dayTimelineActivityBlocks(
                                 on: date,
-                                automaticSuggestionBlocksByDayKey: visibleAutomaticSuggestionBlocksByDayKey,
-                                unplaceableAutomaticSuggestionBlocksByDayKey: visibleUnplaceableAutomaticSuggestionBlocksByDayKey
+                                automaticSuggestionBlocksByDayKey: dayTaskListAutomaticSuggestionBlocksByDayKey,
+                                unplaceableAutomaticSuggestionBlocksByDayKey: dayTaskListUnplaceableAutomaticSuggestionBlocksByDayKey
                             )
                             : [],
                         visibilitySignature: dayTaskListVisibilitySignature
@@ -2718,8 +2737,8 @@ private struct DayPlanTimelinePanelContentView: View {
                                 timelineActivityBlocks: timelineSuggestionsVisible
                                     ? dayTimelineActivityBlocks(
                                         on: date,
-                                        automaticSuggestionBlocksByDayKey: visibleAutomaticSuggestionBlocksByDayKey,
-                                        unplaceableAutomaticSuggestionBlocksByDayKey: visibleUnplaceableAutomaticSuggestionBlocksByDayKey
+                                        automaticSuggestionBlocksByDayKey: dayTaskListAutomaticSuggestionBlocksByDayKey,
+                                        unplaceableAutomaticSuggestionBlocksByDayKey: dayTaskListUnplaceableAutomaticSuggestionBlocksByDayKey
                                     )
                                     : [],
                                 visibilitySignature: dayTaskListVisibilitySignature
@@ -2874,13 +2893,19 @@ private struct DayPlanTimelinePanelContentView: View {
 
     private func filteredTimelineBlocksByDayKey(
         _ blocksByDayKey: [String: [DayPlanTimelineActivityBlock]],
+        filters: DayPlanCalendarFilterState,
+        includesAssumedDone: Bool = false,
         matchingTaskIDs: Set<UUID>,
         allTaskIDs: Set<UUID>,
         isTaskFilterActive: Bool
     ) -> [String: [DayPlanTimelineActivityBlock]] {
         return blocksByDayKey.mapValues { blocks in
             blocks.filter { activity in
-                matchesCalendarSearch(
+                guard filters.includesTimelineActivity(
+                    activity,
+                    includesAssumedDone: includesAssumedDone
+                ) else { return false }
+                return matchesCalendarSearch(
                     taskID: activity.block.taskID,
                     title: activity.block.titleSnapshot,
                     emoji: activity.block.emojiSnapshot,
@@ -5631,6 +5656,11 @@ private struct DayPlanCalendarFilterSidebar: View {
                     isOn: timelineSuggestionsBinding,
                     subtitle: timelineSuggestionsAvailable ? nil : "Off in Settings",
                     isEnabled: timelineSuggestionsAvailable
+                )
+                filterToggle(
+                    title: "Assumed done",
+                    systemImage: "checkmark.circle",
+                    isOn: filterBinding(\.showsAssumedDone)
                 )
                 if availability.includesEvents {
                     filterToggle(

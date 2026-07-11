@@ -5,6 +5,7 @@ struct DayPlanCalendarFilterState: Equatable {
     var showsPlannedTasks = true
     var showsAllDayTasks = true
     var showsTimelineSuggestions = true
+    var showsAssumedDone = false
     var showsEvents = true
     var showsFocus = true
     var showsAway = true
@@ -49,8 +50,20 @@ struct DayPlanCalendarFilterState: Equatable {
     }
 
     func summaryText(availability: DayPlanCalendarFilterAvailability) -> String {
-        let count = hiddenLayerCount(availability: availability)
-        return count == 0 ? "All layers visible" : "\(count) \(count == 1 ? "layer" : "layers") hidden"
+        let hiddenCount = hiddenLayerCount(availability: availability)
+        if hiddenCount == 0 {
+            return showsAssumedDone ? "Showing assumed done" : "Default layers visible"
+        }
+
+        let hiddenText = "\(hiddenCount) \(hiddenCount == 1 ? "layer" : "layers") hidden"
+        return showsAssumedDone ? "\(hiddenText), showing assumed done" : hiddenText
+    }
+
+    func includesTimelineActivity(
+        _ activity: DayPlanTimelineActivityBlock,
+        includesAssumedDone: Bool = false
+    ) -> Bool {
+        includesAssumedDone || showsAssumedDone || !activity.source.isSyntheticAssumedDone
     }
 }
 
@@ -64,6 +77,7 @@ struct DayPlanDayTaskListVisibilitySignature: Hashable {
     var showsPlannedTasks: Bool
     var showsAllDayTasks: Bool
     var showsTimelineSuggestions: Bool
+    var showsAssumedDone: Bool
     var showsEvents: Bool
     var showsFocus: Bool
     var showsAway: Bool
@@ -91,6 +105,7 @@ struct DayPlanDayTaskListVisibilitySignature: Hashable {
         showsPlannedTasks = normalizedFilters.showsPlannedTasks
         showsAllDayTasks = normalizedFilters.showsAllDayTasks
         showsTimelineSuggestions = normalizedFilters.showsTimelineSuggestions
+        showsAssumedDone = normalizedFilters.showsAssumedDone
         showsEvents = normalizedFilters.showsEvents
         showsFocus = normalizedFilters.showsFocus
         showsAway = normalizedFilters.showsAway

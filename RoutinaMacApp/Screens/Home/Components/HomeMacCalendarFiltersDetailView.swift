@@ -37,6 +37,11 @@ struct HomeMacCalendarFiltersDetailView: View {
                         subtitle: timelineSuggestionsAvailable ? nil : "Off in Settings",
                         isEnabled: timelineSuggestionsAvailable
                     )
+                    filterToggle(
+                        title: "Assumed done",
+                        systemImage: "checkmark.circle",
+                        isOn: filterBinding(\.showsAssumedDone)
+                    )
                     if availability.includesEvents {
                         filterToggle(
                             title: "Events",
