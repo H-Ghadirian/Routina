@@ -546,6 +546,8 @@ struct HomeFeature {
         case deleteTasks([UUID])
         case markTaskDone(UUID)
         case markTaskMissed(UUID)
+        case confirmAssumedTaskDone(UUID)
+        case markAssumedTaskMissed(UUID)
         case markTaskCanceled(UUID)
         case moveTodoToState(UUID, TodoState)
         case moveTodoOnBoard(taskID: UUID, targetState: TodoState, orderedTaskIDs: [UUID])
@@ -910,6 +912,20 @@ struct HomeFeature {
                     doneStats: &doneStats
                 )
             },
+            confirmAssumedDone: { id, tasks, doneStats in
+                taskLifecycleCoordinator().confirmAssumedTaskDone(
+                    taskID: id,
+                    tasks: tasks,
+                    doneStats: &doneStats
+                )
+            },
+            markAssumedMissed: { id, tasks, doneStats in
+                taskLifecycleCoordinator().markAssumedTaskMissed(
+                    taskID: id,
+                    tasks: tasks,
+                    doneStats: &doneStats
+                )
+            },
             markCanceled: { id, tasks, doneStats in
                 taskLifecycleCoordinator().markTaskCanceled(
                     taskID: id,
@@ -1223,6 +1239,12 @@ struct HomeFeature {
 
             case let .markTaskMissed(id):
                 return taskLifecycleCommandRouter().markTaskMissed(id, state: &state)
+
+            case let .confirmAssumedTaskDone(id):
+                return taskLifecycleCommandRouter().confirmAssumedTaskDone(id, state: &state)
+
+            case let .markAssumedTaskMissed(id):
+                return taskLifecycleCommandRouter().markAssumedTaskMissed(id, state: &state)
 
             case let .markTaskCanceled(id):
                 return taskLifecycleCommandRouter().markTaskCanceled(id, state: &state)

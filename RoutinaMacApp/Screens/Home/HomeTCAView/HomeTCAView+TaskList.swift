@@ -125,6 +125,57 @@ extension HomeTCAView {
         .padding(.vertical, 2)
     }
 
+    @ViewBuilder
+    func assumedDoneHoverActions(
+        for task: HomeFeature.RoutineDisplay,
+        isVisible: Bool
+    ) -> some View {
+        if task.isAssumedDoneToday {
+            HStack(spacing: 6) {
+                assumedDoneHoverButton(
+                    systemImage: "checkmark",
+                    tint: .green,
+                    accessibilityLabel: "I did it"
+                ) {
+                    confirmAssumedTaskDone(task.taskID)
+                }
+
+                assumedDoneHoverButton(
+                    systemImage: "xmark",
+                    tint: .red,
+                    accessibilityLabel: "I didn't do it"
+                ) {
+                    markAssumedTaskMissed(task.taskID)
+                }
+            }
+            .padding(4)
+            .routinaGlassPill(tint: .secondary, tintOpacity: 0.12)
+            .opacity(isVisible ? 1 : 0)
+            .allowsHitTesting(isVisible)
+            .animation(.easeInOut(duration: 0.12), value: isVisible)
+        }
+    }
+
+    private func assumedDoneHoverButton(
+        systemImage: String,
+        tint: Color,
+        accessibilityLabel: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(width: 24, height: 24)
+                .background(tint, in: Circle())
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityLabel)
+        .help(accessibilityLabel)
+        .contentShape(Circle())
+    }
+
     private func taskIcon(for task: HomeFeature.RoutineDisplay) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -1423,7 +1474,7 @@ extension HomeTCAView {
             metadataPresenter: metadataPresenter,
             rowVisibility: rowVisibility
         )
-            .padding(.trailing, macTaskSourceRowColorBadgeTrailingSpace(for: task, rowVisibility: rowVisibility))
+            .padding(.trailing, macTaskSourceRowTrailingSpace(for: task, rowVisibility: rowVisibility))
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
             .routinaGlassCard(
@@ -1442,8 +1493,18 @@ extension HomeTCAView {
             .overlay(alignment: .topTrailing) {
                 macTaskSourceRowColorBadge(for: task, rowVisibility: rowVisibility)
             }
+            .overlay(alignment: .trailing) {
+                assumedDoneHoverActions(
+                    for: task,
+                    isVisible: hoveredAssumedDoneTaskID == task.taskID
+                )
+                .padding(.trailing, 12)
+            }
             .id(task.taskID)
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .onHover { isHovered in
+                hoveredAssumedDoneTaskID = isHovered && task.isAssumedDoneToday ? task.taskID : nil
+            }
             .onTapGesture {
                 selectMacTaskSourceListTask(task.taskID, scrollAnchor: nil)
             }
@@ -1563,6 +1624,16 @@ extension HomeTCAView {
         rowVisibility: HomeTaskRowVisibility
     ) -> CGFloat {
         rowVisibility.shows(.colorBadge) && task.color.swiftUIColor != nil ? 15 : 0
+    }
+
+    private func macTaskSourceRowTrailingSpace(
+        for task: HomeFeature.RoutineDisplay,
+        rowVisibility: HomeTaskRowVisibility
+    ) -> CGFloat {
+        max(
+            macTaskSourceRowColorBadgeTrailingSpace(for: task, rowVisibility: rowVisibility),
+            task.isAssumedDoneToday ? 76 : 0
+        )
     }
 
     @ViewBuilder

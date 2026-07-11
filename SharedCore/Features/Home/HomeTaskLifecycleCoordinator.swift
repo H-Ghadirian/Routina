@@ -69,6 +69,56 @@ struct HomeTaskLifecycleCoordinator<Action> {
         )
     }
 
+    func confirmAssumedTaskDone(
+        taskID: UUID,
+        tasks: [RoutineTask],
+        doneStats: inout HomeDoneStats
+    ) -> Effect<Action>? {
+        let referenceDate = referenceDate()
+        guard let update = HomeTaskLifecycleSupport.confirmAssumedTaskDone(
+            taskID: taskID,
+            referenceDate: referenceDate,
+            calendar: calendar,
+            tasks: tasks,
+            doneStats: &doneStats
+        ) else {
+            return nil
+        }
+
+        return HomeTaskLifecycleExecutionSupport.confirmAssumedTaskDone(
+            update,
+            calendar: calendar,
+            modelContext: modelContext,
+            cancelNotification: cancelNotification,
+            scheduleNotification: scheduleNotification
+        )
+    }
+
+    func markAssumedTaskMissed(
+        taskID: UUID,
+        tasks: [RoutineTask],
+        doneStats: inout HomeDoneStats
+    ) -> Effect<Action>? {
+        let referenceDate = referenceDate()
+        guard let update = HomeTaskLifecycleSupport.markAssumedTaskMissed(
+            taskID: taskID,
+            referenceDate: referenceDate,
+            calendar: calendar,
+            tasks: tasks,
+            doneStats: &doneStats
+        ) else {
+            return nil
+        }
+
+        return HomeTaskLifecycleExecutionSupport.markAssumedTaskMissed(
+            update,
+            calendar: calendar,
+            modelContext: modelContext,
+            cancelNotification: cancelNotification,
+            scheduleNotification: scheduleNotification
+        )
+    }
+
     func markTaskCanceled(
         taskID: UUID,
         tasks: [RoutineTask],

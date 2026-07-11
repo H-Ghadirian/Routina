@@ -2614,6 +2614,12 @@ private struct DayPlanTimelinePanelContentView: View {
                 onOpenDayTaskDetails: { taskID in
                     onOpenTaskDetails?(taskID)
                 },
+                onConfirmAssumedDayTask: { item, date in
+                    confirmAssumedDayTask(item, on: date)
+                },
+                onMarkAssumedDayTaskMissed: { item, date in
+                    markAssumedDayTaskMissed(item, on: date)
+                },
                 onSelectSlot: { date, minute in
                     planner.selectSlot(on: date, startMinute: minute, calendar: calendar, context: modelContext)
                 },
@@ -2809,6 +2815,12 @@ private struct DayPlanTimelinePanelContentView: View {
                             calendar: calendar,
                             isTaskOpenable: { taskID in
                                 onOpenTaskDetails != nil && currentTaskIDs.contains(taskID)
+                            },
+                            onConfirmAssumedDayTask: { item, date in
+                                confirmAssumedDayTask(item, on: date)
+                            },
+                            onMarkAssumedDayTaskMissed: { item, date in
+                                markAssumedDayTaskMissed(item, on: date)
                             },
                             onOpenTaskDetails: { taskID in
                                 dismiss()
@@ -3602,6 +3614,44 @@ private struct DayPlanTimelinePanelContentView: View {
         planner.selectSlot(on: date, startMinute: startMinute, calendar: calendar, context: modelContext)
         planner.selectTask(task)
         planner.commitBlock(task: task, calendar: calendar, context: modelContext)
+    }
+
+    private func confirmAssumedDayTask(_ item: DayPlanDayTaskListItem, on date: Date) {
+        guard item.section == .assumedDone else { return }
+        let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext)
+        let referenceDate = Date()
+        do {
+            _ = try RoutineLogHistory.confirmTaskCompletions(
+                taskID: item.taskID,
+                on: [date],
+                context: context,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+            WidgetStatsService.refreshAndReload(using: context)
+            NotificationCenter.default.postRoutineDidUpdate()
+        } catch {
+            NSLog("Failed to confirm assumed planner day task: \(error.localizedDescription)")
+        }
+    }
+
+    private func markAssumedDayTaskMissed(_ item: DayPlanDayTaskListItem, on date: Date) {
+        guard item.section == .assumedDone else { return }
+        let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext)
+        let referenceDate = Date()
+        do {
+            _ = try RoutineLogHistory.markAssumedCompletionMissed(
+                taskID: item.taskID,
+                on: date,
+                context: context,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+            WidgetStatsService.refreshAndReload(using: context)
+            NotificationCenter.default.postRoutineDidUpdate()
+        } catch {
+            NSLog("Failed to mark assumed planner day task missed: \(error.localizedDescription)")
+        }
     }
 
     private func createTaskBlock(
@@ -5878,6 +5928,8 @@ private struct DayPlanDayTaskListSidebar: View {
     let taskTint: (UUID) -> Color
     let calendar: Calendar
     let isTaskOpenable: (UUID) -> Bool
+    let onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
+    let onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
     let onOpenTaskDetails: (UUID) -> Void
     let onDismiss: () -> Void
 
@@ -5899,7 +5951,9 @@ private struct DayPlanDayTaskListSidebar: View {
                     date: date,
                     calendar: calendar,
                     isTaskOpenable: isTaskOpenable,
-                    onOpenTaskDetails: onOpenTaskDetails
+                    onOpenTaskDetails: onOpenTaskDetails,
+                    onConfirmAssumedDayTask: onConfirmAssumedDayTask,
+                    onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed
                 )
             }
         }

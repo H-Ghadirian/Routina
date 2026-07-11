@@ -27,6 +27,14 @@ extension HomeTCAView {
         )
     }
 
+    func confirmAssumedTaskDone(_ taskID: UUID) {
+        store.send(.confirmAssumedTaskDone(taskID))
+    }
+
+    func markAssumedTaskMissed(_ taskID: UUID) {
+        store.send(.markAssumedTaskMissed(taskID))
+    }
+
     func routineNavigationRow(
         for task: HomeFeature.RoutineDisplay,
         rowNumber: Int,

@@ -73,6 +73,8 @@ struct DayPlanWeekCalendarView: View {
     var dayTaskTint: (UUID) -> Color = { _ in .accentColor }
     var isDayTaskOpenable: (UUID) -> Bool = { _ in false }
     var onOpenDayTaskDetails: (UUID) -> Void = { _ in }
+    var onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void = { _, _ in }
+    var onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void = { _, _ in }
     var onSelectSlot: (Date, Int) -> Void
     var onSelectBlock: (DayPlanBlock, Date) -> Void
     var onOpenBlockDetails: (DayPlanBlock, Date) -> Void
@@ -154,7 +156,9 @@ struct DayPlanWeekCalendarView: View {
                         dayTaskListItems: dayTaskListItems,
                         taskTint: dayTaskTint,
                         isTaskOpenable: isDayTaskOpenable,
-                        onOpenTaskDetails: onOpenDayTaskDetails
+                        onOpenTaskDetails: onOpenDayTaskDetails,
+                        onConfirmAssumedDayTask: onConfirmAssumedDayTask,
+                        onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed
                     )
                 } else {
                 DayPlanUnplaceableActivityLaneView(
@@ -948,6 +952,8 @@ private struct DayPlanDayTaskColumnsView: View {
     var taskTint: (UUID) -> Color
     var isTaskOpenable: (UUID) -> Bool
     var onOpenTaskDetails: (UUID) -> Void
+    var onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
+    var onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
 
     var body: some View {
         GeometryReader { proxy in
@@ -977,7 +983,9 @@ private struct DayPlanDayTaskColumnsView: View {
                             taskTint: taskTint,
                             calendar: calendar,
                             isTaskOpenable: isTaskOpenable,
-                            onOpenTaskDetails: onOpenTaskDetails
+                            onOpenTaskDetails: onOpenTaskDetails,
+                            onConfirmAssumedDayTask: onConfirmAssumedDayTask,
+                            onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed
                         )
                         .frame(width: dayWidth, alignment: .topLeading)
                         .frame(minHeight: proxy.size.height, alignment: .topLeading)
@@ -1000,6 +1008,8 @@ private struct DayPlanDayTaskColumnView: View {
     var calendar: Calendar
     var isTaskOpenable: (UUID) -> Bool
     var onOpenTaskDetails: (UUID) -> Void
+    var onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
+    var onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -1013,6 +1023,8 @@ private struct DayPlanDayTaskColumnView: View {
                     calendar: calendar,
                     isTaskOpenable: isTaskOpenable,
                     onOpenTaskDetails: onOpenTaskDetails,
+                    onConfirmAssumedDayTask: onConfirmAssumedDayTask,
+                    onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed,
                     sectionSpacing: 12
                 )
             }
@@ -1048,6 +1060,8 @@ struct DayPlanDayTaskListContentView: View {
     let calendar: Calendar
     let isTaskOpenable: (UUID) -> Bool
     let onOpenTaskDetails: (UUID) -> Void
+    let onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
+    let onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
     var sectionSpacing: CGFloat = 14
 
     var body: some View {
@@ -1063,7 +1077,9 @@ struct DayPlanDayTaskListContentView: View {
                         date: date,
                         calendar: calendar,
                         isTaskOpenable: isTaskOpenable,
-                        onOpenTaskDetails: onOpenTaskDetails
+                        onOpenTaskDetails: onOpenTaskDetails,
+                        onConfirmAssumedDayTask: onConfirmAssumedDayTask,
+                        onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed
                     )
                 }
             }
@@ -1084,6 +1100,8 @@ private struct DayPlanDayTaskListContentSectionView: View {
     let calendar: Calendar
     let isTaskOpenable: (UUID) -> Bool
     let onOpenTaskDetails: (UUID) -> Void
+    let onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
+    let onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -1113,7 +1131,9 @@ private struct DayPlanDayTaskListContentSectionView: View {
                     date: date,
                     calendar: calendar,
                     isOpenable: isTaskOpenable(item.taskID),
-                    onOpenTaskDetails: onOpenTaskDetails
+                    onOpenTaskDetails: onOpenTaskDetails,
+                    onConfirmAssumedDayTask: onConfirmAssumedDayTask,
+                    onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed
                 )
             }
         }
@@ -1128,9 +1148,13 @@ private struct DayPlanDayTaskListContentRow: View {
     let calendar: Calendar
     let isOpenable: Bool
     let onOpenTaskDetails: (UUID) -> Void
+    let onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
+    let onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
+
+    @State private var isHovered = false
 
     var body: some View {
-        if isOpenable {
+        if isOpenable && item.section != .assumedDone {
             Button {
                 onOpenTaskDetails(item.taskID)
             } label: {
@@ -1139,8 +1163,17 @@ private struct DayPlanDayTaskListContentRow: View {
             .buttonStyle(.plain)
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             .help("Open \(item.title)")
+            .onHover { isHovered = $0 }
         } else {
             rowContent
+                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .onTapGesture {
+                    if isOpenable {
+                        onOpenTaskDetails(item.taskID)
+                    }
+                }
+                .help(isOpenable ? "Open \(item.title)" : "")
+                .onHover { isHovered = $0 }
         }
     }
 
@@ -1165,6 +1198,7 @@ private struct DayPlanDayTaskListContentRow: View {
             Spacer(minLength: 6)
         }
         .padding(10)
+        .padding(.trailing, item.section == .assumedDone ? 64 : 0)
         .frame(maxWidth: .infinity, alignment: .leading)
         .routinaGlassCard(
             cornerRadius: 8,
@@ -1172,6 +1206,57 @@ private struct DayPlanDayTaskListContentRow: View {
             tintOpacity: 0.08,
             interactive: isOpenable
         )
+        .overlay(alignment: .trailing) {
+            if item.section == .assumedDone {
+                assumedDoneActions
+                    .padding(.trailing, 8)
+            }
+        }
+    }
+
+    private var assumedDoneActions: some View {
+        HStack(spacing: 5) {
+            assumedDoneButton(
+                systemImage: "checkmark",
+                tint: .green,
+                accessibilityLabel: "I did it"
+            ) {
+                onConfirmAssumedDayTask(item, date)
+            }
+
+            assumedDoneButton(
+                systemImage: "xmark",
+                tint: .red,
+                accessibilityLabel: "I didn't do it"
+            ) {
+                onMarkAssumedDayTaskMissed(item, date)
+            }
+        }
+        .padding(4)
+        .routinaGlassPill(tint: .secondary, tintOpacity: 0.12)
+        .opacity(isHovered ? 1 : 0)
+        .allowsHitTesting(isHovered)
+        .animation(.easeInOut(duration: 0.12), value: isHovered)
+    }
+
+    private func assumedDoneButton(
+        systemImage: String,
+        tint: Color,
+        accessibilityLabel: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(width: 22, height: 22)
+                .background(tint, in: Circle())
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityLabel)
+        .help(accessibilityLabel)
+        .contentShape(Circle())
     }
 
     private var placementText: String {

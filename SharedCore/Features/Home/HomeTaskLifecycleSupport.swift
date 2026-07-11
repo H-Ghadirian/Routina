@@ -46,6 +46,12 @@ struct HomeMarkTaskMissedUpdate: Equatable {
     var referenceDate: Date
 }
 
+struct HomeResolveAssumedTaskUpdate: Equatable {
+    var taskID: UUID
+    var resolutionDate: Date
+    var referenceDate: Date
+}
+
 struct HomeMarkTaskCanceledUpdate: Equatable {
     var taskID: UUID
     var canceledDate: Date
@@ -246,6 +252,83 @@ enum HomeTaskLifecycleSupport {
         return HomeMarkTaskMissedUpdate(taskID: taskID, missedDate: missedDate, referenceDate: referenceDate)
     }
 
+    static func confirmAssumedTaskDone(
+        taskID: UUID,
+        referenceDate: Date,
+        calendar: Calendar,
+        tasks: [RoutineTask],
+        doneStats: inout HomeDoneStats
+    ) -> HomeResolveAssumedTaskUpdate? {
+        guard let task = assumedTask(
+            taskID: taskID,
+            referenceDate: referenceDate,
+            calendar: calendar,
+            tasks: tasks,
+            doneStats: doneStats
+        ) else {
+            return nil
+        }
+
+        let day = RoutineAssumedCompletion.currentOccurrenceDay(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let completionDate = RoutineAssumedCompletion.completionTimestamp(
+            for: task,
+            on: day,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        doneStats.totalCount += 1
+        doneStats.countsByTaskID[taskID, default: 0] += 1
+        doneStats.completedDatesByTaskID[taskID, default: []].insert(completionDate)
+        removeDate(completionDate, for: taskID, from: &doneStats.missedDatesByTaskID, calendar: calendar)
+        removeDate(completionDate, for: taskID, from: &doneStats.canceledDatesByTaskID, calendar: calendar)
+        return HomeResolveAssumedTaskUpdate(
+            taskID: taskID,
+            resolutionDate: completionDate,
+            referenceDate: referenceDate
+        )
+    }
+
+    static func markAssumedTaskMissed(
+        taskID: UUID,
+        referenceDate: Date,
+        calendar: Calendar,
+        tasks: [RoutineTask],
+        doneStats: inout HomeDoneStats
+    ) -> HomeResolveAssumedTaskUpdate? {
+        guard let task = assumedTask(
+            taskID: taskID,
+            referenceDate: referenceDate,
+            calendar: calendar,
+            tasks: tasks,
+            doneStats: doneStats
+        ) else {
+            return nil
+        }
+
+        let day = RoutineAssumedCompletion.currentOccurrenceDay(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let missedDate = RoutineAssumedCompletion.completionTimestamp(
+            for: task,
+            on: day,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        doneStats.missedDatesByTaskID[taskID, default: []].insert(missedDate)
+        removeDate(missedDate, for: taskID, from: &doneStats.canceledDatesByTaskID, calendar: calendar)
+        return HomeResolveAssumedTaskUpdate(
+            taskID: taskID,
+            resolutionDate: missedDate,
+            referenceDate: referenceDate
+        )
+    }
+
     static func markTaskCanceled(
         taskID: UUID,
         referenceDate: Date,
@@ -400,6 +483,37 @@ enum HomeTaskLifecycleSupport {
         }
 
         return unresolvedDates.first
+    }
+
+    private static func assumedTask(
+        taskID: UUID,
+        referenceDate: Date,
+        calendar: Calendar,
+        tasks: [RoutineTask],
+        doneStats: HomeDoneStats
+    ) -> RoutineTask? {
+        guard let task = tasks.first(where: {
+            $0.id == taskID && !$0.isArchived(referenceDate: referenceDate, calendar: calendar)
+        }) else {
+            return nil
+        }
+        let day = RoutineAssumedCompletion.currentOccurrenceDay(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        guard !doneStats.hasCompletedDate(taskID: taskID, date: day, calendar: calendar),
+              !doneStats.hasResolvedMissedDate(taskID: taskID, missedDate: day, calendar: calendar),
+              RoutineAssumedCompletion.isAssumedDone(
+                for: task,
+                on: day,
+                referenceDate: referenceDate,
+                calendar: calendar
+              )
+        else {
+            return nil
+        }
+        return task
     }
 
     private static func removeDate(

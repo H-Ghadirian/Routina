@@ -485,6 +485,7 @@ enum DayPlanTimelineTasks {
                             referenceDate: dateInfo.assumptionReferenceDate,
                             recordedCompletionDayKeys: recordedDayIndexes.completed[taskInfo.id, default: []],
                             recordedCancellationDayKeys: recordedDayIndexes.canceled[taskInfo.id, default: []],
+                            recordedMissedDayKeys: recordedDayIndexes.missed[taskInfo.id, default: []],
                             calendar: calendar
                           )
                     else {
@@ -582,6 +583,7 @@ enum DayPlanTimelineTasks {
     ) -> DayPlanTimelineRecordedDayIndexes {
         var completed: [UUID: Set<String>] = [:]
         var canceled: [UUID: Set<String>] = [:]
+        var missed: [UUID: Set<String>] = [:]
 
         for taskInfo in taskInfosByID.values {
             if let lastDone = taskInfo.lastDone {
@@ -608,11 +610,11 @@ enum DayPlanTimelineTasks {
             case .canceled:
                 canceled[log.taskID, default: []].insert(dayKey)
             case .missed:
-                break
+                missed[log.taskID, default: []].insert(dayKey)
             }
         }
 
-        return DayPlanTimelineRecordedDayIndexes(completed: completed, canceled: canceled)
+        return DayPlanTimelineRecordedDayIndexes(completed: completed, canceled: canceled, missed: missed)
     }
 
     static func taskIDs(
@@ -1024,6 +1026,7 @@ private struct DayPlanTimelineDateInfo {
 private struct DayPlanTimelineRecordedDayIndexes {
     var completed: [UUID: Set<String>]
     var canceled: [UUID: Set<String>]
+    var missed: [UUID: Set<String>]
 }
 
 private struct DayPlanTimelineTaskInfo {
@@ -1096,6 +1099,7 @@ private struct DayPlanTimelineTaskInfo {
         referenceDate: Date,
         recordedCompletionDayKeys: Set<String>,
         recordedCancellationDayKeys: Set<String>,
+        recordedMissedDayKeys: Set<String>,
         calendar: Calendar
     ) -> Bool {
         guard isAssumedCompletionEligible else { return false }
@@ -1123,6 +1127,10 @@ private struct DayPlanTimelineTaskInfo {
         }
 
         if recordedCancellationDayKeys.contains(dayKey) {
+            return false
+        }
+
+        if recordedMissedDayKeys.contains(dayKey) {
             return false
         }
 

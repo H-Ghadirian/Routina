@@ -10,6 +10,8 @@ protocol HomeFeatureTaskLifecycleCommandState {
 struct HomeFeatureTaskLifecycleCommandRouter<State: HomeFeatureTaskLifecycleCommandState, Action> {
     var markDone: (UUID, inout [RoutineTask], inout HomeDoneStats) -> Effect<Action>?
     var markMissed: (UUID, [RoutineTask], inout HomeDoneStats) -> Effect<Action>?
+    var confirmAssumedDone: (UUID, [RoutineTask], inout HomeDoneStats) -> Effect<Action>?
+    var markAssumedMissed: (UUID, [RoutineTask], inout HomeDoneStats) -> Effect<Action>?
     var markCanceled: (UUID, [RoutineTask], inout HomeDoneStats) -> Effect<Action>?
     var pause: (UUID, inout [RoutineTask]) -> Effect<Action>?
     var resume: (UUID, inout [RoutineTask]) -> Effect<Action>?
@@ -44,6 +46,41 @@ struct HomeFeatureTaskLifecycleCommandRouter<State: HomeFeatureTaskLifecycleComm
             return .none
         }
         state.doneStats = doneStats
+        return finishMutation(effect, &state)
+    }
+
+    func confirmAssumedTaskDone(_ id: UUID, state: inout State) -> Effect<Action> {
+        var doneStats = state.doneStats
+        let previousCompletedDates = doneStats.completedDatesByTaskID[id] ?? []
+        guard let effect = confirmAssumedDone(id, state.routineTasks, &doneStats) else {
+            return .none
+        }
+        state.doneStats = doneStats
+        let addedCompletionDates = (doneStats.completedDatesByTaskID[id] ?? [])
+            .subtracting(previousCompletedDates)
+        upsertOptimisticTimelineLogs(
+            taskID: id,
+            completionDates: addedCompletionDates,
+            timelineLogs: &state.timelineLogs
+        )
+        return finishMutation(effect, &state)
+    }
+
+    func markAssumedTaskMissed(_ id: UUID, state: inout State) -> Effect<Action> {
+        var doneStats = state.doneStats
+        let previousMissedDates = doneStats.missedDatesByTaskID[id] ?? []
+        guard let effect = markAssumedMissed(id, state.routineTasks, &doneStats) else {
+            return .none
+        }
+        state.doneStats = doneStats
+        let addedMissedDates = (doneStats.missedDatesByTaskID[id] ?? [])
+            .subtracting(previousMissedDates)
+        upsertOptimisticTimelineLogs(
+            taskID: id,
+            dates: addedMissedDates,
+            kind: .missed,
+            timelineLogs: &state.timelineLogs
+        )
         return finishMutation(effect, &state)
     }
 
@@ -116,6 +153,40 @@ struct HomeFeatureTaskLifecycleCommandRouter<State: HomeFeatureTaskLifecycleComm
                     timestamp: completionDate,
                     taskID: taskID,
                     kind: .completed
+                )
+            )
+        }
+
+        timelineLogs.sort {
+            let lhs = $0.timestamp ?? .distantPast
+            let rhs = $1.timestamp ?? .distantPast
+            return lhs > rhs
+        }
+    }
+
+    private func upsertOptimisticTimelineLogs(
+        taskID: UUID,
+        dates: Set<Date>,
+        kind: RoutineLogKind,
+        timelineLogs: inout [RoutineLog]
+    ) {
+        guard !dates.isEmpty else { return }
+
+        for date in dates {
+            guard !timelineLogs.contains(where: { log in
+                log.taskID == taskID
+                    && log.kind == kind
+                    && log.timestamp == date
+            }) else {
+                continue
+            }
+
+            timelineLogs.append(
+                RoutineLog(
+                    id: UUID(),
+                    timestamp: date,
+                    taskID: taskID,
+                    kind: kind
                 )
             )
         }

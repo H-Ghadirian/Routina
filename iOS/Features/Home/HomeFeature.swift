@@ -660,6 +660,20 @@ struct HomeFeature {
                     doneStats: &doneStats
                 )
             },
+            confirmAssumedDone: { id, tasks, doneStats in
+                taskLifecycleCoordinator().confirmAssumedTaskDone(
+                    taskID: id,
+                    tasks: tasks,
+                    doneStats: &doneStats
+                )
+            },
+            markAssumedMissed: { id, tasks, doneStats in
+                taskLifecycleCoordinator().markAssumedTaskMissed(
+                    taskID: id,
+                    tasks: tasks,
+                    doneStats: &doneStats
+                )
+            },
             markCanceled: { id, tasks, doneStats in
                 taskLifecycleCoordinator().markTaskCanceled(
                     taskID: id,

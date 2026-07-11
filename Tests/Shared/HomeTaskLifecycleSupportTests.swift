@@ -183,6 +183,68 @@ struct HomeTaskLifecycleSupportTests {
     }
 
     @Test
+    func confirmAssumedTaskDone_recordsOptimisticCompletionForToday() {
+        let calendar = makeTestCalendar()
+        let referenceDate = makeDate("2026-05-08T10:00:00Z")
+        let task = RoutineTask(
+            name: "Review notes",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 8, minute: 0)),
+            createdAt: makeDate("2026-05-01T10:00:00Z"),
+            autoAssumeDailyDone: true
+        )
+        var doneStats = HomeDoneStats()
+
+        let update = HomeTaskLifecycleSupport.confirmAssumedTaskDone(
+            taskID: task.id,
+            referenceDate: referenceDate,
+            calendar: calendar,
+            tasks: [task],
+            doneStats: &doneStats
+        )
+
+        #expect(update == HomeResolveAssumedTaskUpdate(
+            taskID: task.id,
+            resolutionDate: referenceDate,
+            referenceDate: referenceDate
+        ))
+        #expect(doneStats.totalCount == 1)
+        #expect(doneStats.countsByTaskID[task.id] == 1)
+        #expect(doneStats.completedDatesByTaskID[task.id] == [referenceDate])
+    }
+
+    @Test
+    func markAssumedTaskMissed_recordsOptimisticMissForToday() {
+        let calendar = makeTestCalendar()
+        let referenceDate = makeDate("2026-05-08T10:00:00Z")
+        let task = RoutineTask(
+            name: "Review notes",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 8, minute: 0)),
+            createdAt: makeDate("2026-05-01T10:00:00Z"),
+            autoAssumeDailyDone: true
+        )
+        var doneStats = HomeDoneStats()
+
+        let update = HomeTaskLifecycleSupport.markAssumedTaskMissed(
+            taskID: task.id,
+            referenceDate: referenceDate,
+            calendar: calendar,
+            tasks: [task],
+            doneStats: &doneStats
+        )
+
+        #expect(update == HomeResolveAssumedTaskUpdate(
+            taskID: task.id,
+            resolutionDate: referenceDate,
+            referenceDate: referenceDate
+        ))
+        #expect(doneStats.totalCount == 0)
+        #expect(doneStats.countsByTaskID.isEmpty)
+        #expect(doneStats.missedDatesByTaskID[task.id] == [referenceDate])
+    }
+
+    @Test
     func markTaskCanceled_acknowledgesMissedOccurrenceAsCanceledWithoutCompletionCount() {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current

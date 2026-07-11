@@ -69,6 +69,10 @@ enum RoutineAssumedCompletion {
             return false
         }
 
+        if hasRecordedMiss(for: task, on: selectedDay, logs: logs, calendar: calendar) {
+            return false
+        }
+
         if task.isChecklistInProgress(referenceDate: selectedDay, calendar: calendar) {
             return false
         }
@@ -242,6 +246,19 @@ enum RoutineAssumedCompletion {
         return logs.contains { log in
             guard let timestamp = log.timestamp else { return false }
             return log.kind == .canceled
+                && isRecordedDate(timestamp, for: task, on: day, calendar: calendar)
+        }
+    }
+
+    private static func hasRecordedMiss(
+        for task: RoutineTask,
+        on day: Date,
+        logs: [RoutineLog],
+        calendar: Calendar
+    ) -> Bool {
+        logs.contains { log in
+            guard let timestamp = log.timestamp else { return false }
+            return log.kind == .missed
                 && isRecordedDate(timestamp, for: task, on: day, calendar: calendar)
         }
     }

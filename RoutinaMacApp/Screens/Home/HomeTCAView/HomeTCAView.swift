@@ -276,6 +276,7 @@ struct HomeTCAView: View {
     @StateObject var macTaskListPresentationCache = HomeMacTaskListPresentationCache()
     @State var dayPlanUnplannedCompletedFilterDate: Date?
     @State var macSidebarTaskScrollRequest: MacSidebarTaskScrollRequest?
+    @State var hoveredAssumedDoneTaskID: UUID?
     @State var macTimelineSidebarPresentationID = UUID()
     @State var macTimelineSidebarPositionedPresentationID: UUID?
     @State var macTimelineSidebarScrollRequest: MacTimelineSidebarScrollRequest?

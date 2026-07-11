@@ -136,6 +136,90 @@ enum HomeTaskLifecycleExecutionSupport {
         }
     }
 
+    static func confirmAssumedTaskDone<Action>(
+        _ update: HomeResolveAssumedTaskUpdate,
+        calendar: Calendar,
+        modelContext: @escaping @MainActor @Sendable () -> ModelContext,
+        cancelNotification: @escaping @Sendable (String) async -> Void,
+        scheduleNotification: @escaping @Sendable (NotificationPayload) async -> Void
+    ) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
+                guard let task = try RoutineLogHistory.confirmTaskCompletions(
+                    taskID: update.taskID,
+                    on: [update.resolutionDate],
+                    context: context,
+                    referenceDate: update.referenceDate,
+                    calendar: calendar
+                ) else {
+                    return
+                }
+                if !NotificationCoordinator.shouldScheduleNotification(
+                    for: task,
+                    referenceDate: update.referenceDate,
+                    calendar: calendar
+                ) {
+                    await cancelNotification(update.taskID.uuidString)
+                } else {
+                    await scheduleNotification(
+                        NotificationCoordinator.notificationPayload(
+                            for: task,
+                            referenceDate: update.referenceDate,
+                            calendar: calendar
+                        )
+                    )
+                }
+                WidgetStatsService.refreshAndReload(using: context)
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Failed to confirm assumed routine from home list: \(error)")
+            }
+        }
+    }
+
+    static func markAssumedTaskMissed<Action>(
+        _ update: HomeResolveAssumedTaskUpdate,
+        calendar: Calendar,
+        modelContext: @escaping @MainActor @Sendable () -> ModelContext,
+        cancelNotification: @escaping @Sendable (String) async -> Void,
+        scheduleNotification: @escaping @Sendable (NotificationPayload) async -> Void
+    ) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
+                guard let task = try RoutineLogHistory.markAssumedCompletionMissed(
+                    taskID: update.taskID,
+                    on: update.resolutionDate,
+                    context: context,
+                    referenceDate: update.referenceDate,
+                    calendar: calendar
+                ) else {
+                    return
+                }
+                if !NotificationCoordinator.shouldScheduleNotification(
+                    for: task,
+                    referenceDate: update.referenceDate,
+                    calendar: calendar
+                ) {
+                    await cancelNotification(update.taskID.uuidString)
+                } else {
+                    await scheduleNotification(
+                        NotificationCoordinator.notificationPayload(
+                            for: task,
+                            referenceDate: update.referenceDate,
+                            calendar: calendar
+                        )
+                    )
+                }
+                WidgetStatsService.refreshAndReload(using: context)
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Failed to mark assumed routine as missed from home list: \(error)")
+            }
+        }
+    }
+
     static func markTaskCanceled<Action>(
         _ update: HomeMarkTaskCanceledUpdate,
         calendar: Calendar,

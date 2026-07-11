@@ -206,6 +206,35 @@ struct RoutineAssumedCompletionTests {
     }
 
     @Test
+    func missedLogSuppressesAssumedDone() {
+        let calendar = makeTestCalendar()
+        let today = makeDate("2026-02-25T00:00:00Z")
+        let referenceDate = makeDate("2026-02-25T10:00:00Z")
+        let task = RoutineTask(
+            name: "Brush teeth",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 8, minute: 0)),
+            createdAt: makeDate("2026-02-20T00:00:00Z"),
+            autoAssumeDailyDone: true
+        )
+        let logs = [
+            RoutineLog(
+                timestamp: makeDate("2026-02-25T08:00:00Z"),
+                taskID: task.id,
+                kind: .missed
+            )
+        ]
+
+        #expect(!RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: today,
+            referenceDate: referenceDate,
+            logs: logs,
+            calendar: calendar
+        ))
+    }
+
+    @Test
     func checklistPartialProgressSuppressesAssumedDone() {
         let calendar = makeTestCalendar()
         let today = makeDate("2026-02-25T00:00:00Z")

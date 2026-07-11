@@ -43,12 +43,15 @@ struct HomeRoutineDisplayFactory {
             isRecordedDate($0, for: task, on: currentOccurrenceDay)
         } ?? false
         let isCanceledToday = canceledTodayFromTask || canceledTodayFromLogs
+        let isMissedToday = doneStats.missedDatesByTaskID[task.id]?.contains {
+            isRecordedDate($0, for: task, on: currentOccurrenceDay)
+        } ?? false
         let assumedDoneToday = !isDoneToday && RoutineAssumedCompletion.isAssumedDone(
             for: task,
             on: currentOccurrenceDay,
             referenceDate: now,
             calendar: calendar
-        )
+        ) && !isCanceledToday && !isMissedToday
         let presentsCompletedChecklistDay = task.isChecklistCompletionRoutine && (isDoneToday || assumedDoneToday)
         let linkedPlaces = showsPlaces ? task.placeIDs.compactMap { placesByID[$0] } : []
         let displayPlaceName = placeListDisplayName(for: linkedPlaces)
