@@ -260,6 +260,23 @@ enum DayPlanVisibleBlocks {
 }
 
 struct DayPlanDayTaskListItem: Identifiable, Equatable {
+    enum Section: String, CaseIterable, Equatable {
+        case planned
+        case assumedDone
+        case done
+
+        var title: String {
+            switch self {
+            case .planned:
+                return "Planned tasks"
+            case .assumedDone:
+                return "Assumed done"
+            case .done:
+                return "Dones"
+            }
+        }
+    }
+
     enum Placement: Equatable {
         case allDay
         case timed(startMinute: Int, durationMinutes: Int)
@@ -270,7 +287,37 @@ struct DayPlanDayTaskListItem: Identifiable, Equatable {
     var blockID: UUID?
     var title: String
     var emoji: String?
+    var section: Section = .planned
     var placement: Placement
+}
+
+struct DayPlanDayTaskCounts: Equatable {
+    var planned: Int = 0
+    var assumedDone: Int = 0
+    var done: Int = 0
+
+    var total: Int {
+        planned + assumedDone + done
+    }
+
+    init(planned: Int = 0, assumedDone: Int = 0, done: Int = 0) {
+        self.planned = planned
+        self.assumedDone = assumedDone
+        self.done = done
+    }
+
+    init(items: [DayPlanDayTaskListItem]) {
+        for item in items {
+            switch item.section {
+            case .planned:
+                planned += 1
+            case .assumedDone:
+                assumedDone += 1
+            case .done:
+                done += 1
+            }
+        }
+    }
 }
 
 enum DayPlanDayTaskListPresentation {
@@ -279,6 +326,7 @@ enum DayPlanDayTaskListPresentation {
         timedBlocks: [DayPlanBlock],
         allDayBlocks: [DayPlanAllDayBlock],
         plannedDateTasks: [RoutineTask] = [],
+        timelineActivityBlocks: [DayPlanTimelineActivityBlock] = [],
         calendar: Calendar,
         visibilityCache: DayPlanPlannedDateTaskVisibilityCache? = nil
     ) -> [DayPlanDayTaskListItem] {
@@ -365,7 +413,48 @@ enum DayPlanDayTaskListPresentation {
                 }
             }
 
-        return allDayItems + plannedDateItems + timedItems
+        let activityItems = timelineActivityBlocks
+            .compactMap { activity -> DayPlanDayTaskListItem? in
+                guard activity.kind == .completed else { return nil }
+
+                let block = activity.block
+                return DayPlanDayTaskListItem(
+                    id: "\(activity.source.isSyntheticAssumedDone ? "assumed" : "done")-\(activity.id)",
+                    taskID: block.taskID,
+                    blockID: nil,
+                    title: block.titleSnapshot,
+                    emoji: block.emojiSnapshot,
+                    section: activity.source.isSyntheticAssumedDone ? .assumedDone : .done,
+                    placement: .timed(
+                        startMinute: block.startMinute,
+                        durationMinutes: block.durationMinutes
+                    )
+                )
+            }
+
+        let assumedDoneItems = sortedActivityItems(
+            activityItems.filter { $0.section == .assumedDone }
+        )
+        let doneItems = sortedActivityItems(
+            activityItems.filter { $0.section == .done }
+        )
+
+        return allDayItems + plannedDateItems + timedItems + assumedDoneItems + doneItems
+    }
+
+    private static func sortedActivityItems(_ items: [DayPlanDayTaskListItem]) -> [DayPlanDayTaskListItem] {
+        items.sorted { lhs, rhs in
+            switch (lhs.placement, rhs.placement) {
+            case let (.timed(lhsStart, _), .timed(rhsStart, _)) where lhsStart != rhsStart:
+                return lhsStart < rhsStart
+            default:
+                let titleComparison = lhs.title.localizedCaseInsensitiveCompare(rhs.title)
+                if titleComparison != .orderedSame {
+                    return titleComparison == .orderedAscending
+                }
+                return lhs.id < rhs.id
+            }
+        }
     }
 
     private static func allDayBlockIntersects(
@@ -409,11 +498,13 @@ final class DayPlanDayTaskListItemsCache: ObservableObject {
         var minimumDaysInFirstWeek: Int
         var visibilitySignature: DayPlanDayTaskListVisibilitySignature
         var timedBlocks: [TimedBlockSignature]
+        var timelineActivities: [TimelineActivitySignature]
 
         init(
             dataSnapshotID: UUID,
             date: Date,
             timedBlocks: [DayPlanBlock],
+            timelineActivityBlocks: [DayPlanTimelineActivityBlock],
             calendar: Calendar,
             visibilitySignature: DayPlanDayTaskListVisibilitySignature
         ) {
@@ -425,6 +516,9 @@ final class DayPlanDayTaskListItemsCache: ObservableObject {
             minimumDaysInFirstWeek = calendar.minimumDaysInFirstWeek
             self.visibilitySignature = visibilitySignature
             self.timedBlocks = timedBlocks.map(TimedBlockSignature.init(block:))
+            timelineActivities = timelineActivityBlocks
+                .map(TimelineActivitySignature.init(activity:))
+                .sorted { $0.id < $1.id }
         }
     }
 
@@ -448,6 +542,31 @@ final class DayPlanDayTaskListItemsCache: ObservableObject {
         }
     }
 
+    private struct TimelineActivitySignature: Hashable {
+        var id: String
+        var kindRawValue: String
+        var taskID: UUID
+        var dayKey: String
+        var startMinute: Int
+        var durationMinutes: Int
+        var titleSnapshot: String
+        var emojiSnapshot: String?
+        var updatedAt: Date
+
+        init(activity: DayPlanTimelineActivityBlock) {
+            let block = activity.block
+            id = activity.id
+            kindRawValue = activity.kind.rawValue
+            taskID = block.taskID
+            dayKey = block.dayKey
+            startMinute = block.startMinute
+            durationMinutes = block.durationMinutes
+            titleSnapshot = block.titleSnapshot
+            emojiSnapshot = block.emojiSnapshot
+            updatedAt = block.updatedAt
+        }
+    }
+
     private var itemsBySignature: [Signature: [DayPlanDayTaskListItem]] = [:]
 
     func items(
@@ -456,6 +575,7 @@ final class DayPlanDayTaskListItemsCache: ObservableObject {
         timedBlocks: [DayPlanBlock],
         allDayBlocks: [DayPlanAllDayBlock],
         plannedDateTasks: [RoutineTask],
+        timelineActivityBlocks: [DayPlanTimelineActivityBlock] = [],
         calendar: Calendar,
         visibilitySignature: DayPlanDayTaskListVisibilitySignature = .unfiltered,
         visibilityCache: DayPlanPlannedDateTaskVisibilityCache? = nil
@@ -464,6 +584,7 @@ final class DayPlanDayTaskListItemsCache: ObservableObject {
             dataSnapshotID: dataSnapshotID,
             date: date,
             timedBlocks: timedBlocks,
+            timelineActivityBlocks: timelineActivityBlocks,
             calendar: calendar,
             visibilitySignature: visibilitySignature
         )
@@ -476,6 +597,7 @@ final class DayPlanDayTaskListItemsCache: ObservableObject {
             timedBlocks: timedBlocks,
             allDayBlocks: allDayBlocks,
             plannedDateTasks: plannedDateTasks,
+            timelineActivityBlocks: timelineActivityBlocks,
             calendar: calendar,
             visibilityCache: visibilityCache
         )

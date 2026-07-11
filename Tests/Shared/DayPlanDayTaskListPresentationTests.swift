@@ -288,6 +288,116 @@ struct DayPlanDayTaskListPresentationTests {
         #expect(items.isEmpty)
     }
 
+    @Test
+    func itemsGroupPlannedAssumedDoneAndDoneSections() throws {
+        let calendar = testCalendar
+        let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))
+        let dayKey = DayPlanStorage.dayKey(for: day, calendar: calendar)
+        let plannedTaskID = try #require(UUID(uuidString: "61616161-6161-6161-6161-616161616161"))
+        let assumedTaskID = try #require(UUID(uuidString: "62626262-6262-6262-6262-626262626262"))
+        let doneTaskID = try #require(UUID(uuidString: "63636363-6363-6363-6363-636363636363"))
+        let missedTaskID = try #require(UUID(uuidString: "64646464-6464-6464-6464-646464646464"))
+        let doneLogID = try #require(UUID(uuidString: "65656565-6565-6565-6565-656565656565"))
+        let missedLogID = try #require(UUID(uuidString: "66666666-6666-6666-6666-666666666666"))
+
+        let plannedTask = RoutineTask(
+            id: plannedTaskID,
+            name: "Monday plan",
+            scheduleMode: .oneOff
+        )
+        plannedTask.plannedDate = day
+
+        let assumedDone = DayPlanTimelineActivityBlock(
+            block: DayPlanBlock(
+                id: assumedTaskID,
+                taskID: assumedTaskID,
+                dayKey: dayKey,
+                startMinute: 8 * 60,
+                durationMinutes: 30,
+                titleSnapshot: "Morning reset"
+            ),
+            kind: .completed,
+            source: .assumedDone
+        )
+        let done = DayPlanTimelineActivityBlock(
+            block: DayPlanBlock(
+                id: doneTaskID,
+                taskID: doneTaskID,
+                dayKey: dayKey,
+                startMinute: 9 * 60,
+                durationMinutes: 45,
+                titleSnapshot: "Inbox review"
+            ),
+            kind: .completed,
+            source: .log(doneLogID)
+        )
+        let missed = DayPlanTimelineActivityBlock(
+            block: DayPlanBlock(
+                id: missedTaskID,
+                taskID: missedTaskID,
+                dayKey: dayKey,
+                startMinute: 10 * 60,
+                durationMinutes: 20,
+                titleSnapshot: "Missed call"
+            ),
+            kind: .missed,
+            source: .log(missedLogID)
+        )
+
+        let items = DayPlanDayTaskListPresentation.items(
+            on: day,
+            timedBlocks: [],
+            allDayBlocks: [],
+            plannedDateTasks: [plannedTask],
+            timelineActivityBlocks: [done, missed, assumedDone],
+            calendar: calendar
+        )
+
+        #expect(items.map(\.title) == ["Monday plan", "Morning reset", "Inbox review"])
+        #expect(items.map(\.section) == [.planned, .assumedDone, .done])
+        #expect(items.map(\.placement) == [
+            .allDay,
+            .timed(startMinute: 8 * 60, durationMinutes: 30),
+            .timed(startMinute: 9 * 60, durationMinutes: 45),
+        ])
+        #expect(DayPlanDayTaskCounts(items: items) == DayPlanDayTaskCounts(planned: 1, assumedDone: 1, done: 1))
+    }
+
+    @Test
+    func doneSectionIncludesLastDoneFallbackActivity() throws {
+        let calendar = testCalendar
+        let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))
+        let dayKey = DayPlanStorage.dayKey(for: day, calendar: calendar)
+        let taskID = try #require(UUID(uuidString: "67676767-6767-6767-6767-676767676767"))
+        let updatedAt = try #require(calendar.date(byAdding: .hour, value: 14, to: day))
+
+        let lastDone = DayPlanTimelineActivityBlock(
+            block: DayPlanBlock(
+                id: taskID,
+                taskID: taskID,
+                dayKey: dayKey,
+                startMinute: 13 * 60 + 30,
+                durationMinutes: 30,
+                titleSnapshot: "Stretch",
+                updatedAt: updatedAt
+            ),
+            kind: .completed,
+            source: .taskLastDone
+        )
+
+        let items = DayPlanDayTaskListPresentation.items(
+            on: day,
+            timedBlocks: [],
+            allDayBlocks: [],
+            timelineActivityBlocks: [lastDone],
+            calendar: calendar
+        )
+
+        #expect(items.map(\.title) == ["Stretch"])
+        #expect(items.map(\.section) == [.done])
+        #expect(DayPlanDayTaskCounts(items: items) == DayPlanDayTaskCounts(done: 1))
+    }
+
     private var testCalendar: Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!

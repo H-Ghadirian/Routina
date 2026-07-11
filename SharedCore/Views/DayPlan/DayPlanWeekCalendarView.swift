@@ -67,7 +67,7 @@ struct DayPlanWeekCalendarView: View {
     var taskTint: (DayPlanBlock) -> Color
     var allDayTint: (DayPlanAllDayBlock) -> Color = { _ in .accentColor }
     var onSelectUnplannedCompletedDate: (Date) -> Void
-    var plannedTaskCount: (Date) -> Int = { _ in 0 }
+    var dayTaskCounts: (Date) -> DayPlanDayTaskCounts = { _ in DayPlanDayTaskCounts() }
     var onSelectSlot: (Date, Int) -> Void
     var onSelectBlock: (DayPlanBlock, Date) -> Void
     var onOpenBlockDetails: (DayPlanBlock, Date) -> Void
@@ -127,7 +127,7 @@ struct DayPlanWeekCalendarView: View {
                     canDecreaseHourSpacing: canDecreaseHourSpacing,
                     canIncreaseHourSpacing: canIncreaseHourSpacing,
                     hourSpacingAccessibilityValue: hourSpacingAccessibilityValue,
-                    plannedTaskCount: plannedTaskCount,
+                    dayTaskCounts: dayTaskCounts,
                     unplannedCompletedCount: unplannedCompletedCount,
                     onDecreaseHourSpacing: onDecreaseHourSpacing,
                     onIncreaseHourSpacing: onIncreaseHourSpacing,

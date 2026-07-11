@@ -12,7 +12,7 @@ struct DayPlanWeekHeaderRow: View {
     var canDecreaseHourSpacing = false
     var canIncreaseHourSpacing = false
     var hourSpacingAccessibilityValue = ""
-    var plannedTaskCount: (Date) -> Int
+    var dayTaskCounts: (Date) -> DayPlanDayTaskCounts
     var unplannedCompletedCount: (Date) -> Int
     var onDecreaseHourSpacing: () -> Void = {}
     var onIncreaseHourSpacing: () -> Void = {}
@@ -30,7 +30,7 @@ struct DayPlanWeekHeaderRow: View {
                     isFocusedForUnplannedCompleted: focusedUnplannedCompletedDate.map { calendar.isDate(date, inSameDayAs: $0) } ?? false,
                     isFocusedForPlannedTasks: focusedPlannedTasksDate.map { calendar.isDate(date, inSameDayAs: $0) } ?? false,
                     isToday: calendar.isDateInToday(date),
-                    plannedTaskCount: plannedTaskCount(date),
+                    dayTaskCounts: dayTaskCounts(date),
                     unplannedCompletedCount: showsUnplannedCompletedBadges ? unplannedCompletedCount(date) : 0,
                     onSelectPlannedTasks: {
                         onSelectPlannedTasksDate(date)

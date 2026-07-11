@@ -2498,8 +2498,8 @@ private struct DayPlanTimelinePanelContentView: View {
                     planner.focusUnplannedCompletedTasks(on: date, calendar: calendar)
                     onSelectUnplannedCompletedDate?(date)
                 },
-                plannedTaskCount: { date in
-                    dayTaskListItems(
+                dayTaskCounts: { date in
+                    DayPlanDayTaskCounts(items: dayTaskListItems(
                         on: date,
                         plannedBlocksByDayKey: calendarFilterState.showsPlannedTasks
                             ? visiblePlannedBlocksByDayKey
@@ -2508,9 +2508,15 @@ private struct DayPlanTimelinePanelContentView: View {
                         plannedDateTasks: calendarFilterState.showsAllDayTasks
                             ? calendarSearchTasks
                             : [],
+                        timelineActivityBlocks: timelineSuggestionsVisible
+                            ? dayTimelineActivityBlocks(
+                                on: date,
+                                automaticSuggestionBlocksByDayKey: visibleAutomaticSuggestionBlocksByDayKey,
+                                unplaceableAutomaticSuggestionBlocksByDayKey: visibleUnplaceableAutomaticSuggestionBlocksByDayKey
+                            )
+                            : [],
                         visibilitySignature: dayTaskListVisibilitySignature
-                    )
-                    .count
+                    ))
                 },
                 onSelectSlot: { date, minute in
                     planner.selectSlot(on: date, startMinute: minute, calendar: calendar, context: modelContext)
@@ -2708,6 +2714,13 @@ private struct DayPlanTimelinePanelContentView: View {
                                 allDayBlocks: visibleAllDayBlocks,
                                 plannedDateTasks: calendarFilterState.showsAllDayTasks
                                     ? calendarSearchTasks
+                                    : [],
+                                timelineActivityBlocks: timelineSuggestionsVisible
+                                    ? dayTimelineActivityBlocks(
+                                        on: date,
+                                        automaticSuggestionBlocksByDayKey: visibleAutomaticSuggestionBlocksByDayKey,
+                                        unplaceableAutomaticSuggestionBlocksByDayKey: visibleUnplaceableAutomaticSuggestionBlocksByDayKey
+                                    )
                                     : [],
                                 visibilitySignature: dayTaskListVisibilitySignature
                             ),
@@ -3138,6 +3151,7 @@ private struct DayPlanTimelinePanelContentView: View {
         plannedBlocksByDayKey: [String: [DayPlanBlock]],
         allDayBlocks: [DayPlanAllDayBlock],
         plannedDateTasks: [RoutineTask],
+        timelineActivityBlocks: [DayPlanTimelineActivityBlock] = [],
         visibilitySignature: DayPlanDayTaskListVisibilitySignature
     ) -> [DayPlanDayTaskListItem] {
         let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
@@ -3147,10 +3161,21 @@ private struct DayPlanTimelinePanelContentView: View {
             timedBlocks: plannedBlocksByDayKey[dayKey] ?? [],
             allDayBlocks: allDayBlocks,
             plannedDateTasks: plannedDateTasks,
+            timelineActivityBlocks: timelineActivityBlocks,
             calendar: calendar,
             visibilitySignature: visibilitySignature,
             visibilityCache: plannedDateTaskVisibilityCache
         )
+    }
+
+    private func dayTimelineActivityBlocks(
+        on date: Date,
+        automaticSuggestionBlocksByDayKey: [String: [DayPlanTimelineActivityBlock]],
+        unplaceableAutomaticSuggestionBlocksByDayKey: [String: [DayPlanTimelineActivityBlock]]
+    ) -> [DayPlanTimelineActivityBlock] {
+        let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+        return (automaticSuggestionBlocksByDayKey[dayKey] ?? [])
+            + (unplaceableAutomaticSuggestionBlocksByDayKey[dayKey] ?? [])
     }
 
     private func activeFocusSessions(from sessions: [FocusSession]) -> [FocusSession] {
@@ -5761,22 +5786,27 @@ private struct DayPlanDayTaskListSidebar: View {
 
             if items.isEmpty {
                 ContentUnavailableView(
-                    "No planned tasks",
+                    "No day tasks",
                     systemImage: "list.bullet.rectangle",
-                    description: Text("Nothing is planned in Planner for this day.")
+                    description: Text("No planned, assumed done, or done tasks for this day.")
                 )
                 .frame(maxWidth: .infinity, minHeight: 220)
             } else {
-                LazyVStack(spacing: 8) {
-                    ForEach(items) { item in
-                        DayPlanDayTaskListRow(
-                            item: item,
-                            tint: taskTint(item.taskID),
-                            date: date,
-                            calendar: calendar,
-                            isOpenable: isTaskOpenable(item.taskID),
-                            onOpenTaskDetails: onOpenTaskDetails
-                        )
+                LazyVStack(alignment: .leading, spacing: 14) {
+                    ForEach(DayPlanDayTaskListItem.Section.allCases, id: \.self) { section in
+                        let sectionItems = items(in: section)
+                        if !sectionItems.isEmpty {
+                            DayPlanDayTaskListSectionView(
+                                title: section.title,
+                                count: sectionItems.count,
+                                items: sectionItems,
+                                taskTint: taskTint,
+                                date: date,
+                                calendar: calendar,
+                                isTaskOpenable: isTaskOpenable,
+                                onOpenTaskDetails: onOpenTaskDetails
+                            )
+                        }
                     }
                 }
             }
@@ -5794,7 +5824,7 @@ private struct DayPlanDayTaskListSidebar: View {
                 .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Planned Tasks")
+                Text("Day Tasks")
                     .font(.headline.weight(.semibold))
                 Text(headerSubtitle)
                     .font(.caption)
@@ -5818,9 +5848,63 @@ private struct DayPlanDayTaskListSidebar: View {
     }
 
     private var headerSubtitle: String {
-        let countText = "\(items.count) \(items.count == 1 ? "task" : "tasks") planned"
+        let countText = taskCountText(items.count)
         let dateText = date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
         return "\(dateText) - \(countText)"
+    }
+
+    private func items(in section: DayPlanDayTaskListItem.Section) -> [DayPlanDayTaskListItem] {
+        items.filter { $0.section == section }
+    }
+
+    private func taskCountText(_ count: Int) -> String {
+        "\(count) \(count == 1 ? "task" : "tasks")"
+    }
+}
+
+private struct DayPlanDayTaskListSectionView: View {
+    let title: String
+    let count: Int
+    let items: [DayPlanDayTaskListItem]
+    let taskTint: (UUID) -> Color
+    let date: Date
+    let calendar: Calendar
+    let isTaskOpenable: (UUID) -> Bool
+    let onOpenTaskDetails: (UUID) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                Text("\(count)")
+                    .font(.caption2.weight(.bold))
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(Color.secondary.opacity(0.10))
+                    )
+
+                Spacer(minLength: 0)
+            }
+
+            ForEach(items) { item in
+                DayPlanDayTaskListRow(
+                    item: item,
+                    tint: taskTint(item.taskID),
+                    date: date,
+                    calendar: calendar,
+                    isOpenable: isTaskOpenable(item.taskID),
+                    onOpenTaskDetails: onOpenTaskDetails
+                )
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
