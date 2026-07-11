@@ -374,6 +374,22 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func dayTaskListAvatarHidesWhenColumnLeavesTooLittleTextRoom() {
+        #expect(
+            DayPlanWeekCalendarSizing.showsDayTaskListAvatar(rowWidth: nil)
+        )
+        #expect(
+            DayPlanWeekCalendarSizing.showsDayTaskListAvatar(rowWidth: 180)
+        )
+        #expect(
+            !DayPlanWeekCalendarSizing.showsDayTaskListAvatar(rowWidth: 167)
+        )
+        #expect(
+            DayPlanWeekCalendarSizing.showsDayTaskListAvatar(rowWidth: 168)
+        )
+    }
+
+    @Test
     func inspectorPlannerCalendarFitsFourHundredPointPaneAfterPadding() {
         let contentWidthAfterPadding: CGFloat = 360
         let dayWidth = DayPlanWeekCalendarSizing.dayWidth(

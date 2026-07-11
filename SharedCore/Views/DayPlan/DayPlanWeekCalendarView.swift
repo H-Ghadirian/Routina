@@ -10,6 +10,13 @@ enum DayPlanWeekCalendarSizing {
     static let inspectorMinimumDayWidth: CGFloat = 96
     static let detailPadding: CGFloat = 20
     static let detailHorizontalPadding: CGFloat = detailPadding * 2
+    static let dayTaskListColumnPadding: CGFloat = 10
+
+    private static let dayTaskListRowHorizontalPadding: CGFloat = 20
+    private static let dayTaskListAvatarWidth: CGFloat = 34
+    private static let dayTaskListAvatarSpacing: CGFloat = 10
+    private static let dayTaskListTrailingTextReserve: CGFloat = 16
+    private static let minimumDayTaskListTextWidthWithAvatar: CGFloat = 88
 
     static func minimumCalendarWidth(isExternalInspectorPresented: Bool) -> CGFloat {
         isExternalInspectorPresented ? inspectorMinimumCalendarWidth : regularMinimumCalendarWidth
@@ -30,6 +37,17 @@ enum DayPlanWeekCalendarSizing {
             : regularMinimumDayWidth
         let availableDayWidth = max(availableWidth - timeColumnWidth, 0) / CGFloat(dayCount)
         return max(availableDayWidth, minimumDayWidth)
+    }
+
+    static func showsDayTaskListAvatar(rowWidth: CGFloat?) -> Bool {
+        guard let rowWidth, rowWidth.isFinite else { return true }
+
+        let reservedWidth = dayTaskListRowHorizontalPadding
+            + dayTaskListAvatarWidth
+            + dayTaskListAvatarSpacing
+            + dayTaskListTrailingTextReserve
+
+        return rowWidth - reservedWidth >= minimumDayTaskListTextWidthWithAvatar
     }
 }
 
@@ -979,6 +997,7 @@ private struct DayPlanDayTaskColumnsView: View {
                         DayPlanDayTaskColumnView(
                             date: date,
                             isSelected: calendar.isDate(date, inSameDayAs: selectedDate),
+                            columnWidth: dayWidth,
                             items: dayTaskListItems(date),
                             taskTint: taskTint,
                             calendar: calendar,
@@ -1003,6 +1022,7 @@ private struct DayPlanDayTaskColumnsView: View {
 private struct DayPlanDayTaskColumnView: View {
     var date: Date
     var isSelected: Bool
+    var columnWidth: CGFloat
     var items: [DayPlanDayTaskListItem]
     var taskTint: (UUID) -> Color
     var calendar: Calendar
@@ -1025,11 +1045,12 @@ private struct DayPlanDayTaskColumnView: View {
                     onOpenTaskDetails: onOpenTaskDetails,
                     onConfirmAssumedDayTask: onConfirmAssumedDayTask,
                     onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed,
+                    availableRowWidth: availableRowWidth,
                     sectionSpacing: 12
                 )
             }
         }
-        .padding(10)
+        .padding(DayPlanWeekCalendarSizing.dayTaskListColumnPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(isSelected ? Color.secondary.opacity(0.045) : Color.clear)
         .overlay(alignment: .trailing) {
@@ -1037,6 +1058,10 @@ private struct DayPlanDayTaskColumnView: View {
                 .fill(Color.secondary.opacity(0.18))
                 .frame(width: 1)
         }
+    }
+
+    private var availableRowWidth: CGFloat {
+        max(columnWidth - (DayPlanWeekCalendarSizing.dayTaskListColumnPadding * 2), 0)
     }
 
     private var emptyState: some View {
@@ -1062,6 +1087,7 @@ struct DayPlanDayTaskListContentView: View {
     let onOpenTaskDetails: (UUID) -> Void
     let onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
     let onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
+    var availableRowWidth: CGFloat? = nil
     var sectionSpacing: CGFloat = 14
 
     var body: some View {
@@ -1079,7 +1105,8 @@ struct DayPlanDayTaskListContentView: View {
                         isTaskOpenable: isTaskOpenable,
                         onOpenTaskDetails: onOpenTaskDetails,
                         onConfirmAssumedDayTask: onConfirmAssumedDayTask,
-                        onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed
+                        onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed,
+                        availableRowWidth: availableRowWidth
                     )
                 }
             }
@@ -1102,6 +1129,7 @@ private struct DayPlanDayTaskListContentSectionView: View {
     let onOpenTaskDetails: (UUID) -> Void
     let onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
     let onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
+    let availableRowWidth: CGFloat?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -1133,7 +1161,8 @@ private struct DayPlanDayTaskListContentSectionView: View {
                     isOpenable: isTaskOpenable(item.taskID),
                     onOpenTaskDetails: onOpenTaskDetails,
                     onConfirmAssumedDayTask: onConfirmAssumedDayTask,
-                    onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed
+                    onMarkAssumedDayTaskMissed: onMarkAssumedDayTaskMissed,
+                    availableRowWidth: availableRowWidth
                 )
             }
         }
@@ -1150,6 +1179,7 @@ private struct DayPlanDayTaskListContentRow: View {
     let onOpenTaskDetails: (UUID) -> Void
     let onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
     let onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
+    let availableRowWidth: CGFloat?
 
     @State private var isHovered = false
 
@@ -1179,7 +1209,9 @@ private struct DayPlanDayTaskListContentRow: View {
 
     private var rowContent: some View {
         HStack(alignment: .top, spacing: 10) {
-            DayPlanTaskAvatar(emoji: item.emoji, tint: tint)
+            if showsAvatar {
+                DayPlanTaskAvatar(emoji: item.emoji, tint: tint)
+            }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.title)
@@ -1198,7 +1230,6 @@ private struct DayPlanDayTaskListContentRow: View {
             Spacer(minLength: 6)
         }
         .padding(10)
-        .padding(.trailing, item.section == .assumedDone ? 64 : 0)
         .frame(maxWidth: .infinity, alignment: .leading)
         .routinaGlassCard(
             cornerRadius: 8,
@@ -1212,6 +1243,10 @@ private struct DayPlanDayTaskListContentRow: View {
                     .padding(.trailing, 8)
             }
         }
+    }
+
+    private var showsAvatar: Bool {
+        DayPlanWeekCalendarSizing.showsDayTaskListAvatar(rowWidth: availableRowWidth)
     }
 
     private var assumedDoneActions: some View {
