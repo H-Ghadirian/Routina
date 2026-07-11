@@ -1858,6 +1858,7 @@ private struct DayPlanTimelineRenderSnapshot {
     var timelineBlocksByDayKey: [String: [DayPlanTimelineActivityBlock]]
     var unplaceableAutomaticSuggestionBlocksByDayKey: [String: [DayPlanTimelineActivityBlock]]
     var automaticSuggestionBlocksByDayKey: [String: [DayPlanTimelineActivityBlock]]
+    var assumedDoneSummaryBlocksByDayKey: [String: [DayPlanTimelineActivityBlock]]
     var allDayBlocks: [DayPlanAllDayBlock]
     var selectedDayBlockedMinutes: Int
     var tintsByTaskID: [UUID: Color]
@@ -2001,6 +2002,14 @@ private final class DayPlanTimelineRenderSnapshotCache: ObservableObject {
             referenceDate: referenceDate
         )
         let rawAutomaticSuggestionBlocksByDayKey = rawAutomaticSuggestionPlacementsByDayKey.mapValues(\.placed)
+        let assumedDoneSummaryBlocksByDayKey = DayPlanTimelineTasks.assumedDoneSummaryBlocksByDayKey(
+            on: visibleDates,
+            from: tasks,
+            logs: logs,
+            calendar: calendar,
+            hiddenActivityIDs: hiddenTimelineActivityIDs,
+            referenceDate: referenceDate
+        )
         let linkedAwayBlocksByDayKey = DayPlanAwayBlocks.linkedBlocksByDayKey(
             awayBlocksByDayKey,
             timelineActivitiesByDayKey: rawAutomaticSuggestionBlocksByDayKey
@@ -2062,6 +2071,7 @@ private final class DayPlanTimelineRenderSnapshotCache: ObservableObject {
             timelineBlocksByDayKey: timelineBlocksByDayKey,
             unplaceableAutomaticSuggestionBlocksByDayKey: visibleAutomaticSuggestionPlacementsByDayKey.mapValues(\.unplaced),
             automaticSuggestionBlocksByDayKey: visibleAutomaticSuggestionPlacementsByDayKey.mapValues(\.placed),
+            assumedDoneSummaryBlocksByDayKey: assumedDoneSummaryBlocksByDayKey,
             allDayBlocks: allDayBlocks,
             selectedDayBlockedMinutes: selectedDayBlockedMinutes,
             tintsByTaskID: tintsByTaskID(from: tasks),
@@ -2377,6 +2387,7 @@ private struct DayPlanTimelinePanelContentView: View {
         let timelineBlocksByDayKey = renderSnapshot.timelineBlocksByDayKey
         let unplaceableAutomaticSuggestionBlocksByDayKey = renderSnapshot.unplaceableAutomaticSuggestionBlocksByDayKey
         let automaticSuggestionBlocksByDayKey = renderSnapshot.automaticSuggestionBlocksByDayKey
+        let assumedDoneSummaryBlocksByDayKey = renderSnapshot.assumedDoneSummaryBlocksByDayKey
         let allDayBlocks = renderSnapshot.allDayBlocks
         let tintsByTaskID = renderSnapshot.tintsByTaskID
         let activeFocusRenderSessions = renderSnapshot.activeFocusRenderSessions
@@ -2466,7 +2477,8 @@ private struct DayPlanTimelinePanelContentView: View {
                     ? dayTimelineActivityBlocks(
                         on: date,
                         automaticSuggestionBlocksByDayKey: dayTaskListAutomaticSuggestionBlocksByDayKey,
-                        unplaceableAutomaticSuggestionBlocksByDayKey: dayTaskListUnplaceableAutomaticSuggestionBlocksByDayKey
+                        unplaceableAutomaticSuggestionBlocksByDayKey: dayTaskListUnplaceableAutomaticSuggestionBlocksByDayKey,
+                        assumedDoneSummaryBlocksByDayKey: assumedDoneSummaryBlocksByDayKey
                     )
                     : [],
                 visibilitySignature: dayTaskListVisibilitySignature
@@ -3248,11 +3260,18 @@ private struct DayPlanTimelinePanelContentView: View {
     private func dayTimelineActivityBlocks(
         on date: Date,
         automaticSuggestionBlocksByDayKey: [String: [DayPlanTimelineActivityBlock]],
-        unplaceableAutomaticSuggestionBlocksByDayKey: [String: [DayPlanTimelineActivityBlock]]
+        unplaceableAutomaticSuggestionBlocksByDayKey: [String: [DayPlanTimelineActivityBlock]],
+        assumedDoneSummaryBlocksByDayKey: [String: [DayPlanTimelineActivityBlock]]
     ) -> [DayPlanTimelineActivityBlock] {
         let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-        return (automaticSuggestionBlocksByDayKey[dayKey] ?? [])
+        var blocks = (automaticSuggestionBlocksByDayKey[dayKey] ?? [])
             + (unplaceableAutomaticSuggestionBlocksByDayKey[dayKey] ?? [])
+        let existingIDs = Set(blocks.map(\.id))
+        blocks.append(
+            contentsOf: (assumedDoneSummaryBlocksByDayKey[dayKey] ?? [])
+                .filter { !existingIDs.contains($0.id) }
+        )
+        return blocks
     }
 
     private func activeFocusSessions(from sessions: [FocusSession]) -> [FocusSession] {

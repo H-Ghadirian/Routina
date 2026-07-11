@@ -1098,6 +1098,60 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func assumedDoneSummaryIncludesRoutineAlreadyShownAsPlannedBlock() throws {
+        let calendar = gregorianCalendar
+        let activityDate = try #require(date("2026-06-21T12:00:00Z"))
+        let referenceDate = try #require(date("2026-06-22T10:00:00Z"))
+        let createdAt = try #require(date("2026-06-20T08:00:00Z"))
+        let dayKey = DayPlanStorage.dayKey(for: activityDate, calendar: calendar)
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Brush Teeth",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(in: RoutineTimeRange(
+                start: RoutineTimeOfDay(hour: 21, minute: 0),
+                end: RoutineTimeOfDay(hour: 3, minute: 0)
+            )),
+            createdAt: createdAt,
+            autoAssumeDailyDone: true,
+            autoAssumeDoneTimeOfDay: RoutineTimeOfDay(hour: 12, minute: 0),
+            estimatedDurationMinutes: 5
+        )
+        let plannedBlock = DayPlanBlock(
+            taskID: taskID,
+            dayKey: dayKey,
+            startMinute: 21 * 60,
+            durationMinutes: 5,
+            titleSnapshot: "Brush Teeth"
+        )
+
+        let gridSuggestions = DayPlanTimelineTasks.automaticSuggestionBlocksByDayKey(
+            on: [activityDate],
+            from: [task],
+            logs: [],
+            plannedBlocksByDayKey: [dayKey: [plannedBlock]],
+            calendar: calendar,
+            referenceDate: referenceDate
+        )
+        let summarySuggestions = DayPlanTimelineTasks.assumedDoneSummaryBlocksByDayKey(
+            on: [activityDate],
+            from: [task],
+            logs: [],
+            calendar: calendar,
+            referenceDate: referenceDate
+        )
+        let summary = try #require(summarySuggestions[dayKey]?.first)
+
+        #expect(gridSuggestions[dayKey]?.isEmpty ?? true)
+        #expect(summarySuggestions[dayKey]?.count == 1)
+        #expect(summary.block.taskID == taskID)
+        #expect(summary.source == .assumedDone)
+        #expect(summary.block.startMinute == 11 * 60 + 45)
+        #expect(summary.block.durationMinutes == 15)
+    }
+
+    @Test
     func automaticPlannerAssumedDoneConflictAppearsUnplaceable() throws {
         let calendar = gregorianCalendar
         let activityDate = try #require(date("2026-06-22T12:00:00Z"))

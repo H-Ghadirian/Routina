@@ -517,6 +517,48 @@ struct DayPlanDayTaskListPresentationTests {
     }
 
     @Test
+    func assumedDoneActivityReplacesMatchingTimedPlannedRow() throws {
+        let calendar = testCalendar
+        let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))
+        let dayKey = DayPlanStorage.dayKey(for: day, calendar: calendar)
+        let taskID = try #require(UUID(uuidString: "67676767-6767-6767-6767-676767676767"))
+        let plannedBlockID = try #require(UUID(uuidString: "68686868-6868-6868-6868-686868686868"))
+
+        let plannedBlock = DayPlanBlock(
+            id: plannedBlockID,
+            taskID: taskID,
+            dayKey: dayKey,
+            startMinute: 21 * 60,
+            durationMinutes: 5,
+            titleSnapshot: "Brush Teeth"
+        )
+        let assumedDone = DayPlanTimelineActivityBlock(
+            block: DayPlanBlock(
+                id: taskID,
+                taskID: taskID,
+                dayKey: dayKey,
+                startMinute: 12 * 60,
+                durationMinutes: 5,
+                titleSnapshot: "Brush Teeth"
+            ),
+            kind: .completed,
+            source: .assumedDone
+        )
+
+        let items = DayPlanDayTaskListPresentation.items(
+            on: day,
+            timedBlocks: [plannedBlock],
+            allDayBlocks: [],
+            timelineActivityBlocks: [assumedDone],
+            calendar: calendar
+        )
+
+        #expect(items.map(\.section) == [.assumedDone])
+        #expect(items.map(\.title) == ["Brush Teeth"])
+        #expect(items.map(\.placement) == [.timed(startMinute: 12 * 60, durationMinutes: 15)])
+    }
+
+    @Test
     func doneSectionIncludesLastDoneFallbackActivity() throws {
         let calendar = testCalendar
         let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))

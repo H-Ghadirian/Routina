@@ -477,15 +477,16 @@ enum DayPlanDayTaskListPresentation {
         let assumedDoneItems = sortedActivityItems(
             activityItems.filter { $0.section == .assumedDone }
         )
+        let assumedDoneTaskIDs = Set(assumedDoneItems.map(\.taskID))
         let doneItems = sortedActivityItems(
             allDayItems.filter { $0.section == .done }
                 + timedItems.filter { $0.section == .done }
                 + activityItems.filter { $0.section == .done }
         )
 
-        return allDayItems.filter { $0.section == .planned }
+        return allDayItems.filter { $0.section == .planned && !assumedDoneTaskIDs.contains($0.taskID) }
             + plannedDateItems
-            + timedItems.filter { $0.section == .planned }
+            + timedItems.filter { $0.section == .planned && !assumedDoneTaskIDs.contains($0.taskID) }
             + assumedDoneItems
             + doneItems
     }

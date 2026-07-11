@@ -341,6 +341,30 @@ enum DayPlanTimelineTasks {
         .mapValues { $0.unplaced }
     }
 
+    static func assumedDoneSummaryBlocksByDayKey(
+        on dates: [Date],
+        from tasks: [RoutineTask],
+        logs: [RoutineLog],
+        calendar: Calendar,
+        hiddenActivityIDs: Set<String> = [],
+        referenceDate: Date = Date()
+    ) -> [String: [DayPlanTimelineActivityBlock]] {
+        activityBlocksByDayKey(
+            on: dates,
+            from: tasks,
+            logs: logs,
+            plannedBlocksByDayKey: [:],
+            calendar: calendar,
+            hiddenActivityIDs: hiddenActivityIDs,
+            excludesAllDayTasks: true,
+            includedKinds: automaticSuggestionKinds,
+            referenceDate: referenceDate
+        )
+        .mapValues { blocks in
+            blocks.filter { $0.source.isSyntheticAssumedDone }
+        }
+    }
+
     static func activityBlocksByDayKey(
         on dates: [Date],
         from tasks: [RoutineTask],
