@@ -34,11 +34,16 @@ struct DayPlanPlannerStateTests {
 
     @Test
     func calendarTaskViewModePickerReservesRoomForScheduleLabel() {
-        #expect(DayPlanHeaderRangePickerVisibility.calendarTaskViewModePickerWidth >= 178)
+        #expect(DayPlanHeaderRangePickerVisibility.calendarTaskViewModePickerWidth >= 190)
         #expect(
             DayPlanHeaderRangePickerVisibility.calendarTaskViewModePickerWidth
                 > DayPlanHeaderRangePickerVisibility.iconOnlyCalendarTaskViewModePickerWidth
         )
+    }
+
+    @Test
+    func plannerHeaderSegmentedControlsKeepReadableSpacing() {
+        #expect(DayPlanHeaderRangePickerVisibility.segmentedControlSpacing >= 16)
     }
 
     @Test

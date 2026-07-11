@@ -783,7 +783,7 @@ private struct DayPlanHeaderView: View {
         showsRangePicker: Bool = true,
         forceIconOnlyDisplayModePicker: Bool? = nil
     ) -> some View {
-        HStack(alignment: .center, spacing: 10) {
+        HStack(alignment: .center, spacing: DayPlanHeaderRangePickerVisibility.segmentedControlSpacing) {
             if showsDisplayModePicker {
                 displayModePicker(forceIconOnly: forceIconOnlyDisplayModePicker)
             }
@@ -1172,9 +1172,10 @@ private struct DayPlanHeaderView: View {
 }
 
 enum DayPlanHeaderRangePickerVisibility {
+    static let segmentedControlSpacing: CGFloat = 16
     static let displayModePickerWidth: CGFloat = 220
     static let iconOnlyDisplayModePickerWidth: CGFloat = 100
-    static let calendarTaskViewModePickerWidth: CGFloat = 178
+    static let calendarTaskViewModePickerWidth: CGFloat = 190
     static let iconOnlyCalendarTaskViewModePickerWidth: CGFloat = 100
     static let visibleRangeModePickerWidth: CGFloat = 234
     static let inspectorRangePickerMinimumAvailableWidth: Double = 860

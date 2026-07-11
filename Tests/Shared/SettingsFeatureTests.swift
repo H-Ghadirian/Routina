@@ -1932,6 +1932,25 @@ struct SettingsFeatureTests {
 
     @Test
     func importRoutineDataSourceSelected_loadsSelectedBackupPackage() async throws {
+        let notesKey = UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue
+        let awayKey = UserDefaultBoolValueKey.appSettingAwayEnabled.rawValue
+        let previousNotesValue = SharedDefaults.app.object(forKey: notesKey)
+        let previousAwayValue = SharedDefaults.app.object(forKey: awayKey)
+        defer {
+            if let previousNotesValue {
+                SharedDefaults.app.set(previousNotesValue, forKey: notesKey)
+            } else {
+                SharedDefaults.app.removeObject(forKey: notesKey)
+            }
+            if let previousAwayValue {
+                SharedDefaults.app.set(previousAwayValue, forKey: awayKey)
+            } else {
+                SharedDefaults.app.removeObject(forKey: awayKey)
+            }
+        }
+        SharedDefaults.app[.appSettingNotesEnabled] = true
+        SharedDefaults.app[.appSettingAwayEnabled] = true
+
         let exportContext = makeInMemoryContext()
         let task = RoutineTask(name: "Restore me", tags: ["Safe"])
         exportContext.insert(task)
