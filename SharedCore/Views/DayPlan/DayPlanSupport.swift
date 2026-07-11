@@ -169,6 +169,20 @@ struct DayPlanVisibleBlockContext {
     }
 }
 
+enum DayPlanScheduleViewVisibility {
+    static func automaticTimelineBlocks(
+        _ blocks: [DayPlanTimelineActivityBlock]
+    ) -> [DayPlanTimelineActivityBlock] {
+        []
+    }
+
+    static func allDayBlocks(
+        _ blocks: [DayPlanAllDayBlock]
+    ) -> [DayPlanAllDayBlock] {
+        blocks.filter { !$0.isCompletedActivity }
+    }
+}
+
 enum DayPlanTaskSorting {
     static func availableTasks(from tasks: [RoutineTask]) -> [RoutineTask] {
         tasks

@@ -18,11 +18,17 @@ struct DayPlanAllDayBlock: Identifiable, Equatable {
     var startDate: Date
     var endDate: Date
     var isLegacyDateOnlyCalendarTask: Bool
+    var isCompletedActivity: Bool = false
     var isEvent: Bool
 }
 
 enum DayPlanAllDayTasks {
-    private typealias AllDaySpan = (startDate: Date, endDate: Date, isLegacyDateOnlyCalendarTask: Bool)
+    private typealias AllDaySpan = (
+        startDate: Date,
+        endDate: Date,
+        isLegacyDateOnlyCalendarTask: Bool,
+        isCompletedActivity: Bool
+    )
 
     static func blocks(
         on dates: [Date],
@@ -68,6 +74,7 @@ enum DayPlanAllDayTasks {
                         startDate: span.startDate,
                         endDate: span.endDate,
                         isLegacyDateOnlyCalendarTask: span.isLegacyDateOnlyCalendarTask,
+                        isCompletedActivity: span.isCompletedActivity,
                         isEvent: false
                     )
                 }
@@ -96,6 +103,7 @@ enum DayPlanAllDayTasks {
                 startDate: startDate,
                 endDate: endDate,
                 isLegacyDateOnlyCalendarTask: false,
+                isCompletedActivity: false,
                 isEvent: true
             )
         }
@@ -127,7 +135,7 @@ enum DayPlanAllDayTasks {
                 calendar: calendar
             )
             guard endDate > startDate else { return [] }
-            return [(startDate, endDate, false)]
+            return [(startDate, endDate, false, false)]
         }
 
         if task.isAllDay {
@@ -155,7 +163,7 @@ enum DayPlanAllDayTasks {
 
             spans += completedActivityStarts(for: task, logs: logs, on: dates, calendar: calendar)
                 .compactMap { startDate in
-                    oneDaySpan(on: startDate, calendar: calendar)
+                    oneDaySpan(on: startDate, isCompletedActivity: true, calendar: calendar)
                 }
 
             return deduplicatedAllDaySpans(spans, calendar: calendar)
@@ -170,11 +178,12 @@ enum DayPlanAllDayTasks {
         }
 
         guard let span = oneDaySpan(on: deadline, calendar: calendar) else { return [] }
-        return [(span.startDate, span.endDate, true)]
+        return [(span.startDate, span.endDate, true, false)]
     }
 
     private static func oneDaySpan(
         on date: Date,
+        isCompletedActivity: Bool = false,
         calendar: Calendar
     ) -> AllDaySpan? {
         let startDate = calendar.startOfDay(for: date)
@@ -182,7 +191,7 @@ enum DayPlanAllDayTasks {
               endDate > startDate else {
             return nil
         }
-        return (startDate, endDate, false)
+        return (startDate, endDate, false, isCompletedActivity)
     }
 
     private static func availabilityDateStarts(
@@ -236,6 +245,9 @@ enum DayPlanAllDayTasks {
         let sortedSpans = spans.sorted { lhs, rhs in
             if lhs.startDate != rhs.startDate {
                 return lhs.startDate < rhs.startDate
+            }
+            if lhs.isCompletedActivity != rhs.isCompletedActivity {
+                return !lhs.isCompletedActivity
             }
             return lhs.endDate > rhs.endDate
         }

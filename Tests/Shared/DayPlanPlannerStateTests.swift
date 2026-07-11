@@ -1820,6 +1820,75 @@ struct DayPlanPlannerStateTests {
         #expect(blocks.first?.startDate == expectedStart)
         #expect(blocks.first?.endDate == expectedEnd)
         #expect(blocks.first?.isLegacyDateOnlyCalendarTask == false)
+        #expect(blocks.first?.isCompletedActivity == true)
+        #expect(DayPlanScheduleViewVisibility.allDayBlocks(blocks).isEmpty)
+    }
+
+    @Test
+    func scheduleViewVisibilityHidesAutomaticTimelineActivity() throws {
+        let calendar = gregorianCalendar
+        let activityDate = try #require(date("2026-05-11T14:30:00Z"))
+        let dayKey = DayPlanStorage.dayKey(for: activityDate, calendar: calendar)
+        let taskID = UUID()
+        let recordedDone = DayPlanTimelineActivityBlock(
+            block: DayPlanBlock(
+                id: taskID,
+                taskID: taskID,
+                dayKey: dayKey,
+                startMinute: 14 * 60,
+                durationMinutes: 30,
+                titleSnapshot: "Inbox review"
+            ),
+            kind: .completed,
+            source: .log(UUID())
+        )
+        let assumedDone = DayPlanTimelineActivityBlock(
+            block: DayPlanBlock(
+                id: UUID(),
+                taskID: UUID(),
+                dayKey: dayKey,
+                startMinute: 9 * 60,
+                durationMinutes: 15,
+                titleSnapshot: "Morning reset"
+            ),
+            kind: .completed,
+            source: .assumedDone
+        )
+
+        let visibleBlocks = DayPlanScheduleViewVisibility.automaticTimelineBlocks([
+            recordedDone,
+            assumedDone,
+        ])
+
+        #expect(visibleBlocks.isEmpty)
+    }
+
+    @Test
+    func scheduleViewVisibilityKeepsExactAllDayBlocks() throws {
+        let calendar = gregorianCalendar
+        let exactDate = try #require(date("2026-05-11T00:00:00Z"))
+        let expectedEnd = try #require(date("2026-05-12T00:00:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Conference",
+            deadline: exactDate,
+            isAllDay: true,
+            scheduleMode: .oneOff
+        )
+
+        let blocks = DayPlanAllDayTasks.blocks(
+            on: try plannerDates(),
+            from: [task],
+            calendar: calendar
+        )
+        let block = try #require(blocks.first)
+
+        #expect(block.taskID == taskID)
+        #expect(block.startDate == exactDate)
+        #expect(block.endDate == expectedEnd)
+        #expect(!block.isCompletedActivity)
+        #expect(DayPlanScheduleViewVisibility.allDayBlocks(blocks) == blocks)
     }
 
     @Test

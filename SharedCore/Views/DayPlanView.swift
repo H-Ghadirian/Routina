@@ -2462,6 +2462,7 @@ private struct DayPlanTimelinePanelContentView: View {
             allTaskIDs: allTaskIDs,
             isTaskFilterActive: isCalendarTaskFilterActive
         )
+        let scheduleAllDayBlocks = DayPlanScheduleViewVisibility.allDayBlocks(visibleAllDayBlocks)
         let calendarDayTaskListItems: (Date) -> [DayPlanDayTaskListItem] = { date in
             dayTaskListItems(
                 on: date,
@@ -2512,12 +2513,16 @@ private struct DayPlanTimelinePanelContentView: View {
                 automaticTimelineBlocksForDate: { date in
                     guard timelineSuggestionsVisible else { return [] }
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-                    return visibleAutomaticSuggestionBlocksByDayKey[dayKey] ?? []
+                    return DayPlanScheduleViewVisibility.automaticTimelineBlocks(
+                        visibleAutomaticSuggestionBlocksByDayKey[dayKey] ?? []
+                    )
                 },
                 unplaceableAutomaticTimelineBlocksForDate: { date in
                     guard timelineSuggestionsVisible else { return [] }
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-                    return visibleUnplaceableAutomaticSuggestionBlocksByDayKey[dayKey] ?? []
+                    return DayPlanScheduleViewVisibility.automaticTimelineBlocks(
+                        visibleUnplaceableAutomaticSuggestionBlocksByDayKey[dayKey] ?? []
+                    )
                 },
                 eventBlocksForDate: { date in
                     guard calendarFilterState.showsEvents else { return [] }
@@ -2578,7 +2583,7 @@ private struct DayPlanTimelinePanelContentView: View {
                     .values
                     .flatMap { $0 }
                 },
-                allDayBlocks: visibleAllDayBlocks,
+                allDayBlocks: scheduleAllDayBlocks,
                 unplannedCompletedCount: { date in
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
                     return visibleTimelineBlocksByDayKey[dayKey]?.count ?? 0
