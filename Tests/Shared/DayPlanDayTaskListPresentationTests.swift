@@ -289,6 +289,159 @@ struct DayPlanDayTaskListPresentationTests {
     }
 
     @Test
+    func plannerBackedCompletedTaskMovesToDoneSection() throws {
+        let calendar = testCalendar
+        let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))
+        let dayKey = DayPlanStorage.dayKey(for: day, calendar: calendar)
+        let taskID = try #require(UUID(uuidString: "51515151-5151-5151-5151-515151515151"))
+        let blockID = try #require(UUID(uuidString: "52525252-5252-5252-5252-525252525252"))
+        let completedAt = try #require(calendar.date(byAdding: .hour, value: 11, to: day))
+
+        let task = RoutineTask(
+            id: taskID,
+            name: "check work emails",
+            scheduleMode: .oneOff,
+            lastDone: completedAt
+        )
+        let block = DayPlanBlock(
+            id: blockID,
+            taskID: taskID,
+            dayKey: dayKey,
+            startMinute: 10 * 60,
+            durationMinutes: 30,
+            titleSnapshot: "check work emails"
+        )
+
+        let items = DayPlanDayTaskListPresentation.items(
+            on: day,
+            timedBlocks: [block],
+            allDayBlocks: [],
+            tasks: [task],
+            calendar: calendar
+        )
+
+        #expect(items.map(\.title) == ["check work emails"])
+        #expect(items.map(\.section) == [.done])
+        #expect(DayPlanDayTaskCounts(items: items) == DayPlanDayTaskCounts(done: 1))
+    }
+
+    @Test
+    func completedOneOffPlannerBlockWithoutSelectedDayCompletionIsOmitted() throws {
+        let calendar = testCalendar
+        let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))
+        let nextDay = try #require(calendar.date(byAdding: .day, value: 1, to: day))
+        let dayKey = DayPlanStorage.dayKey(for: day, calendar: calendar)
+        let taskID = try #require(UUID(uuidString: "53535353-5353-5353-5353-535353535353"))
+        let blockID = try #require(UUID(uuidString: "54545454-5454-5454-5454-545454545454"))
+
+        let task = RoutineTask(
+            id: taskID,
+            name: "Already finished tomorrow",
+            scheduleMode: .oneOff,
+            lastDone: nextDay
+        )
+        let block = DayPlanBlock(
+            id: blockID,
+            taskID: taskID,
+            dayKey: dayKey,
+            startMinute: 9 * 60,
+            durationMinutes: 30,
+            titleSnapshot: "Already finished tomorrow"
+        )
+
+        let items = DayPlanDayTaskListPresentation.items(
+            on: day,
+            timedBlocks: [block],
+            allDayBlocks: [],
+            tasks: [task],
+            calendar: calendar
+        )
+
+        #expect(items.isEmpty)
+    }
+
+    @Test
+    func completedPlannedDateRoutineUsesDoneActivityWithoutPlannerConfirmation() throws {
+        let calendar = testCalendar
+        let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))
+        let dayKey = DayPlanStorage.dayKey(for: day, calendar: calendar)
+        let taskID = try #require(UUID(uuidString: "57575757-5757-5757-5757-575757575757"))
+        let logID = try #require(UUID(uuidString: "58585858-5858-5858-5858-585858585858"))
+        let completedAt = try #require(calendar.date(byAdding: .hour, value: 10, to: day))
+
+        let task = RoutineTask(
+            id: taskID,
+            name: "Review pull requests",
+            scheduleMode: .fixedInterval,
+            lastDone: completedAt
+        )
+        task.plannedDate = day
+        let log = RoutineLog(
+            id: logID,
+            timestamp: completedAt,
+            taskID: taskID,
+            kind: .completed
+        )
+        let done = DayPlanTimelineActivityBlock(
+            block: DayPlanBlock(
+                id: taskID,
+                taskID: taskID,
+                dayKey: dayKey,
+                startMinute: 9 * 60 + 30,
+                durationMinutes: 30,
+                titleSnapshot: "Review pull requests"
+            ),
+            kind: .completed,
+            source: .log(logID)
+        )
+
+        let items = DayPlanDayTaskListPresentation.items(
+            on: day,
+            timedBlocks: [],
+            allDayBlocks: [],
+            plannedDateTasks: [task],
+            timelineActivityBlocks: [done],
+            tasks: [task],
+            logs: [log],
+            calendar: calendar
+        )
+
+        #expect(items.map(\.title) == ["Review pull requests"])
+        #expect(items.map(\.section) == [.done])
+        #expect(items.map(\.placement) == [
+            .timed(startMinute: 9 * 60 + 30, durationMinutes: 30),
+        ])
+        #expect(DayPlanDayTaskCounts(items: items) == DayPlanDayTaskCounts(done: 1))
+    }
+
+    @Test
+    func completedPlannedDateRoutineIsNotPlannedWhenDoneLayerIsHidden() throws {
+        let calendar = testCalendar
+        let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))
+        let taskID = try #require(UUID(uuidString: "59595959-5959-5959-5959-595959595959"))
+        let completedAt = try #require(calendar.date(byAdding: .hour, value: 10, to: day))
+
+        let task = RoutineTask(
+            id: taskID,
+            name: "Write report",
+            scheduleMode: .fixedInterval,
+            lastDone: completedAt
+        )
+        task.plannedDate = day
+
+        let items = DayPlanDayTaskListPresentation.items(
+            on: day,
+            timedBlocks: [],
+            allDayBlocks: [],
+            plannedDateTasks: [task],
+            tasks: [task],
+            calendar: calendar
+        )
+
+        #expect(items.isEmpty)
+    }
+
+    @Test
     func itemsGroupPlannedAssumedDoneAndDoneSections() throws {
         let calendar = testCalendar
         let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))

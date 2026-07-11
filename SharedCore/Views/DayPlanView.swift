@@ -2527,6 +2527,8 @@ private struct DayPlanTimelinePanelContentView: View {
                         plannedDateTasks: calendarFilterState.showsAllDayTasks
                             ? calendarSearchTasks
                             : [],
+                        tasks: currentTasks,
+                        logs: logs,
                         timelineActivityBlocks: timelineSuggestionsVisible
                             ? dayTimelineActivityBlocks(
                                 on: date,
@@ -2734,6 +2736,8 @@ private struct DayPlanTimelinePanelContentView: View {
                                 plannedDateTasks: calendarFilterState.showsAllDayTasks
                                     ? calendarSearchTasks
                                     : [],
+                                tasks: currentTasks,
+                                logs: logs,
                                 timelineActivityBlocks: timelineSuggestionsVisible
                                     ? dayTimelineActivityBlocks(
                                         on: date,
@@ -3176,6 +3180,8 @@ private struct DayPlanTimelinePanelContentView: View {
         plannedBlocksByDayKey: [String: [DayPlanBlock]],
         allDayBlocks: [DayPlanAllDayBlock],
         plannedDateTasks: [RoutineTask],
+        tasks: [RoutineTask],
+        logs: [RoutineLog],
         timelineActivityBlocks: [DayPlanTimelineActivityBlock] = [],
         visibilitySignature: DayPlanDayTaskListVisibilitySignature
     ) -> [DayPlanDayTaskListItem] {
@@ -3187,6 +3193,8 @@ private struct DayPlanTimelinePanelContentView: View {
             allDayBlocks: allDayBlocks,
             plannedDateTasks: plannedDateTasks,
             timelineActivityBlocks: timelineActivityBlocks,
+            tasks: tasks,
+            logs: logs,
             calendar: calendar,
             visibilitySignature: visibilitySignature,
             visibilityCache: plannedDateTaskVisibilityCache

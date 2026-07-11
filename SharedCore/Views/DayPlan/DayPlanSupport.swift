@@ -342,15 +342,29 @@ enum DayPlanDayTaskListPresentation {
         allDayBlocks: [DayPlanAllDayBlock],
         plannedDateTasks: [RoutineTask] = [],
         timelineActivityBlocks: [DayPlanTimelineActivityBlock] = [],
+        tasks: [RoutineTask] = [],
+        logs: [RoutineLog] = [],
         calendar: Calendar,
         visibilityCache: DayPlanPlannedDateTaskVisibilityCache? = nil
     ) -> [DayPlanDayTaskListItem] {
+        let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+        let completionContext = DayPlanDayTaskListCompletionContext(
+            tasks: tasks,
+            logs: logs,
+            calendar: calendar
+        )
         let allDayItems = allDayBlocks
             .enumerated()
             .compactMap { offset, allDayBlock -> DayPlanDayTaskListItem? in
                 guard let taskID = allDayBlock.taskID,
                       !allDayBlock.isEvent,
                       allDayBlockIntersects(allDayBlock, date: date, calendar: calendar) else {
+                    return nil
+                }
+                guard let section = completionContext.sectionForPlannerBackedTask(
+                    taskID,
+                    dayKey: dayKey
+                ) else {
                     return nil
                 }
 
@@ -360,6 +374,7 @@ enum DayPlanDayTaskListPresentation {
                     blockID: nil,
                     title: allDayBlock.title,
                     emoji: allDayBlock.emoji,
+                    section: section,
                     placement: .allDay
                 )
             }
@@ -375,6 +390,10 @@ enum DayPlanDayTaskListPresentation {
         let plannedDateItems = plannedDateTasks
             .compactMap { task -> DayPlanDayTaskListItem? in
                 guard !plannedTaskIDs.contains(task.id),
+                      !completionContext.hasCompletion(
+                        task.id,
+                        dayKey: dayKey
+                      ),
                       isVisiblePlannedDateTask(
                         task,
                         on: date,
@@ -402,13 +421,21 @@ enum DayPlanDayTaskListPresentation {
             }
 
         let timedItems = timedBlocks
-            .map { block in
-                DayPlanDayTaskListItem(
+            .compactMap { block -> DayPlanDayTaskListItem? in
+                guard let section = completionContext.sectionForPlannerBackedTask(
+                    block.taskID,
+                    dayKey: dayKey
+                ) else {
+                    return nil
+                }
+
+                return DayPlanDayTaskListItem(
                     id: "timed-\(block.id.uuidString)",
                     taskID: block.taskID,
                     blockID: block.id,
                     title: block.titleSnapshot,
                     emoji: block.emojiSnapshot,
+                    section: section,
                     placement: .timed(
                         startMinute: block.startMinute,
                         durationMinutes: block.durationMinutes
@@ -451,10 +478,16 @@ enum DayPlanDayTaskListPresentation {
             activityItems.filter { $0.section == .assumedDone }
         )
         let doneItems = sortedActivityItems(
-            activityItems.filter { $0.section == .done }
+            allDayItems.filter { $0.section == .done }
+                + timedItems.filter { $0.section == .done }
+                + activityItems.filter { $0.section == .done }
         )
 
-        return allDayItems + plannedDateItems + timedItems + assumedDoneItems + doneItems
+        return allDayItems.filter { $0.section == .planned }
+            + plannedDateItems
+            + timedItems.filter { $0.section == .planned }
+            + assumedDoneItems
+            + doneItems
     }
 
     private static func sortedActivityItems(_ items: [DayPlanDayTaskListItem]) -> [DayPlanDayTaskListItem] {
@@ -500,6 +533,65 @@ enum DayPlanDayTaskListPresentation {
             && !task.isPinned
             && !task.isArchived(referenceDate: dayStart, calendar: calendar)
             && calendar.isDate(plannedDate, inSameDayAs: dayStart)
+    }
+}
+
+private struct DayPlanDayTaskListCompletionContext {
+    private var tasksByID: [UUID: RoutineTask] = [:]
+    private var completedDayKeysByTaskID: [UUID: Set<String>] = [:]
+
+    init(
+        tasks: [RoutineTask],
+        logs: [RoutineLog],
+        calendar: Calendar
+    ) {
+        for task in tasks {
+            tasksByID[task.id] = task
+            recordCompletion(task.lastDone, taskID: task.id, calendar: calendar)
+        }
+
+        for log in logs where log.kind == .completed {
+            recordCompletion(log.timestamp, taskID: log.taskID, calendar: calendar)
+        }
+    }
+
+    mutating private func recordCompletion(
+        _ timestamp: Date?,
+        taskID: UUID,
+        calendar: Calendar
+    ) {
+        guard let timestamp else { return }
+        let displayDay = tasksByID[taskID]
+            .flatMap { task in
+                RoutineDateMath.completionDisplayDay(
+                    for: task,
+                    completionDate: timestamp,
+                    calendar: calendar
+                )
+            }
+            ?? calendar.startOfDay(for: timestamp)
+        let dayKey = DayPlanStorage.dayKey(for: displayDay, calendar: calendar)
+        completedDayKeysByTaskID[taskID, default: []].insert(dayKey)
+    }
+
+    func hasCompletion(
+        _ taskID: UUID,
+        dayKey: String
+    ) -> Bool {
+        completedDayKeysByTaskID[taskID]?.contains(dayKey) == true
+    }
+
+    func sectionForPlannerBackedTask(
+        _ taskID: UUID,
+        dayKey: String
+    ) -> DayPlanDayTaskListItem.Section? {
+        if hasCompletion(taskID, dayKey: dayKey) {
+            return .done
+        }
+        if tasksByID[taskID]?.isCompletedOneOff == true {
+            return nil
+        }
+        return .planned
     }
 }
 
@@ -591,6 +683,8 @@ final class DayPlanDayTaskListItemsCache: ObservableObject {
         allDayBlocks: [DayPlanAllDayBlock],
         plannedDateTasks: [RoutineTask],
         timelineActivityBlocks: [DayPlanTimelineActivityBlock] = [],
+        tasks: [RoutineTask] = [],
+        logs: [RoutineLog] = [],
         calendar: Calendar,
         visibilitySignature: DayPlanDayTaskListVisibilitySignature = .unfiltered,
         visibilityCache: DayPlanPlannedDateTaskVisibilityCache? = nil
@@ -613,6 +707,8 @@ final class DayPlanDayTaskListItemsCache: ObservableObject {
             allDayBlocks: allDayBlocks,
             plannedDateTasks: plannedDateTasks,
             timelineActivityBlocks: timelineActivityBlocks,
+            tasks: tasks,
+            logs: logs,
             calendar: calendar,
             visibilityCache: visibilityCache
         )
