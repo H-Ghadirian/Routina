@@ -114,6 +114,7 @@ extension HomeTCAView {
             isCreatingTaskFromSearch: isToolbarSearchCreateInProgress,
             canCreateTaskFromSearch: canCreateTaskFromToolbarSearch,
             onSearchSubmit: createTaskFromToolbarSearch,
+            onSearchCommandSubmit: openAddTaskFromToolbarSearch,
             onAddEvent: openAddEvent,
             onAddEmotion: openAddEmotion,
             onAddNote: openAddNote,
@@ -746,6 +747,21 @@ extension HomeTCAView {
                 toolbarSearchCreateErrorMessage = error.localizedDescription
             }
         }
+    }
+
+    private func openAddTaskFromToolbarSearch(_ rawText: String) {
+        let trimmedText = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedText.isEmpty else { return }
+
+        isEmotionLogEditorPresented = false
+        isNoteEditorPresented = false
+        isAwayStartPresented = false
+        toolbarSearchCreateErrorMessage = nil
+        addEditFormCoordinator.resetRevealedTaskFormSections()
+        searchTextBinding.wrappedValue = ""
+        quickAddCreatedToast = nil
+        store.send(.openAddTaskSheet(seedName: trimmedText))
+        scheduleAddTaskNameFocus()
     }
 
     private func hasToolbarSearchResult(for searchText: String) -> Bool {

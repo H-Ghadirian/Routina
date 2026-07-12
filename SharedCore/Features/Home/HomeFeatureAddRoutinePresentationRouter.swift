@@ -14,11 +14,18 @@ struct HomeFeatureAddRoutinePresentationRouter<State: HomeFeatureAddRoutinePrese
     var relatedTagRules: () -> [RoutineRelatedTagRule]
     var addRoutineDraft: () -> AddRoutineDraftSnapshot?
 
-    func setSheet(_ isPresented: Bool, state: inout State) {
+    func setSheet(
+        _ isPresented: Bool,
+        state: inout State,
+        seedName: String? = nil
+    ) {
         state.presentation.isAddRoutineSheetPresented = isPresented
         if isPresented {
             state.presentation.isMacFilterDetailPresented = false
-            state.presentation.addRoutineState = makeAddRoutineState(for: state)
+            state.presentation.addRoutineState = makeAddRoutineState(
+                for: state,
+                seedName: seedName
+            )
         } else {
             state.presentation.addRoutineState = nil
         }
@@ -69,9 +76,10 @@ struct HomeFeatureAddRoutinePresentationRouter<State: HomeFeatureAddRoutinePrese
     private func makeAddRoutineState(
         for state: State,
         preselectedRelationships: [RoutineTaskRelationship] = [],
-        excludingRelationshipTaskID: UUID? = nil
+        excludingRelationshipTaskID: UUID? = nil,
+        seedName: String? = nil
     ) -> AddRoutineFeature.State {
-        let addRoutineState = HomeAddRoutineSupport.makeAddRoutineState(
+        var addRoutineState = HomeAddRoutineSupport.makeAddRoutineState(
             tasks: state.routineTasks,
             places: state.routinePlaces,
             goals: state.routineGoals,
@@ -81,6 +89,14 @@ struct HomeFeatureAddRoutinePresentationRouter<State: HomeFeatureAddRoutinePrese
             preselectedRelationships: preselectedRelationships,
             excludingRelationshipTaskID: excludingRelationshipTaskID
         )
+        if let seedName = seedName.flatMap(RoutineTask.trimmedName),
+           !seedName.isEmpty {
+            AddRoutineValidationEditor.setRoutineName(
+                seedName,
+                state: &addRoutineState
+            )
+            return addRoutineState
+        }
         guard preselectedRelationships.isEmpty,
               excludingRelationshipTaskID == nil,
               let draft = addRoutineDraft()

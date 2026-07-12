@@ -99,6 +99,37 @@ struct HomeFeatureAddRoutinePresentationTests {
     }
 
     @Test
+    func openAddTaskSheet_seedsNameAndBypassesSavedDraft() async throws {
+        let context = makeInMemoryContext()
+        var draft = AddRoutineDraftSnapshot()
+        draft.routineName = "Old draft"
+        let draftRawValue = try encodedDraftString(draft)
+
+        let store = TestStore(initialState: HomeFeature.State(isMacFilterDetailPresented: true)) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.creationDraftClient.load = { kind in
+                kind == .task ? draftRawValue : nil
+            }
+        }
+
+        await store.send(.openAddTaskSheet(seedName: "  Draft proposal  ")) {
+            $0.macSidebarMode = .addTask
+            $0.isAddRoutineSheetPresented = true
+            $0.isMacFilterDetailPresented = false
+            $0.addRoutineState = AddRoutineFeature.State(
+                basics: AddRoutineBasicsState(routineName: "Draft proposal"),
+                organization: AddRoutineOrganizationState(
+                    availableTagSummaries: [],
+                    existingRoutineNames: []
+                )
+            )
+        }
+    }
+
+    @Test
     func openAddLinkedTask_presentsAddRoutineSeededWithInverseRelationship() async throws {
         let context = makeInMemoryContext()
         let place = makePlace(in: context, name: "Office")
@@ -195,5 +226,10 @@ struct HomeFeatureAddRoutinePresentationTests {
                 status: .onTrack
             )
         ])
+    }
+
+    private func encodedDraftString(_ value: AddRoutineDraftSnapshot) throws -> String {
+        let data = try JSONEncoder().encode(value)
+        return try #require(String(data: data, encoding: .utf8))
     }
 }

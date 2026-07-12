@@ -29,6 +29,7 @@ struct HomeMacTopToolbarChrome: View {
     let isCreatingTaskFromSearch: Bool
     let canCreateTaskFromSearch: Bool
     let onSearchSubmit: (String) -> Void
+    let onSearchCommandSubmit: (String) -> Void
     let onAddEvent: () -> Void
     let onAddEmotion: () -> Void
     let onAddNote: () -> Void
@@ -93,7 +94,8 @@ struct HomeMacTopToolbarChrome: View {
             focusDismissRequestID: $searchFocusDismissRequestID,
             isCreatingTask: isCreatingTaskFromSearch,
             canCreateTaskFromQuery: canCreateTaskFromSearch,
-            onSubmit: onSearchSubmit
+            onSubmit: onSearchSubmit,
+            onCommandSubmit: onSearchCommandSubmit
         )
         .frame(width: HomeMacToolbarSearchLayout.focusedWidth, alignment: .center)
         .layoutPriority(2)
@@ -238,6 +240,7 @@ struct HomeMacToolbarSearchField: View {
     let isCreatingTask: Bool
     let canCreateTaskFromQuery: Bool
     let onSubmit: (String) -> Void
+    let onCommandSubmit: (String) -> Void
 
     var body: some View {
         searchShell(width: visiblePillWidth)
@@ -410,7 +413,8 @@ struct HomeMacToolbarSearchField: View {
             isFocused: searchFocusBinding,
             focusRequestID: focusRequestID,
             focusDismissRequestID: focusDismissRequestID,
-            onSubmit: onSubmit
+            onSubmit: onSubmit,
+            onCommandSubmit: onCommandSubmit
         )
         .frame(maxWidth: .infinity)
         .frame(height: HomeMacToolbarSearchLayout.textFieldHeight)
@@ -887,6 +891,7 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
     let focusRequestID: Int
     let focusDismissRequestID: Int
     let onSubmit: (String) -> Void
+    let onCommandSubmit: (String) -> Void
 
     @MainActor
     final class Coordinator: NSObject, NSTextFieldDelegate {
@@ -967,15 +972,34 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
                 return true
             }
 
-            guard commandSelector == #selector(NSResponder.insertNewline(_:)) else {
+            let isCommandReturn = isCommandModifiedReturn && isNewlineCommand(commandSelector)
+            guard commandSelector == #selector(NSResponder.insertNewline(_:)) || isCommandReturn else {
                 return false
             }
 
             syncSearchText(from: control)
             guard !parent.isCreatingTask else { return true }
-            parent.onSubmit((control as? NSTextField)?.stringValue ?? parent.text)
+            let submittedText = (control as? NSTextField)?.stringValue ?? parent.text
+            if isCommandReturn {
+                dismissSearchFocus()
+                parent.onCommandSubmit(submittedText)
+                return true
+            }
+            parent.onSubmit(submittedText)
             restoreFocusAfterSearchUpdate()
             return true
+        }
+
+        private func isNewlineCommand(_ commandSelector: Selector) -> Bool {
+            commandSelector == #selector(NSResponder.insertNewline(_:))
+                || commandSelector == #selector(NSResponder.insertNewlineIgnoringFieldEditor(_:))
+        }
+
+        private var isCommandModifiedReturn: Bool {
+            guard let event = NSApp.currentEvent else { return false }
+            return event.modifierFlags
+                .intersection(.deviceIndependentFlagsMask)
+                .contains(.command)
         }
 
         private func syncSearchText(from object: Any?) {
