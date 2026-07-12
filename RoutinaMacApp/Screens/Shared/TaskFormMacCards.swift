@@ -1101,16 +1101,7 @@ struct TaskFormMacBehaviorCard: View {
             isOn: model.autoAssumeDailyDone,
             caption: presentation.autoAssumeDailyDoneHelpText,
             isDisabled: !model.canAutoAssumeDailyDone
-        ) {
-            if model.showsAutoAssumeDoneTimeOfDay {
-                DatePicker(
-                    "Probable time",
-                    selection: model.autoAssumeDoneTimeOfDay,
-                    displayedComponents: .hourAndMinute
-                )
-                .fixedSize()
-            }
-        }
+        ) {}
     }
 
     @ViewBuilder

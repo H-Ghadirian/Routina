@@ -15,6 +15,10 @@ Accepted
 - [0268: Show Assumed-Done Routines in Planner](0268-show-assumed-done-routines-in-planner.md)
 - [0269: Support Planner Slot Actions](0269-support-planner-slot-actions.md)
 
+## Refined by
+
+- [0376: Hide Probable Time From Assumed-Done Forms](0376-hide-probable-time-from-assumed-done-forms.md)
+
 ## Context
 
 Assumed-done routines are synthetic planner activity until the user confirms
