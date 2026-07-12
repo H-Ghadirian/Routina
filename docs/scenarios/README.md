@@ -217,23 +217,23 @@ Given the user hides that assumed-done planner activity
 When Planner derives automatic activity again
 Then the synthetic assumed-done activity stays hidden for that task and day
 
-### Planner Time-Window Routine Blocks Use Window Fallback
+### Planner Time Windows Stay Out of Schedule By Default
 
 Area: Planner
-Decision links: [0009](../decisions/0009-support-routine-time-ranges.md), [0199](../decisions/0199-support-multiday-routine-start-flow.md)
+Decision links: [0009](../decisions/0009-support-routine-time-ranges.md), [0199](../decisions/0199-support-multiday-routine-start-flow.md), [0373](../decisions/0373-treat-window-availability-as-non-schedule-placement.md)
 Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/Shared/DayPlanPlannerStateTests.swift`
 
 Given a routine is scheduled with a 10:00-10:15 time window and no duration estimate
-When Planner creates its timed calendar block
-Then the block starts at 10:00 and lasts 15 minutes instead of falling back to one hour
+When Planner refreshes exact timed calendar blocks
+Then Planner does not create a default timed Schedule block for that window
 
 Given the same routine has an explicit duration estimate
-When Planner creates its timed calendar block
-Then the estimate controls the block duration while the window start controls placement
+When Planner refreshes exact timed calendar blocks
+Then Planner still does not create a default timed Schedule block for that window
 
-Given a time-window routine is paused after Planner already created a matching scheduled block for a later day
+Given Planner previously created a matching scheduled block for a time-window routine
 When Planner refreshes that later day
 Then the stale scheduled block is removed while manually moved or resized blocks for that routine remain
 

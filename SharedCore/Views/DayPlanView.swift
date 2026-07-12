@@ -1861,6 +1861,7 @@ private struct DayPlanTimelineRenderSnapshot {
     var automaticSuggestionBlocksByDayKey: [String: [DayPlanTimelineActivityBlock]]
     var assumedDoneSummaryBlocksByDayKey: [String: [DayPlanTimelineActivityBlock]]
     var allDayBlocks: [DayPlanAllDayBlock]
+    var visibleBlockContext: DayPlanVisibleBlockContext
     var selectedDayBlockedMinutes: Int
     var tintsByTaskID: [UUID: Color]
     var activeFocusRenderSessions: [FocusSession]
@@ -1905,7 +1906,7 @@ private final class DayPlanTimelineRenderSnapshotCache: ObservableObject {
             sprintFocusSessions: sprintFocusSessions,
             referenceDate: referenceDate,
             calendar: calendar
-        )
+        ) || tasks.contains { RoutineAssumedCompletion.isEligible($0) }
         let key = DayPlanTimelineRenderSnapshotKey(
             dataSnapshotID: dataSnapshotID,
             visibleDates: visibleDates,
@@ -1929,6 +1930,7 @@ private final class DayPlanTimelineRenderSnapshotCache: ObservableObject {
             tasks: tasks,
             logs: logs,
             calendar: calendar,
+            referenceDate: referenceDate,
             activeFocusSessions: activeTaskAndTagFocusSessions
         )
         let plannedBlockPresentation = plannedBlockPresentation(
@@ -2074,6 +2076,7 @@ private final class DayPlanTimelineRenderSnapshotCache: ObservableObject {
             automaticSuggestionBlocksByDayKey: visibleAutomaticSuggestionPlacementsByDayKey.mapValues(\.placed),
             assumedDoneSummaryBlocksByDayKey: assumedDoneSummaryBlocksByDayKey,
             allDayBlocks: allDayBlocks,
+            visibleBlockContext: visibleBlockContext,
             selectedDayBlockedMinutes: selectedDayBlockedMinutes,
             tintsByTaskID: tintsByTaskID(from: tasks),
             activeFocusRenderSessions: activeFocusRenderSessions,
@@ -2462,7 +2465,10 @@ private struct DayPlanTimelinePanelContentView: View {
             allTaskIDs: allTaskIDs,
             isTaskFilterActive: isCalendarTaskFilterActive
         )
-        let scheduleAllDayBlocks = DayPlanScheduleViewVisibility.allDayBlocks(visibleAllDayBlocks)
+        let scheduleAllDayBlocks = DayPlanScheduleViewVisibility.allDayBlocks(
+            visibleAllDayBlocks,
+            context: renderSnapshot.visibleBlockContext
+        )
         let calendarDayTaskListItems: (Date) -> [DayPlanDayTaskListItem] = { date in
             dayTaskListItems(
                 on: date,
@@ -3970,13 +3976,15 @@ private final class DayPlanVisibleBlockContextCache: ObservableObject {
         tasks: [RoutineTask],
         logs: [RoutineLog],
         calendar: Calendar,
+        referenceDate: Date,
         activeFocusSessions: [FocusSession]
     ) -> DayPlanVisibleBlockContext {
         let reuseSignature = DayPlanVisibleBlockContextReuseSignature(
             tasks: tasks,
             logs: logs,
             activeFocusSessions: activeFocusSessions,
-            calendar: calendar
+            calendar: calendar,
+            referenceDate: referenceDate
         )
 
         if !requiresFullValidation, cachedReuseSignature == reuseSignature, let cachedContext {
@@ -3987,7 +3995,8 @@ private final class DayPlanVisibleBlockContextCache: ObservableObject {
             tasks: tasks,
             logs: logs,
             activeFocusSessions: activeFocusSessions,
-            calendar: calendar
+            calendar: calendar,
+            referenceDate: referenceDate
         )
 
         if cachedKey == key, let cachedContext {
@@ -4000,6 +4009,7 @@ private final class DayPlanVisibleBlockContextCache: ObservableObject {
             tasks: tasks,
             logs: logs,
             calendar: calendar,
+            referenceDate: referenceDate,
             activeFocusSessions: activeFocusSessions
         )
         cachedReuseSignature = reuseSignature
@@ -4029,12 +4039,14 @@ private struct DayPlanVisibleBlockContextReuseSignature: Equatable {
     var taskObjects: [ObjectIdentifier]
     var logObjects: [ObjectIdentifier]
     var activeFocusSessionObjects: [ObjectIdentifier]
+    var referenceMinute: DayPlanTimelineRenderSnapshotKey.ReferenceMinute
 
     init(
         tasks: [RoutineTask],
         logs: [RoutineLog],
         activeFocusSessions: [FocusSession],
-        calendar: Calendar
+        calendar: Calendar,
+        referenceDate: Date
     ) {
         calendarIdentifier = String(describing: calendar.identifier)
         timeZoneIdentifier = calendar.timeZone.identifier
@@ -4043,6 +4055,10 @@ private struct DayPlanVisibleBlockContextReuseSignature: Equatable {
         taskObjects = tasks.map { ObjectIdentifier($0) }
         logObjects = logs.map { ObjectIdentifier($0) }
         activeFocusSessionObjects = activeFocusSessions.map { ObjectIdentifier($0) }
+        referenceMinute = DayPlanTimelineRenderSnapshotKey.ReferenceMinute(
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
     }
 }
 
@@ -4054,26 +4070,35 @@ private struct DayPlanVisibleBlockContextCacheKey: Equatable {
     var tasks: [TaskSnapshot]
     var logs: [LogSnapshot]
     var activeFocusSessions: [FocusSessionSnapshot]
+    var referenceMinute: DayPlanTimelineRenderSnapshotKey.ReferenceMinute
 
     init(
         tasks: [RoutineTask],
         logs: [RoutineLog],
         activeFocusSessions: [FocusSession],
-        calendar: Calendar
+        calendar: Calendar,
+        referenceDate: Date
     ) {
         calendarIdentifier = String(describing: calendar.identifier)
         timeZoneIdentifier = calendar.timeZone.identifier
         firstWeekday = calendar.firstWeekday
         minimumDaysInFirstWeek = calendar.minimumDaysInFirstWeek
+        referenceMinute = DayPlanTimelineRenderSnapshotKey.ReferenceMinute(
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
         self.tasks = tasks
             .map(TaskSnapshot.init(task:))
             .sorted { $0.idSortKey < $1.idSortKey }
 
+        let completedKind = RoutineLogKind.completed.rawValue
         let canceledKind = RoutineLogKind.canceled.rawValue
         let missedKind = RoutineLogKind.missed.rawValue
         self.logs = logs
             .compactMap { log -> LogSnapshot? in
-                guard log.kindRawValue == canceledKind || log.kindRawValue == missedKind,
+                guard log.kindRawValue == completedKind
+                    || log.kindRawValue == canceledKind
+                    || log.kindRawValue == missedKind,
                       log.timestamp != nil else {
                     return nil
                 }
@@ -4100,13 +4125,55 @@ private struct DayPlanVisibleBlockContextCacheKey: Equatable {
         var id: UUID
         var idSortKey: String
         var scheduleModeRawValue: String
+        var recurrenceStorageVersion: Int16
+        var recurrenceKindRawValue: String
+        var recurrenceTimeOfDayHour: Int?
+        var recurrenceTimeOfDayMinute: Int?
+        var recurrenceTimeRangeStartHour: Int?
+        var recurrenceTimeRangeStartMinute: Int?
+        var recurrenceTimeRangeEndHour: Int?
+        var recurrenceTimeRangeEndMinute: Int?
+        var recurrenceWeekday: Int?
+        var recurrenceDayOfMonth: Int?
+        var recurrenceRuleStorage: String
+        var interval: Int16
+        var lastDone: Date?
         var canceledAt: Date?
+        var createdAt: Date?
+        var pausedAt: Date?
+        var snoozedUntil: Date?
+        var autoAssumeDailyDone: Bool
+        var autoAssumeDoneTimeOfDayHour: Int?
+        var autoAssumeDoneTimeOfDayMinute: Int?
+        var hasSequentialSteps: Bool
+        var hasChecklistItems: Bool
 
         init(task: RoutineTask) {
             id = task.id
             idSortKey = task.id.uuidString
             scheduleModeRawValue = task.scheduleModeRawValue
+            recurrenceStorageVersion = task.recurrenceStorageVersion
+            recurrenceKindRawValue = task.recurrenceKindRawValue
+            recurrenceTimeOfDayHour = task.recurrenceTimeOfDayHour
+            recurrenceTimeOfDayMinute = task.recurrenceTimeOfDayMinute
+            recurrenceTimeRangeStartHour = task.recurrenceTimeRangeStartHour
+            recurrenceTimeRangeStartMinute = task.recurrenceTimeRangeStartMinute
+            recurrenceTimeRangeEndHour = task.recurrenceTimeRangeEndHour
+            recurrenceTimeRangeEndMinute = task.recurrenceTimeRangeEndMinute
+            recurrenceWeekday = task.recurrenceWeekday
+            recurrenceDayOfMonth = task.recurrenceDayOfMonth
+            recurrenceRuleStorage = task.recurrenceRuleStorage
+            interval = task.interval
+            lastDone = task.lastDone
             canceledAt = task.canceledAt
+            createdAt = task.createdAt
+            pausedAt = task.pausedAt
+            snoozedUntil = task.snoozedUntil
+            autoAssumeDailyDone = task.autoAssumeDailyDone
+            autoAssumeDoneTimeOfDayHour = task.autoAssumeDoneTimeOfDay?.hour
+            autoAssumeDoneTimeOfDayMinute = task.autoAssumeDoneTimeOfDay?.minute
+            hasSequentialSteps = task.hasSequentialSteps
+            hasChecklistItems = task.hasChecklistItems
         }
     }
 

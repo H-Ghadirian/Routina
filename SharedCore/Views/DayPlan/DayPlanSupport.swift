@@ -123,11 +123,15 @@ struct DayPlanVisibleBlockContext {
     var canceledOneOffTaskIDs: Set<UUID>
     var hiddenOutcomeDayKeysByTaskID: [UUID: Set<String>]
     var activeFocusSessions: [FocusSession]
+    private var logs: [RoutineLog]
+    private var calendar: Calendar
+    private var referenceDate: Date
 
     init(
         tasks: [RoutineTask],
         logs: [RoutineLog],
         calendar: Calendar,
+        referenceDate: Date = Date(),
         activeFocusSessions: [FocusSession] = []
     ) {
         var tasksByID: [UUID: RoutineTask] = [:]
@@ -147,25 +151,92 @@ struct DayPlanVisibleBlockContext {
                     DayPlanStorage.dayKey(for: canceledAt, calendar: calendar)
                 )
             }
+
+            if let lastDone = task.lastDone {
+                hiddenOutcomeDayKeysByTaskID[taskID, default: []].insert(
+                    Self.completionDayKey(for: task, timestamp: lastDone, calendar: calendar)
+                )
+            }
         }
 
+        let completedKind = RoutineLogKind.completed.rawValue
         let canceledKind = RoutineLogKind.canceled.rawValue
         let missedKind = RoutineLogKind.missed.rawValue
         for log in logs {
-            guard log.kindRawValue == canceledKind || log.kindRawValue == missedKind,
-                  let timestamp = log.timestamp else {
+            guard let timestamp = log.timestamp else {
                 continue
             }
 
-            hiddenOutcomeDayKeysByTaskID[log.taskID, default: []].insert(
-                DayPlanStorage.dayKey(for: timestamp, calendar: calendar)
-            )
+            if log.kindRawValue == completedKind,
+               let task = tasksByID[log.taskID] {
+                hiddenOutcomeDayKeysByTaskID[log.taskID, default: []].insert(
+                    Self.completionDayKey(for: task, timestamp: timestamp, calendar: calendar)
+                )
+            } else if log.kindRawValue == canceledKind || log.kindRawValue == missedKind {
+                hiddenOutcomeDayKeysByTaskID[log.taskID, default: []].insert(
+                    DayPlanStorage.dayKey(for: timestamp, calendar: calendar)
+                )
+            }
         }
 
         self.tasksByID = tasksByID
         self.canceledOneOffTaskIDs = canceledOneOffTaskIDs
         self.hiddenOutcomeDayKeysByTaskID = hiddenOutcomeDayKeysByTaskID
         self.activeFocusSessions = activeFocusSessions
+        self.logs = logs
+        self.calendar = calendar
+        self.referenceDate = referenceDate
+    }
+
+    func isHiddenTaskDay(taskID: UUID, dayKey: String) -> Bool {
+        if hiddenOutcomeDayKeysByTaskID[taskID]?.contains(dayKey) == true {
+            return true
+        }
+
+        guard let task = tasksByID[taskID],
+              let day = Self.date(fromDayKey: dayKey, calendar: calendar) else {
+            return false
+        }
+
+        return RoutineAssumedCompletion.isAssumedDone(
+            for: task,
+            on: day,
+            referenceDate: referenceDate,
+            logs: logs,
+            calendar: calendar
+        )
+    }
+
+    func isHiddenTaskDay(taskID: UUID, on date: Date) -> Bool {
+        isHiddenTaskDay(
+            taskID: taskID,
+            dayKey: DayPlanStorage.dayKey(for: date, calendar: calendar)
+        )
+    }
+
+    private static func completionDayKey(
+        for task: RoutineTask,
+        timestamp: Date,
+        calendar: Calendar
+    ) -> String {
+        let displayDay = RoutineDateMath.completionDisplayDay(
+            for: task,
+            completionDate: timestamp,
+            calendar: calendar
+        ) ?? calendar.startOfDay(for: timestamp)
+        return DayPlanStorage.dayKey(for: displayDay, calendar: calendar)
+    }
+
+    private static func date(fromDayKey dayKey: String, calendar: Calendar) -> Date? {
+        let parts = dayKey.split(separator: "-")
+        guard parts.count == 3,
+              let year = Int(parts[0]),
+              let month = Int(parts[1]),
+              let day = Int(parts[2]) else {
+            return nil
+        }
+
+        return calendar.date(from: DateComponents(year: year, month: month, day: day))
     }
 }
 
@@ -177,9 +248,18 @@ enum DayPlanScheduleViewVisibility {
     }
 
     static func allDayBlocks(
-        _ blocks: [DayPlanAllDayBlock]
+        _ blocks: [DayPlanAllDayBlock],
+        context: DayPlanVisibleBlockContext? = nil
     ) -> [DayPlanAllDayBlock] {
-        blocks.filter { !$0.isCompletedActivity }
+        blocks.filter { block in
+            guard !block.isCompletedActivity else { return false }
+            guard let context,
+                  let taskID = block.taskID,
+                  !block.isEvent else {
+                return true
+            }
+            return !context.isHiddenTaskDay(taskID: taskID, on: block.startDate)
+        }
     }
 }
 
@@ -231,6 +311,7 @@ enum DayPlanVisibleBlocks {
         tasks: [RoutineTask],
         logs: [RoutineLog],
         calendar: Calendar,
+        referenceDate: Date = Date(),
         activeFocusSessions: [FocusSession] = []
     ) -> [DayPlanBlock] {
         Self.blocks(
@@ -239,6 +320,7 @@ enum DayPlanVisibleBlocks {
                 tasks: tasks,
                 logs: logs,
                 calendar: calendar,
+                referenceDate: referenceDate,
                 activeFocusSessions: activeFocusSessions
             )
         )
@@ -262,7 +344,7 @@ enum DayPlanVisibleBlocks {
 
             guard context.tasksByID[block.taskID] != nil else { return true }
             guard !context.canceledOneOffTaskIDs.contains(block.taskID) else { return false }
-            return context.hiddenOutcomeDayKeysByTaskID[block.taskID]?.contains(block.dayKey) != true
+            return !context.isHiddenTaskDay(taskID: block.taskID, dayKey: block.dayKey)
         }
     }
 

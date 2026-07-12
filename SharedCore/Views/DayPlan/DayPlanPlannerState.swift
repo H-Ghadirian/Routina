@@ -350,6 +350,23 @@ final class DayPlanPlannerState: ObservableObject {
             var didChangeDay = false
 
             for task in availableTasks {
+                if let windowBlock = automaticWindowScheduledBlock(for: task, on: date, calendar: calendar) {
+                    let windowStartMinute = startMinute(for: windowBlock.startDate, calendar: calendar)
+                    let windowDurationMinutes = scheduledDurationMinutes(
+                        for: windowBlock,
+                        task: task,
+                        startMinute: windowStartMinute
+                    )
+                    if removeStaleScheduledBlocks(
+                        from: &dayBlocks,
+                        taskID: task.id,
+                        scheduledStartMinute: windowStartMinute,
+                        scheduledDurationMinutes: windowDurationMinutes
+                    ) {
+                        didChangeDay = true
+                    }
+                }
+
                 guard let scheduledBlock = exactScheduledBlock(for: task, on: date, calendar: calendar) else {
                     continue
                 }
@@ -1310,15 +1327,6 @@ final class DayPlanPlannerState: ObservableObject {
 
         if task.isOneOffTask {
             if isDateWithinAvailabilityDateBounds(date, for: task, calendar: calendar) {
-                if let timeRange = task.recurrenceRule.timeRange {
-                    let startDate = timeRange.startDate(on: date, calendar: calendar)
-                    let endDate = timeRange.endDate(on: date, calendar: calendar)
-                    return ExactScheduledBlock(
-                        startDate: startDate,
-                        durationMinutes: availabilityWindowDuration(start: startDate, end: endDate)
-                    )
-                }
-
                 if let timeOfDay = task.recurrenceRule.timeOfDay {
                     return ExactScheduledBlock(
                         startDate: timeOfDay.date(on: date, calendar: calendar),
@@ -1335,15 +1343,42 @@ final class DayPlanPlannerState: ObservableObject {
             return ExactScheduledBlock(startDate: deadline, durationMinutes: nil)
         }
 
+        guard task.recurrenceRule.timeRange == nil else { return nil }
         guard let occurrence = RoutineDateMath.scheduledOccurrence(for: task, on: date, calendar: calendar) else {
             return nil
         }
-        let windowDuration = task.recurrenceRule.timeRange.flatMap { timeRange in
-            availabilityWindowDuration(
-                start: occurrence,
-                end: timeRange.endDate(on: occurrence, calendar: calendar)
+        return ExactScheduledBlock(startDate: occurrence, durationMinutes: nil)
+    }
+
+    private func automaticWindowScheduledBlock(
+        for task: RoutineTask,
+        on date: Date,
+        calendar: Calendar
+    ) -> ExactScheduledBlock? {
+        guard !task.isAllDay,
+              let timeRange = task.recurrenceRule.timeRange else {
+            return nil
+        }
+
+        if task.isOneOffTask {
+            guard isDateWithinAvailabilityDateBounds(date, for: task, calendar: calendar) else {
+                return nil
+            }
+            let startDate = timeRange.startDate(on: date, calendar: calendar)
+            let endDate = timeRange.endDate(on: date, calendar: calendar)
+            return ExactScheduledBlock(
+                startDate: startDate,
+                durationMinutes: availabilityWindowDuration(start: startDate, end: endDate)
             )
         }
+
+        guard let occurrence = RoutineDateMath.scheduledOccurrence(for: task, on: date, calendar: calendar) else {
+            return nil
+        }
+        let windowDuration = availabilityWindowDuration(
+            start: occurrence,
+            end: timeRange.endDate(on: occurrence, calendar: calendar)
+        )
         return ExactScheduledBlock(
             startDate: occurrence,
             durationMinutes: nil,

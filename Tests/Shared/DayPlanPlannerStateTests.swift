@@ -688,7 +688,7 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
-    func visiblePlannerBlocksKeepCompletedAndDifferentDayOutcomes() throws {
+    func visiblePlannerBlocksHideCompletedAndKeepDifferentDayOutcomes() throws {
         let calendar = gregorianCalendar
         let blockDate = try #require(date("2026-05-07T12:00:00Z"))
         let completedAt = try #require(date("2026-05-07T10:00:00Z"))
@@ -729,7 +729,38 @@ struct DayPlanPlannerStateTests {
             calendar: calendar
         )
 
-        #expect(visibleBlocks.map(\.taskID) == [completedTaskID, missedTomorrowTaskID])
+        #expect(visibleBlocks.map(\.taskID) == [missedTomorrowTaskID])
+    }
+
+    @Test
+    func visiblePlannerBlocksHideAssumedDoneTasks() throws {
+        let calendar = gregorianCalendar
+        let blockDate = try #require(date("2026-05-07T12:00:00Z"))
+        let referenceDate = try #require(date("2026-05-08T10:00:00Z"))
+        let createdAt = try #require(date("2026-05-06T08:00:00Z"))
+        let assumedTaskID = UUID()
+        let assumedTask = RoutineTask(
+            id: assumedTaskID,
+            name: "Brush teeth",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 21, minute: 0)),
+            createdAt: createdAt,
+            autoAssumeDailyDone: true,
+            autoAssumeDoneTimeOfDay: RoutineTimeOfDay(hour: 8, minute: 0)
+        )
+        let blocks = [
+            plannerBlock(taskID: assumedTaskID, title: "Brush teeth", on: blockDate, calendar: calendar),
+        ]
+
+        let visibleBlocks = DayPlanVisibleBlocks.blocks(
+            blocks,
+            tasks: [assumedTask],
+            logs: [],
+            calendar: calendar,
+            referenceDate: referenceDate
+        )
+
+        #expect(visibleBlocks.isEmpty)
     }
 
     @Test
@@ -1892,6 +1923,36 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func scheduleViewVisibilityHidesCompletedExactAllDayBlocks() throws {
+        let calendar = gregorianCalendar
+        let exactDate = try #require(date("2026-05-11T00:00:00Z"))
+        let completedAt = try #require(date("2026-05-11T09:00:00Z"))
+        let taskID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Conference",
+            deadline: exactDate,
+            isAllDay: true,
+            scheduleMode: .oneOff,
+            lastDone: completedAt
+        )
+        let blocks = DayPlanAllDayTasks.blocks(
+            on: try plannerDates(),
+            from: [task],
+            calendar: calendar
+        )
+        let context = DayPlanVisibleBlockContext(
+            tasks: [task],
+            logs: [],
+            calendar: calendar,
+            referenceDate: completedAt
+        )
+
+        #expect(blocks.compactMap(\.taskID) == [taskID])
+        #expect(DayPlanScheduleViewVisibility.allDayBlocks(blocks, context: context).isEmpty)
+    }
+
+    @Test
     func allDayRoutinesDoNotCreateTimedPlannerBlocks() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()
@@ -1950,13 +2011,11 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
-    func timeWindowRoutineWithoutEstimateUsesWindowDurationForPlannerBlock() throws {
+    func timeWindowRoutineWithoutEstimateDoesNotCreatePlannerBlock() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()
         let occurrence = try #require(date("2026-05-11T12:00:00Z"))
-        let taskID = UUID()
         let task = RoutineTask(
-            id: taskID,
             name: "Daily",
             emoji: "✨",
             scheduleMode: .fixedInterval,
@@ -1977,20 +2036,15 @@ struct DayPlanPlannerStateTests {
             context: context
         )
 
-        let block = try #require(planner.weekBlocksByDayKey.values.flatMap { $0 }.first)
-        #expect(block.taskID == taskID)
-        #expect(block.startMinute == 10 * 60)
-        #expect(block.durationMinutes == 15)
+        #expect(planner.weekBlocksByDayKey.values.flatMap { $0 }.isEmpty)
     }
 
     @Test
-    func timeWindowRoutineEstimateOverridesWindowFallbackForPlannerBlock() throws {
+    func timeWindowRoutineEstimateDoesNotCreatePlannerBlock() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()
         let occurrence = try #require(date("2026-05-11T12:00:00Z"))
-        let taskID = UUID()
         let task = RoutineTask(
-            id: taskID,
             name: "Daily",
             emoji: "✨",
             scheduleMode: .fixedInterval,
@@ -2012,17 +2066,13 @@ struct DayPlanPlannerStateTests {
             context: context
         )
 
-        let block = try #require(planner.weekBlocksByDayKey.values.flatMap { $0 }.first)
-        #expect(block.taskID == taskID)
-        #expect(block.startMinute == 10 * 60)
-        #expect(block.durationMinutes == 30)
+        #expect(planner.weekBlocksByDayKey.values.flatMap { $0 }.isEmpty)
     }
 
     @Test
-    func pausedTimeWindowRoutineRemovesStaleScheduledPlannerBlock() throws {
+    func timeWindowRoutineRemovesStaleScheduledPlannerBlock() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()
-        let pausedAt = try #require(date("2026-07-09T12:00:00Z"))
         let occurrence = try #require(date("2026-07-10T12:00:00Z"))
         let dayKey = DayPlanStorage.dayKey(for: occurrence, calendar: calendar)
         let taskID = UUID()
@@ -2037,8 +2087,7 @@ struct DayPlanPlannerStateTests {
                     start: RoutineTimeOfDay(hour: 10, minute: 0),
                     end: RoutineTimeOfDay(hour: 10, minute: 15)
                 )
-            ),
-            pausedAt: pausedAt
+            )
         )
         let staleBlock = DayPlanBlock(
             id: blockID,
@@ -2185,14 +2234,12 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
-    func availabilityWindowTodoCreatesTimedPlannerBlockWithWindowDuration() throws {
+    func availabilityWindowTodoDoesNotCreateTimedPlannerBlock() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()
         let availabilityStart = try #require(date("2026-05-11T09:15:00Z"))
         let availabilityEnd = try #require(date("2026-05-11T11:00:00Z"))
-        let taskID = UUID()
         let task = RoutineTask(
-            id: taskID,
             name: "Call accountant",
             emoji: "📞",
             availabilityStartDate: availabilityStart,
@@ -2217,21 +2264,16 @@ struct DayPlanPlannerStateTests {
             context: context
         )
 
-        let block = try #require(planner.weekBlocksByDayKey.values.flatMap { $0 }.first)
-        #expect(block.taskID == taskID)
-        #expect(block.startMinute == 9 * 60 + 15)
-        #expect(block.durationMinutes == 105)
+        #expect(planner.weekBlocksByDayKey.values.flatMap { $0 }.isEmpty)
     }
 
     @Test
-    func dateWindowTodoCreatesTimedPlannerBlocksOnEveryEligibleDate() throws {
+    func dateWindowTodoWithAvailabilityWindowDoesNotCreateTimedPlannerBlocks() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()
         let availabilityStart = try #require(date("2026-05-11T09:15:00Z"))
         let availabilityEnd = try #require(date("2026-05-12T11:00:00Z"))
-        let taskID = UUID()
         let task = RoutineTask(
-            id: taskID,
             name: "Call accountant",
             emoji: "📞",
             availabilityStartDate: availabilityStart,
@@ -2256,12 +2298,7 @@ struct DayPlanPlannerStateTests {
             context: context
         )
 
-        let blocks = planner.weekBlocksByDayKey
-            .flatMap { entry in entry.value.map { (entry.key, $0) } }
-            .sorted { lhs, rhs in lhs.0 < rhs.0 }
-        #expect(blocks.map { $0.1.taskID } == [taskID, taskID])
-        #expect(blocks.map { $0.1.startMinute } == [9 * 60 + 15, 9 * 60 + 15])
-        #expect(blocks.map { $0.1.durationMinutes } == [105, 105])
+        #expect(planner.weekBlocksByDayKey.values.flatMap { $0 }.isEmpty)
     }
 
     @Test
