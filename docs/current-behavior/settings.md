@@ -24,11 +24,12 @@ This page summarizes active Settings, durable preference, backup, reset, App Loc
 - [0290](../decisions/0290-limit-free-active-tasks-behind-subscription.md)
 - [0293](../decisions/0293-add-settings-unlimited-task-override-while-products-unavailable.md)
 - [0313](../decisions/0313-disable-mac-app-widgets-in-app-targets.md)
+- [0374](../decisions/0374-move-unlimited-task-override-to-beta-experiments.md)
 
 ## Current Contract
 
 - User-owned preferences that should back up, restore, reset, and sync belong in SwiftData.
-- Purchase entitlement is resolved from StoreKit rather than backed up in user data. Weekly, monthly, annual, and lifetime products unlock unlimited active tasks. Settings -> Support & About -> Purchases includes a temporary unlimited-task override while StoreKit products are unavailable; production defaults the override off.
+- Purchase entitlement is resolved from StoreKit rather than backed up in user data. Weekly, monthly, annual, and lifetime products unlock unlimited active tasks. Settings -> Support & About -> Beta Experiments includes a temporary unlimited-task override while StoreKit products are unavailable; production defaults the override off.
 - Temporary, diagnostic, cache, migration, permission, and per-device handoff values can remain in `UserDefaults`.
 - iCloud sync, reset, backup import, and backup export live in one iCloud & Backup settings section.
 - Default `.routinabackup` export/import and destructive reset are complete user-data operations over the SwiftData user model set.

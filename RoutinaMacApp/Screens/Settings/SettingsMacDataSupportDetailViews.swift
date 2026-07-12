@@ -426,15 +426,6 @@ SettingsMacDetailShell(
             }
     }
 
-    SettingsMacDetailCard(title: "Purchases") {
-        Toggle("Unlock unlimited tasks", isOn: unlockUnlimitedTasksBinding)
-            .toggleStyle(.switch)
-
-        Text("Bypass the active-task purchase limit while StoreKit products are unavailable.")
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-    }
-
     if store.diagnostics.isDebugSectionVisible {
         SettingsMacBetaExperimentsCard(store: store)
 
@@ -456,12 +447,6 @@ SettingsMacDetailShell(
 }
     }
 
-    private var unlockUnlimitedTasksBinding: Binding<Bool> {
-        Binding(
-            get: { store.appearance.unlocksUnlimitedTasks },
-            set: { store.send(.unlockUnlimitedTasksToggled($0)) }
-        )
-    }
 }
 
 private struct SettingsMacBetaExperimentsCard: View {
@@ -530,6 +515,13 @@ private struct SettingsMacBetaExperimentsCard: View {
 
     var body: some View {
         SettingsMacDetailCard(title: "Beta Experiments") {
+            Toggle("Unlock unlimited tasks", isOn: unlockUnlimitedTasksBinding)
+                .toggleStyle(.switch)
+
+            Text("Bypass the active-task purchase limit while StoreKit products are unavailable.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
             Toggle("Enable Git features", isOn: gitFeaturesBinding)
                 .toggleStyle(.switch)
 
@@ -692,6 +684,13 @@ private struct SettingsMacBetaExperimentsCard: View {
         Binding(
             get: { store.appearance.isGitFeaturesEnabled },
             set: { store.send(.gitFeaturesToggled($0)) }
+        )
+    }
+
+    private var unlockUnlimitedTasksBinding: Binding<Bool> {
+        Binding(
+            get: { store.appearance.unlocksUnlimitedTasks },
+            set: { store.send(.unlockUnlimitedTasksToggled($0)) }
         )
     }
 

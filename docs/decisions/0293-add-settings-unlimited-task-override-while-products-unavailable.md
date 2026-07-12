@@ -6,6 +6,8 @@ Date: 2026-06-27
 
 Refines: [0290 Limit Free Active Tasks Behind Subscription](0290-limit-free-active-tasks-behind-subscription.md)
 
+Refined by: [0374 Move Unlimited Task Override to Beta Experiments](0374-move-unlimited-task-override-to-beta-experiments.md)
+
 ## Context
 
 The active-task subscription gate from [0290](0290-limit-free-active-tasks-behind-subscription.md) is working, but the StoreKit products are not available yet during manual app testing. Once a user has 10 active tasks, the paywall blocks creating more tasks and the user cannot complete a purchase to unlock the entitlement.
