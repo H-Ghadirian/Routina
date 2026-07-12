@@ -325,4 +325,35 @@ struct RoutineAssumedCompletionTests {
 
         #expect(assumedDates == [makeDate("2026-02-22T00:00:00Z")])
     }
+
+    @Test
+    func pastAssumedDates_skipCompletedTimeWindowDaysLoggedAtProbableTime() {
+        let calendar = makeTestCalendar()
+        let referenceDate = makeDate("2026-02-25T08:00:00Z")
+        let timeRange = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 21, minute: 0),
+            end: RoutineTimeOfDay(hour: 3, minute: 0)
+        )
+        let task = RoutineTask(
+            name: "Brush teeth",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(in: timeRange),
+            createdAt: makeDate("2026-02-22T00:00:00Z"),
+            autoAssumeDailyDone: true,
+            autoAssumeDoneTimeOfDay: RoutineTimeOfDay(hour: 12, minute: 0)
+        )
+        let logs = [
+            RoutineLog(timestamp: makeDate("2026-02-23T12:00:00Z"), taskID: task.id, kind: .completed),
+            RoutineLog(timestamp: makeDate("2026-02-24T12:00:00Z"), taskID: task.id, kind: .canceled),
+        ]
+
+        let assumedDates = RoutineAssumedCompletion.pastAssumedDates(
+            for: task,
+            referenceDate: referenceDate,
+            logs: logs,
+            calendar: calendar
+        )
+
+        #expect(assumedDates == [makeDate("2026-02-22T00:00:00Z")])
+    }
 }

@@ -120,6 +120,54 @@ struct TaskDetailCalendarGridSupportTests {
     }
 
     @Test
+    func doneDatesIncludesTimeWindowCompletionsLoggedAtProbableTime() {
+        let calendar = gregorianUTC
+        let timeRange = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 21, minute: 0),
+            end: RoutineTimeOfDay(hour: 3, minute: 0)
+        )
+        let task = RoutineTask(
+            name: "Brush teeth",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 1, timeRange: timeRange),
+            lastDone: DateComponents(
+                calendar: calendar,
+                timeZone: calendar.timeZone,
+                year: 2026,
+                month: 7,
+                day: 11,
+                hour: 12
+            ).date,
+            createdAt: date(year: 2026, month: 6, day: 9, calendar: calendar),
+            autoAssumeDailyDone: true,
+            autoAssumeDoneTimeOfDay: RoutineTimeOfDay(hour: 12, minute: 0)
+        )
+        let completionDay = date(year: 2026, month: 7, day: 1, calendar: calendar)
+        let logs = [
+            RoutineLog(
+                timestamp: DateComponents(
+                    calendar: calendar,
+                    timeZone: calendar.timeZone,
+                    year: 2026,
+                    month: 7,
+                    day: 1,
+                    hour: 12
+                ).date,
+                taskID: task.id,
+                kind: .completed
+            )
+        ]
+
+        let doneDates = TaskDetailCalendarPresentation.doneDates(
+            from: logs,
+            task: task,
+            calendar: calendar
+        )
+
+        #expect(doneDates.contains(completionDay))
+    }
+
+    @Test
     func overdueLegendHidesWhenTaskWasDoneOnDueDate() {
         let calendar = gregorianUTC
         let dueDate = date(year: 2026, month: 6, day: 25, calendar: calendar)

@@ -201,6 +201,39 @@ struct HomeRoutineDisplayFactoryTests {
     }
 
     @Test
+    func overnightWindowProbableTimeCompletionMarksCurrentOccurrenceDoneBeforeNextStart() {
+        let now = makeDate("2026-07-12T12:00:00Z")
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 21, minute: 0),
+            end: RoutineTimeOfDay(hour: 3, minute: 0)
+        )
+        let task = RoutineTask(
+            name: "Brush teeth",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(in: window),
+            createdAt: makeDate("2026-07-01T00:00:00Z"),
+            autoAssumeDailyDone: true,
+            autoAssumeDoneTimeOfDay: RoutineTimeOfDay(hour: 12, minute: 0)
+        )
+        let probableCompletion = makeDate("2026-07-11T12:00:00Z")
+
+        let display = makeDisplay(
+            task: task,
+            now: now,
+            places: [],
+            coordinate: LocationCoordinate(latitude: 52.5200, longitude: 13.4050),
+            doneStats: HomeDoneStats(
+                totalCount: 1,
+                countsByTaskID: [task.id: 1],
+                completedDatesByTaskID: [task.id: [probableCompletion]]
+            )
+        )
+
+        #expect(display.isDoneToday)
+        #expect(!display.isAssumedDoneToday)
+    }
+
+    @Test
     func assumedChecklistRoutineHidesPendingChecklistPrompt() {
         let now = makeDate("2026-06-09T08:00:00Z")
         let task = RoutineTask(

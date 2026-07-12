@@ -392,6 +392,53 @@ struct RoutineDateMathTests {
     }
 
     @Test
+    func completionDisplayDayForTimeWindowUsesSameScheduledDayWhenTimestampIsOutsideWindow() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let timeRange = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 21, minute: 0),
+            end: RoutineTimeOfDay(hour: 3, minute: 0)
+        )
+        let task = RoutineTask(
+            recurrenceRule: .daily(in: timeRange),
+            scheduleAnchor: makeDate("2026-03-20T00:00:00Z")
+        )
+
+        let displayDay = RoutineDateMath.completionDisplayDay(
+            for: task,
+            completionDate: makeDate("2026-03-20T12:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(displayDay == makeDate("2026-03-20T00:00:00Z"))
+    }
+
+    @Test
+    func completionDisplayDayForIntervalTimeWindowHistoryDoesNotRequireCurrentAnchor() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let timeRange = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 21, minute: 0),
+            end: RoutineTimeOfDay(hour: 3, minute: 0)
+        )
+        let task = RoutineTask(
+            recurrenceRule: .interval(days: 1, timeRange: timeRange),
+            lastDone: makeDate("2026-07-11T12:00:00Z"),
+            createdAt: makeDate("2026-06-09T00:00:00Z")
+        )
+
+        let displayDay = RoutineDateMath.completionDisplayDay(
+            for: task,
+            completionDate: makeDate("2026-07-01T12:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(displayDay == makeDate("2026-07-01T00:00:00Z"))
+    }
+
+    @Test
     func dueDate_weeklySchedule_usesConfiguredWeekday() {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current

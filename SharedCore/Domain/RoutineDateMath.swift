@@ -681,11 +681,20 @@ enum RoutineDateMath {
             return completionDay
         }
 
+        if task.recurrenceRule.kind == .intervalDays {
+            return intervalCompletionDisplayDay(
+                for: task,
+                completionDate: completionDate,
+                calendar: calendar
+            )
+        }
+
         var candidateDays = [completionDay]
         if let previousDay = calendar.date(byAdding: .day, value: -1, to: completionDay) {
             candidateDays.append(previousDay)
         }
 
+        var sameDayWindowFallback: Date?
         for candidateDay in candidateDays {
             guard let occurrence = scheduledOccurrence(for: task, on: candidateDay, calendar: calendar) else {
                 continue
@@ -696,12 +705,40 @@ enum RoutineDateMath {
                 if completionDate >= occurrence && completionDate < windowEnd {
                     return candidateDay
                 }
+                if calendar.isDate(candidateDay, inSameDayAs: completionDay) {
+                    sameDayWindowFallback = candidateDay
+                }
             } else if calendar.isDate(completionDate, inSameDayAs: occurrence) {
                 return candidateDay
             }
         }
 
+        if let sameDayWindowFallback {
+            return sameDayWindowFallback
+        }
+
         return nil
+    }
+
+    private static func intervalCompletionDisplayDay(
+        for task: RoutineTask,
+        completionDate: Date,
+        calendar: Calendar
+    ) -> Date {
+        let completionDay = calendar.startOfDay(for: completionDate)
+        guard let timeRange = task.recurrenceRule.timeRange,
+              timeRange.isOvernight,
+              let previousDay = calendar.date(byAdding: .day, value: -1, to: completionDay)
+        else {
+            return completionDay
+        }
+
+        let previousOccurrence = timeRange.startDate(on: previousDay, calendar: calendar)
+        let previousWindowEnd = timeRange.endDate(on: previousOccurrence, calendar: calendar)
+        if completionDate >= previousOccurrence && completionDate < previousWindowEnd {
+            return previousDay
+        }
+        return completionDay
     }
 
     static func softIntervalThresholdDate(
