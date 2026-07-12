@@ -229,7 +229,7 @@ enum DayPlanAllDayTasks {
         }
 
         logs
-            .filter { $0.kind == .completed }
+            .filter { $0.kind.resolvesDoneDate }
             .forEach { record($0.timestamp) }
         record(task.lastDone)
 

@@ -312,6 +312,7 @@ enum TimelineLogic {
 
         let logEntries = resolvedLogs.compactMap { log -> TimelineEntry? in
             guard let timestamp = log.timestamp else { return nil }
+            guard log.kind != .fulfilled else { return nil }
             if let cutoff, timestamp < cutoff { return nil }
 
             let task = lookup[log.taskID]
@@ -686,7 +687,7 @@ enum TimelineLogic {
             guard let lastDone = task.lastDone else { continue }
             let hasCompletionLog = resolvedLogs.contains { log in
                 guard log.taskID == task.id,
-                      log.kind == .completed,
+                      log.kind.resolvesDoneDate,
                       let timestamp = log.timestamp else {
                     return false
                 }

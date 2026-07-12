@@ -85,7 +85,7 @@ enum TaskDetailCalendarPresentation {
         calendar: Calendar = .current
     ) -> Set<Date> {
         var dates = Set<Date>(logs.compactMap { log in
-            guard let timestamp = log.timestamp, log.kind == .completed else { return nil }
+            guard let timestamp = log.timestamp, log.kind.resolvesDoneDate else { return nil }
             return RoutineDateMath.completionDisplayDay(for: task, completionDate: timestamp, calendar: calendar)
         })
         if let lastDone = task.lastDone,

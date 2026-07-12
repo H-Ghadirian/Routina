@@ -8,13 +8,23 @@ enum TaskDetailDurationTextStyle {
 
 enum TaskDetailLogPresentation {
     static func actionTitle(for log: RoutineLog) -> String {
-        log.kind == .completed ? "Undo" : "Remove"
+        log.kind.resolvesDoneDate ? "Undo" : "Remove"
     }
 
     static func statusText(for kind: RoutineLogKind) -> String {
+        statusText(for: kind, sourceTaskName: nil)
+    }
+
+    static func statusText(for kind: RoutineLogKind, sourceTaskName: String?) -> String {
         switch kind {
         case .completed:
             return "Done"
+        case .fulfilled:
+            guard let sourceTaskName,
+                  !sourceTaskName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                return "Done via linked task"
+            }
+            return "Done via \(sourceTaskName)"
         case .canceled:
             return "Canceled"
         case .missed:
@@ -25,6 +35,8 @@ enum TaskDetailLogPresentation {
     static func statusColor(for kind: RoutineLogKind) -> Color {
         switch kind {
         case .completed:
+            return TaskDetailStatusPalette.done
+        case .fulfilled:
             return TaskDetailStatusPalette.done
         case .canceled:
             return TaskDetailStatusPalette.canceled

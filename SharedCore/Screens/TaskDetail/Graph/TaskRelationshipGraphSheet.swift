@@ -128,6 +128,8 @@ struct TaskRelationshipGraphSheet: View {
             return .orange.opacity(0.85)
         case .blocks:
             return .blue.opacity(0.85)
+        case .doneWhen, .completes:
+            return .green.opacity(0.75)
         case .related:
             return .secondary.opacity(0.6)
         }

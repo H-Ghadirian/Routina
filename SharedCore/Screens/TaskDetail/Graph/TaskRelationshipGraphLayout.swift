@@ -31,7 +31,9 @@ struct TaskRelationshipGraphLayout {
     init(centerTask: RoutineTask, relationships: [RoutineTaskResolvedRelationship]) {
         let blockedBy = relationships.filter { $0.kind == .blockedBy }
         let blocks = relationships.filter { $0.kind == .blocks }
-        let related = relationships.filter { $0.kind == .related }
+        let related = relationships.filter {
+            $0.kind == .related || $0.kind == .doneWhen || $0.kind == .completes
+        }
 
         let centerNode = TaskRelationshipGraphNode(
             id: centerTask.id.uuidString,
@@ -75,7 +77,7 @@ struct TaskRelationshipGraphLayout {
                 emoji: relationship.taskEmoji,
                 status: relationship.status,
                 isCenter: false,
-                kind: .related
+                kind: relationship.kind
             )
         }
 
@@ -143,7 +145,7 @@ struct TaskRelationshipGraphLayout {
                     id: "edge-related-\(node.id)",
                     fromID: centerNode.id,
                     toID: node.id,
-                    kind: .related
+                    kind: node.kind ?? .related
                 )
             )
         }

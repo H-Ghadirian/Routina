@@ -2,8 +2,13 @@ import Foundation
 
 enum RoutineLogKind: String, Codable, Equatable, Sendable {
     case completed
+    case fulfilled
     case canceled
     case missed
+
+    var resolvesDoneDate: Bool {
+        self == .completed || self == .fulfilled
+    }
 }
 
 enum RoutineTaskChangeKind: String, Codable, Equatable, Sendable {

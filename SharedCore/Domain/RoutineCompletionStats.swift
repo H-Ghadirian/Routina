@@ -58,6 +58,8 @@ struct OutcomeMixChartPoint: Equatable, Identifiable {
         switch kind {
         case .completed:
             return doneCount
+        case .fulfilled:
+            return 0
         case .missed:
             return missedCount
         case .canceled:

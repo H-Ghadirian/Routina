@@ -447,6 +447,7 @@ enum DayPlanTimelineTasks {
 
         for log in logs {
             guard let timestamp = log.timestamp else { continue }
+            guard log.kind != .fulfilled else { continue }
             let kind = log.kind
             record(
                 DayPlanTimelineActivity(
@@ -605,7 +606,7 @@ enum DayPlanTimelineTasks {
 
             let dayKey = taskInfo.recordedDisplayDayKey(for: timestamp, calendar: calendar)
             switch log.kind {
-            case .completed:
+            case .completed, .fulfilled:
                 completed[log.taskID, default: []].insert(dayKey)
             case .canceled:
                 canceled[log.taskID, default: []].insert(dayKey)
@@ -894,9 +895,9 @@ enum DayPlanTimelineTasks {
         calendar: Calendar
     ) {
         switch movedKind {
-        case .completed:
+        case .completed, .fulfilled:
             var completionDates = logs
-                .filter { $0.kind == .completed }
+                .filter { $0.kind.resolvesDoneDate }
                 .compactMap { log -> Date? in
                     if log.id == movedLogID {
                         return targetTimestamp

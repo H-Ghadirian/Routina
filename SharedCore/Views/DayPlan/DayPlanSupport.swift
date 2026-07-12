@@ -160,6 +160,7 @@ struct DayPlanVisibleBlockContext {
         }
 
         let completedKind = RoutineLogKind.completed.rawValue
+        let fulfilledKind = RoutineLogKind.fulfilled.rawValue
         let canceledKind = RoutineLogKind.canceled.rawValue
         let missedKind = RoutineLogKind.missed.rawValue
         for log in logs {
@@ -167,7 +168,7 @@ struct DayPlanVisibleBlockContext {
                 continue
             }
 
-            if log.kindRawValue == completedKind,
+            if (log.kindRawValue == completedKind || log.kindRawValue == fulfilledKind),
                let task = tasksByID[log.taskID] {
                 hiddenOutcomeDayKeysByTaskID[log.taskID, default: []].insert(
                     Self.completionDayKey(for: task, timestamp: timestamp, calendar: calendar)
@@ -647,7 +648,7 @@ private struct DayPlanDayTaskListCompletionContext {
             recordCompletion(task.lastDone, taskID: task.id, calendar: calendar)
         }
 
-        for log in logs where log.kind == .completed {
+        for log in logs where log.kind.resolvesDoneDate {
             recordCompletion(log.timestamp, taskID: log.taskID, calendar: calendar)
         }
     }

@@ -10,14 +10,17 @@ struct TaskDetailRoutineLogRowPresentation {
     let actionColor: Color
     let isActionEnabled: Bool
 
-    init(log: RoutineLog, showPersianDates: Bool) {
+    init(log: RoutineLog, showPersianDates: Bool, sourceTaskName: String? = nil) {
         self.timestampText = TaskDetailLogPresentation.timestampText(
             log.timestamp,
             showPersianDates: showPersianDates
         )
         self.compactTimeSpentText = TaskDetailLogPresentation.timeSpentText(for: log, style: .compact)
         self.fullTimeSpentText = TaskDetailLogPresentation.timeSpentText(for: log, style: .full)
-        self.statusText = TaskDetailLogPresentation.statusText(for: log.kind)
+        self.statusText = TaskDetailLogPresentation.statusText(
+            for: log.kind,
+            sourceTaskName: sourceTaskName
+        )
         self.statusColor = TaskDetailLogPresentation.statusColor(for: log.kind)
         self.actionTitle = TaskDetailLogPresentation.actionTitle(for: log)
         self.actionColor = TaskDetailLogPresentation.statusColor(for: log.kind)

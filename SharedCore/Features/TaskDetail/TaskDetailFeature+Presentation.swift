@@ -69,14 +69,14 @@ extension TaskDetailFeature.State {
             guard !hasPendingLocalRemoval(on: occurrence, calendar: calendar) else { return false }
             return logs.contains {
                 guard let timestamp = $0.timestamp else { return false }
-                return $0.kind == .completed && calendar.isDate(timestamp, inSameDayAs: occurrence)
+                return $0.kind.resolvesDoneDate && calendar.isDate(timestamp, inSameDayAs: occurrence)
             }
             || task.lastDone.map { calendar.isDate($0, inSameDayAs: occurrence) } == true
         }
         guard !hasPendingLocalRemoval(on: day, calendar: calendar) else { return false }
         return logs.contains {
             guard let timestamp = $0.timestamp else { return false }
-            return $0.kind == .completed && calendar.isDate(timestamp, inSameDayAs: day)
+            return $0.kind.resolvesDoneDate && calendar.isDate(timestamp, inSameDayAs: day)
         }
         || task.lastDone.map { calendar.isDate($0, inSameDayAs: day) } == true
     }
@@ -136,7 +136,7 @@ extension TaskDetailFeature.State {
     }
 
     var completedLogCount: Int {
-        logs.filter { $0.kind == .completed }.count
+        logs.filter { $0.kind.resolvesDoneDate }.count
     }
 
     var canceledLogCount: Int {

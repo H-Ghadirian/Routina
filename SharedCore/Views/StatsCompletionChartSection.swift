@@ -269,6 +269,8 @@ private struct StatsOutcomeChartSegment: Identifiable {
         switch kind {
         case .completed:
             return "Done"
+        case .fulfilled:
+            return "Fulfilled"
         case .missed:
             return "Missed"
         case .canceled:

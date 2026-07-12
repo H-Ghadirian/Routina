@@ -62,6 +62,10 @@ struct HomeDoneStats: Equatable {
                 if let timestamp = log.timestamp {
                     completedDatesByTaskID[taskID, default: []].insert(timestamp)
                 }
+            case .fulfilled:
+                if let timestamp = log.timestamp {
+                    completedDatesByTaskID[taskID, default: []].insert(timestamp)
+                }
             case .canceled:
                 canceledTotalCount += 1
                 canceledCountsByTaskID[taskID, default: 0] += 1
@@ -83,6 +87,7 @@ private struct HomeTaskLogPayloadSignature: Comparable, Equatable {
     let taskID: UUID
     let kindRawValue: String
     let actualDurationMinutes: Int?
+    let sourceTaskID: UUID?
 
     init(log: RoutineLog) {
         id = log.id
@@ -90,6 +95,7 @@ private struct HomeTaskLogPayloadSignature: Comparable, Equatable {
         taskID = log.taskID
         kindRawValue = log.kindRawValue
         actualDurationMinutes = log.actualDurationMinutes
+        sourceTaskID = log.sourceTaskID
     }
 
     static func < (lhs: Self, rhs: Self) -> Bool {
@@ -274,6 +280,10 @@ enum HomeTaskSupport {
             case .completed:
                 totalCount += 1
                 countsByTaskID[log.taskID, default: 0] += 1
+                if let timestamp = log.timestamp {
+                    completedDatesByTaskID[log.taskID, default: []].insert(timestamp)
+                }
+            case .fulfilled:
                 if let timestamp = log.timestamp {
                     completedDatesByTaskID[log.taskID, default: []].insert(timestamp)
                 }

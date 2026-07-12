@@ -16,6 +16,7 @@ enum RoutineLogHistory {
             let key = RoutineLogDeduplicationKey(
                 taskID: log.taskID,
                 kind: log.kind,
+                sourceTaskID: log.sourceTaskID,
                 day: calendar.startOfDay(for: timestamp)
             )
 
@@ -49,7 +50,7 @@ enum RoutineLogHistory {
             guard let lastDone = task.lastDone else { continue }
             let hasMatchingLog = logs.contains { log in
                 log.taskID == task.id
-                    && log.kind == .completed
+                    && log.kind.resolvesDoneDate
                     && isSameCompletion(log.timestamp, as: lastDone)
             }
 
@@ -84,7 +85,7 @@ enum RoutineLogHistory {
         )
         let logs = try context.fetch(logDescriptor)
         let hasMatchingLog = logs.contains { log in
-            log.kind == .completed && isSameCompletion(log.timestamp, as: lastDone)
+            log.kind.resolvesDoneDate && isSameCompletion(log.timestamp, as: lastDone)
         }
 
         guard !hasMatchingLog else { return false }
@@ -127,10 +128,11 @@ enum RoutineLogHistory {
             return nil
         }
 
+        let allTasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let existingLogs = detailLogs(taskID: taskID, context: context)
         let hasMatchingLog = existingLogs.contains { log in
             guard let timestamp = log.timestamp else { return false }
-            return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: completedAt)
+            return log.kind.resolvesDoneDate && calendar.isDate(timestamp, inSameDayAs: completedAt)
         }
         if hasMatchingLog {
             if BatteryRoutineService.dismissCompletedLowBatteryPrompt(for: task, at: completedAt) {
@@ -168,6 +170,14 @@ enum RoutineLogHistory {
         case .completedRoutine:
             deleteNonCompletionResolutionLogs(on: completedAt, from: existingLogs, context: context, calendar: calendar)
             context.insert(RoutineLog(timestamp: completedAt, taskID: taskID, kind: .completed))
+            try fulfillLinkedTasks(
+                from: task,
+                completedAt: completedAt,
+                tasks: allTasks,
+                context: context,
+                calendar: calendar,
+                sourceDevice: sourceDevice
+            )
             _ = BatteryRoutineService.dismissCompletedLowBatteryPrompt(for: task, at: completedAt)
             DeviceActivityRecorder.recordAction(
                 .completed,
@@ -214,7 +224,7 @@ enum RoutineLogHistory {
         let existingLogs = detailLogs(taskID: taskID, context: context)
         let hasCompletedLog = existingLogs.contains { log in
             guard let timestamp = log.timestamp else { return false }
-            return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: occurrence)
+            return log.kind.resolvesDoneDate && calendar.isDate(timestamp, inSameDayAs: occurrence)
         }
         guard !hasCompletedLog else {
             return task
@@ -283,7 +293,7 @@ enum RoutineLogHistory {
         let existingLogs = detailLogs(taskID: taskID, context: context)
         let hasCompletedLog = existingLogs.contains { log in
             guard let timestamp = log.timestamp else { return false }
-            return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: occurrence)
+            return log.kind.resolvesDoneDate && calendar.isDate(timestamp, inSameDayAs: occurrence)
         }
         guard !hasCompletedLog else {
             return task
@@ -351,7 +361,7 @@ enum RoutineLogHistory {
         for day in orderedDays {
             let alreadyCompleted = existingLogs.contains { log in
                 guard let timestamp = log.timestamp else { return false }
-                return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: day)
+                return log.kind.resolvesDoneDate && calendar.isDate(timestamp, inSameDayAs: day)
             }
             if alreadyCompleted {
                 continue
@@ -367,6 +377,15 @@ enum RoutineLogHistory {
             switch result {
             case .completedRoutine:
                 context.insert(RoutineLog(timestamp: completionDate, taskID: taskID, kind: .completed))
+                let allTasks = try context.fetch(FetchDescriptor<RoutineTask>())
+                try fulfillLinkedTasks(
+                    from: task,
+                    completedAt: completionDate,
+                    tasks: allTasks,
+                    context: context,
+                    calendar: calendar,
+                    sourceDevice: sourceDevice
+                )
                 didChange = true
             case .advancedStep, .advancedChecklist:
                 didChange = true
@@ -431,7 +450,7 @@ enum RoutineLogHistory {
         )
         let hasCompletedLog = existingLogs.contains { log in
             guard let timestamp = log.timestamp else { return false }
-            return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: missedAt)
+            return log.kind.resolvesDoneDate && calendar.isDate(timestamp, inSameDayAs: missedAt)
         }
         guard !hasCompletedLog else {
             return task
@@ -508,7 +527,7 @@ enum RoutineLogHistory {
         case .completedRoutine:
             if let existingLog = detailLogs(taskID: taskID, context: context).first(where: { log in
                 guard let timestamp = log.timestamp else { return false }
-                return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: completedAt)
+                return log.kind.resolvesDoneDate && calendar.isDate(timestamp, inSameDayAs: completedAt)
             }) {
                 let currentTimestamp = existingLog.timestamp ?? .distantPast
                 if completedAt > currentTimestamp {
@@ -517,6 +536,15 @@ enum RoutineLogHistory {
             } else {
                 context.insert(RoutineLog(timestamp: completedAt, taskID: taskID, kind: .completed))
             }
+            let allTasks = try context.fetch(FetchDescriptor<RoutineTask>())
+            try fulfillLinkedTasks(
+                from: task,
+                completedAt: completedAt,
+                tasks: allTasks,
+                context: context,
+                calendar: calendar,
+                sourceDevice: sourceDevice
+            )
 
             DeviceActivityRecorder.recordAction(
                 .completed,
@@ -664,7 +692,7 @@ enum RoutineLogHistory {
             let existingLogs = detailLogs(taskID: taskID, context: context)
             if let existingLog = existingLogs.first(where: { log in
                 guard let timestamp = log.timestamp else { return false }
-                return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: doneAt)
+                return log.kind.resolvesDoneDate && calendar.isDate(timestamp, inSameDayAs: doneAt)
             }) {
                 let currentTimestamp = existingLog.timestamp ?? .distantPast
                 if doneAt > currentTimestamp {
@@ -673,6 +701,15 @@ enum RoutineLogHistory {
             } else {
                 context.insert(RoutineLog(timestamp: doneAt, taskID: taskID, kind: .completed))
             }
+            let allTasks = try context.fetch(FetchDescriptor<RoutineTask>())
+            try fulfillLinkedTasks(
+                from: task,
+                completedAt: doneAt,
+                tasks: allTasks,
+                context: context,
+                calendar: calendar,
+                sourceDevice: sourceDevice
+            )
         }
 
         DeviceActivityRecorder.recordAction(
@@ -760,6 +797,12 @@ enum RoutineLogHistory {
             for log in logs where log.kind == .completed && log.timestamp == removedCompletionAt {
                 context.delete(log)
             }
+            try removeFulfillmentsSourcedBy(
+                taskID: taskID,
+                on: removedCompletionAt,
+                context: context,
+                calendar: calendar
+            )
         }
 
         DeviceActivityRecorder.recordAction(
@@ -895,12 +938,20 @@ enum RoutineLogHistory {
         for log in matchingLogs {
             context.delete(log)
         }
+        if didMatchLastDone || matchingLogs.contains(where: { $0.kind == .completed }) {
+            try removeFulfillmentsSourcedBy(
+                taskID: taskID,
+                on: completedDay,
+                context: context,
+                calendar: calendar
+            )
+        }
 
         let remainingLatestCompletion = existingLogs
             .filter { log in
                 !matchingLogs.contains(where: { $0.id == log.id })
             }
-            .filter { $0.kind == .completed }
+            .filter { $0.kind.resolvesDoneDate }
             .compactMap(\.timestamp)
             .max()
 
@@ -965,12 +1016,20 @@ enum RoutineLogHistory {
         for log in matchingLogs {
             context.delete(log)
         }
+        if didMatchLastDone || matchingLogs.contains(where: { $0.kind == .completed }) {
+            try removeFulfillmentsSourcedBy(
+                taskID: taskID,
+                on: timestamp,
+                context: context,
+                calendar: calendar
+            )
+        }
 
         let remainingLatestCompletion = existingLogs
             .filter { log in
                 !matchingLogs.contains(where: { $0.id == log.id })
             }
-            .filter { $0.kind == .completed }
+            .filter { $0.kind.resolvesDoneDate }
             .compactMap(\.timestamp)
             .max()
 
@@ -1040,10 +1099,183 @@ enum RoutineLogHistory {
             context.delete(log)
         }
     }
+
+    @MainActor
+    static func fulfillLinkedTasks(
+        fromSourceTaskID sourceTaskID: UUID,
+        completedAt: Date,
+        context: ModelContext,
+        calendar: Calendar = .current,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
+    ) throws {
+        let descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == sourceTaskID
+            }
+        )
+        guard let sourceTask = try context.fetch(descriptor).first else { return }
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        try fulfillLinkedTasks(
+            from: sourceTask,
+            completedAt: completedAt,
+            tasks: tasks,
+            context: context,
+            calendar: calendar,
+            sourceDevice: sourceDevice
+        )
+    }
+
+    @MainActor
+    private static func fulfillLinkedTasks(
+        from sourceTask: RoutineTask,
+        completedAt: Date,
+        tasks: [RoutineTask],
+        context: ModelContext,
+        calendar: Calendar,
+        sourceDevice: RoutinaDeviceActivitySource?
+    ) throws {
+        let targets = fulfillmentTargets(
+            for: sourceTask,
+            in: tasks,
+            completedAt: completedAt,
+            calendar: calendar
+        )
+        guard !targets.isEmpty else { return }
+
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+        for target in targets {
+            let targetLogs = logs.filter { $0.taskID == target.id }
+            let alreadyCompleted = targetLogs.contains { log in
+                guard let timestamp = log.timestamp else { return false }
+                return log.kind == .completed
+                    && calendar.isDate(timestamp, inSameDayAs: completedAt)
+            }
+            guard !alreadyCompleted else { continue }
+
+            let alreadyFulfilledBySource = targetLogs.contains { log in
+                guard let timestamp = log.timestamp else { return false }
+                return log.kind == .fulfilled
+                    && log.sourceTaskID == sourceTask.id
+                    && calendar.isDate(timestamp, inSameDayAs: completedAt)
+            }
+            guard !alreadyFulfilledBySource else { continue }
+
+            let alreadyResolved = targetLogs.contains { log in
+                guard let timestamp = log.timestamp else { return false }
+                return log.kind.resolvesDoneDate
+                    && calendar.isDate(timestamp, inSameDayAs: completedAt)
+            }
+            if !alreadyResolved {
+                guard target.recordFulfillment(at: completedAt, calendar: calendar) else { continue }
+            }
+
+            deleteNonCompletionResolutionLogs(
+                on: completedAt,
+                from: targetLogs,
+                context: context,
+                calendar: calendar
+            )
+            context.insert(
+                RoutineLog(
+                    timestamp: completedAt,
+                    taskID: target.id,
+                    kind: .fulfilled,
+                    sourceTaskID: sourceTask.id
+                )
+            )
+            DeviceActivityRecorder.recordAction(
+                .completed,
+                entity: .task,
+                entityID: target.id,
+                entityTitle: taskTitle(target),
+                details: "Fulfilled by \(taskTitle(sourceTask))",
+                sourceDevice: sourceDevice,
+                at: completedAt,
+                in: context
+            )
+        }
+    }
+
+    private static func fulfillmentTargets(
+        for sourceTask: RoutineTask,
+        in tasks: [RoutineTask],
+        completedAt: Date,
+        calendar: Calendar
+    ) -> [RoutineTask] {
+        tasks.filter { candidate in
+            guard candidate.id != sourceTask.id,
+                  candidate.canBeFulfilledByLinkedTask(referenceDate: completedAt, calendar: calendar)
+            else {
+                return false
+            }
+
+            let candidateIsDoneWhenSource = candidate.relationships.contains { relationship in
+                relationship.targetTaskID == sourceTask.id && relationship.kind == .doneWhen
+            }
+            let sourceCompletesCandidate = sourceTask.relationships.contains { relationship in
+                relationship.targetTaskID == candidate.id && relationship.kind == .completes
+            }
+            return candidateIsDoneWhenSource || sourceCompletesCandidate
+        }
+    }
+
+    @MainActor
+    private static func removeFulfillmentsSourcedBy(
+        taskID sourceTaskID: UUID,
+        on date: Date,
+        context: ModelContext,
+        calendar: Calendar
+    ) throws {
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+        let matchingFulfillments = logs.filter { log in
+            guard log.kind == .fulfilled,
+                  log.sourceTaskID == sourceTaskID,
+                  let timestamp = log.timestamp else {
+                return false
+            }
+            return calendar.isDate(timestamp, inSameDayAs: date)
+        }
+        guard !matchingFulfillments.isEmpty else { return }
+
+        let affectedTaskIDs = Set(matchingFulfillments.map(\.taskID))
+        for log in matchingFulfillments {
+            context.delete(log)
+        }
+
+        let removedLogIDs = Set(matchingFulfillments.map(\.id))
+        let remainingLogsByTaskID = Dictionary(grouping: logs.filter { log in
+            affectedTaskIDs.contains(log.taskID) && !removedLogIDs.contains(log.id)
+        }, by: \.taskID)
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+            .filter { affectedTaskIDs.contains($0.id) }
+
+        for task in tasks {
+            let removedTaskFulfillments = matchingFulfillments.filter { $0.taskID == task.id }
+            let removedMatchesLastDone = task.lastDone.map { lastDone in
+                removedTaskFulfillments.contains { log in
+                    guard let timestamp = log.timestamp else { return false }
+                    return calendar.isDate(timestamp, inSameDayAs: lastDone)
+                }
+            } ?? false
+            guard removedMatchesLastDone else { continue }
+
+            let remainingLatestCompletion = remainingLogsByTaskID[task.id, default: []]
+                .filter { $0.kind.resolvesDoneDate }
+                .compactMap(\.timestamp)
+                .max()
+            task.lastDone = remainingLatestCompletion
+            task.refreshScheduleAnchorAfterRemovingLatestCompletion(
+                remainingLatestCompletion: remainingLatestCompletion
+            )
+            task.resetStepProgress()
+            task.resetChecklistProgress()
+        }
+    }
 }
 
 private struct RoutineLogDeduplicationKey: Hashable {
     var taskID: UUID
     var kind: RoutineLogKind
+    var sourceTaskID: UUID?
     var day: Date
 }

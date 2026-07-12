@@ -328,7 +328,7 @@ enum RoutineDateMath {
         guard usesExactTimedOccurrenceTracking(for: task) else { return false }
         return logs.contains { log in
             guard let timestamp = log.timestamp else { return false }
-            guard log.kind == .missed || log.kind == .completed || log.kind == .canceled else { return false }
+            guard log.kind == .missed || log.kind.resolvesDoneDate || log.kind == .canceled else { return false }
             return calendar.isDate(timestamp, inSameDayAs: missedDate)
         }
     }

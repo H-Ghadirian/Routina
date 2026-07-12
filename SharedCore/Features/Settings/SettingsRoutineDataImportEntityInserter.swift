@@ -405,7 +405,8 @@ enum SettingsRoutineDataImportEntityInserter {
                 timestamp: log.timestamp,
                 taskID: log.taskID,
                 kind: log.kind ?? .completed,
-                actualDurationMinutes: log.actualDurationMinutes
+                actualDurationMinutes: log.actualDurationMinutes,
+                sourceTaskID: log.sourceTaskID.flatMap { importedTaskIDs.contains($0) ? $0 : nil }
             )
             context.insert(importedLog)
             importedCount += 1

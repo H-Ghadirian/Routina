@@ -145,7 +145,7 @@ enum HomeDetailSelectionSupport {
         } ?? false
         let doneTodayFromLogs = detailState.logs.contains {
             guard let timestamp = $0.timestamp else { return false }
-            guard $0.kind == .completed else { return false }
+            guard $0.kind.resolvesDoneDate else { return false }
             guard let displayDay = RoutineDateMath.completionDisplayDay(
                 for: detailState.task,
                 completionDate: timestamp,

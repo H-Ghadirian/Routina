@@ -227,7 +227,7 @@ enum RoutineAssumedCompletion {
 
         return logs.contains { log in
             guard let timestamp = log.timestamp else { return false }
-            return log.kind == .completed
+            return log.kind.resolvesDoneDate
                 && isRecordedDate(timestamp, for: task, on: day, calendar: calendar)
         }
     }

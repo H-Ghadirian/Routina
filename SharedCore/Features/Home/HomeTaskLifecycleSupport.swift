@@ -109,6 +109,13 @@ enum HomeTaskLifecycleSupport {
                 doneStats.totalCount += 1
                 doneStats.countsByTaskID[taskID, default: 0] += 1
                 doneStats.completedDatesByTaskID[taskID, default: []].insert(referenceDate)
+                fulfillLinkedTasks(
+                    from: taskID,
+                    completedAt: referenceDate,
+                    calendar: calendar,
+                    tasks: &tasks,
+                    doneStats: &doneStats
+                )
             }
             return .checklist(
                 HomeChecklistRunoutDoneUpdate(
@@ -188,6 +195,13 @@ enum HomeTaskLifecycleSupport {
             doneStats.totalCount += 1
             doneStats.countsByTaskID[taskID, default: 0] += 1
             doneStats.completedDatesByTaskID[taskID, default: []].insert(completionDate)
+            fulfillLinkedTasks(
+                from: taskID,
+                completedAt: completionDate,
+                calendar: calendar,
+                tasks: &tasks,
+                doneStats: &doneStats
+            )
             _ = BatteryRoutineService.dismissCompletedLowBatteryPrompt(
                 for: tasks[index],
                 at: completionDate
@@ -529,5 +543,53 @@ enum HomeTaskLifecycleSupport {
         } else {
             datesByTaskID[taskID] = dates
         }
+    }
+
+    private static func fulfillLinkedTasks(
+        from sourceTaskID: UUID,
+        completedAt: Date,
+        calendar: Calendar,
+        tasks: inout [RoutineTask],
+        doneStats: inout HomeDoneStats
+    ) {
+        guard let sourceTask = tasks.first(where: { $0.id == sourceTaskID }) else {
+            return
+        }
+
+        for index in tasks.indices where tasks[index].id != sourceTaskID {
+            let targetTaskID = tasks[index].id
+            guard shouldFulfill(
+                target: tasks[index],
+                from: sourceTask,
+                completedAt: completedAt,
+                calendar: calendar
+            ) else {
+                continue
+            }
+            let alreadyResolved = doneStats.completedDatesByTaskID[targetTaskID]?.contains {
+                calendar.isDate($0, inSameDayAs: completedAt)
+            } ?? false
+            guard !alreadyResolved else { continue }
+            guard tasks[index].recordFulfillment(at: completedAt, calendar: calendar) else { continue }
+            doneStats.completedDatesByTaskID[targetTaskID, default: []].insert(completedAt)
+        }
+    }
+
+    private static func shouldFulfill(
+        target: RoutineTask,
+        from source: RoutineTask,
+        completedAt: Date,
+        calendar: Calendar
+    ) -> Bool {
+        guard target.canBeFulfilledByLinkedTask(referenceDate: completedAt, calendar: calendar) else {
+            return false
+        }
+        let targetIsDoneWhenSource = target.relationships.contains { relationship in
+            relationship.targetTaskID == source.id && relationship.kind == .doneWhen
+        }
+        let sourceCompletesTarget = source.relationships.contains { relationship in
+            relationship.targetTaskID == target.id && relationship.kind == .completes
+        }
+        return targetIsDoneWhenSource || sourceCompletesTarget
     }
 }

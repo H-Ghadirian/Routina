@@ -3,10 +3,14 @@ import Foundation
 enum CloudKitDirectPullMergeSupport {
     struct LogDeduplicationKey: Hashable {
         let taskID: UUID
+        let kind: RoutineLogKind
+        let sourceTaskID: UUID?
         let timestampBucket: Int?
 
-        init(taskID: UUID, timestamp: Date?) {
+        init(taskID: UUID, kind: RoutineLogKind, sourceTaskID: UUID?, timestamp: Date?) {
             self.taskID = taskID
+            self.kind = kind
+            self.sourceTaskID = sourceTaskID
             self.timestampBucket = timestamp.map { Int($0.timeIntervalSince1970.rounded()) }
         }
     }

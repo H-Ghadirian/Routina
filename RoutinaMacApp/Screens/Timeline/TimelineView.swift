@@ -904,6 +904,8 @@ struct TimelineView: View {
         switch entry.kind {
         case .completed:
             return entry.isOneOff ? "Todo" : "Routine"
+        case .fulfilled:
+            return "Fulfilled"
         case .canceled:
             return "Canceled"
         case .missed:
@@ -940,6 +942,8 @@ struct TimelineView: View {
         switch entry.kind {
         case .completed:
             return entry.isOneOff ? .purple : .accentColor
+        case .fulfilled:
+            return .green
         case .canceled:
             return .orange
         case .missed:

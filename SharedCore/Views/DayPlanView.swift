@@ -1687,6 +1687,7 @@ private struct DayPlanTimelineDataSnapshotSignature: Equatable {
         var taskID: UUID
         var kindRawValue: String
         var actualDurationMinutes: Int?
+        var sourceTaskID: UUID?
 
         init(log: RoutineLog) {
             id = log.id
@@ -1695,6 +1696,7 @@ private struct DayPlanTimelineDataSnapshotSignature: Equatable {
             taskID = log.taskID
             kindRawValue = log.kindRawValue
             actualDurationMinutes = log.actualDurationMinutes
+            sourceTaskID = log.sourceTaskID
         }
     }
 
@@ -4092,11 +4094,13 @@ private struct DayPlanVisibleBlockContextCacheKey: Equatable {
             .sorted { $0.idSortKey < $1.idSortKey }
 
         let completedKind = RoutineLogKind.completed.rawValue
+        let fulfilledKind = RoutineLogKind.fulfilled.rawValue
         let canceledKind = RoutineLogKind.canceled.rawValue
         let missedKind = RoutineLogKind.missed.rawValue
         self.logs = logs
             .compactMap { log -> LogSnapshot? in
                 guard log.kindRawValue == completedKind
+                    || log.kindRawValue == fulfilledKind
                     || log.kindRawValue == canceledKind
                     || log.kindRawValue == missedKind,
                       log.timestamp != nil else {
@@ -4184,6 +4188,7 @@ private struct DayPlanVisibleBlockContextCacheKey: Equatable {
         var taskID: UUID
         var taskIDSortKey: String
         var kindRawValue: String
+        var sourceTaskID: UUID?
 
         init(log: RoutineLog) {
             id = log.id
@@ -4192,6 +4197,7 @@ private struct DayPlanVisibleBlockContextCacheKey: Equatable {
             taskID = log.taskID
             taskIDSortKey = log.taskID.uuidString
             kindRawValue = log.kindRawValue
+            sourceTaskID = log.sourceTaskID
         }
     }
 
@@ -4952,12 +4958,14 @@ private struct DayPlanAllDayBlocksCacheKey: Equatable {
         var timestamp: Date?
         var taskID: UUID
         var kindRawValue: String
+        var sourceTaskID: UUID?
 
         init(log: RoutineLog) {
             id = log.id
             timestamp = log.timestamp
             taskID = log.taskID
             kindRawValue = log.kindRawValue
+            sourceTaskID = log.sourceTaskID
         }
     }
 
@@ -5344,6 +5352,7 @@ private struct DayPlanTimelinePlacementCacheKey: Equatable {
         var taskID: UUID
         var kindRawValue: String
         var actualDurationMinutes: Int?
+        var sourceTaskID: UUID?
 
         init(log: RoutineLog) {
             id = log.id
@@ -5351,6 +5360,7 @@ private struct DayPlanTimelinePlacementCacheKey: Equatable {
             taskID = log.taskID
             kindRawValue = log.kindRawValue
             actualDurationMinutes = log.actualDurationMinutes
+            sourceTaskID = log.sourceTaskID
         }
     }
 

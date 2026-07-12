@@ -507,6 +507,33 @@ extension RoutineTask {
         return .completedRoutine
     }
 
+    @discardableResult
+    func recordFulfillment(at fulfilledAt: Date, calendar: Calendar = .current) -> Bool {
+        guard canBeFulfilledByLinkedTask(referenceDate: fulfilledAt, calendar: calendar) else {
+            return false
+        }
+        guard lastDone.map({ !calendar.isDate($0, inSameDayAs: fulfilledAt) }) ?? true else {
+            return false
+        }
+
+        recordCompletion(at: fulfilledAt, calendar: calendar)
+        resetStepProgress()
+        resetChecklistProgress()
+        resetOptionalRoutineChecklistProgressIfNeeded()
+        return true
+    }
+
+    func canBeFulfilledByLinkedTask(
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> Bool {
+        !isOneOffTask
+            && !hasSequentialSteps
+            && !isChecklistDriven
+            && !isArchived(referenceDate: referenceDate, calendar: calendar)
+            && RoutineDateMath.canMarkDone(for: self, referenceDate: referenceDate, calendar: calendar)
+    }
+
     func refreshScheduleAnchorAfterRemovingLatestCompletion(
         remainingLatestCompletion: Date?
     ) {

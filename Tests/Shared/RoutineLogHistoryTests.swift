@@ -88,6 +88,198 @@ struct RoutineLogHistoryTests {
     }
 
     @Test
+    func deduplicateRedundantSameDayLogs_keepsFulfilledLogsFromDifferentSources() throws {
+        let context = makeInMemoryContext()
+        let target = makeTask(
+            in: context,
+            name: "Exercise routine",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil
+        )
+        let gym = makeTask(
+            in: context,
+            name: "Gym",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil
+        )
+        let hiking = makeTask(
+            in: context,
+            name: "Hiking",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil
+        )
+        let olderGymFulfillment = makeDate("2026-05-01T10:00:00Z")
+        let newerGymFulfillment = makeDate("2026-05-01T10:05:00Z")
+        let hikingFulfillment = makeDate("2026-05-01T11:00:00Z")
+        context.insert(RoutineLog(
+            timestamp: olderGymFulfillment,
+            taskID: target.id,
+            kind: .fulfilled,
+            sourceTaskID: gym.id
+        ))
+        context.insert(RoutineLog(
+            timestamp: newerGymFulfillment,
+            taskID: target.id,
+            kind: .fulfilled,
+            sourceTaskID: gym.id
+        ))
+        context.insert(RoutineLog(
+            timestamp: hikingFulfillment,
+            taskID: target.id,
+            kind: .fulfilled,
+            sourceTaskID: hiking.id
+        ))
+        try context.save()
+
+        let didDelete = try RoutineLogHistory.deduplicateRedundantSameDayLogs(
+            in: context,
+            calendar: makeTestCalendar()
+        )
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(didDelete)
+        #expect(logs.count == 2)
+        #expect(logs.contains {
+            $0.taskID == target.id
+                && $0.kind == .fulfilled
+                && $0.sourceTaskID == gym.id
+                && $0.timestamp == newerGymFulfillment
+        })
+        #expect(logs.contains {
+            $0.taskID == target.id
+                && $0.kind == .fulfilled
+                && $0.sourceTaskID == hiking.id
+                && $0.timestamp == hikingFulfillment
+        })
+    }
+
+    @Test
+    func advanceTask_fulfillsDoneWhenLinkedRoutine() throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let gym = makeTask(
+            in: context,
+            name: "Gym",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil
+        )
+        let exercise = makeTask(
+            in: context,
+            name: "Exercise routine",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil
+        )
+        exercise.relationships = [
+            RoutineTaskRelationship(targetTaskID: gym.id, kind: .doneWhen)
+        ]
+        try context.save()
+
+        let completedAt = makeDate("2026-05-01T10:00:00Z")
+        let result = try #require(
+            try RoutineLogHistory.advanceTask(
+                taskID: gym.id,
+                completedAt: completedAt,
+                context: context,
+                calendar: calendar
+            )
+        )
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+        let gymLog = try #require(logs.first { $0.taskID == gym.id })
+        let exerciseLog = try #require(logs.first { $0.taskID == exercise.id })
+
+        #expect(result.result == .completedRoutine)
+        #expect(gym.lastDone == completedAt)
+        #expect(exercise.lastDone == completedAt)
+        #expect(gymLog.kind == .completed)
+        #expect(gymLog.sourceTaskID == nil)
+        #expect(exerciseLog.kind == .fulfilled)
+        #expect(exerciseLog.sourceTaskID == gym.id)
+    }
+
+    @Test
+    func removeCompletion_keepsLinkedRoutineFulfilledWhenAnotherSourceCompletedSameDay() throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let gym = makeTask(
+            in: context,
+            name: "Gym",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil
+        )
+        let hiking = makeTask(
+            in: context,
+            name: "Hiking",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil
+        )
+        let exercise = makeTask(
+            in: context,
+            name: "Exercise routine",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil
+        )
+        exercise.relationships = [
+            RoutineTaskRelationship(targetTaskID: gym.id, kind: .doneWhen),
+            RoutineTaskRelationship(targetTaskID: hiking.id, kind: .doneWhen)
+        ]
+        try context.save()
+
+        let gymCompletedAt = makeDate("2026-05-01T10:00:00Z")
+        let hikingCompletedAt = makeDate("2026-05-01T11:00:00Z")
+        _ = try #require(
+            try RoutineLogHistory.advanceTask(
+                taskID: gym.id,
+                completedAt: gymCompletedAt,
+                context: context,
+                calendar: calendar
+            )
+        )
+        _ = try #require(
+            try RoutineLogHistory.advanceTask(
+                taskID: hiking.id,
+                completedAt: hikingCompletedAt,
+                context: context,
+                calendar: calendar
+            )
+        )
+        let fulfilledBeforeUndo = try context.fetch(FetchDescriptor<RoutineLog>())
+            .filter { $0.taskID == exercise.id && $0.kind == .fulfilled }
+
+        #expect(fulfilledBeforeUndo.count == 2)
+
+        _ = try #require(
+            try RoutineLogHistory.removeCompletion(
+                taskID: gym.id,
+                on: gymCompletedAt,
+                context: context,
+                calendar: calendar
+            )
+        )
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(exercise.lastDone == hikingCompletedAt)
+        #expect(logs.contains {
+            $0.taskID == exercise.id
+                && $0.kind == .fulfilled
+                && $0.sourceTaskID == hiking.id
+                && $0.timestamp == hikingCompletedAt
+        })
+        #expect(!logs.contains {
+            $0.taskID == exercise.id
+                && $0.kind == .fulfilled
+                && $0.sourceTaskID == gym.id
+        })
+    }
+
+    @Test
     func advanceTask_withSequentialSteps_savesLogOnlyAfterFinalStep() throws {
         let context = makeInMemoryContext()
         let task = makeTask(

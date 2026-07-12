@@ -23,7 +23,7 @@ extension TaskDetailFeature {
         } ?? false
         let doneTodayFromLogs = state.logs.contains {
             guard let timestamp = $0.timestamp else { return false }
-            guard $0.kind == .completed else { return false }
+            guard $0.kind.resolvesDoneDate else { return false }
             guard let displayDay = RoutineDateMath.completionDisplayDay(
                 for: state.task,
                 completionDate: timestamp,
@@ -119,7 +119,7 @@ extension TaskDetailFeature {
         }
 
         let remainingLatestCompletion = state.logs
-            .filter { $0.kind == .completed }
+            .filter { $0.kind.resolvesDoneDate }
             .compactMap(\.timestamp)
             .max()
 
@@ -149,7 +149,7 @@ extension TaskDetailFeature {
         state.logs.removeAll { $0.timestamp == timestamp }
 
         let remainingLatestCompletion = state.logs
-            .filter { $0.kind == .completed }
+            .filter { $0.kind.resolvesDoneDate }
             .compactMap(\.timestamp)
             .max()
 
@@ -197,7 +197,7 @@ extension TaskDetailFeature {
     ) -> [RoutineLog] {
         var mergedLogs = loadedLogs.filter { log in
             guard let timestamp = log.timestamp else { return true }
-            guard log.kind == .completed else { return true }
+            guard log.kind.resolvesDoneDate else { return true }
             return !state.pendingLocalRemovalDates.contains {
                 calendar.isDate($0, inSameDayAs: timestamp)
             }
@@ -206,13 +206,13 @@ extension TaskDetailFeature {
         let confirmedRemovalDates = state.pendingLocalRemovalDates.filter { pendingDate in
             !loadedLogs.contains { log in
                 guard let timestamp = log.timestamp else { return false }
-                return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: pendingDate)
+                return log.kind.resolvesDoneDate && calendar.isDate(timestamp, inSameDayAs: pendingDate)
             }
         }
 
         if !confirmedRemovalDates.isEmpty {
             let remainingLatestCompletion = mergedLogs
-                .filter { $0.kind == .completed }
+                .filter { $0.kind.resolvesDoneDate }
                 .compactMap(\.timestamp)
                 .max()
             for pendingDate in confirmedRemovalDates {
@@ -235,21 +235,21 @@ extension TaskDetailFeature {
         state.pendingLocalCompletionDates.removeAll { pendingDate in
             mergedLogs.contains { log in
                 guard let timestamp = log.timestamp else { return false }
-                return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: pendingDate)
+                return log.kind.resolvesDoneDate && calendar.isDate(timestamp, inSameDayAs: pendingDate)
             }
         }
 
         for pendingDate in state.pendingLocalCompletionDates {
             guard !mergedLogs.contains(where: { log in
                 guard let timestamp = log.timestamp else { return false }
-                return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: pendingDate)
+                return log.kind.resolvesDoneDate && calendar.isDate(timestamp, inSameDayAs: pendingDate)
             }) else {
                 continue
             }
 
             if let optimisticLog = state.logs.first(where: { log in
                 guard let timestamp = log.timestamp else { return false }
-                return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: pendingDate)
+                return log.kind.resolvesDoneDate && calendar.isDate(timestamp, inSameDayAs: pendingDate)
             }) {
                 mergedLogs.append(optimisticLog.detachedCopy())
             } else {

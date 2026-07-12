@@ -88,6 +88,43 @@ struct HomeTaskLifecycleSupportTests {
     }
 
     @Test
+    func markTaskDone_fulfillsLinkedRoutineWithoutIncreasingAggregateDoneCount() {
+        let calendar = makeTestCalendar()
+        let completedAt = makeDate("2026-05-01T10:00:00Z")
+        let gym = RoutineTask(name: "Gym", scheduleMode: .fixedInterval)
+        let exercise = RoutineTask(
+            name: "Exercise routine",
+            relationships: [
+                RoutineTaskRelationship(targetTaskID: gym.id, kind: .doneWhen)
+            ],
+            scheduleMode: .fixedInterval
+        )
+        var tasks = [gym, exercise]
+        var doneStats = HomeDoneStats()
+
+        let update = HomeTaskLifecycleSupport.markTaskDone(
+            taskID: gym.id,
+            referenceDate: completedAt,
+            calendar: calendar,
+            tasks: &tasks,
+            doneStats: &doneStats
+        )
+        let updatedExercise = tasks.first { $0.id == exercise.id }
+
+        #expect(update == .advance(HomeAdvanceTaskUpdate(
+            taskID: gym.id,
+            completionDate: completedAt,
+            previousTodoStateTitle: nil
+        )))
+        #expect(doneStats.totalCount == 1)
+        #expect(doneStats.countsByTaskID[gym.id] == 1)
+        #expect(doneStats.countsByTaskID[exercise.id] == nil)
+        #expect(doneStats.completedDatesByTaskID[gym.id] == [completedAt])
+        #expect(doneStats.completedDatesByTaskID[exercise.id] == [completedAt])
+        #expect(updatedExercise?.lastDone == completedAt)
+    }
+
+    @Test
     func markTaskDone_forSameDayMissedTimeWindowCompletesCurrentOccurrenceBeforeOlderMisses() {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current

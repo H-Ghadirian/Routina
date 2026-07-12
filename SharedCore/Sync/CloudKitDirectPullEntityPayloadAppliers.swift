@@ -88,6 +88,7 @@ enum CloudKitDirectPullLogPayloadApplier {
         log.taskID = payload.taskID
         log.kind = payload.kind
         log.actualDurationMinutes = payload.actualDurationMinutes
+        log.sourceTaskID = payload.sourceTaskID
     }
 
     static func makeLog(from payload: CloudKitDirectPullService.LogPayload) -> RoutineLog {
@@ -96,7 +97,8 @@ enum CloudKitDirectPullLogPayloadApplier {
             timestamp: payload.timestamp,
             taskID: payload.taskID,
             kind: payload.kind,
-            actualDurationMinutes: payload.actualDurationMinutes
+            actualDurationMinutes: payload.actualDurationMinutes,
+            sourceTaskID: payload.sourceTaskID
         )
     }
 }

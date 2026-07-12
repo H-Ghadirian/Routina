@@ -112,6 +112,7 @@ extension SettingsRoutineDataPersistence {
             var taskID: UUID
             var kind: RoutineLogKind?
             var actualDurationMinutes: Int?
+            var sourceTaskID: UUID?
         }
 
         struct Sleep: Codable {

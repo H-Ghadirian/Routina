@@ -712,7 +712,7 @@ extension TaskDetailFeature {
                 let existingLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
                 if let existingLog = existingLogs.first(where: { log in
                     guard let timestamp = log.timestamp else { return false }
-                    return log.kind == .completed && calendar.isDate(timestamp, inSameDayAs: finishedAt)
+                    return log.kind.resolvesDoneDate && calendar.isDate(timestamp, inSameDayAs: finishedAt)
                 }) {
                     if finishedAt > (existingLog.timestamp ?? .distantPast) {
                         existingLog.timestamp = finishedAt
@@ -720,6 +720,12 @@ extension TaskDetailFeature {
                 } else {
                     context.insert(RoutineLog(timestamp: finishedAt, taskID: taskID, kind: .completed))
                 }
+                try RoutineLogHistory.fulfillLinkedTasks(
+                    fromSourceTaskID: taskID,
+                    completedAt: finishedAt,
+                    context: context,
+                    calendar: calendar
+                )
 
                 DeviceActivityRecorder.recordAction(
                     .completed,

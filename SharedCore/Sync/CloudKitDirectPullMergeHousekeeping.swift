@@ -10,6 +10,8 @@ enum CloudKitDirectPullMergeHousekeeping {
         for log in logs {
             let key = CloudKitDirectPullMergeSupport.LogDeduplicationKey(
                 taskID: log.taskID,
+                kind: log.kind,
+                sourceTaskID: log.sourceTaskID,
                 timestamp: log.timestamp
             )
             if let keptLogID = keptLogIDsByKey[key], keptLogID != log.id {
@@ -116,6 +118,15 @@ enum CloudKitDirectPullMergeHousekeeping {
 
         for log in try context.fetch(descriptor) {
             log.taskID = targetTaskID
+        }
+
+        let sourceDescriptor = FetchDescriptor<RoutineLog>(
+            predicate: #Predicate { log in
+                log.sourceTaskID == sourceTaskID
+            }
+        )
+        for log in try context.fetch(sourceDescriptor) {
+            log.sourceTaskID = targetTaskID
         }
     }
 

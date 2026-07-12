@@ -521,6 +521,8 @@ struct DayPlanBlockCard: View {
         switch kind {
         case .completed:
             return "checkmark.circle.fill"
+        case .fulfilled:
+            return "checkmark.circle"
         case .missed:
             return "exclamationmark.triangle.fill"
         case .canceled:
@@ -533,6 +535,8 @@ struct DayPlanBlockCard: View {
         switch automaticKind {
         case .completed:
             return "Automatically shown from completed timeline activity"
+        case .fulfilled:
+            return "Automatically shown from linked task fulfillment"
         case .missed:
             return "Automatically shown from missed timeline activity"
         case .canceled:

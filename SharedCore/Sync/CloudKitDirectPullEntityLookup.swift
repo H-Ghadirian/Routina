@@ -16,6 +16,8 @@ enum CloudKitDirectPullEntityLookup {
 
         return try context.fetch(descriptor).first { log in
             CloudKitDirectPullMergeSupport.timestampsMatch(log.timestamp, payload.timestamp)
+                && log.kind == payload.kind
+                && log.sourceTaskID == payload.sourceTaskID
         }
     }
 

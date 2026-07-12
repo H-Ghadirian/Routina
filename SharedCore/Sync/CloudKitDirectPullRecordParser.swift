@@ -158,12 +158,24 @@ enum CloudKitDirectPullRecordParser {
                 "cd_actualdurationminutes"
             ]
         )
+        let sourceTaskID = CloudKitDirectPullService.uuidValue(
+            in: record,
+            keys: [
+                "sourceTaskID",
+                "sourceTaskId",
+                "SOURCETASKID",
+                "zsourcetaskid",
+                "ZSOURCETASKID",
+                "cd_sourcetaskid"
+            ]
+        )
         return LogPayload(
             id: id,
             timestamp: timestamp,
             taskID: taskID,
             kind: kindRawValue.flatMap(RoutineLogKind.init(rawValue:)) ?? .completed,
-            actualDurationMinutes: RoutineLog.sanitizedActualDurationMinutes(actualDurationMinutes)
+            actualDurationMinutes: RoutineLog.sanitizedActualDurationMinutes(actualDurationMinutes),
+            sourceTaskID: sourceTaskID
         )
     }
 }

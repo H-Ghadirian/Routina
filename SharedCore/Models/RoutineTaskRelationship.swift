@@ -4,6 +4,8 @@ enum RoutineTaskRelationshipKind: String, Codable, CaseIterable, Equatable, Hash
     case related
     case blocks
     case blockedBy
+    case doneWhen
+    case completes
 
     var title: String {
         switch self {
@@ -13,6 +15,10 @@ enum RoutineTaskRelationshipKind: String, Codable, CaseIterable, Equatable, Hash
             return "Blocks"
         case .blockedBy:
             return "Blocked by"
+        case .doneWhen:
+            return "Done when"
+        case .completes:
+            return "Completes"
         }
     }
 
@@ -24,6 +30,10 @@ enum RoutineTaskRelationshipKind: String, Codable, CaseIterable, Equatable, Hash
             return "arrow.turn.down.right"
         case .blockedBy:
             return "exclamationmark.triangle"
+        case .doneWhen:
+            return "checkmark.circle"
+        case .completes:
+            return "arrow.triangle.2.circlepath"
         }
     }
 
@@ -35,6 +45,10 @@ enum RoutineTaskRelationshipKind: String, Codable, CaseIterable, Equatable, Hash
             return .blockedBy
         case .blockedBy:
             return .blocks
+        case .doneWhen:
+            return .completes
+        case .completes:
+            return .doneWhen
         }
     }
 
@@ -44,8 +58,12 @@ enum RoutineTaskRelationshipKind: String, Codable, CaseIterable, Equatable, Hash
             return 0
         case .blocks:
             return 1
-        case .related:
+        case .doneWhen:
             return 2
+        case .completes:
+            return 3
+        case .related:
+            return 4
         }
     }
 }

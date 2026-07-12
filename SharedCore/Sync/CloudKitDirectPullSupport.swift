@@ -86,6 +86,7 @@ extension CloudKitDirectPullService {
         var taskID: UUID
         var kind: RoutineLogKind
         var actualDurationMinutes: Int?
+        var sourceTaskID: UUID?
     }
 
     static func stringValue(in record: CKRecord, keys: [String]) -> String? {

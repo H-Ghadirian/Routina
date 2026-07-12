@@ -928,7 +928,11 @@ detailBody
             relatedTaskName: relatedTaskName(for:)
         ) { _, log, _ in
             RoutineLogSwipeRow(
-                presentation: TaskDetailRoutineLogRowPresentation(log: log, showPersianDates: showPersianDates)
+                presentation: TaskDetailRoutineLogRowPresentation(
+                    log: log,
+                    showPersianDates: showPersianDates,
+                    sourceTaskName: sourceTaskName(for: log)
+                )
             ) {
                 if let timestamp = log.timestamp {
                     store.send(.requestRemoveLogEntry(timestamp))
@@ -950,6 +954,11 @@ detailBody
     private func relatedTaskName(for change: RoutineTaskChangeLogEntry) -> String {
         guard let relatedTaskID = change.relatedTaskID else { return "task" }
         return store.availableRelationshipTasks.first(where: { $0.id == relatedTaskID })?.displayName ?? "task"
+    }
+
+    private func sourceTaskName(for log: RoutineLog) -> String? {
+        guard let sourceTaskID = log.sourceTaskID else { return nil }
+        return store.availableRelationshipTasks.first(where: { $0.id == sourceTaskID })?.displayName
     }
 
     private var relationshipsSection: some View {
