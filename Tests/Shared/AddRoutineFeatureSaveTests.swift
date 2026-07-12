@@ -442,7 +442,34 @@ struct AddRoutineFeatureSaveTests {
 
         #expect(task.scheduleMode == .oneOff)
         #expect(task.recurrenceRule == .interval(days: 1, timeRange: window))
+        #expect(task.recurrenceTimeRangeRole == .availability)
         #expect(task.interval == 1)
+    }
+
+    @Test
+    func makeRoutine_persistsTimeBlockRoleFromSaveRequest() {
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 18, minute: 30),
+            end: RoutineTimeOfDay(hour: 20, minute: 0)
+        )
+        let request = makeSaveRequest(
+            name: "Group session",
+            frequencyInDays: 7,
+            recurrenceRule: .weekly(on: 5, timeRange: window),
+            emoji: "✨",
+            scheduleMode: .fixedInterval,
+            recurrenceTimeRangeRole: .scheduledBlock
+        )
+
+        let task = HomeAddRoutineSupport.makeRoutine(
+            from: request,
+            name: request.name,
+            goalIDs: [],
+            scheduleAnchor: makeDate("2026-03-22T00:00:00Z")
+        )
+
+        #expect(task.recurrenceRule == .weekly(on: 5, timeRange: window))
+        #expect(task.recurrenceTimeRangeRole == .scheduledBlock)
     }
 
     @Test

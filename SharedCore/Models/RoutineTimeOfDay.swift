@@ -117,6 +117,11 @@ struct RoutineTimeRange: Codable, Equatable, Hashable, Sendable {
     }
 }
 
+enum RoutineTimeRangeRole: String, Codable, CaseIterable, Equatable, Hashable, Sendable {
+    case availability
+    case scheduledBlock
+}
+
 enum PersianDateDisplay {
     static func supplementaryText(for date: Date, enabled: Bool) -> String? {
         guard enabled else { return nil }

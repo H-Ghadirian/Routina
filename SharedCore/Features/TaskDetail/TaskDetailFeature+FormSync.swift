@@ -51,6 +51,9 @@ extension TaskDetailFeature {
         state.editRecurrenceKind = recurrenceRule.kind
         state.editRecurrenceHasExplicitTime = recurrenceRule.usesExplicitTimeOfDay
         state.editRecurrenceHasTimeRange = recurrenceRule.usesTimeRange
+        state.editRecurrenceTimeRangeRole = recurrenceRule.usesTimeRange
+            ? state.task.recurrenceTimeRangeRole
+            : .availability
         state.editRecurrenceTimeOfDay = recurrenceRule.timeOfDay ?? .defaultValue
         state.editRecurrenceTimeRangeStart = recurrenceRule.timeRange?.start ?? RoutineTimeRange.defaultValue.start
         state.editRecurrenceTimeRangeEnd = recurrenceRule.timeRange?.end ?? RoutineTimeRange.defaultValue.end

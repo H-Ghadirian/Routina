@@ -1327,6 +1327,15 @@ final class DayPlanPlannerState: ObservableObject {
 
         if task.isOneOffTask {
             if isDateWithinAvailabilityDateBounds(date, for: task, calendar: calendar) {
+                if let timeRange = task.recurrenceRule.timeRange,
+                   task.recurrenceTimeRangeRole == .scheduledBlock {
+                    let startDate = timeRange.startDate(on: date, calendar: calendar)
+                    let endDate = timeRange.endDate(on: date, calendar: calendar)
+                    return ExactScheduledBlock(
+                        startDate: startDate,
+                        durationMinutes: availabilityWindowDuration(start: startDate, end: endDate)
+                    )
+                }
                 if let timeOfDay = task.recurrenceRule.timeOfDay {
                     return ExactScheduledBlock(
                         startDate: timeOfDay.date(on: date, calendar: calendar),
@@ -1343,9 +1352,18 @@ final class DayPlanPlannerState: ObservableObject {
             return ExactScheduledBlock(startDate: deadline, durationMinutes: nil)
         }
 
-        guard task.recurrenceRule.timeRange == nil else { return nil }
         guard let occurrence = RoutineDateMath.scheduledOccurrence(for: task, on: date, calendar: calendar) else {
             return nil
+        }
+        if let timeRange = task.recurrenceRule.timeRange {
+            guard task.recurrenceTimeRangeRole == .scheduledBlock else { return nil }
+            return ExactScheduledBlock(
+                startDate: occurrence,
+                durationMinutes: availabilityWindowDuration(
+                    start: occurrence,
+                    end: timeRange.endDate(on: occurrence, calendar: calendar)
+                )
+            )
         }
         return ExactScheduledBlock(startDate: occurrence, durationMinutes: nil)
     }
@@ -1356,6 +1374,7 @@ final class DayPlanPlannerState: ObservableObject {
         calendar: Calendar
     ) -> ExactScheduledBlock? {
         guard !task.isAllDay,
+              task.recurrenceTimeRangeRole == .availability,
               let timeRange = task.recurrenceRule.timeRange else {
             return nil
         }

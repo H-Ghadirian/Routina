@@ -83,6 +83,7 @@ struct TaskDetailFeature: Reducer {
         var editRecurrenceKind: RoutineRecurrenceRule.Kind = .intervalDays
         var editRecurrenceHasExplicitTime: Bool = false
         var editRecurrenceHasTimeRange: Bool = false
+        var editRecurrenceTimeRangeRole: RoutineTimeRangeRole = .availability
         var editRecurrenceTimeOfDay: RoutineTimeOfDay = .defaultValue
         var editRecurrenceTimeRangeStart: RoutineTimeOfDay = RoutineTimeRange.defaultValue.start
         var editRecurrenceTimeRangeEnd: RoutineTimeOfDay = RoutineTimeRange.defaultValue.end
@@ -313,6 +314,7 @@ struct TaskDetailFeature: Reducer {
         case editRecurrenceKindChanged(RoutineRecurrenceRule.Kind)
         case editRecurrenceHasExplicitTimeChanged(Bool)
         case editRecurrenceHasTimeRangeChanged(Bool)
+        case editRecurrenceTimeRangeRoleChanged(RoutineTimeRangeRole)
         case editRecurrenceTimeOfDayChanged(RoutineTimeOfDay)
         case editRecurrenceTimeRangeStartChanged(RoutineTimeOfDay)
         case editRecurrenceTimeRangeEndChanged(RoutineTimeOfDay)
@@ -1271,6 +1273,12 @@ struct TaskDetailFeature: Reducer {
         case let .editRecurrenceHasTimeRangeChanged(hasTimeRange):
             return recurrenceEditActionHandler().editRecurrenceHasTimeRangeChanged(
                 hasTimeRange,
+                state: &state
+            )
+
+        case let .editRecurrenceTimeRangeRoleChanged(role):
+            return recurrenceEditActionHandler().editRecurrenceTimeRangeRoleChanged(
+                role,
                 state: &state
             )
 

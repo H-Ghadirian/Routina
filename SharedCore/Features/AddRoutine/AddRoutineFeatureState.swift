@@ -54,6 +54,7 @@ struct AddRoutineScheduleState: Equatable {
     var recurrenceKind: RoutineRecurrenceRule.Kind = .intervalDays
     var recurrenceHasExplicitTime: Bool = false
     var recurrenceHasTimeRange: Bool = false
+    var recurrenceTimeRangeRole: RoutineTimeRangeRole = .availability
     var recurrenceTimeOfDay: RoutineTimeOfDay = .defaultValue
     var recurrenceTimeRangeStart: RoutineTimeOfDay = RoutineTimeRange.defaultValue.start
     var recurrenceTimeRangeEnd: RoutineTimeOfDay = RoutineTimeRange.defaultValue.end

@@ -292,6 +292,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 scheduleMode: task.scheduleMode,
                 interval: Int16(clampedInterval(task.interval)),
                 recurrenceRule: task.recurrenceRule,
+                recurrenceTimeRangeRole: task.recurrenceTimeRangeRole ?? .availability,
                 lastDone: task.lastDone,
                 canceledAt: task.canceledAt,
                 scheduleAnchor: task.scheduleAnchor,

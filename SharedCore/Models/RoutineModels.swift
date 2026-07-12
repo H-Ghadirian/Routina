@@ -44,6 +44,7 @@ final class RoutineTask {
     var recurrenceTimeRangeStartMinute: Int?
     var recurrenceTimeRangeEndHour: Int?
     var recurrenceTimeRangeEndMinute: Int?
+    var recurrenceTimeRangeRoleRawValue: String = RoutineTimeRangeRole.availability.rawValue
     var recurrenceWeekday: Int?
     var recurrenceDayOfMonth: Int?
     // Legacy JSON storage retained only so existing stores can be backfilled into the typed recurrence columns.
@@ -345,7 +346,15 @@ final class RoutineTask {
                 )
                 : newValue
             storeRecurrenceRuleInColumns(normalizedRule)
+            if normalizedRule.timeRange == nil {
+                recurrenceTimeRangeRole = .availability
+            }
         }
+    }
+
+    var recurrenceTimeRangeRole: RoutineTimeRangeRole {
+        get { RoutineTimeRangeRole(rawValue: recurrenceTimeRangeRoleRawValue) ?? .availability }
+        set { recurrenceTimeRangeRoleRawValue = newValue.rawValue }
     }
 
     init(
@@ -382,6 +391,7 @@ final class RoutineTask {
         scheduleMode: RoutineScheduleMode? = nil,
         interval: Int16 = 1,
         recurrenceRule: RoutineRecurrenceRule? = nil,
+        recurrenceTimeRangeRole: RoutineTimeRangeRole = .availability,
         lastDone: Date? = nil,
         canceledAt: Date? = nil,
         scheduleAnchor: Date? = nil,
@@ -459,6 +469,9 @@ final class RoutineTask {
             RoutineChecklistItem.sanitized(resolvedChecklistItems, for: resolvedScheduleMode)
         )
         storeRecurrenceRuleInColumns(resolvedRecurrenceRule)
+        self.recurrenceTimeRangeRole = resolvedRecurrenceRule.timeRange == nil
+            ? .availability
+            : recurrenceTimeRangeRole
         self.interval = Int16(clamping: resolvedScheduleMode == .oneOff ? 1 : resolvedRecurrenceRule.approximateIntervalDays)
         self.lastDone = lastDone
         self.canceledAt = resolvedScheduleMode == .oneOff ? canceledAt : nil

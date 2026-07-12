@@ -109,6 +109,31 @@ struct SettingsRoutineDataBackupMappingTests {
     }
 
     @Test
+    func taskMappingIncludesTimeRangeRoleForTimeBlocks() {
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 18, minute: 30),
+            end: RoutineTimeOfDay(hour: 20, minute: 0)
+        )
+        let task = RoutineTask(
+            name: "Group session",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .weekly(on: 5, timeRange: window),
+            recurrenceTimeRangeRole: .scheduledBlock
+        )
+
+        let backupTask = SettingsRoutineDataBackupMapping.task(
+            task,
+            imageData: nil,
+            imageAttachmentID: nil,
+            voiceNoteData: nil,
+            voiceNoteAttachmentID: nil,
+            includesPressure: false
+        )
+
+        #expect(backupTask.recurrenceTimeRangeRole == .scheduledBlock)
+    }
+
+    @Test
     func placeCheckInMappingChoosesInlineImageOrAttachmentReference() {
         let sessionID = UUID()
         let attachmentID = UUID()

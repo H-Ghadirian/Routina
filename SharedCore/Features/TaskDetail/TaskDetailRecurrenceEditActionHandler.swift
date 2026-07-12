@@ -36,6 +36,7 @@ struct TaskDetailRecurrenceEditActionHandler {
             if isAllDay {
                 state.editRecurrenceHasExplicitTime = false
                 state.editRecurrenceHasTimeRange = false
+                state.editRecurrenceTimeRangeRole = .availability
             }
         }
         disableAutoAssumeIfNeeded(state: &state)
@@ -173,6 +174,7 @@ struct TaskDetailRecurrenceEditActionHandler {
             state.editRecurrenceHasExplicitTime = hasExplicitTime
             if hasExplicitTime {
                 state.editRecurrenceHasTimeRange = false
+                state.editRecurrenceTimeRangeRole = .availability
             }
         }
         return .none
@@ -186,9 +188,19 @@ struct TaskDetailRecurrenceEditActionHandler {
             state.editRecurrenceHasTimeRange = hasTimeRange
             if hasTimeRange {
                 state.editRecurrenceHasExplicitTime = false
+            } else {
+                state.editRecurrenceTimeRangeRole = .availability
             }
         }
         disableAutoAssumeIfNeeded(state: &state)
+        return .none
+    }
+
+    func editRecurrenceTimeRangeRoleChanged(
+        _ role: RoutineTimeRangeRole,
+        state: inout State
+    ) -> Effect<Action> {
+        state.editRecurrenceTimeRangeRole = role
         return .none
     }
 

@@ -106,6 +106,8 @@ enum CloudKitDirectPullTaskRecordParser {
         let recurrenceTimeRangeStartMinuteValue = intValue(in: record, keys: storageKeys("recurrenceTimeRangeStartMinute"))
         let recurrenceTimeRangeEndHourValue = intValue(in: record, keys: storageKeys("recurrenceTimeRangeEndHour"))
         let recurrenceTimeRangeEndMinuteValue = intValue(in: record, keys: storageKeys("recurrenceTimeRangeEndMinute"))
+        let recurrenceTimeRangeRoleValue = stringValue(in: record, keys: storageKeys("recurrenceTimeRangeRoleRawValue"))
+            .flatMap(RoutineTimeRangeRole.init(rawValue:))
         let recurrenceWeekdayValue = intValue(in: record, keys: storageKeys("recurrenceWeekday"))
         let recurrenceDayOfMonthValue = intValue(in: record, keys: storageKeys("recurrenceDayOfMonth"))
         let recurrenceRuleColumnValue = recurrenceRuleFromColumns(
@@ -269,6 +271,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 || voiceNoteCreatedAtValue != nil
                 || scheduleModeValue != nil
                 || recurrenceRuleValue != nil
+                || recurrenceTimeRangeRoleValue != nil
                 || lastDoneValue != nil
                 || canceledAtValue != nil
                 || scheduleAnchorValue != nil
@@ -337,6 +340,7 @@ enum CloudKitDirectPullTaskRecordParser {
             scheduleMode: scheduleModeValue.flatMap(RoutineScheduleMode.init(rawValue:)),
             interval: Int16(clamping: intervalValue ?? 1),
             recurrenceRule: recurrenceRuleValue,
+            recurrenceTimeRangeRole: recurrenceTimeRangeRoleValue,
             lastDone: lastDoneValue,
             canceledAt: canceledAtValue,
             scheduleAnchor: scheduleAnchorValue,

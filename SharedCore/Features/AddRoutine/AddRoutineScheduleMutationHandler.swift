@@ -131,6 +131,16 @@ struct AddRoutineScheduleMutationHandler {
         enforceAutoAssumeEligibility(state: &state)
     }
 
+    func setRecurrenceTimeRangeRole(
+        _ role: RoutineTimeRangeRole,
+        state: inout AddRoutineFeature.State
+    ) {
+        AddRoutineScheduleEditor.setRecurrenceTimeRangeRole(
+            role,
+            schedule: &state.schedule
+        )
+    }
+
     func setRecurrenceTimeOfDay(
         _ timeOfDay: RoutineTimeOfDay,
         state: inout AddRoutineFeature.State

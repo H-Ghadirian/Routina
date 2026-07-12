@@ -83,6 +83,7 @@ extension SettingsRoutineDataPersistence {
             var scheduleMode: RoutineScheduleMode?
             var interval: Int
             var recurrenceRule: RoutineRecurrenceRule?
+            var recurrenceTimeRangeRole: RoutineTimeRangeRole?
             var lastDone: Date?
             var canceledAt: Date?
             var scheduleAnchor: Date?

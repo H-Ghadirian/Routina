@@ -647,6 +647,7 @@ struct SwiftDataModelTests {
         let task = RoutineTask(
             name: "Breakfast",
             recurrenceRule: .daily(in: timeRange),
+            recurrenceTimeRangeRole: .scheduledBlock,
             scheduleAnchor: makeDate("2026-03-18T06:00:00Z")
         )
 
@@ -656,6 +657,8 @@ struct SwiftDataModelTests {
         #expect(task.recurrenceTimeRangeStartMinute == 0)
         #expect(task.recurrenceTimeRangeEndHour == 10)
         #expect(task.recurrenceTimeRangeEndMinute == 0)
+        #expect(task.recurrenceTimeRangeRole == .scheduledBlock)
+        #expect(task.recurrenceTimeRangeRoleRawValue == RoutineTimeRangeRole.scheduledBlock.rawValue)
         #expect(task.recurrenceRuleStorage.isEmpty)
     }
 

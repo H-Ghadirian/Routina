@@ -6,6 +6,8 @@ Status: Accepted
 
 Refines: [0009 Support Routine Time Ranges](0009-support-routine-time-ranges.md), [0178 Make Recurrence Availability Independent](0178-make-recurrence-availability-independent.md), [0183 Support Todo Availability Time Windows](0183-support-todo-availability-time-windows.md), [0197 Separate Todo Date and Time Availability](0197-separate-todo-date-and-time-availability.md), [0372 Hide Completed Tasks From Calendar Schedule](0372-hide-completed-tasks-from-calendar-schedule.md)
 
+Refined by: [0375 Split Time Blocks From Available Windows](0375-split-time-blocks-from-available-windows.md)
+
 ## Context
 
 Routina supports `Window` timing so routines and todos can be available during a span such as 21:00-03:00 without forcing the user to choose one exact moment. Earlier Planner behavior treated the start of that window as an automatic timed Calendar `Schedule` placement. That made availability windows look like user-scheduled blocks and caused auto-assumed routine days to keep appearing in the timed grid.

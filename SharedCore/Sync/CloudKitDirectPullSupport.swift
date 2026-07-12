@@ -31,6 +31,7 @@ extension CloudKitDirectPullService {
         var scheduleMode: RoutineScheduleMode?
         var interval: Int16
         var recurrenceRule: RoutineRecurrenceRule?
+        var recurrenceTimeRangeRole: RoutineTimeRangeRole?
         var lastDone: Date?
         var canceledAt: Date?
         var scheduleAnchor: Date?

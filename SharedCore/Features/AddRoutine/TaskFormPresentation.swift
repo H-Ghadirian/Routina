@@ -20,9 +20,30 @@ enum TaskFormTimingMode: String, CaseIterable, Equatable, Identifiable, Sendable
     case none = "Any time"
     case allDay = "All-day"
     case exact = "At time"
-    case range = "Window"
+    case timeBlock = "Time block"
+    case availableWindow = "Available window"
 
     var id: String { rawValue }
+
+    var usesTimeRange: Bool {
+        switch self {
+        case .timeBlock, .availableWindow:
+            return true
+        case .none, .allDay, .exact:
+            return false
+        }
+    }
+
+    var timeRangeRole: RoutineTimeRangeRole? {
+        switch self {
+        case .timeBlock:
+            return .scheduledBlock
+        case .availableWindow:
+            return .availability
+        case .none, .allDay, .exact:
+            return nil
+        }
+    }
 
     static func cases(for _: RoutineTaskType) -> [Self] {
         allCases

@@ -108,6 +108,7 @@ struct AddRoutineSaveRequest: Equatable {
     let steps: [RoutineStep]
     let scheduleMode: RoutineScheduleMode
     let checklistItems: [RoutineChecklistItem]
+    let recurrenceTimeRangeRole: RoutineTimeRangeRole
     let attachments: [AttachmentItem]
     let color: RoutineTaskColor
     let autoAssumeDailyDone: Bool
@@ -147,6 +148,7 @@ struct AddRoutineSaveRequest: Equatable {
         steps: [RoutineStep] = [],
         scheduleMode: RoutineScheduleMode,
         checklistItems: [RoutineChecklistItem] = [],
+        recurrenceTimeRangeRole: RoutineTimeRangeRole = .availability,
         attachments: [AttachmentItem] = [],
         color: RoutineTaskColor,
         autoAssumeDailyDone: Bool = false,
@@ -198,6 +200,9 @@ struct AddRoutineSaveRequest: Equatable {
         self.steps = steps
         self.scheduleMode = scheduleMode
         self.checklistItems = checklistItems
+        self.recurrenceTimeRangeRole = recurrenceRule.timeRange == nil
+            ? .availability
+            : recurrenceTimeRangeRole
         self.attachments = attachments
         self.color = color
         self.autoAssumeDailyDone = autoAssumeDailyDone
@@ -282,6 +287,9 @@ struct AddRoutineSaveRequest: Equatable {
             : []
         self.scheduleMode = schedule.scheduleMode
         self.checklistItems = sanitizedChecklistItems
+        self.recurrenceTimeRangeRole = self.recurrenceRule.timeRange == nil
+            ? .availability
+            : schedule.recurrenceTimeRangeRole
         self.attachments = basics.attachments
         self.color = basics.routineColor
         self.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(basics.estimatedDurationMinutes)

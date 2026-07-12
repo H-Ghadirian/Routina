@@ -2070,6 +2070,42 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func timeBlockRoutineCreatesFullRangePlannerBlock() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let occurrence = try #require(date("2026-05-11T12:00:00Z"))
+        let dayKey = DayPlanStorage.dayKey(for: occurrence, calendar: calendar)
+        let taskID = UUID()
+        let timeRange = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 18, minute: 30),
+            end: RoutineTimeOfDay(hour: 20, minute: 0)
+        )
+        let task = RoutineTask(
+            id: taskID,
+            name: "Group session",
+            emoji: "✨",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .daily(in: timeRange),
+            recurrenceTimeRangeRole: .scheduledBlock,
+            estimatedDurationMinutes: 30
+        )
+        context.insert(task)
+        try context.save()
+        let planner = DayPlanPlannerState(selectedDate: occurrence)
+
+        planner.showExactTimedTasks(
+            from: [task],
+            calendar: calendar,
+            context: context
+        )
+
+        let block = try #require(planner.weekBlocksByDayKey[dayKey]?.first)
+        #expect(block.taskID == taskID)
+        #expect(block.startMinute == (18 * 60) + 30)
+        #expect(block.durationMinutes == 90)
+    }
+
+    @Test
     func timeWindowRoutineRemovesStaleScheduledPlannerBlock() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()
@@ -2265,6 +2301,45 @@ struct DayPlanPlannerStateTests {
         )
 
         #expect(planner.weekBlocksByDayKey.values.flatMap { $0 }.isEmpty)
+    }
+
+    @Test
+    func timeBlockTodoCreatesFullRangePlannerBlockWithoutDeadline() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let availabilityStart = try #require(date("2026-05-11T09:15:00Z"))
+        let availabilityEnd = try #require(date("2026-05-11T11:00:00Z"))
+        let dayKey = DayPlanStorage.dayKey(for: availabilityStart, calendar: calendar)
+        let taskID = UUID()
+        let timeRange = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 9, minute: 15),
+            end: RoutineTimeOfDay(hour: 11, minute: 0)
+        )
+        let task = RoutineTask(
+            id: taskID,
+            name: "Call accountant",
+            emoji: "📞",
+            availabilityStartDate: availabilityStart,
+            availabilityEndDate: availabilityEnd,
+            scheduleMode: .oneOff,
+            recurrenceRule: .interval(days: 1, timeRange: timeRange),
+            recurrenceTimeRangeRole: .scheduledBlock,
+            estimatedDurationMinutes: 45
+        )
+        context.insert(task)
+        try context.save()
+        let planner = DayPlanPlannerState(selectedDate: availabilityStart)
+
+        planner.showExactTimedTasks(
+            from: [task],
+            calendar: calendar,
+            context: context
+        )
+
+        let block = try #require(planner.weekBlocksByDayKey[dayKey]?.first)
+        #expect(block.taskID == taskID)
+        #expect(block.startMinute == (9 * 60) + 15)
+        #expect(block.durationMinutes == 105)
     }
 
     @Test

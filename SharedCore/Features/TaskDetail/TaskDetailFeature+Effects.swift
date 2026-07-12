@@ -419,6 +419,7 @@ extension TaskDetailFeature {
             checklistItems: request.checklistItems,
             scheduleMode: request.scheduleMode,
             recurrenceRule: request.recurrenceRule,
+            recurrenceTimeRangeRole: request.recurrenceTimeRangeRole,
             color: request.color,
             autoAssumeDailyDone: request.autoAssumeDailyDone,
             autoAssumeDoneTimeOfDay: request.autoAssumeDoneTimeOfDay,
@@ -461,6 +462,7 @@ extension TaskDetailFeature {
         checklistItems: [RoutineChecklistItem],
         scheduleMode: RoutineScheduleMode,
         recurrenceRule: RoutineRecurrenceRule,
+        recurrenceTimeRangeRole: RoutineTimeRangeRole,
         color: RoutineTaskColor,
         autoAssumeDailyDone: Bool,
         autoAssumeDoneTimeOfDay: RoutineTimeOfDay?,
@@ -529,6 +531,9 @@ extension TaskDetailFeature {
                 task.availabilityEndDate = scheduleMode == .oneOff ? availabilityDateBounds.endDate : nil
                 task.plannedDate = RoutineTask.normalizedPlannedDate(plannedDate, calendar: calendar)
                 task.recurrenceRule = recurrenceRule
+                task.recurrenceTimeRangeRole = recurrenceRule.timeRange == nil
+                    ? .availability
+                    : recurrenceTimeRangeRole
                 task.replaceChecklistItems(checklistItems)
                 if !task.usesOngoingLifecycle {
                     task.activityState = .idle

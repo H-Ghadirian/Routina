@@ -162,6 +162,7 @@ struct TaskDetailEditRoutineContent: View {
             recurrenceKind: recurrenceKindBinding,
             recurrenceHasExplicitTime: recurrenceHasExplicitTimeBinding,
             recurrenceHasTimeRange: recurrenceHasTimeRangeBinding,
+            recurrenceTimeRangeRole: recurrenceTimeRangeRoleBinding,
             recurrenceTimeOfDay: recurrenceTimeBinding,
             recurrenceTimeRangeStart: recurrenceTimeRangeStartBinding,
             recurrenceTimeRangeEnd: recurrenceTimeRangeEndBinding,
@@ -339,6 +340,13 @@ struct TaskDetailEditRoutineContent: View {
         Binding(
             get: { store.editRecurrenceHasTimeRange },
             set: { store.send(.editRecurrenceHasTimeRangeChanged($0)) }
+        )
+    }
+
+    private var recurrenceTimeRangeRoleBinding: Binding<RoutineTimeRangeRole> {
+        Binding(
+            get: { store.editRecurrenceTimeRangeRole },
+            set: { store.send(.editRecurrenceTimeRangeRoleChanged($0)) }
         )
     }
 

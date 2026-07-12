@@ -249,6 +249,47 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func saveTapped_preservesTimeBlockRole() async {
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(
+                    routineName: "Group session",
+                    routineEmoji: "✨"
+                ),
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .fixedInterval,
+                    recurrenceKind: .weekly,
+                    recurrenceHasTimeRange: true,
+                    recurrenceTimeRangeRole: .scheduledBlock,
+                    recurrenceTimeRangeStart: RoutineTimeOfDay(hour: 18, minute: 30),
+                    recurrenceTimeRangeEnd: RoutineTimeOfDay(hour: 20, minute: 0),
+                    recurrenceWeekday: 5,
+                    recurrenceWeekdays: [5]
+                )
+            )
+        ) {
+            makeDelegateEchoFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.saveTapped)
+        await store.receive(.delegate(.didSave(makeSaveRequest(
+            name: "Group session",
+            frequencyInDays: 1,
+            recurrenceRule: .weekly(
+                on: [5],
+                timeRange: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 18, minute: 30),
+                    end: RoutineTimeOfDay(hour: 20, minute: 0)
+                )
+            ),
+            emoji: "✨",
+            recurrenceTimeRangeRole: .scheduledBlock
+        ))))
+    }
+
+    @Test
     func taskTypeChanged_toRoutineClearsTodoAvailabilityDateBounds() async {
         let start = makeDate("2026-04-10T09:00:00Z")
         let end = makeDate("2026-04-10T11:30:00Z")

@@ -33,6 +33,7 @@ struct CloudKitDirectPullRecurrenceTests {
         remoteTask["recurrenceTimeRangeStartMinute"] = NSNumber(value: timeRange.start.minute)
         remoteTask["recurrenceTimeRangeEndHour"] = NSNumber(value: timeRange.end.hour)
         remoteTask["recurrenceTimeRangeEndMinute"] = NSNumber(value: timeRange.end.minute)
+        remoteTask["recurrenceTimeRangeRoleRawValue"] = RoutineTimeRangeRole.scheduledBlock.rawValue as CKRecordValue
 
         try CloudKitDirectPullService.mergeForTesting(
             .init(changedRecords: [remoteTask], deletedRecordIDs: []),
@@ -49,6 +50,7 @@ struct CloudKitDirectPullRecurrenceTests {
             ).first
         )
         #expect(task.recurrenceRule == .daily(in: timeRange))
+        #expect(task.recurrenceTimeRangeRole == .scheduledBlock)
         #expect(task.recurrenceStorageVersion == 1)
         #expect(task.recurrenceRuleStorage.isEmpty)
     }

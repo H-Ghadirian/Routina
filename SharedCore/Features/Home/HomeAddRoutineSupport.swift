@@ -76,6 +76,7 @@ enum HomeAddRoutineSupport {
             scheduleMode: request.scheduleMode,
             interval: Int16(request.frequencyInDays),
             recurrenceRule: request.recurrenceRule,
+            recurrenceTimeRangeRole: request.recurrenceTimeRangeRole,
             lastDone: nil,
             scheduleAnchor: request.scheduleMode == .oneOff ? nil : scheduleAnchor,
             color: request.color,

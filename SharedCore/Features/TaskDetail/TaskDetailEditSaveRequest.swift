@@ -32,6 +32,7 @@ struct TaskDetailEditSaveRequest: Equatable {
     var checklistItems: [RoutineChecklistItem]
     var scheduleMode: RoutineScheduleMode
     var recurrenceRule: RoutineRecurrenceRule
+    var recurrenceTimeRangeRole: RoutineTimeRangeRole
     var color: RoutineTaskColor
     var autoAssumeDailyDone: Bool
     var autoAssumeDoneTimeOfDay: RoutineTimeOfDay?
@@ -156,6 +157,9 @@ struct TaskDetailEditSaveRequestBuilder {
             checklistItems: sanitizedChecklistItems,
             scheduleMode: scheduleMode,
             recurrenceRule: recurrenceRule,
+            recurrenceTimeRangeRole: recurrenceRule.timeRange == nil
+                ? .availability
+                : state.editRecurrenceTimeRangeRole,
             color: state.editColor,
             autoAssumeDailyDone: state.editAutoAssumeDailyDone,
             autoAssumeDoneTimeOfDay: state.editAutoAssumeDailyDone

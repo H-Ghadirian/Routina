@@ -46,7 +46,16 @@ enum AddRoutineScheduleEditor {
         schedule.recurrenceHasTimeRange = hasTimeRange
         if hasTimeRange {
             schedule.recurrenceHasExplicitTime = false
+        } else {
+            schedule.recurrenceTimeRangeRole = .availability
         }
+    }
+
+    static func setRecurrenceTimeRangeRole(
+        _ role: RoutineTimeRangeRole,
+        schedule: inout AddRoutineScheduleState
+    ) {
+        schedule.recurrenceTimeRangeRole = role
     }
 
     static func setRecurrenceTimeOfDay(

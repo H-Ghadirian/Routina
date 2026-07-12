@@ -48,6 +48,7 @@ enum CloudSharingService {
         var scheduleMode: RoutineScheduleMode
         var interval: Int16
         var recurrenceRule: RoutineRecurrenceRule?
+        var recurrenceTimeRangeRole: RoutineTimeRangeRole?
         var lastDone: Date?
         var canceledAt: Date?
         var scheduleAnchor: Date?
@@ -302,6 +303,7 @@ extension CloudSharingService.SharedTaskPayload {
         self.scheduleMode = task.scheduleMode
         self.interval = task.interval
         self.recurrenceRule = task.recurrenceRule
+        self.recurrenceTimeRangeRole = task.recurrenceRule.timeRange == nil ? nil : task.recurrenceTimeRangeRole
         self.lastDone = task.lastDone
         self.canceledAt = task.canceledAt
         self.scheduleAnchor = task.scheduleAnchor
@@ -370,6 +372,9 @@ extension CloudSharingService.SharedTaskPayload {
         task.replaceChecklistItems(checklistItems)
         task.scheduleMode = scheduleMode
         task.recurrenceRule = recurrenceRule ?? .interval(days: max(Int(interval), 1))
+        task.recurrenceTimeRangeRole = task.recurrenceRule.timeRange == nil
+            ? .availability
+            : (recurrenceTimeRangeRole ?? .availability)
         task.interval = Int16(clamping: max(Int(interval), 1))
         task.lastDone = lastDone
         task.canceledAt = scheduleMode == .oneOff ? canceledAt : nil
@@ -432,6 +437,7 @@ private extension RoutineTask {
             scheduleMode: payload.scheduleMode,
             interval: payload.interval,
             recurrenceRule: payload.recurrenceRule,
+            recurrenceTimeRangeRole: payload.recurrenceTimeRangeRole ?? .availability,
             lastDone: payload.lastDone,
             canceledAt: payload.canceledAt,
             scheduleAnchor: payload.scheduleAnchor,

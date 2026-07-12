@@ -42,6 +42,7 @@ struct TaskDetailEditChangeRequest {
     let recurrenceKind: RoutineRecurrenceRule.Kind
     let recurrenceHasExplicitTime: Bool
     let recurrenceHasTimeRange: Bool
+    let recurrenceTimeRangeRole: RoutineTimeRangeRole
     let recurrenceTimeOfDay: RoutineTimeOfDay
     let recurrenceTimeRangeStart: RoutineTimeOfDay
     let recurrenceTimeRangeEnd: RoutineTimeOfDay
@@ -96,6 +97,7 @@ struct TaskDetailEditChangeRequest {
         self.recurrenceKind = state.editRecurrenceKind
         self.recurrenceHasExplicitTime = state.editRecurrenceHasExplicitTime
         self.recurrenceHasTimeRange = state.editRecurrenceHasTimeRange
+        self.recurrenceTimeRangeRole = state.editRecurrenceTimeRangeRole
         self.recurrenceTimeOfDay = state.editRecurrenceTimeOfDay
         self.recurrenceTimeRangeStart = state.editRecurrenceTimeRangeStart
         self.recurrenceTimeRangeEnd = state.editRecurrenceTimeRangeEnd
@@ -184,6 +186,7 @@ enum TaskDetailEditChangeDetector {
             || RoutineStep.sanitized(candidateSteps) != currentSteps
             || sanitizedCandidateChecklistItems != currentChecklistItems
             || recurrenceRule(for: request) != task.recurrenceRule
+            || recurrenceTimeRangeRole(for: request) != recurrenceTimeRangeRole(for: task)
             || request.autoAssumeDailyDone != task.autoAssumeDailyDone
             || normalizedAutoAssumeDoneTimeOfDay(for: request) != normalizedAutoAssumeDoneTimeOfDay(for: task)
             || request.focusModeEnabled != task.focusModeEnabled
@@ -259,6 +262,14 @@ enum TaskDetailEditChangeDetector {
                 timeRange: timeRange
             )
         }
+    }
+
+    private static func recurrenceTimeRangeRole(for request: TaskDetailEditChangeRequest) -> RoutineTimeRangeRole {
+        recurrenceRule(for: request).timeRange == nil ? .availability : request.recurrenceTimeRangeRole
+    }
+
+    private static func recurrenceTimeRangeRole(for task: RoutineTask) -> RoutineTimeRangeRole {
+        task.recurrenceRule.timeRange == nil ? .availability : task.recurrenceTimeRangeRole
     }
 
     private static func effectiveRecurrenceWeekdays(for request: TaskDetailEditChangeRequest) -> [Int] {

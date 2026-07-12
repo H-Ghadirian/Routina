@@ -125,6 +125,7 @@ struct TaskFormModel {
     var recurrenceKind: Binding<RoutineRecurrenceRule.Kind>
     var recurrenceHasExplicitTime: Binding<Bool>
     var recurrenceHasTimeRange: Binding<Bool> = .constant(false)
+    var recurrenceTimeRangeRole: Binding<RoutineTimeRangeRole> = .constant(.availability)
     var recurrenceTimeOfDay: Binding<Date>
     var recurrenceTimeRangeStart: Binding<Date> = .constant(RoutineTimeRange.defaultValue.start.date(on: Date()))
     var recurrenceTimeRangeEnd: Binding<Date> = .constant(RoutineTimeRange.defaultValue.end.date(on: Date()))

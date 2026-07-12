@@ -71,6 +71,7 @@ enum SettingsRoutineDataBackupMapping {
             scheduleMode: task.scheduleMode,
             interval: max(Int(task.interval), 1),
             recurrenceRule: task.recurrenceRule,
+            recurrenceTimeRangeRole: task.recurrenceRule.timeRange == nil ? nil : task.recurrenceTimeRangeRole,
             lastDone: task.lastDone,
             canceledAt: task.canceledAt,
             scheduleAnchor: task.scheduleAnchor,

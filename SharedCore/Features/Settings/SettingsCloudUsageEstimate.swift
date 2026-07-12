@@ -183,6 +183,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var recurrenceTimeRangeStartMinute: Int?
         var recurrenceTimeRangeEndHour: Int?
         var recurrenceTimeRangeEndMinute: Int?
+        var recurrenceTimeRangeRoleRawValue: String
         var recurrenceWeekday: Int?
         var recurrenceDayOfMonth: Int?
         var interval: Int16
@@ -235,6 +236,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             recurrenceTimeRangeStartMinute = task.recurrenceTimeRangeStartMinute
             recurrenceTimeRangeEndHour = task.recurrenceTimeRangeEndHour
             recurrenceTimeRangeEndMinute = task.recurrenceTimeRangeEndMinute
+            recurrenceTimeRangeRoleRawValue = task.recurrenceTimeRangeRoleRawValue
             recurrenceWeekday = task.recurrenceWeekday
             recurrenceDayOfMonth = task.recurrenceDayOfMonth
             interval = task.interval

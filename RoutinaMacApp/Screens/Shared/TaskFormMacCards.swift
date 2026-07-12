@@ -909,7 +909,7 @@ struct TaskFormMacBehaviorCard: View {
                     displayedComponents: .hourAndMinute
                 )
                 .labelsHidden()
-            } else if currentTimingMode == .range {
+            } else if currentTimingMode.usesTimeRange {
                 routineTimeRangePickers
             }
         }
@@ -1006,7 +1006,9 @@ struct TaskFormMacBehaviorCard: View {
                     return .allDay
                 }
                 if model.recurrenceHasTimeRange.wrappedValue {
-                    return .range
+                    return model.recurrenceTimeRangeRole.wrappedValue == .scheduledBlock
+                        ? .timeBlock
+                        : .availableWindow
                 }
                 if model.recurrenceHasExplicitTime.wrappedValue {
                     return .exact
@@ -1043,7 +1045,10 @@ struct TaskFormMacBehaviorCard: View {
     private func applyTimingMode(_ mode: TaskFormTimingMode) {
         model.isAllDay.wrappedValue = mode == .allDay
         model.recurrenceHasExplicitTime.wrappedValue = mode == .exact
-        model.recurrenceHasTimeRange.wrappedValue = mode == .range
+        model.recurrenceHasTimeRange.wrappedValue = mode.usesTimeRange
+        if let role = mode.timeRangeRole {
+            model.recurrenceTimeRangeRole.wrappedValue = role
+        }
     }
 
     private func applyTodoDateAvailabilityMode(_ mode: TaskFormDateAvailabilityMode) {

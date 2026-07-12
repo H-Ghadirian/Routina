@@ -73,6 +73,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
     var recurrenceKind: RoutineRecurrenceRule.Kind = .intervalDays
     var recurrenceHasExplicitTime = false
     var recurrenceHasTimeRange = false
+    var recurrenceTimeRangeRole: RoutineTimeRangeRole?
     var recurrenceTimeOfDay: RoutineTimeOfDay = .defaultValue
     var recurrenceTimeRangeStart: RoutineTimeOfDay = RoutineTimeRange.defaultValue.start
     var recurrenceTimeRangeEnd: RoutineTimeOfDay = RoutineTimeRange.defaultValue.end
@@ -133,6 +134,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
         recurrenceKind = schedule.recurrenceKind
         recurrenceHasExplicitTime = schedule.recurrenceHasExplicitTime
         recurrenceHasTimeRange = schedule.recurrenceHasTimeRange
+        recurrenceTimeRangeRole = schedule.recurrenceTimeRangeRole
         recurrenceTimeOfDay = schedule.recurrenceTimeOfDay
         recurrenceTimeRangeStart = schedule.recurrenceTimeRangeStart
         recurrenceTimeRangeEnd = schedule.recurrenceTimeRangeEnd
@@ -185,6 +187,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
             || recurrenceKind != .intervalDays
             || recurrenceHasExplicitTime
             || recurrenceHasTimeRange
+            || (recurrenceHasTimeRange && (recurrenceTimeRangeRole ?? .availability) != .availability)
             || recurrenceTimeOfDay != .defaultValue
             || recurrenceTimeRangeStart != RoutineTimeRange.defaultValue.start
             || recurrenceTimeRangeEnd != RoutineTimeRange.defaultValue.end
@@ -252,6 +255,9 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
         state.schedule.recurrenceKind = recurrenceKind
         state.schedule.recurrenceHasExplicitTime = recurrenceHasExplicitTime && !recurrenceHasTimeRange
         state.schedule.recurrenceHasTimeRange = recurrenceHasTimeRange
+        state.schedule.recurrenceTimeRangeRole = recurrenceHasTimeRange
+            ? (recurrenceTimeRangeRole ?? .availability)
+            : .availability
         state.schedule.recurrenceTimeOfDay = recurrenceTimeOfDay
         state.schedule.recurrenceTimeRangeStart = recurrenceTimeRangeStart
         state.schedule.recurrenceTimeRangeEnd = recurrenceTimeRangeEnd
