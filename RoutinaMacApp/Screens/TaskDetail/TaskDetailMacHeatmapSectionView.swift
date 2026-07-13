@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct TaskDetailMacRoutineHeatmapSectionView: View {
+struct TaskDetailMacHeatmapSectionView: View {
     let task: RoutineTask
     let logs: [RoutineLog]
     let referenceDate: Date
@@ -8,8 +8,8 @@ struct TaskDetailMacRoutineHeatmapSectionView: View {
     let stroke: Color
     var calendar: Calendar = .current
 
-    private var weeks: [TaskDetailMacRoutineHeatmapWeek] {
-        TaskDetailMacRoutineHeatmapPresentation.weeks(
+    private var weeks: [TaskDetailMacHeatmapWeek] {
+        TaskDetailMacHeatmapPresentation.weeks(
             logs: logs,
             task: task,
             referenceDate: referenceDate,
@@ -18,7 +18,7 @@ struct TaskDetailMacRoutineHeatmapSectionView: View {
     }
 
     private var completedDayCount: Int {
-        TaskDetailMacRoutineHeatmapPresentation.completedDayCount(
+        TaskDetailMacHeatmapPresentation.completedDayCount(
             logs: logs,
             task: task,
             referenceDate: referenceDate,
@@ -31,7 +31,7 @@ struct TaskDetailMacRoutineHeatmapSectionView: View {
             VStack(alignment: .leading, spacing: 12) {
                 header
 
-                TaskDetailMacRoutineHeatmapGridView(
+                TaskDetailMacHeatmapGridView(
                     weeks: weeks,
                     calendar: calendar
                 )
@@ -60,21 +60,21 @@ struct TaskDetailMacRoutineHeatmapSectionView: View {
     }
 }
 
-struct TaskDetailMacRoutineHeatmapWeek: Identifiable, Equatable {
+struct TaskDetailMacHeatmapWeek: Identifiable, Equatable {
     let weekStart: Date
-    let days: [TaskDetailMacRoutineHeatmapDay?]
+    let days: [TaskDetailMacHeatmapDay?]
 
     var id: Date { weekStart }
 }
 
-struct TaskDetailMacRoutineHeatmapDay: Identifiable, Equatable {
+struct TaskDetailMacHeatmapDay: Identifiable, Equatable {
     let date: Date
     let isDone: Bool
 
     var id: Date { date }
 }
 
-enum TaskDetailMacRoutineHeatmapPresentation {
+enum TaskDetailMacHeatmapPresentation {
     static let visibleDayCount = 365
 
     static func doneDates(
@@ -109,7 +109,7 @@ enum TaskDetailMacRoutineHeatmapPresentation {
         task: RoutineTask,
         referenceDate: Date = Date(),
         calendar: Calendar = .current
-    ) -> [TaskDetailMacRoutineHeatmapWeek] {
+    ) -> [TaskDetailMacHeatmapWeek] {
         weeks(
             doneDates: doneDates(logs: logs, task: task, calendar: calendar),
             referenceDate: referenceDate,
@@ -121,14 +121,14 @@ enum TaskDetailMacRoutineHeatmapPresentation {
         doneDates: Set<Date>,
         referenceDate: Date = Date(),
         calendar: Calendar = .current
-    ) -> [TaskDetailMacRoutineHeatmapWeek] {
+    ) -> [TaskDetailMacHeatmapWeek] {
         let range = visibleDayRange(referenceDate: referenceDate, calendar: calendar)
         let normalizedDoneDates = Set(doneDates.map { calendar.startOfDay(for: $0) })
-        var result: [TaskDetailMacRoutineHeatmapWeek] = []
+        var result: [TaskDetailMacHeatmapWeek] = []
         var weekStart = startOfWeek(containing: range.start, calendar: calendar)
 
         while weekStart <= range.end {
-            let days = (0..<7).map { offset -> TaskDetailMacRoutineHeatmapDay? in
+            let days = (0..<7).map { offset -> TaskDetailMacHeatmapDay? in
                 guard let day = calendar.date(byAdding: .day, value: offset, to: weekStart) else {
                     return nil
                 }
@@ -136,13 +136,13 @@ enum TaskDetailMacRoutineHeatmapPresentation {
                 guard normalizedDay >= range.start && normalizedDay <= range.end else {
                     return nil
                 }
-                return TaskDetailMacRoutineHeatmapDay(
+                return TaskDetailMacHeatmapDay(
                     date: normalizedDay,
                     isDone: normalizedDoneDates.contains(normalizedDay)
                 )
             }
 
-            result.append(TaskDetailMacRoutineHeatmapWeek(weekStart: weekStart, days: days))
+            result.append(TaskDetailMacHeatmapWeek(weekStart: weekStart, days: days))
 
             guard let nextWeekStart = calendar.date(byAdding: .day, value: 7, to: weekStart) else {
                 break
@@ -177,8 +177,8 @@ enum TaskDetailMacRoutineHeatmapPresentation {
     }
 }
 
-private struct TaskDetailMacRoutineHeatmapGridView: View {
-    let weeks: [TaskDetailMacRoutineHeatmapWeek]
+private struct TaskDetailMacHeatmapGridView: View {
+    let weeks: [TaskDetailMacHeatmapWeek]
     let calendar: Calendar
 
     private let cellSize: CGFloat = 10
@@ -244,7 +244,7 @@ private struct TaskDetailMacRoutineHeatmapGridView: View {
     }
 
     @ViewBuilder
-    private func dayCell(_ day: TaskDetailMacRoutineHeatmapDay?) -> some View {
+    private func dayCell(_ day: TaskDetailMacHeatmapDay?) -> some View {
         if let day {
             RoundedRectangle(cornerRadius: 2, style: .continuous)
                 .fill(day.isDone ? TaskDetailStatusPalette.done : Color.secondary.opacity(0.13))
@@ -259,7 +259,7 @@ private struct TaskDetailMacRoutineHeatmapGridView: View {
     }
 
     private func monthLabel(
-        for week: TaskDetailMacRoutineHeatmapWeek,
+        for week: TaskDetailMacHeatmapWeek,
         at index: Int
     ) -> String {
         let visibleDays = week.days.compactMap { $0?.date }
@@ -276,7 +276,7 @@ private struct TaskDetailMacRoutineHeatmapGridView: View {
             : ""
     }
 
-    private func helpText(for day: TaskDetailMacRoutineHeatmapDay) -> String {
+    private func helpText(for day: TaskDetailMacHeatmapDay) -> String {
         let prefix = day.isDone ? "Done" : "No done"
         return "\(prefix) on \(day.date.formatted(date: .abbreviated, time: .omitted))"
     }

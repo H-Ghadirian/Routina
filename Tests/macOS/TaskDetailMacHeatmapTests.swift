@@ -2,21 +2,21 @@ import Foundation
 import Testing
 @testable @preconcurrency import RoutinaMacOSDev
 
-struct TaskDetailMacRoutineHeatmapTests {
+struct TaskDetailMacHeatmapTests {
     @Test
     func weeksCoverTrailingYearIncludingReferenceDate() {
         var calendar = gregorianUTC
         calendar.firstWeekday = 2
         let referenceDate = date(year: 2026, month: 7, day: 13, calendar: calendar)
 
-        let weeks = TaskDetailMacRoutineHeatmapPresentation.weeks(
+        let weeks = TaskDetailMacHeatmapPresentation.weeks(
             doneDates: [],
             referenceDate: referenceDate,
             calendar: calendar
         )
         let visibleDays = weeks.flatMap(\.days).compactMap(\.self)
 
-        #expect(visibleDays.count == TaskDetailMacRoutineHeatmapPresentation.visibleDayCount)
+        #expect(visibleDays.count == TaskDetailMacHeatmapPresentation.visibleDayCount)
         #expect(visibleDays.first?.date == date(year: 2025, month: 7, day: 14, calendar: calendar))
         #expect(visibleDays.last?.date == referenceDate)
     }
@@ -47,7 +47,7 @@ struct TaskDetailMacRoutineHeatmapTests {
             )
         ]
 
-        let doneDates = TaskDetailMacRoutineHeatmapPresentation.doneDates(
+        let doneDates = TaskDetailMacHeatmapPresentation.doneDates(
             logs: logs,
             task: task,
             calendar: calendar
@@ -57,6 +57,32 @@ struct TaskDetailMacRoutineHeatmapTests {
         #expect(doneDates.contains(date(year: 2026, month: 7, day: 11, calendar: calendar)))
         #expect(doneDates.contains(date(year: 2026, month: 7, day: 12, calendar: calendar)))
         #expect(!doneDates.contains(date(year: 2026, month: 7, day: 9, calendar: calendar)))
+    }
+
+    @Test
+    func doneDatesSupportRecordTasks() {
+        let calendar = gregorianUTC
+        let task = RoutineTask(
+            name: "Deep work log",
+            scheduleMode: .record,
+            lastDone: date(year: 2026, month: 7, day: 12, calendar: calendar)
+        )
+        let logs = [
+            RoutineLog(
+                timestamp: date(year: 2026, month: 7, day: 11, calendar: calendar),
+                taskID: task.id,
+                kind: .completed
+            )
+        ]
+
+        let doneDates = TaskDetailMacHeatmapPresentation.doneDates(
+            logs: logs,
+            task: task,
+            calendar: calendar
+        )
+
+        #expect(doneDates.contains(date(year: 2026, month: 7, day: 11, calendar: calendar)))
+        #expect(doneDates.contains(date(year: 2026, month: 7, day: 12, calendar: calendar)))
     }
 
     @Test
@@ -82,7 +108,7 @@ struct TaskDetailMacRoutineHeatmapTests {
             )
         ]
 
-        let count = TaskDetailMacRoutineHeatmapPresentation.completedDayCount(
+        let count = TaskDetailMacHeatmapPresentation.completedDayCount(
             logs: logs,
             task: task,
             referenceDate: referenceDate,

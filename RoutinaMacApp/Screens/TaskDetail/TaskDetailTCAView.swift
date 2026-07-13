@@ -38,6 +38,7 @@ struct TaskDetailTCAView: View {
     @State private var isTodoStateControlRevealed = false
     @State private var isPressureControlRevealed = false
     @State private var isChecklistSectionRevealed = false
+    @State private var isHeatmapSectionRevealed = false
     @State private var inlineEditSections: [FormSection] = []
     @State private var isTimeSectionExpanded = false
     @State private var timeEditing = TaskDetailTimeEditingState()
@@ -471,8 +472,8 @@ struct TaskDetailTCAView: View {
                 if shouldShowCommentsSection {
                     commentsSection
                 }
-                if presentation == .fullDetail {
-                    routineHeatmapSection
+                if shouldShowHeatmapSection {
+                    taskHeatmapSection
                 }
                 historySection
                 if shouldShowChecklistSection {
@@ -568,6 +569,14 @@ struct TaskDetailTCAView: View {
             actions.append(TaskDetailOptionalAction(title: "Comment", systemImage: "text.bubble") {
                 withAnimation(.easeInOut(duration: 0.18)) {
                     isCommentComposerVisible = true
+                }
+            })
+        }
+
+        if shouldShowHeatmapAddAction {
+            actions.append(TaskDetailOptionalAction(title: "Heatmap", systemImage: "square.grid.3x3.fill") {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    isHeatmapSectionRevealed = true
                 }
             })
         }
@@ -742,11 +751,31 @@ struct TaskDetailTCAView: View {
             || !store.taskAttachments.isEmpty
     }
 
+    private var shouldShowHeatmapSection: Bool {
+        canShowHeatmapSection && isHeatmapSectionRevealed
+    }
+
+    private var shouldShowHeatmapAddAction: Bool {
+        canShowHeatmapSection && !isHeatmapSectionRevealed
+    }
+
+    private var canShowHeatmapSection: Bool {
+        guard presentation == .fullDetail else { return false }
+
+        switch store.task.scheduleMode.taskType {
+        case .routine, .record:
+            return true
+        case .todo:
+            return false
+        }
+    }
+
     private func resetRevealedOptionalControls() {
         isTimeControlRevealed = false
         isTodoStateControlRevealed = false
         isPressureControlRevealed = false
         isChecklistSectionRevealed = false
+        isHeatmapSectionRevealed = false
         inlineEditSections.removeAll()
     }
 
@@ -1235,8 +1264,8 @@ struct TaskDetailTCAView: View {
         }
     }
 
-    private var routineHeatmapSection: some View {
-        TaskDetailMacRoutineHeatmapSectionView(
+    private var taskHeatmapSection: some View {
+        TaskDetailMacHeatmapSectionView(
             task: store.task,
             logs: store.logs,
             referenceDate: referenceDate,
