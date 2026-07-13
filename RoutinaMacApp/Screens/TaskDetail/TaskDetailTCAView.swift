@@ -471,6 +471,9 @@ struct TaskDetailTCAView: View {
                 if shouldShowCommentsSection {
                     commentsSection
                 }
+                if presentation == .fullDetail {
+                    routineHeatmapSection
+                }
                 historySection
                 if shouldShowChecklistSection {
                     checklistItemsSection
@@ -1230,6 +1233,16 @@ struct TaskDetailTCAView: View {
                 }
             }
         }
+    }
+
+    private var routineHeatmapSection: some View {
+        TaskDetailMacRoutineHeatmapSectionView(
+            task: store.task,
+            logs: store.logs,
+            referenceDate: referenceDate,
+            background: routineLogsBackground,
+            stroke: TaskDetailPlatformStyle.sectionCardStroke
+        )
     }
 
     private func beginEditingTime(for log: RoutineLog) {
