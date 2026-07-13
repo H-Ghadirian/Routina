@@ -120,9 +120,6 @@ struct TaskDetailRecurrenceEditActionHandler {
             if mode.taskType != .todo {
                 state.editReminderAt = nil
             }
-            if mode.taskType == .record {
-                state.editPlannedDate = nil
-            }
             if mode.taskType == .todo {
                 state.editRoutineDurationMode = .oneDay
             }
@@ -307,8 +304,7 @@ struct TaskDetailRecurrenceEditActionHandler {
     }
 
     private func supportsPlanning(_ state: State) -> Bool {
-        state.editScheduleMode.taskType != .record
-            && !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+        !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
             scheduleMode: state.editScheduleMode,
             recurrenceRule: state.candidateRecurrenceRule,
             checklistItems: candidateChecklistItems(for: state)

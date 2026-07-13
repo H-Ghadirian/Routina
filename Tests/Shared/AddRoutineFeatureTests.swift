@@ -659,7 +659,7 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
-    func saveTapped_recordKeepsRoutineLikeFieldsWithoutDueOrRepeatControls() async {
+    func saveTapped_recordKeepsRoutineLikeFieldsWithGentleRepeatControls() async {
         let date = makeDate("2026-04-10T09:00:00Z")
         let step = RoutineStep(title: "Classify support themes")
         let checklistItem = RoutineChecklistItem(title: "Summarize time sinks", intervalDays: 4)
@@ -682,7 +682,8 @@ struct AddRoutineFeatureTests {
                     frequencyValue: 3,
                     recurrenceKind: .weekly,
                     recurrenceHasExplicitTime: true,
-                    recurrenceTimeOfDay: exactTime
+                    recurrenceTimeOfDay: exactTime,
+                    recurrenceWeekdays: [3, 5]
                 ),
                 checklist: AddRoutineChecklistState(
                     routineSteps: [step],
@@ -703,10 +704,12 @@ struct AddRoutineFeatureTests {
         }
         await store.receive(.delegate(.didSave(makeSaveRequest(
             name: "Analyzed support queue",
-            frequencyInDays: 1,
-            recurrenceRule: .interval(days: 1, at: exactTime),
+            frequencyInDays: 21,
+            recurrenceRule: .weekly(on: [3, 5], at: exactTime),
             emoji: "✨",
             routineDurationMode: .multiDay,
+            plannedDate: date,
+            calendar: makeTestCalendar(),
             steps: [step],
             scheduleMode: .record,
             checklistItems: RoutineChecklistItem.sanitized([checklistItem], for: .record),
@@ -716,7 +719,7 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
-    func saveTapped_recordChecklistKeepsChecklistCompletionWithoutRepeatCadence() async {
+    func saveTapped_recordChecklistKeepsChecklistCompletionWithGentleRepeatCadence() async {
         let checklistItem = RoutineChecklistItem(title: "Capture outcome", intervalDays: 5)
         let exactTime = RoutineTimeOfDay(hour: 15, minute: 0)
         let store = TestStore(
@@ -729,7 +732,8 @@ struct AddRoutineFeatureTests {
                     frequencyValue: 2,
                     recurrenceKind: .monthlyDay,
                     recurrenceHasExplicitTime: true,
-                    recurrenceTimeOfDay: exactTime
+                    recurrenceTimeOfDay: exactTime,
+                    recurrenceDaysOfMonth: [5, 20]
                 ),
                 checklist: AddRoutineChecklistState(
                     routineChecklistItems: [checklistItem]
@@ -749,8 +753,8 @@ struct AddRoutineFeatureTests {
         }
         await store.receive(.delegate(.didSave(makeSaveRequest(
             name: "Retrospective notes",
-            frequencyInDays: 1,
-            recurrenceRule: .interval(days: 1, at: exactTime),
+            frequencyInDays: 60,
+            recurrenceRule: .monthly(on: [5, 20], at: exactTime),
             emoji: "✨",
             scheduleMode: .recordChecklist,
             checklistItems: RoutineChecklistItem.sanitized([checklistItem], for: .recordChecklist)

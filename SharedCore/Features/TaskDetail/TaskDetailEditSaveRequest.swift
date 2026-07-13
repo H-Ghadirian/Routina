@@ -94,7 +94,7 @@ struct TaskDetailEditSaveRequestBuilder {
 
         state.isEditSheetPresented = false
 
-        let frequencyInterval = scheduleMode.taskType != .routine
+        let frequencyInterval = !scheduleMode.usesRoutineCadence
             ? 1
             : TaskFormRecurrenceConstraints.effectiveIntervalDays(
                 value: state.editFrequencyValue,
@@ -130,8 +130,7 @@ struct TaskDetailEditSaveRequestBuilder {
             routineDurationMode: scheduleMode.taskType == .todo ? .oneDay : state.editRoutineDurationMode,
             availabilityStartDate: scheduleMode.taskType == .todo ? availabilityDateBounds.startDate : nil,
             availabilityEndDate: scheduleMode.taskType == .todo ? availabilityDateBounds.endDate : nil,
-            plannedDate: scheduleMode.taskType == .record
-                || RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+            plannedDate: RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
                     scheduleMode: scheduleMode,
                     recurrenceRule: recurrenceRule,
                     checklistItems: sanitizedChecklistItems
@@ -182,20 +181,14 @@ struct TaskDetailEditSaveRequestBuilder {
         let timeRange = usesAvailabilityTiming ? state.editRecurrenceTimeRange : nil
 
         switch scheduleMode.taskType {
-        case .routine:
-            break
         case .todo:
             return .interval(
                 days: 1,
                 at: usesAvailabilityTiming && state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
-        case .record:
-            return .interval(
-                days: 1,
-                at: usesAvailabilityTiming && state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil,
-                timeRange: timeRange
-            )
+        case .routine, .record:
+            break
         }
 
         guard !scheduleMode.isChecklistDrivenMode else {
@@ -280,11 +273,14 @@ enum TaskDetailRoutineChecklistModeNormalizer {
         candidateChecklistItems: [RoutineChecklistItem],
         candidateSteps: [RoutineStep]
     ) -> RoutineScheduleMode {
-        if currentMode.taskType == .routine,
-           currentMode.isStandardRoutineMode,
+        if currentMode.usesRoutineCadence,
+           currentMode.routineFormat == .standard,
            existingChecklistItems.isEmpty,
            !candidateChecklistItems.isEmpty,
            candidateSteps.isEmpty {
+            if currentMode.taskType == .record {
+                return .recordChecklist
+            }
             return RoutineScheduleMode.routineMode(
                 behavior: currentMode.scheduleBehavior,
                 format: .checklist
@@ -294,6 +290,9 @@ enum TaskDetailRoutineChecklistModeNormalizer {
         if currentMode.isRoutineModeRequiringChecklistItems,
            candidateChecklistItems.isEmpty,
            !existingChecklistItems.isEmpty {
+            if currentMode.taskType == .record {
+                return .record
+            }
             return RoutineScheduleMode.routineMode(
                 behavior: currentMode.scheduleBehavior,
                 format: .standard

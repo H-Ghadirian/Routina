@@ -263,7 +263,8 @@ extension TaskFormModel {
     }
 
     var supportsItemRunoutRepeatType: Bool {
-        taskType.wrappedValue == .routine
+        (taskType.wrappedValue == .routine || taskType.wrappedValue == .record)
+            && scheduleMode.wrappedValue.usesRoutineCadence
             && scheduleMode.wrappedValue.routineFinishMode == .checklist
     }
 
@@ -301,14 +302,19 @@ extension TaskFormModel {
                     recurrenceKind.wrappedValue = recurrenceKind.wrappedValue.replacingRepeatBasis(.calendar)
 
                 case .itemRunout:
-                    guard taskType.wrappedValue == .routine,
+                    guard (taskType.wrappedValue == .routine || taskType.wrappedValue == .record),
+                          scheduleMode.wrappedValue.usesRoutineCadence,
                           scheduleMode.wrappedValue.routineFinishMode == .checklist
                     else { return }
 
-                    scheduleMode.wrappedValue = RoutineScheduleMode.routineMode(
-                        behavior: scheduleMode.wrappedValue.scheduleBehavior,
-                        format: .runout
-                    )
+                    if scheduleMode.wrappedValue.taskType == .record {
+                        scheduleMode.wrappedValue = .recordDerivedFromChecklist
+                    } else {
+                        scheduleMode.wrappedValue = RoutineScheduleMode.routineMode(
+                            behavior: scheduleMode.wrappedValue.scheduleBehavior,
+                            format: .runout
+                        )
+                    }
                 }
             }
         )
@@ -360,12 +366,10 @@ extension TaskFormModel {
             : nil
 
         switch currentScheduleMode.taskType {
-        case .routine:
-            break
         case .todo:
             return .interval(days: 1, at: timeOfDay, timeRange: timeRange)
-        case .record:
-            return .interval(days: 1, at: timeOfDay, timeRange: timeRange)
+        case .routine, .record:
+            break
         }
 
         guard !currentScheduleMode.isChecklistDrivenMode else {
@@ -455,7 +459,7 @@ extension TaskFormModel {
         case .routine:
             return !isDailyRoutineDraft
         case .record:
-            return false
+            return !isDailyRoutineDraft
         }
     }
 
@@ -482,7 +486,7 @@ extension TaskFormModel {
 
     private var isDailyRoutineDraft: Bool {
         let currentScheduleMode = scheduleMode.wrappedValue
-        guard currentScheduleMode.taskType == .routine else { return false }
+        guard currentScheduleMode.usesRoutineCadence else { return false }
         if currentScheduleMode.isChecklistDrivenMode {
             return RoutineTaskDailyRoutineSupport.hasDailyRunoutChecklistItem(candidateChecklistItems)
         }
@@ -536,7 +540,7 @@ extension TaskFormModel {
             sections.insert(.scheduleType)
         }
 
-        if scheduleMode.wrappedValue.taskType == .routine
+        if scheduleMode.wrappedValue.usesRoutineCadence
             && (scheduleMode.wrappedValue.showsRoutineRepeatControls
                 || scheduleMode.wrappedValue.routineFinishMode == .checklist) {
             sections.insert(.repeatPattern)
@@ -614,6 +618,9 @@ extension TaskFormModel {
 
     private static func nonRunoutScheduleMode(from scheduleMode: RoutineScheduleMode) -> RoutineScheduleMode {
         let fallbackFormat: RoutineFormat = scheduleMode.routineFinishMode == .checklist ? .checklist : .standard
+        if scheduleMode.taskType == .record {
+            return fallbackFormat == .checklist ? .recordChecklist : .record
+        }
         return RoutineScheduleMode.routineMode(
             behavior: scheduleMode.scheduleBehavior,
             format: fallbackFormat

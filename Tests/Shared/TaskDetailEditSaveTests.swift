@@ -1292,7 +1292,7 @@ struct TaskDetailEditSaveTests {
     }
 
     @Test
-    func editSaveTapped_recordKeepsRoutineLikeFieldsWithoutDueOrRepeat() async throws {
+    func editSaveTapped_recordKeepsRoutineLikeFieldsWithGentleRepeat() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-10T09:00:00Z")
@@ -1328,6 +1328,7 @@ struct TaskDetailEditSaveTests {
                 editRecurrenceKind: .weekly,
                 editRecurrenceHasExplicitTime: true,
                 editRecurrenceTimeOfDay: exactTime,
+                editRecurrenceWeekdays: [2, 6],
                 editActualDurationMinutes: 75
             )
         ) {
@@ -1359,10 +1360,11 @@ struct TaskDetailEditSaveTests {
         )
         #expect(persistedTask.scheduleMode == .record)
         #expect(persistedTask.deadline == nil)
-        #expect(persistedTask.plannedDate == nil)
+        #expect(persistedTask.plannedDate == makeDate("2026-03-14T00:00:00Z"))
         #expect(persistedTask.reminderAt == nil)
         #expect(persistedTask.routineDurationMode == .multiDay)
-        #expect(persistedTask.recurrenceRule == .interval(days: 1, at: exactTime))
+        #expect(persistedTask.recurrenceRule == .weekly(on: [2, 6], at: exactTime))
+        #expect(persistedTask.interval == 7)
         #expect(persistedTask.steps.map(\.title) == ["Collect sources"])
         #expect(persistedTask.checklistItems.map(\.title) == ["Summarize findings"])
         #expect(persistedTask.checklistItems.map(\.intervalDays) == [1])

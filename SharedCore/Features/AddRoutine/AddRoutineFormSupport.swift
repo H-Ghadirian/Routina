@@ -63,7 +63,6 @@ enum AddRoutineFormEditor {
             basics.deadline = nil
             basics.availabilityStartDate = nil
             basics.availabilityEndDate = nil
-            basics.plannedDate = nil
             basics.reminderAt = nil
         }
     }

@@ -34,7 +34,6 @@ struct AddRoutineScheduleMutationHandler {
             state.basics.deadline = nil
             state.basics.availabilityStartDate = nil
             state.basics.availabilityEndDate = nil
-            state.basics.plannedDate = nil
             state.basics.reminderAt = nil
         }
         normalizeChecklistItemIntervals(state: &state)

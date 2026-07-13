@@ -344,7 +344,7 @@ extension CloudSharingService.SharedTaskPayload {
             ?? link.map { [RoutineTaskLink(title: nil, url: $0)] }
             ?? []
         task.deadline = scheduleMode == .oneOff ? deadline : nil
-        task.plannedDate = scheduleMode.taskType == .record ? nil : RoutineTask.normalizedPlannedDate(plannedDate)
+        task.plannedDate = RoutineTask.normalizedPlannedDate(plannedDate)
         task.isAllDay = isAllDay ?? false
         task.routineDurationMode = scheduleMode.taskType == .todo ? .oneDay : (routineDurationMode ?? .oneDay)
         let availabilityDateBounds = RoutineTask.normalizedAvailabilityDateBounds(
@@ -375,7 +375,7 @@ extension CloudSharingService.SharedTaskPayload {
         task.recurrenceTimeRangeRole = task.recurrenceRule.timeRange == nil
             ? .availability
             : (recurrenceTimeRangeRole ?? .availability)
-        task.interval = Int16(clamping: scheduleMode.taskType == .routine ? max(Int(interval), 1) : 1)
+        task.interval = Int16(clamping: scheduleMode.usesRoutineCadence ? max(Int(interval), 1) : 1)
         task.lastDone = lastDone
         task.canceledAt = scheduleMode == .oneOff ? canceledAt : nil
         task.scheduleAnchor = scheduleMode == .oneOff ? lastDone : (scheduleAnchor ?? lastDone)

@@ -43,7 +43,8 @@ struct TaskFormPresentationTests {
         #expect(oneOff.notesHelpText == "Capture extra context, links, or reminders for this todo.")
         #expect(oneOff.checklistSectionDescription(includesDerivedChecklistDueDetail: false) == "Use checklist items for parts you want to tick off before finishing the todo.")
         #expect(record.isStepBasedMode)
-        #expect(record.showsRepeatControls == false)
+        #expect(record.showsRepeatControls)
+        #expect(RoutineScheduleMode.record.scheduleBehavior == .soft)
         #expect(record.notesHelpText == "Capture what happened, context, and time-spent details for analysis.")
         #expect(RoutineScheduleMode.record.replacingRoutineFinishMode(.checklist) == .recordChecklist)
         #expect(RoutineScheduleMode.recordChecklist.replacingRoutineFinishMode(.standard) == .record)
@@ -144,6 +145,8 @@ struct TaskFormPresentationTests {
         let standard = taskFormModel(scheduleMode: .fixedInterval)
         let checklist = taskFormModel(scheduleMode: .fixedIntervalChecklist)
         let runout = taskFormModel(scheduleMode: .derivedFromChecklist)
+        let checklistRecord = taskFormModel(taskType: .record, scheduleMode: .recordChecklist)
+        let runoutRecord = taskFormModel(taskType: .record, scheduleMode: .recordDerivedFromChecklist)
         let todo = taskFormModel(taskType: .todo, scheduleMode: .oneOff)
 
         #expect(standard.supportsItemRunoutRepeatType == false)
@@ -154,6 +157,10 @@ struct TaskFormPresentationTests {
         #expect(runout.supportsItemRunoutRepeatType)
         #expect(runout.routineRepeatTypeCases == [.interval, .calendar, .itemRunout])
         #expect(runout.routineRepeatType.wrappedValue == .itemRunout)
+        #expect(checklistRecord.supportsItemRunoutRepeatType)
+        #expect(checklistRecord.routineRepeatTypeCases == [.interval, .calendar, .itemRunout])
+        #expect(runoutRecord.supportsItemRunoutRepeatType)
+        #expect(runoutRecord.routineRepeatType.wrappedValue == .itemRunout)
         #expect(todo.supportsItemRunoutRepeatType == false)
         #expect(todo.routineRepeatTypeCases == [.interval, .calendar])
     }
@@ -232,6 +239,14 @@ struct TaskFormPresentationTests {
         taskType = .todo
         model.routineRepeatType.wrappedValue = .itemRunout
         #expect(scheduleMode == .softIntervalChecklist)
+
+        taskType = .record
+        scheduleMode = .recordChecklist
+        model.routineRepeatType.wrappedValue = .itemRunout
+        #expect(scheduleMode == .recordDerivedFromChecklist)
+
+        model.routineRepeatType.wrappedValue = .interval
+        #expect(scheduleMode == .recordChecklist)
     }
 
     @Test @MainActor
@@ -388,7 +403,7 @@ struct TaskFormPresentationTests {
         #expect(runoutRoutine.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
         #expect(runoutRoutine.visibleCompactSections(isShowingMoreDetails: false).contains(.repeatPattern))
         #expect(checklistRecord.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
-        #expect(!checklistRecord.visibleCompactSections(isShowingMoreDetails: false).contains(.repeatPattern))
+        #expect(checklistRecord.visibleCompactSections(isShowingMoreDetails: false).contains(.repeatPattern))
         #expect(existingChecklistRoutine.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
         #expect(!todo.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
         #expect(todo.visibleCompactSections(isShowingMoreDetails: true).contains(.checklist))

@@ -270,8 +270,7 @@ extension AddRoutineFeature.State {
 
 extension AddRoutineFeature.State {
     var supportsPlanning: Bool {
-        schedule.scheduleMode.taskType != .record
-            && !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+        !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
             scheduleMode: schedule.scheduleMode,
             recurrenceRule: candidateRecurrenceRule,
             checklistItems: candidateChecklistItems
@@ -350,8 +349,7 @@ extension TaskDetailFeature.State {
 
 extension TaskDetailFeature.State {
     var supportsPlanning: Bool {
-        editScheduleMode.taskType != .record
-            && !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+        !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
             scheduleMode: editScheduleMode,
             recurrenceRule: candidateRecurrenceRule,
             checklistItems: candidateChecklistItems

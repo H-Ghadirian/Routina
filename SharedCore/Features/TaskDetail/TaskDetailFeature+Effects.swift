@@ -540,7 +540,7 @@ extension TaskDetailFeature {
                 )
                 task.availabilityStartDate = scheduleMode.taskType == .todo ? availabilityDateBounds.startDate : nil
                 task.availabilityEndDate = scheduleMode.taskType == .todo ? availabilityDateBounds.endDate : nil
-                task.plannedDate = scheduleMode.taskType == .record ? nil : RoutineTask.normalizedPlannedDate(plannedDate, calendar: calendar)
+                task.plannedDate = RoutineTask.normalizedPlannedDate(plannedDate, calendar: calendar)
                 task.recurrenceRule = recurrenceRule
                 task.recurrenceTimeRangeRole = recurrenceRule.timeRange == nil
                     ? .availability
@@ -580,10 +580,11 @@ extension TaskDetailFeature {
                 }
                 task.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
                 task.focusModeEnabled = focusModeEnabled
-                if scheduleMode.taskType != .routine {
+                if !scheduleMode.usesRoutineCadence {
                     task.scheduleAnchor = task.lastDone
                     task.interval = 1
                 } else if previousScheduleMode != scheduleMode || previousRecurrenceRule != recurrenceRule {
+                    task.interval = Int16(clamping: recurrenceRule.approximateIntervalDays)
                     if previousScheduleMode != .oneOff,
                        previousRecurrenceRule.kind == .intervalDays,
                        recurrenceRule.kind == .intervalDays,
@@ -593,7 +594,10 @@ extension TaskDetailFeature {
                         task.scheduleAnchor = now
                     }
                 } else if task.scheduleAnchor == nil, let existingAnchor = task.lastDone ?? task.createdAt {
+                    task.interval = Int16(clamping: recurrenceRule.approximateIntervalDays)
                     task.scheduleAnchor = existingAnchor
+                } else {
+                    task.interval = Int16(clamping: recurrenceRule.approximateIntervalDays)
                 }
                 DeviceActivityRecorder.recordAction(
                     .updated,

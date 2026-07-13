@@ -506,7 +506,7 @@ struct TaskFormMacBehaviorCard: View {
         case .todo:
             return 130
         case .record:
-            return 60
+            return 300
         case .routine:
             if model.scheduleMode.wrappedValue.isChecklistDrivenMode {
                 return 240
@@ -550,6 +550,7 @@ struct TaskFormMacBehaviorCard: View {
             } else if model.taskType.wrappedValue == .record {
                 Divider()
                 recordCompletionControl
+                routineCadenceControls
             }
         }
     }
@@ -614,7 +615,7 @@ struct TaskFormMacBehaviorCard: View {
         case .routine:
             return presentation.showsRepeatControls
         case .record:
-            return true
+            return presentation.showsRepeatControls
         }
     }
 

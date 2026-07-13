@@ -109,8 +109,7 @@ struct AddRoutineFeature: Reducer {
     }
 
     private func supportsPlanning(_ state: State) -> Bool {
-        state.schedule.scheduleMode.taskType != .record
-            && !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+        !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
             scheduleMode: state.schedule.scheduleMode,
             recurrenceRule: state.candidateRecurrenceRule,
             checklistItems: state.candidateChecklistItems

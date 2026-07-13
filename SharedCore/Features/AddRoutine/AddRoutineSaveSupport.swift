@@ -133,6 +133,7 @@ struct AddRoutineSaveRequest: Equatable {
         availabilityStartDate: Date? = nil,
         availabilityEndDate: Date? = nil,
         plannedDate: Date? = nil,
+        calendar: Calendar = .current,
         reminderAt: Date? = nil,
         priority: RoutineTaskPriority,
         importance: RoutineTaskImportance,
@@ -178,14 +179,13 @@ struct AddRoutineSaveRequest: Equatable {
         self.routineDurationMode = scheduleMode.taskType == .todo ? .oneDay : routineDurationMode
         self.availabilityStartDate = scheduleMode.taskType == .todo ? availabilityStartDate : nil
         self.availabilityEndDate = scheduleMode.taskType == .todo ? availabilityEndDate : nil
-        self.plannedDate = scheduleMode.taskType == .record
-            || RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+        self.plannedDate = RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
                 scheduleMode: scheduleMode,
                 recurrenceRule: recurrenceRule,
                 checklistItems: sanitizedChecklistItems
             )
             ? nil
-            : RoutineTask.normalizedPlannedDate(plannedDate)
+            : RoutineTask.normalizedPlannedDate(plannedDate, calendar: calendar)
         self.reminderAt = scheduleMode.taskType == .todo ? reminderAt : nil
         self.priority = priority
         self.importance = importance
@@ -230,7 +230,7 @@ struct AddRoutineSaveRequest: Equatable {
         let schedule = state.schedule
         let checklist = state.checklist
 
-        let frequencyInDays = schedule.scheduleMode.taskType != .routine
+        let frequencyInDays = !schedule.scheduleMode.usesRoutineCadence
             ? 1
             : TaskFormRecurrenceConstraints.effectiveIntervalDays(
                 value: schedule.frequencyValue,
@@ -270,8 +270,7 @@ struct AddRoutineSaveRequest: Equatable {
         )
         self.availabilityStartDate = schedule.scheduleMode.taskType == .todo ? availabilityDateBounds.startDate : nil
         self.availabilityEndDate = schedule.scheduleMode.taskType == .todo ? availabilityDateBounds.endDate : nil
-        self.plannedDate = schedule.scheduleMode.taskType == .record
-            || RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+        self.plannedDate = RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
                 scheduleMode: schedule.scheduleMode,
                 recurrenceRule: self.recurrenceRule,
                 checklistItems: sanitizedChecklistItems
@@ -331,20 +330,14 @@ struct AddRoutineSaveRequest: Equatable {
         let timeRange = usesAvailabilityTiming ? schedule.recurrenceTimeRange : nil
 
         switch schedule.scheduleMode.taskType {
-        case .routine:
-            break
         case .todo:
             return .interval(
                 days: 1,
                 at: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
-        case .record:
-            return .interval(
-                days: 1,
-                at: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
-                timeRange: timeRange
-            )
+        case .routine, .record:
+            break
         }
 
         guard !schedule.scheduleMode.isChecklistDrivenMode else {

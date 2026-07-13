@@ -143,7 +143,7 @@ struct SwiftDataModelTests {
     }
 
     @Test
-    func routineTask_recordPreservesRoutineLikeMetadataWithoutPlanningOrRepeat() {
+    func routineTask_recordPreservesRoutineLikeMetadataWithGentleRepeat() {
         let date = Date(timeIntervalSince1970: 1_780_000_000)
         let exactTime = RoutineTimeOfDay(hour: 16, minute: 45)
         let checklistItem = RoutineChecklistItem(title: "Summarize findings", intervalDays: 5)
@@ -160,11 +160,13 @@ struct SwiftDataModelTests {
             recurrenceRule: .interval(days: 14, at: exactTime)
         )
 
-        #expect(record.plannedDate == nil)
+        #expect(record.plannedDate == RoutineTask.normalizedPlannedDate(date))
         #expect(record.reminderAt == nil)
         #expect(record.routineDurationMode == .multiDay)
         #expect(record.isMultiDayRoutine)
-        #expect(record.recurrenceRule == .interval(days: 1, at: exactTime))
+        #expect(record.scheduleMode.scheduleBehavior == .soft)
+        #expect(record.recurrenceRule == .interval(days: 14, at: exactTime))
+        #expect(record.interval == 14)
         #expect(record.steps.map(\.title) == ["Collect sources"])
         #expect(record.checklistItems.map(\.title) == ["Summarize findings"])
         #expect(record.checklistItems.map(\.intervalDays) == [1])
@@ -239,12 +241,19 @@ struct SwiftDataModelTests {
         #expect(RoutineScheduleMode.softDerivedFromChecklist.routineFormat == .runout)
         #expect(RoutineScheduleMode.softDerivedFromChecklist.routineFinishMode == .checklist)
         #expect(RoutineScheduleMode.softDerivedFromChecklist.checklistTimingMode == .runout)
+        #expect(RoutineScheduleMode.recordDerivedFromChecklist.taskType == .record)
+        #expect(RoutineScheduleMode.recordDerivedFromChecklist.scheduleBehavior == .soft)
+        #expect(RoutineScheduleMode.recordDerivedFromChecklist.routineFormat == .runout)
+        #expect(RoutineScheduleMode.recordDerivedFromChecklist.routineFinishMode == .checklist)
+        #expect(RoutineScheduleMode.recordDerivedFromChecklist.checklistTimingMode == .runout)
         #expect(RoutineScheduleMode.fixedInterval.routineFinishMode == .standard)
         #expect(RoutineScheduleMode.derivedFromChecklist.replacingRoutineFinishMode(.standard) == .fixedInterval)
         #expect(RoutineScheduleMode.derivedFromChecklist.replacingRoutineFinishMode(.checklist) == .derivedFromChecklist)
         #expect(RoutineScheduleMode.fixedInterval.replacingRoutineFinishMode(.checklist) == .fixedIntervalChecklist)
         #expect(RoutineScheduleMode.derivedFromChecklist.replacingChecklistTimingMode(.together) == .fixedIntervalChecklist)
         #expect(RoutineScheduleMode.softIntervalChecklist.replacingChecklistTimingMode(.runout) == .softDerivedFromChecklist)
+        #expect(RoutineScheduleMode.recordChecklist.replacingChecklistTimingMode(.runout) == .recordDerivedFromChecklist)
+        #expect(RoutineScheduleMode.recordDerivedFromChecklist.replacingChecklistTimingMode(.together) == .recordChecklist)
 
         #expect(RoutineScheduleBehavior.fixed.rawValue == "Due")
         #expect(RoutineScheduleBehavior.soft.rawValue == "Gentle")

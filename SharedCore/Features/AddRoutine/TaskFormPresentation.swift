@@ -235,7 +235,8 @@ struct TaskFormPresentation {
     }
 
     var showsRepeatControls: Bool {
-        taskType == .routine && scheduleMode.taskType == .routine
+        (taskType == .routine || taskType == .record)
+            && scheduleMode.usesRoutineCadence
     }
 
     var derivedPriority: RoutineTaskPriority {
@@ -299,8 +300,9 @@ struct TaskFormPresentation {
         case .derivedFromChecklist: return "Checklist items have their own timing; the earliest due item drives the routine."
         case .softDerivedFromChecklist: return "Checklist items have their own timing, without turning the routine overdue."
         case .oneOff: return "This task does not repeat."
-        case .record: return "Use this to track what happened and analyze time spent."
-        case .recordChecklist: return "Use this to track what happened and complete every checklist item."
+        case .record: return "Track what happened with a gentle cadence."
+        case .recordChecklist: return "Track what happened and complete every checklist item with a gentle cadence."
+        case .recordDerivedFromChecklist: return "Track item timing without overdue pressure."
         }
     }
 
@@ -337,6 +339,8 @@ struct TaskFormPresentation {
             return "Use checklist items for parts you want to tick off before finishing the todo."
         case .recordChecklist:
             return "Tracking is complete when every checklist item is completed."
+        case .recordDerivedFromChecklist:
+            return "Tracking items have their own timing, without making the tracking entry overdue."
         case .record:
             return "Tracking focuses on what happened and the time spent."
         }

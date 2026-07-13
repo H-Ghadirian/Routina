@@ -645,9 +645,7 @@ struct TaskFormContent: View {
             return model.deadlineEnabled.wrappedValue
                 ? "A one-off task with a deadline."
                 : "A one-off task you can finish once."
-        case .record:
-            return "Tracking what happened and how time was spent."
-        case .routine:
+        case .routine, .record:
             break
         }
         switch model.scheduleMode.wrappedValue {
@@ -658,8 +656,9 @@ struct TaskFormContent: View {
         case .derivedFromChecklist: return "A routine driven by the due dates of its checklist items."
         case .softDerivedFromChecklist: return "A gentle routine driven by checklist item timing."
         case .oneOff: return "A one-off task you can finish once."
-        case .record: return "Tracking what happened and how time was spent."
-        case .recordChecklist: return "Tracking completed by finishing every checklist item."
+        case .record: return "Gentle tracking for what happened and how time was spent."
+        case .recordChecklist: return "Gentle tracking completed by finishing every checklist item."
+        case .recordDerivedFromChecklist: return "Gentle tracking driven by checklist item timing."
         }
     }
 
@@ -669,9 +668,7 @@ struct TaskFormContent: View {
             return model.deadlineEnabled.wrappedValue
                 ? "Due \(deadlineSummaryText)"
                 : "One-off"
-        case .record:
-            return "Tracking"
-        case .routine:
+        case .routine, .record:
             break
         }
         switch model.recurrenceKind.wrappedValue {

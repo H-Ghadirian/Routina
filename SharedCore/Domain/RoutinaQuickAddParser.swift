@@ -63,6 +63,8 @@ struct RoutinaQuickAddDraft: Equatable, Sendable {
             return "Tracking"
         case .recordChecklist:
             return "Tracking · Checklist"
+        case .recordDerivedFromChecklist:
+            return "Tracking · Item runout"
         }
     }
 

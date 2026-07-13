@@ -6,7 +6,7 @@ Date: 2026-07-13
 
 Refines: [0380 Add Record Task Type](0380-add-record-task-type.md), [0381 Make Mac Task Detail Heatmap Optional](0381-make-mac-task-detail-heatmap-optional.md)
 
-Refined by: [0383 Use Tracking as Record Label](0383-use-tracking-as-record-label.md) for user-facing task-kind naming.
+Refined by: [0383 Use Tracking as Record Label](0383-use-tracking-as-record-label.md) for user-facing task-kind naming, and [0385 Use Gentle Routine Cadence for Tracking](0385-use-gentle-routine-cadence-for-tracking.md) for routine-like Tracking repeat controls.
 
 ## Context
 

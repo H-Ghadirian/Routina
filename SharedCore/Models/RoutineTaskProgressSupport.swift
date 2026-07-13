@@ -25,7 +25,7 @@ enum RoutineTaskDailyRoutineSupport {
         hasDailyRunoutChecklistItem: Bool
     ) -> Bool {
         guard !isOneOffTask,
-              scheduleMode.taskType == .routine,
+              scheduleMode.usesRoutineCadence,
               recurrenceRule.isDaily
         else { return false }
         guard scheduleMode.isChecklistDrivenMode else { return true }

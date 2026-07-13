@@ -10,12 +10,13 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
     case oneOff
     case record
     case recordChecklist
+    case recordDerivedFromChecklist
 
     var taskType: RoutineTaskType {
         switch self {
         case .oneOff:
             return .todo
-        case .record, .recordChecklist:
+        case .record, .recordChecklist, .recordDerivedFromChecklist:
             return .record
         case .fixedInterval, .softInterval, .fixedIntervalChecklist, .softIntervalChecklist, .derivedFromChecklist, .softDerivedFromChecklist:
             return .routine
@@ -24,9 +25,9 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
 
     var scheduleBehavior: RoutineScheduleBehavior {
         switch self {
-        case .softInterval, .softIntervalChecklist, .softDerivedFromChecklist:
+        case .softInterval, .softIntervalChecklist, .softDerivedFromChecklist, .record, .recordChecklist, .recordDerivedFromChecklist:
             return .soft
-        case .fixedInterval, .fixedIntervalChecklist, .derivedFromChecklist, .oneOff, .record, .recordChecklist:
+        case .fixedInterval, .fixedIntervalChecklist, .derivedFromChecklist, .oneOff:
             return .fixed
         }
     }
@@ -39,7 +40,7 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
             return .checklist
         case .fixedIntervalChecklist, .softIntervalChecklist:
             return .checklist
-        case .derivedFromChecklist, .softDerivedFromChecklist:
+        case .derivedFromChecklist, .softDerivedFromChecklist, .recordDerivedFromChecklist:
             return .runout
         }
     }
@@ -58,7 +59,7 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
             case .standard:
                 return .record
             case .checklist:
-                return .recordChecklist
+                return routineFormat == .runout ? .recordDerivedFromChecklist : .recordChecklist
             }
         }
 
@@ -74,7 +75,7 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
 
     func replacingChecklistTimingMode(_ timingMode: ChecklistTimingMode) -> RoutineScheduleMode {
         if taskType == .record {
-            return .recordChecklist
+            return timingMode == .runout ? .recordDerivedFromChecklist : .recordChecklist
         }
 
         return Self.routineMode(
@@ -88,15 +89,19 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
     }
 
     var isChecklistCompletionMode: Bool {
-        taskType == .routine && routineFormat == .checklist
+        usesRoutineCadence && routineFormat == .checklist
     }
 
     var isChecklistDrivenMode: Bool {
-        taskType == .routine && routineFormat == .runout
+        usesRoutineCadence && routineFormat == .runout
     }
 
     var isStandardRoutineMode: Bool {
         taskType == .routine && routineFormat == .standard
+    }
+
+    var usesRoutineCadence: Bool {
+        taskType == .routine || taskType == .record
     }
 
     var isRoutineModeRequiringChecklistItems: Bool {
@@ -114,7 +119,7 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
     }
 
     var showsRoutineRepeatControls: Bool {
-        taskType == .routine && routineFormat != .runout
+        usesRoutineCadence && routineFormat != .runout
     }
 
     static func routineMode(

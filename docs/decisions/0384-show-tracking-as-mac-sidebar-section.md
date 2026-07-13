@@ -6,6 +6,8 @@ Date: 2026-07-13
 
 Refines: [0285 Clarify Mac Sidebar Section Surfaces](0285-clarify-mac-sidebar-section-surfaces.md), [0347 Split Mac Future Tag Groups By Task Kind](0347-split-mac-future-tag-groups-by-task-kind.md), [0350 Add Optional Mac Tomorrow Task Section](0350-add-optional-mac-tomorrow-task-section.md), [0380 Add Record Task Type](0380-add-record-task-type.md), [0383 Use Tracking as Record Label](0383-use-tracking-as-record-label.md)
 
+Refined by: [0385 Use Gentle Routine Cadence for Tracking](0385-use-gentle-routine-cadence-for-tracking.md) for routine-like Tracking cadence while preserving top-level Tracking section placement.
+
 ## Context
 
 Tracking rows are for analyzing what happened and how time was spent. When they appear inside `Today`, `Tomorrow`, or `Future`, they read like planned obligations instead of time-analysis entries.

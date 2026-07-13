@@ -134,7 +134,7 @@ struct AddRoutineFeatureState: Equatable {
     }
 
     var candidateRecurrenceRule: RoutineRecurrenceRule {
-        let fallbackInterval = schedule.scheduleMode.taskType != .routine
+        let fallbackInterval = !schedule.scheduleMode.usesRoutineCadence
             ? 1
             : TaskFormRecurrenceConstraints.effectiveIntervalDays(
                 value: schedule.frequencyValue,
@@ -147,20 +147,14 @@ struct AddRoutineFeatureState: Equatable {
         let timeRange = usesAvailabilityTiming ? schedule.recurrenceTimeRange : nil
 
         switch schedule.scheduleMode.taskType {
-        case .routine:
-            break
         case .todo:
             return .interval(
                 days: 1,
                 at: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
-        case .record:
-            return .interval(
-                days: 1,
-                at: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
-                timeRange: timeRange
-            )
+        case .routine, .record:
+            break
         }
 
         guard !schedule.scheduleMode.isChecklistDrivenMode else {

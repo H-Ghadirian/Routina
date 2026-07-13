@@ -108,7 +108,7 @@ struct TaskDetailFeature: Reducer {
         var systemNotificationsAuthorized: Bool = true
 
         var candidateRecurrenceRule: RoutineRecurrenceRule {
-            let fallbackInterval = editScheduleMode.taskType != .routine
+            let fallbackInterval = !editScheduleMode.usesRoutineCadence
                 ? 1
                 : TaskFormRecurrenceConstraints.effectiveIntervalDays(
                     value: editFrequencyValue,
@@ -120,7 +120,7 @@ struct TaskDetailFeature: Reducer {
             let usesAvailabilityTiming = !editIsAllDay
             let timeRange = usesAvailabilityTiming ? editRecurrenceTimeRange : nil
 
-            if editScheduleMode.taskType != .routine {
+            if !editScheduleMode.usesRoutineCadence {
                 return .interval(
                     days: 1,
                     at: usesAvailabilityTiming && editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil,
