@@ -161,6 +161,12 @@ struct StatsView: View {
         store.taskTypeFilter
     }
 
+    private var showsTaskTypeFilter: Bool {
+        tasks.contains {
+            $0.isOneOffTask || $0.scheduleMode.taskType == .record
+        }
+    }
+
     private var availableExcludeTags: [String] {
         filterPresentation.availableExcludeTags(from: store.tasks)
     }
@@ -535,7 +541,7 @@ struct StatsView: View {
         StatsSidebarContent(
             selectedRange: selectedRange,
             onSelectRange: { store.send(.selectedRangeChanged($0)) },
-            showsTaskTypeFilter: tasks.contains(where: \.isOneOffTask),
+            showsTaskTypeFilter: showsTaskTypeFilter,
             selectedTaskTypeFilter: selectedTaskTypeFilter,
             filteredTaskCount: filteredTaskCount,
             onSelectTaskTypeFilter: { store.send(.taskTypeFilterChanged($0)) },
@@ -726,7 +732,7 @@ struct StatsView: View {
         StatsFiltersSheet(
             advancedQuery: advancedQueryBinding,
             advancedQueryOptions: advancedQueryOptions,
-            showsTaskTypeFilter: tasks.contains(where: \.isOneOffTask),
+            showsTaskTypeFilter: showsTaskTypeFilter,
             taskTypeFilter: taskTypeFilterBinding,
             selectedImportanceUrgencyFilter: Binding(
                 get: { store.selectedImportanceUrgencyFilter },
@@ -950,7 +956,7 @@ struct StatsView: View {
             metrics: metrics,
             selectedRange: selectedRange,
             chartPresentation: chartPresentation,
-            taskTypeFilter: .routines,
+            taskTypeFilter: selectedTaskTypeFilter,
             filteredTaskCount: filteredTaskCount,
             healthSummary: store.healthSummary
         )

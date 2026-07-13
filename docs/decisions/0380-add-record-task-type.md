@@ -6,7 +6,7 @@ Date: 2026-07-13
 
 Refines: [0045 Split Routine Schedule Behavior and Format](0045-split-routine-schedule-behavior-and-format.md), [0197 Separate Todo Date and Time Availability](0197-separate-todo-date-and-time-availability.md), [0200 Support Task Planned Dates](0200-support-task-planned-dates.md), [0347 Split Mac Future Tag Groups By Task Kind](0347-split-mac-future-tag-groups-by-task-kind.md), [0359 Show Assumed Done Stats Summary](0359-show-assumed-done-stats-summary.md)
 
-Refined by: [0382 Split Record Task Form Controls](0382-split-record-task-form-controls.md) for Record form field availability; [0383 Use Tracking as Record Label](0383-use-tracking-as-record-label.md) for user-facing task-kind naming; [0384 Show Tracking as Mac Sidebar Section](0384-show-tracking-as-mac-sidebar-section.md) for Mac task-list placement.
+Refined by: [0382 Split Record Task Form Controls](0382-split-record-task-form-controls.md) for Record form field availability; [0383 Use Tracking as Record Label](0383-use-tracking-as-record-label.md) for user-facing task-kind naming; [0384 Show Tracking as Mac Sidebar Section](0384-show-tracking-as-mac-sidebar-section.md) for Mac task-list placement; [0388 Show Tracking Summary Stats](0388-show-tracking-summary-stats.md) for Stats summary reporting.
 
 ## Context
 

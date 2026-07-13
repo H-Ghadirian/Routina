@@ -221,6 +221,28 @@ enum StatsSummaryCardItemBuilder {
 
         items.append(
             StatsSummaryCardItem(
+                icon: "waveform.path.ecg",
+                accent: .orange,
+                title: "Tracking",
+                value: metrics.trackingEntryCount.formatted(),
+                caption: trackingCountCaption(metrics: metrics),
+                accessibilityIdentifier: "stats.summary.trackingCount"
+            )
+        )
+
+        items.append(
+            StatsSummaryCardItem(
+                icon: "clock.badge.checkmark",
+                accent: .purple,
+                title: "Tracking time",
+                value: estimatedMinutesText(metrics.totalTrackingActualMinutes),
+                caption: trackingTimeCaption(metrics: metrics),
+                accessibilityIdentifier: "stats.summary.trackingTime"
+            )
+        )
+
+        items.append(
+            StatsSummaryCardItem(
                 icon: "checklist",
                 accent: .green,
                 title: activeArchivePresentation.activeTitle,
@@ -351,6 +373,24 @@ enum StatsSummaryCardItemBuilder {
         "\(metrics.goalsCreatedCount) new, \(metrics.archivedGoalCount) archived"
     }
 
+    private static func trackingCountCaption(metrics: StatsFeatureMetrics) -> String {
+        if metrics.archivedTrackingEntryCount == 0 {
+            return "\(metrics.activeTrackingEntryCount) active"
+        }
+
+        return "\(metrics.activeTrackingEntryCount) active, \(metrics.archivedTrackingEntryCount) archived"
+    }
+
+    private static func trackingTimeCaption(metrics: StatsFeatureMetrics) -> String {
+        guard metrics.completedTrackingLogCount > 0 else {
+            return "Stored on tracking entries"
+        }
+
+        return metrics.completedTrackingLogCount == 1
+            ? "1 logged completion"
+            : "\(metrics.completedTrackingLogCount) logged completions"
+    }
+
     private static func healthCaption(for selectedRange: DoneChartRange) -> String {
         "Apple Health, \(selectedRange.periodDescription.lowercased())"
     }
@@ -427,6 +467,10 @@ enum StatsDashboardReportAvailability {
             return metrics.routineCount > 0
         case "todoCount":
             return metrics.openTodoCount > 0
+        case "trackingCount":
+            return metrics.trackingEntryCount > 0
+        case "trackingTime":
+            return metrics.totalTrackingActualMinutes > 0
         case "activeItems":
             return metrics.activeRoutineCount > 0
         case "archivedItems":
@@ -504,6 +548,10 @@ enum StatsDashboardReportAvailability {
             return isReportable(itemID: "routineCount", metrics: metrics, healthSummary: healthSummary)
         case "stats.summary.todoCount":
             return isReportable(itemID: "todoCount", metrics: metrics, healthSummary: healthSummary)
+        case "stats.summary.trackingCount":
+            return isReportable(itemID: "trackingCount", metrics: metrics, healthSummary: healthSummary)
+        case "stats.summary.trackingTime":
+            return isReportable(itemID: "trackingTime", metrics: metrics, healthSummary: healthSummary)
         case "stats.summary.activeRoutines":
             return isReportable(itemID: "activeItems", metrics: metrics, healthSummary: healthSummary)
         case "stats.summary.archivedRoutines":
@@ -523,5 +571,6 @@ enum StatsDashboardReportAvailability {
             || metrics.noteCount > 0
             || metrics.eventCount > 0
             || metrics.goalsCreatedCount > 0
+            || metrics.totalTrackingActualMinutes > 0
     }
 }

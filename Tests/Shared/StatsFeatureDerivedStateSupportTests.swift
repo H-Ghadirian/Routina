@@ -545,6 +545,91 @@ struct StatsFeatureDerivedStateSupportTests {
     }
 
     @Test
+    func build_summarizesTrackingCountsAndTimeForFilteredTasks() {
+        let calendar = makeTestCalendar()
+        let referenceDate = makeDate("2026-03-08T12:00:00Z")
+        let entryTimeTracking = RoutineTask(
+            name: "Research notes",
+            tags: ["Focus"],
+            scheduleMode: .record,
+            createdAt: makeDate("2026-03-03T09:00:00Z"),
+            actualDurationMinutes: 25
+        )
+        let loggedTracking = RoutineTask(
+            name: "Review session",
+            tags: ["Focus"],
+            scheduleMode: .record,
+            createdAt: makeDate("2026-03-03T09:00:00Z"),
+            actualDurationMinutes: 90
+        )
+        let archivedTracking = RoutineTask(
+            name: "Old audit",
+            tags: ["Focus"],
+            scheduleMode: .record,
+            pausedAt: makeDate("2026-03-01T08:00:00Z"),
+            createdAt: makeDate("2026-03-03T09:00:00Z"),
+            actualDurationMinutes: 15
+        )
+        let hiddenTracking = RoutineTask(
+            name: "Hidden analysis",
+            tags: ["Hidden"],
+            scheduleMode: .record,
+            createdAt: makeDate("2026-03-03T09:00:00Z"),
+            actualDurationMinutes: 100
+        )
+        let routine = RoutineTask(name: "Stretch", tags: ["Focus"])
+        let logs = [
+            RoutineLog(
+                timestamp: makeDate("2026-03-04T10:00:00Z"),
+                taskID: loggedTracking.id,
+                kind: .completed,
+                actualDurationMinutes: 40
+            ),
+            RoutineLog(
+                timestamp: makeDate("2026-03-05T10:00:00Z"),
+                taskID: loggedTracking.id,
+                kind: .missed,
+                actualDurationMinutes: 30
+            ),
+            RoutineLog(
+                timestamp: makeDate("2026-02-20T10:00:00Z"),
+                taskID: loggedTracking.id,
+                kind: .completed,
+                actualDurationMinutes: 60
+            ),
+            RoutineLog(
+                timestamp: makeDate("2026-03-04T10:00:00Z"),
+                taskID: hiddenTracking.id,
+                kind: .completed,
+                actualDurationMinutes: 100
+            )
+        ]
+
+        let state = StatsFeatureDerivedStateBuilder.build(
+            tasks: [entryTimeTracking, loggedTracking, archivedTracking, hiddenTracking, routine],
+            logs: logs,
+            focusSessions: [],
+            selectedRange: .week,
+            taskTypeFilter: .all,
+            selectedImportanceUrgencyFilter: nil,
+            advancedQuery: "",
+            selectedTags: ["Focus"],
+            includeTagMatchMode: .all,
+            excludedTags: [],
+            excludeTagMatchMode: .any,
+            tagColors: [:],
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        #expect(state.metrics.trackingEntryCount == 3)
+        #expect(state.metrics.activeTrackingEntryCount == 2)
+        #expect(state.metrics.archivedTrackingEntryCount == 1)
+        #expect(state.metrics.completedTrackingLogCount == 1)
+        #expect(state.metrics.totalTrackingActualMinutes == 80)
+    }
+
+    @Test
     func build_summarizesGoalMomentumForFilteredTasks() {
         let calendar = makeTestCalendar()
         let goal = RoutineGoal(title: "Launch", emoji: "🚀", status: .active)

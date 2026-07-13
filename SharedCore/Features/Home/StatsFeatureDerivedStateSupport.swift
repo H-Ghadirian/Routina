@@ -41,6 +41,11 @@ struct StatsFeatureMetrics: Equatable {
     var goalsCreatedCount: Int = 0
     var routineCount: Int = 0
     var openTodoCount: Int = 0
+    var trackingEntryCount: Int = 0
+    var activeTrackingEntryCount: Int = 0
+    var archivedTrackingEntryCount: Int = 0
+    var completedTrackingLogCount: Int = 0
+    var totalTrackingActualMinutes: Int = 0
     var activeRoutineCount: Int = 0
     var archivedRoutineCount: Int = 0
     var totalCount: Int = 0
@@ -418,6 +423,46 @@ enum StatsFeatureDerivedStateBuilder {
         let openTodoCount = filteredTasks.filter {
             $0.isOneOffTask && !$0.isCompletedOneOff && !$0.isCanceledOneOff
         }.count
+        let trackingTasks = filteredTasks.filter { $0.scheduleMode.taskType == .record }
+        let trackingTaskIDs = Set(trackingTasks.map(\.id))
+        let trackingLogsInRange = filteredLogs.filter { log in
+            guard trackingTaskIDs.contains(log.taskID),
+                  let timestamp = log.timestamp,
+                  dateIsInRange(
+                    timestamp,
+                    selectedRange: selectedRange,
+                    referenceDate: referenceDate,
+                    calendar: calendar
+                  )
+            else {
+                return false
+            }
+            return true
+        }
+        let completedTrackingLogsInRange = trackingLogsInRange.filter { $0.kind == .completed }
+        let trackingTasksWithCompletedLogsInRange = Set(completedTrackingLogsInRange.map(\.taskID))
+        let trackingActualMinutesFromLogs = completedTrackingLogsInRange.reduce(0) { total, log in
+            total + (log.actualDurationMinutes ?? 0)
+        }
+        let trackingActualMinutesFromEntries = trackingTasks.reduce(0) { total, task in
+            guard !trackingTasksWithCompletedLogsInRange.contains(task.id) else { return total }
+            guard let createdAt = task.createdAt,
+                  dateIsInRange(
+                    createdAt,
+                    selectedRange: selectedRange,
+                    referenceDate: referenceDate,
+                    calendar: calendar
+                  )
+            else {
+                return total
+            }
+            return total + (task.actualDurationMinutes ?? 0)
+        }
+        let trackingArchiveCounts = taskArchiveCounts(
+            trackingTasks,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
         let archiveCounts = taskArchiveCounts(
             filteredTasks,
             referenceDate: referenceDate,
@@ -483,6 +528,11 @@ enum StatsFeatureDerivedStateBuilder {
                 goalsCreatedCount: goalsCreatedInRange.count,
                 routineCount: routineCount,
                 openTodoCount: openTodoCount,
+                trackingEntryCount: trackingTasks.count,
+                activeTrackingEntryCount: trackingArchiveCounts.active,
+                archivedTrackingEntryCount: trackingArchiveCounts.archived,
+                completedTrackingLogCount: completedTrackingLogsInRange.count,
+                totalTrackingActualMinutes: trackingActualMinutesFromLogs + trackingActualMinutesFromEntries,
                 activeRoutineCount: archiveCounts.active,
                 archivedRoutineCount: archiveCounts.archived,
                 totalCount: totalCount,

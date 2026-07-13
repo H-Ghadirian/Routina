@@ -31,6 +31,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0388](0388-show-tracking-summary-stats.md) refines [0236](0236-hide-empty-stats-reports.md), [0380](0380-add-record-task-type.md), and [0383](0383-use-tracking-as-record-label.md) for Stats Tracking summaries:** Stats summary cards can show `Tracking` entry counts and selected-range `Tracking time` when backing tracking data exists, and the Stats task-type filter appears when tracking entries exist even without todos.
 - **[0386](0386-match-tracking-inner-groups-to-future.md) refines [0285](0285-clarify-mac-sidebar-section-surfaces.md), [0384](0384-show-tracking-as-mac-sidebar-section.md), and [0385](0385-use-gentle-routine-cadence-for-tracking.md) for Tracking section presentation:** Tracking stays a top-level Mac section, but its expanded inner groups mirror `Future` for the active grouping mode and use the same neutral top-level section tint while preserving the `tracking` manual-order key.
 - **[0385](0385-use-gentle-routine-cadence-for-tracking.md) refines [0382](0382-split-record-task-form-controls.md), [0383](0383-use-tracking-as-record-label.md), and [0384](0384-show-tracking-as-mac-sidebar-section.md) for Tracking cadence:** Tracking keeps the internal `record` task type and top-level Mac `Tracking` section, but now exposes routine cadence controls including interval/calendar repeat and checklist item runout. Its due style is implicit Gentle, the `Due Style` picker stays hidden, and Tracking still omits due dates, exact reminders, and todo date availability.
 - **[0384](0384-show-tracking-as-mac-sidebar-section.md) refines [0347](0347-split-mac-future-tag-groups-by-task-kind.md), [0380](0380-add-record-task-type.md), and [0383](0383-use-tracking-as-record-label.md) for Mac task-list presentation:** Mac Home claims active unpinned tracking rows into a top-level `Tracking` section between optional `Tomorrow` and `Future`, hides that section when it has no rows, and keeps compatibility planned-date metadata on tracking rows from placing them in `Today`, `Tomorrow`, or `Future`.
@@ -281,6 +282,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0388](0388-show-tracking-summary-stats.md) | Show Tracking Summary Stats | Accepted | 2026-07-13 |
 | [0385](0385-use-gentle-routine-cadence-for-tracking.md) | Use Gentle Routine Cadence for Tracking | Accepted | 2026-07-13 |
 | [0377](0377-fulfill-routines-from-linked-task-completions.md) | Fulfill Routines From Linked Task Completions | Accepted | 2026-07-12 |
 | [0376](0376-hide-probable-time-from-assumed-done-forms.md) | Hide Probable Time From Assumed-Done Forms | Accepted | 2026-07-12 |
