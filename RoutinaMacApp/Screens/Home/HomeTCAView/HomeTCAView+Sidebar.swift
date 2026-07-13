@@ -1061,6 +1061,11 @@ extension HomeTCAView {
     }
 
     var emptyTaskListMessage: String {
+        let trimmedSearchText = searchTextBinding.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedSearchText.isEmpty {
+            return "Try a different timeline search or filters."
+        }
+
         switch store.taskListMode {
         case .all:
             return isPlacesEnabled ? "Try a different place or clear a few filters." : "Clear a few filters and try again."

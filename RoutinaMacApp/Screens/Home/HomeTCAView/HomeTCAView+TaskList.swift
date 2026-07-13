@@ -19,10 +19,16 @@ extension HomeTCAView {
             )
 
             if let emptyState = presentation.emptyState {
+                let searchCreateAction: (() -> Void)? = canCreateTaskFromToolbarSearch
+                    ? { openAddTaskFromToolbarSearch(searchTextBinding.wrappedValue) }
+                    : nil
+
                 emptyStateView(
                     title: emptyState.title,
                     message: emptyState.message,
-                    systemImage: emptyState.systemImage
+                    systemImage: emptyState.systemImage,
+                    actionTitle: "Create task",
+                    action: searchCreateAction
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {

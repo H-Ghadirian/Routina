@@ -882,6 +882,30 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testMacSearchNoResultSidebarCanOpenSeededAddTask() throws {
+        let taskListSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+TaskList.swift")
+        let sidebarSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Sidebar.swift")
+        let platformSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift")
+
+        XCTAssertTrue(
+            sidebarSource.contains("return \"Try a different timeline search or filters.\""),
+            "The task-list sidebar should match the Planner Timeline no-results subtext while a search query is active."
+        )
+        XCTAssertTrue(taskListSource.contains("canCreateTaskFromToolbarSearch"))
+        XCTAssertTrue(taskListSource.contains("actionTitle: \"Create task\""))
+        XCTAssertTrue(
+            taskListSource.contains("openAddTaskFromToolbarSearch(searchTextBinding.wrappedValue)"),
+            "The sidebar no-results action should reuse the seeded full-form route instead of quick-creating directly."
+        )
+        XCTAssertTrue(platformSource.contains("func openAddTaskFromToolbarSearch(_ rawText: String)"))
+        XCTAssertTrue(platformSource.contains("toolbarSearchFocusDismissRequestID += 1"))
+        XCTAssertTrue(platformSource.contains("store.send(.openAddTaskSheet(seedName: trimmedText))"))
+        XCTAssertFalse(
+            platformSource.contains("private func openAddTaskFromToolbarSearch"),
+            "The seeded Add Task route needs to be reusable by the sidebar no-results button."
+        )
+    }
+
     func testMacHomeFiltersUseRightSideCompanionPane() throws {
         let detailSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
         let filterContainerSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacFilterDetailContainerView.swift")

@@ -96,7 +96,7 @@ And normal non-fullscreen windows keep the same custom toolbar alignment
 ### Mac Toolbar Search Creates Only When Search Has No Result
 
 Area: Other
-Decision links: [0315](../decisions/0315-merge-mac-quick-add-into-toolbar-search.md)
+Decision links: [0315](../decisions/0315-merge-mac-quick-add-into-toolbar-search.md), [0378](../decisions/0378-open-mac-add-task-from-toolbar-search-command-return.md), [0389](../decisions/0389-create-task-from-mac-search-empty-state.md)
 Current behavior: [UI](../current-behavior/ui.md)
 Coverage:
 - `Tests/macOS/PerformanceRegressionTests.swift`
@@ -105,6 +105,7 @@ Given the configurable Mac Quick Add shortcut has focused the Home toolbar searc
 When the user enters a non-empty query and presses Return
 Then Routina creates a task through Quick Add only if that query has no matching task or Timeline-style result
 And the toolbar shows a visible Return-to-create hint for that no-result query
+And when that no-result query leaves the task-list sidebar empty, the sidebar uses the Planner Timeline no-results subtext and shows a `Create task` button that opens the full Add Task form with the query in the Identity task-name field
 And if the query includes quick-add syntax such as `today`, `every day`, or `#home`, the toolbar shows a flat same-width parser preview below the field before creation without duplicating the Return-to-create hint
 
 ### Mac Home Sidebar Toggle Keeps Detail Panes Stable

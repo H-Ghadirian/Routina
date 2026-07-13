@@ -699,7 +699,7 @@ extension HomeTCAView {
         )
     }
 
-    private var canCreateTaskFromToolbarSearch: Bool {
+    var canCreateTaskFromToolbarSearch: Bool {
         let trimmedText = searchTextBinding.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines)
         return !trimmedText.isEmpty
             && !isToolbarSearchCreateInProgress
@@ -751,7 +751,7 @@ extension HomeTCAView {
         }
     }
 
-    private func openAddTaskFromToolbarSearch(_ rawText: String) {
+    func openAddTaskFromToolbarSearch(_ rawText: String) {
         let trimmedText = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedText.isEmpty else { return }
 
@@ -760,6 +760,8 @@ extension HomeTCAView {
         isAwayStartPresented = false
         toolbarSearchCreateErrorMessage = nil
         addEditFormCoordinator.resetRevealedTaskFormSections()
+        isToolbarSearchTextFocused = false
+        toolbarSearchFocusDismissRequestID += 1
         searchTextBinding.wrappedValue = ""
         quickAddCreatedToast = nil
         store.send(.openAddTaskSheet(seedName: trimmedText))
