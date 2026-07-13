@@ -669,7 +669,7 @@ extension HomeTCAView {
                     for: task,
                     rowNumber: rowNumbersByTaskID[task.taskID] ?? 1,
                     includeMarkDone: section.includeMarkDone,
-                    moveContext: group.moveContext,
+                    moveContext: group.moveContext ?? section.moveContext,
                     metadataPresenter: metadataPresenter,
                     rowVisibility: rowVisibility,
                     allowsPlannerDrag: allowsPlannerDrag
@@ -873,9 +873,9 @@ extension HomeTCAView {
         switch section.kind {
         case .tag:
             return 0.12
-        case .future:
+        case .tracking, .future:
             return 0.07
-        case .plannedToday, .plannedTomorrow, .tracking, .daily:
+        case .plannedToday, .plannedTomorrow, .daily:
             return 0.08
         case .untagged, .archived:
             return 0.06
@@ -891,9 +891,9 @@ extension HomeTCAView {
         switch section.kind {
         case .tag:
             return 0.30
-        case .future:
+        case .tracking, .future:
             return 0.20
-        case .plannedToday, .plannedTomorrow, .tracking, .daily:
+        case .plannedToday, .plannedTomorrow, .daily:
             return 0.22
         case .untagged, .archived:
             return 0.18
@@ -938,7 +938,7 @@ extension HomeTCAView {
         case .plannedTomorrow:
             return .blue
         case .tracking:
-            return .cyan
+            return .secondary
         case .daily:
             return .teal
         case .future:
@@ -1028,7 +1028,7 @@ extension HomeTCAView {
         case .plannedTomorrow:
             return .blue
         case .tracking:
-            return .cyan
+            return .secondary
         case .untagged, .future, .regular, .deadlineDate, .away, .archived:
             return .secondary
         case .pinned:

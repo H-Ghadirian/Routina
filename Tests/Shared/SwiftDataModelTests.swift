@@ -165,6 +165,7 @@ struct SwiftDataModelTests {
         #expect(record.routineDurationMode == .multiDay)
         #expect(record.isMultiDayRoutine)
         #expect(record.scheduleMode.scheduleBehavior == .soft)
+        #expect(record.isSoftIntervalRoutine)
         #expect(record.recurrenceRule == .interval(days: 14, at: exactTime))
         #expect(record.interval == 14)
         #expect(record.steps.map(\.title) == ["Collect sources"])

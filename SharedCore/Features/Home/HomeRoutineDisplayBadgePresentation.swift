@@ -68,14 +68,6 @@ extension HomeRoutineDisplayMetadataPresenter {
                     : nil
             }
         }
-        if task.scheduleMode.taskType == .record {
-            if task.isDoneToday {
-                return badge("Logged", "checkmark.circle.fill", .green, Color.green.opacity(0.14))
-            }
-            return badgeMode == .complete
-                ? badge("Tracking", "chart.bar.doc.horizontal", .secondary, Color.secondary.opacity(0.12))
-                : nil
-        }
         let dueIn = filtering.dueInDays(for: task)
 
         if task.scheduleMode.isChecklistDrivenMode {

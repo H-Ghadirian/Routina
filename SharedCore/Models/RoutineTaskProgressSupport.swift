@@ -81,6 +81,7 @@ extension RoutineTask {
 
     var isSoftIntervalRoutine: Bool {
         scheduleMode.isSoftIntervalRoutine
+            || (scheduleMode.taskType == .record && scheduleMode.scheduleBehavior == .soft)
     }
 
     var usesRollingScheduleAnchor: Bool {

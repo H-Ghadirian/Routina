@@ -1364,8 +1364,64 @@ struct HomeTaskListFilteringTests {
             trackingLaterID,
             trackingFutureID
         ])
+        #expect(trackingSection?.taskGroups.map(\.title) == [String?("On Track")])
+        #expect(trackingSection?.taskGroups.map(\.kind) == [.regular])
+        #expect(trackingSection?.taskGroups.map(\.isCollapsible) == [false])
         #expect(futureSection?.kind == .future)
         #expect(futureSection?.tasks.map(\.taskID) == [regularID])
+    }
+
+    @Test
+    func sidebarPresentationGroupsTrackingRowsLikeFutureTagGroups() {
+        let adminTrackingID = UUID()
+        let focusTrackingID = UUID()
+        let futureID = UUID()
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(routineListSectioningMode: .tags),
+            routineDisplays: [
+                TestTaskDisplay(
+                    taskID: focusTrackingID,
+                    name: "Review workouts",
+                    tags: ["Focus"],
+                    scheduleMode: .record,
+                    manualSectionOrders: ["tracking": 1]
+                ),
+                TestTaskDisplay(
+                    taskID: adminTrackingID,
+                    name: "Log errands",
+                    tags: ["Admin"],
+                    scheduleMode: .recordChecklist,
+                    manualSectionOrders: ["tracking": 0]
+                ),
+                TestTaskDisplay(
+                    taskID: futureID,
+                    name: "Weekly planning",
+                    tags: ["Focus"],
+                    daysUntilDue: 4
+                )
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        let trackingSection = presentation.sections.first { $0.kind == HomeTaskListPresentationSectionKind.tracking }
+        let futureSection = presentation.sections.first { $0.kind == HomeTaskListPresentationSectionKind.future }
+
+        let sectionKinds: [HomeTaskListPresentationSectionKind] = presentation.sections.map(\.kind)
+        #expect(sectionKinds == [.tracking, .future])
+        #expect(trackingSection?.moveContext?.sectionKey == "tracking")
+        #expect(trackingSection?.moveContext?.orderedTaskIDs == [adminTrackingID, focusTrackingID])
+        #expect((trackingSection?.taskGroups.map(\.title) ?? []) == [String?("#Admin"), String?("#Focus")])
+        #expect((trackingSection?.taskGroups.map(\.kind) ?? []) == [.tag, .tag])
+        #expect((trackingSection?.taskGroups.map(\.isCollapsible) ?? []) == [true, true])
+        #expect((trackingSection?.taskGroups.map { $0.tasks.map(\.taskID) } ?? []) == [[adminTrackingID], [focusTrackingID]])
+        #expect((futureSection?.taskGroups.map(\.title) ?? []) == [String?("#Focus")])
+        #expect((futureSection?.taskGroups.map(\.kind) ?? []) == [.tag])
     }
 
     @Test
@@ -1851,6 +1907,27 @@ struct HomeTaskListFilteringTests {
         )
 
         #expect(presenter.rowMetadataText(for: task) == "Every day • 0 completions • Ready whenever")
+    }
+
+    @Test
+    func trackingRowsUseRoutineStyleGentleBadges() {
+        let task = TestTaskDisplay(
+            name: "Clean coffee machine",
+            interval: 14,
+            recurrenceRule: .interval(days: 14),
+            scheduleMode: .record,
+            isSoftIntervalRoutine: true
+        )
+        let presenter = HomeRoutineDisplayMetadataPresenter(
+            filtering: makeFiltering(),
+            showPersianDates: false,
+            badgeMode: .complete
+        )
+
+        let badge = presenter.badgeStyle(for: task)
+
+        #expect(badge?.title == "Ready to Do")
+        #expect(badge?.systemImage == "circle")
     }
 
     @Test

@@ -549,21 +549,13 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         }
 
         if !trackingTasks.isEmpty {
-            presentationSections.append(
-                HomeTaskListPresentationSection(
-                    kind: .tracking,
-                    identityKey: "tracking",
-                    title: "Tracking",
-                    tasks: trackingTasks,
-                    rowNumberOffset: offset,
-                    includeMarkDone: true,
-                    moveContext: HomeTaskListMoveContext(
-                        sectionKey: HomeTaskListFiltering<Display>.trackingManualOrderSectionKey,
-                        orderedTaskIDs: trackingTasks.map(\.taskID)
-                    )
-                )
-            )
-            offset += trackingTasks.count
+            if let trackingSection = sidebarTrackingSection(
+                from: trackingTasks,
+                filtering: filtering,
+                offset: &offset
+            ) {
+                presentationSections.append(trackingSection)
+            }
         }
 
         if filtering.usesTagSectioning {
@@ -683,6 +675,50 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         }
 
         return groups
+    }
+
+    private static func sidebarTrackingSection(
+        from trackingTasks: [Display],
+        filtering: HomeTaskListFiltering<Display>,
+        offset: inout Int
+    ) -> HomeTaskListPresentationSection<Display>? {
+        guard !trackingTasks.isEmpty else { return nil }
+
+        let showsGroupTitles = !filtering.usesUngroupedSectioning
+        let usesDeadlineDateSectioning = filtering.usesTagSectioning
+            ? filtering.separatesDeadlineStatusInTagSections
+            : filtering.usesDeadlineDateSectioning
+        let groupedSections = filtering.groupedSections(fromFilteredTasks: trackingTasks)
+        let taskGroups = groupedSections.map { section in
+            let kind = sidebarFutureGroupKind(
+                for: section,
+                showsGroupTitles: showsGroupTitles,
+                usesDeadlineDateSectioning: usesDeadlineDateSectioning
+            )
+            return HomeTaskListPresentationTaskGroup(
+                kind: kind,
+                identityKey: section.identityKey,
+                title: showsGroupTitles ? section.title : nil,
+                tasks: section.tasks,
+                moveContext: nil,
+                isCollapsible: kind == .tag || kind == .untagged || kind == .deadlineDate
+            )
+        }
+
+        defer { offset += trackingTasks.count }
+        return HomeTaskListPresentationSection(
+            kind: .tracking,
+            identityKey: "tracking",
+            title: "Tracking",
+            tasks: trackingTasks,
+            rowNumberOffset: offset,
+            includeMarkDone: true,
+            moveContext: HomeTaskListMoveContext(
+                sectionKey: HomeTaskListFiltering<Display>.trackingManualOrderSectionKey,
+                orderedTaskIDs: trackingTasks.map(\.taskID)
+            ),
+            taskGroups: taskGroups
+        )
     }
 
     private static func sidebarFutureSection(
