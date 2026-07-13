@@ -478,10 +478,20 @@ extension TaskDetailFeature {
                 if try hasDuplicateRoutineName(name, in: context, excludingID: taskID) {
                     return
                 }
+                let allTasks = try context.fetch(FetchDescriptor<RoutineTask>())
+                let previousRelationshipCandidates = RoutineTaskRelationshipCandidate.from(
+                    allTasks,
+                    excluding: taskID,
+                    referenceDate: now,
+                    calendar: calendar
+                )
                 let previousScheduleMode = task.scheduleMode
                 let previousRecurrenceRule = task.recurrenceRule
                 let previousRollingScheduleAnchor = task.scheduleAnchor ?? task.lastDone
-                let previousRelationships = task.relationships
+                let previousRelationships = RoutineTask.editableRelationships(
+                    for: task,
+                    within: previousRelationshipCandidates
+                )
                 let previousActualDurationMinutes = task.actualDurationMinutes
                 let previousCreatedAt = task.createdAt
                 task.name = name
@@ -517,6 +527,7 @@ extension TaskDetailFeature {
                 task.goalIDs = try RoutineGoalPersistence.ensureGoals(goals, in: context)
                 task.eventIDs = RoutineEventIDStorage.sanitized(eventIDs)
                 task.replaceRelationships(relationships)
+                RoutineTask.removeInverseRelationships(targeting: taskID, from: allTasks)
                 task.replaceSteps(steps)
                 task.scheduleMode = scheduleMode
                 task.deadline = scheduleMode == .oneOff ? deadline : nil

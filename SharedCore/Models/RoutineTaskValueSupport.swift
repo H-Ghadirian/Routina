@@ -114,6 +114,28 @@ struct RoutineTaskRelationshipResolution {
         }
     }
 
+    static func editableRelationships(
+        for task: RoutineTask,
+        within candidates: [RoutineTaskRelationshipCandidate]
+    ) -> [RoutineTaskRelationship] {
+        var relationships: [RoutineTaskRelationship] = []
+
+        for candidate in candidates {
+            for relationship in candidate.relationships where relationship.targetTaskID == task.id {
+                relationships.append(
+                    RoutineTaskRelationship(
+                        targetTaskID: candidate.id,
+                        kind: relationship.kind.inverse
+                    )
+                )
+            }
+        }
+
+        relationships.append(contentsOf: task.relationships)
+
+        return RoutineTaskRelationship.sanitized(relationships, ownerID: task.id)
+    }
+
     static func removeRelationships(
         targeting deletedTaskIDs: Set<UUID>,
         from tasks: [RoutineTask]
@@ -121,6 +143,20 @@ struct RoutineTaskRelationshipResolution {
         guard !deletedTaskIDs.isEmpty else { return }
         for task in tasks where !deletedTaskIDs.contains(task.id) {
             let updatedRelationships = task.relationships.filter { !deletedTaskIDs.contains($0.targetTaskID) }
+            if updatedRelationships != task.relationships {
+                task.replaceRelationships(updatedRelationships)
+            }
+        }
+    }
+
+    static func removeInverseRelationships(
+        targeting ownerID: UUID,
+        from tasks: [RoutineTask]
+    ) {
+        for task in tasks where task.id != ownerID {
+            let updatedRelationships = task.relationships.filter { relationship in
+                relationship.targetTaskID != ownerID
+            }
             if updatedRelationships != task.relationships {
                 task.replaceRelationships(updatedRelationships)
             }

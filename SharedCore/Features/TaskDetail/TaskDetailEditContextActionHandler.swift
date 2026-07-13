@@ -77,9 +77,14 @@ struct TaskDetailEditContextActionHandler {
         state: inout State
     ) -> Effect<Action> {
         state.availableRelationshipTasks = tasks
+        let graphRelationships = RoutineTask.editableRelationships(
+            for: state.task,
+            within: tasks
+        )
+        let availableTaskIDs = Set(tasks.map(\.id))
         state.editRelationships = RoutineTaskRelationship.sanitized(
-            state.editRelationships.filter { relationship in
-                tasks.contains(where: { $0.id == relationship.targetTaskID })
+            (graphRelationships + state.editRelationships).filter { relationship in
+                availableTaskIDs.contains(relationship.targetTaskID)
             },
             ownerID: state.task.id
         )

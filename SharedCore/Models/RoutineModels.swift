@@ -701,11 +701,25 @@ final class RoutineTask {
         RoutineTaskRelationshipResolution.resolvedRelationships(for: task, within: candidates)
     }
 
+    static func editableRelationships(
+        for task: RoutineTask,
+        within candidates: [RoutineTaskRelationshipCandidate]
+    ) -> [RoutineTaskRelationship] {
+        RoutineTaskRelationshipResolution.editableRelationships(for: task, within: candidates)
+    }
+
     static func removeRelationships(
         targeting deletedTaskIDs: Set<UUID>,
         from tasks: [RoutineTask]
     ) {
         RoutineTaskRelationshipResolution.removeRelationships(targeting: deletedTaskIDs, from: tasks)
+    }
+
+    static func removeInverseRelationships(
+        targeting ownerID: UUID,
+        from tasks: [RoutineTask]
+    ) {
+        RoutineTaskRelationshipResolution.removeInverseRelationships(targeting: ownerID, from: tasks)
     }
 
     func detachedCopy() -> RoutineTask {

@@ -99,6 +99,98 @@ struct TaskDetailEditSaveTests {
     }
 
     @Test
+    func availableRelationshipTasksLoaded_mergesInverseRelationshipsIntoEditDraft() async {
+        let currentID = UUID()
+        let linkedID = UUID()
+        let task = RoutineTask(id: currentID, name: "Talk to a friend")
+        let candidate = RoutineTaskRelationshipCandidate(
+            id: linkedID,
+            name: "Talk to Jalal",
+            emoji: "✨",
+            relationships: [
+                RoutineTaskRelationship(targetTaskID: currentID, kind: .related)
+            ]
+        )
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(task: task)
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.availableRelationshipTasksLoaded([candidate])) {
+            $0.availableRelationshipTasks = [candidate]
+            $0.editRelationships = [
+                RoutineTaskRelationship(targetTaskID: linkedID, kind: .related)
+            ]
+        }
+    }
+
+    @Test
+    func editSaveTapped_canonicalizesInverseLinkedTaskOntoEditedTask() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Talk to a friend",
+            interval: 30,
+            lastDone: nil,
+            emoji: "✨"
+        )
+        let linkedTask = makeTask(
+            in: context,
+            name: "Talk to Jalal",
+            interval: 1,
+            lastDone: nil,
+            emoji: "✨"
+        )
+        linkedTask.replaceRelationships([
+            RoutineTaskRelationship(targetTaskID: task.id, kind: .related)
+        ])
+        try context.save()
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Talk to a friend",
+                editRoutineEmoji: "✨",
+                editRelationships: [
+                    RoutineTaskRelationship(targetTaskID: linkedTask.id, kind: .related)
+                ],
+                editFrequency: .month,
+                editFrequencyValue: 1
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+        await store.receive(.onAppear)
+
+        let taskID = task.id
+        let linkedTaskID = linkedTask.id
+        let persistedTasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        let persistedTask = try #require(persistedTasks.first { $0.id == taskID })
+        let persistedLinkedTask = try #require(persistedTasks.first { $0.id == linkedTaskID })
+
+        #expect(persistedTask.relationships == [
+            RoutineTaskRelationship(targetTaskID: linkedTaskID, kind: .related)
+        ])
+        #expect(persistedLinkedTask.relationships.isEmpty)
+    }
+
+    @Test
     func editSaveTapped_persistsMultipleSelectedPlaceIDs() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()
