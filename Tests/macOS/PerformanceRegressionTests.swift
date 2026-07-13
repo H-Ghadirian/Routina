@@ -448,8 +448,9 @@ final class PerformanceRegressionTests: XCTestCase {
 
         XCTAssertTrue(
             source.contains("HomeMacToolbarSearchField("),
-            "Home should keep the global task and timeline search field visible in the top search affordance."
+            "Home should keep the global task and timeline search field in the top search affordance for searchable surfaces."
         )
+        XCTAssertTrue(source.contains("let showsSearch: Bool"))
         XCTAssertTrue(
             source.contains("struct HomeMacTopToolbarChrome: View"),
             "Home search should live in the SwiftUI top chrome so text input and animation remain in the main view hierarchy."
@@ -525,8 +526,8 @@ final class PerformanceRegressionTests: XCTestCase {
         )
         XCTAssertTrue(source.contains("private var toolbarSearch: some View"))
         XCTAssertTrue(
-            source.contains("toolbarSearch\n                .frame(maxWidth: .infinity, alignment: .center)"),
-            "The search field should stay centered against the full toolbar width, not the remaining space in an HStack."
+            source.contains("if showsSearch {\n                toolbarSearch\n                    .frame(maxWidth: .infinity, alignment: .center)"),
+            "The search field should stay centered against the full toolbar width when visible, not the remaining space in an HStack."
         )
         XCTAssertTrue(source.contains("private var toolbarTrailingCluster: some View"))
         XCTAssertFalse(
@@ -557,6 +558,9 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(homeSource.contains("@State var isMacWindowFullscreen = false"))
         XCTAssertFalse(homeSource.contains("isMacFullscreenTitlebarRevealed"))
         XCTAssertTrue(platformSource.contains("isSearchTextFocused: $isToolbarSearchTextFocused"))
+        XCTAssertTrue(platformSource.contains("showsSearch: showsHomeToolbarSearch"))
+        XCTAssertTrue(platformSource.contains("private var showsHomeToolbarSearch: Bool"))
+        XCTAssertTrue(platformSource.contains("!isMacStatsMode && !isMacAddTaskMode"))
         XCTAssertTrue(platformSource.contains("searchVisiblePillWidth: $toolbarSearchVisiblePillWidth"))
         XCTAssertTrue(platformSource.contains("searchExpansionTransitionID: $toolbarSearchExpansionTransitionID"))
         XCTAssertTrue(platformSource.contains("searchFocusRequestID: $toolbarSearchFocusRequestID"))
@@ -623,6 +627,9 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(platformSource.contains("isSearchExpanded: $isToolbarSearchExpanded"))
         XCTAssertTrue(platformSource.contains("isSearchTextFocused: $isToolbarSearchTextFocused"))
         XCTAssertTrue(platformSource.contains("isCreatingTaskFromSearch: isToolbarSearchCreateInProgress"))
+        XCTAssertTrue(platformSource.contains("guard showsHomeToolbarSearch else { return }"))
+        XCTAssertTrue(platformSource.contains(".onChange(of: showsHomeToolbarSearch)"))
+        XCTAssertTrue(platformSource.contains("dismissToolbarSearchFocus()"))
         XCTAssertFalse(platformSource.contains(".background(homeTitlebarSearchInstaller)"))
         XCTAssertFalse(platformSource.contains("ToolbarItemGroup(placement: .primaryAction) {\n            if isDevelopmentAppVariant"))
         XCTAssertFalse(platformSource.contains("if !isToolbarSearchExpanded {\n            ToolbarItemGroup(placement: .primaryAction)"))

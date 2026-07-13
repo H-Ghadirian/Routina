@@ -14,6 +14,7 @@ struct HomeMacTopToolbarChrome: View {
     let isDevelopmentAppVariant: Bool
     let showsProgressModePicker: Bool
     let showsPlaces: Bool
+    let showsSearch: Bool
     @Binding var progressMode: MacHomeProgressMode
     @Binding var selectedSidebarMode: HomeFeature.MacSidebarMode
     @Binding var searchText: String
@@ -76,8 +77,10 @@ struct HomeMacTopToolbarChrome: View {
             .frame(height: HomeMacToolbarSearchLayout.topToolbarHeight)
             .frame(maxWidth: .infinity)
 
-            toolbarSearch
-                .frame(maxWidth: .infinity, alignment: .center)
+            if showsSearch {
+                toolbarSearch
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
         }
         .frame(height: HomeMacToolbarSearchLayout.topToolbarHeight)
         .frame(maxWidth: .infinity)

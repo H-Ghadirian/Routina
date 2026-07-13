@@ -97,6 +97,7 @@ extension HomeTCAView {
             isDevelopmentAppVariant: isDevelopmentAppVariant,
             showsProgressModePicker: showsProgressModePickerInToolbar,
             showsPlaces: isPlacesEnabled,
+            showsSearch: showsHomeToolbarSearch,
             progressMode: macHomeProgressModeBinding,
             selectedSidebarMode: macSidebarModeBinding,
             searchText: searchTextBinding,
@@ -136,6 +137,10 @@ extension HomeTCAView {
             && !isNoteEditorPresented
             && !isAwayStartPresented
             && store.addRoutineState == nil
+    }
+
+    private var showsHomeToolbarSearch: Bool {
+        !isMacStatsMode && !isMacAddTaskMode
     }
 
     private var homeToolbarMode: HomeMacTopToolbarChrome.Mode {
@@ -555,12 +560,18 @@ extension HomeTCAView {
         .onReceive(NotificationCenter.default.publisher(for: .routinaMacFocusSearchOrCreate)) { _ in
             focusExpandedToolbarSearchFromCommand()
         }
+        .onChange(of: showsHomeToolbarSearch) { _, showsSearch in
+            if !showsSearch {
+                dismissToolbarSearchFocus()
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .routinaOpenDeepLink)) { notification in
             alignMacDetailModeForDeepLinkNotification(notification)
         }
     }
 
     private func focusExpandedToolbarSearchFromCommand() {
+        guard showsHomeToolbarSearch else { return }
         toolbarSearchFocusRequestID += 1
         toolbarSearchExpansionTransitionID += 1
         let transitionID = toolbarSearchExpansionTransitionID
@@ -580,6 +591,15 @@ extension HomeTCAView {
                 toolbarSearchVisiblePillWidth = HomeMacToolbarSearchLayout.focusedWidth
             }
         }
+    }
+
+    private func dismissToolbarSearchFocus() {
+        guard isToolbarSearchTextFocused || isToolbarSearchExpanded else { return }
+        toolbarSearchExpansionTransitionID += 1
+        isToolbarSearchTextFocused = false
+        isToolbarSearchExpanded = false
+        toolbarSearchVisiblePillWidth = HomeMacToolbarSearchLayout.compactWidth
+        toolbarSearchFocusDismissRequestID += 1
     }
 
     private func alignMacDetailModeForDeepLinkNotification(_ notification: Notification) {
@@ -628,7 +648,7 @@ extension HomeTCAView {
     func applyAddRoutinePresentation<Content: View>(to content: Content) -> some View {
         content
             .overlay(alignment: .top) {
-                if let toolbarSearchCreateDraft, isToolbarSearchExpanded {
+                if showsHomeToolbarSearch, let toolbarSearchCreateDraft, isToolbarSearchExpanded {
                     HomeMacToolbarSearchParserPreview(draft: toolbarSearchCreateDraft)
                         .frame(
                             width: HomeMacToolbarSearchLayout.focusedWidth,
