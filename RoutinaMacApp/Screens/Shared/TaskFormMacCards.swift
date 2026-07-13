@@ -910,6 +910,11 @@ struct TaskFormMacBehaviorCard: View {
                 )
                 .labelsHidden()
             } else if currentTimingMode.usesTimeRange {
+                if let timeRangeHelpText {
+                    Text(timeRangeHelpText)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
                 routineTimeRangePickers
             }
         }
@@ -958,6 +963,21 @@ struct TaskFormMacBehaviorCard: View {
             )
             .fixedSize()
         }
+    }
+
+    private var timeRangeHelpText: String? {
+        let startText = model.recurrenceTimeRangeStart.wrappedValue.formatted(
+            date: .omitted,
+            time: .shortened
+        )
+        let endText = model.recurrenceTimeRangeEnd.wrappedValue.formatted(
+            date: .omitted,
+            time: .shortened
+        )
+        return currentTimingMode.timeRangeHelpText(
+            startTimeText: startText,
+            endTimeText: endText
+        )
     }
 
     private var todoDateRangePickers: some View {

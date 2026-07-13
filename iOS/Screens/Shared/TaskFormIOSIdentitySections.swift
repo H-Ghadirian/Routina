@@ -105,6 +105,11 @@ struct TaskFormIOSTaskTypeSection: View {
             if currentTimingMode == .exact {
                 DatePicker("Time", selection: model.recurrenceTimeOfDay, displayedComponents: .hourAndMinute)
             } else if currentTimingMode.usesTimeRange {
+                if let timeRangeHelpText {
+                    Text(timeRangeHelpText)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
                 routineTimeRangePickers
             }
         }
@@ -144,6 +149,21 @@ struct TaskFormIOSTaskTypeSection: View {
             DatePicker("Starts", selection: model.recurrenceTimeRangeStart, displayedComponents: .hourAndMinute)
             DatePicker("Ends", selection: model.recurrenceTimeRangeEnd, displayedComponents: .hourAndMinute)
         }
+    }
+
+    private var timeRangeHelpText: String? {
+        let startText = model.recurrenceTimeRangeStart.wrappedValue.formatted(
+            date: .omitted,
+            time: .shortened
+        )
+        let endText = model.recurrenceTimeRangeEnd.wrappedValue.formatted(
+            date: .omitted,
+            time: .shortened
+        )
+        return currentTimingMode.timeRangeHelpText(
+            startTimeText: startText,
+            endTimeText: endText
+        )
     }
 
     private var todoDateRangePickers: some View {

@@ -105,6 +105,17 @@ struct TaskFormPresentationTests {
         #expect(TaskFormTimingMode.availableWindow.usesTimeRange)
         #expect(TaskFormTimingMode.timeBlock.timeRangeRole == .scheduledBlock)
         #expect(TaskFormTimingMode.availableWindow.timeRangeRole == .availability)
+        #expect(
+            TaskFormTimingMode.timeBlock.timeRangeHelpText(startTimeText: "07:00", endTimeText: "10:00")
+                == "Reserve the full time from 07:00 to 10:00"
+        )
+        #expect(
+            TaskFormTimingMode.availableWindow.timeRangeHelpText(startTimeText: "07:00", endTimeText: "10:00")
+                == "Can be scheduled anytime between 07:00 and 10:00"
+        )
+        #expect(
+            TaskFormTimingMode.exact.timeRangeHelpText(startTimeText: "07:00", endTimeText: "10:00") == nil
+        )
         #expect(TaskFormDateAvailabilityMode.allCases == [.none, .exact, .range])
     }
 

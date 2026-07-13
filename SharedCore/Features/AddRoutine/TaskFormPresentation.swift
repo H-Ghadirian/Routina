@@ -45,6 +45,17 @@ enum TaskFormTimingMode: String, CaseIterable, Equatable, Identifiable, Sendable
         }
     }
 
+    func timeRangeHelpText(startTimeText: String, endTimeText: String) -> String? {
+        switch self {
+        case .timeBlock:
+            return "Reserve the full time from \(startTimeText) to \(endTimeText)"
+        case .availableWindow:
+            return "Can be scheduled anytime between \(startTimeText) and \(endTimeText)"
+        case .none, .allDay, .exact:
+            return nil
+        }
+    }
+
     static func cases(for _: RoutineTaskType) -> [Self] {
         allCases
     }
