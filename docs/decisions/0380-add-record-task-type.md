@@ -6,6 +6,8 @@ Date: 2026-07-13
 
 Refines: [0045 Split Routine Schedule Behavior and Format](0045-split-routine-schedule-behavior-and-format.md), [0197 Separate Todo Date and Time Availability](0197-separate-todo-date-and-time-availability.md), [0200 Support Task Planned Dates](0200-support-task-planned-dates.md), [0347 Split Mac Future Tag Groups By Task Kind](0347-split-mac-future-tag-groups-by-task-kind.md), [0359 Show Assumed Done Stats Summary](0359-show-assumed-done-stats-summary.md)
 
+Refined by: [0382 Split Record Task Form Controls](0382-split-record-task-form-controls.md) for Record form field availability.
+
 ## Context
 
 Todos answer what needs to be finished once. Routines answer what should recur or remain gently visible. Neither is a clean fit for after-the-fact logs such as analysis notes, work records, or time-spend entries.

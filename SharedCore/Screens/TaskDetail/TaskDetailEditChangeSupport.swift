@@ -196,7 +196,7 @@ enum TaskDetailEditChangeDetector {
     private static func normalizedRoutineDurationMode(
         for request: TaskDetailEditChangeRequest
     ) -> RoutineDurationMode {
-        request.scheduleMode == .oneOff ? .oneDay : request.routineDurationMode
+        request.scheduleMode.taskType == .todo ? .oneDay : request.routineDurationMode
     }
 
     private static func normalizedRoutineDurationMode(for task: RoutineTask) -> RoutineDurationMode {

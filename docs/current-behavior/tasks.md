@@ -39,13 +39,14 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0374](../decisions/0374-move-unlimited-task-override-to-beta-experiments.md)
 - [0379](../decisions/0379-separate-deadline-status-in-tag-task-list.md)
 - [0380](../decisions/0380-add-record-task-type.md)
+- [0382](../decisions/0382-split-record-task-form-controls.md)
 
 ## Current Contract
 
 - Todos, routines, and records share the task model, but their timing semantics are different.
 - Free Routina allows up to 10 active tasks. Creating another active task requires an unlimited-task entitlement from a subscription or lifetime purchase; existing tasks are preserved even if the account already has more than 10 active tasks. Settings -> Support & About -> Beta Experiments can temporarily unlock unlimited task creation while StoreKit products are unavailable; production defaults this override off.
 - Active-task counting includes todos, routines, and records that are not paused, snoozed, archived, done, or canceled.
-- Records are unscheduled analysis entries for logging what happened and how time was spent. They can use notes, links, tags, goals, places, media, attachments, estimates, actual duration, focus metadata, search, Stats, Timeline, and archive state, but they do not expose or persist due dates, reminders, date availability, all-day/time availability, planned dates, routine duration, repeat controls, routine steps, or routine checklist cadence.
+- Records are unscheduled analysis entries for logging what happened and how time was spent. Task forms split the primary kind into `Record` / `Task`, and show `Todo` / `Routine` only inside `Task`. Records can use routine-like analysis metadata including `Completion`, duration, all-day/time availability, steps for standard records, checklist items for checklist records, estimates, actual duration, focus metadata, notes, links, tags, goals, places, media, attachments, relationships, events, comments, search, Stats, Timeline, heatmaps, and archive state. They do not expose or persist due dates, reminders, date availability, planned dates, `Due Style`, `Repeat type`, or `Repeat` controls; stored checklist intervals and recurrence intervals normalize to one day so records do not become repeating scheduled work.
 - Todo availability has independent date and time axes. Date bounds, time windows, deadlines, reminders, and planned dates are separate concepts.
 - Planned dates are date-only Home-list planning hints for todos and non-daily routines. They are not availability, deadline, reminder, completion history, or stored Planner blocks. Planner day agendas surface active date-only planned tasks for the selected day.
 - Deleting a task also removes persisted task-backed Planner blocks for that task so deleted work does not remain on the calendar.

@@ -61,6 +61,8 @@ struct RoutinaQuickAddDraft: Equatable, Sendable {
             return "Routine · \(recurrenceRule.displayText())"
         case .record:
             return "Record"
+        case .recordChecklist:
+            return "Record · Checklist"
         }
     }
 

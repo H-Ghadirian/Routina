@@ -659,6 +659,7 @@ struct TaskFormContent: View {
         case .softDerivedFromChecklist: return "A gentle routine driven by checklist item timing."
         case .oneOff: return "A one-off task you can finish once."
         case .record: return "A record of what happened and how time was spent."
+        case .recordChecklist: return "A record completed by finishing every checklist item."
         }
     }
 

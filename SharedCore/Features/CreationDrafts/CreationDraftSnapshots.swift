@@ -224,7 +224,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
         state.basics.deadline = deadline
         state.basics.plannedDate = RoutineTask.normalizedPlannedDate(plannedDate)
         state.basics.isAllDay = isAllDay
-        state.basics.routineDurationMode = scheduleMode.taskType != .routine
+        state.basics.routineDurationMode = scheduleMode.taskType == .todo
             ? .oneDay
             : (routineDurationMode ?? .oneDay)
         state.basics.availabilityStartDate = availabilityStartDate

@@ -28,10 +28,6 @@ struct TaskDetailRecurrenceEditActionHandler {
     }
 
     func editAllDayChanged(_ isAllDay: Bool, state: inout State) -> Effect<Action> {
-        guard state.editScheduleMode.taskType != .record else {
-            state.editIsAllDay = false
-            return .none
-        }
         rebaseEditReminderIfUsingLeadTime(&state) { state in
             state.editIsAllDay = isAllDay
             if isAllDay, state.editScheduleMode == .oneOff, let deadline = state.editDeadline {
@@ -51,7 +47,7 @@ struct TaskDetailRecurrenceEditActionHandler {
         _ durationMode: RoutineDurationMode,
         state: inout State
     ) -> Effect<Action> {
-        state.editRoutineDurationMode = state.editScheduleMode == .oneOff ? .oneDay : durationMode
+        state.editRoutineDurationMode = state.editScheduleMode.taskType == .todo ? .oneDay : durationMode
         enforceRecurrenceConstraints(state: &state)
         clearPlanningIfDailyRoutine(state: &state)
         return .none
@@ -125,10 +121,9 @@ struct TaskDetailRecurrenceEditActionHandler {
                 state.editReminderAt = nil
             }
             if mode.taskType == .record {
-                state.editIsAllDay = false
                 state.editPlannedDate = nil
             }
-            if mode.taskType != .routine {
+            if mode.taskType == .todo {
                 state.editRoutineDurationMode = .oneDay
             }
             enforceRecurrenceConstraints(state: &state)

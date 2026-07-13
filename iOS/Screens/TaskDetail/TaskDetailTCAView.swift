@@ -476,7 +476,12 @@ detailBody
     }
 
     private var canShowTimeControl: Bool {
-        store.task.isOneOffTask
+        switch store.task.scheduleMode.taskType {
+        case .todo, .record:
+            return true
+        case .routine:
+            return false
+        }
     }
 
     private var canShowTodoStateControl: Bool {

@@ -26,11 +26,22 @@ struct TaskFormIOSTaskTypeSection: View {
         Section(header: Text("Kind")) {
             RoutinaGlassSegmentedControl(
                 accessibilityLabel: "Kind",
-                options: RoutineTaskType.allCases,
-                selection: model.taskType,
+                options: TaskFormPrimaryKind.allCases,
+                selection: model.primaryKind,
                 fillsAvailableWidth: true
-            ) { taskType in
-                Text(taskType.rawValue)
+            ) { kind in
+                Text(kind.rawValue)
+            }
+
+            if model.primaryKind.wrappedValue == .task {
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Task kind",
+                    options: TaskFormTaskKind.allCases,
+                    selection: model.taskKind,
+                    fillsAvailableWidth: true
+                ) { kind in
+                    Text(kind.rawValue)
+                }
             }
 
             if showsRoutineDurationControl {
@@ -52,12 +63,17 @@ struct TaskFormIOSTaskTypeSection: View {
         case .routine:
             return presentation.showsRepeatControls
         case .record:
-            return false
+            return true
         }
     }
 
     private var showsRoutineDurationControl: Bool {
-        model.taskType.wrappedValue == .routine
+        switch model.taskType.wrappedValue {
+        case .routine, .record:
+            return true
+        case .todo:
+            return false
+        }
     }
 
     private var availabilityContent: some View {

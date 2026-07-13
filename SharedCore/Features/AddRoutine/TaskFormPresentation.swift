@@ -16,6 +16,29 @@ enum TaskFormFrequencyUnit: String, Codable, CaseIterable, Equatable, Sendable {
     var singularLabel: String { rawValue.lowercased() }
 }
 
+enum TaskFormPrimaryKind: String, CaseIterable, Equatable, Identifiable, Sendable {
+    case record = "Record"
+    case task = "Task"
+
+    var id: String { rawValue }
+}
+
+enum TaskFormTaskKind: String, CaseIterable, Equatable, Identifiable, Sendable {
+    case todo = "Todo"
+    case routine = "Routine"
+
+    var id: String { rawValue }
+
+    var taskType: RoutineTaskType {
+        switch self {
+        case .todo:
+            return .todo
+        case .routine:
+            return .routine
+        }
+    }
+}
+
 enum TaskFormTimingMode: String, CaseIterable, Equatable, Identifiable, Sendable {
     case none = "Any time"
     case allDay = "All-day"
@@ -208,7 +231,7 @@ struct TaskFormPresentation {
     let canAutoAssumeDailyDone: Bool
 
     var isStepBasedMode: Bool {
-        scheduleMode.isStandardRoutineMode || scheduleMode == .oneOff
+        scheduleMode.isStandardRoutineMode || scheduleMode == .oneOff || scheduleMode == .record
     }
 
     var showsRepeatControls: Bool {
@@ -277,6 +300,7 @@ struct TaskFormPresentation {
         case .softDerivedFromChecklist: return "Checklist items have their own timing, without turning the routine overdue."
         case .oneOff: return "This task does not repeat."
         case .record: return "Use this to log what happened and analyze time spent."
+        case .recordChecklist: return "Use this to log what happened and complete every checklist item."
         }
     }
 
@@ -289,9 +313,14 @@ struct TaskFormPresentation {
     }
 
     var stepsSectionDescription: String {
-        scheduleMode == .oneOff
-            ? "Steps run in order. Leave this empty for a single-step todo."
-            : "Steps run in order. Leave this empty for a one-step routine."
+        switch scheduleMode {
+        case .oneOff:
+            return "Steps run in order. Leave this empty for a single-step todo."
+        case .record:
+            return "Steps run in order. Leave this empty for a one-step record."
+        default:
+            return "Steps run in order. Leave this empty for a one-step routine."
+        }
     }
 
     func checklistSectionDescription(includesDerivedChecklistDueDetail: Bool) -> String {
@@ -306,6 +335,8 @@ struct TaskFormPresentation {
             return "Use checklist items for parts you want to tick off before finishing the routine."
         case .oneOff:
             return "Use checklist items for parts you want to tick off before finishing the todo."
+        case .recordChecklist:
+            return "The record is complete when every checklist item is completed."
         case .record:
             return "Records focus on what happened and the time spent."
         }

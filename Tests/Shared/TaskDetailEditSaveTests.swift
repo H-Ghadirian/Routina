@@ -1292,6 +1292,84 @@ struct TaskDetailEditSaveTests {
     }
 
     @Test
+    func editSaveTapped_recordKeepsRoutineLikeFieldsWithoutDueOrRepeat() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let staleDate = makeDate("2026-03-14T18:45:00Z")
+        let exactTime = RoutineTimeOfDay(hour: 16, minute: 45)
+        let step = RoutineStep(title: "Collect sources")
+        let checklistItem = RoutineChecklistItem(title: "Summarize findings", intervalDays: 5)
+        let task = makeTask(
+            in: context,
+            name: "Research session",
+            interval: 1,
+            lastDone: nil,
+            emoji: "📊",
+            scheduleMode: .record
+        )
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Research session",
+                editRoutineEmoji: "📊",
+                editDeadline: staleDate,
+                editIsAllDay: false,
+                editRoutineDurationMode: .multiDay,
+                editPlannedDate: staleDate,
+                editReminderAt: staleDate,
+                editScheduleMode: .record,
+                editRoutineSteps: [step],
+                editRoutineChecklistItems: [checklistItem],
+                editFrequency: .week,
+                editFrequencyValue: 4,
+                editRecurrenceKind: .weekly,
+                editRecurrenceHasExplicitTime: true,
+                editRecurrenceTimeOfDay: exactTime,
+                editActualDurationMinutes: 75
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+        await store.receive(.onAppear) {
+            $0.selectedDate = calendar.startOfDay(for: now)
+        }
+
+        let taskID = task.id
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { task in
+                        task.id == taskID
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.scheduleMode == .record)
+        #expect(persistedTask.deadline == nil)
+        #expect(persistedTask.plannedDate == nil)
+        #expect(persistedTask.reminderAt == nil)
+        #expect(persistedTask.routineDurationMode == .multiDay)
+        #expect(persistedTask.recurrenceRule == .interval(days: 1, at: exactTime))
+        #expect(persistedTask.steps.map(\.title) == ["Collect sources"])
+        #expect(persistedTask.checklistItems.map(\.title) == ["Summarize findings"])
+        #expect(persistedTask.checklistItems.map(\.intervalDays) == [1])
+        #expect(persistedTask.actualDurationMinutes == 75)
+    }
+
+    @Test
     func editSaveTapped_persistsDailyTimeRangeRecurrence() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()

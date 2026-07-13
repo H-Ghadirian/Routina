@@ -94,9 +94,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
         if scheduleMode.isTaskFormStepBased {
             sections.append(.steps)
         }
-        if scheduleMode.taskType != .record {
-            sections.append(.checklist)
-        }
+        sections.append(.checklist)
         sections.append(.image)
         sections.append(.voiceNote)
         sections.append(.attachment)
@@ -131,7 +129,7 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
 
 extension RoutineScheduleMode {
     var isTaskFormStepBased: Bool {
-        isStandardRoutineMode || self == .oneOff
+        isStandardRoutineMode || self == .oneOff || self == .record
     }
 }
 

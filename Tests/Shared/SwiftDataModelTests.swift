@@ -143,6 +143,35 @@ struct SwiftDataModelTests {
     }
 
     @Test
+    func routineTask_recordPreservesRoutineLikeMetadataWithoutPlanningOrRepeat() {
+        let date = Date(timeIntervalSince1970: 1_780_000_000)
+        let exactTime = RoutineTimeOfDay(hour: 16, minute: 45)
+        let checklistItem = RoutineChecklistItem(title: "Summarize findings", intervalDays: 5)
+        let record = RoutineTask(
+            name: "Research session",
+            plannedDate: date,
+            isAllDay: false,
+            routineDurationMode: .multiDay,
+            reminderAt: date,
+            steps: [RoutineStep(title: "Collect sources")],
+            checklistItems: [checklistItem],
+            scheduleMode: .record,
+            interval: 14,
+            recurrenceRule: .interval(days: 14, at: exactTime)
+        )
+
+        #expect(record.plannedDate == nil)
+        #expect(record.reminderAt == nil)
+        #expect(record.routineDurationMode == .multiDay)
+        #expect(record.isMultiDayRoutine)
+        #expect(record.recurrenceRule == .interval(days: 1, at: exactTime))
+        #expect(record.steps.map(\.title) == ["Collect sources"])
+        #expect(record.checklistItems.map(\.title) == ["Summarize findings"])
+        #expect(record.checklistItems.map(\.intervalDays) == [1])
+        #expect(record.detachedCopy().routineDurationMode == .multiDay)
+    }
+
+    @Test
     func routineTask_normalizesPlannedDateAndCopiesItDetached() {
         let plannedDate = makeDate("2026-06-10T15:45:00Z")
         let expectedDate = Calendar.current.startOfDay(for: plannedDate)

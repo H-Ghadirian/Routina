@@ -27,11 +27,10 @@ struct AddRoutineScheduleMutationHandler {
             mode,
             schedule: &state.schedule
         )
-        if mode.taskType != .routine {
+        if mode.taskType == .todo {
             state.basics.routineDurationMode = .oneDay
         }
-        if mode == .record {
-            state.basics.isAllDay = false
+        if mode.taskType == .record {
             state.basics.deadline = nil
             state.basics.availabilityStartDate = nil
             state.basics.availabilityEndDate = nil

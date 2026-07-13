@@ -171,13 +171,11 @@ struct AddRoutineSaveRequest: Equatable {
         self.link = sanitizedLinkItems.first?.url
         self.links = sanitizedLinkItems.map(\.url)
         self.linkItems = sanitizedLinkItems
-        let sanitizedChecklistItems = scheduleMode.taskType == .record
-            ? []
-            : RoutineChecklistItem.sanitized(checklistItems, for: scheduleMode)
+        let sanitizedChecklistItems = RoutineChecklistItem.sanitized(checklistItems, for: scheduleMode)
 
         self.deadline = scheduleMode.taskType == .todo ? deadline : nil
-        self.isAllDay = scheduleMode.taskType == .record ? false : isAllDay
-        self.routineDurationMode = scheduleMode.taskType != .routine ? .oneDay : routineDurationMode
+        self.isAllDay = isAllDay
+        self.routineDurationMode = scheduleMode.taskType == .todo ? .oneDay : routineDurationMode
         self.availabilityStartDate = scheduleMode.taskType == .todo ? availabilityStartDate : nil
         self.availabilityEndDate = scheduleMode.taskType == .todo ? availabilityEndDate : nil
         self.plannedDate = scheduleMode.taskType == .record
@@ -204,7 +202,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.goals = RoutineGoalSummary.sanitized(goals)
         self.eventIDs = RoutineEventIDStorage.sanitized(eventIDs)
         self.relationships = relationships
-        self.steps = (scheduleMode.isStandardRoutineMode || scheduleMode == .oneOff)
+        self.steps = (scheduleMode.isStandardRoutineMode || scheduleMode == .oneOff || scheduleMode == .record)
             ? RoutineStep.sanitized(steps)
             : []
         self.scheduleMode = scheduleMode
@@ -256,11 +254,12 @@ struct AddRoutineSaveRequest: Equatable {
         self.links = sanitizedLinks.map(\.url)
         self.linkItems = sanitizedLinks
         self.deadline = schedule.scheduleMode.taskType == .todo ? basics.deadline : nil
-        self.isAllDay = schedule.scheduleMode.taskType == .record ? false : basics.isAllDay
-        self.routineDurationMode = schedule.scheduleMode.taskType != .routine ? .oneDay : basics.routineDurationMode
-        let sanitizedChecklistItems = schedule.scheduleMode.taskType == .record
-            ? []
-            : RoutineChecklistItem.sanitized(checklist.routineChecklistItems)
+        self.isAllDay = basics.isAllDay
+        self.routineDurationMode = schedule.scheduleMode.taskType == .todo ? .oneDay : basics.routineDurationMode
+        let sanitizedChecklistItems = RoutineChecklistItem.sanitized(
+            checklist.routineChecklistItems,
+            for: schedule.scheduleMode
+        )
         guard !schedule.scheduleMode.isRoutineModeRequiringChecklistItems
             || !sanitizedChecklistItems.isEmpty
         else { return nil }
@@ -297,7 +296,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.goals = organization.routineGoals
         self.eventIDs = RoutineEventIDStorage.sanitized(organization.eventIDs)
         self.relationships = organization.relationships
-        self.steps = (schedule.scheduleMode.isStandardRoutineMode || schedule.scheduleMode == .oneOff)
+        self.steps = (schedule.scheduleMode.isStandardRoutineMode || schedule.scheduleMode == .oneOff || schedule.scheduleMode == .record)
             ? RoutineStep.sanitized(checklist.routineSteps)
             : []
         self.scheduleMode = schedule.scheduleMode
@@ -341,7 +340,11 @@ struct AddRoutineSaveRequest: Equatable {
                 timeRange: timeRange
             )
         case .record:
-            return .interval(days: 1)
+            return .interval(
+                days: 1,
+                at: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
+                timeRange: timeRange
+            )
         }
 
         guard !schedule.scheduleMode.isChecklistDrivenMode else {

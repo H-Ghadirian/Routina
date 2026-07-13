@@ -532,7 +532,7 @@ extension TaskDetailFeature {
                 task.scheduleMode = scheduleMode
                 task.deadline = scheduleMode.taskType == .todo ? deadline : nil
                 task.isAllDay = isAllDay
-                task.routineDurationMode = scheduleMode.taskType != .routine ? .oneDay : routineDurationMode
+                task.routineDurationMode = scheduleMode.taskType == .todo ? .oneDay : routineDurationMode
                 let availabilityDateBounds = RoutineTask.normalizedAvailabilityDateBounds(
                     startDate: availabilityStartDate,
                     endDate: availabilityEndDate,
@@ -561,7 +561,7 @@ extension TaskDetailFeature {
                     ? (autoAssumeDoneTimeOfDay ?? RoutineAssumedCompletion.defaultDoneTimeOfDay)
                     : nil
                 task.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
-                task.actualDurationMinutes = scheduleMode == .oneOff
+                task.actualDurationMinutes = scheduleMode.taskType == .todo || scheduleMode.taskType == .record
                     ? RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutes)
                     : nil
                 task.createdAt = previousCreatedAt

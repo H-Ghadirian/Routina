@@ -49,7 +49,7 @@ extension RoutineTask {
     }
 
     var isRecordTask: Bool {
-        scheduleMode == .record
+        scheduleMode.taskType == .record
     }
 
     var isRoutineTask: Bool {

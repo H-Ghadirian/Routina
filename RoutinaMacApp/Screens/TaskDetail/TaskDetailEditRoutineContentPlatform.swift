@@ -218,7 +218,7 @@ struct TaskDetailEditRoutineContent: View {
                 case .todo:
                     nextMode = .oneOff
                 case .record:
-                    nextMode = .record
+                    nextMode = store.editScheduleMode.taskType == .record ? store.editScheduleMode : .record
                 }
                 store.send(.editScheduleModeChanged(nextMode))
             }

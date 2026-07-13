@@ -163,6 +163,37 @@ struct TaskFormModel {
 }
 
 extension TaskFormModel {
+    var primaryKind: Binding<TaskFormPrimaryKind> {
+        let taskType = taskType
+        return Binding(
+            get: {
+                taskType.wrappedValue == .record ? .record : .task
+            },
+            set: { kind in
+                switch kind {
+                case .record:
+                    taskType.wrappedValue = .record
+                case .task:
+                    if taskType.wrappedValue == .record {
+                        taskType.wrappedValue = .todo
+                    }
+                }
+            }
+        )
+    }
+
+    var taskKind: Binding<TaskFormTaskKind> {
+        let taskType = taskType
+        return Binding(
+            get: {
+                taskType.wrappedValue == .routine ? .routine : .todo
+            },
+            set: { kind in
+                taskType.wrappedValue = kind.taskType
+            }
+        )
+    }
+
     var scheduleBehavior: Binding<RoutineScheduleBehavior> {
         let scheduleMode = scheduleMode
         return Binding(
@@ -334,7 +365,7 @@ extension TaskFormModel {
         case .todo:
             return .interval(days: 1, at: timeOfDay, timeRange: timeRange)
         case .record:
-            return .interval(days: 1)
+            return .interval(days: 1, at: timeOfDay, timeRange: timeRange)
         }
 
         guard !currentScheduleMode.isChecklistDrivenMode else {
@@ -404,7 +435,7 @@ extension TaskFormModel {
     }
 
     var allowsOptionalChecklistReveal: Bool {
-        taskType.wrappedValue == .todo
+        taskType.wrappedValue == .todo || taskType.wrappedValue == .record
     }
 
     var shouldShowChecklistSection: Bool {
@@ -434,8 +465,11 @@ extension TaskFormModel {
             case .steps:
                 return scheduleMode.wrappedValue.isStandardRoutineMode
                     || scheduleMode.wrappedValue == .oneOff
+                    || scheduleMode.wrappedValue == .record
             case .checklist:
                 return shouldShowChecklistSection
+            case .deadline:
+                return taskType.wrappedValue == .todo
             case .reminder:
                 return supportsExactDateReminder
             case .planning:
@@ -498,12 +532,13 @@ extension TaskFormModel {
             sections.insert(.reminder)
         }
 
-        if scheduleMode.wrappedValue.taskType == .routine {
+        if scheduleMode.wrappedValue.taskType == .routine || scheduleMode.wrappedValue.taskType == .record {
             sections.insert(.scheduleType)
         }
 
-        if scheduleMode.wrappedValue.showsRoutineRepeatControls
-            || scheduleMode.wrappedValue.routineFinishMode == .checklist {
+        if scheduleMode.wrappedValue.taskType == .routine
+            && (scheduleMode.wrappedValue.showsRoutineRepeatControls
+                || scheduleMode.wrappedValue.routineFinishMode == .checklist) {
             sections.insert(.repeatPattern)
         }
 

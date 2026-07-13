@@ -854,7 +854,7 @@ extension HomeTCAView {
             mode: .progressiveCreate,
             revealedSections: addEditFormCoordinator.revealedTaskFormSections,
             populatedSections: populatedSections,
-            allowsOptionalChecklistReveal: addState?.taskType == .todo
+            allowsOptionalChecklistReveal: addState?.taskType != .routine
         )
     }
 
@@ -873,7 +873,7 @@ extension HomeTCAView {
             mode: .progressiveEdit,
             revealedSections: addEditFormCoordinator.revealedTaskFormSections,
             populatedSections: detail.populatedMacFormSections,
-            allowsOptionalChecklistReveal: detail.editScheduleMode.taskType == .todo
+            allowsOptionalChecklistReveal: detail.editScheduleMode.taskType != .routine
         )
     }
 

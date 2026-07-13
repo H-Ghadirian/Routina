@@ -659,14 +659,17 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
-    func saveTapped_recordClearsScheduleFieldsAndKeepsActualDuration() async {
+    func saveTapped_recordKeepsRoutineLikeFieldsWithoutDueOrRepeatControls() async {
         let date = makeDate("2026-04-10T09:00:00Z")
+        let step = RoutineStep(title: "Classify support themes")
+        let checklistItem = RoutineChecklistItem(title: "Summarize time sinks", intervalDays: 4)
+        let exactTime = RoutineTimeOfDay(hour: 14, minute: 30)
         let store = TestStore(
             initialState: makeState(
                 basics: AddRoutineBasicsState(
                     routineName: "Analyzed support queue",
                     deadline: date,
-                    isAllDay: true,
+                    routineDurationMode: .multiDay,
                     plannedDate: date,
                     reminderAt: date,
                     estimatedDurationMinutes: 120,
@@ -679,11 +682,11 @@ struct AddRoutineFeatureTests {
                     frequencyValue: 3,
                     recurrenceKind: .weekly,
                     recurrenceHasExplicitTime: true,
-                    recurrenceTimeOfDay: RoutineTimeOfDay(hour: 14, minute: 30)
+                    recurrenceTimeOfDay: exactTime
                 ),
                 checklist: AddRoutineChecklistState(
-                    routineSteps: [RoutineStep(title: "Hidden step")],
-                    routineChecklistItems: [RoutineChecklistItem(title: "Hidden item", intervalDays: 1)]
+                    routineSteps: [step],
+                    routineChecklistItems: [checklistItem]
                 )
             )
         ) {
@@ -692,16 +695,65 @@ struct AddRoutineFeatureTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) {
+            $0.checklist.routineChecklistItems = RoutineChecklistItem.sanitized(
+                [checklistItem],
+                for: .record
+            )
+        }
         await store.receive(.delegate(.didSave(makeSaveRequest(
             name: "Analyzed support queue",
             frequencyInDays: 1,
-            recurrenceRule: .interval(days: 1),
+            recurrenceRule: .interval(days: 1, at: exactTime),
             emoji: "✨",
-            isAllDay: false,
+            routineDurationMode: .multiDay,
+            steps: [step],
             scheduleMode: .record,
+            checklistItems: RoutineChecklistItem.sanitized([checklistItem], for: .record),
             estimatedDurationMinutes: 120,
             actualDurationMinutes: 95
+        ))))
+    }
+
+    @Test
+    func saveTapped_recordChecklistKeepsChecklistCompletionWithoutRepeatCadence() async {
+        let checklistItem = RoutineChecklistItem(title: "Capture outcome", intervalDays: 5)
+        let exactTime = RoutineTimeOfDay(hour: 15, minute: 0)
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(routineName: "Retrospective notes"),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .recordChecklist,
+                    frequency: .month,
+                    frequencyValue: 2,
+                    recurrenceKind: .monthlyDay,
+                    recurrenceHasExplicitTime: true,
+                    recurrenceTimeOfDay: exactTime
+                ),
+                checklist: AddRoutineChecklistState(
+                    routineChecklistItems: [checklistItem]
+                )
+            )
+        ) {
+            makeDelegateEchoFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.saveTapped) {
+            $0.checklist.routineChecklistItems = RoutineChecklistItem.sanitized(
+                [checklistItem],
+                for: .recordChecklist
+            )
+        }
+        await store.receive(.delegate(.didSave(makeSaveRequest(
+            name: "Retrospective notes",
+            frequencyInDays: 1,
+            recurrenceRule: .interval(days: 1, at: exactTime),
+            emoji: "✨",
+            scheduleMode: .recordChecklist,
+            checklistItems: RoutineChecklistItem.sanitized([checklistItem], for: .recordChecklist)
         ))))
     }
 

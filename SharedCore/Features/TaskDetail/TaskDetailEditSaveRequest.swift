@@ -81,9 +81,7 @@ struct TaskDetailEditSaveRequestBuilder {
         guard !trimmedName.isEmpty else { return nil }
         let candidateChecklistItems = RoutineChecklistItem.sanitized(state.editRoutineChecklistItems)
         let scheduleMode = effectiveScheduleMode(for: state, checklistItems: candidateChecklistItems)
-        let sanitizedChecklistItems = scheduleMode.taskType == .record
-            ? []
-            : RoutineChecklistItem.sanitized(candidateChecklistItems, for: scheduleMode)
+        let sanitizedChecklistItems = RoutineChecklistItem.sanitized(candidateChecklistItems, for: scheduleMode)
         state.editRoutineChecklistItems = sanitizedChecklistItems
         state.editChecklistValidationMessage = AddRoutineChecklistValidator.validationMessage(
             scheduleMode: scheduleMode,
@@ -128,8 +126,8 @@ struct TaskDetailEditSaveRequestBuilder {
             links: sanitizedLinks.map(\.url),
             linkItems: sanitizedLinks,
             deadline: scheduleMode.taskType == .todo ? state.editDeadline : nil,
-            isAllDay: scheduleMode.taskType == .record ? false : state.editIsAllDay,
-            routineDurationMode: scheduleMode.taskType != .routine ? .oneDay : state.editRoutineDurationMode,
+            isAllDay: state.editIsAllDay,
+            routineDurationMode: scheduleMode.taskType == .todo ? .oneDay : state.editRoutineDurationMode,
             availabilityStartDate: scheduleMode.taskType == .todo ? availabilityDateBounds.startDate : nil,
             availabilityEndDate: scheduleMode.taskType == .todo ? availabilityDateBounds.endDate : nil,
             plannedDate: scheduleMode.taskType == .record
@@ -154,7 +152,7 @@ struct TaskDetailEditSaveRequestBuilder {
             goals: state.editRoutineGoals,
             eventIDs: RoutineEventIDStorage.sanitized(state.editEventIDs),
             relationships: state.editRelationships,
-            steps: (scheduleMode.isStandardRoutineMode || scheduleMode == .oneOff)
+            steps: (scheduleMode.isStandardRoutineMode || scheduleMode == .oneOff || scheduleMode == .record)
                 ? state.editRoutineSteps
                 : [],
             checklistItems: sanitizedChecklistItems,
@@ -193,7 +191,11 @@ struct TaskDetailEditSaveRequestBuilder {
                 timeRange: timeRange
             )
         case .record:
-            return .interval(days: 1)
+            return .interval(
+                days: 1,
+                at: usesAvailabilityTiming && state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil,
+                timeRange: timeRange
+            )
         }
 
         guard !scheduleMode.isChecklistDrivenMode else {

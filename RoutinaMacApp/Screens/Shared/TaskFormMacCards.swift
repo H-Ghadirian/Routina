@@ -547,6 +547,9 @@ struct TaskFormMacBehaviorCard: View {
                 Divider()
                 routineScheduleControls
                 routineCadenceControls
+            } else if model.taskType.wrappedValue == .record {
+                Divider()
+                recordCompletionControl
             }
         }
     }
@@ -582,12 +585,24 @@ struct TaskFormMacBehaviorCard: View {
     }
 
     private var taskTypeControl: some View {
-        RoutinaGlassSegmentedControl(
-            accessibilityLabel: "Task type",
-            options: RoutineTaskType.allCases,
-            selection: model.taskType
-        ) { taskType in
-            Text(taskType.rawValue)
+        VStack(alignment: .leading, spacing: 10) {
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Kind",
+                options: TaskFormPrimaryKind.allCases,
+                selection: model.primaryKind
+            ) { kind in
+                Text(kind.rawValue)
+            }
+
+            if model.primaryKind.wrappedValue == .task {
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Task kind",
+                    options: TaskFormTaskKind.allCases,
+                    selection: model.taskKind
+                ) { kind in
+                    Text(kind.rawValue)
+                }
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -599,7 +614,7 @@ struct TaskFormMacBehaviorCard: View {
         case .routine:
             return presentation.showsRepeatControls
         case .record:
-            return false
+            return true
         }
     }
 
@@ -618,6 +633,18 @@ struct TaskFormMacBehaviorCard: View {
                     scheduleBehaviorControl
                     routineFormatControl
                 }
+            }
+        }
+    }
+
+    private var recordCompletionControl: some View {
+        TaskFormMacControlBlock(title: "Completion") {
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Completion",
+                options: RoutineFinishMode.allCases,
+                selection: model.routineFinishMode
+            ) { mode in
+                Text(mode.rawValue)
             }
         }
     }

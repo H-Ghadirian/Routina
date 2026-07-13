@@ -68,7 +68,7 @@ extension HomeRoutineDisplayMetadataPresenter {
                     : nil
             }
         }
-        if task.scheduleMode == .record {
+        if task.scheduleMode.taskType == .record {
             if task.isDoneToday {
                 return badge("Logged", "checkmark.circle.fill", .green, Color.green.opacity(0.14))
             }

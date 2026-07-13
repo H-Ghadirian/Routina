@@ -344,16 +344,16 @@ extension CloudSharingService.SharedTaskPayload {
             ?? link.map { [RoutineTaskLink(title: nil, url: $0)] }
             ?? []
         task.deadline = scheduleMode == .oneOff ? deadline : nil
-        task.plannedDate = RoutineTask.normalizedPlannedDate(plannedDate)
+        task.plannedDate = scheduleMode.taskType == .record ? nil : RoutineTask.normalizedPlannedDate(plannedDate)
         task.isAllDay = isAllDay ?? false
-        task.routineDurationMode = scheduleMode == .oneOff ? .oneDay : (routineDurationMode ?? .oneDay)
+        task.routineDurationMode = scheduleMode.taskType == .todo ? .oneDay : (routineDurationMode ?? .oneDay)
         let availabilityDateBounds = RoutineTask.normalizedAvailabilityDateBounds(
             startDate: availabilityStartDate,
             endDate: availabilityEndDate
         )
         task.availabilityStartDate = scheduleMode == .oneOff ? availabilityDateBounds.startDate : nil
         task.availabilityEndDate = scheduleMode == .oneOff ? availabilityDateBounds.endDate : nil
-        task.reminderAt = reminderAt
+        task.reminderAt = scheduleMode.taskType == .record ? nil : reminderAt
         task.priority = priority
         task.importance = importance
         task.urgency = urgency
@@ -375,7 +375,7 @@ extension CloudSharingService.SharedTaskPayload {
         task.recurrenceTimeRangeRole = task.recurrenceRule.timeRange == nil
             ? .availability
             : (recurrenceTimeRangeRole ?? .availability)
-        task.interval = Int16(clamping: max(Int(interval), 1))
+        task.interval = Int16(clamping: scheduleMode.taskType == .routine ? max(Int(interval), 1) : 1)
         task.lastDone = lastDone
         task.canceledAt = scheduleMode == .oneOff ? canceledAt : nil
         task.scheduleAnchor = scheduleMode == .oneOff ? lastDone : (scheduleAnchor ?? lastDone)
@@ -411,7 +411,7 @@ private extension RoutineTask {
             deadline: payload.deadline,
             plannedDate: payload.plannedDate,
             isAllDay: payload.isAllDay ?? false,
-            routineDurationMode: payload.scheduleMode == .oneOff
+            routineDurationMode: payload.scheduleMode.taskType == .todo
                 ? .oneDay
                 : (payload.routineDurationMode ?? .oneDay),
             availabilityStartDate: payload.availabilityStartDate,

@@ -20,10 +20,6 @@ enum AddRoutineFormEditor {
         scheduleMode: RoutineScheduleMode,
         basics: inout AddRoutineBasicsState
     ) {
-        guard scheduleMode.taskType != .record else {
-            basics.isAllDay = false
-            return
-        }
         basics.isAllDay = isAllDay
         if isAllDay, scheduleMode == .oneOff, let deadline = basics.deadline {
             basics.deadline = calendar.startOfDay(for: deadline)
@@ -64,13 +60,11 @@ enum AddRoutineFormEditor {
             basics.routineDurationMode = .oneDay
         case .record:
             schedule.scheduleMode = .record
-            basics.isAllDay = false
             basics.deadline = nil
             basics.availabilityStartDate = nil
             basics.availabilityEndDate = nil
             basics.plannedDate = nil
             basics.reminderAt = nil
-            basics.routineDurationMode = .oneDay
         }
     }
 

@@ -9,12 +9,13 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
     case softDerivedFromChecklist
     case oneOff
     case record
+    case recordChecklist
 
     var taskType: RoutineTaskType {
         switch self {
         case .oneOff:
             return .todo
-        case .record:
+        case .record, .recordChecklist:
             return .record
         case .fixedInterval, .softInterval, .fixedIntervalChecklist, .softIntervalChecklist, .derivedFromChecklist, .softDerivedFromChecklist:
             return .routine
@@ -25,7 +26,7 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
         switch self {
         case .softInterval, .softIntervalChecklist, .softDerivedFromChecklist:
             return .soft
-        case .fixedInterval, .fixedIntervalChecklist, .derivedFromChecklist, .oneOff, .record:
+        case .fixedInterval, .fixedIntervalChecklist, .derivedFromChecklist, .oneOff, .record, .recordChecklist:
             return .fixed
         }
     }
@@ -34,6 +35,8 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
         switch self {
         case .fixedInterval, .softInterval, .oneOff, .record:
             return .standard
+        case .recordChecklist:
+            return .checklist
         case .fixedIntervalChecklist, .softIntervalChecklist:
             return .checklist
         case .derivedFromChecklist, .softDerivedFromChecklist:
@@ -50,6 +53,15 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
     }
 
     func replacingRoutineFinishMode(_ finishMode: RoutineFinishMode) -> RoutineScheduleMode {
+        if taskType == .record {
+            switch finishMode {
+            case .standard:
+                return .record
+            case .checklist:
+                return .recordChecklist
+            }
+        }
+
         let format: RoutineFormat
         switch finishMode {
         case .standard:
@@ -61,7 +73,11 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
     }
 
     func replacingChecklistTimingMode(_ timingMode: ChecklistTimingMode) -> RoutineScheduleMode {
-        Self.routineMode(
+        if taskType == .record {
+            return .recordChecklist
+        }
+
+        return Self.routineMode(
             behavior: scheduleBehavior,
             format: timingMode == .runout ? .runout : .checklist
         )

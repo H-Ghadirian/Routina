@@ -174,7 +174,7 @@ struct TaskFormContent: View {
         case .relationships:
             relationshipsSection
         case .scheduleType:
-            if model.scheduleMode.wrappedValue.taskType == .routine {
+            if model.scheduleMode.wrappedValue.taskType == .routine || model.scheduleMode.wrappedValue.taskType == .record {
                 scheduleTypeSection
             }
         case .steps:

@@ -27,7 +27,7 @@ extension TaskDetailFeature {
         let usesAvailabilityTiming = !state.editIsAllDay
         let timeRange = usesAvailabilityTiming ? state.editRecurrenceTimeRange : nil
 
-        guard state.editScheduleMode != .oneOff else {
+        guard state.editScheduleMode.taskType == .routine else {
             return .interval(
                 days: 1,
                 at: usesAvailabilityTiming && state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil,

@@ -125,17 +125,20 @@ struct TaskFormIOSScheduleTypeSection: View {
     let model: TaskFormModel
     let presentation: TaskFormPresentation
 
+    @ViewBuilder
     var body: some View {
-        Section(header: Text("Due Style")) {
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Due Style",
-                options: RoutineScheduleBehavior.allCases,
-                selection: model.scheduleBehavior,
-                fillsAvailableWidth: true
-            ) { behavior in
-                Text(behavior.rawValue)
+        if model.scheduleMode.wrappedValue.taskType == .routine {
+            Section(header: Text("Due Style")) {
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Due Style",
+                    options: RoutineScheduleBehavior.allCases,
+                    selection: model.scheduleBehavior,
+                    fillsAvailableWidth: true
+                ) { behavior in
+                    Text(behavior.rawValue)
+                }
+                TaskFormIOSScheduleBehaviorHint(behavior: model.scheduleBehavior.wrappedValue)
             }
-            TaskFormIOSScheduleBehaviorHint(behavior: model.scheduleBehavior.wrappedValue)
         }
 
         Section(header: Text("Completion")) {

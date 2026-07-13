@@ -16,6 +16,7 @@ struct TaskFormPresentationTests {
         let gentle = presentation(scheduleMode: .softInterval)
         let runout = presentation(scheduleMode: .derivedFromChecklist)
         let oneOff = presentation(taskType: .todo, scheduleMode: .oneOff)
+        let record = presentation(taskType: .record, scheduleMode: .record)
 
         #expect(fixed.isStepBasedMode == false)
         #expect(fixed.showsRepeatControls)
@@ -28,6 +29,11 @@ struct TaskFormPresentationTests {
         #expect(oneOff.showsRepeatControls == false)
         #expect(oneOff.notesHelpText == "Capture extra context, links, or reminders for this todo.")
         #expect(oneOff.checklistSectionDescription(includesDerivedChecklistDueDetail: false) == "Use checklist items for parts you want to tick off before finishing the todo.")
+        #expect(record.isStepBasedMode)
+        #expect(record.showsRepeatControls == false)
+        #expect(record.notesHelpText == "Capture what happened, context, and time-spent details for analysis.")
+        #expect(RoutineScheduleMode.record.replacingRoutineFinishMode(.checklist) == .recordChecklist)
+        #expect(RoutineScheduleMode.recordChecklist.replacingRoutineFinishMode(.standard) == .record)
     }
 
     @Test
@@ -101,6 +107,7 @@ struct TaskFormPresentationTests {
     func availabilityModesMatchPersistedTaskTypeSupport() {
         #expect(TaskFormTimingMode.cases(for: .todo) == [.none, .allDay, .exact, .timeBlock, .availableWindow])
         #expect(TaskFormTimingMode.cases(for: .routine) == [.none, .allDay, .exact, .timeBlock, .availableWindow])
+        #expect(TaskFormTimingMode.cases(for: .record) == [.none, .allDay, .exact, .timeBlock, .availableWindow])
         #expect(TaskFormTimingMode.timeBlock.usesTimeRange)
         #expect(TaskFormTimingMode.availableWindow.usesTimeRange)
         #expect(TaskFormTimingMode.timeBlock.timeRangeRole == .scheduledBlock)
@@ -356,6 +363,7 @@ struct TaskFormPresentationTests {
         let routine = taskFormModel(scheduleMode: .fixedInterval)
         let checklistRoutine = taskFormModel(scheduleMode: .fixedIntervalChecklist)
         let runoutRoutine = taskFormModel(scheduleMode: .derivedFromChecklist)
+        let checklistRecord = taskFormModel(taskType: .record, scheduleMode: .recordChecklist)
         let existingChecklistRoutine = taskFormModel(
             scheduleMode: .fixedInterval,
             checklistItems: [RoutineChecklistItem(title: "Bread", intervalDays: 3)]
@@ -366,6 +374,8 @@ struct TaskFormPresentationTests {
         #expect(checklistRoutine.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
         #expect(runoutRoutine.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
         #expect(runoutRoutine.visibleCompactSections(isShowingMoreDetails: false).contains(.repeatPattern))
+        #expect(checklistRecord.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
+        #expect(!checklistRecord.visibleCompactSections(isShowingMoreDetails: false).contains(.repeatPattern))
         #expect(existingChecklistRoutine.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
         #expect(!todo.visibleCompactSections(isShowingMoreDetails: false).contains(.checklist))
         #expect(todo.visibleCompactSections(isShowingMoreDetails: true).contains(.checklist))
