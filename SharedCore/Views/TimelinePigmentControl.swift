@@ -35,7 +35,7 @@ struct TimelinePigmentControl: View {
             selection = type
         } label: {
             Label {
-                Text(type.rawValue)
+                Text(type.title)
                     .font(.caption.weight(.semibold))
                     .lineLimit(1)
             } icon: {

@@ -13,9 +13,9 @@ struct HomeMacTaskListModeStripView: View {
             minimumSegmentWidth: 72,
             fillsAvailableWidth: true
         ) { mode in
-            Text(mode.rawValue)
+            Text(mode.title)
                 .accessibilityLabel(mode.accessibilityLabel)
-                .help(mode.rawValue)
+                .help(mode.title)
         }
     }
 

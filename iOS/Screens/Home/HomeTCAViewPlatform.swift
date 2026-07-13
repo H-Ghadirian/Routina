@@ -18,7 +18,7 @@ extension HomeTCAView {
         case .routines:
             return "Routines"
         case .records:
-            return "Records"
+            return "Tracking"
         }
     }
 
@@ -93,7 +93,7 @@ detailContent
         case .todos:
             return "Search todos"
         case .records:
-            return "Search records"
+            return "Search tracking"
         }
     }
 

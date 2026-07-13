@@ -6,7 +6,7 @@ Date: 2026-07-07
 
 Refines: [0283 Preserve Mac Future Inner Sections](0283-preserve-mac-future-inner-sections.md), [0314 Remove Status Grouping and Collapse Deadline Groups](0314-remove-status-grouping-and-collapse-deadline-groups.md), [0346 Add Mac Future Bulk Subsection Actions](0346-add-mac-future-bulk-subsection-actions.md)
 
-Refined by: [0351 Collapse Mac Future Tag Task Kind Subsections](0351-collapse-mac-future-tag-task-kind-subsections.md), [0379 Separate Deadline Status in Tag Task List](0379-separate-deadline-status-in-tag-task-list.md)
+Refined by: [0351 Collapse Mac Future Tag Task Kind Subsections](0351-collapse-mac-future-tag-task-kind-subsections.md), [0379 Separate Deadline Status in Tag Task List](0379-separate-deadline-status-in-tag-task-list.md), [0384 Show Tracking as Mac Sidebar Section](0384-show-tracking-as-mac-sidebar-section.md) for tracking rows leaving Future tag groups.
 
 ## Context
 

@@ -6,6 +6,8 @@ Date: 2026-07-13
 
 Refines: [0380 Add Record Task Type](0380-add-record-task-type.md), [0381 Make Mac Task Detail Heatmap Optional](0381-make-mac-task-detail-heatmap-optional.md)
 
+Refined by: [0383 Use Tracking as Record Label](0383-use-tracking-as-record-label.md) for user-facing task-kind naming.
+
 ## Context
 
 The first Record task type kept records intentionally minimal: no due dates, no repeat configuration, no routine duration, no steps, and no checklist data. That avoided accidental scheduling pressure, but it also made records less useful for time-spend analysis, because records often need the same descriptive structure as routines while remaining unscheduled.

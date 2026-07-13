@@ -621,7 +621,7 @@ extension HomeTCAView {
         case .todos:
             return "Search todos"
         case .records:
-            return "Search records"
+            return "Search tracking"
         }
     }
 

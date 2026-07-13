@@ -130,7 +130,7 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
 
     private func isSectionExpanded(_ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>) -> Bool {
         switch section.kind {
-        case .plannedToday, .plannedTomorrow:
+        case .plannedToday, .plannedTomorrow, .tracking:
             return !collapsedTagTaskListSectionIDs.contains(section.id)
         case .daily:
             return !isDailyRoutinesSectionCollapsed
@@ -149,7 +149,7 @@ struct HomeIOSTaskListView<HeaderContent: View, EmptyRowContent: View, RowConten
         guard section.kind.isCollapsible else { return }
         withAnimation(.snappy(duration: 0.2)) {
             switch section.kind {
-            case .plannedToday, .plannedTomorrow:
+            case .plannedToday, .plannedTomorrow, .tracking:
                 setTagTaskListSection(section, collapsed: isSectionExpanded(section))
             case .daily:
                 isDailyRoutinesSectionCollapsed.toggle()

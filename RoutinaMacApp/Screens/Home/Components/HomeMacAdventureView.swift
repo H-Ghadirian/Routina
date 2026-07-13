@@ -1143,7 +1143,7 @@ private struct HomeAdventureUnlockGuidance {
             return "Earn \(coinGap.formatted()) coins: \(coinExampleText)."
         }
         if actionGap > 0 {
-            return "Do \(actionGap.formatted()) more Routina actions: complete/create tasks, focus, capture records, or log goals."
+            return "Do \(actionGap.formatted()) more Routina actions: complete/create tasks, focus, capture tracking, or log goals."
         }
         if activeDayGap > 0 {
             return "Use Routina on \(activeDayGap.formatted()) more active days."

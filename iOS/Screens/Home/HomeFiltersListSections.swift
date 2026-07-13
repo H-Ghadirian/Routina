@@ -22,7 +22,7 @@ struct HomeFiltersTaskListModeSection: View {
                 selection: $taskListMode,
                 fillsAvailableWidth: true
             ) { mode in
-                Label(mode.rawValue, systemImage: mode.systemImage)
+                Label(mode.title, systemImage: mode.systemImage)
             }
 
             Text("Choose which tasks the Home list should show.")

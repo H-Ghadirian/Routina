@@ -60,7 +60,7 @@ struct MacPlaceFilterOptionFactory {
         case .todos:
             return count == 1 ? "1 todo" : "\(count) todos"
         case .records:
-            return count == 1 ? "1 record" : "\(count) records"
+            return count == 1 ? "1 tracking entry" : "\(count) tracking entries"
         }
     }
 

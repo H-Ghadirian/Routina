@@ -616,7 +616,7 @@ struct TimelineView: View {
                             ),
                             selection: filterTypeBinding
                         ) { type in
-                            Text(type.rawValue)
+                            Text(type.title)
                         }
                     }
                 }

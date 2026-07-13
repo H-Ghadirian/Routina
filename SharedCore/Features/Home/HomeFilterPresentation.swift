@@ -15,7 +15,7 @@ enum HomeFilterTaskListKind: Equatable, Sendable {
         case .todos:
             return "todos"
         case .records:
-            return "records"
+            return "tracking"
         }
     }
 
@@ -28,7 +28,7 @@ enum HomeFilterTaskListKind: Equatable, Sendable {
         case .todos:
             return "All todos"
         case .records:
-            return "All records"
+            return "All tracking"
         }
     }
 }
@@ -315,7 +315,7 @@ private extension HomeFilterTaskListKind {
         case .todos:
             return "Todos"
         case .records:
-            return "Records"
+            return "Tracking"
         }
     }
 }

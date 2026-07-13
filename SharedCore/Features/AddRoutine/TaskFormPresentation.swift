@@ -17,7 +17,7 @@ enum TaskFormFrequencyUnit: String, Codable, CaseIterable, Equatable, Sendable {
 }
 
 enum TaskFormPrimaryKind: String, CaseIterable, Equatable, Identifiable, Sendable {
-    case record = "Record"
+    case record = "Tracking"
     case task = "Task"
 
     var id: String { rawValue }
@@ -299,8 +299,8 @@ struct TaskFormPresentation {
         case .derivedFromChecklist: return "Checklist items have their own timing; the earliest due item drives the routine."
         case .softDerivedFromChecklist: return "Checklist items have their own timing, without turning the routine overdue."
         case .oneOff: return "This task does not repeat."
-        case .record: return "Use this to log what happened and analyze time spent."
-        case .recordChecklist: return "Use this to log what happened and complete every checklist item."
+        case .record: return "Use this to track what happened and analyze time spent."
+        case .recordChecklist: return "Use this to track what happened and complete every checklist item."
         }
     }
 
@@ -317,7 +317,7 @@ struct TaskFormPresentation {
         case .oneOff:
             return "Steps run in order. Leave this empty for a single-step todo."
         case .record:
-            return "Steps run in order. Leave this empty for a one-step record."
+            return "Steps run in order. Leave this empty for one-step tracking."
         default:
             return "Steps run in order. Leave this empty for a one-step routine."
         }
@@ -336,9 +336,9 @@ struct TaskFormPresentation {
         case .oneOff:
             return "Use checklist items for parts you want to tick off before finishing the todo."
         case .recordChecklist:
-            return "The record is complete when every checklist item is completed."
+            return "Tracking is complete when every checklist item is completed."
         case .record:
-            return "Records focus on what happened and the time spent."
+            return "Tracking focuses on what happened and the time spent."
         }
     }
 

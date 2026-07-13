@@ -476,7 +476,7 @@ extension HomeTCAView {
         var labels: [String] = []
 
         if effectiveMacTimelineFilterType != .all {
-            labels.append(effectiveMacTimelineFilterType.rawValue)
+            labels.append(effectiveMacTimelineFilterType.title)
         }
 
         if let filter = store.selectedTimelineImportanceUrgencyFilter {

@@ -13,7 +13,7 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
         case .todos:
             return "Active todos"
         case .records:
-            return "Active records"
+            return "Active tracking"
         }
     }
 
@@ -26,7 +26,7 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
         case .todos:
             return "Archived todos"
         case .records:
-            return "Archived records"
+            return "Archived tracking"
         }
     }
 
@@ -40,7 +40,7 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
             case .todos:
                 return "No todos created yet"
             case .records:
-                return "No records created yet"
+                return "No tracking entries yet"
             }
         }
 
@@ -60,8 +60,8 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
                     : "All todos are currently archived"
             case .records:
                 return archivedItemCount == 1
-                    ? "Your only record is archived"
-                    : "All records are currently archived"
+                    ? "Your only tracking entry is archived"
+                    : "All tracking entries are currently archived"
             }
         }
 
@@ -74,7 +74,7 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
             case .todos:
                 return "All matching todos are currently active"
             case .records:
-                return "All matching records are currently active"
+                return "All matching tracking entries are currently active"
             }
         }
 
@@ -94,7 +94,7 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
         case .records:
             return archivedItemCount == 1
                 ? "1 archived excluded"
-                : "\(archivedItemCount) archived records excluded"
+                : "\(archivedItemCount) archived tracking entries excluded"
         }
     }
 
@@ -108,7 +108,7 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
             case .todos:
                 return "No todos created yet"
             case .records:
-                return "No records created yet"
+                return "No tracking entries yet"
             }
         }
 
@@ -121,7 +121,7 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
             case .todos:
                 return "No archived todos right now"
             case .records:
-                return "No archived records right now"
+                return "No archived tracking entries right now"
             }
         }
 

@@ -54,7 +54,7 @@ struct MacPlaceFilterAllItemsRow: View {
         case .todos:
             return "All todos"
         case .records:
-            return "All records"
+            return "All tracking"
         }
     }
 
@@ -67,7 +67,7 @@ struct MacPlaceFilterAllItemsRow: View {
         case .todos:
             return "Show every todo without filtering by place."
         case .records:
-            return "Show every record without filtering by place."
+            return "Show every tracking entry without filtering by place."
         }
     }
 

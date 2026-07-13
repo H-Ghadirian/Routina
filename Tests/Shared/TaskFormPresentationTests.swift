@@ -11,6 +11,19 @@ import Testing
 
 struct TaskFormPresentationTests {
     @Test
+    func trackingLabelsUseRecordStorageCompatibility() {
+        #expect(RoutineTaskType.record.rawValue == "Tracking")
+        #expect(RoutineTaskType.record.pluralTitle == "Tracking")
+        #expect(TaskFormPrimaryKind.record.rawValue == "Tracking")
+        #expect(HomeTaskListMode.records.title == "Tracking")
+        #expect(HomeTaskListMode.records.rawValue == "Records")
+        #expect(TimelineFilterType.records.title == "Tracking")
+        #expect(TimelineFilterType.records.rawValue == "Records")
+        #expect(StatsTaskTypeFilter.records.title == "Tracking")
+        #expect(StatsTaskTypeFilter.records.rawValue == "Records")
+    }
+
+    @Test
     func scheduleAndDescriptionCopyMatchTaskFormModes() {
         let fixed = presentation(scheduleMode: .fixedIntervalChecklist)
         let gentle = presentation(scheduleMode: .softInterval)

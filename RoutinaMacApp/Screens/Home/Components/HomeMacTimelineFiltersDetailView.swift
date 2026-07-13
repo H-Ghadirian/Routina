@@ -99,7 +99,7 @@ struct HomeMacTimelineFiltersDetailView: View {
             ),
             selection: contentTypeBinding
         ) { type in
-            Text(type.rawValue)
+            Text(type.title)
         }
     }
 

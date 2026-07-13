@@ -8,6 +8,19 @@ enum HomeTaskListMode: String, CaseIterable, Equatable, Identifiable {
 
     var id: Self { self }
 
+    var title: String {
+        switch self {
+        case .all:
+            return rawValue
+        case .routines:
+            return rawValue
+        case .todos:
+            return rawValue
+        case .records:
+            return "Tracking"
+        }
+    }
+
     var systemImage: String {
         switch self {
         case .all:
@@ -34,7 +47,7 @@ enum HomeTaskListMode: String, CaseIterable, Equatable, Identifiable {
         case .todos:
             return "Show todos"
         case .records:
-            return "Show records"
+            return "Show tracking"
         }
     }
 }

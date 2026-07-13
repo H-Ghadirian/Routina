@@ -919,7 +919,7 @@ struct TimelineView: View {
                                 includingNotes: isNotesEnabled,
                                 includingAway: isAwayEnabled
                             )) { type in
-                                Text(type.rawValue).tag(type)
+                                Text(type.title).tag(type)
                             }
                         }
                         .pickerStyle(.inline)

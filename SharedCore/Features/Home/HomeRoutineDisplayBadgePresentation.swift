@@ -73,7 +73,7 @@ extension HomeRoutineDisplayMetadataPresenter {
                 return badge("Logged", "checkmark.circle.fill", .green, Color.green.opacity(0.14))
             }
             return badgeMode == .complete
-                ? badge("Record", "chart.bar.doc.horizontal", .secondary, Color.secondary.opacity(0.12))
+                ? badge("Tracking", "chart.bar.doc.horizontal", .secondary, Color.secondary.opacity(0.12))
                 : nil
         }
         let dueIn = filtering.dueInDays(for: task)

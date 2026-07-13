@@ -27,7 +27,7 @@ struct StatsCreatedTasksPresentation {
         case .todos:
             return count == 1 ? "todo" : "todos"
         case .records:
-            return count == 1 ? "record" : "records"
+            return count == 1 ? "tracking entry" : "tracking entries"
         }
     }
 }

@@ -646,7 +646,7 @@ struct TaskFormContent: View {
                 ? "A one-off task with a deadline."
                 : "A one-off task you can finish once."
         case .record:
-            return "A record of what happened and how time was spent."
+            return "Tracking what happened and how time was spent."
         case .routine:
             break
         }
@@ -658,8 +658,8 @@ struct TaskFormContent: View {
         case .derivedFromChecklist: return "A routine driven by the due dates of its checklist items."
         case .softDerivedFromChecklist: return "A gentle routine driven by checklist item timing."
         case .oneOff: return "A one-off task you can finish once."
-        case .record: return "A record of what happened and how time was spent."
-        case .recordChecklist: return "A record completed by finishing every checklist item."
+        case .record: return "Tracking what happened and how time was spent."
+        case .recordChecklist: return "Tracking completed by finishing every checklist item."
         }
     }
 
@@ -670,7 +670,7 @@ struct TaskFormContent: View {
                 ? "Due \(deadlineSummaryText)"
                 : "One-off"
         case .record:
-            return "Record"
+            return "Tracking"
         case .routine:
             break
         }

@@ -13,6 +13,10 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
         HomeTaskListSorter<Display>.plannedTomorrowManualOrderSectionKey
     }
 
+    static var trackingManualOrderSectionKey: String {
+        HomeTaskListSorter<Display>.trackingManualOrderSectionKey
+    }
+
     static var ungroupedManualOrderSectionKey: String {
         HomeTaskListSorter<Display>.ungroupedManualOrderSectionKey
     }
@@ -175,6 +179,14 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
             on: tomorrow,
             sortedBy: sorter.plannedTomorrowTaskSort
         )
+    }
+
+    func filteredTrackingTasks(_ displays: [Display]) -> [Display] {
+        displays
+            .filter { task in
+                task.scheduleMode.taskType == .record && predicate.matchesVisibleTask(task)
+            }
+            .sorted(by: sorter.trackingTaskSort)
     }
 
     private func filteredPlannedTasks(

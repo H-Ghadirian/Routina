@@ -141,7 +141,7 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
             selection: $taskListMode,
             minimumSegmentWidth: 112
         ) { mode in
-            Label(mode.rawValue, systemImage: taskListModeSystemImage(mode))
+            Label(mode.title, systemImage: taskListModeSystemImage(mode))
         }
     }
 

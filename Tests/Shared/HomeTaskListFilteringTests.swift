@@ -1305,6 +1305,70 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func sidebarPresentationShowsTrackingSectionForRecordRows() {
+        let referenceDate = makeDate("2026-06-22T10:00:00Z") // Monday
+        let tomorrow = makeDate("2026-06-23T10:00:00Z")
+        let plannedTodayID = UUID()
+        let trackingLaterID = UUID()
+        let trackingEarlierID = UUID()
+        let trackingFutureID = UUID()
+        let regularID = UUID()
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(referenceDate: referenceDate),
+            routineDisplays: [
+                TestTaskDisplay(taskID: plannedTodayID, name: "Plan today", plannedDate: referenceDate),
+                TestTaskDisplay(
+                    taskID: trackingLaterID,
+                    name: "Later tracking",
+                    scheduleMode: .record,
+                    plannedDate: referenceDate,
+                    manualSectionOrders: ["tracking": 1]
+                ),
+                TestTaskDisplay(
+                    taskID: trackingEarlierID,
+                    name: "Earlier tracking",
+                    scheduleMode: .recordChecklist,
+                    plannedDate: tomorrow,
+                    manualSectionOrders: ["tracking": 0]
+                ),
+                TestTaskDisplay(
+                    taskID: trackingFutureID,
+                    name: "Future tracking",
+                    scheduleMode: .record
+                ),
+                TestTaskDisplay(taskID: regularID, name: "Weekly", recurrenceRule: .interval(days: 7), daysUntilDue: 4)
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            showTomorrowSection: true,
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        let trackingSection = presentation.sections.first { $0.kind == .tracking }
+        let futureSection = presentation.sections.last
+        #expect(presentation.sections.map(\.kind) == [.plannedToday, .tracking, .future])
+        #expect(presentation.sections.map(\.title) == ["Today", "Tracking", "Future"])
+        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 1, 4])
+        #expect(trackingSection?.tasks.map(\.taskID) == [
+            trackingEarlierID,
+            trackingLaterID,
+            trackingFutureID
+        ])
+        #expect(trackingSection?.moveContext?.sectionKey == "tracking")
+        #expect(trackingSection?.moveContext?.orderedTaskIDs == [
+            trackingEarlierID,
+            trackingLaterID,
+            trackingFutureID
+        ])
+        #expect(futureSection?.kind == .future)
+        #expect(futureSection?.tasks.map(\.taskID) == [regularID])
+    }
+
+    @Test
     func sidebarPresentationKeepsInProgressPlannedTaskInPlanToday() {
         let referenceDate = Date(timeIntervalSince1970: 1_714_608_000)
         let plannedID = UUID()

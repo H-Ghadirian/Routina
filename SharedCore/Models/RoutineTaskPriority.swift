@@ -3,7 +3,7 @@ import Foundation
 enum RoutineTaskType: String, CaseIterable, Equatable, Hashable, Sendable {
     case routine = "Routine"
     case todo = "Todo"
-    case record = "Record"
+    case record = "Tracking"
 
     var defaultEmoji: String {
         switch self {
@@ -13,6 +13,17 @@ enum RoutineTaskType: String, CaseIterable, Equatable, Hashable, Sendable {
             return "\u{2705}"
         case .record:
             return "\u{1F4CA}"
+        }
+    }
+
+    var pluralTitle: String {
+        switch self {
+        case .routine:
+            return "Routines"
+        case .todo:
+            return "Todos"
+        case .record:
+            return "Tracking"
         }
     }
 }

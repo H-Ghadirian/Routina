@@ -196,7 +196,7 @@ struct MacPlaceFilterPanel: View {
         case .todos:
             return "todos"
         case .records:
-            return "records"
+            return "tracking"
         }
     }
 

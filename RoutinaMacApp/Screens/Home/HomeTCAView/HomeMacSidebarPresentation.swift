@@ -92,7 +92,7 @@ private extension HomeFeature.TaskListMode {
         case .todos:
             return "Todos"
         case .records:
-            return "Records"
+            return "Tracking"
         }
     }
 
@@ -105,7 +105,7 @@ private extension HomeFeature.TaskListMode {
         case .todos:
             return "Filter Todos"
         case .records:
-            return "Filter Records"
+            return "Filter Tracking"
         }
     }
 }

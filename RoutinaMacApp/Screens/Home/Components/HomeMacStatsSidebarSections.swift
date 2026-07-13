@@ -40,7 +40,7 @@ struct HomeMacStatsTaskTypeSection: View {
                 onSelect: onSelectTaskTypeFilter,
                 minimumSegmentWidth: 92
             ) { filter in
-                Label(filter.rawValue, systemImage: filter.macSidebarIconName)
+                Label(filter.title, systemImage: filter.macSidebarIconName)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }

@@ -36,7 +36,7 @@ struct StatsSidebarContent: View {
                 Section("Type") {
                     ForEach(StatsTaskTypeFilter.allCases) { filter in
                         sidebarButton(
-                            title: filter.rawValue,
+                            title: filter.title,
                             subtitle: taskTypeSubtitle(for: filter),
                             systemImage: filter.iosStatsIconName
                         ) {
@@ -113,7 +113,7 @@ struct StatsSidebarContent: View {
         case .todos:
             return "Todo activity"
         case .records:
-            return "Record activity"
+            return "Tracking activity"
         }
     }
 }
@@ -252,7 +252,7 @@ struct StatsFiltersSheet: View {
                     Section("Type") {
                         Picker("Type", selection: $taskTypeFilter) {
                             ForEach(StatsTaskTypeFilter.allCases) { filter in
-                                Label(filter.rawValue, systemImage: filter.iosStatsIconName)
+                                Label(filter.title, systemImage: filter.iosStatsIconName)
                                     .tag(filter)
                             }
                         }

@@ -38,7 +38,7 @@ struct StatsCreatedTasksChartSection: View {
                         selection: selectedTaskTypeFilterBinding,
                         fillsAvailableWidth: true
                     ) { filter in
-                        Text(filter.rawValue)
+                        Text(filter.title)
                     }
                     .frame(width: Self.taskTypePickerWidth)
                     .accessibilityIdentifier("stats.createdTasks.typePicker")

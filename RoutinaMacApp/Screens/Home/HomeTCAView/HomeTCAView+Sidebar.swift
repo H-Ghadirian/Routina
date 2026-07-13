@@ -56,7 +56,7 @@ extension HomeTCAView {
         case .todos:
             return "Todos"
         case .records:
-            return "Records"
+            return "Tracking"
         }
     }
 
@@ -69,7 +69,7 @@ extension HomeTCAView {
         case .todos:
             return "Filter Todos"
         case .records:
-            return "Filter Records"
+            return "Filter Tracking"
         }
     }
 
@@ -1056,7 +1056,7 @@ extension HomeTCAView {
         case .todos:
             return "No matching todos"
         case .records:
-            return "No matching records"
+            return "No matching tracking"
         }
     }
 
@@ -1069,7 +1069,7 @@ extension HomeTCAView {
         case .todos:
             return isPlacesEnabled ? "Try a different place or switch back to all todos." : "Clear a few filters or switch back to all todos."
         case .records:
-            return isPlacesEnabled ? "Try a different place or switch back to all records." : "Clear a few filters or switch back to all records."
+            return isPlacesEnabled ? "Try a different place or switch back to all tracking." : "Clear a few filters or switch back to all tracking."
         }
     }
 

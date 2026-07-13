@@ -41,6 +41,7 @@ enum HomeTaskListPresentationSectionKind: String, Equatable {
     case pinned
     case plannedToday
     case plannedTomorrow
+    case tracking
     case daily
     case future
     case regular
@@ -54,7 +55,7 @@ enum HomeTaskListPresentationSectionKind: String, Equatable {
 extension HomeTaskListPresentationSectionKind {
     var isCollapsible: Bool {
         switch self {
-        case .plannedToday, .plannedTomorrow, .daily, .future, .tag, .untagged, .archived:
+        case .plannedToday, .plannedTomorrow, .tracking, .daily, .future, .tag, .untagged, .archived:
             return true
         case .pinned, .regular, .deadlineDate, .away:
             return false
@@ -442,8 +443,15 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         let unpinnedActiveDisplays = (routineDisplays + awayRoutineDisplays).filter {
             !$0.isPinned && !claimedTaskIDs.contains($0.taskID)
         }
+        let trackingTasks = claimTasks(
+            filtering.filteredTrackingTasks(unpinnedActiveDisplays),
+            claimedTaskIDs: &claimedTaskIDs
+        )
+        let activeDisplaysAfterTrackingClaim = unpinnedActiveDisplays.filter {
+            !claimedTaskIDs.contains($0.taskID)
+        }
         let plannedTodayTasks = claimTasks(
-            filtering.filteredPlannedTodayTasks(unpinnedActiveDisplays),
+            filtering.filteredPlannedTodayTasks(activeDisplaysAfterTrackingClaim),
             claimedTaskIDs: &claimedTaskIDs
         )
         let activeDisplaysAfterTodayClaim = unpinnedActiveDisplays.filter {
@@ -538,6 +546,24 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                 )
             )
             offset += plannedTomorrowTasks.count
+        }
+
+        if !trackingTasks.isEmpty {
+            presentationSections.append(
+                HomeTaskListPresentationSection(
+                    kind: .tracking,
+                    identityKey: "tracking",
+                    title: "Tracking",
+                    tasks: trackingTasks,
+                    rowNumberOffset: offset,
+                    includeMarkDone: true,
+                    moveContext: HomeTaskListMoveContext(
+                        sectionKey: HomeTaskListFiltering<Display>.trackingManualOrderSectionKey,
+                        orderedTaskIDs: trackingTasks.map(\.taskID)
+                    )
+                )
+            )
+            offset += trackingTasks.count
         }
 
         if filtering.usesTagSectioning {
@@ -760,7 +786,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             HomeTaskListPresentationTaskGroup(
                 kind: .regular,
                 identityKey: "\(section.identityKey):records",
-                title: "Records",
+                title: "Tracking",
                 tasks: records,
                 moveContext: nil,
                 isCollapsible: true
@@ -828,7 +854,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         case .todos:
             return "No matching todos"
         case .records:
-            return "No matching records"
+            return "No matching tracking"
         }
     }
 }

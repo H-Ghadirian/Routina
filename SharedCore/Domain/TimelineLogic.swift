@@ -25,6 +25,15 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
     case canceled = "Canceled"
     var id: Self { self }
 
+    var title: String {
+        switch self {
+        case .records:
+            return "Tracking"
+        default:
+            return rawValue
+        }
+    }
+
     static let timelinePigmentCases: [TimelineFilterType] = [
         .all,
         .routines,
