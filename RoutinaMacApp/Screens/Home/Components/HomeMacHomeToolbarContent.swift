@@ -201,6 +201,7 @@ enum HomeMacToolbarSearchLayout {
     static let iconSize: CGFloat = 18
     static let textFieldHeight: CGFloat = 26
     static let clearButtonSize: CGFloat = 22
+    static let clearButtonHitSize: CGFloat = 34
     static let createHintWidth: CGFloat = 154
     static let animationDuration: TimeInterval = 0.22
     static let toolbarActionRestoreDelay: TimeInterval = animationDuration
@@ -433,9 +434,20 @@ struct HomeMacToolbarSearchField: View {
                     width: HomeMacToolbarSearchLayout.clearButtonSize,
                     height: HomeMacToolbarSearchLayout.clearButtonSize
                 )
-                .contentShape(Circle())
         }
         .buttonStyle(.plain)
+        .frame(
+            width: HomeMacToolbarSearchLayout.clearButtonHitSize,
+            height: HomeMacToolbarSearchLayout.clearButtonHitSize
+        )
+        .contentShape(Circle())
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    guard !text.isEmpty else { return }
+                    clearSearchText()
+                }
+        )
         .accessibilityLabel(HomeMacToolbarSearchCopy.clearAccessibilityLabel)
         .help(HomeMacToolbarSearchCopy.clearHelp)
     }

@@ -71,6 +71,7 @@ And non-search toolbar actions hide while the search field is expanded/focused
 And the focused search state survives the toolbar rebuild caused by hiding those actions
 And no separate focused-width toolbar reservation appears before or behind the animated pill
 And the SwiftUI search shell, icon, typed text, placeholder, clear button, create hint, and `Esc` keycap animate as one visible search surface
+And pressing the clear button clears the query from the button's expanded hit target before focus expansion can move the pill under the pointer
 And clicking outside the visible search pill dismisses focus and collapses search without clearing the query
 And task-detail toolbar actions return after the search pill has collapsed to compact width
 And the field remains clickable and editable throughout the animation
