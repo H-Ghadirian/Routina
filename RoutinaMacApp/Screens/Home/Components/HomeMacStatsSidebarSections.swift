@@ -38,7 +38,10 @@ struct HomeMacStatsTaskTypeSection: View {
                 options: StatsTaskTypeFilter.allCases,
                 selection: selectedTaskTypeFilter,
                 onSelect: onSelectTaskTypeFilter,
-                minimumSegmentWidth: 92
+                minimumSegmentWidth: 92,
+                horizontalPadding: 10,
+                fillsAvailableWidth: true,
+                maximumSegmentsPerRow: 2
             ) { filter in
                 Label(filter.title, systemImage: filter.macSidebarIconName)
             }
