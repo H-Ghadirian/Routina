@@ -291,6 +291,31 @@ struct TimelineLogicTests {
     }
 
     @Test
+    func filteredEntries_recordTasksUseTrackingTimelineLabel() {
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-20T10:00:00Z")
+        let tracking = makeRoutineTask(name: "Tracking", scheduleMode: .record)
+        let routine = makeRoutineTask(name: "Routine")
+        let trackingLog = makeLog(taskID: tracking.id, timestamp: makeDate("2026-03-20T09:00:00Z"))
+        let routineLog = makeLog(taskID: routine.id, timestamp: makeDate("2026-03-20T08:00:00Z"))
+
+        let entries = TimelineLogic.filteredEntries(
+            logs: [trackingLog, routineLog],
+            tasks: [tracking, routine],
+            range: .all,
+            filterType: .records,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(entries.count == 1)
+        #expect(entries[0].taskName == "Tracking")
+        #expect(entries[0].taskType == .record)
+        #expect(entries[0].taskKindLabel == "Tracking")
+        #expect(TimelineEntryKindPresentation.label(for: entries[0]) == "Tracking")
+    }
+
+    @Test
     func filteredEntries_outcomeFiltersMatchLogKind() {
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-20T10:00:00Z")

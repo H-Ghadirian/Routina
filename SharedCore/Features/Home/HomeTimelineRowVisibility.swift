@@ -30,7 +30,7 @@ enum HomeTimelineRowField: String, CaseIterable, Identifiable, Sendable {
         case .subtitle:
             return "Completion and metadata summary text."
         case .kindBadge:
-            return "Routine, Todo, Event, Note, or type label at the right side."
+            return "Routine, Todo, Tracking, Event, Note, or type label at the right side."
         }
     }
 

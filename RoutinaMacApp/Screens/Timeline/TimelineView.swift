@@ -876,41 +876,7 @@ struct TimelineView: View {
     }
 
     private func timelineKindLabel(for entry: TimelineEntry) -> String {
-        if entry.isSleep {
-            return "Sleep"
-        }
-        if entry.isEmotion {
-            return "Emotion"
-        }
-        if entry.isEvent {
-            return "Event"
-        }
-        if entry.isStatusNote {
-            return "Status"
-        }
-        if entry.isNote {
-            return "Note"
-        }
-        if entry.isFocus {
-            return "Focus"
-        }
-        if entry.isPlaceCheckIn {
-            return "Place"
-        }
-        if entry.isAway {
-            return "Away"
-        }
-
-        switch entry.kind {
-        case .completed:
-            return entry.isOneOff ? "Todo" : "Routine"
-        case .fulfilled:
-            return "Fulfilled"
-        case .canceled:
-            return "Canceled"
-        case .missed:
-            return "Missed"
-        }
+        TimelineEntryKindPresentation.label(for: entry)
     }
 
     private func timelineKindColor(for entry: TimelineEntry) -> Color {

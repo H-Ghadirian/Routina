@@ -189,6 +189,7 @@ struct TimelineEntry: Identifiable, Equatable {
     let hasVoiceNote: Bool
     let importance: RoutineTaskImportance
     let urgency: RoutineTaskUrgency
+    let taskType: RoutineTaskType?
     let isOneOff: Bool
     let kind: RoutineLogKind
     let entryType: TimelineEntryType
@@ -210,6 +211,7 @@ struct TimelineEntry: Identifiable, Equatable {
         hasVoiceNote: Bool = false,
         importance: RoutineTaskImportance = .level2,
         urgency: RoutineTaskUrgency = .level2,
+        taskType: RoutineTaskType? = nil,
         isOneOff: Bool,
         kind: RoutineLogKind,
         entryType: TimelineEntryType = .task,
@@ -230,6 +232,7 @@ struct TimelineEntry: Identifiable, Equatable {
         self.hasVoiceNote = hasVoiceNote
         self.importance = importance
         self.urgency = urgency
+        self.taskType = taskType
         self.isOneOff = isOneOff
         self.kind = kind
         self.entryType = entryType
@@ -283,6 +286,59 @@ struct TimelineEntry: Identifiable, Equatable {
 
     var isAway: Bool {
         entryType == .away
+    }
+
+    var taskKindLabel: String {
+        switch taskType {
+        case .routine:
+            return "Routine"
+        case .todo:
+            return "Todo"
+        case .record:
+            return "Tracking"
+        case nil:
+            return isOneOff ? "Todo" : "Routine"
+        }
+    }
+}
+
+enum TimelineEntryKindPresentation {
+    static func label(for entry: TimelineEntry) -> String {
+        if entry.isSleep {
+            return "Sleep"
+        }
+        if entry.isAway {
+            return "Away"
+        }
+        if entry.isEmotion {
+            return "Emotion"
+        }
+        if entry.isEvent {
+            return "Event"
+        }
+        if entry.isStatusNote {
+            return "Status"
+        }
+        if entry.isNote {
+            return "Note"
+        }
+        if entry.isFocus {
+            return "Focus"
+        }
+        if entry.isPlaceCheckIn {
+            return "Place"
+        }
+
+        switch entry.kind {
+        case .completed:
+            return entry.taskKindLabel
+        case .fulfilled:
+            return "Fulfilled"
+        case .canceled:
+            return "Canceled"
+        case .missed:
+            return "Missed"
+        }
     }
 }
 
@@ -371,6 +427,7 @@ enum TimelineLogic {
                 hasVoiceNote: hasVoiceNote,
                 importance: task?.importance ?? .level2,
                 urgency: task?.urgency ?? .level2,
+                taskType: taskType,
                 isOneOff: taskType == .todo,
                 kind: log.kind
             )
