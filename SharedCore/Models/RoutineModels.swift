@@ -765,6 +765,7 @@ final class RoutineTask {
             scheduleMode: scheduleMode,
             interval: interval,
             recurrenceRule: recurrenceRule,
+            recurrenceTimeRangeRole: recurrenceTimeRangeRole,
             lastDone: lastDone,
             canceledAt: canceledAt,
             scheduleAnchor: scheduleAnchor,

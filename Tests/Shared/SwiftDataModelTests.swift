@@ -698,6 +698,7 @@ struct SwiftDataModelTests {
         #expect(task.recurrenceTimeRangeEndMinute == 0)
         #expect(task.recurrenceTimeRangeRole == .scheduledBlock)
         #expect(task.recurrenceTimeRangeRoleRawValue == RoutineTimeRangeRole.scheduledBlock.rawValue)
+        #expect(task.detachedCopy().recurrenceTimeRangeRole == .scheduledBlock)
         #expect(task.recurrenceRuleStorage.isEmpty)
     }
 

@@ -417,6 +417,34 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func editChangeDetectorTracksTimeRangeRoleChanges() {
+        let task = RoutineTask(
+            name: "Group session",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .weekly(
+                on: 2,
+                timeRange: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 17, minute: 0),
+                    end: RoutineTimeOfDay(hour: 17, minute: 55)
+                )
+            ),
+            recurrenceTimeRangeRole: .availability
+        )
+        var state = TaskDetailFeature.State(task: task)
+        withDependencies {
+            $0.date.now = makeDate("2026-04-25T10:00:00Z")
+        } operation: {
+            TaskDetailFeature().syncEditFormFromTask(&state)
+        }
+
+        #expect(TaskDetailEditChangeDetector.canSave(TaskDetailEditChangeRequest(state: state)) == false)
+
+        state.editRecurrenceTimeRangeRole = .scheduledBlock
+
+        #expect(TaskDetailEditChangeDetector.canSave(TaskDetailEditChangeRequest(state: state)))
+    }
+
+    @Test
     func editChangeDetectorAllowsRemovingExistingChecklist() {
         let task = RoutineTask(
             name: "Restock pantry",

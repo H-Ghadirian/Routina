@@ -488,6 +488,73 @@ struct TaskDetailEditSaveTests {
     }
 
     @Test
+    func editSaveTapped_switchesAvailableWindowToTimeBlockRole() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 17, minute: 0),
+            end: RoutineTimeOfDay(hour: 17, minute: 55)
+        )
+        let task = RoutineTask(
+            name: "Group session",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .weekly(on: 2, timeRange: window),
+            recurrenceTimeRangeRole: .availability
+        )
+        context.insert(task)
+        try context.save()
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Group session",
+                editRoutineEmoji: "✨",
+                editScheduleMode: .fixedInterval,
+                editFrequency: .day,
+                editFrequencyValue: 1,
+                editRecurrenceKind: .weekly,
+                editRecurrenceHasTimeRange: true,
+                editRecurrenceTimeRangeRole: .availability,
+                editRecurrenceTimeRangeStart: window.start,
+                editRecurrenceTimeRangeEnd: window.end,
+                editRecurrenceWeekday: 2,
+                editRecurrenceWeekdays: [2]
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editRecurrenceTimeRangeRoleChanged(.scheduledBlock)) {
+            $0.editRecurrenceTimeRangeRole = .scheduledBlock
+        }
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+        await store.receive(.onAppear)
+
+        let taskID = task.id
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { task in
+                        task.id == taskID
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.recurrenceRule == .weekly(on: [2], timeRange: window))
+        #expect(persistedTask.recurrenceTimeRangeRole == .scheduledBlock)
+    }
+
+    @Test
     func editSaveTapped_persistsAllDayFlagForRoutines() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()
