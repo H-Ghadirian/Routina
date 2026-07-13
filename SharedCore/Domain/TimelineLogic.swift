@@ -302,6 +302,20 @@ struct TimelineEntry: Identifiable, Equatable {
     }
 }
 
+enum TimelineEntryKindTint: Equatable {
+    case accent
+    case blue
+    case cyan
+    case green
+    case indigo
+    case mint
+    case orange
+    case pink
+    case purple
+    case teal
+    case yellow
+}
+
 enum TimelineEntryKindPresentation {
     static func label(for entry: TimelineEntry) -> String {
         if entry.isSleep {
@@ -338,6 +352,53 @@ enum TimelineEntryKindPresentation {
             return "Canceled"
         case .missed:
             return "Missed"
+        }
+    }
+
+    static func tint(for entry: TimelineEntry) -> TimelineEntryKindTint {
+        if entry.isSleep {
+            return .indigo
+        }
+        if entry.isAway {
+            return .mint
+        }
+        if entry.isEmotion {
+            return .pink
+        }
+        if entry.isEvent {
+            return .teal
+        }
+        if entry.isStatusNote {
+            return .mint
+        }
+        if entry.isNote {
+            return .blue
+        }
+        if entry.isFocus {
+            return .cyan
+        }
+        if entry.isPlaceCheckIn {
+            return .teal
+        }
+
+        switch entry.kind {
+        case .completed:
+            switch entry.taskType {
+            case .record:
+                return .orange
+            case .todo:
+                return .purple
+            case .routine:
+                return .accent
+            case nil:
+                return entry.isOneOff ? .purple : .accent
+            }
+        case .fulfilled:
+            return .green
+        case .canceled:
+            return .orange
+        case .missed:
+            return .yellow
         }
     }
 }

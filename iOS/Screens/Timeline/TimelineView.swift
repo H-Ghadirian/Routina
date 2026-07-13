@@ -1084,79 +1084,11 @@ struct TimelineView: View {
     }
 
     private func timelineKindLabel(for entry: TimelineEntry) -> String {
-        if entry.isSleep {
-            return "Sleep"
-        }
-        if entry.isAway {
-            return "Away"
-        }
-        if entry.isEmotion {
-            return "Emotion"
-        }
-        if entry.isEvent {
-            return "Event"
-        }
-        if entry.isStatusNote {
-            return "Status"
-        }
-        if entry.isNote {
-            return "Note"
-        }
-        if entry.isFocus {
-            return "Focus"
-        }
-        if entry.isPlaceCheckIn {
-            return "Place"
-        }
-
-        switch entry.kind {
-        case .completed:
-            return entry.isOneOff ? "Todo" : "Routine"
-        case .fulfilled:
-            return "Fulfilled"
-        case .canceled:
-            return "Canceled"
-        case .missed:
-            return "Missed"
-        }
+        TimelineEntryKindPresentation.label(for: entry)
     }
 
     private func timelineKindColor(for entry: TimelineEntry) -> Color {
-        if entry.isSleep {
-            return .indigo
-        }
-        if entry.isAway {
-            return .mint
-        }
-        if entry.isEmotion {
-            return .pink
-        }
-        if entry.isEvent {
-            return .teal
-        }
-        if entry.isStatusNote {
-            return .mint
-        }
-        if entry.isNote {
-            return .blue
-        }
-        if entry.isFocus {
-            return .cyan
-        }
-        if entry.isPlaceCheckIn {
-            return .teal
-        }
-
-        switch entry.kind {
-        case .completed:
-            return entry.isOneOff ? .purple : .accentColor
-        case .fulfilled:
-            return .green
-        case .canceled:
-            return .orange
-        case .missed:
-            return .yellow
-        }
+        TimelineEntryKindPresentation.tint(for: entry).color
     }
 
     private func timelineSubtitle(for entry: TimelineEntry) -> String {

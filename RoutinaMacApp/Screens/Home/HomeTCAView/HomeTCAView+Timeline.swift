@@ -698,41 +698,7 @@ extension HomeTCAView {
     }
 
     private func timelineKindColor(for entry: TimelineEntry) -> Color {
-        if entry.isSleep {
-            return .indigo
-        }
-        if entry.isAway {
-            return .mint
-        }
-        if entry.isEmotion {
-            return .pink
-        }
-        if entry.isEvent {
-            return .teal
-        }
-        if entry.isStatusNote {
-            return .mint
-        }
-        if entry.isNote {
-            return .blue
-        }
-        if entry.isFocus {
-            return .cyan
-        }
-        if entry.isPlaceCheckIn {
-            return .teal
-        }
-
-        switch entry.kind {
-        case .completed:
-            return entry.isOneOff ? .purple : .accentColor
-        case .fulfilled:
-            return .green
-        case .canceled:
-            return .orange
-        case .missed:
-            return .yellow
-        }
+        TimelineEntryKindPresentation.tint(for: entry).color
     }
 
     private func timelineSubtitle(for entry: TimelineEntry) -> String {

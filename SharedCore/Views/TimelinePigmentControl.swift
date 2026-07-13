@@ -125,3 +125,32 @@ private extension TimelineFilterType {
         }
     }
 }
+
+extension TimelineEntryKindTint {
+    var color: Color {
+        switch self {
+        case .accent:
+            return .accentColor
+        case .blue:
+            return .blue
+        case .cyan:
+            return .cyan
+        case .green:
+            return .green
+        case .indigo:
+            return .indigo
+        case .mint:
+            return .mint
+        case .orange:
+            return .orange
+        case .pink:
+            return .pink
+        case .purple:
+            return .purple
+        case .teal:
+            return .teal
+        case .yellow:
+            return .yellow
+        }
+    }
+}

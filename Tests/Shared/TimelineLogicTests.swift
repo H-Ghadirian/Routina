@@ -313,6 +313,7 @@ struct TimelineLogicTests {
         #expect(entries[0].taskType == .record)
         #expect(entries[0].taskKindLabel == "Tracking")
         #expect(TimelineEntryKindPresentation.label(for: entries[0]) == "Tracking")
+        #expect(TimelineEntryKindPresentation.tint(for: entries[0]) == .orange)
     }
 
     @Test
