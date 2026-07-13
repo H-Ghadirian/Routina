@@ -900,6 +900,7 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
         private var shouldRestoreFocus = false
         private var focusGeneration = 0
         private var isFocusObserverInstalled = false
+        private var commandReturnMonitor: Any?
         private var handledFocusRequestID: Int
         private var handledFocusDismissRequestID: Int
 
@@ -928,6 +929,53 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
                 name: .routinaMacToolbarSearchDismissFocus,
                 object: nil
             )
+            installCommandReturnMonitorIfNeeded()
+        }
+
+        private func installCommandReturnMonitorIfNeeded() {
+            guard commandReturnMonitor == nil else { return }
+            commandReturnMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                var didConsumeEvent = false
+                MainActor.assumeIsolated {
+                    didConsumeEvent = self?.handleCommandReturn(event) ?? false
+                }
+                return didConsumeEvent ? nil : event
+            }
+        }
+
+        fileprivate func removeCommandReturnMonitor() {
+            if let commandReturnMonitor {
+                NSEvent.removeMonitor(commandReturnMonitor)
+            }
+            commandReturnMonitor = nil
+        }
+
+        private func handleCommandReturn(_ event: NSEvent) -> Bool {
+            guard parent.isFocused,
+                  !parent.isCreatingTask,
+                  isCommandReturnEvent(event),
+                  let textField,
+                  let window = textField.window,
+                  event.window === window else {
+                return false
+            }
+
+            guard window.firstResponder === textField.currentEditor()
+                    || window.firstResponder === textField else {
+                return false
+            }
+
+            syncSearchText(from: textField)
+            let submittedText = textField.stringValue
+            dismissSearchFocus()
+            parent.onCommandSubmit(submittedText)
+            return true
+        }
+
+        private func isCommandReturnEvent(_ event: NSEvent) -> Bool {
+            let modifierFlags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            guard modifierFlags.contains(.command) else { return false }
+            return event.keyCode == 36 || event.keyCode == 76
         }
 
         @objc private func focusSearchOrCreate() {
@@ -1156,6 +1204,15 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
                 }
             }
         }
+    }
+
+    @MainActor
+    static func dismantleNSView(
+        _ nsView: HomeMacToolbarSearchTextEditorView,
+        coordinator: Coordinator
+    ) {
+        NotificationCenter.default.removeObserver(coordinator)
+        coordinator.removeCommandReturnMonitor()
     }
 
     private static func clampedSelectionRange(_ range: NSRange, in text: String) -> NSRange {
