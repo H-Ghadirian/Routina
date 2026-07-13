@@ -67,6 +67,8 @@ private extension TimelineFilterType {
             return "arrow.clockwise"
         case .todos:
             return "checkmark.circle.fill"
+        case .records:
+            return "chart.bar.doc.horizontal"
         case .focus:
             return "timer"
         case .notes:
@@ -98,6 +100,8 @@ private extension TimelineFilterType {
             return .teal
         case .todos:
             return .green
+        case .records:
+            return .purple
         case .focus:
             return .cyan
         case .notes:

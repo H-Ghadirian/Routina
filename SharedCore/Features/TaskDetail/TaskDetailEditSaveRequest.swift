@@ -81,7 +81,9 @@ struct TaskDetailEditSaveRequestBuilder {
         guard !trimmedName.isEmpty else { return nil }
         let candidateChecklistItems = RoutineChecklistItem.sanitized(state.editRoutineChecklistItems)
         let scheduleMode = effectiveScheduleMode(for: state, checklistItems: candidateChecklistItems)
-        let sanitizedChecklistItems = RoutineChecklistItem.sanitized(candidateChecklistItems, for: scheduleMode)
+        let sanitizedChecklistItems = scheduleMode.taskType == .record
+            ? []
+            : RoutineChecklistItem.sanitized(candidateChecklistItems, for: scheduleMode)
         state.editRoutineChecklistItems = sanitizedChecklistItems
         state.editChecklistValidationMessage = AddRoutineChecklistValidator.validationMessage(
             scheduleMode: scheduleMode,
@@ -94,7 +96,7 @@ struct TaskDetailEditSaveRequestBuilder {
 
         state.isEditSheetPresented = false
 
-        let frequencyInterval = scheduleMode == .oneOff
+        let frequencyInterval = scheduleMode.taskType != .routine
             ? 1
             : TaskFormRecurrenceConstraints.effectiveIntervalDays(
                 value: state.editFrequencyValue,
@@ -125,19 +127,20 @@ struct TaskDetailEditSaveRequestBuilder {
             link: sanitizedLinks.first?.url,
             links: sanitizedLinks.map(\.url),
             linkItems: sanitizedLinks,
-            deadline: scheduleMode == .oneOff ? state.editDeadline : nil,
-            isAllDay: state.editIsAllDay,
-            routineDurationMode: scheduleMode == .oneOff ? .oneDay : state.editRoutineDurationMode,
-            availabilityStartDate: scheduleMode == .oneOff ? availabilityDateBounds.startDate : nil,
-            availabilityEndDate: scheduleMode == .oneOff ? availabilityDateBounds.endDate : nil,
-            plannedDate: RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
-                scheduleMode: scheduleMode,
-                recurrenceRule: recurrenceRule,
-                checklistItems: sanitizedChecklistItems
-            )
+            deadline: scheduleMode.taskType == .todo ? state.editDeadline : nil,
+            isAllDay: scheduleMode.taskType == .record ? false : state.editIsAllDay,
+            routineDurationMode: scheduleMode.taskType != .routine ? .oneDay : state.editRoutineDurationMode,
+            availabilityStartDate: scheduleMode.taskType == .todo ? availabilityDateBounds.startDate : nil,
+            availabilityEndDate: scheduleMode.taskType == .todo ? availabilityDateBounds.endDate : nil,
+            plannedDate: scheduleMode.taskType == .record
+                || RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+                    scheduleMode: scheduleMode,
+                    recurrenceRule: recurrenceRule,
+                    checklistItems: sanitizedChecklistItems
+                )
                 ? nil
                 : RoutineTask.normalizedPlannedDate(state.editPlannedDate, calendar: calendar),
-            reminderAt: scheduleMode == .oneOff ? state.editReminderAt : nil,
+            reminderAt: scheduleMode.taskType == .todo ? state.editReminderAt : nil,
             priority: matrixPriority(state.editImportance, state.editUrgency),
             importance: state.editImportance,
             urgency: state.editUrgency,
@@ -180,12 +183,17 @@ struct TaskDetailEditSaveRequestBuilder {
         let usesAvailabilityTiming = !state.editIsAllDay
         let timeRange = usesAvailabilityTiming ? state.editRecurrenceTimeRange : nil
 
-        guard scheduleMode != .oneOff else {
+        switch scheduleMode.taskType {
+        case .routine:
+            break
+        case .todo:
             return .interval(
                 days: 1,
                 at: usesAvailabilityTiming && state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
+        case .record:
+            return .interval(days: 1)
         }
 
         guard !scheduleMode.isChecklistDrivenMode else {

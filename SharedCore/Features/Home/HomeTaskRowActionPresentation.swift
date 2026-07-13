@@ -304,6 +304,7 @@ struct HomeTaskRowActionPresentation: Equatable {
               !task.isCompletedOneOff,
               !task.isCanceledOneOff,
               !task.hasMissedExactTimedOccurrence,
+              task.scheduleMode.taskType == .routine,
               !task.isOneOffTask else {
             return nil
         }

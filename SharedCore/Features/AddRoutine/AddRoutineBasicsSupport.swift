@@ -153,6 +153,13 @@ enum AddRoutineBasicsEditor {
         basics.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(estimatedDurationMinutes)
     }
 
+    static func setActualDurationMinutes(
+        _ actualDurationMinutes: Int?,
+        basics: inout AddRoutineBasicsState
+    ) {
+        basics.actualDurationMinutes = RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutes)
+    }
+
     static func setStoryPoints(
         _ storyPoints: Int?,
         basics: inout AddRoutineBasicsState

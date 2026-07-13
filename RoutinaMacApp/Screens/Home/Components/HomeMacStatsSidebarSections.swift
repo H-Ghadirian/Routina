@@ -119,6 +119,8 @@ private extension StatsTaskTypeFilter {
             return "repeat"
         case .todos:
             return "checklist"
+        case .records:
+            return "chart.bar.doc.horizontal"
         }
     }
 }

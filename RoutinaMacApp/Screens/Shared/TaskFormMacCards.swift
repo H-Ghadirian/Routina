@@ -505,6 +505,8 @@ struct TaskFormMacBehaviorCard: View {
         switch model.taskType.wrappedValue {
         case .todo:
             return 130
+        case .record:
+            return 60
         case .routine:
             if model.scheduleMode.wrappedValue.isChecklistDrivenMode {
                 return 240
@@ -596,6 +598,8 @@ struct TaskFormMacBehaviorCard: View {
             return true
         case .routine:
             return presentation.showsRepeatControls
+        case .record:
+            return false
         }
     }
 

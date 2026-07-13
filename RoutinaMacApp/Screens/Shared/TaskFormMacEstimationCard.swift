@@ -19,6 +19,21 @@ struct TaskFormMacEstimationCard: View {
                     }
                 }
 
+                if showsActualDurationControl {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Toggle("Set actual time spent", isOn: actualDurationEnabledBinding)
+                            .toggleStyle(.switch)
+                        if actualDurationEnabledBinding.wrappedValue {
+                            TaskFormDurationEntry(
+                                title: "Actual",
+                                minutes: actualDurationBinding,
+                                bounds: TaskFormDurationEntryPresentation.actualDurationBounds,
+                                presets: TaskFormDurationEntryPresentation.durationPresets
+                            )
+                        }
+                    }
+                }
+
                 VStack(alignment: .leading, spacing: 10) {
                     Toggle("Set story points", isOn: storyPointsEnabledBinding)
                         .toggleStyle(.switch)
@@ -53,6 +68,30 @@ struct TaskFormMacEstimationCard: View {
             get: { max(model.estimatedDurationMinutes.wrappedValue ?? 30, 5) },
             set: { model.estimatedDurationMinutes.wrappedValue = RoutineTask.sanitizedEstimatedDurationMinutes(max($0, 5)) }
         )
+    }
+
+    private var actualDurationEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { model.actualDurationMinutes?.wrappedValue != nil },
+            set: { isEnabled in
+                guard let actualDurationMinutes = model.actualDurationMinutes else { return }
+                actualDurationMinutes.wrappedValue = isEnabled
+                    ? (actualDurationMinutes.wrappedValue ?? model.estimatedDurationMinutes.wrappedValue ?? 30)
+                    : nil
+            }
+        )
+    }
+
+    private var actualDurationBinding: Binding<Int> {
+        Binding(
+            get: { max(model.actualDurationMinutes?.wrappedValue ?? model.estimatedDurationMinutes.wrappedValue ?? 30, 1) },
+            set: { model.actualDurationMinutes?.wrappedValue = RoutineTask.sanitizedActualDurationMinutes(max($0, 1)) }
+        )
+    }
+
+    private var showsActualDurationControl: Bool {
+        model.actualDurationMinutes != nil
+            && (model.taskType.wrappedValue == .todo || model.taskType.wrappedValue == .record)
     }
 
     private var storyPointsEnabledBinding: Binding<Bool> {

@@ -83,6 +83,7 @@ enum HomeAddRoutineSupport {
             autoAssumeDailyDone: request.autoAssumeDailyDone,
             autoAssumeDoneTimeOfDay: request.autoAssumeDoneTimeOfDay,
             estimatedDurationMinutes: request.estimatedDurationMinutes,
+            actualDurationMinutes: request.actualDurationMinutes,
             storyPoints: request.storyPoints,
             focusModeEnabled: request.focusModeEnabled
         )

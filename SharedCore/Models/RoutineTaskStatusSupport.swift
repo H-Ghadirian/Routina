@@ -48,6 +48,14 @@ extension RoutineTask {
         scheduleMode == .oneOff
     }
 
+    var isRecordTask: Bool {
+        scheduleMode == .record
+    }
+
+    var isRoutineTask: Bool {
+        scheduleMode.taskType == .routine
+    }
+
     var isCompletedOneOff: Bool {
         isOneOffTask && lastDone != nil && canceledAt == nil && !isInProgress
     }

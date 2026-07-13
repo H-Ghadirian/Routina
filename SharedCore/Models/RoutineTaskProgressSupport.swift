@@ -24,7 +24,10 @@ enum RoutineTaskDailyRoutineSupport {
         recurrenceRule: RoutineRecurrenceRule,
         hasDailyRunoutChecklistItem: Bool
     ) -> Bool {
-        guard !isOneOffTask, recurrenceRule.isDaily else { return false }
+        guard !isOneOffTask,
+              scheduleMode.taskType == .routine,
+              recurrenceRule.isDaily
+        else { return false }
         guard scheduleMode.isChecklistDrivenMode else { return true }
         return hasDailyRunoutChecklistItem
     }

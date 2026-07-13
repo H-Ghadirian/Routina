@@ -16,6 +16,7 @@ struct HomeIOSHomeToolbarContent: ToolbarContent {
                     taskListModeButton(.all)
                     taskListModeButton(.routines)
                     taskListModeButton(.todos)
+                    taskListModeButton(.records)
                 }
 
                 Button(action: onToggleTaskListModeActions) {

@@ -414,7 +414,7 @@ enum StatsFeatureDerivedStateBuilder {
         let endedEarlyAwaySessionCount = awaySessionsInRange.filter { $0.state == .endedEarly }.count
         let activeGoalCount = goals.filter { $0.status == .active }.count
         let archivedGoalCount = goals.filter { $0.status == .archived }.count
-        let routineCount = filteredTasks.filter { !$0.isOneOffTask }.count
+        let routineCount = filteredTasks.filter { $0.scheduleMode.taskType == .routine }.count
         let openTodoCount = filteredTasks.filter {
             $0.isOneOffTask && !$0.isCompletedOneOff && !$0.isCanceledOneOff
         }.count

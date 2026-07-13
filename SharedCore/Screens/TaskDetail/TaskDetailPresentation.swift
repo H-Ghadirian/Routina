@@ -167,7 +167,10 @@ enum TaskDetailPresentation {
     // MARK: - Urgency helpers
 
     static func isOrangeUrgency(_ task: RoutineTask, referenceDate: Date = Date()) -> Bool {
-        guard !task.isArchived(referenceDate: referenceDate), !task.isChecklistDriven, !task.isOneOffTask else { return false }
+        guard task.scheduleMode.taskType == .routine,
+              !task.isArchived(referenceDate: referenceDate),
+              !task.isChecklistDriven,
+              !task.isOneOffTask else { return false }
         if task.recurrenceRule.isFixedCalendar {
             return daysUntilDueIfActive(task, referenceDate: referenceDate) == 1
         }

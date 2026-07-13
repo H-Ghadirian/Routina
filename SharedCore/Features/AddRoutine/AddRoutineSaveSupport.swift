@@ -114,6 +114,7 @@ struct AddRoutineSaveRequest: Equatable {
     let autoAssumeDailyDone: Bool
     let autoAssumeDoneTimeOfDay: RoutineTimeOfDay?
     let estimatedDurationMinutes: Int?
+    let actualDurationMinutes: Int?
     let storyPoints: Int?
     let focusModeEnabled: Bool
 
@@ -154,6 +155,7 @@ struct AddRoutineSaveRequest: Equatable {
         autoAssumeDailyDone: Bool = false,
         autoAssumeDoneTimeOfDay: RoutineTimeOfDay? = nil,
         estimatedDurationMinutes: Int? = nil,
+        actualDurationMinutes: Int? = nil,
         storyPoints: Int? = nil,
         focusModeEnabled: Bool = false
     ) {
@@ -169,19 +171,24 @@ struct AddRoutineSaveRequest: Equatable {
         self.link = sanitizedLinkItems.first?.url
         self.links = sanitizedLinkItems.map(\.url)
         self.linkItems = sanitizedLinkItems
-        self.deadline = deadline
-        self.isAllDay = isAllDay
-        self.routineDurationMode = scheduleMode == .oneOff ? .oneDay : routineDurationMode
-        self.availabilityStartDate = availabilityStartDate
-        self.availabilityEndDate = availabilityEndDate
-        self.plannedDate = RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
-            scheduleMode: scheduleMode,
-            recurrenceRule: recurrenceRule,
-            checklistItems: checklistItems
-        )
+        let sanitizedChecklistItems = scheduleMode.taskType == .record
+            ? []
+            : RoutineChecklistItem.sanitized(checklistItems, for: scheduleMode)
+
+        self.deadline = scheduleMode.taskType == .todo ? deadline : nil
+        self.isAllDay = scheduleMode.taskType == .record ? false : isAllDay
+        self.routineDurationMode = scheduleMode.taskType != .routine ? .oneDay : routineDurationMode
+        self.availabilityStartDate = scheduleMode.taskType == .todo ? availabilityStartDate : nil
+        self.availabilityEndDate = scheduleMode.taskType == .todo ? availabilityEndDate : nil
+        self.plannedDate = scheduleMode.taskType == .record
+            || RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+                scheduleMode: scheduleMode,
+                recurrenceRule: recurrenceRule,
+                checklistItems: sanitizedChecklistItems
+            )
             ? nil
             : RoutineTask.normalizedPlannedDate(plannedDate)
-        self.reminderAt = reminderAt
+        self.reminderAt = scheduleMode.taskType == .todo ? reminderAt : nil
         self.priority = priority
         self.importance = importance
         self.urgency = urgency
@@ -197,9 +204,11 @@ struct AddRoutineSaveRequest: Equatable {
         self.goals = RoutineGoalSummary.sanitized(goals)
         self.eventIDs = RoutineEventIDStorage.sanitized(eventIDs)
         self.relationships = relationships
-        self.steps = steps
+        self.steps = (scheduleMode.isStandardRoutineMode || scheduleMode == .oneOff)
+            ? RoutineStep.sanitized(steps)
+            : []
         self.scheduleMode = scheduleMode
-        self.checklistItems = checklistItems
+        self.checklistItems = sanitizedChecklistItems
         self.recurrenceTimeRangeRole = recurrenceRule.timeRange == nil
             ? .availability
             : recurrenceTimeRangeRole
@@ -208,6 +217,9 @@ struct AddRoutineSaveRequest: Equatable {
         self.autoAssumeDailyDone = autoAssumeDailyDone
         self.autoAssumeDoneTimeOfDay = autoAssumeDailyDone ? autoAssumeDoneTimeOfDay : nil
         self.estimatedDurationMinutes = estimatedDurationMinutes
+        self.actualDurationMinutes = scheduleMode.taskType == .record
+            ? RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutes)
+            : nil
         self.storyPoints = storyPoints
         self.focusModeEnabled = focusModeEnabled
     }
@@ -220,7 +232,7 @@ struct AddRoutineSaveRequest: Equatable {
         let schedule = state.schedule
         let checklist = state.checklist
 
-        let frequencyInDays = schedule.scheduleMode == .oneOff
+        let frequencyInDays = schedule.scheduleMode.taskType != .routine
             ? 1
             : TaskFormRecurrenceConstraints.effectiveIntervalDays(
                 value: schedule.frequencyValue,
@@ -244,9 +256,11 @@ struct AddRoutineSaveRequest: Equatable {
         self.links = sanitizedLinks.map(\.url)
         self.linkItems = sanitizedLinks
         self.deadline = schedule.scheduleMode.taskType == .todo ? basics.deadline : nil
-        self.isAllDay = basics.isAllDay
-        self.routineDurationMode = schedule.scheduleMode == .oneOff ? .oneDay : basics.routineDurationMode
-        let sanitizedChecklistItems = RoutineChecklistItem.sanitized(checklist.routineChecklistItems)
+        self.isAllDay = schedule.scheduleMode.taskType == .record ? false : basics.isAllDay
+        self.routineDurationMode = schedule.scheduleMode.taskType != .routine ? .oneDay : basics.routineDurationMode
+        let sanitizedChecklistItems = schedule.scheduleMode.taskType == .record
+            ? []
+            : RoutineChecklistItem.sanitized(checklist.routineChecklistItems)
         guard !schedule.scheduleMode.isRoutineModeRequiringChecklistItems
             || !sanitizedChecklistItems.isEmpty
         else { return nil }
@@ -255,16 +269,17 @@ struct AddRoutineSaveRequest: Equatable {
             endDate: basics.availabilityEndDate,
             calendar: calendar
         )
-        self.availabilityStartDate = schedule.scheduleMode == .oneOff ? availabilityDateBounds.startDate : nil
-        self.availabilityEndDate = schedule.scheduleMode == .oneOff ? availabilityDateBounds.endDate : nil
-        self.plannedDate = RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
-            scheduleMode: schedule.scheduleMode,
-            recurrenceRule: self.recurrenceRule,
-            checklistItems: sanitizedChecklistItems
-        )
+        self.availabilityStartDate = schedule.scheduleMode.taskType == .todo ? availabilityDateBounds.startDate : nil
+        self.availabilityEndDate = schedule.scheduleMode.taskType == .todo ? availabilityDateBounds.endDate : nil
+        self.plannedDate = schedule.scheduleMode.taskType == .record
+            || RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+                scheduleMode: schedule.scheduleMode,
+                recurrenceRule: self.recurrenceRule,
+                checklistItems: sanitizedChecklistItems
+            )
             ? nil
             : RoutineTask.normalizedPlannedDate(basics.plannedDate, calendar: calendar)
-        self.reminderAt = schedule.scheduleMode == .oneOff ? basics.reminderAt : nil
+        self.reminderAt = schedule.scheduleMode.taskType == .todo ? basics.reminderAt : nil
         self.priority = AddRoutinePriorityMatrix.priority(
             importance: basics.importance,
             urgency: basics.urgency
@@ -293,6 +308,9 @@ struct AddRoutineSaveRequest: Equatable {
         self.attachments = basics.attachments
         self.color = basics.routineColor
         self.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(basics.estimatedDurationMinutes)
+        self.actualDurationMinutes = schedule.scheduleMode.taskType == .record
+            ? RoutineTask.sanitizedActualDurationMinutes(basics.actualDurationMinutes)
+            : nil
         self.storyPoints = RoutineTask.sanitizedStoryPoints(basics.storyPoints)
         self.focusModeEnabled = basics.focusModeEnabled
         self.autoAssumeDailyDone = schedule.autoAssumeDailyDone
@@ -313,12 +331,17 @@ struct AddRoutineSaveRequest: Equatable {
         let usesAvailabilityTiming = !isAllDay
         let timeRange = usesAvailabilityTiming ? schedule.recurrenceTimeRange : nil
 
-        guard schedule.scheduleMode != .oneOff else {
+        switch schedule.scheduleMode.taskType {
+        case .routine:
+            break
+        case .todo:
             return .interval(
                 days: 1,
                 at: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
+        case .record:
+            return .interval(days: 1)
         }
 
         guard !schedule.scheduleMode.isChecklistDrivenMode else {

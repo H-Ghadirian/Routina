@@ -108,7 +108,7 @@ extension HomeTaskListDisplay {
     }
 
     func isFixedCalendarRoutineScheduled(on day: Date, calendar: Calendar) -> Bool {
-        guard !isOneOffTask, !isDailyRoutine else { return false }
+        guard scheduleMode.taskType == .routine, !isOneOffTask, !isDailyRoutine else { return false }
         let normalizedDay = calendar.startOfDay(for: day)
 
         switch recurrenceRule.kind {

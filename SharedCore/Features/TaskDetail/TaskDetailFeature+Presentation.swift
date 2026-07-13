@@ -281,6 +281,9 @@ extension TaskDetailFeature.State {
 
     /// Due date resolved from the task (one-off deadline or next recurrence).
     var resolvedDueDate: Date? {
+        if task.isRecordTask {
+            return nil
+        }
         if task.isSoftIntervalRoutine {
             return nil
         }

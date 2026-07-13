@@ -328,8 +328,13 @@ extension TaskFormModel {
             ? RoutineTimeOfDay.from(recurrenceTimeOfDay.wrappedValue)
             : nil
 
-        guard currentScheduleMode != .oneOff else {
+        switch currentScheduleMode.taskType {
+        case .routine:
+            break
+        case .todo:
             return .interval(days: 1, at: timeOfDay, timeRange: timeRange)
+        case .record:
+            return .interval(days: 1)
         }
 
         guard !currentScheduleMode.isChecklistDrivenMode else {
@@ -413,13 +418,22 @@ extension TaskFormModel {
     }
 
     var supportsPlanning: Bool {
-        guard taskType.wrappedValue == .routine else { return true }
-        return !isDailyRoutineDraft
+        switch taskType.wrappedValue {
+        case .todo:
+            return true
+        case .routine:
+            return !isDailyRoutineDraft
+        case .record:
+            return false
+        }
     }
 
     private var availableCompactSections: [TaskFormCompactSection] {
         TaskFormCompactSection.defaultOrder.filter { section in
             switch section {
+            case .steps:
+                return scheduleMode.wrappedValue.isStandardRoutineMode
+                    || scheduleMode.wrappedValue == .oneOff
             case .checklist:
                 return shouldShowChecklistSection
             case .reminder:

@@ -356,7 +356,7 @@ extension HomeFeature {
         state.selectedTaskID = task.id
         state.taskDetailState = makeTaskDetailState(for: task)
         if state.taskListMode != .all {
-            state.taskListMode = task.isOneOffTask ? .todos : .routines
+            state.taskListMode = task.preferredTaskListMode
         }
 
         return .merge(backlogSaveEffect, saveEffect)

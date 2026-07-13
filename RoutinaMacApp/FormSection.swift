@@ -94,7 +94,9 @@ enum FormSection: String, CaseIterable, Hashable, Codable {
         if scheduleMode.isTaskFormStepBased {
             sections.append(.steps)
         }
-        sections.append(.checklist)
+        if scheduleMode.taskType != .record {
+            sections.append(.checklist)
+        }
         sections.append(.image)
         sections.append(.voiceNote)
         sections.append(.attachment)
@@ -270,7 +272,8 @@ extension AddRoutineFeature.State {
 
 extension AddRoutineFeature.State {
     var supportsPlanning: Bool {
-        !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+        schedule.scheduleMode.taskType != .record
+            && !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
             scheduleMode: schedule.scheduleMode,
             recurrenceRule: candidateRecurrenceRule,
             checklistItems: candidateChecklistItems
@@ -349,7 +352,8 @@ extension TaskDetailFeature.State {
 
 extension TaskDetailFeature.State {
     var supportsPlanning: Bool {
-        !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+        editScheduleMode.taskType != .record
+            && !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
             scheduleMode: editScheduleMode,
             recurrenceRule: candidateRecurrenceRule,
             checklistItems: candidateChecklistItems

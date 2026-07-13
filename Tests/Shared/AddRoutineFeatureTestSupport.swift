@@ -73,6 +73,7 @@ func makeSaveRequest(
     color: RoutineTaskColor = .none,
     autoAssumeDailyDone: Bool = false,
     estimatedDurationMinutes: Int? = nil,
+    actualDurationMinutes: Int? = nil,
     storyPoints: Int? = nil,
     focusModeEnabled: Bool = false
 ) -> AddRoutineSaveRequest {
@@ -107,6 +108,7 @@ func makeSaveRequest(
         color: color,
         autoAssumeDailyDone: autoAssumeDailyDone,
         estimatedDurationMinutes: estimatedDurationMinutes,
+        actualDurationMinutes: actualDurationMinutes,
         storyPoints: storyPoints,
         focusModeEnabled: focusModeEnabled
     )

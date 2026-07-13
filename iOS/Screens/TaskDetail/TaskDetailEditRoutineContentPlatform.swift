@@ -192,9 +192,11 @@ struct TaskDetailEditRoutineContent: View {
                 let nextMode: RoutineScheduleMode
                 switch taskType {
                 case .routine:
-                    nextMode = store.editScheduleMode == .oneOff ? .fixedInterval : store.editScheduleMode
+                    nextMode = store.editScheduleMode.taskType == .routine ? store.editScheduleMode : .fixedInterval
                 case .todo:
                     nextMode = .oneOff
+                case .record:
+                    nextMode = .record
                 }
                 store.send(.editScheduleModeChanged(nextMode))
             }

@@ -615,11 +615,13 @@ extension HomeTCAView {
         }
         switch store.taskListMode {
         case .all:
-            return "Search routines and todos"
+            return "Search tasks"
         case .routines:
             return "Search routines"
         case .todos:
             return "Search todos"
+        case .records:
+            return "Search records"
         }
     }
 
@@ -853,9 +855,11 @@ extension HomeTCAView {
         case .all:
             return true
         case .routines:
-            return !task.isOneOffTask
+            return task.scheduleMode.taskType == .routine
         case .todos:
             return task.isOneOffTask
+        case .records:
+            return task.scheduleMode.taskType == .record
         }
     }
 

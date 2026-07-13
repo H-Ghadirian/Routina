@@ -293,7 +293,7 @@ final class RoutineTask {
                 availabilityStartDate = nil
                 availabilityEndDate = nil
             }
-            if newValue == .oneOff {
+            if newValue.taskType != .routine {
                 routineDurationMode = .oneDay
             }
             if hasChecklistItems {
@@ -307,18 +307,18 @@ final class RoutineTask {
 
     var routineDurationMode: RoutineDurationMode {
         get {
-            guard scheduleMode != .oneOff else { return .oneDay }
+            guard scheduleMode.taskType == .routine else { return .oneDay }
             return RoutineDurationMode(rawValue: routineDurationModeRawValue) ?? .oneDay
         }
         set {
-            routineDurationModeRawValue = scheduleMode == .oneOff
+            routineDurationModeRawValue = scheduleMode.taskType != .routine
                 ? RoutineDurationMode.oneDay.rawValue
                 : newValue.rawValue
         }
     }
 
     var isMultiDayRoutine: Bool {
-        scheduleMode != .oneOff && routineDurationMode == .multiDay
+        scheduleMode.taskType == .routine && routineDurationMode == .multiDay
     }
 
     var usesOngoingLifecycle: Bool {
@@ -338,13 +338,19 @@ final class RoutineTask {
                 ?? recurrenceRuleFromColumns
         }
         set {
-            let normalizedRule = scheduleMode == .oneOff
-                ? RoutineRecurrenceRule.interval(
+            let normalizedRule: RoutineRecurrenceRule
+            switch scheduleMode.taskType {
+            case .routine:
+                normalizedRule = newValue
+            case .todo:
+                normalizedRule = RoutineRecurrenceRule.interval(
                     days: 1,
                     at: newValue.timeOfDay,
                     timeRange: newValue.timeRange
                 )
-                : newValue
+            case .record:
+                normalizedRule = .interval(days: 1)
+            }
             storeRecurrenceRuleInColumns(normalizedRule)
             if normalizedRule.timeRange == nil {
                 recurrenceTimeRangeRole = .availability
@@ -416,13 +422,19 @@ final class RoutineTask {
         let resolvedScheduleMode = scheduleMode ?? (checklistItems.isEmpty ? .fixedInterval : .derivedFromChecklist)
         let resolvedChecklistItems = checklistItems
         let inputRecurrenceRule = recurrenceRule ?? RoutineRecurrenceRule.interval(days: max(Int(interval), 1))
-        let resolvedRecurrenceRule = resolvedScheduleMode == .oneOff
-            ? RoutineRecurrenceRule.interval(
+        let resolvedRecurrenceRule: RoutineRecurrenceRule
+        switch resolvedScheduleMode.taskType {
+        case .routine:
+            resolvedRecurrenceRule = inputRecurrenceRule
+        case .todo:
+            resolvedRecurrenceRule = RoutineRecurrenceRule.interval(
                 days: 1,
                 at: inputRecurrenceRule.timeOfDay,
                 timeRange: inputRecurrenceRule.timeRange
             )
-            : inputRecurrenceRule
+        case .record:
+            resolvedRecurrenceRule = .interval(days: 1)
+        }
         self.id = id
         self.name = name
         self.emoji = emoji
@@ -436,7 +448,7 @@ final class RoutineTask {
         self.deadline = resolvedScheduleMode == .oneOff ? deadline : nil
         self.plannedDate = Self.normalizedPlannedDate(plannedDate)
         self.isAllDay = isAllDay
-        self.routineDurationModeRawValue = resolvedScheduleMode == .oneOff
+        self.routineDurationModeRawValue = resolvedScheduleMode.taskType != .routine
             ? RoutineDurationMode.oneDay.rawValue
             : routineDurationMode.rawValue
         self.availabilityStartDate = resolvedScheduleMode == .oneOff ? availabilityStartDate : nil
@@ -472,7 +484,7 @@ final class RoutineTask {
         self.recurrenceTimeRangeRole = resolvedRecurrenceRule.timeRange == nil
             ? .availability
             : recurrenceTimeRangeRole
-        self.interval = Int16(clamping: resolvedScheduleMode == .oneOff ? 1 : resolvedRecurrenceRule.approximateIntervalDays)
+        self.interval = Int16(clamping: resolvedScheduleMode.taskType == .routine ? resolvedRecurrenceRule.approximateIntervalDays : 1)
         self.lastDone = lastDone
         self.canceledAt = resolvedScheduleMode == .oneOff ? canceledAt : nil
         self.scheduleAnchor = resolvedScheduleMode == .oneOff ? lastDone : (scheduleAnchor ?? lastDone)
@@ -589,7 +601,7 @@ final class RoutineTask {
     private func storeRecurrenceRuleInColumns(_ recurrenceRule: RoutineRecurrenceRule) {
         recurrenceStorageVersion = Self.currentRecurrenceStorageVersion
         recurrenceKindRawValue = recurrenceRule.kind.rawValue
-        interval = Int16(clamping: scheduleMode == .oneOff ? 1 : recurrenceRule.approximateIntervalDays)
+        interval = Int16(clamping: scheduleMode.taskType == .routine ? recurrenceRule.approximateIntervalDays : 1)
         recurrenceTimeOfDayHour = recurrenceRule.timeOfDay?.hour
         recurrenceTimeOfDayMinute = recurrenceRule.timeOfDay?.minute
         recurrenceTimeRangeStartHour = recurrenceRule.timeRange?.start.hour

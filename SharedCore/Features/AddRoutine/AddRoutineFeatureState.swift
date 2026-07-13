@@ -24,6 +24,7 @@ struct AddRoutineBasicsState: Equatable {
     var selectedPlaceIDs: [UUID] = []
     var routineColor: RoutineTaskColor = .none
     var estimatedDurationMinutes: Int?
+    var actualDurationMinutes: Int?
     var storyPoints: Int?
     var focusModeEnabled: Bool = false
 }
@@ -133,7 +134,7 @@ struct AddRoutineFeatureState: Equatable {
     }
 
     var candidateRecurrenceRule: RoutineRecurrenceRule {
-        let fallbackInterval = schedule.scheduleMode == .oneOff
+        let fallbackInterval = schedule.scheduleMode.taskType != .routine
             ? 1
             : TaskFormRecurrenceConstraints.effectiveIntervalDays(
                 value: schedule.frequencyValue,
@@ -145,12 +146,17 @@ struct AddRoutineFeatureState: Equatable {
         let usesAvailabilityTiming = !basics.isAllDay
         let timeRange = usesAvailabilityTiming ? schedule.recurrenceTimeRange : nil
 
-        guard schedule.scheduleMode != .oneOff else {
+        switch schedule.scheduleMode.taskType {
+        case .routine:
+            break
+        case .todo:
             return .interval(
                 days: 1,
                 at: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
+        case .record:
+            return .interval(days: 1)
         }
 
         guard !schedule.scheduleMode.isChecklistDrivenMode else {

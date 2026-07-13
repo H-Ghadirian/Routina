@@ -59,14 +59,29 @@ struct HomeStatusBadgeView: View {
 }
 
 struct HomeTaskTypeBadgeView: View {
-    let isTodo: Bool
+    let taskType: RoutineTaskType
+
+    init(taskType: RoutineTaskType) {
+        self.taskType = taskType
+    }
+
+    init(isTodo: Bool) {
+        self.taskType = isTodo ? .todo : .routine
+    }
 
     private var title: String {
-        isTodo ? "Todo" : "Routine"
+        taskType.rawValue
     }
 
     private var tint: Color {
-        isTodo ? .blue : .green
+        switch taskType {
+        case .routine:
+            return .green
+        case .todo:
+            return .blue
+        case .record:
+            return .purple
+        }
     }
 
     var body: some View {

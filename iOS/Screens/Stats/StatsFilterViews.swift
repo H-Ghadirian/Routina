@@ -112,6 +112,8 @@ struct StatsSidebarContent: View {
             return "Routine activity"
         case .todos:
             return "Todo activity"
+        case .records:
+            return "Record activity"
         }
     }
 }
@@ -306,6 +308,8 @@ extension StatsTaskTypeFilter {
             return "repeat"
         case .todos:
             return "checklist"
+        case .records:
+            return "chart.bar.doc.horizontal"
         }
     }
 }

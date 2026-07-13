@@ -106,7 +106,9 @@ enum HomeDetailSelectionSupport {
         case "Todos":
             keepSelection = task.isOneOffTask
         case "Routines":
-            keepSelection = !task.isOneOffTask
+            keepSelection = task.scheduleMode.taskType == .routine
+        case "Records":
+            keepSelection = task.scheduleMode.taskType == .record
         default:
             keepSelection = true
         }

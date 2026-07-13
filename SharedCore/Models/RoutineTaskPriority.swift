@@ -3,6 +3,18 @@ import Foundation
 enum RoutineTaskType: String, CaseIterable, Equatable, Hashable, Sendable {
     case routine = "Routine"
     case todo = "Todo"
+    case record = "Record"
+
+    var defaultEmoji: String {
+        switch self {
+        case .routine:
+            return "\u{1F501}"
+        case .todo:
+            return "\u{2705}"
+        case .record:
+            return "\u{1F4CA}"
+        }
+    }
 }
 
 enum RoutineTaskPriority: String, Codable, CaseIterable, Equatable, Hashable, Sendable {

@@ -4,6 +4,7 @@ enum StatsTaskTypeFilter: String, CaseIterable, Identifiable, Sendable, Equatabl
     case all = "All"
     case routines = "Routines"
     case todos = "Todos"
+    case records = "Records"
 
     var id: Self { self }
 }

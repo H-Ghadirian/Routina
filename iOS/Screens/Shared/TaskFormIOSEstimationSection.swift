@@ -15,7 +15,7 @@ struct TaskFormIOSEstimationSection: View {
                 )
             }
 
-            if model.taskType.wrappedValue == .todo, model.actualDurationMinutes != nil {
+            if showsActualDurationControl {
                 Toggle("Set actual time spent", isOn: actualDurationEnabledBinding)
                 if actualDurationEnabledBinding.wrappedValue {
                     TaskFormDurationEntry(
@@ -73,6 +73,11 @@ struct TaskFormIOSEstimationSection: View {
             get: { max(model.actualDurationMinutes?.wrappedValue ?? model.estimatedDurationMinutes.wrappedValue ?? 30, 1) },
             set: { model.actualDurationMinutes?.wrappedValue = RoutineTask.sanitizedActualDurationMinutes(max($0, 1)) }
         )
+    }
+
+    private var showsActualDurationControl: Bool {
+        model.actualDurationMinutes != nil
+            && (model.taskType.wrappedValue == .todo || model.taskType.wrappedValue == .record)
     }
 
     private var storyPointsEnabledBinding: Binding<Bool> {

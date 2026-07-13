@@ -659,6 +659,53 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func saveTapped_recordClearsScheduleFieldsAndKeepsActualDuration() async {
+        let date = makeDate("2026-04-10T09:00:00Z")
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(
+                    routineName: "Analyzed support queue",
+                    deadline: date,
+                    isAllDay: true,
+                    plannedDate: date,
+                    reminderAt: date,
+                    estimatedDurationMinutes: 120,
+                    actualDurationMinutes: 95
+                ),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .record,
+                    frequency: .week,
+                    frequencyValue: 3,
+                    recurrenceKind: .weekly,
+                    recurrenceHasExplicitTime: true,
+                    recurrenceTimeOfDay: RoutineTimeOfDay(hour: 14, minute: 30)
+                ),
+                checklist: AddRoutineChecklistState(
+                    routineSteps: [RoutineStep(title: "Hidden step")],
+                    routineChecklistItems: [RoutineChecklistItem(title: "Hidden item", intervalDays: 1)]
+                )
+            )
+        ) {
+            makeDelegateEchoFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.saveTapped)
+        await store.receive(.delegate(.didSave(makeSaveRequest(
+            name: "Analyzed support queue",
+            frequencyInDays: 1,
+            recurrenceRule: .interval(days: 1),
+            emoji: "✨",
+            isAllDay: false,
+            scheduleMode: .record,
+            estimatedDurationMinutes: 120,
+            actualDurationMinutes: 95
+        ))))
+    }
+
+    @Test
     func availablePlacesChanged_clearsSelectedPlaceWhenPlaceDisappears() async {
         let keptPlaceID = UUID()
         let removedPlaceID = UUID()

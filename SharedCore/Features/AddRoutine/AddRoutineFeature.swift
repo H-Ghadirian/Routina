@@ -80,6 +80,7 @@ struct AddRoutineFeature: Reducer {
         case selectedPlaceIDsChanged([UUID])
         case routineColorChanged(RoutineTaskColor)
         case estimatedDurationChanged(Int?)
+        case actualDurationChanged(Int?)
         case storyPointsChanged(Int?)
         case focusModeEnabledChanged(Bool)
         case applyQuickAddDraftFromName
@@ -108,7 +109,8 @@ struct AddRoutineFeature: Reducer {
     }
 
     private func supportsPlanning(_ state: State) -> Bool {
-        !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+        state.schedule.scheduleMode.taskType != .record
+            && !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
             scheduleMode: state.schedule.scheduleMode,
             recurrenceRule: state.candidateRecurrenceRule,
             checklistItems: state.candidateChecklistItems
@@ -574,6 +576,13 @@ struct AddRoutineFeature: Reducer {
         case let .estimatedDurationChanged(estimatedDurationMinutes):
             AddRoutineBasicsEditor.setEstimatedDurationMinutes(
                 estimatedDurationMinutes,
+                basics: &state.basics
+            )
+            return .none
+
+        case let .actualDurationChanged(actualDurationMinutes):
+            AddRoutineBasicsEditor.setActualDurationMinutes(
+                actualDurationMinutes,
                 basics: &state.basics
             )
             return .none

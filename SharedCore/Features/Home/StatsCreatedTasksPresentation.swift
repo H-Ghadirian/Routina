@@ -26,6 +26,8 @@ struct StatsCreatedTasksPresentation {
             return count == 1 ? "routine" : "routines"
         case .todos:
             return count == 1 ? "todo" : "todos"
+        case .records:
+            return count == 1 ? "record" : "records"
         }
     }
 }

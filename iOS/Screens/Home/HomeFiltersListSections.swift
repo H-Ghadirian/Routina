@@ -43,7 +43,7 @@ struct HomeFiltersVisibilitySection: View {
             Toggle("Show blocked tasks", isOn: showBlockedTasksBinding)
                 .toggleStyle(.switch)
 
-            if taskListMode != .todos {
+            if taskListMode == .all || taskListMode == .routines {
                 Toggle("Show assumed done", isOn: showAssumedDoneTasksBinding)
                     .toggleStyle(.switch)
             }

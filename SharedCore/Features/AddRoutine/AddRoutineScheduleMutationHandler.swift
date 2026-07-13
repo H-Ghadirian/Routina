@@ -27,8 +27,16 @@ struct AddRoutineScheduleMutationHandler {
             mode,
             schedule: &state.schedule
         )
-        if mode == .oneOff {
+        if mode.taskType != .routine {
             state.basics.routineDurationMode = .oneDay
+        }
+        if mode == .record {
+            state.basics.isAllDay = false
+            state.basics.deadline = nil
+            state.basics.availabilityStartDate = nil
+            state.basics.availabilityEndDate = nil
+            state.basics.plannedDate = nil
+            state.basics.reminderAt = nil
         }
         normalizeChecklistItemIntervals(state: &state)
         enforceRecurrenceConstraints(state: &state)

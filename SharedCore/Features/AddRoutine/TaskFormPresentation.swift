@@ -212,7 +212,7 @@ struct TaskFormPresentation {
     }
 
     var showsRepeatControls: Bool {
-        taskType == .routine && scheduleMode != .oneOff
+        taskType == .routine && scheduleMode.taskType == .routine
     }
 
     var derivedPriority: RoutineTaskPriority {
@@ -226,9 +226,14 @@ struct TaskFormPresentation {
     }
 
     var notesHelpText: String {
-        taskType == .todo
-            ? "Capture extra context, links, or reminders for this todo."
-            : "Add any details you want to keep with this routine."
+        switch taskType {
+        case .todo:
+            return "Capture extra context, links, or reminders for this todo."
+        case .routine:
+            return "Add any details you want to keep with this routine."
+        case .record:
+            return "Capture what happened, context, and time-spent details for analysis."
+        }
     }
 
     func importanceUrgencyDescription(
@@ -271,6 +276,7 @@ struct TaskFormPresentation {
         case .derivedFromChecklist: return "Checklist items have their own timing; the earliest due item drives the routine."
         case .softDerivedFromChecklist: return "Checklist items have their own timing, without turning the routine overdue."
         case .oneOff: return "This task does not repeat."
+        case .record: return "Use this to log what happened and analyze time spent."
         }
     }
 
@@ -300,6 +306,8 @@ struct TaskFormPresentation {
             return "Use checklist items for parts you want to tick off before finishing the routine."
         case .oneOff:
             return "Use checklist items for parts you want to tick off before finishing the todo."
+        case .record:
+            return "Records focus on what happened and the time spent."
         }
     }
 

@@ -203,7 +203,7 @@ struct HomeFeatureMacNavigationRouter {
               let task = state.routineTasks.first(where: { $0.id == taskID }) else {
             return nil
         }
-        let newMode: HomeFeature.TaskListMode = task.isOneOffTask ? .todos : .routines
+        let newMode = task.preferredTaskListMode
         guard newMode != state.taskListMode else { return nil }
         return .send(.taskListModeChanged(newMode))
     }
@@ -213,7 +213,7 @@ struct HomeFeatureMacNavigationRouter {
         state: inout HomeFeature.State
     ) {
         guard let task = state.routineTasks.first(where: { $0.id == taskID }) else { return }
-        let newMode: HomeFeature.TaskListMode = task.isOneOffTask ? .todos : .routines
+        let newMode = task.preferredTaskListMode
         guard state.taskListMode != .all, newMode != state.taskListMode else { return }
 
         let oldMode = state.taskListMode

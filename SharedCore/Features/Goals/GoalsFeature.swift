@@ -95,7 +95,7 @@ struct GoalsFeature {
         }
 
         var routineCount: Int {
-            linkedTasks.filter { !$0.isOneOffTask }.count
+            linkedTasks.filter { $0.taskType == .routine }.count
         }
 
         var todoCount: Int {
@@ -220,6 +220,7 @@ struct GoalsFeature {
         var id: UUID
         var name: String
         var emoji: String?
+        var taskType: RoutineTaskType
         var isOneOffTask: Bool
         var isCompletedOneOff: Bool
         var isCanceledOneOff: Bool
@@ -232,11 +233,11 @@ struct GoalsFeature {
         }
 
         var displayEmoji: String {
-            RoutineTask.sanitizedEmoji(emoji ?? "", fallback: isOneOffTask ? "\u{2705}" : "\u{1F501}")
+            RoutineTask.sanitizedEmoji(emoji ?? "", fallback: taskType.defaultEmoji)
         }
 
         var kindText: String {
-            isOneOffTask ? "Todo" : "Routine"
+            taskType.rawValue
         }
 
         var stateText: String {
@@ -255,12 +256,15 @@ struct GoalsFeature {
             self.id = task.id
             self.name = task.name ?? ""
             self.emoji = task.emoji
+            self.taskType = task.scheduleMode.taskType
             self.isOneOffTask = task.isOneOffTask
             self.isCompletedOneOff = task.isCompletedOneOff
             self.isCanceledOneOff = task.isCanceledOneOff
             self.isPaused = task.isArchived(referenceDate: referenceDate, calendar: calendar)
             self.isOngoing = task.isOngoing
-            if task.isOneOffTask {
+            if task.isRecordTask {
+                self.dueDate = nil
+            } else if task.isOneOffTask {
                 self.dueDate = task.deadline
             } else {
                 self.dueDate = RoutineDateMath.dueDate(

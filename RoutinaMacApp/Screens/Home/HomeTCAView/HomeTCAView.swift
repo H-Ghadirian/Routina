@@ -836,6 +836,8 @@ extension HomeFeature.TaskListMode {
             return .routines
         case .todos:
             return .todos
+        case .records:
+            return .records
         }
     }
 }

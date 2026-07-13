@@ -51,6 +51,8 @@ struct TaskFormIOSTaskTypeSection: View {
             return true
         case .routine:
             return presentation.showsRepeatControls
+        case .record:
+            return false
         }
     }
 

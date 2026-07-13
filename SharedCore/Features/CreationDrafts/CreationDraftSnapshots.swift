@@ -59,6 +59,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
     var selectedPlaceIDs: [UUID] = []
     var routineColor: RoutineTaskColor = .none
     var estimatedDurationMinutes: Int?
+    var actualDurationMinutes: Int?
     var storyPoints: Int?
     var focusModeEnabled = false
     var routineTags: [String] = []
@@ -120,6 +121,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
         )
         routineColor = basics.routineColor
         estimatedDurationMinutes = basics.estimatedDurationMinutes
+        actualDurationMinutes = basics.actualDurationMinutes
         storyPoints = basics.storyPoints
         focusModeEnabled = basics.focusModeEnabled
         routineTags = organization.routineTags
@@ -173,6 +175,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
             || !selectedPlaceIDs.isEmpty
             || routineColor != .none
             || estimatedDurationMinutes != nil
+            || actualDurationMinutes != nil
             || storyPoints != nil
             || focusModeEnabled
             || !routineTags.isEmpty
@@ -221,7 +224,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
         state.basics.deadline = deadline
         state.basics.plannedDate = RoutineTask.normalizedPlannedDate(plannedDate)
         state.basics.isAllDay = isAllDay
-        state.basics.routineDurationMode = scheduleMode == .oneOff
+        state.basics.routineDurationMode = scheduleMode.taskType != .routine
             ? .oneDay
             : (routineDurationMode ?? .oneDay)
         state.basics.availabilityStartDate = availabilityStartDate
@@ -238,6 +241,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
         state.basics.selectedPlaceID = state.basics.selectedPlaceIDs.first
         state.basics.routineColor = routineColor
         state.basics.estimatedDurationMinutes = estimatedDurationMinutes
+        state.basics.actualDurationMinutes = actualDurationMinutes
         state.basics.storyPoints = storyPoints
         state.basics.focusModeEnabled = focusModeEnabled
         state.organization.routineTags = RoutineTag.deduplicated(

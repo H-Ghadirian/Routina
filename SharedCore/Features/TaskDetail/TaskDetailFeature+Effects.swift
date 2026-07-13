@@ -530,17 +530,17 @@ extension TaskDetailFeature {
                 RoutineTask.removeInverseRelationships(targeting: taskID, from: allTasks)
                 task.replaceSteps(steps)
                 task.scheduleMode = scheduleMode
-                task.deadline = scheduleMode == .oneOff ? deadline : nil
+                task.deadline = scheduleMode.taskType == .todo ? deadline : nil
                 task.isAllDay = isAllDay
-                task.routineDurationMode = scheduleMode == .oneOff ? .oneDay : routineDurationMode
+                task.routineDurationMode = scheduleMode.taskType != .routine ? .oneDay : routineDurationMode
                 let availabilityDateBounds = RoutineTask.normalizedAvailabilityDateBounds(
                     startDate: availabilityStartDate,
                     endDate: availabilityEndDate,
                     calendar: Calendar.current
                 )
-                task.availabilityStartDate = scheduleMode == .oneOff ? availabilityDateBounds.startDate : nil
-                task.availabilityEndDate = scheduleMode == .oneOff ? availabilityDateBounds.endDate : nil
-                task.plannedDate = RoutineTask.normalizedPlannedDate(plannedDate, calendar: calendar)
+                task.availabilityStartDate = scheduleMode.taskType == .todo ? availabilityDateBounds.startDate : nil
+                task.availabilityEndDate = scheduleMode.taskType == .todo ? availabilityDateBounds.endDate : nil
+                task.plannedDate = scheduleMode.taskType == .record ? nil : RoutineTask.normalizedPlannedDate(plannedDate, calendar: calendar)
                 task.recurrenceRule = recurrenceRule
                 task.recurrenceTimeRangeRole = recurrenceRule.timeRange == nil
                     ? .availability
@@ -580,7 +580,7 @@ extension TaskDetailFeature {
                 }
                 task.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
                 task.focusModeEnabled = focusModeEnabled
-                if scheduleMode == .oneOff {
+                if scheduleMode.taskType != .routine {
                     task.scheduleAnchor = task.lastDone
                     task.interval = 1
                 } else if previousScheduleMode != scheduleMode || previousRecurrenceRule != recurrenceRule {

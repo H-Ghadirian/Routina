@@ -2,7 +2,8 @@ import Foundation
 
 enum RoutineDateMath {
     static func usesExactTimedOccurrenceTracking(for task: RoutineTask) -> Bool {
-        !task.isOneOffTask
+        task.scheduleMode.taskType == .routine
+            && !task.isOneOffTask
             && task.recurrenceRule.usesTimeConstraint
             && !task.isChecklistDriven
     }
@@ -179,6 +180,9 @@ enum RoutineDateMath {
         referenceDate: Date,
         calendar: Calendar = .current
     ) -> Int {
+        if task.isRecordTask {
+            return Int.max
+        }
         if task.isSoftIntervalRoutine {
             return Int.max
         }

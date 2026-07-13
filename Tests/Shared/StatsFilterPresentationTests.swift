@@ -115,6 +115,38 @@ struct StatsFilterPresentationTests {
         #expect(filtered.map(\.name) == ["Urgent todo"])
     }
 
+    @Test
+    func taskTypeMatrixFilterKeepsOnlyMatchingRecords() {
+        let routine = RoutineTask(
+            name: "Routine",
+            importance: .level4,
+            urgency: .level4
+        )
+        let matchingRecord = RoutineTask(
+            name: "Research log",
+            importance: .level3,
+            urgency: .level4,
+            scheduleMode: .record
+        )
+        let lowRecord = RoutineTask(
+            name: "Low log",
+            importance: .level2,
+            urgency: .level4,
+            scheduleMode: .record
+        )
+
+        let filtered = StatsTaskTypeMatrixFilterSupport.filteredTasks(
+            [routine, matchingRecord, lowRecord],
+            taskTypeFilter: .records,
+            selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(
+                importance: .level3,
+                urgency: .level3
+            )
+        )
+
+        #expect(filtered.map(\.name) == ["Research log"])
+    }
+
     private func makePresentation(
         taskTypeFilter: StatsTaskTypeFilter = .all,
         advancedQuery: String = "",

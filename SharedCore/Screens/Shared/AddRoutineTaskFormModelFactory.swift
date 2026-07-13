@@ -51,6 +51,10 @@ struct AddRoutineTaskFormModelFactory {
                 get: { store.basics.estimatedDurationMinutes },
                 send: AddRoutineFeature.Action.estimatedDurationChanged
             ),
+            actualDurationMinutes: binding(
+                get: { store.basics.actualDurationMinutes },
+                send: AddRoutineFeature.Action.actualDurationChanged
+            ),
             storyPoints: binding(get: { store.basics.storyPoints }, send: AddRoutineFeature.Action.storyPointsChanged),
             imageData: store.basics.imageData,
             onImagePicked: { store.send(.imagePicked($0)) },

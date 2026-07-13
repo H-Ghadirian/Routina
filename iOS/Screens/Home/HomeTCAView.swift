@@ -281,7 +281,7 @@ homeContent
     }
 
     func taskTypeBadge(for task: HomeFeature.RoutineDisplay) -> some View {
-        HomeTaskTypeBadgeView(isTodo: task.isOneOffTask)
+        HomeTaskTypeBadgeView(taskType: task.scheduleMode.taskType)
     }
 
     @ViewBuilder
@@ -738,6 +738,8 @@ extension HomeFeature.TaskListMode {
             return .routines
         case .todos:
             return .todos
+        case .records:
+            return .records
         }
     }
 }

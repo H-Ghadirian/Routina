@@ -12,6 +12,8 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
             return "Active routines"
         case .todos:
             return "Active todos"
+        case .records:
+            return "Active records"
         }
     }
 
@@ -23,6 +25,8 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
             return "Archived routines"
         case .todos:
             return "Archived todos"
+        case .records:
+            return "Archived records"
         }
     }
 
@@ -35,6 +39,8 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
                 return "No routines created yet"
             case .todos:
                 return "No todos created yet"
+            case .records:
+                return "No records created yet"
             }
         }
 
@@ -52,6 +58,10 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
                 return archivedItemCount == 1
                     ? "Your only todo is archived"
                     : "All todos are currently archived"
+            case .records:
+                return archivedItemCount == 1
+                    ? "Your only record is archived"
+                    : "All records are currently archived"
             }
         }
 
@@ -63,6 +73,8 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
                 return "Everything is currently in rotation"
             case .todos:
                 return "All matching todos are currently active"
+            case .records:
+                return "All matching records are currently active"
             }
         }
 
@@ -79,6 +91,10 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
             return archivedItemCount == 1
                 ? "1 archived excluded"
                 : "\(archivedItemCount) archived todos excluded"
+        case .records:
+            return archivedItemCount == 1
+                ? "1 archived excluded"
+                : "\(archivedItemCount) archived records excluded"
         }
     }
 
@@ -91,6 +107,8 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
                 return "No routines created yet"
             case .todos:
                 return "No todos created yet"
+            case .records:
+                return "No records created yet"
             }
         }
 
@@ -102,6 +120,8 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
                 return "No archived routines right now"
             case .todos:
                 return "No archived todos right now"
+            case .records:
+                return "No archived records right now"
             }
         }
 
@@ -111,6 +131,8 @@ struct StatsActiveArchiveSummaryPresentation: Equatable {
         case .routines:
             return "Paused and hidden from Home"
         case .todos:
+            return "Hidden from Home"
+        case .records:
             return "Hidden from Home"
         }
     }

@@ -4,6 +4,7 @@ enum HomeFilterTaskListKind: Equatable, Sendable {
     case all
     case routines
     case todos
+    case records
 
     var placeFilterPluralNoun: String {
         switch self {
@@ -13,6 +14,8 @@ enum HomeFilterTaskListKind: Equatable, Sendable {
             return "routines"
         case .todos:
             return "todos"
+        case .records:
+            return "records"
         }
     }
 
@@ -24,6 +27,8 @@ enum HomeFilterTaskListKind: Equatable, Sendable {
             return "All routines"
         case .todos:
             return "All todos"
+        case .records:
+            return "All records"
         }
     }
 }
@@ -130,6 +135,8 @@ struct HomeFilterPresentation: Equatable, Sendable {
             return [.all, .due, .doneToday]
         case .todos:
             return [.all, .due]
+        case .records:
+            return [.all, .doneToday]
         }
     }
 
@@ -138,7 +145,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
     }
 
     var showsAssumedDoneVisibilityFilter: Bool {
-        taskListKind != .todos
+        taskListKind == .all || taskListKind == .routines
     }
 
     var filterLabels: [String] {
@@ -307,6 +314,8 @@ private extension HomeFilterTaskListKind {
             return "Routines"
         case .todos:
             return "Todos"
+        case .records:
+            return "Records"
         }
     }
 }

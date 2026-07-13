@@ -17,6 +17,8 @@ extension HomeTCAView {
             return "Todos"
         case .routines:
             return "Routines"
+        case .records:
+            return "Records"
         }
     }
 
@@ -90,6 +92,8 @@ detailContent
             return "Search routines"
         case .todos:
             return "Search todos"
+        case .records:
+            return "Search records"
         }
     }
 
@@ -185,9 +189,11 @@ detailContent
         case .all:
             return true
         case .routines:
-            return !task.isOneOffTask
+            return task.scheduleMode.taskType == .routine
         case .todos:
             return task.isOneOffTask
+        case .records:
+            return task.scheduleMode.taskType == .record
         }
     }
 

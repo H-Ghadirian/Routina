@@ -95,7 +95,7 @@ struct HomeIOSRoutineRowView: View {
             if shouldShowTaskTypeBadge || shouldShowStatusBadge {
                 HStack(spacing: 6) {
                     if shouldShowTaskTypeBadge {
-                        HomeTaskTypeBadgeView(isTodo: task.isOneOffTask)
+                        HomeTaskTypeBadgeView(taskType: task.scheduleMode.taskType)
                     }
                     if shouldShowStatusBadge {
                         HomeStatusBadgeView(style: statusBadgeStyle)

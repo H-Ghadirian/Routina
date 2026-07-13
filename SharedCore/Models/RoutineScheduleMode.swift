@@ -8,23 +8,31 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
     case derivedFromChecklist
     case softDerivedFromChecklist
     case oneOff
+    case record
 
     var taskType: RoutineTaskType {
-        self == .oneOff ? .todo : .routine
+        switch self {
+        case .oneOff:
+            return .todo
+        case .record:
+            return .record
+        case .fixedInterval, .softInterval, .fixedIntervalChecklist, .softIntervalChecklist, .derivedFromChecklist, .softDerivedFromChecklist:
+            return .routine
+        }
     }
 
     var scheduleBehavior: RoutineScheduleBehavior {
         switch self {
         case .softInterval, .softIntervalChecklist, .softDerivedFromChecklist:
             return .soft
-        case .fixedInterval, .fixedIntervalChecklist, .derivedFromChecklist, .oneOff:
+        case .fixedInterval, .fixedIntervalChecklist, .derivedFromChecklist, .oneOff, .record:
             return .fixed
         }
     }
 
     var routineFormat: RoutineFormat {
         switch self {
-        case .fixedInterval, .softInterval, .oneOff:
+        case .fixedInterval, .softInterval, .oneOff, .record:
             return .standard
         case .fixedIntervalChecklist, .softIntervalChecklist:
             return .checklist
@@ -60,19 +68,19 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
     }
 
     var isSoftIntervalRoutine: Bool {
-        scheduleBehavior == .soft
+        taskType == .routine && scheduleBehavior == .soft
     }
 
     var isChecklistCompletionMode: Bool {
-        routineFormat == .checklist
+        taskType == .routine && routineFormat == .checklist
     }
 
     var isChecklistDrivenMode: Bool {
-        routineFormat == .runout
+        taskType == .routine && routineFormat == .runout
     }
 
     var isStandardRoutineMode: Bool {
-        routineFormat == .standard
+        taskType == .routine && routineFormat == .standard
     }
 
     var isRoutineModeRequiringChecklistItems: Bool {
@@ -90,7 +98,7 @@ enum RoutineScheduleMode: String, Codable, CaseIterable, Equatable, Hashable, Se
     }
 
     var showsRoutineRepeatControls: Bool {
-        self != .oneOff && routineFormat != .runout
+        taskType == .routine && routineFormat != .runout
     }
 
     static func routineMode(

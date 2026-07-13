@@ -635,15 +635,20 @@ struct TaskFormContent: View {
     private var previewTitle: String {
         let trimmed = model.name.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty
-            ? "New \(model.taskType.wrappedValue == .todo ? "todo" : "routine")"
+            ? "New \(model.taskType.wrappedValue.rawValue.lowercased())"
             : trimmed
     }
 
     private var previewSubtitle: String {
-        if model.taskType.wrappedValue == .todo {
+        switch model.taskType.wrappedValue {
+        case .todo:
             return model.deadlineEnabled.wrappedValue
                 ? "A one-off task with a deadline."
                 : "A one-off task you can finish once."
+        case .record:
+            return "A record of what happened and how time was spent."
+        case .routine:
+            break
         }
         switch model.scheduleMode.wrappedValue {
         case .fixedInterval: return "A repeating routine with one shared cadence."
@@ -653,14 +658,20 @@ struct TaskFormContent: View {
         case .derivedFromChecklist: return "A routine driven by the due dates of its checklist items."
         case .softDerivedFromChecklist: return "A gentle routine driven by checklist item timing."
         case .oneOff: return "A one-off task you can finish once."
+        case .record: return "A record of what happened and how time was spent."
         }
     }
 
     private var previewScheduleSummary: String {
-        if model.taskType.wrappedValue == .todo {
+        switch model.taskType.wrappedValue {
+        case .todo:
             return model.deadlineEnabled.wrappedValue
                 ? "Due \(deadlineSummaryText)"
                 : "One-off"
+        case .record:
+            return "Record"
+        case .routine:
+            break
         }
         switch model.recurrenceKind.wrappedValue {
         case .intervalDays:

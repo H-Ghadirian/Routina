@@ -146,7 +146,7 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     }
 
     private var taskListModeOptions: [HomeTaskListMode] {
-        [.all, .todos, .routines]
+        [.all, .todos, .routines, .records]
     }
 
     private func taskListModeSystemImage(_ mode: HomeTaskListMode) -> String {
@@ -157,6 +157,8 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
             return "checklist"
         case .routines:
             return "repeat"
+        case .records:
+            return "chart.bar.doc.horizontal"
         }
     }
 

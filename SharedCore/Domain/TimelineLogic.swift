@@ -12,6 +12,7 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
     case all = "All"
     case routines = "Routines"
     case todos = "Todos"
+    case records = "Records"
     case focus = "Focus"
     case events = "Events"
     case emotions = "Emotions"
@@ -28,6 +29,7 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
         .all,
         .routines,
         .todos,
+        .records,
         .focus,
         .notes,
         .places,
@@ -44,6 +46,7 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
         .all,
         .routines,
         .todos,
+        .records,
         .focus,
         .events,
         .emotions,
@@ -316,7 +319,7 @@ enum TimelineLogic {
             if let cutoff, timestamp < cutoff { return nil }
 
             let task = lookup[log.taskID]
-            let isOneOff = task?.isOneOffTask ?? false
+            let taskType = task?.scheduleMode.taskType
             let hasImage = task?.hasImage ?? false
             let hasFileAttachment = fileAttachmentTaskIDs.contains(log.taskID)
             let hasVoiceNote = task?.hasVoiceNote ?? false
@@ -332,8 +335,9 @@ enum TimelineLogic {
 
             switch filterType {
             case .all: break
-            case .routines: if isOneOff { return nil }
-            case .todos: if !isOneOff { return nil }
+            case .routines: if taskType != .routine { return nil }
+            case .todos: if taskType != .todo { return nil }
+            case .records: if taskType != .record { return nil }
             case .events: return nil
             case .emotions: return nil
             case .notes: return nil
@@ -358,7 +362,7 @@ enum TimelineLogic {
                 hasVoiceNote: hasVoiceNote,
                 importance: task?.importance ?? .level2,
                 urgency: task?.urgency ?? .level2,
-                isOneOff: isOneOff,
+                isOneOff: taskType == .todo,
                 kind: log.kind
             )
         }

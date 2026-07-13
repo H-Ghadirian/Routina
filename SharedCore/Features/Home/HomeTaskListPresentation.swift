@@ -735,8 +735,10 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         }
 
         let todos = section.tasks.filter(\.isOneOffTask)
-        let routines = section.tasks.filter { !$0.isOneOffTask }
-        guard !todos.isEmpty, !routines.isEmpty else { return [] }
+        let routines = section.tasks.filter { !$0.isOneOffTask && $0.scheduleMode.taskType == .routine }
+        let records = section.tasks.filter { $0.scheduleMode.taskType == .record }
+        let childGroupCount = [todos, routines, records].filter { !$0.isEmpty }.count
+        guard childGroupCount > 1 else { return [] }
 
         return [
             HomeTaskListPresentationTaskGroup(
@@ -754,8 +756,16 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                 tasks: routines,
                 moveContext: nil,
                 isCollapsible: true
+            ),
+            HomeTaskListPresentationTaskGroup(
+                kind: .regular,
+                identityKey: "\(section.identityKey):records",
+                title: "Records",
+                tasks: records,
+                moveContext: nil,
+                isCollapsible: true
             )
-        ]
+        ].filter { !$0.tasks.isEmpty }
     }
 
     private static func isDeadlineStatusSection(_ section: HomeTaskListSection<Display>) -> Bool {
@@ -817,6 +827,8 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             return "No matching routines"
         case .todos:
             return "No matching todos"
+        case .records:
+            return "No matching records"
         }
     }
 }

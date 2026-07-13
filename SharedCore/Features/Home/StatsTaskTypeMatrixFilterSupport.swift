@@ -24,9 +24,11 @@ enum StatsTaskTypeMatrixFilterSupport {
         case .all:
             return true
         case .routines:
-            return !task.isOneOffTask
+            return task.scheduleMode.taskType == .routine
         case .todos:
             return task.isOneOffTask
+        case .records:
+            return task.scheduleMode.taskType == .record
         }
     }
 
