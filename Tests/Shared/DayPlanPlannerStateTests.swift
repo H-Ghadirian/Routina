@@ -688,17 +688,24 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
-    func visiblePlannerBlocksHideCompletedAndKeepDifferentDayOutcomes() throws {
+    func visiblePlannerBlocksKeepCompletedAndDifferentDayOutcomes() throws {
         let calendar = gregorianCalendar
         let blockDate = try #require(date("2026-05-07T12:00:00Z"))
         let completedAt = try #require(date("2026-05-07T10:00:00Z"))
         let missedOnDifferentDay = try #require(date("2026-05-08T11:00:00Z"))
         let completedTaskID = UUID()
+        let lastDoneTaskID = UUID()
         let missedTomorrowTaskID = UUID()
         let completedTask = RoutineTask(
             id: completedTaskID,
             name: "Done later",
             scheduleMode: .fixedInterval
+        )
+        let lastDoneTask = RoutineTask(
+            id: lastDoneTaskID,
+            name: "Done from task state",
+            scheduleMode: .fixedInterval,
+            lastDone: completedAt
         )
         let missedTomorrowTask = RoutineTask(
             id: missedTomorrowTaskID,
@@ -707,6 +714,7 @@ struct DayPlanPlannerStateTests {
         )
         let blocks = [
             plannerBlock(taskID: completedTaskID, title: "Done later", on: blockDate, calendar: calendar),
+            plannerBlock(taskID: lastDoneTaskID, title: "Done from task state", on: blockDate, calendar: calendar),
             plannerBlock(taskID: missedTomorrowTaskID, title: "Missed tomorrow", on: blockDate, calendar: calendar),
         ]
         let logs = [
@@ -724,12 +732,12 @@ struct DayPlanPlannerStateTests {
 
         let visibleBlocks = DayPlanVisibleBlocks.blocks(
             blocks,
-            tasks: [completedTask, missedTomorrowTask],
+            tasks: [completedTask, lastDoneTask, missedTomorrowTask],
             logs: logs,
             calendar: calendar
         )
 
-        #expect(visibleBlocks.map(\.taskID) == [missedTomorrowTaskID])
+        #expect(visibleBlocks.map(\.taskID) == [completedTaskID, lastDoneTaskID, missedTomorrowTaskID])
     }
 
     @Test
@@ -1923,7 +1931,7 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
-    func scheduleViewVisibilityHidesCompletedExactAllDayBlocks() throws {
+    func scheduleViewVisibilityKeepsCompletedExactAllDayBlocks() throws {
         let calendar = gregorianCalendar
         let exactDate = try #require(date("2026-05-11T00:00:00Z"))
         let completedAt = try #require(date("2026-05-11T09:00:00Z"))
@@ -1949,7 +1957,7 @@ struct DayPlanPlannerStateTests {
         )
 
         #expect(blocks.compactMap(\.taskID) == [taskID])
-        #expect(DayPlanScheduleViewVisibility.allDayBlocks(blocks, context: context).isEmpty)
+        #expect(DayPlanScheduleViewVisibility.allDayBlocks(blocks, context: context) == blocks)
     }
 
     @Test

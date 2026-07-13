@@ -6,6 +6,8 @@ Status: Accepted
 
 Refines: [0124 Support Multiple Task Links](0124-support-multiple-task-links.md), [0259 Allow Daily Checklist Auto-Assumed Completion](0259-allow-daily-checklist-auto-assumed-completion.md), [0367 Show Day Agenda Done Sections](0367-show-day-agenda-done-sections.md), [0372 Hide Completed Tasks From Calendar Schedule](0372-hide-completed-tasks-from-calendar-schedule.md)
 
+Refined by: [0387 Keep Completed Scheduled Blocks Visible](0387-keep-completed-scheduled-blocks-visible.md)
+
 ## Context
 
 Some routines are satisfied by doing another task. For example, `Exercise routine` should be considered done when `Gym` is done, and also when `Hiking` is done. The link needs to be explainable without inflating activity history: doing Gym should not count as both Gym and Exercise in aggregate stats.
@@ -17,7 +19,7 @@ Task links support a directional fulfillment relationship:
 - `Done when` on the target routine means this routine is fulfilled when the linked source task is completed.
 - `Completes` is the inverse wording from the source task.
 
-When a source task is completed, Routina records a `fulfilled` log for each eligible linked target routine. Fulfilled logs store the source task ID, update the target routine's own done date, streak/calendar state, and hide the target from unresolved planner surfaces for that date.
+When a source task is completed, Routina records a `fulfilled` log for each eligible linked target routine. Fulfilled logs store the source task ID and update the target routine's own done date, streak/calendar state, and day review state for that date. Decision 0387 keeps qualifying scheduled Planner blocks visible after fulfillment.
 
 Fulfilled logs do not count as aggregate completed activity. Stats and global timeline activity continue to count only direct `completed` logs. A target routine can have multiple source-specific fulfilled logs on the same day, but calendar and done-date presentation deduplicate by day, so the routine appears done once. Removing one source completion removes only fulfillments sourced by that task; another same-day source can keep the target fulfilled.
 

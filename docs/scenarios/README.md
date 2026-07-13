@@ -203,7 +203,7 @@ Then the routine is available as synthetic completed planner activity without cr
 
 Given Planner Calendar filters are at their defaults
 When Calendar filters automatic activity for display
-Then synthetic assumed-done activity and recorded completed activity are hidden from the editable Schedule grid
+Then synthetic assumed-done activity and automatic recorded-completion activity are hidden from the editable Schedule grid
 
 Given Planner Calendar filters are at their defaults
 When the user opens the right-side day task list for an assumed-done day
@@ -216,6 +216,22 @@ Then synthetic assumed-done activity can appear in day agenda and Calendar `List
 Given the user hides that assumed-done planner activity
 When Planner derives automatic activity again
 Then the synthetic assumed-done activity stays hidden for that task and day
+
+### Completed Scheduled Blocks Stay Visible
+
+Area: Planner
+Decision links: [0387](../decisions/0387-keep-completed-scheduled-blocks-visible.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/DayPlanPlannerStateTests.swift`
+
+Given a task-backed timed Schedule block exists for a day
+When that task day is completed or fulfilled
+Then the Schedule block remains visible for that day
+
+Given a task-backed all-day Schedule block exists for a day
+When that task day is completed
+Then the all-day block remains visible for that day
 
 ### Planner Time Blocks and Available Windows Stay Distinct
 

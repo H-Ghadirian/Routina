@@ -152,15 +152,8 @@ struct DayPlanVisibleBlockContext {
                 )
             }
 
-            if let lastDone = task.lastDone {
-                hiddenOutcomeDayKeysByTaskID[taskID, default: []].insert(
-                    Self.completionDayKey(for: task, timestamp: lastDone, calendar: calendar)
-                )
-            }
         }
 
-        let completedKind = RoutineLogKind.completed.rawValue
-        let fulfilledKind = RoutineLogKind.fulfilled.rawValue
         let canceledKind = RoutineLogKind.canceled.rawValue
         let missedKind = RoutineLogKind.missed.rawValue
         for log in logs {
@@ -168,12 +161,7 @@ struct DayPlanVisibleBlockContext {
                 continue
             }
 
-            if (log.kindRawValue == completedKind || log.kindRawValue == fulfilledKind),
-               let task = tasksByID[log.taskID] {
-                hiddenOutcomeDayKeysByTaskID[log.taskID, default: []].insert(
-                    Self.completionDayKey(for: task, timestamp: timestamp, calendar: calendar)
-                )
-            } else if log.kindRawValue == canceledKind || log.kindRawValue == missedKind {
+            if log.kindRawValue == canceledKind || log.kindRawValue == missedKind {
                 hiddenOutcomeDayKeysByTaskID[log.taskID, default: []].insert(
                     DayPlanStorage.dayKey(for: timestamp, calendar: calendar)
                 )
@@ -213,19 +201,6 @@ struct DayPlanVisibleBlockContext {
             taskID: taskID,
             dayKey: DayPlanStorage.dayKey(for: date, calendar: calendar)
         )
-    }
-
-    private static func completionDayKey(
-        for task: RoutineTask,
-        timestamp: Date,
-        calendar: Calendar
-    ) -> String {
-        let displayDay = RoutineDateMath.completionDisplayDay(
-            for: task,
-            completionDate: timestamp,
-            calendar: calendar
-        ) ?? calendar.startOfDay(for: timestamp)
-        return DayPlanStorage.dayKey(for: displayDay, calendar: calendar)
     }
 
     private static func date(fromDayKey dayKey: String, calendar: Calendar) -> Date? {
