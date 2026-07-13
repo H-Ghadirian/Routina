@@ -85,6 +85,7 @@ enum AppSettingsDefaults {
         .appSettingSeparateDailyRoutinesInTaskList: false,
         .appSettingShowTomorrowInTaskList: false,
         .appSettingSeparateTodosAndRoutinesInTagTaskListSections: false,
+        .appSettingSeparateDeadlineStatusInTagTaskListSections: false,
         .appSettingDailyRoutinesSectionCollapsed: false,
         .appSettingMacPlanTodayDailyRoutinesGroupCollapsed: true,
         .appSettingMacFutureTasksSectionCollapsed: true,
@@ -180,6 +181,7 @@ public enum UserDefaultBoolValueKey: String, Sendable {
     case appSettingSeparateDailyRoutinesInTaskList
     case appSettingShowTomorrowInTaskList
     case appSettingSeparateTodosAndRoutinesInTagTaskListSections
+    case appSettingSeparateDeadlineStatusInTagTaskListSections
     case appSettingDailyRoutinesSectionCollapsed
     case appSettingMacPlanTodayDailyRoutinesGroupCollapsed
     case appSettingMacFutureTasksSectionCollapsed

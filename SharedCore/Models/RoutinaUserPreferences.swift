@@ -56,6 +56,7 @@ final class RoutinaUserPreferences {
     var showTomorrowInTaskList: Bool = false
     var macShowDoneCountInToolbar: Bool = false
     var separateTodosAndRoutinesInTagTaskListSections: Bool = false
+    var separateDeadlineStatusInTagTaskListSections: Bool = false
     var notificationReminderHour: Int = NotificationPreferences.defaultReminderHour
     var notificationReminderMinute: Int = NotificationPreferences.defaultReminderMinute
     var batteryRoutineThresholdPercent: Int = BatteryRoutinePreferences.defaultThresholdPercent
@@ -206,6 +207,9 @@ enum RoutinaUserPreferencesStore {
         preferences.separateTodosAndRoutinesInTagTaskListSections = defaults[
             .appSettingSeparateTodosAndRoutinesInTagTaskListSections
         ]
+        preferences.separateDeadlineStatusInTagTaskListSections = defaults[
+            .appSettingSeparateDeadlineStatusInTagTaskListSections
+        ]
         preferences.notificationReminderHour = defaults.integer(forKey: NotificationPreferences.reminderHourDefaultsKey)
         preferences.notificationReminderMinute = defaults.integer(forKey: NotificationPreferences.reminderMinuteDefaultsKey)
         preferences.batteryRoutineThresholdPercent = BatteryRoutinePreferences.thresholdPercent
@@ -270,6 +274,8 @@ enum RoutinaUserPreferencesStore {
         defaults[.appSettingMacShowDoneCountInToolbar] = preferences.macShowDoneCountInToolbar
         defaults[.appSettingSeparateTodosAndRoutinesInTagTaskListSections] = preferences
             .separateTodosAndRoutinesInTagTaskListSections
+        defaults[.appSettingSeparateDeadlineStatusInTagTaskListSections] = preferences
+            .separateDeadlineStatusInTagTaskListSections
         defaults.set(preferences.notificationReminderHour, forKey: NotificationPreferences.reminderHourDefaultsKey)
         defaults.set(preferences.notificationReminderMinute, forKey: NotificationPreferences.reminderMinuteDefaultsKey)
         defaults.set(preferences.batteryRoutineThresholdPercent, forKey: BatteryRoutinePreferences.thresholdPercentDefaultsKey)

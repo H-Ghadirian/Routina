@@ -380,6 +380,7 @@ extension SettingsRoutineDataPersistence {
             var showTomorrowInTaskList: Bool?
             var macShowDoneCountInToolbar: Bool?
             var separateTodosAndRoutinesInTagTaskListSections: Bool?
+            var separateDeadlineStatusInTagTaskListSections: Bool?
             var notificationReminderHour: Int?
             var notificationReminderMinute: Int?
             var batteryRoutineThresholdPercent: Int?

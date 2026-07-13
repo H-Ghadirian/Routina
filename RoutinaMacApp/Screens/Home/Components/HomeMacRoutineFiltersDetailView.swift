@@ -14,6 +14,7 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     @Binding var taskListViewMode: HomeTaskListViewMode
     @Binding var routineListSectioningMode: RoutineListSectioningMode
     @Binding var separateTodosAndRoutinesInTagSections: Bool
+    @Binding var separateDeadlineStatusInTagSections: Bool
     @Binding var taskListSortOrder: HomeTaskListSortOrder
     @Binding var createdDateFilter: HomeTaskCreatedDateFilter
     @Binding var hideAssumedDoneTasks: Bool
@@ -263,9 +264,14 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                 .foregroundStyle(.secondary)
 
             if routineListSectioningMode == .tags {
-                Toggle("Separate todos and routines", isOn: $separateTodosAndRoutinesInTagSections)
-                    .toggleStyle(.switch)
-                    .padding(.top, 4)
+                VStack(alignment: .leading, spacing: 8) {
+                    Toggle("Show overdue and due soon separately", isOn: $separateDeadlineStatusInTagSections)
+                        .toggleStyle(.switch)
+
+                    Toggle("Separate todos and routines", isOn: $separateTodosAndRoutinesInTagSections)
+                        .toggleStyle(.switch)
+                }
+                .padding(.top, 4)
             }
         }
     }

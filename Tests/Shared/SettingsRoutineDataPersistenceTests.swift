@@ -109,6 +109,7 @@ struct SettingsRoutineDataPersistenceTests {
             UserDefaultBoolValueKey.appSettingShowTomorrowInTaskList.rawValue,
             UserDefaultBoolValueKey.appSettingMacShowDoneCountInToolbar.rawValue,
             UserDefaultBoolValueKey.appSettingSeparateTodosAndRoutinesInTagTaskListSections.rawValue,
+            UserDefaultBoolValueKey.appSettingSeparateDeadlineStatusInTagTaskListSections.rawValue,
             BatteryRoutinePreferences.thresholdPercentDefaultsKey
         ]
         let previousValues = Dictionary(uniqueKeysWithValues: keysToRestore.map { ($0, defaults.object(forKey: $0)) })
@@ -152,6 +153,7 @@ struct SettingsRoutineDataPersistenceTests {
         defaults[.appSettingShowTomorrowInTaskList] = true
         defaults[.appSettingMacShowDoneCountInToolbar] = true
         defaults[.appSettingSeparateTodosAndRoutinesInTagTaskListSections] = true
+        defaults[.appSettingSeparateDeadlineStatusInTagTaskListSections] = true
         defaults.set(35, forKey: BatteryRoutinePreferences.thresholdPercentDefaultsKey)
 
         let package = try SettingsRoutineDataPersistence.buildBackupPackage(from: context)
@@ -167,6 +169,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(backup.userPreferences?.filterQuerySectionsEnabled == true)
         #expect(backup.userPreferences?.unlockUnlimitedTasks == true)
         #expect(backup.userPreferences?.separateTodosAndRoutinesInTagTaskListSections == true)
+        #expect(backup.userPreferences?.separateDeadlineStatusInTagTaskListSections == true)
         #expect(backup.userPreferences?.showTomorrowInTaskList == true)
         #expect(backup.userPreferences?.macShowDoneCountInToolbar == true)
 
@@ -207,6 +210,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(restored.showTomorrowInTaskList)
         #expect(restored.macShowDoneCountInToolbar)
         #expect(restored.separateTodosAndRoutinesInTagTaskListSections)
+        #expect(restored.separateDeadlineStatusInTagTaskListSections)
         #expect(restored.batteryRoutineThresholdPercent == 35)
     }
 

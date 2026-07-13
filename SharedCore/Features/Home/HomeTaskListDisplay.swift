@@ -218,6 +218,7 @@ struct HomeTaskListFilteringConfiguration {
     var excludeTagMatchMode: RoutineTagMatchMode
     var searchText: String
     var routineListSectioningMode: RoutineListSectioningMode
+    var separateDeadlineStatusInTagSections: Bool = false
     var routineTasks: [RoutineTask]
     var referenceDate: Date
     var calendar: Calendar

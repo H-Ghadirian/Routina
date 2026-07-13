@@ -6,6 +6,8 @@ Date: 2026-06-29
 
 Refines: [0064 Group Home Task List by Tags](0064-group-home-task-list-by-tags.md), [0088 Support an Ungrouped Home Task List](0088-support-ungrouped-home-task-list.md), [0283 Preserve Mac Future Inner Sections](0283-preserve-mac-future-inner-sections.md)
 
+Refined by: [0379 Separate Deadline Status in Tag Task List](0379-separate-deadline-status-in-tag-task-list.md)
+
 ## Context
 
 The Task List grouping control had grown to four modes: None, Status, Deadline Date, and Tags. Status grouping duplicated information already available through badges and filters, while Deadline Date grouping made future work easier to scan by time but left date groups expanded-only inside the Mac `Future` section.

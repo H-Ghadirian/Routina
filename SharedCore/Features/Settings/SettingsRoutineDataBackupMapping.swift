@@ -394,6 +394,8 @@ enum SettingsRoutineDataBackupMapping {
             macShowDoneCountInToolbar: preferences.macShowDoneCountInToolbar,
             separateTodosAndRoutinesInTagTaskListSections: preferences
                 .separateTodosAndRoutinesInTagTaskListSections,
+            separateDeadlineStatusInTagTaskListSections: preferences
+                .separateDeadlineStatusInTagTaskListSections,
             notificationReminderHour: preferences.notificationReminderHour,
             notificationReminderMinute: preferences.notificationReminderMinute,
             batteryRoutineThresholdPercent: preferences.batteryRoutineThresholdPercent,

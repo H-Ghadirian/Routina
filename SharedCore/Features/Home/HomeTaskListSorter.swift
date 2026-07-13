@@ -197,6 +197,10 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
         }
 
         if configuration.routineListSectioningMode == .tags {
+            if configuration.separateDeadlineStatusInTagSections,
+               let statusSectionKey = deadlineStatusManualOrderSectionKey(for: task, sortKey: sortKey) {
+                return statusSectionKey
+            }
             return sortKey?.tagManualOrderSectionKey ?? task.taskListTagManualOrderSectionKey
         }
 
@@ -235,10 +239,14 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
         sortKeys.reserveCapacity(displays.count)
 
         let sectioningMode = configuration.routineListSectioningMode
+        let separatesDeadlineStatusInTags = sectioningMode == .tags
+            && configuration.separateDeadlineStatusInTagSections
         for task in displays {
             let overdueDays = metrics.overdueDays(for: task)
             let urgencyLevel = metrics.urgencyLevel(for: task)
-            let isYellowUrgency = sectioningMode == .status || sectioningMode == .deadlineDate
+            let isYellowUrgency = sectioningMode == .status
+                || sectioningMode == .deadlineDate
+                || separatesDeadlineStatusInTags
                 ? metrics.isYellowUrgency(task)
                 : false
             let tagManualOrderSectionKey = sectioningMode == .tags
@@ -267,6 +275,27 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
         let month = components.month ?? 0
         let day = components.day ?? 0
         return String(format: "%04d-%02d-%02d", year, month, day)
+    }
+
+    private func deadlineStatusManualOrderSectionKey(
+        for task: Display,
+        sortKey: HomeTaskListSortKey?
+    ) -> String? {
+        if sortKey?.hasMissedExactTimedOccurrence ?? metrics.hasMissedExactTimedOccurrence(for: task) {
+            return "missed"
+        }
+        if sortKey?.overdueDays ?? metrics.overdueDays(for: task) > 0 {
+            return "overdue"
+        }
+        if task.isDoneToday {
+            return "doneToday"
+        }
+        let urgencyLevel = sortKey?.urgencyLevel ?? metrics.urgencyLevel(for: task)
+        let isYellowUrgency = sortKey?.isYellowUrgency ?? metrics.isYellowUrgency(task)
+        if urgencyLevel > 0 || isYellowUrgency {
+            return "dueSoon"
+        }
+        return nil
     }
 
     private func manualOrderSortResult(

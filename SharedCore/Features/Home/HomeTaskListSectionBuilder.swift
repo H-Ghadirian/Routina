@@ -12,7 +12,9 @@ struct HomeTaskListSectionBuilder<Display: HomeTaskListDisplay> {
                 ? []
                 : [HomeTaskListSection(identityKey: "tasks", title: Self.ungroupedTitle, tasks: filteredTasks)]
         case .tags:
-            return tagBasedSections(from: filteredTasks)
+            return configuration.separateDeadlineStatusInTagSections
+                ? tagBasedSectionsWithDeadlineStatus(from: filteredTasks)
+                : tagBasedSections(from: filteredTasks)
         case .status, .deadlineDate:
             break
         }
@@ -123,6 +125,42 @@ struct HomeTaskListSectionBuilder<Display: HomeTaskListDisplay> {
         .map { group in
             HomeTaskListSection(identityKey: group.identityKey, title: group.title, tasks: group.tasks)
         }
+    }
+
+    func tagBasedSectionsWithDeadlineStatus(from tasks: [Display]) -> [HomeTaskListSection<Display>] {
+        guard !tasks.isEmpty else { return [] }
+
+        let bucketedTasks = tasks.reduce(into: [HomeTaskListStatusBucket: [Display]]()) { buckets, task in
+            buckets[statusBucket(for: task), default: []].append(task)
+        }
+
+        let leadingStatusSections = [
+            HomeTaskListStatusBucket.missed,
+            .overdue,
+            .dueSoon
+        ].compactMap { bucket in
+            statusSection(bucket, tasks: bucketedTasks[bucket, default: []])
+        }
+
+        let tagSections = tagBasedSections(from: bucketedTasks[.onTrack, default: []])
+        let doneTodaySections = statusSection(.doneToday, tasks: bucketedTasks[.doneToday, default: []])
+            .map { [$0] } ?? []
+
+        return leadingStatusSections
+            + tagSections
+            + doneTodaySections
+    }
+
+    private func statusSection(
+        _ bucket: HomeTaskListStatusBucket,
+        tasks: [Display]
+    ) -> HomeTaskListSection<Display>? {
+        guard !tasks.isEmpty else { return nil }
+        return HomeTaskListSection(
+            identityKey: bucket.identityKey,
+            title: bucket.title,
+            tasks: tasks
+        )
     }
 
     private func statusBucket(for task: Display) -> HomeTaskListStatusBucket {

@@ -780,6 +780,12 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func defaultSettingsKeepTagDeadlineStatusSectionsOff() {
+        #expect(AppSettingsDefaults.boolValues[.appSettingSeparateDeadlineStatusInTagTaskListSections] == .some(false))
+        #expect(!RoutinaUserPreferences().separateDeadlineStatusInTagTaskListSections)
+    }
+
+    @Test
     func automaticPlaceCheckInToggled_persistsSelection() async {
         let persistedValue = LockIsolated<Bool?>(nil)
 

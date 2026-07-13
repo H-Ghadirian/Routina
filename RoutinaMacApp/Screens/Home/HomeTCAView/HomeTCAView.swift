@@ -225,6 +225,10 @@ struct HomeTCAView: View {
         store: SharedDefaults.app
     ) var separatesTodosAndRoutinesInTagTaskListSections = false
     @AppStorage(
+        UserDefaultBoolValueKey.appSettingSeparateDeadlineStatusInTagTaskListSections.rawValue,
+        store: SharedDefaults.app
+    ) var separatesDeadlineStatusInTagTaskListSections = false
+    @AppStorage(
         UserDefaultBoolValueKey.appSettingArchivedRoutinesSectionCollapsed.rawValue,
         store: SharedDefaults.app
     ) var isArchivedSectionCollapsed = false

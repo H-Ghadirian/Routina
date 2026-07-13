@@ -541,16 +541,20 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         }
 
         if filtering.usesTagSectioning {
+            let separatesDeadlineStatusInTagSections = filtering.separatesDeadlineStatusInTagSections
             if let futureSection = sidebarFutureSection(
                 from: regularSections,
                 offset: &offset,
                 showsGroupTitles: true,
-                usesDeadlineDateSectioning: false,
+                usesDeadlineDateSectioning: separatesDeadlineStatusInTagSections,
                 separateTodosAndRoutinesInTagSections: separateTodosAndRoutinesInTagSections,
                 moveContext: { section in
                     HomeTaskListMoveContext(
-                        sectionKey: section.tasks.first.map { filtering.regularManualOrderSectionKey(for: $0) }
-                            ?? HomeTaskListTagGrouping.sectionKey(for: nil),
+                        sectionKey: separatesDeadlineStatusInTagSections
+                            && isDeadlineStatusSection(section)
+                            ? section.identityKey
+                            : section.tasks.first.map { filtering.regularManualOrderSectionKey(for: $0) }
+                                ?? HomeTaskListTagGrouping.sectionKey(for: nil),
                         orderedTaskIDs: section.tasks.map(\.taskID)
                     )
                 }
@@ -752,6 +756,15 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                 isCollapsible: true
             )
         ]
+    }
+
+    private static func isDeadlineStatusSection(_ section: HomeTaskListSection<Display>) -> Bool {
+        switch section.identityKey {
+        case "missed", "overdue", "dueSoon", "doneToday":
+            return true
+        default:
+            return false
+        }
     }
 
     private static func tagPresentationSections(

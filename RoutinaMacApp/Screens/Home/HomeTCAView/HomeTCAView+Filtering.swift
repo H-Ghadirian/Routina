@@ -30,6 +30,7 @@ extension HomeTCAView {
                 excludeTagMatchMode: store.excludeTagMatchMode,
                 searchText: searchTextBinding.wrappedValue,
                 routineListSectioningMode: routineListSectioningMode,
+                separateDeadlineStatusInTagSections: separatesDeadlineStatusInTagTaskListSections,
                 routineTasks: store.routineTasks,
                 referenceDate: referenceDate,
                 calendar: calendar
@@ -70,6 +71,7 @@ extension HomeTCAView {
             separateDailyRoutinesInTaskList: separatesDailyRoutinesInTaskList,
             showTomorrowSection: showsTomorrowInTaskList,
             separateTodosAndRoutinesInTagSections: separatesTodosAndRoutinesInTagTaskListSections,
+            separateDeadlineStatusInTagSections: separatesDeadlineStatusInTagTaskListSections,
             emptyState: emptyState,
             taskListMode: store.taskListMode,
             selectedFilter: store.selectedFilter,
@@ -217,6 +219,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
     let separateDailyRoutinesInTaskList: Bool
     let showTomorrowSection: Bool
     let separateTodosAndRoutinesInTagSections: Bool
+    let separateDeadlineStatusInTagSections: Bool
     let emptyState: HomeTaskListEmptyState
     let taskListMode: HomeFeature.TaskListMode
     let selectedFilter: RoutineListFilter
@@ -253,6 +256,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         separateDailyRoutinesInTaskList: Bool,
         showTomorrowSection: Bool,
         separateTodosAndRoutinesInTagSections: Bool,
+        separateDeadlineStatusInTagSections: Bool,
         emptyState: HomeTaskListEmptyState,
         taskListMode: HomeFeature.TaskListMode,
         selectedFilter: RoutineListFilter,
@@ -293,6 +297,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         self.separateDailyRoutinesInTaskList = separateDailyRoutinesInTaskList
         self.showTomorrowSection = showTomorrowSection
         self.separateTodosAndRoutinesInTagSections = separateTodosAndRoutinesInTagSections
+        self.separateDeadlineStatusInTagSections = separateDeadlineStatusInTagSections
         self.emptyState = emptyState
         self.taskListMode = taskListMode
         self.selectedFilter = selectedFilter

@@ -1095,6 +1095,8 @@ enum SettingsRoutineDataImportEntityInserter {
         preferences.macShowDoneCountInToolbar = backupPreferences.macShowDoneCountInToolbar ?? false
         preferences.separateTodosAndRoutinesInTagTaskListSections = backupPreferences
             .separateTodosAndRoutinesInTagTaskListSections ?? false
+        preferences.separateDeadlineStatusInTagTaskListSections = backupPreferences
+            .separateDeadlineStatusInTagTaskListSections ?? false
         preferences.notificationReminderHour = backupPreferences.notificationReminderHour ?? NotificationPreferences.defaultReminderHour
         preferences.notificationReminderMinute = backupPreferences.notificationReminderMinute ?? NotificationPreferences.defaultReminderMinute
         preferences.batteryRoutineThresholdPercent = backupPreferences.batteryRoutineThresholdPercent ?? BatteryRoutinePreferences.defaultThresholdPercent

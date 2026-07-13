@@ -733,6 +733,38 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func groupedRoutineSectionsCanSeparateDeadlineStatusWhenGroupingByTags() {
+        let sections = makeFiltering(
+            routineListSectioningMode: .tags,
+            separateDeadlineStatusInTagSections: true
+        )
+        .groupedRoutineSections(from: [
+            TestTaskDisplay(
+                name: "Missed",
+                tags: ["Focus"],
+                daysUntilDue: 1,
+                hasMissedExactTimedOccurrence: true
+            ),
+            TestTaskDisplay(name: "Overdue", tags: ["Focus"], daysUntilDue: -2),
+            TestTaskDisplay(name: "Due Soon", tags: ["Admin"], daysUntilDue: 1),
+            TestTaskDisplay(name: "Tagged", tags: ["Focus"], daysUntilDue: 4),
+            TestTaskDisplay(name: "Untagged", daysUntilDue: 4),
+            TestTaskDisplay(name: "Done Today", tags: ["Admin"], daysUntilDue: 4, isDoneToday: true)
+        ])
+
+        #expect(sections.map(\.identityKey) == ["missed", "overdue", "dueSoon", "tag:focus", "tag:untagged", "doneToday"])
+        #expect(sections.map(\.title) == ["Missed", "Overdue", "Due Soon", "#Focus", "No Tags", "Done Today"])
+        #expect(sections.map { $0.tasks.map(\.name) } == [
+            ["Missed"],
+            ["Overdue"],
+            ["Due Soon"],
+            ["Tagged"],
+            ["Untagged"],
+            ["Done Today"]
+        ])
+    }
+
+    @Test
     func deadlineSectionsUseStableDateKeys() {
         let sections = makeFiltering(routineListSectioningMode: .deadlineDate)
             .groupedRoutineSections(from: [
@@ -1379,6 +1411,53 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func sidebarPresentationTagGroupingCanSeparateDeadlineStatusInsideFuture() {
+        let missedID = UUID()
+        let overdueID = UUID()
+        let dueSoonID = UUID()
+        let taggedID = UUID()
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(
+                routineListSectioningMode: .tags,
+                separateDeadlineStatusInTagSections: true
+            ),
+            routineDisplays: [
+                TestTaskDisplay(
+                    taskID: missedID,
+                    name: "Missed",
+                    tags: ["Focus"],
+                    daysUntilDue: 1,
+                    hasMissedExactTimedOccurrence: true
+                ),
+                TestTaskDisplay(taskID: overdueID, name: "Overdue", tags: ["Focus"], daysUntilDue: -2),
+                TestTaskDisplay(taskID: dueSoonID, name: "Due soon", tags: ["Admin"], daysUntilDue: 1),
+                TestTaskDisplay(taskID: taggedID, name: "Tagged", tags: ["Focus"], daysUntilDue: 4)
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        let futureSection = presentation.sections.first
+        let taskGroups = futureSection?.taskGroups ?? []
+        #expect(futureSection?.kind == .future)
+        #expect(taskGroups.map(\.title) == ["Missed", "Overdue", "Due Soon", "#Focus"])
+        #expect(taskGroups.map(\.kind) == [.deadlineDate, .deadlineDate, .deadlineDate, .tag])
+        #expect(taskGroups.map(\.isCollapsible) == [true, true, true, true])
+        #expect(taskGroups.compactMap(\.moveContext?.sectionKey) == ["missed", "overdue", "dueSoon", "tag:focus"])
+        #expect(taskGroups.compactMap(\.moveContext?.orderedTaskIDs) == [
+            [missedID],
+            [overdueID],
+            [dueSoonID],
+            [taggedID]
+        ])
+    }
+
+    @Test
     func sidebarPresentationTagGroupingMovesPlannedTodayTaskAheadOfMergedDailyRoutines() {
         let referenceDate = Date(timeIntervalSince1970: 1_714_608_000)
         let plannedID = UUID()
@@ -1751,6 +1830,7 @@ private func makeFiltering(
     excludeTagMatchMode: RoutineTagMatchMode = .any,
     searchText: String = "",
     routineListSectioningMode: RoutineListSectioningMode = .status,
+    separateDeadlineStatusInTagSections: Bool = false,
     routineTasks: [RoutineTask] = [],
     referenceDate: Date = Date(timeIntervalSince1970: 1_714_608_000)
 ) -> HomeTaskListFiltering<TestTaskDisplay> {
@@ -1777,6 +1857,7 @@ private func makeFiltering(
             excludeTagMatchMode: excludeTagMatchMode,
             searchText: searchText,
             routineListSectioningMode: routineListSectioningMode,
+            separateDeadlineStatusInTagSections: separateDeadlineStatusInTagSections,
             routineTasks: routineTasks,
             referenceDate: referenceDate,
             calendar: calendar

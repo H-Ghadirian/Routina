@@ -140,6 +140,11 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
         sectionBuilder.configuration.routineListSectioningMode == .deadlineDate
     }
 
+    var separatesDeadlineStatusInTagSections: Bool {
+        sectionBuilder.configuration.routineListSectioningMode == .tags
+            && sectionBuilder.configuration.separateDeadlineStatusInTagSections
+    }
+
     func filteredDailyRoutineTasks(_ displays: [Display]) -> [Display] {
         sorter.sortedTasks(
             displays.filter { task in

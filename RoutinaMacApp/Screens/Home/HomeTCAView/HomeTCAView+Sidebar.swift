@@ -1146,6 +1146,7 @@ extension HomeTCAView {
             taskListViewMode: homeFilterBindings.taskListViewMode,
             routineListSectioningMode: homeFilterBindings.routineListSectioningMode,
             separateTodosAndRoutinesInTagSections: $separatesTodosAndRoutinesInTagTaskListSections,
+            separateDeadlineStatusInTagSections: $separatesDeadlineStatusInTagTaskListSections,
             taskListSortOrder: homeFilterBindings.taskListSortOrder,
             createdDateFilter: homeFilterBindings.createdDateFilter,
             hideAssumedDoneTasks: homeFilterBindings.hideAssumedDoneTasks,
