@@ -207,6 +207,7 @@ private struct TaskDetailMacRoutineHeatmapGridView: View {
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                         .frame(width: cellSize, alignment: .leading)
                 }
             }
