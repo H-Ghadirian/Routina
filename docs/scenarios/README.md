@@ -490,6 +490,21 @@ Given plan focus starts from tasks in `Today`
 When focus time is allocated while running or after finish
 Then task allocations are recorded without deleting the unassigned focus session history
 
+### Resumed Tag Focus Shows Separate Planner Segments
+
+Area: Planner
+Decision links: [0123](../decisions/0123-pause-focus-timers.md), [0267](../decisions/0267-support-mac-toolbar-tag-focus.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/DayPlanPlannerStateTests.swift`
+
+Given a count-up tag focus session is paused after focused work has accumulated
+When the user resumes the same focus session later that day
+Then Planner shows the completed pre-pause segment and the current resumed segment as separate blocks with the same tag
+And the resumed block duration follows focused time after resume instead of the wall-clock gap while the timer was paused
+And an already-saved pre-pause segment is capped to focused time instead of spanning the paused gap
+And after multiple pause/resume cycles, each completed focus segment remains its own block instead of being packed into the first block
+
 ### Planner Range Picker Follows Adaptive Visible Days
 
 Area: Planner

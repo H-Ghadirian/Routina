@@ -573,10 +573,10 @@ struct FocusSessionCard: View {
     private func resume(_ session: FocusSession) {
         let resumedAt = Date()
         let pausedAt = session.pausedAt
-        guard session.resume(at: resumedAt) else { return }
         if let pausedAt {
             syncPausedCountUpPlannerSegment(for: session, pausedAt: pausedAt)
         }
+        guard session.resume(at: resumedAt) else { return }
         syncResumedCountUpPlannerSegment(for: session, resumedAt: resumedAt)
         DeviceActivityRecorder.recordAction(
             .resumed,

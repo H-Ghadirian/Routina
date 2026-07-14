@@ -235,12 +235,14 @@ enum FocusSessionSupport {
     ) throws -> Bool {
         guard kind != .sprint,
               let session = try activeTaskFocus(sessionID: sessionID, kind: kind, in: context),
-              let pausedAt = session.pausedAt,
-              session.resume(at: resumedAt) else {
+              let pausedAt = session.pausedAt else {
             return false
         }
 
         try savePausedCountUpFocusSegment(for: session, pausedAt: pausedAt, calendar: calendar, context: context)
+        guard session.resume(at: resumedAt) else {
+            return false
+        }
         try saveResumedCountUpFocusSegment(for: session, resumedAt: resumedAt, calendar: calendar, context: context)
         let title = try focusTitle(for: session, in: context)
         DeviceActivityRecorder.recordAction(

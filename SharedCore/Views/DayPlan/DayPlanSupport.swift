@@ -203,6 +203,14 @@ struct DayPlanVisibleBlockContext {
         )
     }
 
+    func correctedActiveFocusBlocks(_ blocks: [DayPlanBlock]) -> [DayPlanBlock] {
+        DayPlanFocusSessionPlannerSync.correctedActiveCountUpFocusSegmentBlocks(
+            blocks,
+            activeFocusSessions: activeFocusSessions,
+            referenceDate: referenceDate
+        )
+    }
+
     private static func date(fromDayKey dayKey: String, calendar: Calendar) -> Date? {
         let parts = dayKey.split(separator: "-")
         guard parts.count == 3,
@@ -308,12 +316,13 @@ enum DayPlanVisibleBlocks {
     ) -> [DayPlanBlock] {
         guard !blocks.isEmpty else { return [] }
 
+        let correctedBlocks = context.correctedActiveFocusBlocks(blocks)
         let activeCountUpSegmentBlockIDs = activeCountUpCurrentSegmentBlockIDs(
-            blocks,
+            correctedBlocks,
             activeFocusSessions: context.activeFocusSessions
         )
 
-        return blocks.filter { block in
+        return correctedBlocks.filter { block in
             if activeCountUpSegmentBlockIDs.contains(block.id) {
                 return false
             }
@@ -338,10 +347,19 @@ enum DayPlanVisibleBlocks {
                 return nil
             }
 
-            return DayPlanFocusSessionPlannerSync.latestFocusSegmentBlock(
+            guard let latestSegmentBlock = DayPlanFocusSessionPlannerSync.latestFocusSegmentBlock(
                 in: blocks,
                 for: session
-            )?.id ?? session.id
+            ) else {
+                return session.id
+            }
+
+            if latestSegmentBlock.id == session.id,
+               session.accumulatedPausedSeconds > 0 {
+                return nil
+            }
+
+            return latestSegmentBlock.id
         })
     }
 }

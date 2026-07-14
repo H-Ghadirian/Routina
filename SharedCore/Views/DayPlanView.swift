@@ -7209,6 +7209,7 @@ private struct DayPlanLifecycleModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .onAppear {
+                reconcileCountUpFocusSegments()
                 planner.loadBlocks(calendar: calendar, context: modelContext)
                 showExactTimedTasks()
                 planner.selectDefaultTaskIfNeeded(from: tasks)
@@ -7233,15 +7234,26 @@ private struct DayPlanLifecycleModifier: ViewModifier {
                 showExactTimedTasks()
             }
             .onChange(of: focusSessionChangeToken) { _, _ in
+                reconcileCountUpFocusSegments()
                 planner.loadBlocks(calendar: calendar, context: modelContext)
                 showExactTimedTasks()
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
+                    reconcileCountUpFocusSegments()
                     planner.loadBlocks(calendar: calendar, context: modelContext)
                     showExactTimedTasks()
                 }
             }
+    }
+
+    private func reconcileCountUpFocusSegments() {
+        DayPlanFocusSessionPlannerSync.reconcileCountUpFocusSegments(
+            for: focusSessions,
+            tasks: tasks,
+            calendar: calendar,
+            context: modelContext
+        )
     }
 
     private var focusSessionChangeToken: [String] {

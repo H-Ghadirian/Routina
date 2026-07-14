@@ -94,6 +94,11 @@ enum DayPlanFocusSessionBlocks {
         calendar: Calendar,
         excluding plannedBlocks: [DayPlanBlock] = []
     ) -> [DayPlanFocusSessionBlock] {
+        let correctedPlannedBlocks = DayPlanFocusSessionPlannerSync.correctedActiveCountUpFocusSegmentBlocks(
+            plannedBlocks,
+            activeFocusSessions: sessions,
+            referenceDate: now
+        )
         let tasksByID = Dictionary(grouping: tasks, by: \.id).compactMapValues(\.first)
         let blocks = sessions.compactMap { session -> DayPlanFocusSessionBlock? in
             if session.isUnassigned {
@@ -101,7 +106,7 @@ enum DayPlanFocusSessionBlocks {
                     for: session,
                     now: now,
                     calendar: calendar,
-                    excluding: plannedBlocks
+                    excluding: correctedPlannedBlocks
                 )
             }
 
@@ -110,7 +115,7 @@ enum DayPlanFocusSessionBlocks {
                     for: session,
                     now: now,
                     calendar: calendar,
-                    excluding: plannedBlocks
+                    excluding: correctedPlannedBlocks
                 )
             }
 
@@ -121,10 +126,11 @@ enum DayPlanFocusSessionBlocks {
                   let task = tasksByID[session.taskID]
             else { return nil }
 
-            let latestSegmentBlock = DayPlanFocusSessionPlannerSync.latestFocusSegmentBlock(
-                in: plannedBlocks,
+            let segmentBlocks = DayPlanFocusSessionPlannerSync.focusSegmentBlocks(
+                in: correctedPlannedBlocks,
                 for: session
             )
+            let latestSegmentBlock = segmentBlocks.last
             if session.isPaused, session.plannedDurationSeconds <= 0, latestSegmentBlock != nil {
                 return nil
             }
@@ -133,9 +139,15 @@ enum DayPlanFocusSessionBlocks {
             let renderStart = activeRenderStart(
                 for: session,
                 startedAt: startedAt,
-                latestSegmentBlock: latestSegmentBlock,
+                segmentBlocks: segmentBlocks,
                 now: now,
                 calendar: calendar
+            )
+            let blockID = activeBlockID(
+                for: session,
+                startedAt: startedAt,
+                renderStart: renderStart,
+                latestSegmentBlock: latestSegmentBlock
             )
             let startMinute = startMinute(for: renderStart, calendar: calendar)
             let elapsedSeconds = max(
@@ -146,7 +158,7 @@ enum DayPlanFocusSessionBlocks {
             let remainingMinutes = max(1, DayPlanBlock.minutesPerDay - startMinute)
             let durationMinutes = min(elapsedMinutes, remainingMinutes)
             let block = DayPlanBlock(
-                id: latestSegmentBlock?.id ?? session.id,
+                id: blockID,
                 taskID: task.id,
                 dayKey: dayKey,
                 startMinute: startMinute,
@@ -160,7 +172,7 @@ enum DayPlanFocusSessionBlocks {
                 updatedAt: now
             )
             if session.plannedDurationSeconds > 0 {
-                guard !isRepresentedByPlannerBlock(block, plannedBlocks: plannedBlocks) else {
+                guard !isRepresentedByPlannerBlock(block, plannedBlocks: correctedPlannedBlocks) else {
                     return nil
                 }
             }
@@ -192,10 +204,11 @@ enum DayPlanFocusSessionBlocks {
               let tagTitle = session.focusTagTitle
         else { return nil }
 
-        let latestSegmentBlock = DayPlanFocusSessionPlannerSync.latestFocusSegmentBlock(
+        let segmentBlocks = DayPlanFocusSessionPlannerSync.focusSegmentBlocks(
             in: plannedBlocks,
             for: session
         )
+        let latestSegmentBlock = segmentBlocks.last
         if session.isPaused, session.plannedDurationSeconds <= 0, latestSegmentBlock != nil {
             return nil
         }
@@ -204,9 +217,15 @@ enum DayPlanFocusSessionBlocks {
         let renderStart = activeRenderStart(
             for: session,
             startedAt: startedAt,
-            latestSegmentBlock: latestSegmentBlock,
+            segmentBlocks: segmentBlocks,
             now: now,
             calendar: calendar
+        )
+        let blockID = activeBlockID(
+            for: session,
+            startedAt: startedAt,
+            renderStart: renderStart,
+            latestSegmentBlock: latestSegmentBlock
         )
         let startMinute = startMinute(for: renderStart, calendar: calendar)
         let elapsedSeconds = max(
@@ -217,7 +236,7 @@ enum DayPlanFocusSessionBlocks {
         let remainingMinutes = max(1, DayPlanBlock.minutesPerDay - startMinute)
         let durationMinutes = min(elapsedMinutes, remainingMinutes)
         let block = DayPlanBlock(
-            id: latestSegmentBlock?.id ?? session.id,
+            id: blockID,
             taskID: FocusSession.unassignedTaskID,
             dayKey: dayKey,
             startMinute: startMinute,
@@ -357,18 +376,73 @@ enum DayPlanFocusSessionBlocks {
     private static func activeRenderStart(
         for session: FocusSession,
         startedAt: Date,
-        latestSegmentBlock: DayPlanBlock?,
+        segmentBlocks: [DayPlanBlock],
         now: Date,
         calendar: Calendar
     ) -> Date {
         let sessionRenderStart = renderStart(for: startedAt, now: now, calendar: calendar)
+        let latestSegmentBlock = segmentBlocks.last
         guard session.plannedDurationSeconds <= 0,
-              let latestSegmentBlock,
-              latestSegmentBlock.createdAt > sessionRenderStart else {
+              let latestSegmentBlock else {
             return sessionRenderStart
         }
 
-        return renderStart(for: latestSegmentBlock.createdAt, now: now, calendar: calendar)
+        if latestSegmentBlock.createdAt > sessionRenderStart {
+            return renderStart(for: latestSegmentBlock.createdAt, now: now, calendar: calendar)
+        }
+
+        if let inferredStart = inferredCurrentSegmentStart(
+            for: session,
+            segmentBlocks: segmentBlocks,
+            now: now
+        ) {
+            return renderStart(for: inferredStart, now: now, calendar: calendar)
+        }
+
+        return sessionRenderStart
+    }
+
+    private static func activeBlockID(
+        for session: FocusSession,
+        startedAt: Date,
+        renderStart: Date,
+        latestSegmentBlock: DayPlanBlock?
+    ) -> UUID {
+        if let latestSegmentBlock,
+           latestSegmentBlock.createdAt == renderStart {
+            return latestSegmentBlock.id
+        }
+
+        if renderStart == startedAt {
+            return session.id
+        }
+
+        return DayPlanFocusSessionPlannerSync.focusSegmentBlockID(
+            sessionID: session.id,
+            segmentStartedAt: renderStart
+        )
+    }
+
+    private static func inferredCurrentSegmentStart(
+        for session: FocusSession,
+        segmentBlocks: [DayPlanBlock],
+        now: Date
+    ) -> Date? {
+        guard session.pausedAt == nil,
+              session.accumulatedPausedSeconds > 0,
+              segmentBlocks.count == 1,
+              let segmentBlock = segmentBlocks.first,
+              segmentBlock.id == session.id else {
+            return nil
+        }
+
+        let activeSeconds = session.activeDurationSeconds(at: now)
+        let storedSeconds = TimeInterval(max(0, segmentBlock.durationMinutes) * 60)
+        let currentSegmentSeconds = max(0, activeSeconds - storedSeconds)
+        guard currentSegmentSeconds > 0 else { return nil }
+
+        let inferredStart = now.addingTimeInterval(-currentSegmentSeconds)
+        return max(inferredStart, segmentBlock.updatedAt)
     }
 
     private static func isRepresentedByPlannerBlock(
@@ -436,6 +510,34 @@ enum DayPlanFocusSessionPlannerSync {
         focusSegmentBlocks(in: blocks, for: session).last
     }
 
+    static func correctedActiveCountUpFocusSegmentBlocks(
+        _ blocks: [DayPlanBlock],
+        activeFocusSessions: [FocusSession],
+        referenceDate: Date
+    ) -> [DayPlanBlock] {
+        guard !blocks.isEmpty, !activeFocusSessions.isEmpty else { return blocks }
+
+        var correctedBlocks = blocks
+        for session in activeFocusSessions {
+            let corrections = correctedCompletedSegmentDurations(
+                in: correctedBlocks,
+                for: session,
+                referenceDate: referenceDate
+            )
+            guard !corrections.isEmpty else { continue }
+
+            correctedBlocks = correctedBlocks.map { block in
+                guard let durationMinutes = corrections[block.id] else {
+                    return block
+                }
+
+                return copyBlock(block, durationMinutes: durationMinutes)
+            }
+        }
+
+        return correctedBlocks
+    }
+
     static func isFocusSegmentBlock(
         _ block: DayPlanBlock,
         for session: FocusSession
@@ -459,6 +561,87 @@ enum DayPlanFocusSessionPlannerSync {
             sessionID: session.id,
             segmentStartedAt: block.createdAt
         )
+    }
+
+    private static func correctedCompletedSegmentDurations(
+        in blocks: [DayPlanBlock],
+        for session: FocusSession,
+        referenceDate: Date
+    ) -> [UUID: Int] {
+        guard session.plannedDurationSeconds <= 0,
+              session.completedAt == nil,
+              session.abandonedAt == nil,
+              session.accumulatedPausedSeconds > 0,
+              session.isTaskFocus || session.isTagFocus else {
+            return [:]
+        }
+
+        let segments = focusSegmentBlocks(in: blocks, for: session)
+        guard segments.count > 1,
+              let currentSegment = segments.last else {
+            return [:]
+        }
+
+        let renderEnd = session.pausedAt ?? referenceDate
+        guard renderEnd >= currentSegment.createdAt else {
+            return [:]
+        }
+
+        let activeSeconds = session.activeDurationSeconds(at: renderEnd)
+        let currentSegmentSeconds = max(0, renderEnd.timeIntervalSince(currentSegment.createdAt))
+        let completedBudgetSeconds = max(0, activeSeconds - currentSegmentSeconds)
+        return completedSegmentDurationCorrections(
+            Array(segments.dropLast()),
+            budgetSeconds: completedBudgetSeconds
+        )
+    }
+
+    private static func copyBlock(_ block: DayPlanBlock, durationMinutes: Int) -> DayPlanBlock {
+        DayPlanBlock(
+            id: block.id,
+            taskID: block.taskID,
+            dayKey: block.dayKey,
+            startMinute: block.startMinute,
+            durationMinutes: durationMinutes,
+            titleSnapshot: block.titleSnapshot,
+            emojiSnapshot: block.emojiSnapshot,
+            createdAt: block.createdAt,
+            updatedAt: block.updatedAt,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
+    }
+
+    private static func completedSegmentDurationCorrections(
+        _ segments: [DayPlanBlock],
+        budgetSeconds: TimeInterval
+    ) -> [UUID: Int] {
+        let budgetMinutes = Int(ceil(max(0, budgetSeconds) / 60))
+        guard budgetMinutes > 0, !segments.isEmpty else {
+            return [:]
+        }
+
+        let originalMinutes = segments.reduce(0) { total, segment in
+            total + max(DayPlanBlock.minimumStoredDurationMinutes, segment.durationMinutes)
+        }
+        guard originalMinutes > budgetMinutes else {
+            return [:]
+        }
+
+        var overageMinutes = originalMinutes - budgetMinutes
+        var correctedDurations: [UUID: Int] = [:]
+        for segment in segments {
+            guard overageMinutes > 0 else { break }
+
+            let originalDuration = max(DayPlanBlock.minimumStoredDurationMinutes, segment.durationMinutes)
+            let reducibleMinutes = max(0, originalDuration - DayPlanBlock.minimumStoredDurationMinutes)
+            let reduction = min(overageMinutes, reducibleMinutes)
+            guard reduction > 0 else { continue }
+
+            correctedDurations[segment.id] = originalDuration - reduction
+            overageMinutes -= reduction
+        }
+
+        return correctedDurations
     }
 
     @discardableResult
@@ -684,6 +867,62 @@ enum DayPlanFocusSessionPlannerSync {
         )
     }
 
+    static func reconcileCountUpFocusSegments(
+        for sessions: [FocusSession],
+        tasks: [RoutineTask],
+        calendar: Calendar,
+        context: ModelContext
+    ) {
+        guard !sessions.isEmpty else { return }
+
+        let tasksByID = Dictionary(grouping: tasks, by: \.id).compactMapValues(\.first)
+        for session in sessions {
+            guard session.plannedDurationSeconds <= 0,
+                  session.abandonedAt == nil,
+                  let startedAt = session.startedAt,
+                  session.isTaskFocus || session.isTagFocus else {
+                continue
+            }
+
+            let taskID: UUID
+            let title: String
+            let emoji: String?
+            if session.isTagFocus {
+                taskID = FocusSession.unassignedTaskID
+                title = session.focusTagTitle ?? "#Tag"
+                emoji = nil
+            } else if let task = tasksByID[session.taskID] {
+                taskID = task.id
+                title = DayPlanTaskSorting.title(for: task)
+                emoji = CalendarTaskImportSupport.displayEmoji(for: task.emoji)
+            } else {
+                continue
+            }
+
+            let actions = focusPauseResumeActionLogs(for: session.id, context: context)
+            let segments = focusSegments(
+                startedAt: startedAt,
+                completedAt: session.completedAt,
+                pausedAt: session.pausedAt,
+                actions: actions
+            )
+            guard !segments.isEmpty else { continue }
+
+            for segment in segments {
+                let block = focusSegmentBlock(
+                    session: session,
+                    taskID: taskID,
+                    title: title,
+                    emoji: emoji,
+                    segmentStartedAt: segment.startedAt,
+                    durationSeconds: segment.durationSeconds,
+                    calendar: calendar
+                )
+                upsertBlock(block, context: context)
+            }
+        }
+    }
+
     @discardableResult
     static func saveStartedFocusBlock(
         for task: RoutineTask,
@@ -762,15 +1001,27 @@ enum DayPlanFocusSessionPlannerSync {
         }
 
         let storedSegments = focusSegmentBlocks(for: session, context: context)
-        if storedSegments.count > 1,
-           let latestSegment = storedSegments.last {
-            let durationSeconds = max(60, endedAt.timeIntervalSince(latestSegment.createdAt))
+        if let segmentStartedAt = countUpSegmentStart(
+            for: session,
+            storedSegments: storedSegments,
+            segmentEndedAt: endedAt,
+            canInferCurrentSegment: session.accumulatedPausedSeconds > 0
+        ),
+           segmentStartedAt > startedAt {
+            repairOvergrownCompletedSegments(
+                for: session,
+                storedSegments: storedSegments,
+                currentSegmentStartedAt: segmentStartedAt,
+                segmentEndedAt: endedAt,
+                context: context
+            )
+            let durationSeconds = max(60, endedAt.timeIntervalSince(segmentStartedAt))
             let block = focusSegmentBlock(
                 session: session,
                 taskID: task.id,
                 title: DayPlanTaskSorting.title(for: task),
                 emoji: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
-                segmentStartedAt: latestSegment.createdAt,
+                segmentStartedAt: segmentStartedAt,
                 durationSeconds: durationSeconds,
                 calendar: calendar
             )
@@ -805,16 +1056,28 @@ enum DayPlanFocusSessionPlannerSync {
         }
 
         let storedSegments = focusSegmentBlocks(for: session, context: context)
-        if storedSegments.count > 1,
-           let latestSegment = storedSegments.last {
-            let durationSeconds = max(60, endedAt.timeIntervalSince(latestSegment.createdAt))
+        if let segmentStartedAt = countUpSegmentStart(
+            for: session,
+            storedSegments: storedSegments,
+            segmentEndedAt: endedAt,
+            canInferCurrentSegment: session.accumulatedPausedSeconds > 0
+        ),
+           segmentStartedAt > startedAt {
+            repairOvergrownCompletedSegments(
+                for: session,
+                storedSegments: storedSegments,
+                currentSegmentStartedAt: segmentStartedAt,
+                segmentEndedAt: endedAt,
+                context: context
+            )
+            let durationSeconds = max(60, endedAt.timeIntervalSince(segmentStartedAt))
             let title = RoutineTag.cleaned(tagName).map { "#\($0)" } ?? "#Tag"
             let block = focusSegmentBlock(
                 session: session,
                 taskID: FocusSession.unassignedTaskID,
                 title: title,
                 emoji: nil,
-                segmentStartedAt: latestSegment.createdAt,
+                segmentStartedAt: segmentStartedAt,
                 durationSeconds: durationSeconds,
                 calendar: calendar
             )
@@ -936,6 +1199,240 @@ enum DayPlanFocusSessionPlannerSync {
         }
     }
 
+    private struct FocusPauseResumeAction {
+        var kind: RoutinaDeviceActionKind
+        var timestamp: Date
+    }
+
+    private struct FocusSegmentInterval {
+        var startedAt: Date
+        var endedAt: Date?
+
+        var durationSeconds: TimeInterval {
+            guard let endedAt else {
+                return 60
+            }
+
+            return max(60, endedAt.timeIntervalSince(startedAt))
+        }
+    }
+
+    private static func focusPauseResumeActionLogs(
+        for sessionID: UUID,
+        context: ModelContext
+    ) -> [FocusPauseResumeAction] {
+        let sessionIDString = sessionID.uuidString
+        let focusEntity = RoutinaDeviceActionEntity.focusSession.rawValue
+        let pausedAction = RoutinaDeviceActionKind.paused.rawValue
+        let resumedAction = RoutinaDeviceActionKind.resumed.rawValue
+        var descriptor = FetchDescriptor<RoutinaDeviceActionLog>(
+            predicate: #Predicate<RoutinaDeviceActionLog> { log in
+                log.entityRawValue == focusEntity
+                    && log.entityID == sessionIDString
+                    && (log.actionRawValue == pausedAction || log.actionRawValue == resumedAction)
+            }
+        )
+        descriptor.sortBy = [SortDescriptor(\.timestamp)]
+
+        do {
+            return try context.fetch(descriptor).compactMap { log in
+                guard let kind = RoutinaDeviceActionKind(rawValue: log.actionRawValue) else {
+                    return nil
+                }
+
+                return FocusPauseResumeAction(kind: kind, timestamp: log.timestamp)
+            }
+        } catch {
+            NSLog("Failed to load focus pause/resume action logs for \(sessionID): \(error.localizedDescription)")
+            return []
+        }
+    }
+
+    private static func focusSegments(
+        startedAt: Date,
+        completedAt: Date?,
+        pausedAt: Date?,
+        actions: [FocusPauseResumeAction]
+    ) -> [FocusSegmentInterval] {
+        var segments: [FocusSegmentInterval] = []
+        var currentStart: Date? = startedAt
+
+        for action in actions where action.timestamp >= startedAt {
+            switch action.kind {
+            case .paused:
+                guard let segmentStart = currentStart,
+                      action.timestamp > segmentStart else {
+                    continue
+                }
+
+                segments.append(FocusSegmentInterval(startedAt: segmentStart, endedAt: action.timestamp))
+                currentStart = nil
+
+            case .resumed:
+                guard currentStart == nil else {
+                    continue
+                }
+
+                currentStart = action.timestamp
+
+            default:
+                continue
+            }
+        }
+
+        if let completedAt,
+           let segmentStart = currentStart,
+           completedAt > segmentStart {
+            segments.append(FocusSegmentInterval(startedAt: segmentStart, endedAt: completedAt))
+        } else if let pausedAt,
+                  let segmentStart = currentStart,
+                  pausedAt > segmentStart {
+            segments.append(FocusSegmentInterval(startedAt: segmentStart, endedAt: pausedAt))
+        } else if let segmentStart = currentStart,
+                  segmentStart > startedAt {
+            segments.append(FocusSegmentInterval(startedAt: segmentStart, endedAt: nil))
+        }
+
+        return segments
+    }
+
+    private static func countUpSegmentStart(
+        for session: FocusSession,
+        storedSegments: [DayPlanBlock],
+        segmentEndedAt: Date,
+        canInferCurrentSegment: Bool
+    ) -> Date? {
+        guard let startedAt = session.startedAt else {
+            return nil
+        }
+
+        if canInferCurrentSegment,
+           session.accumulatedPausedSeconds > 0,
+           let inferredStart = inferredUnsavedCurrentSegmentStart(
+                for: session,
+                storedSegments: storedSegments,
+                segmentEndedAt: segmentEndedAt
+           ) {
+            if let latestSegment = storedSegments.last {
+                let latestSegmentEnd = latestSegment.createdAt.addingTimeInterval(
+                    storedSegmentDurationSeconds(latestSegment)
+                )
+                if inferredStart > latestSegmentEnd {
+                    return inferredStart
+                }
+            } else if inferredStart > startedAt {
+                return inferredStart
+            }
+        }
+
+        if let latestSegment = storedSegments.last,
+           latestSegment.createdAt > startedAt,
+           isCurrentSegmentPlaceholder(latestSegment, for: session) {
+            return latestSegment.createdAt
+        }
+
+        if let latestSegment = storedSegments.last {
+            if latestSegment.id == session.id,
+               latestSegment.durationMinutes <= DayPlanBlock.minimumStoredDurationMinutes {
+                return startedAt
+            }
+
+            if latestSegment.createdAt > startedAt {
+                return latestSegment.createdAt
+            }
+
+            if canInferCurrentSegment,
+               session.accumulatedPausedSeconds > 0 {
+                return nil
+            }
+        }
+
+        return startedAt
+    }
+
+    private static func inferredUnsavedCurrentSegmentStart(
+        for session: FocusSession,
+        storedSegments: [DayPlanBlock],
+        segmentEndedAt: Date
+    ) -> Date? {
+        guard let startedAt = session.startedAt else {
+            return nil
+        }
+
+        let activeSeconds = session.activeDurationSeconds(at: segmentEndedAt)
+        let storedSeconds = storedSegments
+            .filter { $0.createdAt < segmentEndedAt }
+            .reduce(TimeInterval.zero) { total, segment in
+                total + storedSegmentDurationSeconds(segment)
+            }
+        guard storedSeconds > TimeInterval(DayPlanBlock.minimumStoredDurationMinutes * 60) else {
+            return nil
+        }
+
+        let currentSegmentSeconds = activeSeconds - storedSeconds
+        guard currentSegmentSeconds > 0 else {
+            return nil
+        }
+
+        let inferredStart = segmentEndedAt.addingTimeInterval(-currentSegmentSeconds)
+        guard inferredStart > startedAt else {
+            return nil
+        }
+
+        return inferredStart
+    }
+
+    private static func isCurrentSegmentPlaceholder(_ segment: DayPlanBlock, for session: FocusSession) -> Bool {
+        segment.id != session.id
+            && segment.durationMinutes <= DayPlanBlock.minimumStoredDurationMinutes
+    }
+
+    private static func storedSegmentDurationSeconds(_ segment: DayPlanBlock) -> TimeInterval {
+        let storedMinutesSeconds = TimeInterval(max(DayPlanBlock.minimumStoredDurationMinutes, segment.durationMinutes) * 60)
+        let timestampSeconds = segment.updatedAt.timeIntervalSince(segment.createdAt)
+        guard timestampSeconds > 0, timestampSeconds <= storedMinutesSeconds else {
+            return storedMinutesSeconds
+        }
+
+        return timestampSeconds
+    }
+
+    private static func repairOvergrownCompletedSegments(
+        for session: FocusSession,
+        storedSegments: [DayPlanBlock],
+        currentSegmentStartedAt: Date,
+        segmentEndedAt: Date,
+        context: ModelContext
+    ) {
+        guard session.accumulatedPausedSeconds > 0 else {
+            return
+        }
+
+        let completedSegments = storedSegments.filter { $0.createdAt < currentSegmentStartedAt }
+        guard !completedSegments.isEmpty else {
+            return
+        }
+
+        let activeSeconds = session.activeDurationSeconds(at: segmentEndedAt)
+        let currentSegmentSeconds = max(0, segmentEndedAt.timeIntervalSince(currentSegmentStartedAt))
+        let completedBudgetSeconds = max(0, activeSeconds - currentSegmentSeconds)
+        let corrections = completedSegmentDurationCorrections(
+            completedSegments,
+            budgetSeconds: completedBudgetSeconds
+        )
+        guard !corrections.isEmpty else {
+            return
+        }
+
+        for segment in completedSegments {
+            guard let durationMinutes = corrections[segment.id] else {
+                continue
+            }
+
+            upsertBlock(copyBlock(segment, durationMinutes: durationMinutes), context: context)
+        }
+    }
+
     private static func savePausedCountUpFocusSegment(
         session: FocusSession,
         taskID: UUID,
@@ -946,15 +1443,30 @@ enum DayPlanFocusSessionPlannerSync {
         context: ModelContext
     ) -> DayPlanBlock? {
         guard session.plannedDurationSeconds <= 0,
-              let startedAt = session.startedAt else {
+              session.startedAt != nil else {
             return nil
         }
 
-        let segmentStartedAt = latestFocusSegmentBlock(for: session, context: context)?.createdAt ?? startedAt
+        let storedSegments = focusSegmentBlocks(for: session, context: context)
+        guard let segmentStartedAt = countUpSegmentStart(
+            for: session,
+            storedSegments: storedSegments,
+            segmentEndedAt: pausedAt,
+            canInferCurrentSegment: true
+        ) else {
+            return nil
+        }
         guard pausedAt >= segmentStartedAt else {
             return nil
         }
 
+        repairOvergrownCompletedSegments(
+            for: session,
+            storedSegments: storedSegments,
+            currentSegmentStartedAt: segmentStartedAt,
+            segmentEndedAt: pausedAt,
+            context: context
+        )
         let block = focusSegmentBlock(
             session: session,
             taskID: taskID,
@@ -1049,7 +1561,7 @@ enum DayPlanFocusSessionPlannerSync {
         return focusSegmentBlockID(sessionID: sessionID, segmentStartedAt: segmentStartedAt)
     }
 
-    private static func focusSegmentBlockID(sessionID: UUID, segmentStartedAt: Date) -> UUID {
+    static func focusSegmentBlockID(sessionID: UUID, segmentStartedAt: Date) -> UUID {
         let sessionBytes = sessionID.uuid
         let milliseconds = Int64((segmentStartedAt.timeIntervalSince1970 * 1_000).rounded())
         let timestampBytes = UInt64(bitPattern: milliseconds)

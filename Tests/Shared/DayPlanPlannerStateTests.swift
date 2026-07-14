@@ -2901,6 +2901,464 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func resumedCountUpTagFocusSessionCreatesSeparatePlannerSegment() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let visibleDate = try #require(date("2026-05-07T12:00:00Z"))
+        let startedAt = try #require(date("2026-05-07T09:47:00Z"))
+        let pausedAt = try #require(date("2026-05-07T10:32:00Z"))
+        let resumedAt = try #require(date("2026-05-07T15:32:00Z"))
+        let now = try #require(date("2026-05-07T15:41:00Z"))
+        let session = FocusSession(
+            id: UUID(),
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            tagName: "HSE"
+        )
+        context.insert(session)
+        _ = DayPlanFocusSessionPlannerSync.saveStartedTagFocusBlock(
+            tagName: "HSE",
+            session: session,
+            startedAt: startedAt,
+            durationSeconds: session.plannedDurationSeconds,
+            calendar: calendar,
+            context: context
+        )
+        #expect(session.pause(at: pausedAt))
+        DayPlanFocusSessionPlannerSync.savePausedCountUpTagFocusSegment(
+            tagName: "HSE",
+            session: session,
+            pausedAt: pausedAt,
+            calendar: calendar,
+            context: context
+        )
+        #expect(session.resume(at: resumedAt))
+        DayPlanFocusSessionPlannerSync.savePausedCountUpTagFocusSegment(
+            tagName: "HSE",
+            session: session,
+            pausedAt: pausedAt,
+            calendar: calendar,
+            context: context
+        )
+        DayPlanFocusSessionPlannerSync.saveResumedCountUpTagFocusSegment(
+            tagName: "HSE",
+            session: session,
+            resumedAt: resumedAt,
+            calendar: calendar,
+            context: context
+        )
+
+        let dayKey = DayPlanStorage.dayKey(for: visibleDate, calendar: calendar)
+        let rawBlocks = DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
+        let visibleBlocks = DayPlanVisibleBlocks.blocks(
+            rawBlocks,
+            tasks: [],
+            logs: [],
+            calendar: calendar,
+            activeFocusSessions: [session]
+        )
+        let activeBlocksByDayKey = DayPlanFocusSessionBlocks.activeBlocksByDayKey(
+            on: [visibleDate],
+            from: [],
+            sessions: [session],
+            now: now,
+            calendar: calendar,
+            excluding: rawBlocks
+        )
+
+        #expect(rawBlocks.count == 2)
+        #expect(rawBlocks.map(\.titleSnapshot) == ["#HSE", "#HSE"])
+        #expect(rawBlocks.map(\.startMinute) == [9 * 60 + 47, 15 * 60 + 32])
+        #expect(rawBlocks.map(\.durationMinutes) == [45, 1])
+        #expect(visibleBlocks.map(\.id) == [session.id])
+
+        let activeBlock = try #require(activeBlocksByDayKey[dayKey]?.first)
+        #expect(activeBlock.sessionID == session.id)
+        #expect(activeBlock.block.id == rawBlocks[1].id)
+        #expect(activeBlock.block.titleSnapshot == "#HSE")
+        #expect(activeBlock.block.startMinute == 15 * 60 + 32)
+        #expect(activeBlock.durationMinutes == 9)
+        #expect(!activeBlock.opensTaskDetails)
+    }
+
+    @Test
+    func resumedCountUpTagFocusSessionInfersCurrentSegmentWhenResumeBlockIsMissing() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let visibleDate = try #require(date("2026-05-07T12:00:00Z"))
+        let startedAt = try #require(date("2026-05-07T09:47:00Z"))
+        let pausedAt = try #require(date("2026-05-07T10:32:00Z"))
+        let resumedAt = try #require(date("2026-05-07T15:32:00Z"))
+        let now = try #require(date("2026-05-07T15:41:00Z"))
+        let session = FocusSession(
+            id: UUID(),
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            tagName: "HSE"
+        )
+        context.insert(session)
+        _ = DayPlanFocusSessionPlannerSync.saveStartedTagFocusBlock(
+            tagName: "HSE",
+            session: session,
+            startedAt: startedAt,
+            durationSeconds: session.plannedDurationSeconds,
+            calendar: calendar,
+            context: context
+        )
+        #expect(session.pause(at: pausedAt))
+        DayPlanFocusSessionPlannerSync.savePausedCountUpTagFocusSegment(
+            tagName: "HSE",
+            session: session,
+            pausedAt: pausedAt,
+            calendar: calendar,
+            context: context
+        )
+        #expect(session.resume(at: resumedAt))
+
+        let dayKey = DayPlanStorage.dayKey(for: visibleDate, calendar: calendar)
+        let rawBlocks = DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
+        let visibleBlocks = DayPlanVisibleBlocks.blocks(
+            rawBlocks,
+            tasks: [],
+            logs: [],
+            calendar: calendar,
+            activeFocusSessions: [session]
+        )
+        let activeBlocksByDayKey = DayPlanFocusSessionBlocks.activeBlocksByDayKey(
+            on: [visibleDate],
+            from: [],
+            sessions: [session],
+            now: now,
+            calendar: calendar,
+            excluding: rawBlocks
+        )
+
+        #expect(rawBlocks.count == 1)
+        #expect(rawBlocks[0].id == session.id)
+        #expect(rawBlocks[0].startMinute == 9 * 60 + 47)
+        #expect(rawBlocks[0].durationMinutes == 45)
+        #expect(visibleBlocks.map(\.id) == [session.id])
+
+        let activeBlock = try #require(activeBlocksByDayKey[dayKey]?.first)
+        #expect(activeBlock.block.id != session.id)
+        #expect(activeBlock.block.titleSnapshot == "#HSE")
+        #expect(activeBlock.block.startMinute == 15 * 60 + 32)
+        #expect(activeBlock.durationMinutes == 9)
+        #expect(!activeBlock.opensTaskDetails)
+    }
+
+    @Test
+    func resumedCountUpTagFocusSessionCapsOvergrownCompletedSegment() throws {
+        let calendar = gregorianCalendar
+        let visibleDate = try #require(date("2026-05-07T12:00:00Z"))
+        let startedAt = try #require(date("2026-05-07T09:47:00Z"))
+        let pausedAt = try #require(date("2026-05-07T10:32:00Z"))
+        let resumedAt = try #require(date("2026-05-07T15:35:00Z"))
+        let now = try #require(date("2026-05-07T15:51:00Z"))
+        let session = FocusSession(
+            id: UUID(),
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            tagName: "HSE"
+        )
+        #expect(session.pause(at: pausedAt))
+        #expect(session.resume(at: resumedAt))
+
+        let dayKey = DayPlanStorage.dayKey(for: visibleDate, calendar: calendar)
+        let overgrownBlock = DayPlanBlock(
+            id: session.id,
+            taskID: FocusSession.unassignedTaskID,
+            dayKey: dayKey,
+            startMinute: 9 * 60 + 47,
+            durationMinutes: 6 * 60 + 4,
+            titleSnapshot: "#HSE",
+            createdAt: startedAt,
+            updatedAt: now,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
+        let resumedBlock = DayPlanBlock(
+            id: DayPlanFocusSessionPlannerSync.focusSegmentBlockID(
+                sessionID: session.id,
+                segmentStartedAt: resumedAt
+            ),
+            taskID: FocusSession.unassignedTaskID,
+            dayKey: dayKey,
+            startMinute: 15 * 60 + 35,
+            durationMinutes: 1,
+            titleSnapshot: "#HSE",
+            createdAt: resumedAt,
+            updatedAt: resumedAt.addingTimeInterval(60),
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
+
+        let visibleBlocks = DayPlanVisibleBlocks.blocks(
+            [overgrownBlock, resumedBlock],
+            tasks: [],
+            logs: [],
+            calendar: calendar,
+            referenceDate: now,
+            activeFocusSessions: [session]
+        )
+        let activeBlocksByDayKey = DayPlanFocusSessionBlocks.activeBlocksByDayKey(
+            on: [visibleDate],
+            from: [],
+            sessions: [session],
+            now: now,
+            calendar: calendar,
+            excluding: [overgrownBlock, resumedBlock]
+        )
+
+        #expect(visibleBlocks.map(\.id) == [session.id])
+        #expect(visibleBlocks.first?.startMinute == 9 * 60 + 47)
+        #expect(visibleBlocks.first?.durationMinutes == 45)
+
+        let activeBlock = try #require(activeBlocksByDayKey[dayKey]?.first)
+        #expect(activeBlock.block.id == resumedBlock.id)
+        #expect(activeBlock.block.startMinute == 15 * 60 + 35)
+        #expect(activeBlock.durationMinutes == 16)
+    }
+
+    @Test
+    func reconcilesPackedCountUpTagFocusSegmentsFromPauseResumeActionLogs() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let startedAt = try #require(date("2026-05-07T09:47:00Z"))
+        let firstPausedAt = try #require(date("2026-05-07T10:32:00Z"))
+        let firstResumedAt = try #require(date("2026-05-07T15:35:00Z"))
+        let secondPausedAt = try #require(date("2026-05-07T15:51:00Z"))
+        let secondResumedAt = try #require(date("2026-05-07T16:09:00Z"))
+        let session = FocusSession(
+            id: UUID(),
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            tagName: "HSE"
+        )
+        #expect(session.pause(at: firstPausedAt))
+        #expect(session.resume(at: firstResumedAt))
+        #expect(session.pause(at: secondPausedAt))
+        #expect(session.resume(at: secondResumedAt))
+        context.insert(session)
+
+        let dayKey = DayPlanStorage.dayKey(for: startedAt, calendar: calendar)
+        let packedBlock = DayPlanBlock(
+            id: session.id,
+            taskID: FocusSession.unassignedTaskID,
+            dayKey: dayKey,
+            startMinute: 9 * 60 + 47,
+            durationMinutes: 70,
+            titleSnapshot: "#HSE",
+            createdAt: startedAt,
+            updatedAt: secondPausedAt,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
+        let currentBlock = DayPlanBlock(
+            id: DayPlanFocusSessionPlannerSync.focusSegmentBlockID(
+                sessionID: session.id,
+                segmentStartedAt: secondResumedAt
+            ),
+            taskID: FocusSession.unassignedTaskID,
+            dayKey: dayKey,
+            startMinute: 16 * 60 + 9,
+            durationMinutes: 1,
+            titleSnapshot: "#HSE",
+            createdAt: secondResumedAt,
+            updatedAt: secondResumedAt.addingTimeInterval(60),
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
+        DayPlanStorage.saveBlocks([packedBlock, currentBlock], forDayKey: dayKey, context: context)
+        DeviceActivityRecorder.recordAction(
+            .paused,
+            entity: .focusSession,
+            entityID: session.id,
+            at: firstPausedAt,
+            in: context
+        )
+        DeviceActivityRecorder.recordAction(
+            .resumed,
+            entity: .focusSession,
+            entityID: session.id,
+            at: firstResumedAt,
+            in: context
+        )
+        DeviceActivityRecorder.recordAction(
+            .paused,
+            entity: .focusSession,
+            entityID: session.id,
+            at: secondPausedAt,
+            in: context
+        )
+        DeviceActivityRecorder.recordAction(
+            .resumed,
+            entity: .focusSession,
+            entityID: session.id,
+            at: secondResumedAt,
+            in: context
+        )
+
+        DayPlanFocusSessionPlannerSync.reconcileCountUpFocusSegments(
+            for: [session],
+            tasks: [],
+            calendar: calendar,
+            context: context
+        )
+
+        let blocks = DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
+
+        #expect(blocks.count == 3)
+        #expect(blocks.map(\.titleSnapshot) == ["#HSE", "#HSE", "#HSE"])
+        #expect(blocks.map(\.startMinute) == [9 * 60 + 47, 15 * 60 + 35, 16 * 60 + 9])
+        #expect(blocks.map(\.durationMinutes) == [45, 16, 1])
+    }
+
+    @Test
+    func pausingResumedCountUpTagFocusSessionWithoutResumeBlockCreatesSeparateSegment() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let startedAt = try #require(date("2026-05-07T09:47:00Z"))
+        let pausedAt = try #require(date("2026-05-07T10:32:00Z"))
+        let resumedAt = try #require(date("2026-05-07T15:35:00Z"))
+        let pausedAgainAt = try #require(date("2026-05-07T15:51:00Z"))
+        let session = FocusSession(
+            id: UUID(),
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            tagName: "HSE"
+        )
+        context.insert(session)
+        _ = DayPlanFocusSessionPlannerSync.saveStartedTagFocusBlock(
+            tagName: "HSE",
+            session: session,
+            startedAt: startedAt,
+            durationSeconds: session.plannedDurationSeconds,
+            calendar: calendar,
+            context: context
+        )
+        #expect(session.pause(at: pausedAt))
+        DayPlanFocusSessionPlannerSync.savePausedCountUpTagFocusSegment(
+            tagName: "HSE",
+            session: session,
+            pausedAt: pausedAt,
+            calendar: calendar,
+            context: context
+        )
+        #expect(session.resume(at: resumedAt))
+        #expect(session.pause(at: pausedAgainAt))
+        DayPlanFocusSessionPlannerSync.savePausedCountUpTagFocusSegment(
+            tagName: "HSE",
+            session: session,
+            pausedAt: pausedAgainAt,
+            calendar: calendar,
+            context: context
+        )
+
+        let dayKey = DayPlanStorage.dayKey(for: startedAt, calendar: calendar)
+        let blocks = DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
+
+        #expect(blocks.count == 2)
+        #expect(blocks.map(\.titleSnapshot) == ["#HSE", "#HSE"])
+        #expect(blocks.map(\.startMinute) == [9 * 60 + 47, 15 * 60 + 35])
+        #expect(blocks.map(\.durationMinutes) == [45, 16])
+        #expect(blocks[0].id == session.id)
+        #expect(blocks[1].id != session.id)
+    }
+
+    @Test
+    func resumingAfterSecondPauseKeepsPreviousCountUpTagFocusSegmentsSeparate() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let startedAt = try #require(date("2026-05-07T09:47:00Z"))
+        let firstPausedAt = try #require(date("2026-05-07T10:32:00Z"))
+        let firstResumedAt = try #require(date("2026-05-07T15:35:00Z"))
+        let secondPausedAt = try #require(date("2026-05-07T15:51:00Z"))
+        let secondResumedAt = try #require(date("2026-05-07T16:09:00Z"))
+        let session = FocusSession(
+            id: UUID(),
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            tagName: "HSE"
+        )
+        context.insert(session)
+        _ = DayPlanFocusSessionPlannerSync.saveStartedTagFocusBlock(
+            tagName: "HSE",
+            session: session,
+            startedAt: startedAt,
+            durationSeconds: session.plannedDurationSeconds,
+            calendar: calendar,
+            context: context
+        )
+
+        #expect(session.pause(at: firstPausedAt))
+        DayPlanFocusSessionPlannerSync.savePausedCountUpTagFocusSegment(
+            tagName: "HSE",
+            session: session,
+            pausedAt: firstPausedAt,
+            calendar: calendar,
+            context: context
+        )
+
+        let closingFirstPause = try #require(session.pausedAt)
+        DayPlanFocusSessionPlannerSync.savePausedCountUpTagFocusSegment(
+            tagName: "HSE",
+            session: session,
+            pausedAt: closingFirstPause,
+            calendar: calendar,
+            context: context
+        )
+        #expect(session.resume(at: firstResumedAt))
+        DayPlanFocusSessionPlannerSync.saveResumedCountUpTagFocusSegment(
+            tagName: "HSE",
+            session: session,
+            resumedAt: firstResumedAt,
+            calendar: calendar,
+            context: context
+        )
+
+        #expect(session.pause(at: secondPausedAt))
+        DayPlanFocusSessionPlannerSync.savePausedCountUpTagFocusSegment(
+            tagName: "HSE",
+            session: session,
+            pausedAt: secondPausedAt,
+            calendar: calendar,
+            context: context
+        )
+
+        let closingSecondPause = try #require(session.pausedAt)
+        DayPlanFocusSessionPlannerSync.savePausedCountUpTagFocusSegment(
+            tagName: "HSE",
+            session: session,
+            pausedAt: closingSecondPause,
+            calendar: calendar,
+            context: context
+        )
+        #expect(session.resume(at: secondResumedAt))
+        DayPlanFocusSessionPlannerSync.saveResumedCountUpTagFocusSegment(
+            tagName: "HSE",
+            session: session,
+            resumedAt: secondResumedAt,
+            calendar: calendar,
+            context: context
+        )
+
+        let dayKey = DayPlanStorage.dayKey(for: startedAt, calendar: calendar)
+        let blocks = DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
+
+        #expect(blocks.count == 3)
+        #expect(blocks.map(\.titleSnapshot) == ["#HSE", "#HSE", "#HSE"])
+        #expect(blocks.map(\.startMinute) == [9 * 60 + 47, 15 * 60 + 35, 16 * 60 + 9])
+        #expect(blocks.map(\.durationMinutes) == [45, 16, 1])
+        #expect(blocks[0].id == session.id)
+        #expect(blocks[1].id != session.id)
+        #expect(blocks[2].id != session.id)
+        #expect(blocks[1].id != blocks[2].id)
+    }
+
+    @Test
     func activeTagFocusSessionBlocksUseTagTitleAndDoNotOpenTaskDetails() throws {
         let calendar = gregorianCalendar
         let visibleDate = try #require(date("2026-05-07T12:00:00Z"))
