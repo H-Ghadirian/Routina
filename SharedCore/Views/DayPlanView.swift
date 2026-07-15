@@ -3020,20 +3020,15 @@ private struct DayPlanTimelinePanelContentView: View {
         allTaskIDs: Set<UUID>,
         isTaskFilterActive: Bool
     ) -> Bool {
-        if let taskID {
-            if matchingTaskIDs.contains(taskID) {
-                return true
-            }
-            if allTaskIDs.contains(taskID) {
-                return false
-            }
-        }
-
-        guard isCalendarSearchActive else { return !isTaskFilterActive }
-        let searchableText = [title, emoji ?? ""]
-            .joined(separator: " ")
-            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
-        return searchableText.contains(normalizedCalendarSearchText)
+        DayPlanCalendarTaskPresentationFilter.matches(
+            taskID: taskID,
+            title: title,
+            emoji: emoji,
+            matchingTaskIDs: matchingTaskIDs,
+            allTaskIDs: allTaskIDs,
+            isTaskFilterActive: isTaskFilterActive,
+            normalizedSearchText: normalizedCalendarSearchText
+        )
     }
 
     private var isCalendarSearchActive: Bool {

@@ -4027,6 +4027,173 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func visiblePlannerBlocksKeepSavedTagFocusSegmentsWhenRangeNarrows() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let previousDate = try #require(date("2026-07-14T12:00:00Z"))
+        let currentDate = try #require(date("2026-07-15T12:00:00Z"))
+        let selectedDate = currentDate
+        let now = try #require(date("2026-07-15T13:01:00Z"))
+        let startedAt = try #require(date("2026-07-14T09:47:00Z"))
+        let firstPausedAt = try #require(date("2026-07-14T10:28:00Z"))
+        let firstResumeAt = try #require(date("2026-07-15T09:36:00Z"))
+        let secondPausedAt = try #require(date("2026-07-15T10:33:00Z"))
+        let secondResumeAt = try #require(date("2026-07-15T11:20:00Z"))
+        let thirdPausedAt = try #require(date("2026-07-15T11:41:00Z"))
+        let thirdResumeAt = try #require(date("2026-07-15T12:50:00Z"))
+        let session = FocusSession(
+            id: UUID(),
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            tagName: "HSE"
+        )
+        #expect(session.pause(at: firstPausedAt))
+        #expect(session.resume(at: firstResumeAt))
+        #expect(session.pause(at: secondPausedAt))
+        #expect(session.resume(at: secondResumeAt))
+        #expect(session.pause(at: thirdPausedAt))
+        #expect(session.resume(at: thirdResumeAt))
+
+        let previousDayKey = DayPlanStorage.dayKey(for: previousDate, calendar: calendar)
+        let currentDayKey = DayPlanStorage.dayKey(for: currentDate, calendar: calendar)
+        let previousBlock = tagFocusSegmentBlock(
+            sessionID: session.id,
+            dayKey: previousDayKey,
+            startedAt: startedAt,
+            endedAt: firstPausedAt,
+            calendar: calendar,
+            usesSessionID: true
+        )
+        let morningBlock = tagFocusSegmentBlock(
+            sessionID: session.id,
+            dayKey: currentDayKey,
+            startedAt: firstResumeAt,
+            endedAt: secondPausedAt,
+            calendar: calendar
+        )
+        let middayBlock = tagFocusSegmentBlock(
+            sessionID: session.id,
+            dayKey: currentDayKey,
+            startedAt: secondResumeAt,
+            endedAt: thirdPausedAt,
+            calendar: calendar
+        )
+        let liveBlock = tagFocusSegmentBlock(
+            sessionID: session.id,
+            dayKey: currentDayKey,
+            startedAt: thirdResumeAt,
+            endedAt: now,
+            calendar: calendar
+        )
+        DayPlanStorage.saveBlocks([previousBlock], forDayKey: previousDayKey, context: context)
+        DayPlanStorage.saveBlocks([morningBlock, middayBlock, liveBlock], forDayKey: currentDayKey, context: context)
+
+        let planner = DayPlanPlannerState(selectedDate: selectedDate, visibleRangeMode: .week)
+        let visibleContext = DayPlanVisibleBlockContext(
+            tasks: [],
+            logs: [],
+            calendar: calendar,
+            referenceDate: now,
+            activeFocusSessions: [session]
+        )
+
+        planner.loadBlocks(calendar: calendar, context: context)
+        #expect(
+            visiblePlannerFocusBlockIDs(
+                planner: planner,
+                calendar: calendar,
+                context: context,
+                visibleContext: visibleContext
+            ) == [previousBlock.id, morningBlock.id, middayBlock.id]
+        )
+
+        planner.setVisibleRangeMode(.threeDays, calendar: calendar, context: context)
+        #expect(
+            visiblePlannerFocusBlockIDs(
+                planner: planner,
+                calendar: calendar,
+                context: context,
+                visibleContext: visibleContext
+            ) == [previousBlock.id, morningBlock.id, middayBlock.id]
+        )
+
+        planner.setVisibleRangeMode(.day, calendar: calendar, context: context)
+        #expect(
+            visiblePlannerFocusBlockIDs(
+                planner: planner,
+                calendar: calendar,
+                context: context,
+                visibleContext: visibleContext
+            ) == [morningBlock.id, middayBlock.id]
+        )
+    }
+
+    @Test
+    func calendarTaskFilterKeepsUnassignedTagFocusBlocksVisible() {
+        let taskID = UUID()
+        let staleDeletedTaskBlockID = UUID()
+        let matchingTaskIDs: Set<UUID> = []
+        let allTaskIDs: Set<UUID> = [taskID]
+
+        #expect(
+            DayPlanCalendarTaskPresentationFilter.matches(
+                taskID: FocusSession.unassignedTaskID,
+                title: "#HSE",
+                emoji: nil,
+                matchingTaskIDs: matchingTaskIDs,
+                allTaskIDs: allTaskIDs,
+                isTaskFilterActive: true,
+                normalizedSearchText: ""
+            )
+        )
+        #expect(
+            !DayPlanCalendarTaskPresentationFilter.matches(
+                taskID: taskID,
+                title: "Filtered task",
+                emoji: nil,
+                matchingTaskIDs: matchingTaskIDs,
+                allTaskIDs: allTaskIDs,
+                isTaskFilterActive: true,
+                normalizedSearchText: ""
+            )
+        )
+        #expect(
+            !DayPlanCalendarTaskPresentationFilter.matches(
+                taskID: staleDeletedTaskBlockID,
+                title: "Deleted task block",
+                emoji: nil,
+                matchingTaskIDs: matchingTaskIDs,
+                allTaskIDs: allTaskIDs,
+                isTaskFilterActive: true,
+                normalizedSearchText: ""
+            )
+        )
+        #expect(
+            DayPlanCalendarTaskPresentationFilter.matches(
+                taskID: FocusSession.unassignedTaskID,
+                title: "#HSE",
+                emoji: nil,
+                matchingTaskIDs: matchingTaskIDs,
+                allTaskIDs: allTaskIDs,
+                isTaskFilterActive: true,
+                normalizedSearchText: "hse"
+            )
+        )
+        #expect(
+            !DayPlanCalendarTaskPresentationFilter.matches(
+                taskID: FocusSession.unassignedTaskID,
+                title: "#HSE",
+                emoji: nil,
+                matchingTaskIDs: matchingTaskIDs,
+                allTaskIDs: allTaskIDs,
+                isTaskFilterActive: true,
+                normalizedSearchText: "admin"
+            )
+        )
+    }
+
+    @Test
     func activePlanFocusSessionBlocksStartAfterAllocatedPlannerBlocks() throws {
         let calendar = gregorianCalendar
         let visibleDate = try #require(date("2026-05-07T12:00:00Z"))
@@ -4971,4 +5138,64 @@ private func plannerBlock(
         createdAt: date,
         updatedAt: date
     )
+}
+
+private func tagFocusSegmentBlock(
+    sessionID: UUID,
+    dayKey: String,
+    startedAt: Date,
+    endedAt: Date,
+    calendar: Calendar,
+    usesSessionID: Bool = false
+) -> DayPlanBlock {
+    let components = calendar.dateComponents([.hour, .minute], from: startedAt)
+    let startMinute = ((components.hour ?? 0) * 60) + (components.minute ?? 0)
+    let durationMinutes = max(1, Int(ceil(endedAt.timeIntervalSince(startedAt) / 60)))
+    let blockID = usesSessionID
+        ? sessionID
+        : DayPlanFocusSessionPlannerSync.focusSegmentBlockID(
+            sessionID: sessionID,
+            segmentStartedAt: startedAt
+        )
+
+    return DayPlanBlock(
+        id: blockID,
+        taskID: FocusSession.unassignedTaskID,
+        dayKey: dayKey,
+        startMinute: DayPlanBlock.clampedStartMinute(startMinute),
+        durationMinutes: durationMinutes,
+        titleSnapshot: "#HSE",
+        createdAt: startedAt,
+        updatedAt: endedAt,
+        minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+    )
+}
+
+@MainActor
+private func visiblePlannerFocusBlockIDs(
+    planner: DayPlanPlannerState,
+    calendar: Calendar,
+    context: ModelContext,
+    visibleContext: DayPlanVisibleBlockContext
+) -> [UUID] {
+    let dates = planner.visibleDates(calendar: calendar)
+    var rawBlocksByDayKey: [String: [DayPlanBlock]] = [:]
+    var rawBlocks: [DayPlanBlock] = []
+
+    for date in dates {
+        let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+        let blocks = planner.blocks(on: date, calendar: calendar, context: context)
+        rawBlocksByDayKey[dayKey] = blocks
+        rawBlocks.append(contentsOf: blocks)
+    }
+
+    return dates.flatMap { date -> [UUID] in
+        let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+        return DayPlanVisibleBlocks.blocks(
+            rawBlocksByDayKey[dayKey] ?? [],
+            context: visibleContext,
+            activeFocusSegmentSearchBlocks: rawBlocks
+        )
+        .map(\.id)
+    }
 }

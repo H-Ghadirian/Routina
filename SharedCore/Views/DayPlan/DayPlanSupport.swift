@@ -251,6 +251,42 @@ enum DayPlanScheduleViewVisibility {
     }
 }
 
+enum DayPlanCalendarTaskPresentationFilter {
+    static func matches(
+        taskID: UUID?,
+        title: String,
+        emoji: String?,
+        matchingTaskIDs: Set<UUID>,
+        allTaskIDs: Set<UUID>,
+        isTaskFilterActive: Bool,
+        normalizedSearchText: String
+    ) -> Bool {
+        let isSearchActive = !normalizedSearchText.isEmpty
+
+        if let taskID {
+            if matchingTaskIDs.contains(taskID) {
+                return true
+            }
+            if allTaskIDs.contains(taskID) {
+                return false
+            }
+            if taskID == FocusSession.unassignedTaskID {
+                guard isSearchActive else { return true }
+                return searchableText(title: title, emoji: emoji).contains(normalizedSearchText)
+            }
+        }
+
+        guard isSearchActive else { return !isTaskFilterActive }
+        return searchableText(title: title, emoji: emoji).contains(normalizedSearchText)
+    }
+
+    private static func searchableText(title: String, emoji: String?) -> String {
+        [title, emoji ?? ""]
+            .joined(separator: " ")
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+    }
+}
+
 enum DayPlanTaskSorting {
     static func availableTasks(from tasks: [RoutineTask]) -> [RoutineTask] {
         tasks
