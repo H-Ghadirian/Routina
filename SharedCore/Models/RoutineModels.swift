@@ -71,6 +71,7 @@ final class RoutineTask {
     var actualDurationMinutes: Int?
     var storyPoints: Int?
     var focusModeEnabled: Bool = false
+    var showsTaskDetailHeatmap: Bool = false
     var commentsStorage: String = ""
     var changeLogStorage: String = ""
 
@@ -139,6 +140,15 @@ final class RoutineTask {
         set {
             autoAssumeDoneTimeOfDayHour = newValue?.hour
             autoAssumeDoneTimeOfDayMinute = newValue?.minute
+        }
+    }
+
+    var supportsTaskDetailHeatmap: Bool {
+        switch scheduleMode.taskType {
+        case .routine, .record:
+            return true
+        case .todo:
+            return false
         }
     }
 
@@ -415,6 +425,7 @@ final class RoutineTask {
         actualDurationMinutes: Int? = nil,
         storyPoints: Int? = nil,
         focusModeEnabled: Bool = false,
+        showsTaskDetailHeatmap: Bool = false,
         comments: [RoutineTaskComment] = []
     ) {
         let resolvedScheduleMode = scheduleMode ?? (checklistItems.isEmpty ? .fixedInterval : .derivedFromChecklist)
@@ -501,6 +512,7 @@ final class RoutineTask {
         self.actualDurationMinutes = Self.sanitizedActualDurationMinutes(actualDurationMinutes)
         self.storyPoints = Self.sanitizedStoryPoints(storyPoints)
         self.focusModeEnabled = focusModeEnabled
+        self.showsTaskDetailHeatmap = showsTaskDetailHeatmap
         self.commentsStorage = RoutineTaskCommentStorage.serialize(comments)
         var initialChanges = [
             RoutineTaskChangeLogEntry(
@@ -785,6 +797,7 @@ final class RoutineTask {
             actualDurationMinutes: actualDurationMinutes,
             storyPoints: storyPoints,
             focusModeEnabled: focusModeEnabled,
+            showsTaskDetailHeatmap: showsTaskDetailHeatmap,
             comments: comments
         )
         copy.completedChecklistItemIDsStorage = completedChecklistItemIDsStorage

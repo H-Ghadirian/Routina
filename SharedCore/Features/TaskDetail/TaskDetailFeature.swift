@@ -234,6 +234,7 @@ struct TaskDetailFeature: Reducer {
         case removeLogEntry(Date)
         case updateTaskDuration(Int?)
         case updateLogDuration(UUID, Int?)
+        case revealHeatmapInTaskDetail
         case pauseTapped
         case notTodayTapped
         case resumeTapped
@@ -938,6 +939,13 @@ struct TaskDetailFeature: Reducer {
 
         case let .updateTaskDuration(durationMinutes):
             return completionLogActionHandler().updateTaskDuration(durationMinutes, state: &state)
+
+        case .revealHeatmapInTaskDetail:
+            guard state.task.supportsTaskDetailHeatmap else { return .none }
+            guard !state.task.showsTaskDetailHeatmap else { return .none }
+            state.task.showsTaskDetailHeatmap = true
+            refreshTaskView(&state)
+            return handleTaskDetailHeatmapRevealed(taskID: state.task.id)
 
         case let .requestRemoveLogEntry(timestamp):
             return dialogLifecycleActionHandler().requestRemoveLogEntry(timestamp, state: &state)

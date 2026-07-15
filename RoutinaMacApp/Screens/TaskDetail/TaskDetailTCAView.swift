@@ -38,7 +38,6 @@ struct TaskDetailTCAView: View {
     @State private var isTodoStateControlRevealed = false
     @State private var isPressureControlRevealed = false
     @State private var isChecklistSectionRevealed = false
-    @State private var isHeatmapSectionRevealed = false
     @State private var inlineEditSections: [FormSection] = []
     @State private var isTimeSectionExpanded = false
     @State private var timeEditing = TaskDetailTimeEditingState()
@@ -581,7 +580,7 @@ struct TaskDetailTCAView: View {
         if shouldShowHeatmapAddAction {
             actions.append(TaskDetailOptionalAction(title: "Heatmap", systemImage: "square.grid.3x3.fill") {
                 withAnimation(.easeInOut(duration: 0.18)) {
-                    isHeatmapSectionRevealed = true
+                    _ = store.send(.revealHeatmapInTaskDetail)
                 }
             })
         }
@@ -757,22 +756,16 @@ struct TaskDetailTCAView: View {
     }
 
     private var shouldShowHeatmapSection: Bool {
-        canShowHeatmapSection && isHeatmapSectionRevealed
+        canShowHeatmapSection && store.task.showsTaskDetailHeatmap
     }
 
     private var shouldShowHeatmapAddAction: Bool {
-        canShowHeatmapSection && !isHeatmapSectionRevealed
+        canShowHeatmapSection && !store.task.showsTaskDetailHeatmap
     }
 
     private var canShowHeatmapSection: Bool {
         guard presentation == .fullDetail else { return false }
-
-        switch store.task.scheduleMode.taskType {
-        case .routine, .record:
-            return true
-        case .todo:
-            return false
-        }
+        return store.task.supportsTaskDetailHeatmap
     }
 
     private func resetRevealedOptionalControls() {
@@ -780,7 +773,6 @@ struct TaskDetailTCAView: View {
         isTodoStateControlRevealed = false
         isPressureControlRevealed = false
         isChecklistSectionRevealed = false
-        isHeatmapSectionRevealed = false
         inlineEditSections.removeAll()
     }
 

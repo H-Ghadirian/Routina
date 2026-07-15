@@ -310,6 +310,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 estimatedDurationMinutes: task.estimatedDurationMinutes,
                 actualDurationMinutes: task.actualDurationMinutes,
                 storyPoints: task.storyPoints,
+                showsTaskDetailHeatmap: task.showsTaskDetailHeatmap ?? false,
                 comments: task.comments ?? []
             )
             if let linkItems = task.linkItems {

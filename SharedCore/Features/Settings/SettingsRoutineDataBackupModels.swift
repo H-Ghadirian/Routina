@@ -101,6 +101,7 @@ extension SettingsRoutineDataPersistence {
             var estimatedDurationMinutes: Int?
             var actualDurationMinutes: Int?
             var storyPoints: Int?
+            var showsTaskDetailHeatmap: Bool?
             var pressure: RoutineTaskPressure?
             var pressureUpdatedAt: Date?
             var comments: [RoutineTaskComment]? = nil

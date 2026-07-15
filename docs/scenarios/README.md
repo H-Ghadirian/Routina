@@ -629,6 +629,23 @@ Given Support & About -> Beta Experiments -> `Show Event and Emotion actions` is
 When the user opens full Mac Task Details for a task with no linked events
 Then the `Add more details` section can expose an Events action
 
+### Mac Task Details Persist Heatmap Per Task
+
+Area: Tasks
+Decision links: [0381](../decisions/0381-make-mac-task-detail-heatmap-optional.md), [0393](../decisions/0393-persist-task-detail-heatmap-per-task.md)
+Current behavior: [UI](../current-behavior/ui.md)
+Coverage:
+- `Tests/macOS/TaskDetailFeatureTests.swift`
+- `Tests/Shared/SettingsRoutineDataPersistenceTests.swift`
+
+Given the user opens full Mac Task Details for a routine or tracking task that has not explicitly added Heatmap
+When the user chooses `Heatmap` from `Add more details`
+Then that task stores the heatmap as visible in full Mac Task Details
+
+Given another eligible task has not explicitly added Heatmap
+When the user opens full Mac Task Details for that other task
+Then the heatmap stays hidden until the user adds it for that task
+
 ### Planner Inspector Day Header Hides Range Picker
 
 Area: Planner

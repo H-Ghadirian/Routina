@@ -37,6 +37,7 @@ struct HomeFeatureTaskDetailActionRouter<State, Action> {
              .removeLogEntry(_),
              .updateTaskDuration(_),
              .updateLogDuration(_, _),
+             .revealHeatmapInTaskDetail,
              .confirmAssumedPastDays,
              .confirmUndoCompletion,
              .todoStateChanged(_),

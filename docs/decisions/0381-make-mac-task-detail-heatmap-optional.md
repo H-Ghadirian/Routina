@@ -6,6 +6,8 @@ Date: 2026-07-13
 
 Refines: [0366 Keep Mac Task Detail Add More Inline](0366-keep-mac-task-detail-add-more-inline.md), [0380 Add Record Task Type](0380-add-record-task-type.md)
 
+Refined by: [0393 Persist Task Detail Heatmap Per Task](0393-persist-task-detail-heatmap-per-task.md)
+
 ## Context
 
 Mac full Task Details can show a GitHub-style done heatmap for completed days. The heatmap is useful for routines and record-style logs, but it is visually dense and should not take over the default detail reading flow for every eligible task.

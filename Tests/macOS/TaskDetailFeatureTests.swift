@@ -47,6 +47,72 @@ struct TaskDetailFeatureTests {
     }
 
     @Test
+    func revealHeatmapInTaskDetailPersistsForEligibleTaskOnly() async throws {
+        let context = makeInMemoryContext()
+        let routine = makeTask(
+            in: context,
+            name: "Practice",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🎹",
+            scheduleMode: .fixedInterval
+        )
+        let todo = makeTask(
+            in: context,
+            name: "Buy strings",
+            interval: 1,
+            lastDone: nil,
+            emoji: "🧵",
+            scheduleMode: .oneOff
+        )
+
+        let routineStore = TestStore(initialState: TaskDetailFeature.State(task: routine)) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+        }
+
+        await routineStore.send(.revealHeatmapInTaskDetail) {
+            $0.task.showsTaskDetailHeatmap = true
+            $0.taskRefreshID = 1
+        }
+
+        let todoStore = TestStore(initialState: TaskDetailFeature.State(task: todo)) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+        }
+
+        await todoStore.send(.revealHeatmapInTaskDetail)
+
+        try context.save()
+
+        let routineID = routine.id
+        let persistedRoutine = try #require(
+            context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { task in
+                        task.id == routineID
+                    }
+                )
+            ).first
+        )
+        let todoID = todo.id
+        let persistedTodo = try #require(
+            context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { task in
+                        task.id == todoID
+                    }
+                )
+            ).first
+        )
+
+        #expect(persistedRoutine.showsTaskDetailHeatmap)
+        #expect(!persistedTodo.showsTaskDetailHeatmap)
+    }
+
+    @Test
     func deleteRoutineConfirmed_removesTaskPlannerBlocksCancelsNotificationAndRequestsDismiss() async throws {
         let context = makeInMemoryContext()
         let task = makeTask(in: context, name: "Stretch", interval: 3, lastDone: nil, emoji: "🤸")
