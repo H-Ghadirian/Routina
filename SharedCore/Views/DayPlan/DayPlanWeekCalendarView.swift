@@ -297,6 +297,7 @@ struct DayPlanWeekCalendarView: View {
                                         dragProvider(for: block, on: date)
                                     }
                                 )
+                                .id(timedBlockLayerIdentity)
                             if let dropPreview, isDropTargeted, !isCompletingDrop {
                                 DayPlanDropIndicator(
                                     preview: dropPreview,
@@ -541,6 +542,22 @@ struct DayPlanWeekCalendarView: View {
     private func minuteDelta(for verticalDelta: CGFloat) -> Int {
         let rawMinutes = (verticalDelta / hourHeight) * 60
         return Int(rawMinutes.rounded())
+    }
+
+    private var timedBlockLayerIdentity: String {
+        dates.map { date in
+            let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+            let blockSignature = blocksForDate(date)
+                .map { block in
+                    [
+                        block.id.uuidString,
+                        block.dayKey,
+                    ].joined(separator: ":")
+                }
+                .joined(separator: ",")
+            return "\(dayKey)=\(blockSignature)"
+        }
+        .joined(separator: "|")
     }
 
     private func blockHeight(forDurationMinutes durationMinutes: Int) -> CGFloat {

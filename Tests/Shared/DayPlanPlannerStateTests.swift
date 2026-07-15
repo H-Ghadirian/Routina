@@ -565,6 +565,24 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func calendarTimedLayerRebuildsWhenRangeBlockSignatureChanges() throws {
+        let projectRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let calendarSource = try String(
+            contentsOf: projectRoot.appendingPathComponent("SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift"),
+            encoding: .utf8
+        )
+
+        #expect(calendarSource.contains(".id(timedBlockLayerIdentity)"))
+        #expect(calendarSource.contains("private var timedBlockLayerIdentity: String"))
+        #expect(calendarSource.contains("blocksForDate(date)"))
+        #expect(calendarSource.contains("block.id.uuidString"))
+        #expect(calendarSource.contains("block.dayKey"))
+    }
+
+    @Test
     func unassignedFocusBlocksUseDayScopedRenderIDs() throws {
         let projectRoot = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
@@ -4168,6 +4186,63 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func visiblePlannerBlocksKeepSavedShortTagFocusSegmentWhenRangeWidens() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let selectedDate = try #require(date("2026-07-15T12:00:00Z"))
+        let now = try #require(date("2026-07-15T16:37:00Z"))
+        let startedAt = try #require(date("2026-07-15T15:12:00Z"))
+        let endedAt = try #require(date("2026-07-15T15:15:00Z"))
+        let session = FocusSession(
+            id: UUID(),
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            completedAt: endedAt,
+            tagName: "Routina"
+        )
+        let dayKey = DayPlanStorage.dayKey(for: selectedDate, calendar: calendar)
+        let block = tagFocusSegmentBlock(
+            sessionID: session.id,
+            dayKey: dayKey,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            calendar: calendar,
+            title: "#Routina"
+        )
+        DayPlanStorage.saveBlocks([block], forDayKey: dayKey, context: context)
+
+        let planner = DayPlanPlannerState(selectedDate: selectedDate, visibleRangeMode: .threeDays)
+        let visibleContext = DayPlanVisibleBlockContext(
+            tasks: [],
+            logs: [],
+            calendar: calendar,
+            referenceDate: now,
+            activeFocusSessions: []
+        )
+
+        planner.loadBlocks(calendar: calendar, context: context)
+        #expect(
+            visiblePlannerFocusBlockIDs(
+                planner: planner,
+                calendar: calendar,
+                context: context,
+                visibleContext: visibleContext
+            ) == [block.id]
+        )
+
+        planner.setVisibleRangeMode(.week, calendar: calendar, context: context)
+        #expect(
+            visiblePlannerFocusBlockIDs(
+                planner: planner,
+                calendar: calendar,
+                context: context,
+                visibleContext: visibleContext
+            ) == [block.id]
+        )
+    }
+
+    @Test
     func calendarTaskFilterKeepsUnassignedTagFocusBlocksVisible() {
         let taskID = UUID()
         let staleDeletedTaskBlockID = UUID()
@@ -5184,7 +5259,8 @@ private func tagFocusSegmentBlock(
     startedAt: Date,
     endedAt: Date,
     calendar: Calendar,
-    usesSessionID: Bool = false
+    usesSessionID: Bool = false,
+    title: String = "#HSE"
 ) -> DayPlanBlock {
     let components = calendar.dateComponents([.hour, .minute], from: startedAt)
     let startMinute = ((components.hour ?? 0) * 60) + (components.minute ?? 0)
@@ -5202,7 +5278,7 @@ private func tagFocusSegmentBlock(
         dayKey: dayKey,
         startMinute: DayPlanBlock.clampedStartMinute(startMinute),
         durationMinutes: durationMinutes,
-        titleSnapshot: "#HSE",
+        titleSnapshot: title,
         createdAt: startedAt,
         updatedAt: endedAt,
         minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
