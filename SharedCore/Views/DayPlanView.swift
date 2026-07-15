@@ -7232,7 +7232,12 @@ private struct DayPlanLifecycleModifier: ViewModifier {
                 showExactTimedTasks()
             }
             .onChange(of: planner.visibleRangeMode) { _, _ in
-                planner.loadBlocks(calendar: calendar, context: modelContext)
+                reconcileCountUpFocusSegments()
+                planner.loadBlocks(
+                    calendar: calendar,
+                    context: modelContext,
+                    preservingCachedUnassignedFocusBlocks: true
+                )
                 showExactTimedTasks()
             }
             .onChange(of: taskChangeToken) { _, _ in

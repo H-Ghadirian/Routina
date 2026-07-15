@@ -4243,6 +4243,111 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func plannerBlocksRecoverSavedTagFocusSegmentWhenCachedDayIsEmpty() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let selectedDate = try #require(date("2026-07-15T12:00:00Z"))
+        let now = try #require(date("2026-07-15T16:37:00Z"))
+        let startedAt = try #require(date("2026-07-15T15:12:00Z"))
+        let endedAt = try #require(date("2026-07-15T15:15:00Z"))
+        let session = FocusSession(
+            id: UUID(),
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            completedAt: endedAt,
+            tagName: "Routina"
+        )
+        let dayKey = DayPlanStorage.dayKey(for: selectedDate, calendar: calendar)
+        let block = tagFocusSegmentBlock(
+            sessionID: session.id,
+            dayKey: dayKey,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            calendar: calendar,
+            title: "#Routina"
+        )
+        DayPlanStorage.saveBlocks([block], forDayKey: dayKey, context: context)
+
+        let planner = DayPlanPlannerState(selectedDate: selectedDate, visibleRangeMode: .threeDays)
+        planner.weekBlocksByDayKey = [dayKey: []]
+        planner.blocks = []
+
+        #expect(planner.blocks(on: selectedDate, calendar: calendar, context: context).map(\.id) == [block.id])
+
+        planner.showExactTimedTasks(from: [], calendar: calendar, context: context)
+        #expect(planner.weekBlocksByDayKey[dayKey]?.map(\.id) == [block.id])
+        #expect(planner.blocks.map(\.id) == [block.id])
+
+        let visibleContext = DayPlanVisibleBlockContext(
+            tasks: [],
+            logs: [],
+            calendar: calendar,
+            referenceDate: now,
+            activeFocusSessions: []
+        )
+        #expect(
+            visiblePlannerFocusBlockIDs(
+                planner: planner,
+                calendar: calendar,
+                context: context,
+                visibleContext: visibleContext
+            ) == [block.id]
+        )
+    }
+
+    @Test
+    func rangeModeChangeKeepsCachedTagFocusSegmentWhenStorageIsTemporarilyEmpty() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let selectedDate = try #require(date("2026-07-15T12:00:00Z"))
+        let now = try #require(date("2026-07-15T18:08:00Z"))
+        let startedAt = try #require(date("2026-07-15T15:05:00Z"))
+        let endedAt = try #require(date("2026-07-15T15:08:00Z"))
+        let session = FocusSession(
+            id: UUID(),
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            completedAt: endedAt,
+            tagName: "Routina"
+        )
+        let dayKey = DayPlanStorage.dayKey(for: selectedDate, calendar: calendar)
+        let block = tagFocusSegmentBlock(
+            sessionID: session.id,
+            dayKey: dayKey,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            calendar: calendar,
+            title: "#Routina"
+        )
+        let planner = DayPlanPlannerState(selectedDate: selectedDate, visibleRangeMode: .week)
+        planner.weekBlocksByDayKey = [dayKey: [block]]
+        planner.blocks = [block]
+
+        planner.setVisibleRangeMode(.threeDays, calendar: calendar, context: context)
+
+        #expect(planner.visibleRangeMode == .threeDays)
+        #expect(planner.weekBlocksByDayKey[dayKey]?.map(\.id) == [block.id])
+
+        let visibleContext = DayPlanVisibleBlockContext(
+            tasks: [],
+            logs: [],
+            calendar: calendar,
+            referenceDate: now,
+            activeFocusSessions: []
+        )
+        #expect(
+            visiblePlannerFocusBlockIDs(
+                planner: planner,
+                calendar: calendar,
+                context: context,
+                visibleContext: visibleContext
+            ) == [block.id]
+        )
+    }
+
+    @Test
     func calendarTaskFilterKeepsUnassignedTagFocusBlocksVisible() {
         let taskID = UUID()
         let staleDeletedTaskBlockID = UUID()

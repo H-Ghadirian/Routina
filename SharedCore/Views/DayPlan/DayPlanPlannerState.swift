@@ -314,18 +314,33 @@ final class DayPlanPlannerState: ObservableObject {
         )
     }
 
-    func loadBlocks(calendar: Calendar, context: ModelContext) {
+    func loadBlocks(
+        calendar: Calendar,
+        context: ModelContext,
+        preservingCachedUnassignedFocusBlocks: Bool = false
+    ) {
         let weekDates = visibleAndSelectedDates(calendar: calendar)
+        let cachedBlocksByDayKey = weekBlocksByDayKey
         var loadedBlocksByDayKey: [String: [DayPlanBlock]] = [:]
 
         for date in weekDates {
             let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-            loadedBlocksByDayKey[dayKey] = DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
+            let loadedBlocks = DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
+            loadedBlocksByDayKey[dayKey] = blocksForLoadedDay(
+                loadedBlocks,
+                cachedBlocks: cachedBlocksByDayKey[dayKey],
+                preservingCachedUnassignedFocusBlocks: preservingCachedUnassignedFocusBlocks
+            )
         }
 
         let selectedDayKey = DayPlanStorage.dayKey(for: selectedDate, calendar: calendar)
         if loadedBlocksByDayKey[selectedDayKey] == nil {
-            loadedBlocksByDayKey[selectedDayKey] = DayPlanStorage.loadBlocks(forDayKey: selectedDayKey, context: context)
+            let loadedBlocks = DayPlanStorage.loadBlocks(forDayKey: selectedDayKey, context: context)
+            loadedBlocksByDayKey[selectedDayKey] = blocksForLoadedDay(
+                loadedBlocks,
+                cachedBlocks: cachedBlocksByDayKey[selectedDayKey],
+                preservingCachedUnassignedFocusBlocks: preservingCachedUnassignedFocusBlocks
+            )
         }
 
         weekBlocksByDayKey = loadedBlocksByDayKey
@@ -346,7 +361,11 @@ final class DayPlanPlannerState: ObservableObject {
 
         for date in visibleDates {
             let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-            var dayBlocks = updatedBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
+            var dayBlocks = cachedOrLoadedBlocks(
+                forDayKey: dayKey,
+                in: updatedBlocksByDayKey,
+                context: context
+            )
             var didChangeDay = false
 
             for task in availableTasks {
@@ -1068,7 +1087,7 @@ final class DayPlanPlannerState: ObservableObject {
 
     func blocks(on date: Date, calendar: Calendar, context: ModelContext) -> [DayPlanBlock] {
         let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-        return weekBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
+        return cachedOrLoadedBlocks(forDayKey: dayKey, in: weekBlocksByDayKey, context: context)
     }
 
     func visibleDates(calendar: Calendar) -> [Date] {
@@ -1226,7 +1245,24 @@ final class DayPlanPlannerState: ObservableObject {
 
     private func syncSelectedDayBlocks(calendar: Calendar, context: ModelContext) {
         let dayKey = DayPlanStorage.dayKey(for: selectedDate, calendar: calendar)
-        blocks = weekBlocksByDayKey[dayKey] ?? DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
+        blocks = cachedOrLoadedBlocks(forDayKey: dayKey, in: weekBlocksByDayKey, context: context)
+    }
+
+    private func cachedOrLoadedBlocks(
+        forDayKey dayKey: String,
+        in blocksByDayKey: [String: [DayPlanBlock]],
+        context: ModelContext
+    ) -> [DayPlanBlock] {
+        guard let cachedBlocks = blocksByDayKey[dayKey] else {
+            return DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
+        }
+
+        guard cachedBlocks.isEmpty else {
+            return cachedBlocks
+        }
+
+        let loadedBlocks = DayPlanStorage.loadBlocks(forDayKey: dayKey, context: context)
+        return loadedBlocks.isEmpty ? cachedBlocks : loadedBlocks
     }
 
     private func clearMissingSelectedBlock() {
@@ -1488,8 +1524,27 @@ final class DayPlanPlannerState: ObservableObject {
 
         guard visibleRangeMode != mode else { return false }
         visibleRangeMode = mode
-        loadBlocks(calendar: calendar, context: context)
+        loadBlocks(
+            calendar: calendar,
+            context: context,
+            preservingCachedUnassignedFocusBlocks: true
+        )
         return true
+    }
+
+    private func blocksForLoadedDay(
+        _ loadedBlocks: [DayPlanBlock],
+        cachedBlocks: [DayPlanBlock]?,
+        preservingCachedUnassignedFocusBlocks: Bool
+    ) -> [DayPlanBlock] {
+        guard preservingCachedUnassignedFocusBlocks,
+              loadedBlocks.isEmpty,
+              let cachedFocusBlocks = cachedBlocks?.filter({ $0.taskID == FocusSession.unassignedTaskID }),
+              !cachedFocusBlocks.isEmpty else {
+            return loadedBlocks
+        }
+
+        return sortedDayBlocks(cachedFocusBlocks)
     }
 
     private func rangeDates(containing date: Date, dayCount: Int, calendar: Calendar) -> [Date] {
