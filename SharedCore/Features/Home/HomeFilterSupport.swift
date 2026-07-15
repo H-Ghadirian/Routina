@@ -110,6 +110,7 @@ enum HomeTaskFilterMutation: Equatable {
     case selectedPressureFilter(RoutineTaskPressure?)
     case selectedGoalFilter(HomeTaskGoalFilter)
     case selectedMediaFilter(TaskMediaFilter)
+    case selectedEstimationFilter(TaskEstimationFilter)
     case hideAssumedDoneTasks(Bool)
     case taskListViewMode(HomeTaskListViewMode)
     case taskListSortOrder(HomeTaskListSortOrder)
@@ -187,6 +188,7 @@ enum HomeFilterEditor {
         taskFilters.selectedPressureFilter = nil
         taskFilters.selectedGoalFilter = .all
         taskFilters.selectedMediaFilter = .all
+        taskFilters.selectedEstimationFilter = .all
         taskFilters.hideAssumedDoneTasks = true
         taskFilters.taskListViewMode = .all
         taskFilters.taskListSortOrder = .smart
@@ -267,6 +269,9 @@ enum HomeFilterEditor {
 
         case let .selectedMediaFilter(filter):
             taskFilters.selectedMediaFilter = filter
+
+        case let .selectedEstimationFilter(filter):
+            taskFilters.selectedEstimationFilter = filter
 
         case let .hideAssumedDoneTasks(hideAssumedDoneTasks):
             taskFilters.hideAssumedDoneTasks = hideAssumedDoneTasks

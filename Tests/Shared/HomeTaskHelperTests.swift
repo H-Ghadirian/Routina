@@ -909,6 +909,7 @@ private func makeHomeRoutineDisplay(
         interval: interval,
         recurrenceRule: recurrenceRule,
         scheduleMode: scheduleMode,
+        estimatedDurationMinutes: nil,
         createdAt: nil,
         isSoftIntervalRoutine: false,
         lastDone: lastDone,

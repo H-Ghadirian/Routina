@@ -20,6 +20,7 @@ extension HomeTCAView {
                 selectedPressureFilter: store.selectedPressureFilter,
                 selectedGoalFilter: effectiveSelectedGoalFilter,
                 selectedMediaFilter: store.selectedMediaFilter,
+                selectedEstimationFilter: store.selectedEstimationFilter,
                 hideAssumedDoneTasks: store.hideAssumedDoneTasks,
                 taskListViewMode: store.taskListViewMode,
                 taskListSortOrder: store.taskListSortOrder,
@@ -84,6 +85,7 @@ extension HomeTCAView {
             selectedPressureFilter: store.selectedPressureFilter,
             selectedGoalFilter: effectiveSelectedGoalFilter,
             selectedMediaFilter: store.selectedMediaFilter,
+            selectedEstimationFilter: store.selectedEstimationFilter,
             hideAssumedDoneTasks: store.hideAssumedDoneTasks,
             taskListViewMode: store.taskListViewMode,
             taskListSortOrder: store.taskListSortOrder,
@@ -232,6 +234,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
     let selectedPressureFilter: RoutineTaskPressure?
     let selectedGoalFilter: HomeTaskGoalFilter
     let selectedMediaFilter: TaskMediaFilter
+    let selectedEstimationFilter: TaskEstimationFilter
     let hideAssumedDoneTasks: Bool
     let taskListViewMode: HomeTaskListViewMode
     let taskListSortOrder: HomeTaskListSortOrder
@@ -269,6 +272,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         selectedPressureFilter: RoutineTaskPressure?,
         selectedGoalFilter: HomeTaskGoalFilter,
         selectedMediaFilter: TaskMediaFilter,
+        selectedEstimationFilter: TaskEstimationFilter,
         hideAssumedDoneTasks: Bool,
         taskListViewMode: HomeTaskListViewMode,
         taskListSortOrder: HomeTaskListSortOrder,
@@ -310,6 +314,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         self.selectedPressureFilter = selectedPressureFilter
         self.selectedGoalFilter = selectedGoalFilter
         self.selectedMediaFilter = selectedMediaFilter
+        self.selectedEstimationFilter = selectedEstimationFilter
         self.hideAssumedDoneTasks = hideAssumedDoneTasks
         self.taskListViewMode = taskListViewMode
         self.taskListSortOrder = taskListSortOrder

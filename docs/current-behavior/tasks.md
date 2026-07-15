@@ -44,6 +44,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0384](../decisions/0384-show-tracking-as-mac-sidebar-section.md)
 - [0385](../decisions/0385-use-gentle-routine-cadence-for-tracking.md)
 - [0386](../decisions/0386-match-tracking-inner-groups-to-future.md)
+- [0391](../decisions/0391-filter-task-list-by-duration-estimates.md)
 
 ## Current Contract
 
@@ -76,6 +77,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Daily checklist-completion progress lasts for the current day only. Tomorrow starts unchecked unless the routine was completed and recorded in history.
 - Daily Checklist-completion routines with auto-assume done use day-level assumption only; assumed completion does not fake completed checklist item IDs, and current-day partial checklist progress suppresses assumed presentation until the routine is fully completed or progress is cleared.
 - Home task filters hide assumed-done rows by default; users can turn on `Show assumed done` in `All` or `Routines` views to review, confirm, or correct assumed days. On Mac, hovering an assumed-done Home row shows green check and red x actions for confirming the current assumed occurrence or recording it as missed.
+- Home task filters include an Estimation filter with `All`, `Has Estimate`, and `No Estimate`; it applies to visible and archived task rows on iOS and macOS and persists with each task-list mode's filter snapshot.
 - On Mac, the Planner header filter button opens `All`, `Task List`, `Timeline`, and `Calendar` filters in one right-side companion pane. Tags and importance/urgency live under `All` and apply to task-list, Timeline, and task-backed Planner Calendar filtering. The pane can expand fullscreen and minimize back, while preserving the active workspace underneath. Task and Timeline sidebars no longer render their own filter icon buttons, but active task filters can still show summaries and clear actions in the sidebar.
 - Home task filter Query sections are hidden by default behind Support & About -> Beta Experiments -> `Show filter query sections`; existing advanced query state remains compatible and still appears in active filter summaries when nonempty.
 - Home status filters offer `Done Today` only for `All` and `Routines`; Todos use Timeline for completed work instead of keeping completed rows in the active task list.

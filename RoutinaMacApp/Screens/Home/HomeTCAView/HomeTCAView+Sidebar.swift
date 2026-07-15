@@ -168,6 +168,7 @@ extension HomeTCAView {
             selectedPressureFilter: store.selectedPressureFilter,
             selectedGoalFilter: effectiveSelectedGoalFilter,
             selectedMediaFilter: store.selectedMediaFilter,
+            selectedEstimationFilter: store.selectedEstimationFilter,
             hideAssumedDoneTasks: store.hideAssumedDoneTasks,
             hideUnavailableRoutines: store.hideUnavailableRoutines,
             showArchivedTasks: store.showArchivedTasks,
@@ -1168,6 +1169,7 @@ extension HomeTCAView {
             selectedPressureFilter: homeFilterBindings.selectedPressureFilter,
             selectedGoalFilter: homeFilterBindings.selectedGoalFilter,
             selectedMediaFilter: homeFilterBindings.selectedMediaFilter,
+            selectedEstimationFilter: homeFilterBindings.selectedEstimationFilter,
             selectedTodoStateFilter: homeFilterBindings.selectedTodoStateFilter,
             taskRowVisibility: taskRowVisibility,
             queryOptions: HomeAdvancedQueryOptions(

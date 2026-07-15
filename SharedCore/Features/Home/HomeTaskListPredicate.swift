@@ -16,6 +16,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             && matchesPressureFilter(task)
             && matchesGoalFilter(task)
             && matchesMediaFilter(task)
+            && matchesEstimationFilter(task)
             && matchesAssumedDoneFilter(task)
             && matchesCreatedDateFilter(task)
             && matchesImportanceUrgencyFilter(task)
@@ -36,6 +37,7 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             && matchesPressureFilter(task)
             && matchesGoalFilter(task)
             && matchesMediaFilter(task)
+            && matchesEstimationFilter(task)
             && matchesAssumedDoneFilter(task)
             && matchesCreatedDateFilter(task)
             && matchesImportanceUrgencyFilter(task)
@@ -105,6 +107,13 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             configuration.selectedMediaFilter,
             hasImage: task.hasImage,
             hasFileAttachment: task.hasFileAttachment
+        )
+    }
+
+    func matchesEstimationFilter(_ task: Display) -> Bool {
+        HomeDisplayFilterSupport.matchesEstimationFilter(
+            configuration.selectedEstimationFilter,
+            estimatedDurationMinutes: task.estimatedDurationMinutes
         )
     }
 

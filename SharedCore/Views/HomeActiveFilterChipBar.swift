@@ -12,6 +12,7 @@ struct HomeActiveFilterChipBar: View {
     let selectedPressureFilter: RoutineTaskPressure?
     let selectedGoalFilter: HomeTaskGoalFilter
     let selectedMediaFilter: TaskMediaFilter
+    let selectedEstimationFilter: TaskEstimationFilter
     let showsAssumedDoneVisibilityFilter: Bool
     let hideAssumedDoneTasks: Bool
     let hideUnavailableRoutines: Bool
@@ -28,6 +29,7 @@ struct HomeActiveFilterChipBar: View {
     let onClearPressure: () -> Void
     let onClearGoal: () -> Void
     let onClearMedia: () -> Void
+    let onClearEstimation: () -> Void
     let onHideAssumedDoneTasks: () -> Void
     let onShowUnavailableRoutines: () -> Void
     let onShowArchivedTasks: () -> Void
@@ -122,6 +124,14 @@ struct HomeActiveFilterChipBar: View {
                         title: selectedMediaFilter.title,
                         systemImage: selectedMediaFilter.systemImage,
                         action: onClearMedia
+                    )
+                }
+
+                if selectedEstimationFilter != .all {
+                    HomeActiveFilterChip(
+                        title: selectedEstimationFilter.title,
+                        systemImage: selectedEstimationFilter.systemImage,
+                        action: onClearEstimation
                     )
                 }
 

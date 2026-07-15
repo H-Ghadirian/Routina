@@ -50,6 +50,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
     let selectedPressureFilter: RoutineTaskPressure?
     let selectedGoalFilter: HomeTaskGoalFilter
     let selectedMediaFilter: TaskMediaFilter
+    let selectedEstimationFilter: TaskEstimationFilter
     let hideAssumedDoneTasks: Bool
     let hideUnavailableRoutines: Bool
     let showArchivedTasks: Bool
@@ -74,6 +75,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         selectedPressureFilter: RoutineTaskPressure? = nil,
         selectedGoalFilter: HomeTaskGoalFilter = .all,
         selectedMediaFilter: TaskMediaFilter = .all,
+        selectedEstimationFilter: TaskEstimationFilter = .all,
         hideAssumedDoneTasks: Bool = true,
         hideUnavailableRoutines: Bool = false,
         showArchivedTasks: Bool = true,
@@ -97,6 +99,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         self.selectedPressureFilter = selectedPressureFilter
         self.selectedGoalFilter = selectedGoalFilter
         self.selectedMediaFilter = selectedMediaFilter
+        self.selectedEstimationFilter = selectedEstimationFilter
         self.hideAssumedDoneTasks = hideAssumedDoneTasks
         self.hideUnavailableRoutines = hideUnavailableRoutines
         self.showArchivedTasks = showArchivedTasks
@@ -115,6 +118,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         if selectedPressureFilter != nil { count += 1 }
         if selectedGoalFilter != .all { count += 1 }
         if selectedMediaFilter != .all { count += 1 }
+        if selectedEstimationFilter != .all { count += 1 }
         if !advancedQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { count += 1 }
         if taskListViewMode != .all { count += 1 }
         if taskListSortOrder != .smart { count += 1 }
@@ -185,6 +189,10 @@ struct HomeFilterPresentation: Equatable, Sendable {
 
         if selectedMediaFilter != .all {
             labels.append(selectedMediaFilter.title)
+        }
+
+        if selectedEstimationFilter != .all {
+            labels.append(selectedEstimationFilter.title)
         }
 
         let trimmedAdvancedQuery = advancedQuery.trimmingCharacters(in: .whitespacesAndNewlines)

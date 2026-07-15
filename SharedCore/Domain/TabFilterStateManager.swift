@@ -116,6 +116,27 @@ enum TaskMediaFilter: String, Codable, CaseIterable, Equatable, Identifiable, Se
     }
 }
 
+enum TaskEstimationFilter: String, Codable, CaseIterable, Equatable, Identifiable, Sendable {
+    case all = "All"
+    case withEstimate = "Has Estimate"
+    case withoutEstimate = "No Estimate"
+
+    var id: Self { self }
+
+    var title: String { rawValue }
+
+    var systemImage: String {
+        switch self {
+        case .all:
+            return "timer"
+        case .withEstimate:
+            return "timer"
+        case .withoutEstimate:
+            return "timer"
+        }
+    }
+}
+
 enum RoutineTagMatchMode: String, Codable, CaseIterable, Equatable, Identifiable, Sendable {
     case all = "All"
     case any = "Any"
@@ -141,6 +162,7 @@ struct TabFilterStateManager {
         var selectedPressureFilter: RoutineTaskPressure? = nil
         var selectedGoalFilter: HomeTaskGoalFilter = .all
         var selectedMediaFilter: TaskMediaFilter = .all
+        var selectedEstimationFilter: TaskEstimationFilter = .all
         var hideAssumedDoneTasks: Bool = true
         var taskListViewMode: HomeTaskListViewMode = .all
         var taskListSortOrder: HomeTaskListSortOrder = .smart
@@ -162,6 +184,7 @@ struct TabFilterStateManager {
                 selectedPressureFilter: nil,
                 selectedGoalFilter: .all,
                 selectedMediaFilter: .all,
+                selectedEstimationFilter: .all,
                 hideAssumedDoneTasks: true,
                 taskListViewMode: .all,
                 taskListSortOrder: .smart,
@@ -184,6 +207,7 @@ struct TabFilterStateManager {
             selectedPressureFilter: RoutineTaskPressure? = nil,
             selectedGoalFilter: HomeTaskGoalFilter = .all,
             selectedMediaFilter: TaskMediaFilter = .all,
+            selectedEstimationFilter: TaskEstimationFilter = .all,
             hideAssumedDoneTasks: Bool = true,
             taskListViewMode: HomeTaskListViewMode = .all,
             taskListSortOrder: HomeTaskListSortOrder = .smart,
@@ -203,6 +227,7 @@ struct TabFilterStateManager {
             self.selectedPressureFilter = selectedPressureFilter
             self.selectedGoalFilter = selectedGoalFilter
             self.selectedMediaFilter = selectedMediaFilter
+            self.selectedEstimationFilter = selectedEstimationFilter
             self.hideAssumedDoneTasks = hideAssumedDoneTasks
             self.taskListViewMode = taskListViewMode
             self.taskListSortOrder = taskListSortOrder
@@ -224,6 +249,7 @@ struct TabFilterStateManager {
             case selectedPressureFilter
             case selectedGoalFilter
             case selectedMediaFilter
+            case selectedEstimationFilter
             case hideAssumedDoneTasks
             case taskListViewMode
             case taskListSortOrder
@@ -247,6 +273,7 @@ struct TabFilterStateManager {
             selectedPressureFilter = try container.decodeIfPresent(RoutineTaskPressure.self, forKey: .selectedPressureFilter)
             selectedGoalFilter = try container.decodeIfPresent(HomeTaskGoalFilter.self, forKey: .selectedGoalFilter) ?? .all
             selectedMediaFilter = try container.decodeIfPresent(TaskMediaFilter.self, forKey: .selectedMediaFilter) ?? .all
+            selectedEstimationFilter = try container.decodeIfPresent(TaskEstimationFilter.self, forKey: .selectedEstimationFilter) ?? .all
             hideAssumedDoneTasks = try container.decodeIfPresent(Bool.self, forKey: .hideAssumedDoneTasks) ?? true
             taskListViewMode = try container.decodeIfPresent(HomeTaskListViewMode.self, forKey: .taskListViewMode) ?? .all
             taskListSortOrder = try container.decodeIfPresent(HomeTaskListSortOrder.self, forKey: .taskListSortOrder) ?? .smart
@@ -289,6 +316,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
     var homeSelectedPressureFilter: RoutineTaskPressure? = nil
     var homeSelectedGoalFilter: HomeTaskGoalFilter = .all
     var homeSelectedMediaFilter: TaskMediaFilter = .all
+    var homeSelectedEstimationFilter: TaskEstimationFilter = .all
     var homeHideAssumedDoneTasks: Bool = true
     var homeTaskListViewMode: HomeTaskListViewMode = .all
     var homeTaskListSortOrder: HomeTaskListSortOrder = .smart
@@ -342,6 +370,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedPressureFilter: RoutineTaskPressure? = nil,
         homeSelectedGoalFilter: HomeTaskGoalFilter = .all,
         homeSelectedMediaFilter: TaskMediaFilter = .all,
+        homeSelectedEstimationFilter: TaskEstimationFilter = .all,
         homeHideAssumedDoneTasks: Bool = true,
         homeTaskListViewMode: HomeTaskListViewMode = .all,
         homeTaskListSortOrder: HomeTaskListSortOrder = .smart,
@@ -394,6 +423,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         self.homeSelectedPressureFilter = homeSelectedPressureFilter
         self.homeSelectedGoalFilter = homeSelectedGoalFilter
         self.homeSelectedMediaFilter = homeSelectedMediaFilter
+        self.homeSelectedEstimationFilter = homeSelectedEstimationFilter
         self.homeHideAssumedDoneTasks = homeHideAssumedDoneTasks
         self.homeTaskListViewMode = homeTaskListViewMode
         self.homeTaskListSortOrder = homeTaskListSortOrder
@@ -448,6 +478,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         case homeSelectedPressureFilter
         case homeSelectedGoalFilter
         case homeSelectedMediaFilter
+        case homeSelectedEstimationFilter
         case homeHideAssumedDoneTasks
         case homeTaskListViewMode
         case homeTaskListSortOrder
@@ -504,6 +535,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
             homeSelectedPressureFilter: try container.decodeIfPresent(RoutineTaskPressure.self, forKey: .homeSelectedPressureFilter),
             homeSelectedGoalFilter: try container.decodeIfPresent(HomeTaskGoalFilter.self, forKey: .homeSelectedGoalFilter) ?? .all,
             homeSelectedMediaFilter: try container.decodeIfPresent(TaskMediaFilter.self, forKey: .homeSelectedMediaFilter) ?? .all,
+            homeSelectedEstimationFilter: try container.decodeIfPresent(TaskEstimationFilter.self, forKey: .homeSelectedEstimationFilter) ?? .all,
             homeHideAssumedDoneTasks: try container.decodeIfPresent(Bool.self, forKey: .homeHideAssumedDoneTasks) ?? true,
             homeTaskListViewMode: try container.decodeIfPresent(HomeTaskListViewMode.self, forKey: .homeTaskListViewMode) ?? .all,
             homeTaskListSortOrder: try container.decodeIfPresent(HomeTaskListSortOrder.self, forKey: .homeTaskListSortOrder) ?? .smart,
@@ -559,6 +591,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedPressureFilter: nil,
         homeSelectedGoalFilter: .all,
         homeSelectedMediaFilter: .all,
+        homeSelectedEstimationFilter: .all,
         homeHideAssumedDoneTasks: true,
         homeTaskListViewMode: .all,
         homeTaskListSortOrder: .smart,

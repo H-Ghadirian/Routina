@@ -23,6 +23,7 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     @Binding var selectedPressureFilter: RoutineTaskPressure?
     @Binding var selectedGoalFilter: HomeTaskGoalFilter
     @Binding var selectedMediaFilter: TaskMediaFilter
+    @Binding var selectedEstimationFilter: TaskEstimationFilter
     @Binding var selectedTodoStateFilter: TodoState?
     let taskRowVisibility: HomeTaskRowVisibility
     let queryOptions: HomeAdvancedQueryOptions
@@ -201,6 +202,10 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
                     mediaPicker
                 }
 
+                filterControlSection("Estimation") {
+                    estimationPicker
+                }
+
                 if taskListMode == .todos || taskListMode == .all {
                     filterControlSection("Todo State") {
                         todoStateFilterSection
@@ -321,6 +326,19 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
             options: TaskMediaFilter.allCases,
             selection: $selectedMediaFilter,
             minimumSegmentWidth: 104,
+            fillsAvailableWidth: true,
+            maximumSegmentsPerRow: 2
+        ) { filter in
+            Label(filter.title, systemImage: filter.systemImage)
+        }
+    }
+
+    private var estimationPicker: some View {
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Estimation",
+            options: TaskEstimationFilter.allCases,
+            selection: $selectedEstimationFilter,
+            minimumSegmentWidth: 108,
             fillsAvailableWidth: true,
             maximumSegmentsPerRow: 2
         ) { filter in

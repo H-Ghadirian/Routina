@@ -59,6 +59,7 @@ enum AppFeatureTemporaryViewStateSupport {
         taskFilters.selectedPressureFilter = nil
         taskFilters.selectedGoalFilter = .all
         taskFilters.selectedMediaFilter = .all
+        taskFilters.selectedEstimationFilter = .all
         taskFilters.tabFilterSnapshots = [:]
         taskFilters.isFilterSheetPresented = false
         state.home.taskFilters = taskFilters
@@ -109,6 +110,7 @@ enum AppFeatureTemporaryViewStateSupport {
             homeSelectedPressureFilter: existing.homeSelectedPressureFilter,
             homeSelectedGoalFilter: existing.homeSelectedGoalFilter,
             homeSelectedMediaFilter: existing.homeSelectedMediaFilter,
+            homeSelectedEstimationFilter: existing.homeSelectedEstimationFilter,
             homeTabFilterSnapshots: existing.homeTabFilterSnapshots,
             hideUnavailableRoutines: existing.hideUnavailableRoutines,
             homeSelectedTimelineRange: existing.homeSelectedTimelineRange,

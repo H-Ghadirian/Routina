@@ -88,6 +88,7 @@ struct HomeFeature {
             selectedPressureFilter: RoutineTaskPressure? = nil,
             selectedGoalFilter: HomeTaskGoalFilter = .all,
             selectedMediaFilter: TaskMediaFilter = .all,
+            selectedEstimationFilter: TaskEstimationFilter = .all,
             hideAssumedDoneTasks: Bool = true,
             taskListViewMode: HomeTaskListViewMode = .all,
             taskListSortOrder: HomeTaskListSortOrder = .smart,
@@ -151,6 +152,7 @@ struct HomeFeature {
                 selectedPressureFilter: selectedPressureFilter,
                 selectedGoalFilter: selectedGoalFilter,
                 selectedMediaFilter: selectedMediaFilter,
+                selectedEstimationFilter: selectedEstimationFilter,
                 hideAssumedDoneTasks: hideAssumedDoneTasks,
                 taskListViewMode: taskListViewMode,
                 taskListSortOrder: taskListSortOrder,
@@ -293,6 +295,11 @@ struct HomeFeature {
         var selectedMediaFilter: TaskMediaFilter {
             get { taskFilters.selectedMediaFilter }
             set { taskFilters.selectedMediaFilter = newValue }
+        }
+
+        var selectedEstimationFilter: TaskEstimationFilter {
+            get { taskFilters.selectedEstimationFilter }
+            set { taskFilters.selectedEstimationFilter = newValue }
         }
 
         var hideAssumedDoneTasks: Bool {
@@ -439,6 +446,7 @@ struct HomeFeature {
         case selectedPressureFilterChanged(RoutineTaskPressure?)
         case selectedGoalFilterChanged(HomeTaskGoalFilter)
         case selectedMediaFilterChanged(TaskMediaFilter)
+        case selectedEstimationFilterChanged(TaskEstimationFilter)
         case hideAssumedDoneTasksChanged(Bool)
         case taskListViewModeChanged(HomeTaskListViewMode)
         case taskListSortOrderChanged(HomeTaskListSortOrder)
@@ -885,6 +893,9 @@ struct HomeFeature {
             case let .selectedMediaFilterChanged(filter):
                 return filterMutationHandler().applyTaskFilterMutation(.selectedMediaFilter(filter), state: &state)
 
+            case let .selectedEstimationFilterChanged(filter):
+                return filterMutationHandler().applyTaskFilterMutation(.selectedEstimationFilter(filter), state: &state)
+
             case let .hideAssumedDoneTasksChanged(hideAssumedDoneTasks):
                 return filterMutationHandler().applyTaskFilterMutation(.hideAssumedDoneTasks(hideAssumedDoneTasks), state: &state)
 
@@ -919,6 +930,7 @@ struct HomeFeature {
                 state.taskFilters.selectedPressureFilter = nil
                 state.taskFilters.selectedGoalFilter = .all
                 state.taskFilters.selectedMediaFilter = .all
+                state.taskFilters.selectedEstimationFilter = .all
                 if state.hideUnavailableRoutines {
                     state.hideUnavailableRoutines = false
                     appSettingsClient.setHideUnavailableRoutines(false)

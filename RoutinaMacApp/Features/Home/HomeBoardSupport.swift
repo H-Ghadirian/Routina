@@ -375,6 +375,7 @@ extension HomeFeature {
         state.selectedPressureFilter = nil
         state.selectedGoalFilter = .all
         state.selectedMediaFilter = .all
+        state.selectedEstimationFilter = .all
         state.taskListViewMode = .all
         state.createdDateFilter = .all
         state.isFilterSheetPresented = false

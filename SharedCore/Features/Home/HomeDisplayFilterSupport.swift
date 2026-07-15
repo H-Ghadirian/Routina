@@ -132,6 +132,20 @@ enum HomeDisplayFilterSupport {
         }
     }
 
+    static func matchesEstimationFilter(
+        _ filter: TaskEstimationFilter,
+        estimatedDurationMinutes: Int?
+    ) -> Bool {
+        switch filter {
+        case .all:
+            return true
+        case .withEstimate:
+            return estimatedDurationMinutes != nil
+        case .withoutEstimate:
+            return estimatedDurationMinutes == nil
+        }
+    }
+
     static func hasActiveRelationshipBlocker(
         taskID: UUID,
         tasks: [RoutineTask],

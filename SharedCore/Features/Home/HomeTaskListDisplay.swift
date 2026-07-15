@@ -16,6 +16,7 @@ protocol HomeTaskListDisplay {
     var interval: Int { get }
     var recurrenceRule: RoutineRecurrenceRule { get }
     var scheduleMode: RoutineScheduleMode { get }
+    var estimatedDurationMinutes: Int? { get }
     var createdAt: Date? { get }
     var lastDone: Date? { get }
     var dueDate: Date? { get }
@@ -56,6 +57,10 @@ extension HomeTaskListDisplay {
 
     var hasFileAttachment: Bool {
         false
+    }
+
+    var estimatedDurationMinutes: Int? {
+        nil
     }
 
     var plannedDate: Date? {
@@ -208,6 +213,7 @@ struct HomeTaskListFilteringConfiguration {
     var selectedPressureFilter: RoutineTaskPressure?
     var selectedGoalFilter: HomeTaskGoalFilter
     var selectedMediaFilter: TaskMediaFilter
+    var selectedEstimationFilter: TaskEstimationFilter
     var hideAssumedDoneTasks: Bool
     var taskListViewMode: HomeTaskListViewMode
     var taskListSortOrder: HomeTaskListSortOrder

@@ -198,6 +198,21 @@ struct HomeFiltersMediaSection: View {
     }
 }
 
+struct HomeFiltersEstimationSection: View {
+    @Binding var selectedEstimationFilter: TaskEstimationFilter
+
+    var body: some View {
+        Section("Estimation") {
+            Picker("Duration estimate", selection: $selectedEstimationFilter) {
+                ForEach(TaskEstimationFilter.allCases) { filter in
+                    Label(filter.title, systemImage: filter.systemImage).tag(filter)
+                }
+            }
+            .pickerStyle(.inline)
+        }
+    }
+}
+
 struct HomeFiltersImportanceUrgencySection: View {
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     let summary: String

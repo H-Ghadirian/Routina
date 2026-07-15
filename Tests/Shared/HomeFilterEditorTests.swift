@@ -164,6 +164,7 @@ struct HomeFilterEditorTests {
             selectedTodoStateFilter: .blocked,
             selectedPressureFilter: .high,
             selectedGoalFilter: .withGoal,
+            selectedEstimationFilter: .withoutEstimate,
             hideAssumedDoneTasks: false,
             taskListViewMode: .actionable,
             taskListSortOrder: .createdNewestFirst,
@@ -189,6 +190,7 @@ struct HomeFilterEditorTests {
         #expect(taskFilters.selectedTodoStateFilter == nil)
         #expect(taskFilters.selectedPressureFilter == nil)
         #expect(taskFilters.selectedGoalFilter == .all)
+        #expect(taskFilters.selectedEstimationFilter == .all)
         #expect(taskFilters.hideAssumedDoneTasks)
         #expect(taskFilters.taskListViewMode == .all)
         #expect(taskFilters.taskListSortOrder == .smart)
@@ -265,6 +267,7 @@ struct HomeFilterEditorTests {
             selectedTodoStateFilter: .inProgress,
             selectedPressureFilter: .medium,
             selectedGoalFilter: .withoutGoal,
+            selectedEstimationFilter: .withoutEstimate,
             hideAssumedDoneTasks: false,
             taskListViewMode: .actionable,
             taskListSortOrder: .createdOldestFirst,
@@ -282,6 +285,7 @@ struct HomeFilterEditorTests {
                     selectedTodoStateFilter: .ready,
                     selectedPressureFilter: RoutineTaskPressure.none,
                     selectedGoalFilter: .withGoal,
+                    selectedEstimationFilter: .withEstimate,
                     hideAssumedDoneTasks: true,
                     taskListViewMode: .all,
                     taskListSortOrder: .createdNewestFirst,
@@ -309,6 +313,7 @@ struct HomeFilterEditorTests {
         #expect(taskFilters.selectedTodoStateFilter == .ready)
         #expect(taskFilters.selectedPressureFilter == RoutineTaskPressure.none)
         #expect(taskFilters.selectedGoalFilter == .withGoal)
+        #expect(taskFilters.selectedEstimationFilter == .withEstimate)
         #expect(taskFilters.hideAssumedDoneTasks)
         #expect(taskFilters.taskListViewMode == .all)
         #expect(taskFilters.taskListSortOrder == .createdNewestFirst)
@@ -326,6 +331,7 @@ struct HomeFilterEditorTests {
             selectedTodoStateFilter: .inProgress,
             selectedPressureFilter: .medium,
             selectedGoalFilter: .withoutGoal,
+            selectedEstimationFilter: .withoutEstimate,
             hideAssumedDoneTasks: false,
             taskListViewMode: .actionable,
             taskListSortOrder: .createdOldestFirst,

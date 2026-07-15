@@ -146,6 +146,7 @@ private extension HomeFeature.RoutineDisplay {
             interval: core.interval,
             recurrenceRule: core.recurrenceRule,
             scheduleMode: core.scheduleMode,
+            estimatedDurationMinutes: core.estimatedDurationMinutes,
             createdAt: core.createdAt,
             isSoftIntervalRoutine: core.isSoftIntervalRoutine,
             lastDone: core.lastDone,

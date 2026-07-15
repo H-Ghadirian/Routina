@@ -18,6 +18,7 @@ extension HomeTCAView {
             selectedPressureFilter: store.selectedPressureFilter,
             selectedGoalFilter: store.selectedGoalFilter,
             selectedMediaFilter: store.selectedMediaFilter,
+            selectedEstimationFilter: store.selectedEstimationFilter,
             showsAssumedDoneVisibilityFilter: homeFilterPresentation.showsAssumedDoneVisibilityFilter,
             hideAssumedDoneTasks: store.hideAssumedDoneTasks,
             hideUnavailableRoutines: store.hideUnavailableRoutines,
@@ -50,6 +51,9 @@ extension HomeTCAView {
             onClearMedia: {
                 store.send(.selectedMediaFilterChanged(.all))
             },
+            onClearEstimation: {
+                store.send(.selectedEstimationFilterChanged(.all))
+            },
             onHideAssumedDoneTasks: {
                 store.send(.hideAssumedDoneTasksChanged(true))
             },
@@ -80,6 +84,7 @@ extension HomeTCAView {
             selectedPressureFilter: store.selectedPressureFilter,
             selectedGoalFilter: store.selectedGoalFilter,
             selectedMediaFilter: store.selectedMediaFilter,
+            selectedEstimationFilter: store.selectedEstimationFilter,
             hideAssumedDoneTasks: store.hideAssumedDoneTasks,
             hideUnavailableRoutines: store.hideUnavailableRoutines,
             showArchivedTasks: store.showArchivedTasks,
@@ -173,6 +178,10 @@ extension HomeTCAView {
             selectedMediaFilter: Binding(
                 get: { store.selectedMediaFilter },
                 set: { store.send(.selectedMediaFilterChanged($0)) }
+            ),
+            selectedEstimationFilter: Binding(
+                get: { store.selectedEstimationFilter },
+                set: { store.send(.selectedEstimationFilterChanged($0)) }
             ),
             hideAssumedDoneTasks: hideAssumedDoneTasksBinding,
             includeTagMatchMode: Binding(

@@ -155,6 +155,23 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func estimationFilterShowsTasksWithOrWithoutDurationEstimate() {
+        let tasks = [
+            TestTaskDisplay(name: "No estimate"),
+            TestTaskDisplay(name: "Quick estimate", estimatedDurationMinutes: 15),
+            TestTaskDisplay(name: "Long estimate", estimatedDurationMinutes: 90)
+        ]
+
+        let withEstimateResult = makeFiltering(selectedEstimationFilter: .withEstimate)
+            .filteredTasks(tasks)
+        let withoutEstimateResult = makeFiltering(selectedEstimationFilter: .withoutEstimate)
+            .filteredTasks(tasks)
+
+        #expect(Set(withEstimateResult.map(\.name)) == ["Quick estimate", "Long estimate"])
+        #expect(withoutEstimateResult.map(\.name) == ["No estimate"])
+    }
+
+    @Test
     func assumedDoneFilterHidesAssumedRowsByDefault() {
         let tasks = [
             TestTaskDisplay(name: "Morning pages", isAssumedDoneToday: true),
@@ -1960,6 +1977,7 @@ private func makeFiltering(
     selectedPressureFilter: RoutineTaskPressure? = nil,
     selectedGoalFilter: HomeTaskGoalFilter = .all,
     selectedMediaFilter: TaskMediaFilter = .all,
+    selectedEstimationFilter: TaskEstimationFilter = .all,
     hideAssumedDoneTasks: Bool = true,
     taskListViewMode: HomeTaskListViewMode = .all,
     taskListSortOrder: HomeTaskListSortOrder = .smart,
@@ -1988,6 +2006,7 @@ private func makeFiltering(
             selectedPressureFilter: selectedPressureFilter,
             selectedGoalFilter: selectedGoalFilter,
             selectedMediaFilter: selectedMediaFilter,
+            selectedEstimationFilter: selectedEstimationFilter,
             hideAssumedDoneTasks: hideAssumedDoneTasks,
             taskListViewMode: taskListViewMode,
             taskListSortOrder: taskListSortOrder,
@@ -2024,6 +2043,7 @@ private struct TestTaskDisplay: HomeRoutineMetadataDisplay, Equatable {
     var interval: Int = 7
     var recurrenceRule: RoutineRecurrenceRule = .interval(days: 7)
     var scheduleMode: RoutineScheduleMode = .fixedInterval
+    var estimatedDurationMinutes: Int?
     var createdAt: Date?
     var lastDone: Date?
     var canceledAt: Date?

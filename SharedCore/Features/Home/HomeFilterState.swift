@@ -14,6 +14,7 @@ struct HomeTaskFiltersState: Equatable {
     var selectedPressureFilter: RoutineTaskPressure? = nil
     var selectedGoalFilter: HomeTaskGoalFilter = .all
     var selectedMediaFilter: TaskMediaFilter = .all
+    var selectedEstimationFilter: TaskEstimationFilter = .all
     var hideAssumedDoneTasks: Bool = true
     var taskListViewMode: HomeTaskListViewMode = .all
     var taskListSortOrder: HomeTaskListSortOrder = .smart
@@ -37,6 +38,7 @@ struct HomeTaskFiltersState: Equatable {
             selectedPressureFilter: selectedPressureFilter,
             selectedGoalFilter: selectedGoalFilter,
             selectedMediaFilter: selectedMediaFilter,
+            selectedEstimationFilter: selectedEstimationFilter,
             hideAssumedDoneTasks: hideAssumedDoneTasks,
             taskListViewMode: taskListViewMode,
             taskListSortOrder: taskListSortOrder,
@@ -74,6 +76,7 @@ struct HomeTaskFiltersState: Equatable {
         selectedPressureFilter = snapshot.selectedPressureFilter
         selectedGoalFilter = snapshot.selectedGoalFilter
         selectedMediaFilter = snapshot.selectedMediaFilter
+        selectedEstimationFilter = snapshot.selectedEstimationFilter
         hideAssumedDoneTasks = snapshot.hideAssumedDoneTasks
         taskListViewMode = snapshot.taskListViewMode
         taskListSortOrder = snapshot.taskListSortOrder
@@ -163,6 +166,7 @@ enum HomeTemporaryViewStateMapper {
             selectedPressureFilter: persistedState.homeSelectedPressureFilter,
             selectedGoalFilter: persistedState.homeSelectedGoalFilter,
             selectedMediaFilter: persistedState.homeSelectedMediaFilter,
+            selectedEstimationFilter: persistedState.homeSelectedEstimationFilter,
             hideAssumedDoneTasks: persistedState.homeHideAssumedDoneTasks,
             taskListViewMode: persistedState.homeTaskListViewMode,
             taskListSortOrder: persistedState.homeTaskListSortOrder,
@@ -236,6 +240,7 @@ enum HomeTemporaryViewStateMapper {
             homeSelectedPressureFilter: taskFilters.selectedPressureFilter,
             homeSelectedGoalFilter: taskFilters.selectedGoalFilter,
             homeSelectedMediaFilter: taskFilters.selectedMediaFilter,
+            homeSelectedEstimationFilter: taskFilters.selectedEstimationFilter,
             homeHideAssumedDoneTasks: taskFilters.hideAssumedDoneTasks,
             homeTaskListViewMode: taskFilters.taskListViewMode,
             homeTaskListSortOrder: taskFilters.taskListSortOrder,

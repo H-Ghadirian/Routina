@@ -55,6 +55,9 @@ struct HomeFiltersSheetView: View {
                 HomeFiltersMediaSection(
                     selectedMediaFilter: bindings.selectedMediaFilter
                 )
+                HomeFiltersEstimationSection(
+                    selectedEstimationFilter: bindings.selectedEstimationFilter
+                )
                 HomeFiltersImportanceUrgencySection(
                     selectedImportanceUrgencyFilter: bindings.selectedImportanceUrgencyFilter,
                     summary: configuration.importanceUrgencySummary

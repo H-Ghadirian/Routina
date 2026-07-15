@@ -19,6 +19,7 @@ struct HomeRoutineDisplayCore: Equatable {
     var interval: Int
     var recurrenceRule: RoutineRecurrenceRule
     var scheduleMode: RoutineScheduleMode
+    var estimatedDurationMinutes: Int?
     var createdAt: Date?
     var isSoftIntervalRoutine: Bool
     var lastDone: Date?

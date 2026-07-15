@@ -97,6 +97,7 @@ struct HomeRoutineDisplayFactory {
             interval: max(Int(task.interval), 1),
             recurrenceRule: task.recurrenceRule,
             scheduleMode: task.scheduleMode,
+            estimatedDurationMinutes: task.estimatedDurationMinutes,
             createdAt: task.createdAt,
             isSoftIntervalRoutine: task.isSoftIntervalRoutine,
             lastDone: task.lastDone,

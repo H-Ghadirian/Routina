@@ -117,6 +117,7 @@ enum StatsFeatureDerivedStateBuilder {
                 selectedPressureFilter: nil,
                 selectedGoalFilter: .all,
                 selectedMediaFilter: .all,
+                selectedEstimationFilter: .all,
                 hideAssumedDoneTasks: false,
                 taskListViewMode: .all,
                 taskListSortOrder: .smart,
