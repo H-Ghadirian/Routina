@@ -4412,6 +4412,49 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func calendarSearchFiltersAssumedDoneSummaryBlocksForPlannerList() {
+        let dayKey = "2026-07-15"
+        let exerciseID = UUID()
+        let planningID = UUID()
+        let exercise = DayPlanTimelineActivityBlock(
+            block: DayPlanBlock(
+                id: exerciseID,
+                taskID: exerciseID,
+                dayKey: dayKey,
+                startMinute: 19 * 60 + 38,
+                durationMinutes: 90,
+                titleSnapshot: "Exercise"
+            ),
+            kind: .completed,
+            source: .assumedDone
+        )
+        let planning = DayPlanTimelineActivityBlock(
+            block: DayPlanBlock(
+                id: planningID,
+                taskID: planningID,
+                dayKey: dayKey,
+                startMinute: 11 * 60 + 30,
+                durationMinutes: 30,
+                titleSnapshot: "Planning"
+            ),
+            kind: .completed,
+            source: .assumedDone
+        )
+
+        let filtered = DayPlanCalendarTimelineActivityPresentationFilter.filteredBlocksByDayKey(
+            [dayKey: [planning, exercise]],
+            filters: DayPlanCalendarFilterState(),
+            includesAssumedDone: true,
+            matchingTaskIDs: [exerciseID],
+            allTaskIDs: [planningID, exerciseID],
+            isTaskFilterActive: false,
+            normalizedSearchText: "exercise"
+        )
+
+        #expect(filtered[dayKey]?.map(\.block.titleSnapshot) == ["Exercise"])
+    }
+
+    @Test
     func activePlanFocusSessionBlocksStartAfterAllocatedPlannerBlocks() throws {
         let calendar = gregorianCalendar
         let visibleDate = try #require(date("2026-05-07T12:00:00Z"))

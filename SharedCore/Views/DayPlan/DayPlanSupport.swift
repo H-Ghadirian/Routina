@@ -287,6 +287,59 @@ enum DayPlanCalendarTaskPresentationFilter {
     }
 }
 
+enum DayPlanCalendarTimelineActivityPresentationFilter {
+    static func filteredBlocksByDayKey(
+        _ blocksByDayKey: [String: [DayPlanTimelineActivityBlock]],
+        filters: DayPlanCalendarFilterState,
+        includesAssumedDone: Bool = false,
+        matchingTaskIDs: Set<UUID>,
+        allTaskIDs: Set<UUID>,
+        isTaskFilterActive: Bool,
+        normalizedSearchText: String
+    ) -> [String: [DayPlanTimelineActivityBlock]] {
+        blocksByDayKey.mapValues { blocks in
+            blocks.filter { activity in
+                matches(
+                    activity,
+                    filters: filters,
+                    includesAssumedDone: includesAssumedDone,
+                    matchingTaskIDs: matchingTaskIDs,
+                    allTaskIDs: allTaskIDs,
+                    isTaskFilterActive: isTaskFilterActive,
+                    normalizedSearchText: normalizedSearchText
+                )
+            }
+        }
+    }
+
+    static func matches(
+        _ activity: DayPlanTimelineActivityBlock,
+        filters: DayPlanCalendarFilterState,
+        includesAssumedDone: Bool = false,
+        matchingTaskIDs: Set<UUID>,
+        allTaskIDs: Set<UUID>,
+        isTaskFilterActive: Bool,
+        normalizedSearchText: String
+    ) -> Bool {
+        guard filters.includesTimelineActivity(
+            activity,
+            includesAssumedDone: includesAssumedDone
+        ) else {
+            return false
+        }
+
+        return DayPlanCalendarTaskPresentationFilter.matches(
+            taskID: activity.block.taskID,
+            title: activity.block.titleSnapshot,
+            emoji: activity.block.emojiSnapshot,
+            matchingTaskIDs: matchingTaskIDs,
+            allTaskIDs: allTaskIDs,
+            isTaskFilterActive: isTaskFilterActive,
+            normalizedSearchText: normalizedSearchText
+        )
+    }
+}
+
 enum DayPlanTaskSorting {
     static func availableTasks(from tasks: [RoutineTask]) -> [RoutineTask] {
         tasks

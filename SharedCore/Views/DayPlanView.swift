@@ -2463,6 +2463,14 @@ private struct DayPlanTimelinePanelContentView: View {
             allTaskIDs: allTaskIDs,
             isTaskFilterActive: isCalendarTaskFilterActive
         )
+        let visibleAssumedDoneSummaryBlocksByDayKey = filteredTimelineBlocksByDayKey(
+            assumedDoneSummaryBlocksByDayKey,
+            filters: calendarFilterState,
+            includesAssumedDone: true,
+            matchingTaskIDs: calendarSearchTaskIDs,
+            allTaskIDs: allTaskIDs,
+            isTaskFilterActive: isCalendarTaskFilterActive
+        )
         let visibleTimelineBlocksByDayKey = filteredTimelineBlocksByDayKey(
             timelineBlocksByDayKey,
             filters: calendarFilterState,
@@ -2496,7 +2504,7 @@ private struct DayPlanTimelinePanelContentView: View {
                         on: date,
                         automaticSuggestionBlocksByDayKey: dayTaskListAutomaticSuggestionBlocksByDayKey,
                         unplaceableAutomaticSuggestionBlocksByDayKey: dayTaskListUnplaceableAutomaticSuggestionBlocksByDayKey,
-                        assumedDoneSummaryBlocksByDayKey: assumedDoneSummaryBlocksByDayKey
+                        assumedDoneSummaryBlocksByDayKey: visibleAssumedDoneSummaryBlocksByDayKey
                     )
                     : [],
                 visibilitySignature: dayTaskListVisibilitySignature
@@ -2998,22 +3006,15 @@ private struct DayPlanTimelinePanelContentView: View {
         allTaskIDs: Set<UUID>,
         isTaskFilterActive: Bool
     ) -> [String: [DayPlanTimelineActivityBlock]] {
-        return blocksByDayKey.mapValues { blocks in
-            blocks.filter { activity in
-                guard filters.includesTimelineActivity(
-                    activity,
-                    includesAssumedDone: includesAssumedDone
-                ) else { return false }
-                return matchesCalendarSearch(
-                    taskID: activity.block.taskID,
-                    title: activity.block.titleSnapshot,
-                    emoji: activity.block.emojiSnapshot,
-                    matchingTaskIDs: matchingTaskIDs,
-                    allTaskIDs: allTaskIDs,
-                    isTaskFilterActive: isTaskFilterActive
-                )
-            }
-        }
+        DayPlanCalendarTimelineActivityPresentationFilter.filteredBlocksByDayKey(
+            blocksByDayKey,
+            filters: filters,
+            includesAssumedDone: includesAssumedDone,
+            matchingTaskIDs: matchingTaskIDs,
+            allTaskIDs: allTaskIDs,
+            isTaskFilterActive: isTaskFilterActive,
+            normalizedSearchText: normalizedCalendarSearchText
+        )
     }
 
     private func matchesCalendarSearch(
