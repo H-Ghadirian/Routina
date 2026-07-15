@@ -339,6 +339,7 @@ extension HomeTCAView {
                         showsPlaces: isPlacesEnabled,
                         mainDetailMode: mainDetailModeBinding,
                         dayPlanDisplayMode: $dayPlanDisplayMode,
+                        dayPlanCalendarTaskViewMode: $dayPlanCalendarTaskViewMode,
                         dayPlanCalendarFilters: $dayPlanCalendarFilters,
                         isDayPlanCalendarFilterDetailPresented: isPlannerFilterDetailPresented,
                         plannerTimelineActivityDates: isPlannerTimelineListVisible

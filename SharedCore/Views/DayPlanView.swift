@@ -446,6 +446,7 @@ struct DayPlanDetailView: View {
     var isTaskDetailInspectorPresented = false
     var macHeaderAvailableWidth: CGFloat? = nil
     var displayMode: Binding<DayPlanDisplayMode> = .constant(.calendar)
+    var calendarTaskViewMode: Binding<DayPlanCalendarTaskViewMode> = .constant(.schedule)
     var calendarFilters: Binding<DayPlanCalendarFilterState> = .constant(DayPlanCalendarFilterState())
     var isCalendarFilterDetailPresented = false
     var listFilterButtonIsActive = false
@@ -461,7 +462,6 @@ struct DayPlanDetailView: View {
     var onOpenEventDetails: ((UUID) -> Void)? = nil
     var onCalendarFilterButtonPressed: (() -> Void)? = nil
     var onPlannerSidebarPresentationRequested: (() -> Void)? = nil
-    @State private var calendarTaskViewMode: DayPlanCalendarTaskViewMode = .schedule
     @State private var isCalendarFilterSidebarPresented = false
     @State private var isDatePickerSidebarPresented = false
     @State private var timelineDateJumpRequest: DayPlanTimelineDateJumpRequest?
@@ -476,7 +476,7 @@ struct DayPlanDetailView: View {
                 isCalendarFilterDetailPresented: isCalendarFilterDetailPresented,
                 showsCalendarFilterButton: true,
                 displayMode: displayMode,
-                calendarTaskViewMode: $calendarTaskViewMode,
+                calendarTaskViewMode: calendarTaskViewMode,
                 showsDisplayModePicker: listContent != nil,
                 isTaskDetailInspectorPresented: isTaskDetailInspectorPresented,
                 parentAvailableWidth: macHeaderAvailableWidth,
@@ -498,7 +498,7 @@ struct DayPlanDetailView: View {
                     calendarSearchText: calendarSearchText,
                     calendarTaskFilter: calendarTaskFilter,
                     calendarTaskFilterCacheSeed: calendarTaskFilterCacheSeed,
-                    calendarTaskViewMode: calendarTaskViewMode,
+                    calendarTaskViewMode: calendarTaskViewMode.wrappedValue,
                     isCalendarFilterSidebarPresented: $isCalendarFilterSidebarPresented,
                     isDatePickerSidebarPresented: $isDatePickerSidebarPresented,
                     isExternalInspectorPresented: isTaskDetailInspectorPresented,

@@ -692,6 +692,10 @@ Given Planner Calendar is in `List` task-view mode
 When day-task columns render the same agenda rows
 Then those column rows remain read-only and do not provide drag payloads
 
+Given Mac Home is fullscreen and Planner Calendar is in `List` task-view mode
+When the user exits fullscreen
+Then Planner Calendar remains in `List` task-view mode instead of resetting to `Schedule`
+
 ### Protected Modes Do Not Overlap
 
 Area: Planner

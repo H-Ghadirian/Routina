@@ -47,6 +47,30 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func macPlannerCalendarListModeIsOwnedByHomeState() throws {
+        let homeSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView.swift")
+        let platformSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift")
+        let detailSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
+        let dayPlanSource = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
+
+        #expect(
+            homeSource.contains("@State var dayPlanCalendarTaskViewMode: DayPlanCalendarTaskViewMode = .schedule"),
+            "Mac Home should own the embedded Planner Calendar Schedule/List state so fullscreen rebuilds do not reset it."
+        )
+        #expect(platformSource.contains("dayPlanCalendarTaskViewMode: $dayPlanCalendarTaskViewMode"))
+        #expect(detailSource.contains("@Binding var dayPlanCalendarTaskViewMode: DayPlanCalendarTaskViewMode"))
+        #expect(detailSource.contains("calendarTaskViewMode: $dayPlanCalendarTaskViewMode"))
+        #expect(
+            dayPlanSource.contains("var calendarTaskViewMode: Binding<DayPlanCalendarTaskViewMode> = .constant(.schedule)"),
+            "The embedded DayPlanDetailView should receive Calendar task view state from Mac Home instead of owning reset-prone local state."
+        )
+        #expect(
+            !dayPlanSource.contains("@State private var calendarTaskViewMode: DayPlanCalendarTaskViewMode = .schedule\n    @State private var isCalendarFilterSidebarPresented"),
+            "DayPlanDetailView should not reset Calendar List to Schedule when the Mac detail child is recreated."
+        )
+    }
+
+    @Test
     func timelineDateJumpTargetsOnlyMatchingVisibleSection() throws {
         let calendar = gregorianCalendar
         let newerSection = try #require(date("2026-05-04T00:00:00Z"))
@@ -5348,6 +5372,12 @@ struct DayPlanPlannerStateTests {
 
         activeUndoManager.undo()
         #expect(DayPlanStorage.loadBlocks(forDayKey: sourceDayKey, context: context).map(\.id) == [block.id])
+    }
+
+    private static func sourceFile(_ relativePath: String) throws -> String {
+        let url = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent(relativePath)
+        return try String(contentsOf: url, encoding: .utf8)
     }
 }
 

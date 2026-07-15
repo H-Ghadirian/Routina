@@ -48,6 +48,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     let showsPlaces: Bool
     @Binding var mainDetailMode: MacHomeDetailMode
     @Binding var dayPlanDisplayMode: DayPlanDisplayMode
+    @Binding var dayPlanCalendarTaskViewMode: DayPlanCalendarTaskViewMode
     @Binding var dayPlanCalendarFilters: DayPlanCalendarFilterState
     let isDayPlanCalendarFilterDetailPresented: Bool
     let plannerTimelineActivityDates: [Date]
@@ -320,6 +321,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                         0
                     ),
                     displayMode: $dayPlanDisplayMode,
+                    calendarTaskViewMode: $dayPlanCalendarTaskViewMode,
                     calendarFilters: $dayPlanCalendarFilters,
                     isCalendarFilterDetailPresented: isDayPlanCalendarFilterDetailPresented,
                     listFilterButtonIsActive: isPlannerTimelineFilterActive,
