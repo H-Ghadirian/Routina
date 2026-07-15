@@ -2100,16 +2100,25 @@ private final class DayPlanTimelineRenderSnapshotCache: ObservableObject {
         context: ModelContext
     ) -> DayPlanPlannedBlockPresentation {
         var visibleBlocksByDayKey: [String: [DayPlanBlock]] = [:]
+        var rawBlocksByDayKey: [String: [DayPlanBlock]] = [:]
         var rawBlocks: [DayPlanBlock] = []
         visibleBlocksByDayKey.reserveCapacity(dates.count)
+        rawBlocksByDayKey.reserveCapacity(dates.count)
 
         for date in dates {
             let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
             let blocks = planner.blocks(on: date, calendar: calendar, context: context)
+            rawBlocksByDayKey[dayKey] = blocks
             rawBlocks.append(contentsOf: blocks)
+        }
+
+        for date in dates {
+            let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+            let blocks = rawBlocksByDayKey[dayKey] ?? []
             visibleBlocksByDayKey[dayKey] = DayPlanVisibleBlocks.blocks(
                 blocks,
-                context: visibleBlockContext
+                context: visibleBlockContext,
+                activeFocusSegmentSearchBlocks: rawBlocks
             )
         }
 
@@ -3462,16 +3471,25 @@ private struct DayPlanTimelinePanelContentView: View {
         visibleBlockContext: DayPlanVisibleBlockContext
     ) -> DayPlanPlannedBlockPresentation {
         var visibleBlocksByDayKey: [String: [DayPlanBlock]] = [:]
+        var rawBlocksByDayKey: [String: [DayPlanBlock]] = [:]
         var rawBlocks: [DayPlanBlock] = []
         visibleBlocksByDayKey.reserveCapacity(dates.count)
+        rawBlocksByDayKey.reserveCapacity(dates.count)
 
         for date in dates {
             let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
             let blocks = planner.blocks(on: date, calendar: calendar, context: modelContext)
+            rawBlocksByDayKey[dayKey] = blocks
             rawBlocks.append(contentsOf: blocks)
+        }
+
+        for date in dates {
+            let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+            let blocks = rawBlocksByDayKey[dayKey] ?? []
             visibleBlocksByDayKey[dayKey] = DayPlanVisibleBlocks.blocks(
                 blocks,
-                context: visibleBlockContext
+                context: visibleBlockContext,
+                activeFocusSegmentSearchBlocks: rawBlocks
             )
         }
 

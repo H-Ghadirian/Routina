@@ -489,7 +489,6 @@ private struct PositionedPlannedBlock: Identifiable {
 
 struct DayPlanFocusSessionBlockLayer: View {
     var dates: [Date]
-    var now: Date
     var calendar: Calendar
     var dayWidth: CGFloat
     var hourHeight: CGFloat
@@ -542,19 +541,19 @@ struct DayPlanFocusSessionBlockLayer: View {
     }
 
     private var positionedFocusBlocks: [PositionedFocusSessionBlock] {
-        guard let todayIndex else { return [] }
-        let today = dates[todayIndex]
-        return focusSessionBlocks.map {
-            PositionedFocusSessionBlock(
-                dayIndex: todayIndex,
-                date: today,
-                focusBlock: $0
+        focusSessionBlocks.compactMap { focusBlock in
+            guard let dayIndex = dates.firstIndex(where: { date in
+                DayPlanStorage.dayKey(for: date, calendar: calendar) == focusBlock.block.dayKey
+            }) else {
+                return nil
+            }
+
+            return PositionedFocusSessionBlock(
+                dayIndex: dayIndex,
+                date: dates[dayIndex],
+                focusBlock: focusBlock
             )
         }
-    }
-
-    private var todayIndex: Int? {
-        dates.firstIndex { calendar.isDate($0, inSameDayAs: now) }
     }
 
     private func yOffset(for minute: Int) -> CGFloat {

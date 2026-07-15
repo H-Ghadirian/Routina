@@ -211,6 +211,10 @@ struct DayPlanVisibleBlockContext {
         )
     }
 
+    var referenceDayKey: String {
+        DayPlanStorage.dayKey(for: referenceDate, calendar: calendar)
+    }
+
     private static func date(fromDayKey dayKey: String, calendar: Calendar) -> Date? {
         let parts = dayKey.split(separator: "-")
         guard parts.count == 3,
@@ -296,7 +300,8 @@ enum DayPlanVisibleBlocks {
         logs: [RoutineLog],
         calendar: Calendar,
         referenceDate: Date = Date(),
-        activeFocusSessions: [FocusSession] = []
+        activeFocusSessions: [FocusSession] = [],
+        activeFocusSegmentSearchBlocks: [DayPlanBlock]? = nil
     ) -> [DayPlanBlock] {
         Self.blocks(
             blocks,
@@ -306,20 +311,26 @@ enum DayPlanVisibleBlocks {
                 calendar: calendar,
                 referenceDate: referenceDate,
                 activeFocusSessions: activeFocusSessions
-            )
+            ),
+            activeFocusSegmentSearchBlocks: activeFocusSegmentSearchBlocks
         )
     }
 
     static func blocks(
         _ blocks: [DayPlanBlock],
-        context: DayPlanVisibleBlockContext
+        context: DayPlanVisibleBlockContext,
+        activeFocusSegmentSearchBlocks: [DayPlanBlock]? = nil
     ) -> [DayPlanBlock] {
         guard !blocks.isEmpty else { return [] }
 
         let correctedBlocks = context.correctedActiveFocusBlocks(blocks)
+        let activeFocusSearchBlocks = context.correctedActiveFocusBlocks(
+            activeFocusSegmentSearchBlocks ?? blocks
+        )
         let activeCountUpSegmentBlockIDs = activeCountUpCurrentSegmentBlockIDs(
-            correctedBlocks,
-            activeFocusSessions: context.activeFocusSessions
+            activeFocusSearchBlocks,
+            activeFocusSessions: context.activeFocusSessions,
+            referenceDayKey: activeFocusSegmentSearchBlocks == nil ? nil : context.referenceDayKey
         )
 
         return correctedBlocks.filter { block in
@@ -335,7 +346,8 @@ enum DayPlanVisibleBlocks {
 
     private static func activeCountUpCurrentSegmentBlockIDs(
         _ blocks: [DayPlanBlock],
-        activeFocusSessions: [FocusSession]
+        activeFocusSessions: [FocusSession],
+        referenceDayKey: String?
     ) -> Set<UUID> {
         Set(activeFocusSessions.compactMap { session in
             guard session.plannedDurationSeconds <= 0,
@@ -351,7 +363,11 @@ enum DayPlanVisibleBlocks {
                 in: blocks,
                 for: session
             ) else {
-                return session.id
+                return nil
+            }
+
+            if let referenceDayKey, latestSegmentBlock.dayKey != referenceDayKey {
+                return nil
             }
 
             if latestSegmentBlock.id == session.id,

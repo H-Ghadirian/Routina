@@ -334,7 +334,6 @@ struct DayPlanWeekCalendarView: View {
                                     if showsActiveFocusBlocks {
                                         DayPlanFocusSessionBlockLayer(
                                             dates: dates,
-                                            now: timeline.date,
                                             calendar: calendar,
                                             dayWidth: dayWidth,
                                             hourHeight: hourHeight,

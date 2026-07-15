@@ -505,6 +505,10 @@ And the resumed block duration follows focused time after resume instead of the 
 And an already-saved pre-pause segment is capped to focused time instead of spanning the paused gap
 And after multiple pause/resume cycles, each completed focus segment remains its own block instead of being packed into the first block
 
+Given a count-up tag focus session has saved focus segments on a prior visible day and a live current-day segment
+When the user switches Planner Calendar between Week, 3 Days, and Day ranges
+Then saved focus segments on visible prior days remain visible, while only the live current-day segment is replaced by the live Focus overlay
+
 ### Planner Range Picker Follows Adaptive Visible Days
 
 Area: Planner

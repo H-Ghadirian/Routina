@@ -3956,6 +3956,77 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func visiblePlannerBlocksKeepPriorDayCountUpTagFocusSegments() throws {
+        let calendar = gregorianCalendar
+        let previousDate = try #require(date("2026-07-14T12:00:00Z"))
+        let currentDate = try #require(date("2026-07-15T12:00:00Z"))
+        let startedAt = try #require(date("2026-07-14T09:47:00Z"))
+        let pausedAt = try #require(date("2026-07-14T10:28:00Z"))
+        let resumedAt = try #require(date("2026-07-15T09:36:00Z"))
+        let now = try #require(date("2026-07-15T13:01:00Z"))
+        let session = FocusSession(
+            id: UUID(),
+            taskID: FocusSession.unassignedTaskID,
+            startedAt: startedAt,
+            plannedDurationSeconds: 0,
+            tagName: "HSE"
+        )
+        #expect(session.pause(at: pausedAt))
+        #expect(session.resume(at: resumedAt))
+
+        let previousDayKey = DayPlanStorage.dayKey(for: previousDate, calendar: calendar)
+        let currentDayKey = DayPlanStorage.dayKey(for: currentDate, calendar: calendar)
+        let previousBlock = DayPlanBlock(
+            id: session.id,
+            taskID: FocusSession.unassignedTaskID,
+            dayKey: previousDayKey,
+            startMinute: 9 * 60 + 47,
+            durationMinutes: 41,
+            titleSnapshot: "#HSE",
+            createdAt: startedAt,
+            updatedAt: pausedAt,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
+        let currentBlock = DayPlanBlock(
+            id: DayPlanFocusSessionPlannerSync.focusSegmentBlockID(
+                sessionID: session.id,
+                segmentStartedAt: resumedAt
+            ),
+            taskID: FocusSession.unassignedTaskID,
+            dayKey: currentDayKey,
+            startMinute: 9 * 60 + 36,
+            durationMinutes: 1,
+            titleSnapshot: "#HSE",
+            createdAt: resumedAt,
+            updatedAt: resumedAt.addingTimeInterval(60),
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
+        let rangeBlocks = [previousBlock, currentBlock]
+
+        let visiblePreviousBlocks = DayPlanVisibleBlocks.blocks(
+            [previousBlock],
+            tasks: [],
+            logs: [],
+            calendar: calendar,
+            referenceDate: now,
+            activeFocusSessions: [session],
+            activeFocusSegmentSearchBlocks: rangeBlocks
+        )
+        let visibleCurrentBlocks = DayPlanVisibleBlocks.blocks(
+            [currentBlock],
+            tasks: [],
+            logs: [],
+            calendar: calendar,
+            referenceDate: now,
+            activeFocusSessions: [session],
+            activeFocusSegmentSearchBlocks: rangeBlocks
+        )
+
+        #expect(visiblePreviousBlocks.map(\.id) == [previousBlock.id])
+        #expect(visibleCurrentBlocks.isEmpty)
+    }
+
+    @Test
     func activePlanFocusSessionBlocksStartAfterAllocatedPlannerBlocks() throws {
         let calendar = gregorianCalendar
         let visibleDate = try #require(date("2026-05-07T12:00:00Z"))
