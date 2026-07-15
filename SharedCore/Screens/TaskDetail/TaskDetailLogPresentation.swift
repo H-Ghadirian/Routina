@@ -45,6 +45,19 @@ enum TaskDetailLogPresentation {
         }
     }
 
+    static func statusSystemImage(for kind: RoutineLogKind) -> String {
+        switch kind {
+        case .completed:
+            return "checkmark.circle.fill"
+        case .fulfilled:
+            return "link.circle.fill"
+        case .canceled:
+            return "xmark.circle.fill"
+        case .missed:
+            return "exclamationmark.triangle.fill"
+        }
+    }
+
     static func timestampText(
         _ timestamp: Date?,
         showPersianDates: Bool

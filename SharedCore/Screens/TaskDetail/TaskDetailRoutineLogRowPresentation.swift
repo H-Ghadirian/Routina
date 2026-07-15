@@ -6,6 +6,7 @@ struct TaskDetailRoutineLogRowPresentation {
     let fullTimeSpentText: String
     let statusText: String
     let statusColor: Color
+    let statusSystemImage: String
     let actionTitle: String
     let actionColor: Color
     let isActionEnabled: Bool
@@ -22,6 +23,7 @@ struct TaskDetailRoutineLogRowPresentation {
             sourceTaskName: sourceTaskName
         )
         self.statusColor = TaskDetailLogPresentation.statusColor(for: log.kind)
+        self.statusSystemImage = TaskDetailLogPresentation.statusSystemImage(for: log.kind)
         self.actionTitle = TaskDetailLogPresentation.actionTitle(for: log)
         self.actionColor = TaskDetailLogPresentation.statusColor(for: log.kind)
         self.isActionEnabled = log.timestamp != nil

@@ -80,9 +80,7 @@ struct TaskDetailHistorySectionView<RowContent: View>: View {
                 )
 
                 if let createdAtBadgeValue {
-                    Label("Created \(createdAtBadgeValue)", systemImage: "calendar.badge.plus")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    createdBadge(createdAtBadgeValue)
                 }
 
                 if isExpanded {
@@ -107,13 +105,13 @@ struct TaskDetailHistorySectionView<RowContent: View>: View {
     @ViewBuilder
     private var historyContent: some View {
         if !logs.isEmpty {
-            historyGroupTitle("Activity", count: logs.count)
+            historyGroupTitle("Activity", count: logs.count, systemImage: "clock")
 
             ForEach(Array(displayedLogs.enumerated()), id: \.element.id) { index, log in
                 rowContent(index, log, displayedLogs)
 
                 if index < displayedLogs.count - 1 {
-                    Divider()
+                    historyDivider
                 }
             }
 
@@ -123,32 +121,48 @@ struct TaskDetailHistorySectionView<RowContent: View>: View {
         }
 
         if !logs.isEmpty && !changes.isEmpty {
-            Divider()
-                .padding(.vertical, 2)
+            historyGroupDivider
         }
 
         if !changes.isEmpty {
-            historyGroupTitle("Changes", count: changes.count)
+            historyGroupTitle("Changes", count: changes.count, systemImage: "pencil")
 
             ForEach(Array(displayedChanges.enumerated()), id: \.element.id) { index, change in
                 taskChangeRow(change)
 
                 if index < displayedChanges.count - 1 {
-                    Divider()
+                    historyDivider
                 }
             }
 
             if shouldShowAllChangesControl {
-                Divider()
+                historyDivider
                 showAllChangesControl
             }
         }
     }
 
-    private func historyGroupTitle(_ title: String, count: Int) -> some View {
+    private func createdBadge(_ value: String) -> some View {
+        Label("Created \(value)", systemImage: "calendar.badge.plus")
+            .font(.caption.weight(.medium))
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 6)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color.secondary.opacity(0.08))
+            )
+            .overlay(
+                Capsule(style: .continuous)
+                    .stroke(Color.secondary.opacity(0.12), lineWidth: 1)
+            )
+    }
+
+    private func historyGroupTitle(_ title: String, count: Int, systemImage: String) -> some View {
         HStack(spacing: 8) {
-            Text(title.uppercased())
-                .font(.caption2.weight(.semibold))
+            Label(title, systemImage: systemImage)
+                .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
             Text(count.formatted())
@@ -161,7 +175,20 @@ struct TaskDetailHistorySectionView<RowContent: View>: View {
                         .fill(Color.secondary.opacity(0.14))
                 )
         }
-        .padding(.top, 2)
+        .padding(.top, 4)
+        .padding(.bottom, 2)
+    }
+
+    private var historyDivider: some View {
+        Divider()
+            .padding(.leading, 40)
+            .opacity(0.65)
+    }
+
+    private var historyGroupDivider: some View {
+        Divider()
+            .padding(.vertical, 6)
+            .opacity(0.7)
     }
 
     private var showAllLogsControl: some View {
@@ -174,10 +201,19 @@ struct TaskDetailHistorySectionView<RowContent: View>: View {
                 isShowingAllLogs ? "Show fewer activity entries" : "Show all activity",
                 systemImage: isShowingAllLogs ? "chevron.up.circle" : "chevron.down.circle"
             )
-            .frame(maxWidth: .infinity)
+            .font(.caption.weight(.semibold))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color.secondary.opacity(0.10))
+            )
         }
-        .buttonStyle(.bordered)
-        .controlSize(.small)
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .contentShape(Capsule(style: .continuous))
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.top, 2)
         .accessibilityHint(isShowingAllLogs ? "Shows only recent activity" : "Shows \(hiddenLogCount) older activity entries")
     }
 
@@ -191,23 +227,32 @@ struct TaskDetailHistorySectionView<RowContent: View>: View {
                 isShowingAllChanges ? "Show fewer changes" : "Show all changes",
                 systemImage: isShowingAllChanges ? "chevron.up.circle" : "chevron.down.circle"
             )
-            .frame(maxWidth: .infinity)
+            .font(.caption.weight(.semibold))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color.secondary.opacity(0.10))
+            )
         }
-        .buttonStyle(.bordered)
-        .controlSize(.small)
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .contentShape(Capsule(style: .continuous))
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.top, 2)
         .accessibilityHint(isShowingAllChanges ? "Shows only recent changes" : "Shows \(hiddenChangeCount) older changes")
     }
 
     private func taskChangeRow(_ change: RoutineTaskChangeLogEntry) -> some View {
         HStack(alignment: .top, spacing: 10) {
-            Image(systemName: TaskDetailLogPresentation.taskChangeSystemImage(for: change))
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .frame(width: 18, height: 18)
+            TaskDetailHistoryMarker(
+                systemImage: TaskDetailLogPresentation.taskChangeSystemImage(for: change),
+                tint: .secondary
+            )
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(TaskDetailLogPresentation.taskChangeTitle(for: change, relatedTaskName: relatedTaskName(change)))
-                    .font(.subheadline.weight(.medium))
+                    .font(.subheadline.weight(.semibold))
                 Text(TaskDetailLogPresentation.timestampText(change.timestamp, showPersianDates: showPersianDates))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -215,5 +260,46 @@ struct TaskDetailHistorySectionView<RowContent: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.vertical, 7)
+    }
+}
+
+struct TaskDetailHistoryMarker: View {
+    let systemImage: String
+    let tint: Color
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(tint.opacity(0.16))
+
+            Image(systemName: systemImage)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(tint)
+        }
+        .frame(width: 28, height: 28)
+        .accessibilityHidden(true)
+    }
+}
+
+struct TaskDetailHistoryStatusBadge: View {
+    let title: String
+    let tint: Color
+
+    var body: some View {
+        Text(title)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(tint)
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(tint.opacity(0.13))
+            )
+            .overlay(
+                Capsule(style: .continuous)
+                    .stroke(tint.opacity(0.22), lineWidth: 1)
+            )
     }
 }
