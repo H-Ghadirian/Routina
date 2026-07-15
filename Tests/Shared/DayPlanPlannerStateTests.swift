@@ -565,6 +565,25 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func unassignedFocusBlocksUseDayScopedRenderIDs() throws {
+        let projectRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let blockLayerSource = try String(
+            contentsOf: projectRoot.appendingPathComponent("SharedCore/Views/DayPlan/DayPlanBlockLayer.swift"),
+            encoding: .utf8
+        )
+
+        #expect(blockLayerSource.contains("block.taskID == FocusSession.unassignedTaskID"))
+        #expect(blockLayerSource.contains("\"planned-focus\""))
+        #expect(blockLayerSource.contains("block.dayKey"))
+        #expect(blockLayerSource.contains("String(block.startMinute)"))
+        #expect(blockLayerSource.contains("String(Int(block.createdAt.timeIntervalSince1970 * 1_000))"))
+        #expect(blockLayerSource.contains("var id: String"))
+    }
+
+    @Test
     func plannedTaskSidebarOpeningDoesNotSelectDate() throws {
         let projectRoot = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

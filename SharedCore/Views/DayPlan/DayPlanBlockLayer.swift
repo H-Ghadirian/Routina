@@ -433,6 +433,7 @@ struct DayPlanBlockLayer: View {
                 columnCount: 1
             )
             return PositionedPlannedBlock(
+                id: id,
                 block: block,
                 columnIndex: placement.columnIndex,
                 columnCount: placement.columnCount
@@ -456,7 +457,17 @@ struct DayPlanBlockLayer: View {
     }
 
     private func timedBlockID(for block: DayPlanBlock) -> String {
-        "planned-\(block.id.uuidString)"
+        if block.taskID == FocusSession.unassignedTaskID {
+            return [
+                "planned-focus",
+                block.dayKey,
+                block.id.uuidString,
+                String(block.startMinute),
+                String(Int(block.createdAt.timeIntervalSince1970 * 1_000)),
+            ].joined(separator: "-")
+        }
+
+        return "planned-\(block.id.uuidString)"
     }
 
     private func timedBlockID(for eventBlock: DayPlanEventBlock) -> String {
@@ -487,13 +498,10 @@ private struct PositionedEventBlock: Identifiable {
 }
 
 private struct PositionedPlannedBlock: Identifiable {
+    var id: String
     var block: DayPlanBlock
     var columnIndex: Int
     var columnCount: Int
-
-    var id: DayPlanBlock.ID {
-        block.id
-    }
 }
 
 struct DayPlanFocusSessionBlockLayer: View {
