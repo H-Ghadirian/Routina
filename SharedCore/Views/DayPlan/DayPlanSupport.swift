@@ -564,11 +564,17 @@ enum DayPlanDayTaskListPresentation {
 
         let timedItems = timedBlocks
             .compactMap { block -> DayPlanDayTaskListItem? in
-                guard let section = completionContext.sectionForPlannerBackedTask(
-                    block.taskID,
-                    dayKey: dayKey
-                ) else {
-                    return nil
+                let section: DayPlanDayTaskListItem.Section
+                if block.taskID == FocusSession.unassignedTaskID {
+                    section = .done
+                } else {
+                    guard let plannerSection = completionContext.sectionForPlannerBackedTask(
+                        block.taskID,
+                        dayKey: dayKey
+                    ) else {
+                        return nil
+                    }
+                    section = plannerSection
                 }
 
                 return DayPlanDayTaskListItem(

@@ -1274,6 +1274,7 @@ private struct DayPlanDayTaskListContentRow: View {
     }
 
     private var dragProvider: (() -> NSItemProvider)? {
+        guard item.taskID != FocusSession.unassignedTaskID else { return nil }
         guard let onDragProvider else { return nil }
         return {
             onDragProvider(item)

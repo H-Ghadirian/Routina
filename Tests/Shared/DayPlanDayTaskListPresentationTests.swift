@@ -326,6 +326,47 @@ struct DayPlanDayTaskListPresentationTests {
     }
 
     @Test
+    func unassignedFocusBlocksRenderInDoneSection() throws {
+        let calendar = testCalendar
+        let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))
+        let dayKey = DayPlanStorage.dayKey(for: day, calendar: calendar)
+        let firstSessionID = try #require(UUID(uuidString: "51515151-5151-5151-5151-515151515152"))
+        let secondSessionID = try #require(UUID(uuidString: "51515151-5151-5151-5151-515151515153"))
+
+        let firstFocusBlock = DayPlanBlock(
+            id: firstSessionID,
+            taskID: FocusSession.unassignedTaskID,
+            dayKey: dayKey,
+            startMinute: 9 * 60 + 36,
+            durationMinutes: 57,
+            titleSnapshot: "#HSE"
+        )
+        let secondFocusBlock = DayPlanBlock(
+            id: secondSessionID,
+            taskID: FocusSession.unassignedTaskID,
+            dayKey: dayKey,
+            startMinute: 11 * 60 + 19,
+            durationMinutes: 21,
+            titleSnapshot: "#HSE"
+        )
+
+        let items = DayPlanDayTaskListPresentation.items(
+            on: day,
+            timedBlocks: [secondFocusBlock, firstFocusBlock],
+            allDayBlocks: [],
+            calendar: calendar
+        )
+
+        #expect(items.map(\.title) == ["#HSE", "#HSE"])
+        #expect(items.map(\.section) == [.done, .done])
+        #expect(items.map(\.placement) == [
+            .timed(startMinute: 9 * 60 + 36, durationMinutes: 57),
+            .timed(startMinute: 11 * 60 + 19, durationMinutes: 21),
+        ])
+        #expect(DayPlanDayTaskCounts(items: items) == DayPlanDayTaskCounts(done: 2))
+    }
+
+    @Test
     func completedOneOffPlannerBlockWithoutSelectedDayCompletionIsOmitted() throws {
         let calendar = testCalendar
         let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))

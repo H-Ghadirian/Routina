@@ -2426,8 +2426,9 @@ private struct DayPlanTimelinePanelContentView: View {
             && calendarFilterState.showsTimelineSuggestions
         let calendarSearchTasks = tasksMatchingCalendarSearch(from: currentTasks)
         let calendarSearchTaskIDs = Set(calendarSearchTasks.map(\.id))
-        let visiblePlannedBlocksByDayKey = filteredBlocksByDayKey(
+        let visibleTimedBlocksByDayKey = filteredBlocksByDayKey(
             plannedBlocksByDayKey,
+            filters: calendarFilterState,
             matchingTaskIDs: calendarSearchTaskIDs,
             allTaskIDs: allTaskIDs,
             isTaskFilterActive: isCalendarTaskFilterActive
@@ -2483,9 +2484,7 @@ private struct DayPlanTimelinePanelContentView: View {
         let calendarDayTaskListItems: (Date) -> [DayPlanDayTaskListItem] = { date in
             dayTaskListItems(
                 on: date,
-                plannedBlocksByDayKey: calendarFilterState.showsPlannedTasks
-                    ? visiblePlannedBlocksByDayKey
-                    : [:],
+                plannedBlocksByDayKey: visibleTimedBlocksByDayKey,
                 allDayBlocks: visibleAllDayBlocks,
                 plannedDateTasks: calendarFilterState.showsAllDayTasks
                     ? calendarSearchTasks
@@ -2523,9 +2522,8 @@ private struct DayPlanTimelinePanelContentView: View {
                 canIncreaseHourSpacing: planner.canIncreaseDayHourSpacing,
                 hourSpacingAccessibilityValue: "\(Int(planner.dayHourSpacing.hourHeight)) points per hour",
                 blocksForDate: { date in
-                    guard calendarFilterState.showsPlannedTasks else { return [] }
                     let dayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
-                    return visiblePlannedBlocksByDayKey[dayKey] ?? []
+                    return visibleTimedBlocksByDayKey[dayKey] ?? []
                 },
                 automaticTimelineBlocksForDate: { date in
                     guard timelineSuggestionsVisible else { return [] }
@@ -2968,13 +2966,19 @@ private struct DayPlanTimelinePanelContentView: View {
 
     private func filteredBlocksByDayKey(
         _ blocksByDayKey: [String: [DayPlanBlock]],
+        filters: DayPlanCalendarFilterState,
         matchingTaskIDs: Set<UUID>,
         allTaskIDs: Set<UUID>,
         isTaskFilterActive: Bool
     ) -> [String: [DayPlanBlock]] {
         return blocksByDayKey.mapValues { blocks in
             blocks.filter { block in
-                matchesCalendarSearch(
+                if block.taskID == FocusSession.unassignedTaskID {
+                    guard filters.showsFocus else { return false }
+                } else {
+                    guard filters.showsPlannedTasks else { return false }
+                }
+                return matchesCalendarSearch(
                     taskID: block.taskID,
                     title: block.titleSnapshot,
                     emoji: block.emojiSnapshot,
