@@ -27,6 +27,7 @@ struct DayPlanWeekGridView: View {
                     .offset(x: timeColumnWidth + CGFloat(index) * dayWidth)
             }
         }
+        .frame(width: contentWidth, height: contentHeight, alignment: .topLeading)
     }
 
     private func hourLabel(for hour: Int) -> some View {
@@ -48,5 +49,13 @@ struct DayPlanWeekGridView: View {
 
     private func hourLabelYOffset(for hour: Int) -> CGFloat {
         max((CGFloat(hour) * hourHeight) - 8, 0)
+    }
+
+    private var contentWidth: CGFloat {
+        timeColumnWidth + (CGFloat(dates.count) * dayWidth)
+    }
+
+    private var contentHeight: CGFloat {
+        hourHeight * 24
     }
 }

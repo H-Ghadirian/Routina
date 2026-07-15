@@ -546,6 +546,25 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func calendarTimedLayersDeclareFullContentFrames() throws {
+        let projectRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let gridSource = try String(
+            contentsOf: projectRoot.appendingPathComponent("SharedCore/Views/DayPlan/DayPlanWeekGridView.swift"),
+            encoding: .utf8
+        )
+        let blockLayerSource = try String(
+            contentsOf: projectRoot.appendingPathComponent("SharedCore/Views/DayPlan/DayPlanBlockLayer.swift"),
+            encoding: .utf8
+        )
+
+        #expect(gridSource.contains(".frame(width: contentWidth, height: contentHeight, alignment: .topLeading)"))
+        #expect(blockLayerSource.contains(".frame(width: contentWidth, height: contentHeight, alignment: .topLeading)"))
+    }
+
+    @Test
     func plannedTaskSidebarOpeningDoesNotSelectDate() throws {
         let projectRoot = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

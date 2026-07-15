@@ -305,6 +305,7 @@ struct DayPlanBlockLayer: View {
                 }
             }
         }
+        .frame(width: contentWidth, height: contentHeight, alignment: .topLeading)
     }
 
     private func yOffset(for minute: Int) -> CGFloat {
@@ -464,6 +465,14 @@ struct DayPlanBlockLayer: View {
 
     private var timedBlockColumnGap: CGFloat {
         4
+    }
+
+    private var contentWidth: CGFloat {
+        timeColumnWidth + (CGFloat(dates.count) * dayWidth)
+    }
+
+    private var contentHeight: CGFloat {
+        hourHeight * 24
     }
 }
 
