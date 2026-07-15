@@ -682,7 +682,7 @@ Then the right sidebar shows task-backed all-day items followed by timed task bl
 
 Given a task has only a date-only `Plan to do` value for Monday
 When the user opens Monday's Planner planned-task list
-Then the task appears in the all-day portion of the list without creating a stored Planner block or duplicating any visible all-day or timed item for the same task
+Then the task appears before timed blocks with an `Any time` placement label, without creating a stored Planner block or duplicating any visible all-day or timed item for the same task
 
 Given the right-side Planner day task sidebar is open in Schedule mode
 When the user drags a row into the Schedule grid or all-day lane

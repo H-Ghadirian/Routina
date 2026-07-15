@@ -163,7 +163,7 @@ struct DayPlanDayTaskListPresentationTests {
 
         #expect(items.map(\.title) == ["Monday plan", "Timed block"])
         #expect(items.map(\.placement) == [
-            .allDay,
+            .anyTime,
             .timed(startMinute: 10 * 60, durationMinutes: 30),
         ])
         #expect(items.map(\.blockID) == [nil, timedBlockID])
@@ -550,7 +550,7 @@ struct DayPlanDayTaskListPresentationTests {
         #expect(items.map(\.title) == ["Monday plan", "Morning reset", "Inbox review"])
         #expect(items.map(\.section) == [.planned, .assumedDone, .done])
         #expect(items.map(\.placement) == [
-            .allDay,
+            .anyTime,
             .timed(startMinute: 8 * 60, durationMinutes: 30),
             .timed(startMinute: 9 * 60, durationMinutes: 45),
         ])

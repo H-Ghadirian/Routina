@@ -435,6 +435,7 @@ struct DayPlanDayTaskListItem: Identifiable, Equatable {
     }
 
     enum Placement: Equatable {
+        case anyTime
         case allDay
         case timed(startMinute: Int, durationMinutes: Int)
     }
@@ -551,7 +552,7 @@ enum DayPlanDayTaskListPresentation {
                     blockID: nil,
                     title: DayPlanTaskSorting.title(for: task),
                     emoji: CalendarTaskImportSupport.displayEmoji(for: task.emoji),
-                    placement: .allDay
+                    placement: .anyTime
                 )
             }
             .sorted { lhs, rhs in

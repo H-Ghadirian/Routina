@@ -1328,6 +1328,8 @@ private struct DayPlanDayTaskListContentRow: View {
 
     private var placementText: String {
         switch item.placement {
+        case .anyTime:
+            return "Any time"
         case .allDay:
             return "All day"
         case let .timed(startMinute, durationMinutes):
@@ -1340,6 +1342,8 @@ private struct DayPlanDayTaskListContentRow: View {
 
     private var placementSystemImage: String {
         switch item.placement {
+        case .anyTime:
+            return "clock.badge.questionmark"
         case .allDay:
             return "sun.max"
         case .timed:
