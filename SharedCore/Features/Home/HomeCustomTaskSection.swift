@@ -100,6 +100,13 @@ enum HomeCustomTaskSectionStorage {
         return (section, sanitizedSections + [section])
     }
 
+    static func deletingSection(
+        _ sectionID: UUID,
+        from sections: [HomeCustomTaskSection]
+    ) -> [HomeCustomTaskSection] {
+        sanitized(sections).filter { $0.id != sectionID }
+    }
+
     private static func normalizedTitleKey(_ title: String) -> String {
         title.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
             .lowercased()

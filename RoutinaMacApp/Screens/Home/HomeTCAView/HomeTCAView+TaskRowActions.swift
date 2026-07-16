@@ -223,6 +223,33 @@ extension HomeTCAView {
         pendingCustomTaskSectionTaskID = nil
     }
 
+    func presentCustomTaskSectionDeleteConfirmation(sectionID: UUID, title: String) {
+        pendingDeleteCustomTaskSectionID = sectionID
+        pendingDeleteCustomTaskSectionTitle = title
+        isCustomTaskSectionDeleteConfirmationPresented = true
+    }
+
+    func confirmCustomTaskSectionDeletion() {
+        guard let sectionID = pendingDeleteCustomTaskSectionID else {
+            resetCustomTaskSectionDeleteConfirmation()
+            return
+        }
+
+        customTaskSectionsRawValue = HomeCustomTaskSectionStorage.encoded(
+            HomeCustomTaskSectionStorage.deletingSection(sectionID, from: customTaskSections)
+        )
+        AppSettingsPersistenceMirror.schedule()
+        removeCustomTaskSectionCollapseState(sectionID)
+        store.send(.deleteCustomTaskSection(sectionID: sectionID))
+        resetCustomTaskSectionDeleteConfirmation()
+    }
+
+    func resetCustomTaskSectionDeleteConfirmation() {
+        isCustomTaskSectionDeleteConfirmationPresented = false
+        pendingDeleteCustomTaskSectionID = nil
+        pendingDeleteCustomTaskSectionTitle = ""
+    }
+
     func applyCustomTaskSectionPrompt<Content: View>(to view: Content) -> some View {
         view.alert("New Section", isPresented: $isCustomTaskSectionPromptPresented) {
             TextField("Name", text: $customTaskSectionNameDraft)
@@ -236,9 +263,31 @@ extension HomeTCAView {
         }
     }
 
+    func applyCustomTaskSectionDeleteConfirmation<Content: View>(to view: Content) -> some View {
+        view.alert("Delete Section?", isPresented: $isCustomTaskSectionDeleteConfirmationPresented) {
+            Button("Delete", role: .destructive) {
+                confirmCustomTaskSectionDeletion()
+            }
+            Button("Cancel", role: .cancel) {
+                resetCustomTaskSectionDeleteConfirmation()
+            }
+        } message: {
+            Text("Are you sure you want to delete \"\(pendingDeleteCustomTaskSectionTitle)\"? Tasks in this section will move back to their default sections.")
+        }
+    }
+
     private func revealCustomTaskSection(_ customSectionID: UUID, taskID: UUID) {
-        let sectionID = "\(HomeTaskListPresentationSectionKind.custom.rawValue):\(HomeCustomTaskSectionStorage.manualOrderSectionKey(for: customSectionID))"
-        revealTaskListSection(sectionID: sectionID, taskID: taskID)
+        revealTaskListSection(sectionID: customTaskListSectionID(for: customSectionID), taskID: taskID)
+    }
+
+    private func removeCustomTaskSectionCollapseState(_ customSectionID: UUID) {
+        var collapsedSectionIDs = collapsedTagTaskListSectionIDs
+        collapsedSectionIDs.remove(customTaskListSectionID(for: customSectionID))
+        collapsedTagTaskListSectionIDsStorage = collapsedSectionIDs.sorted().joined(separator: "\n")
+    }
+
+    private func customTaskListSectionID(for customSectionID: UUID) -> String {
+        "\(HomeTaskListPresentationSectionKind.custom.rawValue):\(HomeCustomTaskSectionStorage.manualOrderSectionKey(for: customSectionID))"
     }
 
     private func revealTaskListSection(sectionID: String, taskID: UUID) {

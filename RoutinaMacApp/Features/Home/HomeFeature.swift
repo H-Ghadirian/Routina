@@ -604,6 +604,7 @@ struct HomeFeature {
         case pinTask(UUID)
         case planTask(UUID, Date?)
         case moveTaskToCustomSection(taskID: UUID, sectionID: UUID?)
+        case deleteCustomTaskSection(sectionID: UUID)
         case unpinTask(UUID)
         case moveTaskInSection(taskID: UUID, sectionKey: String, orderedTaskIDs: [UUID], direction: MoveDirection)
         case setTaskOrderInSection(sectionKey: String, orderedTaskIDs: [UUID])
@@ -1435,6 +1436,9 @@ struct HomeFeature {
                     state: &state
                 )
 
+            case let .deleteCustomTaskSection(sectionID):
+                return deleteCustomTaskSection(sectionID: sectionID, state: &state)
+
             case let .unpinTask(id):
                 return taskLifecycleCommandRouter().unpinTask(id, state: &state)
 
@@ -1645,6 +1649,58 @@ struct HomeFeature {
             ),
             state: &state
         )
+    }
+
+    private func deleteCustomTaskSection(
+        sectionID: UUID,
+        state: inout State
+    ) -> Effect<Action> {
+        guard let update = HomeTaskLifecycleSupport.deleteCustomTaskSection(
+            sectionID: sectionID,
+            tasks: &state.routineTasks
+        ) else {
+            return .none
+        }
+
+        return postMutationRefresher().finishMutation(
+            persistDeletedCustomTaskSection(update),
+            state: &state
+        )
+    }
+
+    private func persistDeletedCustomTaskSection(
+        _ update: HomeDeleteCustomTaskSectionUpdate
+    ) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = modelContext()
+                let changedTaskIDs = Set(update.taskIDs)
+                let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+                    .filter { changedTaskIDs.contains($0.id) }
+
+                for task in tasks {
+                    if task.customTaskSectionID == update.sectionID {
+                        task.customTaskSectionID = nil
+                    }
+                    var manualSectionOrders = task.manualSectionOrders
+                    manualSectionOrders.removeValue(forKey: update.sectionKey)
+                    task.manualSectionOrders = manualSectionOrders
+                    DeviceActivityRecorder.recordAction(
+                        .updated,
+                        entity: .task,
+                        entityID: task.id,
+                        entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                        details: "Removed task from deleted custom section",
+                        in: context
+                    )
+                }
+
+                try context.save()
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Failed to delete custom task section: \(error)")
+            }
+        }
     }
 
     private func moveTaskToCustomSection(

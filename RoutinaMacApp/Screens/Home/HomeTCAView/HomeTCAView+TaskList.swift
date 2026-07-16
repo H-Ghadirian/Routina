@@ -1075,6 +1075,7 @@ extension HomeTCAView {
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     ) -> some View {
         let showsFutureSubsectionActions = section.kind == .future && section.taskGroups.contains { $0.isCollapsible }
+        let customSectionID = customTaskSectionID(for: section)
 
         if showsFutureSubsectionActions {
             Button {
@@ -1090,7 +1091,17 @@ extension HomeTCAView {
             }
         }
 
-        if showsFutureSubsectionActions, areMacHomeSectionFocusTimersEnabled, section.canStartFocusTimer {
+        if let customSectionID {
+            Button(role: .destructive) {
+                presentCustomTaskSectionDeleteConfirmation(sectionID: customSectionID, title: section.title)
+            } label: {
+                Label("Delete Section", systemImage: "trash")
+            }
+        }
+
+        if (showsFutureSubsectionActions || customSectionID != nil),
+           areMacHomeSectionFocusTimersEnabled,
+           section.canStartFocusTimer {
             Divider()
         }
 
@@ -1099,6 +1110,13 @@ extension HomeTCAView {
                 taskListSectionFocusContextMenuItems(for: section)
             }
         }
+    }
+
+    private func customTaskSectionID(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+    ) -> UUID? {
+        guard section.kind == .custom else { return nil }
+        return HomeCustomTaskSectionStorage.sectionID(fromManualOrderSectionKey: section.identityKey)
     }
 
     @ViewBuilder

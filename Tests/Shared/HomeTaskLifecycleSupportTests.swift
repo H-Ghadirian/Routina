@@ -384,6 +384,51 @@ struct HomeTaskLifecycleSupportTests {
     }
 
     @Test
+    func deleteCustomTaskSectionClearsAssignmentsAndManualOrder() {
+        let deletedSectionID = UUID()
+        let otherSectionID = UUID()
+        let deletedSectionKey = HomeCustomTaskSectionStorage.manualOrderSectionKey(for: deletedSectionID)
+        let otherSectionKey = HomeCustomTaskSectionStorage.manualOrderSectionKey(for: otherSectionID)
+
+        let assignedTask = RoutineTask(
+            name: "Assigned",
+            customTaskSectionID: deletedSectionID,
+            scheduleMode: .oneOff
+        )
+        assignedTask.manualSectionOrders = [deletedSectionKey: 0]
+
+        let staleManualOrderTask = RoutineTask(
+            name: "Other section",
+            customTaskSectionID: otherSectionID,
+            scheduleMode: .oneOff
+        )
+        staleManualOrderTask.manualSectionOrders = [
+            deletedSectionKey: 1,
+            otherSectionKey: 0
+        ]
+
+        let unrelatedTask = RoutineTask(name: "Unrelated", scheduleMode: .oneOff)
+        var tasks = [assignedTask, staleManualOrderTask, unrelatedTask]
+
+        let update = HomeTaskLifecycleSupport.deleteCustomTaskSection(
+            sectionID: deletedSectionID,
+            tasks: &tasks
+        )
+
+        #expect(update == HomeDeleteCustomTaskSectionUpdate(
+            sectionID: deletedSectionID,
+            sectionKey: deletedSectionKey,
+            taskIDs: [assignedTask.id, staleManualOrderTask.id]
+        ))
+        #expect(tasks[0].customTaskSectionID == nil)
+        #expect(tasks[0].manualSectionOrders[deletedSectionKey] == nil)
+        #expect(tasks[1].customTaskSectionID == otherSectionID)
+        #expect(tasks[1].manualSectionOrders[deletedSectionKey] == nil)
+        #expect(tasks[1].manualSectionOrders[otherSectionKey] == 0)
+        #expect(tasks[2].customTaskSectionID == nil)
+    }
+
+    @Test
     func planTaskDoesNotPlanDailyRoutine() {
         let calendar = makeTestCalendar()
         let task = RoutineTask(

@@ -37,6 +37,12 @@ struct HomePlanTaskUpdate: Equatable {
     var customTaskSectionID: UUID? = nil
 }
 
+struct HomeDeleteCustomTaskSectionUpdate: Equatable {
+    var sectionID: UUID
+    var sectionKey: String
+    var taskIDs: [UUID]
+}
+
 struct HomeUnpinTaskUpdate: Equatable {
     var taskID: UUID
 }
@@ -469,6 +475,35 @@ enum HomeTaskLifecycleSupport {
             taskID: taskID,
             plannedDate: normalizedDate,
             customTaskSectionID: customTaskSectionID
+        )
+    }
+
+    static func deleteCustomTaskSection(
+        sectionID: UUID,
+        tasks: inout [RoutineTask]
+    ) -> HomeDeleteCustomTaskSectionUpdate? {
+        let sectionKey = HomeCustomTaskSectionStorage.manualOrderSectionKey(for: sectionID)
+        var changedTaskIDs: [UUID] = []
+
+        for index in tasks.indices {
+            var manualSectionOrders = tasks[index].manualSectionOrders
+            let removedManualOrder = manualSectionOrders.removeValue(forKey: sectionKey) != nil
+            let removedSectionAssignment = tasks[index].customTaskSectionID == sectionID
+
+            guard removedSectionAssignment || removedManualOrder else { continue }
+
+            if removedSectionAssignment {
+                tasks[index].customTaskSectionID = nil
+            }
+            tasks[index].manualSectionOrders = manualSectionOrders
+            changedTaskIDs.append(tasks[index].id)
+        }
+
+        guard !changedTaskIDs.isEmpty else { return nil }
+        return HomeDeleteCustomTaskSectionUpdate(
+            sectionID: sectionID,
+            sectionKey: sectionKey,
+            taskIDs: changedTaskIDs
         )
     }
 

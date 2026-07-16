@@ -31,6 +31,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0395](0395-delete-custom-mac-sidebar-task-sections.md) refines [0394](0394-add-custom-mac-sidebar-task-sections.md) for custom Mac sidebar section deletion:** Mac Home custom section headers expose a destructive `Delete Section` context-menu action with confirmation; deleting removes the section catalog entry, clears matching task assignments, removes the deleted section's manual-order key from affected tasks, and leaves tasks themselves intact.
 - **[0394](0394-add-custom-mac-sidebar-task-sections.md) refines [0252](0252-stabilize-home-task-list-presentation-identity.md), [0285](0285-clarify-mac-sidebar-section-surfaces.md), [0384](0384-show-tracking-as-mac-sidebar-section.md), and [0386](0386-match-tracking-inner-groups-to-future.md) for custom Mac sidebar sections:** Mac Home can create named custom top-level task sections from row context menus, store section names durably, assign tasks/tracking rows by stable section ID, and claim active unpinned assigned rows before built-in planning, tracking, or future sections while preserving pinned/archived priority.
 - **[0393](0393-persist-task-detail-heatmap-per-task.md) refines [0381](0381-make-mac-task-detail-heatmap-optional.md) for Mac Task Detail heatmaps:** Full Mac Task Details still hides the heatmap by default, but adding `Heatmap` persists that choice on the selected routine or tracking task so future full details for that same task show it while other tasks remain unchanged.
 - **[0392](0392-show-focus-time-in-calendar-list-dones.md) refines [0205](0205-run-plan-focus-from-planner.md), [0209](0209-allocate-plan-focus-while-running.md), [0367](0367-show-day-agenda-done-sections.md), and [0369](0369-show-day-task-list-columns-in-planner-calendar.md) for Planner Calendar List focus review:** Calendar `List` and day-agenda rows classify visible unassigned/tag focus time as `Dones` instead of `Planned tasks` while preserving Schedule behavior, focus history, and Focus layer visibility.
@@ -289,6 +290,8 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0395](0395-delete-custom-mac-sidebar-task-sections.md) | Delete Custom Mac Sidebar Task Sections | Accepted | 2026-07-16 |
+| [0394](0394-add-custom-mac-sidebar-task-sections.md) | Add Custom Mac Sidebar Task Sections | Accepted | 2026-07-16 |
 | [0393](0393-persist-task-detail-heatmap-per-task.md) | Persist Task Detail Heatmap Per Task | Accepted | 2026-07-15 |
 | [0390](0390-hide-mac-toolbar-search-on-stats-and-add-task.md) | Hide Mac Toolbar Search on Stats and Add Task | Accepted | 2026-07-13 |
 | [0388](0388-show-tracking-summary-stats.md) | Show Tracking Summary Stats | Accepted | 2026-07-13 |

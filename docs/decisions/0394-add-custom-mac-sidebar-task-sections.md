@@ -22,4 +22,4 @@ Custom sections use their own manual-order keys and the same full-bleed Mac side
 
 Users can make named task-list areas without changing task type, dates, tags, or tracking semantics.
 
-Backups include both custom section names and task assignments. Future custom-section management such as renaming, deletion, or section reordering should preserve the stable custom-section IDs and manual-order keys.
+Backups include both custom section names and task assignments. Future custom-section management such as renaming or section reordering should preserve the stable custom-section IDs and manual-order keys.

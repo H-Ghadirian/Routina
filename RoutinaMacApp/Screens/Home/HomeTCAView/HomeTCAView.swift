@@ -297,6 +297,9 @@ struct HomeTCAView: View {
     @State var isCustomTaskSectionPromptPresented = false
     @State var customTaskSectionNameDraft = ""
     @State var pendingCustomTaskSectionTaskID: UUID?
+    @State var isCustomTaskSectionDeleteConfirmationPresented = false
+    @State var pendingDeleteCustomTaskSectionID: UUID?
+    @State var pendingDeleteCustomTaskSectionTitle = ""
     @State var homeToolbarFocusPickerDuration: TimeInterval?
     @FocusState var isSprintCreationFieldFocused: Bool
     @FocusState var isBacklogCreationFieldFocused: Bool
@@ -361,10 +364,12 @@ homeContent
                 to: applyAddRoutinePresentation(
                     to: applyPlatformDeleteConfirmation(
                         to: applyPlatformRefresh(
-                            to: applyCustomTaskSectionPrompt(
-                                to: applyPlatformSearchExperience(
-                                    to: platformNavigationContent,
-                                    searchText: searchTextBinding
+                            to: applyCustomTaskSectionDeleteConfirmation(
+                                to: applyCustomTaskSectionPrompt(
+                                    to: applyPlatformSearchExperience(
+                                        to: platformNavigationContent,
+                                        searchText: searchTextBinding
+                                    )
                                 )
                             )
                         )
