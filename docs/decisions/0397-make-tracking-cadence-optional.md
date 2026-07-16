@@ -12,7 +12,7 @@ Some Tracking entries are recurring in the broad human sense, but not on a usefu
 
 ## Decision
 
-Tracking repeat controls include `No repeat`. New Tracking entries can be record-only without cadence, while Tracking that benefits from loose rhythm can still choose interval, calendar, or item-runout cadence.
+Tracking repeat controls include `None`. New Tracking entries can be record-only without cadence, while Tracking that benefits from loose rhythm can still choose interval, calendar, or item-runout cadence.
 
 Routina stores `trackingCadenceEnabled` separately from `trackingNudgesEnabled`. When cadence is disabled, recurrence settings are treated as a neutral internal placeholder, Home and Task Detail do not surface soft-threshold/nudge behavior, and the form hides cadence-specific frequency/calendar and nudge controls. Existing imported/shared Tracking data defaults cadence on for compatibility.
 

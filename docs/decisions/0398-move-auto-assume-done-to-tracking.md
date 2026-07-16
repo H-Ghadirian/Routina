@@ -14,7 +14,7 @@ Auto-assume done originally belonged to daily routines, where it made a routine 
 
 `Auto-assume done` moves from Task -> Routine to Tracking.
 
-Eligible Tracking entries are daily standard Tracking entries with cadence enabled, no sequential steps, and no optional checklist items, plus daily checklist-completion Tracking entries with cadence enabled and checklist items. Tracking entries with `No repeat`, item-runout Tracking, Tracking with steps, standard Tracking with optional checklist items, non-daily Tracking, todos, and routines do not qualify.
+Eligible Tracking entries are daily standard Tracking entries with cadence enabled, no sequential steps, and no optional checklist items, plus daily checklist-completion Tracking entries with cadence enabled and checklist items. Tracking entries with `None`, item-runout Tracking, Tracking with steps, standard Tracking with optional checklist items, non-daily Tracking, todos, and routines do not qualify.
 
 Task creation and Task Detail editing hide the control for routines. Save paths clear routine-owned auto-assume values when a routine is saved, while legacy stored values remain readable for backup/import compatibility and no longer make routines eligible.
 

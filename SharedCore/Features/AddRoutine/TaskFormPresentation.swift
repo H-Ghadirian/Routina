@@ -93,7 +93,7 @@ enum TaskFormDateAvailabilityMode: String, CaseIterable, Equatable, Identifiable
 }
 
 enum RoutineRepeatType: String, CaseIterable, Equatable, Hashable, Identifiable, Sendable {
-    case none = "No repeat"
+    case none = "None"
     case interval = "Interval"
     case calendar = "Calendar"
     case itemRunout = "Item runout"
