@@ -31,6 +31,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0399](0399-hide-visible-fulfilled-target-duplicates.md) refines [0367](0367-show-day-agenda-done-sections.md), [0369](0369-show-day-task-list-columns-in-planner-calendar.md), and [0377](0377-fulfill-routines-from-linked-task-completions.md) for Planner fulfillment review:** Planner day agendas and Calendar `List` suppress a fulfillment-backed target row when one of its source tasks is already visible in the same day task list, while preserving the target's done state and showing it when the source row is hidden.
 - **[0398](0398-move-auto-assume-done-to-tracking.md) refines [0259](0259-allow-daily-checklist-auto-assumed-completion.md), [0376](0376-hide-probable-time-from-assumed-done-forms.md), [0385](0385-use-gentle-routine-cadence-for-tracking.md), and [0397](0397-make-tracking-cadence-optional.md) for auto-assume ownership:** `Auto-assume done` moves from Task -> Routine to Tracking. Eligible daily Tracking entries with cadence enabled can opt into synthetic assumed days, while routines, todos, `None` Tracking, item-runout Tracking, step Tracking, optional-checklist Tracking, and non-daily cadences do not qualify.
 - **[0397](0397-make-tracking-cadence-optional.md) refines [0385](0385-use-gentle-routine-cadence-for-tracking.md) and [0396](0396-allow-quiet-tracking-cadence.md) for optional Tracking cadence:** Tracking repeat controls include `None`; random or opportunistic Tracking can be record-only without cadence, while interval/calendar/item-runout cadence remains available when useful.
 - **[0396](0396-allow-quiet-tracking-cadence.md) refines [0385](0385-use-gentle-routine-cadence-for-tracking.md) for optional Tracking nudges:** Tracking keeps repeat cadence and implicit Gentle behavior, but each Tracking task can turn nudges off; quiet tracking preserves cadence metadata while Home and Task Detail suppress Ready/Gentle-nudge soft-threshold presentation for that item.
@@ -293,6 +294,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0399](0399-hide-visible-fulfilled-target-duplicates.md) | Hide Visible Fulfilled Target Duplicates | Accepted | 2026-07-17 |
 | [0395](0395-delete-custom-mac-sidebar-task-sections.md) | Delete Custom Mac Sidebar Task Sections | Accepted | 2026-07-16 |
 | [0394](0394-add-custom-mac-sidebar-task-sections.md) | Add Custom Mac Sidebar Task Sections | Accepted | 2026-07-16 |
 | [0393](0393-persist-task-detail-heatmap-per-task.md) | Persist Task Detail Heatmap Per Task | Accepted | 2026-07-15 |

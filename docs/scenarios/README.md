@@ -670,7 +670,7 @@ Then the top range segmented picker can remain visible
 ### Planner Day Headers Open Planned Task Lists
 
 Area: Planner
-Decision links: [0288](../decisions/0288-open-planned-day-task-list-from-planner-headers.md), [0300](../decisions/0300-show-plan-to-do-tasks-in-planner-day-agenda.md), [0371](../decisions/0371-drag-day-task-sidebar-rows-to-schedule.md)
+Decision links: [0288](../decisions/0288-open-planned-day-task-list-from-planner-headers.md), [0300](../decisions/0300-show-plan-to-do-tasks-in-planner-day-agenda.md), [0371](../decisions/0371-drag-day-task-sidebar-rows-to-schedule.md), [0399](../decisions/0399-hide-visible-fulfilled-target-duplicates.md)
 Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/Shared/DayPlanDayTaskListPresentationTests.swift`
@@ -691,6 +691,10 @@ Then the row uses the same task payload as the left task list and schedules the 
 Given Planner Calendar is in `List` task-view mode
 When day-task columns render the same agenda rows
 Then those column rows remain read-only and do not provide drag payloads
+
+Given Task A is done for a day via linked source Task B
+When Task B is already visible in that day's Planner task list
+Then Task A is not also shown as a separate `Dones` row for the same fulfilled action
 
 Given Mac Home is fullscreen and Planner Calendar is in `List` task-view mode
 When the user exits fullscreen

@@ -680,15 +680,34 @@ enum DayPlanDayTaskListPresentation {
             activityItems.filter { $0.section == .assumedDone }
         )
         let assumedDoneTaskIDs = Set(assumedDoneItems.map(\.taskID))
-        let doneItems = sortedActivityItems(
+        let rawDoneItems = sortedActivityItems(
             allDayItems.filter { $0.section == .done }
                 + timedItems.filter { $0.section == .done }
                 + activityItems.filter { $0.section == .done }
         )
+        let plannedAllDayItems = allDayItems.filter { $0.section == .planned && !assumedDoneTaskIDs.contains($0.taskID) }
+        let plannedTimedItems = timedItems.filter { $0.section == .planned && !assumedDoneTaskIDs.contains($0.taskID) }
+        let visibleTaskIDsBeforeFulfillmentSuppression = Set(
+            (plannedAllDayItems + plannedDateItems + plannedTimedItems + assumedDoneItems + rawDoneItems)
+                .map(\.taskID)
+        )
+        let doneItems = rawDoneItems.filter { item in
+            let sourceTaskIDs = completionContext.fulfillmentSourceTaskIDs(
+                for: item.taskID,
+                dayKey: dayKey
+            )
+            guard !sourceTaskIDs.isEmpty,
+                  !completionContext.hasDirectCompletion(item.taskID, dayKey: dayKey),
+                  !sourceTaskIDs.isDisjoint(with: visibleTaskIDsBeforeFulfillmentSuppression)
+            else {
+                return true
+            }
+            return false
+        }
 
-        return allDayItems.filter { $0.section == .planned && !assumedDoneTaskIDs.contains($0.taskID) }
+        return plannedAllDayItems
             + plannedDateItems
-            + timedItems.filter { $0.section == .planned && !assumedDoneTaskIDs.contains($0.taskID) }
+            + plannedTimedItems
             + assumedDoneItems
             + doneItems
     }
@@ -742,6 +761,8 @@ enum DayPlanDayTaskListPresentation {
 private struct DayPlanDayTaskListCompletionContext {
     private var tasksByID: [UUID: RoutineTask] = [:]
     private var completedDayKeysByTaskID: [UUID: Set<String>] = [:]
+    private var directCompletedDayKeysByTaskID: [UUID: Set<String>] = [:]
+    private var fulfillmentSourceTaskIDsByTaskIDAndDayKey: [UUID: [String: Set<UUID>]] = [:]
 
     init(
         tasks: [RoutineTask],
@@ -754,16 +775,39 @@ private struct DayPlanDayTaskListCompletionContext {
         }
 
         for log in logs where log.kind.resolvesDoneDate {
-            recordCompletion(log.timestamp, taskID: log.taskID, calendar: calendar)
+            guard let dayKey = recordCompletion(log.timestamp, taskID: log.taskID, calendar: calendar) else {
+                continue
+            }
+            switch log.kind {
+            case .completed:
+                directCompletedDayKeysByTaskID[log.taskID, default: []].insert(dayKey)
+            case .fulfilled:
+                guard let sourceTaskID = log.sourceTaskID else { break }
+                fulfillmentSourceTaskIDsByTaskIDAndDayKey[log.taskID, default: [:]][dayKey, default: []]
+                    .insert(sourceTaskID)
+            case .canceled, .missed:
+                break
+            }
         }
     }
 
+    @discardableResult
     mutating private func recordCompletion(
         _ timestamp: Date?,
         taskID: UUID,
         calendar: Calendar
-    ) {
-        guard let timestamp else { return }
+    ) -> String? {
+        guard let timestamp else { return nil }
+        let dayKey = displayDayKey(for: timestamp, taskID: taskID, calendar: calendar)
+        completedDayKeysByTaskID[taskID, default: []].insert(dayKey)
+        return dayKey
+    }
+
+    private func displayDayKey(
+        for timestamp: Date,
+        taskID: UUID,
+        calendar: Calendar
+    ) -> String {
         let displayDay = tasksByID[taskID]
             .flatMap { task in
                 RoutineDateMath.completionDisplayDay(
@@ -773,8 +817,7 @@ private struct DayPlanDayTaskListCompletionContext {
                 )
             }
             ?? calendar.startOfDay(for: timestamp)
-        let dayKey = DayPlanStorage.dayKey(for: displayDay, calendar: calendar)
-        completedDayKeysByTaskID[taskID, default: []].insert(dayKey)
+        return DayPlanStorage.dayKey(for: displayDay, calendar: calendar)
     }
 
     func hasCompletion(
@@ -782,6 +825,20 @@ private struct DayPlanDayTaskListCompletionContext {
         dayKey: String
     ) -> Bool {
         completedDayKeysByTaskID[taskID]?.contains(dayKey) == true
+    }
+
+    func hasDirectCompletion(
+        _ taskID: UUID,
+        dayKey: String
+    ) -> Bool {
+        directCompletedDayKeysByTaskID[taskID]?.contains(dayKey) == true
+    }
+
+    func fulfillmentSourceTaskIDs(
+        for taskID: UUID,
+        dayKey: String
+    ) -> Set<UUID> {
+        fulfillmentSourceTaskIDsByTaskIDAndDayKey[taskID]?[dayKey] ?? []
     }
 
     func sectionForPlannerBackedTask(

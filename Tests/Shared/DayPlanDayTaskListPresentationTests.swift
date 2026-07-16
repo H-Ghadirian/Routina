@@ -483,6 +483,139 @@ struct DayPlanDayTaskListPresentationTests {
     }
 
     @Test
+    func fulfilledTaskIsHiddenWhenSourceCompletionIsAlreadyVisible() throws {
+        let calendar = testCalendar
+        let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))
+        let dayKey = DayPlanStorage.dayKey(for: day, calendar: calendar)
+        let targetTaskID = try #require(UUID(uuidString: "5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a"))
+        let sourceTaskID = try #require(UUID(uuidString: "5b5b5b5b-5b5b-5b5b-5b5b-5b5b5b5b5b5b"))
+        let sourceLogID = try #require(UUID(uuidString: "5c5c5c5c-5c5c-5c5c-5c5c-5c5c5c5c5c5c"))
+        let targetLogID = try #require(UUID(uuidString: "5d5d5d5d-5d5d-5d5d-5d5d-5d5d5d5d5d5d"))
+        let completedAt = try #require(calendar.date(byAdding: .hour, value: 10, to: day))
+
+        let targetTask = RoutineTask(
+            id: targetTaskID,
+            name: "Exercise",
+            scheduleMode: .fixedInterval,
+            lastDone: completedAt
+        )
+        let sourceTask = RoutineTask(
+            id: sourceTaskID,
+            name: "Gym",
+            scheduleMode: .oneOff,
+            lastDone: completedAt
+        )
+        let sourceLog = RoutineLog(
+            id: sourceLogID,
+            timestamp: completedAt,
+            taskID: sourceTaskID,
+            kind: .completed
+        )
+        let targetLog = RoutineLog(
+            id: targetLogID,
+            timestamp: completedAt,
+            taskID: targetTaskID,
+            kind: .fulfilled,
+            sourceTaskID: sourceTaskID
+        )
+        let sourceDone = DayPlanTimelineActivityBlock(
+            block: DayPlanBlock(
+                id: sourceTaskID,
+                taskID: sourceTaskID,
+                dayKey: dayKey,
+                startMinute: 10 * 60,
+                durationMinutes: 45,
+                titleSnapshot: "Gym"
+            ),
+            kind: .completed,
+            source: .log(sourceLogID)
+        )
+        let targetFallback = DayPlanTimelineActivityBlock(
+            block: DayPlanBlock(
+                id: targetTaskID,
+                taskID: targetTaskID,
+                dayKey: dayKey,
+                startMinute: 10 * 60,
+                durationMinutes: 30,
+                titleSnapshot: "Exercise"
+            ),
+            kind: .completed,
+            source: .taskLastDone
+        )
+
+        let items = DayPlanDayTaskListPresentation.items(
+            on: day,
+            timedBlocks: [],
+            allDayBlocks: [],
+            timelineActivityBlocks: [targetFallback, sourceDone],
+            tasks: [targetTask, sourceTask],
+            logs: [targetLog, sourceLog],
+            calendar: calendar
+        )
+
+        #expect(items.map(\.title) == ["Gym"])
+        #expect(items.map(\.taskID) == [sourceTaskID])
+        #expect(DayPlanDayTaskCounts(items: items) == DayPlanDayTaskCounts(done: 1))
+    }
+
+    @Test
+    func fulfilledTaskStaysVisibleWhenSourceCompletionIsNotVisible() throws {
+        let calendar = testCalendar
+        let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))
+        let dayKey = DayPlanStorage.dayKey(for: day, calendar: calendar)
+        let targetTaskID = try #require(UUID(uuidString: "5e5e5e5e-5e5e-5e5e-5e5e-5e5e5e5e5e5e"))
+        let sourceTaskID = try #require(UUID(uuidString: "5f5f5f5f-5f5f-5f5f-5f5f-5f5f5f5f5f5f"))
+        let targetLogID = try #require(UUID(uuidString: "70707070-7070-7070-7070-707070707070"))
+        let completedAt = try #require(calendar.date(byAdding: .hour, value: 10, to: day))
+
+        let targetTask = RoutineTask(
+            id: targetTaskID,
+            name: "Exercise",
+            scheduleMode: .fixedInterval,
+            lastDone: completedAt
+        )
+        let sourceTask = RoutineTask(
+            id: sourceTaskID,
+            name: "Gym",
+            scheduleMode: .oneOff,
+            lastDone: completedAt
+        )
+        let targetLog = RoutineLog(
+            id: targetLogID,
+            timestamp: completedAt,
+            taskID: targetTaskID,
+            kind: .fulfilled,
+            sourceTaskID: sourceTaskID
+        )
+        let targetFallback = DayPlanTimelineActivityBlock(
+            block: DayPlanBlock(
+                id: targetTaskID,
+                taskID: targetTaskID,
+                dayKey: dayKey,
+                startMinute: 10 * 60,
+                durationMinutes: 30,
+                titleSnapshot: "Exercise"
+            ),
+            kind: .completed,
+            source: .taskLastDone
+        )
+
+        let items = DayPlanDayTaskListPresentation.items(
+            on: day,
+            timedBlocks: [],
+            allDayBlocks: [],
+            timelineActivityBlocks: [targetFallback],
+            tasks: [targetTask, sourceTask],
+            logs: [targetLog],
+            calendar: calendar
+        )
+
+        #expect(items.map(\.title) == ["Exercise"])
+        #expect(items.map(\.taskID) == [targetTaskID])
+        #expect(DayPlanDayTaskCounts(items: items) == DayPlanDayTaskCounts(done: 1))
+    }
+
+    @Test
     func itemsGroupPlannedAssumedDoneAndDoneSections() throws {
         let calendar = testCalendar
         let day = try #require(testDate(year: 2026, month: 6, day: 29, calendar: calendar))
