@@ -52,6 +52,7 @@ struct TaskDetailEditChangeRequest {
     let autoAssumeDailyDone: Bool
     let autoAssumeDoneTimeOfDay: RoutineTimeOfDay
     let focusModeEnabled: Bool
+    let trackingCadenceEnabled: Bool
     let trackingNudgesEnabled: Bool
     let pressure: RoutineTaskPressure
     let task: RoutineTask
@@ -108,6 +109,7 @@ struct TaskDetailEditChangeRequest {
         self.autoAssumeDailyDone = state.editAutoAssumeDailyDone
         self.autoAssumeDoneTimeOfDay = state.editAutoAssumeDoneTimeOfDay
         self.focusModeEnabled = state.editFocusModeEnabled
+        self.trackingCadenceEnabled = state.editTrackingCadenceEnabled
         self.trackingNudgesEnabled = state.editTrackingNudgesEnabled
         self.pressure = state.editPressure
         self.task = state.task
@@ -192,6 +194,7 @@ enum TaskDetailEditChangeDetector {
             || request.autoAssumeDailyDone != task.autoAssumeDailyDone
             || normalizedAutoAssumeDoneTimeOfDay(for: request) != normalizedAutoAssumeDoneTimeOfDay(for: task)
             || request.focusModeEnabled != task.focusModeEnabled
+            || request.trackingCadenceEnabled != task.trackingCadenceEnabled
             || request.trackingNudgesEnabled != task.trackingNudgesEnabled
             || request.pressure != task.pressure
     }
@@ -235,6 +238,10 @@ enum TaskDetailEditChangeDetector {
                 at: usesAvailabilityTiming && request.recurrenceHasExplicitTime ? request.recurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )
+        }
+
+        if request.scheduleMode.taskType == .record, !request.trackingCadenceEnabled {
+            return .interval(days: 1)
         }
 
         switch request.recurrenceKind {

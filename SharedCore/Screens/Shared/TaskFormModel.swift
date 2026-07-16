@@ -140,6 +140,7 @@ struct TaskFormModel {
         RoutineAssumedCompletion.defaultDoneTimeOfDay.date(on: Date())
     )
     var focusModeEnabled: Binding<Bool> = .constant(false)
+    var trackingCadenceEnabled: Binding<Bool> = .constant(true)
     var trackingNudgesEnabled: Binding<Bool> = .constant(true)
 
     // MARK: Color
@@ -270,16 +271,24 @@ extension TaskFormModel {
     }
 
     var routineRepeatTypeCases: [RoutineRepeatType] {
-        RoutineRepeatType.cases(supportsItemRunout: supportsItemRunoutRepeatType)
+        RoutineRepeatType.cases(
+            supportsNoRepeat: taskType.wrappedValue == .record,
+            supportsItemRunout: supportsItemRunoutRepeatType
+        )
     }
 
     var routineRepeatType: Binding<RoutineRepeatType> {
         let taskType = taskType
         let scheduleMode = scheduleMode
         let recurrenceKind = recurrenceKind
+        let trackingCadenceEnabled = trackingCadenceEnabled
 
         return Binding(
             get: {
+                if taskType.wrappedValue == .record, !trackingCadenceEnabled.wrappedValue {
+                    return .none
+                }
+
                 if scheduleMode.wrappedValue.isChecklistDrivenMode {
                     return .itemRunout
                 }
@@ -290,13 +299,22 @@ extension TaskFormModel {
             },
             set: { repeatType in
                 switch repeatType {
+                case .none:
+                    guard taskType.wrappedValue == .record else { return }
+                    trackingCadenceEnabled.wrappedValue = false
+                    if scheduleMode.wrappedValue.isChecklistDrivenMode {
+                        scheduleMode.wrappedValue = Self.nonRunoutScheduleMode(from: scheduleMode.wrappedValue)
+                    }
+
                 case .interval:
+                    trackingCadenceEnabled.wrappedValue = true
                     if scheduleMode.wrappedValue.isChecklistDrivenMode {
                         scheduleMode.wrappedValue = Self.nonRunoutScheduleMode(from: scheduleMode.wrappedValue)
                     }
                     recurrenceKind.wrappedValue = recurrenceKind.wrappedValue.replacingRepeatBasis(.interval)
 
                 case .calendar:
+                    trackingCadenceEnabled.wrappedValue = true
                     if scheduleMode.wrappedValue.isChecklistDrivenMode {
                         scheduleMode.wrappedValue = Self.nonRunoutScheduleMode(from: scheduleMode.wrappedValue)
                     }
@@ -308,6 +326,7 @@ extension TaskFormModel {
                           scheduleMode.wrappedValue.routineFinishMode == .checklist
                     else { return }
 
+                    trackingCadenceEnabled.wrappedValue = true
                     if scheduleMode.wrappedValue.taskType == .record {
                         scheduleMode.wrappedValue = .recordDerivedFromChecklist
                     } else {
@@ -348,6 +367,9 @@ extension TaskFormModel {
         RoutineAssumedCompletion.isEligible(
             scheduleMode: scheduleMode.wrappedValue,
             recurrenceRule: candidateRecurrenceRule,
+            trackingCadenceEnabled: scheduleMode.wrappedValue.taskType == .record
+                ? trackingCadenceEnabled.wrappedValue
+                : true,
             hasSequentialSteps: !routineSteps.isEmpty,
             hasChecklistItems: !routineChecklistItems.isEmpty
         )

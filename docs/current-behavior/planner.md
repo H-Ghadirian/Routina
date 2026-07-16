@@ -22,6 +22,7 @@ This page summarizes active Planner, timeline activity, focus, Away, and Sleep b
 - [0245](../decisions/0245-retire-pending-focus-assignment-ui.md)
 - [0267](../decisions/0267-support-mac-toolbar-tag-focus.md)
 - [0268](../decisions/0268-show-assumed-done-routines-in-planner.md)
+- [0398](../decisions/0398-move-auto-assume-done-to-tracking.md)
 - [0368](../decisions/0368-hide-assumed-done-calendar-layer-by-default.md)
 - [0269](../decisions/0269-support-planner-slot-actions.md)
 - [0271](../decisions/0271-use-probable-times-for-assumed-planner-activity.md)

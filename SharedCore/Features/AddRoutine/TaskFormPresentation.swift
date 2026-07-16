@@ -93,14 +93,19 @@ enum TaskFormDateAvailabilityMode: String, CaseIterable, Equatable, Identifiable
 }
 
 enum RoutineRepeatType: String, CaseIterable, Equatable, Hashable, Identifiable, Sendable {
+    case none = "No repeat"
     case interval = "Interval"
     case calendar = "Calendar"
     case itemRunout = "Item runout"
 
     var id: String { rawValue }
 
-    static func cases(supportsItemRunout: Bool) -> [Self] {
-        supportsItemRunout ? allCases : [.interval, .calendar]
+    static func cases(supportsNoRepeat: Bool, supportsItemRunout: Bool) -> [Self] {
+        var cases: [Self] = supportsNoRepeat ? [.none, .interval, .calendar] : [.interval, .calendar]
+        if supportsItemRunout {
+            cases.append(.itemRunout)
+        }
+        return cases
     }
 }
 
@@ -300,8 +305,8 @@ struct TaskFormPresentation {
         case .derivedFromChecklist: return "Checklist items have their own timing; the earliest due item drives the routine."
         case .softDerivedFromChecklist: return "Checklist items have their own timing, without turning the routine overdue."
         case .oneOff: return "This task does not repeat."
-        case .record: return "Track what happened with a gentle cadence."
-        case .recordChecklist: return "Track what happened and complete every checklist item with a gentle cadence."
+        case .record: return "Track what happened and the time spent."
+        case .recordChecklist: return "Track what happened and complete every checklist item."
         case .recordDerivedFromChecklist: return "Track item timing without overdue pressure."
         }
     }
@@ -374,9 +379,9 @@ struct TaskFormPresentation {
 
     var autoAssumeDailyDoneHelpText: String {
         if canAutoAssumeDailyDone {
-            return "Defaults this daily routine to done. You can still confirm it or mark it not done later."
+            return "Defaults this daily tracking entry to done. You can still confirm it or mark it not done later."
         }
-        return "Available only for daily Standard routines without steps or checklist items, and daily Checklist routines."
+        return "Available only for daily Tracking entries without steps or optional checklist items, and daily Checklist Tracking entries."
     }
 
     var weekdayOptions: [(id: Int, name: String)] {

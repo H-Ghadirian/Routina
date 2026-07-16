@@ -225,7 +225,7 @@ struct HomeTaskLifecycleSupportTests {
         let referenceDate = makeDate("2026-05-08T10:00:00Z")
         let task = RoutineTask(
             name: "Review notes",
-            scheduleMode: .fixedInterval,
+            scheduleMode: .record,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 8, minute: 0)),
             createdAt: makeDate("2026-05-01T10:00:00Z"),
             autoAssumeDailyDone: true
@@ -256,7 +256,7 @@ struct HomeTaskLifecycleSupportTests {
         let referenceDate = makeDate("2026-05-08T10:00:00Z")
         let task = RoutineTask(
             name: "Review notes",
-            scheduleMode: .fixedInterval,
+            scheduleMode: .record,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 8, minute: 0)),
             createdAt: makeDate("2026-05-01T10:00:00Z"),
             autoAssumeDailyDone: true

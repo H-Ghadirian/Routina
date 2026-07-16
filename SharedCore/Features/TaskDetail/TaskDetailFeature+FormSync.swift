@@ -69,6 +69,7 @@ extension TaskDetailFeature {
         state.editActualDurationMinutes = state.task.actualDurationMinutes
         state.editStoryPoints = state.task.storyPoints
         state.editFocusModeEnabled = state.task.focusModeEnabled
+        state.editTrackingCadenceEnabled = state.task.trackingCadenceEnabled
         state.editTrackingNudgesEnabled = state.task.trackingNudgesEnabled
         state.tagCounterDisplayMode = appSettingsClient.tagCounterDisplayMode()
 

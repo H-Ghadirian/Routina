@@ -25,7 +25,7 @@ struct TaskDetailCalendarCardContent: View {
                 displayedMonthStart: displayedMonthStart
             ),
             onToday: onToday,
-            showsAssumedLegend: task.autoAssumeDailyDone,
+            showsAssumedLegend: RoutineAssumedCompletion.isEligible(task),
             showsMissedLegend: !missedDates.isEmpty,
             showsCanceledLegend: !canceledDates.isEmpty,
             showsDueLegend: dueDate != nil,

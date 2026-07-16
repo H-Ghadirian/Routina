@@ -27,6 +27,7 @@ struct AddRoutineBasicsState: Equatable {
     var actualDurationMinutes: Int?
     var storyPoints: Int?
     var focusModeEnabled: Bool = false
+    var trackingCadenceEnabled: Bool = false
     var trackingNudgesEnabled: Bool = true
 }
 
@@ -135,7 +136,10 @@ struct AddRoutineFeatureState: Equatable {
     }
 
     var candidateRecurrenceRule: RoutineRecurrenceRule {
-        let fallbackInterval = !schedule.scheduleMode.usesRoutineCadence
+        let trackingCadenceEnabled = schedule.scheduleMode.taskType == .record
+            ? basics.trackingCadenceEnabled
+            : true
+        let fallbackInterval = !schedule.scheduleMode.usesRoutineCadence || !trackingCadenceEnabled
             ? 1
             : TaskFormRecurrenceConstraints.effectiveIntervalDays(
                 value: schedule.frequencyValue,
@@ -157,6 +161,8 @@ struct AddRoutineFeatureState: Equatable {
         case .routine, .record:
             break
         }
+
+        guard trackingCadenceEnabled else { return .interval(days: 1) }
 
         guard !schedule.scheduleMode.isChecklistDrivenMode else {
             return .interval(days: max(fallbackInterval, 1))
@@ -196,6 +202,9 @@ struct AddRoutineFeatureState: Equatable {
         RoutineAssumedCompletion.isEligible(
             scheduleMode: schedule.scheduleMode,
             recurrenceRule: candidateRecurrenceRule,
+            trackingCadenceEnabled: schedule.scheduleMode.taskType == .record
+                ? basics.trackingCadenceEnabled
+                : true,
             hasSequentialSteps: !checklist.routineSteps.isEmpty,
             hasChecklistItems: !checklist.routineChecklistItems.isEmpty
         )

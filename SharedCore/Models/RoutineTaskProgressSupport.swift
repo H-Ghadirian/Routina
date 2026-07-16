@@ -62,7 +62,8 @@ extension RoutineTask {
     }
 
     var isDailyRoutineForTaskList: Bool {
-        RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+        guard usesEffectiveRoutineCadence else { return false }
+        return RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
             scheduleMode: scheduleMode,
             recurrenceRule: recurrenceRule,
             checklistItems: checklistItems
@@ -81,15 +82,19 @@ extension RoutineTask {
 
     var isSoftIntervalRoutine: Bool {
         scheduleMode.isSoftIntervalRoutine
-            || (scheduleMode.taskType == .record && scheduleMode.scheduleBehavior == .soft)
+            || (scheduleMode.taskType == .record && scheduleMode.scheduleBehavior == .soft && trackingCadenceEnabled)
     }
 
     var surfacesSoftIntervalNudges: Bool {
-        isSoftIntervalRoutine && (!isRecordTask || trackingNudgesEnabled)
+        isSoftIntervalRoutine && (!isRecordTask || (trackingCadenceEnabled && trackingNudgesEnabled))
+    }
+
+    var usesEffectiveRoutineCadence: Bool {
+        scheduleMode.usesRoutineCadence && (!isRecordTask || trackingCadenceEnabled)
     }
 
     var usesRollingScheduleAnchor: Bool {
-        recurrenceRule.kind == .intervalDays || isChecklistDriven
+        usesEffectiveRoutineCadence && (recurrenceRule.kind == .intervalDays || isChecklistDriven)
     }
 
     var completedSteps: Int {

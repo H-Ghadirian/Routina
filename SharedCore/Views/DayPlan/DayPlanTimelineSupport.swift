@@ -1071,6 +1071,7 @@ private struct DayPlanTimelineTaskInfo {
             && RoutineAssumedCompletion.isEligible(
                 scheduleMode: scheduleMode,
                 recurrenceRule: recurrenceRule,
+                trackingCadenceEnabled: task.trackingCadenceEnabled,
                 hasSequentialSteps: hasSequentialSteps,
                 hasChecklistItems: hasChecklistItems
             )

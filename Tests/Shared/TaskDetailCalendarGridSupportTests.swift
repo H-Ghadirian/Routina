@@ -128,7 +128,7 @@ struct TaskDetailCalendarGridSupportTests {
         )
         let task = RoutineTask(
             name: "Brush teeth",
-            scheduleMode: .fixedInterval,
+            scheduleMode: .record,
             recurrenceRule: .interval(days: 1, timeRange: timeRange),
             lastDone: DateComponents(
                 calendar: calendar,

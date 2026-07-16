@@ -170,12 +170,12 @@ struct StatsFeatureDerivedStateSupportTests {
     }
 
     @Test
-    func build_countsAssumedDoneDaysAndEstimatedTimeForFilteredDailyRoutines() {
+    func build_countsAssumedDoneDaysAndEstimatedTimeForFilteredDailyTracking() {
         let calendar = makeTestCalendar()
         let estimatedRoutine = RoutineTask(
             name: "Hydrate",
             tags: ["Health"],
-            scheduleMode: .fixedInterval,
+            scheduleMode: .record,
             recurrenceRule: .interval(days: 1),
             createdAt: makeDate("2026-05-07T08:00:00Z"),
             autoAssumeDailyDone: true,
@@ -184,7 +184,7 @@ struct StatsFeatureDerivedStateSupportTests {
         let noEstimateRoutine = RoutineTask(
             name: "Stretch",
             tags: ["Health"],
-            scheduleMode: .softInterval,
+            scheduleMode: .record,
             recurrenceRule: .interval(days: 1),
             createdAt: makeDate("2026-05-09T08:00:00Z"),
             autoAssumeDailyDone: true
@@ -192,7 +192,7 @@ struct StatsFeatureDerivedStateSupportTests {
         let hiddenRoutine = RoutineTask(
             name: "Read",
             tags: ["Hidden"],
-            scheduleMode: .fixedInterval,
+            scheduleMode: .record,
             recurrenceRule: .interval(days: 1),
             createdAt: makeDate("2026-05-07T08:00:00Z"),
             autoAssumeDailyDone: true,
@@ -212,7 +212,7 @@ struct StatsFeatureDerivedStateSupportTests {
             logs: logs,
             focusSessions: [],
             selectedRange: .week,
-            taskTypeFilter: .routines,
+            taskTypeFilter: .records,
             selectedImportanceUrgencyFilter: nil,
             advancedQuery: "",
             selectedTags: ["Health"],

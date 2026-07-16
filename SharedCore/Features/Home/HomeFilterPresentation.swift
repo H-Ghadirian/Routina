@@ -149,7 +149,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
     }
 
     var showsAssumedDoneVisibilityFilter: Bool {
-        taskListKind == .all || taskListKind == .routines
+        taskListKind == .all || taskListKind == .records
     }
 
     var filterLabels: [String] {

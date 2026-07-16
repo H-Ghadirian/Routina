@@ -768,9 +768,7 @@ homeContent
             EmptyView()
         } else {
             HomeStatusBadgeView(
-                style: HomeStatusBadgeStyle(
-                    metadataPresenter.badgeStyle(for: task)!.tuple
-                )
+                style: metadataPresenter.badgeStyle(for: task).map { HomeStatusBadgeStyle($0.tuple) }
             )
         }
     }

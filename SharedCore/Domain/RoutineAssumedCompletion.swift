@@ -8,6 +8,7 @@ enum RoutineAssumedCompletion {
             && isEligible(
                 scheduleMode: task.scheduleMode,
                 recurrenceRule: task.recurrenceRule,
+                trackingCadenceEnabled: task.trackingCadenceEnabled,
                 hasSequentialSteps: task.hasSequentialSteps,
                 hasChecklistItems: task.hasChecklistItems
             )
@@ -16,17 +17,19 @@ enum RoutineAssumedCompletion {
     static func isEligible(
         scheduleMode: RoutineScheduleMode,
         recurrenceRule: RoutineRecurrenceRule,
+        trackingCadenceEnabled: Bool = true,
         hasSequentialSteps: Bool,
         hasChecklistItems: Bool
     ) -> Bool {
-        guard scheduleMode.taskType == .routine,
+        guard scheduleMode.taskType == .record,
+              trackingCadenceEnabled,
               !hasSequentialSteps,
               recurrenceRule.isDaily
         else {
             return false
         }
 
-        if scheduleMode.isStandardRoutineMode {
+        if scheduleMode.routineFormat == .standard {
             return !hasChecklistItems
         }
 

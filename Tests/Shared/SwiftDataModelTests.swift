@@ -178,6 +178,24 @@ struct SwiftDataModelTests {
     }
 
     @Test
+    func trackingCanDisableCadenceEntirely() {
+        let task = RoutineTask(
+            scheduleMode: .record,
+            recurrenceRule: .weekly(on: [2, 6]),
+            trackingCadenceEnabled: false,
+            trackingNudgesEnabled: true
+        )
+
+        #expect(!task.trackingCadenceEnabled)
+        #expect(!task.trackingNudgesEnabled)
+        #expect(!task.isSoftIntervalRoutine)
+        #expect(!task.surfacesSoftIntervalNudges)
+        #expect(task.recurrenceRule == .interval(days: 1))
+        #expect(task.interval == 1)
+        #expect(!task.detachedCopy().trackingCadenceEnabled)
+    }
+
+    @Test
     func routineTask_normalizesPlannedDateAndCopiesItDetached() {
         let plannedDate = makeDate("2026-06-10T15:45:00Z")
         let expectedDate = Calendar.current.startOfDay(for: plannedDate)

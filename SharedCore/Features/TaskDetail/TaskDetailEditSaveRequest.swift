@@ -40,6 +40,7 @@ struct TaskDetailEditSaveRequest: Equatable {
     var actualDurationMinutes: Int?
     var storyPoints: Int?
     var focusModeEnabled: Bool
+    var trackingCadenceEnabled: Bool
     var trackingNudgesEnabled: Bool
 }
 
@@ -95,7 +96,10 @@ struct TaskDetailEditSaveRequestBuilder {
 
         state.isEditSheetPresented = false
 
-        let frequencyInterval = !scheduleMode.usesRoutineCadence
+        let trackingCadenceEnabled = scheduleMode.taskType == .record
+            ? state.editTrackingCadenceEnabled
+            : true
+        let frequencyInterval = !scheduleMode.usesRoutineCadence || !trackingCadenceEnabled
             ? 1
             : TaskFormRecurrenceConstraints.effectiveIntervalDays(
                 value: state.editFrequencyValue,
@@ -104,11 +108,13 @@ struct TaskDetailEditSaveRequestBuilder {
                 routineDurationMode: state.editRoutineDurationMode,
                 recurrenceKind: state.editRecurrenceKind
             )
-        let recurrenceRule = selectedRecurrenceRule(
-            for: state,
-            scheduleMode: scheduleMode,
-            fallbackInterval: frequencyInterval
-        )
+        let recurrenceRule = trackingCadenceEnabled
+            ? selectedRecurrenceRule(
+                for: state,
+                scheduleMode: scheduleMode,
+                fallbackInterval: frequencyInterval
+            )
+            : .interval(days: 1)
 
         let sanitizedLinks = RoutineTask.sanitizedLinkItems(fromEditorText: state.editRoutineLink)
 
@@ -131,7 +137,7 @@ struct TaskDetailEditSaveRequestBuilder {
             routineDurationMode: scheduleMode.taskType == .todo ? .oneDay : state.editRoutineDurationMode,
             availabilityStartDate: scheduleMode.taskType == .todo ? availabilityDateBounds.startDate : nil,
             availabilityEndDate: scheduleMode.taskType == .todo ? availabilityDateBounds.endDate : nil,
-            plannedDate: RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+            plannedDate: !trackingCadenceEnabled || RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
                     scheduleMode: scheduleMode,
                     recurrenceRule: recurrenceRule,
                     checklistItems: sanitizedChecklistItems
@@ -170,8 +176,9 @@ struct TaskDetailEditSaveRequestBuilder {
             actualDurationMinutes: state.editActualDurationMinutes,
             storyPoints: state.editStoryPoints,
             focusModeEnabled: state.editFocusModeEnabled,
+            trackingCadenceEnabled: trackingCadenceEnabled,
             trackingNudgesEnabled: scheduleMode.taskType == .record
-                ? state.editTrackingNudgesEnabled
+                ? trackingCadenceEnabled && state.editTrackingNudgesEnabled
                 : true
         )
     }

@@ -359,10 +359,10 @@ struct TaskFormIOSRepeatPatternSections: View {
             ) { repeatType in
                 Text(repeatType.rawValue)
             }
-            if model.routineRepeatType.wrappedValue != .itemRunout {
+            if model.routineRepeatType.wrappedValue != .itemRunout && model.routineRepeatType.wrappedValue != .none {
                 Text(presentation.recurrencePatternDescription).font(.caption).foregroundStyle(.secondary)
             }
-            if model.taskType.wrappedValue == .record {
+            if model.taskType.wrappedValue == .record && model.routineRepeatType.wrappedValue != .none {
                 Toggle("Nudges", isOn: model.trackingNudgesEnabled)
             }
         }
@@ -388,6 +388,9 @@ struct TaskFormIOSRepeatPatternSections: View {
     @ViewBuilder
     private var recurrenceSpecificSections: some View {
         switch model.routineRepeatType.wrappedValue {
+        case .none:
+            EmptyView()
+
         case .interval:
             Section(header: Text("Frequency")) {
                 frequencyUnitPicker
@@ -456,7 +459,8 @@ struct TaskFormIOSRepeatPatternSections: View {
     }
 
     private var showsAssumedDoneSection: Bool {
-        model.canAutoAssumeDailyDone || model.autoAssumeDailyDone.wrappedValue
+        model.canAutoAssumeDailyDone
+            || (model.taskType.wrappedValue == .record && model.autoAssumeDailyDone.wrappedValue)
     }
 
     private var assumedDoneSection: some View {

@@ -674,6 +674,7 @@ struct AddRoutineFeatureTests {
                     reminderAt: date,
                     estimatedDurationMinutes: 120,
                     actualDurationMinutes: 95,
+                    trackingCadenceEnabled: true,
                     trackingNudgesEnabled: false
                 ),
                 organization: AddRoutineOrganizationState(existingRoutineNames: []),
@@ -716,6 +717,46 @@ struct AddRoutineFeatureTests {
             checklistItems: RoutineChecklistItem.sanitized([checklistItem], for: .record),
             estimatedDurationMinutes: 120,
             actualDurationMinutes: 95,
+            trackingCadenceEnabled: true,
+            trackingNudgesEnabled: false
+        ))))
+    }
+
+    @Test
+    func saveTapped_recordCanSkipRepeatCadence() async {
+        let plannedDate = makeDate("2026-05-01T09:00:00Z")
+        let exactTime = RoutineTimeOfDay(hour: 14, minute: 30)
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(
+                    routineName: "Ad hoc symptom log",
+                    plannedDate: plannedDate
+                ),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .record,
+                    frequency: .week,
+                    frequencyValue: 3,
+                    recurrenceKind: .weekly,
+                    recurrenceHasExplicitTime: true,
+                    recurrenceTimeOfDay: exactTime,
+                    recurrenceWeekdays: [3, 5]
+                )
+            )
+        ) {
+            makeDelegateEchoFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.saveTapped)
+        await store.receive(.delegate(.didSave(makeSaveRequest(
+            name: "Ad hoc symptom log",
+            frequencyInDays: 1,
+            recurrenceRule: .interval(days: 1),
+            emoji: "✨",
+            scheduleMode: .record,
+            trackingCadenceEnabled: false,
             trackingNudgesEnabled: false
         ))))
     }
@@ -726,7 +767,10 @@ struct AddRoutineFeatureTests {
         let exactTime = RoutineTimeOfDay(hour: 15, minute: 0)
         let store = TestStore(
             initialState: makeState(
-                basics: AddRoutineBasicsState(routineName: "Retrospective notes"),
+                basics: AddRoutineBasicsState(
+                    routineName: "Retrospective notes",
+                    trackingCadenceEnabled: true
+                ),
                 organization: AddRoutineOrganizationState(existingRoutineNames: []),
                 schedule: AddRoutineScheduleState(
                     scheduleMode: .recordChecklist,
@@ -759,7 +803,8 @@ struct AddRoutineFeatureTests {
             recurrenceRule: .monthly(on: [5, 20], at: exactTime),
             emoji: "✨",
             scheduleMode: .recordChecklist,
-            checklistItems: RoutineChecklistItem.sanitized([checklistItem], for: .recordChecklist)
+            checklistItems: RoutineChecklistItem.sanitized([checklistItem], for: .recordChecklist),
+            trackingCadenceEnabled: true
         ))))
     }
 

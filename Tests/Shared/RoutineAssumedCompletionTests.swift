@@ -11,66 +11,81 @@ import Testing
 @MainActor
 struct RoutineAssumedCompletionTests {
     @Test
-    func eligibility_allowsDailyStandardAndChecklistCompletionRoutinesWithOptIn() {
+    func eligibility_allowsDailyStandardAndChecklistCompletionTrackingWithOptIn() {
         let checklistItem = RoutineChecklistItem(title: "Breakfast", intervalDays: 1)
-        let due = RoutineTask(
+        let routine = RoutineTask(
             name: "Brush teeth",
             scheduleMode: .fixedInterval,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 21, minute: 0)),
             autoAssumeDailyDone: true
         )
-        let gentle = RoutineTask(
+        let standard = RoutineTask(
+            name: "Brush teeth",
+            scheduleMode: .record,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 21, minute: 0)),
+            autoAssumeDailyDone: true
+        )
+        let interval = RoutineTask(
             name: "Journal",
-            scheduleMode: .softInterval,
+            scheduleMode: .record,
             recurrenceRule: .interval(days: 1),
             autoAssumeDailyDone: true
         )
+        let noCadence = RoutineTask(
+            name: "Random log",
+            scheduleMode: .record,
+            recurrenceRule: .interval(days: 1),
+            autoAssumeDailyDone: true,
+            trackingCadenceEnabled: false
+        )
         let weekly = RoutineTask(
             name: "Review",
-            scheduleMode: .fixedInterval,
+            scheduleMode: .record,
             recurrenceRule: .weekly(on: 2, at: nil),
             autoAssumeDailyDone: true
         )
         let checklist = RoutineTask(
             name: "Meals",
             checklistItems: [checklistItem],
-            scheduleMode: .fixedIntervalChecklist,
+            scheduleMode: .recordChecklist,
             recurrenceRule: .interval(days: 1),
             autoAssumeDailyDone: true
         )
-        let gentleChecklist = RoutineTask(
+        let exactTimeChecklist = RoutineTask(
             name: "Study blocks",
             checklistItems: [checklistItem],
-            scheduleMode: .softIntervalChecklist,
+            scheduleMode: .recordChecklist,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 9, minute: 0)),
             autoAssumeDailyDone: true
         )
         let optionalChecklist = RoutineTask(
             name: "Read",
             checklistItems: [checklistItem],
-            scheduleMode: .fixedInterval,
+            scheduleMode: .record,
             recurrenceRule: .interval(days: 1),
             autoAssumeDailyDone: true
         )
         let runout = RoutineTask(
             name: "Groceries",
             checklistItems: [checklistItem],
-            scheduleMode: .derivedFromChecklist,
+            scheduleMode: .recordDerivedFromChecklist,
             recurrenceRule: .interval(days: 1),
             autoAssumeDailyDone: true
         )
         let withSteps = RoutineTask(
-            name: "Morning routine",
+            name: "Morning tracking",
             steps: [RoutineStep(title: "Stretch")],
-            scheduleMode: .fixedInterval,
+            scheduleMode: .record,
             recurrenceRule: .interval(days: 1),
             autoAssumeDailyDone: true
         )
 
-        #expect(RoutineAssumedCompletion.isEligible(due))
-        #expect(RoutineAssumedCompletion.isEligible(gentle))
+        #expect(!RoutineAssumedCompletion.isEligible(routine))
+        #expect(RoutineAssumedCompletion.isEligible(standard))
+        #expect(RoutineAssumedCompletion.isEligible(interval))
         #expect(RoutineAssumedCompletion.isEligible(checklist))
-        #expect(RoutineAssumedCompletion.isEligible(gentleChecklist))
+        #expect(RoutineAssumedCompletion.isEligible(exactTimeChecklist))
+        #expect(!RoutineAssumedCompletion.isEligible(noCadence))
         #expect(!RoutineAssumedCompletion.isEligible(weekly))
         #expect(!RoutineAssumedCompletion.isEligible(optionalChecklist))
         #expect(!RoutineAssumedCompletion.isEligible(runout))
@@ -85,7 +100,7 @@ struct RoutineAssumedCompletionTests {
         let evening = makeDate("2026-02-25T22:00:00Z")
         let task = RoutineTask(
             name: "Brush teeth",
-            scheduleMode: .fixedInterval,
+            scheduleMode: .record,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 21, minute: 0)),
             createdAt: makeDate("2026-02-20T00:00:00Z"),
             autoAssumeDailyDone: true
@@ -119,7 +134,7 @@ struct RoutineAssumedCompletionTests {
         )
         let task = RoutineTask(
             name: "Brush teeth",
-            scheduleMode: .fixedInterval,
+            scheduleMode: .record,
             recurrenceRule: .daily(in: timeRange),
             createdAt: makeDate("2026-02-20T00:00:00Z"),
             autoAssumeDailyDone: true
@@ -149,7 +164,7 @@ struct RoutineAssumedCompletionTests {
         )
         let task = RoutineTask(
             name: "Brush teeth",
-            scheduleMode: .fixedInterval,
+            scheduleMode: .record,
             recurrenceRule: .daily(in: timeRange),
             createdAt: makeDate("2026-02-20T00:00:00Z"),
             autoAssumeDailyDone: true
@@ -179,7 +194,7 @@ struct RoutineAssumedCompletionTests {
         )
         let task = RoutineTask(
             name: "Brush teeth",
-            scheduleMode: .fixedInterval,
+            scheduleMode: .record,
             recurrenceRule: .daily(in: timeRange),
             createdAt: makeDate("2026-02-20T00:00:00Z"),
             autoAssumeDailyDone: true
@@ -212,7 +227,7 @@ struct RoutineAssumedCompletionTests {
         let referenceDate = makeDate("2026-02-25T10:00:00Z")
         let task = RoutineTask(
             name: "Brush teeth",
-            scheduleMode: .fixedInterval,
+            scheduleMode: .record,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 8, minute: 0)),
             createdAt: makeDate("2026-02-20T00:00:00Z"),
             autoAssumeDailyDone: true
@@ -247,7 +262,7 @@ struct RoutineAssumedCompletionTests {
                 RoutineChecklistItem(id: firstID, title: "Breakfast", intervalDays: 1, createdAt: today),
                 RoutineChecklistItem(id: secondID, title: "Lunch", intervalDays: 1, createdAt: today)
             ],
-            scheduleMode: .fixedIntervalChecklist,
+            scheduleMode: .recordChecklist,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 8, minute: 0)),
             createdAt: makeDate("2026-02-24T00:00:00Z"),
             autoAssumeDailyDone: true
@@ -278,7 +293,7 @@ struct RoutineAssumedCompletionTests {
         let referenceDate = makeDate("2026-02-25T10:00:00Z")
         let task = RoutineTask(
             name: "Brush teeth",
-            scheduleMode: .fixedInterval,
+            scheduleMode: .record,
             recurrenceRule: .interval(days: 1),
             createdAt: makeDate("2026-02-25T09:30:00Z"),
             autoAssumeDailyDone: true
@@ -306,7 +321,7 @@ struct RoutineAssumedCompletionTests {
         let referenceDate = makeDate("2026-02-25T08:00:00Z")
         let task = RoutineTask(
             name: "Brush teeth",
-            scheduleMode: .fixedInterval,
+            scheduleMode: .record,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 21, minute: 0)),
             createdAt: makeDate("2026-02-22T00:00:00Z"),
             autoAssumeDailyDone: true
@@ -336,7 +351,7 @@ struct RoutineAssumedCompletionTests {
         )
         let task = RoutineTask(
             name: "Brush teeth",
-            scheduleMode: .fixedInterval,
+            scheduleMode: .record,
             recurrenceRule: .daily(in: timeRange),
             createdAt: makeDate("2026-02-22T00:00:00Z"),
             autoAssumeDailyDone: true,

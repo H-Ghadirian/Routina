@@ -173,7 +173,7 @@ enum HomeTaskLifecycleExecutionSupport {
                 WidgetStatsService.refreshAndReload(using: context)
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                print("Failed to confirm assumed routine from home list: \(error)")
+                print("Failed to confirm assumed task from home list: \(error)")
             }
         }
     }
@@ -215,7 +215,7 @@ enum HomeTaskLifecycleExecutionSupport {
                 WidgetStatsService.refreshAndReload(using: context)
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                print("Failed to mark assumed routine as missed from home list: \(error)")
+                print("Failed to mark assumed task as missed from home list: \(error)")
             }
         }
     }

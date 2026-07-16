@@ -1181,11 +1181,11 @@ struct TaskDetailEditSaveTests {
 
         #expect(store.state.editRoutineChecklistItems.map(\.title) == ["Bread"])
         #expect(store.state.editRoutineChecklistItems.map(\.intervalDays) == [1])
-        #expect(store.state.canAutoAssumeDailyDone)
+        #expect(!store.state.canAutoAssumeDailyDone)
     }
 
     @Test
-    func editSaveTapped_promotesNewStandardRoutineChecklistToChecklistCompletion() async throws {
+    func editSaveTapped_promotesNewStandardRoutineChecklistToChecklistCompletionWithoutAutoAssume() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-10T09:00:00Z")
@@ -1239,6 +1239,68 @@ struct TaskDetailEditSaveTests {
             ).first
         )
         #expect(persistedTask.scheduleMode == .fixedIntervalChecklist)
+        #expect(persistedTask.checklistItems.map(\.title) == ["Bread"])
+        #expect(persistedTask.checklistItems.map(\.intervalDays) == [1])
+        #expect(!persistedTask.autoAssumeDailyDone)
+        #expect(persistedTask.autoAssumeDoneTimeOfDay == nil)
+    }
+
+    @Test
+    func editSaveTapped_preservesAutoAssumeForDailyTrackingChecklistCompletion() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Meals",
+            interval: 1,
+            lastDone: nil,
+            emoji: "✨",
+            scheduleMode: .record
+        )
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                isEditSheetPresented: true,
+                editRoutineName: "Meals",
+                editRoutineEmoji: "✨",
+                editScheduleMode: .record,
+                editRoutineChecklistItems: [RoutineChecklistItem(title: "Bread", intervalDays: 1)],
+                editFrequency: .day,
+                editFrequencyValue: 1,
+                editAutoAssumeDailyDone: true,
+                editAutoAssumeDoneTimeOfDay: RoutineTimeOfDay(hour: 8, minute: 15),
+                editTrackingCadenceEnabled: true
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+        await store.receive(.onAppear) {
+            $0.selectedDate = calendar.startOfDay(for: now)
+        }
+
+        let taskID = task.id
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { task in
+                        task.id == taskID
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.scheduleMode == .recordChecklist)
         #expect(persistedTask.checklistItems.map(\.title) == ["Bread"])
         #expect(persistedTask.checklistItems.map(\.intervalDays) == [1])
         #expect(persistedTask.autoAssumeDailyDone)
@@ -1397,6 +1459,7 @@ struct TaskDetailEditSaveTests {
                 editRecurrenceTimeOfDay: exactTime,
                 editRecurrenceWeekdays: [2, 6],
                 editActualDurationMinutes: 75,
+                editTrackingCadenceEnabled: true,
                 editTrackingNudgesEnabled: false
             )
         ) {
@@ -1433,6 +1496,7 @@ struct TaskDetailEditSaveTests {
         #expect(persistedTask.routineDurationMode == .multiDay)
         #expect(persistedTask.recurrenceRule == .weekly(on: [2, 6], at: exactTime))
         #expect(persistedTask.interval == 7)
+        #expect(persistedTask.trackingCadenceEnabled)
         #expect(persistedTask.steps.map(\.title) == ["Collect sources"])
         #expect(persistedTask.checklistItems.map(\.title) == ["Summarize findings"])
         #expect(persistedTask.checklistItems.map(\.intervalDays) == [1])

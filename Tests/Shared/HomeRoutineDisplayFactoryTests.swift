@@ -209,7 +209,7 @@ struct HomeRoutineDisplayFactoryTests {
         )
         let task = RoutineTask(
             name: "Brush teeth",
-            scheduleMode: .fixedInterval,
+            scheduleMode: .record,
             recurrenceRule: .daily(in: window),
             createdAt: makeDate("2026-07-01T00:00:00Z"),
             autoAssumeDailyDone: true,
@@ -234,7 +234,7 @@ struct HomeRoutineDisplayFactoryTests {
     }
 
     @Test
-    func assumedChecklistRoutineHidesPendingChecklistPrompt() {
+    func assumedChecklistTrackingHidesPendingChecklistPrompt() {
         let now = makeDate("2026-06-09T08:00:00Z")
         let task = RoutineTask(
             name: "Meals",
@@ -242,7 +242,7 @@ struct HomeRoutineDisplayFactoryTests {
                 RoutineChecklistItem(title: "Breakfast", intervalDays: 1, createdAt: now),
                 RoutineChecklistItem(title: "Lunch", intervalDays: 1, createdAt: now)
             ],
-            scheduleMode: .fixedIntervalChecklist,
+            scheduleMode: .recordChecklist,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 7, minute: 0)),
             scheduleAnchor: now,
             createdAt: makeDate("2026-06-08T08:00:00Z"),
@@ -262,11 +262,11 @@ struct HomeRoutineDisplayFactoryTests {
     }
 
     @Test
-    func overnightAutoAssumedRoutineUsesCurrentOccurrenceDayInHomeDisplay() {
+    func overnightAutoAssumedTrackingUsesCurrentOccurrenceDayInHomeDisplay() {
         let now = makeDate("2026-06-10T01:00:00Z")
         let task = RoutineTask(
             name: "Brush teeth",
-            scheduleMode: .fixedInterval,
+            scheduleMode: .record,
             recurrenceRule: .daily(in: RoutineTimeRange(
                 start: RoutineTimeOfDay(hour: 21, minute: 0),
                 end: RoutineTimeOfDay(hour: 3, minute: 0)
@@ -288,11 +288,11 @@ struct HomeRoutineDisplayFactoryTests {
     }
 
     @Test
-    func overnightAutoAssumedRoutineStaysAssumedAfterWindowBeforeNextStart() {
+    func overnightAutoAssumedTrackingStaysAssumedAfterWindowBeforeNextStart() {
         let now = makeDate("2026-06-10T12:00:00Z")
         let task = RoutineTask(
             name: "Brush teeth",
-            scheduleMode: .fixedInterval,
+            scheduleMode: .record,
             recurrenceRule: .daily(in: RoutineTimeRange(
                 start: RoutineTimeOfDay(hour: 21, minute: 0),
                 end: RoutineTimeOfDay(hour: 3, minute: 0)
@@ -323,7 +323,7 @@ struct HomeRoutineDisplayFactoryTests {
                 RoutineChecklistItem(id: firstID, title: "Breakfast", intervalDays: 1, createdAt: now),
                 RoutineChecklistItem(title: "Lunch", intervalDays: 1, createdAt: now)
             ],
-            scheduleMode: .fixedIntervalChecklist,
+            scheduleMode: .recordChecklist,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 7, minute: 0)),
             scheduleAnchor: now,
             createdAt: makeDate("2026-06-08T08:00:00Z"),
@@ -365,11 +365,11 @@ struct HomeRoutineDisplayFactoryTests {
     }
 
     @Test
-    func creationDayAllDayAutoAssumedRoutinePresentsAsAssumedInHome() {
+    func creationDayAllDayAutoAssumedTrackingPresentsAsAssumedInHome() {
         let now = makeDate("2026-06-09T08:00:00Z")
         let task = RoutineTask(
             name: "Hydrate",
-            scheduleMode: .fixedInterval,
+            scheduleMode: .record,
             recurrenceRule: .interval(days: 1),
             scheduleAnchor: makeDate("2026-06-09T00:00:00Z"),
             createdAt: makeDate("2026-06-09T07:30:00Z"),

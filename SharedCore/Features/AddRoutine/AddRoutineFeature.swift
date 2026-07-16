@@ -83,6 +83,7 @@ struct AddRoutineFeature: Reducer {
         case actualDurationChanged(Int?)
         case storyPointsChanged(Int?)
         case focusModeEnabledChanged(Bool)
+        case trackingCadenceEnabledChanged(Bool)
         case trackingNudgesEnabledChanged(Bool)
         case applyQuickAddDraftFromName
         case saveTapped
@@ -599,6 +600,16 @@ struct AddRoutineFeature: Reducer {
                 isEnabled,
                 basics: &state.basics
             )
+            return .none
+
+        case let .trackingCadenceEnabledChanged(isEnabled):
+            state.basics.trackingCadenceEnabled = isEnabled
+            if !isEnabled {
+                state.basics.trackingNudgesEnabled = false
+            }
+            if !state.canAutoAssumeDailyDone {
+                state.schedule.autoAssumeDailyDone = false
+            }
             return .none
 
         case let .trackingNudgesEnabledChanged(isEnabled):

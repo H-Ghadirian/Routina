@@ -168,40 +168,40 @@ Given a checklist runout routine has an item due yesterday
 When the user selects yesterday in Task Details and checks that item
 Then the item is reset using yesterday as the done date, the selected-day row appears checked, and future selected dates remain unavailable for runout updates
 
-### Daily Checklist Auto-Assume Uses Day-Level Completion
+### Daily Tracking Checklist Auto-Assume Uses Day-Level Completion
 
 Area: Tasks
-Decision links: [0259](../decisions/0259-allow-daily-checklist-auto-assumed-completion.md)
+Decision links: [0259](../decisions/0259-allow-daily-checklist-auto-assumed-completion.md), [0398](../decisions/0398-move-auto-assume-done-to-tracking.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/RoutineAssumedCompletionTests.swift`
 - `Tests/Shared/HomeRoutineDisplayFactoryTests.swift`
 - `Tests/Shared/TaskDetailFeatureCompletionTests.swift`
 
-Given a daily checklist-completion routine has auto-assume done enabled
+Given a daily checklist-completion Tracking entry has auto-assume done enabled
 When today's availability starts and no checklist item progress exists
-Then Home and Task Detail present the routine as assumed done without pretending individual checklist items are checked
+Then Home and Task Detail present the Tracking entry as assumed done without pretending individual checklist items are checked
 
-Given a daily routine is created today with auto-assume done enabled
+Given a daily Tracking entry is created today with auto-assume done enabled
 When today's availability has already started
 Then Home treats the current occurrence as assumed done while dates before creation remain unassumed
 
 Given the user starts checking checklist items for that daily occurrence
 When the app derives assumed completion state
-Then manual partial checklist progress suppresses assumed-done presentation until the routine is fully completed or progress is cleared
+Then manual partial checklist progress suppresses assumed-done presentation until the Tracking entry is fully completed or progress is cleared
 
-### Planner Can Show Assumed Done Routines
+### Planner Can Show Assumed Done Tracking
 
 Area: Planner
-Decision links: [0268](../decisions/0268-show-assumed-done-routines-in-planner.md), [0368](../decisions/0368-hide-assumed-done-calendar-layer-by-default.md), [0372](../decisions/0372-hide-completed-tasks-from-calendar-schedule.md)
+Decision links: [0268](../decisions/0268-show-assumed-done-routines-in-planner.md), [0368](../decisions/0368-hide-assumed-done-calendar-layer-by-default.md), [0372](../decisions/0372-hide-completed-tasks-from-calendar-schedule.md), [0398](../decisions/0398-move-auto-assume-done-to-tracking.md)
 Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/Shared/DayPlanCalendarFilterStateTests.swift`
 - `Tests/Shared/DayPlanPlannerStateTests.swift`
 
-Given an eligible daily routine has auto-assume done enabled
+Given an eligible daily Tracking entry has auto-assume done enabled
 When Planner derives automatic activity for an assumed-done day
-Then the routine is available as synthetic completed planner activity without creating a completion log
+Then the Tracking entry is available as synthetic completed planner activity without creating a completion log
 
 Given Planner Calendar filters are at their defaults
 When Calendar filters automatic activity for display
@@ -270,7 +270,7 @@ Coverage:
 
 Given a Standard routine has no checklist items
 When the user adds checklist items in Task Details
-Then the editor and save path promote it to Checklist completion so eligible daily routines can expose auto-assume done
+Then the editor and save path promote it to Checklist completion so checklist completion owns the finish behavior
 
 Given an existing Standard routine already has checklist items from legacy optional data
 When the user saves it from Task Details

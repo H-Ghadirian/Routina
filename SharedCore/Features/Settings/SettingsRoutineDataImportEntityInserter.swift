@@ -311,6 +311,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 estimatedDurationMinutes: task.estimatedDurationMinutes,
                 actualDurationMinutes: task.actualDurationMinutes,
                 storyPoints: task.storyPoints,
+                trackingCadenceEnabled: task.trackingCadenceEnabled ?? true,
                 trackingNudgesEnabled: task.trackingNudgesEnabled ?? true,
                 showsTaskDetailHeatmap: task.showsTaskDetailHeatmap ?? false,
                 comments: task.comments ?? []

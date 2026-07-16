@@ -12,6 +12,10 @@ Accepted
 
 [0255](superseded/0255-allow-gentle-auto-assumed-daily-completion.md)
 
+## Refined by
+
+[0398: Move Auto-Assume Done to Tracking](0398-move-auto-assume-done-to-tracking.md)
+
 ## Refines
 
 - [0249: Reset Daily Checklist Progress Each Day](0249-reset-daily-checklist-progress.md)

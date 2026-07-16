@@ -96,6 +96,7 @@ struct TaskDetailFeature: Reducer {
         var editActualDurationMinutes: Int?
         var editStoryPoints: Int?
         var editFocusModeEnabled: Bool = false
+        var editTrackingCadenceEnabled: Bool = true
         var editTrackingNudgesEnabled: Bool = true
         var isDeleteConfirmationPresented: Bool = false
         var isUndoCompletionConfirmationPresented: Bool = false
@@ -180,6 +181,9 @@ struct TaskDetailFeature: Reducer {
             RoutineAssumedCompletion.isEligible(
                 scheduleMode: editScheduleMode,
                 recurrenceRule: candidateRecurrenceRule,
+                trackingCadenceEnabled: editScheduleMode.taskType == .record
+                    ? editTrackingCadenceEnabled
+                    : true,
                 hasSequentialSteps: !editRoutineSteps.isEmpty,
                 hasChecklistItems: !editRoutineChecklistItems.isEmpty
             )
@@ -311,6 +315,7 @@ struct TaskDetailFeature: Reducer {
         case editActualDurationChanged(Int?)
         case editStoryPointsChanged(Int?)
         case editFocusModeEnabledChanged(Bool)
+        case editTrackingCadenceEnabledChanged(Bool)
         case editTrackingNudgesEnabledChanged(Bool)
         case editFrequencyChanged(EditFrequency)
         case editFrequencyValueChanged(Int)
@@ -1264,6 +1269,16 @@ struct TaskDetailFeature: Reducer {
 
         case let .editFocusModeEnabledChanged(isEnabled):
             return basicEditActionHandler().editFocusModeEnabledChanged(isEnabled, state: &state)
+
+        case let .editTrackingCadenceEnabledChanged(isEnabled):
+            state.editTrackingCadenceEnabled = isEnabled
+            if !isEnabled {
+                state.editTrackingNudgesEnabled = false
+            }
+            if !state.canAutoAssumeDailyDone {
+                state.editAutoAssumeDailyDone = false
+            }
+            return .none
 
         case let .editTrackingNudgesEnabledChanged(isEnabled):
             state.editTrackingNudgesEnabled = isEnabled

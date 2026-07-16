@@ -8,6 +8,10 @@ Accepted
 
 2026-07-12
 
+## Refined by
+
+[0398: Move Auto-Assume Done to Tracking](0398-move-auto-assume-done-to-tracking.md)
+
 ## Refines
 
 - [0271: Use Probable Times for Assumed Planner Activity](0271-use-probable-times-for-assumed-planner-activity.md)

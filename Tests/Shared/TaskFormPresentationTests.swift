@@ -145,8 +145,21 @@ struct TaskFormPresentationTests {
         let standard = taskFormModel(scheduleMode: .fixedInterval)
         let checklist = taskFormModel(scheduleMode: .fixedIntervalChecklist)
         let runout = taskFormModel(scheduleMode: .derivedFromChecklist)
-        let checklistRecord = taskFormModel(taskType: .record, scheduleMode: .recordChecklist)
-        let runoutRecord = taskFormModel(taskType: .record, scheduleMode: .recordDerivedFromChecklist)
+        let recordWithoutCadence = taskFormModel(
+            taskType: .record,
+            scheduleMode: .record,
+            trackingCadenceEnabled: false
+        )
+        let checklistRecord = taskFormModel(
+            taskType: .record,
+            scheduleMode: .recordChecklist,
+            trackingCadenceEnabled: true
+        )
+        let runoutRecord = taskFormModel(
+            taskType: .record,
+            scheduleMode: .recordDerivedFromChecklist,
+            trackingCadenceEnabled: true
+        )
         let todo = taskFormModel(taskType: .todo, scheduleMode: .oneOff)
 
         #expect(standard.supportsItemRunoutRepeatType == false)
@@ -157,8 +170,10 @@ struct TaskFormPresentationTests {
         #expect(runout.supportsItemRunoutRepeatType)
         #expect(runout.routineRepeatTypeCases == [.interval, .calendar, .itemRunout])
         #expect(runout.routineRepeatType.wrappedValue == .itemRunout)
+        #expect(recordWithoutCadence.routineRepeatTypeCases == [.none, .interval, .calendar])
+        #expect(recordWithoutCadence.routineRepeatType.wrappedValue == .none)
         #expect(checklistRecord.supportsItemRunoutRepeatType)
-        #expect(checklistRecord.routineRepeatTypeCases == [.interval, .calendar, .itemRunout])
+        #expect(checklistRecord.routineRepeatTypeCases == [.none, .interval, .calendar, .itemRunout])
         #expect(runoutRecord.supportsItemRunoutRepeatType)
         #expect(runoutRecord.routineRepeatType.wrappedValue == .itemRunout)
         #expect(todo.supportsItemRunoutRepeatType == false)
@@ -166,10 +181,10 @@ struct TaskFormPresentationTests {
     }
 
     @Test @MainActor
-    func autoAssumeEligibilityTracksLiveGentleDailyScheduleBindings() {
+    func autoAssumeEligibilityTracksLiveDailyTrackingBindings() {
         var scheduleMode = RoutineScheduleMode.oneOff
         let model = taskFormModel(
-            taskType: .todo,
+            taskType: .record,
             scheduleModeBinding: Binding(
                 get: { scheduleMode },
                 set: { scheduleMode = $0 }
@@ -178,22 +193,33 @@ struct TaskFormPresentationTests {
 
         #expect(!model.canAutoAssumeDailyDone)
 
-        scheduleMode = .softInterval
+        scheduleMode = .record
         #expect(model.canAutoAssumeDailyDone)
 
-        scheduleMode = .softIntervalChecklist
+        scheduleMode = .recordChecklist
         #expect(!model.canAutoAssumeDailyDone)
 
         let checklistModel = taskFormModel(
-            scheduleMode: .softIntervalChecklist,
+            taskType: .record,
+            scheduleMode: .recordChecklist,
             checklistItems: [RoutineChecklistItem(title: "Breakfast", intervalDays: 1)]
         )
         let runoutModel = taskFormModel(
-            scheduleMode: .derivedFromChecklist,
+            taskType: .record,
+            scheduleMode: .recordDerivedFromChecklist,
             checklistItems: [RoutineChecklistItem(title: "Milk", intervalDays: 1)]
         )
+        let noCadenceModel = taskFormModel(
+            taskType: .record,
+            scheduleMode: .record,
+            trackingCadenceEnabled: false
+        )
+        let routineModel = taskFormModel(scheduleMode: .softInterval)
+
         #expect(checklistModel.canAutoAssumeDailyDone)
         #expect(!runoutModel.canAutoAssumeDailyDone)
+        #expect(!noCadenceModel.canAutoAssumeDailyDone)
+        #expect(!routineModel.canAutoAssumeDailyDone)
     }
 
     @Test @MainActor
@@ -201,6 +227,7 @@ struct TaskFormPresentationTests {
         var taskType = RoutineTaskType.routine
         var scheduleMode = RoutineScheduleMode.fixedIntervalChecklist
         var recurrenceKind = RoutineRecurrenceRule.Kind.weekly
+        var trackingCadenceEnabled = true
         let model = taskFormModel(
             taskTypeBinding: Binding(
                 get: { taskType },
@@ -213,6 +240,10 @@ struct TaskFormPresentationTests {
             recurrenceKindBinding: Binding(
                 get: { recurrenceKind },
                 set: { recurrenceKind = $0 }
+            ),
+            trackingCadenceEnabledBinding: Binding(
+                get: { trackingCadenceEnabled },
+                set: { trackingCadenceEnabled = $0 }
             )
         )
 
@@ -245,7 +276,13 @@ struct TaskFormPresentationTests {
         model.routineRepeatType.wrappedValue = .itemRunout
         #expect(scheduleMode == .recordDerivedFromChecklist)
 
+        model.routineRepeatType.wrappedValue = .none
+        #expect(!trackingCadenceEnabled)
+        #expect(scheduleMode == .recordChecklist)
+        #expect(model.routineRepeatType.wrappedValue == .none)
+
         model.routineRepeatType.wrappedValue = .interval
+        #expect(trackingCadenceEnabled)
         #expect(scheduleMode == .recordChecklist)
     }
 
@@ -466,13 +503,15 @@ struct TaskFormPresentationTests {
         recurrenceKind: RoutineRecurrenceRule.Kind = .intervalDays,
         frequencyUnit: TaskFormFrequencyUnit = .day,
         frequencyValue: Int = 1,
+        trackingCadenceEnabled: Bool = true,
         taskTypeBinding: Binding<RoutineTaskType>? = nil,
         scheduleModeBinding: Binding<RoutineScheduleMode>? = nil,
         recurrenceKindBinding: Binding<RoutineRecurrenceRule.Kind>? = nil,
         recurrenceWeekdayBinding: Binding<Int>? = nil,
         recurrenceDayOfMonthBinding: Binding<Int>? = nil,
         recurrenceWeekdaysBinding: Binding<[Int]>? = nil,
-        recurrenceDaysOfMonthBinding: Binding<[Int]>? = nil
+        recurrenceDaysOfMonthBinding: Binding<[Int]>? = nil,
+        trackingCadenceEnabledBinding: Binding<Bool>? = nil
     ) -> TaskFormModel {
         TaskFormModel(
             name: .constant("Task"),
@@ -540,6 +579,7 @@ struct TaskFormPresentationTests {
             recurrenceDaysOfMonth: recurrenceDaysOfMonthBinding ?? .constant([]),
             frequencyUnit: .constant(frequencyUnit),
             frequencyValue: .constant(frequencyValue),
+            trackingCadenceEnabled: trackingCadenceEnabledBinding ?? .constant(trackingCadenceEnabled),
             color: .constant(.none),
             visibilityMode: .progressiveCreate
         )

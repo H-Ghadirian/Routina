@@ -6,6 +6,8 @@ Date: 2026-07-16
 
 Refines: [0385 Use Gentle Routine Cadence for Tracking](0385-use-gentle-routine-cadence-for-tracking.md)
 
+Refined by: [0397 Make Tracking Cadence Optional](0397-make-tracking-cadence-optional.md)
+
 ## Context
 
 Tracking can repeat with loose routine cadence, but not every recurring thing should become a nudge. Some tracking happens irregularly or only after a while; for those items, the useful behavior is recording entries whenever they happen, without Routina surfacing them as ready or gently due.

@@ -117,6 +117,7 @@ struct AddRoutineSaveRequest: Equatable {
     let actualDurationMinutes: Int?
     let storyPoints: Int?
     let focusModeEnabled: Bool
+    let trackingCadenceEnabled: Bool
     let trackingNudgesEnabled: Bool
 
     init(
@@ -160,6 +161,7 @@ struct AddRoutineSaveRequest: Equatable {
         actualDurationMinutes: Int? = nil,
         storyPoints: Int? = nil,
         focusModeEnabled: Bool = false,
+        trackingCadenceEnabled: Bool = true,
         trackingNudgesEnabled: Bool = true
     ) {
         self.name = name
@@ -214,15 +216,23 @@ struct AddRoutineSaveRequest: Equatable {
             : recurrenceTimeRangeRole
         self.attachments = attachments
         self.color = color
+        self.trackingCadenceEnabled = scheduleMode.taskType == .record ? trackingCadenceEnabled : true
         self.autoAssumeDailyDone = autoAssumeDailyDone
-        self.autoAssumeDoneTimeOfDay = autoAssumeDailyDone ? autoAssumeDoneTimeOfDay : nil
+            && RoutineAssumedCompletion.isEligible(
+                scheduleMode: scheduleMode,
+                recurrenceRule: recurrenceRule,
+                trackingCadenceEnabled: self.trackingCadenceEnabled,
+                hasSequentialSteps: !self.steps.isEmpty,
+                hasChecklistItems: !self.checklistItems.isEmpty
+            )
+        self.autoAssumeDoneTimeOfDay = self.autoAssumeDailyDone ? autoAssumeDoneTimeOfDay : nil
         self.estimatedDurationMinutes = estimatedDurationMinutes
         self.actualDurationMinutes = scheduleMode.taskType == .record
             ? RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutes)
             : nil
         self.storyPoints = storyPoints
         self.focusModeEnabled = focusModeEnabled
-        self.trackingNudgesEnabled = scheduleMode.taskType == .record ? trackingNudgesEnabled : true
+        self.trackingNudgesEnabled = scheduleMode.taskType == .record ? (self.trackingCadenceEnabled && trackingNudgesEnabled) : true
     }
 
     init?(state: AddRoutineFeature.State, calendar: Calendar = .current) {
@@ -233,7 +243,10 @@ struct AddRoutineSaveRequest: Equatable {
         let schedule = state.schedule
         let checklist = state.checklist
 
-        let frequencyInDays = !schedule.scheduleMode.usesRoutineCadence
+        let trackingCadenceEnabled = schedule.scheduleMode.taskType == .record
+            ? basics.trackingCadenceEnabled
+            : true
+        let frequencyInDays = !schedule.scheduleMode.usesRoutineCadence || !trackingCadenceEnabled
             ? 1
             : TaskFormRecurrenceConstraints.effectiveIntervalDays(
                 value: schedule.frequencyValue,
@@ -245,11 +258,13 @@ struct AddRoutineSaveRequest: Equatable {
 
         self.name = state.trimmedRoutineName
         self.frequencyInDays = frequencyInDays
-        self.recurrenceRule = Self.selectedRecurrenceRule(
-            schedule: schedule,
-            fallbackInterval: frequencyInDays,
-            isAllDay: basics.isAllDay
-        )
+        self.recurrenceRule = trackingCadenceEnabled
+            ? Self.selectedRecurrenceRule(
+                schedule: schedule,
+                fallbackInterval: frequencyInDays,
+                isAllDay: basics.isAllDay
+            )
+            : .interval(days: 1)
         self.emoji = basics.routineEmoji
         self.notes = RoutineTask.sanitizedNotes(basics.routineNotes)
         let sanitizedLinks = RoutineTask.sanitizedLinkItems(fromEditorText: basics.routineLink)
@@ -273,7 +288,7 @@ struct AddRoutineSaveRequest: Equatable {
         )
         self.availabilityStartDate = schedule.scheduleMode.taskType == .todo ? availabilityDateBounds.startDate : nil
         self.availabilityEndDate = schedule.scheduleMode.taskType == .todo ? availabilityDateBounds.endDate : nil
-        self.plannedDate = RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+        self.plannedDate = !trackingCadenceEnabled || RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
                 scheduleMode: schedule.scheduleMode,
                 recurrenceRule: self.recurrenceRule,
                 checklistItems: sanitizedChecklistItems
@@ -314,13 +329,15 @@ struct AddRoutineSaveRequest: Equatable {
             : nil
         self.storyPoints = RoutineTask.sanitizedStoryPoints(basics.storyPoints)
         self.focusModeEnabled = basics.focusModeEnabled
+        self.trackingCadenceEnabled = trackingCadenceEnabled
         self.trackingNudgesEnabled = schedule.scheduleMode.taskType == .record
-            ? basics.trackingNudgesEnabled
+            ? trackingCadenceEnabled && basics.trackingNudgesEnabled
             : true
         self.autoAssumeDailyDone = schedule.autoAssumeDailyDone
             && RoutineAssumedCompletion.isEligible(
                 scheduleMode: self.scheduleMode,
                 recurrenceRule: self.recurrenceRule,
+                trackingCadenceEnabled: trackingCadenceEnabled,
                 hasSequentialSteps: !self.steps.isEmpty,
                 hasChecklistItems: !self.checklistItems.isEmpty
             )

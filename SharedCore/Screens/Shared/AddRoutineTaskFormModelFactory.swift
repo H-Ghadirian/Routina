@@ -166,6 +166,10 @@ struct AddRoutineTaskFormModelFactory {
                 get: { store.basics.focusModeEnabled },
                 send: AddRoutineFeature.Action.focusModeEnabledChanged
             ),
+            trackingCadenceEnabled: binding(
+                get: { store.basics.trackingCadenceEnabled },
+                send: AddRoutineFeature.Action.trackingCadenceEnabledChanged
+            ),
             trackingNudgesEnabled: binding(
                 get: { store.basics.trackingNudgesEnabled },
                 send: AddRoutineFeature.Action.trackingNudgesEnabledChanged

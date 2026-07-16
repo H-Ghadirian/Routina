@@ -105,6 +105,25 @@ struct HomeFilterPresentationTests {
     }
 
     @Test
+    func showingAssumedDoneTasksBelongsToTrackingNotRoutines() {
+        let routines = HomeFilterPresentation(
+            taskListKind: .routines,
+            hideAssumedDoneTasks: false
+        )
+        let tracking = HomeFilterPresentation(
+            taskListKind: .records,
+            hideAssumedDoneTasks: false
+        )
+
+        #expect(!routines.showsAssumedDoneVisibilityFilter)
+        #expect(routines.activeOptionalFilterCount == 0)
+        #expect(routines.filterLabels == ["Routines"])
+        #expect(tracking.showsAssumedDoneVisibilityFilter)
+        #expect(tracking.activeOptionalFilterCount == 1)
+        #expect(tracking.filterLabels == ["Tracking", "Showing assumed done"])
+    }
+
+    @Test
     func statusFiltersHideDoneTodayForTodos() {
         #expect(HomeFilterPresentation(taskListKind: .all).availableStatusFilters == [.all, .due, .doneToday])
         #expect(HomeFilterPresentation(taskListKind: .routines).availableStatusFilters == [.all, .due, .doneToday])

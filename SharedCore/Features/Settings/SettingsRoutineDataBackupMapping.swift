@@ -91,6 +91,7 @@ enum SettingsRoutineDataBackupMapping {
             actualDurationMinutes: task.actualDurationMinutes,
             storyPoints: task.storyPoints,
             showsTaskDetailHeatmap: task.showsTaskDetailHeatmap,
+            trackingCadenceEnabled: task.trackingCadenceEnabled,
             trackingNudgesEnabled: task.trackingNudgesEnabled,
             pressure: includesPressure ? task.pressure : nil,
             pressureUpdatedAt: includesPressure ? task.pressureUpdatedAt : nil,

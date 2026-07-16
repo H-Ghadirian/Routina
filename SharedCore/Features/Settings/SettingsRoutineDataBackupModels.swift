@@ -103,6 +103,7 @@ extension SettingsRoutineDataPersistence {
             var actualDurationMinutes: Int?
             var storyPoints: Int?
             var showsTaskDetailHeatmap: Bool?
+            var trackingCadenceEnabled: Bool?
             var trackingNudgesEnabled: Bool?
             var pressure: RoutineTaskPressure?
             var pressureUpdatedAt: Date?

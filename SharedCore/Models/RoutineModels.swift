@@ -72,6 +72,7 @@ final class RoutineTask {
     var actualDurationMinutes: Int?
     var storyPoints: Int?
     var focusModeEnabled: Bool = false
+    var trackingCadenceEnabled: Bool = true
     var trackingNudgesEnabled: Bool = true
     var showsTaskDetailHeatmap: Bool = false
     var commentsStorage: String = ""
@@ -438,13 +439,17 @@ final class RoutineTask {
         actualDurationMinutes: Int? = nil,
         storyPoints: Int? = nil,
         focusModeEnabled: Bool = false,
+        trackingCadenceEnabled: Bool = true,
         trackingNudgesEnabled: Bool = true,
         showsTaskDetailHeatmap: Bool = false,
         comments: [RoutineTaskComment] = []
     ) {
         let resolvedScheduleMode = scheduleMode ?? (checklistItems.isEmpty ? .fixedInterval : .derivedFromChecklist)
+        let resolvedTrackingCadenceEnabled = resolvedScheduleMode.taskType == .record ? trackingCadenceEnabled : true
         let resolvedChecklistItems = checklistItems
-        let inputRecurrenceRule = recurrenceRule ?? RoutineRecurrenceRule.interval(days: max(Int(interval), 1))
+        let inputRecurrenceRule = resolvedTrackingCadenceEnabled
+            ? (recurrenceRule ?? RoutineRecurrenceRule.interval(days: max(Int(interval), 1)))
+            : .interval(days: 1)
         let resolvedRecurrenceRule: RoutineRecurrenceRule
         switch resolvedScheduleMode.taskType {
         case .routine, .record:
@@ -506,10 +511,10 @@ final class RoutineTask {
         self.recurrenceTimeRangeRole = resolvedRecurrenceRule.timeRange == nil
             ? .availability
             : recurrenceTimeRangeRole
-        self.interval = Int16(clamping: resolvedScheduleMode.usesRoutineCadence ? resolvedRecurrenceRule.approximateIntervalDays : 1)
+        self.interval = Int16(clamping: resolvedScheduleMode.usesRoutineCadence && resolvedTrackingCadenceEnabled ? resolvedRecurrenceRule.approximateIntervalDays : 1)
         self.lastDone = lastDone
         self.canceledAt = resolvedScheduleMode == .oneOff ? canceledAt : nil
-        self.scheduleAnchor = resolvedScheduleMode == .oneOff ? lastDone : (scheduleAnchor ?? lastDone)
+        self.scheduleAnchor = resolvedScheduleMode == .oneOff || !resolvedTrackingCadenceEnabled ? lastDone : (scheduleAnchor ?? lastDone)
         self.pausedAt = pausedAt
         self.snoozedUntil = snoozedUntil
         self.pinnedAt = pinnedAt
@@ -527,7 +532,8 @@ final class RoutineTask {
         self.actualDurationMinutes = Self.sanitizedActualDurationMinutes(actualDurationMinutes)
         self.storyPoints = Self.sanitizedStoryPoints(storyPoints)
         self.focusModeEnabled = focusModeEnabled
-        self.trackingNudgesEnabled = resolvedScheduleMode.taskType == .record ? trackingNudgesEnabled : true
+        self.trackingCadenceEnabled = resolvedTrackingCadenceEnabled
+        self.trackingNudgesEnabled = resolvedScheduleMode.taskType == .record ? (resolvedTrackingCadenceEnabled && trackingNudgesEnabled) : true
         self.showsTaskDetailHeatmap = showsTaskDetailHeatmap
         self.commentsStorage = RoutineTaskCommentStorage.serialize(comments)
         var initialChanges = [
@@ -814,6 +820,7 @@ final class RoutineTask {
             actualDurationMinutes: actualDurationMinutes,
             storyPoints: storyPoints,
             focusModeEnabled: focusModeEnabled,
+            trackingCadenceEnabled: trackingCadenceEnabled,
             trackingNudgesEnabled: trackingNudgesEnabled,
             showsTaskDetailHeatmap: showsTaskDetailHeatmap,
             comments: comments

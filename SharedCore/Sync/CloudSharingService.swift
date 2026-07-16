@@ -68,6 +68,7 @@ enum CloudSharingService {
         var actualDurationMinutes: Int?
         var storyPoints: Int?
         var focusModeEnabled: Bool
+        var trackingCadenceEnabled: Bool?
         var trackingNudgesEnabled: Bool?
         var comments: [RoutineTaskComment]?
     }
@@ -324,6 +325,7 @@ extension CloudSharingService.SharedTaskPayload {
         self.actualDurationMinutes = task.actualDurationMinutes
         self.storyPoints = task.storyPoints
         self.focusModeEnabled = task.focusModeEnabled
+        self.trackingCadenceEnabled = task.trackingCadenceEnabled
         self.trackingNudgesEnabled = task.trackingNudgesEnabled
         self.comments = task.comments
     }
@@ -397,7 +399,8 @@ extension CloudSharingService.SharedTaskPayload {
         task.actualDurationMinutes = RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutes)
         task.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
         task.focusModeEnabled = focusModeEnabled
-        task.trackingNudgesEnabled = scheduleMode.taskType == .record ? (trackingNudgesEnabled ?? true) : true
+        task.trackingCadenceEnabled = scheduleMode.taskType == .record ? (trackingCadenceEnabled ?? true) : true
+        task.trackingNudgesEnabled = scheduleMode.taskType == .record ? (task.trackingCadenceEnabled && (trackingNudgesEnabled ?? true)) : true
         task.comments = comments ?? []
     }
 }
@@ -460,6 +463,7 @@ private extension RoutineTask {
             actualDurationMinutes: payload.actualDurationMinutes,
             storyPoints: payload.storyPoints,
             focusModeEnabled: payload.focusModeEnabled,
+            trackingCadenceEnabled: payload.trackingCadenceEnabled ?? true,
             trackingNudgesEnabled: payload.trackingNudgesEnabled ?? true,
             comments: payload.comments ?? []
         )

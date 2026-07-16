@@ -78,6 +78,7 @@ func makeSaveRequest(
     actualDurationMinutes: Int? = nil,
     storyPoints: Int? = nil,
     focusModeEnabled: Bool = false,
+    trackingCadenceEnabled: Bool = true,
     trackingNudgesEnabled: Bool = true
 ) -> AddRoutineSaveRequest {
     AddRoutineSaveRequest(
@@ -116,6 +117,7 @@ func makeSaveRequest(
         actualDurationMinutes: actualDurationMinutes,
         storyPoints: storyPoints,
         focusModeEnabled: focusModeEnabled,
+        trackingCadenceEnabled: trackingCadenceEnabled,
         trackingNudgesEnabled: trackingNudgesEnabled
     )
 }

@@ -2,8 +2,7 @@ import Foundation
 
 enum RoutineDateMath {
     static func usesExactTimedOccurrenceTracking(for task: RoutineTask) -> Bool {
-        task.scheduleMode.taskType == .routine
-            && !task.isOneOffTask
+        task.usesEffectiveRoutineCadence
             && task.recurrenceRule.usesTimeConstraint
             && !task.isChecklistDriven
     }

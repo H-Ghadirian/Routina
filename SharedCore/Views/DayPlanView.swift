@@ -5475,7 +5475,7 @@ private struct DayPlanTimelineReferenceAssumptionBucket: Equatable {
     }
 
     private static func availabilityBoundaryMinute(for task: RoutineTask) -> Int? {
-        guard task.autoAssumeDailyDone else { return nil }
+        guard RoutineAssumedCompletion.isEligible(task) else { return nil }
 
         if let hour = task.recurrenceTimeRangeStartHour,
            let minute = task.recurrenceTimeRangeStartMinute {
@@ -7310,6 +7310,10 @@ private struct DayPlanLifecycleModifier: ViewModifier {
                 task.pausedAt?.timeIntervalSinceReferenceDate.description ?? "",
                 task.snoozedUntil?.timeIntervalSinceReferenceDate.description ?? "",
                 task.estimatedDurationMinutes?.description ?? "",
+                task.autoAssumeDailyDone.description,
+                task.autoAssumeDoneTimeOfDayHour?.description ?? "",
+                task.autoAssumeDoneTimeOfDayMinute?.description ?? "",
+                task.trackingCadenceEnabled.description,
             ].joined(separator: ":")
         }
         .sorted()

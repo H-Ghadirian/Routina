@@ -745,7 +745,7 @@ struct TaskFormMacBehaviorCard: View {
             calendarPatternControl
         }
 
-        if model.taskType.wrappedValue == .record {
+        if model.taskType.wrappedValue == .record && model.routineRepeatType.wrappedValue != .none {
             TaskFormMacControlBlock(title: "Nudges") {
                 Toggle("Nudges", isOn: model.trackingNudgesEnabled)
                     .toggleStyle(.switch)
@@ -753,6 +753,9 @@ struct TaskFormMacBehaviorCard: View {
         }
 
         switch model.routineRepeatType.wrappedValue {
+        case .none:
+            EmptyView()
+
         case .interval:
             TaskFormMacControlBlock(title: "Repeat") {
                 frequencyStepper(prefix: intervalFrequencyPrefix)
@@ -1169,7 +1172,8 @@ struct TaskFormMacBehaviorCard: View {
     }
 
     private var showsAssumedDoneControl: Bool {
-        model.canAutoAssumeDailyDone || model.autoAssumeDailyDone.wrappedValue
+        model.canAutoAssumeDailyDone
+            || (model.taskType.wrappedValue == .record && model.autoAssumeDailyDone.wrappedValue)
     }
 
     private var assumedDoneControl: some View {

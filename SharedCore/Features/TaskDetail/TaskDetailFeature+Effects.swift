@@ -442,6 +442,7 @@ extension TaskDetailFeature {
             actualDurationMinutes: request.actualDurationMinutes,
             storyPoints: request.storyPoints,
             focusModeEnabled: request.focusModeEnabled,
+            trackingCadenceEnabled: request.trackingCadenceEnabled,
             trackingNudgesEnabled: request.trackingNudgesEnabled
         )
     }
@@ -486,6 +487,7 @@ extension TaskDetailFeature {
         actualDurationMinutes: Int?,
         storyPoints: Int?,
         focusModeEnabled: Bool,
+        trackingCadenceEnabled: Bool,
         trackingNudgesEnabled: Bool
     ) -> Effect<Action> {
         .run { @MainActor send in
@@ -571,6 +573,7 @@ extension TaskDetailFeature {
                     && RoutineAssumedCompletion.isEligible(
                         scheduleMode: scheduleMode,
                         recurrenceRule: recurrenceRule,
+                        trackingCadenceEnabled: trackingCadenceEnabled,
                         hasSequentialSteps: !steps.isEmpty,
                         hasChecklistItems: !checklistItems.isEmpty
                     )
@@ -597,8 +600,9 @@ extension TaskDetailFeature {
                 }
                 task.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
                 task.focusModeEnabled = focusModeEnabled
-                task.trackingNudgesEnabled = scheduleMode.taskType == .record ? trackingNudgesEnabled : true
-                if !scheduleMode.usesRoutineCadence {
+                task.trackingCadenceEnabled = scheduleMode.taskType == .record ? trackingCadenceEnabled : true
+                task.trackingNudgesEnabled = scheduleMode.taskType == .record ? (trackingCadenceEnabled && trackingNudgesEnabled) : true
+                if !scheduleMode.usesRoutineCadence || !task.trackingCadenceEnabled {
                     task.scheduleAnchor = task.lastDone
                     task.interval = 1
                 } else if previousScheduleMode != scheduleMode || previousRecurrenceRule != recurrenceRule {
@@ -685,7 +689,7 @@ extension TaskDetailFeature {
                 WidgetStatsService.refreshAndReload(using: context)
                 NotificationCenter.default.postRoutineDidUpdate()
             } catch {
-                print("Error confirming assumed routine days: \(error)")
+                print("Error confirming assumed task days: \(error)")
             }
         }
     }

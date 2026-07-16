@@ -394,6 +394,7 @@ struct HomeMacTaskListRelationshipTaskSignature: Equatable {
     let autoAssumeDailyDone: Bool
     let autoAssumeDoneTimeOfDayHour: Int?
     let autoAssumeDoneTimeOfDayMinute: Int?
+    let trackingCadenceEnabled: Bool
 
     init(task: RoutineTask) {
         id = task.id
@@ -427,5 +428,6 @@ struct HomeMacTaskListRelationshipTaskSignature: Equatable {
         autoAssumeDailyDone = task.autoAssumeDailyDone
         autoAssumeDoneTimeOfDayHour = task.autoAssumeDoneTimeOfDayHour
         autoAssumeDoneTimeOfDayMinute = task.autoAssumeDoneTimeOfDayMinute
+        trackingCadenceEnabled = task.trackingCadenceEnabled
     }
 }
