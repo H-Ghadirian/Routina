@@ -8,6 +8,9 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
     static var ungroupedManualOrderSectionKey: String { "tasks" }
     static var dailyManualOrderSectionKey: String { "daily" }
     static var archivedManualOrderSectionKey: String { "archived" }
+    static func customManualOrderSectionKey(for sectionID: UUID) -> String {
+        HomeCustomTaskSectionStorage.manualOrderSectionKey(for: sectionID)
+    }
 
     var configuration: HomeTaskListFilteringConfiguration
     var metrics: HomeTaskListMetrics<Display>
@@ -174,6 +177,20 @@ struct HomeTaskListSorter<Display: HomeTaskListDisplay> {
             rhs,
             sectionKey: Self.trackingManualOrderSectionKey,
             otherSectionKey: Self.trackingManualOrderSectionKey
+        ) {
+            return manualOrderComparison
+        }
+
+        return regularTaskSort(lhs, rhs)
+    }
+
+    func customTaskSectionSort(_ lhs: Display, _ rhs: Display, sectionID: UUID) -> Bool {
+        let sectionKey = Self.customManualOrderSectionKey(for: sectionID)
+        if let manualOrderComparison = manualOrderSortResult(
+            lhs,
+            rhs,
+            sectionKey: sectionKey,
+            otherSectionKey: sectionKey
         ) {
             return manualOrderComparison
         }

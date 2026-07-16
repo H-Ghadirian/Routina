@@ -10,6 +10,7 @@ final class RoutinaUserPreferences {
     var appColorScheme: String?
     var routineListSectioningMode: String?
     var tagCounterDisplayMode: String?
+    var customTaskSections: String?
     var homeTaskRowHiddenFields: String?
     var homeTimelineRowHiddenFields: String?
     var relatedTagRules: String?
@@ -159,6 +160,7 @@ enum RoutinaUserPreferencesStore {
             rawValue: defaults[.appSettingRoutineListSectioningMode]
         ).rawValue
         preferences.tagCounterDisplayMode = defaults[.appSettingTagCounterDisplayMode]
+        preferences.customTaskSections = defaults[.appSettingCustomTaskSections]
         preferences.homeTaskRowHiddenFields = defaults[.appSettingHomeTaskRowHiddenFields]
         preferences.homeTimelineRowHiddenFields = defaults[.appSettingHomeTimelineRowHiddenFields]
         preferences.relatedTagRules = defaults[.appSettingRelatedTagRules]
@@ -222,6 +224,7 @@ enum RoutinaUserPreferencesStore {
             rawValue: preferences.routineListSectioningMode
         ).rawValue
         defaults[.appSettingTagCounterDisplayMode] = preferences.tagCounterDisplayMode
+        defaults[.appSettingCustomTaskSections] = preferences.customTaskSections
         defaults[.appSettingHomeTaskRowHiddenFields] = preferences.homeTaskRowHiddenFields
         defaults[.appSettingHomeTimelineRowHiddenFields] = preferences.homeTimelineRowHiddenFields
         defaults[.appSettingRelatedTagRules] = preferences.relatedTagRules

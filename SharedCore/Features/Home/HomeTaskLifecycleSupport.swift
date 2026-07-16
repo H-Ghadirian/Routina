@@ -34,6 +34,7 @@ struct HomePinTaskUpdate: Equatable {
 struct HomePlanTaskUpdate: Equatable {
     var taskID: UUID
     var plannedDate: Date?
+    var customTaskSectionID: UUID? = nil
 }
 
 struct HomeUnpinTaskUpdate: Equatable {
@@ -458,10 +459,17 @@ enum HomeTaskLifecycleSupport {
         guard tasks[index].isOneOffTask || !tasks[index].isDailyRoutineForTaskList else { return nil }
 
         let normalizedDate = RoutineTask.normalizedPlannedDate(plannedDate, calendar: calendar)
-        guard tasks[index].plannedDate != normalizedDate else { return nil }
+        let customTaskSectionID = normalizedDate == nil ? tasks[index].customTaskSectionID : nil
+        guard tasks[index].plannedDate != normalizedDate
+            || tasks[index].customTaskSectionID != customTaskSectionID else { return nil }
 
         tasks[index].plannedDate = normalizedDate
-        return HomePlanTaskUpdate(taskID: taskID, plannedDate: normalizedDate)
+        tasks[index].customTaskSectionID = customTaskSectionID
+        return HomePlanTaskUpdate(
+            taskID: taskID,
+            plannedDate: normalizedDate,
+            customTaskSectionID: customTaskSectionID
+        )
     }
 
     static func unpinTask(

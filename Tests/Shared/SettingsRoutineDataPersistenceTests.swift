@@ -155,6 +155,14 @@ struct SettingsRoutineDataPersistenceTests {
         defaults[.appSettingSeparateTodosAndRoutinesInTagTaskListSections] = true
         defaults[.appSettingSeparateDeadlineStatusInTagTaskListSections] = true
         defaults.set(35, forKey: BatteryRoutinePreferences.thresholdPercentDefaultsKey)
+        let customTaskSectionsRawValue = HomeCustomTaskSectionStorage.encoded([
+            HomeCustomTaskSection(
+                id: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!,
+                title: "Work",
+                createdAt: nil
+            )
+        ])
+        defaults[.appSettingCustomTaskSections] = customTaskSectionsRawValue
 
         let package = try SettingsRoutineDataPersistence.buildBackupPackage(from: context)
         let backup = try SettingsRoutineDataBackupCoding.decodeBackup(from: package.manifestData)
@@ -172,6 +180,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(backup.userPreferences?.separateDeadlineStatusInTagTaskListSections == true)
         #expect(backup.userPreferences?.showTomorrowInTaskList == true)
         #expect(backup.userPreferences?.macShowDoneCountInToolbar == true)
+        #expect(backup.userPreferences?.customTaskSections == customTaskSectionsRawValue)
 
         let restoreContext = makeInMemoryContext()
         let summary = try SettingsRoutineDataPersistence.replaceAllRoutineData(
@@ -186,6 +195,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(restored.relatedTagRules == "[{\"tag\":\"Focus\",\"relatedTags\":[\"Deep Work\"]}]")
         #expect(restored.tagColors == "{\"Focus\":\"#112233\"}")
         #expect(restored.fastFilterTags == "Focus,Health")
+        #expect(restored.customTaskSections == customTaskSectionsRawValue)
         #expect(restored.iOSStatsDashboardHiddenItemIDs == "movement")
         #expect(restored.macStatsDashboardItemOrderIDs == "done,focus")
         #expect(restored.protectionBlockingEnabledModes == ProtectionBlockingMode.encodedSet([.focus]))

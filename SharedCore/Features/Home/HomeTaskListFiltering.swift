@@ -29,6 +29,10 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
         HomeTaskListSorter<Display>.archivedManualOrderSectionKey
     }
 
+    static func customManualOrderSectionKey(for sectionID: UUID) -> String {
+        HomeTaskListSorter<Display>.customManualOrderSectionKey(for: sectionID)
+    }
+
     private var predicate: HomeTaskListPredicate<Display>
     private var sorter: HomeTaskListSorter<Display>
     private var sectionBuilder: HomeTaskListSectionBuilder<Display>
@@ -191,6 +195,19 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
                 task.scheduleMode.taskType == .record && predicate.matchesVisibleTask(task)
             }
             .sorted(by: sorter.trackingTaskSort)
+    }
+
+    func filteredCustomTaskSectionTasks(
+        _ displays: [Display],
+        sectionID: UUID
+    ) -> [Display] {
+        displays
+            .filter { task in
+                task.customTaskSectionID == sectionID && predicate.matchesVisibleTask(task)
+            }
+            .sorted { lhs, rhs in
+                sorter.customTaskSectionSort(lhs, rhs, sectionID: sectionID)
+            }
     }
 
     private func filteredPlannedTasks(

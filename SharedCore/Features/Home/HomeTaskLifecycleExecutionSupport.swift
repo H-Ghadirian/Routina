@@ -435,6 +435,7 @@ enum HomeTaskLifecycleExecutionSupport {
                     return
                 }
                 task.plannedDate = update.plannedDate
+                task.customTaskSectionID = update.customTaskSectionID
                 DeviceActivityRecorder.recordAction(
                     .updated,
                     entity: .task,

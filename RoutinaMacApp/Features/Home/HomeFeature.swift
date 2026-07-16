@@ -603,6 +603,7 @@ struct HomeFeature {
         case resumeTask(UUID)
         case pinTask(UUID)
         case planTask(UUID, Date?)
+        case moveTaskToCustomSection(taskID: UUID, sectionID: UUID?)
         case unpinTask(UUID)
         case moveTaskInSection(taskID: UUID, sectionKey: String, orderedTaskIDs: [UUID], direction: MoveDirection)
         case setTaskOrderInSection(sectionKey: String, orderedTaskIDs: [UUID])
@@ -1427,6 +1428,13 @@ struct HomeFeature {
             case let .planTask(id, plannedDate):
                 return taskLifecycleCommandRouter().planTask(id, plannedDate: plannedDate, state: &state)
 
+            case let .moveTaskToCustomSection(taskID, sectionID):
+                return moveTaskToCustomSection(
+                    taskID: taskID,
+                    sectionID: sectionID,
+                    state: &state
+                )
+
             case let .unpinTask(id):
                 return taskLifecycleCommandRouter().unpinTask(id, state: &state)
 
@@ -1637,6 +1645,78 @@ struct HomeFeature {
             ),
             state: &state
         )
+    }
+
+    private func moveTaskToCustomSection(
+        taskID: UUID,
+        sectionID: UUID?,
+        state: inout State
+    ) -> Effect<Action> {
+        guard let index = state.routineTasks.firstIndex(where: { $0.id == taskID }) else {
+            return .none
+        }
+
+        let task = state.routineTasks[index]
+        let plannedDate = sectionID == nil ? task.plannedDate : nil
+        var manualSectionOrders = task.manualSectionOrders
+        if let sectionID {
+            let sectionKey = HomeCustomTaskSectionStorage.manualOrderSectionKey(for: sectionID)
+            if manualSectionOrders[sectionKey] == nil {
+                manualSectionOrders[sectionKey] = nextManualOrder(in: sectionKey, tasks: state.routineTasks)
+            }
+        }
+
+        guard task.customTaskSectionID != sectionID
+            || task.plannedDate != plannedDate
+            || task.manualSectionOrders != manualSectionOrders else {
+            return .none
+        }
+
+        task.customTaskSectionID = sectionID
+        task.plannedDate = plannedDate
+        task.manualSectionOrders = manualSectionOrders
+        state.routineTasks[index] = task
+
+        return postMutationRefresher().finishMutation(
+            persistCustomTaskSectionAssignment(
+                taskID: taskID,
+                sectionID: sectionID,
+                plannedDate: plannedDate,
+                manualSectionOrders: manualSectionOrders
+            ),
+            state: &state
+        )
+    }
+
+    private func persistCustomTaskSectionAssignment(
+        taskID: UUID,
+        sectionID: UUID?,
+        plannedDate: Date?,
+        manualSectionOrders: [String: Int]
+    ) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = modelContext()
+                guard let task = try context.fetch(HomeTaskSupport.taskDescriptor(for: taskID)).first else {
+                    return
+                }
+                task.customTaskSectionID = sectionID
+                task.plannedDate = plannedDate
+                task.manualSectionOrders = manualSectionOrders
+                DeviceActivityRecorder.recordAction(
+                    .updated,
+                    entity: .task,
+                    entityID: taskID,
+                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                    details: sectionID == nil ? "Cleared custom task section" : "Moved task to custom section",
+                    in: context
+                )
+                try context.save()
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Failed to move task to custom section: \(error)")
+            }
+        }
     }
 
     static func boardSectionKey(for state: TodoState) -> String {

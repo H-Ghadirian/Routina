@@ -73,6 +73,7 @@ extension HomeTCAView {
             showArchivedTasks: store.showArchivedTasks,
             separateDailyRoutinesInTaskList: separatesDailyRoutinesInTaskList,
             showTomorrowSection: showsTomorrowInTaskList,
+            customSections: customTaskSections,
             separateTodosAndRoutinesInTagSections: separatesTodosAndRoutinesInTagTaskListSections,
             separateDeadlineStatusInTagSections: separatesDeadlineStatusInTagTaskListSections,
             emptyState: emptyState,
@@ -110,6 +111,7 @@ extension HomeTCAView {
                 showArchivedTasks: store.showArchivedTasks,
                 separateDailyRoutinesInTaskList: separatesDailyRoutinesInTaskList,
                 showTomorrowSection: showsTomorrowInTaskList,
+                customSections: customTaskSections,
                 separateTodosAndRoutinesInTagSections: separatesTodosAndRoutinesInTagTaskListSections,
                 emptyState: emptyState
             )
@@ -222,6 +224,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
     let showArchivedTasks: Bool
     let separateDailyRoutinesInTaskList: Bool
     let showTomorrowSection: Bool
+    let customSections: [HomeCustomTaskSection]
     let separateTodosAndRoutinesInTagSections: Bool
     let separateDeadlineStatusInTagSections: Bool
     let emptyState: HomeTaskListEmptyState
@@ -260,6 +263,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         showArchivedTasks: Bool,
         separateDailyRoutinesInTaskList: Bool,
         showTomorrowSection: Bool,
+        customSections: [HomeCustomTaskSection],
         separateTodosAndRoutinesInTagSections: Bool,
         separateDeadlineStatusInTagSections: Bool,
         emptyState: HomeTaskListEmptyState,
@@ -302,6 +306,7 @@ struct HomeMacTaskListPresentationSignature: Equatable {
         self.showArchivedTasks = showArchivedTasks
         self.separateDailyRoutinesInTaskList = separateDailyRoutinesInTaskList
         self.showTomorrowSection = showTomorrowSection
+        self.customSections = HomeCustomTaskSectionStorage.sanitized(customSections)
         self.separateTodosAndRoutinesInTagSections = separateTodosAndRoutinesInTagSections
         self.separateDeadlineStatusInTagSections = separateDeadlineStatusInTagSections
         self.emptyState = emptyState

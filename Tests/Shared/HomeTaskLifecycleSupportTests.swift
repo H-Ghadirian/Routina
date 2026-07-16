@@ -355,6 +355,35 @@ struct HomeTaskLifecycleSupportTests {
     }
 
     @Test
+    func planTaskClearsCustomSectionAssignmentWhenDateIsSet() {
+        let calendar = makeTestCalendar()
+        let customSectionID = UUID()
+        let task = RoutineTask(
+            name: "Draft outline",
+            customTaskSectionID: customSectionID,
+            scheduleMode: .oneOff
+        )
+        let plannedDate = makeDate("2026-06-10T16:20:00Z")
+        let normalizedDate = calendar.startOfDay(for: plannedDate)
+        var tasks = [task]
+
+        let update = HomeTaskLifecycleSupport.planTask(
+            taskID: task.id,
+            plannedDate: plannedDate,
+            calendar: calendar,
+            tasks: &tasks
+        )
+
+        #expect(update == HomePlanTaskUpdate(
+            taskID: task.id,
+            plannedDate: normalizedDate,
+            customTaskSectionID: nil
+        ))
+        #expect(tasks[0].plannedDate == normalizedDate)
+        #expect(tasks[0].customTaskSectionID == nil)
+    }
+
+    @Test
     func planTaskDoesNotPlanDailyRoutine() {
         let calendar = makeTestCalendar()
         let task = RoutineTask(

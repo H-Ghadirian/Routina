@@ -269,6 +269,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 links: task.links ?? task.link.map { [$0] } ?? [],
                 deadline: task.deadline,
                 plannedDate: task.plannedDate,
+                customTaskSectionID: task.customTaskSectionID,
                 isAllDay: task.isAllDay ?? false,
                 routineDurationMode: task.scheduleMode == .oneOff
                     ? .oneDay
@@ -1051,6 +1052,7 @@ enum SettingsRoutineDataImportEntityInserter {
         preferences.appColorScheme = backupPreferences.appColorScheme
         preferences.routineListSectioningMode = backupPreferences.routineListSectioningMode
         preferences.tagCounterDisplayMode = backupPreferences.tagCounterDisplayMode
+        preferences.customTaskSections = backupPreferences.customTaskSections
         preferences.homeTaskRowHiddenFields = backupPreferences.homeTaskRowHiddenFields
         preferences.relatedTagRules = backupPreferences.relatedTagRules
         preferences.tagColors = backupPreferences.tagColors

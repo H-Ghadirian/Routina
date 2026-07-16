@@ -11,6 +11,7 @@ final class RoutineTask {
     var linksStorage: String = ""
     var deadline: Date?
     var plannedDate: Date?
+    var customTaskSectionIDRawValue: String?
     var isAllDay: Bool = false
     var routineDurationModeRawValue: String = RoutineDurationMode.oneDay.rawValue
     var availabilityStartDate: Date?
@@ -201,6 +202,16 @@ final class RoutineTask {
         }
     }
 
+    var customTaskSectionID: UUID? {
+        get {
+            guard let customTaskSectionIDRawValue else { return nil }
+            return UUID(uuidString: customTaskSectionIDRawValue)
+        }
+        set {
+            customTaskSectionIDRawValue = newValue?.uuidString.lowercased()
+        }
+    }
+
     var placeIDs: [UUID] {
         get {
             let storedPlaceIDs = RoutinePlaceIDStorage.deserialize(placeIDsStorage)
@@ -380,6 +391,7 @@ final class RoutineTask {
         links: [String] = [],
         deadline: Date? = nil,
         plannedDate: Date? = nil,
+        customTaskSectionID: UUID? = nil,
         isAllDay: Bool = false,
         routineDurationMode: RoutineDurationMode = .oneDay,
         availabilityStartDate: Date? = nil,
@@ -454,6 +466,7 @@ final class RoutineTask {
         self.linksStorage = RoutineTaskLinkStorage.serializeItems(sanitizedLinks)
         self.deadline = resolvedScheduleMode == .oneOff ? deadline : nil
         self.plannedDate = Self.normalizedPlannedDate(plannedDate)
+        self.customTaskSectionIDRawValue = customTaskSectionID?.uuidString.lowercased()
         self.isAllDay = isAllDay
         self.routineDurationModeRawValue = resolvedScheduleMode.taskType == .todo
             ? RoutineDurationMode.oneDay.rawValue
@@ -752,6 +765,7 @@ final class RoutineTask {
             links: links,
             deadline: deadline,
             plannedDate: plannedDate,
+            customTaskSectionID: customTaskSectionID,
             isAllDay: isAllDay,
             routineDurationMode: routineDurationMode,
             availabilityStartDate: availabilityStartDate,

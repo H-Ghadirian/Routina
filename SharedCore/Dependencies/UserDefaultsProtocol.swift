@@ -95,6 +95,7 @@ enum AppSettingsDefaults {
     static let stringValues: [String: String] = [
         UserDefaultStringValueKey.appSettingRoutineListSectioningMode.rawValue: RoutineListSectioningMode.defaultValue.rawValue,
         UserDefaultStringValueKey.appSettingCollapsedTagTaskListSections.rawValue: "",
+        UserDefaultStringValueKey.appSettingCustomTaskSections.rawValue: "",
         UserDefaultStringValueKey.appSettingHomeTaskRowHiddenFields.rawValue: "",
         UserDefaultStringValueKey.appSettingHomeTimelineRowHiddenFields.rawValue: "",
         UserDefaultStringValueKey.appSettingProtectionBlockingEnabledModes.rawValue: ProtectionBlockingMode.encodedSet(
@@ -124,6 +125,7 @@ enum AppSettingsDefaults {
         .appSettingMacStatsSummaryDisplayMode,
         .appSettingHiddenDayPlanTimelineActivityIDs,
         .appSettingTemporaryViewState,
+        .appSettingCustomTaskSections,
         .appSettingBlockingWebsiteDomains,
         .appSettingFocusShieldSelection,
         .appSettingMacFocusBlockedApps,
@@ -194,6 +196,7 @@ public enum UserDefaultStringValueKey: String, Sendable {
     case appSettingAppColorScheme
     case appSettingRoutineListSectioningMode
     case appSettingCollapsedTagTaskListSections
+    case appSettingCustomTaskSections
     case appSettingTagCounterDisplayMode
     case appSettingHomeTaskRowHiddenFields
     case appSettingHomeTimelineRowHiddenFields

@@ -224,6 +224,7 @@ let package = Package(
                 "SharedCore/Features/Home/HomeFeatureTaskListModeRouter.swift",
                 "SharedCore/Features/Home/HomeReloadGuardSupport.swift",
                 "SharedCore/Features/Home/HomeSelectionSupport.swift",
+                "SharedCore/Features/Home/HomeCustomTaskSection.swift",
                 "SharedCore/Features/Home/HomeTaskDeletionSupport.swift",
                 "SharedCore/Features/Home/HomeTaskListDisplay.swift",
                 "SharedCore/Features/Home/HomeTaskAdvancedQuery.swift",

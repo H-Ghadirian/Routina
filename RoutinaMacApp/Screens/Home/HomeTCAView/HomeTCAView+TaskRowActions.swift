@@ -117,14 +117,21 @@ extension HomeTCAView {
             }
         }
 
-        if !presentation.moveActions.isEmpty {
-            menu.addItem(.separator())
-            menu.addMoveToSubmenu(
-                actions: presentation.moveActions,
-                taskID: task.taskID,
-                commandHandler: homeTaskRowCommandHandler
-            )
-        }
+        menu.addItem(.separator())
+        menu.addMoveToSubmenu(
+            actions: presentation.moveActions,
+            customSections: customTaskSections,
+            currentCustomSectionID: task.customTaskSectionID,
+            defaultSectionTitle: defaultTaskSectionTitle(for: task),
+            taskID: task.taskID,
+            commandHandler: homeTaskRowCommandHandler,
+            moveToCustomSection: { sectionID in
+                moveTaskToCustomSection(task.taskID, sectionID: sectionID)
+            },
+            createCustomSection: {
+                presentCustomTaskSectionPrompt(for: task.taskID)
+            }
+        )
 
         if !task.isDailyRoutine || presentation.notTodayCommand != nil {
             menu.addItem(.separator())
@@ -177,11 +184,78 @@ extension HomeTCAView {
         revealTaskListSection(sectionID: sectionID, taskID: taskID)
     }
 
+    func moveTaskToCustomSection(_ taskID: UUID, sectionID: UUID?) {
+        if let sectionID {
+            revealCustomTaskSection(sectionID, taskID: taskID)
+        }
+        store.send(.moveTaskToCustomSection(taskID: taskID, sectionID: sectionID))
+    }
+
+    var customTaskSections: [HomeCustomTaskSection] {
+        HomeCustomTaskSectionStorage.decoded(from: customTaskSectionsRawValue)
+    }
+
+    func presentCustomTaskSectionPrompt(for taskID: UUID?) {
+        pendingCustomTaskSectionTaskID = taskID
+        customTaskSectionNameDraft = ""
+        isCustomTaskSectionPromptPresented = true
+    }
+
+    func confirmCustomTaskSectionPrompt() {
+        guard let result = HomeCustomTaskSectionStorage.upsertingSection(
+            title: customTaskSectionNameDraft,
+            in: customTaskSections
+        ) else {
+            return
+        }
+
+        customTaskSectionsRawValue = HomeCustomTaskSectionStorage.encoded(result.sections)
+        AppSettingsPersistenceMirror.schedule()
+        if let taskID = pendingCustomTaskSectionTaskID {
+            moveTaskToCustomSection(taskID, sectionID: result.section.id)
+        }
+        resetCustomTaskSectionPrompt()
+    }
+
+    func resetCustomTaskSectionPrompt() {
+        isCustomTaskSectionPromptPresented = false
+        customTaskSectionNameDraft = ""
+        pendingCustomTaskSectionTaskID = nil
+    }
+
+    func applyCustomTaskSectionPrompt<Content: View>(to view: Content) -> some View {
+        view.alert("New Section", isPresented: $isCustomTaskSectionPromptPresented) {
+            TextField("Name", text: $customTaskSectionNameDraft)
+            Button("Create") {
+                confirmCustomTaskSectionPrompt()
+            }
+            .disabled(HomeCustomTaskSectionStorage.sanitizedTitle(customTaskSectionNameDraft) == nil)
+            Button("Cancel", role: .cancel) {
+                resetCustomTaskSectionPrompt()
+            }
+        }
+    }
+
+    private func revealCustomTaskSection(_ customSectionID: UUID, taskID: UUID) {
+        let sectionID = "\(HomeTaskListPresentationSectionKind.custom.rawValue):\(HomeCustomTaskSectionStorage.manualOrderSectionKey(for: customSectionID))"
+        revealTaskListSection(sectionID: sectionID, taskID: taskID)
+    }
+
     private func revealTaskListSection(sectionID: String, taskID: UUID) {
         var collapsedSectionIDs = collapsedTagTaskListSectionIDs
         collapsedSectionIDs.remove(sectionID)
         collapsedTagTaskListSectionIDsStorage = collapsedSectionIDs.sorted().joined(separator: "\n")
         macSidebarTaskScrollRequest = MacSidebarTaskScrollRequest(taskID: taskID, anchor: .center)
+    }
+
+    private func defaultTaskSectionTitle(for task: HomeFeature.RoutineDisplay) -> String {
+        if task.scheduleMode.taskType == .record {
+            return "Tracking"
+        }
+        if task.isDailyRoutine {
+            return "Today"
+        }
+        return "Future"
     }
 }
 
@@ -270,8 +344,13 @@ private extension NSMenu {
 
     func addMoveToSubmenu(
         actions: [HomeTaskRowMoveActionPresentation],
+        customSections: [HomeCustomTaskSection],
+        currentCustomSectionID: UUID?,
+        defaultSectionTitle: String,
         taskID: UUID,
-        commandHandler: HomeTaskRowCommandHandler
+        commandHandler: HomeTaskRowCommandHandler,
+        moveToCustomSection: @escaping (UUID?) -> Void,
+        createCustomSection: @escaping () -> Void
     ) {
         let item = NSMenuItem(title: "Move to", action: nil, keyEquivalent: "")
         item.image = NSImage(
@@ -280,6 +359,40 @@ private extension NSMenu {
         )
 
         let submenu = NSMenu(title: "Move to")
+        var hasSectionItems = false
+
+        for section in customSections {
+            submenu.addActionItem(
+                title: section.title,
+                systemImage: "rectangle.stack",
+                isEnabled: currentCustomSectionID != section.id
+            ) {
+                moveToCustomSection(section.id)
+            }
+            hasSectionItems = true
+        }
+
+        submenu.addActionItem(
+            title: "New Section...",
+            systemImage: "plus.rectangle"
+        ) {
+            createCustomSection()
+        }
+        hasSectionItems = true
+
+        if currentCustomSectionID != nil {
+            submenu.addActionItem(
+                title: defaultSectionTitle,
+                systemImage: "arrow.uturn.backward"
+            ) {
+                moveToCustomSection(nil)
+            }
+            hasSectionItems = true
+        }
+
+        if hasSectionItems && !actions.isEmpty {
+            submenu.addItem(.separator())
+        }
 
         for action in actions {
             submenu.addActionItem(

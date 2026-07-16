@@ -41,6 +41,7 @@ enum HomeTaskListPresentationSectionKind: String, Equatable {
     case pinned
     case plannedToday
     case plannedTomorrow
+    case custom
     case tracking
     case daily
     case future
@@ -55,7 +56,7 @@ enum HomeTaskListPresentationSectionKind: String, Equatable {
 extension HomeTaskListPresentationSectionKind {
     var isCollapsible: Bool {
         switch self {
-        case .plannedToday, .plannedTomorrow, .tracking, .daily, .future, .tag, .untagged, .archived:
+        case .plannedToday, .plannedTomorrow, .custom, .tracking, .daily, .future, .tag, .untagged, .archived:
             return true
         case .pinned, .regular, .deadlineDate, .away:
             return false
@@ -427,6 +428,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         showArchivedTasks: Bool = true,
         separateDailyRoutinesInTaskList: Bool = false,
         showTomorrowSection: Bool = false,
+        customSections: [HomeCustomTaskSection] = [],
         separateTodosAndRoutinesInTagSections: Bool = false,
         emptyState: HomeTaskListEmptyState
     ) -> Self {
@@ -443,11 +445,20 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         let unpinnedActiveDisplays = (routineDisplays + awayRoutineDisplays).filter {
             !$0.isPinned && !claimedTaskIDs.contains($0.taskID)
         }
-        let trackingTasks = claimTasks(
-            filtering.filteredTrackingTasks(unpinnedActiveDisplays),
+        let customTaskSections = sidebarCustomTaskSections(
+            from: HomeCustomTaskSectionStorage.sanitized(customSections),
+            displays: unpinnedActiveDisplays,
+            filtering: filtering,
             claimedTaskIDs: &claimedTaskIDs
         )
-        let activeDisplaysAfterTrackingClaim = unpinnedActiveDisplays.filter {
+        let activeDisplaysAfterCustomClaim = unpinnedActiveDisplays.filter {
+            !claimedTaskIDs.contains($0.taskID)
+        }
+        let trackingTasks = claimTasks(
+            filtering.filteredTrackingTasks(activeDisplaysAfterCustomClaim),
+            claimedTaskIDs: &claimedTaskIDs
+        )
+        let activeDisplaysAfterTrackingClaim = activeDisplaysAfterCustomClaim.filter {
             !claimedTaskIDs.contains($0.taskID)
         }
         let plannedTodayTasks = claimTasks(
@@ -548,6 +559,26 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             offset += plannedTomorrowTasks.count
         }
 
+        for customTaskSection in customTaskSections {
+            presentationSections.append(
+                HomeTaskListPresentationSection(
+                    kind: .custom,
+                    identityKey: HomeCustomTaskSectionStorage.manualOrderSectionKey(for: customTaskSection.section.id),
+                    title: customTaskSection.section.title,
+                    tasks: customTaskSection.tasks,
+                    rowNumberOffset: offset,
+                    includeMarkDone: true,
+                    moveContext: HomeTaskListMoveContext(
+                        sectionKey: HomeTaskListFiltering<Display>.customManualOrderSectionKey(
+                            for: customTaskSection.section.id
+                        ),
+                        orderedTaskIDs: customTaskSection.tasks.map(\.taskID)
+                    )
+                )
+            )
+            offset += customTaskSection.tasks.count
+        }
+
         if !trackingTasks.isEmpty {
             if let trackingSection = sidebarTrackingSection(
                 from: trackingTasks,
@@ -635,6 +666,27 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             hiddenUnavailableTaskCount: 0,
             emptyState: presentationSections.isEmpty ? emptyState : nil
         )
+    }
+
+    private struct SidebarCustomTaskSection {
+        let section: HomeCustomTaskSection
+        let tasks: [Display]
+    }
+
+    private static func sidebarCustomTaskSections(
+        from sections: [HomeCustomTaskSection],
+        displays: [Display],
+        filtering: HomeTaskListFiltering<Display>,
+        claimedTaskIDs: inout Set<UUID>
+    ) -> [SidebarCustomTaskSection] {
+        sections.compactMap { section in
+            let tasks = claimTasks(
+                filtering.filteredCustomTaskSectionTasks(displays, sectionID: section.id),
+                claimedTaskIDs: &claimedTaskIDs
+            )
+            guard !tasks.isEmpty else { return nil }
+            return SidebarCustomTaskSection(section: section, tasks: tasks)
+        }
     }
 
     private static func sidebarPlanTodayTaskGroups(

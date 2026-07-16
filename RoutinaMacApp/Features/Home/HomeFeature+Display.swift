@@ -153,6 +153,7 @@ private extension HomeFeature.RoutineDisplay {
             canceledAt: core.canceledAt,
             dueDate: core.dueDate,
             plannedDate: core.plannedDate,
+            customTaskSectionID: core.customTaskSectionID,
             priority: core.priority,
             importance: core.importance,
             urgency: core.urgency,

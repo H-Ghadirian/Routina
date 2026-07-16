@@ -236,6 +236,10 @@ struct HomeTCAView: View {
         UserDefaultStringValueKey.appSettingCollapsedTagTaskListSections.rawValue,
         store: SharedDefaults.app
     ) var collapsedTagTaskListSectionIDsStorage = ""
+    @AppStorage(
+        UserDefaultStringValueKey.appSettingCustomTaskSections.rawValue,
+        store: SharedDefaults.app
+    ) var customTaskSectionsRawValue = ""
     @StateObject var collapsedTagTaskListSectionIDsCache = HomeCollapsedTagTaskListSectionIDsCache()
     @State private var localSearchText = ""
     @State var isCompactHeaderHidden = false
@@ -290,6 +294,9 @@ struct HomeTCAView: View {
     @State var placeCheckInSelectedHistoryMarkerID: PlaceCheckInHistoryMapMarker.ID?
     @State var planningDateTaskID: UUID?
     @State var planningDateDraft = Date()
+    @State var isCustomTaskSectionPromptPresented = false
+    @State var customTaskSectionNameDraft = ""
+    @State var pendingCustomTaskSectionTaskID: UUID?
     @State var homeToolbarFocusPickerDuration: TimeInterval?
     @FocusState var isSprintCreationFieldFocused: Bool
     @FocusState var isBacklogCreationFieldFocused: Bool
@@ -354,9 +361,11 @@ homeContent
                 to: applyAddRoutinePresentation(
                     to: applyPlatformDeleteConfirmation(
                         to: applyPlatformRefresh(
-                            to: applyPlatformSearchExperience(
-                                to: platformNavigationContent,
-                                searchText: searchTextBinding
+                            to: applyCustomTaskSectionPrompt(
+                                to: applyPlatformSearchExperience(
+                                    to: platformNavigationContent,
+                                    searchText: searchTextBinding
+                                )
                             )
                         )
                     )

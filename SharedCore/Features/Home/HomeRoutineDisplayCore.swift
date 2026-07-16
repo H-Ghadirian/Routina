@@ -26,6 +26,7 @@ struct HomeRoutineDisplayCore: Equatable {
     var canceledAt: Date?
     var dueDate: Date?
     var plannedDate: Date? = nil
+    var customTaskSectionID: UUID? = nil
     var priority: RoutineTaskPriority
     var importance: RoutineTaskImportance
     var urgency: RoutineTaskUrgency

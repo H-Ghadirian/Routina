@@ -104,6 +104,7 @@ struct HomeRoutineDisplayFactory {
             canceledAt: task.canceledAt,
             dueDate: dueDate(for: task, isArchived: isArchived),
             plannedDate: task.plannedDate,
+            customTaskSectionID: task.customTaskSectionID,
             priority: task.priority,
             importance: task.importance,
             urgency: task.urgency,

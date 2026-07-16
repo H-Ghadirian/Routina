@@ -62,6 +62,7 @@ extension SettingsRoutineDataPersistence {
             var linkItems: [RoutineTaskLink]?
             var deadline: Date?
             var plannedDate: Date?
+            var customTaskSectionID: UUID?
             var isAllDay: Bool?
             var routineDurationMode: RoutineDurationMode?
             var availabilityStartDate: Date?
@@ -337,6 +338,7 @@ extension SettingsRoutineDataPersistence {
             var appColorScheme: String?
             var routineListSectioningMode: String?
             var tagCounterDisplayMode: String?
+            var customTaskSections: String?
             var homeTaskRowHiddenFields: String?
             var relatedTagRules: String?
             var tagColors: String?

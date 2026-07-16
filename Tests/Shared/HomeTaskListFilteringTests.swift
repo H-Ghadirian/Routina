@@ -1389,6 +1389,61 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func sidebarPresentationShowsCustomTaskSectionsForAssignedRows() {
+        let referenceDate = makeDate("2026-06-22T10:00:00Z")
+        let customSectionID = UUID()
+        let customSectionKey = HomeCustomTaskSectionStorage.manualOrderSectionKey(for: customSectionID)
+        let plannedTodayID = UUID()
+        let customLaterID = UUID()
+        let customEarlierID = UUID()
+        let trackingID = UUID()
+        let futureID = UUID()
+
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(referenceDate: referenceDate),
+            routineDisplays: [
+                TestTaskDisplay(taskID: plannedTodayID, name: "Plan today", plannedDate: referenceDate),
+                TestTaskDisplay(
+                    taskID: customLaterID,
+                    name: "Custom planned task",
+                    plannedDate: referenceDate,
+                    customTaskSectionID: customSectionID,
+                    manualSectionOrders: [customSectionKey: 1]
+                ),
+                TestTaskDisplay(
+                    taskID: customEarlierID,
+                    name: "Custom tracking",
+                    scheduleMode: .record,
+                    plannedDate: referenceDate,
+                    customTaskSectionID: customSectionID,
+                    manualSectionOrders: [customSectionKey: 0]
+                ),
+                TestTaskDisplay(taskID: trackingID, name: "Default tracking", scheduleMode: .record),
+                TestTaskDisplay(taskID: futureID, name: "Future", recurrenceRule: .interval(days: 7), daysUntilDue: 4)
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            customSections: [
+                HomeCustomTaskSection(id: customSectionID, title: "Work", createdAt: nil)
+            ],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        let customSection = presentation.sections.first { $0.kind == .custom }
+        #expect(presentation.sections.map(\.kind) == [.plannedToday, .custom, .tracking, .future])
+        #expect(presentation.sections.map(\.title) == ["Today", "Work", "Tracking", "Future"])
+        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 1, 3, 4])
+        #expect(customSection?.identityKey == customSectionKey)
+        #expect(customSection?.moveContext?.sectionKey == customSectionKey)
+        #expect(customSection?.tasks.map(\.taskID) == [customEarlierID, customLaterID])
+        #expect(customSection?.moveContext?.orderedTaskIDs == [customEarlierID, customLaterID])
+    }
+
+    @Test
     func sidebarPresentationGroupsTrackingRowsLikeFutureTagGroups() {
         let adminTrackingID = UUID()
         let focusTrackingID = UUID()
@@ -2049,6 +2104,7 @@ private struct TestTaskDisplay: HomeRoutineMetadataDisplay, Equatable {
     var canceledAt: Date?
     var dueDate: Date?
     var plannedDate: Date?
+    var customTaskSectionID: UUID?
     var priority: RoutineTaskPriority = .none
     var importance: RoutineTaskImportance = .level2
     var urgency: RoutineTaskUrgency = .level2

@@ -21,6 +21,7 @@ protocol HomeTaskListDisplay {
     var lastDone: Date? { get }
     var dueDate: Date? { get }
     var plannedDate: Date? { get }
+    var customTaskSectionID: UUID? { get }
     var priority: RoutineTaskPriority { get }
     var importance: RoutineTaskImportance { get }
     var urgency: RoutineTaskUrgency { get }
@@ -64,6 +65,10 @@ extension HomeTaskListDisplay {
     }
 
     var plannedDate: Date? {
+        nil
+    }
+
+    var customTaskSectionID: UUID? {
         nil
     }
 
