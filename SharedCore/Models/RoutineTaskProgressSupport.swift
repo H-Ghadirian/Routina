@@ -84,6 +84,10 @@ extension RoutineTask {
             || (scheduleMode.taskType == .record && scheduleMode.scheduleBehavior == .soft)
     }
 
+    var surfacesSoftIntervalNudges: Bool {
+        isSoftIntervalRoutine && (!isRecordTask || trackingNudgesEnabled)
+    }
+
     var usesRollingScheduleAnchor: Bool {
         recurrenceRule.kind == .intervalDays || isChecklistDriven
     }

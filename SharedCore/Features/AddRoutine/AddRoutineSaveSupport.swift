@@ -117,6 +117,7 @@ struct AddRoutineSaveRequest: Equatable {
     let actualDurationMinutes: Int?
     let storyPoints: Int?
     let focusModeEnabled: Bool
+    let trackingNudgesEnabled: Bool
 
     init(
         name: String,
@@ -158,7 +159,8 @@ struct AddRoutineSaveRequest: Equatable {
         estimatedDurationMinutes: Int? = nil,
         actualDurationMinutes: Int? = nil,
         storyPoints: Int? = nil,
-        focusModeEnabled: Bool = false
+        focusModeEnabled: Bool = false,
+        trackingNudgesEnabled: Bool = true
     ) {
         self.name = name
         self.frequencyInDays = frequencyInDays
@@ -220,6 +222,7 @@ struct AddRoutineSaveRequest: Equatable {
             : nil
         self.storyPoints = storyPoints
         self.focusModeEnabled = focusModeEnabled
+        self.trackingNudgesEnabled = scheduleMode.taskType == .record ? trackingNudgesEnabled : true
     }
 
     init?(state: AddRoutineFeature.State, calendar: Calendar = .current) {
@@ -311,6 +314,9 @@ struct AddRoutineSaveRequest: Equatable {
             : nil
         self.storyPoints = RoutineTask.sanitizedStoryPoints(basics.storyPoints)
         self.focusModeEnabled = basics.focusModeEnabled
+        self.trackingNudgesEnabled = schedule.scheduleMode.taskType == .record
+            ? basics.trackingNudgesEnabled
+            : true
         self.autoAssumeDailyDone = schedule.autoAssumeDailyDone
             && RoutineAssumedCompletion.isEligible(
                 scheduleMode: self.scheduleMode,

@@ -27,6 +27,7 @@ struct AddRoutineBasicsState: Equatable {
     var actualDurationMinutes: Int?
     var storyPoints: Int?
     var focusModeEnabled: Bool = false
+    var trackingNudgesEnabled: Bool = true
 }
 
 struct AddRoutineOrganizationState: Equatable {

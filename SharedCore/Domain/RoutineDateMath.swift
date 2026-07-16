@@ -749,7 +749,7 @@ enum RoutineDateMath {
         for task: RoutineTask,
         calendar: Calendar = .current
     ) -> Date? {
-        guard task.isSoftIntervalRoutine else { return nil }
+        guard task.surfacesSoftIntervalNudges else { return nil }
         guard let lastDone = task.lastDone else { return nil }
         if task.recurrenceRule.kind.repeatBasis == .calendar {
             return softCalendarThresholdDate(for: task, after: lastDone, calendar: calendar)

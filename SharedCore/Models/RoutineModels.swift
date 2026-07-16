@@ -72,6 +72,7 @@ final class RoutineTask {
     var actualDurationMinutes: Int?
     var storyPoints: Int?
     var focusModeEnabled: Bool = false
+    var trackingNudgesEnabled: Bool = true
     var showsTaskDetailHeatmap: Bool = false
     var commentsStorage: String = ""
     var changeLogStorage: String = ""
@@ -437,6 +438,7 @@ final class RoutineTask {
         actualDurationMinutes: Int? = nil,
         storyPoints: Int? = nil,
         focusModeEnabled: Bool = false,
+        trackingNudgesEnabled: Bool = true,
         showsTaskDetailHeatmap: Bool = false,
         comments: [RoutineTaskComment] = []
     ) {
@@ -525,6 +527,7 @@ final class RoutineTask {
         self.actualDurationMinutes = Self.sanitizedActualDurationMinutes(actualDurationMinutes)
         self.storyPoints = Self.sanitizedStoryPoints(storyPoints)
         self.focusModeEnabled = focusModeEnabled
+        self.trackingNudgesEnabled = resolvedScheduleMode.taskType == .record ? trackingNudgesEnabled : true
         self.showsTaskDetailHeatmap = showsTaskDetailHeatmap
         self.commentsStorage = RoutineTaskCommentStorage.serialize(comments)
         var initialChanges = [
@@ -811,6 +814,7 @@ final class RoutineTask {
             actualDurationMinutes: actualDurationMinutes,
             storyPoints: storyPoints,
             focusModeEnabled: focusModeEnabled,
+            trackingNudgesEnabled: trackingNudgesEnabled,
             showsTaskDetailHeatmap: showsTaskDetailHeatmap,
             comments: comments
         )

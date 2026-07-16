@@ -52,6 +52,7 @@ struct TaskDetailEditChangeRequest {
     let autoAssumeDailyDone: Bool
     let autoAssumeDoneTimeOfDay: RoutineTimeOfDay
     let focusModeEnabled: Bool
+    let trackingNudgesEnabled: Bool
     let pressure: RoutineTaskPressure
     let task: RoutineTask
 
@@ -107,6 +108,7 @@ struct TaskDetailEditChangeRequest {
         self.autoAssumeDailyDone = state.editAutoAssumeDailyDone
         self.autoAssumeDoneTimeOfDay = state.editAutoAssumeDoneTimeOfDay
         self.focusModeEnabled = state.editFocusModeEnabled
+        self.trackingNudgesEnabled = state.editTrackingNudgesEnabled
         self.pressure = state.editPressure
         self.task = state.task
     }
@@ -190,6 +192,7 @@ enum TaskDetailEditChangeDetector {
             || request.autoAssumeDailyDone != task.autoAssumeDailyDone
             || normalizedAutoAssumeDoneTimeOfDay(for: request) != normalizedAutoAssumeDoneTimeOfDay(for: task)
             || request.focusModeEnabled != task.focusModeEnabled
+            || request.trackingNudgesEnabled != task.trackingNudgesEnabled
             || request.pressure != task.pressure
     }
 

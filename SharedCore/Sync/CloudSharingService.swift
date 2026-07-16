@@ -68,6 +68,7 @@ enum CloudSharingService {
         var actualDurationMinutes: Int?
         var storyPoints: Int?
         var focusModeEnabled: Bool
+        var trackingNudgesEnabled: Bool?
         var comments: [RoutineTaskComment]?
     }
 
@@ -323,6 +324,7 @@ extension CloudSharingService.SharedTaskPayload {
         self.actualDurationMinutes = task.actualDurationMinutes
         self.storyPoints = task.storyPoints
         self.focusModeEnabled = task.focusModeEnabled
+        self.trackingNudgesEnabled = task.trackingNudgesEnabled
         self.comments = task.comments
     }
 
@@ -395,6 +397,7 @@ extension CloudSharingService.SharedTaskPayload {
         task.actualDurationMinutes = RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutes)
         task.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
         task.focusModeEnabled = focusModeEnabled
+        task.trackingNudgesEnabled = scheduleMode.taskType == .record ? (trackingNudgesEnabled ?? true) : true
         task.comments = comments ?? []
     }
 }
@@ -457,6 +460,7 @@ private extension RoutineTask {
             actualDurationMinutes: payload.actualDurationMinutes,
             storyPoints: payload.storyPoints,
             focusModeEnabled: payload.focusModeEnabled,
+            trackingNudgesEnabled: payload.trackingNudgesEnabled ?? true,
             comments: payload.comments ?? []
         )
         self.linkItems = payload.linkItems

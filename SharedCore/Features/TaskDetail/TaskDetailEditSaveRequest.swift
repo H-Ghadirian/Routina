@@ -40,6 +40,7 @@ struct TaskDetailEditSaveRequest: Equatable {
     var actualDurationMinutes: Int?
     var storyPoints: Int?
     var focusModeEnabled: Bool
+    var trackingNudgesEnabled: Bool
 }
 
 struct TaskDetailEditSaveRequestBuilder {
@@ -168,7 +169,10 @@ struct TaskDetailEditSaveRequestBuilder {
             estimatedDurationMinutes: state.editEstimatedDurationMinutes,
             actualDurationMinutes: state.editActualDurationMinutes,
             storyPoints: state.editStoryPoints,
-            focusModeEnabled: state.editFocusModeEnabled
+            focusModeEnabled: state.editFocusModeEnabled,
+            trackingNudgesEnabled: scheduleMode.taskType == .record
+                ? state.editTrackingNudgesEnabled
+                : true
         )
     }
 

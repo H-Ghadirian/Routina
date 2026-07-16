@@ -40,12 +40,14 @@ extension HomeRoutineDisplayMetadataPresenter {
             if task.isDoneToday {
                 return badge("Done", "checkmark.circle.fill", .green, Color.green.opacity(0.14))
             }
-            if task.hasPassedSoftThreshold, task.lastDone != nil {
-                return badge(softElapsedBadgeTitle(for: task), "clock.arrow.circlepath", .teal, Color.teal.opacity(0.12))
+            if task.surfacesSoftIntervalNudges {
+                if task.hasPassedSoftThreshold, task.lastDone != nil {
+                    return badge(softElapsedBadgeTitle(for: task), "clock.arrow.circlepath", .teal, Color.teal.opacity(0.12))
+                }
+                return badgeMode == .complete
+                    ? badge("Ready to Do", "circle", .secondary, Color.secondary.opacity(0.12))
+                    : nil
             }
-            return badgeMode == .complete
-                ? badge("Ready to Do", "circle", .secondary, Color.secondary.opacity(0.12))
-                : nil
         }
         if task.isInProgress {
             return badge("Step \(task.completedStepCount + 1)/\(max(task.steps.count, 1))", "list.number", .orange, Color.orange.opacity(0.16))
@@ -71,6 +73,9 @@ extension HomeRoutineDisplayMetadataPresenter {
         let dueIn = filtering.dueInDays(for: task)
 
         if task.scheduleMode.isChecklistDrivenMode {
+            if task.isSoftIntervalRoutine && !task.surfacesSoftIntervalNudges {
+                return nil
+            }
             if dueIn < 0 {
                 return badge("Overdue \(abs(dueIn))d", "exclamationmark.circle.fill", .red, Color.red.opacity(0.14))
             }
@@ -103,6 +108,10 @@ extension HomeRoutineDisplayMetadataPresenter {
 
         if task.isDoneToday {
             return badge("Done", "checkmark.circle.fill", .green, Color.green.opacity(0.14))
+        }
+
+        if task.isSoftIntervalRoutine && !task.surfacesSoftIntervalNudges {
+            return nil
         }
 
         if filtering.hasMissedExactTimedOccurrence(for: task) {

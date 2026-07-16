@@ -1396,7 +1396,8 @@ struct TaskDetailEditSaveTests {
                 editRecurrenceHasExplicitTime: true,
                 editRecurrenceTimeOfDay: exactTime,
                 editRecurrenceWeekdays: [2, 6],
-                editActualDurationMinutes: 75
+                editActualDurationMinutes: 75,
+                editTrackingNudgesEnabled: false
             )
         ) {
             TaskDetailFeature()
@@ -1436,6 +1437,7 @@ struct TaskDetailEditSaveTests {
         #expect(persistedTask.checklistItems.map(\.title) == ["Summarize findings"])
         #expect(persistedTask.checklistItems.map(\.intervalDays) == [1])
         #expect(persistedTask.actualDurationMinutes == 75)
+        #expect(!persistedTask.trackingNudgesEnabled)
     }
 
     @Test

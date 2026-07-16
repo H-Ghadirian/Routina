@@ -2003,6 +2003,26 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func trackingRowsCanKeepCadenceWithoutGentleNudgeBadges() {
+        let task = TestTaskDisplay(
+            name: "Clean coffee machine",
+            interval: 14,
+            recurrenceRule: .interval(days: 14),
+            scheduleMode: .record,
+            isSoftIntervalRoutine: true,
+            surfacesSoftIntervalNudges: false
+        )
+        let presenter = HomeRoutineDisplayMetadataPresenter(
+            filtering: makeFiltering(),
+            showPersianDates: false,
+            badgeMode: .complete
+        )
+
+        #expect(presenter.badgeStyle(for: task) == nil)
+        #expect(presenter.rowMetadataText(for: task) == "Every 2 weeks • 0 completions • Not recorded yet")
+    }
+
+    @Test
     func taskRowVisibilityRoundTripsHiddenFields() {
         let visibility = HomeTaskRowVisibility(hiddenFields: [.tags, .icon, .colorBadge, .pressure])
         let rawValue = visibility.storageRawValue
@@ -2124,6 +2144,7 @@ private struct TestTaskDisplay: HomeRoutineMetadataDisplay, Equatable {
     var isSnoozed: Bool = false
     var isPinned: Bool = false
     var isSoftIntervalRoutine: Bool = false
+    var surfacesSoftIntervalNudges: Bool = true
     var isOngoing: Bool = false
     var ongoingSince: Date?
     var hasPassedSoftThreshold: Bool = false

@@ -362,6 +362,9 @@ struct TaskFormIOSRepeatPatternSections: View {
             if model.routineRepeatType.wrappedValue != .itemRunout {
                 Text(presentation.recurrencePatternDescription).font(.caption).foregroundStyle(.secondary)
             }
+            if model.taskType.wrappedValue == .record {
+                Toggle("Nudges", isOn: model.trackingNudgesEnabled)
+            }
         }
 
         if model.routineRepeatType.wrappedValue == .calendar {
@@ -447,7 +450,7 @@ struct TaskFormIOSRepeatPatternSections: View {
             unit: model.frequencyUnit.wrappedValue,
             value: model.frequencyValue.wrappedValue
         )
-        return model.scheduleBehavior.wrappedValue == .soft
+        return model.scheduleBehavior.wrappedValue == .soft && model.trackingNudgesEnabled.wrappedValue
             ? "Nudge \(label.lowercased())"
             : label
     }

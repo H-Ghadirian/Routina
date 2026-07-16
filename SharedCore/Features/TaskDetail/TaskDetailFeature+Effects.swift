@@ -441,7 +441,8 @@ extension TaskDetailFeature {
             estimatedDurationMinutes: request.estimatedDurationMinutes,
             actualDurationMinutes: request.actualDurationMinutes,
             storyPoints: request.storyPoints,
-            focusModeEnabled: request.focusModeEnabled
+            focusModeEnabled: request.focusModeEnabled,
+            trackingNudgesEnabled: request.trackingNudgesEnabled
         )
     }
 
@@ -484,7 +485,8 @@ extension TaskDetailFeature {
         estimatedDurationMinutes: Int?,
         actualDurationMinutes: Int?,
         storyPoints: Int?,
-        focusModeEnabled: Bool
+        focusModeEnabled: Bool,
+        trackingNudgesEnabled: Bool
     ) -> Effect<Action> {
         .run { @MainActor send in
             do {
@@ -595,6 +597,7 @@ extension TaskDetailFeature {
                 }
                 task.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
                 task.focusModeEnabled = focusModeEnabled
+                task.trackingNudgesEnabled = scheduleMode.taskType == .record ? trackingNudgesEnabled : true
                 if !scheduleMode.usesRoutineCadence {
                     task.scheduleAnchor = task.lastDone
                     task.interval = 1

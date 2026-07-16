@@ -157,7 +157,8 @@ struct SwiftDataModelTests {
             checklistItems: [checklistItem],
             scheduleMode: .record,
             interval: 14,
-            recurrenceRule: .interval(days: 14, at: exactTime)
+            recurrenceRule: .interval(days: 14, at: exactTime),
+            trackingNudgesEnabled: false
         )
 
         #expect(record.plannedDate == RoutineTask.normalizedPlannedDate(date))
@@ -166,12 +167,14 @@ struct SwiftDataModelTests {
         #expect(record.isMultiDayRoutine)
         #expect(record.scheduleMode.scheduleBehavior == .soft)
         #expect(record.isSoftIntervalRoutine)
+        #expect(!record.surfacesSoftIntervalNudges)
         #expect(record.recurrenceRule == .interval(days: 14, at: exactTime))
         #expect(record.interval == 14)
         #expect(record.steps.map(\.title) == ["Collect sources"])
         #expect(record.checklistItems.map(\.title) == ["Summarize findings"])
         #expect(record.checklistItems.map(\.intervalDays) == [1])
         #expect(record.detachedCopy().routineDurationMode == .multiDay)
+        #expect(!record.detachedCopy().trackingNudgesEnabled)
     }
 
     @Test

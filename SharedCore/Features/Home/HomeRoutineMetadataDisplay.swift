@@ -4,6 +4,7 @@ protocol HomeRoutineMetadataDisplay: HomeTaskRowDisplay {
     var locationAvailability: RoutineLocationAvailability { get }
     var canceledAt: Date? { get }
     var isSoftIntervalRoutine: Bool { get }
+    var surfacesSoftIntervalNudges: Bool { get }
     var isAssumedDoneToday: Bool { get }
     var isSnoozed: Bool { get }
     var isOngoing: Bool { get }

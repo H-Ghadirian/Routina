@@ -23,6 +23,7 @@ struct HomeRoutineDisplay: Equatable, Identifiable, HomeTaskListDisplay, HomeTas
     var estimatedDurationMinutes: Int?
     var createdAt: Date?
     var isSoftIntervalRoutine: Bool
+    var surfacesSoftIntervalNudges: Bool = true
     var lastDone: Date?
     var canceledAt: Date?
     var dueDate: Date?

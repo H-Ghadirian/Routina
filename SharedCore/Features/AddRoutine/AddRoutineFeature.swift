@@ -83,6 +83,7 @@ struct AddRoutineFeature: Reducer {
         case actualDurationChanged(Int?)
         case storyPointsChanged(Int?)
         case focusModeEnabledChanged(Bool)
+        case trackingNudgesEnabledChanged(Bool)
         case applyQuickAddDraftFromName
         case saveTapped
         case cancelTapped
@@ -598,6 +599,10 @@ struct AddRoutineFeature: Reducer {
                 isEnabled,
                 basics: &state.basics
             )
+            return .none
+
+        case let .trackingNudgesEnabledChanged(isEnabled):
+            state.basics.trackingNudgesEnabled = isEnabled
             return .none
 
         case .applyQuickAddDraftFromName:

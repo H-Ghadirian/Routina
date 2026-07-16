@@ -307,7 +307,8 @@ extension TaskDetailFeature.State {
 
     /// Soft routines use a threshold date instead of a hard overdue date.
     var resolvedSoftDueDate: Date? {
-        RoutineDateMath.softIntervalThresholdDate(for: task)
+        guard task.surfacesSoftIntervalNudges else { return nil }
+        return RoutineDateMath.softIntervalThresholdDate(for: task)
     }
 
     var dueDateMetadataText: String? {

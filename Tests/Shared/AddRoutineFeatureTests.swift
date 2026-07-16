@@ -673,7 +673,8 @@ struct AddRoutineFeatureTests {
                     plannedDate: date,
                     reminderAt: date,
                     estimatedDurationMinutes: 120,
-                    actualDurationMinutes: 95
+                    actualDurationMinutes: 95,
+                    trackingNudgesEnabled: false
                 ),
                 organization: AddRoutineOrganizationState(existingRoutineNames: []),
                 schedule: AddRoutineScheduleState(
@@ -714,7 +715,8 @@ struct AddRoutineFeatureTests {
             scheduleMode: .record,
             checklistItems: RoutineChecklistItem.sanitized([checklistItem], for: .record),
             estimatedDurationMinutes: 120,
-            actualDurationMinutes: 95
+            actualDurationMinutes: 95,
+            trackingNudgesEnabled: false
         ))))
     }
 

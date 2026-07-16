@@ -166,6 +166,10 @@ struct AddRoutineTaskFormModelFactory {
                 get: { store.basics.focusModeEnabled },
                 send: AddRoutineFeature.Action.focusModeEnabledChanged
             ),
+            trackingNudgesEnabled: binding(
+                get: { store.basics.trackingNudgesEnabled },
+                send: AddRoutineFeature.Action.trackingNudgesEnabledChanged
+            ),
             color: binding(get: { store.basics.routineColor }, send: AddRoutineFeature.Action.routineColorChanged),
             nameFocus: nameFocus,
             nameFocusRequestID: nameFocusRequestID,

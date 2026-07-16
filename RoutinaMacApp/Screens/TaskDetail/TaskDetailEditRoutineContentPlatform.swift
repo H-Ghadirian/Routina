@@ -186,6 +186,10 @@ struct TaskDetailEditRoutineContent: View {
                 get: { store.editFocusModeEnabled },
                 set: { store.send(.editFocusModeEnabledChanged($0)) }
             ),
+            trackingNudgesEnabled: Binding(
+                get: { store.editTrackingNudgesEnabled },
+                set: { store.send(.editTrackingNudgesEnabledChanged($0)) }
+            ),
             color: Binding(
                 get: { store.editColor },
                 set: { store.send(.editColorChanged($0)) }

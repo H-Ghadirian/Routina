@@ -149,6 +149,7 @@ private extension HomeFeature.RoutineDisplay {
             estimatedDurationMinutes: core.estimatedDurationMinutes,
             createdAt: core.createdAt,
             isSoftIntervalRoutine: core.isSoftIntervalRoutine,
+            surfacesSoftIntervalNudges: core.surfacesSoftIntervalNudges,
             lastDone: core.lastDone,
             canceledAt: core.canceledAt,
             dueDate: core.dueDate,

@@ -153,6 +153,13 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
             if task.isDoneToday {
                 return "Done today"
             }
+            if !task.surfacesSoftIntervalNudges {
+                guard task.lastDone != nil else { return "Not recorded yet" }
+                let elapsedDays = filtering.daysSinceLastRoutine(task)
+                if elapsedDays == 0 { return "Recorded today" }
+                if elapsedDays == 1 { return "Recorded yesterday" }
+                return "Recorded \(elapsedDays) days ago"
+            }
             guard task.lastDone != nil else { return "Ready whenever" }
             return softElapsedDescription(for: task)
         }

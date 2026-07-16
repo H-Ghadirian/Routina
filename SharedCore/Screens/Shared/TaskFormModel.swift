@@ -140,6 +140,7 @@ struct TaskFormModel {
         RoutineAssumedCompletion.defaultDoneTimeOfDay.date(on: Date())
     )
     var focusModeEnabled: Binding<Bool> = .constant(false)
+    var trackingNudgesEnabled: Binding<Bool> = .constant(true)
 
     // MARK: Color
     var color: Binding<RoutineTaskColor>

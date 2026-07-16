@@ -85,7 +85,8 @@ enum HomeAddRoutineSupport {
             estimatedDurationMinutes: request.estimatedDurationMinutes,
             actualDurationMinutes: request.actualDurationMinutes,
             storyPoints: request.storyPoints,
-            focusModeEnabled: request.focusModeEnabled
+            focusModeEnabled: request.focusModeEnabled,
+            trackingNudgesEnabled: request.trackingNudgesEnabled
         )
         task.linkItems = request.linkItems
         return task

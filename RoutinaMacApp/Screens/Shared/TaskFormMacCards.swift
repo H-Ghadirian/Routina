@@ -745,6 +745,13 @@ struct TaskFormMacBehaviorCard: View {
             calendarPatternControl
         }
 
+        if model.taskType.wrappedValue == .record {
+            TaskFormMacControlBlock(title: "Nudges") {
+                Toggle("Nudges", isOn: model.trackingNudgesEnabled)
+                    .toggleStyle(.switch)
+            }
+        }
+
         switch model.routineRepeatType.wrappedValue {
         case .interval:
             TaskFormMacControlBlock(title: "Repeat") {
@@ -770,7 +777,9 @@ struct TaskFormMacBehaviorCard: View {
     }
 
     private var intervalFrequencyPrefix: String {
-        model.scheduleBehavior.wrappedValue == .soft ? "Nudge every" : "Every"
+        model.scheduleBehavior.wrappedValue == .soft && model.trackingNudgesEnabled.wrappedValue
+            ? "Nudge every"
+            : "Every"
     }
 
     private var calendarPatternControl: some View {

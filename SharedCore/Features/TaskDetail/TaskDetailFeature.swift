@@ -96,6 +96,7 @@ struct TaskDetailFeature: Reducer {
         var editActualDurationMinutes: Int?
         var editStoryPoints: Int?
         var editFocusModeEnabled: Bool = false
+        var editTrackingNudgesEnabled: Bool = true
         var isDeleteConfirmationPresented: Bool = false
         var isUndoCompletionConfirmationPresented: Bool = false
         var pendingLogRemovalTimestamp: Date?
@@ -310,6 +311,7 @@ struct TaskDetailFeature: Reducer {
         case editActualDurationChanged(Int?)
         case editStoryPointsChanged(Int?)
         case editFocusModeEnabledChanged(Bool)
+        case editTrackingNudgesEnabledChanged(Bool)
         case editFrequencyChanged(EditFrequency)
         case editFrequencyValueChanged(Int)
         case editRecurrenceKindChanged(RoutineRecurrenceRule.Kind)
@@ -1262,6 +1264,10 @@ struct TaskDetailFeature: Reducer {
 
         case let .editFocusModeEnabledChanged(isEnabled):
             return basicEditActionHandler().editFocusModeEnabledChanged(isEnabled, state: &state)
+
+        case let .editTrackingNudgesEnabledChanged(isEnabled):
+            state.editTrackingNudgesEnabled = isEnabled
+            return .none
 
         case let .editFrequencyChanged(frequency):
             return recurrenceEditActionHandler().editFrequencyChanged(frequency, state: &state)

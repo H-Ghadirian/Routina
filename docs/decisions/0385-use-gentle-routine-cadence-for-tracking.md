@@ -6,6 +6,8 @@ Date: 2026-07-13
 
 Refines: [0177 Separate Interval and Calendar Repeat Controls](0177-separate-interval-and-calendar-repeat-controls.md), [0181 Allow Gentle Calendar Repeats](0181-allow-gentle-calendar-repeats.md), [0186 Put Item Runout in Repeat Type](0186-put-item-runout-in-repeat-type.md), [0200 Support Task Planned Dates](0200-support-task-planned-dates.md), [0382 Split Record Task Form Controls](0382-split-record-task-form-controls.md), [0383 Use Tracking as Record Label](0383-use-tracking-as-record-label.md), [0384 Show Tracking as Mac Sidebar Section](0384-show-tracking-as-mac-sidebar-section.md)
 
+Refined by: [0396 Allow Quiet Tracking Cadence](0396-allow-quiet-tracking-cadence.md)
+
 ## Context
 
 Tracking entries started as unscheduled records with routine-like descriptive metadata but no repeat controls. That kept tracking away from due-date pressure, but it also prevented recurring time-analysis rows such as weekly reviews, recurring logs, or checklist runout tracking.

@@ -160,6 +160,27 @@ struct RoutineDateMathTests {
     }
 
     @Test
+    func trackingWithNudgesDisabledDoesNotSurfaceSoftThreshold() {
+        let task = RoutineTask(
+            scheduleMode: .record,
+            recurrenceRule: .interval(days: 14),
+            lastDone: makeDate("2026-01-01T10:00:00Z"),
+            scheduleAnchor: makeDate("2026-01-01T10:00:00Z"),
+            trackingNudgesEnabled: false
+        )
+
+        #expect(task.isSoftIntervalRoutine)
+        #expect(!task.surfacesSoftIntervalNudges)
+        #expect(RoutineDateMath.softIntervalThresholdDate(for: task) == nil)
+        #expect(
+            !RoutineDateMath.hasPassedSoftIntervalThreshold(
+                for: task,
+                referenceDate: makeDate("2026-02-01T10:00:00Z")
+            )
+        )
+    }
+
+    @Test
     func timedSoftIntervalThreshold_waitsForAvailabilityTime() {
         let calendar = makeTestCalendar()
         let task = RoutineTask(
