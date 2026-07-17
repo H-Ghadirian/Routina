@@ -671,6 +671,23 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func plannerTaskDetailTitleUsesTaskUUIDDragPayload() throws {
+        let headerSource = try Self.sourceFile("SharedCore/Screens/TaskDetail/TaskDetailHeaderViews.swift")
+        let taskDetailSource = try Self.sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift")
+        let containerSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
+
+        #expect(headerSource.contains("let titleDragPayload: String?"))
+        #expect(headerSource.contains(".taskDetailCopyableText(title)"))
+        #expect(headerSource.contains(".draggable(titleDragPayload)"))
+        #expect(taskDetailSource.contains("let allowsTitlePlannerDrag: Bool"))
+        #expect(taskDetailSource.contains("titleDragPayload: taskTitlePlannerDragPayload"))
+        #expect(taskDetailSource.contains("allowsTitlePlannerDrag ? store.task.id.uuidString : nil"))
+        #expect(containerSource.contains("taskDetailPane(edge: .trailing, allowsTitlePlannerDrag: true)"))
+        #expect(containerSource.contains("taskDetailPane(edge: .leading, allowsTitlePlannerDrag: false)"))
+        #expect(containerSource.contains("allowsTitlePlannerDrag: fullscreenTaskDetailReturnPlacement == .plannerAdjacent"))
+    }
+
+    @Test
     func focusSleepSessionSelectsStartDayAndScrollMinute() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

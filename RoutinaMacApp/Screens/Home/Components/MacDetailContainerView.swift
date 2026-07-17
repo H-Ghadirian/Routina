@@ -257,7 +257,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     private var mainDetailContent: some View {
         HStack(spacing: 0) {
             if shouldShowListTaskDetailPane {
-                taskDetailPane(edge: .leading)
+                taskDetailPane(edge: .leading, allowsTitlePlannerDrag: false)
             }
 
             mainDetailBody
@@ -273,6 +273,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
             switch mainDetailMode.visibleSurfaceMode {
             case .details:
                 selectedTaskDetailContent(
+                    allowsTitlePlannerDrag: fullscreenTaskDetailReturnPlacement == .plannerAdjacent,
                     onMinimizeFullscreen: onMinimizeFullscreenTaskDetails,
                     onCloseFullscreen: onCloseFullscreenTaskDetails
                 )
@@ -350,7 +351,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                 .clipped()
 
                 if canShowTaskDetailPane {
-                    taskDetailPane(edge: .trailing)
+                    taskDetailPane(edge: .trailing, allowsTitlePlannerDrag: true)
                 }
             }
             .frame(width: proxy.size.width, height: proxy.size.height, alignment: .leading)
@@ -474,9 +475,10 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
             && availableWidth >= MacDetailContainerSizing.plannerTaskDetailMinWidth
     }
 
-    private func taskDetailPane(edge: Edge) -> some View {
+    private func taskDetailPane(edge: Edge, allowsTitlePlannerDrag: Bool) -> some View {
         selectedTaskDetailContent(
             presentation: .companionPane,
+            allowsTitlePlannerDrag: allowsTitlePlannerDrag,
             onExpandCompanion: onExpandTaskDetails,
             onCloseCompanion: onCloseTaskDetails
         )
@@ -670,6 +672,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     @ViewBuilder
     private func selectedTaskDetailContent(
         presentation: TaskDetailTCAView.Presentation = .fullDetail,
+        allowsTitlePlannerDrag: Bool = false,
         onExpandCompanion: (() -> Void)? = nil,
         onCloseCompanion: (() -> Void)? = nil,
         onMinimizeFullscreen: (() -> Void)? = nil,
@@ -682,6 +685,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
             TaskDetailTCAView(
                 store: detailStore,
                 showsPrincipalToolbarTitle: false,
+                allowsTitlePlannerDrag: allowsTitlePlannerDrag,
                 presentation: presentation,
                 onExpandCompanion: onExpandCompanion,
                 onCloseCompanion: onCloseCompanion,

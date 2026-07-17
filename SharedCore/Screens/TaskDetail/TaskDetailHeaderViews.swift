@@ -6,6 +6,7 @@ private enum TaskDetailHeaderSectionMetrics {
 
 struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View, HeaderAccessory: View>: View {
     let title: String
+    let titleDragPayload: String?
     let statusContextMessage: String?
     let badgeRows: [[TaskDetailHeaderBadgeItem]]
     let tags: [String]
@@ -16,6 +17,7 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
 
     init(
         title: String,
+        titleDragPayload: String? = nil,
         statusContextMessage: String?,
         badgeRows: [[TaskDetailHeaderBadgeItem]],
         tags: [String],
@@ -24,6 +26,7 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
         @ViewBuilder additionalContent: @escaping () -> AdditionalContent
     ) {
         self.title = title
+        self.titleDragPayload = titleDragPayload
         self.statusContextMessage = statusContextMessage
         self.badgeRows = badgeRows
         self.tags = tags
@@ -82,11 +85,7 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
 
     private var titleBlock: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.title2.weight(.bold))
-                .foregroundStyle(.primary)
-                .fixedSize(horizontal: false, vertical: true)
-                .taskDetailCopyableText(title)
+            titleText
 
             if let statusContextMessage {
                 Text(statusContextMessage)
@@ -95,6 +94,25 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    @ViewBuilder
+    private var titleText: some View {
+        if let titleDragPayload {
+            baseTitleText
+                .draggable(titleDragPayload)
+                .help("Drag to place this task on the planner")
+        } else {
+            baseTitleText
+        }
+    }
+
+    private var baseTitleText: some View {
+        Text(title)
+            .font(.title2.weight(.bold))
+            .foregroundStyle(.primary)
+            .fixedSize(horizontal: false, vertical: true)
+            .taskDetailCopyableText(title)
     }
 
     private var measuredHeaderAccessory: some View {
@@ -161,6 +179,7 @@ private enum TaskDetailHeaderSectionViewMetric: Hashable {
 extension TaskDetailHeaderSectionView where HeaderAccessory == EmptyView {
     init(
         title: String,
+        titleDragPayload: String? = nil,
         statusContextMessage: String?,
         badgeRows: [[TaskDetailHeaderBadgeItem]],
         tags: [String],
@@ -169,6 +188,7 @@ extension TaskDetailHeaderSectionView where HeaderAccessory == EmptyView {
     ) {
         self.init(
             title: title,
+            titleDragPayload: titleDragPayload,
             statusContextMessage: statusContextMessage,
             badgeRows: badgeRows,
             tags: tags,
@@ -182,6 +202,7 @@ extension TaskDetailHeaderSectionView where HeaderAccessory == EmptyView {
 extension TaskDetailHeaderSectionView where AdditionalContent == EmptyView, HeaderAccessory == EmptyView {
     init(
         title: String,
+        titleDragPayload: String? = nil,
         statusContextMessage: String?,
         badgeRows: [[TaskDetailHeaderBadgeItem]],
         tags: [String],
@@ -189,6 +210,7 @@ extension TaskDetailHeaderSectionView where AdditionalContent == EmptyView, Head
     ) {
         self.init(
             title: title,
+            titleDragPayload: titleDragPayload,
             statusContextMessage: statusContextMessage,
             badgeRows: badgeRows,
             tags: tags,

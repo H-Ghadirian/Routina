@@ -18,6 +18,7 @@ struct TaskDetailTCAView: View {
 
     let store: StoreOf<TaskDetailFeature>
     var showsPrincipalToolbarTitle = true
+    let allowsTitlePlannerDrag: Bool
     let presentation: Presentation
     let onExpandCompanion: (() -> Void)?
     let onCloseCompanion: (() -> Void)?
@@ -88,6 +89,7 @@ struct TaskDetailTCAView: View {
     init(
         store: StoreOf<TaskDetailFeature>,
         showsPrincipalToolbarTitle: Bool = true,
+        allowsTitlePlannerDrag: Bool = false,
         presentation: Presentation = .fullDetail,
         onExpandCompanion: (() -> Void)? = nil,
         onCloseCompanion: (() -> Void)? = nil,
@@ -98,6 +100,7 @@ struct TaskDetailTCAView: View {
     ) {
         self.store = store
         self.showsPrincipalToolbarTitle = showsPrincipalToolbarTitle
+        self.allowsTitlePlannerDrag = allowsTitlePlannerDrag
         self.presentation = presentation
         self.onExpandCompanion = onExpandCompanion
         self.onCloseCompanion = onCloseCompanion
@@ -923,6 +926,7 @@ struct TaskDetailTCAView: View {
     private var todoHeaderSection: some View {
         TaskDetailHeaderSectionView(
             title: store.task.name ?? "Task",
+            titleDragPayload: taskTitlePlannerDragPayload,
             statusContextMessage: statusContextMessage,
             badgeRows: todoHeaderBadgeRows,
             tags: [],
@@ -952,6 +956,7 @@ struct TaskDetailTCAView: View {
 
         return TaskDetailHeaderSectionView(
             title: store.task.name ?? "Routine",
+            titleDragPayload: taskTitlePlannerDragPayload,
             statusContextMessage: statusContextMessage,
             badgeRows: routineHeaderBadgeRows(
                 summaryStatusTitle: summaryStatusTitle,
@@ -970,6 +975,10 @@ struct TaskDetailTCAView: View {
                 headerSupplementaryContent(dueDate: dueDate)
             }
         }
+    }
+
+    private var taskTitlePlannerDragPayload: String? {
+        allowsTitlePlannerDrag ? store.task.id.uuidString : nil
     }
 
     @ViewBuilder

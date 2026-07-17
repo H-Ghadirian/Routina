@@ -687,7 +687,7 @@ Then the top range segmented picker can remain visible
 ### Planner Day Headers Open Planned Task Lists
 
 Area: Planner
-Decision links: [0288](../decisions/0288-open-planned-day-task-list-from-planner-headers.md), [0300](../decisions/0300-show-plan-to-do-tasks-in-planner-day-agenda.md), [0371](../decisions/0371-drag-day-task-sidebar-rows-to-schedule.md), [0399](../decisions/0399-hide-visible-fulfilled-target-duplicates.md)
+Decision links: [0288](../decisions/0288-open-planned-day-task-list-from-planner-headers.md), [0300](../decisions/0300-show-plan-to-do-tasks-in-planner-day-agenda.md), [0371](../decisions/0371-drag-day-task-sidebar-rows-to-schedule.md), [0399](../decisions/0399-hide-visible-fulfilled-target-duplicates.md), [0402](../decisions/0402-drag-planner-task-detail-title-to-schedule.md)
 Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/Shared/DayPlanDayTaskListPresentationTests.swift`
@@ -704,6 +704,10 @@ Then the task appears before timed blocks with an `Any time` placement label, wi
 Given the right-side Planner day task sidebar is open in Schedule mode
 When the user drags a row into the Schedule grid or all-day lane
 Then the row uses the same task payload as the left task list and schedules the underlying task through existing Planner drop behavior
+
+Given the Mac Planner task-detail companion pane is open beside Calendar Schedule
+When the user drags the task title into the Schedule grid or all-day lane
+Then the title uses the same task payload as the left task list and schedules the underlying task through existing Planner drop behavior
 
 Given Planner Calendar is in `List` task-view mode
 When day-task columns render the same agenda rows
