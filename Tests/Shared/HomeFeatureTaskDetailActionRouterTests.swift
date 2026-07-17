@@ -32,6 +32,27 @@ struct HomeFeatureTaskDetailActionRouterTests {
         #expect(syncedLogCounts == [0])
     }
 
+    @Test
+    func editSaveTappedSyncsSelectedTaskAndTimelineLogsImmediately() {
+        var state = TestTaskDetailRouterState()
+        var didSyncSelectedTask = false
+        var syncedLogCounts: [Int] = []
+
+        let router = makeRouter(
+            syncSelectedTaskFromTaskDetail: { _ in
+                didSyncSelectedTask = true
+            },
+            syncSelectedTaskLogs: { logs, _ in
+                syncedLogCounts.append(logs.count)
+            }
+        )
+
+        _ = router.handle(.editSaveTapped, state: &state)
+
+        #expect(didSyncSelectedTask)
+        #expect(syncedLogCounts == [0])
+    }
+
     private func makeRouter(
         syncSelectedTaskFromTaskDetail: @escaping (inout TestTaskDetailRouterState) -> Void = { _ in },
         syncSelectedTaskLogs: @escaping ([RoutineLog], inout TestTaskDetailRouterState) -> Void = { _, _ in }

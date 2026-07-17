@@ -495,6 +495,7 @@ extension TaskDetailFeature {
                 let context = modelContext()
                 guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
                 if try hasDuplicateRoutineName(name, in: context, excludingID: taskID) {
+                    send(.editSaveRejected(task.detachedCopy()))
                     return
                 }
                 let allTasks = try context.fetch(FetchDescriptor<RoutineTask>())

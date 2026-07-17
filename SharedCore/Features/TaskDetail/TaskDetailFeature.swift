@@ -332,6 +332,7 @@ struct TaskDetailFeature: Reducer {
         case editAutoAssumeDailyDoneChanged(Bool)
         case editAutoAssumeDoneTimeOfDayChanged(RoutineTimeOfDay)
         case editSaveTapped
+        case editSaveRejected(RoutineTask)
         case confirmAssumedPastDays
         case setDeleteConfirmation(Bool)
         case setUndoCompletionConfirmation(Bool)
@@ -1361,7 +1362,13 @@ struct TaskDetailFeature: Reducer {
 
         case .editSaveTapped:
             guard let request = editSaveRequestBuilder().build(state: &state) else { return .none }
+            applyEditSaveRequest(request, to: &state)
             return handleEditSave(request)
+
+        case let .editSaveRejected(task):
+            state.task = task
+            updateDerivedState(&state)
+            return .none
 
         case .confirmAssumedPastDays:
             return completionLogActionHandler().confirmAssumedPastDays(state: &state)

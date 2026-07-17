@@ -41,7 +41,9 @@ struct HomeFeatureTaskDetailActionRouter<State, Action> {
              .confirmAssumedPastDays,
              .confirmUndoCompletion,
              .todoStateChanged(_),
-             .confirmBlockedStateCompletion:
+             .confirmBlockedStateCompletion,
+             .editSaveTapped,
+             .editSaveRejected(_):
             syncSelectedTaskAndLogs(&state)
             return .none
 

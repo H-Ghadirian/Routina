@@ -277,6 +277,123 @@ struct TaskDetailEditSaveRequestBuilder {
     }
 }
 
+extension TaskDetailFeature {
+    func applyEditSaveRequest(
+        _ request: TaskDetailEditSaveRequest,
+        to state: inout State
+    ) {
+        let previousScheduleMode = state.task.scheduleMode
+        let previousRecurrenceRule = state.task.recurrenceRule
+        let previousRollingScheduleAnchor = state.task.scheduleAnchor ?? state.task.lastDone
+        let previousCreatedAt = state.task.createdAt
+        let updatedTask = state.task.detachedCopy()
+
+        updatedTask.name = request.name
+        updatedTask.emoji = request.emoji
+        updatedTask.notes = CalendarTaskImportSupport.notesPreservingCalendarMarkers(
+            visibleNotes: request.notes,
+            existingNotes: updatedTask.notes
+        )
+        updatedTask.linkItems = request.linkItems.isEmpty
+            ? (
+                request.links.isEmpty
+                    ? request.link.map { [RoutineTaskLink(title: nil, url: $0)] } ?? []
+                    : request.links.map { RoutineTaskLink(title: nil, url: $0) }
+            )
+            : request.linkItems
+        updatedTask.reminderAt = request.reminderAt
+        updatedTask.priority = request.priority
+        updatedTask.importance = request.importance
+        updatedTask.urgency = request.urgency
+        updatedTask.pressure = request.pressure
+        updatedTask.color = request.color
+        updatedTask.imageData = request.imageData
+        updatedTask.voiceNote = request.voiceNote
+        updatedTask.placeIDs = RoutinePlaceIDStorage.sanitized(
+            request.placeIDs.isEmpty ? request.placeID.map { [$0] } ?? [] : request.placeIDs
+        )
+        updatedTask.tags = request.tags
+        updatedTask.goalIDs = RoutineGoalIDStorage.sanitized(request.goals.map(\.id))
+        updatedTask.eventIDs = RoutineEventIDStorage.sanitized(request.eventIDs)
+        updatedTask.replaceRelationships(request.relationships)
+        updatedTask.replaceSteps(request.steps)
+        updatedTask.scheduleMode = request.scheduleMode
+        updatedTask.deadline = request.scheduleMode.taskType == .todo ? request.deadline : nil
+        updatedTask.isAllDay = request.isAllDay
+        updatedTask.routineDurationMode = request.scheduleMode.taskType == .todo
+            ? .oneDay
+            : request.routineDurationMode
+        updatedTask.availabilityStartDate = request.scheduleMode.taskType == .todo
+            ? request.availabilityStartDate
+            : nil
+        updatedTask.availabilityEndDate = request.scheduleMode.taskType == .todo
+            ? request.availabilityEndDate
+            : nil
+        updatedTask.plannedDate = RoutineTask.normalizedPlannedDate(request.plannedDate, calendar: calendar)
+        updatedTask.recurrenceRule = request.recurrenceRule
+        updatedTask.recurrenceTimeRangeRole = request.recurrenceRule.timeRange == nil
+            ? .availability
+            : request.recurrenceTimeRangeRole
+        updatedTask.replaceChecklistItems(request.checklistItems)
+        if !updatedTask.usesOngoingLifecycle {
+            updatedTask.activityState = .idle
+            updatedTask.ongoingSince = nil
+        }
+        updatedTask.autoAssumeDailyDone = request.autoAssumeDailyDone
+            && RoutineAssumedCompletion.isEligible(
+                scheduleMode: request.scheduleMode,
+                recurrenceRule: request.recurrenceRule,
+                trackingCadenceEnabled: request.trackingCadenceEnabled,
+                hasSequentialSteps: !request.steps.isEmpty,
+                hasChecklistItems: !request.checklistItems.isEmpty
+            )
+        updatedTask.autoAssumeDoneTimeOfDay = updatedTask.autoAssumeDailyDone
+            ? (request.autoAssumeDoneTimeOfDay ?? RoutineAssumedCompletion.defaultDoneTimeOfDay)
+            : nil
+        updatedTask.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(
+            request.estimatedDurationMinutes
+        )
+        updatedTask.actualDurationMinutes = request.scheduleMode.taskType == .todo
+            || request.scheduleMode.taskType == .record
+            ? RoutineTask.sanitizedActualDurationMinutes(request.actualDurationMinutes)
+            : nil
+        updatedTask.storyPoints = RoutineTask.sanitizedStoryPoints(request.storyPoints)
+        updatedTask.focusModeEnabled = request.focusModeEnabled
+        updatedTask.trackingCadenceEnabled = request.scheduleMode.taskType == .record
+            ? request.trackingCadenceEnabled
+            : true
+        updatedTask.trackingNudgesEnabled = request.scheduleMode.taskType == .record
+            ? request.trackingCadenceEnabled && request.trackingNudgesEnabled
+            : true
+
+        if !request.scheduleMode.usesRoutineCadence || !updatedTask.trackingCadenceEnabled {
+            updatedTask.scheduleAnchor = updatedTask.lastDone
+            updatedTask.interval = 1
+        } else if previousScheduleMode != request.scheduleMode || previousRecurrenceRule != request.recurrenceRule {
+            updatedTask.interval = Int16(clamping: request.recurrenceRule.approximateIntervalDays)
+            if previousScheduleMode != .oneOff,
+               previousRecurrenceRule.kind == .intervalDays,
+               request.recurrenceRule.kind == .intervalDays,
+               let previousRollingScheduleAnchor {
+                updatedTask.scheduleAnchor = previousRollingScheduleAnchor
+            } else {
+                updatedTask.scheduleAnchor = now
+            }
+        } else if updatedTask.scheduleAnchor == nil, let existingAnchor = updatedTask.lastDone ?? updatedTask.createdAt {
+            updatedTask.interval = Int16(clamping: request.recurrenceRule.approximateIntervalDays)
+            updatedTask.scheduleAnchor = existingAnchor
+        } else {
+            updatedTask.interval = Int16(clamping: request.recurrenceRule.approximateIntervalDays)
+        }
+
+        updatedTask.createdAt = previousCreatedAt
+        state.task = updatedTask
+        state.taskAttachments = request.attachments
+        state.editAttachments = request.attachments
+        updateDerivedState(&state)
+    }
+}
+
 enum TaskDetailRoutineChecklistModeNormalizer {
     static func effectiveScheduleMode(
         currentMode: RoutineScheduleMode,

@@ -168,6 +168,19 @@ Given a checklist runout routine has an item due yesterday
 When the user selects yesterday in Task Details and checks that item
 Then the item is reset using yesterday as the done date, the selected-day row appears checked, and future selected dates remain unavailable for runout updates
 
+### Task Detail Checklist Removal Appears Immediately After Save
+
+Area: Tasks
+Decision links: [0069](../decisions/0069-support-optional-task-checklists.md), [0253](../decisions/0253-guard-checklist-detail-mutations-through-reloads.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDetailEditSaveTests.swift`
+- `Tests/Shared/HomeFeatureTaskDetailActionRouterTests.swift`
+
+Given Task Details is editing a routine or task with checklist items
+When the user removes every checklist item and saves the edit
+Then the selected detail state and Home selected row drop the checklist immediately while persistence and reloads catch up
+
 ### Daily Tracking Checklist Auto-Assume Uses Day-Level Completion
 
 Area: Tasks

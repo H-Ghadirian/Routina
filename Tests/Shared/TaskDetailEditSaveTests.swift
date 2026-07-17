@@ -1103,6 +1103,57 @@ struct TaskDetailEditSaveTests {
     }
 
     @Test
+    func editSaveTapped_removingAllChecklistItemsUpdatesDetailImmediately() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Meal",
+            interval: 1,
+            lastDone: nil,
+            emoji: "✨",
+            checklistItems: [
+                RoutineChecklistItem(title: "first meal", intervalDays: 1, createdAt: now)
+            ],
+            scheduleMode: .fixedIntervalChecklist
+        )
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task.detachedCopy(),
+                isEditSheetPresented: true,
+                editRoutineName: "Meal",
+                editRoutineEmoji: "✨",
+                editScheduleMode: .fixedIntervalChecklist,
+                editRoutineChecklistItems: [],
+                editFrequency: .day,
+                editFrequencyValue: 1
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+            $0.notificationClient.cancel = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editSaveTapped) {
+            $0.isEditSheetPresented = false
+        }
+
+        #expect(store.state.task.scheduleMode == .fixedInterval)
+        #expect(store.state.task.checklistItems.isEmpty)
+        #expect(store.state.detailChecklistItems.isEmpty)
+
+        await store.receive(.onAppear) {
+            $0.selectedDate = calendar.startOfDay(for: now)
+        }
+    }
+
+    @Test
     func editSaveTapped_switchingToChecklistWithoutItemsShowsValidation() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()

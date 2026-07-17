@@ -838,6 +838,8 @@ struct TaskDetailFeatureTests {
         await store.send(.editSaveTapped) {
             $0.isEditSheetPresented = false
         }
+        await store.receive(.editSaveRejected(editableTask.detachedCopy()))
+        #expect(store.state.task.name == "Workout")
 
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let names = tasks.compactMap(\.name)
