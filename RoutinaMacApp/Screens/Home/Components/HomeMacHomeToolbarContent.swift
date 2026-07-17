@@ -1406,7 +1406,7 @@ struct HomeMacPlanFocusToolbarButton: View {
             Button {
                 onTaskFocusDurationSelected(0)
             } label: {
-                Label("Count up", systemImage: "stopwatch")
+                Text("Count up")
             }
 
             Divider()
