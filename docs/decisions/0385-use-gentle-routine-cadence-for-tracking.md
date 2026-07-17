@@ -6,7 +6,7 @@ Date: 2026-07-13
 
 Refines: [0177 Separate Interval and Calendar Repeat Controls](0177-separate-interval-and-calendar-repeat-controls.md), [0181 Allow Gentle Calendar Repeats](0181-allow-gentle-calendar-repeats.md), [0186 Put Item Runout in Repeat Type](0186-put-item-runout-in-repeat-type.md), [0200 Support Task Planned Dates](0200-support-task-planned-dates.md), [0382 Split Record Task Form Controls](0382-split-record-task-form-controls.md), [0383 Use Tracking as Record Label](0383-use-tracking-as-record-label.md), [0384 Show Tracking as Mac Sidebar Section](0384-show-tracking-as-mac-sidebar-section.md)
 
-Refined by: [0396 Allow Quiet Tracking Cadence](0396-allow-quiet-tracking-cadence.md), [0397 Make Tracking Cadence Optional](0397-make-tracking-cadence-optional.md)
+Refined by: [0396 Allow Quiet Tracking Cadence](0396-allow-quiet-tracking-cadence.md), [0397 Make Tracking Cadence Optional](0397-make-tracking-cadence-optional.md), [0400 Plan Tracking Rows Into Today](0400-plan-tracking-rows-into-today.md)
 
 ## Context
 
@@ -21,6 +21,8 @@ Tracking uses the internal `record` task type and keeps the user-facing `Trackin
 Tracking exposes the same routine cadence controls: `Repeat type`, interval repeat, calendar repeat, and checklist `Item runout`. Standard tracking uses steps, checklist tracking can complete when every item is done, and item-runout tracking stores checklist item intervals in the same way runout routines do.
 
 Tracking still omits due dates, exact reminders, and todo date availability. Non-daily tracking can store planned dates like non-daily routines, but Mac Home still claims active unpinned tracking rows into the top-level `Tracking` section instead of date/planning buckets.
+
+[0400 Plan Tracking Rows Into Today](0400-plan-tracking-rows-into-today.md) later refines this placement rule: explicit planned dates now place eligible Tracking rows into `Today` or enabled `Tomorrow`, while cadence-only Tracking stays in `Tracking`.
 
 ## Consequences
 

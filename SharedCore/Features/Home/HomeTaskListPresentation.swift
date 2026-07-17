@@ -454,18 +454,11 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         let activeDisplaysAfterCustomClaim = unpinnedActiveDisplays.filter {
             !claimedTaskIDs.contains($0.taskID)
         }
-        let trackingTasks = claimTasks(
-            filtering.filteredTrackingTasks(activeDisplaysAfterCustomClaim),
-            claimedTaskIDs: &claimedTaskIDs
-        )
-        let activeDisplaysAfterTrackingClaim = activeDisplaysAfterCustomClaim.filter {
-            !claimedTaskIDs.contains($0.taskID)
-        }
         let plannedTodayTasks = claimTasks(
-            filtering.filteredPlannedTodayTasks(activeDisplaysAfterTrackingClaim),
+            filtering.filteredPlannedTodayTasks(activeDisplaysAfterCustomClaim),
             claimedTaskIDs: &claimedTaskIDs
         )
-        let activeDisplaysAfterTodayClaim = unpinnedActiveDisplays.filter {
+        let activeDisplaysAfterTodayClaim = activeDisplaysAfterCustomClaim.filter {
             !claimedTaskIDs.contains($0.taskID)
         }
         let plannedTomorrowTasks = showTomorrowSection
@@ -474,7 +467,14 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                 claimedTaskIDs: &claimedTaskIDs
             )
             : []
-        let unplannedActiveDisplays = activeDisplaysAfterTodayClaim.filter {
+        let activeDisplaysAfterTomorrowClaim = activeDisplaysAfterTodayClaim.filter {
+            !claimedTaskIDs.contains($0.taskID)
+        }
+        let trackingTasks = claimTasks(
+            filtering.filteredTrackingTasks(activeDisplaysAfterTomorrowClaim),
+            claimedTaskIDs: &claimedTaskIDs
+        )
+        let unplannedActiveDisplays = activeDisplaysAfterTomorrowClaim.filter {
             !claimedTaskIDs.contains($0.taskID)
         }
         let dailyTasks = claimTasks(

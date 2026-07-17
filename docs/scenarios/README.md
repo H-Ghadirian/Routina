@@ -350,7 +350,7 @@ Then the primary action, active range, completed span, and undo behavior stay co
 ### Today Routines Stay In Today Section
 
 Area: Tasks
-Decision links: [0202](../decisions/0202-nest-daily-routines-under-mac-plan-today.md), [0247](../decisions/0247-make-mac-daily-routine-grouping-optional.md), [0266](../decisions/0266-show-calendar-routines-in-plan-today.md)
+Decision links: [0202](../decisions/0202-nest-daily-routines-under-mac-plan-today.md), [0247](../decisions/0247-make-mac-daily-routine-grouping-optional.md), [0266](../decisions/0266-show-calendar-routines-in-plan-today.md), [0400](../decisions/0400-plan-tracking-rows-into-today.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/macOS/HomeFeatureTaskListModeTests.swift`
@@ -364,6 +364,10 @@ Then daily routines remain in the today area, visually merged by default and nes
 Given Mac Home shows expanded `Today`
 When planned rows are visible
 Then the header and rows share one full-bleed section surface with square horizontal edges, no colored side borders, and spacing between task cards
+
+Given a Tracking row has an explicit plan date for today or tomorrow
+When Mac Home derives the sidebar sections
+Then the row appears in `Today` or enabled `Tomorrow` before unplanned Tracking rows are claimed into `Tracking`
 
 Given Mac Home shows expanded `Future`
 When future task groups are visible
