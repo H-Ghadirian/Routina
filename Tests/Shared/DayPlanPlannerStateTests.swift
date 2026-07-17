@@ -5136,6 +5136,105 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func plannerDuplicateCreatesNewBlockAtTargetAndUndoRemovesCopy() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let undoManager = UndoManager()
+        RoutinaUndoSupport.setActiveUndoManager(undoManager)
+        RoutinaUndoSupport.configure(
+            undoManagerProvider: { undoManager },
+            contextPreparer: { $0.undoManager = undoManager }
+        )
+        defer {
+            RoutinaUndoSupport.setActiveUndoManager(nil)
+            RoutinaUndoSupport.configure(
+                undoManagerProvider: { nil },
+                contextPreparer: { _ in }
+            )
+        }
+
+        let sourceDate = try #require(date("2026-05-02T12:00:00Z"))
+        let targetDate = try #require(date("2026-06-25T12:00:00Z"))
+        let block = dayPlanBlock(on: sourceDate, calendar: calendar)
+        let sourceDayKey = DayPlanStorage.dayKey(for: sourceDate, calendar: calendar)
+        let targetDayKey = DayPlanStorage.dayKey(for: targetDate, calendar: calendar)
+        DayPlanStorage.saveBlocks([block], forDayKey: sourceDayKey, context: context)
+        let planner = DayPlanPlannerState(selectedDate: targetDate)
+        planner.weekBlocksByDayKey = [sourceDayKey: [block]]
+
+        let didDuplicate = planner.duplicateBlock(
+            block.id,
+            to: targetDate,
+            startMinute: 9 * 60,
+            calendar: calendar,
+            context: context
+        )
+
+        let sourceBlocks = DayPlanStorage.loadBlocks(forDayKey: sourceDayKey, context: context)
+        let targetBlocks = DayPlanStorage.loadBlocks(forDayKey: targetDayKey, context: context)
+        let duplicatedBlock = try #require(targetBlocks.first)
+        #expect(didDuplicate)
+        #expect(sourceBlocks.map(\.id) == [block.id])
+        #expect(duplicatedBlock.id != block.id)
+        #expect(duplicatedBlock.taskID == block.taskID)
+        #expect(duplicatedBlock.startMinute == 9 * 60)
+        #expect(duplicatedBlock.durationMinutes == block.durationMinutes)
+        #expect(duplicatedBlock.titleSnapshot == block.titleSnapshot)
+        #expect(duplicatedBlock.emojiSnapshot == block.emojiSnapshot)
+        #expect(planner.selectedDate == calendar.startOfDay(for: targetDate))
+        #expect(planner.selectedBlockID == duplicatedBlock.id)
+        #expect(undoManager.canUndo)
+
+        undoManager.undo()
+
+        #expect(DayPlanStorage.loadBlocks(forDayKey: sourceDayKey, context: context).map(\.id) == [block.id])
+        #expect(DayPlanStorage.loadBlocks(forDayKey: targetDayKey, context: context).isEmpty)
+        #expect(planner.selectedDate == calendar.startOfDay(for: sourceDate))
+        #expect(planner.selectedBlockID == block.id)
+        #expect(planner.highlightedBlockID == block.id)
+        #expect(planner.highlightedBlockScrollMinute == block.startMinute)
+    }
+
+    @Test
+    func plannerDuplicateRejectsOverlappingTargetBlock() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let sourceDate = try #require(date("2026-05-02T12:00:00Z"))
+        let targetDate = try #require(date("2026-06-25T12:00:00Z"))
+        let block = dayPlanBlock(on: sourceDate, calendar: calendar)
+        let sourceDayKey = DayPlanStorage.dayKey(for: sourceDate, calendar: calendar)
+        let targetDayKey = DayPlanStorage.dayKey(for: targetDate, calendar: calendar)
+        let targetBlock = DayPlanBlock(
+            taskID: UUID(uuidString: "00000000-0000-0000-0000-000000000003") ?? UUID(),
+            dayKey: targetDayKey,
+            startMinute: 9 * 60,
+            durationMinutes: 60,
+            titleSnapshot: "Existing block",
+            createdAt: targetDate,
+            updatedAt: targetDate
+        )
+        DayPlanStorage.saveBlocks([block], forDayKey: sourceDayKey, context: context)
+        DayPlanStorage.saveBlocks([targetBlock], forDayKey: targetDayKey, context: context)
+        let planner = DayPlanPlannerState(selectedDate: targetDate)
+        planner.weekBlocksByDayKey = [
+            sourceDayKey: [block],
+            targetDayKey: [targetBlock],
+        ]
+
+        let didDuplicate = planner.duplicateBlock(
+            block.id,
+            to: targetDate,
+            startMinute: 9 * 60,
+            calendar: calendar,
+            context: context
+        )
+
+        #expect(!didDuplicate)
+        #expect(DayPlanStorage.loadBlocks(forDayKey: sourceDayKey, context: context).map(\.id) == [block.id])
+        #expect(DayPlanStorage.loadBlocks(forDayKey: targetDayKey, context: context).map(\.id) == [targetBlock.id])
+    }
+
+    @Test
     func plannerMoveUndoRestoresBlockAndFocusesOriginalDate() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

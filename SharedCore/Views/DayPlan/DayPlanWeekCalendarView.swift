@@ -106,6 +106,7 @@ struct DayPlanWeekCalendarView: View {
     var onConfirmTimelineActivity: (DayPlanTimelineActivityBlock, Date) -> Void = { _, _ in }
     var onHideTimelineActivity: (DayPlanTimelineActivityBlock, Date) -> Void = { _, _ in }
     var onMoveBlock: (DayPlanBlock.ID, Date, Int) -> Void
+    var onDuplicateBlock: (DayPlanBlock.ID, Date, Int) -> Void = { _, _, _ in }
     var onMoveTimelineActivity: (DayPlanTimelineActivityBlock, Date, Int) -> Void = { _, _, _ in }
     var onMoveBlockToAllDay: (DayPlanBlock.ID, Date) -> Void = { _, _ in }
     var onMoveTimelineActivityToAllDay: (DayPlanTimelineActivityBlock, Date) -> Void = { _, _ in }
@@ -395,6 +396,7 @@ struct DayPlanWeekCalendarView: View {
                                 dropPreview: $dropPreview,
                                 blockedIntervalsForDate: blockedIntervalsForDate,
                                 onMoveBlock: onMoveBlock,
+                                onDuplicateBlock: onDuplicateBlock,
                                 onMoveTimelineActivity: onMoveTimelineActivity,
                                 onDropTask: onDropTask
                             )

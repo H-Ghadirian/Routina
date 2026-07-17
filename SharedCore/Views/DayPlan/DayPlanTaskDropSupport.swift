@@ -1,6 +1,9 @@
 import Foundation
 import SwiftUI
 import UniformTypeIdentifiers
+#if os(macOS)
+import AppKit
+#endif
 
 enum DayPlanMotion {
     static let dropPreview = Animation.interactiveSpring(
@@ -26,6 +29,16 @@ enum DayPlanBlockDragPayload {
     static func blockID(from text: String) -> DayPlanBlock.ID? {
         guard text.hasPrefix(prefix) else { return nil }
         return UUID(uuidString: String(text.dropFirst(prefix.count)))
+    }
+}
+
+enum DayPlanDropModifierState {
+    static var isCopyModifierActive: Bool {
+        #if os(macOS)
+        NSEvent.modifierFlags.contains(.command)
+        #else
+        false
+        #endif
     }
 }
 
@@ -92,6 +105,7 @@ struct DayPlanTaskDropDelegate: DropDelegate {
     @Binding var dropPreview: DayPlanDropPreview?
     let blockedIntervalsForDate: (Date) -> [DayPlanBlockedInterval]
     let onMoveBlock: (DayPlanBlock.ID, Date, Int) -> Void
+    let onDuplicateBlock: (DayPlanBlock.ID, Date, Int) -> Void
     let onMoveTimelineActivity: (DayPlanTimelineActivityBlock, Date, Int) -> Void
     let onDropTask: (UUID, Date, Int) -> Void
 
@@ -122,7 +136,7 @@ struct DayPlanTaskDropDelegate: DropDelegate {
         guard updatePreview(for: info) else {
             return nil
         }
-        return DropProposal(operation: draggedBlockID == nil && draggedTimelineActivity == nil ? .copy : .move)
+        return DropProposal(operation: proposedDropOperation)
     }
 
     func dropExited(info: DropInfo) {
@@ -138,9 +152,14 @@ struct DayPlanTaskDropDelegate: DropDelegate {
         }
 
         if let draggedBlockID {
+            let isDuplicateDrop = DayPlanDropModifierState.isCopyModifierActive
             finishDrop()
             withAnimation(DayPlanMotion.dropCommit) {
-                onMoveBlock(draggedBlockID, target.date, target.startMinute)
+                if isDuplicateDrop {
+                    onDuplicateBlock(draggedBlockID, target.date, target.startMinute)
+                } else {
+                    onMoveBlock(draggedBlockID, target.date, target.startMinute)
+                }
             }
             return true
         }
@@ -159,6 +178,7 @@ struct DayPlanTaskDropDelegate: DropDelegate {
         }
 
         finishDrop()
+        let isDuplicateDrop = DayPlanDropModifierState.isCopyModifierActive
 
         provider.loadObject(ofClass: NSString.self) { object, _ in
             guard
@@ -169,7 +189,11 @@ struct DayPlanTaskDropDelegate: DropDelegate {
             DispatchQueue.main.async {
                 if let blockID = DayPlanBlockDragPayload.blockID(from: payloadText) {
                     withAnimation(DayPlanMotion.dropCommit) {
-                        onMoveBlock(blockID, target.date, target.startMinute)
+                        if isDuplicateDrop {
+                            onDuplicateBlock(blockID, target.date, target.startMinute)
+                        } else {
+                            onMoveBlock(blockID, target.date, target.startMinute)
+                        }
                     }
                 } else if let taskID = UUID(uuidString: payloadText) {
                     withAnimation(DayPlanMotion.dropCommit) {
@@ -179,6 +203,16 @@ struct DayPlanTaskDropDelegate: DropDelegate {
             }
         }
         return true
+    }
+
+    private var proposedDropOperation: DropOperation {
+        if draggedBlockID != nil {
+            return DayPlanDropModifierState.isCopyModifierActive ? .copy : .move
+        }
+        if draggedTimelineActivity != nil {
+            return .move
+        }
+        return .copy
     }
 
     @discardableResult

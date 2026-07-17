@@ -2726,6 +2726,19 @@ private struct DayPlanTimelinePanelContentView: View {
                     }
                     planner.moveBlock(blockID, to: date, startMinute: minute, calendar: calendar, context: modelContext)
                 },
+                onDuplicateBlock: { blockID, date, minute in
+                    activatePlannerUndoManager()
+                    let durationMinutes = plannedBlock(with: blockID)?.durationMinutes ?? planner.durationMinutes
+                    guard !hasSleepConflict(
+                        on: date,
+                        startMinute: minute,
+                        durationMinutes: durationMinutes,
+                        blockedIntervalsByDayKey: blockedIntervalsByDayKey
+                    ) else {
+                        return
+                    }
+                    planner.duplicateBlock(blockID, to: date, startMinute: minute, calendar: calendar, context: modelContext)
+                },
                 onMoveTimelineActivity: { activity, date, minute in
                     guard !hasSleepConflict(
                         on: date,

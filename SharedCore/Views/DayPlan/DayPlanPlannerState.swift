@@ -691,6 +691,80 @@ final class DayPlanPlannerState: ObservableObject {
     }
 
     @discardableResult
+    func duplicateBlock(_ id: DayPlanBlock.ID, to date: Date, startMinute: Int, calendar: Calendar, context: ModelContext) -> Bool {
+        guard let locatedBlock = locatedBlock(id, calendar: calendar) else { return false }
+
+        let targetDayKey = DayPlanStorage.dayKey(for: date, calendar: calendar)
+        let beforeSnapshots = snapshots(forDayKeys: [targetDayKey], context: context)
+        let targetMinimumDuration = minimumDurationForExistingBlock(locatedBlock.block)
+        let targetStartMinute = DayPlanBlock.clampedStartMinute(
+            startMinute,
+            minimumDurationMinutes: targetMinimumDuration
+        )
+        let targetDuration = DayPlanBlock.clampedDuration(
+            locatedBlock.block.durationMinutes,
+            startMinute: targetStartMinute,
+            minimumDurationMinutes: targetMinimumDuration
+        )
+        var targetBlocks = weekBlocksByDayKey[targetDayKey] ?? DayPlanStorage.loadBlocks(forDayKey: targetDayKey, context: context)
+        let targetEndMinute = targetStartMinute + targetDuration
+        let hasConflict = targetBlocks.contains { block in
+            max(targetStartMinute, block.startMinute) < min(targetEndMinute, block.endMinute)
+        }
+
+        guard !hasConflict else { return false }
+
+        let now = Date()
+        let duplicatedBlock = DayPlanBlock(
+            taskID: locatedBlock.block.taskID,
+            dayKey: targetDayKey,
+            startMinute: targetStartMinute,
+            durationMinutes: targetDuration,
+            titleSnapshot: locatedBlock.block.titleSnapshot,
+            emojiSnapshot: locatedBlock.block.emojiSnapshot,
+            createdAt: now,
+            updatedAt: now,
+            minimumDurationMinutes: targetMinimumDuration
+        )
+
+        targetBlocks.append(duplicatedBlock)
+        let sortedTargetBlocks = sortedDayBlocks(targetBlocks)
+        weekBlocksByDayKey[targetDayKey] = sortedTargetBlocks
+        DayPlanStorage.saveBlocks(sortedTargetBlocks, forDayKey: targetDayKey, context: context)
+
+        let targetDate = calendar.startOfDay(for: date)
+        selectedDate = targetDate
+        focusedSleep = nil
+        selectedBlockID = duplicatedBlock.id
+        selectedTaskID = duplicatedBlock.taskID
+        self.startMinute = duplicatedBlock.startMinute
+        durationMinutes = duplicatedBlock.durationMinutes
+        syncSelectedDayBlocks(calendar: calendar, context: context)
+        let afterSnapshots = snapshots(forDayKeys: [targetDayKey], context: context)
+        let sourceDate = dateForDayKey(locatedBlock.dayKey, calendar: calendar) ?? selectedDate
+        registerPlannerUndoIfNeeded(
+            actionName: "Duplicate Planner Block",
+            beforeSnapshots: beforeSnapshots,
+            afterSnapshots: afterSnapshots,
+            beforeFocus: DayPlanPlannerUndoSide(
+                snapshots: beforeSnapshots,
+                focusedBlockID: locatedBlock.block.id,
+                focusedDate: sourceDate,
+                focusedStartMinute: locatedBlock.block.startMinute
+            ),
+            afterFocus: DayPlanPlannerUndoSide(
+                snapshots: afterSnapshots,
+                focusedBlockID: duplicatedBlock.id,
+                focusedDate: targetDate,
+                focusedStartMinute: duplicatedBlock.startMinute
+            ),
+            calendar: calendar,
+            context: context
+        )
+        return true
+    }
+
+    @discardableResult
     func confirmTimelineActivity(
         _ activity: DayPlanTimelineActivityBlock,
         on date: Date,
