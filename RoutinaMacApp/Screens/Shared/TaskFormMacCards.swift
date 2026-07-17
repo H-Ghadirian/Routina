@@ -551,6 +551,9 @@ struct TaskFormMacBehaviorCard: View {
                 Divider()
                 recordCompletionControl
                 routineCadenceControls
+                if showsAssumedDoneControl {
+                    assumedDoneControl
+                }
             }
         }
     }
@@ -559,10 +562,6 @@ struct TaskFormMacBehaviorCard: View {
         VStack(alignment: .leading, spacing: 16) {
             if model.taskType.wrappedValue == .routine {
                 scheduleResultPreview
-
-                if showsAssumedDoneControl {
-                    assumedDoneControl
-                }
             }
 
             if model.supportsExactDateReminder {

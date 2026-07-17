@@ -343,7 +343,7 @@ struct TaskFormIOSRepeatPatternSections: View {
             recurrenceSpecificSections
         }
 
-        if model.taskType.wrappedValue == .routine, showsAssumedDoneSection {
+        if showsAssumedDoneSection {
             assumedDoneSection
         }
     }
