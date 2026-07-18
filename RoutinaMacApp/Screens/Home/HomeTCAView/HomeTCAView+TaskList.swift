@@ -1227,6 +1227,10 @@ extension HomeTCAView {
     private func taskListSectionIsExpanded(
         _ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     ) -> Bool {
+        if isMacSearchSidebarRevealActive {
+            return true
+        }
+
         switch section.kind {
         case .plannedToday, .plannedTomorrow, .custom, .tracking:
             return !collapsedTagTaskListSectionIDs.contains(section.id)
@@ -1269,6 +1273,10 @@ extension HomeTCAView {
         _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
     ) -> Bool {
         guard group.isCollapsible else { return true }
+        if isMacSearchSidebarRevealActive {
+            return true
+        }
+
         switch group.kind {
         case .daily:
             return !isMacPlanTodayDailyRoutinesGroupCollapsed
@@ -1375,6 +1383,10 @@ extension HomeTCAView {
         _ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
         collapsedTagIDs: Set<String>
     ) -> Bool {
+        if isMacSearchSidebarRevealActive {
+            return true
+        }
+
         switch section.kind {
         case .plannedToday, .plannedTomorrow, .custom, .tracking, .tag, .untagged:
             return !collapsedTagIDs.contains(section.id)
@@ -1394,6 +1406,10 @@ extension HomeTCAView {
         collapsedTagIDs: Set<String>
     ) -> Bool {
         guard group.isCollapsible else { return true }
+        if isMacSearchSidebarRevealActive {
+            return true
+        }
+
         switch group.kind {
         case .daily:
             return !isMacPlanTodayDailyRoutinesGroupCollapsed

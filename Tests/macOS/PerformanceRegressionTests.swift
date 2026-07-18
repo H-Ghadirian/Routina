@@ -47,6 +47,41 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(source.contains("ids.subtract(subsectionIDs)"))
     }
 
+    func testMacToolbarSearchTemporarilyRevealsSidebarAndRestoresCollapseState() throws {
+        let homeSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView.swift")
+        let platformSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift")
+        let taskListSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+TaskList.swift")
+        let decisionSource = try Self.sourceFile("docs/decisions/0404-temporarily-expand-mac-sidebar-during-search.md")
+
+        XCTAssertTrue(homeSource.contains("struct HomeMacSearchSidebarRevealSnapshot"))
+        XCTAssertTrue(homeSource.contains("let sidebarColumnVisibility: NavigationSplitViewVisibility"))
+        XCTAssertTrue(homeSource.contains("let isDailyRoutinesSectionCollapsed: Bool"))
+        XCTAssertTrue(homeSource.contains("let isMacPlanTodayDailyRoutinesGroupCollapsed: Bool"))
+        XCTAssertTrue(homeSource.contains("let isMacFutureTasksSectionCollapsed: Bool"))
+        XCTAssertTrue(homeSource.contains("let isArchivedSectionCollapsed: Bool"))
+        XCTAssertTrue(homeSource.contains("let collapsedTagTaskListSectionIDsStorage: String"))
+        XCTAssertTrue(homeSource.contains("@State var macSearchSidebarRevealSnapshot: HomeMacSearchSidebarRevealSnapshot?"))
+        XCTAssertTrue(homeSource.contains("var isMacSearchSidebarRevealActive: Bool"))
+
+        XCTAssertTrue(platformSource.contains("updateMacSearchSidebarReveal(for: searchText.wrappedValue)"))
+        XCTAssertTrue(platformSource.contains(".onChange(of: searchText.wrappedValue)"))
+        XCTAssertTrue(platformSource.contains("let isSearching = !rawSearchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty"))
+        XCTAssertTrue(platformSource.contains("beginMacSearchSidebarRevealIfNeeded()"))
+        XCTAssertTrue(platformSource.contains("restoreMacSearchSidebarRevealIfNeeded()"))
+        XCTAssertTrue(platformSource.contains("sidebarColumnVisibility: macHomeSidebarColumnVisibility"))
+        XCTAssertTrue(platformSource.contains("collapsedTagTaskListSectionIDsStorage: collapsedTagTaskListSectionIDsStorage"))
+        XCTAssertTrue(platformSource.contains("macHomeSidebarColumnVisibility = .all"))
+        XCTAssertTrue(platformSource.contains("isMacFutureTasksSectionCollapsed = snapshot.isMacFutureTasksSectionCollapsed"))
+        XCTAssertTrue(platformSource.contains("collapsedTagTaskListSectionIDsStorage = snapshot.collapsedTagTaskListSectionIDsStorage"))
+        XCTAssertTrue(platformSource.contains("macHomeSidebarColumnVisibility = snapshot.sidebarColumnVisibility"))
+        XCTAssertTrue(platformSource.contains("macSearchSidebarRevealSnapshot = nil"))
+
+        XCTAssertTrue(taskListSource.contains("if isMacSearchSidebarRevealActive {\n            return true\n        }\n\n        switch section.kind"))
+        XCTAssertTrue(taskListSource.contains("if isMacSearchSidebarRevealActive {\n            return true\n        }\n\n        switch group.kind"))
+        XCTAssertTrue(decisionSource.contains("temporarily reveals the left sidebar column"))
+        XCTAssertTrue(decisionSource.contains("Clearing the search query restores the captured sidebar column visibility"))
+    }
+
     func testHomeRefreshUsesCentralCloudSyncFanIn() throws {
         let source = try Self.sourceFile("SharedCore/Screens/Home/HomeTCAView+Refresh.swift")
 

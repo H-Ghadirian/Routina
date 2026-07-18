@@ -114,6 +114,15 @@ struct MacTimelineSidebarScrollRequest: Equatable {
     private let token = UUID()
 }
 
+struct HomeMacSearchSidebarRevealSnapshot {
+    let sidebarColumnVisibility: NavigationSplitViewVisibility
+    let isDailyRoutinesSectionCollapsed: Bool
+    let isMacPlanTodayDailyRoutinesGroupCollapsed: Bool
+    let isMacFutureTasksSectionCollapsed: Bool
+    let isArchivedSectionCollapsed: Bool
+    let collapsedTagTaskListSectionIDsStorage: String
+}
+
 struct HomeTCAView: View {
     let store: StoreOf<HomeFeature>
     let settingsStore: StoreOf<SettingsFeature>
@@ -270,6 +279,7 @@ struct HomeTCAView: View {
     @State var macHomeDetailMode: MacHomeDetailMode = .defaultLandingMode
     @State var macHomeProgressMode: MacHomeProgressMode = .stats
     @State var macHomeSidebarColumnVisibility: NavigationSplitViewVisibility = .all
+    @State var macSearchSidebarRevealSnapshot: HomeMacSearchSidebarRevealSnapshot?
     @State var macFilterDetailScope: HomeMacFilterDetailScope = .taskList
     @State var isMacFilterDetailFullscreen = false
     @State var selectedStatsDashboardScope: StatsDashboardScope = .all
@@ -594,6 +604,10 @@ homeContent
 
     var timelineRowVisibility: HomeTimelineRowVisibility {
         HomeTimelineRowVisibility(storageRawValue: timelineRowHiddenFieldsRawValue)
+    }
+
+    var isMacSearchSidebarRevealActive: Bool {
+        macSearchSidebarRevealSnapshot != nil
     }
 
     var selectedTaskBinding: Binding<UUID?> {

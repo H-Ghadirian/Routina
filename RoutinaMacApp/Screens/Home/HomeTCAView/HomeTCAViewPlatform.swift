@@ -445,6 +445,54 @@ extension HomeTCAView {
         }
     }
 
+    private func updateMacSearchSidebarReveal(for rawSearchText: String) {
+        let isSearching = !rawSearchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        if isSearching {
+            beginMacSearchSidebarRevealIfNeeded()
+        } else {
+            restoreMacSearchSidebarRevealIfNeeded()
+        }
+    }
+
+    private func beginMacSearchSidebarRevealIfNeeded() {
+        guard macSearchSidebarRevealSnapshot == nil else {
+            if macHomeSidebarColumnVisibility != .all {
+                withAnimation(.easeInOut(duration: 0.22)) {
+                    macHomeSidebarColumnVisibility = .all
+                }
+            }
+            return
+        }
+
+        let snapshot = HomeMacSearchSidebarRevealSnapshot(
+            sidebarColumnVisibility: macHomeSidebarColumnVisibility,
+            isDailyRoutinesSectionCollapsed: isDailyRoutinesSectionCollapsed,
+            isMacPlanTodayDailyRoutinesGroupCollapsed: isMacPlanTodayDailyRoutinesGroupCollapsed,
+            isMacFutureTasksSectionCollapsed: isMacFutureTasksSectionCollapsed,
+            isArchivedSectionCollapsed: isArchivedSectionCollapsed,
+            collapsedTagTaskListSectionIDsStorage: collapsedTagTaskListSectionIDsStorage
+        )
+
+        withAnimation(.easeInOut(duration: 0.22)) {
+            macSearchSidebarRevealSnapshot = snapshot
+            macHomeSidebarColumnVisibility = .all
+        }
+    }
+
+    private func restoreMacSearchSidebarRevealIfNeeded() {
+        guard let snapshot = macSearchSidebarRevealSnapshot else { return }
+
+        withAnimation(.easeInOut(duration: 0.22)) {
+            isDailyRoutinesSectionCollapsed = snapshot.isDailyRoutinesSectionCollapsed
+            isMacPlanTodayDailyRoutinesGroupCollapsed = snapshot.isMacPlanTodayDailyRoutinesGroupCollapsed
+            isMacFutureTasksSectionCollapsed = snapshot.isMacFutureTasksSectionCollapsed
+            isArchivedSectionCollapsed = snapshot.isArchivedSectionCollapsed
+            collapsedTagTaskListSectionIDsStorage = snapshot.collapsedTagTaskListSectionIDsStorage
+            macHomeSidebarColumnVisibility = snapshot.sidebarColumnVisibility
+            macSearchSidebarRevealSnapshot = nil
+        }
+    }
+
     var macBoardInspectorPresentedBinding: Binding<Bool> {
         Binding(
             get: {
@@ -477,6 +525,12 @@ extension HomeTCAView {
         searchText: Binding<String>
     ) -> some View {
         view
+            .onAppear {
+                updateMacSearchSidebarReveal(for: searchText.wrappedValue)
+            }
+            .onChange(of: searchText.wrappedValue) { _, newValue in
+                updateMacSearchSidebarReveal(for: newValue)
+            }
     }
 
     @ViewBuilder
