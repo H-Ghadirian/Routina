@@ -31,6 +31,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0403](0403-rename-custom-mac-sidebar-task-sections.md) refines [0394](0394-add-custom-mac-sidebar-task-sections.md) and [0395](0395-delete-custom-mac-sidebar-task-sections.md) for custom Mac sidebar section renaming:** Mac Home custom section headers expose a `Rename Section` context-menu action that updates only the durable catalog title for the existing section ID, preserving task assignments, collapse state, and manual-order keys while rejecting empty or duplicate normalized titles.
 - **[0402](0402-drag-planner-task-detail-title-to-schedule.md) refines [0095](0095-drag-tasks-to-planner-all-day-lane.md), [0296](0296-present-mac-task-details-as-planner-inspector.md), [0302](0302-minimize-fullscreen-mac-task-details-to-companion-pane.md), and [0371](0371-drag-day-task-sidebar-rows-to-schedule.md) for Planner task-detail scheduling:** The Mac task detail title starts the same task UUID drag payload when details are shown from the Planner-adjacent companion pane or from Full Details expanded from that pane, while keeping the title copy menu and leaving other detail presentations non-draggable.
 - **[0401](0401-duplicate-planner-blocks-with-command-drag.md) refines [0095](0095-drag-tasks-to-planner-all-day-lane.md), [0265](0265-scope-planner-block-undo-to-planner.md), [0371](0371-drag-day-task-sidebar-rows-to-schedule.md), and [0375](0375-split-time-blocks-from-available-windows.md) for Mac Planner block duplication:** In Calendar `Schedule`, Command-dragging a persisted timed Planner block creates a new timed Planner block with the same task, duration, and snapshots at the drop target while leaving the source block in place; normal dragging still moves, Calendar `List` stays read-only, and all-day drops keep the task-level all-day conversion model.
 - **[0400](0400-plan-tracking-rows-into-today.md) refines [0200](0200-support-task-planned-dates.md), [0384](0384-show-tracking-as-mac-sidebar-section.md), [0385](0385-use-gentle-routine-cadence-for-tracking.md), and [0394](0394-add-custom-mac-sidebar-task-sections.md) for explicit Tracking planning:** Active unpinned Tracking rows with explicit `plannedDate` values can appear in `Today` or enabled `Tomorrow` before leftover rows are claimed into `Tracking`, while cadence alone does not create planning placement and custom/pinned/archived priority remains intact.
@@ -297,6 +298,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0403](0403-rename-custom-mac-sidebar-task-sections.md) | Rename Custom Mac Sidebar Task Sections | Accepted | 2026-07-18 |
 | [0402](0402-drag-planner-task-detail-title-to-schedule.md) | Drag Planner Task Detail Title to Schedule | Accepted | 2026-07-17 |
 | [0401](0401-duplicate-planner-blocks-with-command-drag.md) | Duplicate Planner Blocks With Command Drag | Accepted | 2026-07-17 |
 | [0400](0400-plan-tracking-rows-into-today.md) | Plan Tracking Rows Into Today | Accepted | 2026-07-17 |

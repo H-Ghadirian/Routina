@@ -107,6 +107,28 @@ enum HomeCustomTaskSectionStorage {
         sanitized(sections).filter { $0.id != sectionID }
     }
 
+    static func renamingSection(
+        _ sectionID: UUID,
+        title rawTitle: String,
+        in sections: [HomeCustomTaskSection]
+    ) -> [HomeCustomTaskSection]? {
+        guard let title = sanitizedTitle(rawTitle) else { return nil }
+
+        var sanitizedSections = sanitized(sections)
+        guard let sectionIndex = sanitizedSections.firstIndex(where: { $0.id == sectionID }) else {
+            return nil
+        }
+
+        let titleKey = normalizedTitleKey(title)
+        let titleBelongsToOtherSection = sanitizedSections.enumerated().contains { index, section in
+            index != sectionIndex && normalizedTitleKey(section.title) == titleKey
+        }
+        guard !titleBelongsToOtherSection else { return nil }
+
+        sanitizedSections[sectionIndex].title = title
+        return sanitizedSections
+    }
+
     private static func normalizedTitleKey(_ title: String) -> String {
         title.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
             .lowercased()

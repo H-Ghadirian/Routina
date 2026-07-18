@@ -223,6 +223,33 @@ extension HomeTCAView {
         pendingCustomTaskSectionTaskID = nil
     }
 
+    func presentCustomTaskSectionRenamePrompt(sectionID: UUID, title: String) {
+        pendingRenameCustomTaskSectionID = sectionID
+        customTaskSectionRenameDraft = title
+        isCustomTaskSectionRenamePromptPresented = true
+    }
+
+    func confirmCustomTaskSectionRename() {
+        guard let sectionID = pendingRenameCustomTaskSectionID,
+              let sections = HomeCustomTaskSectionStorage.renamingSection(
+                sectionID,
+                title: customTaskSectionRenameDraft,
+                in: customTaskSections
+              ) else {
+            return
+        }
+
+        customTaskSectionsRawValue = HomeCustomTaskSectionStorage.encoded(sections)
+        AppSettingsPersistenceMirror.schedule()
+        resetCustomTaskSectionRenamePrompt()
+    }
+
+    func resetCustomTaskSectionRenamePrompt() {
+        isCustomTaskSectionRenamePromptPresented = false
+        pendingRenameCustomTaskSectionID = nil
+        customTaskSectionRenameDraft = ""
+    }
+
     func presentCustomTaskSectionDeleteConfirmation(sectionID: UUID, title: String) {
         pendingDeleteCustomTaskSectionID = sectionID
         pendingDeleteCustomTaskSectionTitle = title
@@ -259,6 +286,27 @@ extension HomeTCAView {
             .disabled(HomeCustomTaskSectionStorage.sanitizedTitle(customTaskSectionNameDraft) == nil)
             Button("Cancel", role: .cancel) {
                 resetCustomTaskSectionPrompt()
+            }
+        }
+    }
+
+    func applyCustomTaskSectionRenamePrompt<Content: View>(to view: Content) -> some View {
+        view.alert("Rename Section", isPresented: $isCustomTaskSectionRenamePromptPresented) {
+            TextField("Name", text: $customTaskSectionRenameDraft)
+            Button("Save") {
+                confirmCustomTaskSectionRename()
+            }
+            .disabled(
+                pendingRenameCustomTaskSectionID.flatMap { sectionID in
+                    HomeCustomTaskSectionStorage.renamingSection(
+                        sectionID,
+                        title: customTaskSectionRenameDraft,
+                        in: customTaskSections
+                    )
+                } == nil
+            )
+            Button("Cancel", role: .cancel) {
+                resetCustomTaskSectionRenamePrompt()
             }
         }
     }

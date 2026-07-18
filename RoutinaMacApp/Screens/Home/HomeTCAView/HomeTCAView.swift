@@ -297,6 +297,9 @@ struct HomeTCAView: View {
     @State var isCustomTaskSectionPromptPresented = false
     @State var customTaskSectionNameDraft = ""
     @State var pendingCustomTaskSectionTaskID: UUID?
+    @State var isCustomTaskSectionRenamePromptPresented = false
+    @State var pendingRenameCustomTaskSectionID: UUID?
+    @State var customTaskSectionRenameDraft = ""
     @State var isCustomTaskSectionDeleteConfirmationPresented = false
     @State var pendingDeleteCustomTaskSectionID: UUID?
     @State var pendingDeleteCustomTaskSectionTitle = ""
@@ -364,11 +367,13 @@ homeContent
                 to: applyAddRoutinePresentation(
                     to: applyPlatformDeleteConfirmation(
                         to: applyPlatformRefresh(
-                            to: applyCustomTaskSectionDeleteConfirmation(
-                                to: applyCustomTaskSectionPrompt(
-                                    to: applyPlatformSearchExperience(
-                                        to: platformNavigationContent,
-                                        searchText: searchTextBinding
+                            to: applyCustomTaskSectionRenamePrompt(
+                                to: applyCustomTaskSectionDeleteConfirmation(
+                                    to: applyCustomTaskSectionPrompt(
+                                        to: applyPlatformSearchExperience(
+                                            to: platformNavigationContent,
+                                            searchText: searchTextBinding
+                                        )
                                     )
                                 )
                             )

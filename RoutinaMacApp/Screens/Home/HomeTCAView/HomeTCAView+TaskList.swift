@@ -1092,6 +1092,12 @@ extension HomeTCAView {
         }
 
         if let customSectionID {
+            Button {
+                presentCustomTaskSectionRenamePrompt(sectionID: customSectionID, title: section.title)
+            } label: {
+                Label("Rename Section", systemImage: "pencil")
+            }
+
             Button(role: .destructive) {
                 presentCustomTaskSectionDeleteConfirmation(sectionID: customSectionID, title: section.title)
             } label: {
