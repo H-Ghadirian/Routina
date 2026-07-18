@@ -1343,10 +1343,12 @@ struct HomeMacActivePlanFocusToolbarButton: View {
             SwiftUI.TimelineView(.periodic(from: .now, by: 1)) { context in
                 planFocusToolbarLabel {
                     Image(systemName: session.isPaused ? "pause.fill" : "stopwatch.fill")
-                        .font(.caption.weight(.semibold))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color.accentColor)
 
                     Text(activeTimeText(at: context.date))
-                        .font(.caption.monospacedDigit().weight(.semibold))
+                        .font(.subheadline.monospacedDigit().weight(.semibold))
+                        .foregroundStyle(.primary)
 
                     Text(activeStatusText(at: context.date))
                         .font(.caption.weight(.semibold))
@@ -1419,10 +1421,12 @@ struct HomeMacPlanFocusToolbarButton: View {
         } label: {
             planFocusToolbarLabel {
                 Image(systemName: "play.fill")
-                    .font(.caption.weight(.semibold))
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
 
                 Text("Focus")
-                    .font(.caption.weight(.semibold))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
             }
         }
         .menuStyle(.button)
@@ -1446,15 +1450,14 @@ private func planFocusToolbarLabel<Content: View>(
     HStack(spacing: 6) {
         content()
     }
-    .foregroundStyle(.orange)
-    .padding(.horizontal, 12)
-    .frame(height: 28)
-    .routinaGlassPill(tint: .orange, tintOpacity: 0.12, interactive: true)
-    .overlay(
-        Capsule(style: .continuous)
-            .stroke(Color.orange.opacity(0.22), lineWidth: 0.75)
+    .padding(.horizontal, 10)
+    .padding(.vertical, 7)
+    .frame(minHeight: 34)
+    .routinaGlassCard(
+        cornerRadius: 8,
+        interactive: true
     )
-    .contentShape(Capsule(style: .continuous))
+    .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     .fixedSize(horizontal: true, vertical: false)
 }
 
