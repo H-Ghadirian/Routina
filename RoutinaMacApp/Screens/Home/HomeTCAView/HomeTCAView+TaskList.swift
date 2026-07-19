@@ -2,6 +2,15 @@ import ComposableArchitecture
 @preconcurrency import AppKit
 import SwiftUI
 
+private enum MacTaskSourceListScrollAnchor: Hashable {
+    case section(String)
+}
+
+private struct MacTaskSourceListTaskLocation {
+    let section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+    let groups: [HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>]
+}
+
 extension HomeTCAView {
     @ViewBuilder
     func platformListOfSortedTasksView(
@@ -269,6 +278,7 @@ extension HomeTCAView {
                             allowsPlannerDrag: allowsPlannerDrag
                         )
                         .padding(.top, taskListTopLevelSectionSpacing(before: section, in: presentation))
+                        .id(MacTaskSourceListScrollAnchor.section(section.id))
                     }
                 }
                 .padding(.horizontal, 10)
@@ -1379,6 +1389,93 @@ extension HomeTCAView {
         }
     }
 
+    func revealMacTaskSourceListTask(_ taskID: UUID) -> String? {
+        let presentation = macTaskListPresentation(
+            routineDisplays: store.routineDisplays,
+            awayRoutineDisplays: store.awayRoutineDisplays,
+            archivedRoutineDisplays: store.archivedRoutineDisplays
+        )
+
+        guard let location = macTaskSourceListLocation(of: taskID, in: presentation) else {
+            return nil
+        }
+
+        expandMacTaskSourceListLocation(location)
+        return location.section.id
+    }
+
+    private func macTaskSourceListLocation(
+        of taskID: UUID,
+        in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>
+    ) -> MacTaskSourceListTaskLocation? {
+        for section in presentation.sections where section.tasks.contains(where: { $0.taskID == taskID }) {
+            return MacTaskSourceListTaskLocation(
+                section: section,
+                groups: macTaskSourceListGroupPath(to: taskID, in: section.taskGroups) ?? []
+            )
+        }
+
+        return nil
+    }
+
+    private func macTaskSourceListGroupPath(
+        to taskID: UUID,
+        in groups: [HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>]
+    ) -> [HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>]? {
+        for group in groups where group.tasks.contains(where: { $0.taskID == taskID }) {
+            if let childPath = macTaskSourceListGroupPath(to: taskID, in: group.childGroups) {
+                return [group] + childPath
+            }
+
+            return [group]
+        }
+
+        return nil
+    }
+
+    private func expandMacTaskSourceListLocation(_ location: MacTaskSourceListTaskLocation) {
+        guard !isMacSearchSidebarRevealActive else { return }
+
+        withAnimation(.easeInOut(duration: 0.24)) {
+            expandTaskListSection(location.section)
+            location.groups.forEach(expandTaskListGroup)
+        }
+    }
+
+    private func expandTaskListSection(
+        _ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+    ) {
+        guard section.kind.isCollapsible else { return }
+
+        switch section.kind {
+        case .plannedToday, .plannedTomorrow, .custom, .tracking, .tag, .untagged:
+            setTagTaskListSection(section, collapsed: false)
+        case .daily:
+            isDailyRoutinesSectionCollapsed = false
+        case .future:
+            isMacFutureTasksSectionCollapsed = false
+        case .archived:
+            isArchivedSectionCollapsed = false
+        case .pinned, .regular, .deadlineDate, .away:
+            break
+        }
+    }
+
+    private func expandTaskListGroup(
+        _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
+    ) {
+        guard group.isCollapsible else { return }
+
+        switch group.kind {
+        case .daily:
+            isMacPlanTodayDailyRoutinesGroupCollapsed = false
+        case .deadlineDate, .tag, .untagged, .regular:
+            setTagTaskListGroup(group, collapsed: false)
+        case .plannedToday, .plannedTomorrow, .custom, .tracking, .future, .pinned, .away, .archived:
+            break
+        }
+    }
+
     private func taskListSectionIsExpanded(
         _ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
         collapsedTagIDs: Set<String>
@@ -1729,6 +1826,7 @@ extension HomeTCAView {
             to: taskID,
             with: proxy,
             visibleTaskIDs: visibleTaskIDs,
+            containingSectionID: macSidebarTaskScrollRequest?.containingSectionID,
             anchor: macSidebarTaskScrollRequest?.unitPointAnchor
         ) {
             macSidebarTaskScrollRequest = nil
@@ -1740,13 +1838,29 @@ extension HomeTCAView {
         to taskID: UUID,
         with proxy: ScrollViewProxy,
         visibleTaskIDs: [UUID],
+        containingSectionID: String?,
         anchor: UnitPoint?
     ) -> Bool {
         guard visibleTaskIDs.contains(taskID) else { return false }
 
         DispatchQueue.main.async {
-            withAnimation(.easeInOut(duration: 0.2)) {
+            if let containingSectionID {
+                withTransaction(Transaction(animation: .easeInOut(duration: 0.16))) {
+                    proxy.scrollTo(
+                        MacTaskSourceListScrollAnchor.section(containingSectionID),
+                        anchor: .top
+                    )
+                }
+            }
+
+            DispatchQueue.main.async {
                 proxy.scrollTo(taskID, anchor: anchor)
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        proxy.scrollTo(taskID, anchor: anchor)
+                    }
+                }
             }
         }
         return true

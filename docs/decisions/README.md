@@ -31,6 +31,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0407](0407-locate-mac-task-detail-sidebar-row.md) refines [0252](0252-stabilize-home-task-list-presentation-identity.md) and [0285](0285-clarify-mac-sidebar-section-surfaces.md) for Mac task-detail row location:** Command-Shift-L while Mac task details are visible reveals the left task-list sidebar, expands the containing task-list section or nested group as needed, and scrolls to the selected task when its row is present in the current task-list presentation; otherwise Home shows an informational toast without changing filters.
 - **[0404](0404-temporarily-expand-mac-sidebar-during-search.md) refines [0310](0310-show-mac-home-toolbar-search.md), [0343](0343-add-mac-home-sidebar-collapse-control.md), and [0389](0389-create-task-from-mac-search-empty-state.md) for Mac sidebar search reveal:** When Mac Home toolbar search becomes non-empty, Home captures the current left-sidebar visibility and task-list collapse state, temporarily reveals the sidebar and treats task-list super sections and nested groups as expanded, then restores the captured state when the query is cleared.
 - **[0403](0403-rename-custom-mac-sidebar-task-sections.md) refines [0394](0394-add-custom-mac-sidebar-task-sections.md) and [0395](0395-delete-custom-mac-sidebar-task-sections.md) for custom Mac sidebar section renaming:** Mac Home custom section headers expose a `Rename Section` context-menu action that updates only the durable catalog title for the existing section ID, preserving task assignments, collapse state, and manual-order keys while rejecting empty or duplicate normalized titles.
 - **[0402](0402-drag-planner-task-detail-title-to-schedule.md) refines [0095](0095-drag-tasks-to-planner-all-day-lane.md), [0296](0296-present-mac-task-details-as-planner-inspector.md), [0302](0302-minimize-fullscreen-mac-task-details-to-companion-pane.md), and [0371](0371-drag-day-task-sidebar-rows-to-schedule.md) for Planner task-detail scheduling:** The Mac task detail title starts the same task UUID drag payload when details are shown from the Planner-adjacent companion pane or from Full Details expanded from that pane, while keeping the title copy menu and leaving other detail presentations non-draggable.
@@ -299,6 +300,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0407](0407-locate-mac-task-detail-sidebar-row.md) | Locate Mac Task Detail Sidebar Row | Accepted | 2026-07-19 |
 | [0403](0403-rename-custom-mac-sidebar-task-sections.md) | Rename Custom Mac Sidebar Task Sections | Accepted | 2026-07-18 |
 | [0402](0402-drag-planner-task-detail-title-to-schedule.md) | Drag Planner Task Detail Title to Schedule | Accepted | 2026-07-17 |
 | [0401](0401-duplicate-planner-blocks-with-command-drag.md) | Duplicate Planner Blocks With Command Drag | Accepted | 2026-07-17 |

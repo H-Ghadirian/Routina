@@ -101,11 +101,17 @@ struct MacSidebarTaskScrollRequest: Equatable {
 
     let taskID: UUID
     let anchor: Anchor
+    let containingSectionID: String?
     private let token = UUID()
 
-    init(taskID: UUID, anchor: Anchor = .center) {
+    init(
+        taskID: UUID,
+        anchor: Anchor = .center,
+        containingSectionID: String? = nil
+    ) {
         self.taskID = taskID
         self.anchor = anchor
+        self.containingSectionID = containingSectionID
     }
 }
 
@@ -261,6 +267,7 @@ struct HomeTCAView: View {
     @State var toolbarSearchFocusDismissRequestID = 0
     @State var isToolbarSearchCreateInProgress = false
     @State var toolbarSearchCreateErrorMessage: String?
+    @State var macHomeNoticeToast: MacHomeNoticeToast?
     @State var isMacWindowFullscreen = false
     @State var isEventEditorPresented = false
     @State var isEmotionLogEditorPresented = false

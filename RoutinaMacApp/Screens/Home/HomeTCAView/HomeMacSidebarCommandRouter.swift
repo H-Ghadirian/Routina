@@ -1,6 +1,42 @@
+import AppKit
 import SwiftUI
 
+private final class HomeMacCommandWindowNumberNSView: NSView {
+    var onWindowNumberChanged: ((Int?) -> Void)?
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        notifyWindowNumberChanged()
+    }
+
+    func notifyWindowNumberChanged() {
+        let windowNumber = window?.windowNumber
+        DispatchQueue.main.async { [weak self] in
+            self?.onWindowNumberChanged?(windowNumber)
+        }
+    }
+}
+
+private struct HomeMacCommandWindowNumberView: NSViewRepresentable {
+    let onWindowNumberChanged: (Int?) -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let view = HomeMacCommandWindowNumberNSView(frame: .zero)
+        view.onWindowNumberChanged = onWindowNumberChanged
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        if let windowNumberView = nsView as? HomeMacCommandWindowNumberNSView {
+            windowNumberView.onWindowNumberChanged = onWindowNumberChanged
+            windowNumberView.notifyWindowNumberChanged()
+        }
+    }
+}
+
 struct HomeMacSidebarCommandRouter<Content: View>: View {
+    @State private var commandWindowNumber: Int?
+
     let content: Content
     let mode: HomeFeature.MacSidebarMode
     let onOpenRoutines: () -> Void
@@ -13,6 +49,7 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
     let onOpenAway: () -> Void
     let onOpenTimeline: () -> Void
     let onOpenStats: () -> Void
+    let onScrollSelectedTaskInSidebar: () -> Void
     let onModeChanged: (HomeFeature.MacSidebarMode) -> Void
 
     init(
@@ -28,6 +65,7 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
         onOpenAway: @escaping () -> Void,
         onOpenTimeline: @escaping () -> Void,
         onOpenStats: @escaping () -> Void,
+        onScrollSelectedTaskInSidebar: @escaping () -> Void,
         onModeChanged: @escaping (HomeFeature.MacSidebarMode) -> Void
     ) {
         self.content = content
@@ -42,11 +80,19 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
         self.onOpenAway = onOpenAway
         self.onOpenTimeline = onOpenTimeline
         self.onOpenStats = onOpenStats
+        self.onScrollSelectedTaskInSidebar = onScrollSelectedTaskInSidebar
         self.onModeChanged = onModeChanged
     }
 
     var body: some View {
         content
+            .background(
+                HomeMacCommandWindowNumberView { windowNumber in
+                    guard commandWindowNumber != windowNumber else { return }
+                    commandWindowNumber = windowNumber
+                }
+                .allowsHitTesting(false)
+            )
             .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenRoutinesInSidebar)) { _ in
                 onOpenRoutines()
             }
@@ -77,8 +123,30 @@ struct HomeMacSidebarCommandRouter<Content: View>: View {
             .onReceive(NotificationCenter.default.publisher(for: .routinaMacOpenStatsInSidebar)) { _ in
                 onOpenStats()
             }
+            .onReceive(NotificationCenter.default.publisher(for: .routinaMacScrollSelectedTaskInSidebar)) { notification in
+                guard shouldHandleCommandNotification(notification) else { return }
+                onScrollSelectedTaskInSidebar()
+            }
             .onChange(of: mode) { _, mode in
                 onModeChanged(mode)
             }
+    }
+
+    private func shouldHandleCommandNotification(_ notification: Notification) -> Bool {
+        if let sourceWindowNumber = RoutinaMacCommandNotification.sourceWindowNumber(from: notification) {
+            guard let commandWindowNumber else {
+                if let activeWindowNumber = NSApp.keyWindow?.windowNumber ?? NSApp.mainWindow?.windowNumber {
+                    return activeWindowNumber == sourceWindowNumber
+                }
+                return true
+            }
+            return sourceWindowNumber == commandWindowNumber
+        }
+
+        guard let keyWindowNumber = NSApp.keyWindow?.windowNumber,
+              let commandWindowNumber else {
+            return true
+        }
+        return keyWindowNumber == commandWindowNumber
     }
 }

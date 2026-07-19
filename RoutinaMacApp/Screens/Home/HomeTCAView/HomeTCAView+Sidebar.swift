@@ -493,6 +493,76 @@ extension HomeTCAView {
         dayPlanPlanner.clearFocusedUnplannedCompletedTasks()
     }
 
+    func scrollSelectedTaskInMacSidebar() {
+        guard isMacTaskDetailVisibleForSidebarLocation,
+              let taskID = store.taskDetailState?.task.id ?? store.selectedTaskID else {
+            return
+        }
+
+        guard let containingSectionID = revealMacTaskSourceListTask(taskID) else {
+            showTaskRowUnavailableToast()
+            return
+        }
+
+        if dayPlanUnplannedCompletedFilterDate != nil {
+            clearDayPlanUnplannedCompletedFilter()
+        }
+
+        isEventEditorPresented = false
+        isEmotionLogEditorPresented = false
+        isNoteEditorPresented = false
+        isAwayStartPresented = false
+        selectedNoteID = nil
+
+        withAnimation(.easeInOut(duration: 0.22)) {
+            macHomeSidebarColumnVisibility = .all
+        }
+
+        if store.macSidebarMode != .routines {
+            store.send(.macSidebarModeChanged(.routines))
+        }
+        store.send(.macSidebarSelectionChanged(.task(taskID)))
+        macSidebarTaskScrollRequest = MacSidebarTaskScrollRequest(
+            taskID: taskID,
+            anchor: .center,
+            containingSectionID: containingSectionID
+        )
+        macHomeNoticeToast = nil
+    }
+
+    private var isMacTaskDetailVisibleForSidebarLocation: Bool {
+        guard store.taskDetailState != nil,
+              store.addRoutineState == nil,
+              store.taskDetailState?.isEditSheetPresented != true,
+              !isEventEditorPresented,
+              !isEmotionLogEditorPresented,
+              !isNoteEditorPresented,
+              !isAwayStartPresented else {
+            return false
+        }
+
+        if macHomeDetailMode.visibleSurfaceMode == .details {
+            return true
+        }
+
+        if taskDetailPanePlacement != nil {
+            return true
+        }
+
+        return isMacTimelineMode
+    }
+
+    private func showTaskRowUnavailableToast() {
+        withAnimation(.easeOut(duration: 0.18)) {
+            macHomeNoticeToast = MacHomeNoticeToast(
+                title: "Task row not available",
+                message: "This task is hidden in the current task list.",
+                systemImage: "sidebar.left",
+                tint: .secondary
+            )
+        }
+    }
+
     func openDayPlanTaskDetails(_ taskID: UUID) {
         openMacTaskDetails(taskID, presentation: .plannerPane)
     }

@@ -567,7 +567,8 @@ extension HomeTCAView {
             onOpenCheckIn: openCheckInFromAddMenu,
             onOpenAway: openAwayFromAddMenu,
             onOpenTimeline: openTimelineInSidebar,
-            onOpenStats: openStatsInSidebar
+            onOpenStats: openStatsInSidebar,
+            onScrollSelectedTaskInSidebar: scrollSelectedTaskInMacSidebar
         ) { mode in
             if mode == .settings {
                 settingsStore.send(.onAppear)
@@ -720,30 +721,52 @@ extension HomeTCAView {
                 }
             }
             .overlay(alignment: .topTrailing) {
-                if let quickAddCreatedToast {
-                    MacQuickAddCreatedToastView(
-                        toast: quickAddCreatedToast,
-                        onOpen: {
-                            openQuickAddCreatedTask(quickAddCreatedToast)
-                        },
-                        onClose: {
-                            self.quickAddCreatedToast = nil
-                        }
-                    )
-                    .padding(.top, HomeMacToolbarSearchLayout.topToolbarHeight + 18)
-                    .padding(.trailing, 22)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .task(id: quickAddCreatedToast.id) {
-                        do {
-                            try await Task.sleep(for: .seconds(10))
-                            await MainActor.run {
-                                if self.quickAddCreatedToast?.id == quickAddCreatedToast.id {
-                                    self.quickAddCreatedToast = nil
-                                }
+                VStack(alignment: .trailing, spacing: 10) {
+                    if let quickAddCreatedToast {
+                        MacQuickAddCreatedToastView(
+                            toast: quickAddCreatedToast,
+                            onOpen: {
+                                openQuickAddCreatedTask(quickAddCreatedToast)
+                            },
+                            onClose: {
+                                self.quickAddCreatedToast = nil
                             }
-                        } catch {}
+                        )
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .task(id: quickAddCreatedToast.id) {
+                            do {
+                                try await Task.sleep(for: .seconds(10))
+                                await MainActor.run {
+                                    if self.quickAddCreatedToast?.id == quickAddCreatedToast.id {
+                                        self.quickAddCreatedToast = nil
+                                    }
+                                }
+                            } catch {}
+                        }
+                    }
+
+                    if let macHomeNoticeToast {
+                        MacHomeNoticeToastView(
+                            toast: macHomeNoticeToast,
+                            onClose: {
+                                self.macHomeNoticeToast = nil
+                            }
+                        )
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .task(id: macHomeNoticeToast.id) {
+                            do {
+                                try await Task.sleep(for: .seconds(5))
+                                await MainActor.run {
+                                    if self.macHomeNoticeToast?.id == macHomeNoticeToast.id {
+                                        self.macHomeNoticeToast = nil
+                                    }
+                                }
+                            } catch {}
+                        }
                     }
                 }
+                .padding(.top, HomeMacToolbarSearchLayout.topToolbarHeight + 18)
+                .padding(.trailing, 22)
             }
             .animation(
                 .easeOut(duration: 0.12),

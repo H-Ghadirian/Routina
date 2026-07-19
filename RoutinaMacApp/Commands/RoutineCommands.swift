@@ -13,8 +13,22 @@ extension Notification.Name {
     static let routinaMacOpenCheckIn = Notification.Name("routina.mac.openCheckIn")
     static let routinaMacOpenAway = Notification.Name("routina.mac.openAway")
     static let routinaMacFocusSearchOrCreate = Notification.Name("routina.mac.focusSearchOrCreate")
+    static let routinaMacScrollSelectedTaskInSidebar = Notification.Name("routina.mac.scrollSelectedTaskInSidebar")
     static let routinaMacNavigateBack = Notification.Name("routina.mac.navigateBack")
     static let routinaMacNavigateForward = Notification.Name("routina.mac.navigateForward")
+}
+
+enum RoutinaMacCommandNotification {
+    private static let sourceWindowNumberUserInfoKey = "sourceWindowNumber"
+
+    static func post(_ name: Notification.Name, sourceWindowNumber: Int? = nil) {
+        let userInfo: [AnyHashable: Any]? = sourceWindowNumber.map { [sourceWindowNumberUserInfoKey: $0] }
+        NotificationCenter.default.post(name: name, object: nil, userInfo: userInfo)
+    }
+
+    static func sourceWindowNumber(from notification: Notification) -> Int? {
+        notification.userInfo?[sourceWindowNumberUserInfoKey] as? Int
+    }
 }
 
 @MainActor
@@ -92,6 +106,14 @@ struct RoutineCommands: Commands {
                 RoutinaMacSearchOrCreateFocus.request()
             }
             .keyboardShortcut(quickAddShortcut.keyEquivalent, modifiers: quickAddShortcut.modifiers)
+
+            Button("Show Task in List") {
+                RoutinaMacCommandNotification.post(
+                    .routinaMacScrollSelectedTaskInSidebar,
+                    sourceWindowNumber: NSApp.keyWindow?.windowNumber
+                )
+            }
+            .keyboardShortcut("l", modifiers: [.command, .shift])
 
             Divider()
 
@@ -212,6 +234,40 @@ struct RoutineCommands: Commands {
             return (shortcut.keyEquivalent, shortcut.eventModifiers)
         }()
         #endif
+    }
+}
+
+@MainActor
+enum RoutinaMacSelectedTaskSidebarShortcutMonitor {
+    private static var monitor: Any?
+
+    static func installIfNeeded() {
+        guard monitor == nil else { return }
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            guard Self.matchesSelectedTaskSidebarShortcut(event) else {
+                return event
+            }
+
+            let sourceWindowNumber = event.windowNumber > 0 ? event.windowNumber : nil
+            RoutinaMacCommandNotification.post(
+                .routinaMacScrollSelectedTaskInSidebar,
+                sourceWindowNumber: sourceWindowNumber
+            )
+            return nil
+        }
+    }
+
+    nonisolated private static func matchesSelectedTaskSidebarShortcut(_ event: NSEvent) -> Bool {
+        let modifierFlags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        guard modifierFlags.contains(.command),
+              modifierFlags.contains(.shift),
+              !modifierFlags.contains(.control),
+              !modifierFlags.contains(.option) else {
+            return false
+        }
+
+        return event.keyCode == 37
+            || event.charactersIgnoringModifiers?.localizedCaseInsensitiveCompare("l") == .orderedSame
     }
 }
 

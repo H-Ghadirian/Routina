@@ -19,6 +19,7 @@ struct RoutinaMacRootScene: Scene {
         self.settingsRoot = RoutinaMacSceneFactory.makeSettingsRoot(persistence: persistence)
         self.focusTimerStatusStore = focusTimerStatusStore
         self.widgetRefreshScheduler = RoutinaMacWidgetRefreshScheduler(persistence: persistence)
+        RoutinaMacSelectedTaskSidebarShortcutMonitor.installIfNeeded()
         RoutinaMacFocusTimerStatusBarController.shared.configure(store: focusTimerStatusStore)
         if !AppEnvironment.isAutomatedTestMode {
             MacBatteryRoutineMonitor.shared.startIfNeeded {
@@ -42,6 +43,7 @@ struct RoutinaMacRootScene: Scene {
                 .background(RoutinaMacHomeWindowConfigurator())
                 .background(RoutinaMacUndoBridge(persistence: persistence))
                 .onAppear {
+                    RoutinaMacSelectedTaskSidebarShortcutMonitor.installIfNeeded()
                     MacMenuCleanup.removeUnneededMenus()
                     DispatchQueue.main.async {
                         MacMenuCleanup.removeUnneededMenus()
