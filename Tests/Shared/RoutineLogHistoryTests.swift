@@ -202,6 +202,63 @@ struct RoutineLogHistoryTests {
     }
 
     @Test
+    func canCompleteRelationshipFulfillsOnlyWhenManuallySelected() throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let cycle = makeTask(
+            in: context,
+            name: "Cycle",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil
+        )
+        let exercise = makeTask(
+            in: context,
+            name: "Exercise routine",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil
+        )
+        cycle.relationships = [
+            RoutineTaskRelationship(targetTaskID: exercise.id, kind: .canComplete)
+        ]
+        try context.save()
+
+        let completedAt = makeDate("2026-05-01T10:00:00Z")
+        let result = try #require(
+            try RoutineLogHistory.advanceTask(
+                taskID: cycle.id,
+                completedAt: completedAt,
+                context: context,
+                calendar: calendar
+            )
+        )
+        var logs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(result.result == .completedRoutine)
+        #expect(cycle.lastDone == completedAt)
+        #expect(exercise.lastDone == nil)
+        #expect(logs.count == 1)
+        #expect(logs.first?.taskID == cycle.id)
+        #expect(logs.first?.kind == .completed)
+
+        try RoutineLogHistory.fulfillManuallySelectedLinkedTasks(
+            fromSourceTaskID: cycle.id,
+            targetTaskIDs: [exercise.id],
+            completedAt: completedAt,
+            context: context,
+            calendar: calendar
+        )
+        try context.save()
+        logs = try context.fetch(FetchDescriptor<RoutineLog>())
+        let exerciseLog = try #require(logs.first { $0.taskID == exercise.id })
+
+        #expect(exercise.lastDone == completedAt)
+        #expect(exerciseLog.kind == .fulfilled)
+        #expect(exerciseLog.sourceTaskID == cycle.id)
+    }
+
+    @Test
     func removeCompletion_keepsLinkedRoutineFulfilledWhenAnotherSourceCompletedSameDay() throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()

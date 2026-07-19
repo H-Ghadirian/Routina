@@ -14,6 +14,61 @@ import Testing
 @MainActor
 struct TaskDetailFeatureCompletionTests {
     @Test
+    func markAsDoneWithCanCompleteTargetPromptsBeforeCompleting() async throws {
+        let context = makeInMemoryContext()
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let now = makeDate("2026-06-17T10:00:00Z")
+        let exercise = RoutineTask(
+            name: "Exercise",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 1),
+            scheduleAnchor: now
+        )
+        let cycle = RoutineTask(
+            name: "Cycle",
+            relationships: [
+                RoutineTaskRelationship(targetTaskID: exercise.id, kind: .canComplete)
+            ],
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 1),
+            scheduleAnchor: now
+        )
+        context.insert(cycle)
+        context.insert(exercise)
+        try context.save()
+
+        var state = TaskDetailFeature.State(
+            task: cycle,
+            selectedDate: calendar.startOfDay(for: now)
+        )
+        state.availableRelationshipTasks = RoutineTaskRelationshipCandidate.from(
+            [cycle, exercise],
+            excluding: cycle.id,
+            referenceDate: now,
+            calendar: calendar
+        )
+
+        let store = TestStore(initialState: state) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = calendar
+            $0.date.now = now
+        }
+
+        _ = await store.withExhaustivity(.off) {
+            await store.send(.markAsDone)
+        }
+
+        #expect(store.state.isManualCompletionConfirmationPresented)
+        #expect(store.state.pendingManualCompletion?.completedAt == now)
+        #expect(store.state.pendingManualCompletionTargets.map(\.taskID) == [exercise.id])
+        #expect(store.state.task.lastDone == nil)
+        #expect(try context.fetch(FetchDescriptor<RoutineLog>()).isEmpty)
+    }
+
+    @Test
     func toggleChecklistItemCompletion_allowsProgressBeforeScheduledDay() async throws {
         let context = makeInMemoryContext()
         var calendar = makeTestCalendar()

@@ -91,7 +91,8 @@ extension TaskDetailFeature {
         taskID: UUID,
         completedAt: Date,
         referenceDate: Date? = nil,
-        previousStateTitle: String? = nil
+        previousStateTitle: String? = nil,
+        manuallySelectedFulfillmentTargetIDs: Set<UUID> = []
     ) -> Effect<Action> {
         .run { @MainActor send in
             do {
@@ -114,6 +115,17 @@ extension TaskDetailFeature {
                             previousValue: previousStateTitle,
                             newValue: TodoState.done.displayTitle
                         )
+                    )
+                    try context.save()
+                }
+                if advancedTask.result == .completedRoutine,
+                   !manuallySelectedFulfillmentTargetIDs.isEmpty {
+                    try RoutineLogHistory.fulfillManuallySelectedLinkedTasks(
+                        fromSourceTaskID: taskID,
+                        targetTaskIDs: manuallySelectedFulfillmentTargetIDs,
+                        completedAt: completedAt,
+                        context: context,
+                        calendar: calendar
                     )
                     try context.save()
                 }

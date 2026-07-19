@@ -175,6 +175,46 @@ extension TaskDetailFeature.State {
             }
     }
 
+    var pendingManualCompletionTargets: [RoutineTaskResolvedRelationship] {
+        pendingManualCompletion?.targets ?? []
+    }
+
+    func manualCompletionTargets(for _: Date) -> [RoutineTaskResolvedRelationship] {
+        var resolvedByTaskID: [UUID: RoutineTaskResolvedRelationship] = [:]
+        let candidateByID = RoutineTaskRelationshipCandidate.lookupByID(availableRelationshipTasks)
+
+        func appendCandidate(_ candidate: RoutineTaskRelationshipCandidate) {
+            guard candidate.canBeFulfilledByLinkedTask,
+                  candidate.status.allowsManualFulfillmentPrompt else {
+                return
+            }
+            resolvedByTaskID[candidate.id] = RoutineTaskResolvedRelationship(
+                taskID: candidate.id,
+                taskName: candidate.displayName,
+                taskEmoji: candidate.emoji,
+                kind: .canComplete,
+                status: candidate.status
+            )
+        }
+
+        for relationship in task.relationships where relationship.kind == .canComplete {
+            guard let candidate = candidateByID[relationship.targetTaskID] else { continue }
+            appendCandidate(candidate)
+        }
+
+        for candidate in availableRelationshipTasks {
+            let canBeCompletedBySource = candidate.relationships.contains { relationship in
+                relationship.targetTaskID == task.id && relationship.kind == .canBeCompletedBy
+            }
+            guard canBeCompletedBySource else { continue }
+            appendCandidate(candidate)
+        }
+
+        return resolvedByTaskID.values.sorted {
+            $0.taskName.localizedCaseInsensitiveCompare($1.taskName) == .orderedAscending
+        }
+    }
+
     var blockingRelationships: [RoutineTaskResolvedRelationship] {
         resolvedRelationships.filter { $0.kind == .blockedBy }
     }

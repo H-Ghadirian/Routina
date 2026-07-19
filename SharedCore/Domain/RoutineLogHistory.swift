@@ -1126,6 +1126,40 @@ enum RoutineLogHistory {
     }
 
     @MainActor
+    static func fulfillManuallySelectedLinkedTasks(
+        fromSourceTaskID sourceTaskID: UUID,
+        targetTaskIDs: Set<UUID>,
+        completedAt: Date,
+        context: ModelContext,
+        calendar: Calendar = .current,
+        sourceDevice: RoutinaDeviceActivitySource? = nil
+    ) throws {
+        guard !targetTaskIDs.isEmpty else { return }
+        let descriptor = FetchDescriptor<RoutineTask>(
+            predicate: #Predicate { task in
+                task.id == sourceTaskID
+            }
+        )
+        guard let sourceTask = try context.fetch(descriptor).first else { return }
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        let targets = manualFulfillmentTargets(
+            for: sourceTask,
+            selectedTargetIDs: targetTaskIDs,
+            in: tasks,
+            completedAt: completedAt,
+            calendar: calendar
+        )
+        try recordFulfillments(
+            from: sourceTask,
+            targets: targets,
+            completedAt: completedAt,
+            context: context,
+            calendar: calendar,
+            sourceDevice: sourceDevice
+        )
+    }
+
+    @MainActor
     private static func fulfillLinkedTasks(
         from sourceTask: RoutineTask,
         completedAt: Date,
@@ -1140,6 +1174,25 @@ enum RoutineLogHistory {
             completedAt: completedAt,
             calendar: calendar
         )
+        try recordFulfillments(
+            from: sourceTask,
+            targets: targets,
+            completedAt: completedAt,
+            context: context,
+            calendar: calendar,
+            sourceDevice: sourceDevice
+        )
+    }
+
+    @MainActor
+    private static func recordFulfillments(
+        from sourceTask: RoutineTask,
+        targets: [RoutineTask],
+        completedAt: Date,
+        context: ModelContext,
+        calendar: Calendar,
+        sourceDevice: RoutinaDeviceActivitySource?
+    ) throws {
         guard !targets.isEmpty else { return }
 
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
@@ -1193,6 +1246,31 @@ enum RoutineLogHistory {
                 at: completedAt,
                 in: context
             )
+        }
+    }
+
+    private static func manualFulfillmentTargets(
+        for sourceTask: RoutineTask,
+        selectedTargetIDs: Set<UUID>,
+        in tasks: [RoutineTask],
+        completedAt: Date,
+        calendar: Calendar
+    ) -> [RoutineTask] {
+        tasks.filter { candidate in
+            guard selectedTargetIDs.contains(candidate.id),
+                  candidate.id != sourceTask.id,
+                  candidate.canBeFulfilledByLinkedTask(referenceDate: completedAt, calendar: calendar)
+            else {
+                return false
+            }
+
+            let candidateCanBeCompletedBySource = candidate.relationships.contains { relationship in
+                relationship.targetTaskID == sourceTask.id && relationship.kind == .canBeCompletedBy
+            }
+            let sourceCanCompleteCandidate = sourceTask.relationships.contains { relationship in
+                relationship.targetTaskID == candidate.id && relationship.kind == .canComplete
+            }
+            return candidateCanBeCompletedBySource || sourceCanCompleteCandidate
         }
     }
 

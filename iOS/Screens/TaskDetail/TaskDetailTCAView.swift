@@ -156,6 +156,7 @@ detailBody
 }
 .taskDetailDeleteConfirmationAlert(store: store)
 .taskDetailUndoCompletionConfirmationAlert(store: store, mode: .adaptiveRemoval)
+.taskDetailManualCompletionConfirmationDialog(store: store)
 .onAppear {
     referenceDate = Date()
     displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)

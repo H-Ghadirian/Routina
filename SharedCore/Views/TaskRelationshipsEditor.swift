@@ -152,14 +152,7 @@ private struct TaskRelationshipPickerSheet<SearchField: View>: View {
         NavigationStack {
             VStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 12) {
-                    RoutinaGlassSegmentedControl(
-                        accessibilityLabel: "Relationship Type",
-                        options: RoutineTaskRelationshipKind.allCases,
-                        selection: $selectedKind,
-                        fillsAvailableWidth: true
-                    ) { kind in
-                        Text(kind.title)
-                    }
+                    TaskRelationshipKindChipPicker(selection: $selectedKind)
 
                     HStack(spacing: 8) {
                         Image(systemName: "magnifyingglass")
@@ -251,6 +244,39 @@ private struct TaskRelationshipPickerSheet<SearchField: View>: View {
                 }
             }
         }
+    }
+}
+
+private struct TaskRelationshipKindChipPicker: View {
+    @Binding var selection: RoutineTaskRelationshipKind
+
+    var body: some View {
+        HomeFilterFlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
+            ForEach(RoutineTaskRelationshipKind.allCases, id: \.self) { kind in
+                Button {
+                    selection = kind
+                } label: {
+                    Label(kind.title, systemImage: kind.systemImage)
+                        .font(.caption.weight(.semibold))
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .foregroundStyle(selection == kind ? Color.accentColor : Color.secondary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .routinaGlassPill(
+                            tint: selection == kind ? Color.accentColor : Color.secondary,
+                            tintOpacity: selection == kind ? 0.18 : 0.10,
+                            interactive: true
+                        )
+                        .contentShape(Capsule(style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .accessibilityValue(selection == kind ? "Selected" : "")
+                .accessibilityAddTraits(selection == kind ? .isSelected : [])
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Relationship Type")
     }
 }
 

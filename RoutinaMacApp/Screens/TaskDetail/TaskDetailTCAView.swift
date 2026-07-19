@@ -184,6 +184,7 @@ struct TaskDetailTCAView: View {
             }
             .taskDetailDeleteConfirmationAlert(store: store)
             .taskDetailUndoCompletionConfirmationAlert(store: store, mode: .undoOnly)
+            .taskDetailManualCompletionConfirmationDialog(store: store)
             .onAppear {
                 referenceDate = Date()
                 displayedMonthStart = Calendar.current.startOfMonth(for: store.resolvedSelectedDate)

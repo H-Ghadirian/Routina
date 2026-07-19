@@ -21,6 +21,14 @@ struct TaskDetailFeature: Reducer {
             }
         }
 
+        struct PendingManualCompletion: Equatable {
+            var completedAt: Date
+            var referenceDate: Date
+            var previousTodoStateTitle: String?
+            var targets: [RoutineTaskResolvedRelationship]
+            var selectedTargetIDs: [UUID] = []
+        }
+
         var task: RoutineTask
         var taskRefreshID: UInt64 = 0
         @ObservationStateIgnored var checklistItemsCache = ChecklistItemsCache()
@@ -75,6 +83,7 @@ struct TaskDetailFeature: Reducer {
         var availableEvents: [RoutineEventLinkCandidate] = []
         var relatedTagRules: [RoutineRelatedTagRule] = []
         var availableRelationshipTasks: [RoutineTaskRelationshipCandidate] = []
+        var editAvailableRelationshipTasks: [RoutineTaskRelationshipCandidate] = []
         var tagCounterDisplayMode: TagCounterDisplayMode = .defaultValue
         var editSelectedPlaceID: UUID?
         var editSelectedPlaceIDs: [UUID] = []
@@ -100,6 +109,8 @@ struct TaskDetailFeature: Reducer {
         var editTrackingNudgesEnabled: Bool = true
         var isDeleteConfirmationPresented: Bool = false
         var isUndoCompletionConfirmationPresented: Bool = false
+        var isManualCompletionConfirmationPresented: Bool = false
+        var pendingManualCompletion: PendingManualCompletion?
         var pendingLogRemovalTimestamp: Date?
         var shouldDismissAfterDelete: Bool = false
         var addLinkedTaskRelationshipKind: RoutineTaskRelationshipKind = .related
@@ -237,6 +248,8 @@ struct TaskDetailFeature: Reducer {
         case undoSelectedDateCompletion
         case requestRemoveLogEntry(Date)
         case removeLogEntry(Date)
+        case setManualCompletionConfirmation(Bool)
+        case confirmManualCompletion([UUID])
         case updateTaskDuration(Int?)
         case updateLogDuration(UUID, Int?)
         case revealHeatmapInTaskDetail
@@ -564,6 +577,21 @@ struct TaskDetailFeature: Reducer {
         )
     }
 
+    private func markManualFulfillmentTargetsDone(
+        _ targetIDs: Set<UUID>,
+        in state: inout State
+    ) {
+        guard !targetIDs.isEmpty else { return }
+        for index in state.availableRelationshipTasks.indices
+            where targetIDs.contains(state.availableRelationshipTasks[index].id) {
+            state.availableRelationshipTasks[index].status = .doneToday
+        }
+        for index in state.editAvailableRelationshipTasks.indices
+            where targetIDs.contains(state.editAvailableRelationshipTasks[index].id) {
+            state.editAvailableRelationshipTasks[index].status = .doneToday
+        }
+    }
+
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case .markAsDone:
@@ -607,11 +635,18 @@ struct TaskDetailFeature: Reducer {
             guard !state.task.blocksManualCompletionForIncompleteChecklist else {
                 return .none
             }
-            guard let completionDate = resolvedMarkAsDoneDate(
-                for: state.selectedDate,
-                task: state.task
-            ) else {
-                return .none
+            let pendingManualCompletion = state.pendingManualCompletion
+            let completionDate: Date
+            if let pendingManualCompletion {
+                completionDate = pendingManualCompletion.completedAt
+            } else {
+                guard let resolvedCompletionDate = resolvedMarkAsDoneDate(
+                    for: state.selectedDate,
+                    task: state.task
+                ) else {
+                    return .none
+                }
+                completionDate = resolvedCompletionDate
             }
             guard !state.task.hasSequentialSteps || calendar.isDate(completionDate, inSameDayAs: now) else {
                 return .none
@@ -638,9 +673,29 @@ struct TaskDetailFeature: Reducer {
                     return .none
                 }
             }
+
+            if state.pendingManualCompletion == nil {
+                let manualTargets = state.manualCompletionTargets(for: completionDate)
+                if !manualTargets.isEmpty {
+                    state.pendingManualCompletion = State.PendingManualCompletion(
+                        completedAt: completionDate,
+                        referenceDate: now,
+                        previousTodoStateTitle: previousTodoStateTitle,
+                        targets: manualTargets
+                    )
+                    state.isManualCompletionConfirmationPresented = true
+                    return .none
+                }
+            }
+
+            let manualFulfillmentTargetIDs = Set(pendingManualCompletion?.selectedTargetIDs ?? [])
+            let completionReferenceDate = pendingManualCompletion?.referenceDate ?? now
+            let persistedPreviousTodoStateTitle = pendingManualCompletion?.previousTodoStateTitle ?? previousTodoStateTitle
+            state.pendingManualCompletion = nil
+            state.isManualCompletionConfirmationPresented = false
             state.task.preserveCurrentScheduleAnchorForBackfill(
                 completedAt: completionDate,
-                referenceDate: now
+                referenceDate: completionReferenceDate
             )
             let advanceResult = state.task.advance(completedAt: completionDate, calendar: calendar)
             if case .completedRoutine = advanceResult {
@@ -652,17 +707,19 @@ struct TaskDetailFeature: Reducer {
                 trackPendingLocalCompletion(at: completionDate, in: &state)
                 appendLocalTodoStateChange(
                     to: state.task,
-                    previousStateTitle: previousTodoStateTitle,
+                    previousStateTitle: persistedPreviousTodoStateTitle,
                     newStateTitle: TodoState.done.displayTitle
                 )
+                markManualFulfillmentTargetsDone(manualFulfillmentTargetIDs, in: &state)
             }
             refreshTaskView(&state)
             updateDerivedState(&state)
             return handleMarkAsDone(
                 taskID: state.task.id,
                 completedAt: completionDate,
-                referenceDate: now,
-                previousStateTitle: previousTodoStateTitle
+                referenceDate: completionReferenceDate,
+                previousStateTitle: persistedPreviousTodoStateTitle,
+                manuallySelectedFulfillmentTargetIDs: manualFulfillmentTargetIDs
             )
 
         case .cancelTodo:
@@ -937,6 +994,19 @@ struct TaskDetailFeature: Reducer {
 
         case let .removeLogEntry(timestamp):
             return completionLogActionHandler().removeLogEntry(timestamp, state: &state)
+
+        case let .setManualCompletionConfirmation(isPresented):
+            state.isManualCompletionConfirmationPresented = isPresented
+            if !isPresented {
+                state.pendingManualCompletion = nil
+            }
+            return .none
+
+        case let .confirmManualCompletion(targetIDs):
+            guard state.pendingManualCompletion != nil else { return .none }
+            state.pendingManualCompletion?.selectedTargetIDs = targetIDs
+            state.isManualCompletionConfirmationPresented = false
+            return reduce(into: &state, action: .markAsDone)
 
         case let .updateLogDuration(logID, durationMinutes):
             return completionLogActionHandler().updateLogDuration(

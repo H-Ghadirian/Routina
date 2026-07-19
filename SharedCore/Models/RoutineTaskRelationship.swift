@@ -6,6 +6,8 @@ enum RoutineTaskRelationshipKind: String, Codable, CaseIterable, Equatable, Hash
     case blockedBy
     case doneWhen
     case completes
+    case canBeCompletedBy
+    case canComplete
 
     var title: String {
         switch self {
@@ -19,6 +21,10 @@ enum RoutineTaskRelationshipKind: String, Codable, CaseIterable, Equatable, Hash
             return "Done when"
         case .completes:
             return "Completes"
+        case .canBeCompletedBy:
+            return "Can be completed by"
+        case .canComplete:
+            return "Can complete"
         }
     }
 
@@ -34,6 +40,8 @@ enum RoutineTaskRelationshipKind: String, Codable, CaseIterable, Equatable, Hash
             return "checkmark.circle"
         case .completes:
             return "arrow.triangle.2.circlepath"
+        case .canBeCompletedBy, .canComplete:
+            return "questionmark.circle"
         }
     }
 
@@ -49,6 +57,10 @@ enum RoutineTaskRelationshipKind: String, Codable, CaseIterable, Equatable, Hash
             return .completes
         case .completes:
             return .doneWhen
+        case .canBeCompletedBy:
+            return .canComplete
+        case .canComplete:
+            return .canBeCompletedBy
         }
     }
 
@@ -62,8 +74,12 @@ enum RoutineTaskRelationshipKind: String, Codable, CaseIterable, Equatable, Hash
             return 2
         case .completes:
             return 3
-        case .related:
+        case .canBeCompletedBy:
             return 4
+        case .canComplete:
+            return 5
+        case .related:
+            return 6
         }
     }
 }
@@ -113,6 +129,15 @@ enum RoutineTaskRelationshipStatus: Equatable, Hashable, Sendable {
             return "clock.fill"
         case .onTrack:
             return "circle.fill"
+        }
+    }
+
+    var allowsManualFulfillmentPrompt: Bool {
+        switch self {
+        case .doneToday, .completedOneOff, .canceledOneOff, .paused:
+            return false
+        case .pendingTodo, .overdue, .dueToday, .onTrack:
+            return true
         }
     }
 
@@ -176,6 +201,7 @@ struct RoutineTaskRelationshipCandidate: Equatable, Hashable, Identifiable, Send
     var emoji: String
     var relationships: [RoutineTaskRelationship]
     var status: RoutineTaskRelationshipStatus = .onTrack
+    var canBeFulfilledByLinkedTask: Bool = true
 
     var displayName: String {
         name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Untitled task" : name
@@ -205,7 +231,11 @@ struct RoutineTaskRelationshipCandidate: Equatable, Hashable, Identifiable, Send
                 name: task.name ?? "Untitled task",
                 emoji: task.emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "✨",
                 relationships: task.relationships,
-                status: RoutineTaskRelationshipStatus.resolved(for: task, referenceDate: referenceDate, calendar: calendar)
+                status: RoutineTaskRelationshipStatus.resolved(for: task, referenceDate: referenceDate, calendar: calendar),
+                canBeFulfilledByLinkedTask: task.canBeFulfilledByLinkedTask(
+                    referenceDate: referenceDate,
+                    calendar: calendar
+                )
             )
         }
         .sorted { lhs, rhs in

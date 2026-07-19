@@ -41,6 +41,17 @@ struct TaskDetailPresentationRouting {
         )
     }
 
+    var manualCompletionConfirmation: Binding<Bool> {
+        Binding(
+            get: { MainActor.assumeIsolated { store.isManualCompletionConfirmationPresented } },
+            set: { isPresented in
+                MainActor.assumeIsolated {
+                    _ = store.send(.setManualCompletionConfirmation(isPresented))
+                }
+            }
+        )
+    }
+
     var editRoutineEmoji: Binding<String> {
         Binding(
             get: { MainActor.assumeIsolated { store.editRoutineEmoji } },
@@ -159,6 +170,38 @@ extension View {
             Button("Cancel", role: .cancel) { }
         } message: {
             Text(copy.message)
+        }
+    }
+
+    func taskDetailManualCompletionConfirmationDialog(store: StoreOf<TaskDetailFeature>) -> some View {
+        let routing = store.taskDetailPresentationRouting
+        let targets = store.pendingManualCompletionTargets
+        let sourceTitle = RoutineTask.trimmedName(store.task.name) ?? "this task"
+
+        return confirmationDialog(
+            "Also complete linked task?",
+            isPresented: routing.manualCompletionConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Only \(sourceTitle)") {
+                store.send(.confirmManualCompletion([]))
+            }
+
+            if targets.count > 1 {
+                Button("Complete all linked tasks") {
+                    store.send(.confirmManualCompletion(targets.map(\.taskID)))
+                }
+            }
+
+            ForEach(targets) { target in
+                Button("Also complete \(target.taskName)") {
+                    store.send(.confirmManualCompletion([target.taskID]))
+                }
+            }
+
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Choose whether this completion should also satisfy a linked routine.")
         }
     }
 }
