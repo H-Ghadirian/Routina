@@ -270,10 +270,13 @@ extension AddRoutineFeature.State {
 
 extension AddRoutineFeature.State {
     var supportsPlanning: Bool {
-        !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+        RoutineTaskPlanningSupport.supportsStoredPlanning(
             scheduleMode: schedule.scheduleMode,
             recurrenceRule: candidateRecurrenceRule,
-            checklistItems: candidateChecklistItems
+            checklistItems: candidateChecklistItems,
+            trackingCadenceEnabled: schedule.scheduleMode.taskType == .record
+                ? basics.trackingCadenceEnabled
+                : true
         )
     }
 }
@@ -349,10 +352,13 @@ extension TaskDetailFeature.State {
 
 extension TaskDetailFeature.State {
     var supportsPlanning: Bool {
-        !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+        RoutineTaskPlanningSupport.supportsStoredPlanning(
             scheduleMode: editScheduleMode,
             recurrenceRule: candidateRecurrenceRule,
-            checklistItems: candidateChecklistItems
+            checklistItems: candidateChecklistItems,
+            trackingCadenceEnabled: editScheduleMode.taskType == .record
+                ? editTrackingCadenceEnabled
+                : true
         )
     }
 

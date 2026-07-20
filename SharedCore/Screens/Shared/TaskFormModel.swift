@@ -482,7 +482,7 @@ extension TaskFormModel {
         case .routine:
             return !isDailyRoutineDraft
         case .record:
-            return !isDailyRoutineDraft
+            return trackingCadenceEnabled.wrappedValue
         }
     }
 

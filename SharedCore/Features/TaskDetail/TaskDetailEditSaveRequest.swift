@@ -137,13 +137,14 @@ struct TaskDetailEditSaveRequestBuilder {
             routineDurationMode: scheduleMode.taskType == .todo ? .oneDay : state.editRoutineDurationMode,
             availabilityStartDate: scheduleMode.taskType == .todo ? availabilityDateBounds.startDate : nil,
             availabilityEndDate: scheduleMode.taskType == .todo ? availabilityDateBounds.endDate : nil,
-            plannedDate: !trackingCadenceEnabled || RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+            plannedDate: RoutineTaskPlanningSupport.supportsStoredPlanning(
                     scheduleMode: scheduleMode,
                     recurrenceRule: recurrenceRule,
-                    checklistItems: sanitizedChecklistItems
+                    checklistItems: sanitizedChecklistItems,
+                    trackingCadenceEnabled: trackingCadenceEnabled
                 )
-                ? nil
-                : RoutineTask.normalizedPlannedDate(state.editPlannedDate, calendar: calendar),
+                ? RoutineTask.normalizedPlannedDate(state.editPlannedDate, calendar: calendar)
+                : nil,
             reminderAt: scheduleMode.taskType == .todo ? state.editReminderAt : nil,
             priority: matrixPriority(state.editImportance, state.editUrgency),
             importance: state.editImportance,

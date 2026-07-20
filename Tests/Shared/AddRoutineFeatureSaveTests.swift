@@ -267,6 +267,43 @@ struct AddRoutineFeatureSaveTests {
     }
 
     @Test
+    func saveTapped_keepsPlannedDateForDailyRunoutTracking() async {
+        let calendar = makeTestCalendar()
+        let plannedDate = makeDate("2026-06-10T15:30:00Z")
+        let capturedRequest = LockIsolated<AddRoutineSaveRequest?>(nil)
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(
+                    routineName: "Groceries",
+                    plannedDate: plannedDate,
+                    trackingCadenceEnabled: true
+                ),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(scheduleMode: .recordDerivedFromChecklist),
+                checklist: AddRoutineChecklistState(
+                    routineChecklistItems: [RoutineChecklistItem(title: "Milk", intervalDays: 1)]
+                )
+            )
+        ) {
+            AddRoutineFeature(
+                onSave: { request in
+                    capturedRequest.withValue { $0 = request }
+                    return .none
+                },
+                onCancel: { .none }
+            )
+        } withDependencies: {
+            setTestDateDependencies(&$0, calendar: calendar)
+        }
+
+        await store.send(.saveTapped)
+
+        #expect(capturedRequest.value?.plannedDate == calendar.startOfDay(for: plannedDate))
+        #expect(capturedRequest.value?.scheduleMode == .recordDerivedFromChecklist)
+        #expect(capturedRequest.value?.recurrenceRule.isDaily == true)
+    }
+
+    @Test
     func saveTapped_includesExactAvailabilityForTodosWithoutDeadline() async {
         let exactTime = RoutineTimeOfDay(hour: 20, minute: 0)
         let capturedRequest = LockIsolated<AddRoutineSaveRequest?>(nil)

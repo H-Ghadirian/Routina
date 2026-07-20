@@ -3363,7 +3363,12 @@ private struct DayPlanTimelinePanelContentView: View {
                     return false
                 }
 
-                if plannedDateTaskVisibilityCache.isDailyRoutineForTaskList(task) {
+                let isDailyRoutineForTaskList = plannedDateTaskVisibilityCache.isDailyRoutineForTaskList(task)
+                if !RoutineTaskPlanningSupport.supportsStoredPlanning(
+                    scheduleMode: task.scheduleMode,
+                    trackingCadenceEnabled: task.trackingCadenceEnabled,
+                    isDailyRoutine: isDailyRoutineForTaskList
+                ), isDailyRoutineForTaskList {
                     return true
                 }
 

@@ -6,6 +6,8 @@ Date: 2026-07-17
 
 Refines: [0200 Support Task Planned Dates](0200-support-task-planned-dates.md), [0384 Show Tracking as Mac Sidebar Section](0384-show-tracking-as-mac-sidebar-section.md), [0385 Use Gentle Routine Cadence for Tracking](0385-use-gentle-routine-cadence-for-tracking.md), [0394 Add Custom Mac Sidebar Task Sections](0394-add-custom-mac-sidebar-task-sections.md)
 
+Refined by: [0408 Allow Explicit Planning for Daily Tracking](0408-allow-explicit-planning-for-daily-tracking.md)
+
 ## Context
 
 Tracking rows have their own Mac sidebar section so analysis entries do not automatically read like obligations. That section remains useful for unplanned Tracking.

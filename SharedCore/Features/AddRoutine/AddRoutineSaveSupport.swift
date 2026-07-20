@@ -183,13 +183,16 @@ struct AddRoutineSaveRequest: Equatable {
         self.routineDurationMode = scheduleMode.taskType == .todo ? .oneDay : routineDurationMode
         self.availabilityStartDate = scheduleMode.taskType == .todo ? availabilityStartDate : nil
         self.availabilityEndDate = scheduleMode.taskType == .todo ? availabilityEndDate : nil
-        self.plannedDate = RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+        self.plannedDate = RoutineTaskPlanningSupport.supportsStoredPlanning(
                 scheduleMode: scheduleMode,
                 recurrenceRule: recurrenceRule,
-                checklistItems: sanitizedChecklistItems
+                checklistItems: sanitizedChecklistItems,
+                trackingCadenceEnabled: scheduleMode.taskType == .record
+                    ? trackingCadenceEnabled
+                    : true
             )
-            ? nil
-            : RoutineTask.normalizedPlannedDate(plannedDate, calendar: calendar)
+            ? RoutineTask.normalizedPlannedDate(plannedDate, calendar: calendar)
+            : nil
         self.reminderAt = scheduleMode.taskType == .todo ? reminderAt : nil
         self.priority = priority
         self.importance = importance
@@ -288,13 +291,14 @@ struct AddRoutineSaveRequest: Equatable {
         )
         self.availabilityStartDate = schedule.scheduleMode.taskType == .todo ? availabilityDateBounds.startDate : nil
         self.availabilityEndDate = schedule.scheduleMode.taskType == .todo ? availabilityDateBounds.endDate : nil
-        self.plannedDate = !trackingCadenceEnabled || RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+        self.plannedDate = RoutineTaskPlanningSupport.supportsStoredPlanning(
                 scheduleMode: schedule.scheduleMode,
                 recurrenceRule: self.recurrenceRule,
-                checklistItems: sanitizedChecklistItems
+                checklistItems: sanitizedChecklistItems,
+                trackingCadenceEnabled: trackingCadenceEnabled
             )
-            ? nil
-            : RoutineTask.normalizedPlannedDate(basics.plannedDate, calendar: calendar)
+            ? RoutineTask.normalizedPlannedDate(basics.plannedDate, calendar: calendar)
+            : nil
         self.reminderAt = schedule.scheduleMode.taskType == .todo ? basics.reminderAt : nil
         self.priority = AddRoutinePriorityMatrix.priority(
             importance: basics.importance,

@@ -160,7 +160,13 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
     func filteredDailyRoutineTasks(_ displays: [Display]) -> [Display] {
         sorter.sortedTasks(
             displays.filter { task in
-                task.isDailyRoutine && predicate.matchesVisibleTask(task)
+                task.isDailyRoutine
+                    && !(RoutineTaskPlanningSupport.supportsStoredPlanning(
+                        scheduleMode: task.scheduleMode,
+                        trackingCadenceEnabled: task.trackingCadenceEnabled,
+                        isDailyRoutine: task.isDailyRoutine
+                    ) && task.plannedDate != nil)
+                    && predicate.matchesVisibleTask(task)
             }
         )
     }
@@ -220,7 +226,11 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
 
         return displays
             .filter { task in
-                guard !task.isDailyRoutine,
+                guard RoutineTaskPlanningSupport.supportsStoredPlanning(
+                        scheduleMode: task.scheduleMode,
+                        trackingCadenceEnabled: task.trackingCadenceEnabled,
+                        isDailyRoutine: task.isDailyRoutine
+                    ),
                       matchesUncompletedTodayClaim(task),
                       predicate.matchesVisibleTask(task) else { return false }
                 guard !isReferenceDay || !task.isCanceledToday else { return false }

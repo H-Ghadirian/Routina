@@ -496,6 +496,30 @@ struct HomeTaskLifecycleSupportTests {
     }
 
     @Test
+    func planTaskAllowsDailyRunoutTracking() {
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(
+            name: "Groceries",
+            checklistItems: [RoutineChecklistItem(title: "Milk", intervalDays: 1)],
+            scheduleMode: .recordDerivedFromChecklist,
+            recurrenceRule: .interval(days: 1)
+        )
+        let plannedDate = makeDate("2026-06-10T16:20:00Z")
+        let normalizedDate = calendar.startOfDay(for: plannedDate)
+        var tasks = [task]
+
+        let update = HomeTaskLifecycleSupport.planTask(
+            taskID: task.id,
+            plannedDate: plannedDate,
+            calendar: calendar,
+            tasks: &tasks
+        )
+
+        #expect(update == HomePlanTaskUpdate(taskID: task.id, plannedDate: normalizedDate))
+        #expect(tasks[0].plannedDate == normalizedDate)
+    }
+
+    @Test
     func markTaskDoneForChecklistRunoutCountsDoneAfterAllDueItemsAreCleared() {
         let calendar = makeTestCalendar()
         let breadID = UUID()

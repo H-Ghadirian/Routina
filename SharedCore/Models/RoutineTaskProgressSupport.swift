@@ -33,6 +33,35 @@ enum RoutineTaskDailyRoutineSupport {
     }
 }
 
+enum RoutineTaskPlanningSupport {
+    static func supportsStoredPlanning(
+        scheduleMode: RoutineScheduleMode,
+        recurrenceRule: RoutineRecurrenceRule,
+        checklistItems: [RoutineChecklistItem],
+        trackingCadenceEnabled: Bool = true
+    ) -> Bool {
+        if scheduleMode.taskType == .record {
+            return trackingCadenceEnabled
+        }
+        return !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+                scheduleMode: scheduleMode,
+                recurrenceRule: recurrenceRule,
+                checklistItems: checklistItems
+            )
+    }
+
+    static func supportsStoredPlanning(
+        scheduleMode: RoutineScheduleMode,
+        trackingCadenceEnabled: Bool = true,
+        isDailyRoutine: Bool
+    ) -> Bool {
+        if scheduleMode.taskType == .record {
+            return trackingCadenceEnabled
+        }
+        return !isDailyRoutine
+    }
+}
+
 extension RoutineTask {
     struct ChecklistRunoutUpdate: Equatable {
         var updatedItemCount: Int
@@ -67,6 +96,14 @@ extension RoutineTask {
             scheduleMode: scheduleMode,
             recurrenceRule: recurrenceRule,
             checklistItems: checklistItems
+        )
+    }
+
+    var supportsStoredPlanning: Bool {
+        RoutineTaskPlanningSupport.supportsStoredPlanning(
+            scheduleMode: scheduleMode,
+            trackingCadenceEnabled: trackingCadenceEnabled,
+            isDailyRoutine: isDailyRoutineForTaskList
         )
     }
 

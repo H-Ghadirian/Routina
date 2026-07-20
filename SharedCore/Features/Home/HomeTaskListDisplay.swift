@@ -16,6 +16,7 @@ protocol HomeTaskListDisplay {
     var interval: Int { get }
     var recurrenceRule: RoutineRecurrenceRule { get }
     var scheduleMode: RoutineScheduleMode { get }
+    var trackingCadenceEnabled: Bool { get }
     var estimatedDurationMinutes: Int? { get }
     var createdAt: Date? { get }
     var lastDone: Date? { get }
@@ -58,6 +59,10 @@ extension HomeTaskListDisplay {
 
     var hasFileAttachment: Bool {
         false
+    }
+
+    var trackingCadenceEnabled: Bool {
+        true
     }
 
     var estimatedDurationMinutes: Int? {

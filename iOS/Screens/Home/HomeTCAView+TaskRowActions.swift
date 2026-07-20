@@ -81,11 +81,17 @@ extension HomeTCAView {
             }
         }
 
-        if !task.isDailyRoutine || presentation.notTodayCommand != nil {
+        let supportsPlanning = RoutineTaskPlanningSupport.supportsStoredPlanning(
+            scheduleMode: task.scheduleMode,
+            trackingCadenceEnabled: task.trackingCadenceEnabled,
+            isDailyRoutine: task.isDailyRoutine
+        )
+
+        if supportsPlanning || presentation.notTodayCommand != nil {
             Divider()
 
             Menu {
-                if !task.isDailyRoutine {
+                if supportsPlanning {
                     Button {
                         store.send(.planTask(task.taskID, Date()))
                     } label: {
@@ -107,7 +113,7 @@ extension HomeTCAView {
                     }
                 }
 
-                if !task.isDailyRoutine, presentation.notTodayCommand != nil {
+                if supportsPlanning, presentation.notTodayCommand != nil {
                     Divider()
                 }
 

@@ -147,6 +147,31 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func contextMenuShowsPlanningForDailyRunoutTrackingRows() throws {
+        let task = makeDisplay(
+            taskID: UUID(),
+            name: "Groceries",
+            emoji: "✨",
+            interval: 1,
+            recurrenceRule: .interval(days: 1),
+            scheduleMode: .recordDerivedFromChecklist,
+            lastDone: nil,
+            isDoneToday: false,
+            checklistItemCount: 1,
+            dueChecklistItemCount: 0,
+            hasDailyRunoutChecklistItem: true
+        )
+        var view = makeHomeViewForContextMenu()
+        view.showsTomorrowInTaskList = true
+
+        let titles = try planToDoSubmenuTitles(
+            in: view.routineNativeContextMenu(for: task, includeMarkDone: true)
+        )
+
+        #expect(titles == ["Today", "Tomorrow", "Choose Date..."])
+    }
+
+    @Test
     func openNoteDeepLink_selectsTimelineSidebarEntryAndClearsTimelineFilters() async {
         let noteID = UUID()
         let selectedTaskID = UUID()

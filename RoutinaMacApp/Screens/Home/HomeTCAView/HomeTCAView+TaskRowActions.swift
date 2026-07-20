@@ -133,10 +133,17 @@ extension HomeTCAView {
             }
         )
 
-        if !task.isDailyRoutine || presentation.notTodayCommand != nil {
+        let supportsPlanning = RoutineTaskPlanningSupport.supportsStoredPlanning(
+            scheduleMode: task.scheduleMode,
+            trackingCadenceEnabled: task.trackingCadenceEnabled,
+            isDailyRoutine: task.isDailyRoutine
+        )
+
+        if supportsPlanning || presentation.notTodayCommand != nil {
             menu.addItem(.separator())
             menu.addPlanToDoSubmenu(
                 for: task,
+                supportsPlanning: supportsPlanning,
                 includesTomorrow: showsTomorrowInTaskList,
                 notTodayCommand: presentation.notTodayCommand,
                 commandHandler: homeTaskRowCommandHandler,
@@ -389,6 +396,7 @@ private extension NSMenu {
 
     func addPlanToDoSubmenu(
         for task: HomeFeature.RoutineDisplay,
+        supportsPlanning: Bool,
         includesTomorrow: Bool,
         notTodayCommand: HomeTaskRowCommand?,
         commandHandler: HomeTaskRowCommandHandler,
@@ -405,7 +413,7 @@ private extension NSMenu {
 
         let submenu = NSMenu(title: "Plan to do")
 
-        if !task.isDailyRoutine {
+        if supportsPlanning {
             submenu.addActionItem(title: "Today", systemImage: "calendar", action: planToday)
             if includesTomorrow {
                 submenu.addActionItem(title: "Tomorrow", systemImage: "calendar.badge.clock", action: planTomorrow)
@@ -425,7 +433,7 @@ private extension NSMenu {
             }
         }
 
-        if !task.isDailyRoutine, notTodayCommand != nil {
+        if supportsPlanning, notTodayCommand != nil {
             submenu.addItem(.separator())
         }
 

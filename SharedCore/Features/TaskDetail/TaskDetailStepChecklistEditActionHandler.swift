@@ -136,10 +136,13 @@ struct TaskDetailStepChecklistEditActionHandler {
     }
 
     private func clearPlanningIfDailyRoutine(state: inout State) {
-        if RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+        if !RoutineTaskPlanningSupport.supportsStoredPlanning(
             scheduleMode: state.editScheduleMode,
             recurrenceRule: state.candidateRecurrenceRule,
-            checklistItems: candidateChecklistItems(for: state)
+            checklistItems: candidateChecklistItems(for: state),
+            trackingCadenceEnabled: state.editScheduleMode.taskType == .record
+                ? state.editTrackingCadenceEnabled
+                : true
         ) {
             state.editPlannedDate = nil
         }

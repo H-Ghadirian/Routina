@@ -304,10 +304,13 @@ struct TaskDetailRecurrenceEditActionHandler {
     }
 
     private func supportsPlanning(_ state: State) -> Bool {
-        !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+        RoutineTaskPlanningSupport.supportsStoredPlanning(
             scheduleMode: state.editScheduleMode,
             recurrenceRule: state.candidateRecurrenceRule,
-            checklistItems: candidateChecklistItems(for: state)
+            checklistItems: candidateChecklistItems(for: state),
+            trackingCadenceEnabled: state.editScheduleMode.taskType == .record
+                ? state.editTrackingCadenceEnabled
+                : true
         )
     }
 

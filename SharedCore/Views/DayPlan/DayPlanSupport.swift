@@ -749,7 +749,11 @@ enum DayPlanDayTaskListPresentation {
         let dayStart = calendar.startOfDay(for: date)
         let isDailyRoutineForTaskList = visibilityCache?.isDailyRoutineForTaskList(task)
             ?? task.isDailyRoutineForTaskList
-        return !isDailyRoutineForTaskList
+        return RoutineTaskPlanningSupport.supportsStoredPlanning(
+                scheduleMode: task.scheduleMode,
+                trackingCadenceEnabled: task.trackingCadenceEnabled,
+                isDailyRoutine: isDailyRoutineForTaskList
+            )
             && !task.isCompletedOneOff
             && !task.isCanceledOneOff
             && !task.isPinned

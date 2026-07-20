@@ -111,10 +111,13 @@ struct AddRoutineFeature: Reducer {
     }
 
     private func supportsPlanning(_ state: State) -> Bool {
-        !RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+        RoutineTaskPlanningSupport.supportsStoredPlanning(
             scheduleMode: state.schedule.scheduleMode,
             recurrenceRule: state.candidateRecurrenceRule,
-            checklistItems: state.candidateChecklistItems
+            checklistItems: state.candidateChecklistItems,
+            trackingCadenceEnabled: state.schedule.scheduleMode.taskType == .record
+                ? state.basics.trackingCadenceEnabled
+                : true
         )
     }
 

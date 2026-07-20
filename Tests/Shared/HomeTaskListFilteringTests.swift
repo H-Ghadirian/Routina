@@ -1328,6 +1328,7 @@ struct HomeTaskListFilteringTests {
         let plannedTodayID = UUID()
         let trackingTodayID = UUID()
         let trackingTomorrowID = UUID()
+        let dailyRunoutTrackingTomorrowID = UUID()
         let trackingFutureID = UUID()
         let regularID = UUID()
         let presentation = HomeTaskListPresentation.sidebar(
@@ -1354,6 +1355,15 @@ struct HomeTaskListFilteringTests {
                     manualSectionOrders: ["plannedTomorrow": 0]
                 ),
                 TestTaskDisplay(
+                    taskID: dailyRunoutTrackingTomorrowID,
+                    name: "Plan daily runout tracking tomorrow",
+                    recurrenceRule: .interval(days: 1),
+                    scheduleMode: .recordDerivedFromChecklist,
+                    plannedDate: tomorrow,
+                    hasDailyRunoutChecklistItem: true,
+                    manualSectionOrders: ["plannedTomorrow": 1]
+                ),
+                TestTaskDisplay(
                     taskID: trackingFutureID,
                     name: "Unplanned tracking",
                     scheduleMode: .record
@@ -1376,14 +1386,17 @@ struct HomeTaskListFilteringTests {
         let futureSection = presentation.sections.last
         #expect(presentation.sections.map(\.kind) == [.plannedToday, .plannedTomorrow, .tracking, .future])
         #expect(presentation.sections.map(\.title) == ["Today", "Tomorrow", "Tracking", "Future"])
-        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 2, 3, 4])
+        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 2, 4, 5])
         #expect(todaySection?.tasks.map(\.taskID) == [plannedTodayID, trackingTodayID])
-        #expect(tomorrowSection?.tasks.map(\.taskID) == [trackingTomorrowID])
+        #expect(tomorrowSection?.tasks.map(\.taskID) == [trackingTomorrowID, dailyRunoutTrackingTomorrowID])
         #expect(trackingSection?.tasks.map(\.taskID) == [trackingFutureID])
         #expect(todaySection?.taskGroups.first?.moveContext?.sectionKey == "plannedToday")
         #expect(todaySection?.taskGroups.first?.moveContext?.orderedTaskIDs == [plannedTodayID, trackingTodayID])
         #expect(tomorrowSection?.moveContext?.sectionKey == "plannedTomorrow")
-        #expect(tomorrowSection?.moveContext?.orderedTaskIDs == [trackingTomorrowID])
+        #expect(tomorrowSection?.moveContext?.orderedTaskIDs == [
+            trackingTomorrowID,
+            dailyRunoutTrackingTomorrowID
+        ])
         #expect(trackingSection?.moveContext?.sectionKey == "tracking")
         #expect(trackingSection?.moveContext?.orderedTaskIDs == [trackingFutureID])
         #expect(trackingSection?.taskGroups.map(\.title) == [String?("On Track")])

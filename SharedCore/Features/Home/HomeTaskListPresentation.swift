@@ -268,7 +268,11 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             claimedTaskIDs: &claimedTaskIDs
         )
         let nonDailyUnplannedRoutineDisplays = unplannedRoutineDisplays.filter {
-            !$0.isDailyRoutine && !claimedTaskIDs.contains($0.taskID)
+            RoutineTaskPlanningSupport.supportsStoredPlanning(
+                scheduleMode: $0.scheduleMode,
+                trackingCadenceEnabled: $0.trackingCadenceEnabled,
+                isDailyRoutine: $0.isDailyRoutine
+            ) && !claimedTaskIDs.contains($0.taskID)
         }
         let regularSections = claimSections(
             filtering.groupedRoutineSections(from: nonDailyUnplannedRoutineDisplays),
@@ -483,7 +487,11 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             claimedTaskIDs: &claimedTaskIDs
         )
         let nonDailyUnplannedActiveDisplays = unplannedActiveDisplays.filter {
-            !$0.isDailyRoutine && !claimedTaskIDs.contains($0.taskID)
+            RoutineTaskPlanningSupport.supportsStoredPlanning(
+                scheduleMode: $0.scheduleMode,
+                trackingCadenceEnabled: $0.trackingCadenceEnabled,
+                isDailyRoutine: $0.isDailyRoutine
+            ) && !claimedTaskIDs.contains($0.taskID)
         }
         let regularSections = claimSections(
             filtering.groupedRoutineSections(from: nonDailyUnplannedActiveDisplays),
