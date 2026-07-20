@@ -286,6 +286,45 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func taskDetailTagFilterTapped_filtersTaskSidebarAndPersistsState() async {
+        let context = makeInMemoryContext()
+        let taskID = UUID()
+        let persistedState = LockIsolated<TemporaryViewState?>(nil)
+        let detailTask = RoutineTask(id: taskID, name: "Write brief", tags: ["Focus"])
+
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                selectedTaskID: taskID,
+                taskDetailState: TaskDetailFeature.State(task: detailTask),
+                isMacFilterDetailPresented: true,
+                selectedTags: ["Old"],
+                excludedTags: ["focus", "Admin"],
+                macSidebarMode: .stats,
+                macSidebarSelection: .timelineEntry(UUID())
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.appSettingsClient.temporaryViewState = { .default }
+            $0.appSettingsClient.setTemporaryViewState = { persistedState.setValue($0) }
+        }
+
+        await store.send(.taskDetailTagFilterTapped(" Focus ")) {
+            $0.isMacFilterDetailPresented = false
+            $0.selectedTags = ["Focus"]
+            $0.excludedTags = ["Admin"]
+            $0.macSidebarMode = .routines
+            $0.macSidebarSelection = .task(taskID)
+        }
+
+        #expect(persistedState.value?.homeSelectedTags == ["Focus"])
+        #expect(persistedState.value?.homeSelectedTag == "Focus")
+        #expect(persistedState.value?.homeExcludedTags == ["Admin"])
+        #expect(persistedState.value?.macHomeSidebarModeRawValue == HomeFeature.MacSidebarMode.routines.rawValue)
+    }
+
+    @Test
     func clearOptionalFilters_resetsOptionalFiltersAndPersistsState() async {
         let context = makeInMemoryContext()
         let placeID = UUID()

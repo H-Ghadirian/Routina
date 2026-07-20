@@ -535,7 +535,8 @@ homeContent
         ) {
             TaskDetailTCAView(
                 store: detailStore,
-                onOpenEventDetails: openSavedEvent
+                onOpenEventDetails: openSavedEvent,
+                onTagFilterSelected: { store.send(.taskDetailTagFilterTapped($0)) }
             )
         } else if let selectedNote {
             RoutineNoteDetailView(
@@ -738,7 +739,8 @@ homeContent
         ) {
             TaskDetailTCAView(
                 store: detailStore,
-                onOpenEventDetails: openSavedEvent
+                onOpenEventDetails: openSavedEvent,
+                onTagFilterSelected: { store.send(.taskDetailTagFilterTapped($0)) }
             )
         } else if store.routineTasks.contains(where: { $0.id == taskID }) {
             HomeLoadingStateView(

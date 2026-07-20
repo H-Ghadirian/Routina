@@ -26,6 +26,7 @@ struct TaskDetailTCAView: View {
     let onCloseFullscreen: (() -> Void)?
     let externalBlockingFocusTitle: String?
     let onOpenEventDetails: ((UUID) -> Void)?
+    let onTagFilterSelected: ((String) -> Void)?
     @Dependency(\.appSettingsClient) private var appSettingsClient
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -96,7 +97,8 @@ struct TaskDetailTCAView: View {
         onMinimizeFullscreen: (() -> Void)? = nil,
         onCloseFullscreen: (() -> Void)? = nil,
         blockingFocusTitle: String? = nil,
-        onOpenEventDetails: ((UUID) -> Void)? = nil
+        onOpenEventDetails: ((UUID) -> Void)? = nil,
+        onTagFilterSelected: ((String) -> Void)? = nil
     ) {
         self.store = store
         self.showsPrincipalToolbarTitle = showsPrincipalToolbarTitle
@@ -108,6 +110,7 @@ struct TaskDetailTCAView: View {
         self.onCloseFullscreen = onCloseFullscreen
         self.externalBlockingFocusTitle = blockingFocusTitle
         self.onOpenEventDetails = onOpenEventDetails
+        self.onTagFilterSelected = onTagFilterSelected
 
         let taskID = store.task.id
         _focusSessions = Query(
@@ -326,7 +329,8 @@ struct TaskDetailTCAView: View {
             showPersianDates: showPersianDates,
             isCalendarExpanded: $isCalendarExpanded,
             sectionCardStroke: TaskDetailPlatformStyle.sectionCardStroke,
-            tagTint: { tagTint(for: $0) }
+            tagTint: { tagTint(for: $0) },
+            onTagFilterSelected: onTagFilterSelected
         ) {
             calendarSection(dueDate: dueDate)
         }
@@ -1181,19 +1185,11 @@ struct TaskDetailTCAView: View {
     }
 
     private func statusTagChip(_ tag: String) -> some View {
-        let tint = tagTint(for: tag)
-
-        return Text("#\(tag)")
-            .font(.caption.weight(.medium))
-            .foregroundStyle(tint)
-            .lineLimit(1)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .routinaGlassPill(tint: tint, tintOpacity: 0.13)
-            .overlay(
-                Capsule()
-                    .stroke(tint.opacity(0.25), lineWidth: 1)
-            )
+        TaskDetailMacFilterableTagChip(
+            tag: tag,
+            tint: tagTint(for: tag),
+            onSelect: onTagFilterSelected
+        )
     }
 
     private func tagTint(for tag: String) -> Color {

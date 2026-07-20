@@ -614,6 +614,7 @@ struct HomeFeature {
         case advancedQueryChanged(String)
         case selectedTagChanged(String?)
         case selectedTagsChanged(Set<String>)
+        case taskDetailTagFilterTapped(String)
         case includeTagMatchModeChanged(RoutineTagMatchMode)
         case excludedTagsChanged(Set<String>)
         case excludeTagMatchModeChanged(RoutineTagMatchMode)
@@ -1137,6 +1138,16 @@ struct HomeFeature {
 
             case let .selectedTagsChanged(tags):
                 return filterMutationHandler().applyTaskFilterMutation(.selectedTags(tags), state: &state)
+
+            case let .taskDetailTagFilterTapped(tag):
+                guard let cleanedTag = RoutineTag.cleaned(tag) else { return .none }
+                state.macSidebarMode = .routines
+                state.macSidebarSelection = state.selectedTaskID.map(MacSidebarSelection.task)
+                state.isMacFilterDetailPresented = false
+                state.excludedTags = state.excludedTags.filter {
+                    !RoutineTag.contains($0, in: [cleanedTag])
+                }
+                return filterMutationHandler().applyTaskFilterMutation(.selectedTags([cleanedTag]), state: &state)
 
             case let .includeTagMatchModeChanged(mode):
                 return filterMutationHandler().applyTaskFilterMutation(.includeTagMatchMode(mode), state: &state)

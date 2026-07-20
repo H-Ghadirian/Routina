@@ -608,7 +608,8 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
             TaskDetailTCAView(
                 store: detailStore,
                 showsPrincipalToolbarTitle: false,
-                onOpenEventDetails: onOpenEventDetails
+                onOpenEventDetails: onOpenEventDetails,
+                onTagFilterSelected: applyTaskListTagFilter
             )
         } else if let selectedTimelineEmotion {
             EmotionLogDetailView(emotion: selectedTimelineEmotion)
@@ -691,7 +692,8 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                 onCloseCompanion: onCloseCompanion,
                 onMinimizeFullscreen: onMinimizeFullscreen,
                 onCloseFullscreen: onCloseFullscreen,
-                onOpenEventDetails: onOpenEventDetails
+                onOpenEventDetails: onOpenEventDetails,
+                onTagFilterSelected: applyTaskListTagFilter
             )
         } else {
             ContentUnavailableView(
@@ -705,6 +707,10 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+    }
+
+    private func applyTaskListTagFilter(_ tag: String) {
+        store.send(.taskDetailTagFilterTapped(tag))
     }
 }
 

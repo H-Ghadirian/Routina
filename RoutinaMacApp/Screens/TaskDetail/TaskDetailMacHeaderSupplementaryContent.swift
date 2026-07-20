@@ -8,6 +8,7 @@ struct TaskDetailMacHeaderSupplementaryContent<CalendarContent: View>: View {
     @Binding var isCalendarExpanded: Bool
     let sectionCardStroke: Color
     let tagTint: (String) -> Color
+    let onTagFilterSelected: ((String) -> Void)?
     let calendarContent: CalendarContent
 
     init(
@@ -18,6 +19,7 @@ struct TaskDetailMacHeaderSupplementaryContent<CalendarContent: View>: View {
         isCalendarExpanded: Binding<Bool>,
         sectionCardStroke: Color,
         tagTint: @escaping (String) -> Color,
+        onTagFilterSelected: ((String) -> Void)? = nil,
         @ViewBuilder calendarContent: () -> CalendarContent
     ) {
         self.task = task
@@ -27,6 +29,7 @@ struct TaskDetailMacHeaderSupplementaryContent<CalendarContent: View>: View {
         _isCalendarExpanded = isCalendarExpanded
         self.sectionCardStroke = sectionCardStroke
         self.tagTint = tagTint
+        self.onTagFilterSelected = onTagFilterSelected
         self.calendarContent = calendarContent()
     }
 
@@ -228,9 +231,37 @@ struct TaskDetailMacHeaderSupplementaryContent<CalendarContent: View>: View {
     }
 
     private func statusTagChip(_ tag: String) -> some View {
-        let tint = tagTint(tag)
+        TaskDetailMacFilterableTagChip(
+            tag: tag,
+            tint: tagTint(tag),
+            onSelect: onTagFilterSelected
+        )
+    }
+}
 
-        return Text("#\(tag)")
+struct TaskDetailMacFilterableTagChip: View {
+    let tag: String
+    let tint: Color
+    let onSelect: ((String) -> Void)?
+
+    var body: some View {
+        if let onSelect {
+            Button {
+                onSelect(tag)
+            } label: {
+                label
+            }
+            .buttonStyle(.plain)
+            .contentShape(Capsule(style: .continuous))
+            .accessibilityLabel("Filter task list by \(tag) tag")
+            .help("Filter task list by #\(tag)")
+        } else {
+            label
+        }
+    }
+
+    private var label: some View {
+        Text("#\(tag)")
             .font(.caption.weight(.medium))
             .foregroundStyle(tint)
             .lineLimit(1)
@@ -238,8 +269,9 @@ struct TaskDetailMacHeaderSupplementaryContent<CalendarContent: View>: View {
             .padding(.vertical, 6)
             .routinaGlassPill(tint: tint, tintOpacity: 0.13)
             .overlay(
-                Capsule()
+                Capsule(style: .continuous)
                     .stroke(tint.opacity(0.25), lineWidth: 1)
             )
+            .contentShape(Capsule(style: .continuous))
     }
 }
