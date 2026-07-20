@@ -115,7 +115,7 @@ struct TaskDetailEditRoutineContent: View {
             availableEvents: store.availableEvents,
             onToggleEventSelection: { store.send(.editToggleEventSelection($0)) },
             relationships: store.editRelationships,
-            availableRelationshipTasks: store.availableRelationshipTasks,
+            availableRelationshipTasks: store.editAvailableRelationshipTasks,
             onAddRelationship: { store.send(.editAddRelationship($0, $1)) },
             onRemoveRelationship: { store.send(.editRemoveRelationship($0)) },
             scheduleMode: scheduleModeBinding,

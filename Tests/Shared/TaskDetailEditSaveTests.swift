@@ -121,6 +121,7 @@ struct TaskDetailEditSaveTests {
 
         await store.send(.availableRelationshipTasksLoaded([candidate])) {
             $0.availableRelationshipTasks = [candidate]
+            $0.editAvailableRelationshipTasks = [candidate]
             $0.editRelationships = [
                 RoutineTaskRelationship(targetTaskID: linkedID, kind: .related)
             ]

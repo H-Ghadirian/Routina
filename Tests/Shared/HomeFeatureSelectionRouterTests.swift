@@ -100,6 +100,45 @@ struct HomeFeatureSelectionRouterTests {
     }
 
     @Test
+    func refreshSelectedTaskDetailPreservesEditRelationshipCandidates() throws {
+        let taskID = UUID()
+        let relatedID = UUID()
+        let unrelatedID = UUID()
+        let task = RoutineTask(
+            id: taskID,
+            name: "Focus",
+            relationships: [
+                RoutineTaskRelationship(targetTaskID: relatedID, kind: .related)
+            ]
+        )
+        let relatedTask = RoutineTask(id: relatedID, name: "Related")
+        let unrelatedTask = RoutineTask(id: unrelatedID, name: "Later")
+        let editCandidate = RoutineTaskRelationshipCandidate(
+            id: unrelatedID,
+            name: "Later",
+            emoji: "✨",
+            relationships: []
+        )
+        var state = TestSelectionRoutingState(
+            routineTasks: [task, relatedTask, unrelatedTask],
+            selection: HomeSelectionState(
+                selectedTaskID: taskID,
+                taskDetailState: TaskDetailFeature.State(
+                    task: task,
+                    editAvailableRelationshipTasks: [editCandidate]
+                )
+            )
+        )
+        let router = makeRouter(TestSelectionRouterRecorder())
+
+        router.refreshSelectedTaskDetailState(&state)
+
+        let detailState = try #require(state.selection.taskDetailState)
+        #expect(detailState.availableRelationshipTasks.map(\.id) == [relatedID])
+        #expect(detailState.editAvailableRelationshipTasks.map(\.id) == [unrelatedID])
+    }
+
+    @Test
     func syncSelectedTaskFromTaskDetailCopiesDetailTaskAndRefreshesDisplays() {
         let taskID = UUID()
         let original = RoutineTask(id: taskID, name: "Original", emoji: "O")

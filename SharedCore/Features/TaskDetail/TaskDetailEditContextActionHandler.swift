@@ -77,6 +77,7 @@ struct TaskDetailEditContextActionHandler {
         state: inout State
     ) -> Effect<Action> {
         state.availableRelationshipTasks = tasks
+        state.editAvailableRelationshipTasks = tasks
         let graphRelationships = RoutineTask.editableRelationships(
             for: state.task,
             within: tasks
