@@ -65,4 +65,83 @@ struct HomeCustomTaskSectionStorageTests {
         #expect(updatedSections.map(\.id) == [keptID])
         #expect(updatedSections.map(\.title) == ["Personal"])
     }
+
+    @Test
+    func decodingLegacySectionWithoutRulesDefaultsToManualOnly() {
+        let sectionID = UUID()
+        let rawValue = """
+        [{"id":"\(sectionID.uuidString)","title":"Work","createdAt":null}]
+        """
+
+        let sections = HomeCustomTaskSectionStorage.decoded(from: rawValue)
+
+        #expect(sections.count == 1)
+        #expect(sections.first?.id == sectionID)
+        #expect(sections.first?.rules.isEmpty == true)
+    }
+
+    @Test
+    func settingRulePreservesSectionIdentityAndTitle() throws {
+        let sectionID = UUID()
+        let createdAt = Date(timeIntervalSince1970: 100)
+        let sections = [
+            HomeCustomTaskSection(id: sectionID, title: "Tracking", createdAt: createdAt)
+        ]
+
+        let updatedSections = try #require(
+            HomeCustomTaskSectionStorage.settingRule(
+                .tracking,
+                isEnabled: true,
+                for: sectionID,
+                in: sections
+            )
+        )
+
+        #expect(updatedSections.map(\.id) == [sectionID])
+        #expect(updatedSections.first?.title == "Tracking")
+        #expect(updatedSections.first?.createdAt == createdAt)
+        #expect(updatedSections.first?.rules.contains(.tracking) == true)
+    }
+
+    @Test
+    func settingTagNamesSanitizesAndDeduplicatesTags() throws {
+        let sectionID = UUID()
+        let sections = [
+            HomeCustomTaskSection(id: sectionID, title: "Work", createdAt: nil)
+        ]
+
+        let updatedSections = try #require(
+            HomeCustomTaskSectionStorage.settingTagNames(
+                ["  Deep   Work  ", "deep work", "Focus", ""],
+                for: sectionID,
+                in: sections
+            )
+        )
+
+        #expect(updatedSections.first?.rules.tagNames == ["Deep Work", "Focus"])
+    }
+
+    @Test
+    func encodedRulesRoundTripInStableRuleOrder() throws {
+        let sectionID = UUID()
+        let rawValue = HomeCustomTaskSectionStorage.encoded([
+            HomeCustomTaskSection(
+                id: sectionID,
+                title: "Today",
+                createdAt: nil,
+                rules: HomeCustomTaskSectionRules(
+                    enabledRules: [.tracking, .plannedToday],
+                    tagNames: ["Work", "Focus"]
+                )
+            )
+        ])
+
+        let decodedSection = try #require(HomeCustomTaskSectionStorage.decoded(from: rawValue).first)
+
+        #expect(decodedSection.id == sectionID)
+        #expect(decodedSection.rules.contains(.plannedToday))
+        #expect(decodedSection.rules.contains(.tracking))
+        #expect(!decodedSection.rules.contains(.plannedTomorrow))
+        #expect(decodedSection.rules.tagNames == ["Work", "Focus"])
+    }
 }

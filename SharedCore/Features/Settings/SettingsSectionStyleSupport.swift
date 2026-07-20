@@ -17,6 +17,8 @@ extension SettingsSectionID {
             return .blue
         case .tags:
             return .pink
+        case .sections:
+            return .blue
         case .appearance:
             return .orange
         case .iCloud:

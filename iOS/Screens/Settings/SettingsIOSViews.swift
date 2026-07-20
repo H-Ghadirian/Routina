@@ -133,6 +133,8 @@ struct SettingsIOSDetailView: View {
             SettingsPlacesDetailView(store: store)
         case .tags:
             SettingsTagsDetailView(store: store)
+        case .sections:
+            SettingsTaskSectionsUnavailableView()
         case .appearance:
             SettingsAppearanceDetailView(store: store)
         case .iCloud, .backup:
@@ -146,6 +148,18 @@ struct SettingsIOSDetailView: View {
         case .support, .about:
             SettingsAboutDetailView(store: store)
         }
+    }
+}
+
+private struct SettingsTaskSectionsUnavailableView: View {
+    var body: some View {
+        List {
+            Section("Sections") {
+                Text("Task list sections are managed on Mac.")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .navigationTitle("Sections")
     }
 }
 

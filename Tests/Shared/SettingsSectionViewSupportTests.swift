@@ -75,6 +75,20 @@ struct SettingsSectionViewSupportTests {
     }
 
     @Test
+    func sectionsRowAppearsOnMacWithRulesSummary() {
+        #if os(macOS)
+        let sections = SettingsSectionID.visibleSections(isGitFeaturesEnabled: false)
+        let compactSections = SettingsSectionID.compactSectionGroups(isGitFeaturesEnabled: false).flatMap { $0 }
+
+        #expect(sections.contains(.sections))
+        #expect(compactSections.contains(.sections))
+        #expect(SettingsSectionID.sections.rowPresentation(in: SettingsFeatureState()) == SettingsSectionRowPresentation(
+            subtitle: "Custom task list sections and rules"
+        ))
+        #endif
+    }
+
+    @Test
     func visibleSectionsHideMergedSupportSection() {
         let sections = SettingsSectionID.visibleSections(isGitFeaturesEnabled: false)
         let compactSections = SettingsSectionID.compactSectionGroups(isGitFeaturesEnabled: false).flatMap { $0 }

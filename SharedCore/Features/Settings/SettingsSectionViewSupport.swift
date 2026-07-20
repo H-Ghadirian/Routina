@@ -8,6 +8,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
     case calendar
     case places
     case tags
+    case sections
     case appearance
     case iCloud
     case git
@@ -48,6 +49,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
                 .calendar,
                 .places,
                 .tags,
+                .sections,
                 .appearance,
                 .iCloud,
                 .git,
@@ -88,6 +90,11 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         if section == .git && !isGitFeaturesEnabled {
             return false
         }
+        #if !os(macOS)
+        if section == .sections {
+            return false
+        }
+        #endif
         if section == .support {
             return false
         }
@@ -118,6 +125,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         case .calendar:      return "Calendar"
         case .places:        return "Places"
         case .tags:          return "Tags"
+        case .sections:      return "Sections"
         case .appearance:    return "Appearance"
         case .iCloud:        return "iCloud & Backup"
         case .git:           return "Git"
@@ -138,6 +146,7 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
         case .calendar:      return "calendar.badge.plus"
         case .places:        return "mappin.and.ellipse"
         case .tags:          return "tag.fill"
+        case .sections:      return "sidebar.leading"
         case .appearance:    return "app.badge.fill"
         case .iCloud:        return "icloud.fill"
         case .git:           return "arrow.triangle.branch"
@@ -185,6 +194,9 @@ enum SettingsSectionID: String, CaseIterable, Identifiable, Hashable {
 
         case .tags:
             return SettingsSectionRowPresentation()
+
+        case .sections:
+            return SettingsSectionRowPresentation(subtitle: "Custom task list sections and rules")
 
         case .appearance:
             return SettingsSectionRowPresentation(subtitle: state.appearance.overviewSubtitle)

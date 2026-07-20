@@ -1,18 +1,129 @@
 import Foundation
 
+enum HomeCustomTaskSectionRule: String, CaseIterable, Identifiable, Hashable, Codable, Sendable {
+    case plannedToday
+    case plannedTomorrow
+    case tracking
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .plannedToday:
+            return "Planned today"
+        case .plannedTomorrow:
+            return "Planned tomorrow"
+        case .tracking:
+            return "Tracking entries"
+        }
+    }
+}
+
+struct HomeCustomTaskSectionRules: Codable, Equatable, Hashable, Sendable {
+    var enabledRules: Set<HomeCustomTaskSectionRule>
+    var tagNames: [String]
+
+    init(
+        enabledRules: Set<HomeCustomTaskSectionRule> = [],
+        tagNames: [String] = []
+    ) {
+        self.enabledRules = enabledRules
+        self.tagNames = Self.sanitizedTagNames(tagNames)
+    }
+
+    var isEmpty: Bool {
+        enabledRules.isEmpty && tagNames.isEmpty
+    }
+
+    func contains(_ rule: HomeCustomTaskSectionRule) -> Bool {
+        enabledRules.contains(rule)
+    }
+
+    func setting(_ rule: HomeCustomTaskSectionRule, enabled isEnabled: Bool) -> Self {
+        var rules = enabledRules
+        if isEnabled {
+            rules.insert(rule)
+        } else {
+            rules.remove(rule)
+        }
+        return HomeCustomTaskSectionRules(enabledRules: rules, tagNames: tagNames)
+    }
+
+    func settingTagNames(_ rawTagNames: [String]) -> Self {
+        HomeCustomTaskSectionRules(
+            enabledRules: enabledRules,
+            tagNames: rawTagNames
+        )
+    }
+
+    func matchesTags(_ taskTags: [String]) -> Bool {
+        tagNames.contains { tagName in
+            RoutineTag.contains(tagName, in: taskTags)
+        }
+    }
+
+    static func sanitizedTagNames(_ tagNames: [String]) -> [String] {
+        RoutineTag.deduplicated(tagNames)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case enabled
+        case tags
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let rawValues = (try? container.decode([String].self, forKey: .enabled)) ?? []
+        enabledRules = Set(rawValues.compactMap(HomeCustomTaskSectionRule.init(rawValue:)))
+        tagNames = Self.sanitizedTagNames(
+            (try? container.decode([String].self, forKey: .tags)) ?? []
+        )
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        let rawValues = HomeCustomTaskSectionRule.allCases
+            .filter { enabledRules.contains($0) }
+            .map(\.rawValue)
+        try container.encode(rawValues, forKey: .enabled)
+        try container.encode(tagNames, forKey: .tags)
+    }
+}
+
 struct HomeCustomTaskSection: Codable, Equatable, Hashable, Identifiable, Sendable {
     var id: UUID
     var title: String
     var createdAt: Date?
+    var rules: HomeCustomTaskSectionRules
 
     init(
         id: UUID = UUID(),
         title: String,
-        createdAt: Date? = Date()
+        createdAt: Date? = Date(),
+        rules: HomeCustomTaskSectionRules = HomeCustomTaskSectionRules()
     ) {
         self.id = id
         self.title = HomeCustomTaskSectionStorage.sanitizedTitle(title) ?? "Section"
         self.createdAt = createdAt
+        self.rules = rules
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case createdAt
+        case rules
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        title = HomeCustomTaskSectionStorage.sanitizedTitle(
+            try container.decode(String.self, forKey: .title)
+        ) ?? "Section"
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
+        rules = (try? container.decodeIfPresent(HomeCustomTaskSectionRules.self, forKey: .rules))
+            ?? HomeCustomTaskSectionRules()
     }
 }
 
@@ -75,7 +186,8 @@ enum HomeCustomTaskSectionStorage {
                 HomeCustomTaskSection(
                     id: section.id,
                     title: title,
-                    createdAt: section.createdAt
+                    createdAt: section.createdAt,
+                    rules: section.rules
                 )
             )
         }
@@ -126,6 +238,37 @@ enum HomeCustomTaskSectionStorage {
         guard !titleBelongsToOtherSection else { return nil }
 
         sanitizedSections[sectionIndex].title = title
+        return sanitizedSections
+    }
+
+    static func settingRule(
+        _ rule: HomeCustomTaskSectionRule,
+        isEnabled: Bool,
+        for sectionID: UUID,
+        in sections: [HomeCustomTaskSection]
+    ) -> [HomeCustomTaskSection]? {
+        var sanitizedSections = sanitized(sections)
+        guard let sectionIndex = sanitizedSections.firstIndex(where: { $0.id == sectionID }) else {
+            return nil
+        }
+
+        sanitizedSections[sectionIndex].rules = sanitizedSections[sectionIndex].rules
+            .setting(rule, enabled: isEnabled)
+        return sanitizedSections
+    }
+
+    static func settingTagNames(
+        _ tagNames: [String],
+        for sectionID: UUID,
+        in sections: [HomeCustomTaskSection]
+    ) -> [HomeCustomTaskSection]? {
+        var sanitizedSections = sanitized(sections)
+        guard let sectionIndex = sanitizedSections.firstIndex(where: { $0.id == sectionID }) else {
+            return nil
+        }
+
+        sanitizedSections[sectionIndex].rules = sanitizedSections[sectionIndex].rules
+            .settingTagNames(tagNames)
         return sanitizedSections
     }
 

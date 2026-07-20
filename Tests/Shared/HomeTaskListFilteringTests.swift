@@ -1462,6 +1462,155 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func sidebarPresentationAppliesCustomSectionRulesWithoutRemovingBuiltIns() {
+        let referenceDate = makeDate("2026-06-22T10:00:00Z")
+        let customTodaySectionID = UUID()
+        let customTrackingSectionID = UUID()
+        let dailyID = UUID()
+        let plannedTodayID = UUID()
+        let trackingID = UUID()
+        let futureID = UUID()
+
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(referenceDate: referenceDate),
+            routineDisplays: [
+                TestTaskDisplay(
+                    taskID: dailyID,
+                    name: "Daily routine",
+                    interval: 1,
+                    recurrenceRule: .interval(days: 1)
+                ),
+                TestTaskDisplay(
+                    taskID: plannedTodayID,
+                    name: "Planned today",
+                    plannedDate: referenceDate
+                ),
+                TestTaskDisplay(
+                    taskID: trackingID,
+                    name: "Tracking",
+                    scheduleMode: .record
+                ),
+                TestTaskDisplay(
+                    taskID: futureID,
+                    name: "Future",
+                    recurrenceRule: .interval(days: 7),
+                    daysUntilDue: 4
+                )
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            customSections: [
+                HomeCustomTaskSection(
+                    id: customTodaySectionID,
+                    title: "Custom Today",
+                    createdAt: nil,
+                    rules: HomeCustomTaskSectionRules(enabledRules: [.plannedToday])
+                ),
+                HomeCustomTaskSection(
+                    id: customTrackingSectionID,
+                    title: "Custom Tracking",
+                    createdAt: nil,
+                    rules: HomeCustomTaskSectionRules(enabledRules: [.tracking])
+                )
+            ],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(presentation.sections.map(\.kind) == [.plannedToday, .custom, .custom, .future])
+        #expect(presentation.sections.map(\.title) == ["Today", "Custom Today", "Custom Tracking", "Future"])
+        #expect(presentation.sections[0].tasks.map(\.taskID) == [dailyID])
+        #expect(presentation.sections[1].tasks.map(\.taskID) == [plannedTodayID])
+        #expect(presentation.sections[2].tasks.map(\.taskID) == [trackingID])
+        #expect(presentation.sections[3].tasks.map(\.taskID) == [futureID])
+    }
+
+    @Test
+    func sidebarPresentationAppliesCustomSectionTagRulesCaseInsensitively() {
+        let tagSectionID = UUID()
+        let taggedID = UUID()
+        let futureID = UUID()
+
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(),
+            routineDisplays: [
+                TestTaskDisplay(
+                    taskID: taggedID,
+                    name: "Tagged task",
+                    tags: ["work"]
+                ),
+                TestTaskDisplay(
+                    taskID: futureID,
+                    name: "Future",
+                    tags: ["Home"],
+                    recurrenceRule: .interval(days: 7),
+                    daysUntilDue: 4
+                )
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            customSections: [
+                HomeCustomTaskSection(
+                    id: tagSectionID,
+                    title: "Work",
+                    createdAt: nil,
+                    rules: HomeCustomTaskSectionRules(tagNames: ["Work", "Deep Focus"])
+                )
+            ],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(presentation.sections.map(\.title) == ["Work", "Future"])
+        #expect(presentation.sections[0].tasks.map(\.taskID) == [taggedID])
+        #expect(presentation.sections[1].tasks.map(\.taskID) == [futureID])
+    }
+
+    @Test
+    func sidebarPresentationKeepsManualCustomAssignmentAheadOfOtherSectionRules() {
+        let manualSectionID = UUID()
+        let trackingRuleSectionID = UUID()
+        let trackingID = UUID()
+
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(),
+            routineDisplays: [
+                TestTaskDisplay(
+                    taskID: trackingID,
+                    name: "Manually placed tracking",
+                    scheduleMode: .record,
+                    customTaskSectionID: manualSectionID
+                )
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            customSections: [
+                HomeCustomTaskSection(
+                    id: trackingRuleSectionID,
+                    title: "Rule Tracking",
+                    createdAt: nil,
+                    rules: HomeCustomTaskSectionRules(enabledRules: [.tracking])
+                ),
+                HomeCustomTaskSection(id: manualSectionID, title: "Manual", createdAt: nil)
+            ],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(presentation.sections.map(\.title) == ["Manual"])
+        #expect(presentation.sections.first?.tasks.map(\.taskID) == [trackingID])
+    }
+
+    @Test
     func sidebarPresentationGroupsTrackingRowsLikeFutureTagGroups() {
         let adminTrackingID = UUID()
         let focusTrackingID = UUID()

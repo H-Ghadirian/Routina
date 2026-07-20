@@ -207,13 +207,91 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
         _ displays: [Display],
         sectionID: UUID
     ) -> [Display] {
+        filteredCustomTaskSectionTasks(
+            displays,
+            section: HomeCustomTaskSection(id: sectionID, title: "Section", createdAt: nil)
+        )
+    }
+
+    func filteredCustomTaskSectionTasks(
+        _ displays: [Display],
+        section: HomeCustomTaskSection
+    ) -> [Display] {
         displays
             .filter { task in
-                task.customTaskSectionID == sectionID && predicate.matchesVisibleTask(task)
+                guard predicate.matchesVisibleTask(task) else { return false }
+                if task.customTaskSectionID == section.id {
+                    return true
+                }
+                if task.customTaskSectionID != nil {
+                    return false
+                }
+                return matchesCustomTaskSectionRules(section.rules, task: task)
             }
             .sorted { lhs, rhs in
-                sorter.customTaskSectionSort(lhs, rhs, sectionID: sectionID)
+                sorter.customTaskSectionSort(lhs, rhs, sectionID: section.id)
             }
+    }
+
+    private func matchesCustomTaskSectionRules(
+        _ rules: HomeCustomTaskSectionRules,
+        task: Display
+    ) -> Bool {
+        guard !rules.isEmpty else { return false }
+        if rules.matchesTags(task.tags) {
+            return true
+        }
+        for rule in rules.enabledRules where matchesCustomTaskSectionRule(rule, task: task) {
+            return true
+        }
+        return false
+    }
+
+    private func matchesCustomTaskSectionRule(
+        _ rule: HomeCustomTaskSectionRule,
+        task: Display
+    ) -> Bool {
+        switch rule {
+        case .plannedToday:
+            return matchesExplicitPlannedDate(
+                for: task,
+                on: metrics.configuration.referenceDate,
+                rejectsCurrentDayCanceledTasks: true
+            )
+        case .plannedTomorrow:
+            guard let tomorrow = metrics.configuration.calendar.date(
+                byAdding: .day,
+                value: 1,
+                to: metrics.configuration.calendar.startOfDay(for: metrics.configuration.referenceDate)
+            ) else {
+                return false
+            }
+            return matchesExplicitPlannedDate(
+                for: task,
+                on: tomorrow,
+                rejectsCurrentDayCanceledTasks: false
+            )
+        case .tracking:
+            return task.scheduleMode.taskType == .record
+        }
+    }
+
+    private func matchesExplicitPlannedDate(
+        for task: Display,
+        on day: Date,
+        rejectsCurrentDayCanceledTasks: Bool
+    ) -> Bool {
+        guard RoutineTaskPlanningSupport.supportsStoredPlanning(
+            scheduleMode: task.scheduleMode,
+            trackingCadenceEnabled: task.trackingCadenceEnabled,
+            isDailyRoutine: task.isDailyRoutine
+        ),
+              matchesUncompletedTodayClaim(task),
+              let plannedDate = task.plannedDate else {
+            return false
+        }
+        guard !rejectsCurrentDayCanceledTasks || !task.isCanceledToday else { return false }
+        return metrics.configuration.calendar.isDate(plannedDate, inSameDayAs: day)
     }
 
     private func filteredPlannedTasks(

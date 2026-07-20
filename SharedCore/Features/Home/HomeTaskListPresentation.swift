@@ -689,7 +689,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
     ) -> [SidebarCustomTaskSection] {
         sections.compactMap { section in
             let tasks = claimTasks(
-                filtering.filteredCustomTaskSectionTasks(displays, sectionID: section.id),
+                filtering.filteredCustomTaskSectionTasks(displays, section: section),
                 claimedTaskIDs: &claimedTaskIDs
             )
             guard !tasks.isEmpty else { return nil }
