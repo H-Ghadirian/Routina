@@ -124,6 +124,21 @@ struct RoutineAdvancedRecurrenceTests {
     }
 
     @Test
+    func dailyWindowKeepsLegacyStorageValueAndUsesClearDisplayTitle() throws {
+        let mode = RoutineAdvancedRecurrenceRule.HourlyMode.dailyWindow
+
+        #expect(mode.rawValue == "During each day")
+        #expect(mode.displayTitle == "Daily window")
+
+        let encoded = try JSONEncoder().encode(mode)
+        let decoded = try JSONDecoder().decode(
+            RoutineAdvancedRecurrenceRule.HourlyMode.self,
+            from: encoded
+        )
+        #expect(decoded == .dailyWindow)
+    }
+
+    @Test
     func advancedRuleRoundTripsThroughRoutineTaskStorage() {
         let advanced = RoutineAdvancedRecurrenceRule(
             frequency: .weekly,

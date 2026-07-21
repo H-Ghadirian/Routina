@@ -35,6 +35,13 @@ struct RoutineAdvancedRecurrenceRule: Codable, Equatable, Hashable, Sendable {
         case dailyWindow = "During each day"
 
         var id: String { rawValue }
+
+        var displayTitle: String {
+            switch self {
+            case .continuous: return "Continuously"
+            case .dailyWindow: return "Daily window"
+            }
+        }
     }
 
     enum MonthlyPattern: String, CaseIterable, Codable, Equatable, Hashable, Identifiable, Sendable {

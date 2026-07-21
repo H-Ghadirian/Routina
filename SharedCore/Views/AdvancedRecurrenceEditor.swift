@@ -54,12 +54,19 @@ struct AdvancedRecurrenceEditor: View {
 
     private var hourlyControls: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Picker("Schedule", selection: valueBinding(\.hourlyMode)) {
-                ForEach(RoutineAdvancedRecurrenceRule.HourlyMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
+            HStack(spacing: 12) {
+                Text("Schedule")
+                RoutinaGlassSegmentedControl(
+                    accessibilityLabel: "Hourly schedule",
+                    options: RoutineAdvancedRecurrenceRule.HourlyMode.allCases,
+                    selection: valueBinding(\.hourlyMode),
+                    minimumSegmentWidth: 96,
+                    horizontalPadding: 10,
+                    fillsAvailableWidth: true
+                ) { mode in
+                    Text(mode.displayTitle)
                 }
             }
-            .pickerStyle(.segmented)
 
             if rule.hourlyMode == .dailyWindow {
                 HStack(spacing: 16) {
@@ -230,8 +237,9 @@ struct AdvancedRecurrenceEditor: View {
         Binding(
             get: { rule[keyPath: keyPath] },
             set: { value in
-                rule[keyPath: keyPath] = value
-                rule = rule.normalized(calendar: calendar)
+                updateRule { updatedRule in
+                    updatedRule[keyPath: keyPath] = value
+                }
             }
         )
     }
@@ -242,8 +250,9 @@ struct AdvancedRecurrenceEditor: View {
         Binding(
             get: { rule[keyPath: keyPath].date(on: rule.startDate, calendar: calendar) },
             set: { value in
-                rule[keyPath: keyPath] = RoutineTimeOfDay.from(value, calendar: calendar)
-                rule = rule.normalized(calendar: calendar)
+                updateRule { updatedRule in
+                    updatedRule[keyPath: keyPath] = RoutineTimeOfDay.from(value, calendar: calendar)
+                }
             }
         )
     }
@@ -256,8 +265,10 @@ struct AdvancedRecurrenceEditor: View {
             },
             set: { value in
                 guard rule.timesOfDay.indices.contains(index) else { return }
-                rule.timesOfDay[index] = RoutineTimeOfDay.from(value, calendar: calendar)
-                rule = rule.normalized(calendar: calendar)
+                updateRule { updatedRule in
+                    guard updatedRule.timesOfDay.indices.contains(index) else { return }
+                    updatedRule.timesOfDay[index] = RoutineTimeOfDay.from(value, calendar: calendar)
+                }
             }
         )
     }
@@ -266,27 +277,42 @@ struct AdvancedRecurrenceEditor: View {
         Binding(
             get: { rule.weekdays.contains(weekday) },
             set: { isSelected in
-                var selected = Set(rule.weekdays)
-                if isSelected {
-                    selected.insert(weekday)
-                } else if selected.count > 1 {
-                    selected.remove(weekday)
+                updateRule { updatedRule in
+                    var selected = Set(updatedRule.weekdays)
+                    if isSelected {
+                        selected.insert(weekday)
+                    } else if selected.count > 1 {
+                        selected.remove(weekday)
+                    }
+                    updatedRule.weekdays = selected.sorted()
                 }
-                rule.weekdays = selected.sorted()
-                rule = rule.normalized(calendar: calendar)
             }
         )
     }
 
     private func addTime() {
-        let last = rule.timesOfDay.last ?? RoutineTimeOfDay.from(rule.startDate, calendar: calendar)
-        rule.timesOfDay.append(last.addingMinutes(60))
-        rule = rule.normalized(calendar: calendar)
+        updateRule { updatedRule in
+            let last = updatedRule.timesOfDay.last
+                ?? RoutineTimeOfDay.from(updatedRule.startDate, calendar: calendar)
+            updatedRule.timesOfDay.append(last.addingMinutes(60))
+        }
     }
 
     private func removeTime(at index: Int) {
         guard rule.timesOfDay.count > 1, rule.timesOfDay.indices.contains(index) else { return }
-        rule.timesOfDay.remove(at: index)
-        rule = rule.normalized(calendar: calendar)
+        updateRule { updatedRule in
+            guard updatedRule.timesOfDay.count > 1,
+                  updatedRule.timesOfDay.indices.contains(index)
+            else { return }
+            updatedRule.timesOfDay.remove(at: index)
+        }
+    }
+
+    private func updateRule(
+        _ update: (inout RoutineAdvancedRecurrenceRule) -> Void
+    ) {
+        var updatedRule = rule
+        update(&updatedRule)
+        rule = updatedRule.normalized(calendar: calendar)
     }
 }
