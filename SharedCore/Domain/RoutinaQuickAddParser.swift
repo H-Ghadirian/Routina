@@ -115,7 +115,6 @@ enum RoutinaQuickAddParser {
             : nil
 
         let priority = extractPriority(from: &working)
-        let durationMinutes = extractDurationMinutes(from: &working)
         let timeOfDay = extractTimeOfDay(from: &working)
         let schedule = extractSchedule(
             from: &working,
@@ -123,6 +122,7 @@ enum RoutinaQuickAddParser {
             referenceDate: referenceDate,
             calendar: calendar
         )
+        let durationMinutes = extractDurationMinutes(from: &working)
 
         let name = cleanedName(from: working)
         guard !name.isEmpty else { return nil }
@@ -161,6 +161,91 @@ enum RoutinaQuickAddParser {
             pattern: "(?:^|\\s)soft(?:ly)?(?=\\s|$)",
             from: &working
         ) != nil
+
+        if let match = removeFirstMatch(
+            pattern: "(?:^|\\s)every\\s+(\\d{1,3})\\s+months?\\s+on\\s+(?:the\\s+)?(first|second|third|fourth|last)\\s+(monday|mon|tuesday|tue|wednesday|wed|thursday|thu|friday|fri|saturday|sat|sunday|sun)(?=\\s|$)",
+            from: &working
+        ), let value = Int(match.groups[0]),
+           let ordinal = weekdayOrdinal(for: match.groups[1]),
+           let weekday = weekdayNumber(for: match.groups[2]) {
+            let start = date(
+                on: referenceDate,
+                timeOfDay: timeOfDay ?? RoutineTimeOfDay.from(referenceDate, calendar: calendar),
+                calendar: calendar
+            )
+            let advanced = RoutineAdvancedRecurrenceRule(
+                frequency: .monthly,
+                interval: value,
+                startDate: start,
+                monthlyPattern: .ordinalWeekday,
+                weekdayOrdinal: ordinal,
+                ordinalWeekday: weekday,
+                timeZoneIdentifier: calendar.timeZone.identifier,
+                calendar: calendar
+            )
+            return ParsedSchedule(
+                scheduleMode: isSoft ? .softInterval : .fixedInterval,
+                frequencyInDays: advanced.approximateIntervalDays,
+                recurrenceRule: .advanced(advanced)
+            )
+        }
+
+        if let match = removeFirstMatch(
+            pattern: "(?:^|\\s)every\\s+(\\d{1,3})\\s+weeks?\\s+on\\s+(monday|mon|tuesday|tue|wednesday|wed|thursday|thu|friday|fri|saturday|sat|sunday|sun)(?=\\s|$)",
+            from: &working
+        ), let value = Int(match.groups[0]),
+           let weekday = weekdayNumber(for: match.groups[1]) {
+            return advancedWeeklySchedule(
+                interval: value,
+                weekday: weekday,
+                timeOfDay: timeOfDay,
+                isSoft: isSoft,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+        }
+
+        if let match = removeFirstMatch(
+            pattern: "(?:^|\\s)every\\s+(other|\\d{1,3})\\s+(monday|mon|tuesday|tue|wednesday|wed|thursday|thu|friday|fri|saturday|sat|sunday|sun)(?=\\s|$)",
+            from: &working
+        ), let weekday = weekdayNumber(for: match.groups[1]) {
+            let value = match.groups[0].lowercased() == "other"
+                ? 2
+                : (Int(match.groups[0]) ?? 1)
+            return advancedWeeklySchedule(
+                interval: value,
+                weekday: weekday,
+                timeOfDay: timeOfDay,
+                isSoft: isSoft,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+        }
+
+        if let match = removeFirstMatch(
+            pattern: "(?:^|\\s)every\\s+(\\d{1,3})\\s+hours?(\\s+(?:in|during)\\s+(?:the\\s+)?day)?(?=\\s|$)",
+            from: &working
+        ), let value = Int(match.groups[0]) {
+            let start = date(
+                on: referenceDate,
+                timeOfDay: timeOfDay ?? RoutineTimeOfDay.from(referenceDate, calendar: calendar),
+                calendar: calendar
+            )
+            let usesDailyWindow = !match.groups[1].isEmpty
+            let advanced = RoutineAdvancedRecurrenceRule(
+                frequency: .hourly,
+                interval: value,
+                startDate: start,
+                hourlyMode: usesDailyWindow ? .dailyWindow : .continuous,
+                timeZoneIdentifier: calendar.timeZone.identifier,
+                calendar: calendar
+            )
+            return ParsedSchedule(
+                scheduleMode: isSoft ? .softInterval : .fixedInterval,
+                frequencyInDays: 1,
+                recurrenceRule: .advanced(advanced)
+            )
+        }
 
         if let match = removeFirstMatch(
             pattern: "(?:^|\\s)every\\s+(\\d{1,3})\\s+(day|days|week|weeks|month|months)(?=\\s|$)",
@@ -412,6 +497,47 @@ enum RoutinaQuickAddParser {
         case "saturday", "sat": return 7
         default: return nil
         }
+    }
+
+    private static func weekdayOrdinal(
+        for value: String
+    ) -> RoutineAdvancedRecurrenceRule.WeekdayOrdinal? {
+        switch value.lowercased() {
+        case "first": return .first
+        case "second": return .second
+        case "third": return .third
+        case "fourth": return .fourth
+        case "last": return .last
+        default: return nil
+        }
+    }
+
+    private static func advancedWeeklySchedule(
+        interval: Int,
+        weekday: Int,
+        timeOfDay: RoutineTimeOfDay?,
+        isSoft: Bool,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> ParsedSchedule {
+        let start = date(
+            on: referenceDate,
+            timeOfDay: timeOfDay ?? RoutineTimeOfDay.from(referenceDate, calendar: calendar),
+            calendar: calendar
+        )
+        let advanced = RoutineAdvancedRecurrenceRule(
+            frequency: .weekly,
+            interval: interval,
+            startDate: start,
+            weekdays: [weekday],
+            timeZoneIdentifier: calendar.timeZone.identifier,
+            calendar: calendar
+        )
+        return ParsedSchedule(
+            scheduleMode: isSoft ? .softInterval : .fixedInterval,
+            frequencyInDays: advanced.approximateIntervalDays,
+            recurrenceRule: .advanced(advanced)
+        )
     }
 
     private static func nextDate(

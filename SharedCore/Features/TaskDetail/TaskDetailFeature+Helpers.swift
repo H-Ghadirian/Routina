@@ -39,6 +39,10 @@ extension TaskDetailFeature {
             return .interval(days: max(fallbackInterval, 1))
         }
 
+        if state.editRecurrenceEditorMode == .advanced {
+            return .advanced(state.editAdvancedRecurrenceRule)
+        }
+
         switch state.editRecurrenceKind {
         case .intervalDays:
             return .interval(

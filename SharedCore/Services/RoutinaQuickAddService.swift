@@ -497,15 +497,8 @@ enum RoutinaQuickAddService {
 #if SWIFT_PACKAGE
         return
 #else
-        guard NotificationPreferences.notificationsEnabled else { return }
-        cancelNotification(payload.identifier)
-
-        let request = UNNotificationRequest(
-            identifier: payload.identifier,
-            content: NotificationCoordinator.createNotificationContent(for: payload),
-            trigger: NotificationCoordinator.createNotificationTrigger(for: payload, now: now)
-        )
-        try? await UNUserNotificationCenter.current().add(request)
+        _ = now
+        await NotificationCoordinator.scheduleNotification(payload)
 #endif
     }
 
@@ -513,9 +506,7 @@ enum RoutinaQuickAddService {
 #if SWIFT_PACKAGE
         return
 #else
-        let center = UNUserNotificationCenter.current()
-        center.removePendingNotificationRequests(withIdentifiers: [identifier])
-        center.removeDeliveredNotifications(withIdentifiers: [identifier])
+        NotificationCoordinator.cancelNotification(identifier)
 #endif
     }
 

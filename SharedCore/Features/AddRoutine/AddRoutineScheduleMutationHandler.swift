@@ -103,6 +103,26 @@ struct AddRoutineScheduleMutationHandler {
         enforceAutoAssumeEligibility(state: &state)
     }
 
+    func setRecurrenceEditorMode(
+        _ mode: RoutineRecurrenceEditorMode,
+        state: inout AddRoutineFeature.State
+    ) {
+        AddRoutineScheduleEditor.setRecurrenceEditorMode(mode, schedule: &state.schedule)
+        if mode == .advanced {
+            state.basics.trackingCadenceEnabled = true
+            state.schedule.autoAssumeDailyDone = false
+        }
+        enforceAutoAssumeEligibility(state: &state)
+    }
+
+    func setAdvancedRecurrenceRule(
+        _ rule: RoutineAdvancedRecurrenceRule,
+        state: inout AddRoutineFeature.State
+    ) {
+        AddRoutineScheduleEditor.setAdvancedRecurrenceRule(rule, schedule: &state.schedule)
+        enforceAutoAssumeEligibility(state: &state)
+    }
+
     func setRecurrenceKind(
         _ kind: RoutineRecurrenceRule.Kind,
         state: inout AddRoutineFeature.State

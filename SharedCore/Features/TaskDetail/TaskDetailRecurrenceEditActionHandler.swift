@@ -157,6 +157,30 @@ struct TaskDetailRecurrenceEditActionHandler {
         return .none
     }
 
+    func editRecurrenceEditorModeChanged(
+        _ mode: RoutineRecurrenceEditorMode,
+        state: inout State
+    ) -> Effect<Action> {
+        state.editRecurrenceEditorMode = mode
+        if mode == .advanced {
+            state.editTrackingCadenceEnabled = true
+            state.editAutoAssumeDailyDone = false
+        }
+        disableAutoAssumeIfNeeded(state: &state)
+        clearPlanningIfDailyRoutine(state: &state)
+        return .none
+    }
+
+    func editAdvancedRecurrenceRuleChanged(
+        _ rule: RoutineAdvancedRecurrenceRule,
+        state: inout State
+    ) -> Effect<Action> {
+        state.editAdvancedRecurrenceRule = rule.normalized(calendar: calendar)
+        disableAutoAssumeIfNeeded(state: &state)
+        clearPlanningIfDailyRoutine(state: &state)
+        return .none
+    }
+
     func editRecurrenceKindChanged(
         _ kind: RoutineRecurrenceRule.Kind,
         state: inout State

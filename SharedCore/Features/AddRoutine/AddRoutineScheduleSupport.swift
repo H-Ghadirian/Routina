@@ -22,6 +22,20 @@ enum AddRoutineScheduleEditor {
         schedule.frequencyValue = value
     }
 
+    static func setRecurrenceEditorMode(
+        _ mode: RoutineRecurrenceEditorMode,
+        schedule: inout AddRoutineScheduleState
+    ) {
+        schedule.recurrenceEditorMode = mode
+    }
+
+    static func setAdvancedRecurrenceRule(
+        _ rule: RoutineAdvancedRecurrenceRule,
+        schedule: inout AddRoutineScheduleState
+    ) {
+        schedule.advancedRecurrenceRule = rule.normalized()
+    }
+
     static func setRecurrenceKind(
         _ kind: RoutineRecurrenceRule.Kind,
         schedule: inout AddRoutineScheduleState

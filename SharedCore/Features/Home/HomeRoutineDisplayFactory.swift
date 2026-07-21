@@ -35,7 +35,12 @@ struct HomeRoutineDisplayFactory {
             }
             return calendar.isDate(displayDay, inSameDayAs: currentOccurrenceDay)
         } ?? false
-        let isDoneToday = doneTodayFromLastDone || doneTodayFromLogs
+        let isDoneToday = RoutineDateMath.isCompletedForCurrentPeriod(
+            doneTodayFromLastDone || doneTodayFromLogs,
+            task: task,
+            referenceDate: now,
+            calendar: calendar
+        )
         let canceledTodayFromTask = task.canceledAt.map {
             isRecordedDate($0, for: task, on: currentOccurrenceDay)
         } ?? false

@@ -128,6 +128,70 @@ struct RoutinaQuickAddParserTests {
     }
 
     @Test
+    func parseEveryOtherTuesdayAsAdvancedWeeklyRule() throws {
+        let draft = try #require(RoutinaQuickAddParser.parse(
+            "Physical therapy every other Tuesday at 9am",
+            referenceDate: makeDate("2026-07-22T10:00:00Z"),
+            calendar: makeTestCalendar()
+        ))
+
+        let advanced = try #require(draft.recurrenceRule.advanced)
+        #expect(draft.name == "Physical therapy")
+        #expect(advanced.frequency == .weekly)
+        #expect(advanced.interval == 2)
+        #expect(advanced.weekdays == [3])
+    }
+
+    @Test
+    func parseEveryThreeSaturdaysAsAdvancedWeeklyRule() throws {
+        let draft = try #require(RoutinaQuickAddParser.parse(
+            "Deep clean every 3 Sat",
+            referenceDate: makeDate("2026-07-22T10:00:00Z"),
+            calendar: makeTestCalendar()
+        ))
+
+        let advanced = try #require(draft.recurrenceRule.advanced)
+        #expect(draft.name == "Deep clean")
+        #expect(advanced.frequency == .weekly)
+        #expect(advanced.interval == 3)
+        #expect(advanced.weekdays == [7])
+    }
+
+    @Test
+    func parseOrdinalWeekdayInAlternatingMonths() throws {
+        let draft = try #require(RoutinaQuickAddParser.parse(
+            "Review accounts every 2 months on first Friday",
+            referenceDate: makeDate("2026-07-22T10:00:00Z"),
+            calendar: makeTestCalendar()
+        ))
+
+        let advanced = try #require(draft.recurrenceRule.advanced)
+        #expect(draft.name == "Review accounts")
+        #expect(advanced.frequency == .monthly)
+        #expect(advanced.interval == 2)
+        #expect(advanced.monthlyPattern == .ordinalWeekday)
+        #expect(advanced.weekdayOrdinal == .first)
+        #expect(advanced.ordinalWeekday == 6)
+    }
+
+    @Test
+    func parseHourlyMedicineCadenceWithoutTreatingItAsDuration() throws {
+        let draft = try #require(RoutinaQuickAddParser.parse(
+            "Take medicine every 6 hours during the day at 7am",
+            referenceDate: makeDate("2026-07-22T10:00:00Z"),
+            calendar: makeTestCalendar()
+        ))
+
+        let advanced = try #require(draft.recurrenceRule.advanced)
+        #expect(draft.name == "Take medicine")
+        #expect(draft.estimatedDurationMinutes == nil)
+        #expect(advanced.frequency == .hourly)
+        #expect(advanced.interval == 6)
+        #expect(advanced.hourlyMode == .dailyWindow)
+        #expect(RoutineTimeOfDay.from(advanced.startDate, calendar: makeTestCalendar()) == RoutineTimeOfDay(hour: 7, minute: 0))
+    }
+
+    @Test
     func createTaskUsesSharedSavePath() async throws {
         let context = makeInMemoryContext()
         let place = makePlace(in: context, name: "Balcony")

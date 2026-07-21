@@ -339,12 +339,45 @@ struct TaskFormIOSRepeatPatternSections: View {
 
     var body: some View {
         if presentation.showsRepeatControls {
-            repeatPatternSection
-            recurrenceSpecificSections
+            if model.supportsAdvancedRecurrence {
+                recurrenceModelSection
+            }
+            if model.recurrenceEditorMode.wrappedValue == .advanced,
+               model.supportsAdvancedRecurrence {
+                advancedRecurrenceSection
+            } else {
+                repeatPatternSection
+                recurrenceSpecificSections
+            }
         }
 
         if showsAssumedDoneSection {
             assumedDoneSection
+        }
+    }
+
+    private var recurrenceModelSection: some View {
+        Section(header: Text("Repeat Model")) {
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Repeat Model",
+                options: RoutineRecurrenceEditorMode.allCases,
+                selection: model.recurrenceEditorMode,
+                fillsAvailableWidth: true
+            ) { mode in
+                Text(mode.rawValue)
+            }
+        }
+    }
+
+    private var advancedRecurrenceSection: some View {
+        Section(header: Text("Advanced Recurrence")) {
+            AdvancedRecurrenceEditor(
+                rule: model.advancedRecurrenceRule,
+                weekdayOptions: presentation.weekdayOptions
+            )
+            if model.taskType.wrappedValue == .record {
+                Toggle("Nudges", isOn: model.trackingNudgesEnabled)
+            }
         }
     }
 

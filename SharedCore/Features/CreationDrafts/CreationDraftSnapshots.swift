@@ -71,6 +71,8 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
     var scheduleMode: RoutineScheduleMode = .oneOff
     var frequency: TaskFormFrequencyUnit = .day
     var frequencyValue = 1
+    var recurrenceEditorMode: RoutineRecurrenceEditorMode?
+    var advancedRecurrenceRule: RoutineAdvancedRecurrenceRule?
     var recurrenceKind: RoutineRecurrenceRule.Kind = .intervalDays
     var recurrenceHasExplicitTime = false
     var recurrenceHasTimeRange = false
@@ -133,6 +135,10 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
         scheduleMode = schedule.scheduleMode
         frequency = schedule.frequency
         frequencyValue = schedule.frequencyValue
+        if schedule.recurrenceEditorMode == .advanced {
+            recurrenceEditorMode = .advanced
+            advancedRecurrenceRule = schedule.advancedRecurrenceRule
+        }
         recurrenceKind = schedule.recurrenceKind
         recurrenceHasExplicitTime = schedule.recurrenceHasExplicitTime
         recurrenceHasTimeRange = schedule.recurrenceHasTimeRange
@@ -187,6 +193,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
             || scheduleMode != .oneOff
             || frequency != .day
             || frequencyValue != 1
+            || recurrenceEditorMode == .advanced
             || recurrenceKind != .intervalDays
             || recurrenceHasExplicitTime
             || recurrenceHasTimeRange
@@ -256,6 +263,10 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
         state.schedule.scheduleMode = scheduleMode
         state.schedule.frequency = frequency
         state.schedule.frequencyValue = max(frequencyValue, 1)
+        state.schedule.recurrenceEditorMode = recurrenceEditorMode ?? .simple
+        if let advancedRecurrenceRule {
+            state.schedule.advancedRecurrenceRule = advancedRecurrenceRule.normalized()
+        }
         state.schedule.recurrenceKind = recurrenceKind
         state.schedule.recurrenceHasExplicitTime = recurrenceHasExplicitTime && !recurrenceHasTimeRange
         state.schedule.recurrenceHasTimeRange = recurrenceHasTimeRange

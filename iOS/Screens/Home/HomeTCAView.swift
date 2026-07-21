@@ -560,7 +560,17 @@ private struct IOSSmartAddTaskSheet: View {
         scheduleMode: RoutineScheduleMode,
         into addRoutineStore: StoreOf<AddRoutineFeature>
     ) {
-        guard scheduleMode != .oneOff, !scheduleMode.isSoftIntervalRoutine else { return }
+        guard scheduleMode != .oneOff else { return }
+
+        if let advanced = recurrenceRule.advanced {
+            addRoutineStore.send(.recurrenceEditorModeChanged(.advanced))
+            addRoutineStore.send(.advancedRecurrenceRuleChanged(advanced))
+            seedTimeConstraint(from: recurrenceRule, into: addRoutineStore)
+            return
+        }
+
+        guard !scheduleMode.isSoftIntervalRoutine else { return }
+        addRoutineStore.send(.recurrenceEditorModeChanged(.simple))
 
         addRoutineStore.send(.recurrenceKindChanged(recurrenceRule.kind))
 

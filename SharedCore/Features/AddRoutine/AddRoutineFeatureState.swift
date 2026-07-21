@@ -54,6 +54,8 @@ struct AddRoutineScheduleState: Equatable {
     var scheduleMode: RoutineScheduleMode = .oneOff
     var frequency: AddRoutineFeature.Frequency = .day
     var frequencyValue: Int = 1
+    var recurrenceEditorMode: RoutineRecurrenceEditorMode = .simple
+    var advancedRecurrenceRule: RoutineAdvancedRecurrenceRule = RoutineAdvancedRecurrenceRule()
     var recurrenceKind: RoutineRecurrenceRule.Kind = .intervalDays
     var recurrenceHasExplicitTime: Bool = false
     var recurrenceHasTimeRange: Bool = false
@@ -166,6 +168,10 @@ struct AddRoutineFeatureState: Equatable {
 
         guard !schedule.scheduleMode.isChecklistDrivenMode else {
             return .interval(days: max(fallbackInterval, 1))
+        }
+
+        if schedule.recurrenceEditorMode == .advanced {
+            return .advanced(schedule.advancedRecurrenceRule)
         }
 
         switch schedule.recurrenceKind {

@@ -29,6 +29,28 @@ If coverage does not exist yet, write `Coverage needed:` instead of `Coverage:` 
 
 ## Initial High-Value Scenarios
 
+### Simple And Advanced Recurrence Stay Independent
+
+Area: Tasks
+Decision links: [0412](../decisions/0412-add-advanced-recurrence-beside-simple.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/RoutineAdvancedRecurrenceTests.swift`
+- `Tests/Shared/RoutinaQuickAddParserTests.swift`
+- `Tests/Shared/NotificationCoordinatorTests.swift`
+
+Given a routine has Simple recurrence values and an independent Advanced recurrence draft
+When the user switches between Simple and Advanced
+Then each model keeps its own values and saving uses only the selected model
+
+Given an Advanced hourly routine repeats every six hours during a daily window
+When two occurrences become due and are completed on the same day
+Then each completion is stored at its scheduled occurrence timestamp, log deduplication preserves both, and the routine becomes actionable again at the next due occurrence
+
+Given an existing routine has no Advanced recurrence payload
+When it is decoded or edited
+Then it remains a Simple recurrence with its prior behavior
+
 ### Custom Buttons Use Full Visual Hit Areas
 
 Area: Other

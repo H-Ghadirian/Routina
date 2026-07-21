@@ -158,7 +158,12 @@ enum HomeDetailSelectionSupport {
             return !detailState.hasPendingLocalRemoval(on: displayDay, calendar: calendar)
                 && calendar.isDate(displayDay, inSameDayAs: todayDisplayDay)
         }
-        detailState.isDoneToday = doneTodayFromLastDone || doneTodayFromLogs
+        detailState.isDoneToday = RoutineDateMath.isCompletedForCurrentPeriod(
+            doneTodayFromLastDone || doneTodayFromLogs,
+            task: detailState.task,
+            referenceDate: now,
+            calendar: calendar
+        )
         detailState.isAssumedDoneToday = !detailState.isDoneToday && RoutineAssumedCompletion.isAssumedDone(
             for: detailState.task,
             on: now,

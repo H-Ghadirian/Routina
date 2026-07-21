@@ -53,6 +53,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0400](../decisions/0400-plan-tracking-rows-into-today.md)
 - [0408](../decisions/0408-allow-explicit-planning-for-daily-tracking.md)
 - [0411](../decisions/0411-manage-custom-task-sections-in-settings.md)
+- [0412](../decisions/0412-add-advanced-recurrence-beside-simple.md)
 
 ## Current Contract
 
@@ -78,7 +79,10 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Routines separate schedule behavior from format. Due/Gentle controls pressure and status; Interval/Calendar controls cadence; Standard/Checklist controls finish behavior.
 - Adding checklist items to a routine that previously had none promotes Standard completion to Checklist completion when no sequential steps would be discarded. Existing Standard routines that already carry checklist items remain editable as legacy optional checklist data.
 - Auto-assume done is opt-in for daily Tracking entries with cadence enabled: Standard Tracking without steps/checklists and Checklist-completion Tracking with checklist items. Todos, routines, Tracking with `None`, item-runout Tracking, Standard Tracking with optional checklist items, Tracking with steps, and non-daily cadences do not qualify.
-- Calendar repeats offer weekday and month-day choices, and editing a weekly calendar routine preserves every selected weekday. Interval repeats own the single daily-repeat path.
+- Simple recurrence remains the default and keeps the existing Interval / Calendar controls. Calendar repeats offer weekday and month-day choices, and editing a weekly calendar routine preserves every selected weekday. Interval repeats own Simple's single daily-repeat path.
+- Routine and cadence-enabled Tracking forms can instead select Advanced recurrence for every-N hourly, daily, weekly, monthly, or yearly schedules, including daily multiple times, selected weekdays, month-day or ordinal-weekday patterns, yearly month/day patterns, start dates, end dates/counts, and hourly daily windows.
+- Advanced calendar occurrences stay anchored to the configured start rule rather than shifting when completed. Subdaily and multi-time daily routines keep separate scheduled completion timestamps on the same day and become actionable again when the next occurrence is due; Simple completion remains day-based.
+- Advanced reminders schedule a bounded rolling set of upcoming occurrences and rebuild that set after completion or edits. Simple reminders retain their existing single pending request.
 - Editing an existing interval routine from one interval frequency to another preserves its current rolling schedule anchor, so the new cadence recalculates from the existing completion/history anchor rather than from the edit timestamp.
 - Multi-day routines use a `Start` -> in-progress -> `Stop` lifecycle. Their detail calendar shows an ongoing range while active and a completed span after stopping.
 - Checklist runout item actions are item-scoped. Task Details can update today or a selected past day, using the selected day as the runout reset date; future dates remain read-only. Completing all currently due items for that selected day records routine completion.

@@ -188,6 +188,40 @@ struct NotificationCoordinatorTests {
     }
 
     @Test
+    func notificationPayload_keepsRollingAdvancedHourlyOccurrences() {
+        let calendar = makeTestCalendar()
+        let advanced = RoutineAdvancedRecurrenceRule(
+            frequency: .hourly,
+            interval: 6,
+            startDate: makeDate("2026-07-21T07:00:00Z"),
+            hourlyMode: .dailyWindow,
+            dailyWindowStart: RoutineTimeOfDay(hour: 7, minute: 0),
+            dailyWindowEnd: RoutineTimeOfDay(hour: 22, minute: 0),
+            timeZoneIdentifier: calendar.timeZone.identifier,
+            calendar: calendar
+        )
+        let task = RoutineTask(
+            name: "Medicine",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .advanced(advanced),
+            scheduleAnchor: advanced.startDate
+        )
+
+        let payload = NotificationCoordinator.notificationPayload(
+            for: task,
+            referenceDate: makeDate("2026-07-21T08:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(payload.recurrenceOccurrenceDates.prefix(4) == [
+            makeDate("2026-07-21T07:00:00Z"),
+            makeDate("2026-07-21T13:00:00Z"),
+            makeDate("2026-07-21T19:00:00Z"),
+            makeDate("2026-07-22T07:00:00Z")
+        ])
+    }
+
+    @Test
     func notificationPayload_forMissedExactTimeRoutineUsesNextOccurrence() {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!

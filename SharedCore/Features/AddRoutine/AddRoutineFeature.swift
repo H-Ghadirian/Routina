@@ -61,6 +61,8 @@ struct AddRoutineFeature: Reducer {
         case removeChecklistItem(UUID)
         case frequencyChanged(Frequency)
         case frequencyValueChanged(Int)
+        case recurrenceEditorModeChanged(RoutineRecurrenceEditorMode)
+        case advancedRecurrenceRuleChanged(RoutineAdvancedRecurrenceRule)
         case recurrenceKindChanged(RoutineRecurrenceRule.Kind)
         case recurrenceHasExplicitTimeChanged(Bool)
         case recurrenceHasTimeRangeChanged(Bool)
@@ -490,6 +492,16 @@ struct AddRoutineFeature: Reducer {
             clearPlanningIfDailyRoutine(state: &state)
             return .none
 
+        case let .recurrenceEditorModeChanged(mode):
+            scheduleMutationHandler().setRecurrenceEditorMode(mode, state: &state)
+            clearPlanningIfDailyRoutine(state: &state)
+            return .none
+
+        case let .advancedRecurrenceRuleChanged(rule):
+            scheduleMutationHandler().setAdvancedRecurrenceRule(rule, state: &state)
+            clearPlanningIfDailyRoutine(state: &state)
+            return .none
+
         case let .recurrenceKindChanged(kind):
             scheduleMutationHandler().setRecurrenceKind(kind, state: &state)
             clearPlanningIfDailyRoutine(state: &state)
@@ -701,6 +713,13 @@ struct AddRoutineFeature: Reducer {
         state.basics.reminderAt = nil
 
         let recurrenceRule = draft.recurrenceRule
+        if let advanced = recurrenceRule.advanced {
+            scheduleMutationHandler().setRecurrenceEditorMode(.advanced, state: &state)
+            scheduleMutationHandler().setAdvancedRecurrenceRule(advanced, state: &state)
+            applyTimeConstraint(from: recurrenceRule, state: &state)
+            return
+        }
+        scheduleMutationHandler().setRecurrenceEditorMode(.simple, state: &state)
         scheduleMutationHandler().setRecurrenceKind(recurrenceRule.kind, state: &state)
 
         switch recurrenceRule.kind {

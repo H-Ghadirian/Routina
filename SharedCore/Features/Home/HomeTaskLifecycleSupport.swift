@@ -609,12 +609,27 @@ enum HomeTaskLifecycleSupport {
             ) else {
                 continue
             }
+            let fulfillmentDate: Date
+            if tasks[index].recurrenceRule.usesAdvancedModel {
+                let due = RoutineDateMath.dueDate(
+                    for: tasks[index],
+                    referenceDate: completedAt,
+                    calendar: calendar
+                )
+                guard due != .distantFuture, due <= completedAt else { continue }
+                fulfillmentDate = due
+            } else {
+                fulfillmentDate = completedAt
+            }
             let alreadyResolved = doneStats.completedDatesByTaskID[targetTaskID]?.contains {
-                calendar.isDate($0, inSameDayAs: completedAt)
+                if tasks[index].recurrenceRule.occursMoreThanOncePerDay {
+                    return abs($0.timeIntervalSince(fulfillmentDate)) < 1
+                }
+                return calendar.isDate($0, inSameDayAs: fulfillmentDate)
             } ?? false
             guard !alreadyResolved else { continue }
-            guard tasks[index].recordFulfillment(at: completedAt, calendar: calendar) else { continue }
-            doneStats.completedDatesByTaskID[targetTaskID, default: []].insert(completedAt)
+            guard tasks[index].recordFulfillment(at: fulfillmentDate, calendar: calendar) else { continue }
+            doneStats.completedDatesByTaskID[targetTaskID, default: []].insert(fulfillmentDate)
         }
     }
 

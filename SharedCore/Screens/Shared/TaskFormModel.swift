@@ -122,6 +122,10 @@ struct TaskFormModel {
     var selectedPlaceIDs: Binding<[UUID]> = .constant([])
 
     // MARK: Recurrence
+    var recurrenceEditorMode: Binding<RoutineRecurrenceEditorMode> = .constant(.simple)
+    var advancedRecurrenceRule: Binding<RoutineAdvancedRecurrenceRule> = .constant(
+        RoutineAdvancedRecurrenceRule()
+    )
     var recurrenceKind: Binding<RoutineRecurrenceRule.Kind>
     var recurrenceHasExplicitTime: Binding<Bool>
     var recurrenceHasTimeRange: Binding<Bool> = .constant(false)
@@ -270,6 +274,12 @@ extension TaskFormModel {
             && scheduleMode.wrappedValue.routineFinishMode == .checklist
     }
 
+    var supportsAdvancedRecurrence: Bool {
+        (taskType.wrappedValue == .routine || taskType.wrappedValue == .record)
+            && scheduleMode.wrappedValue.usesRoutineCadence
+            && !scheduleMode.wrappedValue.isChecklistDrivenMode
+    }
+
     var routineRepeatTypeCases: [RoutineRepeatType] {
         RoutineRepeatType.cases(
             supportsNoRepeat: taskType.wrappedValue == .record,
@@ -399,6 +409,10 @@ extension TaskFormModel {
             return .interval(days: max(effectiveIntervalDays, 1))
         }
 
+        if recurrenceEditorMode.wrappedValue == .advanced {
+            return .advanced(advancedRecurrenceRule.wrappedValue)
+        }
+
         switch recurrenceKind.wrappedValue {
         case .intervalDays:
             return .interval(days: max(effectiveIntervalDays, 1), at: timeOfDay, timeRange: timeRange)
@@ -512,6 +526,9 @@ extension TaskFormModel {
         guard currentScheduleMode.usesRoutineCadence else { return false }
         if currentScheduleMode.isChecklistDrivenMode {
             return RoutineTaskDailyRoutineSupport.hasDailyRunoutChecklistItem(candidateChecklistItems)
+        }
+        if recurrenceEditorMode.wrappedValue == .advanced {
+            return advancedRecurrenceRule.wrappedValue.isDaily
         }
         switch recurrenceKind.wrappedValue {
         case .dailyTime:

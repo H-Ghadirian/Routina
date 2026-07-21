@@ -249,15 +249,20 @@ struct AddRoutineSaveRequest: Equatable {
         let trackingCadenceEnabled = schedule.scheduleMode.taskType == .record
             ? basics.trackingCadenceEnabled
             : true
-        let frequencyInDays = !schedule.scheduleMode.usesRoutineCadence || !trackingCadenceEnabled
-            ? 1
-            : TaskFormRecurrenceConstraints.effectiveIntervalDays(
+        let frequencyInDays: Int
+        if !schedule.scheduleMode.usesRoutineCadence || !trackingCadenceEnabled {
+            frequencyInDays = 1
+        } else if schedule.recurrenceEditorMode == .advanced {
+            frequencyInDays = schedule.advancedRecurrenceRule.approximateIntervalDays
+        } else {
+            frequencyInDays = TaskFormRecurrenceConstraints.effectiveIntervalDays(
                 value: schedule.frequencyValue,
                 unit: schedule.frequency,
                 scheduleMode: schedule.scheduleMode,
                 routineDurationMode: basics.routineDurationMode,
                 recurrenceKind: schedule.recurrenceKind
             )
+        }
 
         self.name = state.trimmedRoutineName
         self.frequencyInDays = frequencyInDays
@@ -369,6 +374,10 @@ struct AddRoutineSaveRequest: Equatable {
 
         guard !schedule.scheduleMode.isChecklistDrivenMode else {
             return .interval(days: max(fallbackInterval, 1))
+        }
+
+        if schedule.recurrenceEditorMode == .advanced {
+            return .advanced(schedule.advancedRecurrenceRule)
         }
 
         switch schedule.recurrenceKind {

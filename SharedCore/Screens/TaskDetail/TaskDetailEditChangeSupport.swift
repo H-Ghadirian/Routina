@@ -39,6 +39,8 @@ struct TaskDetailEditChangeRequest {
     let checklistItemDraftInterval: Int
     let frequency: TaskDetailFeature.EditFrequency
     let frequencyValue: Int
+    let recurrenceEditorMode: RoutineRecurrenceEditorMode
+    let advancedRecurrenceRule: RoutineAdvancedRecurrenceRule
     let recurrenceKind: RoutineRecurrenceRule.Kind
     let recurrenceHasExplicitTime: Bool
     let recurrenceHasTimeRange: Bool
@@ -96,6 +98,8 @@ struct TaskDetailEditChangeRequest {
         self.checklistItemDraftInterval = state.editChecklistItemDraftInterval
         self.frequency = state.editFrequency
         self.frequencyValue = state.editFrequencyValue
+        self.recurrenceEditorMode = state.editRecurrenceEditorMode
+        self.advancedRecurrenceRule = state.editAdvancedRecurrenceRule
         self.recurrenceKind = state.editRecurrenceKind
         self.recurrenceHasExplicitTime = state.editRecurrenceHasExplicitTime
         self.recurrenceHasTimeRange = state.editRecurrenceHasTimeRange
@@ -242,6 +246,10 @@ enum TaskDetailEditChangeDetector {
 
         if request.scheduleMode.taskType == .record, !request.trackingCadenceEnabled {
             return .interval(days: 1)
+        }
+
+        if request.recurrenceEditorMode == .advanced {
+            return .advanced(request.advancedRecurrenceRule)
         }
 
         switch request.recurrenceKind {

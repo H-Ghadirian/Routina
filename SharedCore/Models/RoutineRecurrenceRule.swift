@@ -10,6 +10,7 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
         case dayOfMonth
         case weekdays
         case daysOfMonth
+        case advanced
     }
 
     enum Kind: String, Codable, CaseIterable, Equatable, Hashable, Sendable {
@@ -55,6 +56,7 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
     var dayOfMonth: Int?
     var weekdays: [Int]
     var daysOfMonth: [Int]
+    var advanced: RoutineAdvancedRecurrenceRule?
 
     init(
         kind: Kind,
@@ -64,9 +66,11 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
         weekday: Int? = nil,
         dayOfMonth: Int? = nil,
         weekdays: [Int]? = nil,
-        daysOfMonth: [Int]? = nil
+        daysOfMonth: [Int]? = nil,
+        advanced: RoutineAdvancedRecurrenceRule? = nil
     ) {
         self.kind = kind
+        self.advanced = advanced
 
         switch kind {
         case .intervalDays:
@@ -119,6 +123,7 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
         let dayOfMonth = try container.decodeIfPresent(Int.self, forKey: .dayOfMonth)
         let weekdays = try container.decodeIfPresent([Int].self, forKey: .weekdays)
         let daysOfMonth = try container.decodeIfPresent([Int].self, forKey: .daysOfMonth)
+        let advanced = try container.decodeIfPresent(RoutineAdvancedRecurrenceRule.self, forKey: .advanced)
         self.init(
             kind: kind,
             interval: interval,
@@ -127,8 +132,39 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
             weekday: weekday,
             dayOfMonth: dayOfMonth,
             weekdays: weekdays,
-            daysOfMonth: daysOfMonth
+            daysOfMonth: daysOfMonth,
+            advanced: advanced
         )
+    }
+
+    static func advanced(_ advancedRule: RoutineAdvancedRecurrenceRule) -> RoutineRecurrenceRule {
+        let normalized = advancedRule.normalized()
+        let timeOfDay = normalized.timesOfDay.first
+            ?? RoutineTimeOfDay.from(normalized.startDate)
+
+        switch normalized.frequency {
+        case .hourly, .daily:
+            return RoutineRecurrenceRule(
+                kind: .intervalDays,
+                interval: max(normalized.approximateIntervalDays, 1),
+                timeOfDay: timeOfDay,
+                advanced: normalized
+            )
+        case .weekly:
+            return RoutineRecurrenceRule(
+                kind: .weekly,
+                timeOfDay: timeOfDay,
+                weekdays: normalized.weekdays,
+                advanced: normalized
+            )
+        case .monthly, .yearly:
+            return RoutineRecurrenceRule(
+                kind: .monthlyDay,
+                timeOfDay: timeOfDay,
+                daysOfMonth: normalized.monthDays,
+                advanced: normalized
+            )
+        }
     }
 
     static func interval(
@@ -205,10 +241,13 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
     }
 
     var isFixedCalendar: Bool {
-        kind != .intervalDays
+        advanced != nil || kind != .intervalDays
     }
 
     var approximateIntervalDays: Int {
+        if let advanced {
+            return max(advanced.approximateIntervalDays, 1)
+        }
         switch kind {
         case .intervalDays:
             return max(interval, 1)
@@ -222,7 +261,7 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
     }
 
     var usesExplicitTimeOfDay: Bool {
-        timeOfDay != nil
+        advanced != nil || timeOfDay != nil
     }
 
     var usesTimeRange: Bool {
@@ -230,10 +269,13 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
     }
 
     var usesTimeConstraint: Bool {
-        usesExplicitTimeOfDay || usesTimeRange
+        advanced != nil || usesExplicitTimeOfDay || usesTimeRange
     }
 
     var isDaily: Bool {
+        if let advanced {
+            return advanced.isDaily
+        }
         switch kind {
         case .intervalDays:
             return max(interval, 1) == 1
@@ -245,6 +287,9 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
     }
 
     func displayText(calendar: Calendar = .current) -> String {
+        if let advanced {
+            return advanced.summary(calendar: calendar)
+        }
         switch kind {
         case .intervalDays:
             let resolvedInterval = max(interval, 1)
@@ -307,6 +352,18 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
 
     var hasMultipleCalendarSelections: Bool {
         weekdays.count > 1 || daysOfMonth.count > 1
+    }
+
+    var requiresStructuredStorage: Bool {
+        advanced != nil || hasMultipleCalendarSelections
+    }
+
+    var usesAdvancedModel: Bool {
+        advanced != nil
+    }
+
+    var occursMoreThanOncePerDay: Bool {
+        advanced?.occursMoreThanOncePerDay == true
     }
 
     func resolvedWeekdays(calendar: Calendar = .current) -> [Int] {

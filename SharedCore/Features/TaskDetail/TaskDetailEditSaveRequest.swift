@@ -99,15 +99,20 @@ struct TaskDetailEditSaveRequestBuilder {
         let trackingCadenceEnabled = scheduleMode.taskType == .record
             ? state.editTrackingCadenceEnabled
             : true
-        let frequencyInterval = !scheduleMode.usesRoutineCadence || !trackingCadenceEnabled
-            ? 1
-            : TaskFormRecurrenceConstraints.effectiveIntervalDays(
+        let frequencyInterval: Int
+        if !scheduleMode.usesRoutineCadence || !trackingCadenceEnabled {
+            frequencyInterval = 1
+        } else if state.editRecurrenceEditorMode == .advanced {
+            frequencyInterval = state.editAdvancedRecurrenceRule.approximateIntervalDays
+        } else {
+            frequencyInterval = TaskFormRecurrenceConstraints.effectiveIntervalDays(
                 value: state.editFrequencyValue,
                 unit: state.editFrequency,
                 scheduleMode: scheduleMode,
                 routineDurationMode: state.editRoutineDurationMode,
                 recurrenceKind: state.editRecurrenceKind
             )
+        }
         let recurrenceRule = trackingCadenceEnabled
             ? selectedRecurrenceRule(
                 for: state,
@@ -205,6 +210,10 @@ struct TaskDetailEditSaveRequestBuilder {
 
         guard !scheduleMode.isChecklistDrivenMode else {
             return .interval(days: max(fallbackInterval, 1))
+        }
+
+        if state.editRecurrenceEditorMode == .advanced {
+            return .advanced(state.editAdvancedRecurrenceRule)
         }
 
         switch state.editRecurrenceKind {

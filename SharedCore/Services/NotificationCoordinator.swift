@@ -101,6 +101,8 @@ enum NotificationCoordinator {
     static let doneActionIdentifier = "ROUTINE_DONE"
     static let snoozeActionIdentifier = "ROUTINE_SNOOZE"
     static let eventNotificationIdentifierPrefix = "event-"
+    private static let advancedOccurrenceNotificationLimit = 12
+    private static let advancedOccurrenceIdentifierMarker = ".occurrence."
 
     static func shouldScheduleNotification(
         for task: RoutineTask,
@@ -117,6 +119,15 @@ enum NotificationCoordinator {
             guard !task.isCompletedOneOff, !task.isCanceledOneOff else { return false }
             guard let deadline = task.deadline else { return false }
             return deadline > referenceDate
+        }
+
+        if task.recurrenceRule.usesAdvancedModel {
+            guard !task.isSoftIntervalRoutine, !task.isOngoing else { return false }
+            return RoutineDateMath.upcomingDueDate(
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) != .distantFuture
         }
 
         if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
@@ -186,6 +197,14 @@ enum NotificationCoordinator {
             return dueDate.map { NotificationPreferences.reminderDate(on: $0, calendar: calendar) }
         }()
         let usesExactTime = reminderDate != nil || task.isOneOffTask || task.recurrenceRule.usesTimeConstraint
+        let recurrenceOccurrenceDates = triggerDate == nil
+            ? advancedNotificationOccurrenceDates(
+                for: task,
+                dueDate: dueDate,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+            : []
         return NotificationPayload(
             identifier: task.id.uuidString,
             name: task.name,
@@ -200,7 +219,8 @@ enum NotificationCoordinator {
             usesExactTime: usesExactTime,
             isChecklistDriven: task.isChecklistDriven,
             isChecklistCompletionRoutine: task.isChecklistCompletionRoutine,
-            nextDueChecklistItemTitle: task.nextDueChecklistItem(referenceDate: referenceDate, calendar: calendar)?.title
+            nextDueChecklistItemTitle: task.nextDueChecklistItem(referenceDate: referenceDate, calendar: calendar)?.title,
+            recurrenceOccurrenceDates: recurrenceOccurrenceDates
         )
     }
 
@@ -244,7 +264,7 @@ enum NotificationCoordinator {
         actionIdentifier: String,
         requestIdentifier: String
     ) async {
-        guard let taskID = UUID(uuidString: requestIdentifier) else { return }
+        guard let taskID = taskID(fromNotificationIdentifier: requestIdentifier) else { return }
 
         switch actionIdentifier {
         case doneActionIdentifier:
@@ -365,8 +385,9 @@ enum NotificationCoordinator {
 
     static func cancelNotification(_ identifier: String) {
         let center = UNUserNotificationCenter.current()
-        center.removePendingNotificationRequests(withIdentifiers: [identifier])
-        center.removeDeliveredNotifications(withIdentifiers: [identifier])
+        let identifiers = notificationIdentifiers(for: identifier)
+        center.removePendingNotificationRequests(withIdentifiers: identifiers)
+        center.removeDeliveredNotifications(withIdentifiers: identifiers)
     }
 
     static func createNotificationTrigger(
@@ -516,12 +537,66 @@ enum NotificationCoordinator {
         }
 
         cancelNotification(payload.identifier)
+        if !payload.recurrenceOccurrenceDates.isEmpty {
+            for (index, occurrence) in payload.recurrenceOccurrenceDates
+                .prefix(advancedOccurrenceNotificationLimit)
+                .enumerated() {
+                let occurrencePayload = payload.forRecurrenceOccurrence(occurrence)
+                let request = UNNotificationRequest(
+                    identifier: advancedOccurrenceIdentifier(base: payload.identifier, index: index),
+                    content: createNotificationContent(for: occurrencePayload),
+                    trigger: createNotificationTrigger(for: occurrencePayload)
+                )
+                try? await UNUserNotificationCenter.current().add(request)
+            }
+            return
+        }
         let request = UNNotificationRequest(
             identifier: payload.identifier,
             content: createNotificationContent(for: payload),
             trigger: createNotificationTrigger(for: payload)
         )
         try? await UNUserNotificationCenter.current().add(request)
+    }
+
+    private static func advancedNotificationOccurrenceDates(
+        for task: RoutineTask,
+        dueDate: Date?,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> [Date] {
+        guard let advanced = task.recurrenceRule.advanced else { return [] }
+        var dates: [Date] = []
+        if let dueDate, dueDate != .distantFuture {
+            dates.append(dueDate)
+        }
+        let futureDates = RoutineAdvancedRecurrenceGenerator.occurrences(
+            for: advanced,
+            after: referenceDate,
+            limit: advancedOccurrenceNotificationLimit,
+            calendar: calendar
+        )
+        for date in futureDates where !dates.contains(date) {
+            dates.append(date)
+            if dates.count == advancedOccurrenceNotificationLimit { break }
+        }
+        return dates.sorted()
+    }
+
+    private static func advancedOccurrenceIdentifier(base: String, index: Int) -> String {
+        "\(base)\(advancedOccurrenceIdentifierMarker)\(index)"
+    }
+
+    private static func notificationIdentifiers(for base: String) -> [String] {
+        [base] + (0..<advancedOccurrenceNotificationLimit).map {
+            advancedOccurrenceIdentifier(base: base, index: $0)
+        }
+    }
+
+    private static func taskID(fromNotificationIdentifier identifier: String) -> UUID? {
+        let base = identifier.components(separatedBy: advancedOccurrenceIdentifierMarker).first
+            ?? identifier
+        return UUID(uuidString: base)
     }
 
     private static func taskDescriptor(for taskID: UUID) -> FetchDescriptor<RoutineTask> {

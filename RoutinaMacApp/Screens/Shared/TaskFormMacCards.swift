@@ -727,42 +727,70 @@ struct TaskFormMacBehaviorCard: View {
 
     @ViewBuilder
     private var repeatPatternControls: some View {
-        TaskFormMacControlBlock(title: "Repeat type") {
-            HStack(spacing: 0) {
+        if model.supportsAdvancedRecurrence {
+            TaskFormMacControlBlock(title: "Repeat model") {
                 RoutinaGlassSegmentedControl(
-                    accessibilityLabel: "Repeat type",
-                    options: model.routineRepeatTypeCases,
-                    selection: model.routineRepeatType
-                ) { repeatType in
-                    Text(repeatType.rawValue)
+                    accessibilityLabel: "Repeat model",
+                    options: RoutineRecurrenceEditorMode.allCases,
+                    selection: model.recurrenceEditorMode
+                ) { mode in
+                    Text(mode.rawValue)
                 }
-                Spacer(minLength: 0)
             }
         }
 
-        if model.routineRepeatType.wrappedValue == .calendar {
-            calendarPatternControl
-        }
-
-        if model.taskType.wrappedValue == .record && model.routineRepeatType.wrappedValue != .none {
-            TaskFormMacControlBlock(title: "Nudges") {
-                Toggle("Nudges", isOn: model.trackingNudgesEnabled)
-                    .toggleStyle(.switch)
+        if model.recurrenceEditorMode.wrappedValue == .advanced,
+           model.supportsAdvancedRecurrence {
+            TaskFormMacControlBlock(title: "Advanced recurrence") {
+                AdvancedRecurrenceEditor(
+                    rule: model.advancedRecurrenceRule,
+                    weekdayOptions: presentation.weekdayOptions
+                )
             }
-        }
-
-        switch model.routineRepeatType.wrappedValue {
-        case .none:
-            EmptyView()
-
-        case .interval:
-            TaskFormMacControlBlock(title: "Repeat") {
-                frequencyStepper(prefix: intervalFrequencyPrefix)
+            if model.taskType.wrappedValue == .record {
+                TaskFormMacControlBlock(title: "Nudges") {
+                    Toggle("Nudges", isOn: model.trackingNudgesEnabled)
+                        .toggleStyle(.switch)
+                }
             }
-        case .calendar:
-            calendarSpecificControls
-        case .itemRunout:
-            EmptyView()
+        } else {
+            TaskFormMacControlBlock(title: "Repeat type") {
+                HStack(spacing: 0) {
+                    RoutinaGlassSegmentedControl(
+                        accessibilityLabel: "Repeat type",
+                        options: model.routineRepeatTypeCases,
+                        selection: model.routineRepeatType
+                    ) { repeatType in
+                        Text(repeatType.rawValue)
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
+
+            if model.routineRepeatType.wrappedValue == .calendar {
+                calendarPatternControl
+            }
+
+            if model.taskType.wrappedValue == .record && model.routineRepeatType.wrappedValue != .none {
+                TaskFormMacControlBlock(title: "Nudges") {
+                    Toggle("Nudges", isOn: model.trackingNudgesEnabled)
+                        .toggleStyle(.switch)
+                }
+            }
+
+            switch model.routineRepeatType.wrappedValue {
+            case .none:
+                EmptyView()
+
+            case .interval:
+                TaskFormMacControlBlock(title: "Repeat") {
+                    frequencyStepper(prefix: intervalFrequencyPrefix)
+                }
+            case .calendar:
+                calendarSpecificControls
+            case .itemRunout:
+                EmptyView()
+            }
         }
     }
 

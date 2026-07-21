@@ -351,7 +351,7 @@ final class RoutineTask {
     var recurrenceRule: RoutineRecurrenceRule {
         get {
             if let storedRule = RoutineRecurrenceRuleStorage.deserialize(recurrenceRuleStorage),
-               storedRule.hasMultipleCalendarSelections {
+               storedRule.requiresStructuredStorage {
                 return storedRule
             }
             if recurrenceStorageVersion >= Self.currentRecurrenceStorageVersion {
@@ -640,7 +640,7 @@ final class RoutineTask {
         recurrenceTimeRangeEndMinute = recurrenceRule.timeRange?.end.minute
         recurrenceWeekday = recurrenceRule.weekday
         recurrenceDayOfMonth = recurrenceRule.dayOfMonth
-        recurrenceRuleStorage = recurrenceRule.hasMultipleCalendarSelections
+        recurrenceRuleStorage = recurrenceRule.requiresStructuredStorage
             ? RoutineRecurrenceRuleStorage.serialize(recurrenceRule)
             : ""
     }

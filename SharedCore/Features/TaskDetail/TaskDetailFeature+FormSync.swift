@@ -48,6 +48,9 @@ extension TaskDetailFeature {
         state.editColor = state.task.color
 
         let recurrenceRule = state.task.recurrenceRule
+        state.editRecurrenceEditorMode = recurrenceRule.usesAdvancedModel ? .advanced : .simple
+        state.editAdvancedRecurrenceRule = recurrenceRule.advanced
+            ?? RoutineAdvancedRecurrenceRule(startDate: now)
         state.editRecurrenceKind = recurrenceRule.kind
         state.editRecurrenceHasExplicitTime = recurrenceRule.usesExplicitTimeOfDay
         state.editRecurrenceHasTimeRange = recurrenceRule.usesTimeRange

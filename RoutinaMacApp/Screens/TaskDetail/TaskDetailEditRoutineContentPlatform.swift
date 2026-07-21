@@ -159,6 +159,14 @@ struct TaskDetailEditRoutineContent: View {
                 get: { store.editSelectedPlaceIDs },
                 set: { store.send(.editSelectedPlaceIDsChanged($0)) }
             ),
+            recurrenceEditorMode: Binding(
+                get: { store.editRecurrenceEditorMode },
+                set: { store.send(.editRecurrenceEditorModeChanged($0)) }
+            ),
+            advancedRecurrenceRule: Binding(
+                get: { store.editAdvancedRecurrenceRule },
+                set: { store.send(.editAdvancedRecurrenceRuleChanged($0)) }
+            ),
             recurrenceKind: recurrenceKindBinding,
             recurrenceHasExplicitTime: recurrenceHasExplicitTimeBinding,
             recurrenceHasTimeRange: recurrenceHasTimeRangeBinding,

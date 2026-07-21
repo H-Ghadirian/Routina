@@ -89,6 +89,8 @@ struct TaskDetailFeature: Reducer {
         var editSelectedPlaceIDs: [UUID] = []
         var editFrequency: EditFrequency = .day
         var editFrequencyValue: Int = 1
+        var editRecurrenceEditorMode: RoutineRecurrenceEditorMode = .simple
+        var editAdvancedRecurrenceRule: RoutineAdvancedRecurrenceRule = RoutineAdvancedRecurrenceRule()
         var editRecurrenceKind: RoutineRecurrenceRule.Kind = .intervalDays
         var editRecurrenceHasExplicitTime: Bool = false
         var editRecurrenceHasTimeRange: Bool = false
@@ -143,6 +145,10 @@ struct TaskDetailFeature: Reducer {
 
             guard !editScheduleMode.isChecklistDrivenMode else {
                 return .interval(days: max(fallbackInterval, 1))
+            }
+
+            if editRecurrenceEditorMode == .advanced {
+                return .advanced(editAdvancedRecurrenceRule)
             }
 
             switch editRecurrenceKind {
@@ -332,6 +338,8 @@ struct TaskDetailFeature: Reducer {
         case editTrackingNudgesEnabledChanged(Bool)
         case editFrequencyChanged(EditFrequency)
         case editFrequencyValueChanged(Int)
+        case editRecurrenceEditorModeChanged(RoutineRecurrenceEditorMode)
+        case editAdvancedRecurrenceRuleChanged(RoutineAdvancedRecurrenceRule)
         case editRecurrenceKindChanged(RoutineRecurrenceRule.Kind)
         case editRecurrenceHasExplicitTimeChanged(Bool)
         case editRecurrenceHasTimeRangeChanged(Bool)
@@ -1360,6 +1368,12 @@ struct TaskDetailFeature: Reducer {
 
         case let .editFrequencyValueChanged(value):
             return recurrenceEditActionHandler().editFrequencyValueChanged(value, state: &state)
+
+        case let .editRecurrenceEditorModeChanged(mode):
+            return recurrenceEditActionHandler().editRecurrenceEditorModeChanged(mode, state: &state)
+
+        case let .editAdvancedRecurrenceRuleChanged(rule):
+            return recurrenceEditActionHandler().editAdvancedRecurrenceRuleChanged(rule, state: &state)
 
         case let .editRecurrenceKindChanged(kind):
             return recurrenceEditActionHandler().editRecurrenceKindChanged(kind, state: &state)

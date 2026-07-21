@@ -24,6 +24,7 @@ struct NotificationPayload: Sendable {
     let nextDueChecklistItemTitle: String?
     let deepLink: RoutinaDeepLink?
     let isAllDayEvent: Bool
+    let recurrenceOccurrenceDates: [Date]
 
     init(
         identifier: String,
@@ -42,7 +43,8 @@ struct NotificationPayload: Sendable {
         isChecklistCompletionRoutine: Bool,
         nextDueChecklistItemTitle: String?,
         deepLink: RoutinaDeepLink? = nil,
-        isAllDayEvent: Bool = false
+        isAllDayEvent: Bool = false,
+        recurrenceOccurrenceDates: [Date] = []
     ) {
         self.identifier = identifier
         self.kind = kind
@@ -61,6 +63,29 @@ struct NotificationPayload: Sendable {
         self.nextDueChecklistItemTitle = nextDueChecklistItemTitle
         self.deepLink = deepLink
         self.isAllDayEvent = isAllDayEvent
+        self.recurrenceOccurrenceDates = recurrenceOccurrenceDates
+    }
+
+    func forRecurrenceOccurrence(_ occurrence: Date) -> NotificationPayload {
+        NotificationPayload(
+            identifier: identifier,
+            kind: kind,
+            name: name,
+            emoji: emoji,
+            interval: interval,
+            lastDone: lastDone,
+            dueDate: occurrence,
+            triggerDate: occurrence,
+            isOneOffTask: isOneOffTask,
+            isCustomReminder: isCustomReminder,
+            isArchived: isArchived,
+            usesExactTime: true,
+            isChecklistDriven: isChecklistDriven,
+            isChecklistCompletionRoutine: isChecklistCompletionRoutine,
+            nextDueChecklistItemTitle: nextDueChecklistItemTitle,
+            deepLink: deepLink,
+            isAllDayEvent: isAllDayEvent
+        )
     }
 }
 
