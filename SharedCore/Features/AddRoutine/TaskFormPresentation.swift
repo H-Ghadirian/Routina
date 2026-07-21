@@ -39,6 +39,13 @@ enum TaskFormTaskKind: String, CaseIterable, Equatable, Identifiable, Sendable {
     }
 }
 
+enum TaskFormCreationKind: String, CaseIterable, Equatable, Identifiable, Sendable {
+    case oneTime = "One-time"
+    case repeating = "Repeating"
+
+    var id: String { rawValue }
+}
+
 enum TaskFormTimingMode: String, CaseIterable, Equatable, Identifiable, Sendable {
     case none = "Any time"
     case allDay = "All-day"

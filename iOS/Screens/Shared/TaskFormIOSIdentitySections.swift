@@ -23,7 +23,43 @@ struct TaskFormIOSTaskTypeSection: View {
     @Environment(\.calendar) private var calendar
 
     var body: some View {
-        Section(header: Text("Kind")) {
+        Section(header: Text(model.visibilityMode == .progressiveCreate ? "Task Type" : "Kind")) {
+            if model.visibilityMode == .progressiveCreate {
+                creationControls
+            } else {
+                existingKindControls
+            }
+
+            if showsRoutineDurationControl {
+                Divider()
+                routineDurationContent
+            }
+
+            if showsAvailabilityControl {
+                Divider()
+                availabilityContent
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var creationControls: some View {
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Task type",
+            options: TaskFormCreationKind.allCases,
+            selection: model.creationKind,
+            fillsAvailableWidth: true
+        ) { kind in
+            Text(kind.rawValue)
+        }
+
+        if model.creationKind.wrappedValue == .repeating {
+            Toggle("Track this routine", isOn: model.tracksRepeatingTask)
+        }
+    }
+
+    @ViewBuilder
+    private var existingKindControls: some View {
             RoutinaGlassSegmentedControl(
                 accessibilityLabel: "Kind",
                 options: TaskFormPrimaryKind.allCases,
@@ -43,17 +79,6 @@ struct TaskFormIOSTaskTypeSection: View {
                     Text(kind.rawValue)
                 }
             }
-
-            if showsRoutineDurationControl {
-                Divider()
-                routineDurationContent
-            }
-
-            if showsAvailabilityControl {
-                Divider()
-                availabilityContent
-            }
-        }
     }
 
     private var showsAvailabilityControl: Bool {

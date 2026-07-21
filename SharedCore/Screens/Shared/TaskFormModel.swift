@@ -170,6 +170,37 @@ struct TaskFormModel {
 }
 
 extension TaskFormModel {
+    var creationKind: Binding<TaskFormCreationKind> {
+        let taskType = taskType
+        return Binding(
+            get: {
+                taskType.wrappedValue == .todo ? .oneTime : .repeating
+            },
+            set: { kind in
+                switch kind {
+                case .oneTime:
+                    taskType.wrappedValue = .todo
+                case .repeating:
+                    if taskType.wrappedValue == .todo {
+                        taskType.wrappedValue = .routine
+                    }
+                }
+            }
+        )
+    }
+
+    var tracksRepeatingTask: Binding<Bool> {
+        let taskType = taskType
+        let trackingCadenceEnabled = trackingCadenceEnabled
+        return Binding(
+            get: { taskType.wrappedValue == .record },
+            set: { isTracking in
+                trackingCadenceEnabled.wrappedValue = true
+                taskType.wrappedValue = isTracking ? .record : .routine
+            }
+        )
+    }
+
     var primaryKind: Binding<TaskFormPrimaryKind> {
         let taskType = taskType
         return Binding(
@@ -283,7 +314,7 @@ extension TaskFormModel {
 
     var routineRepeatTypeCases: [RoutineRepeatType] {
         RoutineRepeatType.cases(
-            supportsNoRepeat: taskType.wrappedValue == .record,
+            supportsNoRepeat: taskType.wrappedValue == .record && visibilityMode != .progressiveCreate,
             supportsItemRunout: supportsItemRunoutRepeatType
         )
     }

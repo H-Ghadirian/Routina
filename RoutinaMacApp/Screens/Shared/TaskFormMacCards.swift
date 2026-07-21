@@ -594,7 +594,35 @@ struct TaskFormMacBehaviorCard: View {
         }
     }
 
+    @ViewBuilder
     private var taskTypeControl: some View {
+        if model.visibilityMode == .progressiveCreate {
+            creationTaskTypeControl
+        } else {
+            existingTaskTypeControl
+        }
+    }
+
+    private var creationTaskTypeControl: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            RoutinaGlassSegmentedControl(
+                accessibilityLabel: "Task type",
+                options: TaskFormCreationKind.allCases,
+                selection: model.creationKind
+            ) { kind in
+                Text(kind.rawValue)
+            }
+
+            if model.creationKind.wrappedValue == .repeating {
+                Toggle("Track this routine", isOn: model.tracksRepeatingTask)
+                    .toggleStyle(.switch)
+                    .contentShape(Rectangle())
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var existingTaskTypeControl: some View {
         ViewThatFits(in: .horizontal) {
             HStack(alignment: .center, spacing: 12) {
                 primaryKindControl

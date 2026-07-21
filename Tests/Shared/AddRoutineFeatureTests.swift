@@ -1040,6 +1040,18 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func taskTypeChanged_toTrackingEnablesRequiredCreationCadence() async {
+        let store = TestStore(initialState: makeState()) {
+            makeFeature()
+        }
+
+        await store.send(.taskTypeChanged(.record)) {
+            $0.schedule.scheduleMode = .record
+            $0.basics.trackingCadenceEnabled = true
+        }
+    }
+
+    @Test
     func saveTapped_trimsNameBeforeDelegating() async {
         let store = TestStore(
             initialState: makeState(

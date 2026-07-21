@@ -23,6 +23,34 @@ struct TaskFormPresentationTests {
         #expect(StatsTaskTypeFilter.records.rawValue == "Records")
     }
 
+    @Test @MainActor
+    func creationKindTreatsTrackingAsRepeatingAndToggleSwitchesRoutinePurpose() {
+        var taskType = RoutineTaskType.todo
+        var trackingCadenceEnabled = false
+        let model = taskFormModel(
+            taskTypeBinding: Binding(
+                get: { taskType },
+                set: { taskType = $0 }
+            ),
+            trackingCadenceEnabledBinding: Binding(
+                get: { trackingCadenceEnabled },
+                set: { trackingCadenceEnabled = $0 }
+            )
+        )
+
+        #expect(model.creationKind.wrappedValue == .oneTime)
+
+        model.creationKind.wrappedValue = .repeating
+        #expect(taskType == .routine)
+
+        model.tracksRepeatingTask.wrappedValue = true
+        #expect(taskType == .record)
+        #expect(trackingCadenceEnabled)
+
+        model.tracksRepeatingTask.wrappedValue = false
+        #expect(taskType == .routine)
+    }
+
     @Test
     func scheduleAndDescriptionCopyMatchTaskFormModes() {
         let fixed = presentation(scheduleMode: .fixedIntervalChecklist)
@@ -170,10 +198,10 @@ struct TaskFormPresentationTests {
         #expect(runout.supportsItemRunoutRepeatType)
         #expect(runout.routineRepeatTypeCases == [.interval, .calendar, .itemRunout])
         #expect(runout.routineRepeatType.wrappedValue == .itemRunout)
-        #expect(recordWithoutCadence.routineRepeatTypeCases == [.none, .interval, .calendar])
+        #expect(recordWithoutCadence.routineRepeatTypeCases == [.interval, .calendar])
         #expect(recordWithoutCadence.routineRepeatType.wrappedValue == .none)
         #expect(checklistRecord.supportsItemRunoutRepeatType)
-        #expect(checklistRecord.routineRepeatTypeCases == [.none, .interval, .calendar, .itemRunout])
+        #expect(checklistRecord.routineRepeatTypeCases == [.interval, .calendar, .itemRunout])
         #expect(runoutRecord.supportsItemRunoutRepeatType)
         #expect(runoutRecord.routineRepeatType.wrappedValue == .itemRunout)
         #expect(todo.supportsItemRunoutRepeatType == false)
