@@ -4,6 +4,7 @@ import SwiftUI
 struct AddRoutineNavigationChromeModifier: ViewModifier {
     let store: StoreOf<AddRoutineFeature>
     let isSaveDisabled: Bool
+    let isSaving: Bool
     var showsToolbarActions = true
 
     func body(content: Content) -> some View {
@@ -18,8 +19,16 @@ struct AddRoutineNavigationChromeModifier: ViewModifier {
                     }
 
                     ToolbarItem(placement: .confirmationAction) {
-                        Button("Save") {
+                        Button {
                             store.send(.saveTapped)
+                        } label: {
+                            if isSaving {
+                                ProgressView()
+                                    .controlSize(.small)
+                                    .accessibilityLabel("Saving task")
+                            } else {
+                                Text("Save")
+                            }
                         }
                         .disabled(isSaveDisabled)
                     }
@@ -54,12 +63,14 @@ extension View {
     func routinaAddRoutineNavigationChrome(
         store: StoreOf<AddRoutineFeature>,
         isSaveDisabled: Bool,
+        isSaving: Bool,
         showsToolbarActions: Bool = true
     ) -> some View {
         modifier(
             AddRoutineNavigationChromeModifier(
                 store: store,
                 isSaveDisabled: isSaveDisabled,
+                isSaving: isSaving,
                 showsToolbarActions: showsToolbarActions
             )
         )

@@ -263,8 +263,18 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
                 }
 
                 if let onSave = model.onSave {
-                    Button("Save") {
+                    Button {
                         onSave()
+                    } label: {
+                        if model.isSaving {
+                            HStack(spacing: 6) {
+                                ProgressView().controlSize(.small)
+                                Text("Saving…")
+                            }
+                            .accessibilityLabel("Saving task")
+                        } else {
+                            Text("Save")
+                        }
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.regular)

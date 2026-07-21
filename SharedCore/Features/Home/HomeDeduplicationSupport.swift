@@ -17,6 +17,20 @@ enum HomeDeduplicationSupport {
         }
     }
 
+    static func hasDuplicateRoutineName(
+        _ name: String,
+        in tasks: [RoutineTask],
+        excludingID: UUID? = nil
+    ) -> Bool {
+        guard let normalized = RoutineTask.normalizedName(name) else { return false }
+        return tasks.contains { task in
+            if let excludingID, task.id == excludingID {
+                return false
+            }
+            return RoutineTask.normalizedName(task.name) == normalized
+        }
+    }
+
     static func enforceUniqueRoutineNames(in context: ModelContext) throws {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         var tasksByNormalizedName: [String: [RoutineTask]] = [:]

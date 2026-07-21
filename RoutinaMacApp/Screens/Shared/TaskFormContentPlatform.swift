@@ -145,8 +145,10 @@ struct TaskFormContent: View {
                 }
 
                 if let onSave = model.onSave {
-                    Button("Save") {
+                    Button {
                         onSave()
+                    } label: {
+                        saveButtonLabel
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.regular)
@@ -154,6 +156,19 @@ struct TaskFormContent: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+    }
+
+    @ViewBuilder
+    private var saveButtonLabel: some View {
+        if model.isSaving {
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.small)
+                Text("Saving…")
+            }
+            .accessibilityLabel("Saving task")
+        } else {
+            Text("Save")
         }
     }
 

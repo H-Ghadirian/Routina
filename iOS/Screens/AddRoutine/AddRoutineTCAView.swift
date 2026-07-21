@@ -26,7 +26,11 @@ struct AddRoutineTCAView: View {
     var body: some View {
 NavigationStack {
     addRoutineContent
-    .routinaAddRoutineNavigationChrome(store: store, isSaveDisabled: isSaveDisabled)
+    .routinaAddRoutineNavigationChrome(
+        store: store,
+        isSaveDisabled: isSaveDisabled,
+        isSaving: store.isSaving
+    )
     .routinaAddRoutineNameAutofocus(isRoutineNameFocused: $isRoutineNameFocused)
     .routinaAddRoutineEmojiPicker(isPresented: $isEmojiPickerPresented) {
         EmojiPickerSheet(

@@ -125,14 +125,15 @@ enum HomeAddRoutineSupport {
                     return
                 }
 
-                if try HomeDeduplicationSupport.hasDuplicateRoutineName(trimmedName, in: context) {
+                let existingTasks = try context.fetch(FetchDescriptor<RoutineTask>())
+                if HomeDeduplicationSupport.hasDuplicateRoutineName(trimmedName, in: existingTasks) {
                     send(failedAction())
                     return
                 }
 
                 let referenceDate = scheduleAnchor()
-                if let snapshot = try RoutinaTaskUsageGate.limitSnapshot(
-                    for: context.fetch(FetchDescriptor<RoutineTask>()),
+                if let snapshot = RoutinaTaskUsageGate.limitSnapshot(
+                    for: existingTasks,
                     entitlement: await currentEntitlement(),
                     referenceDate: referenceDate,
                     calendar: calendar

@@ -86,6 +86,7 @@ struct AddRoutineFeatureState: Equatable {
     var organization = AddRoutineOrganizationState()
     var schedule = AddRoutineScheduleState()
     var checklist = AddRoutineChecklistState()
+    var isSaving = false
 
     init(
         basics: AddRoutineBasicsState = AddRoutineBasicsState(),
@@ -129,7 +130,8 @@ struct AddRoutineFeatureState: Equatable {
     }
 
     var isSaveDisabled: Bool {
-        trimmedRoutineName.isEmpty
+        isSaving
+            || trimmedRoutineName.isEmpty
             || organization.nameValidationMessage != nil
     }
 

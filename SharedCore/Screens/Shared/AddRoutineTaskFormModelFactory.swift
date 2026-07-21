@@ -189,6 +189,7 @@ struct AddRoutineTaskFormModelFactory {
             onCancel: { store.send(.cancelTapped) },
             onSave: { store.send(.saveTapped) },
             isSaveDisabled: store.isSaveDisabled,
+            isSaving: store.isSaving,
             autofocusName: true,
             onDelete: nil
         )

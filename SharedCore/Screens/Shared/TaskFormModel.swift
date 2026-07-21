@@ -157,6 +157,7 @@ struct TaskFormModel {
     var onCancel: (() -> Void)? = nil
     var onSave: (() -> Void)? = nil
     var isSaveDisabled = false
+    var isSaving = false
 
     // MARK: Extras
     var autofocusName: Bool = false

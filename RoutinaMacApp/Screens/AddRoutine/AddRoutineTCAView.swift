@@ -30,6 +30,7 @@ NavigationStack {
     .routinaAddRoutineNavigationChrome(
         store: store,
         isSaveDisabled: isSaveDisabled,
+        isSaving: store.isSaving,
         showsToolbarActions: false
     )
     .routinaAddRoutineNameAutofocus(isRoutineNameFocused: $isRoutineNameFocused)

@@ -1067,7 +1067,10 @@ struct HomeFeature {
                 return addRoutineActionHandler().finishSave(task, state: &state)
 
             case .routineSaveFailed:
-                return addRoutineActionHandler().failSave()
+                return .merge(
+                    addRoutineActionHandler().failSave(),
+                    .send(.addRoutineSheet(.saveFailed))
+                )
 
             case let .taskDetail(action):
                 return taskDetailActionRouter().handle(action, state: &state) ?? .none
