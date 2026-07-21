@@ -31,6 +31,7 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0414](0414-align-task-kind-controls-between-create-and-edit.md) refines [0413](0413-nest-tracking-under-repeating-task-creation.md) for form consistency:** Full progressive Add Task and Edit Task forms both use `One-time` / `Repeating` with `Track this routine`; edit alone preserves `Repeat type: None` for existing no-cadence Tracking compatibility.
 - **[0413](0413-nest-tracking-under-repeating-task-creation.md) refines [0382](0382-split-record-task-form-controls.md) and [0397](0397-make-tracking-cadence-optional.md) for simpler creation:** Add Task offers `One-time` and `Repeating`, reveals `Track this routine` only for Repeating, and requires cadence for newly created Tracking while preserving edit support for existing no-cadence Tracking.
 - **[0412](0412-add-advanced-recurrence-beside-simple.md) refines [0177](0177-separate-interval-and-calendar-repeat-controls.md), [0178](0178-make-recurrence-availability-independent.md), and [0204](0204-avoid-duplicate-daily-repeat-choices.md) for optional complex cadence:** Routine and cadence-enabled Tracking forms keep Simple recurrence as the default and add an independent Advanced editor for every-N hourly/daily/weekly/monthly/yearly schedules, fixed occurrence anchors, daily time windows, ending conditions, occurrence-level subdaily completion logs, and rolling occurrence notifications.
 - **[0411](0411-manage-custom-task-sections-in-settings.md) refines [0252](0252-stabilize-home-task-list-presentation-identity.md), [0384](0384-show-tracking-as-mac-sidebar-section.md), [0394](0394-add-custom-mac-sidebar-task-sections.md), [0395](0395-delete-custom-mac-sidebar-task-sections.md), [0400](0400-plan-tracking-rows-into-today.md), [0403](0403-rename-custom-mac-sidebar-task-sections.md), and [0408](0408-allow-explicit-planning-for-daily-tracking.md) for Settings-managed custom sections:** Mac Settings exposes a `Sections` page for creating, renaming, deleting, and adding rules to custom task-list sections; rules can claim explicit planned-today, explicit planned-tomorrow, Tracking, or configured tag-list rows into custom sections before built-in fallback sections, while manual custom assignments stay stronger than rule matches.
@@ -304,6 +305,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0414](0414-align-task-kind-controls-between-create-and-edit.md) | Align Task Kind Controls Between Create and Edit | Accepted | 2026-07-22 |
 | [0413](0413-nest-tracking-under-repeating-task-creation.md) | Nest Tracking Under Repeating Task Creation | Accepted | 2026-07-21 |
 | [0411](0411-manage-custom-task-sections-in-settings.md) | Manage Custom Task Sections in Settings | Accepted | 2026-07-20 |
 | [0412](0412-add-advanced-recurrence-beside-simple.md) | Add Advanced Recurrence Beside Simple | Accepted | 2026-07-21 |

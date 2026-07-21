@@ -51,6 +51,31 @@ struct TaskFormPresentationTests {
         #expect(taskType == .routine)
     }
 
+    @Test @MainActor
+    func progressiveEditUsesSharedKindMappingWhileKeepingLegacyTrackingNoCadence() {
+        var taskType = RoutineTaskType.record
+        var trackingCadenceEnabled = false
+        let model = taskFormModel(
+            taskTypeBinding: Binding(
+                get: { taskType },
+                set: { taskType = $0 }
+            ),
+            trackingCadenceEnabledBinding: Binding(
+                get: { trackingCadenceEnabled },
+                set: { trackingCadenceEnabled = $0 }
+            ),
+            visibilityMode: .progressiveEdit
+        )
+
+        #expect(model.creationKind.wrappedValue == .repeating)
+        #expect(model.tracksRepeatingTask.wrappedValue)
+        #expect(model.routineRepeatTypeCases.contains(.none))
+        #expect(model.routineRepeatType.wrappedValue == .none)
+
+        model.creationKind.wrappedValue = .oneTime
+        #expect(taskType == .todo)
+    }
+
     @Test
     func scheduleAndDescriptionCopyMatchTaskFormModes() {
         let fixed = presentation(scheduleMode: .fixedIntervalChecklist)
@@ -539,7 +564,8 @@ struct TaskFormPresentationTests {
         recurrenceDayOfMonthBinding: Binding<Int>? = nil,
         recurrenceWeekdaysBinding: Binding<[Int]>? = nil,
         recurrenceDaysOfMonthBinding: Binding<[Int]>? = nil,
-        trackingCadenceEnabledBinding: Binding<Bool>? = nil
+        trackingCadenceEnabledBinding: Binding<Bool>? = nil,
+        visibilityMode: TaskFormVisibilityMode = .progressiveCreate
     ) -> TaskFormModel {
         TaskFormModel(
             name: .constant("Task"),
@@ -609,7 +635,7 @@ struct TaskFormPresentationTests {
             frequencyValue: .constant(frequencyValue),
             trackingCadenceEnabled: trackingCadenceEnabledBinding ?? .constant(trackingCadenceEnabled),
             color: .constant(.none),
-            visibilityMode: .progressiveCreate
+            visibilityMode: visibilityMode
         )
     }
 }

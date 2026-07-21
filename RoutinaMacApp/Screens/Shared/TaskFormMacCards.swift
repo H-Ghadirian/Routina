@@ -596,7 +596,7 @@ struct TaskFormMacBehaviorCard: View {
 
     @ViewBuilder
     private var taskTypeControl: some View {
-        if model.visibilityMode == .progressiveCreate {
+        if model.visibilityMode.usesProgressiveDisclosure {
             creationTaskTypeControl
         } else {
             existingTaskTypeControl
