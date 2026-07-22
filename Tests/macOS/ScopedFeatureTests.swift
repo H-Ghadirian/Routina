@@ -254,6 +254,34 @@ struct TimelineFeatureTests {
 @MainActor
 struct StatsFeatureTests {
     @Test
+    func dataRefreshRequested_loadsPersistedDataThroughReducerDependency() async throws {
+        let context = makeInMemoryContext()
+        let task = makeTask(
+            in: context,
+            name: "Reducer-owned stats",
+            interval: 1,
+            lastDone: nil,
+            emoji: "📊",
+            tags: ["Architecture"]
+        )
+        try context.save()
+
+        let store = TestStore(initialState: StatsFeature.State()) {
+            StatsFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.appSettingsClient = .noop
+        }
+        store.exhaustivity = .off(showSkippedAssertions: false)
+
+        await store.send(.dataRefreshRequested).finish()
+
+        #expect(store.state.tasks.map(\.id) == [task.id])
+        #expect(store.state.availableTags == ["Architecture"])
+        #expect(store.state.filteredTaskCount == 1)
+    }
+
+    @Test
     func setData_recomputesMetricsAndClearsUnavailableSelectedTag() async {
         let context = makeInMemoryContext()
         let now = makeDate("2026-03-20T10:00:00Z")

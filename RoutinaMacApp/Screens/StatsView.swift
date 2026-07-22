@@ -24,7 +24,6 @@ struct StatsViewWrapper: View {
 
 private struct StatsDataObserver: View {
     let store: StoreOf<StatsFeature>
-    @Environment(\.modelContext) private var modelContext
     @AppStorage(UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue, store: SharedDefaults.app)
     private var isPlacesEnabled = false
     @AppStorage(UserDefaultBoolValueKey.appSettingNotesEnabled.rawValue, store: SharedDefaults.app)
@@ -36,62 +35,22 @@ private struct StatsDataObserver: View {
         Color.clear
             .task {
                 store.send(.onAppear)
-                refreshData()
             }
             .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { _ in
-                refreshData()
+                store.send(.dataRefreshRequested)
             }
             .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
-                refreshData()
+                store.send(.dataRefreshRequested)
             }
             .onChange(of: isPlacesEnabled) { _, _ in
-                refreshData()
+                store.send(.dataRefreshRequested)
             }
             .onChange(of: isNotesEnabled) { _, _ in
-                refreshData()
+                store.send(.dataRefreshRequested)
             }
             .onChange(of: isAwayEnabled) { _, _ in
-                refreshData()
+                store.send(.dataRefreshRequested)
             }
-    }
-
-    private func refreshData() {
-        do {
-            let tasks = try modelContext.fetch(FetchDescriptor<RoutineTask>())
-            let logs = try modelContext.fetch(FetchDescriptor<RoutineLog>())
-            let focusSessions = try modelContext.fetch(FetchDescriptor<FocusSession>())
-            let sprintFocusSessions = try modelContext.fetch(FetchDescriptor<SprintFocusSessionRecord>())
-            let boardSprints = try modelContext.fetch(FetchDescriptor<BoardSprintRecord>())
-            let sleepSessions = try modelContext.fetch(FetchDescriptor<SleepSession>())
-            let awaySessions = try modelContext.fetch(FetchDescriptor<AwaySession>())
-            let emotionLogs = try modelContext.fetch(FetchDescriptor<EmotionLog>())
-            let notes = try modelContext.fetch(FetchDescriptor<RoutineNote>())
-            let events = try modelContext.fetch(FetchDescriptor<RoutineEvent>())
-            let noteAttachments = try modelContext.fetch(FetchDescriptor<RoutineNoteAttachment>())
-            let goals = try modelContext.fetch(FetchDescriptor<RoutineGoal>())
-            let places = try modelContext.fetch(FetchDescriptor<RoutinePlace>())
-            let placeCheckInSessions = try modelContext.fetch(FetchDescriptor<PlaceCheckInSession>())
-            store.send(
-                .setData(
-                    tasks: tasks,
-                    logs: logs,
-                    focusSessions: focusSessions,
-                    sprintFocusSessions: sprintFocusSessions,
-                    boardSprints: boardSprints,
-                    sleepSessions: isAwayEnabled ? sleepSessions : [],
-                    awaySessions: isAwayEnabled ? awaySessions : [],
-                    emotionLogs: emotionLogs,
-                    notes: isNotesEnabled ? notes : [],
-                    events: events,
-                    noteAttachmentNoteIDs: isNotesEnabled ? Set(noteAttachments.map(\.noteID)) : [],
-                    goals: goals,
-                    places: isPlacesEnabled ? places : [],
-                    placeCheckInSessions: isPlacesEnabled ? placeCheckInSessions : []
-                )
-            )
-        } catch {
-            NSLog("StatsDataObserver: failed to refresh stats data - \(error)")
-        }
     }
 }
 

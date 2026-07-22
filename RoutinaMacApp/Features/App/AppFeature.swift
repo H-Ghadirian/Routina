@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import Foundation
+import SwiftData
 
 @Reducer
 struct AppFeature {
@@ -364,6 +365,8 @@ struct StatsFeature {
             places: [RoutinePlace] = [],
             placeCheckInSessions: [PlaceCheckInSession] = []
         )
+        case dataRefreshRequested
+        case dataRefreshFailed
         case onAppear
         case selectedRangeChanged(DoneChartRange)
         case taskTypeFilterChanged(StatsTaskTypeFilter)
@@ -386,6 +389,7 @@ struct StatsFeature {
     @Dependency(\.gitHubStatsClient) var gitHubStatsClient
     @Dependency(\.gitLabStatsClient) var gitLabStatsClient
     @Dependency(\.appSettingsClient) var appSettingsClient
+    @Dependency(\.modelContext) var modelContext
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -413,6 +417,12 @@ struct StatsFeature {
                 refreshDerivedState(&state)
                 return .none
 
+            case .dataRefreshRequested:
+                return refreshDataEffect()
+
+            case .dataRefreshFailed:
+                return .none
+
             case .onAppear:
                 state.relatedTagRules = RoutineTagRelations.sanitized(
                     appSettingsClient.relatedTagRules()
@@ -425,7 +435,7 @@ struct StatsFeature {
                     state.isGitHubStatsLoading = false
                     state.gitHubStats = nil
                     state.gitHubStatsErrorMessage = nil
-                    return .none
+                    return refreshDataEffect()
                 }
                 state.gitHubConnection = gitHubStatsClient.loadConnectionStatus()
                 if !state.gitHubConnection.isConnected {
@@ -433,7 +443,10 @@ struct StatsFeature {
                     state.gitHubStats = nil
                     state.gitHubStatsErrorMessage = nil
                 }
-                return refreshGitHubStatsEffect(state: &state)
+                return .merge(
+                    refreshDataEffect(),
+                    refreshGitHubStatsEffect(state: &state)
+                )
 
             case let .selectedRangeChanged(range):
                 state.selectedRange = range
@@ -528,6 +541,51 @@ struct StatsFeature {
                 state.advancedQuery = ""
                 refreshDerivedState(&state)
                 return .none
+            }
+        }
+    }
+
+    private func refreshDataEffect() -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = modelContext()
+                let notesEnabled = appSettingsClient.notesEnabled()
+                let placesEnabled = appSettingsClient.placesEnabled()
+                let awayEnabled = appSettingsClient.awayEnabled()
+
+                let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+                let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+                let focusSessions = try context.fetch(FetchDescriptor<FocusSession>())
+                let sprintFocusSessions = try context.fetch(FetchDescriptor<SprintFocusSessionRecord>())
+                let boardSprints = try context.fetch(FetchDescriptor<BoardSprintRecord>())
+                let sleepSessions = try context.fetch(FetchDescriptor<SleepSession>())
+                let awaySessions = try context.fetch(FetchDescriptor<AwaySession>())
+                let emotionLogs = try context.fetch(FetchDescriptor<EmotionLog>())
+                let notes = try context.fetch(FetchDescriptor<RoutineNote>())
+                let events = try context.fetch(FetchDescriptor<RoutineEvent>())
+                let noteAttachments = try context.fetch(FetchDescriptor<RoutineNoteAttachment>())
+                let goals = try context.fetch(FetchDescriptor<RoutineGoal>())
+                let places = try context.fetch(FetchDescriptor<RoutinePlace>())
+                let placeCheckInSessions = try context.fetch(FetchDescriptor<PlaceCheckInSession>())
+
+                send(.setData(
+                    tasks: tasks,
+                    logs: logs,
+                    focusSessions: focusSessions,
+                    sprintFocusSessions: sprintFocusSessions,
+                    boardSprints: boardSprints,
+                    sleepSessions: awayEnabled ? sleepSessions : [],
+                    awaySessions: awayEnabled ? awaySessions : [],
+                    emotionLogs: emotionLogs,
+                    notes: notesEnabled ? notes : [],
+                    events: events,
+                    noteAttachmentNoteIDs: notesEnabled ? Set(noteAttachments.map(\.noteID)) : [],
+                    goals: goals,
+                    places: placesEnabled ? places : [],
+                    placeCheckInSessions: placesEnabled ? placeCheckInSessions : []
+                ))
+            } catch {
+                send(.dataRefreshFailed)
             }
         }
     }
