@@ -18,20 +18,6 @@ struct StatsView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
-    @Query private var logs: [RoutineLog]
-    @Query private var tasks: [RoutineTask]
-    @Query private var focusSessions: [FocusSession]
-    @Query private var sprintFocusSessions: [SprintFocusSessionRecord]
-    @Query private var boardSprints: [BoardSprintRecord]
-    @Query private var sleepSessions: [SleepSession]
-    @Query private var awaySessions: [AwaySession]
-    @Query private var emotionLogs: [EmotionLog]
-    @Query private var notes: [RoutineNote]
-    @Query private var events: [RoutineEvent]
-    @Query private var noteAttachments: [RoutineNoteAttachment]
-    @Query private var goals: [RoutineGoal]
-    @Query private var places: [RoutinePlace]
-    @Query private var placeCheckInSessions: [PlaceCheckInSession]
     @State private var relatedFilterTagSuggestionAnchor: String?
     @State private var selectedDashboardScope = StatsDashboardScope.all
     @State private var isEditingDashboard = false
@@ -59,6 +45,20 @@ struct StatsView: View {
     private var isAwayEnabled = false
 
     private typealias Metrics = StatsFeature.Metrics
+
+    private var tasks: [RoutineTask] { store.tasks }
+    private var logs: [RoutineLog] { store.logs }
+    private var focusSessions: [FocusSession] { store.focusSessions }
+    private var sprintFocusSessions: [SprintFocusSessionRecord] { store.sprintFocusSessions }
+    private var boardSprints: [BoardSprintRecord] { store.boardSprints }
+    private var sleepSessions: [SleepSession] { store.sleepSessions }
+    private var awaySessions: [AwaySession] { store.awaySessions }
+    private var emotionLogs: [EmotionLog] { store.emotionLogs }
+    private var notes: [RoutineNote] { store.notes }
+    private var events: [RoutineEvent] { store.events }
+    private var goals: [RoutineGoal] { store.goals }
+    private var places: [RoutinePlace] { store.places }
+    private var placeCheckInSessions: [PlaceCheckInSession] { store.placeCheckInSessions }
 
     init(
         store: StoreOf<StatsFeature>,
@@ -100,7 +100,7 @@ struct StatsView: View {
     }
 
     private var statsNoteAttachmentNoteIDs: Set<UUID> {
-        isNotesEnabled ? Set(noteAttachments.map(\.noteID)) : []
+        isNotesEnabled ? store.noteAttachmentNoteIDs : []
     }
 
     private var filterSheetBinding: Binding<Bool> {
@@ -379,90 +379,22 @@ struct StatsView: View {
             .sheet(isPresented: $isAddDashboardItemSheetPresented) {
                 addDashboardItemSheet
             }
-            .statsDataRefresh(
-                tasks: tasks,
-                logs: logs,
-                focusSessions: focusSessions,
-                sprintFocusSessions: sprintFocusSessions,
-                boardSprints: boardSprints,
-                sleepSessions: statsSleepSessions,
-                awaySessions: statsAwaySessions,
-                emotionLogs: emotionLogs,
-                notes: statsNotes,
-                events: events,
-                noteAttachmentNoteIDs: statsNoteAttachmentNoteIDs,
-                goals: goals,
-                places: statsPlaces,
-                placeCheckInSessions: statsPlaceCheckInSessions,
-                onAppear: { store.send(.onAppear) },
-                onDataChanged: { tasks, logs, focusSessions, sprintFocusSessions, boardSprints, sleepSessions, awaySessions, emotionLogs, notes, events, noteAttachmentNoteIDs, goals, places, placeCheckInSessions in
-                    store.send(
-                        .setData(
-                            tasks: tasks,
-                            logs: logs,
-                            focusSessions: focusSessions,
-                            sprintFocusSessions: sprintFocusSessions,
-                            boardSprints: boardSprints,
-                            sleepSessions: isAwayEnabled ? sleepSessions : [],
-                            awaySessions: isAwayEnabled ? awaySessions : [],
-                            emotionLogs: emotionLogs,
-                            notes: isNotesEnabled ? notes : [],
-                            events: events,
-                            noteAttachmentNoteIDs: isNotesEnabled ? noteAttachmentNoteIDs : [],
-                            goals: goals,
-                            places: isPlacesEnabled ? places : [],
-                            placeCheckInSessions: isPlacesEnabled ? placeCheckInSessions : []
-                        )
-                    )
-                }
-            )
+            .task { store.send(.onAppear) }
+            .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { _ in
+                store.send(.dataRefreshRequested)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
+                store.send(.dataRefreshRequested)
+            }
             .onChange(of: isPlacesEnabled) { _, _ in
-                store.send(
-                    .setData(
-                        tasks: tasks,
-                        logs: logs,
-                        focusSessions: focusSessions,
-                        sprintFocusSessions: sprintFocusSessions,
-                        boardSprints: boardSprints,
-                        sleepSessions: statsSleepSessions,
-                        awaySessions: statsAwaySessions,
-                        emotionLogs: emotionLogs,
-                        notes: statsNotes,
-                        events: events,
-                        noteAttachmentNoteIDs: statsNoteAttachmentNoteIDs,
-                        goals: goals,
-                        places: statsPlaces,
-                        placeCheckInSessions: statsPlaceCheckInSessions
-                    )
-                )
+                store.send(.dataRefreshRequested)
             }
             .onChange(of: isNotesEnabled) { _, _ in
-                refreshStatsDataForVisibilityChange()
+                store.send(.dataRefreshRequested)
             }
             .onChange(of: isAwayEnabled) { _, _ in
-                refreshStatsDataForVisibilityChange()
+                store.send(.dataRefreshRequested)
             }
-    }
-
-    private func refreshStatsDataForVisibilityChange() {
-        store.send(
-            .setData(
-                tasks: tasks,
-                logs: logs,
-                focusSessions: focusSessions,
-                sprintFocusSessions: sprintFocusSessions,
-                boardSprints: boardSprints,
-                sleepSessions: statsSleepSessions,
-                awaySessions: statsAwaySessions,
-                emotionLogs: emotionLogs,
-                notes: statsNotes,
-                events: events,
-                noteAttachmentNoteIDs: statsNoteAttachmentNoteIDs,
-                goals: goals,
-                places: statsPlaces,
-                placeCheckInSessions: statsPlaceCheckInSessions
-            )
-        )
     }
 
     @ViewBuilder
