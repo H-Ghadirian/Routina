@@ -17,7 +17,6 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     @Binding var separateDeadlineStatusInTagSections: Bool
     @Binding var taskListSortOrder: HomeTaskListSortOrder
     @Binding var createdDateFilter: HomeTaskCreatedDateFilter
-    @Binding var hideAssumedDoneTasks: Bool
     @Binding var showArchivedTasks: Bool
     @Binding var selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell?
     @Binding var selectedPressureFilter: RoutineTaskPressure?
@@ -176,9 +175,6 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
 
                 VStack(alignment: .leading, spacing: 10) {
                     blockedTasksToggle
-                    if taskListMode != .todos {
-                        assumedDoneToggle
-                    }
                     archivedToggle
                 }
 
@@ -362,18 +358,6 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     private var archivedToggle: some View {
         Toggle("Show archived list", isOn: $showArchivedTasks)
             .toggleStyle(.switch)
-    }
-
-    private var assumedDoneToggle: some View {
-        Toggle("Show assumed done", isOn: showAssumedDoneTasksBinding)
-            .toggleStyle(.switch)
-    }
-
-    private var showAssumedDoneTasksBinding: Binding<Bool> {
-        Binding(
-            get: { !hideAssumedDoneTasks },
-            set: { hideAssumedDoneTasks = !$0 }
-        )
     }
 
     private var todoStateFilterSection: some View {

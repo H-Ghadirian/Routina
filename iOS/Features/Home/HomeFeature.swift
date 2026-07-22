@@ -89,7 +89,7 @@ struct HomeFeature {
             selectedGoalFilter: HomeTaskGoalFilter = .all,
             selectedMediaFilter: TaskMediaFilter = .all,
             selectedEstimationFilter: TaskEstimationFilter = .all,
-            hideAssumedDoneTasks: Bool = true,
+            hideAssumedDoneTasks: Bool = false,
             taskListViewMode: HomeTaskListViewMode = .all,
             taskListSortOrder: HomeTaskListSortOrder = .smart,
             createdDateFilter: HomeTaskCreatedDateFilter = .all,

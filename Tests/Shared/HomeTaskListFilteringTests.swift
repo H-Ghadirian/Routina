@@ -172,7 +172,7 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
-    func assumedDoneFilterHidesAssumedRowsByDefault() {
+    func assumedDoneRowsAreVisibleByDefaultAndLegacyHiddenFlagIsIgnored() {
         let tasks = [
             TestTaskDisplay(name: "Morning pages", isAssumedDoneToday: true),
             TestTaskDisplay(name: "Read chapter")
@@ -180,15 +180,15 @@ struct HomeTaskListFilteringTests {
 
         let defaultResult = makeFiltering()
             .filteredTasks(tasks)
-        let visibleResult = makeFiltering(hideAssumedDoneTasks: false)
+        let legacyHiddenResult = makeFiltering(hideAssumedDoneTasks: true)
             .filteredTasks(tasks)
 
-        #expect(defaultResult.map(\.name) == ["Read chapter"])
-        #expect(Set(visibleResult.map(\.name)) == ["Morning pages", "Read chapter"])
+        #expect(Set(defaultResult.map(\.name)) == ["Morning pages", "Read chapter"])
+        #expect(Set(legacyHiddenResult.map(\.name)) == ["Morning pages", "Read chapter"])
     }
 
     @Test
-    func sidebarPresentationHidesAssumedDailyRowsFromPlanTodayByDefault() {
+    func sidebarPresentationShowsAssumedTrackingRowsByDefault() {
         let assumedID = UUID()
         let visibleID = UUID()
         let tasks = [
@@ -196,6 +196,7 @@ struct HomeTaskListFilteringTests {
                 taskID: assumedID,
                 name: "Brush teeth",
                 recurrenceRule: .interval(days: 1),
+                scheduleMode: .record,
                 isDoneToday: true,
                 isAssumedDoneToday: true
             ),
@@ -218,8 +219,13 @@ struct HomeTaskListFilteringTests {
             )
         )
 
-        #expect(presentation.sections.map(\.title) == ["Today"])
-        #expect(presentation.sections.flatMap(\.tasks).map(\.taskID) == [visibleID])
+        let sectionTitles = presentation.sections.map { $0.title }
+        let todayTaskIDs = presentation.sections.first?.tasks.map { $0.taskID }
+        let trackingTaskIDs = presentation.sections.last?.tasks.map { $0.taskID }
+
+        #expect(sectionTitles == ["Today", "Tracking"])
+        #expect(todayTaskIDs == [visibleID])
+        #expect(trackingTaskIDs == [assumedID])
     }
 
     @Test
@@ -2220,7 +2226,7 @@ private func makeFiltering(
     selectedGoalFilter: HomeTaskGoalFilter = .all,
     selectedMediaFilter: TaskMediaFilter = .all,
     selectedEstimationFilter: TaskEstimationFilter = .all,
-    hideAssumedDoneTasks: Bool = true,
+    hideAssumedDoneTasks: Bool = false,
     taskListViewMode: HomeTaskListViewMode = .all,
     taskListSortOrder: HomeTaskListSortOrder = .smart,
     createdDateFilter: HomeTaskCreatedDateFilter = .all,

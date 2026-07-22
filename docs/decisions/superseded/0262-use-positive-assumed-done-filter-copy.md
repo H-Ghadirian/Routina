@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted
+Superseded
+
+## Superseded by
+
+[0410: Show Assumed-Done Home Rows by Default](../0410-show-assumed-done-home-rows-by-default.md)
 
 ## Date
 
@@ -11,7 +15,7 @@ Accepted
 ## Refines
 
 - [0260: Hide Assumed-Done Tasks by Default](0260-hide-assumed-done-tasks-by-default.md)
-- [0261: Scope Done Today Filter to Routines](0261-scope-done-today-filter-to-routines.md)
+- [0261: Scope Done Today Filter to Routines](../0261-scope-done-today-filter-to-routines.md)
 
 ## Context
 

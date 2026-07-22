@@ -19,8 +19,6 @@ extension HomeTCAView {
             selectedGoalFilter: store.selectedGoalFilter,
             selectedMediaFilter: store.selectedMediaFilter,
             selectedEstimationFilter: store.selectedEstimationFilter,
-            showsAssumedDoneVisibilityFilter: homeFilterPresentation.showsAssumedDoneVisibilityFilter,
-            hideAssumedDoneTasks: store.hideAssumedDoneTasks,
             hideUnavailableRoutines: store.hideUnavailableRoutines,
             showArchivedTasks: store.showArchivedTasks,
             onClearAll: { store.send(.clearOptionalFilters) },
@@ -53,9 +51,6 @@ extension HomeTCAView {
             },
             onClearEstimation: {
                 store.send(.selectedEstimationFilterChanged(.all))
-            },
-            onHideAssumedDoneTasks: {
-                store.send(.hideAssumedDoneTasksChanged(true))
             },
             onShowUnavailableRoutines: {
                 store.send(.hideUnavailableRoutinesChanged(false))
@@ -105,13 +100,6 @@ extension HomeTCAView {
         Binding(
             get: { store.showArchivedTasks },
             set: { store.send(.showArchivedTasksChanged($0)) }
-        )
-    }
-
-    var hideAssumedDoneTasksBinding: Binding<Bool> {
-        Binding(
-            get: { store.hideAssumedDoneTasks },
-            set: { store.send(.hideAssumedDoneTasksChanged($0)) }
         )
     }
 
@@ -183,7 +171,6 @@ extension HomeTCAView {
                 get: { store.selectedEstimationFilter },
                 set: { store.send(.selectedEstimationFilterChanged($0)) }
             ),
-            hideAssumedDoneTasks: hideAssumedDoneTasksBinding,
             includeTagMatchMode: Binding(
                 get: { store.includeTagMatchMode },
                 set: { store.send(.includeTagMatchModeChanged($0)) }

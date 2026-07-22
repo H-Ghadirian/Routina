@@ -163,7 +163,7 @@ struct TabFilterStateManager {
         var selectedGoalFilter: HomeTaskGoalFilter = .all
         var selectedMediaFilter: TaskMediaFilter = .all
         var selectedEstimationFilter: TaskEstimationFilter = .all
-        var hideAssumedDoneTasks: Bool = true
+        var hideAssumedDoneTasks: Bool = false
         var taskListViewMode: HomeTaskListViewMode = .all
         var taskListSortOrder: HomeTaskListSortOrder = .smart
         var createdDateFilter: HomeTaskCreatedDateFilter = .all
@@ -185,7 +185,7 @@ struct TabFilterStateManager {
                 selectedGoalFilter: .all,
                 selectedMediaFilter: .all,
                 selectedEstimationFilter: .all,
-                hideAssumedDoneTasks: true,
+                hideAssumedDoneTasks: false,
                 taskListViewMode: .all,
                 taskListSortOrder: .smart,
                 createdDateFilter: .all,
@@ -208,7 +208,7 @@ struct TabFilterStateManager {
             selectedGoalFilter: HomeTaskGoalFilter = .all,
             selectedMediaFilter: TaskMediaFilter = .all,
             selectedEstimationFilter: TaskEstimationFilter = .all,
-            hideAssumedDoneTasks: Bool = true,
+            hideAssumedDoneTasks: Bool = false,
             taskListViewMode: HomeTaskListViewMode = .all,
             taskListSortOrder: HomeTaskListSortOrder = .smart,
             createdDateFilter: HomeTaskCreatedDateFilter = .all,
@@ -274,7 +274,7 @@ struct TabFilterStateManager {
             selectedGoalFilter = try container.decodeIfPresent(HomeTaskGoalFilter.self, forKey: .selectedGoalFilter) ?? .all
             selectedMediaFilter = try container.decodeIfPresent(TaskMediaFilter.self, forKey: .selectedMediaFilter) ?? .all
             selectedEstimationFilter = try container.decodeIfPresent(TaskEstimationFilter.self, forKey: .selectedEstimationFilter) ?? .all
-            hideAssumedDoneTasks = try container.decodeIfPresent(Bool.self, forKey: .hideAssumedDoneTasks) ?? true
+            hideAssumedDoneTasks = try container.decodeIfPresent(Bool.self, forKey: .hideAssumedDoneTasks) ?? false
             taskListViewMode = try container.decodeIfPresent(HomeTaskListViewMode.self, forKey: .taskListViewMode) ?? .all
             taskListSortOrder = try container.decodeIfPresent(HomeTaskListSortOrder.self, forKey: .taskListSortOrder) ?? .smart
             createdDateFilter = try container.decodeIfPresent(HomeTaskCreatedDateFilter.self, forKey: .createdDateFilter) ?? .all
@@ -317,7 +317,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
     var homeSelectedGoalFilter: HomeTaskGoalFilter = .all
     var homeSelectedMediaFilter: TaskMediaFilter = .all
     var homeSelectedEstimationFilter: TaskEstimationFilter = .all
-    var homeHideAssumedDoneTasks: Bool = true
+    var homeHideAssumedDoneTasks: Bool = false
     var homeTaskListViewMode: HomeTaskListViewMode = .all
     var homeTaskListSortOrder: HomeTaskListSortOrder = .smart
     var homeCreatedDateFilter: HomeTaskCreatedDateFilter = .all
@@ -371,7 +371,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedGoalFilter: HomeTaskGoalFilter = .all,
         homeSelectedMediaFilter: TaskMediaFilter = .all,
         homeSelectedEstimationFilter: TaskEstimationFilter = .all,
-        homeHideAssumedDoneTasks: Bool = true,
+        homeHideAssumedDoneTasks: Bool = false,
         homeTaskListViewMode: HomeTaskListViewMode = .all,
         homeTaskListSortOrder: HomeTaskListSortOrder = .smart,
         homeCreatedDateFilter: HomeTaskCreatedDateFilter = .all,
@@ -536,7 +536,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
             homeSelectedGoalFilter: try container.decodeIfPresent(HomeTaskGoalFilter.self, forKey: .homeSelectedGoalFilter) ?? .all,
             homeSelectedMediaFilter: try container.decodeIfPresent(TaskMediaFilter.self, forKey: .homeSelectedMediaFilter) ?? .all,
             homeSelectedEstimationFilter: try container.decodeIfPresent(TaskEstimationFilter.self, forKey: .homeSelectedEstimationFilter) ?? .all,
-            homeHideAssumedDoneTasks: try container.decodeIfPresent(Bool.self, forKey: .homeHideAssumedDoneTasks) ?? true,
+            homeHideAssumedDoneTasks: try container.decodeIfPresent(Bool.self, forKey: .homeHideAssumedDoneTasks) ?? false,
             homeTaskListViewMode: try container.decodeIfPresent(HomeTaskListViewMode.self, forKey: .homeTaskListViewMode) ?? .all,
             homeTaskListSortOrder: try container.decodeIfPresent(HomeTaskListSortOrder.self, forKey: .homeTaskListSortOrder) ?? .smart,
             homeCreatedDateFilter: try container.decodeIfPresent(HomeTaskCreatedDateFilter.self, forKey: .homeCreatedDateFilter) ?? .all,
@@ -592,7 +592,7 @@ struct TemporaryViewState: Equatable, Codable, Sendable {
         homeSelectedGoalFilter: .all,
         homeSelectedMediaFilter: .all,
         homeSelectedEstimationFilter: .all,
-        homeHideAssumedDoneTasks: true,
+        homeHideAssumedDoneTasks: false,
         homeTaskListViewMode: .all,
         homeTaskListSortOrder: .smart,
         homeCreatedDateFilter: .all,

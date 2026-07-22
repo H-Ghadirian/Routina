@@ -13,7 +13,7 @@ Accepted
 - [0005: Show Timeline Activity in the Day Planner](0005-show-timeline-activity-in-day-planner.md)
 - [0094: Suggest Only Completed Activity in Planner Calendar](0094-suggest-only-completed-activity-in-planner-calendar.md)
 - [0259: Allow Daily Checklist Auto-Assumed Completion](0259-allow-daily-checklist-auto-assumed-completion.md)
-- [0260: Hide Assumed-Done Tasks by Default](0260-hide-assumed-done-tasks-by-default.md)
+- [0260: Hide Assumed-Done Tasks by Default](superseded/0260-hide-assumed-done-tasks-by-default.md)
 
 ## Context
 
@@ -39,8 +39,9 @@ normal planner block for that task and time. It does not move completion
 history or create a fake completion log. Confirming the assumed routine remains
 the Task Detail action that records history and stats.
 
-Home task list filters continue to hide assumed-done rows by default; this
-decision changes Planner presentation only.
+Home later changed to show assumed-done rows by default in
+[0410](0410-show-assumed-done-home-rows-by-default.md); this decision continues
+to define Planner's separate synthetic activity presentation.
 
 ## Consequences
 

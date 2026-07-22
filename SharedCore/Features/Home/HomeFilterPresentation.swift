@@ -76,7 +76,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
         selectedGoalFilter: HomeTaskGoalFilter = .all,
         selectedMediaFilter: TaskMediaFilter = .all,
         selectedEstimationFilter: TaskEstimationFilter = .all,
-        hideAssumedDoneTasks: Bool = true,
+        hideAssumedDoneTasks: Bool = false,
         hideUnavailableRoutines: Bool = false,
         showArchivedTasks: Bool = true,
         hasSavedPlaces: Bool = false,
@@ -123,7 +123,6 @@ struct HomeFilterPresentation: Equatable, Sendable {
         if taskListViewMode != .all { count += 1 }
         if taskListSortOrder != .smart { count += 1 }
         if createdDateFilter != .all { count += 1 }
-        if showsAssumedDoneVisibilityFilter && !hideAssumedDoneTasks { count += 1 }
         if hideUnavailableRoutines { count += 1 }
         if !showArchivedTasks { count += 1 }
         return count
@@ -149,7 +148,7 @@ struct HomeFilterPresentation: Equatable, Sendable {
     }
 
     var showsAssumedDoneVisibilityFilter: Bool {
-        taskListKind == .all || taskListKind == .records
+        false
     }
 
     var filterLabels: [String] {
@@ -218,10 +217,6 @@ struct HomeFilterPresentation: Equatable, Sendable {
 
         if let selectedImportanceUrgencyFilterLabel {
             labels.append(selectedImportanceUrgencyFilterLabel)
-        }
-
-        if showsAssumedDoneVisibilityFilter && !hideAssumedDoneTasks {
-            labels.append("Showing assumed done")
         }
 
         if hideUnavailableRoutines {

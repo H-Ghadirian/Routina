@@ -1233,7 +1233,6 @@ extension HomeTCAView {
             separateDeadlineStatusInTagSections: $separatesDeadlineStatusInTagTaskListSections,
             taskListSortOrder: homeFilterBindings.taskListSortOrder,
             createdDateFilter: homeFilterBindings.createdDateFilter,
-            hideAssumedDoneTasks: homeFilterBindings.hideAssumedDoneTasks,
             showArchivedTasks: homeFilterBindings.showArchivedTasks,
             selectedImportanceUrgencyFilter: homeFilterBindings.selectedImportanceUrgencyFilter,
             selectedPressureFilter: homeFilterBindings.selectedPressureFilter,

@@ -33,20 +33,13 @@ struct HomeFiltersTaskListModeSection: View {
 }
 
 struct HomeFiltersVisibilitySection: View {
-    let taskListMode: HomeFeature.TaskListMode
     @Binding var taskListViewMode: HomeTaskListViewMode
-    @Binding var hideAssumedDoneTasks: Bool
     @Binding var showArchivedTasks: Bool
 
     var body: some View {
         Section {
             Toggle("Show blocked tasks", isOn: showBlockedTasksBinding)
                 .toggleStyle(.switch)
-
-            if taskListMode == .all || taskListMode == .routines {
-                Toggle("Show assumed done", isOn: showAssumedDoneTasksBinding)
-                    .toggleStyle(.switch)
-            }
 
             Toggle("Show archived list", isOn: $showArchivedTasks)
                 .toggleStyle(.switch)
@@ -60,12 +53,6 @@ struct HomeFiltersVisibilitySection: View {
         )
     }
 
-    private var showAssumedDoneTasksBinding: Binding<Bool> {
-        Binding(
-            get: { !hideAssumedDoneTasks },
-            set: { hideAssumedDoneTasks = !$0 }
-        )
-    }
 }
 
 struct HomeFiltersGroupingSection: View {

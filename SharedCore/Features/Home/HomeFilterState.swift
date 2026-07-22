@@ -15,7 +15,7 @@ struct HomeTaskFiltersState: Equatable {
     var selectedGoalFilter: HomeTaskGoalFilter = .all
     var selectedMediaFilter: TaskMediaFilter = .all
     var selectedEstimationFilter: TaskEstimationFilter = .all
-    var hideAssumedDoneTasks: Bool = true
+    var hideAssumedDoneTasks: Bool = false
     var taskListViewMode: HomeTaskListViewMode = .all
     var taskListSortOrder: HomeTaskListSortOrder = .smart
     var createdDateFilter: HomeTaskCreatedDateFilter = .all
@@ -39,7 +39,7 @@ struct HomeTaskFiltersState: Equatable {
             selectedGoalFilter: selectedGoalFilter,
             selectedMediaFilter: selectedMediaFilter,
             selectedEstimationFilter: selectedEstimationFilter,
-            hideAssumedDoneTasks: hideAssumedDoneTasks,
+            hideAssumedDoneTasks: false,
             taskListViewMode: taskListViewMode,
             taskListSortOrder: taskListSortOrder,
             createdDateFilter: createdDateFilter,
@@ -77,7 +77,7 @@ struct HomeTaskFiltersState: Equatable {
         selectedGoalFilter = snapshot.selectedGoalFilter
         selectedMediaFilter = snapshot.selectedMediaFilter
         selectedEstimationFilter = snapshot.selectedEstimationFilter
-        hideAssumedDoneTasks = snapshot.hideAssumedDoneTasks
+        hideAssumedDoneTasks = false
         taskListViewMode = snapshot.taskListViewMode
         taskListSortOrder = snapshot.taskListSortOrder
         createdDateFilter = snapshot.createdDateFilter
@@ -167,7 +167,7 @@ enum HomeTemporaryViewStateMapper {
             selectedGoalFilter: persistedState.homeSelectedGoalFilter,
             selectedMediaFilter: persistedState.homeSelectedMediaFilter,
             selectedEstimationFilter: persistedState.homeSelectedEstimationFilter,
-            hideAssumedDoneTasks: persistedState.homeHideAssumedDoneTasks,
+            hideAssumedDoneTasks: false,
             taskListViewMode: persistedState.homeTaskListViewMode,
             taskListSortOrder: persistedState.homeTaskListSortOrder,
             createdDateFilter: persistedState.homeCreatedDateFilter,
@@ -241,7 +241,7 @@ enum HomeTemporaryViewStateMapper {
             homeSelectedGoalFilter: taskFilters.selectedGoalFilter,
             homeSelectedMediaFilter: taskFilters.selectedMediaFilter,
             homeSelectedEstimationFilter: taskFilters.selectedEstimationFilter,
-            homeHideAssumedDoneTasks: taskFilters.hideAssumedDoneTasks,
+            homeHideAssumedDoneTasks: false,
             homeTaskListViewMode: taskFilters.taskListViewMode,
             homeTaskListSortOrder: taskFilters.taskListSortOrder,
             homeCreatedDateFilter: taskFilters.createdDateFilter,

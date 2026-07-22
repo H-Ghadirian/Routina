@@ -18,7 +18,6 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0252](../decisions/0252-stabilize-home-task-list-presentation-identity.md)
 - [0253](../decisions/0253-guard-checklist-detail-mutations-through-reloads.md)
 - [0259](../decisions/0259-allow-daily-checklist-auto-assumed-completion.md)
-- [0260](../decisions/0260-hide-assumed-done-tasks-by-default.md)
 - [0270](../decisions/0270-normalize-checklist-item-intervals.md)
 - [0275](../decisions/0275-hide-places-behind-beta-toggle.md)
 - [0284](../decisions/0284-hide-filter-query-sections-behind-beta-toggle.md)
@@ -52,6 +51,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0398](../decisions/0398-move-auto-assume-done-to-tracking.md)
 - [0400](../decisions/0400-plan-tracking-rows-into-today.md)
 - [0408](../decisions/0408-allow-explicit-planning-for-daily-tracking.md)
+- [0410](../decisions/0410-show-assumed-done-home-rows-by-default.md)
 - [0411](../decisions/0411-manage-custom-task-sections-in-settings.md)
 - [0412](../decisions/0412-add-advanced-recurrence-beside-simple.md)
 
@@ -89,7 +89,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Checklist item intervals are stored as meaningful cadence only for checklist runout routines. Checklist-completion routines and optional checklist data normalize item intervals to a neutral one-day value.
 - Daily checklist-completion progress lasts for the current day only. Tomorrow starts unchecked unless the routine was completed and recorded in history.
 - Daily Checklist-completion Tracking entries with auto-assume done use day-level assumption only; assumed completion does not fake completed checklist item IDs, and current-day partial checklist progress suppresses assumed presentation until the tracking entry is fully completed or progress is cleared.
-- Home task filters hide assumed-done rows by default; users can turn on `Show assumed done` in `All` or `Tracking` views to review, confirm, or correct assumed days. On Mac, hovering an assumed-done Home row shows green check and red x actions for confirming the current assumed occurrence or recording it as missed.
+- Home shows assumed-done rows by default and no longer has a `Show assumed done` task filter. On Mac, hovering an assumed-done Home row shows green check and red x actions for confirming the current assumed occurrence or recording it as missed.
 - Home task filters include an Estimation filter with `All`, `Has Estimate`, and `No Estimate`; it applies to visible and archived task rows on iOS and macOS and persists with each task-list mode's filter snapshot.
 - On Mac, the Planner header filter button opens `All`, `Task List`, `Timeline`, and `Calendar` filters in one right-side companion pane. Tags and importance/urgency live under `All` and apply to task-list, Timeline, and task-backed Planner Calendar filtering. The pane can expand fullscreen and minimize back, while preserving the active workspace underneath. Task and Timeline sidebars no longer render their own filter icon buttons, but active task filters can still show summaries and clear actions in the sidebar.
 - Home task filter Query sections are hidden by default behind Support & About -> Beta Experiments -> `Show filter query sections`; existing advanced query state remains compatible and still appears in active filter summaries when nonempty.

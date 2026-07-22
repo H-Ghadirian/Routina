@@ -189,7 +189,7 @@ enum HomeFilterEditor {
         taskFilters.selectedGoalFilter = .all
         taskFilters.selectedMediaFilter = .all
         taskFilters.selectedEstimationFilter = .all
-        taskFilters.hideAssumedDoneTasks = true
+        taskFilters.hideAssumedDoneTasks = false
         taskFilters.taskListViewMode = .all
         taskFilters.taskListSortOrder = .smart
         taskFilters.createdDateFilter = .all
@@ -273,8 +273,8 @@ enum HomeFilterEditor {
         case let .selectedEstimationFilter(filter):
             taskFilters.selectedEstimationFilter = filter
 
-        case let .hideAssumedDoneTasks(hideAssumedDoneTasks):
-            taskFilters.hideAssumedDoneTasks = hideAssumedDoneTasks
+        case .hideAssumedDoneTasks:
+            taskFilters.hideAssumedDoneTasks = false
 
         case let .taskListViewMode(mode):
             taskFilters.taskListViewMode = mode

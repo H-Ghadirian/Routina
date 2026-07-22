@@ -21,17 +21,17 @@ struct TabFilterStateManagerTests {
         #expect(snapshot.excludedTags.isEmpty)
         #expect(snapshot.selectedFilter == .all)
         #expect(snapshot.selectedManualPlaceFilterID == nil)
-        #expect(snapshot.hideAssumedDoneTasks)
+        #expect(!snapshot.hideAssumedDoneTasks)
     }
 
     @Test
-    func decodingLegacyStateDefaultsToHidingAssumedDoneTasks() throws {
+    func decodingLegacyStateDefaultsToShowingAssumedDoneTasks() throws {
         let decoder = JSONDecoder()
         let snapshot = try decoder.decode(TabFilterStateManager.Snapshot.self, from: Data("{}".utf8))
         let temporaryViewState = try decoder.decode(TemporaryViewState.self, from: Data("{}".utf8))
 
-        #expect(snapshot.hideAssumedDoneTasks)
-        #expect(temporaryViewState.homeHideAssumedDoneTasks)
+        #expect(!snapshot.hideAssumedDoneTasks)
+        #expect(!temporaryViewState.homeHideAssumedDoneTasks)
     }
 
     // MARK: - hasSnapshot(for:)

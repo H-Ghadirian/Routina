@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted
+Superseded
+
+## Superseded by
+
+[0410: Show Assumed-Done Home Rows by Default](../0410-show-assumed-done-home-rows-by-default.md)
 
 ## Date
 
@@ -10,9 +14,9 @@ Accepted
 
 ## Refines
 
-- [0216: Move Mac Home Task Type Tabs to Filter Screen](0216-move-mac-home-task-type-tabs-to-filter-screen.md)
-- [0252: Stabilize Home Task List Presentation Identity](0252-stabilize-home-task-list-presentation-identity.md)
-- [0259: Allow Daily Checklist Auto-Assumed Completion](0259-allow-daily-checklist-auto-assumed-completion.md)
+- [0216: Move Mac Home Task Type Tabs to Filter Screen](../0216-move-mac-home-task-type-tabs-to-filter-screen.md)
+- [0252: Stabilize Home Task List Presentation Identity](../0252-stabilize-home-task-list-presentation-identity.md)
+- [0259: Allow Daily Checklist Auto-Assumed Completion](../0259-allow-daily-checklist-auto-assumed-completion.md)
 
 ## Context
 

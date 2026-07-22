@@ -11,7 +11,7 @@ Accepted
 ## Refines
 
 - [0216: Move Mac Home Task Type Tabs to Filter Screen](0216-move-mac-home-task-type-tabs-to-filter-screen.md)
-- [0260: Hide Assumed-Done Tasks by Default](0260-hide-assumed-done-tasks-by-default.md)
+- [0260: Hide Assumed-Done Tasks by Default](superseded/0260-hide-assumed-done-tasks-by-default.md)
 
 ## Context
 
