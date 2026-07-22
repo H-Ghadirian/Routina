@@ -10,6 +10,30 @@ import Testing
 @MainActor
 struct HomeFeatureTests {
     @Test
+    func statusComposerSaveRequested_persistsTaggedNoteThroughReducer() async throws {
+        let context = makeInMemoryContext()
+        let now = makeDate("2026-07-23T08:30:00Z")
+        let store = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.date.now = now
+        }
+
+        await store.send(.statusComposerSaveRequested("  Shipping the TCA migration  "))
+        await store.receive(\.statusComposerSaveSucceeded) {
+            $0.statusComposerSaveCount = 1
+        }
+
+        let notes = try context.fetch(FetchDescriptor<RoutineNote>())
+        #expect(notes.count == 1)
+        #expect(notes[0].body == "Shipping the TCA migration")
+        #expect(notes[0].tags == ["Status"])
+        #expect(notes[0].createdAt == now)
+        #expect(notes[0].updatedAt == now)
+    }
+
+    @Test
     func macFilterDetailScopeTitlesUseAllForSharedScope() {
         #expect(HomeMacFilterDetailScope.both.title == "All")
         #expect(HomeMacFilterDetailScope.allCases.map(\.title) == [

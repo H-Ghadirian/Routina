@@ -877,7 +877,7 @@ extension HomeTCAView {
         .routinaHomeSidebarColumnWidth()
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if isMacStatusComposerEnabled && isNotesEnabled {
-                HomeMacStatusComposerView()
+                HomeMacStatusComposerView(store: store)
             }
         }
     }

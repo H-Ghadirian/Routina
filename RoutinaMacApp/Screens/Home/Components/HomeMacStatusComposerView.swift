@@ -1,10 +1,9 @@
-import SwiftData
+import ComposableArchitecture
 import SwiftUI
 
 struct HomeMacStatusComposerView: View {
-    @Environment(\.modelContext) private var modelContext
+    let store: StoreOf<HomeFeature>
     @State private var statusText = ""
-    @State private var saveErrorMessage: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -32,7 +31,7 @@ struct HomeMacStatusComposerView: View {
                 .accessibilityLabel("Add status to timeline")
             }
 
-            if let saveErrorMessage {
+            if let saveErrorMessage = store.statusComposerErrorMessage {
                 Text(saveErrorMessage)
                     .font(.caption)
                     .foregroundStyle(.red)
@@ -45,6 +44,9 @@ struct HomeMacStatusComposerView: View {
         .overlay(alignment: .top) {
             Divider()
         }
+        .onChange(of: store.statusComposerSaveCount) { _, _ in
+            statusText = ""
+        }
     }
 
     private var trimmedStatusText: String? {
@@ -54,23 +56,6 @@ struct HomeMacStatusComposerView: View {
     private func saveStatus() {
         guard let text = trimmedStatusText else { return }
 
-        let now = Date()
-        let note = RoutineNote(
-            body: text,
-            tags: ["Status"],
-            createdAt: now,
-            updatedAt: now
-        )
-
-        modelContext.insert(note)
-
-        do {
-            try modelContext.save()
-            statusText = ""
-            saveErrorMessage = nil
-        } catch {
-            modelContext.delete(note)
-            saveErrorMessage = "Status was not saved."
-        }
+        store.send(.statusComposerSaveRequested(text))
     }
 }

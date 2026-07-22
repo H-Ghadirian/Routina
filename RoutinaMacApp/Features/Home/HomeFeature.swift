@@ -88,6 +88,8 @@ struct HomeFeature {
         var pendingSleepPlannerSessionID: UUID?
         var relatedTagRules: [RoutineRelatedTagRule] = []
         var tagColors: [String: String] = [:]
+        var statusComposerSaveCount = 0
+        var statusComposerErrorMessage: String?
 
         init(
             routineTasks: [RoutineTask] = [],
@@ -657,6 +659,10 @@ struct HomeFeature {
         case macSidebarSelectionChanged(MacSidebarSelection?)
         case selectedSettingsSectionChanged(SettingsMacSection?)
 
+        case statusComposerSaveRequested(String)
+        case statusComposerSaveSucceeded
+        case statusComposerSaveFailed
+
         case addRoutineSheet(AddRoutineFeature.Action)
         case subscriptionPaywall(SubscriptionPaywallFeature.Action)
         case subscriptionRequired(RoutinaTaskLimitSnapshot, AddRoutineSaveRequest?)
@@ -1053,6 +1059,37 @@ struct HomeFeature {
             case .manualRefreshRequested:
                 state.isLoading = true
                 return lifecycleActionHandler().manualRefreshRequested()
+
+            case let .statusComposerSaveRequested(rawText):
+                guard let text = RoutineNote.cleanedText(rawText) else { return .none }
+                state.statusComposerErrorMessage = nil
+                let createdAt = now
+                return .run { @MainActor send in
+                    let context = modelContext()
+                    let note = RoutineNote(
+                        body: text,
+                        tags: ["Status"],
+                        createdAt: createdAt,
+                        updatedAt: createdAt
+                    )
+                    context.insert(note)
+                    do {
+                        try context.save()
+                        send(.statusComposerSaveSucceeded)
+                    } catch {
+                        context.delete(note)
+                        send(.statusComposerSaveFailed)
+                    }
+                }
+
+            case .statusComposerSaveSucceeded:
+                state.statusComposerSaveCount += 1
+                state.statusComposerErrorMessage = nil
+                return .none
+
+            case .statusComposerSaveFailed:
+                state.statusComposerErrorMessage = "Status was not saved."
+                return .none
 
             case let .tasksLoadedSuccessfully(tasks, places, goals, logs, doneStats):
                 return taskLoadHandler().applyLoadedTasks(

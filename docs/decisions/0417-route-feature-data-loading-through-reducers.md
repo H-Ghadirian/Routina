@@ -18,6 +18,8 @@ Migrate feature-owned data loading and mutations incrementally into reducer effe
 
 Stats is the first migrated feature on both macOS and iOS: its views report refresh events, while each platform reducer fetches SwiftData through the injected model-context provider, applies feature-availability settings, and sends the resulting data through its normal action path.
 
+The macOS status composer is the first migrated mutation slice: its view submits text as a Home action, and `HomeFeature` owns validation, timestamping, SwiftData persistence, and explicit success or failure state.
+
 Large existing workflows should move opportunistically in behavior-preserving slices with focused reducer coverage rather than through a single broad rewrite.
 
 ## Consequences
