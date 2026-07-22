@@ -43,7 +43,7 @@ struct StatsSummaryGrid<Accessory: View>: View {
             columns: [
                 GridItem(
                     .adaptive(
-                        minimum: displayMode == .compact ? max(240, minimumCardWidth) : minimumCardWidth,
+                        minimum: displayMode == .compact ? max(280, minimumCardWidth) : minimumCardWidth,
                         maximum: displayMode == .compact ? 420 : 280
                     ),
                     spacing: 14

@@ -213,16 +213,16 @@ struct StatsCompactSummaryCard<Accessory: View>: View {
                 Text(title)
                     .font((caption == nil ? Font.subheadline : Font.caption).weight(.semibold))
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 if let caption {
                     Text(caption)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
+            .layoutPriority(1)
 
             Spacer(minLength: 8)
 

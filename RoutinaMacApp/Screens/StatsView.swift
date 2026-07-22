@@ -541,7 +541,7 @@ struct StatsView: View {
         case .cards:
             return horizontalSizeClass == .compact ? 160 : 220
         case .compact:
-            return horizontalSizeClass == .compact ? 240 : 220
+            return 280
         }
     }
 
