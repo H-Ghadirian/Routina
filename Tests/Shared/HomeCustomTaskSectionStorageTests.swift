@@ -78,6 +78,38 @@ struct HomeCustomTaskSectionStorageTests {
         #expect(sections.count == 1)
         #expect(sections.first?.id == sectionID)
         #expect(sections.first?.rules.isEmpty == true)
+        #expect(sections.first?.colorHex == nil)
+    }
+
+    @Test
+    func settingColorSanitizesHexAndPreservesOtherMetadata() throws {
+        let sectionID = UUID()
+        let sections = [
+            HomeCustomTaskSection(
+                id: sectionID,
+                title: "Work",
+                createdAt: nil,
+                rules: HomeCustomTaskSectionRules(enabledRules: [.plannedToday])
+            )
+        ]
+
+        let updatedSections = try #require(
+            HomeCustomTaskSectionStorage.settingColor(
+                "  #11aaCC  ",
+                for: sectionID,
+                in: sections
+            )
+        )
+
+        #expect(updatedSections.first?.colorHex == "#11AACC")
+        #expect(updatedSections.first?.rules.contains(.plannedToday) == true)
+        #expect(
+            HomeCustomTaskSectionStorage.settingColor(
+                nil,
+                for: sectionID,
+                in: updatedSections
+            )?.first?.colorHex == nil
+        )
     }
 
     @Test

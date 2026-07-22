@@ -70,6 +70,7 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
     let title: String
     let rowNumberOffset: Int
     let includeMarkDone: Bool
+    let colorHex: String?
     let moveContext: HomeTaskListMoveContext?
     let taskGroups: [HomeTaskListPresentationTaskGroup<Display>]
 
@@ -80,6 +81,7 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
         tasks: [Display],
         rowNumberOffset: Int,
         includeMarkDone: Bool,
+        colorHex: String? = nil,
         moveContext: HomeTaskListMoveContext?,
         taskGroups: [HomeTaskListPresentationTaskGroup<Display>]? = nil
     ) {
@@ -88,6 +90,7 @@ struct HomeTaskListPresentationSection<Display: HomeTaskListDisplay>: Identifiab
         self.title = title
         self.rowNumberOffset = rowNumberOffset
         self.includeMarkDone = includeMarkDone
+        self.colorHex = colorHex
         self.moveContext = moveContext
         self.taskGroups = Self.deduplicatedTaskGroups(taskGroups ?? [
             HomeTaskListPresentationTaskGroup(
@@ -603,6 +606,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                     tasks: customTaskSection.tasks,
                     rowNumberOffset: offset,
                     includeMarkDone: true,
+                    colorHex: customTaskSection.section.colorHex,
                     moveContext: HomeTaskListMoveContext(
                         sectionKey: HomeTaskListFiltering<Display>.customManualOrderSectionKey(
                             for: customTaskSection.section.id

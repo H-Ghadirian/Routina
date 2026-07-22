@@ -16,7 +16,7 @@ The existing built-in `Today`, optional `Tomorrow`, `Tracking`, and `Future` sec
 
 Mac Settings exposes a `Sections` page for managing custom task-list sections.
 
-Each custom section keeps its stable section ID, title, creation date, and optional rule set in the durable custom-section catalog. The first supported automatic rules are:
+Each custom section keeps its stable section ID, title, creation date, optional color, and optional rule set in the durable custom-section catalog. Settings lets the user choose or reset that color, and Home uses it to tint the custom section surface and header. Sections without a color retain the neutral tint. The first supported automatic rules are:
 
 - `Planned today`, which claims active unpinned tasks with an explicit stored planned date on the current day.
 - `Planned tomorrow`, which claims active unpinned tasks with an explicit stored planned date on tomorrow.
@@ -33,4 +33,4 @@ Users can manage custom sections from Settings without relying on row context me
 
 Custom rules are additive: they can redirect matching rows into user-owned sections while the built-in Mac sidebar sections continue to exist as fallback surfaces.
 
-The section catalog remains backward-compatible with existing saved custom sections that do not have rule metadata.
+The section catalog remains backward-compatible with existing saved custom sections that do not have rule or color metadata.

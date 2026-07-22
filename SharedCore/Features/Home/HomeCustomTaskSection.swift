@@ -95,17 +95,20 @@ struct HomeCustomTaskSection: Codable, Equatable, Hashable, Identifiable, Sendab
     var title: String
     var createdAt: Date?
     var rules: HomeCustomTaskSectionRules
+    var colorHex: String?
 
     init(
         id: UUID = UUID(),
         title: String,
         createdAt: Date? = Date(),
-        rules: HomeCustomTaskSectionRules = HomeCustomTaskSectionRules()
+        rules: HomeCustomTaskSectionRules = HomeCustomTaskSectionRules(),
+        colorHex: String? = nil
     ) {
         self.id = id
         self.title = HomeCustomTaskSectionStorage.sanitizedTitle(title) ?? "Section"
         self.createdAt = createdAt
         self.rules = rules
+        self.colorHex = HomeCustomTaskSectionStorage.sanitizedColorHex(colorHex)
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -113,6 +116,7 @@ struct HomeCustomTaskSection: Codable, Equatable, Hashable, Identifiable, Sendab
         case title
         case createdAt
         case rules
+        case colorHex
     }
 
     init(from decoder: Decoder) throws {
@@ -124,6 +128,9 @@ struct HomeCustomTaskSection: Codable, Equatable, Hashable, Identifiable, Sendab
         createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
         rules = (try? container.decodeIfPresent(HomeCustomTaskSectionRules.self, forKey: .rules))
             ?? HomeCustomTaskSectionRules()
+        colorHex = HomeCustomTaskSectionStorage.sanitizedColorHex(
+            try? container.decodeIfPresent(String.self, forKey: .colorHex)
+        )
     }
 }
 
@@ -146,6 +153,11 @@ enum HomeCustomTaskSectionStorage {
         let trimmed = String(collapsed.prefix(maxTitleLength))
             .trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
+    }
+
+    static func sanitizedColorHex(_ colorHex: String?) -> String? {
+        guard let colorHex else { return nil }
+        return RoutineTagColors.sanitized(["section": colorHex])["section"]
     }
 
     static func decoded(from rawValue: String?) -> [HomeCustomTaskSection] {
@@ -187,7 +199,8 @@ enum HomeCustomTaskSectionStorage {
                     id: section.id,
                     title: title,
                     createdAt: section.createdAt,
-                    rules: section.rules
+                    rules: section.rules,
+                    colorHex: section.colorHex
                 )
             )
         }
@@ -254,6 +267,20 @@ enum HomeCustomTaskSectionStorage {
 
         sanitizedSections[sectionIndex].rules = sanitizedSections[sectionIndex].rules
             .setting(rule, enabled: isEnabled)
+        return sanitizedSections
+    }
+
+    static func settingColor(
+        _ colorHex: String?,
+        for sectionID: UUID,
+        in sections: [HomeCustomTaskSection]
+    ) -> [HomeCustomTaskSection]? {
+        var sanitizedSections = sanitized(sections)
+        guard let sectionIndex = sanitizedSections.firstIndex(where: { $0.id == sectionID }) else {
+            return nil
+        }
+
+        sanitizedSections[sectionIndex].colorHex = sanitizedColorHex(colorHex)
         return sanitizedSections
     }
 

@@ -1043,7 +1043,7 @@ extension HomeTCAView {
         case .plannedTomorrow:
             return .blue
         case .custom:
-            return .secondary
+            return Color(routineTagHex: section.colorHex) ?? .secondary
         case .tracking:
             return .secondary
         case .daily:

@@ -130,6 +130,26 @@ struct SettingsMacTaskSectionsDetailView: View {
                 .tint(.red)
             }
 
+            HStack(spacing: 10) {
+                Text("Color")
+                    .font(.subheadline.weight(.semibold))
+
+                ColorPicker(
+                    "Section color",
+                    selection: colorBinding(for: section),
+                    supportsOpacity: false
+                )
+                .labelsHidden()
+
+                if section.colorHex != nil {
+                    Button("Reset") {
+                        setColor(nil, for: section.id)
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+            .padding(.leading, 32)
+
             VStack(alignment: .leading, spacing: 8) {
                 Text("Rules")
                     .font(.subheadline.weight(.semibold))
@@ -193,6 +213,13 @@ struct SettingsMacTaskSectionsDetailView: View {
         Binding(
             get: { tagRuleDrafts[section.id] ?? tagRuleDraftText(for: section.rules.tagNames) },
             set: { tagRuleDrafts[section.id] = $0 }
+        )
+    }
+
+    private func colorBinding(for section: HomeCustomTaskSection) -> Binding<Color> {
+        Binding(
+            get: { Color(routineTagHex: section.colorHex) ?? .accentColor },
+            set: { setColor($0.routineTagHex, for: section.id) }
         )
     }
 
@@ -264,6 +291,19 @@ struct SettingsMacTaskSectionsDetailView: View {
         guard let sections = HomeCustomTaskSectionStorage.settingRule(
             rule,
             isEnabled: isEnabled,
+            for: sectionID,
+            in: customTaskSections
+        ) else {
+            return
+        }
+
+        persistSections(sections)
+        statusMessage = ""
+    }
+
+    private func setColor(_ colorHex: String?, for sectionID: UUID) {
+        guard let sections = HomeCustomTaskSectionStorage.settingColor(
+            colorHex,
             for: sectionID,
             in: customTaskSections
         ) else {
