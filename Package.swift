@@ -372,6 +372,7 @@ let package = Package(
                 "SharedCore/Screens/TaskDetail/TaskDetailTimeSpentPresentation.swift",
                 "SharedCore/Screens/Shared/AddRoutineTaskFormModelFactory.swift",
                 "SharedCore/Screens/Shared/TaskFormModel.swift",
+                "SharedCore/Features/CalendarTaskImportFeature.swift",
                 "SharedCore/Services/NotificationCoordinator.swift",
                 "SharedCore/Services/BatteryRoutineService.swift",
                 "SharedCore/Services/CalendarTaskImportService.swift",

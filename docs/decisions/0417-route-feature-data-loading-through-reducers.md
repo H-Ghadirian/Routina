@@ -20,6 +20,8 @@ Stats is the first migrated feature on both macOS and iOS: its views report refr
 
 The macOS status composer is the first migrated mutation slice: its view submits text as a Home action, and `HomeFeature` owns validation, timestamping, SwiftData persistence, and explicit success or failure state.
 
+Calendar task import uses a dedicated shared reducer on iOS and macOS. EventKit and Outlook discovery remain in the existing import view model, while confirming a suggestion sends a feature action that owns validation, task construction, persistence, and success/failure reporting.
+
 Large existing workflows should move opportunistically in behavior-preserving slices with focused reducer coverage rather than through a single broad rewrite.
 
 ## Consequences

@@ -1,12 +1,14 @@
+import ComposableArchitecture
 import EventKit
-import SwiftData
 import SwiftUI
 
 struct CalendarTaskImportSheet: View {
     @Environment(\.calendar) private var calendar
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
     @StateObject private var viewModel = CalendarTaskImportViewModel()
+    @State private var store = Store(initialState: CalendarTaskImportFeature.State()) {
+        CalendarTaskImportFeature()
+    }
 
     let existingTasks: [RoutineTask]
     let onTasksChanged: () -> Void
@@ -32,6 +34,12 @@ struct CalendarTaskImportSheet: View {
         #if os(macOS)
         .frame(minWidth: 560, minHeight: 560)
         #endif
+        .onChange(of: store.addedSuggestionIDs) { previousIDs, addedIDs in
+            for suggestionID in addedIDs.subtracting(previousIDs) {
+                viewModel.markAdded(suggestionID: suggestionID)
+                onTasksChanged()
+            }
+        }
     }
 
     @ViewBuilder
@@ -272,35 +280,7 @@ struct CalendarTaskImportSheet: View {
     }
 
     private func addTask(from suggestion: CalendarTaskSuggestion) {
-        guard suggestion.reviewState == .pending,
-              let trimmedTitle = RoutineTask.trimmedName(suggestion.taskTitle) else {
-            return
-        }
-
-        let task = RoutineTask(
-            name: trimmedTitle,
-            emoji: CalendarTaskImportSupport.defaultTaskEmoji,
-            notes: CalendarTaskImportSupport.notes(for: suggestion, calendar: calendar),
-            deadline: suggestion.deadline,
-            isAllDay: suggestion.isAllDay,
-            priority: .none,
-            importance: .level2,
-            urgency: .level2,
-            tags: ["Calendar"],
-            scheduleMode: .oneOff,
-            interval: 1,
-            recurrenceRule: .interval(days: 1),
-            todoStateRawValue: TodoState.ready.rawValue
-        )
-        modelContext.insert(task)
-        do {
-            try modelContext.save()
-            viewModel.markAdded(suggestionID: suggestion.id)
-            NotificationCenter.default.postRoutineDidUpdate()
-            onTasksChanged()
-        } catch {
-            modelContext.delete(task)
-        }
+        store.send(.addTaskRequested(suggestion))
     }
 }
 
