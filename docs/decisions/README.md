@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0416](0416-use-semantic-release-versions.md) establishes the release-numbering contract:** Routina uses three-component semantic public versions, a separately increasing Apple build number, and synchronized version metadata across all iOS, Watch, macOS, widget, development, and production target configurations.
+
 - **[0415](0415-support-custom-stats-date-ranges.md) expands the Stats range contract:** Stats retains its four trailing quick presets and adds a persisted inclusive custom start/end range shared by dashboard reports and available integrations on iOS and macOS.
 
 - **[0414](0414-align-task-kind-controls-between-create-and-edit.md) refines [0413](0413-nest-tracking-under-repeating-task-creation.md) for form consistency:** Full progressive Add Task and Edit Task forms both use `One-time` / `Repeating` with `Track this routine`; edit alone preserves `Repeat type: None` for existing no-cadence Tracking compatibility.
@@ -311,6 +313,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0416](0416-use-semantic-release-versions.md) | Use Semantic Release Versions | Accepted | 2026-07-22 |
 | [0414](0414-align-task-kind-controls-between-create-and-edit.md) | Align Task Kind Controls Between Create and Edit | Accepted | 2026-07-22 |
 | [0413](0413-nest-tracking-under-repeating-task-creation.md) | Nest Tracking Under Repeating Task Creation | Accepted | 2026-07-21 |
 | [0411](0411-manage-custom-task-sections-in-settings.md) | Manage Custom Task Sections in Settings | Accepted | 2026-07-20 |
