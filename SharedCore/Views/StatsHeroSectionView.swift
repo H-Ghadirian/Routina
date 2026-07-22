@@ -141,7 +141,7 @@ struct StatsHeroSectionView: View {
     }
 
     private var rangeHeroLabel: String {
-        switch selectedRange {
+        switch selectedRange.kind {
         case .today:
             return "Today"
         case .week:
@@ -150,6 +150,8 @@ struct StatsHeroSectionView: View {
             return "This month"
         case .year:
             return "This year"
+        case .custom:
+            return "Custom range"
         }
     }
 

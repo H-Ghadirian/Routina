@@ -202,13 +202,9 @@ private actor HealthStatsStore {
         referenceDate: Date,
         calendar: Calendar
     ) throws -> DateInterval {
-        let endDay = calendar.startOfDay(for: referenceDate)
-        guard let start = calendar.date(
-            byAdding: .day,
-            value: -(range.trailingDayCount - 1),
-            to: endDay
-        ),
-            let end = calendar.date(byAdding: .day, value: 1, to: endDay) else {
+        let endDay = calendar.startOfDay(for: range.referenceDate(relativeTo: referenceDate))
+        let start = range.startDate(relativeTo: referenceDate, calendar: calendar)
+        guard let end = calendar.date(byAdding: .day, value: 1, to: endDay) else {
             throw HealthStatsClientError.unavailable
         }
 

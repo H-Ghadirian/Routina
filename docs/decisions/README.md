@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0415](0415-support-custom-stats-date-ranges.md) expands the Stats range contract:** Stats retains its four trailing quick presets and adds a persisted inclusive custom start/end range shared by dashboard reports and available integrations on iOS and macOS.
+
 - **[0414](0414-align-task-kind-controls-between-create-and-edit.md) refines [0413](0413-nest-tracking-under-repeating-task-creation.md) for form consistency:** Full progressive Add Task and Edit Task forms both use `One-time` / `Repeating` with `Track this routine`; edit alone preserves `Repeat type: None` for existing no-cadence Tracking compatibility.
 - **[0413](0413-nest-tracking-under-repeating-task-creation.md) refines [0382](0382-split-record-task-form-controls.md) and [0397](0397-make-tracking-cadence-optional.md) for simpler creation:** Add Task offers `One-time` and `Repeating`, reveals `Track this routine` only for Repeating, and requires cadence for newly created Tracking while preserving edit support for existing no-cadence Tracking.
 - **[0412](0412-add-advanced-recurrence-beside-simple.md) refines [0177](0177-separate-interval-and-calendar-repeat-controls.md), [0178](0178-make-recurrence-availability-independent.md), and [0204](0204-avoid-duplicate-daily-repeat-choices.md) for optional complex cadence:** Routine and cadence-enabled Tracking forms keep Simple recurrence as the default and add an independent Advanced editor for every-N hourly/daily/weekly/monthly/yearly schedules, fixed occurrence anchors, daily time windows, ending conditions, occurrence-level subdaily completion logs, and rolling occurrence notifications.

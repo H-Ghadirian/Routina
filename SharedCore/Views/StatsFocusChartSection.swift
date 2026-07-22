@@ -629,7 +629,7 @@ private struct StatsFocusCumulativeChart: View {
         let labelPoints = activePoints.isEmpty ? points : activePoints
         let targetCount: Int
 
-        switch chartPresentation.selectedRange {
+        switch chartPresentation.selectedRange.kind {
         case .today:
             targetCount = 1
         case .week:
@@ -638,6 +638,8 @@ private struct StatsFocusCumulativeChart: View {
             targetCount = 10
         case .year:
             targetCount = 18
+        case .custom:
+            targetCount = min(max(chartPresentation.selectedRange.trailingDayCount, 7), 18)
         }
 
         guard labelPoints.count > targetCount, targetCount > 1 else {

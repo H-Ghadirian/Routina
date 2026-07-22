@@ -135,12 +135,8 @@ private func makeGitHubStatsWindow(
     referenceDate: Date
 ) -> (startDate: Date, endDate: Date) {
     let calendar = Calendar.current
-    let endDate = referenceDate
-    let startDate = calendar.date(
-        byAdding: .day,
-        value: -(range.trailingDayCount - 1),
-        to: calendar.startOfDay(for: referenceDate)
-    ) ?? referenceDate
+    let endDate = range.referenceDate(relativeTo: referenceDate)
+    let startDate = range.startDate(relativeTo: referenceDate, calendar: calendar)
     return (startDate, endDate)
 }
 

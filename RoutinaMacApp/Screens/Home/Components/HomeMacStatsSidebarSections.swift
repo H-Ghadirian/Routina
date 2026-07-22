@@ -76,6 +76,8 @@ struct HomeMacStatsDashboardScopeSection: View {
 struct HomeMacStatsRangeSection: View {
     let selectedRange: DoneChartRange
     let onSelectRange: (DoneChartRange) -> Void
+    @State private var customStart = Calendar.current.date(byAdding: .day, value: -6, to: Date()) ?? Date()
+    @State private var customEnd = Date()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -94,7 +96,38 @@ struct HomeMacStatsRangeSection: View {
                 Label(range.rawValue, systemImage: range.macSidebarIconName)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button {
+                onSelectRange(.custom(from: customStart, through: customEnd))
+            } label: {
+                Label(
+                    selectedRange.kind == .custom ? selectedRange.periodDescription : "Custom range",
+                    systemImage: "calendar.badge.plus"
+                )
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if selectedRange.kind == .custom {
+                DatePicker("From", selection: $customStart, in: ...customEnd, displayedComponents: .date)
+                    .onChange(of: customStart) { _, _ in applyCustomDates() }
+                DatePicker("Through", selection: $customEnd, in: customStart..., displayedComponents: .date)
+                    .onChange(of: customEnd) { _, _ in applyCustomDates() }
+            }
         }
+        .onAppear(perform: syncCustomDates)
+        .onChange(of: selectedRange) { _, _ in syncCustomDates() }
+    }
+
+    private func applyCustomDates() {
+        onSelectRange(.custom(from: customStart, through: customEnd))
+    }
+
+    private func syncCustomDates() {
+        guard selectedRange.kind == .custom else { return }
+        customStart = selectedRange.customStart ?? customStart
+        customEnd = selectedRange.customEnd ?? customEnd
     }
 }
 
@@ -130,7 +163,7 @@ private extension StatsTaskTypeFilter {
 
 private extension DoneChartRange {
     var macSidebarIconName: String {
-        switch self {
+        switch kind {
         case .today:
             return "calendar.badge.checkmark"
         case .week:
@@ -138,6 +171,8 @@ private extension DoneChartRange {
         case .month:
             return "calendar"
         case .year:
+            return "calendar.badge.plus"
+        case .custom:
             return "calendar.badge.plus"
         }
     }

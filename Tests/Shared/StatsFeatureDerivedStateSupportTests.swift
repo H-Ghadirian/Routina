@@ -10,6 +10,36 @@ import Testing
 
 struct StatsFeatureDerivedStateSupportTests {
     @Test
+    func build_usesInclusiveCustomDateBoundaries() {
+        let calendar = makeTestCalendar()
+        let task = RoutineTask(name: "Practice", createdAt: makeDate("2026-01-01T08:00:00Z"))
+        let range = DoneChartRange.custom(
+            from: makeDate("2026-02-10T00:00:00Z"),
+            through: makeDate("2026-02-12T00:00:00Z"),
+            calendar: calendar
+        )
+        let logs = [
+            RoutineLog(timestamp: makeDate("2026-02-09T18:00:00Z"), taskID: task.id, kind: .completed),
+            RoutineLog(timestamp: makeDate("2026-02-10T18:00:00Z"), taskID: task.id, kind: .completed),
+            RoutineLog(timestamp: makeDate("2026-02-12T18:00:00Z"), taskID: task.id, kind: .completed),
+            RoutineLog(timestamp: makeDate("2026-02-13T18:00:00Z"), taskID: task.id, kind: .completed)
+        ]
+
+        let state = StatsFeatureDerivedStateBuilder.build(
+            tasks: [task], logs: logs, focusSessions: [], selectedRange: range,
+            taskTypeFilter: .all, selectedImportanceUrgencyFilter: nil, advancedQuery: "",
+            selectedTags: [], includeTagMatchMode: .all, excludedTags: [],
+            excludeTagMatchMode: .any, tagColors: [:],
+            referenceDate: range.referenceDate(relativeTo: makeDate("2026-07-22T10:00:00Z")),
+            calendar: calendar
+        )
+
+        #expect(range.trailingDayCount == 3)
+        #expect(state.metrics.chartPoints.map(\.count) == [1, 0, 1])
+        #expect(state.metrics.totalDoneCount == 2)
+    }
+
+    @Test
     func build_groupsYearSparklineIntoTrailingTwelveMonths() {
         let calendar = makeTestCalendar()
         let task = RoutineTask(

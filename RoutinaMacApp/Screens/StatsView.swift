@@ -951,7 +951,7 @@ struct StatsView: View {
     }
 
     private func rangeButtonSubtitle(for range: DoneChartRange) -> String {
-        switch range {
+        switch range.kind {
         case .today:
             return "1 day"
         case .week:
@@ -960,6 +960,8 @@ struct StatsView: View {
             return "30 days"
         case .year:
             return "1 year"
+        case .custom:
+            return "Custom"
         }
     }
 

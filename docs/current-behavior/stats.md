@@ -29,10 +29,12 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - [0388](../decisions/0388-show-tracking-summary-stats.md)
 - [0398](../decisions/0398-move-auto-assume-done-to-tracking.md)
 - [0390](../decisions/0390-hide-mac-toolbar-search-on-stats-and-add-task.md)
+- [0415](../decisions/0415-support-custom-stats-date-ranges.md)
 
 ## Current Contract
 
 - Stats dashboards are customizable, reorderable, and adaptive-width.
+- Stats offers Today, Week, Month, and Year presets plus an inclusive custom start/end date range on iOS and macOS. All dashboard reports and available integrations use the same selected boundaries.
 - Dashboard reports appear only when their backing metric has data. Saved order and hidden-item preferences are preserved for when data appears later.
 - Sleep time and Sleep sessions sit beside comparable summary reports when available and when the Away experiment is enabled.
 - Goal reports follow the Goals beta setting.

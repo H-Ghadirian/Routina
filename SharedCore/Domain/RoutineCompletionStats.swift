@@ -1,15 +1,47 @@
 import Foundation
 
-enum DoneChartRange: String, CaseIterable, Equatable, Identifiable, Codable, Sendable {
-    case today = "Today"
-    case week = "Week"
-    case month = "Month"
-    case year = "Year"
+struct DoneChartRange: Equatable, Identifiable, Codable, Sendable, Hashable {
+    enum Kind: String, Codable, Sendable {
+        case today = "Today"
+        case week = "Week"
+        case month = "Month"
+        case year = "Year"
+        case custom = "Custom"
+    }
 
-    var id: Self { self }
+    static let today = Self(kind: .today)
+    static let week = Self(kind: .week)
+    static let month = Self(kind: .month)
+    static let year = Self(kind: .year)
+    static let allCases: [Self] = [.today, .week, .month, .year]
+
+    let kind: Kind
+    let customStart: Date?
+    let customEnd: Date?
+
+    private init(kind: Kind, customStart: Date? = nil, customEnd: Date? = nil) {
+        self.kind = kind
+        self.customStart = customStart
+        self.customEnd = customEnd
+    }
+
+    static func custom(from start: Date, through end: Date, calendar: Calendar = .current) -> Self {
+        let first = calendar.startOfDay(for: min(start, end))
+        let last = calendar.startOfDay(for: max(start, end))
+        return Self(kind: .custom, customStart: first, customEnd: last)
+    }
+
+    var id: String {
+        "\(kind.rawValue)-\(customStart?.timeIntervalSinceReferenceDate ?? 0)-\(customEnd?.timeIntervalSinceReferenceDate ?? 0)"
+    }
+
+    var rawValue: String { kind.rawValue }
 
     var trailingDayCount: Int {
-        switch self {
+        if kind == .custom, let customStart, let customEnd {
+            return max(Calendar.current.dateComponents([.day], from: customStart, to: customEnd).day ?? 0, 0) + 1
+        }
+        switch kind {
         case .today:
             return 1
         case .week:
@@ -18,11 +50,13 @@ enum DoneChartRange: String, CaseIterable, Equatable, Identifiable, Codable, Sen
             return 30
         case .year:
             return 365
+        case .custom:
+            return 1
         }
     }
 
     var periodDescription: String {
-        switch self {
+        switch kind {
         case .today:
             return "Today"
         case .week:
@@ -31,7 +65,48 @@ enum DoneChartRange: String, CaseIterable, Equatable, Identifiable, Codable, Sen
             return "Last 30 days"
         case .year:
             return "Last 365 days"
+        case .custom:
+            guard let customStart, let customEnd else { return "Custom range" }
+            return "\(customStart.formatted(date: .abbreviated, time: .omitted)) – \(customEnd.formatted(date: .abbreviated, time: .omitted))"
         }
+    }
+
+    func referenceDate(relativeTo fallback: Date) -> Date {
+        customEnd ?? fallback
+    }
+
+    func startDate(relativeTo fallback: Date, calendar: Calendar) -> Date {
+        if let customStart { return calendar.startOfDay(for: customStart) }
+        let end = calendar.startOfDay(for: referenceDate(relativeTo: fallback))
+        return calendar.date(byAdding: .day, value: -(trailingDayCount - 1), to: end) ?? end
+    }
+
+    private enum CodingKeys: String, CodingKey { case kind, customStart, customEnd }
+
+    init(from decoder: Decoder) throws {
+        if let legacy = try? decoder.singleValueContainer().decode(String.self),
+           let kind = Kind(rawValue: legacy) {
+            self.init(kind: kind)
+            return
+        }
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            kind: try container.decode(Kind.self, forKey: .kind),
+            customStart: try container.decodeIfPresent(Date.self, forKey: .customStart),
+            customEnd: try container.decodeIfPresent(Date.self, forKey: .customEnd)
+        )
+    }
+
+    func encode(to encoder: Encoder) throws {
+        if kind != .custom {
+            var container = encoder.singleValueContainer()
+            try container.encode(kind.rawValue)
+            return
+        }
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(kind, forKey: .kind)
+        try container.encodeIfPresent(customStart, forKey: .customStart)
+        try container.encodeIfPresent(customEnd, forKey: .customEnd)
     }
 }
 

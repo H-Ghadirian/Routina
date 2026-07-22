@@ -58,14 +58,8 @@ private func fetchCommitDates(
     accessToken: String?
 ) async throws -> [GitHubCommitAggregate] {
     let calendar = Calendar.current
-    let endDate = referenceDate
-    guard let startDate = calendar.date(
-        byAdding: .day,
-        value: -(range.trailingDayCount - 1),
-        to: calendar.startOfDay(for: referenceDate)
-    ) else {
-        return []
-    }
+    let endDate = range.referenceDate(relativeTo: referenceDate)
+    let startDate = range.startDate(relativeTo: referenceDate, calendar: calendar)
 
     var page = 1
     var results: [GitHubCommitAggregate] = []
@@ -109,17 +103,12 @@ private func fetchMergedPullRequestCount(
     accessToken: String?
 ) async throws -> Int {
     let calendar = Calendar.current
-    guard let startDate = calendar.date(
-        byAdding: .day,
-        value: -(range.trailingDayCount - 1),
-        to: calendar.startOfDay(for: referenceDate)
-    ) else {
-        return 0
-    }
+    let startDate = range.startDate(relativeTo: referenceDate, calendar: calendar)
+    let endDate = range.referenceDate(relativeTo: referenceDate)
 
     let formatter = ISO8601DateFormatter()
     let startDateString = formatter.string(from: startDate)
-    let endDateString = formatter.string(from: referenceDate)
+    let endDateString = formatter.string(from: endDate)
     let mergedQuery = "repo:\(repository.fullName) is:pr is:merged merged:\(startDateString)..\(endDateString)"
 
     return try await searchCount(

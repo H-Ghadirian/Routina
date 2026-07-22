@@ -90,7 +90,7 @@ struct StatsGitHubChartView: View {
     }
 
     private var chartMinWidth: CGFloat {
-        switch selectedRange {
+        switch selectedRange.kind {
         case .today:
             return 260
         case .week:
@@ -99,6 +99,8 @@ struct StatsGitHubChartView: View {
             return 720
         case .year:
             return yearMinWidth
+        case .custom:
+            return max(CGFloat(selectedRange.trailingDayCount) * 24, 340)
         }
     }
 
@@ -108,7 +110,7 @@ struct StatsGitHubChartView: View {
     }
 
     private var xAxisDates: [Date] {
-        switch selectedRange {
+        switch selectedRange.kind {
         case .today, .week:
             return points.map(\.date)
         case .month:
@@ -128,17 +130,24 @@ struct StatsGitHubChartView: View {
                 }
                 return nil
             }
+        case .custom:
+            let step = max(points.count / 8, 1)
+            return points.enumerated().compactMap { index, point in
+                index == 0 || index == points.count - 1 || index.isMultiple(of: step) ? point.date : nil
+            }
         }
     }
 
     private func xAxisLabel(for date: Date) -> String {
-        switch selectedRange {
+        switch selectedRange.kind {
         case .today, .week:
             return date.formatted(.dateTime.weekday(.abbreviated))
         case .month:
             return date.formatted(.dateTime.day())
         case .year:
             return date.formatted(.dateTime.month(.abbreviated))
+        case .custom:
+            return date.formatted(.dateTime.month(.abbreviated).day())
         }
     }
 }

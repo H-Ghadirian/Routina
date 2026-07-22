@@ -500,9 +500,9 @@ enum StatsFeatureDerivedStateBuilder {
                 focusWeekdayAveragePoints: focusWeekdayAveragePoints,
                 goalProgressChartPoints: goalProgressChartPoints,
                 tagUsagePoints: tagUsagePoints,
-                totalDoneCount: completionDates.count,
-                totalCanceledCount: canceledDates.count,
-                totalMissedCount: missedDates.count,
+                totalDoneCount: outcomeMixChartPoints.reduce(0) { $0 + $1.doneCount },
+                totalCanceledCount: outcomeMixChartPoints.reduce(0) { $0 + $1.canceledCount },
+                totalMissedCount: outcomeMixChartPoints.reduce(0) { $0 + $1.missedCount },
                 assumedDoneCount: assumedCompletionSummary.count,
                 totalAssumedEstimatedMinutes: assumedCompletionSummary.estimatedMinutes,
                 createdTotalCount: createdTotalCount,
@@ -682,7 +682,7 @@ enum StatsFeatureDerivedStateBuilder {
         referenceDate: Date,
         calendar: Calendar
     ) -> [DoneChartPoint] {
-        switch range {
+        switch range.kind {
         case .today, .week:
             return chartPoints
         case .month:
@@ -693,6 +693,10 @@ enum StatsFeatureDerivedStateBuilder {
                 referenceDate: referenceDate,
                 calendar: calendar
             )
+        case .custom:
+            return chartPoints.count > 31
+                ? bucketedSparklinePoints(from: chartPoints, bucketSize: 7)
+                : chartPoints
         }
     }
 
@@ -748,7 +752,7 @@ enum StatsFeatureDerivedStateBuilder {
         for range: DoneChartRange,
         calendar: Calendar
     ) -> [Date] {
-        switch range {
+        switch range.kind {
         case .today:
             return chartPoints.map(\.date)
 
@@ -773,6 +777,11 @@ enum StatsFeatureDerivedStateBuilder {
                     return point.date
                 }
                 return nil
+            }
+        case .custom:
+            let step = max(chartPoints.count / 8, 1)
+            return chartPoints.enumerated().compactMap { index, point in
+                index == 0 || index == chartPoints.count - 1 || index.isMultiple(of: step) ? point.date : nil
             }
         }
     }

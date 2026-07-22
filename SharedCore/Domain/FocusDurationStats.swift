@@ -11,10 +11,9 @@ enum FocusDurationStats {
         referenceDate: Date = .now,
         calendar: Calendar = .current
     ) -> [FocusDurationChartPoint] {
-        let endDate = calendar.startOfDay(for: referenceDate)
-        guard let defaultStart = calendar.date(byAdding: .day, value: -(range.trailingDayCount - 1), to: endDate) else {
-            return []
-        }
+        let effectiveReferenceDate = range.referenceDate(relativeTo: referenceDate)
+        let endDate = calendar.startOfDay(for: effectiveReferenceDate)
+        let defaultStart = range.startDate(relativeTo: referenceDate, calendar: calendar)
 
         let startDate: Date
         if range == .year, let earliestActivityDate {

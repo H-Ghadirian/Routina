@@ -5,11 +5,21 @@ struct StatsRangeSelectorView: View {
     let onSelectRange: (DoneChartRange) -> Void
 
     @Environment(\.colorScheme) private var colorScheme
+    @State private var customStart = Calendar.current.date(byAdding: .day, value: -6, to: Date()) ?? Date()
+    @State private var customEnd = Date()
 
     var body: some View {
-        HStack(spacing: 10) {
-            ForEach(DoneChartRange.allCases) { range in
-                rangeButton(for: range)
+        VStack(spacing: 10) {
+            HStack(spacing: 10) {
+                ForEach(DoneChartRange.allCases) { range in
+                    rangeButton(for: range)
+                }
+            }
+
+            customRangeButton
+
+            if selectedRange.kind == .custom {
+                customDateFields
             }
         }
         .padding(6)
@@ -22,6 +32,44 @@ struct StatsRangeSelectorView: View {
                 .stroke(Color.white, lineWidth: 1)
                 .opacity(selectorOutlineOpacity)
         )
+        .onAppear(perform: syncCustomDates)
+        .onChange(of: selectedRange) { _, _ in syncCustomDates() }
+    }
+
+    private var customRangeButton: some View {
+        Button {
+            onSelectRange(.custom(from: customStart, through: customEnd))
+        } label: {
+            Label(
+                selectedRange.kind == .custom ? selectedRange.periodDescription : "Custom range",
+                systemImage: "calendar.badge.plus"
+            )
+            .font(.subheadline.weight(.semibold))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var customDateFields: some View {
+        HStack(spacing: 12) {
+            DatePicker("From", selection: $customStart, in: ...customEnd, displayedComponents: .date)
+            DatePicker("Through", selection: $customEnd, in: customStart..., displayedComponents: .date)
+        }
+        .font(.caption)
+        .onChange(of: customStart) { _, _ in applyCustomDates() }
+        .onChange(of: customEnd) { _, _ in applyCustomDates() }
+    }
+
+    private func applyCustomDates() {
+        onSelectRange(.custom(from: customStart, through: customEnd))
+    }
+
+    private func syncCustomDates() {
+        guard selectedRange.kind == .custom else { return }
+        customStart = selectedRange.customStart ?? customStart
+        customEnd = selectedRange.customEnd ?? customEnd
     }
 
     private func rangeButton(for range: DoneChartRange) -> some View {
@@ -51,7 +99,7 @@ struct StatsRangeSelectorView: View {
     }
 
     private func subtitle(for range: DoneChartRange) -> String {
-        switch range {
+        switch range.kind {
         case .today:
             return "1 day"
         case .week:
@@ -60,6 +108,8 @@ struct StatsRangeSelectorView: View {
             return "30 days"
         case .year:
             return "1 year"
+        case .custom:
+            return "Custom"
         }
     }
 

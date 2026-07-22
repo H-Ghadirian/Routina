@@ -522,10 +522,10 @@ private enum StatsHourlyActivityMetric: String, CaseIterable, Identifiable {
 
 private extension DoneChartRange {
     var hourlyActivityRangePhrase: String {
-        switch self {
+        switch kind {
         case .today:
             return "today"
-        case .week, .month, .year:
+        case .week, .month, .year, .custom:
             return "across the \(periodDescription.lowercased())"
         }
     }

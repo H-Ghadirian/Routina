@@ -710,7 +710,7 @@ struct StatsFeature {
             excludedTags: state.excludedTags,
             excludeTagMatchMode: state.excludeTagMatchMode,
             tagColors: state.tagColors,
-            referenceDate: now,
+            referenceDate: state.selectedRange.referenceDate(relativeTo: now),
             calendar: calendar
         )
         state.availableTags = derivedState.availableTags

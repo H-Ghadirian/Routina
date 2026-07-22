@@ -7,7 +7,7 @@ struct StatsChartPresentation {
     func sampledSparklinePoints(from chartPoints: [DoneChartPoint]) -> [DoneChartPoint] {
         let targetCount: Int
 
-        switch selectedRange {
+        switch selectedRange.kind {
         case .today:
             targetCount = 1
         case .week:
@@ -16,6 +16,8 @@ struct StatsChartPresentation {
             targetCount = 15
         case .year:
             targetCount = 24
+        case .custom:
+            targetCount = min(max(selectedRange.trailingDayCount, 7), 24)
         }
 
         guard chartPoints.count > targetCount, targetCount > 1 else {
@@ -31,7 +33,7 @@ struct StatsChartPresentation {
     }
 
     var sparklineTitle: String {
-        switch selectedRange {
+        switch selectedRange.kind {
         case .today:
             return "Activity today"
         case .week:
@@ -40,6 +42,8 @@ struct StatsChartPresentation {
             return "Activity by week"
         case .year:
             return "Activity by month"
+        case .custom:
+            return "Activity by day"
         }
     }
 
@@ -69,7 +73,7 @@ struct StatsChartPresentation {
     }
 
     func sparklineLabel(for point: DoneChartPoint) -> String {
-        switch selectedRange {
+        switch selectedRange.kind {
         case .today:
             return "Today"
         case .week:
@@ -78,20 +82,24 @@ struct StatsChartPresentation {
             return point.date.formatted(.dateTime.month(.abbreviated).day())
         case .year:
             return point.date.formatted(.dateTime.month(.abbreviated))
+        case .custom:
+            return point.date.formatted(.dateTime.month(.abbreviated).day())
         }
     }
 
     func sparklineBucketMaxWidth(pointCount: Int) -> CGFloat {
-        switch selectedRange {
+        switch selectedRange.kind {
         case .today, .week:
             return .infinity
         case .month, .year:
+            return pointCount <= 3 ? 128 : .infinity
+        case .custom:
             return pointCount <= 3 ? 128 : .infinity
         }
     }
 
     var chartMinWidth: CGFloat {
-        switch selectedRange {
+        switch selectedRange.kind {
         case .today:
             return 260
         case .week:
@@ -100,26 +108,32 @@ struct StatsChartPresentation {
             return 720
         case .year:
             return 2600
+        case .custom:
+            return max(CGFloat(selectedRange.trailingDayCount) * 24, 340)
         }
     }
 
     var usesHorizontalChartScroll: Bool {
-        switch selectedRange {
+        switch selectedRange.kind {
         case .today, .week:
             return false
         case .month:
             return isCompact
         case .year:
             return true
+        case .custom:
+            return selectedRange.trailingDayCount > 14
         }
     }
 
     var showsFocusWeekdayAverages: Bool {
-        switch selectedRange {
+        switch selectedRange.kind {
         case .week, .month:
             return true
         case .today, .year:
             return false
+        case .custom:
+            return selectedRange.trailingDayCount > 1
         }
     }
 
@@ -185,21 +199,23 @@ struct StatsChartPresentation {
     }
 
     func xAxisLabel(for date: Date) -> String {
-        switch selectedRange {
+        switch selectedRange.kind {
         case .today, .week:
             return date.formatted(.dateTime.weekday(.abbreviated))
         case .month:
             return date.formatted(.dateTime.day())
         case .year:
             return date.formatted(.dateTime.month(.abbreviated))
+        case .custom:
+            return date.formatted(.dateTime.month(.abbreviated).day())
         }
     }
 
     func dailyBarXAxisLabel(for date: Date) -> String {
-        switch selectedRange {
+        switch selectedRange.kind {
         case .today:
             return "Today"
-        case .week, .month, .year:
+        case .week, .month, .year, .custom:
             return date.formatted(.dateTime.day())
         }
     }
@@ -218,7 +234,7 @@ struct StatsChartPresentation {
     }
 
     func focusBarXAxisLabel(for date: Date) -> String {
-        switch selectedRange {
+        switch selectedRange.kind {
         case .today:
             return "Today"
         case .week:
@@ -226,6 +242,8 @@ struct StatsChartPresentation {
         case .month:
             return date.formatted(.dateTime.day())
         case .year:
+            return date.formatted(.dateTime.month(.abbreviated).day())
+        case .custom:
             return date.formatted(.dateTime.month(.abbreviated).day())
         }
     }
@@ -239,10 +257,12 @@ struct StatsChartPresentation {
         maxCount: Int,
         highlightedBusiestDay: DoneChartPoint?
     ) -> Bool {
-        switch selectedRange {
+        switch selectedRange.kind {
         case .today, .week:
             return point.date == highlightedBusiestDay?.date
         case .month, .year:
+            return point.count == maxCount
+        case .custom:
             return point.count == maxCount
         }
     }
