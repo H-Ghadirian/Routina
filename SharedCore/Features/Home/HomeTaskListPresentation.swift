@@ -207,6 +207,33 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         sections.reduce(0) { $0 + $1.tasks.count }
     }
 
+    func addingSearchFallbackResults(
+        from sourceDisplays: [Display],
+        filtering: HomeTaskListFiltering<Display>,
+        title: String = "Search Results"
+    ) -> Self {
+        guard sections.isEmpty else { return self }
+
+        let fallbackTasks = filtering.searchFallbackTasks(from: sourceDisplays)
+        guard !fallbackTasks.isEmpty else { return self }
+
+        let section = HomeTaskListPresentationSection(
+            kind: .regular,
+            identityKey: "searchResults",
+            title: title,
+            tasks: fallbackTasks,
+            rowNumberOffset: 0,
+            includeMarkDone: false,
+            moveContext: nil
+        )
+
+        return HomeTaskListPresentation(
+            sections: [section],
+            hiddenUnavailableTaskCount: hiddenUnavailableTaskCount,
+            emptyState: nil
+        )
+    }
+
     private static func claimTasks(
         _ tasks: [Display],
         claimedTaskIDs: inout Set<UUID>

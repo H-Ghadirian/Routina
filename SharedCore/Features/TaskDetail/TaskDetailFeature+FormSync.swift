@@ -12,7 +12,13 @@ extension TaskDetailFeature {
         state.editRoutineDurationMode = state.task.routineDurationMode
         state.editAvailabilityStartDate = state.task.availabilityStartDate
         state.editAvailabilityEndDate = state.task.availabilityEndDate
-        state.editPlannedDate = state.task.plannedDate
+        if state.task.scheduleMode == .oneOff,
+           let availabilityStartDate = state.task.availabilityStartDate,
+           state.task.availabilityEndDate == nil {
+            state.editPlannedDate = calendar.startOfDay(for: availabilityStartDate)
+        } else {
+            state.editPlannedDate = state.task.plannedDate
+        }
         state.editReminderAt = state.task.reminderAt
         if state.task.derivedPriorityFromMatrix == state.task.priority || state.task.priority == .none {
             state.editImportance = state.task.importance

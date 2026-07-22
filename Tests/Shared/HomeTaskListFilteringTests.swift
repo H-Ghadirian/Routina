@@ -229,6 +229,43 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func sidebarSearchFallbackShowsDoneDailyTaskHiddenFromNormalTodayList() {
+        let mealID = UUID()
+        let meal = TestTaskDisplay(
+            taskID: mealID,
+            name: "Meal",
+            recurrenceRule: .interval(days: 1),
+            isDoneToday: true
+        )
+        let filtering = makeFiltering(searchText: "meal")
+        let emptyState = HomeTaskListEmptyState(
+            title: "No matching tasks",
+            message: "Try a different timeline search or filters.",
+            systemImage: "magnifyingglass"
+        )
+        let normalPresentation = HomeTaskListPresentation.sidebar(
+            filtering: filtering,
+            routineDisplays: [meal],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            emptyState: emptyState
+        )
+
+        #expect(normalPresentation.sections.isEmpty)
+        #expect(normalPresentation.emptyState == emptyState)
+
+        let searchPresentation = normalPresentation.addingSearchFallbackResults(
+            from: [meal],
+            filtering: filtering
+        )
+
+        #expect(searchPresentation.emptyState == nil)
+        #expect(searchPresentation.sections.map(\.title) == ["Search Results"])
+        #expect(searchPresentation.sections.flatMap(\.tasks).map(\.taskID) == [mealID])
+        #expect(searchPresentation.sections.first?.includeMarkDone == false)
+    }
+
+    @Test
     func filteredPlannedTodayTasksMatchesReferenceDate() {
         let referenceDate = Date(timeIntervalSince1970: 1_714_608_000)
         let tasks = [

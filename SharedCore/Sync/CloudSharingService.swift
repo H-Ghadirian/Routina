@@ -279,7 +279,12 @@ extension CloudSharingService.SharedTaskPayload {
         self.links = task.links.isEmpty ? nil : task.links
         self.linkItems = task.linkItems.isEmpty ? nil : task.linkItems
         self.deadline = task.deadline
-        self.plannedDate = task.plannedDate
+        self.plannedDate = RoutineTask.effectivePlannedDate(
+            plannedDate: task.plannedDate,
+            scheduleMode: task.scheduleMode,
+            availabilityStartDate: task.availabilityStartDate,
+            availabilityEndDate: task.availabilityEndDate
+        )
         self.isAllDay = task.isAllDay
         self.routineDurationMode = task.routineDurationMode
         self.availabilityStartDate = task.availabilityStartDate
@@ -347,14 +352,19 @@ extension CloudSharingService.SharedTaskPayload {
             ?? links?.map { RoutineTaskLink(title: nil, url: $0) }
             ?? link.map { [RoutineTaskLink(title: nil, url: $0)] }
             ?? []
-        task.deadline = scheduleMode == .oneOff ? deadline : nil
-        task.plannedDate = RoutineTask.normalizedPlannedDate(plannedDate)
-        task.isAllDay = isAllDay ?? false
-        task.routineDurationMode = scheduleMode.taskType == .todo ? .oneDay : (routineDurationMode ?? .oneDay)
         let availabilityDateBounds = RoutineTask.normalizedAvailabilityDateBounds(
             startDate: availabilityStartDate,
             endDate: availabilityEndDate
         )
+        task.deadline = scheduleMode == .oneOff ? deadline : nil
+        task.plannedDate = RoutineTask.effectivePlannedDate(
+            plannedDate: plannedDate,
+            scheduleMode: scheduleMode,
+            availabilityStartDate: availabilityDateBounds.startDate,
+            availabilityEndDate: availabilityDateBounds.endDate
+        )
+        task.isAllDay = isAllDay ?? false
+        task.routineDurationMode = scheduleMode.taskType == .todo ? .oneDay : (routineDurationMode ?? .oneDay)
         task.availabilityStartDate = scheduleMode == .oneOff ? availabilityDateBounds.startDate : nil
         task.availabilityEndDate = scheduleMode == .oneOff ? availabilityDateBounds.endDate : nil
         task.reminderAt = scheduleMode.taskType == .record ? nil : reminderAt

@@ -3,12 +3,74 @@ import ComposableArchitecture
 import SwiftUI
 
 private enum MacTaskSourceListScrollAnchor: Hashable {
+    case top
     case section(String)
+}
+
+private enum MacTaskSourceListScrollContainerIdentity: Hashable {
+    case normal(Int)
+    case searchReveal
 }
 
 private struct MacTaskSourceListTaskLocation {
     let section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     let groups: [HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>]
+}
+
+private struct MacTaskSourceListScrollResetView: NSViewRepresentable {
+    let requestID: Int
+
+    final class Coordinator {
+        var handledRequestID = 0
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    func makeNSView(context: Context) -> NSView {
+        NSView(frame: .zero)
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        guard requestID > 0, context.coordinator.handledRequestID != requestID else { return }
+        context.coordinator.handledRequestID = requestID
+
+        resetScrollPosition(from: nsView)
+        DispatchQueue.main.async {
+            resetScrollPosition(from: nsView)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                resetScrollPosition(from: nsView)
+            }
+        }
+    }
+
+    private func resetScrollPosition(from nsView: NSView) {
+        guard let scrollView = nsView.enclosingTaskSourceScrollView else { return }
+
+        scrollView.layoutSubtreeIfNeeded()
+        scrollView.documentView?.layoutSubtreeIfNeeded()
+
+        let clipView = scrollView.contentView
+        let documentView = scrollView.documentView
+        let targetY: CGFloat
+        if documentView?.isFlipped == false {
+            targetY = max(0, (documentView?.bounds.height ?? 0) - clipView.bounds.height)
+        } else {
+            targetY = 0
+        }
+
+        clipView.scroll(to: NSPoint(x: clipView.bounds.origin.x, y: targetY))
+        scrollView.reflectScrolledClipView(clipView)
+    }
+}
+
+private extension NSView {
+    var enclosingTaskSourceScrollView: NSScrollView? {
+        sequence(first: superview, next: { $0?.superview })
+            .compactMap { $0 as? NSScrollView }
+            .first
+    }
 }
 
 extension HomeTCAView {
@@ -267,6 +329,10 @@ extension HomeTCAView {
         return ScrollViewReader { scrollProxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0, pinnedViews: []) {
+                    Color.clear
+                        .frame(height: 1)
+                        .id(MacTaskSourceListScrollAnchor.top)
+
                     ForEach(presentation.sections) { section in
                         taskListSectionView(
                             for: section,
@@ -283,7 +349,13 @@ extension HomeTCAView {
                 }
                 .padding(.horizontal, 10)
                 .padding(.bottom, 10)
+                .background(
+                    MacTaskSourceListScrollResetView(
+                        requestID: macSearchSidebarRestoreScrollRequestID
+                    )
+                )
             }
+            .id(macTaskSourceListScrollContainerIdentity)
             .onAppear {
                 handleMacTaskSourceScrollEvent(
                     .listAppeared,
@@ -311,6 +383,9 @@ extension HomeTCAView {
                     with: scrollProxy,
                     visibleTaskIDs: visibleTaskIDs
                 )
+            }
+            .onChange(of: macSearchSidebarRestoreScrollRequestID) { _, _ in
+                restoreMacTaskSourceListTopPosition(with: scrollProxy)
             }
             .focusable()
             .focused($isMacTaskSourceListFocused)
@@ -361,7 +436,7 @@ extension HomeTCAView {
                         )
                         .padding(.horizontal, 10)
                         .padding(.bottom, 10)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
+                        .transition(taskListSearchRestoreTransition)
                     }
                 }
                 .routinaGlassCard(
@@ -395,7 +470,7 @@ extension HomeTCAView {
                         )
                         .padding(.horizontal, 8)
                         .padding(.bottom, 8)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
+                        .transition(taskListSearchRestoreTransition)
                     }
                 }
                 .routinaGlassCard(
@@ -536,7 +611,7 @@ extension HomeTCAView {
                             )
                             .padding(.horizontal, 8)
                             .padding(.bottom, 8)
-                            .transition(.opacity.combined(with: .move(edge: .top)))
+                            .transition(taskListSearchRestoreTransition)
                         }
                     }
                     .routinaGlassCard(
@@ -662,7 +737,7 @@ extension HomeTCAView {
                             rowVisibility: rowVisibility,
                             allowsPlannerDrag: allowsPlannerDrag
                         )
-                        .transition(.opacity.combined(with: .move(edge: .top)))
+                        .transition(taskListSearchRestoreTransition)
                     }
                 }
             }
@@ -696,6 +771,18 @@ extension HomeTCAView {
 
     private func taskListTaskRowSpacing() -> CGFloat {
         5
+    }
+
+    private var taskListSearchRestoreTransition: AnyTransition {
+        isMacSearchSidebarRestoreInProgress
+            ? .identity
+            : .opacity.combined(with: .move(edge: .top))
+    }
+
+    private var macTaskSourceListScrollContainerIdentity: MacTaskSourceListScrollContainerIdentity {
+        isMacSearchSidebarRevealActive
+            ? .searchReveal
+            : .normal(macSearchSidebarRestoreScrollRequestID)
     }
 
     private func taskListTaskGroupsRenderIdentity(
@@ -1389,6 +1476,18 @@ extension HomeTCAView {
         }
     }
 
+    func macVisibleTaskSourceListTaskIDs() -> [UUID] {
+        let presentation = macTaskListPresentation(
+            routineDisplays: store.routineDisplays,
+            awayRoutineDisplays: store.awayRoutineDisplays,
+            archivedRoutineDisplays: store.archivedRoutineDisplays
+        )
+        return visibleTaskIDs(
+            in: presentation,
+            collapsedTagIDs: collapsedTagTaskListSectionIDs
+        )
+    }
+
     func revealMacTaskSourceListTask(_ taskID: UUID) -> String? {
         let presentation = macTaskListPresentation(
             routineDisplays: store.routineDisplays,
@@ -1864,6 +1963,26 @@ extension HomeTCAView {
             }
         }
         return true
+    }
+
+    private func restoreMacTaskSourceListTopPosition(with proxy: ScrollViewProxy) {
+        DispatchQueue.main.async {
+            withTransaction(Transaction(animation: nil)) {
+                proxy.scrollTo(MacTaskSourceListScrollAnchor.top, anchor: .top)
+            }
+
+            DispatchQueue.main.async {
+                withTransaction(Transaction(animation: nil)) {
+                    proxy.scrollTo(MacTaskSourceListScrollAnchor.top, anchor: .top)
+                }
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    withTransaction(Transaction(animation: nil)) {
+                        proxy.scrollTo(MacTaskSourceListScrollAnchor.top, anchor: .top)
+                    }
+                }
+            }
+        }
     }
 
     func platformDeleteTasks(

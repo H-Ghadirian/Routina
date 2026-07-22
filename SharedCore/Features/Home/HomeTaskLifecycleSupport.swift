@@ -464,7 +464,13 @@ enum HomeTaskLifecycleSupport {
         guard let index = tasks.firstIndex(where: { $0.id == taskID }) else { return nil }
         guard tasks[index].supportsStoredPlanning else { return nil }
 
-        let normalizedDate = RoutineTask.normalizedPlannedDate(plannedDate, calendar: calendar)
+        let normalizedDate = RoutineTask.effectivePlannedDate(
+            plannedDate: plannedDate,
+            scheduleMode: tasks[index].scheduleMode,
+            availabilityStartDate: tasks[index].availabilityStartDate,
+            availabilityEndDate: tasks[index].availabilityEndDate,
+            calendar: calendar
+        )
         let customTaskSectionID = normalizedDate == nil ? tasks[index].customTaskSectionID : nil
         guard tasks[index].plannedDate != normalizedDate
             || tasks[index].customTaskSectionID != customTaskSectionID else { return nil }

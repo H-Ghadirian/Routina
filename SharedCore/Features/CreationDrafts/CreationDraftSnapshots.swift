@@ -105,7 +105,12 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
         routineNotes = basics.routineNotes
         routineLink = basics.routineLink
         deadline = basics.deadline
-        plannedDate = RoutineTask.normalizedPlannedDate(basics.plannedDate)
+        plannedDate = RoutineTask.effectivePlannedDate(
+            plannedDate: basics.plannedDate,
+            scheduleMode: schedule.scheduleMode,
+            availabilityStartDate: basics.availabilityStartDate,
+            availabilityEndDate: basics.availabilityEndDate
+        )
         isAllDay = basics.isAllDay
         routineDurationMode = basics.routineDurationMode
         availabilityStartDate = basics.availabilityStartDate
@@ -293,6 +298,13 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
         state.checklist.routineChecklistItems = RoutineChecklistItem.sanitized(routineChecklistItems)
         state.checklist.checklistItemDraftTitle = checklistItemDraftTitle
         state.checklist.checklistItemDraftInterval = max(checklistItemDraftInterval, 1)
+        if let exactAvailabilityDate = RoutineTask.exactAvailabilityPlannedDate(
+            scheduleMode: state.schedule.scheduleMode,
+            availabilityStartDate: state.basics.availabilityStartDate,
+            availabilityEndDate: state.basics.availabilityEndDate
+        ) {
+            state.basics.plannedDate = exactAvailabilityDate
+        }
         AddRoutineValidationEditor.refreshNameValidation(state: &state)
     }
 

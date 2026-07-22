@@ -355,6 +355,30 @@ struct HomeTaskLifecycleSupportTests {
     }
 
     @Test
+    func planTaskKeepsExactTodoAvailabilityPlannedOnSameDate() {
+        let calendar = makeTestCalendar()
+        let availabilityDate = makeDate("2026-07-19T11:30:00Z")
+        let expectedDate = makeDate("2026-07-19T00:00:00Z")
+        let task = RoutineTask(
+            name: "Visit pharmacy",
+            availabilityStartDate: availabilityDate,
+            scheduleMode: .oneOff
+        )
+        task.plannedDate = nil
+        var tasks = [task]
+
+        let update = HomeTaskLifecycleSupport.planTask(
+            taskID: task.id,
+            plannedDate: nil,
+            calendar: calendar,
+            tasks: &tasks
+        )
+
+        #expect(update == HomePlanTaskUpdate(taskID: task.id, plannedDate: expectedDate))
+        #expect(tasks[0].plannedDate == expectedDate)
+    }
+
+    @Test
     func planTaskClearsCustomSectionAssignmentWhenDateIsSet() {
         let calendar = makeTestCalendar()
         let customSectionID = UUID()

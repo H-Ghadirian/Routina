@@ -24,7 +24,7 @@ The existing sidebar collapse control remains useful outside search because it l
 
 When the Mac Home toolbar search query first becomes non-empty after trimming whitespace, Home captures the current left-sidebar presentation state: sidebar column visibility, daily routine section collapse state, `Today` daily inner-group collapse state, `Future` collapse state, archived collapse state, and the stored tag/custom/deadline subsection collapse IDs.
 
-While that search session is active, Home temporarily reveals the left sidebar column and treats all task-list super sections and nested task-list groups as expanded so matching rows are visible without extra clicks. Clearing the search query restores the captured sidebar column visibility and task-list collapse state from the start of the search session.
+While that search session is active, Home temporarily reveals the left sidebar column and treats all task-list super sections and nested task-list groups as expanded so matching rows are visible without extra clicks. Clearing the search query restores the captured sidebar column visibility and task-list collapse state from the start of the search session, then rebuilds and resets the task-list scroll container to the top of the restored outline so a selected filtered result cannot keep the sidebar anchored to stale or hidden content. Home also suppresses collapse transitions during that restore so the expanded search layout cannot leave stretched section surfaces behind.
 
 The temporary expansion is presentation state for search. It does not rewrite the user's saved collapse preferences as the mechanism for showing results, and it does not remove the explicit sidebar toggle from normal Home use.
 

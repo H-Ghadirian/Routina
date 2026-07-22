@@ -124,10 +124,16 @@ struct AddRoutineFeature: Reducer {
         )
     }
 
-    private func clearPlanningIfDailyRoutine(state: inout State) {
+    private func enforcePlanningRules(state: inout State) {
         if !supportsPlanning(state) {
             state.basics.plannedDate = nil
+            return
         }
+        guard state.schedule.scheduleMode == .oneOff,
+              let availabilityStartDate = state.basics.availabilityStartDate,
+              state.basics.availabilityEndDate == nil
+        else { return }
+        state.basics.plannedDate = calendar.startOfDay(for: availabilityStartDate)
     }
 
     private func enforceRecurrenceConstraints(state: inout State) {
@@ -214,7 +220,7 @@ struct AddRoutineFeature: Reducer {
                 basics: &state.basics
             )
             enforceRecurrenceConstraints(state: &state)
-            clearPlanningIfDailyRoutine(state: &state)
+            enforcePlanningRules(state: &state)
             return .none
 
         case let .availabilityStartDateChanged(availabilityStartDate):
@@ -223,6 +229,7 @@ struct AddRoutineFeature: Reducer {
                 calendar: calendar,
                 basics: &state.basics
             )
+            enforcePlanningRules(state: &state)
             return .none
 
         case let .availabilityEndDateChanged(availabilityEndDate):
@@ -231,15 +238,22 @@ struct AddRoutineFeature: Reducer {
                 calendar: calendar,
                 basics: &state.basics
             )
+            enforcePlanningRules(state: &state)
             return .none
 
         case let .plannedDateChanged(plannedDate):
             if supportsPlanning(state) {
-                AddRoutineBasicsEditor.setPlannedDate(
-                    plannedDate,
-                    calendar: calendar,
-                    basics: &state.basics
-                )
+                if state.schedule.scheduleMode == .oneOff,
+                   let availabilityStartDate = state.basics.availabilityStartDate,
+                   state.basics.availabilityEndDate == nil {
+                    state.basics.plannedDate = calendar.startOfDay(for: availabilityStartDate)
+                } else {
+                    AddRoutineBasicsEditor.setPlannedDate(
+                        plannedDate,
+                        calendar: calendar,
+                        basics: &state.basics
+                    )
+                }
             } else {
                 state.basics.plannedDate = nil
             }
@@ -413,7 +427,7 @@ struct AddRoutineFeature: Reducer {
             if state.checklist.checklistValidationMessage != nil {
                 AddRoutineValidationEditor.refreshChecklistValidation(state: &state)
             }
-            clearPlanningIfDailyRoutine(state: &state)
+            enforcePlanningRules(state: &state)
             return .none
 
         case let .stepDraftChanged(value):
@@ -455,7 +469,7 @@ struct AddRoutineFeature: Reducer {
             if state.checklist.checklistValidationMessage != nil {
                 AddRoutineValidationEditor.refreshChecklistValidation(state: &state)
             }
-            clearPlanningIfDailyRoutine(state: &state)
+            enforcePlanningRules(state: &state)
             return .none
 
         case let .checklistItemDraftIntervalChanged(value):
@@ -466,13 +480,13 @@ struct AddRoutineFeature: Reducer {
             if state.checklist.checklistValidationMessage != nil {
                 AddRoutineValidationEditor.refreshChecklistValidation(state: &state)
             }
-            clearPlanningIfDailyRoutine(state: &state)
+            enforcePlanningRules(state: &state)
             return .none
 
         case .addChecklistItemTapped:
             scheduleMutationHandler().addChecklistItem(state: &state)
             AddRoutineValidationEditor.refreshChecklistValidation(state: &state)
-            clearPlanningIfDailyRoutine(state: &state)
+            enforcePlanningRules(state: &state)
             return .none
 
         case let .removeChecklistItem(itemID):
@@ -480,32 +494,32 @@ struct AddRoutineFeature: Reducer {
             if state.checklist.checklistValidationMessage != nil {
                 AddRoutineValidationEditor.refreshChecklistValidation(state: &state)
             }
-            clearPlanningIfDailyRoutine(state: &state)
+            enforcePlanningRules(state: &state)
             return .none
 
         case let .frequencyChanged(freq):
             scheduleMutationHandler().setFrequency(freq, state: &state)
-            clearPlanningIfDailyRoutine(state: &state)
+            enforcePlanningRules(state: &state)
             return .none
 
         case let .frequencyValueChanged(value):
             scheduleMutationHandler().setFrequencyValue(value, state: &state)
-            clearPlanningIfDailyRoutine(state: &state)
+            enforcePlanningRules(state: &state)
             return .none
 
         case let .recurrenceEditorModeChanged(mode):
             scheduleMutationHandler().setRecurrenceEditorMode(mode, state: &state)
-            clearPlanningIfDailyRoutine(state: &state)
+            enforcePlanningRules(state: &state)
             return .none
 
         case let .advancedRecurrenceRuleChanged(rule):
             scheduleMutationHandler().setAdvancedRecurrenceRule(rule, state: &state)
-            clearPlanningIfDailyRoutine(state: &state)
+            enforcePlanningRules(state: &state)
             return .none
 
         case let .recurrenceKindChanged(kind):
             scheduleMutationHandler().setRecurrenceKind(kind, state: &state)
-            clearPlanningIfDailyRoutine(state: &state)
+            enforcePlanningRules(state: &state)
             return .none
 
         case let .recurrenceHasExplicitTimeChanged(hasExplicitTime):
@@ -538,7 +552,7 @@ struct AddRoutineFeature: Reducer {
 
         case let .recurrenceWeekdaysChanged(weekdays):
             scheduleMutationHandler().setRecurrenceWeekdays(weekdays, state: &state)
-            clearPlanningIfDailyRoutine(state: &state)
+            enforcePlanningRules(state: &state)
             return .none
 
         case let .recurrenceDayOfMonthChanged(dayOfMonth):
@@ -547,7 +561,7 @@ struct AddRoutineFeature: Reducer {
 
         case let .recurrenceDaysOfMonthChanged(daysOfMonth):
             scheduleMutationHandler().setRecurrenceDaysOfMonth(daysOfMonth, state: &state)
-            clearPlanningIfDailyRoutine(state: &state)
+            enforcePlanningRules(state: &state)
             return .none
 
         case let .autoAssumeDailyDoneChanged(isEnabled):

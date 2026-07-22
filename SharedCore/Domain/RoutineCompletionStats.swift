@@ -595,6 +595,7 @@ enum HourlyActivityStats {
         tasks: [RoutineTask],
         logs: [RoutineLog],
         focusSessions: [FocusSession],
+        sprintFocusSessions: [SprintFocusSessionRecord] = [],
         selectedRange: DoneChartRange,
         earliestActivityDate: Date? = nil,
         referenceDate: Date = .now,
@@ -608,11 +609,34 @@ enum HourlyActivityStats {
         )
 
         var focusSecondsByHour: [Int: TimeInterval] = [:]
-        for session in focusSessions where session.state == .completed {
-            allocateFocusSession(
-                session,
-                into: &focusSecondsByHour,
+        for session in focusSessions {
+            guard let contribution = focusContribution(
+                for: session,
                 range: range,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) else { continue }
+            allocateFocusInterval(
+                from: contribution.startedAt,
+                to: contribution.endedAt,
+                totalSeconds: contribution.seconds,
+                into: &focusSecondsByHour,
+                calendar: calendar
+            )
+        }
+
+        for session in sprintFocusSessions {
+            guard let contribution = sprintFocusContribution(
+                for: session,
+                range: range,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) else { continue }
+            allocateFocusInterval(
+                from: contribution.startedAt,
+                to: contribution.endedAt,
+                totalSeconds: contribution.seconds,
+                into: &focusSecondsByHour,
                 calendar: calendar
             )
         }
@@ -681,31 +705,101 @@ enum HourlyActivityStats {
         return (defaultStart, end)
     }
 
-    private static func allocateFocusSession(
-        _ session: FocusSession,
+    private static func allocateFocusInterval(
+        from startedAt: Date,
+        to endedAt: Date,
+        totalSeconds: TimeInterval,
         into focusSecondsByHour: inout [Int: TimeInterval],
-        range: (start: Date, end: Date),
         calendar: Calendar
     ) {
-        guard let startedAt = session.startedAt,
-              let completedAt = session.completedAt,
-              completedAt > startedAt else {
-            return
-        }
+        let wallClockSeconds = endedAt.timeIntervalSince(startedAt)
+        guard wallClockSeconds > 0, totalSeconds > 0 else { return }
+        let activeRatio = min(1, totalSeconds / wallClockSeconds)
+        var cursor = startedAt
+        var allocatedSeconds: TimeInterval = 0
 
-        var cursor = max(startedAt, range.start)
-        let clampedEnd = min(completedAt, range.end)
-        guard clampedEnd > cursor else { return }
-
-        while cursor < clampedEnd {
+        while cursor < endedAt {
             let hour = calendar.component(.hour, from: cursor)
-            let hourEnd = calendar.dateInterval(of: .hour, for: cursor)?.end ?? clampedEnd
-            let segmentEnd = min(hourEnd, clampedEnd)
+            let hourEnd = calendar.dateInterval(of: .hour, for: cursor)?.end ?? endedAt
+            let segmentEnd = min(hourEnd, endedAt)
             guard segmentEnd > cursor else { break }
 
-            focusSecondsByHour[hour, default: 0] += segmentEnd.timeIntervalSince(cursor)
+            let segmentSeconds = segmentEnd.timeIntervalSince(cursor) * activeRatio
+            focusSecondsByHour[hour, default: 0] += segmentSeconds
+            allocatedSeconds += segmentSeconds
             cursor = segmentEnd
         }
+
+        // Keep the hourly sum identical to the canonical active-duration total despite
+        // floating-point rounding while distributing a session across hour boundaries.
+        if allocatedSeconds > 0 {
+            let finalHour = calendar.component(.hour, from: endedAt.addingTimeInterval(-0.001))
+            focusSecondsByHour[finalHour, default: 0] += totalSeconds - allocatedSeconds
+        }
+    }
+
+    private static func focusContribution(
+        for session: FocusSession,
+        range: (start: Date, end: Date),
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> (startedAt: Date, endedAt: Date, seconds: TimeInterval)? {
+        guard let startedAt = session.startedAt else { return nil }
+
+        switch session.state {
+        case .completed:
+            guard let completedAt = session.completedAt,
+                  completedAt > startedAt,
+                  completedAt >= range.start,
+                  completedAt < range.end else { return nil }
+            return (startedAt, completedAt, session.actualDurationSeconds)
+
+        case .active:
+            let dayStart = calendar.startOfDay(for: referenceDate)
+            guard dayStart >= range.start, dayStart < range.end else { return nil }
+            let intervalStart = max(startedAt, dayStart)
+            let intervalEnd = min(session.pausedAt ?? referenceDate, referenceDate)
+            let wallClockSeconds = max(0, intervalEnd.timeIntervalSince(intervalStart))
+            let activeSeconds = min(
+                max(0, session.activeDurationSeconds(at: referenceDate)),
+                wallClockSeconds
+            )
+            guard intervalEnd > intervalStart, activeSeconds > 0 else { return nil }
+            return (intervalStart, intervalEnd, activeSeconds)
+
+        case .abandoned:
+            return nil
+        }
+    }
+
+    private static func sprintFocusContribution(
+        for session: SprintFocusSessionRecord,
+        range: (start: Date, end: Date),
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> (startedAt: Date, endedAt: Date, seconds: TimeInterval)? {
+        if let stoppedAt = session.stoppedAt {
+            guard stoppedAt > session.startedAt,
+                  stoppedAt >= range.start,
+                  stoppedAt < range.end else { return nil }
+            return (
+                session.startedAt,
+                stoppedAt,
+                session.activeDurationSeconds(at: referenceDate)
+            )
+        }
+
+        let dayStart = calendar.startOfDay(for: referenceDate)
+        guard dayStart >= range.start, dayStart < range.end else { return nil }
+        let intervalStart = max(session.startedAt, dayStart)
+        let intervalEnd = min(session.pausedAt ?? referenceDate, referenceDate)
+        let wallClockSeconds = max(0, intervalEnd.timeIntervalSince(intervalStart))
+        let activeSeconds = min(
+            max(0, session.activeDurationSeconds(at: referenceDate)),
+            wallClockSeconds
+        )
+        guard intervalEnd > intervalStart, activeSeconds > 0 else { return nil }
+        return (intervalStart, intervalEnd, activeSeconds)
     }
 }
 

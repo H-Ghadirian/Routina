@@ -148,7 +148,13 @@ struct TaskDetailEditSaveRequestBuilder {
                     checklistItems: sanitizedChecklistItems,
                     trackingCadenceEnabled: trackingCadenceEnabled
                 )
-                ? RoutineTask.normalizedPlannedDate(state.editPlannedDate, calendar: calendar)
+                ? RoutineTask.effectivePlannedDate(
+                    plannedDate: state.editPlannedDate,
+                    scheduleMode: scheduleMode,
+                    availabilityStartDate: availabilityDateBounds.startDate,
+                    availabilityEndDate: availabilityDateBounds.endDate,
+                    calendar: calendar
+                )
                 : nil,
             reminderAt: scheduleMode.taskType == .todo ? state.editReminderAt : nil,
             priority: matrixPriority(state.editImportance, state.editUrgency),
@@ -339,7 +345,13 @@ extension TaskDetailFeature {
         updatedTask.availabilityEndDate = request.scheduleMode.taskType == .todo
             ? request.availabilityEndDate
             : nil
-        updatedTask.plannedDate = RoutineTask.normalizedPlannedDate(request.plannedDate, calendar: calendar)
+        updatedTask.plannedDate = RoutineTask.effectivePlannedDate(
+            plannedDate: request.plannedDate,
+            scheduleMode: request.scheduleMode,
+            availabilityStartDate: request.availabilityStartDate,
+            availabilityEndDate: request.availabilityEndDate,
+            calendar: calendar
+        )
         updatedTask.recurrenceRule = request.recurrenceRule
         updatedTask.recurrenceTimeRangeRole = request.recurrenceRule.timeRange == nil
             ? .availability

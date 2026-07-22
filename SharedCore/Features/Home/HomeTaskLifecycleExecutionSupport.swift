@@ -434,14 +434,20 @@ enum HomeTaskLifecycleExecutionSupport {
                 guard let task = try context.fetch(HomeTaskSupport.taskDescriptor(for: update.taskID)).first else {
                     return
                 }
-                task.plannedDate = update.plannedDate
+                let effectivePlannedDate = RoutineTask.effectivePlannedDate(
+                    plannedDate: update.plannedDate,
+                    scheduleMode: task.scheduleMode,
+                    availabilityStartDate: task.availabilityStartDate,
+                    availabilityEndDate: task.availabilityEndDate
+                )
+                task.plannedDate = effectivePlannedDate
                 task.customTaskSectionID = update.customTaskSectionID
                 DeviceActivityRecorder.recordAction(
                     .updated,
                     entity: .task,
                     entityID: update.taskID,
                     entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
-                    details: update.plannedDate == nil ? "Cleared task plan" : "Planned task",
+                    details: effectivePlannedDate == nil ? "Cleared task plan" : "Planned task",
                     in: context
                 )
                 try context.save()

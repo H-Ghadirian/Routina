@@ -173,6 +173,27 @@ struct HomeRoutineDisplayFactoryTests {
     }
 
     @Test
+    func oneOffExactAvailabilityUsesSameDayAsHomePlannedDate() {
+        let referenceDate = makeDate("2026-07-18T10:00:00Z")
+        let availabilityDate = makeDate("2026-07-19T11:30:00Z")
+        let task = RoutineTask(
+            name: "Visit pharmacy",
+            availabilityStartDate: availabilityDate,
+            scheduleMode: .oneOff
+        )
+        task.plannedDate = nil
+
+        let display = makeDisplay(
+            task: task,
+            now: referenceDate,
+            places: [],
+            coordinate: LocationCoordinate(latitude: 52.5200, longitude: 13.4050)
+        )
+
+        #expect(display.plannedDate == makeDate("2026-07-19T00:00:00Z"))
+    }
+
+    @Test
     func canceledWeeklyTimeWindowOccurrenceMarksDisplayCanceledToday() {
         let now = makeDate("2026-06-22T10:00:00Z")
         let window = RoutineTimeRange(

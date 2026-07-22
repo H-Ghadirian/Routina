@@ -40,7 +40,7 @@ struct AddRoutineFeatureSaveTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
 
         #expect(capturedVoiceNote.value == voiceNote)
     }
@@ -96,7 +96,7 @@ struct AddRoutineFeatureSaveTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
 
         #expect(capturedEventIDs.value == [eventID])
     }
@@ -154,7 +154,7 @@ struct AddRoutineFeatureSaveTests {
         await store.send(.deadlineDateChanged(deadline)) {
             $0.basics.deadline = calendar.startOfDay(for: deadline)
         }
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
 
         #expect(capturedRequest.value?.deadline == calendar.startOfDay(for: deadline))
         #expect(capturedRequest.value?.isAllDay == true)
@@ -189,7 +189,7 @@ struct AddRoutineFeatureSaveTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
 
         #expect(capturedRequest.value?.plannedDate == nil)
         #expect(capturedRequest.value?.recurrenceRule.isDaily == true)
@@ -224,7 +224,7 @@ struct AddRoutineFeatureSaveTests {
             setTestDateDependencies(&$0, calendar: calendar)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
 
         #expect(capturedRequest.value?.plannedDate == calendar.startOfDay(for: plannedDate))
         #expect(capturedRequest.value?.scheduleMode == .derivedFromChecklist)
@@ -259,7 +259,7 @@ struct AddRoutineFeatureSaveTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
 
         #expect(capturedRequest.value?.plannedDate == nil)
         #expect(capturedRequest.value?.scheduleMode == .derivedFromChecklist)
@@ -296,7 +296,7 @@ struct AddRoutineFeatureSaveTests {
             setTestDateDependencies(&$0, calendar: calendar)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
 
         #expect(capturedRequest.value?.plannedDate == calendar.startOfDay(for: plannedDate))
         #expect(capturedRequest.value?.scheduleMode == .recordDerivedFromChecklist)
@@ -329,7 +329,7 @@ struct AddRoutineFeatureSaveTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
 
         #expect(capturedRequest.value?.scheduleMode == .oneOff)
         #expect(capturedRequest.value?.deadline == nil)
@@ -361,7 +361,7 @@ struct AddRoutineFeatureSaveTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
 
         #expect(capturedRequest.value?.scheduleMode == .fixedInterval)
         #expect(capturedRequest.value?.deadline == nil)
@@ -394,7 +394,7 @@ struct AddRoutineFeatureSaveTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
 
         #expect(capturedRequest.value?.scheduleMode == .oneOff)
         #expect(capturedRequest.value?.isAllDay == true)
@@ -426,7 +426,7 @@ struct AddRoutineFeatureSaveTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
 
         #expect(capturedRequest.value?.scheduleMode == .fixedInterval)
         #expect(capturedRequest.value?.reminderAt == nil)
@@ -569,6 +569,7 @@ struct AddRoutineFeatureSaveTests {
         }
 
         await store.send(.saveTapped) {
+            $0.isSaving = true
             $0.checklist.routineSteps = capturedSteps.value
             $0.checklist.stepDraft = ""
         }
@@ -604,6 +605,7 @@ struct AddRoutineFeatureSaveTests {
 
         _ = await store.withExhaustivity(.off) {
             await store.send(.saveTapped) {
+            $0.isSaving = true
                 $0.checklist.checklistItemDraftTitle = ""
             }
         }
@@ -639,6 +641,7 @@ struct AddRoutineFeatureSaveTests {
 
         _ = await store.withExhaustivity(.off) {
             await store.send(.saveTapped) {
+            $0.isSaving = true
                 $0.checklist.checklistItemDraftTitle = ""
             }
         }
@@ -702,6 +705,7 @@ struct AddRoutineFeatureSaveTests {
 
         _ = await store.withExhaustivity(.off) {
             await store.send(.saveTapped) {
+            $0.isSaving = true
                 $0.checklist.checklistItemDraftTitle = ""
                 $0.checklist.checklistItemDraftInterval = 1
             }
@@ -747,6 +751,7 @@ struct AddRoutineFeatureSaveTests {
 
         _ = await store.withExhaustivity(.off) {
             await store.send(.saveTapped) {
+            $0.isSaving = true
                 $0.checklist.checklistItemDraftTitle = ""
                 $0.checklist.checklistItemDraftInterval = 3
             }
@@ -793,6 +798,7 @@ struct AddRoutineFeatureSaveTests {
 
         _ = await store.withExhaustivity(.off) {
             await store.send(.saveTapped) {
+            $0.isSaving = true
                 $0.checklist.routineChecklistItems[0].intervalDays = 1
                 $0.checklist.checklistItemDraftTitle = ""
                 $0.checklist.checklistItemDraftInterval = 1
@@ -831,7 +837,7 @@ struct AddRoutineFeatureSaveTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
 
         #expect(capturedRecurrenceRules.value == [.daily(at: RoutineTimeOfDay(hour: 21, minute: 15))])
     }
@@ -868,7 +874,7 @@ struct AddRoutineFeatureSaveTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
 
         #expect(capturedRecurrenceRules.value == [.daily(in: timeRange)])
     }
@@ -932,8 +938,8 @@ struct AddRoutineFeatureSaveTests {
             setTestDateDependencies(&$0)
         }
 
-        await exactStore.send(.saveTapped)
-        await rangeStore.send(.saveTapped)
+        await exactStore.send(.saveTapped) { $0.isSaving = true }
+        await rangeStore.send(.saveTapped) { $0.isSaving = true }
 
         #expect(capturedRecurrenceRules.value == [
             .interval(days: 7, at: exactTime),
@@ -970,7 +976,7 @@ struct AddRoutineFeatureSaveTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
 
         #expect(capturedRequest.value?.frequencyInDays == 2)
         #expect(capturedRequest.value?.recurrenceRule == .interval(days: 2))
@@ -1013,7 +1019,7 @@ struct AddRoutineFeatureSaveTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
 
         #expect(capturedRecurrenceRules.value == [.interval(days: 7)])
         #expect(capturedAllDayFlags.value == [true])
@@ -1066,8 +1072,8 @@ struct AddRoutineFeatureSaveTests {
             setTestDateDependencies(&$0)
         }
 
-        await weeklyStore.send(.saveTapped)
-        await monthlyStore.send(.saveTapped)
+        await weeklyStore.send(.saveTapped) { $0.isSaving = true }
+        await monthlyStore.send(.saveTapped) { $0.isSaving = true }
 
         #expect(capturedRecurrenceRules.value == [.weekly(on: 6), .monthly(on: 21)])
     }
@@ -1121,8 +1127,8 @@ struct AddRoutineFeatureSaveTests {
             setTestDateDependencies(&$0)
         }
 
-        await weeklyStore.send(.saveTapped)
-        await monthlyStore.send(.saveTapped)
+        await weeklyStore.send(.saveTapped) { $0.isSaving = true }
+        await monthlyStore.send(.saveTapped) { $0.isSaving = true }
 
         #expect(capturedRecurrenceRules.value == [.weekly(on: [2, 4, 6]), .monthly(on: [1, 15, 31])])
     }
@@ -1180,8 +1186,8 @@ struct AddRoutineFeatureSaveTests {
             setTestDateDependencies(&$0)
         }
 
-        await weeklyStore.send(.saveTapped)
-        await monthlyStore.send(.saveTapped)
+        await weeklyStore.send(.saveTapped) { $0.isSaving = true }
+        await monthlyStore.send(.saveTapped) { $0.isSaving = true }
 
         #expect(
             capturedRecurrenceRules.value == [
@@ -1220,7 +1226,7 @@ struct AddRoutineFeatureSaveTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
 
         #expect(capturedNotes.value == "get lactose free")
         #expect(capturedDeadline.value == deadline)
@@ -1252,7 +1258,7 @@ struct AddRoutineFeatureSaveTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
 
         #expect(capturedLink.value == "https://example.com/berlin")
         #expect(capturedLinks.value == ["https://example.com/berlin", "https://example.com/hotel"])

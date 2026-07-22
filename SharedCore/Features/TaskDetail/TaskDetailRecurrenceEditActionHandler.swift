@@ -49,7 +49,7 @@ struct TaskDetailRecurrenceEditActionHandler {
     ) -> Effect<Action> {
         state.editRoutineDurationMode = state.editScheduleMode.taskType == .todo ? .oneDay : durationMode
         enforceRecurrenceConstraints(state: &state)
-        clearPlanningIfDailyRoutine(state: &state)
+        enforcePlanningRules(state: &state)
         return .none
     }
 
@@ -61,6 +61,7 @@ struct TaskDetailRecurrenceEditActionHandler {
         )
         state.editAvailabilityStartDate = bounds.startDate
         state.editAvailabilityEndDate = bounds.endDate
+        enforcePlanningRules(state: &state)
         return .none
     }
 
@@ -72,13 +73,21 @@ struct TaskDetailRecurrenceEditActionHandler {
         )
         state.editAvailabilityStartDate = bounds.startDate
         state.editAvailabilityEndDate = bounds.endDate
+        enforcePlanningRules(state: &state)
         return .none
     }
 
     func editPlannedDateChanged(_ plannedDate: Date?, state: inout State) -> Effect<Action> {
-        state.editPlannedDate = supportsPlanning(state)
-            ? RoutineTask.normalizedPlannedDate(plannedDate, calendar: calendar)
-            : nil
+        guard supportsPlanning(state) else {
+            state.editPlannedDate = nil
+            return .none
+        }
+        state.editPlannedDate = RoutineTask.exactAvailabilityPlannedDate(
+            scheduleMode: state.editScheduleMode,
+            availabilityStartDate: state.editAvailabilityStartDate,
+            availabilityEndDate: state.editAvailabilityEndDate,
+            calendar: calendar
+        ) ?? RoutineTask.normalizedPlannedDate(plannedDate, calendar: calendar)
         return .none
     }
 
@@ -133,7 +142,7 @@ struct TaskDetailRecurrenceEditActionHandler {
             )
         }
         disableAutoAssumeIfNeeded(state: &state)
-        clearPlanningIfDailyRoutine(state: &state)
+        enforcePlanningRules(state: &state)
         return .none
     }
 
@@ -143,7 +152,7 @@ struct TaskDetailRecurrenceEditActionHandler {
             enforceRecurrenceConstraints(state: &state)
         }
         disableAutoAssumeIfNeeded(state: &state)
-        clearPlanningIfDailyRoutine(state: &state)
+        enforcePlanningRules(state: &state)
         return .none
     }
 
@@ -153,7 +162,7 @@ struct TaskDetailRecurrenceEditActionHandler {
             enforceRecurrenceConstraints(state: &state)
         }
         disableAutoAssumeIfNeeded(state: &state)
-        clearPlanningIfDailyRoutine(state: &state)
+        enforcePlanningRules(state: &state)
         return .none
     }
 
@@ -167,7 +176,7 @@ struct TaskDetailRecurrenceEditActionHandler {
             state.editAutoAssumeDailyDone = false
         }
         disableAutoAssumeIfNeeded(state: &state)
-        clearPlanningIfDailyRoutine(state: &state)
+        enforcePlanningRules(state: &state)
         return .none
     }
 
@@ -177,7 +186,7 @@ struct TaskDetailRecurrenceEditActionHandler {
     ) -> Effect<Action> {
         state.editAdvancedRecurrenceRule = rule.normalized(calendar: calendar)
         disableAutoAssumeIfNeeded(state: &state)
-        clearPlanningIfDailyRoutine(state: &state)
+        enforcePlanningRules(state: &state)
         return .none
     }
 
@@ -190,7 +199,7 @@ struct TaskDetailRecurrenceEditActionHandler {
             enforceRecurrenceConstraints(state: &state)
         }
         disableAutoAssumeIfNeeded(state: &state)
-        clearPlanningIfDailyRoutine(state: &state)
+        enforcePlanningRules(state: &state)
         return .none
     }
 
@@ -338,10 +347,16 @@ struct TaskDetailRecurrenceEditActionHandler {
         )
     }
 
-    private func clearPlanningIfDailyRoutine(state: inout State) {
+    private func enforcePlanningRules(state: inout State) {
         if !supportsPlanning(state) {
             state.editPlannedDate = nil
+            return
         }
+        guard state.editScheduleMode == .oneOff,
+              let availabilityStartDate = state.editAvailabilityStartDate,
+              state.editAvailabilityEndDate == nil
+        else { return }
+        state.editPlannedDate = calendar.startOfDay(for: availabilityStartDate)
     }
 
     private func candidateChecklistItems(for state: State) -> [RoutineChecklistItem] {

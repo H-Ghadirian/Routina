@@ -24,6 +24,25 @@ struct HomeTaskListPredicate<Display: HomeTaskListDisplay> {
             && matchesExcludedTags(task)
     }
 
+    func matchesSearchFallbackTask(_ task: Display) -> Bool {
+        matchesCurrentTaskListMode(task)
+            && matchesSearch(task)
+            && matchesAdvancedQuery(task)
+            && matchesFilter(task)
+            && matchesTaskListViewMode(task)
+            && matchesManualPlaceFilter(task)
+            && matchesTodoStateFilter(task)
+            && matchesPressureFilter(task)
+            && matchesGoalFilter(task)
+            && matchesMediaFilter(task)
+            && matchesEstimationFilter(task)
+            && matchesAssumedDoneFilter(task)
+            && matchesCreatedDateFilter(task)
+            && matchesImportanceUrgencyFilter(task)
+            && matchesSelectedTags(task)
+            && matchesExcludedTags(task)
+    }
+
     func matchesArchivedTask(_ task: Display, includePinned: Bool) -> Bool {
         matchesCurrentTaskListMode(task)
             && !task.isCompletedOneOff

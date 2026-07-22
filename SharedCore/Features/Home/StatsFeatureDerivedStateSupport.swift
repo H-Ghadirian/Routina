@@ -337,6 +337,7 @@ enum StatsFeatureDerivedStateBuilder {
             tasks: filteredTasks,
             logs: filteredLogs,
             focusSessions: filteredFocusSessions,
+            sprintFocusSessions: sprintFocusSessions,
             selectedRange: selectedRange,
             earliestActivityDate: earliestActivityDate,
             referenceDate: referenceDate,

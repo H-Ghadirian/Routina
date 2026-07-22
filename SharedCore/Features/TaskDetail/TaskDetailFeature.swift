@@ -467,7 +467,7 @@ struct TaskDetailFeature: Reducer {
     }
 
     private func stepChecklistEditActionHandler() -> TaskDetailStepChecklistEditActionHandler {
-        TaskDetailStepChecklistEditActionHandler(now: { now })
+        TaskDetailStepChecklistEditActionHandler(now: { now }, calendar: { calendar })
     }
 
     private func editContextActionHandler() -> TaskDetailEditContextActionHandler {

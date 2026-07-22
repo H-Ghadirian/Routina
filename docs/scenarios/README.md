@@ -130,6 +130,21 @@ And the toolbar shows a visible Return-to-create hint for that no-result query
 And when that no-result query leaves the task-list sidebar empty, the sidebar uses the Planner Timeline no-results subtext and shows a `Create task` button that opens the full Add Task form with the query in the Identity task-name field
 And if the query includes quick-add syntax such as `today`, `every day`, or `#home`, the toolbar shows a flat same-width parser preview below the field before creation without duplicating the Return-to-create hint
 
+### Mac Toolbar Search Shows Hidden Scheduled Task Matches
+
+Area: Tasks / Planner
+Decision links: [0310](../decisions/0310-show-mac-home-toolbar-search.md), [0387](../decisions/0387-keep-completed-scheduled-blocks-visible.md), [0405](../decisions/0405-show-hidden-scheduled-task-search-results.md)
+Current behavior: [Tasks](../current-behavior/tasks.md), [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/HomeTaskListFilteringTests.swift`
+
+Given Mac Home toolbar search is non-empty
+And Planner Calendar can show a matching task-backed scheduled block
+And the normal left task-list sections hide that task because it is already done or otherwise suppressed from active placement
+When the task-list sidebar would otherwise render no rows
+Then the sidebar shows a search-only `Search Results` section with the matching task row instead of the no-results empty state
+And normal task-list section membership remains unchanged when search is cleared
+
 ### Mac Home Sidebar Toggle Keeps Detail Panes Stable
 
 Area: Other
@@ -372,7 +387,7 @@ Then the primary action, active range, completed span, and undo behavior stay co
 ### Today Routines Stay In Today Section
 
 Area: Tasks
-Decision links: [0202](../decisions/0202-nest-daily-routines-under-mac-plan-today.md), [0247](../decisions/0247-make-mac-daily-routine-grouping-optional.md), [0266](../decisions/0266-show-calendar-routines-in-plan-today.md), [0400](../decisions/0400-plan-tracking-rows-into-today.md)
+Decision links: [0202](../decisions/0202-nest-daily-routines-under-mac-plan-today.md), [0247](../decisions/0247-make-mac-daily-routine-grouping-optional.md), [0266](../decisions/0266-show-calendar-routines-in-plan-today.md), [0400](../decisions/0400-plan-tracking-rows-into-today.md), [0406](../decisions/0406-auto-plan-exact-date-todos.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/macOS/HomeFeatureTaskListModeTests.swift`
@@ -386,6 +401,10 @@ Then daily routines remain in the today area, visually merged by default and nes
 Given Mac Home shows expanded `Today`
 When planned rows are visible
 Then the header and rows share one full-bleed section surface with square horizontal edges, no colored side borders, and spacing between task cards
+
+Given a Todo has exact `At date` availability
+When the user creates or edits it
+Then `Plan to do` is active and set to the same date
 
 Given a Tracking row has an explicit plan date for today or tomorrow
 When Mac Home derives the sidebar sections
@@ -414,6 +433,10 @@ Then the direct `Tomorrow` shortcut is hidden
 Given the Mac `Show Tomorrow section` task-list setting is on
 When Home derives tasks planned for tomorrow or calendar routines scheduled tomorrow
 Then `Tomorrow` appears between `Today` and `Future`, uses the `plannedTomorrow` manual-order bucket, and removes those rows from `Future`
+
+Given the Mac `Show Tomorrow section` task-list setting is on
+When a Todo has exact `At date` availability for tomorrow
+Then it appears in `Tomorrow` through its same-day planned date
 
 Given the Mac `Show Tomorrow section` task-list setting is on
 When a task row context menu opens its `Plan to do` submenu

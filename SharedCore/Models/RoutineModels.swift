@@ -472,7 +472,12 @@ final class RoutineTask {
         self.link = sanitizedLinks.first?.url
         self.linksStorage = RoutineTaskLinkStorage.serializeItems(sanitizedLinks)
         self.deadline = resolvedScheduleMode == .oneOff ? deadline : nil
-        self.plannedDate = Self.normalizedPlannedDate(plannedDate)
+        self.plannedDate = Self.effectivePlannedDate(
+            plannedDate: plannedDate,
+            scheduleMode: resolvedScheduleMode,
+            availabilityStartDate: availabilityStartDate,
+            availabilityEndDate: availabilityEndDate
+        )
         self.customTaskSectionIDRawValue = customTaskSectionID?.uuidString.lowercased()
         self.isAllDay = isAllDay
         self.routineDurationModeRawValue = resolvedScheduleMode.taskType == .todo
@@ -719,6 +724,40 @@ final class RoutineTask {
         calendar: Calendar = .current
     ) -> Date? {
         plannedDate.map { calendar.startOfDay(for: $0) }
+    }
+
+    static func exactAvailabilityPlannedDate(
+        scheduleMode: RoutineScheduleMode,
+        availabilityStartDate: Date?,
+        availabilityEndDate: Date?,
+        calendar: Calendar = .current
+    ) -> Date? {
+        guard scheduleMode.taskType == .todo else { return nil }
+        let bounds = normalizedAvailabilityDateBounds(
+            startDate: availabilityStartDate,
+            endDate: availabilityEndDate,
+            calendar: calendar
+        )
+        guard let startDate = bounds.startDate,
+              bounds.endDate == nil else {
+            return nil
+        }
+        return startDate
+    }
+
+    static func effectivePlannedDate(
+        plannedDate: Date?,
+        scheduleMode: RoutineScheduleMode,
+        availabilityStartDate: Date?,
+        availabilityEndDate: Date?,
+        calendar: Calendar = .current
+    ) -> Date? {
+        exactAvailabilityPlannedDate(
+            scheduleMode: scheduleMode,
+            availabilityStartDate: availabilityStartDate,
+            availabilityEndDate: availabilityEndDate,
+            calendar: calendar
+        ) ?? normalizedPlannedDate(plannedDate, calendar: calendar)
     }
 
     var resolvedLinkURL: URL? {

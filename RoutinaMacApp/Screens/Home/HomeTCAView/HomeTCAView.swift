@@ -287,6 +287,8 @@ struct HomeTCAView: View {
     @State var macHomeProgressMode: MacHomeProgressMode = .stats
     @State var macHomeSidebarColumnVisibility: NavigationSplitViewVisibility = .all
     @State var macSearchSidebarRevealSnapshot: HomeMacSearchSidebarRevealSnapshot?
+    @State var macSearchSidebarRestoreScrollRequestID = 0
+    @State var isMacSearchSidebarRestoreInProgress = false
     @State var macFilterDetailScope: HomeMacFilterDetailScope = .taskList
     @State var isMacFilterDetailFullscreen = false
     @State var selectedStatsDashboardScope: StatsDashboardScope = .all

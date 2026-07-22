@@ -6,6 +6,7 @@ struct TaskDetailStepChecklistEditActionHandler {
     typealias Action = TaskDetailFeature.Action
 
     var now: () -> Date
+    var calendar: () -> Calendar
 
     func editStepDraftChanged(_ value: String, state: inout State) -> Effect<Action> {
         state.editStepDraft = value
@@ -41,7 +42,7 @@ struct TaskDetailStepChecklistEditActionHandler {
     ) -> Effect<Action> {
         state.editChecklistItemDraftTitle = value
         refreshChecklistValidationIfNeeded(state: &state)
-        clearPlanningIfDailyRoutine(state: &state)
+        enforcePlanningRules(state: &state)
         return .none
     }
 
@@ -51,7 +52,7 @@ struct TaskDetailStepChecklistEditActionHandler {
     ) -> Effect<Action> {
         state.editChecklistItemDraftInterval = RoutineChecklistItem.clampedIntervalDays(value)
         refreshChecklistValidationIfNeeded(state: &state)
-        clearPlanningIfDailyRoutine(state: &state)
+        enforcePlanningRules(state: &state)
         return .none
     }
 
@@ -71,7 +72,7 @@ struct TaskDetailStepChecklistEditActionHandler {
         state.editChecklistItemDraftInterval = state.editScheduleMode.storesChecklistItemIntervals ? 3 : 1
         refreshChecklistValidation(state: &state)
         disableAutoAssumeIfNeeded(state: &state)
-        clearPlanningIfDailyRoutine(state: &state)
+        enforcePlanningRules(state: &state)
         return .none
     }
 
@@ -79,7 +80,7 @@ struct TaskDetailStepChecklistEditActionHandler {
         state.editRoutineChecklistItems.removeAll { $0.id == itemID }
         refreshChecklistValidationIfNeeded(state: &state)
         disableAutoAssumeIfNeeded(state: &state)
-        clearPlanningIfDailyRoutine(state: &state)
+        enforcePlanningRules(state: &state)
         return .none
     }
 
@@ -135,7 +136,7 @@ struct TaskDetailStepChecklistEditActionHandler {
         )
     }
 
-    private func clearPlanningIfDailyRoutine(state: inout State) {
+    private func enforcePlanningRules(state: inout State) {
         if !RoutineTaskPlanningSupport.supportsStoredPlanning(
             scheduleMode: state.editScheduleMode,
             recurrenceRule: state.candidateRecurrenceRule,
@@ -145,7 +146,13 @@ struct TaskDetailStepChecklistEditActionHandler {
                 : true
         ) {
             state.editPlannedDate = nil
+            return
         }
+        guard state.editScheduleMode == .oneOff,
+              let availabilityStartDate = state.editAvailabilityStartDate,
+              state.editAvailabilityEndDate == nil
+        else { return }
+        state.editPlannedDate = calendar().startOfDay(for: availabilityStartDate)
     }
 
     private func disableAutoAssumeIfNeeded(state: inout State) {

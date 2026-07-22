@@ -80,6 +80,10 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
         sorter.sortedTasks(displays.filter(predicate.matchesVisibleTask))
     }
 
+    func searchFallbackTasks(from displays: [Display]) -> [Display] {
+        sorter.sortedTasks(displays.filter(predicate.matchesSearchFallbackTask))
+    }
+
     func filteredAwayTasks(_ displays: [Display]) -> [Display] {
         sorter.sortedTasks(displays.filter(predicate.matchesVisibleTask))
     }

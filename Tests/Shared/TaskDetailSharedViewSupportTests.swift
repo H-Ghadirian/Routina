@@ -417,6 +417,28 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func syncEditFormUsesExactAvailabilityAsPlannedDate() {
+        let calendar = makeTestCalendar()
+        let availabilityDate = makeDate("2026-07-19T11:30:00Z")
+        let task = RoutineTask(
+            name: "Visit pharmacy",
+            availabilityStartDate: availabilityDate,
+            scheduleMode: .oneOff
+        )
+        task.plannedDate = nil
+        var state = TaskDetailFeature.State(task: task)
+
+        withDependencies {
+            $0.date.now = makeDate("2026-07-18T10:00:00Z")
+            $0.calendar = calendar
+        } operation: {
+            TaskDetailFeature().syncEditFormFromTask(&state)
+        }
+
+        #expect(state.editPlannedDate == makeDate("2026-07-19T00:00:00Z"))
+    }
+
+    @Test
     func editChangeDetectorTracksTimeRangeRoleChanges() {
         let task = RoutineTask(
             name: "Group session",

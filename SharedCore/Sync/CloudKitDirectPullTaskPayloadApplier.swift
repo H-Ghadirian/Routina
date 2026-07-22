@@ -38,18 +38,23 @@ enum CloudKitDirectPullTaskPayloadApplier {
         if let scheduleMode = payload.scheduleMode {
             task.scheduleMode = scheduleMode
         }
+        let availabilityDateBounds = RoutineTask.normalizedAvailabilityDateBounds(
+            startDate: payload.availabilityStartDate,
+            endDate: payload.availabilityEndDate
+        )
         task.deadline = task.scheduleMode == .oneOff ? payload.deadline : nil
-        task.plannedDate = RoutineTask.normalizedPlannedDate(payload.plannedDate)
+        task.plannedDate = RoutineTask.effectivePlannedDate(
+            plannedDate: payload.plannedDate,
+            scheduleMode: task.scheduleMode,
+            availabilityStartDate: availabilityDateBounds.startDate,
+            availabilityEndDate: availabilityDateBounds.endDate
+        )
         if let isAllDay = payload.isAllDay {
             task.isAllDay = isAllDay
         }
         task.routineDurationMode = task.scheduleMode == .oneOff
             ? .oneDay
             : (payload.routineDurationMode ?? .oneDay)
-        let availabilityDateBounds = RoutineTask.normalizedAvailabilityDateBounds(
-            startDate: payload.availabilityStartDate,
-            endDate: payload.availabilityEndDate
-        )
         task.availabilityStartDate = task.scheduleMode == .oneOff ? availabilityDateBounds.startDate : nil
         task.availabilityEndDate = task.scheduleMode == .oneOff ? availabilityDateBounds.endDate : nil
         task.reminderAt = payload.reminderAt

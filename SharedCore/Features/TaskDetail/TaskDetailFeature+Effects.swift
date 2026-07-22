@@ -568,11 +568,17 @@ extension TaskDetailFeature {
                 let availabilityDateBounds = RoutineTask.normalizedAvailabilityDateBounds(
                     startDate: availabilityStartDate,
                     endDate: availabilityEndDate,
-                    calendar: Calendar.current
+                    calendar: calendar
                 )
                 task.availabilityStartDate = scheduleMode.taskType == .todo ? availabilityDateBounds.startDate : nil
                 task.availabilityEndDate = scheduleMode.taskType == .todo ? availabilityDateBounds.endDate : nil
-                task.plannedDate = RoutineTask.normalizedPlannedDate(plannedDate, calendar: calendar)
+                task.plannedDate = RoutineTask.effectivePlannedDate(
+                    plannedDate: plannedDate,
+                    scheduleMode: scheduleMode,
+                    availabilityStartDate: availabilityDateBounds.startDate,
+                    availabilityEndDate: availabilityDateBounds.endDate,
+                    calendar: calendar
+                )
                 task.recurrenceRule = recurrenceRule
                 task.recurrenceTimeRangeRole = recurrenceRule.timeRange == nil
                     ? .availability

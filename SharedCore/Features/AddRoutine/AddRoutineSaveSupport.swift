@@ -177,12 +177,17 @@ struct AddRoutineSaveRequest: Equatable {
         self.links = sanitizedLinkItems.map(\.url)
         self.linkItems = sanitizedLinkItems
         let sanitizedChecklistItems = RoutineChecklistItem.sanitized(checklistItems, for: scheduleMode)
+        let availabilityDateBounds = RoutineTask.normalizedAvailabilityDateBounds(
+            startDate: availabilityStartDate,
+            endDate: availabilityEndDate,
+            calendar: calendar
+        )
 
         self.deadline = scheduleMode.taskType == .todo ? deadline : nil
         self.isAllDay = isAllDay
         self.routineDurationMode = scheduleMode.taskType == .todo ? .oneDay : routineDurationMode
-        self.availabilityStartDate = scheduleMode.taskType == .todo ? availabilityStartDate : nil
-        self.availabilityEndDate = scheduleMode.taskType == .todo ? availabilityEndDate : nil
+        self.availabilityStartDate = scheduleMode.taskType == .todo ? availabilityDateBounds.startDate : nil
+        self.availabilityEndDate = scheduleMode.taskType == .todo ? availabilityDateBounds.endDate : nil
         self.plannedDate = RoutineTaskPlanningSupport.supportsStoredPlanning(
                 scheduleMode: scheduleMode,
                 recurrenceRule: recurrenceRule,
@@ -191,7 +196,13 @@ struct AddRoutineSaveRequest: Equatable {
                     ? trackingCadenceEnabled
                     : true
             )
-            ? RoutineTask.normalizedPlannedDate(plannedDate, calendar: calendar)
+            ? RoutineTask.effectivePlannedDate(
+                plannedDate: plannedDate,
+                scheduleMode: scheduleMode,
+                availabilityStartDate: availabilityDateBounds.startDate,
+                availabilityEndDate: availabilityDateBounds.endDate,
+                calendar: calendar
+            )
             : nil
         self.reminderAt = scheduleMode.taskType == .todo ? reminderAt : nil
         self.priority = priority
@@ -302,7 +313,13 @@ struct AddRoutineSaveRequest: Equatable {
                 checklistItems: sanitizedChecklistItems,
                 trackingCadenceEnabled: trackingCadenceEnabled
             )
-            ? RoutineTask.normalizedPlannedDate(basics.plannedDate, calendar: calendar)
+            ? RoutineTask.effectivePlannedDate(
+                plannedDate: basics.plannedDate,
+                scheduleMode: schedule.scheduleMode,
+                availabilityStartDate: availabilityDateBounds.startDate,
+                availabilityEndDate: availabilityDateBounds.endDate,
+                calendar: calendar
+            )
             : nil
         self.reminderAt = schedule.scheduleMode.taskType == .todo ? basics.reminderAt : nil
         self.priority = AddRoutinePriorityMatrix.priority(

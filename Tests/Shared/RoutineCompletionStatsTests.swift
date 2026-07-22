@@ -596,6 +596,56 @@ struct RoutineCompletionStatsTests {
     }
 
     @Test
+    func hourlyActivityPoints_matchCanonicalFocusTotalWithPausesActiveAndSprintFocus() {
+        let calendar = makeTestCalendar()
+        let referenceDate = makeDate("2026-03-10T12:00:00Z")
+        let task = RoutineTask(name: "Write")
+        let sessions = [
+            FocusSession(
+                taskID: task.id,
+                startedAt: makeDate("2026-03-10T08:00:00Z"),
+                completedAt: makeDate("2026-03-10T10:00:00Z"),
+                accumulatedPausedSeconds: 45 * 60
+            ),
+            FocusSession(
+                taskID: task.id,
+                startedAt: makeDate("2026-03-10T11:00:00Z")
+            )
+        ]
+        let sprintSessions = [
+            SprintFocusSessionRecord(
+                sprintID: UUID(),
+                startedAt: makeDate("2026-03-10T06:00:00Z"),
+                stoppedAt: makeDate("2026-03-10T07:00:00Z"),
+                accumulatedPausedSeconds: 15 * 60
+            )
+        ]
+
+        let hourlyPoints = HourlyActivityStats.points(
+            tasks: [task],
+            logs: [],
+            focusSessions: sessions,
+            sprintFocusSessions: sprintSessions,
+            selectedRange: .week,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let focusPoints = FocusDurationStats.points(
+            for: .week,
+            sessions: sessions,
+            sprintSessions: sprintSessions,
+            tasks: [task],
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        let hourlyTotal = hourlyPoints.reduce(0) { $0 + $1.focusSeconds }
+        let canonicalTotal = FocusDurationStats.totalSeconds(in: focusPoints)
+        #expect(abs(hourlyTotal - canonicalTotal) < 0.001)
+        #expect(hourlyTotal == TimeInterval((3 * 60 * 60)))
+    }
+
+    @Test
     func estimateActualPoints_compareCompletedWorkWithLoggedTime() {
         let calendar = makeTestCalendar()
         let firstDay = makeDate("2026-03-10T00:00:00Z")

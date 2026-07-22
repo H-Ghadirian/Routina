@@ -455,6 +455,7 @@ extension HomeTCAView {
     }
 
     private func beginMacSearchSidebarRevealIfNeeded() {
+        isMacSearchSidebarRestoreInProgress = false
         guard macSearchSidebarRevealSnapshot == nil else {
             if macHomeSidebarColumnVisibility != .all {
                 withAnimation(.easeInOut(duration: 0.22)) {
@@ -482,7 +483,8 @@ extension HomeTCAView {
     private func restoreMacSearchSidebarRevealIfNeeded() {
         guard let snapshot = macSearchSidebarRevealSnapshot else { return }
 
-        withAnimation(.easeInOut(duration: 0.22)) {
+        withTransaction(Transaction(animation: nil)) {
+            isMacSearchSidebarRestoreInProgress = true
             isDailyRoutinesSectionCollapsed = snapshot.isDailyRoutinesSectionCollapsed
             isMacPlanTodayDailyRoutinesGroupCollapsed = snapshot.isMacPlanTodayDailyRoutinesGroupCollapsed
             isMacFutureTasksSectionCollapsed = snapshot.isMacFutureTasksSectionCollapsed
@@ -490,6 +492,13 @@ extension HomeTCAView {
             collapsedTagTaskListSectionIDsStorage = snapshot.collapsedTagTaskListSectionIDsStorage
             macHomeSidebarColumnVisibility = snapshot.sidebarColumnVisibility
             macSearchSidebarRevealSnapshot = nil
+            macSearchSidebarRestoreScrollRequestID += 1
+        }
+
+        let handledRequestID = macSearchSidebarRestoreScrollRequestID
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            guard macSearchSidebarRestoreScrollRequestID == handledRequestID else { return }
+            isMacSearchSidebarRestoreInProgress = false
         }
     }
 

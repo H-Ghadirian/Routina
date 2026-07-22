@@ -103,8 +103,9 @@ extension HomeTCAView {
         )
 
         return macTaskListPresentationCache.presentation(for: signature) {
-            HomeTaskListPresentation.sidebar(
-                filtering: taskListFiltering(referenceDate: referenceDate),
+            let filtering = taskListFiltering(referenceDate: referenceDate)
+            let presentation = HomeTaskListPresentation.sidebar(
+                filtering: filtering,
                 routineDisplays: routineDisplays,
                 awayRoutineDisplays: awayRoutineDisplays,
                 archivedRoutineDisplays: archivedRoutineDisplays,
@@ -115,6 +116,58 @@ extension HomeTCAView {
                 separateTodosAndRoutinesInTagSections: separatesTodosAndRoutinesInTagTaskListSections,
                 emptyState: emptyState
             )
+
+            return macSearchFallbackPresentationIfNeeded(
+                presentation,
+                filtering: filtering,
+                routineDisplays: routineDisplays,
+                awayRoutineDisplays: awayRoutineDisplays,
+                archivedRoutineDisplays: archivedRoutineDisplays,
+                showArchivedTasks: store.showArchivedTasks
+            )
+        }
+    }
+
+    private func macSearchFallbackPresentationIfNeeded(
+        _ presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>,
+        filtering: HomeTaskListFiltering<HomeFeature.RoutineDisplay>,
+        routineDisplays: [HomeFeature.RoutineDisplay],
+        awayRoutineDisplays: [HomeFeature.RoutineDisplay],
+        archivedRoutineDisplays: [HomeFeature.RoutineDisplay],
+        showArchivedTasks: Bool
+    ) -> HomeTaskListPresentation<HomeFeature.RoutineDisplay> {
+        let trimmedSearchText = searchTextBinding.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedSearchText.isEmpty, presentation.sections.isEmpty else {
+            return presentation
+        }
+
+        return presentation.addingSearchFallbackResults(
+            from: macSearchFallbackSourceDisplays(
+                routineDisplays: routineDisplays,
+                awayRoutineDisplays: awayRoutineDisplays,
+                archivedRoutineDisplays: archivedRoutineDisplays,
+                showArchivedTasks: showArchivedTasks
+            ),
+            filtering: filtering
+        )
+    }
+
+    private func macSearchFallbackSourceDisplays(
+        routineDisplays: [HomeFeature.RoutineDisplay],
+        awayRoutineDisplays: [HomeFeature.RoutineDisplay],
+        archivedRoutineDisplays: [HomeFeature.RoutineDisplay],
+        showArchivedTasks: Bool
+    ) -> [HomeFeature.RoutineDisplay] {
+        var seenTaskIDs: Set<UUID> = []
+
+        var sourceDisplays = routineDisplays + awayRoutineDisplays
+        if showArchivedTasks {
+            sourceDisplays += archivedRoutineDisplays
+        }
+        sourceDisplays += store.boardTodoDisplays
+
+        return sourceDisplays.filter { task in
+            seenTaskIDs.insert(task.taskID).inserted
         }
     }
 

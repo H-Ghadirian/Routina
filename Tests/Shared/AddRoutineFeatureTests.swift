@@ -230,7 +230,7 @@ struct AddRoutineFeatureTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
         await store.receive(.delegate(.didSave(makeSaveRequest(
             name: "Call accountant",
             frequencyInDays: 1,
@@ -244,6 +244,61 @@ struct AddRoutineFeatureTests {
             emoji: "📞",
             availabilityStartDate: expectedStartDate,
             availabilityEndDate: expectedEndDate,
+            calendar: makeTestCalendar(),
+            scheduleMode: .oneOff
+        ))))
+    }
+
+    @Test
+    func exactTodoAvailabilityActivatesPlanningOnSameDate() async {
+        let calendar = makeTestCalendar()
+        let availabilityDate = makeDate("2026-07-19T11:30:00Z")
+        let otherPlanDate = makeDate("2026-07-22T09:00:00Z")
+        let expectedDate = makeDate("2026-07-19T00:00:00Z")
+        let store = TestStore(
+            initialState: makeState(schedule: AddRoutineScheduleState(scheduleMode: .oneOff))
+        ) {
+            makeFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, calendar: calendar)
+        }
+
+        await store.send(.availabilityStartDateChanged(availabilityDate)) {
+            $0.basics.availabilityStartDate = expectedDate
+            $0.basics.plannedDate = expectedDate
+        }
+        await store.send(.plannedDateChanged(otherPlanDate))
+
+        #expect(store.state.basics.plannedDate == expectedDate)
+    }
+
+    @Test
+    func saveTapped_exactTodoAvailabilityPlansSameDate() async {
+        let availabilityDate = makeDate("2026-07-19T11:30:00Z")
+        let expectedDate = makeDate("2026-07-19T00:00:00Z")
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(
+                    routineName: "Visit pharmacy",
+                    availabilityStartDate: availabilityDate
+                ),
+                schedule: AddRoutineScheduleState(scheduleMode: .oneOff)
+            )
+        ) {
+            makeDelegateEchoFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(.delegate(.didSave(makeSaveRequest(
+            name: "Visit pharmacy",
+            frequencyInDays: 1,
+            recurrenceRule: .interval(days: 1),
+            emoji: "✨",
+            availabilityStartDate: expectedDate,
+            plannedDate: expectedDate,
+            calendar: makeTestCalendar(),
             scheduleMode: .oneOff
         ))))
     }
@@ -273,7 +328,7 @@ struct AddRoutineFeatureTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
         await store.receive(.delegate(.didSave(makeSaveRequest(
             name: "Group session",
             frequencyInDays: 1,
@@ -548,7 +603,7 @@ struct AddRoutineFeatureTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
         await store.receive(.delegate(.didSave(makeSaveRequest(
             name: "Read",
             frequencyInDays: 21,
@@ -581,7 +636,7 @@ struct AddRoutineFeatureTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
         await store.receive(.delegate(.didSave(makeSaveRequest(
             name: "Laundry",
             frequencyInDays: 1,
@@ -615,7 +670,7 @@ struct AddRoutineFeatureTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
         await store.receive(.delegate(.didSave(makeSaveRequest(
             name: "Stretch",
             frequencyInDays: 1,
@@ -645,7 +700,7 @@ struct AddRoutineFeatureTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
         await store.receive(.delegate(.didSave(makeSaveRequest(
             name: "Implement Apple Sign In",
             frequencyInDays: 1,
@@ -699,6 +754,7 @@ struct AddRoutineFeatureTests {
         }
 
         await store.send(.saveTapped) {
+            $0.isSaving = true
             $0.checklist.routineChecklistItems = RoutineChecklistItem.sanitized(
                 [checklistItem],
                 for: .record
@@ -749,7 +805,7 @@ struct AddRoutineFeatureTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
         await store.receive(.delegate(.didSave(makeSaveRequest(
             name: "Ad hoc symptom log",
             frequencyInDays: 1,
@@ -792,6 +848,7 @@ struct AddRoutineFeatureTests {
         }
 
         await store.send(.saveTapped) {
+            $0.isSaving = true
             $0.checklist.routineChecklistItems = RoutineChecklistItem.sanitized(
                 [checklistItem],
                 for: .recordChecklist
@@ -955,6 +1012,7 @@ struct AddRoutineFeatureTests {
         ))
 
         await store.send(.saveTapped) {
+            $0.isSaving = true
             $0.basics.routineName = "Pay rent"
             $0.basics.deadline = expectedDeadline
             $0.basics.reminderAt = expectedDeadline
@@ -1069,7 +1127,7 @@ struct AddRoutineFeatureTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
         await store.receive(.delegate(.didSave(makeSaveRequest(
             name: "Read",
             frequencyInDays: 5,
@@ -1114,6 +1172,7 @@ struct AddRoutineFeatureTests {
 
         _ = await store.withExhaustivity(.off) {
             await store.send(.saveTapped) {
+            $0.isSaving = true
                 $0.checklist.stepDraft = ""
             }
         }
@@ -1164,6 +1223,7 @@ struct AddRoutineFeatureTests {
         }
 
         await store.send(.saveTapped) {
+            $0.isSaving = true
             $0.checklist.routineChecklistItems[0].intervalDays = 1
             $0.checklist.routineChecklistItems[1].intervalDays = 1
         }
@@ -1204,7 +1264,7 @@ struct AddRoutineFeatureTests {
             setTestDateDependencies(&$0)
         }
 
-        await store.send(.saveTapped)
+        await store.send(.saveTapped) { $0.isSaving = true }
 
         #expect(capturedRequest.value?.scheduleMode == .softInterval)
         #expect(capturedRequest.value?.recurrenceRule == .weekly(on: 2, at: exactTime))
@@ -1376,6 +1436,7 @@ struct AddRoutineFeatureTests {
         }
 
         await store.send(.saveTapped) {
+            $0.isSaving = true
             $0.organization.routineTags = ["Mindset", "night", "focus"]
             $0.organization.tagDraft = ""
         }

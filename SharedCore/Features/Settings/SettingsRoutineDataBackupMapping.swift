@@ -49,7 +49,12 @@ enum SettingsRoutineDataBackupMapping {
             links: task.links.isEmpty ? nil : task.links,
             linkItems: task.linkItems.isEmpty ? nil : task.linkItems,
             deadline: task.deadline,
-            plannedDate: task.plannedDate,
+            plannedDate: RoutineTask.effectivePlannedDate(
+                plannedDate: task.plannedDate,
+                scheduleMode: task.scheduleMode,
+                availabilityStartDate: task.availabilityStartDate,
+                availabilityEndDate: task.availabilityEndDate
+            ),
             customTaskSectionID: task.customTaskSectionID,
             isAllDay: task.isAllDay,
             routineDurationMode: task.routineDurationMode,
