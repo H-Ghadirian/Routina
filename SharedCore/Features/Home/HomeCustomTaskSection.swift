@@ -92,6 +92,7 @@ struct HomeCustomTaskSectionRules: Codable, Equatable, Hashable, Sendable {
 
 struct HomeCustomTaskSection: Codable, Equatable, Hashable, Identifiable, Sendable {
     var id: UUID
+    var parentSectionID: UUID?
     var title: String
     var createdAt: Date?
     var rules: HomeCustomTaskSectionRules
@@ -99,12 +100,14 @@ struct HomeCustomTaskSection: Codable, Equatable, Hashable, Identifiable, Sendab
 
     init(
         id: UUID = UUID(),
+        parentSectionID: UUID? = nil,
         title: String,
         createdAt: Date? = Date(),
         rules: HomeCustomTaskSectionRules = HomeCustomTaskSectionRules(),
         colorHex: String? = nil
     ) {
         self.id = id
+        self.parentSectionID = parentSectionID
         self.title = HomeCustomTaskSectionStorage.sanitizedTitle(title) ?? "Section"
         self.createdAt = createdAt
         self.rules = rules
@@ -113,6 +116,7 @@ struct HomeCustomTaskSection: Codable, Equatable, Hashable, Identifiable, Sendab
 
     private enum CodingKeys: String, CodingKey {
         case id
+        case parentSectionID
         case title
         case createdAt
         case rules
@@ -122,6 +126,7 @@ struct HomeCustomTaskSection: Codable, Equatable, Hashable, Identifiable, Sendab
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
+        parentSectionID = try container.decodeIfPresent(UUID.self, forKey: .parentSectionID)
         title = HomeCustomTaskSectionStorage.sanitizedTitle(
             try container.decode(String.self, forKey: .title)
         ) ?? "Section"
@@ -184,19 +189,26 @@ enum HomeCustomTaskSectionStorage {
 
     static func sanitized(_ sections: [HomeCustomTaskSection]) -> [HomeCustomTaskSection] {
         var seenIDs: Set<UUID> = []
-        var seenTitleKeys: Set<String> = []
+        var seenTitleKeysByParent: [UUID?: Set<String>] = [:]
         var sanitizedSections: [HomeCustomTaskSection] = []
+        let candidateTopLevelIDs = Set(sections.filter { $0.parentSectionID == nil }.map(\.id))
 
         for section in sections {
             guard seenIDs.insert(section.id).inserted,
                   let title = sanitizedTitle(section.title) else {
                 continue
             }
+            let parentSectionID = section.parentSectionID.flatMap {
+                candidateTopLevelIDs.contains($0) && $0 != section.id ? $0 : nil
+            }
             let titleKey = normalizedTitleKey(title)
-            guard seenTitleKeys.insert(titleKey).inserted else { continue }
+            var siblingTitleKeys = seenTitleKeysByParent[parentSectionID] ?? []
+            guard siblingTitleKeys.insert(titleKey).inserted else { continue }
+            seenTitleKeysByParent[parentSectionID] = siblingTitleKeys
             sanitizedSections.append(
                 HomeCustomTaskSection(
                     id: section.id,
+                    parentSectionID: parentSectionID,
                     title: title,
                     createdAt: section.createdAt,
                     rules: section.rules,
@@ -210,18 +222,29 @@ enum HomeCustomTaskSectionStorage {
 
     static func upsertingSection(
         title rawTitle: String,
+        parentSectionID: UUID? = nil,
         in sections: [HomeCustomTaskSection],
         now: Date = Date()
     ) -> (section: HomeCustomTaskSection, sections: [HomeCustomTaskSection])? {
         guard let title = sanitizedTitle(rawTitle) else { return nil }
         let sanitizedSections = sanitized(sections)
+        if let parentSectionID,
+           !sanitizedSections.contains(where: { $0.id == parentSectionID && $0.parentSectionID == nil }) {
+            return nil
+        }
         let titleKey = normalizedTitleKey(title)
 
-        if let existing = sanitizedSections.first(where: { normalizedTitleKey($0.title) == titleKey }) {
+        if let existing = sanitizedSections.first(where: {
+            $0.parentSectionID == parentSectionID && normalizedTitleKey($0.title) == titleKey
+        }) {
             return (existing, sanitizedSections)
         }
 
-        let section = HomeCustomTaskSection(title: title, createdAt: now)
+        let section = HomeCustomTaskSection(
+            parentSectionID: parentSectionID,
+            title: title,
+            createdAt: now
+        )
         return (section, sanitizedSections + [section])
     }
 
@@ -229,7 +252,9 @@ enum HomeCustomTaskSectionStorage {
         _ sectionID: UUID,
         from sections: [HomeCustomTaskSection]
     ) -> [HomeCustomTaskSection] {
-        sanitized(sections).filter { $0.id != sectionID }
+        sanitized(sections).filter {
+            $0.id != sectionID && $0.parentSectionID != sectionID
+        }
     }
 
     static func renamingSection(
@@ -245,8 +270,11 @@ enum HomeCustomTaskSectionStorage {
         }
 
         let titleKey = normalizedTitleKey(title)
+        let parentSectionID = sanitizedSections[sectionIndex].parentSectionID
         let titleBelongsToOtherSection = sanitizedSections.enumerated().contains { index, section in
-            index != sectionIndex && normalizedTitleKey(section.title) == titleKey
+            index != sectionIndex
+                && section.parentSectionID == parentSectionID
+                && normalizedTitleKey(section.title) == titleKey
         }
         guard !titleBelongsToOtherSection else { return nil }
 
@@ -297,6 +325,29 @@ enum HomeCustomTaskSectionStorage {
         sanitizedSections[sectionIndex].rules = sanitizedSections[sectionIndex].rules
             .settingTagNames(tagNames)
         return sanitizedSections
+    }
+
+    static func topLevelSections(in sections: [HomeCustomTaskSection]) -> [HomeCustomTaskSection] {
+        sanitized(sections).filter { $0.parentSectionID == nil }
+    }
+
+    static func subsections(
+        of parentSectionID: UUID,
+        in sections: [HomeCustomTaskSection]
+    ) -> [HomeCustomTaskSection] {
+        sanitized(sections).filter { $0.parentSectionID == parentSectionID }
+    }
+
+    static func sectionAndDescendantIDs(
+        for sectionID: UUID,
+        in sections: [HomeCustomTaskSection]
+    ) -> Set<UUID> {
+        let sanitizedSections = sanitized(sections)
+        return Set(
+            sanitizedSections
+                .filter { $0.id == sectionID || $0.parentSectionID == sectionID }
+                .map(\.id)
+        )
     }
 
     private static func normalizedTitleKey(_ title: String) -> String {

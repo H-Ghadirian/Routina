@@ -77,8 +77,62 @@ struct HomeCustomTaskSectionStorageTests {
 
         #expect(sections.count == 1)
         #expect(sections.first?.id == sectionID)
+        #expect(sections.first?.parentSectionID == nil)
         #expect(sections.first?.rules.isEmpty == true)
         #expect(sections.first?.colorHex == nil)
+    }
+
+    @Test
+    func subsectionRoundTripsAndIsScopedToItsSuperSection() throws {
+        let workID = UUID()
+        let personalID = UUID()
+        let sections = [
+            HomeCustomTaskSection(id: workID, title: "Work", createdAt: nil),
+            HomeCustomTaskSection(
+                parentSectionID: workID,
+                title: "Projects",
+                createdAt: nil
+            ),
+            HomeCustomTaskSection(id: personalID, title: "Personal", createdAt: nil),
+            HomeCustomTaskSection(
+                parentSectionID: personalID,
+                title: "Projects",
+                createdAt: nil
+            )
+        ]
+
+        let decoded = HomeCustomTaskSectionStorage.decoded(
+            from: HomeCustomTaskSectionStorage.encoded(sections)
+        )
+
+        #expect(HomeCustomTaskSectionStorage.topLevelSections(in: decoded).map(\.id) == [workID, personalID])
+        #expect(HomeCustomTaskSectionStorage.subsections(of: workID, in: decoded).map(\.title) == ["Projects"])
+        #expect(HomeCustomTaskSectionStorage.subsections(of: personalID, in: decoded).map(\.title) == ["Projects"])
+    }
+
+    @Test
+    func deletingSuperSectionAlsoDeletesItsSubsections() {
+        let workID = UUID()
+        let workChildID = UUID()
+        let personalID = UUID()
+        let sections = [
+            HomeCustomTaskSection(id: workID, title: "Work", createdAt: nil),
+            HomeCustomTaskSection(
+                id: workChildID,
+                parentSectionID: workID,
+                title: "Projects",
+                createdAt: nil
+            ),
+            HomeCustomTaskSection(id: personalID, title: "Personal", createdAt: nil)
+        ]
+
+        let updated = HomeCustomTaskSectionStorage.deletingSection(workID, from: sections)
+
+        #expect(updated.map(\.id) == [personalID])
+        #expect(
+            HomeCustomTaskSectionStorage.sectionAndDescendantIDs(for: workID, in: sections)
+                == [workID, workChildID]
+        )
     }
 
     @Test

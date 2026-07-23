@@ -612,7 +612,8 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                             for: customTaskSection.section.id
                         ),
                         orderedTaskIDs: customTaskSection.tasks.map(\.taskID)
-                    )
+                    ),
+                    taskGroups: customTaskSection.taskGroups
                 )
             )
             offset += customTaskSection.tasks.count
@@ -710,6 +711,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
     private struct SidebarCustomTaskSection {
         let section: HomeCustomTaskSection
         let tasks: [Display]
+        let taskGroups: [HomeTaskListPresentationTaskGroup<Display>]
     }
 
     private static func sidebarCustomTaskSections(
@@ -718,13 +720,66 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         filtering: HomeTaskListFiltering<Display>,
         claimedTaskIDs: inout Set<UUID>
     ) -> [SidebarCustomTaskSection] {
-        sections.compactMap { section in
-            let tasks = claimTasks(
+        let topLevelSections = HomeCustomTaskSectionStorage.topLevelSections(in: sections)
+        return topLevelSections.compactMap { section in
+            var taskGroups: [HomeTaskListPresentationTaskGroup<Display>] = []
+            var allTasks: [Display] = []
+
+            let subsections = HomeCustomTaskSectionStorage.subsections(of: section.id, in: sections)
+            for subsection in subsections {
+                let tasks = claimTasks(
+                    filtering.filteredCustomTaskSectionTasks(displays, section: subsection),
+                    claimedTaskIDs: &claimedTaskIDs
+                )
+                guard !tasks.isEmpty else { continue }
+                allTasks.append(contentsOf: tasks)
+                taskGroups.append(
+                    HomeTaskListPresentationTaskGroup(
+                        kind: .custom,
+                        identityKey: HomeCustomTaskSectionStorage.manualOrderSectionKey(for: subsection.id),
+                        title: subsection.title,
+                        tasks: tasks,
+                        moveContext: HomeTaskListMoveContext(
+                            sectionKey: HomeTaskListFiltering<Display>.customManualOrderSectionKey(
+                                for: subsection.id
+                            ),
+                            orderedTaskIDs: tasks.map(\.taskID)
+                        ),
+                        isCollapsible: true
+                    )
+                )
+            }
+
+            let parentTasks = claimTasks(
                 filtering.filteredCustomTaskSectionTasks(displays, section: section),
                 claimedTaskIDs: &claimedTaskIDs
             )
-            guard !tasks.isEmpty else { return nil }
-            return SidebarCustomTaskSection(section: section, tasks: tasks)
+            if !parentTasks.isEmpty {
+                allTasks.insert(contentsOf: parentTasks, at: 0)
+                taskGroups.insert(
+                    HomeTaskListPresentationTaskGroup(
+                        kind: .custom,
+                        identityKey: HomeCustomTaskSectionStorage.manualOrderSectionKey(for: section.id),
+                        title: nil,
+                        tasks: parentTasks,
+                        moveContext: HomeTaskListMoveContext(
+                            sectionKey: HomeTaskListFiltering<Display>.customManualOrderSectionKey(
+                                for: section.id
+                            ),
+                            orderedTaskIDs: parentTasks.map(\.taskID)
+                        ),
+                        isCollapsible: false
+                    ),
+                    at: 0
+                )
+            }
+
+            guard !allTasks.isEmpty else { return nil }
+            return SidebarCustomTaskSection(
+                section: section,
+                tasks: allTasks,
+                taskGroups: taskGroups
+            )
         }
     }
 

@@ -1505,6 +1505,58 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func sidebarPresentationNestsSubsectionRowsInsideTheirSuperSection() throws {
+        let referenceDate = makeDate("2026-06-22T10:00:00Z")
+        let superSectionID = UUID()
+        let subsectionID = UUID()
+        let parentTaskID = UUID()
+        let childTaskID = UUID()
+
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(referenceDate: referenceDate),
+            routineDisplays: [
+                TestTaskDisplay(
+                    taskID: parentTaskID,
+                    name: "Parent row",
+                    customTaskSectionID: superSectionID
+                ),
+                TestTaskDisplay(
+                    taskID: childTaskID,
+                    name: "Child row",
+                    customTaskSectionID: subsectionID
+                )
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            customSections: [
+                HomeCustomTaskSection(id: superSectionID, title: "Work", createdAt: nil),
+                HomeCustomTaskSection(
+                    id: subsectionID,
+                    parentSectionID: superSectionID,
+                    title: "Project A",
+                    createdAt: nil
+                )
+            ],
+            emptyState: HomeTaskListEmptyState(
+                title: "Empty",
+                message: "Empty",
+                systemImage: "tray"
+            )
+        )
+
+        let section = try #require(presentation.sections.first)
+        #expect(section.title == "Work")
+        #expect(section.tasks.map(\.taskID) == [parentTaskID, childTaskID])
+        #expect(section.taskGroups.map(\.title) == [nil, "Project A"])
+        #expect(section.taskGroups[0].tasks.map(\.taskID) == [parentTaskID])
+        #expect(section.taskGroups[1].tasks.map(\.taskID) == [childTaskID])
+        #expect(
+            section.taskGroups[1].moveContext?.sectionKey
+                == HomeCustomTaskSectionStorage.manualOrderSectionKey(for: subsectionID)
+        )
+    }
+
+    @Test
     func sidebarPresentationAppliesCustomSectionRulesWithoutRemovingBuiltIns() {
         let referenceDate = makeDate("2026-06-22T10:00:00Z")
         let customTodaySectionID = UUID()

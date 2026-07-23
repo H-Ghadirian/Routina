@@ -13,6 +13,7 @@ struct SettingsMacTaskSectionsDetailView: View {
     ) private var collapsedTaskListSectionIDsStorage = ""
 
     @State private var newSectionTitle = ""
+    @State private var newSubsectionTitles: [UUID: String] = [:]
     @State private var renameDrafts: [UUID: String] = [:]
     @State private var tagRuleDrafts: [UUID: String] = [:]
     @State private var pendingDeleteSection: HomeCustomTaskSection?
@@ -39,16 +40,16 @@ struct SettingsMacTaskSectionsDetailView: View {
                     .disabled(!canCreateSection)
                 }
 
-                if customTaskSections.isEmpty {
-                    Text("No custom sections")
+                if superSections.isEmpty {
+                    Text("No super sections")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 } else {
                     VStack(alignment: .leading, spacing: 14) {
-                        ForEach(Array(customTaskSections.enumerated()), id: \.element.id) { index, section in
+                        ForEach(Array(superSections.enumerated()), id: \.element.id) { index, section in
                             sectionEditor(for: section)
 
-                            if index < customTaskSections.count - 1 {
+                            if index < superSections.count - 1 {
                                 Divider()
                             }
                         }
@@ -80,6 +81,10 @@ struct SettingsMacTaskSectionsDetailView: View {
 
     private var customTaskSections: [HomeCustomTaskSection] {
         HomeCustomTaskSectionStorage.decoded(from: customTaskSectionsRawValue)
+    }
+
+    private var superSections: [HomeCustomTaskSection] {
+        HomeCustomTaskSectionStorage.topLevelSections(in: customTaskSections)
     }
 
     private var canCreateSection: Bool {
@@ -185,7 +190,65 @@ struct SettingsMacTaskSectionsDetailView: View {
                 }
             }
             .padding(.leading, 32)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Subsections")
+                    .font(.subheadline.weight(.semibold))
+
+                ForEach(HomeCustomTaskSectionStorage.subsections(of: section.id, in: customTaskSections)) { subsection in
+                    HStack(spacing: 10) {
+                        Image(systemName: "rectangle.inset.filled")
+                            .foregroundStyle(.secondary)
+                            .frame(width: 22)
+
+                        TextField("Subsection name", text: titleDraftBinding(for: subsection))
+                            .textFieldStyle(.roundedBorder)
+                            .onSubmit { saveTitle(for: subsection) }
+
+                        Button {
+                            saveTitle(for: subsection)
+                        } label: {
+                            Label("Save", systemImage: "checkmark")
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(!canSaveTitle(for: subsection))
+
+                        Button(role: .destructive) {
+                            requestDelete(subsection)
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(.red)
+                    }
+                }
+
+                HStack(spacing: 10) {
+                    TextField(
+                        "New subsection",
+                        text: newSubsectionTitleBinding(for: section.id)
+                    )
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit { createSubsection(in: section.id) }
+
+                    Button {
+                        createSubsection(in: section.id)
+                    } label: {
+                        Label("Add Subsection", systemImage: "plus")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(!canCreateSubsection(in: section.id))
+                }
+            }
+            .padding(.leading, 32)
         }
+    }
+
+    private func newSubsectionTitleBinding(for sectionID: UUID) -> Binding<String> {
+        Binding(
+            get: { newSubsectionTitles[sectionID] ?? "" },
+            set: { newSubsectionTitles[sectionID] = $0 }
+        )
     }
 
     private func titleDraftBinding(for section: HomeCustomTaskSection) -> Binding<String> {
@@ -255,6 +318,31 @@ struct SettingsMacTaskSectionsDetailView: View {
         statusMessage = ""
     }
 
+    private func canCreateSubsection(in sectionID: UUID) -> Bool {
+        guard let result = HomeCustomTaskSectionStorage.upsertingSection(
+            title: newSubsectionTitles[sectionID] ?? "",
+            parentSectionID: sectionID,
+            in: customTaskSections
+        ) else {
+            return false
+        }
+        return result.sections.count > customTaskSections.count
+    }
+
+    private func createSubsection(in sectionID: UUID) {
+        guard let result = HomeCustomTaskSectionStorage.upsertingSection(
+            title: newSubsectionTitles[sectionID] ?? "",
+            parentSectionID: sectionID,
+            in: customTaskSections
+        ),
+              result.sections.count > customTaskSections.count else {
+            return
+        }
+        persistSections(result.sections)
+        newSubsectionTitles[sectionID] = ""
+        statusMessage = ""
+    }
+
     private func saveTitle(for section: HomeCustomTaskSection) {
         let draft = renameDrafts[section.id] ?? section.title
         guard let sections = HomeCustomTaskSectionStorage.renamingSection(
@@ -321,12 +409,18 @@ struct SettingsMacTaskSectionsDetailView: View {
 
     private func confirmDeleteSection() {
         guard let section = pendingDeleteSection else { return }
+        let deletedSectionIDs = HomeCustomTaskSectionStorage.sectionAndDescendantIDs(
+            for: section.id,
+            in: customTaskSections
+        )
         persistSections(
             HomeCustomTaskSectionStorage.deletingSection(section.id, from: customTaskSections)
         )
-        removeCollapseState(for: section.id)
+        for sectionID in deletedSectionIDs {
+            removeCollapseState(for: sectionID)
+        }
         statusMessage = ""
-        clearDeletedSectionAssignments(section.id)
+        clearDeletedSectionAssignments(deletedSectionIDs)
         pendingDeleteSection = nil
     }
 
@@ -370,8 +464,8 @@ struct SettingsMacTaskSectionsDetailView: View {
         collapsedTaskListSectionIDsStorage = collapsedIDs.sorted().joined(separator: "\n")
     }
 
-    private func clearDeletedSectionAssignments(_ sectionID: UUID) {
-        let sectionKey = HomeCustomTaskSectionStorage.manualOrderSectionKey(for: sectionID)
+    private func clearDeletedSectionAssignments(_ sectionIDs: Set<UUID>) {
+        let sectionKeys = Set(sectionIDs.map(HomeCustomTaskSectionStorage.manualOrderSectionKey(for:)))
 
         do {
             let tasks = try modelContext.fetch(FetchDescriptor<RoutineTask>())
@@ -380,13 +474,15 @@ struct SettingsMacTaskSectionsDetailView: View {
             for task in tasks {
                 var didChangeTask = false
 
-                if task.customTaskSectionID == sectionID {
+                if task.customTaskSectionID.map(sectionIDs.contains) == true {
                     task.customTaskSectionID = nil
                     didChangeTask = true
                 }
 
                 var manualSectionOrders = task.manualSectionOrders
-                if manualSectionOrders.removeValue(forKey: sectionKey) != nil {
+                let originalCount = manualSectionOrders.count
+                manualSectionOrders = manualSectionOrders.filter { !sectionKeys.contains($0.key) }
+                if manualSectionOrders.count != originalCount {
                     task.manualSectionOrders = manualSectionOrders
                     didChangeTask = true
                 }

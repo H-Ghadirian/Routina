@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0419](0419-nest-custom-subsections-under-super-sections.md) refines [0394](0394-add-custom-mac-sidebar-task-sections.md), [0395](0395-delete-custom-mac-sidebar-task-sections.md), [0403](0403-rename-custom-mac-sidebar-task-sections.md), and [0411](0411-manage-custom-task-sections-in-settings.md) for one-level custom hierarchy:** User-created top-level custom sections are super sections that may contain one level of user-created subsections; tasks can be assigned directly to either level, row move menus expose the hierarchy, existing flat sections migrate as super sections, and deleting a super section cascades through its subsections without deleting tasks.
+
 - **[0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md) establishes the scrolling performance contract:** Unbounded SwiftUI lists consume stable presentation snapshots; full-history fetching, filtering, sorting, grouping, lookup construction, and row numbering happen only at data/filter/search/preference invalidation boundaries, with nonessential refreshes deferred during active macOS scrolling and Release profiling required for meaningful scrolling changes.
 
 - **[0417](0417-route-feature-data-loading-through-reducers.md) establishes the TCA data-boundary migration convention:** Feature-owned SwiftData loading and mutations should move incrementally behind reducer actions and injected dependencies; views may observe platform events but should translate them into actions instead of executing feature persistence workflows directly.

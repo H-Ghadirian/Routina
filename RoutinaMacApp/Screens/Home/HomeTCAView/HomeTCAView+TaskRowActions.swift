@@ -202,8 +202,9 @@ extension HomeTCAView {
         HomeCustomTaskSectionStorage.decoded(from: customTaskSectionsRawValue)
     }
 
-    func presentCustomTaskSectionPrompt(for taskID: UUID?) {
+    func presentCustomTaskSectionPrompt(for taskID: UUID?, parentSectionID: UUID? = nil) {
         pendingCustomTaskSectionTaskID = taskID
+        pendingCustomTaskSectionParentID = parentSectionID
         customTaskSectionNameDraft = ""
         isCustomTaskSectionPromptPresented = true
     }
@@ -211,6 +212,7 @@ extension HomeTCAView {
     func confirmCustomTaskSectionPrompt() {
         guard let result = HomeCustomTaskSectionStorage.upsertingSection(
             title: customTaskSectionNameDraft,
+            parentSectionID: pendingCustomTaskSectionParentID,
             in: customTaskSections
         ) else {
             return
@@ -228,6 +230,7 @@ extension HomeTCAView {
         isCustomTaskSectionPromptPresented = false
         customTaskSectionNameDraft = ""
         pendingCustomTaskSectionTaskID = nil
+        pendingCustomTaskSectionParentID = nil
     }
 
     func presentCustomTaskSectionRenamePrompt(sectionID: UUID, title: String) {
@@ -268,13 +271,19 @@ extension HomeTCAView {
             resetCustomTaskSectionDeleteConfirmation()
             return
         }
+        let deletedSectionIDs = HomeCustomTaskSectionStorage.sectionAndDescendantIDs(
+            for: sectionID,
+            in: customTaskSections
+        )
 
         customTaskSectionsRawValue = HomeCustomTaskSectionStorage.encoded(
             HomeCustomTaskSectionStorage.deletingSection(sectionID, from: customTaskSections)
         )
         AppSettingsPersistenceMirror.schedule()
-        removeCustomTaskSectionCollapseState(sectionID)
-        store.send(.deleteCustomTaskSection(sectionID: sectionID))
+        for deletedSectionID in deletedSectionIDs {
+            removeCustomTaskSectionCollapseState(deletedSectionID)
+            store.send(.deleteCustomTaskSection(sectionID: deletedSectionID))
+        }
         resetCustomTaskSectionDeleteConfirmation()
     }
 
@@ -285,7 +294,10 @@ extension HomeTCAView {
     }
 
     func applyCustomTaskSectionPrompt<Content: View>(to view: Content) -> some View {
-        view.alert("New Section", isPresented: $isCustomTaskSectionPromptPresented) {
+        view.alert(
+            pendingCustomTaskSectionParentID == nil ? "New Super Section" : "New Subsection",
+            isPresented: $isCustomTaskSectionPromptPresented
+        ) {
             TextField("Name", text: $customTaskSectionNameDraft)
             Button("Create") {
                 confirmCustomTaskSectionPrompt()
@@ -332,7 +344,10 @@ extension HomeTCAView {
     }
 
     private func revealCustomTaskSection(_ customSectionID: UUID, taskID: UUID) {
-        revealTaskListSection(sectionID: customTaskListSectionID(for: customSectionID), taskID: taskID)
+        let topLevelID = customTaskSections
+            .first(where: { $0.id == customSectionID })?
+            .parentSectionID ?? customSectionID
+        revealTaskListSection(sectionID: customTaskListSectionID(for: topLevelID), taskID: taskID)
     }
 
     private func removeCustomTaskSectionCollapseState(_ customSectionID: UUID) {
@@ -466,19 +481,43 @@ private extension NSMenu {
         let submenu = NSMenu(title: "Move to")
         var hasSectionItems = false
 
-        for section in customSections {
-            submenu.addActionItem(
+        for section in HomeCustomTaskSectionStorage.topLevelSections(in: customSections) {
+            let sectionItem = NSMenuItem(
                 title: section.title,
+                action: nil,
+                keyEquivalent: ""
+            )
+            sectionItem.image = NSImage(
+                systemSymbolName: "rectangle.stack",
+                accessibilityDescription: section.title
+            )
+            let sectionSubmenu = NSMenu(title: section.title)
+            sectionSubmenu.addActionItem(
+                title: "In \(section.title)",
                 systemImage: "rectangle.stack",
                 isEnabled: currentCustomSectionID != section.id
             ) {
                 moveToCustomSection(section.id)
             }
+            for subsection in HomeCustomTaskSectionStorage.subsections(
+                of: section.id,
+                in: customSections
+            ) {
+                sectionSubmenu.addActionItem(
+                    title: subsection.title,
+                    systemImage: "rectangle.inset.filled",
+                    isEnabled: currentCustomSectionID != subsection.id
+                ) {
+                    moveToCustomSection(subsection.id)
+                }
+            }
+            sectionItem.submenu = sectionSubmenu
+            submenu.addItem(sectionItem)
             hasSectionItems = true
         }
 
         submenu.addActionItem(
-            title: "New Section...",
+            title: "New Super Section...",
             systemImage: "plus.rectangle"
         ) {
             createCustomSection()

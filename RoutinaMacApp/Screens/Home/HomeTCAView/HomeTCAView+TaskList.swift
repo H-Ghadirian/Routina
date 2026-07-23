@@ -1190,6 +1190,12 @@ extension HomeTCAView {
 
         if let customSectionID {
             Button {
+                presentCustomTaskSectionPrompt(for: nil, parentSectionID: customSectionID)
+            } label: {
+                Label("New Subsection", systemImage: "plus.rectangle.on.rectangle")
+            }
+
+            Button {
                 presentCustomTaskSectionRenamePrompt(sectionID: customSectionID, title: section.title)
             } label: {
                 Label("Rename Section", systemImage: "pencil")
