@@ -404,6 +404,22 @@ enum TimelineEntryKindPresentation {
 }
 
 enum TimelineLogic {
+    static func rowNumbersByEntryID(
+        groupedEntries: [(date: Date, entries: [TimelineEntry])]
+    ) -> [UUID: Int] {
+        var rowNumbers: [UUID: Int] = [:]
+        rowNumbers.reserveCapacity(groupedEntries.reduce(into: 0) { $0 += $1.entries.count })
+
+        var rowNumber = 1
+        for section in groupedEntries {
+            for entry in section.entries {
+                rowNumbers[entry.id] = rowNumber
+                rowNumber += 1
+            }
+        }
+        return rowNumbers
+    }
+
     static func filteredEntries(
         logs: [RoutineLog],
         tasks: [RoutineTask],

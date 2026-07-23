@@ -41,4 +41,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 
 ## Index
 
-No lessons recorded yet.
+- [0001 — Number mixed timeline entries in display order](0001-number-mixed-timeline-entries-in-display-order.md)

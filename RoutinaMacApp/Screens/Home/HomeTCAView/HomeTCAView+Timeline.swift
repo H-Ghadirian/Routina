@@ -205,20 +205,19 @@ extension HomeTCAView {
             calendar: calendar
         )
 
-        var rowNumbersByEntryID: [UUID: Int] = [:]
-        rowNumbersByEntryID.reserveCapacity(filteredEntries.count)
-        for (index, entry) in filteredEntries.enumerated() {
-            rowNumbersByEntryID[entry.id] = index + 1
-        }
+        let groupedFilteredEntries = TimelineLogic.groupedByDay(
+            entries: filteredEntries,
+            calendar: calendar
+        )
+        let rowNumbersByEntryID = TimelineLogic.rowNumbersByEntryID(
+            groupedEntries: groupedFilteredEntries
+        )
 
         return HomeMacTimelinePresentation(
             baseEntries: baseEntries,
             filteredEntries: filteredEntries,
             unfilteredEntries: unfilteredEntries,
-            groupedFilteredEntries: TimelineLogic.groupedByDay(
-                entries: filteredEntries,
-                calendar: calendar
-            ),
+            groupedFilteredEntries: groupedFilteredEntries,
             rowNumbersByEntryID: rowNumbersByEntryID
         )
     }

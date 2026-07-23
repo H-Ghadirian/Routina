@@ -1114,6 +1114,45 @@ struct TimelineLogicTests {
         #expect(groups.isEmpty)
     }
 
+    @Test
+    func rowNumbersFollowGroupedDisplayOrderAcrossEntryTypes() {
+        let calendar = makeTestCalendar()
+        let olderLogID = UUID()
+        let newerFocusID = UUID()
+        let olderLog = TimelineEntry(
+            id: olderLogID,
+            taskID: UUID(),
+            timestamp: makeDate("2026-03-19T10:00:00Z"),
+            taskName: "Older task",
+            taskEmoji: "✅",
+            tags: [],
+            isOneOff: false,
+            kind: .completed
+        )
+        let newerFocus = TimelineEntry(
+            id: newerFocusID,
+            taskID: nil,
+            timestamp: makeDate("2026-03-20T10:00:00Z"),
+            taskName: "#Focus",
+            taskEmoji: "⏱️",
+            tags: ["Focus"],
+            isOneOff: false,
+            kind: .completed,
+            entryType: .focus
+        )
+
+        // Filtering builds entries by category, while display order is chronological
+        // across all categories.
+        let groups = TimelineLogic.groupedByDay(
+            entries: [olderLog, newerFocus],
+            calendar: calendar
+        )
+        let rowNumbers = TimelineLogic.rowNumbersByEntryID(groupedEntries: groups)
+
+        #expect(rowNumbers[newerFocusID] == 1)
+        #expect(rowNumbers[olderLogID] == 2)
+    }
+
     // MARK: - daySectionTitle
 
     @Test
