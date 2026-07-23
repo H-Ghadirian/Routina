@@ -12,6 +12,12 @@
 - After making a change that introduces or revises long-term decisions, add a new decision record or supersede an existing one.
 - Decision records should capture why a choice was made, not every small implementation detail. Use them for architecture, conventions, data model, dependencies, product behavior, build setup, and other choices future contributors should preserve or understand.
 
+## Bug-Fix Lessons
+
+- After every bug fix, add a separate numbered lesson-learned note under `docs/lessons/` and update `docs/lessons/README.md`, following the format and naming convention documented there.
+- Each lesson must record the symptom, root cause, fix, prevention rule for future development, and any regression test or safeguard added to prevent recurrence.
+- Keep lesson notes separate from decision records: decisions document durable project choices, while lessons document reusable knowledge gained from defects.
+
 ## UI Interaction Rules
 
 - All visible buttons must be clickable across their full visual surface, not only on their text, emoji, or icon. Native button styles can own their native hit areas; custom/plain SwiftUI buttons must fill their intended target and define a matching `contentShape`, or use a shared Routina visual modifier that does.
