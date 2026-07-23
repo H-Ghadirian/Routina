@@ -5,15 +5,20 @@ struct HomeFeatureTaskLoadQuery {
     var calendar: Calendar
 
     @MainActor
-    func load(from sourceContext: ModelContext) throws -> HomeFeatureTaskLoadEffectResult {
+    func load(
+        from sourceContext: ModelContext,
+        performingMaintenance: Bool = true
+    ) throws -> HomeFeatureTaskLoadEffectResult {
         let context = ModelContext(sourceContext.container)
-        try HomeDeduplicationSupport.enforceUniqueRoutineNames(in: context)
-        try HomeDeduplicationSupport.enforceUniquePlaceNames(in: context)
-        _ = try RoutineLogHistory.deduplicateRedundantSameDayLogs(in: context, calendar: calendar)
-        _ = try RoutineLogHistory.backfillMissingLastDoneLogs(in: context)
-        try CloudKitDirectPullMergeHousekeeping.deleteOrphanedTaskRows(in: context)
-        if context.hasChanges {
-            try context.save()
+        if performingMaintenance {
+            try HomeDeduplicationSupport.enforceUniqueRoutineNames(in: context)
+            try HomeDeduplicationSupport.enforceUniquePlaceNames(in: context)
+            _ = try RoutineLogHistory.deduplicateRedundantSameDayLogs(in: context, calendar: calendar)
+            _ = try RoutineLogHistory.backfillMissingLastDoneLogs(in: context)
+            try CloudKitDirectPullMergeHousekeeping.deleteOrphanedTaskRows(in: context)
+            if context.hasChanges {
+                try context.save()
+            }
         }
 
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())

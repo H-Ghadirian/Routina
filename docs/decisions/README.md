@@ -320,6 +320,7 @@ These are ordered from newest resolver to oldest resolver.
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
 | [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md) | Keep Whole-History Work Out of Scrolling Render Paths | Accepted | 2026-07-23 |
+| [0419](0419-refresh-stats-on-meaningful-surface-events.md) | Refresh Stats on Meaningful Surface Events | Accepted | 2026-07-23 |
 | [0417](0417-route-feature-data-loading-through-reducers.md) | Route Feature Data Loading Through Reducers | Accepted | 2026-07-22 |
 | [0416](0416-use-semantic-release-versions.md) | Use Semantic Release Versions | Accepted | 2026-07-22 |
 | [0414](0414-align-task-kind-controls-between-create-and-edit.md) | Align Task Kind Controls Between Create and Edit | Accepted | 2026-07-22 |

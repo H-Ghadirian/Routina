@@ -36,9 +36,6 @@ private struct StatsDataObserver: View {
             .task {
                 store.send(.onAppear)
             }
-            .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { _ in
-                store.send(.dataRefreshRequested)
-            }
             .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
                 store.send(.dataRefreshRequested)
             }

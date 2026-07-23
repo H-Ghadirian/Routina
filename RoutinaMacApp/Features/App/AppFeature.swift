@@ -9,6 +9,7 @@ struct AppFeature {
     struct State: Equatable {
         var selectedTab: Tab = .home
         var hasRestoredTemporaryViewState = false
+        var isMacStatsSurfaceActive = false
         var pendingDeepLinkedTaskID: UUID?
         var pendingDeepLinkedSprintID: UUID?
         var home = HomeFeature.State()
@@ -70,6 +71,10 @@ struct AppFeature {
                 return openPendingSprintDeepLinkIfPossible(sprintBoardData, state: &state)
             case let .home(.sprintBoardLoadedFromStorage(sprintBoardData, _)):
                 return openPendingSprintDeepLinkIfPossible(sprintBoardData, state: &state)
+            case let .home(.macSidebarModeChanged(mode)):
+                let isEnteringStats = mode == .stats && !state.isMacStatsSurfaceActive
+                state.isMacStatsSurfaceActive = mode == .stats
+                return isEnteringStats ? .send(.stats(.dataRefreshRequested)) : .none
             case .onAppear:
                 guard !state.hasRestoredTemporaryViewState else { return .none }
                 state.hasRestoredTemporaryViewState = true
@@ -322,6 +327,7 @@ struct StatsFeature {
         var isGitHubStatsLoading: Bool = false
         var gitHubStatsErrorMessage: String?
         var isGitFeaturesEnabled: Bool = false
+        var hasLoadedDataSnapshot = false
 
         var hasActiveFilters: Bool {
             selectedRange != .week
@@ -366,6 +372,8 @@ struct StatsFeature {
             placeCheckInSessions: [PlaceCheckInSession] = []
         )
         case dataRefreshRequested
+        case dataRefreshDebounceCompleted
+        case activeFocusRefreshTimerTick
         case dataRefreshFailed
         case onAppear
         case selectedRangeChanged(DoneChartRange)
@@ -385,6 +393,7 @@ struct StatsFeature {
     }
 
     @Dependency(\.calendar) var calendar
+    @Dependency(\.continuousClock) var continuousClock
     @Dependency(\.date.now) var now
     @Dependency(\.gitHubStatsClient) var gitHubStatsClient
     @Dependency(\.gitLabStatsClient) var gitLabStatsClient
@@ -395,6 +404,7 @@ struct StatsFeature {
         Reduce { state, action in
             switch action {
             case let .setData(tasks, logs, focusSessions, sprintFocusSessions, boardSprints, sleepSessions, awaySessions, emotionLogs, notes, events, noteAttachmentNoteIDs, goals, places, placeCheckInSessions):
+                state.hasLoadedDataSnapshot = true
                 state.tasks = tasks
                 state.logs = logs
                 state.focusSessions = focusSessions
@@ -418,24 +428,43 @@ struct StatsFeature {
                 return .none
 
             case .dataRefreshRequested:
+                return .run { send in
+                    try await continuousClock.sleep(for: .seconds(1))
+                    await send(.dataRefreshDebounceCompleted)
+                }
+                .cancellable(id: CancelID.dataRefreshDebounce, cancelInFlight: true)
+
+            case .dataRefreshDebounceCompleted:
                 return refreshDataEffect()
+
+            case .activeFocusRefreshTimerTick:
+                let hasActiveUnpausedFocus = state.focusSessions.contains {
+                    $0.state == .active && !$0.isPaused
+                } || state.sprintFocusSessions.contains {
+                    $0.isActive && !$0.isPaused
+                }
+                return hasActiveUnpausedFocus ? refreshDataEffect() : .none
 
             case .dataRefreshFailed:
                 return .none
 
             case .onAppear:
+                let activeFocusTimer = activeFocusRefreshTimerEffect()
                 state.relatedTagRules = RoutineTagRelations.sanitized(
                     appSettingsClient.relatedTagRules()
                     + RoutineTagRelations.learnedRules(from: state.tasks.map(\.tags))
                 )
                 state.tagColors = appSettingsClient.tagColors()
                 state.isGitFeaturesEnabled = appSettingsClient.gitFeaturesEnabled()
+                guard !state.hasLoadedDataSnapshot else {
+                    return activeFocusTimer
+                }
                 guard state.isGitFeaturesEnabled else {
                     state.gitHubConnection = .disconnected
                     state.isGitHubStatsLoading = false
                     state.gitHubStats = nil
                     state.gitHubStatsErrorMessage = nil
-                    return refreshDataEffect()
+                    return .merge(refreshDataEffect(), activeFocusTimer)
                 }
                 state.gitHubConnection = gitHubStatsClient.loadConnectionStatus()
                 if !state.gitHubConnection.isConnected {
@@ -445,7 +474,8 @@ struct StatsFeature {
                 }
                 return .merge(
                     refreshDataEffect(),
-                    refreshGitHubStatsEffect(state: &state)
+                    refreshGitHubStatsEffect(state: &state),
+                    activeFocusTimer
                 )
 
             case let .selectedRangeChanged(range):
@@ -543,6 +573,21 @@ struct StatsFeature {
                 return .none
             }
         }
+    }
+
+    private enum CancelID {
+        case dataRefreshDebounce
+        case activeFocusRefreshTimer
+    }
+
+    private func activeFocusRefreshTimerEffect() -> Effect<Action> {
+        .run { send in
+            while !Task.isCancelled {
+                try await continuousClock.sleep(for: .seconds(30))
+                await send(.activeFocusRefreshTimerTick)
+            }
+        }
+        .cancellable(id: CancelID.activeFocusRefreshTimer, cancelInFlight: true)
     }
 
     private func refreshDataEffect() -> Effect<Action> {

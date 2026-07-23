@@ -42,3 +42,6 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 ## Index
 
 - [0001 — Number mixed timeline entries in display order](0001-number-mixed-timeline-entries-in-display-order.md)
+- [0002 — Keep Timeline change detection out of the render path](0002-keep-timeline-change-detection-out-of-render-path.md)
+- [0003 — Separate Home maintenance from refresh](0003-separate-home-maintenance-from-refresh.md)
+- [0004 — Do not reload Stats on view reappearance](0004-do-not-reload-stats-on-view-reappearance.md)

@@ -18,18 +18,21 @@ struct HomeFeatureTaskLoadEffectFactory<Action, CancelID: Hashable & Sendable> {
     var failedAction: @Sendable () -> Action
 
     @MainActor
-    func loadTasks() throws -> HomeFeatureTaskLoadEffectResult {
-        try HomeFeatureTaskLoadQuery(calendar: calendar).load(from: modelContext())
+    func loadTasks(performingMaintenance: Bool = true) throws -> HomeFeatureTaskLoadEffectResult {
+        try HomeFeatureTaskLoadQuery(calendar: calendar).load(
+            from: modelContext(),
+            performingMaintenance: performingMaintenance
+        )
     }
 
-    func loadTasksEffect() -> Effect<Action> {
+    func loadTasksEffect(performingMaintenance: Bool = true) -> Effect<Action> {
         let loadTasks = self.loadTasks
         let loadedAction = self.loadedAction
         let failedAction = self.failedAction
 
         return .run { @MainActor send in
             do {
-                let result = try loadTasks()
+                let result = try loadTasks(performingMaintenance)
                 send(
                     loadedAction(
                         result.tasks,

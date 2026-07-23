@@ -2,23 +2,69 @@ import ComposableArchitecture
 import SwiftData
 import SwiftUI
 
+private struct TimelineDataSnapshot {
+    var tasks: [RoutineTask] = []
+    var logs: [RoutineLog] = []
+    var fileAttachments: [RoutineAttachment] = []
+    var events: [RoutineEvent] = []
+    var emotionLogs: [EmotionLog] = []
+    var notes: [RoutineNote] = []
+    var noteAttachments: [RoutineNoteAttachment] = []
+    var focusSessions: [FocusSession] = []
+    var sprintFocusSessions: [SprintFocusSessionRecord] = []
+    var boardSprints: [BoardSprintRecord] = []
+    var sleepSessions: [SleepSession] = []
+    var awaySessions: [AwaySession] = []
+    var placeCheckInSessions: [PlaceCheckInSession] = []
+
+    @MainActor
+    static func fetch(from context: ModelContext) throws -> Self {
+        Self(
+            tasks: try context.fetch(FetchDescriptor<RoutineTask>()),
+            logs: try context.fetch(FetchDescriptor<RoutineLog>(
+                sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+            )),
+            fileAttachments: try context.fetch(FetchDescriptor<RoutineAttachment>()),
+            events: try context.fetch(FetchDescriptor<RoutineEvent>(
+                sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
+            )),
+            emotionLogs: try context.fetch(FetchDescriptor<EmotionLog>(
+                sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+            )),
+            notes: try context.fetch(FetchDescriptor<RoutineNote>(
+                sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+            )),
+            noteAttachments: try context.fetch(FetchDescriptor<RoutineNoteAttachment>()),
+            focusSessions: try context.fetch(FetchDescriptor<FocusSession>(
+                sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
+            )),
+            sprintFocusSessions: try context.fetch(FetchDescriptor<SprintFocusSessionRecord>(
+                sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
+            )),
+            boardSprints: try context.fetch(FetchDescriptor<BoardSprintRecord>(
+                sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+            )),
+            sleepSessions: try context.fetch(FetchDescriptor<SleepSession>(
+                sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
+            )),
+            awaySessions: try context.fetch(FetchDescriptor<AwaySession>(
+                sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
+            )),
+            placeCheckInSessions: try context.fetch(FetchDescriptor<PlaceCheckInSession>(
+                sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
+            ))
+        )
+    }
+}
+
 struct TimelineView: View {
     let store: StoreOf<TimelineFeature>
     @Environment(\.calendar) private var calendar
     @Environment(\.colorScheme) private var colorScheme
-    @Query(sort: \RoutineLog.timestamp, order: .reverse) private var logs: [RoutineLog]
-    @Query private var tasks: [RoutineTask]
-    @Query private var fileAttachments: [RoutineAttachment]
-    @Query(sort: \RoutineEvent.startedAt, order: .reverse) private var events: [RoutineEvent]
-    @Query(sort: \EmotionLog.createdAt, order: .reverse) private var emotionLogs: [EmotionLog]
-    @Query(sort: \RoutineNote.createdAt, order: .reverse) private var notes: [RoutineNote]
-    @Query private var noteAttachments: [RoutineNoteAttachment]
-    @Query(sort: \FocusSession.startedAt, order: .reverse) private var focusSessions: [FocusSession]
-    @Query(sort: \SprintFocusSessionRecord.startedAt, order: .reverse) private var sprintFocusSessions: [SprintFocusSessionRecord]
-    @Query(sort: \BoardSprintRecord.createdAt, order: .reverse) private var boardSprints: [BoardSprintRecord]
-    @Query(sort: \SleepSession.startedAt, order: .reverse) private var sleepSessions: [SleepSession]
-    @Query(sort: \AwaySession.startedAt, order: .reverse) private var awaySessions: [AwaySession]
-    @Query(sort: \PlaceCheckInSession.startedAt, order: .reverse) private var placeCheckInSessions: [PlaceCheckInSession]
+    @Environment(\.modelContext) private var modelContext
+    @State private var dataSnapshot = TimelineDataSnapshot()
+    @State private var hasDeferredDataSnapshotRefresh = false
+    @State private var deferredDataSnapshotRefreshTask: Task<Void, Never>?
     @State private var relatedFilterTagSuggestionAnchor: String?
     @AppStorage(
         UserDefaultBoolValueKey.appSettingMacTimelineQuickFiltersVisible.rawValue,
@@ -88,11 +134,11 @@ struct TimelineView: View {
                 }
         }
         .task {
-            syncTimelineData()
+            refreshTimelineDataSnapshot()
             validateEventEmotionFilterVisibility()
         }
-        .onChange(of: timelineDataChangeToken) { _, _ in
-            syncTimelineData()
+        .onReceive(NotificationCenter.default.publisher(for: .routineDidUpdate)) { _ in
+            requestTimelineDataSnapshotRefresh()
         }
         .onChange(of: isPlacesEnabled) { _, _ in
             syncTimelineData()
@@ -117,117 +163,9 @@ struct TimelineView: View {
         .onChange(of: store.filterType) { _, _ in
             validateTimelineFilterVisibility()
         }
-    }
-
-    private var timelineDataChangeToken: [String] {
-        taskChangeToken
-            + logChangeToken
-            + focusSessionChangeToken
-            + sprintFocusSessionChangeToken
-            + boardSprintChangeToken
-            + sleepSessionChangeToken
-            + awaySessionChangeToken
-            + placeCheckInChangeToken
-            + fileAttachmentChangeToken
-            + eventChangeToken
-            + emotionLogChangeToken
-            + noteChangeToken
-            + noteAttachmentChangeToken
-    }
-
-    private var taskChangeToken: [String] {
-        tasks.map { task in
-            [
-                task.id.uuidString,
-                task.name ?? "",
-                task.emoji ?? "",
-                task.tagsStorage,
-                task.importanceRawValue,
-                task.urgencyRawValue,
-                task.scheduleModeRawValue,
-                task.lastDone?.timeIntervalSinceReferenceDate.description ?? "",
-                task.canceledAt?.timeIntervalSinceReferenceDate.description ?? "",
-                task.scheduleAnchor?.timeIntervalSinceReferenceDate.description ?? "",
-                task.todoStateRawValue ?? "",
-                task.imageData?.count.description ?? "",
-                task.voiceNoteData?.count.description ?? "",
-            ].joined(separator: ":")
-        }
-    }
-
-    private var logChangeToken: [String] {
-        logs.map { log in
-            [
-                log.id.uuidString,
-                log.taskID.uuidString,
-                log.timestamp?.timeIntervalSinceReferenceDate.description ?? "",
-                log.kindRawValue,
-                log.actualDurationMinutes?.description ?? "",
-            ].joined(separator: ":")
-        }
-    }
-
-    private var sleepSessionChangeToken: [String] {
-        sleepSessions.map { session in
-            [
-                session.id.uuidString,
-                session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.endedAt?.timeIntervalSinceReferenceDate.description ?? "",
-            ].joined(separator: ":")
-        }
-    }
-
-    private var awaySessionChangeToken: [String] {
-        awaySessions.map { session in
-            [
-                session.id.uuidString,
-                session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.finishedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.state.rawValue,
-                session.linkedTaskID?.uuidString ?? "",
-                session.title,
-                session.presetRawValue,
-            ].joined(separator: ":")
-        }
-    }
-
-    private var focusSessionChangeToken: [String] {
-        focusSessions.map { session in
-            [
-                session.id.uuidString,
-                session.taskID.uuidString,
-                session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.completedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.abandonedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.pausedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.accumulatedPausedSeconds.description,
-            ].joined(separator: ":")
-        }
-    }
-
-    private var sprintFocusSessionChangeToken: [String] {
-        sprintFocusSessions.map { session in
-            [
-                session.id.uuidString,
-                session.sprintID.uuidString,
-                session.startedAt.timeIntervalSinceReferenceDate.description,
-                session.stoppedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.pausedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.accumulatedPausedSeconds.description,
-            ].joined(separator: ":")
-        }
-    }
-
-    private var boardSprintChangeToken: [String] {
-        boardSprints.map { sprint in
-            [
-                sprint.id.uuidString,
-                sprint.title,
-                sprint.statusRawValue,
-                sprint.createdAt.timeIntervalSinceReferenceDate.description,
-                sprint.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                sprint.finishedAt?.timeIntervalSinceReferenceDate.description ?? "",
-            ].joined(separator: ":")
+        .onDisappear {
+            deferredDataSnapshotRefreshTask?.cancel()
+            deferredDataSnapshotRefreshTask = nil
         }
     }
 
@@ -235,66 +173,22 @@ struct TimelineView: View {
         Set(fileAttachments.map(\.taskID))
     }
 
-    private var fileAttachmentChangeToken: [String] {
-        fileAttachments.map { "\($0.id.uuidString):\($0.taskID.uuidString)" }.sorted()
-    }
+    private var tasks: [RoutineTask] { dataSnapshot.tasks }
+    private var logs: [RoutineLog] { dataSnapshot.logs }
+    private var fileAttachments: [RoutineAttachment] { dataSnapshot.fileAttachments }
+    private var events: [RoutineEvent] { dataSnapshot.events }
+    private var emotionLogs: [EmotionLog] { dataSnapshot.emotionLogs }
+    private var notes: [RoutineNote] { dataSnapshot.notes }
+    private var noteAttachments: [RoutineNoteAttachment] { dataSnapshot.noteAttachments }
+    private var focusSessions: [FocusSession] { dataSnapshot.focusSessions }
+    private var sprintFocusSessions: [SprintFocusSessionRecord] { dataSnapshot.sprintFocusSessions }
+    private var boardSprints: [BoardSprintRecord] { dataSnapshot.boardSprints }
+    private var sleepSessions: [SleepSession] { dataSnapshot.sleepSessions }
+    private var awaySessions: [AwaySession] { dataSnapshot.awaySessions }
+    private var placeCheckInSessions: [PlaceCheckInSession] { dataSnapshot.placeCheckInSessions }
 
     private var noteAttachmentNoteIDs: Set<UUID> {
         Set(noteAttachments.map(\.noteID))
-    }
-
-    private var eventChangeToken: [String] {
-        events.map { event in
-            [
-                event.id.uuidString,
-                event.title ?? "",
-                event.notes ?? "",
-                event.emoji ?? "",
-                event.tagsStorage,
-                event.isAllDay.description,
-                event.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                event.endedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                event.updatedAt?.timeIntervalSinceReferenceDate.description ?? "",
-            ].joined(separator: ":")
-        }
-    }
-
-    private var emotionLogChangeToken: [String] {
-        emotionLogs.map { emotion in
-            [
-                emotion.id.uuidString,
-                emotion.familyRawValue,
-                emotion.familyRawValuesStorage,
-                emotion.label,
-                emotion.labelsStorage,
-                emotion.valence.description,
-                emotion.arousal.description,
-                emotion.intensity.description,
-                emotion.bodyAreasStorage,
-                emotion.reflection ?? "",
-                emotion.createdAt?.timeIntervalSinceReferenceDate.description ?? "",
-                emotion.updatedAt?.timeIntervalSinceReferenceDate.description ?? "",
-            ].joined(separator: ":")
-        }
-    }
-
-    private var noteChangeToken: [String] {
-        notes.map { note in
-            [
-                note.id.uuidString,
-                note.title ?? "",
-                note.body ?? "",
-                note.tagsStorage,
-                note.createdAt?.timeIntervalSinceReferenceDate.description ?? "",
-                note.updatedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                note.imageData?.count.description ?? "",
-                note.voiceNoteData?.count.description ?? "",
-            ].joined(separator: ":")
-        }
-    }
-
-    private var noteAttachmentChangeToken: [String] {
-        noteAttachments.map { "\($0.id.uuidString):\($0.noteID.uuidString):\($0.fileName):\($0.data.count)" }.sorted()
     }
 
     private var deepLinkedNotePresentationBinding: Binding<TimelineNoteDeepLinkPresentation?> {
@@ -329,16 +223,37 @@ struct TimelineView: View {
         ))
     }
 
-    private var placeCheckInChangeToken: [String] {
-        placeCheckInSessions.map { session in
-            [
-                session.id.uuidString,
-                session.placeName,
-                session.startedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.endedAt?.timeIntervalSinceReferenceDate.description ?? "",
-                session.activityRawValue ?? "",
-                session.imageData?.count.description ?? "",
-            ].joined(separator: ":")
+    private func requestTimelineDataSnapshotRefresh() {
+        guard !RoutinaMacScrollInteractionGate.isScrollActive else {
+            hasDeferredDataSnapshotRefresh = true
+            scheduleDeferredTimelineDataSnapshotRefresh()
+            return
+        }
+        refreshTimelineDataSnapshot()
+    }
+
+    private func scheduleDeferredTimelineDataSnapshotRefresh() {
+        guard deferredDataSnapshotRefreshTask == nil else { return }
+        deferredDataSnapshotRefreshTask = Task { @MainActor in
+            try? await Task.sleep(
+                for: .milliseconds(RoutinaMacScrollInteractionGate.quietRetryDelayMilliseconds)
+            )
+            guard !Task.isCancelled else { return }
+            deferredDataSnapshotRefreshTask = nil
+            guard hasDeferredDataSnapshotRefresh else { return }
+            requestTimelineDataSnapshotRefresh()
+        }
+    }
+
+    private func refreshTimelineDataSnapshot() {
+        do {
+            dataSnapshot = try TimelineDataSnapshot.fetch(from: modelContext)
+            hasDeferredDataSnapshotRefresh = false
+            deferredDataSnapshotRefreshTask?.cancel()
+            deferredDataSnapshotRefreshTask = nil
+            syncTimelineData()
+        } catch {
+            assertionFailure("Unable to refresh Timeline data: \(error)")
         }
     }
 

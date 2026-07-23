@@ -2,6 +2,50 @@ import XCTest
 @testable @preconcurrency import RoutinaMacOSDev
 
 final class PerformanceRegressionTests: XCTestCase {
+    func testMacTimelineDoesNotBindWholeHistoryQueriesIntoRenderPath() throws {
+        let source = try Self.sourceFile("RoutinaMacApp/Screens/Timeline/TimelineView.swift")
+
+        XCTAssertFalse(
+            source.contains("@Query"),
+            "Timeline scrolling must not observe whole-history SwiftData queries from the view render path."
+        )
+        XCTAssertTrue(source.contains("@State private var dataSnapshot = TimelineDataSnapshot()"))
+        XCTAssertTrue(source.contains("TimelineDataSnapshot.fetch(from: modelContext)"))
+        XCTAssertTrue(source.contains("NotificationCenter.default.publisher(for: .routineDidUpdate)"))
+        XCTAssertTrue(source.contains("RoutinaMacScrollInteractionGate.isScrollActive"))
+        XCTAssertFalse(
+            source.contains("timelineDataChangeToken"),
+            "Timeline must not rebuild full-history string signatures during SwiftUI body evaluation."
+        )
+    }
+
+    func testMacHomeRunsWholeHistoryMaintenanceOnlyForInitialLoad() throws {
+        let featureSource = try Self.sourceFile("RoutinaMacApp/Features/Home/HomeFeature.swift")
+        let refreshSource = try Self.sourceFile("SharedCore/Screens/Home/HomeTCAView+Refresh.swift")
+        let querySource = try Self.sourceFile("SharedCore/Features/Home/HomeFeatureTaskLoadQuery.swift")
+
+        XCTAssertTrue(
+            featureSource.contains("loadTasksEffect(performingMaintenance: !state.hasLoadedTaskSnapshot)"),
+            "Home should run repair and deduplication passes only while establishing the initial task snapshot."
+        )
+        XCTAssertTrue(
+            featureSource.contains("private func loadTasksEffect(performingMaintenance: Bool = false)"),
+            "Ordinary Home refreshes and post-mutation reloads should skip whole-history maintenance."
+        )
+        XCTAssertTrue(refreshSource.contains("guard !store.hasLoadedTaskSnapshot else { return }"))
+        XCTAssertTrue(querySource.contains("if performingMaintenance {"))
+        XCTAssertTrue(querySource.contains("RoutineLogHistory.backfillMissingLastDoneLogs"))
+    }
+
+    func testMacStatsDoesNotReloadItsWholeSnapshotOnEveryAppearance() throws {
+        let source = try Self.sourceFile("RoutinaMacApp/Features/App/AppFeature.swift")
+
+        XCTAssertTrue(source.contains("var hasLoadedDataSnapshot = false"))
+        XCTAssertTrue(source.contains("state.hasLoadedDataSnapshot = true"))
+        XCTAssertTrue(source.contains("guard !state.hasLoadedDataSnapshot else"))
+        XCTAssertTrue(source.contains(".cancellable(id: CancelID.dataRefreshDebounce, cancelInFlight: true)"))
+    }
+
     func testMacStatsViewDoesNotBindSwiftDataQueriesIntoRenderPath() throws {
         let source = try Self.sourceFile("RoutinaMacApp/Screens/StatsView.swift")
 
@@ -13,6 +57,21 @@ final class PerformanceRegressionTests: XCTestCase {
             source.contains("FetchDescriptor<RoutineTask>()"),
             "Stats data should still be refreshed explicitly from SwiftData when the underlying data changes."
         )
+        XCTAssertFalse(
+            source.contains("publisher(for: ModelContext.didSave)"),
+            "Stats must use Routina's semantic update notification so unrelated context saves cannot rebuild the whole dashboard."
+        )
+        XCTAssertFalse(
+            source.contains("publisher(for: .routineDidUpdate)"),
+            "App-wide sync chatter must not continuously rebuild Stats while it is idle."
+        )
+        let appFeatureSource = try Self.sourceFile("RoutinaMacApp/Features/App/AppFeature.swift")
+        XCTAssertTrue(appFeatureSource.contains("let hasActiveUnpausedFocus"))
+        XCTAssertTrue(appFeatureSource.contains("continuousClock.sleep(for: .seconds(30))"))
+        XCTAssertTrue(appFeatureSource.contains(".cancellable(id: CancelID.activeFocusRefreshTimer, cancelInFlight: true)"))
+        XCTAssertTrue(appFeatureSource.contains("var isMacStatsSurfaceActive = false"))
+        XCTAssertTrue(appFeatureSource.contains("let isEnteringStats = mode == .stats && !state.isMacStatsSurfaceActive"))
+        XCTAssertTrue(appFeatureSource.contains("return isEnteringStats ? .send(.stats(.dataRefreshRequested)) : .none"))
     }
 
     func testMacStatsDashboardToolbarControlsAreBetaGated() throws {

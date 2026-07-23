@@ -997,7 +997,7 @@ struct HomeFeature {
             },
             loadOnAppearEffect: { state in
                 .concatenate(
-                    loadTasksEffect(),
+                    loadTasksEffect(performingMaintenance: !state.hasLoadedTaskSnapshot),
                     loadSprintBoardEffect(revision: state.board.sprintBoardRevision),
                     .run { @MainActor send in
                         let snapshot = await self.locationClient.snapshot(false)
@@ -1869,8 +1869,8 @@ struct HomeFeature {
         }
     }
 
-    private func loadTasksEffect() -> Effect<Action> {
-        taskLoadEffectFactory().loadTasksEffect()
+    private func loadTasksEffect(performingMaintenance: Bool = false) -> Effect<Action> {
+        taskLoadEffectFactory().loadTasksEffect(performingMaintenance: performingMaintenance)
     }
 
     func syncSelectedTaskDetailState(_ state: inout State) {

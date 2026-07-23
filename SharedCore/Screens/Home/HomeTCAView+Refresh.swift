@@ -10,6 +10,7 @@ extension HomeTCAView {
 #if os(macOS)
                 RoutinaMacScrollInteractionGate.start()
 #endif
+                guard !store.hasLoadedTaskSnapshot else { return }
                 requestRefresh()
             }
             .onReceive(
