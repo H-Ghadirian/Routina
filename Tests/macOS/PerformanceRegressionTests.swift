@@ -1082,6 +1082,27 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testMacTimelineCachesWholeHistoryPresentationDuringScroll() throws {
+        let source = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift")
+        let homeSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView.swift")
+        let refreshSource = try Self.sourceFile("SharedCore/Screens/Home/HomeTCAView+Refresh.swift")
+        let listSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/HomeMacTimelineSidebarView.swift")
+
+        XCTAssertTrue(source.contains("final class HomeMacTimelinePresentationCache"))
+        XCTAssertTrue(source.contains("if cachedSignature == signature, let cachedPresentation"))
+        XCTAssertTrue(source.contains("RoutinaMacScrollInteractionGate.isScrollActive, let cachedPresentation"))
+        XCTAssertTrue(source.contains("private var macTimelinePresentation: HomeMacTimelinePresentation"))
+        XCTAssertTrue(source.contains("macTimelinePresentationCache.presentation(for: signature)"))
+        XCTAssertTrue(source.contains("let groupedFilteredEntries: [(date: Date, entries: [TimelineEntry])]"))
+        XCTAssertTrue(source.contains("let rowNumbersByEntryID: [UUID: Int]"))
+        XCTAssertTrue(homeSource.contains("@StateObject var macTimelinePresentationCache"))
+        XCTAssertTrue(refreshSource.contains("macTimelinePresentationCache.invalidate()"))
+        XCTAssertFalse(
+            listSource.contains("private var rowNumbersByEntryID"),
+            "Visible Timeline list body updates should reuse cached row numbers instead of walking all history."
+        )
+    }
+
     func testMacToolbarStatusBadgeKeepsStableTextWidth() throws {
         let source = try Self.sourceFile("RoutinaMacApp/Screens/Shared/MacToolbarComponents.swift")
 

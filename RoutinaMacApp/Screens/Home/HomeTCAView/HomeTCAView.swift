@@ -302,6 +302,7 @@ struct HomeTCAView: View {
     @State var fullscreenTaskDetailReturnPlacement: MacTaskDetailPanePlacement?
     @StateObject var dayPlanPlanner = DayPlanPlannerState()
     @StateObject var macTaskListPresentationCache = HomeMacTaskListPresentationCache()
+    @StateObject var macTimelinePresentationCache = HomeMacTimelinePresentationCache()
     @State var dayPlanUnplannedCompletedFilterDate: Date?
     @State var macSidebarTaskScrollRequest: MacSidebarTaskScrollRequest?
     @State var hoveredAssumedDoneTaskID: UUID?

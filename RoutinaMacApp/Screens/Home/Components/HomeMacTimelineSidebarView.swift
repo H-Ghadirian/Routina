@@ -3,6 +3,7 @@ import SwiftUI
 struct HomeMacTimelineSidebarView<RowContent: View>: View {
     let timelineEntryCount: Int
     let groupedEntries: [(date: Date, entries: [TimelineEntry])]
+    let rowNumbersByEntryID: [UUID: Int]
     let presentationID: UUID
     let isActive: Bool
     let allowsFallbackSelection: Bool
@@ -144,18 +145,6 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
         return entryID
     }
 
-    private var rowNumbersByEntryID: [UUID: Int] {
-        var result: [UUID: Int] = [:]
-        var rowNumber = 1
-        for section in groupedEntries {
-            for entry in section.entries {
-                result[entry.id] = rowNumber
-                rowNumber += 1
-            }
-        }
-        return result
-    }
-
     private var isPositionedForCurrentPresentation: Bool {
         positionedPresentationID == presentationID
     }
@@ -240,6 +229,7 @@ struct HomeMacTimelineSidebarView<RowContent: View>: View {
 struct HomeMacPlannerTimelineListView<RowContent: View>: View {
     let timelineEntryCount: Int
     let groupedEntries: [(date: Date, entries: [TimelineEntry])]
+    let rowNumbersByEntryID: [UUID: Int]
     let activeFiltersTitle: String?
     let activeFiltersSummary: String?
     let showsPlaces: Bool
@@ -346,18 +336,6 @@ struct HomeMacPlannerTimelineListView<RowContent: View>: View {
         default:
             return items.dropLast().joined(separator: ", ") + ", and \(items.last ?? "")"
         }
-    }
-
-    private var rowNumbersByEntryID: [UUID: Int] {
-        var result: [UUID: Int] = [:]
-        var rowNumber = 1
-        for section in groupedEntries {
-            for entry in section.entries {
-                result[entry.id] = rowNumber
-                rowNumber += 1
-            }
-        }
-        return result
     }
 
     private var sectionDates: [Date] {

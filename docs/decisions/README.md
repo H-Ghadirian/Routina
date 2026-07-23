@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md) establishes the scrolling performance contract:** Unbounded SwiftUI lists consume stable presentation snapshots; full-history fetching, filtering, sorting, grouping, lookup construction, and row numbering happen only at data/filter/search/preference invalidation boundaries, with nonessential refreshes deferred during active macOS scrolling and Release profiling required for meaningful scrolling changes.
+
 - **[0417](0417-route-feature-data-loading-through-reducers.md) establishes the TCA data-boundary migration convention:** Feature-owned SwiftData loading and mutations should move incrementally behind reducer actions and injected dependencies; views may observe platform events but should translate them into actions instead of executing feature persistence workflows directly.
 
 - **[0416](0416-use-semantic-release-versions.md) establishes the release-numbering contract:** Routina uses three-component semantic public versions, a separately increasing Apple build number, and synchronized version metadata across all iOS, Watch, macOS, widget, development, and production target configurations.
@@ -315,8 +317,9 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
-| [0416](0416-use-semantic-release-versions.md) | Use Semantic Release Versions | Accepted | 2026-07-22 |
+| [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md) | Keep Whole-History Work Out of Scrolling Render Paths | Accepted | 2026-07-23 |
 | [0417](0417-route-feature-data-loading-through-reducers.md) | Route Feature Data Loading Through Reducers | Accepted | 2026-07-22 |
+| [0416](0416-use-semantic-release-versions.md) | Use Semantic Release Versions | Accepted | 2026-07-22 |
 | [0414](0414-align-task-kind-controls-between-create-and-edit.md) | Align Task Kind Controls Between Create and Edit | Accepted | 2026-07-22 |
 | [0413](0413-nest-tracking-under-repeating-task-creation.md) | Nest Tracking Under Repeating Task Creation | Accepted | 2026-07-21 |
 | [0411](0411-manage-custom-task-sections-in-settings.md) | Manage Custom Task Sections in Settings | Accepted | 2026-07-20 |

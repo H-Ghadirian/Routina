@@ -51,6 +51,9 @@ extension HomeTCAView {
     @MainActor
     func requestRefresh() {
         guard !isRefreshScheduled else { return }
+#if os(macOS)
+        macTimelinePresentationCache.invalidate()
+#endif
         isRefreshScheduled = true
 
         Task { @MainActor in

@@ -1,5 +1,65 @@
 import SwiftUI
 
+@MainActor
+final class HomeMacTimelinePresentationCache: ObservableObject {
+    private var cachedSignature: HomeMacTimelinePresentationSignature?
+    private var cachedPresentation: HomeMacTimelinePresentation?
+
+    func presentation(
+        for signature: HomeMacTimelinePresentationSignature,
+        build: () -> HomeMacTimelinePresentation
+    ) -> HomeMacTimelinePresentation {
+        if cachedSignature == signature, let cachedPresentation {
+            return cachedPresentation
+        }
+#if os(macOS)
+        if RoutinaMacScrollInteractionGate.isScrollActive, let cachedPresentation {
+            return cachedPresentation
+        }
+#endif
+
+        let presentation = build()
+        cachedSignature = signature
+        cachedPresentation = presentation
+        return presentation
+    }
+
+    func invalidate() {
+        cachedSignature = nil
+    }
+}
+
+struct HomeMacTimelinePresentationSignature: Equatable {
+    let dataRevision: Int
+    let filterType: TimelineFilterType
+    let mediaFilter: TaskMediaFilter
+    let selectedTags: Set<String>
+    let includeTagMatchMode: RoutineTagMatchMode
+    let excludedTags: Set<String>
+    let excludeTagMatchMode: RoutineTagMatchMode
+    let importanceUrgencyFilter: ImportanceUrgencyFilterCell?
+    let searchText: String
+    let showsEventsAndEmotions: Bool
+    let showsPlaces: Bool
+    let showsNotes: Bool
+    let showsAway: Bool
+    let showsSleep: Bool
+    let fileAttachmentTaskIDs: Set<UUID>
+    let noteAttachmentNoteIDs: Set<UUID>
+    let calendarIdentifier: Calendar.Identifier
+    let calendarTimeZoneIdentifier: String
+    let calendarFirstWeekday: Int
+    let calendarMinimumDaysInFirstWeek: Int
+}
+
+struct HomeMacTimelinePresentation {
+    let baseEntries: [TimelineEntry]
+    let filteredEntries: [TimelineEntry]
+    let unfilteredEntries: [TimelineEntry]
+    let groupedFilteredEntries: [(date: Date, entries: [TimelineEntry])]
+    let rowNumbersByEntryID: [UUID: Int]
+}
+
 struct MacTimelineSelection {
     static var empty: MacTimelineSelection {
         MacTimelineSelection(
@@ -24,25 +84,7 @@ struct MacTimelineSelection {
 
 extension HomeTCAView {
     var timelineEntries: [TimelineEntry] {
-        baseTimelineEntries
-            .filter { entry in
-                HomeFeature.matchesImportanceUrgencyFilter(
-                    store.selectedTimelineImportanceUrgencyFilter,
-                    importance: entry.importance,
-                    urgency: entry.urgency
-                )
-                    && HomeFeature.matchesSelectedTags(
-                        store.selectedTimelineTags,
-                        mode: store.selectedTimelineIncludeTagMatchMode,
-                        in: entry.tags
-                    )
-                    && HomeFeature.matchesExcludedTags(
-                        store.selectedTimelineExcludedTags,
-                        mode: store.selectedTimelineExcludeTagMatchMode,
-                        in: entry.tags
-                    )
-            }
-            .filter(matchesTimelineSearch)
+        macTimelinePresentation.filteredEntries
     }
 
     private var timelineSourceTasks: [RoutineTask] {
@@ -62,25 +104,122 @@ extension HomeTCAView {
     }
 
     private var baseTimelineEntries: [TimelineEntry] {
-        TimelineLogic.filteredEntries(
-            logs: timelineSourceLogs,
-            tasks: timelineSourceTasks,
+        macTimelinePresentation.baseEntries
+    }
+
+    private var macTimelinePresentation: HomeMacTimelinePresentation {
+        let signature = HomeMacTimelinePresentationSignature(
+            dataRevision: store.routineDisplaysRevision,
+            filterType: effectiveMacTimelineFilterType,
+            mediaFilter: store.selectedTimelineMediaFilter,
+            selectedTags: store.selectedTimelineTags,
+            includeTagMatchMode: store.selectedTimelineIncludeTagMatchMode,
+            excludedTags: store.selectedTimelineExcludedTags,
+            excludeTagMatchMode: store.selectedTimelineExcludeTagMatchMode,
+            importanceUrgencyFilter: store.selectedTimelineImportanceUrgencyFilter,
+            searchText: searchTextBinding.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines),
+            showsEventsAndEmotions: areMacEventEmotionActionsEnabled,
+            showsPlaces: isPlacesEnabled,
+            showsNotes: isNotesEnabled,
+            showsAway: isAwayEnabled,
+            showsSleep: includesMacSleepTimelineFilters,
+            fileAttachmentTaskIDs: store.fileAttachmentTaskIDs,
+            noteAttachmentNoteIDs: isNotesEnabled ? noteAttachmentNoteIDs : [],
+            calendarIdentifier: calendar.identifier,
+            calendarTimeZoneIdentifier: calendar.timeZone.identifier,
+            calendarFirstWeekday: calendar.firstWeekday,
+            calendarMinimumDaysInFirstWeek: calendar.minimumDaysInFirstWeek
+        )
+
+        return macTimelinePresentationCache.presentation(for: signature) {
+            buildMacTimelinePresentation()
+        }
+    }
+
+    private func buildMacTimelinePresentation() -> HomeMacTimelinePresentation {
+        let tasks = timelineSourceTasks
+        let logs = timelineSourceLogs
+        let now = Date()
+        let visibleNotes = isNotesEnabled ? notes : []
+        let visiblePlaces = isPlacesEnabled ? placeCheckInSessions : []
+        let visibleAwaySessions = isAwayEnabled ? awaySessions : []
+        let visibleNoteAttachmentIDs = isNotesEnabled ? noteAttachmentNoteIDs : []
+
+        let baseEntries = TimelineLogic.filteredEntries(
+            logs: logs,
+            tasks: tasks,
             events: events,
             emotionLogs: emotionLogs,
-            notes: isNotesEnabled ? notes : [],
+            notes: visibleNotes,
             focusSessions: focusSessions,
             sprintFocusSessions: sprintFocusSessions,
             boardSprints: boardSprints,
             sleepSessions: sleepSessions,
-            placeCheckInSessions: isPlacesEnabled ? placeCheckInSessions : [],
-            awaySessions: isAwayEnabled ? awaySessions : [],
+            placeCheckInSessions: visiblePlaces,
+            awaySessions: visibleAwaySessions,
             fileAttachmentTaskIDs: store.fileAttachmentTaskIDs,
-            noteAttachmentNoteIDs: isNotesEnabled ? noteAttachmentNoteIDs : [],
+            noteAttachmentNoteIDs: visibleNoteAttachmentIDs,
             range: .all,
             filterType: effectiveMacTimelineFilterType,
             mediaFilter: store.selectedTimelineMediaFilter,
-            now: Date(),
+            now: now,
             calendar: calendar
+        )
+        let filteredEntries = baseEntries
+            .filter { entry in
+                HomeFeature.matchesImportanceUrgencyFilter(
+                    store.selectedTimelineImportanceUrgencyFilter,
+                    importance: entry.importance,
+                    urgency: entry.urgency
+                )
+                    && HomeFeature.matchesSelectedTags(
+                        store.selectedTimelineTags,
+                        mode: store.selectedTimelineIncludeTagMatchMode,
+                        in: entry.tags
+                    )
+                    && HomeFeature.matchesExcludedTags(
+                        store.selectedTimelineExcludedTags,
+                        mode: store.selectedTimelineExcludeTagMatchMode,
+                        in: entry.tags
+                    )
+            }
+            .filter(matchesTimelineSearch)
+        let unfilteredEntries = TimelineLogic.filteredEntries(
+            logs: logs,
+            tasks: tasks,
+            events: events,
+            emotionLogs: emotionLogs,
+            notes: visibleNotes,
+            focusSessions: focusSessions,
+            sprintFocusSessions: sprintFocusSessions,
+            boardSprints: boardSprints,
+            sleepSessions: sleepSessions,
+            placeCheckInSessions: visiblePlaces,
+            awaySessions: visibleAwaySessions,
+            fileAttachmentTaskIDs: store.fileAttachmentTaskIDs,
+            noteAttachmentNoteIDs: visibleNoteAttachmentIDs,
+            range: .all,
+            filterType: .all,
+            mediaFilter: .all,
+            now: now,
+            calendar: calendar
+        )
+
+        var rowNumbersByEntryID: [UUID: Int] = [:]
+        rowNumbersByEntryID.reserveCapacity(filteredEntries.count)
+        for (index, entry) in filteredEntries.enumerated() {
+            rowNumbersByEntryID[entry.id] = index + 1
+        }
+
+        return HomeMacTimelinePresentation(
+            baseEntries: baseEntries,
+            filteredEntries: filteredEntries,
+            unfilteredEntries: unfilteredEntries,
+            groupedFilteredEntries: TimelineLogic.groupedByDay(
+                entries: filteredEntries,
+                calendar: calendar
+            ),
+            rowNumbersByEntryID: rowNumbersByEntryID
         )
     }
 
@@ -132,7 +271,7 @@ extension HomeTCAView {
     }
 
     var groupedTimelineEntries: [(date: Date, entries: [TimelineEntry])] {
-        TimelineLogic.groupedByDay(entries: timelineEntries, calendar: calendar)
+        macTimelinePresentation.groupedFilteredEntries
     }
 
     var plannerTimelineEntries: [TimelineEntry] {
@@ -140,7 +279,7 @@ extension HomeTCAView {
     }
 
     var groupedPlannerTimelineEntries: [(date: Date, entries: [TimelineEntry])] {
-        TimelineLogic.groupedByDay(entries: plannerTimelineEntries, calendar: calendar)
+        macTimelinePresentation.groupedFilteredEntries
     }
 
     var plannerTimelineEntryCount: Int {
@@ -185,26 +324,7 @@ extension HomeTCAView {
     }
 
     private var unfilteredPlannerTimelineEntries: [TimelineEntry] {
-        TimelineLogic.filteredEntries(
-            logs: timelineSourceLogs,
-            tasks: timelineSourceTasks,
-            events: events,
-            emotionLogs: emotionLogs,
-            notes: isNotesEnabled ? notes : [],
-            focusSessions: focusSessions,
-            sprintFocusSessions: sprintFocusSessions,
-            boardSprints: boardSprints,
-            sleepSessions: sleepSessions,
-            placeCheckInSessions: isPlacesEnabled ? placeCheckInSessions : [],
-            awaySessions: isAwayEnabled ? awaySessions : [],
-            fileAttachmentTaskIDs: store.fileAttachmentTaskIDs,
-            noteAttachmentNoteIDs: isNotesEnabled ? noteAttachmentNoteIDs : [],
-            range: .all,
-            filterType: .all,
-            mediaFilter: .all,
-            now: Date(),
-            calendar: calendar
-        )
+        macTimelinePresentation.unfilteredEntries
     }
 
     var selectedMacTimelineEntry: TimelineEntry? {
@@ -572,6 +692,7 @@ extension HomeTCAView {
         HomeMacPlannerTimelineListView(
             timelineEntryCount: plannerTimelineEntryCount,
             groupedEntries: groupedPlannerTimelineEntries,
+            rowNumbersByEntryID: macTimelinePresentation.rowNumbersByEntryID,
             activeFiltersTitle: macPlannerTimelineFilterNoticeTitle,
             activeFiltersSummary: macActiveTimelineFiltersSummary,
             showsPlaces: isPlacesEnabled,
@@ -621,6 +742,7 @@ extension HomeTCAView {
             HomeMacTimelineSidebarView(
                 timelineEntryCount: timelineSourceLogs.count + events.count + emotionLogs.count + (isNotesEnabled ? notes.count : 0) + focusSessions.count + sprintFocusSessions.count + sleepSessions.count + (isAwayEnabled ? awaySessions.count : 0) + (isPlacesEnabled ? placeCheckInSessions.count : 0),
                 groupedEntries: groupedTimelineEntries,
+                rowNumbersByEntryID: macTimelinePresentation.rowNumbersByEntryID,
                 presentationID: macTimelineSidebarPresentationID,
                 isActive: isMacTimelineMode,
                 allowsFallbackSelection: !store.isMacFilterDetailPresented,

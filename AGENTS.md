@@ -16,6 +16,18 @@
 
 - All visible buttons must be clickable across their full visual surface, not only on their text, emoji, or icon. Native button styles can own their native hit areas; custom/plain SwiftUI buttons must fill their intended target and define a matching `contentShape`, or use a shared Routina visual modifier that does.
 
+## Scrolling and Render-Path Performance
+
+- Treat every SwiftUI `body`, row builder, section builder, toolbar builder, and computed property reached from them as a hot render path. They may run repeatedly during scrolling even when their apparent inputs have not changed.
+- Never fetch SwiftData, walk complete model collections, rebuild dictionaries, group or sort all history, format every off-screen row, or call an expensive domain derivation directly from a scrolling render path.
+- Build expensive list/timeline presentations only when source data, filters, search, calendar semantics, or visible preferences change. Cache the immutable result and let scrolling reuse it.
+- Cache all related derived artifacts together when they share the same source, including filtered and unfiltered entries, grouped sections, lookup dictionaries, counts, and row numbers. Do not hide a second full-history pass behind a convenience computed property.
+- Keep visible collections lazily rendered with stable semantic IDs. Avoid changing a list/container `.id` during normal updates because that discards native reuse and scroll position.
+- Coalesce persistence and sync notifications. Defer nonessential snapshot refreshes while `RoutinaMacScrollInteractionGate.isScrollActive`, then refresh after the quiet window; never trade data correctness away permanently.
+- Before merging a meaningful scrolling surface or data-pipeline change, test with production-like history volume in a Release build. Profile while continuously scrolling and verify that app-owned model filtering/grouping/fetching does not appear repeatedly in main-thread samples.
+- Add a focused performance-regression test for the structural invariant whenever practical. Source-based regression checks are acceptable for guarding architectural boundaries that ordinary behavior tests cannot measure.
+- Read [Decision 0418](docs/decisions/0418-keep-whole-history-work-out-of-scrolling-render-paths.md) before changing Timeline, Planner, Stats, or another unbounded scrolling surface.
+
 ## Build Verification
 
 - Swift package tests:
