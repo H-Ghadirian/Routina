@@ -1205,8 +1205,13 @@ private struct HomeMacToolbarSearchTextField: NSViewRepresentable {
         (textField as? HomeMacToolbarSearchClickableTextField)?.onMouseDown = { [weak coordinator = context.coordinator] in
             coordinator?.pointerFocusRequested()
         }
-        context.coordinator.dismissFocusIfNeeded(for: focusDismissRequestID)
-        context.coordinator.focusIfNeeded(for: focusRequestID)
+        let nextFocusDismissRequestID = focusDismissRequestID
+        let nextFocusRequestID = focusRequestID
+        DispatchQueue.main.async { [weak coordinator = context.coordinator] in
+            guard let coordinator else { return }
+            coordinator.dismissFocusIfNeeded(for: nextFocusDismissRequestID)
+            coordinator.focusIfNeeded(for: nextFocusRequestID)
+        }
         configure(textField)
 
         if textField.stringValue != text {

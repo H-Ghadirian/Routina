@@ -583,7 +583,7 @@ extension HomeTCAView {
         allowsPlannerDrag: Bool
     ) -> some View {
         let taskGroups = section.taskGroups
-        VStack(alignment: .leading, spacing: taskListGroupStackSpacing(for: section)) {
+        LazyVStack(alignment: .leading, spacing: taskListGroupStackSpacing(for: section)) {
             ForEach(taskGroups) { group in
                 if taskListGroupUsesSectionSurface(group) {
                     VStack(alignment: .leading, spacing: 0) {
@@ -655,7 +655,6 @@ extension HomeTCAView {
                 }
             }
         }
-        .id(taskListTaskGroupsRenderIdentity(taskGroups))
     }
 
     private func taskListGroupStackSpacing(
@@ -715,7 +714,7 @@ extension HomeTCAView {
         rowVisibility: HomeTaskRowVisibility,
         allowsPlannerDrag: Bool
     ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        LazyVStack(alignment: .leading, spacing: 8) {
             ForEach(group.childGroups) { childGroup in
                 VStack(alignment: .leading, spacing: 5) {
                     if let title = childGroup.title {
@@ -754,7 +753,7 @@ extension HomeTCAView {
         rowVisibility: HomeTaskRowVisibility,
         allowsPlannerDrag: Bool
     ) -> some View {
-        VStack(alignment: .leading, spacing: taskListTaskRowSpacing()) {
+        LazyVStack(alignment: .leading, spacing: taskListTaskRowSpacing()) {
             ForEach(group.tasks, id: \.id) { task in
                 macTaskSourceRow(
                     for: task,
@@ -783,23 +782,6 @@ extension HomeTCAView {
         isMacSearchSidebarRevealActive
             ? .searchReveal
             : .normal(macSearchSidebarRestoreScrollRequestID)
-    }
-
-    private func taskListTaskGroupsRenderIdentity(
-        _ groups: [HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>]
-    ) -> String {
-        groups.map { group in
-            taskListTaskGroupRenderIdentity(group)
-        }
-        .joined(separator: "|")
-    }
-
-    private func taskListTaskGroupRenderIdentity(
-        _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
-    ) -> String {
-        let taskIDs = group.tasks.map(\.taskID.uuidString).joined(separator: ",")
-        let childIDs = taskListTaskGroupsRenderIdentity(group.childGroups)
-        return "\(group.id):\(taskIDs):\(childIDs)"
     }
 
     private func taskListGroupUsesSectionSurface(

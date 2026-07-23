@@ -19,6 +19,39 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testMacToolbarSearchDefersResponderMutationsPastRepresentableUpdate() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/Components/HomeMacHomeToolbarContent.swift"
+        )
+
+        XCTAssertTrue(
+            source.contains("DispatchQueue.main.async { [weak coordinator = context.coordinator]"),
+            "Responder changes can synchronously invoke AppKit delegates, so they must run after updateNSView returns."
+        )
+        XCTAssertFalse(
+            source.contains(
+                "context.coordinator.dismissFocusIfNeeded(for: focusDismissRequestID)\n        context.coordinator.focusIfNeeded(for: focusRequestID)"
+            )
+        )
+    }
+
+    func testMacExpandedTaskSidebarKeepsNestedRowsLazyAndStable() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+TaskList.swift"
+        )
+
+        XCTAssertTrue(
+            source.contains("LazyVStack(alignment: .leading, spacing: taskListTaskRowSpacing())")
+        )
+        XCTAssertTrue(
+            source.contains("LazyVStack(alignment: .leading, spacing: taskListGroupStackSpacing(for: section))")
+        )
+        XCTAssertFalse(
+            source.contains(".id(taskListTaskGroupsRenderIdentity(taskGroups))"),
+            "Scrolling must not walk all nested task IDs or replace group identity during rendering."
+        )
+    }
+
     func testMacHomeRunsWholeHistoryMaintenanceOnlyForInitialLoad() throws {
         let featureSource = try Self.sourceFile("RoutinaMacApp/Features/Home/HomeFeature.swift")
         let refreshSource = try Self.sourceFile("SharedCore/Screens/Home/HomeTCAView+Refresh.swift")
