@@ -1378,10 +1378,17 @@ extension HomeTCAView {
         _ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
     ) {
         guard section.kind.isCollapsible else { return }
-        withAnimation(.easeInOut(duration: 0.24)) {
+        let isCurrentlyExpanded = taskListSectionIsExpanded(section)
+        let shouldAnimate = MacTaskSourceListSectionTogglePolicy.shouldAnimate(
+            sectionKind: section.kind,
+            isCurrentlyExpanded: isCurrentlyExpanded
+        )
+        withTransaction(
+            Transaction(animation: shouldAnimate ? .easeInOut(duration: 0.24) : nil)
+        ) {
             switch section.kind {
             case .plannedToday, .plannedTomorrow, .custom, .tracking:
-                setTagTaskListSection(section, collapsed: taskListSectionIsExpanded(section))
+                setTagTaskListSection(section, collapsed: isCurrentlyExpanded)
             case .daily:
                 isDailyRoutinesSectionCollapsed.toggle()
             case .future:

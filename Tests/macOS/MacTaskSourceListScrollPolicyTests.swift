@@ -62,6 +62,34 @@ struct MacTaskSourceListScrollPolicyTests {
     }
 }
 
+struct MacTaskSourceListSectionTogglePolicyTests {
+    @Test
+    func openingFutureDoesNotAnimateItsLargeLayoutInsertion() {
+        #expect(
+            !MacTaskSourceListSectionTogglePolicy.shouldAnimate(
+                sectionKind: .future,
+                isCurrentlyExpanded: false
+            )
+        )
+    }
+
+    @Test
+    func closingFutureAndTogglingOtherSectionsRemainAnimated() {
+        #expect(
+            MacTaskSourceListSectionTogglePolicy.shouldAnimate(
+                sectionKind: .future,
+                isCurrentlyExpanded: true
+            )
+        )
+        #expect(
+            MacTaskSourceListSectionTogglePolicy.shouldAnimate(
+                sectionKind: .plannedToday,
+                isCurrentlyExpanded: false
+            )
+        )
+    }
+}
+
 struct MacTaskSourceListKeyboardNavigationTests {
     @Test
     func downArrowMovesToNextVisibleTask() {

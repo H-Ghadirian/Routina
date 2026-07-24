@@ -29,6 +29,15 @@ enum MacTaskSourceListScrollPolicy {
     }
 }
 
+enum MacTaskSourceListSectionTogglePolicy {
+    static func shouldAnimate(
+        sectionKind: HomeTaskListPresentationSectionKind,
+        isCurrentlyExpanded: Bool
+    ) -> Bool {
+        sectionKind != .future || isCurrentlyExpanded
+    }
+}
+
 enum MacTaskSourceListKeyboardDirection: Equatable {
     case previous
     case next
