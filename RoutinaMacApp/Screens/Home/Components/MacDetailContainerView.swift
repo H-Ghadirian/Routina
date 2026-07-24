@@ -83,6 +83,8 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     let onDeleteNote: (UUID) -> Void
     let onToggleBoardInspector: () -> Void
     let onExpandTaskDetails: () -> Void
+    let taskSidebarLocation: (UUID) -> TaskDetailSidebarLocation?
+    let onLocateTaskInSidebar: () -> Void
     let fullscreenTaskDetailReturnPlacement: MacTaskDetailPanePlacement?
     let onMinimizeFullscreenTaskDetails: (() -> Void)?
     let onCloseTaskDetails: () -> Void
@@ -693,7 +695,9 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                 onMinimizeFullscreen: onMinimizeFullscreen,
                 onCloseFullscreen: onCloseFullscreen,
                 onOpenEventDetails: onOpenEventDetails,
-                onTagFilterSelected: applyTaskListTagFilter
+                onTagFilterSelected: applyTaskListTagFilter,
+                sidebarLocation: taskSidebarLocation(detailStore.task.id),
+                onLocateInSidebar: onLocateTaskInSidebar
             )
         } else {
             ContentUnavailableView(

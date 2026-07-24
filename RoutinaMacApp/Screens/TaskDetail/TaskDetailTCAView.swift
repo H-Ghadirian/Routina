@@ -2,6 +2,14 @@ import SwiftUI
 import ComposableArchitecture
 import SwiftData
 
+struct TaskDetailSidebarLocation: Equatable {
+    let titles: [String]
+
+    var accessibilityValue: String {
+        titles.joined(separator: ", ")
+    }
+}
+
 struct TaskDetailTCAView: View {
     enum Presentation {
         case fullDetail
@@ -27,6 +35,8 @@ struct TaskDetailTCAView: View {
     let externalBlockingFocusTitle: String?
     let onOpenEventDetails: ((UUID) -> Void)?
     let onTagFilterSelected: ((String) -> Void)?
+    let sidebarLocation: TaskDetailSidebarLocation?
+    let onLocateInSidebar: (() -> Void)?
     @Dependency(\.appSettingsClient) private var appSettingsClient
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -98,7 +108,9 @@ struct TaskDetailTCAView: View {
         onCloseFullscreen: (() -> Void)? = nil,
         blockingFocusTitle: String? = nil,
         onOpenEventDetails: ((UUID) -> Void)? = nil,
-        onTagFilterSelected: ((String) -> Void)? = nil
+        onTagFilterSelected: ((String) -> Void)? = nil,
+        sidebarLocation: TaskDetailSidebarLocation? = nil,
+        onLocateInSidebar: (() -> Void)? = nil
     ) {
         self.store = store
         self.showsPrincipalToolbarTitle = showsPrincipalToolbarTitle
@@ -111,6 +123,8 @@ struct TaskDetailTCAView: View {
         self.externalBlockingFocusTitle = blockingFocusTitle
         self.onOpenEventDetails = onOpenEventDetails
         self.onTagFilterSelected = onTagFilterSelected
+        self.sidebarLocation = sidebarLocation
+        self.onLocateInSidebar = onLocateInSidebar
 
         let taskID = store.task.id
         _focusSessions = Query(
@@ -942,6 +956,7 @@ struct TaskDetailTCAView: View {
             statusTagChip(tag)
         } additionalContent: {
             VStack(alignment: .leading, spacing: 8) {
+                taskSidebarLocationButton
                 todoHeaderControls
                 headerSupplementaryContent
             }
@@ -976,9 +991,50 @@ struct TaskDetailTCAView: View {
             statusTagChip(tag)
         } additionalContent: {
             VStack(alignment: .leading, spacing: 8) {
+                taskSidebarLocationButton
                 routineHeaderControls
                 headerSupplementaryContent(dueDate: dueDate)
             }
+        }
+    }
+
+    @ViewBuilder
+    private var taskSidebarLocationButton: some View {
+        if let sidebarLocation, let onLocateInSidebar {
+            Button(action: onLocateInSidebar) {
+                HStack(spacing: 6) {
+                    Image(systemName: "sidebar.left")
+                        .foregroundStyle(.secondary)
+
+                    ForEach(Array(sidebarLocation.titles.enumerated()), id: \.offset) { index, title in
+                        if index > 0 {
+                            Image(systemName: "chevron.right")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.tertiary)
+                        }
+
+                        Text(title)
+                            .lineLimit(1)
+                    }
+
+                    Image(systemName: "arrow.up.left")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.primary)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(.secondary.opacity(0.10))
+                )
+                .contentShape(Capsule(style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .help("Show this task in the left sidebar")
+            .accessibilityLabel("Show task in sidebar")
+            .accessibilityValue(sidebarLocation.accessibilityValue)
         }
     }
 

@@ -804,7 +804,12 @@ extension HomeTCAView {
     private func taskListGroupUsesSectionSurface(
         _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
     ) -> Bool {
-        group.title != nil && (group.kind == .tag || group.kind == .untagged || group.kind == .deadlineDate)
+        group.title != nil && (
+            group.kind == .custom
+                || group.kind == .tag
+                || group.kind == .untagged
+                || group.kind == .deadlineDate
+        )
     }
 
     @ViewBuilder
@@ -1402,9 +1407,9 @@ extension HomeTCAView {
         switch group.kind {
         case .daily:
             return !isMacPlanTodayDailyRoutinesGroupCollapsed
-        case .deadlineDate, .tag, .untagged, .regular:
+        case .custom, .deadlineDate, .tag, .untagged, .regular:
             return !collapsedTagTaskListSectionIDs.contains(taskListGroupCollapseID(group))
-        case .plannedToday, .plannedTomorrow, .custom, .tracking, .future, .pinned, .away, .archived:
+        case .plannedToday, .plannedTomorrow, .tracking, .future, .pinned, .away, .archived:
             return true
         }
     }
@@ -1417,9 +1422,9 @@ extension HomeTCAView {
             switch group.kind {
             case .daily:
                 isMacPlanTodayDailyRoutinesGroupCollapsed.toggle()
-            case .deadlineDate, .tag, .untagged, .regular:
+            case .custom, .deadlineDate, .tag, .untagged, .regular:
                 setTagTaskListGroup(group, collapsed: taskListGroupIsExpanded(group))
-            case .plannedToday, .plannedTomorrow, .custom, .tracking, .future, .pinned, .away, .archived:
+            case .plannedToday, .plannedTomorrow, .tracking, .future, .pinned, .away, .archived:
                 break
             }
         }
@@ -1528,6 +1533,21 @@ extension HomeTCAView {
         return location.section.id
     }
 
+    func macTaskSourceListSidebarLocation(_ taskID: UUID) -> TaskDetailSidebarLocation? {
+        let presentation = macTaskListPresentation(
+            routineDisplays: store.routineDisplays,
+            awayRoutineDisplays: store.awayRoutineDisplays,
+            archivedRoutineDisplays: store.archivedRoutineDisplays
+        )
+        guard let location = macTaskSourceListLocation(of: taskID, in: presentation) else {
+            return nil
+        }
+
+        return TaskDetailSidebarLocation(
+            titles: [location.section.title] + location.groups.compactMap(\.title)
+        )
+    }
+
     private func macTaskSourceListLocation(
         of taskID: UUID,
         in presentation: HomeTaskListPresentation<HomeFeature.RoutineDisplay>
@@ -1593,9 +1613,9 @@ extension HomeTCAView {
         switch group.kind {
         case .daily:
             isMacPlanTodayDailyRoutinesGroupCollapsed = false
-        case .deadlineDate, .tag, .untagged, .regular:
+        case .custom, .deadlineDate, .tag, .untagged, .regular:
             setTagTaskListGroup(group, collapsed: false)
-        case .plannedToday, .plannedTomorrow, .custom, .tracking, .future, .pinned, .away, .archived:
+        case .plannedToday, .plannedTomorrow, .tracking, .future, .pinned, .away, .archived:
             break
         }
     }
@@ -1634,9 +1654,9 @@ extension HomeTCAView {
         switch group.kind {
         case .daily:
             return !isMacPlanTodayDailyRoutinesGroupCollapsed
-        case .deadlineDate, .tag, .untagged, .regular:
+        case .custom, .deadlineDate, .tag, .untagged, .regular:
             return !collapsedTagIDs.contains(taskListGroupCollapseID(group))
-        case .plannedToday, .plannedTomorrow, .custom, .tracking, .future, .pinned, .away, .archived:
+        case .plannedToday, .plannedTomorrow, .tracking, .future, .pinned, .away, .archived:
             return true
         }
     }

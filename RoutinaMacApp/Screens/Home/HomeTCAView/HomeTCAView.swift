@@ -540,7 +540,9 @@ homeContent
             TaskDetailTCAView(
                 store: detailStore,
                 onOpenEventDetails: openSavedEvent,
-                onTagFilterSelected: { store.send(.taskDetailTagFilterTapped($0)) }
+                onTagFilterSelected: { store.send(.taskDetailTagFilterTapped($0)) },
+                sidebarLocation: macTaskSourceListSidebarLocation(detailStore.task.id),
+                onLocateInSidebar: scrollSelectedTaskInMacSidebar
             )
         } else if let selectedNote {
             RoutineNoteDetailView(
@@ -744,7 +746,9 @@ homeContent
             TaskDetailTCAView(
                 store: detailStore,
                 onOpenEventDetails: openSavedEvent,
-                onTagFilterSelected: { store.send(.taskDetailTagFilterTapped($0)) }
+                onTagFilterSelected: { store.send(.taskDetailTagFilterTapped($0)) },
+                sidebarLocation: macTaskSourceListSidebarLocation(detailStore.task.id),
+                onLocateInSidebar: scrollSelectedTaskInMacSidebar
             )
         } else if store.routineTasks.contains(where: { $0.id == taskID }) {
             HomeLoadingStateView(

@@ -390,6 +390,8 @@ extension HomeTCAView {
                         onDeleteNote: closeDeletedNote,
                         onToggleBoardInspector: toggleMacBoardTicketInspector,
                         onExpandTaskDetails: expandTaskDetailPane,
+                        taskSidebarLocation: macTaskSourceListSidebarLocation,
+                        onLocateTaskInSidebar: scrollSelectedTaskInMacSidebar,
                         fullscreenTaskDetailReturnPlacement: fullscreenTaskDetailReturnPlacement,
                         onMinimizeFullscreenTaskDetails: minimizeFullscreenTaskDetailsAction,
                         onCloseTaskDetails: closeTaskDetailPane,

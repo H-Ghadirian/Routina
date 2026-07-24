@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0420](0420-show-task-sidebar-location-in-mac-details.md) refines [0407](0407-locate-mac-task-detail-sidebar-row.md) and [0419](0419-nest-custom-subsections-under-super-sections.md) for visible location navigation:** Mac task details show the selected task's current sidebar section/subsection path from the live task-list presentation, and clicking it reveals, expands, selects, and scrolls to that row through the existing locate pipeline.
+
 - **[0419](0419-nest-custom-subsections-under-super-sections.md) refines [0394](0394-add-custom-mac-sidebar-task-sections.md), [0395](0395-delete-custom-mac-sidebar-task-sections.md), [0403](0403-rename-custom-mac-sidebar-task-sections.md), and [0411](0411-manage-custom-task-sections-in-settings.md) for one-level custom hierarchy:** User-created top-level custom sections are super sections that may contain one level of user-created subsections; tasks can be assigned directly to either level, row move menus expose the hierarchy, existing flat sections migrate as super sections, and deleting a super section cascades through its subsections without deleting tasks.
 
 - **[0419](0419-use-lightweight-surfaces-inside-unbounded-scroll-rows.md) refines [0024](0024-adopt-liquid-glass-ui-surfaces.md) and [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md) for repeated row decoration:** Noninteractive icon and badge surfaces repeated through an unbounded list use lightweight semantic shape fills instead of per-row backdrop-sampling glass; persistence-driven Home refreshes are coalesced before rechecking the macOS scroll quiet gate.

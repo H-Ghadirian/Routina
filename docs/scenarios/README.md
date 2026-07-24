@@ -416,6 +416,14 @@ Given Mac Home shows expanded `Future`
 When future task groups are visible
 Then the header and groups share one full-bleed section surface while nested tag groups keep their own collapsible surfaces
 
+Given a user-created Mac task super section contains a subsection
+When the super section is expanded in the left sidebar
+Then the subsection uses the same nested card surface and persistent collapse behavior as a built-in tag subsection
+
+Given Mac task details show a task that is currently inside a sidebar section and nested subsection
+When the user clicks the section breadcrumb in the detail header
+Then the left sidebar opens in task-list mode, expands both ancestors, selects the task, and scrolls its row into view
+
 Given a weekly or month-day calendar routine is configured for today's weekday or day of month
 When Home derives `Today`
 Then that calendar routine appears in the existing today list without a separate scheduled-today group, while rolling interval routines stay in the normal due/status sections unless explicitly planned

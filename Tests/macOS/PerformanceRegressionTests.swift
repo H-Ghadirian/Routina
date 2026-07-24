@@ -52,6 +52,48 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testMacCustomSubsectionsUseTagStyleSurfaceAndPersistedCollapseState() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+TaskList.swift"
+        )
+
+        XCTAssertTrue(
+            source.contains(
+                """
+                group.kind == .custom
+                                || group.kind == .tag
+                """
+            ),
+            "Custom subsections must use the same nested section surface as tag subsections."
+        )
+        XCTAssertEqual(
+            source.components(separatedBy: "case .custom, .deadlineDate, .tag, .untagged, .regular:").count - 1,
+            4,
+            "Live toggle, reveal, and snapshot visibility must all route custom subsections through persisted collapse IDs."
+        )
+    }
+
+    func testMacTaskDetailsUseLiveSidebarLocationAndExistingRevealPath() throws {
+        let taskDetailSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"
+        )
+        let taskListSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+TaskList.swift"
+        )
+        let sidebarSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Sidebar.swift"
+        )
+
+        XCTAssertTrue(taskDetailSource.contains("private var taskSidebarLocationButton: some View"))
+        XCTAssertTrue(taskDetailSource.contains("Button(action: onLocateInSidebar)"))
+        XCTAssertTrue(taskDetailSource.contains("ForEach(Array(sidebarLocation.titles.enumerated())"))
+        XCTAssertTrue(taskListSource.contains("func macTaskSourceListSidebarLocation(_ taskID: UUID)"))
+        XCTAssertTrue(taskListSource.contains("macTaskSourceListLocation(of: taskID, in: presentation)"))
+        XCTAssertTrue(taskListSource.contains("location.groups.forEach(expandTaskListGroup)"))
+        XCTAssertTrue(sidebarSource.contains("scrollSelectedTaskInMacSidebar()"))
+        XCTAssertTrue(sidebarSource.contains("revealMacTaskSourceListTask(taskID)"))
+    }
+
     func testMacTimelineRowsAvoidPerRowGlassAndCoalesceRefreshes() throws {
         let homeTimelineSource = try Self.sourceFile(
             "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift"
