@@ -12,12 +12,12 @@ The sidebar relied on SwiftUI and AppKit's implicit scroll anchoring while an an
 
 ## Fix
 
-The task-list scroll view is now resolved explicitly. Every user-driven top-level, nested, and bulk disclosure captures its clip-view origin before changing section state and restores that origin during and after the animated layout update, clamped only when collapsed content makes the old offset impossible.
+The task-list scroll view is now resolved explicitly. Every user-driven top-level, nested, and bulk disclosure captures its clip-view origin before changing section state, performs the height change in a nonanimated transaction, and restores that origin synchronously and across the next layout passes. The origin is clamped only when collapsed content makes the old offset impossible.
 
 ## Prevention Rule
 
-When disclosure changes must not move the user's viewport, preserve the native scroll view's content offset explicitly across the layout transaction; do not rely on animation choice or framework anchoring heuristics.
+When disclosure changes must not move the user's viewport, preserve the native scroll view's content offset explicitly and suppress the layout animation that can expose an intermediate framework-generated offset before restoration.
 
 ## Regression Safeguard
 
-Focused scroll-preservation tests cover retaining a valid origin and clamping it after content shrinkage. The task-list scenario records the invariant for top-level, nested, and bulk disclosure changes.
+Focused scroll-preservation tests cover retaining a valid origin and clamping it after content shrinkage. The task-list scenario requires continuous viewport stability, without an intermediate jumped frame, for top-level, nested, and bulk disclosure changes.

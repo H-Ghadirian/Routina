@@ -64,6 +64,11 @@ struct MacTaskSourceListScrollPolicyTests {
 
 struct MacTaskSourceListScrollPreservationTests {
     @Test
+    func userDrivenDisclosureChangesDoNotExposeAnimatedIntermediateOffsets() {
+        #expect(!MacTaskSourceListScrollPreservation.animatesUserDrivenDisclosureChanges)
+    }
+
+    @Test
     func keepsExistingOriginWhenItFitsUpdatedContent() {
         #expect(
             MacTaskSourceListScrollPreservation.verticalOrigin(

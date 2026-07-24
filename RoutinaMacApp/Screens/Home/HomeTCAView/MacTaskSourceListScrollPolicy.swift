@@ -30,6 +30,8 @@ enum MacTaskSourceListScrollPolicy {
 }
 
 enum MacTaskSourceListScrollPreservation {
+    static let animatesUserDrivenDisclosureChanges = false
+
     static func verticalOrigin(
         preserving requestedOrigin: CGFloat,
         documentHeight: CGFloat,

@@ -1403,21 +1403,19 @@ extension HomeTCAView {
         guard section.kind.isCollapsible else { return }
         let isCurrentlyExpanded = taskListSectionIsExpanded(section)
         preserveMacTaskSourceListScrollPosition {
-            withAnimation(.easeInOut(duration: 0.24)) {
-                switch section.kind {
-                case .plannedToday, .plannedTomorrow, .custom, .tracking:
-                    setTagTaskListSection(section, collapsed: isCurrentlyExpanded)
-                case .daily:
-                    isDailyRoutinesSectionCollapsed.toggle()
-                case .future:
-                    isMacFutureTasksSectionCollapsed.toggle()
-                case .tag, .untagged:
-                    setTagTaskListSection(section, collapsed: isCurrentlyExpanded)
-                case .archived:
-                    isArchivedSectionCollapsed.toggle()
-                case .pinned, .regular, .deadlineDate, .away:
-                    break
-                }
+            switch section.kind {
+            case .plannedToday, .plannedTomorrow, .custom, .tracking:
+                setTagTaskListSection(section, collapsed: isCurrentlyExpanded)
+            case .daily:
+                isDailyRoutinesSectionCollapsed.toggle()
+            case .future:
+                isMacFutureTasksSectionCollapsed.toggle()
+            case .tag, .untagged:
+                setTagTaskListSection(section, collapsed: isCurrentlyExpanded)
+            case .archived:
+                isArchivedSectionCollapsed.toggle()
+            case .pinned, .regular, .deadlineDate, .away:
+                break
             }
         }
     }
@@ -1429,7 +1427,13 @@ extension HomeTCAView {
         }
 
         let requestedOrigin = scrollView.contentView.bounds.origin
-        update()
+        let animation: Animation? = MacTaskSourceListScrollPreservation
+            .animatesUserDrivenDisclosureChanges
+            ? .easeInOut(duration: 0.24)
+            : nil
+        withTransaction(Transaction(animation: animation)) {
+            update()
+        }
 
         restoreMacTaskSourceListScrollPosition(
             requestedOrigin,
@@ -1440,7 +1444,7 @@ extension HomeTCAView {
                 requestedOrigin,
                 in: scrollView
             )
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.26) {
+            DispatchQueue.main.async {
                 restoreMacTaskSourceListScrollPosition(
                     requestedOrigin,
                     in: scrollView
@@ -1490,15 +1494,13 @@ extension HomeTCAView {
         guard group.isCollapsible else { return }
         let isCurrentlyExpanded = taskListGroupIsExpanded(group)
         preserveMacTaskSourceListScrollPosition {
-            withAnimation(.easeInOut(duration: 0.24)) {
-                switch group.kind {
-                case .daily:
-                    isMacPlanTodayDailyRoutinesGroupCollapsed.toggle()
-                case .custom, .deadlineDate, .tag, .untagged, .regular:
-                    setTagTaskListGroup(group, collapsed: isCurrentlyExpanded)
-                case .plannedToday, .plannedTomorrow, .tracking, .future, .pinned, .away, .archived:
-                    break
-                }
+            switch group.kind {
+            case .daily:
+                isMacPlanTodayDailyRoutinesGroupCollapsed.toggle()
+            case .custom, .deadlineDate, .tag, .untagged, .regular:
+                setTagTaskListGroup(group, collapsed: isCurrentlyExpanded)
+            case .plannedToday, .plannedTomorrow, .tracking, .future, .pinned, .away, .archived:
+                break
             }
         }
     }
@@ -1523,16 +1525,14 @@ extension HomeTCAView {
         guard section.kind == .future, !subsectionIDs.isEmpty else { return }
 
         preserveMacTaskSourceListScrollPosition {
-            withAnimation(.easeInOut(duration: 0.24)) {
-                isMacFutureTasksSectionCollapsed = false
-                var ids = collapsedTagTaskListSectionIDs
-                if collapsed {
-                    ids.formUnion(subsectionIDs)
-                } else {
-                    ids.subtract(subsectionIDs)
-                }
-                collapsedTagTaskListSectionIDsStorage = ids.sorted().joined(separator: "\n")
+            isMacFutureTasksSectionCollapsed = false
+            var ids = collapsedTagTaskListSectionIDs
+            if collapsed {
+                ids.formUnion(subsectionIDs)
+            } else {
+                ids.subtract(subsectionIDs)
             }
+            collapsedTagTaskListSectionIDsStorage = ids.sorted().joined(separator: "\n")
         }
     }
 
