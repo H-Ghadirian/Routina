@@ -786,7 +786,8 @@ struct AddRoutineFeatureTests {
             initialState: makeState(
                 basics: AddRoutineBasicsState(
                     routineName: "Ad hoc symptom log",
-                    plannedDate: plannedDate
+                    plannedDate: plannedDate,
+                    trackingCadenceEnabled: false
                 ),
                 organization: AddRoutineOrganizationState(existingRoutineNames: []),
                 schedule: AddRoutineScheduleState(

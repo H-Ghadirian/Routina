@@ -314,7 +314,7 @@ extension TaskFormModel {
 
     var routineRepeatTypeCases: [RoutineRepeatType] {
         RoutineRepeatType.cases(
-            supportsNoRepeat: taskType.wrappedValue == .record && visibilityMode != .progressiveCreate,
+            supportsNoRepeat: taskType.wrappedValue == .routine || taskType.wrappedValue == .record,
             supportsItemRunout: supportsItemRunoutRepeatType
         )
     }
@@ -327,7 +327,8 @@ extension TaskFormModel {
 
         return Binding(
             get: {
-                if taskType.wrappedValue == .record, !trackingCadenceEnabled.wrappedValue {
+                if (taskType.wrappedValue == .routine || taskType.wrappedValue == .record),
+                   !trackingCadenceEnabled.wrappedValue {
                     return .none
                 }
 
@@ -342,7 +343,7 @@ extension TaskFormModel {
             set: { repeatType in
                 switch repeatType {
                 case .none:
-                    guard taskType.wrappedValue == .record else { return }
+                    guard taskType.wrappedValue == .routine || taskType.wrappedValue == .record else { return }
                     trackingCadenceEnabled.wrappedValue = false
                     if scheduleMode.wrappedValue.isChecklistDrivenMode {
                         scheduleMode.wrappedValue = Self.nonRunoutScheduleMode(from: scheduleMode.wrappedValue)

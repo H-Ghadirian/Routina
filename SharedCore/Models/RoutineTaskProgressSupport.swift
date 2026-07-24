@@ -40,6 +40,9 @@ enum RoutineTaskPlanningSupport {
         checklistItems: [RoutineChecklistItem],
         trackingCadenceEnabled: Bool = true
     ) -> Bool {
+        if scheduleMode.taskType == .routine, !trackingCadenceEnabled {
+            return true
+        }
         if scheduleMode.taskType == .record {
             return trackingCadenceEnabled
         }
@@ -55,6 +58,9 @@ enum RoutineTaskPlanningSupport {
         trackingCadenceEnabled: Bool = true,
         isDailyRoutine: Bool
     ) -> Bool {
+        if scheduleMode.taskType == .routine, !trackingCadenceEnabled {
+            return true
+        }
         if scheduleMode.taskType == .record {
             return trackingCadenceEnabled
         }
@@ -118,8 +124,9 @@ extension RoutineTask {
     }
 
     var isSoftIntervalRoutine: Bool {
-        scheduleMode.isSoftIntervalRoutine
-            || (scheduleMode.taskType == .record && scheduleMode.scheduleBehavior == .soft && trackingCadenceEnabled)
+        trackingCadenceEnabled
+            && (scheduleMode.isSoftIntervalRoutine
+                || (scheduleMode.taskType == .record && scheduleMode.scheduleBehavior == .soft))
     }
 
     var surfacesSoftIntervalNudges: Bool {
@@ -127,7 +134,7 @@ extension RoutineTask {
     }
 
     var usesEffectiveRoutineCadence: Bool {
-        scheduleMode.usesRoutineCadence && (!isRecordTask || trackingCadenceEnabled)
+        scheduleMode.usesRoutineCadence && trackingCadenceEnabled
     }
 
     var usesRollingScheduleAnchor: Bool {

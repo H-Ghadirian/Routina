@@ -118,9 +118,9 @@ struct AddRoutineFeature: Reducer {
             scheduleMode: state.schedule.scheduleMode,
             recurrenceRule: state.candidateRecurrenceRule,
             checklistItems: state.candidateChecklistItems,
-            trackingCadenceEnabled: state.schedule.scheduleMode.taskType == .record
-                ? state.basics.trackingCadenceEnabled
-                : true
+            trackingCadenceEnabled: state.schedule.scheduleMode.taskType == .todo
+                ? true
+                : state.basics.trackingCadenceEnabled
         )
     }
 

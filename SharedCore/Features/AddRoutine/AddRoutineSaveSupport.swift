@@ -192,9 +192,9 @@ struct AddRoutineSaveRequest: Equatable {
                 scheduleMode: scheduleMode,
                 recurrenceRule: recurrenceRule,
                 checklistItems: sanitizedChecklistItems,
-                trackingCadenceEnabled: scheduleMode.taskType == .record
-                    ? trackingCadenceEnabled
-                    : true
+                trackingCadenceEnabled: scheduleMode.taskType == .todo
+                    ? true
+                    : trackingCadenceEnabled
             )
             ? RoutineTask.effectivePlannedDate(
                 plannedDate: plannedDate,
@@ -230,7 +230,7 @@ struct AddRoutineSaveRequest: Equatable {
             : recurrenceTimeRangeRole
         self.attachments = attachments
         self.color = color
-        self.trackingCadenceEnabled = scheduleMode.taskType == .record ? trackingCadenceEnabled : true
+        self.trackingCadenceEnabled = scheduleMode.taskType == .todo ? true : trackingCadenceEnabled
         self.autoAssumeDailyDone = autoAssumeDailyDone
             && RoutineAssumedCompletion.isEligible(
                 scheduleMode: scheduleMode,
@@ -257,9 +257,9 @@ struct AddRoutineSaveRequest: Equatable {
         let schedule = state.schedule
         let checklist = state.checklist
 
-        let trackingCadenceEnabled = schedule.scheduleMode.taskType == .record
-            ? basics.trackingCadenceEnabled
-            : true
+        let trackingCadenceEnabled = schedule.scheduleMode.taskType == .todo
+            ? true
+            : basics.trackingCadenceEnabled
         let frequencyInDays: Int
         if !schedule.scheduleMode.usesRoutineCadence || !trackingCadenceEnabled {
             frequencyInDays = 1

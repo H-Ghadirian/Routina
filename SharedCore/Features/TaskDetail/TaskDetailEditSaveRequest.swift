@@ -96,9 +96,9 @@ struct TaskDetailEditSaveRequestBuilder {
 
         state.isEditSheetPresented = false
 
-        let trackingCadenceEnabled = scheduleMode.taskType == .record
-            ? state.editTrackingCadenceEnabled
-            : true
+        let trackingCadenceEnabled = scheduleMode.taskType == .todo
+            ? true
+            : state.editTrackingCadenceEnabled
         let frequencyInterval: Int
         if !scheduleMode.usesRoutineCadence || !trackingCadenceEnabled {
             frequencyInterval = 1
@@ -381,9 +381,9 @@ extension TaskDetailFeature {
             : nil
         updatedTask.storyPoints = RoutineTask.sanitizedStoryPoints(request.storyPoints)
         updatedTask.focusModeEnabled = request.focusModeEnabled
-        updatedTask.trackingCadenceEnabled = request.scheduleMode.taskType == .record
-            ? request.trackingCadenceEnabled
-            : true
+        updatedTask.trackingCadenceEnabled = request.scheduleMode.taskType == .todo
+            ? true
+            : request.trackingCadenceEnabled
         updatedTask.trackingNudgesEnabled = request.scheduleMode.taskType == .record
             ? request.trackingCadenceEnabled && request.trackingNudgesEnabled
             : true

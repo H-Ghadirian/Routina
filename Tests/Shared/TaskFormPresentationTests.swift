@@ -216,17 +216,17 @@ struct TaskFormPresentationTests {
         let todo = taskFormModel(taskType: .todo, scheduleMode: .oneOff)
 
         #expect(standard.supportsItemRunoutRepeatType == false)
-        #expect(standard.routineRepeatTypeCases == [.interval, .calendar])
+        #expect(standard.routineRepeatTypeCases == [.none, .interval, .calendar])
         #expect(standard.routineRepeatType.wrappedValue == .interval)
         #expect(checklist.supportsItemRunoutRepeatType)
-        #expect(checklist.routineRepeatTypeCases == [.interval, .calendar, .itemRunout])
+        #expect(checklist.routineRepeatTypeCases == [.none, .interval, .calendar, .itemRunout])
         #expect(runout.supportsItemRunoutRepeatType)
-        #expect(runout.routineRepeatTypeCases == [.interval, .calendar, .itemRunout])
+        #expect(runout.routineRepeatTypeCases == [.none, .interval, .calendar, .itemRunout])
         #expect(runout.routineRepeatType.wrappedValue == .itemRunout)
-        #expect(recordWithoutCadence.routineRepeatTypeCases == [.interval, .calendar])
+        #expect(recordWithoutCadence.routineRepeatTypeCases == [.none, .interval, .calendar])
         #expect(recordWithoutCadence.routineRepeatType.wrappedValue == .none)
         #expect(checklistRecord.supportsItemRunoutRepeatType)
-        #expect(checklistRecord.routineRepeatTypeCases == [.interval, .calendar, .itemRunout])
+        #expect(checklistRecord.routineRepeatTypeCases == [.none, .interval, .calendar, .itemRunout])
         #expect(runoutRecord.supportsItemRunoutRepeatType)
         #expect(runoutRecord.routineRepeatType.wrappedValue == .itemRunout)
         #expect(todo.supportsItemRunoutRepeatType == false)
@@ -301,6 +301,14 @@ struct TaskFormPresentationTests {
         )
 
         #expect(model.routineRepeatType.wrappedValue == .calendar)
+
+        model.routineRepeatType.wrappedValue = .none
+        #expect(!trackingCadenceEnabled)
+        #expect(scheduleMode == .fixedIntervalChecklist)
+        #expect(model.routineRepeatType.wrappedValue == .none)
+
+        model.routineRepeatType.wrappedValue = .calendar
+        #expect(trackingCadenceEnabled)
 
         model.routineRepeatType.wrappedValue = .itemRunout
         #expect(scheduleMode == .derivedFromChecklist)

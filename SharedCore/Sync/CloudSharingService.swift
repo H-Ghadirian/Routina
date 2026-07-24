@@ -409,7 +409,7 @@ extension CloudSharingService.SharedTaskPayload {
         task.actualDurationMinutes = RoutineTask.sanitizedActualDurationMinutes(actualDurationMinutes)
         task.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
         task.focusModeEnabled = focusModeEnabled
-        task.trackingCadenceEnabled = scheduleMode.taskType == .record ? (trackingCadenceEnabled ?? true) : true
+        task.trackingCadenceEnabled = scheduleMode.taskType == .todo ? true : (trackingCadenceEnabled ?? true)
         task.trackingNudgesEnabled = scheduleMode.taskType == .record ? (task.trackingCadenceEnabled && (trackingNudgesEnabled ?? true)) : true
         task.comments = comments ?? []
     }

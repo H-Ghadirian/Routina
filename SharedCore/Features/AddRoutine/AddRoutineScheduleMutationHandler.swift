@@ -14,7 +14,7 @@ struct AddRoutineScheduleMutationHandler {
             basics: &basics,
             schedule: &schedule
         )
-        if taskType == .record {
+        if taskType != .todo {
             basics.trackingCadenceEnabled = true
         }
         state.basics = basics

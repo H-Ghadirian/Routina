@@ -244,7 +244,7 @@ enum TaskDetailEditChangeDetector {
             )
         }
 
-        if request.scheduleMode.taskType == .record, !request.trackingCadenceEnabled {
+        if request.scheduleMode.taskType != .todo, !request.trackingCadenceEnabled {
             return .interval(days: 1)
         }
 

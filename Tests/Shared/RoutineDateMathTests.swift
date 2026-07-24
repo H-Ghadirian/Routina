@@ -1061,4 +1061,26 @@ struct RoutineDateMathTests {
         let expected = makeDate("2026-04-26T00:00:00Z")
         #expect(due == expected)
     }
+
+    @Test
+    func cadenceFreeRoutineRemainsImmediatelyAvailableWithoutDailyClassificationOrNudges() {
+        let completion = makeDate("2026-07-24T10:00:00Z")
+        let task = RoutineTask(
+            scheduleMode: .softInterval,
+            recurrenceRule: .interval(days: 1),
+            lastDone: completion,
+            trackingCadenceEnabled: false
+        )
+
+        #expect(!task.usesEffectiveRoutineCadence)
+        #expect(!task.isDailyRoutineForTaskList)
+        #expect(!task.surfacesSoftIntervalNudges)
+        #expect(task.supportsStoredPlanning)
+        #expect(
+            RoutineDateMath.canMarkDone(
+                for: task,
+                referenceDate: completion.addingTimeInterval(1)
+            )
+        )
+    }
 }

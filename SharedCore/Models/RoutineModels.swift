@@ -445,7 +445,7 @@ final class RoutineTask {
         comments: [RoutineTaskComment] = []
     ) {
         let resolvedScheduleMode = scheduleMode ?? (checklistItems.isEmpty ? .fixedInterval : .derivedFromChecklist)
-        let resolvedTrackingCadenceEnabled = resolvedScheduleMode.taskType == .record ? trackingCadenceEnabled : true
+        let resolvedTrackingCadenceEnabled = resolvedScheduleMode.taskType == .todo ? true : trackingCadenceEnabled
         let resolvedChecklistItems = checklistItems
         let inputRecurrenceRule = resolvedTrackingCadenceEnabled
             ? (recurrenceRule ?? RoutineRecurrenceRule.interval(days: max(Int(interval), 1)))

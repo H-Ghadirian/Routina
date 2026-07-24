@@ -29,6 +29,21 @@ If coverage does not exist yet, write `Coverage needed:` instead of `Coverage:` 
 
 ## Initial High-Value Scenarios
 
+### Cadence-Free Repeating Tasks Stay Reusable
+
+Area: Tasks
+Decision links: [0421](../decisions/0421-support-cadence-free-repeating-routines.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskFormPresentationTests.swift`
+- `Tests/Shared/RoutineDateMathTests.swift`
+
+Given a routine or Tracking entry is reusable but has no known schedule
+When the user chooses `Repeating` and `Repeat type: None`
+Then the task saves without an effective cadence and remains available immediately after every completion
+And every completion remains in its history
+And the task is not classified as a cadence-derived daily routine
+
 ### Simple And Advanced Recurrence Stay Independent
 
 Area: Tasks

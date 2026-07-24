@@ -198,9 +198,9 @@ struct TaskDetailFeature: Reducer {
             RoutineAssumedCompletion.isEligible(
                 scheduleMode: editScheduleMode,
                 recurrenceRule: candidateRecurrenceRule,
-                trackingCadenceEnabled: editScheduleMode.taskType == .record
-                    ? editTrackingCadenceEnabled
-                    : true,
+                trackingCadenceEnabled: editScheduleMode.taskType == .todo
+                    ? true
+                    : editTrackingCadenceEnabled,
                 hasSequentialSteps: !editRoutineSteps.isEmpty,
                 hasChecklistItems: !editRoutineChecklistItems.isEmpty
             )
