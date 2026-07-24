@@ -378,7 +378,7 @@ extension HomeTCAView {
     }
 }
 
-private extension NSMenu {
+extension NSMenu {
     @discardableResult
     func addActionItem(
         title: String,
@@ -398,7 +398,7 @@ private extension NSMenu {
         return item
     }
 
-    func assignRoutinaActionTarget(_ target: RoutinaMacContextMenuView) {
+    fileprivate func assignRoutinaActionTarget(_ target: RoutinaMacContextMenuView) {
         for item in items {
             if item.representedObject is RoutinaMacMenuAction {
                 item.target = target

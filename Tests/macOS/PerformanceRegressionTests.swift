@@ -167,6 +167,30 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(source.contains("ids.subtract(subsectionIDs)"))
     }
 
+    func testMacTaskSectionHeadersDoNotInstallEmptyContextMenus() throws {
+        let source = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+TaskList.swift")
+
+        XCTAssertTrue(source.contains("if taskListSectionHasContextMenu(section) {"))
+        XCTAssertTrue(source.contains("if taskListGroupHasContextMenu(group) {"))
+        XCTAssertTrue(source.contains(".routinaMacContextMenu {"))
+        XCTAssertTrue(source.contains("taskListSectionNativeContextMenu(for: section)"))
+        XCTAssertTrue(source.contains("taskListGroupNativeContextMenu(for: group)"))
+        XCTAssertFalse(
+            source.contains("taskListSectionContextMenu(for: section)"),
+            "Section menus must use the AppKit bridge so menu tracking cannot repeatedly update the entire SwiftUI sidebar."
+        )
+        XCTAssertTrue(
+            source.contains(
+                "return hasFutureSubsectionActions || hasCustomSectionActions || hasFocusActions"
+            )
+        )
+        XCTAssertTrue(
+            source.contains(
+                "areMacHomeSectionFocusTimersEnabled && group.canStartFocusTimer"
+            )
+        )
+    }
+
     func testMacToolbarSearchTemporarilyRevealsSidebarAndRestoresCollapseState() throws {
         let homeSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView.swift")
         let platformSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAViewPlatform.swift")

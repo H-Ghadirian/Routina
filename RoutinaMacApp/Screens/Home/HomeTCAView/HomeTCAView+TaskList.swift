@@ -555,7 +555,27 @@ extension HomeTCAView {
             .frame(height: 0.75)
     }
 
+    @ViewBuilder
     private func taskListCollapsibleSectionHeader(
+        for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
+        isExpanded: Bool
+    ) -> some View {
+        let header = taskListCollapsibleSectionHeaderButton(
+            for: section,
+            isExpanded: isExpanded
+        )
+
+        if taskListSectionHasContextMenu(section) {
+            header
+                .routinaMacContextMenu {
+                    taskListSectionNativeContextMenu(for: section)
+                }
+        } else {
+            header
+        }
+    }
+
+    private func taskListCollapsibleSectionHeaderButton(
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>,
         isExpanded: Bool
     ) -> some View {
@@ -567,9 +587,6 @@ extension HomeTCAView {
         .buttonStyle(.plain)
         .accessibilityLabel(section.title)
         .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
-        .contextMenu {
-            taskListSectionContextMenu(for: section)
-        }
     }
 
     @ViewBuilder
@@ -799,7 +816,7 @@ extension HomeTCAView {
     ) -> some View {
         if group.isCollapsible {
             let isExpanded = taskListGroupIsExpanded(group, collapsedTagIDs: collapsedTagIDs)
-            Button {
+            let header = Button {
                 toggleTaskListGroup(group)
             } label: {
                 if taskListGroupUsesSectionSurface(group) {
@@ -816,14 +833,26 @@ extension HomeTCAView {
             .buttonStyle(.plain)
             .accessibilityLabel(title)
             .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
-            .contextMenu {
-                taskListGroupFocusContextMenu(for: group)
+
+            if taskListGroupHasContextMenu(group) {
+                header
+                    .routinaMacContextMenu {
+                        taskListGroupNativeContextMenu(for: group)
+                    }
+            } else {
+                header
             }
         } else {
-            taskListInnerGroupHeaderLabel(title, count: count, isExpanded: nil)
-                .contextMenu {
-                    taskListGroupFocusContextMenu(for: group)
-                }
+            let header = taskListInnerGroupHeaderLabel(title, count: count, isExpanded: nil)
+
+            if taskListGroupHasContextMenu(group) {
+                header
+                    .routinaMacContextMenu {
+                        taskListGroupNativeContextMenu(for: group)
+                    }
+            } else {
+                header
+            }
         }
     }
 
@@ -1149,58 +1178,58 @@ extension HomeTCAView {
         return String(title.dropFirst())
     }
 
-    @ViewBuilder
-    private func taskListSectionContextMenu(
+    private func taskListSectionNativeContextMenu(
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
-    ) -> some View {
+    ) -> NSMenu {
+        let menu = NSMenu(title: section.title)
         let showsFutureSubsectionActions = section.kind == .future && section.taskGroups.contains { $0.isCollapsible }
         let customSectionID = customTaskSectionID(for: section)
 
         if showsFutureSubsectionActions {
-            Button {
+            menu.addActionItem(title: "Expand All", systemImage: "chevron.down.2") {
                 expandAllFutureTaskListSubsections(in: section)
-            } label: {
-                Label("Expand All", systemImage: "chevron.down.2")
             }
 
-            Button {
+            menu.addActionItem(title: "Collapse All Subsections", systemImage: "chevron.right.2") {
                 collapseAllFutureTaskListSubsections(in: section)
-            } label: {
-                Label("Collapse All Subsections", systemImage: "chevron.right.2")
             }
         }
 
         if let customSectionID {
-            Button {
+            menu.addActionItem(title: "New Subsection", systemImage: "plus.rectangle.on.rectangle") {
                 presentCustomTaskSectionPrompt(for: nil, parentSectionID: customSectionID)
-            } label: {
-                Label("New Subsection", systemImage: "plus.rectangle.on.rectangle")
             }
 
-            Button {
+            menu.addActionItem(title: "Rename Section", systemImage: "pencil") {
                 presentCustomTaskSectionRenamePrompt(sectionID: customSectionID, title: section.title)
-            } label: {
-                Label("Rename Section", systemImage: "pencil")
             }
 
-            Button(role: .destructive) {
+            menu.addActionItem(title: "Delete Section", systemImage: "trash") {
                 presentCustomTaskSectionDeleteConfirmation(sectionID: customSectionID, title: section.title)
-            } label: {
-                Label("Delete Section", systemImage: "trash")
             }
         }
 
         if (showsFutureSubsectionActions || customSectionID != nil),
            areMacHomeSectionFocusTimersEnabled,
            section.canStartFocusTimer {
-            Divider()
+            menu.addItem(.separator())
         }
 
         if areMacHomeSectionFocusTimersEnabled, section.canStartFocusTimer {
-            Section("Focus Timer") {
-                taskListSectionFocusContextMenuItems(for: section)
-            }
+            menu.addItem(.sectionHeader(title: "Focus Timer"))
+            addTaskListSectionFocusItems(to: menu, for: section)
         }
+
+        return menu
+    }
+
+    private func taskListSectionHasContextMenu(
+        _ section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
+    ) -> Bool {
+        let hasFutureSubsectionActions = section.kind == .future && section.taskGroups.contains { $0.isCollapsible }
+        let hasCustomSectionActions = customTaskSectionID(for: section) != nil
+        let hasFocusActions = areMacHomeSectionFocusTimersEnabled && section.canStartFocusTimer
+        return hasFutureSubsectionActions || hasCustomSectionActions || hasFocusActions
     }
 
     private func customTaskSectionID(
@@ -1210,53 +1239,61 @@ extension HomeTCAView {
         return HomeCustomTaskSectionStorage.sectionID(fromManualOrderSectionKey: section.identityKey)
     }
 
-    @ViewBuilder
-    private func taskListGroupFocusContextMenu(
-        for group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
-    ) -> some View {
-        if areMacHomeSectionFocusTimersEnabled, group.canStartFocusTimer {
-            Section("Focus Timer") {
-                taskListGroupFocusContextMenuItems(for: group)
-            }
-        }
+    private func taskListGroupHasContextMenu(
+        _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
+    ) -> Bool {
+        areMacHomeSectionFocusTimersEnabled && group.canStartFocusTimer
     }
 
-    @ViewBuilder
-    private func taskListSectionFocusContextMenuItems(
+    private func taskListGroupNativeContextMenu(
+        for group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
+    ) -> NSMenu {
+        let menu = NSMenu(title: group.title ?? "Focus Timer")
+        if areMacHomeSectionFocusTimersEnabled, group.canStartFocusTimer {
+            menu.addItem(.sectionHeader(title: "Focus Timer"))
+            addTaskListGroupFocusItems(to: menu, for: group)
+        }
+        return menu
+    }
+
+    private func addTaskListSectionFocusItems(
+        to menu: NSMenu,
         for section: HomeTaskListPresentationSection<HomeFeature.RoutineDisplay>
-    ) -> some View {
+    ) {
         if section.canStartFocusTimer {
-            Button {
+            menu.addActionItem(title: "Count up", systemImage: "stopwatch") {
                 startFocusFromTaskListSection(section, duration: 0)
-            } label: {
-                Label("Count up", systemImage: "stopwatch")
             }
 
-            Divider()
+            menu.addItem(.separator())
 
-            ForEach(planFocusDurationOptions, id: \.self) { duration in
-                Button(FocusSessionFormatting.compactDurationText(seconds: duration)) {
+            for duration in planFocusDurationOptions {
+                menu.addActionItem(
+                    title: FocusSessionFormatting.compactDurationText(seconds: duration),
+                    systemImage: "timer"
+                ) {
                     startFocusFromTaskListSection(section, duration: duration)
                 }
             }
         }
     }
 
-    @ViewBuilder
-    private func taskListGroupFocusContextMenuItems(
+    private func addTaskListGroupFocusItems(
+        to menu: NSMenu,
         for group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
-    ) -> some View {
+    ) {
         if group.canStartFocusTimer {
-            Button {
+            menu.addActionItem(title: "Count up", systemImage: "stopwatch") {
                 startFocusFromTaskListGroup(group, duration: 0)
-            } label: {
-                Label("Count up", systemImage: "stopwatch")
             }
 
-            Divider()
+            menu.addItem(.separator())
 
-            ForEach(planFocusDurationOptions, id: \.self) { duration in
-                Button(FocusSessionFormatting.compactDurationText(seconds: duration)) {
+            for duration in planFocusDurationOptions {
+                menu.addActionItem(
+                    title: FocusSessionFormatting.compactDurationText(seconds: duration),
+                    systemImage: "timer"
+                ) {
                     startFocusFromTaskListGroup(group, duration: duration)
                 }
             }
