@@ -217,6 +217,19 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func priorityVisibilityRequiresSavedNonDefaultValues() {
+        let neutralTask = RoutineTask(name: "Neutral")
+        let prioritizedTask = RoutineTask(name: "Prioritized", priority: .high)
+        let importantTask = RoutineTask(name: "Important", importance: .level3)
+        let urgentTask = RoutineTask(name: "Urgent", urgency: .level3)
+
+        #expect(!TaskDetailOptionalControlVisibility.showsPriority(for: neutralTask))
+        #expect(TaskDetailOptionalControlVisibility.showsPriority(for: prioritizedTask))
+        #expect(TaskDetailOptionalControlVisibility.showsPriority(for: importantTask))
+        #expect(TaskDetailOptionalControlVisibility.showsPriority(for: urgentTask))
+    }
+
+    @Test
     func addEventsActionRequiresEventActionsEnabledAndNoLinkedEvents() {
         #expect(TaskDetailEventActionVisibility.shouldShowAddEventsAction(
             hasLinkedEvents: false,

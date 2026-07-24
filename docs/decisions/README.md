@@ -31,6 +31,10 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0425](0425-make-task-detail-history-optional.md) refines [0100](0100-reveal-task-form-details-by-section.md), [0366](0366-keep-mac-task-detail-add-more-inline.md), and [0393](0393-persist-task-detail-heatmap-per-task.md) for progressive history review:** iOS and macOS Task Details hide History by default, offer it through Add More Details, and persist the reveal choice per task through copying and backup/import.
+
+- **[0424](0424-make-task-detail-priority-optional.md) refines [0100](0100-reveal-task-form-details-by-section.md) and [0366](0366-keep-mac-task-detail-add-more-inline.md) for progressive task details:** iOS and macOS Task Details hide neutral default Priority metadata, offer Priority through Add More Details, and keep saved non-default priority, importance, or urgency visible.
+
 - **[0423](0423-separate-mac-task-title-from-optional-media.md) refines [0058](0058-use-progressive-task-forms.md), [0100](0100-reveal-task-form-details-by-section.md), and [0353](0353-move-mac-task-form-actions-into-identity.md) for simpler Mac capture:** Mac Add Task and Edit Task keep Identity focused on the title and form actions, while Emoji and Image are separate optional sections available through `Add More Details`; customized saved emoji remains visible in progressive edit.
 
 - **[0422](0422-keep-mac-focus-control-in-planner-timeline.md) refines [0333](0333-move-mac-focus-control-to-planner-calendar-header.md) for stable Planner access:** The Mac Planner header keeps the same Focus control visible in both Calendar and Timeline modes while retaining Planner-local ownership and existing focus behavior.
@@ -328,6 +332,8 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0425](0425-make-task-detail-history-optional.md) | Make Task Detail History Optional | Accepted | 2026-07-24 |
+| [0424](0424-make-task-detail-priority-optional.md) | Make Task Detail Priority Optional | Accepted | 2026-07-24 |
 | [0419](0419-use-lightweight-surfaces-inside-unbounded-scroll-rows.md) | Use Lightweight Surfaces Inside Unbounded Scroll Rows | Accepted | 2026-07-23 |
 | [0418](0418-keep-whole-history-work-out-of-scrolling-render-paths.md) | Keep Whole-History Work Out of Scrolling Render Paths | Accepted | 2026-07-23 |
 | [0419](0419-refresh-stats-on-meaningful-surface-events.md) | Refresh Stats on Meaningful Surface Events | Accepted | 2026-07-23 |

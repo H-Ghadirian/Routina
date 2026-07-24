@@ -75,6 +75,7 @@ final class RoutineTask {
     var trackingCadenceEnabled: Bool = true
     var trackingNudgesEnabled: Bool = true
     var showsTaskDetailHeatmap: Bool = false
+    var showsTaskDetailHistory: Bool = false
     var commentsStorage: String = ""
     var changeLogStorage: String = ""
 
@@ -442,6 +443,7 @@ final class RoutineTask {
         trackingCadenceEnabled: Bool = true,
         trackingNudgesEnabled: Bool = true,
         showsTaskDetailHeatmap: Bool = false,
+        showsTaskDetailHistory: Bool = false,
         comments: [RoutineTaskComment] = []
     ) {
         let resolvedScheduleMode = scheduleMode ?? (checklistItems.isEmpty ? .fixedInterval : .derivedFromChecklist)
@@ -540,6 +542,7 @@ final class RoutineTask {
         self.trackingCadenceEnabled = resolvedTrackingCadenceEnabled
         self.trackingNudgesEnabled = resolvedScheduleMode.taskType == .record ? (resolvedTrackingCadenceEnabled && trackingNudgesEnabled) : true
         self.showsTaskDetailHeatmap = showsTaskDetailHeatmap
+        self.showsTaskDetailHistory = showsTaskDetailHistory
         self.commentsStorage = RoutineTaskCommentStorage.serialize(comments)
         var initialChanges = [
             RoutineTaskChangeLogEntry(
@@ -862,6 +865,7 @@ final class RoutineTask {
             trackingCadenceEnabled: trackingCadenceEnabled,
             trackingNudgesEnabled: trackingNudgesEnabled,
             showsTaskDetailHeatmap: showsTaskDetailHeatmap,
+            showsTaskDetailHistory: showsTaskDetailHistory,
             comments: comments
         )
         copy.completedChecklistItemIDsStorage = completedChecklistItemIDsStorage

@@ -251,7 +251,8 @@ struct SettingsRoutineDataPersistenceTests {
             voiceNoteData: voiceData,
             voiceNoteDurationSeconds: 3.5,
             voiceNoteCreatedAt: voiceCreatedAt,
-            showsTaskDetailHeatmap: true
+            showsTaskDetailHeatmap: true,
+            showsTaskDetailHistory: true
         )
         context.insert(task)
         context.insert(
@@ -285,6 +286,7 @@ struct SettingsRoutineDataPersistenceTests {
         #expect(restoredTask.voiceNoteCreatedAt == voiceCreatedAt)
         #expect(restoredTask.pressure == .high)
         #expect(restoredTask.showsTaskDetailHeatmap)
+        #expect(restoredTask.showsTaskDetailHistory)
         let restoredAttachment = try #require(restoreContext.fetch(FetchDescriptor<RoutineAttachment>()).first)
         #expect(restoredAttachment.taskID == restoredTask.id)
         #expect(restoredAttachment.fileName == "receipt.jpg")

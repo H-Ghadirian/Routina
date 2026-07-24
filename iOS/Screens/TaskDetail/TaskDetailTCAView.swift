@@ -17,6 +17,7 @@ struct TaskDetailTCAView: View {
     @State private var isTimeControlRevealed = false
     @State private var isTodoStateControlRevealed = false
     @State private var isPressureControlRevealed = false
+    @State private var isPriorityControlRevealed = false
     @State private var isChecklistSectionRevealed = false
     @State private var timeEditing = TaskDetailTimeEditingState()
     @State var isEditEmojiPickerPresented = false
@@ -256,7 +257,9 @@ detailBody
                 if shouldShowCommentsSection {
                     commentsSection
                 }
-                historySection
+                if store.task.showsTaskDetailHistory {
+                    historySection
+                }
                 if shouldShowChecklistSection {
                     checklistItemsSection
                 }
@@ -299,7 +302,9 @@ detailBody
                 if shouldShowCommentsSection {
                     commentsSection
                 }
-                historySection
+                if store.task.showsTaskDetailHistory {
+                    historySection
+                }
                 if shouldShowChecklistSection {
                     checklistItemsSection
                 }
@@ -375,6 +380,15 @@ detailBody
             })
         }
 
+        if !store.task.showsTaskDetailHistory {
+            actions.append(TaskDetailOptionalAction(title: "History", systemImage: "clock.arrow.circlepath") {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    _ = store.send(.revealHistoryInTaskDetail)
+                    isRoutineLogsExpanded = true
+                }
+            })
+        }
+
         if !shouldShowRelationshipsSection {
             actions.append(TaskDetailOptionalAction(title: "Linked Task", systemImage: "link.badge.plus") {
                 store.send(.openAddLinkedTask)
@@ -408,6 +422,15 @@ detailBody
             actions.append(TaskDetailOptionalAction(title: "Pressure", systemImage: "gauge.with.dots.needle.50percent") {
                 withAnimation(.easeInOut(duration: 0.18)) {
                     isPressureControlRevealed = true
+                }
+            })
+        }
+
+        if shouldShowPriorityAddAction {
+            actions.append(TaskDetailOptionalAction(title: "Priority", systemImage: "flag") {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    isPriorityControlRevealed = true
+                    isMatrixExpanded = true
                 }
             })
         }
@@ -461,6 +484,10 @@ detailBody
         isPressureControlRevealed || TaskDetailOptionalControlVisibility.showsPressure(for: store.task)
     }
 
+    private var shouldShowPriorityControl: Bool {
+        isPriorityControlRevealed || TaskDetailOptionalControlVisibility.showsPriority(for: store.task)
+    }
+
     private var shouldShowChecklistSection: Bool {
         isChecklistSectionRevealed || store.hasStoredChecklistItems
     }
@@ -471,6 +498,10 @@ detailBody
 
     private var shouldShowPressureAddAction: Bool {
         !shouldShowPressureControl
+    }
+
+    private var shouldShowPriorityAddAction: Bool {
+        !shouldShowPriorityControl
     }
 
     private var shouldShowTimeAddAction: Bool {
@@ -504,6 +535,7 @@ detailBody
         isTimeControlRevealed = false
         isTodoStateControlRevealed = false
         isPressureControlRevealed = false
+        isPriorityControlRevealed = false
         isChecklistSectionRevealed = false
     }
 
@@ -660,7 +692,9 @@ detailBody
             statusTagChip(tag)
         } additionalContent: {
             VStack(alignment: .leading, spacing: 8) {
-                priorityDisclosureBox
+                if shouldShowPriorityControl {
+                    priorityDisclosureBox
+                }
                 if shouldShowTimeControl {
                     todoTimeSpentHeaderBox
                 }
@@ -687,7 +721,9 @@ detailBody
             statusTagChip(tag)
         } additionalContent: {
             VStack(alignment: .leading, spacing: 8) {
-                priorityDisclosureBox
+                if shouldShowPriorityControl {
+                    priorityDisclosureBox
+                }
                 headerGoalsBox
             }
         }

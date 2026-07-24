@@ -111,6 +111,12 @@ enum TaskDetailPriorityPresentation {
 }
 
 enum TaskDetailOptionalControlVisibility {
+    static func showsPriority(for task: RoutineTask) -> Bool {
+        task.priority != .none
+            || task.importance != .level2
+            || task.urgency != .level2
+    }
+
     static func showsTodoState(for task: RoutineTask) -> Bool {
         guard task.isOneOffTask else { return false }
         return task.todoStateRawValue != nil || task.isPaused

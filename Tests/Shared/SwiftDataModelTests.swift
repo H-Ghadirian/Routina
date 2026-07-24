@@ -30,6 +30,7 @@ struct SwiftDataModelTests {
         #expect(task.checklistItems.isEmpty)
         #expect(task.scheduleMode == .fixedInterval)
         #expect(task.priority == .none)
+        #expect(!task.showsTaskDetailHistory)
         #expect(task.importance == .level2)
         #expect(task.urgency == .level2)
         #expect(task.completedStepCount == 0)

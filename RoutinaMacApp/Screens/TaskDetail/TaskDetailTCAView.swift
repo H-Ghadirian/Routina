@@ -49,6 +49,7 @@ struct TaskDetailTCAView: View {
     @State private var isTimeControlRevealed = false
     @State private var isTodoStateControlRevealed = false
     @State private var isPressureControlRevealed = false
+    @State private var isPriorityControlRevealed = false
     @State private var isChecklistSectionRevealed = false
     @State private var inlineEditSections: [FormSection] = []
     @State private var isTimeSectionExpanded = false
@@ -289,7 +290,9 @@ struct TaskDetailTCAView: View {
                 if shouldShowCommentsSection {
                     commentsSection
                 }
-                historySection
+                if store.task.showsTaskDetailHistory {
+                    historySection
+                }
                 if shouldShowChecklistSection {
                     checklistItemsSection
                 }
@@ -353,7 +356,9 @@ struct TaskDetailTCAView: View {
     @ViewBuilder
     private var todoHeaderControls: some View {
         VStack(alignment: .leading, spacing: 8) {
-            priorityDisclosureBox
+            if shouldShowPriorityControl {
+                priorityDisclosureBox
+            }
             if shouldShowEffortSection {
                 todoTimeSpentHeaderBox
             }
@@ -423,6 +428,10 @@ struct TaskDetailTCAView: View {
         isPressureControlRevealed || TaskDetailOptionalControlVisibility.showsPressure(for: store.task)
     }
 
+    private var shouldShowPriorityControl: Bool {
+        isPriorityControlRevealed || TaskDetailOptionalControlVisibility.showsPriority(for: store.task)
+    }
+
     private var shouldShowChecklistSection: Bool {
         isChecklistSectionRevealed || store.hasStoredChecklistItems
     }
@@ -433,6 +442,10 @@ struct TaskDetailTCAView: View {
 
     private var shouldShowPressureAddAction: Bool {
         !shouldShowPressureControl
+    }
+
+    private var shouldShowPriorityAddAction: Bool {
+        !shouldShowPriorityControl
     }
 
     private var shouldShowTimeAddAction: Bool {
@@ -478,7 +491,9 @@ struct TaskDetailTCAView: View {
     @ViewBuilder
     private var routineHeaderControls: some View {
         VStack(alignment: .leading, spacing: 8) {
-            priorityDisclosureBox
+            if shouldShowPriorityControl {
+                priorityDisclosureBox
+            }
             if shouldShowPressureControl {
                 TaskDetailPressureSegmentedPicker(store: store)
             }
@@ -501,7 +516,9 @@ struct TaskDetailTCAView: View {
                 if shouldShowHeatmapSection {
                     taskHeatmapSection
                 }
-                historySection
+                if store.task.showsTaskDetailHistory {
+                    historySection
+                }
                 if shouldShowChecklistSection {
                     checklistItemsSection
                 }
@@ -607,6 +624,15 @@ struct TaskDetailTCAView: View {
             })
         }
 
+        if !store.task.showsTaskDetailHistory {
+            actions.append(TaskDetailOptionalAction(title: "History", systemImage: "clock.arrow.circlepath") {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    _ = store.send(.revealHistoryInTaskDetail)
+                    isRoutineLogsExpanded = true
+                }
+            })
+        }
+
         if shouldShowTimeAddAction {
             actions.append(TaskDetailOptionalAction(title: "Time", systemImage: "clock.badge") {
                 withAnimation(.easeInOut(duration: 0.18)) {
@@ -629,6 +655,15 @@ struct TaskDetailTCAView: View {
             actions.append(TaskDetailOptionalAction(title: "Pressure", systemImage: "gauge.with.dots.needle.50percent") {
                 withAnimation(.easeInOut(duration: 0.18)) {
                     isPressureControlRevealed = true
+                }
+            })
+        }
+
+        if shouldShowPriorityAddAction {
+            actions.append(TaskDetailOptionalAction(title: "Priority", systemImage: "flag") {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    isPriorityControlRevealed = true
+                    isMatrixExpanded = true
                 }
             })
         }
@@ -795,6 +830,7 @@ struct TaskDetailTCAView: View {
         isTimeControlRevealed = false
         isTodoStateControlRevealed = false
         isPressureControlRevealed = false
+        isPriorityControlRevealed = false
         isChecklistSectionRevealed = false
         inlineEditSections.removeAll()
     }

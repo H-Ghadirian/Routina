@@ -51,7 +51,8 @@ struct SettingsRoutineDataBackupMappingTests {
             voiceNoteCreatedAt: voiceCreatedAt,
             scheduleMode: .oneOff,
             interval: 0,
-            showsTaskDetailHeatmap: true
+            showsTaskDetailHeatmap: true,
+            showsTaskDetailHistory: true
         )
 
         let inline = SettingsRoutineDataBackupMapping.task(
@@ -84,12 +85,14 @@ struct SettingsRoutineDataBackupMappingTests {
         #expect(inline.voiceNoteCreatedAt == voiceCreatedAt)
         #expect(inline.interval == 1)
         #expect(inline.showsTaskDetailHeatmap == true)
+        #expect(inline.showsTaskDetailHistory == true)
         #expect(inline.pressure == .high)
         #expect(packaged.imageData == nil)
         #expect(packaged.imageAttachmentID == attachmentID)
         #expect(packaged.voiceNoteData == nil)
         #expect(packaged.voiceNoteAttachmentID == voiceAttachmentID)
         #expect(packaged.showsTaskDetailHeatmap == true)
+        #expect(packaged.showsTaskDetailHistory == true)
         #expect(packaged.pressure == .high)
     }
 
