@@ -341,6 +341,22 @@ extension TaskDetailFeature {
         }
     }
 
+    func handleTodoStateDetailRevealed(taskID: UUID) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = modelContext()
+                guard let task = try context.fetch(TaskDetailFetchDescriptors.task(for: taskID)).first else { return }
+                guard task.isOneOffTask, !task.isCompletedOneOff, !task.isCanceledOneOff else { return }
+                guard task.todoStateRawValue == nil, !task.isPaused else { return }
+                task.todoStateRawValue = TodoState.ready.rawValue
+                try context.save()
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error saving task detail state visibility: \(error)")
+            }
+        }
+    }
+
     func handleDetailCommentsChanged(
         taskID: UUID,
         comments: [RoutineTaskComment]

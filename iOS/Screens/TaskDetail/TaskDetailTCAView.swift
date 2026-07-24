@@ -398,6 +398,7 @@ detailBody
         if shouldShowTodoStateAddAction {
             actions.append(TaskDetailOptionalAction(title: "State", systemImage: "circle.grid.2x1") {
                 withAnimation(.easeInOut(duration: 0.18)) {
+                    _ = store.send(.revealTodoStateInTaskDetail)
                     isTodoStateControlRevealed = true
                 }
             })

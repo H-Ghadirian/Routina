@@ -258,6 +258,7 @@ struct TaskDetailFeature: Reducer {
         case confirmManualCompletion([UUID])
         case updateTaskDuration(Int?)
         case updateLogDuration(UUID, Int?)
+        case revealTodoStateInTaskDetail
         case revealHeatmapInTaskDetail
         case pauseTapped
         case notTodayTapped
@@ -1025,6 +1026,14 @@ struct TaskDetailFeature: Reducer {
 
         case let .updateTaskDuration(durationMinutes):
             return completionLogActionHandler().updateTaskDuration(durationMinutes, state: &state)
+
+        case .revealTodoStateInTaskDetail:
+            guard state.task.isOneOffTask else { return .none }
+            guard !state.task.isCompletedOneOff, !state.task.isCanceledOneOff else { return .none }
+            guard state.task.todoStateRawValue == nil, !state.task.isPaused else { return .none }
+            state.task.todoStateRawValue = TodoState.ready.rawValue
+            refreshTaskView(&state)
+            return handleTodoStateDetailRevealed(taskID: state.task.id)
 
         case .revealHeatmapInTaskDetail:
             guard state.task.supportsTaskDetailHeatmap else { return .none }

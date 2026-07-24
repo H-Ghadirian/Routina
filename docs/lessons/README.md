@@ -55,3 +55,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0012 — Preserve scroll position across sidebar disclosure changes](0012-preserve-scroll-position-across-sidebar-disclosure-changes.md)
 - [0013 — Do not expose fallback recurrence for cadence-free tasks](0013-do-not-expose-fallback-recurrence-for-cadence-free-tasks.md)
 - [0014 — Present the Mac Add Task emoji picker as a sheet](0014-present-mac-add-task-emoji-picker-as-a-sheet.md)
+- [0015 — Persist deliberately revealed task-detail controls](0015-persist-deliberately-revealed-task-detail-controls.md)

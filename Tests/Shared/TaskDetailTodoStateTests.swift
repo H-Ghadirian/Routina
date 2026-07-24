@@ -76,6 +76,31 @@ struct TodoStateFeatureTests {
     // MARK: - Reducer: todoStateChanged
 
     @Test
+    func revealTodoStateInTaskDetailPersistsReadyVisibilityWithoutChangeHistory() async throws {
+        let context = makeInMemoryContext()
+        let task = RoutineTask(name: "Write report", scheduleMode: .oneOff)
+        context.insert(task)
+        try context.save()
+
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.revealTodoStateInTaskDetail) {
+            $0.task.todoStateRawValue = TodoState.ready.rawValue
+            $0.taskRefreshID = 1
+        }
+
+        let saved = try #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(saved.todoStateRawValue == TodoState.ready.rawValue)
+        #expect(!saved.changeLogEntries.contains { $0.kind == .stateChanged })
+        #expect(TaskDetailOptionalControlVisibility.showsTodoState(for: saved))
+    }
+
+    @Test
     func pressureChanged_updatesPressureAndPersists() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-03-18T10:00:00Z")
