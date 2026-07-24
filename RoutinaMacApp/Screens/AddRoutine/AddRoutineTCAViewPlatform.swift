@@ -16,7 +16,7 @@ extension View {
         isPresented: Binding<Bool>,
         @ViewBuilder content: @escaping () -> Content
     ) -> some View {
-        popover(isPresented: isPresented, arrowEdge: .top) {
+        sheet(isPresented: isPresented) {
             content()
                 .frame(minWidth: 430, minHeight: 380)
         }

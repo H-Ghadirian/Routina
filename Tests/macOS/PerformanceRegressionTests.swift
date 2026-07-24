@@ -2,6 +2,18 @@ import XCTest
 @testable @preconcurrency import RoutinaMacOSDev
 
 final class PerformanceRegressionTests: XCTestCase {
+    func testMacAddTaskEmojiChooserUsesStableSheetPresentation() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/AddRoutine/AddRoutineTCAViewPlatform.swift"
+        )
+
+        XCTAssertTrue(source.contains("sheet(isPresented: isPresented)"))
+        XCTAssertFalse(
+            source.contains("popover(isPresented: isPresented"),
+            "The progressively composed Add Task identity control must not use the crashing popover presentation path."
+        )
+    }
+
     func testMacTimelineDoesNotBindWholeHistoryQueriesIntoRenderPath() throws {
         let source = try Self.sourceFile("RoutinaMacApp/Screens/Timeline/TimelineView.swift")
 
