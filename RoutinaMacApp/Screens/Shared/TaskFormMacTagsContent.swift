@@ -4,6 +4,8 @@ struct TaskFormMacTagsContent: View {
     let model: TaskFormModel
     let onManageTags: () -> Void
 
+    @State private var showsAllAvailableTags = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             tagComposer
@@ -81,12 +83,38 @@ struct TaskFormMacTagsContent: View {
                     relatedTagButton(tag)
                 }
 
-                ForEach(unselectedAvailableTags, id: \.self) { tag in
+                ForEach(visibleAvailableTags, id: \.self) { tag in
                     availableTagButton(tag)
+                }
+
+                if canToggleAvailableTags {
+                    availableTagsExpansionButton
                 }
             }
             .padding(.vertical, 4)
         }
+    }
+
+    private var availableTagsExpansionButton: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showsAllAvailableTags.toggle()
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: showsAllAvailableTags ? "chevron.up" : "chevron.down")
+                    .font(.caption.weight(.semibold))
+                Text(showsAllAvailableTags ? "Show less" : "Show all (\(unselectedAvailableTags.count))")
+                    .lineLimit(1)
+            }
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .fixedSize()
+        .accessibilityLabel(showsAllAvailableTags ? "Show fewer tags" : "Show all tags")
     }
 
     private func selectedTagButton(_ tag: String) -> some View {
@@ -167,11 +195,30 @@ struct TaskFormMacTagsContent: View {
         }
     }
 
+    private var visibleAvailableTags: [String] {
+        TaskFormMacTagSuggestionPresentation.visibleAvailableTags(
+            unselectedAvailableTags,
+            showsAll: showsAllAvailableTags
+        )
+    }
+
+    private var canToggleAvailableTags: Bool {
+        unselectedAvailableTags.count > TaskFormMacTagSuggestionPresentation.collapsedLimit
+    }
+
     private func tagChipTitle(tag: String, summary: RoutineTagSummary?) -> String {
         TagCounterFormatting.chipTitle(
             tag: tag,
             summary: summary,
             mode: model.tagCounterDisplayMode
         )
+    }
+}
+
+enum TaskFormMacTagSuggestionPresentation {
+    static let collapsedLimit = 6
+
+    static func visibleAvailableTags(_ tags: [String], showsAll: Bool) -> [String] {
+        showsAll ? tags : Array(tags.prefix(collapsedLimit))
     }
 }
