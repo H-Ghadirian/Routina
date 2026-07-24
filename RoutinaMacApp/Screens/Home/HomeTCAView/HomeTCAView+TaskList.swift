@@ -17,6 +17,24 @@ private struct MacTaskSourceListTaskLocation {
     let groups: [HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>]
 }
 
+final class MacTaskSourceListScrollViewReference {
+    weak var scrollView: NSScrollView?
+}
+
+private struct MacTaskSourceListScrollViewResolver: NSViewRepresentable {
+    let reference: MacTaskSourceListScrollViewReference
+
+    func makeNSView(context: Context) -> NSView {
+        NSView(frame: .zero)
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        DispatchQueue.main.async {
+            reference.scrollView = nsView.enclosingTaskSourceScrollView
+        }
+    }
+}
+
 private struct MacTaskSourceListScrollResetView: NSViewRepresentable {
     let requestID: Int
 
@@ -350,9 +368,14 @@ extension HomeTCAView {
                 .padding(.horizontal, 10)
                 .padding(.bottom, 10)
                 .background(
-                    MacTaskSourceListScrollResetView(
-                        requestID: macSearchSidebarRestoreScrollRequestID
-                    )
+                    ZStack {
+                        MacTaskSourceListScrollResetView(
+                            requestID: macSearchSidebarRestoreScrollRequestID
+                        )
+                        MacTaskSourceListScrollViewResolver(
+                            reference: macTaskSourceListScrollViewReference
+                        )
+                    }
                 )
             }
             .id(macTaskSourceListScrollContainerIdentity)
@@ -1379,28 +1402,68 @@ extension HomeTCAView {
     ) {
         guard section.kind.isCollapsible else { return }
         let isCurrentlyExpanded = taskListSectionIsExpanded(section)
-        let shouldAnimate = MacTaskSourceListSectionTogglePolicy.shouldAnimate(
-            sectionKind: section.kind,
-            isCurrentlyExpanded: isCurrentlyExpanded
-        )
-        withTransaction(
-            Transaction(animation: shouldAnimate ? .easeInOut(duration: 0.24) : nil)
-        ) {
-            switch section.kind {
-            case .plannedToday, .plannedTomorrow, .custom, .tracking:
-                setTagTaskListSection(section, collapsed: isCurrentlyExpanded)
-            case .daily:
-                isDailyRoutinesSectionCollapsed.toggle()
-            case .future:
-                isMacFutureTasksSectionCollapsed.toggle()
-            case .tag, .untagged:
-                setTagTaskListSection(section, collapsed: taskListSectionIsExpanded(section))
-            case .archived:
-                isArchivedSectionCollapsed.toggle()
-            case .pinned, .regular, .deadlineDate, .away:
-                break
+        preserveMacTaskSourceListScrollPosition {
+            withAnimation(.easeInOut(duration: 0.24)) {
+                switch section.kind {
+                case .plannedToday, .plannedTomorrow, .custom, .tracking:
+                    setTagTaskListSection(section, collapsed: isCurrentlyExpanded)
+                case .daily:
+                    isDailyRoutinesSectionCollapsed.toggle()
+                case .future:
+                    isMacFutureTasksSectionCollapsed.toggle()
+                case .tag, .untagged:
+                    setTagTaskListSection(section, collapsed: isCurrentlyExpanded)
+                case .archived:
+                    isArchivedSectionCollapsed.toggle()
+                case .pinned, .regular, .deadlineDate, .away:
+                    break
+                }
             }
         }
+    }
+
+    private func preserveMacTaskSourceListScrollPosition(_ update: () -> Void) {
+        guard let scrollView = macTaskSourceListScrollViewReference.scrollView else {
+            update()
+            return
+        }
+
+        let requestedOrigin = scrollView.contentView.bounds.origin
+        update()
+
+        restoreMacTaskSourceListScrollPosition(
+            requestedOrigin,
+            in: scrollView
+        )
+        DispatchQueue.main.async {
+            restoreMacTaskSourceListScrollPosition(
+                requestedOrigin,
+                in: scrollView
+            )
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.26) {
+                restoreMacTaskSourceListScrollPosition(
+                    requestedOrigin,
+                    in: scrollView
+                )
+            }
+        }
+    }
+
+    private func restoreMacTaskSourceListScrollPosition(
+        _ requestedOrigin: NSPoint,
+        in scrollView: NSScrollView
+    ) {
+        scrollView.layoutSubtreeIfNeeded()
+        scrollView.documentView?.layoutSubtreeIfNeeded()
+
+        let clipView = scrollView.contentView
+        let targetY = MacTaskSourceListScrollPreservation.verticalOrigin(
+            preserving: requestedOrigin.y,
+            documentHeight: scrollView.documentView?.bounds.height ?? 0,
+            viewportHeight: clipView.bounds.height
+        )
+        clipView.scroll(to: NSPoint(x: requestedOrigin.x, y: targetY))
+        scrollView.reflectScrolledClipView(clipView)
     }
 
     private func taskListGroupIsExpanded(
@@ -1425,14 +1488,17 @@ extension HomeTCAView {
         _ group: HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>
     ) {
         guard group.isCollapsible else { return }
-        withAnimation(.easeInOut(duration: 0.24)) {
-            switch group.kind {
-            case .daily:
-                isMacPlanTodayDailyRoutinesGroupCollapsed.toggle()
-            case .custom, .deadlineDate, .tag, .untagged, .regular:
-                setTagTaskListGroup(group, collapsed: taskListGroupIsExpanded(group))
-            case .plannedToday, .plannedTomorrow, .tracking, .future, .pinned, .away, .archived:
-                break
+        let isCurrentlyExpanded = taskListGroupIsExpanded(group)
+        preserveMacTaskSourceListScrollPosition {
+            withAnimation(.easeInOut(duration: 0.24)) {
+                switch group.kind {
+                case .daily:
+                    isMacPlanTodayDailyRoutinesGroupCollapsed.toggle()
+                case .custom, .deadlineDate, .tag, .untagged, .regular:
+                    setTagTaskListGroup(group, collapsed: isCurrentlyExpanded)
+                case .plannedToday, .plannedTomorrow, .tracking, .future, .pinned, .away, .archived:
+                    break
+                }
             }
         }
     }
@@ -1456,15 +1522,17 @@ extension HomeTCAView {
         let subsectionIDs = futureTaskListSubsectionCollapseIDs(in: section)
         guard section.kind == .future, !subsectionIDs.isEmpty else { return }
 
-        withAnimation(.easeInOut(duration: 0.24)) {
-            isMacFutureTasksSectionCollapsed = false
-            var ids = collapsedTagTaskListSectionIDs
-            if collapsed {
-                ids.formUnion(subsectionIDs)
-            } else {
-                ids.subtract(subsectionIDs)
+        preserveMacTaskSourceListScrollPosition {
+            withAnimation(.easeInOut(duration: 0.24)) {
+                isMacFutureTasksSectionCollapsed = false
+                var ids = collapsedTagTaskListSectionIDs
+                if collapsed {
+                    ids.formUnion(subsectionIDs)
+                } else {
+                    ids.subtract(subsectionIDs)
+                }
+                collapsedTagTaskListSectionIDsStorage = ids.sorted().joined(separator: "\n")
             }
-            collapsedTagTaskListSectionIDsStorage = ids.sorted().joined(separator: "\n")
         }
     }
 

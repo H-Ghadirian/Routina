@@ -62,30 +62,26 @@ struct MacTaskSourceListScrollPolicyTests {
     }
 }
 
-struct MacTaskSourceListSectionTogglePolicyTests {
+struct MacTaskSourceListScrollPreservationTests {
     @Test
-    func openingFutureDoesNotAnimateItsLargeLayoutInsertion() {
+    func keepsExistingOriginWhenItFitsUpdatedContent() {
         #expect(
-            !MacTaskSourceListSectionTogglePolicy.shouldAnimate(
-                sectionKind: .future,
-                isCurrentlyExpanded: false
-            )
+            MacTaskSourceListScrollPreservation.verticalOrigin(
+                preserving: 240,
+                documentHeight: 2_000,
+                viewportHeight: 700
+            ) == 240
         )
     }
 
     @Test
-    func closingFutureAndTogglingOtherSectionsRemainAnimated() {
+    func clampsExistingOriginAfterContentShrinks() {
         #expect(
-            MacTaskSourceListSectionTogglePolicy.shouldAnimate(
-                sectionKind: .future,
-                isCurrentlyExpanded: true
-            )
-        )
-        #expect(
-            MacTaskSourceListSectionTogglePolicy.shouldAnimate(
-                sectionKind: .plannedToday,
-                isCurrentlyExpanded: false
-            )
+            MacTaskSourceListScrollPreservation.verticalOrigin(
+                preserving: 900,
+                documentHeight: 1_200,
+                viewportHeight: 700
+            ) == 500
         )
     }
 }

@@ -29,12 +29,13 @@ enum MacTaskSourceListScrollPolicy {
     }
 }
 
-enum MacTaskSourceListSectionTogglePolicy {
-    static func shouldAnimate(
-        sectionKind: HomeTaskListPresentationSectionKind,
-        isCurrentlyExpanded: Bool
-    ) -> Bool {
-        sectionKind != .future || isCurrentlyExpanded
+enum MacTaskSourceListScrollPreservation {
+    static func verticalOrigin(
+        preserving requestedOrigin: CGFloat,
+        documentHeight: CGFloat,
+        viewportHeight: CGFloat
+    ) -> CGFloat {
+        min(max(0, requestedOrigin), max(0, documentHeight - viewportHeight))
     }
 }
 

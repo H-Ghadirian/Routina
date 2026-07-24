@@ -288,6 +288,7 @@ struct HomeTCAView: View {
     @State var macHomeSidebarColumnVisibility: NavigationSplitViewVisibility = .all
     @State var macSearchSidebarRevealSnapshot: HomeMacSearchSidebarRevealSnapshot?
     @State var macSearchSidebarRestoreScrollRequestID = 0
+    @State var macTaskSourceListScrollViewReference = MacTaskSourceListScrollViewReference()
     @State var isMacSearchSidebarRestoreInProgress = false
     @State var macFilterDetailScope: HomeMacFilterDetailScope = .taskList
     @State var isMacFilterDetailFullscreen = false

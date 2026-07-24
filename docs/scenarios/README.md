@@ -434,9 +434,9 @@ Given Mac Home shows expanded `Future`
 When future task groups are visible
 Then the header and groups share one full-bleed section surface while nested tag groups keep their own collapsible surfaces
 
-Given Mac Home shows collapsed `Future` with earlier task-list sections visible above it
-When the user expands `Future`
-Then its groups open below the header without moving the task-list viewport, so the `Future` header and the previously visible sections remain in place
+Given Mac Home shows any collapsed or expanded task-list section or nested group
+When the user toggles that disclosure, including a bulk subsection action
+Then its contents open or close without moving the task-list viewport, so the toggled header and the previously visible surrounding sections remain in place
 
 Given a user-created Mac task super section contains a subsection
 When the super section is expanded in the left sidebar
