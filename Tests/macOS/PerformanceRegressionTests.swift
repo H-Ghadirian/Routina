@@ -21,6 +21,23 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testMacTaskDetailLinkMenuFillsItsVisibleHitSurface() throws {
+        let source = try Self.sourceFile(
+            "SharedCore/Views/RoutinaDeepLinkShareViews.swift"
+        )
+
+        XCTAssertTrue(
+            source.contains(
+                """
+                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .contentShape(Rectangle())
+                """
+            ),
+            "The plain toolbar menu label must fill the surrounding icon chrome so its whole visible surface is clickable."
+        )
+    }
+
     func testMacAddTaskEmojiChooserUsesStableSheetPresentation() throws {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/AddRoutine/AddRoutineTCAViewPlatform.swift"

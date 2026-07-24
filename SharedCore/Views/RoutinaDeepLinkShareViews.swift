@@ -31,6 +31,8 @@ struct RoutinaDeepLinkShareMenu: View {
                         .font(.system(size: 8, weight: .semibold))
                 }
                 .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         }
