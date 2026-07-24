@@ -11,6 +11,7 @@ struct RoutinaQuickAddDraft: Equatable, Sendable {
     var placeName: String?
     var importance: RoutineTaskImportance
     var urgency: RoutineTaskUrgency
+    var hasExplicitPriority: Bool
     var estimatedDurationMinutes: Int?
     var focusModeEnabled: Bool
 
@@ -22,8 +23,7 @@ struct RoutinaQuickAddDraft: Equatable, Sendable {
         hasDetectedSchedule
             || !tags.isEmpty
             || placeName != nil
-            || importance != .level2
-            || urgency != .level2
+            || hasExplicitPriority
             || estimatedDurationMinutes != nil
     }
 
@@ -76,10 +76,9 @@ struct RoutinaQuickAddDraft: Equatable, Sendable {
             emoji: "✨",
             deadline: deadline,
             reminderAt: reminderAt,
-            priority: AddRoutinePriorityMatrix.priority(
-                importance: importance,
-                urgency: urgency
-            ),
+            priority: hasExplicitPriority
+                ? AddRoutinePriorityMatrix.priority(importance: importance, urgency: urgency)
+                : .none,
             importance: importance,
             urgency: urgency,
             selectedPlaceID: placeID,
@@ -138,6 +137,7 @@ enum RoutinaQuickAddParser {
             placeName: placeName,
             importance: priority.importance,
             urgency: priority.urgency,
+            hasExplicitPriority: priority.wasExplicitlySet,
             estimatedDurationMinutes: durationMinutes,
             focusModeEnabled: durationMinutes != nil
         )
@@ -336,23 +336,27 @@ enum RoutinaQuickAddParser {
 
     private static func extractPriority(
         from working: inout String
-    ) -> (importance: RoutineTaskImportance, urgency: RoutineTaskUrgency) {
+    ) -> (
+        importance: RoutineTaskImportance,
+        urgency: RoutineTaskUrgency,
+        wasExplicitlySet: Bool
+    ) {
         guard let match = removeFirstMatch(
             pattern: "(?:^|\\s)!(urgent|high|medium|low)(?=\\s|$)",
             from: &working
         ) else {
-            return (.level2, .level2)
+            return (.level2, .level2, false)
         }
 
         switch match.groups[0].lowercased() {
         case "urgent":
-            return (.level4, .level4)
+            return (.level4, .level4, true)
         case "high":
-            return (.level3, .level3)
+            return (.level3, .level3, true)
         case "low":
-            return (.level1, .level1)
+            return (.level1, .level1, true)
         default:
-            return (.level2, .level2)
+            return (.level2, .level2, true)
         }
     }
 

@@ -29,6 +29,7 @@ struct RoutinaQuickAddParserTests {
         #expect(draft.placeName == "Balcony")
         #expect(draft.importance == .level3)
         #expect(draft.urgency == .level3)
+        #expect(draft.hasExplicitPriority)
         #expect(draft.estimatedDurationMinutes == 25)
         #expect(draft.focusModeEnabled)
     }
@@ -217,6 +218,47 @@ struct RoutinaQuickAddParserTests {
         #expect(task.recurrenceRule.timeOfDay == RoutineTimeOfDay(hour: 9, minute: 0))
         #expect(task.estimatedDurationMinutes == 25)
         #expect(task.focusModeEnabled)
+        #expect(task.priority == .high)
         #expect(result.matchedPlaceName == "Balcony")
+    }
+
+    @Test
+    func createTaskWithoutPrioritySyntaxKeepsPriorityUnset() async throws {
+        let context = makeInMemoryContext()
+
+        let result = try await RoutinaQuickAddService.createTask(
+            from: "test2 #test",
+            context: context,
+            referenceDate: makeDate("2026-07-25T10:00:00Z"),
+            calendar: makeTestCalendar()
+        )
+
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        let task = try #require(tasks.first { $0.id == result.taskID })
+
+        #expect(!result.draft.hasExplicitPriority)
+        #expect(task.importance == .level2)
+        #expect(task.urgency == .level2)
+        #expect(task.priority == .none)
+        #expect(!TaskDetailOptionalControlVisibility.showsPriority(for: task))
+    }
+
+    @Test
+    func createTaskWithExplicitMediumPriorityKeepsPriorityVisible() async throws {
+        let context = makeInMemoryContext()
+
+        let result = try await RoutinaQuickAddService.createTask(
+            from: "Review notes !medium",
+            context: context,
+            referenceDate: makeDate("2026-07-25T10:00:00Z"),
+            calendar: makeTestCalendar()
+        )
+
+        let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
+        let task = try #require(tasks.first { $0.id == result.taskID })
+
+        #expect(result.draft.hasExplicitPriority)
+        #expect(task.priority == .medium)
+        #expect(TaskDetailOptionalControlVisibility.showsPriority(for: task))
     }
 }

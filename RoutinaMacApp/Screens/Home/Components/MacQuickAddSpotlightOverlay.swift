@@ -114,7 +114,7 @@ struct MacQuickAddSpotlightOverlay: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
 
-                if draft.importance != .level2 || draft.urgency != .level2 {
+                if draft.hasExplicitPriority {
                     Text("\(draft.importance.title) importance • \(draft.urgency.title) urgency")
                         .font(.caption)
                         .foregroundStyle(.orange)

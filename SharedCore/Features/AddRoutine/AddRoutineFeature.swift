@@ -699,7 +699,7 @@ struct AddRoutineFeature: Reducer {
             AddRoutineFormEditor.setSelectedPlace(placeID, basics: &state.basics)
         }
 
-        if draft.importance != .level2 || draft.urgency != .level2 {
+        if draft.hasExplicitPriority {
             state.basics.importance = draft.importance
             state.basics.urgency = draft.urgency
             state.basics.priority = AddRoutinePriorityMatrix.priority(

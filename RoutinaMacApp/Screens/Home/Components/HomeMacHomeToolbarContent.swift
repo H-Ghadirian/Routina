@@ -668,7 +668,7 @@ struct HomeMacToolbarSearchParserPreview: View {
             ))
         }
 
-        if draft.importance != .level2 || draft.urgency != .level2 {
+        if draft.hasExplicitPriority {
             rows.append(ParsedRow(
                 title: "Priority",
                 value: "\(draft.importance.title) / \(draft.urgency.title)",

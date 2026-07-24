@@ -59,4 +59,5 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0016 — Defer Mac sharing-service discovery until selection](0016-defer-mac-sharing-service-discovery.md)
 - [0017 — Bound growing form suggestion lists](0017-bound-growing-form-suggestion-lists.md)
 - [0018 — Derive mirrored form labels from one section model](0018-derive-mirrored-form-labels-from-one-section-model.md)
+- [0019 — Distinguish neutral defaults from explicit Quick Add metadata](0019-distinguish-neutral-defaults-from-explicit-quick-add-metadata.md)
 - [0020 — Put hit shapes inside control labels](0020-put-hit-shapes-inside-control-labels.md)

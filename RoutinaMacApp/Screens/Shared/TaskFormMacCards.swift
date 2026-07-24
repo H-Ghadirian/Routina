@@ -361,7 +361,7 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
             ))
         }
 
-        if draft.importance != .level2 || draft.urgency != .level2 {
+        if draft.hasExplicitPriority {
             rows.append(SmartNameRow(
                 title: "Priority",
                 value: "\(draft.importance.title) / \(draft.urgency.title)",

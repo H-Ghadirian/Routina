@@ -50,7 +50,7 @@ struct QuickAddTaskSheet: View {
                         Text(draft.summaryText)
                             .foregroundStyle(.secondary)
 
-                        if draft.importance != .level2 || draft.urgency != .level2 {
+                        if draft.hasExplicitPriority {
                             Label(
                                 "\(draft.importance.title) importance, \(draft.urgency.title) urgency",
                                 systemImage: "exclamationmark.triangle"
