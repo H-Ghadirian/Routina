@@ -2,6 +2,25 @@ import XCTest
 @testable @preconcurrency import RoutinaMacOSDev
 
 final class PerformanceRegressionTests: XCTestCase {
+    func testMacDeepLinkMenuDefersSystemSharingServiceDiscovery() throws {
+        let source = try Self.sourceFile(
+            "SharedCore/Views/RoutinaDeepLinkShareViews.swift"
+        )
+
+        XCTAssertTrue(source.contains("RoutinaDeepLinkSharingPresenter.present(deepLink.url)"))
+        XCTAssertTrue(source.contains("NSSharingServicePicker(items: [url])"))
+        XCTAssertTrue(source.contains("DispatchQueue.main.async {"))
+        XCTAssertFalse(
+            source.contains(
+                """
+                #if os(macOS)
+                ShareLink(item: deepLink.url)
+                """
+            ),
+            "The Mac menu must not embed ShareLink because it can discover system sharing services while the outer menu opens."
+        )
+    }
+
     func testMacAddTaskEmojiChooserUsesStableSheetPresentation() throws {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/AddRoutine/AddRoutineTCAViewPlatform.swift"

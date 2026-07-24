@@ -55,10 +55,19 @@ struct RoutinaDeepLinkShareActions: View {
     @State private var didCopy = false
 
     var body: some View {
+        #if os(macOS)
+        Button {
+            RoutinaDeepLinkSharingPresenter.present(deepLink.url)
+        } label: {
+            Label("Share Link", systemImage: "square.and.arrow.up")
+        }
+        .accessibilityLabel("Share link to \(title)")
+        #else
         ShareLink(item: deepLink.url) {
             Label("Share Link", systemImage: "square.and.arrow.up")
         }
         .accessibilityLabel("Share link to \(title)")
+        #endif
 
         Button {
             RoutinaDeepLinkClipboard.copy(deepLink.url.absoluteString)
@@ -68,6 +77,35 @@ struct RoutinaDeepLinkShareActions: View {
         }
     }
 }
+
+#if os(macOS)
+@MainActor
+private enum RoutinaDeepLinkSharingPresenter {
+    private static var activePicker: NSSharingServicePicker?
+
+    static func present(_ url: URL) {
+        // Let the lightweight Routina menu close before asking AppKit to discover
+        // and present the system's sharing services.
+        DispatchQueue.main.async {
+            guard let window = NSApp.keyWindow ?? NSApp.mainWindow,
+                  let contentView = window.contentView
+            else {
+                return
+            }
+
+            let picker = NSSharingServicePicker(items: [url])
+            activePicker = picker
+
+            let mousePoint = contentView.convert(window.mouseLocationOutsideOfEventStream, from: nil)
+            picker.show(
+                relativeTo: NSRect(origin: mousePoint, size: .zero),
+                of: contentView,
+                preferredEdge: .minY
+            )
+        }
+    }
+}
+#endif
 
 enum RoutinaDeepLinkClipboard {
     static func copy(_ value: String) {
