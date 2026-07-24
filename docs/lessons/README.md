@@ -48,3 +48,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0005 — Defer AppKit responder changes out of `updateNSView`](0005-defer-appkit-responder-changes-out-of-update-ns-view.md)
 - [0006 — Keep expanded sidebar groups lazy and stably identified](0006-keep-expanded-sidebar-groups-lazy-and-stably-identified.md)
 - [0007 — Keep Timeline row compositing and refreshes off the scroll frame](0007-keep-timeline-row-compositing-and-refreshes-off-the-scroll-frame.md)
+- [0008 — Keep assumed completion visually distinct from recorded completion](0008-keep-assumed-completion-visually-distinct.md)

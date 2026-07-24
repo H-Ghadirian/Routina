@@ -2265,6 +2265,29 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func assumedTrackingRowsUseAssumedBadgeInsteadOfDoneBadge() {
+        let task = TestTaskDisplay(
+            name: "Eat fruit",
+            interval: 1,
+            recurrenceRule: .interval(days: 1),
+            scheduleMode: .record,
+            isDoneToday: true,
+            isAssumedDoneToday: true,
+            isSoftIntervalRoutine: true
+        )
+        let presenter = HomeRoutineDisplayMetadataPresenter(
+            filtering: makeFiltering(),
+            showPersianDates: false,
+            badgeMode: .complete
+        )
+
+        let badge = presenter.badgeStyle(for: task)
+
+        #expect(badge?.title == "Assumed")
+        #expect(badge?.systemImage == "checkmark.circle")
+    }
+
+    @Test
     func trackingRowsCanKeepCadenceWithoutGentleNudgeBadges() {
         let task = TestTaskDisplay(
             name: "Clean coffee machine",

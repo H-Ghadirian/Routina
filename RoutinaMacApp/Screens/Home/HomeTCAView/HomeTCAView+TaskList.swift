@@ -1720,7 +1720,7 @@ extension HomeTCAView {
             metadataPresenter: metadataPresenter,
             rowVisibility: rowVisibility
         )
-            .padding(.trailing, macTaskSourceRowTrailingSpace(for: task, rowVisibility: rowVisibility))
+            .padding(.trailing, macTaskSourceRowColorBadgeTrailingSpace(for: task, rowVisibility: rowVisibility))
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
             .routinaGlassCard(
@@ -1870,16 +1870,6 @@ extension HomeTCAView {
         rowVisibility: HomeTaskRowVisibility
     ) -> CGFloat {
         rowVisibility.shows(.colorBadge) && task.color.swiftUIColor != nil ? 15 : 0
-    }
-
-    private func macTaskSourceRowTrailingSpace(
-        for task: HomeFeature.RoutineDisplay,
-        rowVisibility: HomeTaskRowVisibility
-    ) -> CGFloat {
-        max(
-            macTaskSourceRowColorBadgeTrailingSpace(for: task, rowVisibility: rowVisibility),
-            task.isAssumedDoneToday ? 76 : 0
-        )
     }
 
     @ViewBuilder

@@ -231,6 +231,8 @@ Coverage:
 Given a daily checklist-completion Tracking entry has auto-assume done enabled
 When today's availability starts and no checklist item progress exists
 Then Home and Task Detail present the Tracking entry as assumed done without pretending individual checklist items are checked
+And the Home task-row status badge says `Assumed`, even when the shared display also treats the assumed occurrence as done for list placement
+And on Mac the hover confirm and missed buttons overlay the trailing row content without reserving permanent horizontal space
 
 Given a daily Tracking entry is created today with auto-assume done enabled
 When today's availability has already started

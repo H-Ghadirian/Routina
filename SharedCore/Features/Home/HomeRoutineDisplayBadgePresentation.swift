@@ -36,6 +36,9 @@ extension HomeRoutineDisplayMetadataPresenter {
                 ? badge("Ongoing", "airplane.circle.fill", .teal, Color.teal.opacity(0.16))
                 : badge("In Progress", "play.circle.fill", .orange, Color.orange.opacity(0.16))
         }
+        if task.isAssumedDoneToday {
+            return badge("Assumed", "checkmark.circle", .mint, Color.mint.opacity(0.18))
+        }
         if task.isSoftIntervalRoutine {
             if task.isDoneToday {
                 return badge("Done", "checkmark.circle.fill", .green, Color.green.opacity(0.14))
@@ -100,10 +103,6 @@ extension HomeRoutineDisplayMetadataPresenter {
                 .orange,
                 Color.orange.opacity(0.16)
             )
-        }
-
-        if task.isAssumedDoneToday {
-            return badge("Assumed", "checkmark.circle", .mint, Color.mint.opacity(0.18))
         }
 
         if task.isDoneToday {
