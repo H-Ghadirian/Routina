@@ -57,3 +57,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0014 — Present the Mac Add Task emoji picker as a sheet](0014-present-mac-add-task-emoji-picker-as-a-sheet.md)
 - [0015 — Persist deliberately revealed task-detail controls](0015-persist-deliberately-revealed-task-detail-controls.md)
 - [0016 — Defer Mac sharing-service discovery until selection](0016-defer-mac-sharing-service-discovery.md)
+- [0018 — Derive mirrored form labels from one section model](0018-derive-mirrored-form-labels-from-one-section-model.md)

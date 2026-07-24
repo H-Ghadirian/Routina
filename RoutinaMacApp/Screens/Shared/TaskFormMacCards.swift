@@ -492,13 +492,15 @@ struct TaskFormMacEmojiContent: View {
 }
 
 struct TaskFormMacBehaviorCard: View {
+    static var sectionTitle: String { FormSection.behavior.title }
+
     let model: TaskFormModel
     let presentation: TaskFormPresentation
     let persianDeadlineText: String?
     @Environment(\.calendar) private var calendar
 
     var body: some View {
-        TaskFormMacSectionCard(title: "Scheduling") {
+        TaskFormMacSectionCard(title: Self.sectionTitle) {
             ViewThatFits(in: .horizontal) {
                 wideSchedulingLayout
                 compactSchedulingLayout

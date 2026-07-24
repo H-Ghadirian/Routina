@@ -3,6 +3,12 @@ import Testing
 
 struct FormSectionTests {
     @Test
+    func behaviorCardTitleMatchesSidebarSectionTitle() {
+        #expect(TaskFormMacBehaviorCard.sectionTitle == FormSection.behavior.title)
+        #expect(TaskFormMacBehaviorCard.sectionTitle == "Behavior")
+    }
+
+    @Test
     func taskFormSectionsIncludeIdentityAndDangerZoneWhenRequested() {
         let sections = FormSection.taskFormSections(
             scheduleMode: .fixedInterval,

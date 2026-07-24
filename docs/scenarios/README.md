@@ -864,3 +864,15 @@ Coverage:
 Given the map is showing an unsaved location, an away saved place, or the current resolved saved place
 When the action panel is derived
 Then Add Place and Check In appear only for the contexts where they make sense
+
+### Mac Task Form Section Titles Stay Consistent
+
+Area: Tasks
+Decision links: [0058](../decisions/0058-use-progressive-task-forms.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/macOS/FormSectionTests.swift`
+
+Given the Mac task form shows a section in both the sidebar navigator and the main form
+When the Behavior section is rendered
+Then both surfaces use the canonical `Behavior` title
