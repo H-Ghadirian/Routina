@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0423](0423-separate-mac-task-title-from-optional-media.md) refines [0058](0058-use-progressive-task-forms.md), [0100](0100-reveal-task-form-details-by-section.md), and [0353](0353-move-mac-task-form-actions-into-identity.md) for simpler Mac capture:** Mac Add Task and Edit Task keep Identity focused on the title and form actions, while Emoji and Image are separate optional sections available through `Add More Details`; customized saved emoji remains visible in progressive edit.
+
 - **[0422](0422-keep-mac-focus-control-in-planner-timeline.md) refines [0333](0333-move-mac-focus-control-to-planner-calendar-header.md) for stable Planner access:** The Mac Planner header keeps the same Focus control visible in both Calendar and Timeline modes while retaining Planner-local ownership and existing focus behavior.
 
 - **[0421](0421-support-cadence-free-repeating-routines.md) refines [0413](0413-nest-tracking-under-repeating-task-creation.md) and [0414](0414-align-task-kind-controls-between-create-and-edit.md) for reusable work with an unknown schedule:** Repeating routines and Tracking entries can select `Repeat type: None`; they remain immediately available after each completion, preserve completion history, and do not acquire cadence-derived occurrences, overdue pressure, nudges, or daily classification.

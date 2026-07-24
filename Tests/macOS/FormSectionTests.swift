@@ -11,6 +11,7 @@ struct FormSectionTests {
         )
 
         #expect(sections.first == .identity)
+        #expect(sections.contains(.emoji))
         #expect(sections.contains(.steps))
         #expect(sections.contains(.checklist))
         #expect(Array(sections.suffix(5)) == [.checklist, .image, .voiceNote, .attachment, .dangerZone])
@@ -25,6 +26,7 @@ struct FormSectionTests {
         )
 
         #expect(!sections.contains(.identity))
+        #expect(sections.contains(.emoji))
         #expect(!sections.contains(.steps))
         #expect(sections.contains(.checklist))
         #expect(Array(sections.suffix(4)) == [.checklist, .image, .voiceNote, .attachment])
@@ -52,7 +54,29 @@ struct FormSectionTests {
         )
 
         #expect(collapsed == [.identity, .behavior, .tags, .notes, .dangerZone])
+        #expect(!collapsed.contains(.emoji))
+        #expect(!collapsed.contains(.image))
         #expect(expanded == sections)
+    }
+
+    @Test
+    func progressiveTaskFormRevealsPopulatedEmojiAndImageOutsideIdentity() {
+        let sections = FormSection.taskFormSections(
+            scheduleMode: .oneOff,
+            includesIdentity: true,
+            includesDangerZone: false
+        )
+
+        let visible = FormSection.visibleTaskFormSections(
+            from: sections,
+            mode: .progressiveEdit,
+            revealedSections: [],
+            populatedSections: [.emoji, .image]
+        )
+
+        #expect(visible.contains(.identity))
+        #expect(visible.contains(.emoji))
+        #expect(visible.contains(.image))
     }
 
     @Test

@@ -273,6 +273,7 @@ struct TaskFormContent: View {
     private func formSectionView(for section: FormSection) -> some View {
         switch section {
         case .identity:           EmptyView() // identityCard is rendered separately above the ScrollView
+        case .emoji:              emojiCard
         case .color:              colorCard
         case .behavior:           behaviorCard
         case .pressure:           pressureCard
@@ -316,6 +317,13 @@ struct TaskFormContent: View {
             taskNameField
         }
         .id(FormSection.identity)
+    }
+
+    private var emojiCard: some View {
+        macSectionCard(title: "Emoji") {
+            TaskFormMacEmojiContent(model: model)
+        }
+        .id(FormSection.emoji)
     }
 
     private var smartNameDraft: RoutinaQuickAddDraft? {

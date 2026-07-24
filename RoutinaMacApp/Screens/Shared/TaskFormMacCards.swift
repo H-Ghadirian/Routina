@@ -234,19 +234,11 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
             }
         ) {
             VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .top, spacing: 14) {
-                    selectedEmojiButton
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        nameField
-                        validationMessage
-                        smartNamePreview
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                emojiPickerRow
+                nameField
+                validationMessage
+                smartNamePreview
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -410,6 +402,36 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
         }
     }
 
+    private struct SmartNameRow: Identifiable {
+        let title: String
+        let value: String
+        let systemImage: String
+
+        var id: String { "\(title):\(value)" }
+    }
+}
+
+struct TaskFormMacEmojiContent: View {
+    let model: TaskFormModel
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 14) {
+            selectedEmojiButton
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(Array(model.emojiOptions.prefix(12)), id: \.self) { emoji in
+                        quickEmojiButton(emoji)
+                    }
+                }
+                .padding(.vertical, 1)
+            }
+            .frame(height: 58)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     private var selectedEmojiButton: some View {
         Button {
             model.isEmojiPickerPresented.wrappedValue = true
@@ -442,24 +464,6 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
         .accessibilityLabel("Choose task emoji")
     }
 
-    private var emojiPickerRow: some View {
-        HStack(alignment: .center, spacing: 12) {
-            Color.clear
-                .frame(width: 56, height: 1)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    ForEach(Array(model.emojiOptions.prefix(12)), id: \.self) { emoji in
-                        quickEmojiButton(emoji)
-                    }
-                }
-                .padding(.vertical, 1)
-            }
-            .frame(height: 34)
-            .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
     private func quickEmojiButton(_ emoji: String) -> some View {
         Button {
             model.emoji.wrappedValue = emoji
@@ -484,14 +488,6 @@ struct TaskFormMacIdentityCard<NameField: View>: View {
         .contentShape(Circle())
         .help("Use \(emoji)")
         .accessibilityLabel("Use \(emoji) emoji")
-    }
-
-    private struct SmartNameRow: Identifiable {
-        let title: String
-        let value: String
-        let systemImage: String
-
-        var id: String { "\(title):\(value)" }
     }
 }
 
