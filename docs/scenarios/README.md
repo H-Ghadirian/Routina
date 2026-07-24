@@ -568,6 +568,19 @@ When the user presses the `Go to date` header button
 Then the Planner date picker opens in the right-side Planner sidebar
 And choosing a date updates the Planner selected date without scoping the Timeline list to that date
 
+### Planner Timeline Keeps Focus Control
+
+Area: Planner
+Decision links: [0422](../decisions/0422-keep-mac-focus-control-in-planner-timeline.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/macOS/PerformanceRegressionTests.swift`
+
+Given Mac Planner is showing the Focus control in Calendar mode
+When the user switches to Timeline mode
+Then the same Focus control remains visible beside the Planner filter button
+And task-backed, tag-backed, active, paused, and completion menu behavior remains unchanged
+
 ### Plan Focus Allocation Preserves Focus History
 
 Area: Planner

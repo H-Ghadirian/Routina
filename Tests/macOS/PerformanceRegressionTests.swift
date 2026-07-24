@@ -656,14 +656,15 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
-    func testPlannerCalendarHeaderOnlyHidesUnassignedPlanFocusBadge() throws {
+    func testPlannerHeaderKeepsFocusAvailableAcrossDisplayModesAndOnlyHidesUnassignedPlanFocusBadge() throws {
         let detailSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
         let dayPlanSource = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
         let badgeSource = try Self.sourceFile("RoutinaMacApp/Screens/Shared/RoutinaMacFocusTimerToolbarBadge.swift")
 
         XCTAssertTrue(
-            dayPlanSource.contains("if effectiveDisplayMode == .calendar, let macFocusControl"),
-            "Planner should keep the moved Focus control local to the Calendar header instead of showing it in Timeline mode."
+            dayPlanSource.contains("if let macFocusControl")
+                && !dayPlanSource.contains("if effectiveDisplayMode == .calendar, let macFocusControl"),
+            "Planner should keep the Focus control visible in both Calendar and Timeline modes."
         )
         XCTAssertTrue(
             detailSource.contains("RoutinaMacFocusTimerToolbarBadge(")
@@ -1126,7 +1127,8 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(detailSource.contains("HomeMacActivePlanFocusToolbarButton("))
         XCTAssertTrue(detailSource.contains("RoutinaMacFocusTimerToolbarBadge("))
         XCTAssertTrue(detailSource.contains("HomeMacPlanFocusToolbarButton("))
-        XCTAssertTrue(dayPlanSource.contains("if effectiveDisplayMode == .calendar, let macFocusControl"))
+        XCTAssertTrue(dayPlanSource.contains("if let macFocusControl"))
+        XCTAssertFalse(dayPlanSource.contains("if effectiveDisplayMode == .calendar, let macFocusControl"))
         XCTAssertFalse(
             source.contains("Assign Pending Focus"),
             "The Planner Calendar focus menu should only start task-backed timers; pending unassigned focus assignment is no longer a header action."

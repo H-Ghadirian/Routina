@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0422](0422-keep-mac-focus-control-in-planner-timeline.md) refines [0333](0333-move-mac-focus-control-to-planner-calendar-header.md) for stable Planner access:** The Mac Planner header keeps the same Focus control visible in both Calendar and Timeline modes while retaining Planner-local ownership and existing focus behavior.
+
 - **[0421](0421-support-cadence-free-repeating-routines.md) refines [0413](0413-nest-tracking-under-repeating-task-creation.md) and [0414](0414-align-task-kind-controls-between-create-and-edit.md) for reusable work with an unknown schedule:** Repeating routines and Tracking entries can select `Repeat type: None`; they remain immediately available after each completion, preserve completion history, and do not acquire cadence-derived occurrences, overdue pressure, nudges, or daily classification.
 
 - **[0420](0420-show-task-sidebar-location-in-mac-details.md) refines [0407](0407-locate-mac-task-detail-sidebar-row.md) and [0419](0419-nest-custom-subsections-under-super-sections.md) for visible location navigation:** Mac task details show the selected task's current sidebar section/subsection path from the live task-list presentation, and clicking it reveals, expands, selects, and scrolls to that row through the existing locate pipeline.

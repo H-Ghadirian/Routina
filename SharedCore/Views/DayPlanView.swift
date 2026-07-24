@@ -803,7 +803,7 @@ private struct DayPlanHeaderView: View {
     private func plannerUtilityCluster(forceCompactDatePickerButton: Bool?) -> some View {
         HStack(alignment: .center, spacing: 8) {
 #if os(macOS)
-            if effectiveDisplayMode == .calendar, let macFocusControl {
+            if let macFocusControl {
                 macFocusControl()
             }
 #endif
