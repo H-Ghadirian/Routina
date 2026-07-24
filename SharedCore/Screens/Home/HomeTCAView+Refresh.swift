@@ -36,17 +36,13 @@ extension HomeTCAView {
     @MainActor
     func requestRoutineUpdateRefresh() {
 #if os(macOS)
-        guard !shouldDeferRoutineUpdateRefresh else {
-            hasDeferredRoutineUpdateRefresh = true
-            return
-        }
-        guard !RoutinaMacScrollInteractionGate.isScrollActive else {
-            hasDeferredRoutineUpdateRefresh = true
-            scheduleDeferredRoutineUpdateRefreshRetry()
-            return
-        }
-#endif
+        hasDeferredRoutineUpdateRefresh = true
+        scheduleDeferredRoutineUpdateRefreshRetry(
+            minimumDelayMilliseconds: routineUpdateCoalescingDelayMilliseconds
+        )
+#else
         requestRefresh()
+#endif
     }
 
     @MainActor
@@ -90,9 +86,18 @@ extension HomeTCAView {
     }
 
     @MainActor
-    private func scheduleDeferredRoutineUpdateRefreshRetry() {
+    private var routineUpdateCoalescingDelayMilliseconds: Int64 {
+        450
+    }
+
+    private func scheduleDeferredRoutineUpdateRefreshRetry(
+        minimumDelayMilliseconds: Int64 = 0
+    ) {
         deferredRoutineUpdateRefreshTask?.cancel()
-        let delayMilliseconds = RoutinaMacScrollInteractionGate.quietRetryDelayMilliseconds
+        let delayMilliseconds = max(
+            minimumDelayMilliseconds,
+            RoutinaMacScrollInteractionGate.quietRetryDelayMilliseconds
+        )
         deferredRoutineUpdateRefreshTask = Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(delayMilliseconds))
             guard !Task.isCancelled else { return }

@@ -52,6 +52,34 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testMacTimelineRowsAvoidPerRowGlassAndCoalesceRefreshes() throws {
+        let homeTimelineSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Timeline.swift"
+        )
+        let standaloneTimelineSource = try Self.sourceFile(
+            "RoutinaMacApp/Screens/Timeline/TimelineView.swift"
+        )
+        let refreshSource = try Self.sourceFile(
+            "SharedCore/Screens/Home/HomeTCAView+Refresh.swift"
+        )
+
+        XCTAssertTrue(homeTimelineSource.contains(".routinaScrollingRoundedFill("))
+        XCTAssertTrue(homeTimelineSource.contains(".routinaScrollingPillFill("))
+        XCTAssertFalse(
+            homeTimelineSource.contains(
+                ".routinaGlassCard(cornerRadius: 8, tint: .secondary, tintOpacity: 0.06)"
+            )
+        )
+        XCTAssertTrue(standaloneTimelineSource.contains(".routinaScrollingRoundedFill("))
+        XCTAssertTrue(standaloneTimelineSource.contains(".routinaScrollingPillFill("))
+        XCTAssertTrue(
+            refreshSource.contains(
+                "minimumDelayMilliseconds: routineUpdateCoalescingDelayMilliseconds"
+            ),
+            "Persistence notifications must be coalesced before they can start a full Home reload near a scroll gesture."
+        )
+    }
+
     func testMacHomeRunsWholeHistoryMaintenanceOnlyForInitialLoad() throws {
         let featureSource = try Self.sourceFile("RoutinaMacApp/Features/Home/HomeFeature.swift")
         let refreshSource = try Self.sourceFile("SharedCore/Screens/Home/HomeTCAView+Refresh.swift")

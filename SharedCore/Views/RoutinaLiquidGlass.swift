@@ -227,6 +227,26 @@ extension View {
         )
     }
 
+    func routinaScrollingRoundedFill(
+        cornerRadius: CGFloat,
+        tint: Color,
+        tintOpacity: Double
+    ) -> some View {
+        background(
+            tint.opacity(tintOpacity),
+            in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+    }
+
+    func routinaScrollingPillFill(
+        tint: Color,
+        tintOpacity: Double
+    ) -> some View {
+        background(tint.opacity(tintOpacity), in: Capsule())
+            .contentShape(Capsule())
+    }
+
     @ViewBuilder
     private func routinaGlassRoundedSurface(
         cornerRadius: CGFloat,

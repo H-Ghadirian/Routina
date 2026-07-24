@@ -757,7 +757,11 @@ struct TimelineView: View {
                 Text(entry.taskEmoji)
                     .font(.title2)
                     .frame(width: 36, height: 36)
-                    .routinaGlassCard(cornerRadius: 8, tint: .secondary, tintOpacity: 0.06)
+                    .routinaScrollingRoundedFill(
+                        cornerRadius: 8,
+                        tint: .secondary,
+                        tintOpacity: 0.06
+                    )
             }
 
             VStack(alignment: .leading, spacing: 2) {
@@ -779,7 +783,10 @@ struct TimelineView: View {
                     .font(.caption2.weight(.semibold))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .routinaGlassPill(tint: timelineKindColor(for: entry), tintOpacity: 0.15)
+                    .routinaScrollingPillFill(
+                        tint: timelineKindColor(for: entry),
+                        tintOpacity: 0.15
+                    )
                     .foregroundStyle(timelineKindColor(for: entry))
             }
         }
