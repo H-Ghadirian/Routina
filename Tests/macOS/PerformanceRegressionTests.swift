@@ -38,6 +38,42 @@ final class PerformanceRegressionTests: XCTestCase {
         )
     }
 
+    func testMacTaskDetailCompletionActionPrecedesTaskSpecificActions() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskDetail/TaskDetailToolbarContent.swift"
+        )
+        let actionButtonsStart = try XCTUnwrap(
+            source.range(of: "private var actionButtons: some View")
+        )
+        let showsFullDetailActionsStart = try XCTUnwrap(
+            source.range(
+                of: "private var showsFullDetailActions: Bool",
+                range: actionButtonsStart.upperBound..<source.endIndex
+            )
+        )
+        let actionButtonsSource = source[actionButtonsStart.lowerBound..<showsFullDetailActionsStart.lowerBound]
+        let completionAction = try XCTUnwrap(
+            actionButtonsSource.range(of: "store.send(store.completionButtonAction)")
+        )
+        let pauseAction = try XCTUnwrap(
+            actionButtonsSource.range(of: "store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped)")
+        )
+        let cancelAction = try XCTUnwrap(
+            actionButtonsSource.range(of: "store.send(.cancelTodo)")
+        )
+
+        XCTAssertLessThan(
+            completionAction.lowerBound,
+            pauseAction.lowerBound,
+            "Done must remain left of the repeating-task Pause/Resume action."
+        )
+        XCTAssertLessThan(
+            completionAction.lowerBound,
+            cancelAction.lowerBound,
+            "Done must remain left of the one-time-task Cancel action."
+        )
+    }
+
     func testMacAddTaskEmojiChooserUsesStableSheetPresentation() throws {
         let source = try Self.sourceFile(
             "RoutinaMacApp/Screens/AddRoutine/AddRoutineTCAViewPlatform.swift"

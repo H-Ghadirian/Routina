@@ -107,6 +107,16 @@ struct TaskDetailActionClusterView: View {
 
     @ViewBuilder
     private var actionButtons: some View {
+        Button {
+            store.send(store.completionButtonAction)
+        } label: {
+            completionActionLabel
+        }
+        .buttonStyle(.plain)
+        .disabled(store.isCompletionButtonDisabled)
+        .help(store.completionButtonTitle)
+        .accessibilityLabel(store.completionButtonTitle)
+
         if showsFullDetailActions && !store.task.isOneOffTask {
             Button {
                 store.send(store.task.isArchived() ? .resumeTapped : .pauseTapped)
@@ -121,16 +131,6 @@ struct TaskDetailActionClusterView: View {
             .help(pauseActionTitle)
             .accessibilityLabel(pauseActionTitle)
         }
-
-        Button {
-            store.send(store.completionButtonAction)
-        } label: {
-            completionActionLabel
-        }
-        .buttonStyle(.plain)
-        .disabled(store.isCompletionButtonDisabled)
-        .help(store.completionButtonTitle)
-        .accessibilityLabel(store.completionButtonTitle)
 
         if showsFullDetailActions && showsCancelTodoButton {
             Button {

@@ -61,3 +61,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0018 — Derive mirrored form labels from one section model](0018-derive-mirrored-form-labels-from-one-section-model.md)
 - [0019 — Distinguish neutral defaults from explicit Quick Add metadata](0019-distinguish-neutral-defaults-from-explicit-quick-add-metadata.md)
 - [0020 — Put hit shapes inside control labels](0020-put-hit-shapes-inside-control-labels.md)
+- [0021 — Place shared actions before conditional actions](0021-place-shared-actions-before-conditional-actions.md)
