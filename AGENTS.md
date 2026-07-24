@@ -4,6 +4,7 @@
 
 - Always ask the user before taking screenshots, screen captures, or recording the screen. Never capture the screen without explicit permission in the current conversation.
 - Project-local generated build cleanup is pre-approved for verification artifacts, including `DerivedData` and other macOS build files generated under the project-local `.codex/` folder. Treat cleanup commands like `rm -rf .codex/DerivedDataTaskDetailTodayIOS`, `rm -rf .codex/DerivedDataTaskDetailTodayMac`, or any other `rm -rf .codex/DerivedData*` command as already approved by the user when they remove generated build output. Do not ask the user again before running those project-local cleanup commands; run them when useful and tell the user afterward exactly what cleanup was performed.
+- After every profiling session, remove all project-local profiling artifacts before finishing, including CPU samples, traces, temporary profiling helpers and binaries, profiling logs, and profiling-specific `.codex/DerivedData*` directories. Verify that none remain and report exactly what was removed.
 
 ## Project Decision Log
 
