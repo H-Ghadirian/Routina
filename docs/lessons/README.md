@@ -53,3 +53,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0010 — Keep Mac sidebar context-menu tracking out of SwiftUI](0010-keep-mac-sidebar-context-menu-tracking-out-of-swiftui.md)
 - [0011 — Route every collapsible sidebar group through persisted state](0011-route-collapsible-sidebar-groups-through-persisted-state.md)
 - [0012 — Do not animate large bottom-section insertions](0012-do-not-animate-large-bottom-section-insertions.md)
+- [0013 — Do not expose fallback recurrence for cadence-free tasks](0013-do-not-expose-fallback-recurrence-for-cadence-free-tasks.md)

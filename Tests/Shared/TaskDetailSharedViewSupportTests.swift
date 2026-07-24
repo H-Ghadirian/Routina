@@ -140,6 +140,19 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func cadenceFreeRoutineFrequencyDoesNotExposeFallbackDailyRule() {
+        let task = RoutineTask(
+            name: "Go to library",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 1),
+            trackingCadenceEnabled: false
+        )
+        let state = TaskDetailFeature.State(task: task)
+
+        #expect(state.frequencyText == "None")
+    }
+
+    @Test
     func statusMetadataItemsBuildSharedTaskDetailRows() {
         let referenceDate = makeDate("2026-04-25T10:00:00Z")
         let task = RoutineTask(

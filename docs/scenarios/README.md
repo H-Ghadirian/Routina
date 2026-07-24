@@ -37,12 +37,15 @@ Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskFormPresentationTests.swift`
 - `Tests/Shared/RoutineDateMathTests.swift`
+- `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
+- `Tests/Shared/NotificationCoordinatorTests.swift`
 
 Given a routine or Tracking entry is reusable but has no known schedule
 When the user chooses `Repeating` and `Repeat type: None`
 Then the task saves without an effective cadence and remains available immediately after every completion
 And every completion remains in its history
 And the task is not classified as a cadence-derived daily routine
+And Task Detail shows no frequency and no cadence-derived notification is scheduled
 
 ### Simple And Advanced Recurrence Stay Independent
 

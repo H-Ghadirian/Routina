@@ -65,6 +65,23 @@ struct NotificationCoordinatorTests {
     }
 
     @Test
+    func shouldScheduleNotification_returnsFalseForCadenceFreeRoutine() {
+        let task = RoutineTask(
+            name: "Go to library",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 1),
+            trackingCadenceEnabled: false
+        )
+
+        #expect(
+            !NotificationCoordinator.shouldScheduleNotification(
+                for: task,
+                referenceDate: makeDate("2026-07-24T10:00:00Z")
+            )
+        )
+    }
+
+    @Test
     func shouldScheduleNotification_returnsTrueForFutureOneOffDeadline() {
         let deadline = makeDate("2026-04-25T14:30:00Z")
         let task = RoutineTask(

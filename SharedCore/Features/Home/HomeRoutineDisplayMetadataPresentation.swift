@@ -107,6 +107,9 @@ struct HomeRoutineDisplayMetadataPresenter<Display: HomeRoutineMetadataDisplay> 
         if task.isOneOffTask {
             return "One-off todo"
         }
+        if !task.trackingCadenceEnabled {
+            return "No cadence"
+        }
         if task.scheduleMode.isChecklistDrivenMode {
             return "Checklist-driven"
         }

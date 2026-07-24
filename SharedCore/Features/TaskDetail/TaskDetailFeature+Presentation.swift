@@ -418,6 +418,9 @@ extension TaskDetailFeature.State {
         if task.isOneOffTask {
             return "One-off todo"
         }
+        if !task.trackingCadenceEnabled {
+            return "None"
+        }
         if isChecklistDrivenFromStoredItems {
             return "Checklist-driven"
         }
