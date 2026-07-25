@@ -77,7 +77,14 @@ struct StatsCreatedTasksChartSection: View {
                         RuleMark(y: .value("Average", metrics.createdAveragePerDay))
                             .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 5]))
                             .foregroundStyle(Color.secondary.opacity(0.65))
-                            .annotation(position: .topLeading, alignment: .leading) {
+                            .annotation(
+                                position: .topLeading,
+                                alignment: .leading,
+                                overflowResolution: .init(
+                                    x: .fit(to: .chart),
+                                    y: .disabled
+                                )
+                            ) {
                                 Text("Avg \(chartPresentation.averagePerDayText(for: metrics.createdAveragePerDay))")
                                     .font(.caption2.weight(.semibold))
                                     .foregroundStyle(.secondary)

@@ -875,4 +875,23 @@ struct StatsFeatureDerivedStateSupportTests {
             "stats.summary.sleepSessions"
         ])
     }
+
+    @Test
+    func averageRuleAnnotationsFitWithinChartBounds() throws {
+        let chartPaths = [
+            "SharedCore/Views/StatsCreatedTasksChartSection.swift",
+            "SharedCore/Views/StatsCompletionChartSection.swift",
+            "SharedCore/Views/StatsFocusChartSection.swift"
+        ]
+
+        for path in chartPaths {
+            let source = try String(
+                contentsOf: URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+                    .appendingPathComponent(path),
+                encoding: .utf8
+            )
+
+            #expect(source.contains("x: .fit(to: .chart)"), "Missing horizontal annotation fitting in \(path)")
+        }
+    }
 }
