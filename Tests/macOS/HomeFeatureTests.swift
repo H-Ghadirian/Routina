@@ -725,15 +725,46 @@ struct HomeFeatureTests {
 
         await store.send(.macSidebarModeChanged(.stats)) {
             $0.macSidebarMode = .stats
-            $0.selectedTaskID = nil
-            $0.taskDetailState = nil
-            $0.selectedTaskReloadGuard = nil
-            $0.pendingSelectedChecklistReloadGuardTaskID = nil
             $0.macSidebarSelection = nil
         }
 
         #expect(persistedState.value?.macHomeSidebarModeRawValue == HomeFeature.MacSidebarMode.stats.rawValue)
         #expect(persistedState.value?.macSelectedSettingsSectionRawValue == SettingsMacSection.notifications.rawValue)
+    }
+
+    @Test
+    func macStatsRoundTrip_preservesSelectedTaskDetail() async {
+        let context = makeInMemoryContext()
+        let selectedTask = RoutineTask(id: UUID(), name: "Review plan")
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                routineTasks: [selectedTask],
+                selectedTaskID: selectedTask.id,
+                taskDetailState: TaskDetailFeature.State(task: selectedTask),
+                macSidebarMode: .routines,
+                macSidebarSelection: .task(selectedTask.id)
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+        }
+
+        await store.send(.macSidebarModeChanged(.stats)) {
+            $0.macSidebarMode = .stats
+            $0.macSidebarSelection = nil
+        }
+
+        #expect(store.state.selectedTaskID == selectedTask.id)
+        #expect(store.state.taskDetailState?.task.id == selectedTask.id)
+
+        await store.send(.macSidebarModeChanged(.routines)) {
+            $0.macSidebarMode = .routines
+            $0.macSidebarSelection = .task(selectedTask.id)
+        }
+
+        #expect(store.state.selectedTaskID == selectedTask.id)
+        #expect(store.state.taskDetailState?.task.id == selectedTask.id)
     }
 
     @Test

@@ -851,6 +851,18 @@ Given a dashboard report has no backing data
 When Stats summary items are derived
 Then the report is hidden while saved order and hidden-item preferences remain preserved
 
+### Mac Stats Round Trip Preserves Task Detail
+
+Area: Tasks / Stats
+Decision links: [0151](../decisions/0151-combine-mac-stats-and-adventure-tab.md)
+Current behavior: [Stats](../current-behavior/stats.md), [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/macOS/HomeFeatureTests.swift`
+
+Given a task detail is selected in Mac Home
+When the user opens Stats and then selects Tasks in the top toolbar
+Then the same task row and task detail are restored
+
 ### App Lock Protects Sensitive Reset Actions
 
 Area: Settings

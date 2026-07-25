@@ -68,3 +68,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0025 — Keep preselected relationships resolvable](0025-keep-preselected-relationships-resolvable.md)
 - [0026 — Clear detail selection on transient navigation](0026-clear-detail-selection-on-transient-navigation.md)
 - [0027 — Preserve detail across transient Add Task](0027-preserve-detail-across-transient-add-task.md)
+- [0028 — Preserve task context across Stats navigation](0028-preserve-task-context-across-stats-navigation.md)
