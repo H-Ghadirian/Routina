@@ -2,6 +2,8 @@
 
 Date: 2026-07-25
 
+Revised by [0027](0027-preserve-detail-across-transient-add-task.md), which preserves the selected detail while suppressing only return-time task-list alignment.
+
 ## Symptom
 
 Opening Add Task from an existing task detail and then returning to Tasks unexpectedly changed the left task list to a task-type tab and restored an old filter such as `Yesterday`.

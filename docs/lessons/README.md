@@ -67,3 +67,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0024 — Fit chart annotations within chart bounds](0024-fit-chart-annotations-within-chart-bounds.md)
 - [0025 — Keep preselected relationships resolvable](0025-keep-preselected-relationships-resolvable.md)
 - [0026 — Clear detail selection on transient navigation](0026-clear-detail-selection-on-transient-navigation.md)
+- [0027 — Preserve detail across transient Add Task](0027-preserve-detail-across-transient-add-task.md)

@@ -456,7 +456,7 @@ Then the Add Task form immediately shows the existing task as a linked task usin
 
 Given Mac Task Details is open from an unfiltered task list
 When the user opens Add Task from the toolbar and returns to Tasks without saving
-Then the task list keeps its previous task-type mode and filters instead of restoring filters associated with the formerly selected task
+Then the previously opened task detail returns and the task list keeps its previous task-type mode and filters instead of restoring filters associated with that task
 
 Given a weekly or month-day calendar routine is configured for today's weekday or day of month
 When Home derives `Today`

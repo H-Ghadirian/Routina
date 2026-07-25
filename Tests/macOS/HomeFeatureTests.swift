@@ -761,7 +761,7 @@ struct HomeFeatureTests {
     }
 
     @Test
-    func returningFromAddTaskDoesNotRestoreSelectedTaskTabFilters() async {
+    func returningFromAddTaskKeepsSelectedTaskWithoutRestoringItsTabFilters() async {
         let context = makeInMemoryContext()
         let routine = makeTask(
             in: context,
@@ -787,17 +787,16 @@ struct HomeFeatureTests {
 
         await store.send(.macSidebarModeChanged(.addTask)) {
             $0.macSidebarMode = .addTask
-            $0.selectedTaskID = nil
-            $0.taskDetailState = nil
-            $0.selectedTaskReloadGuard = nil
-            $0.pendingSelectedChecklistReloadGuardTaskID = nil
             $0.macSidebarSelection = nil
         }
 
         await store.send(.macSidebarModeChanged(.routines)) {
             $0.macSidebarMode = .routines
+            $0.macSidebarSelection = .task(routine.id)
         }
 
+        #expect(store.state.selectedTaskID == routine.id)
+        #expect(store.state.taskDetailState?.task.id == routine.id)
         #expect(store.state.taskListMode == .all)
         #expect(store.state.taskFilters.createdDateFilter == .all)
     }
