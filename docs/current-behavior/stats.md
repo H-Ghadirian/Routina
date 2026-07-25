@@ -36,6 +36,7 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - Stats dashboards are customizable, reorderable, and adaptive-width.
 - Compact Stats summary cards use widths that accommodate their icon, labels, value, and optional accessory; titles and captions wrap instead of truncating when additional vertical space is available.
 - Stats offers Today, Week, Month, and Year presets plus an inclusive custom start/end date range on iOS and macOS. All dashboard reports and available integrations use the same selected boundaries.
+- Single-day ranges, whether selected through Today or a one-day custom range, omit multi-day comparisons such as daily averages, best-day callouts, active-day badges, and trend charts.
 - Dashboard reports appear only when their backing metric has data. Saved order and hidden-item preferences are preserved for when data appears later.
 - Sleep time and Sleep sessions sit beside comparable summary reports when available and when the Away experiment is enabled.
 - Goal reports follow the Goals beta setting.

@@ -140,7 +140,7 @@ struct StatsGitHubSection: View {
             )
         }
 
-        if selectedRange != .today {
+        if selectedRange.trailingDayCount > 1 {
             gitHubChart(
                 points: stats.commitPoints,
                 averageCount: stats.averageCommitCount,
@@ -219,7 +219,7 @@ struct StatsGitHubSection: View {
             )
         }
 
-        if selectedRange != .today {
+        if selectedRange.trailingDayCount > 1 {
             gitHubChart(
                 points: stats.contributionPoints,
                 averageCount: stats.averageContributionCount,

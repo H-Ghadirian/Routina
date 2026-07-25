@@ -758,6 +758,63 @@ struct StatsFeatureDerivedStateSupportTests {
     }
 
     @Test
+    func summaryItemsOmitComparisonsForOneDayCustomRange() {
+        var metrics = StatsFeatureMetrics()
+        metrics.totalDoneCount = 7
+        metrics.totalCount = 7
+        metrics.averagePerDay = 7
+        metrics.totalFocusSeconds = 30 * 60
+        metrics.averageFocusSecondsPerDay = 30 * 60
+
+        var testCalendar = Calendar(identifier: .gregorian)
+        testCalendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let day = makeDate("2026-07-24T10:00:00Z")
+        let selectedRange = DoneChartRange.custom(from: day, through: day, calendar: testCalendar)
+        let items = StatsSummaryCardItemBuilder.items(
+            metrics: metrics,
+            selectedRange: selectedRange,
+            chartPresentation: StatsChartPresentation(selectedRange: selectedRange, isCompact: false),
+            taskTypeFilter: .all,
+            filteredTaskCount: 0
+        )
+        let identifiers = Set(items.map(\.accessibilityIdentifier))
+
+        #expect(!identifiers.contains("stats.summary.dailyAverage"))
+        #expect(!identifiers.contains("stats.summary.focusAverage"))
+        #expect(!identifiers.contains("stats.summary.bestDay"))
+        #expect(identifiers.contains("stats.summary.totalDones"))
+        #expect(identifiers.contains("stats.summary.focusTime"))
+    }
+
+    @Test
+    func summaryItemsKeepComparisonsForMultiDayCustomRange() {
+        var metrics = StatsFeatureMetrics()
+        metrics.totalDoneCount = 7
+        metrics.totalCount = 7
+        metrics.averagePerDay = 3.5
+        metrics.totalFocusSeconds = 30 * 60
+        metrics.averageFocusSecondsPerDay = 15 * 60
+
+        var testCalendar = Calendar(identifier: .gregorian)
+        testCalendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let start = makeDate("2026-07-23T10:00:00Z")
+        let end = makeDate("2026-07-24T10:00:00Z")
+        let selectedRange = DoneChartRange.custom(from: start, through: end, calendar: testCalendar)
+        let items = StatsSummaryCardItemBuilder.items(
+            metrics: metrics,
+            selectedRange: selectedRange,
+            chartPresentation: StatsChartPresentation(selectedRange: selectedRange, isCompact: false),
+            taskTypeFilter: .all,
+            filteredTaskCount: 0
+        )
+        let identifiers = Set(items.map(\.accessibilityIdentifier))
+
+        #expect(identifiers.contains("stats.summary.dailyAverage"))
+        #expect(identifiers.contains("stats.summary.focusAverage"))
+        #expect(identifiers.contains("stats.summary.bestDay"))
+    }
+
+    @Test
     func summaryItemsIncludeAssumedDoneCardsWhenAssumedMetricsHaveData() {
         var metrics = StatsFeatureMetrics()
         metrics.assumedDoneCount = 2

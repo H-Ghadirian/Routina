@@ -17,7 +17,7 @@ struct StatsHeroSectionView: View {
         VStack(alignment: .leading, spacing: 20) {
             header
 
-            if selectedRange != .today {
+            if selectedRange.trailingDayCount > 1 {
                 sparklinePreview
                 metricPills
             }
@@ -57,7 +57,7 @@ struct StatsHeroSectionView: View {
 
             Spacer(minLength: 0)
 
-            if selectedRange != .today {
+            if selectedRange.trailingDayCount > 1 {
                 activeDayBadge
             }
         }

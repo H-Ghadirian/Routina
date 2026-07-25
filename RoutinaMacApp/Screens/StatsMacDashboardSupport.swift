@@ -357,7 +357,7 @@ enum StatsMacDashboardItem: String, CaseIterable, Identifiable {
         case .unassignedFocus:
             return false
         case .dailyAverage, .focusAverage, .bestDay, .completionChart, .focusChart, .focusWorkChart:
-            return selectedRange != .today
+            return selectedRange.trailingDayCount > 1
         case .gitHub:
             return isGitFeaturesEnabled
         case .goals, .goalProgress:

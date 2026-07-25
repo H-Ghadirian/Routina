@@ -18,7 +18,7 @@ enum StatsSummaryCardItemBuilder {
             archivedItemCount: metrics.archivedRoutineCount
         )
 
-        if selectedRange != .today {
+        if selectedRange.trailingDayCount > 1 {
             items.append(
                 StatsSummaryCardItem(
                     icon: "gauge.with.dots.needle.50percent",
@@ -125,7 +125,7 @@ enum StatsSummaryCardItemBuilder {
             )
         )
 
-        if selectedRange != .today {
+        if selectedRange.trailingDayCount > 1 {
             items.append(
                 StatsSummaryCardItem(
                     icon: "stopwatch.fill",
