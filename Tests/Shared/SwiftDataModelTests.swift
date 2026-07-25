@@ -31,6 +31,7 @@ struct SwiftDataModelTests {
         #expect(task.scheduleMode == .fixedInterval)
         #expect(task.priority == .none)
         #expect(!task.showsTaskDetailHistory)
+        #expect(!task.showsTaskDetailPriority)
         #expect(task.importance == .level2)
         #expect(task.urgency == .level2)
         #expect(task.completedStepCount == 0)

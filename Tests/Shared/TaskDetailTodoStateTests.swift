@@ -76,6 +76,31 @@ struct TodoStateFeatureTests {
     // MARK: - Reducer: todoStateChanged
 
     @Test
+    func revealPriorityInTaskDetailPersistsVisibilityWithoutChangingPriority() async throws {
+        let context = makeInMemoryContext()
+        let task = RoutineTask(name: "Write report", priority: .medium)
+        context.insert(task)
+        try context.save()
+
+        let store = TestStore(initialState: TaskDetailFeature.State(task: task)) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.revealPriorityInTaskDetail) {
+            $0.task.showsTaskDetailPriority = true
+            $0.taskRefreshID = 1
+        }
+
+        let saved = try #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
+        #expect(saved.showsTaskDetailPriority)
+        #expect(saved.priority == .medium)
+        #expect(TaskDetailOptionalControlVisibility.showsPriority(for: saved))
+    }
+
+    @Test
     func revealHistoryInTaskDetailPersistsVisibilityWithoutChangingHistory() async throws {
         let context = makeInMemoryContext()
         let task = RoutineTask(name: "Write report", scheduleMode: .oneOff)

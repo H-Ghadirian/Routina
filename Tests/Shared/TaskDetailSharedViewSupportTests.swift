@@ -219,11 +219,19 @@ struct TaskDetailSharedViewSupportTests {
     @Test
     func priorityVisibilityRequiresSavedNonDefaultValues() {
         let neutralTask = RoutineTask(name: "Neutral")
+        let legacyMediumTask = RoutineTask(name: "Legacy medium", priority: .medium)
+        let explicitlyRevealedMediumTask = RoutineTask(
+            name: "Explicit medium",
+            priority: .medium,
+            showsTaskDetailPriority: true
+        )
         let prioritizedTask = RoutineTask(name: "Prioritized", priority: .high)
         let importantTask = RoutineTask(name: "Important", importance: .level3)
         let urgentTask = RoutineTask(name: "Urgent", urgency: .level3)
 
         #expect(!TaskDetailOptionalControlVisibility.showsPriority(for: neutralTask))
+        #expect(!TaskDetailOptionalControlVisibility.showsPriority(for: legacyMediumTask))
+        #expect(TaskDetailOptionalControlVisibility.showsPriority(for: explicitlyRevealedMediumTask))
         #expect(TaskDetailOptionalControlVisibility.showsPriority(for: prioritizedTask))
         #expect(TaskDetailOptionalControlVisibility.showsPriority(for: importantTask))
         #expect(TaskDetailOptionalControlVisibility.showsPriority(for: urgentTask))

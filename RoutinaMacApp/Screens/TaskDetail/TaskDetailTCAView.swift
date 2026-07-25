@@ -662,6 +662,7 @@ struct TaskDetailTCAView: View {
         if shouldShowPriorityAddAction {
             actions.append(TaskDetailOptionalAction(title: "Priority", systemImage: "flag") {
                 withAnimation(.easeInOut(duration: 0.18)) {
+                    _ = store.send(.revealPriorityInTaskDetail)
                     isPriorityControlRevealed = true
                     isMatrixExpanded = true
                 }

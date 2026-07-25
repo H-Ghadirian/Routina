@@ -12,12 +12,13 @@ Task Details always showed the Priority matrix summary, including for tasks that
 
 ## Decision
 
-iOS and macOS Task Details hide Priority when the task has the neutral defaults: no derived priority, medium importance, and medium urgency. Full Task Details offers Priority in Add More Details. Choosing it reveals and expands the matrix inline.
+iOS and macOS Task Details hide Priority when the task has legacy neutral defaults: none or medium derived priority, medium importance, and medium urgency, unless the task records that the user explicitly revealed Priority. Full Task Details offers Priority in Add More Details. Choosing it reveals and expands the matrix inline and persists that choice for the task.
 
-Priority remains visible whenever the task has a saved non-default priority, importance, or urgency value, including after reopening Task Details.
+Priority remains visible whenever the task has a saved non-neutral priority, importance, or urgency value, or the explicit per-task visibility preference, including after reopening Task Details. Quick Add sets that preference when the user enters priority syntax, including `!medium`.
 
 ## Consequences
 
 - New and otherwise neutral tasks have a simpler detail header.
 - Users can add Priority without leaving Task Details.
 - Existing customized priority metadata remains visible and editable.
+- Legacy tasks whose only priority metadata is the old implicit Medium/Medium default stay hidden, matching Edit Task.

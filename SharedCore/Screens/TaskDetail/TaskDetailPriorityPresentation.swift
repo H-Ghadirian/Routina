@@ -112,7 +112,8 @@ enum TaskDetailPriorityPresentation {
 
 enum TaskDetailOptionalControlVisibility {
     static func showsPriority(for task: RoutineTask) -> Bool {
-        task.priority != .none
+        task.showsTaskDetailPriority
+            || (task.priority != .none && task.priority != .medium)
             || task.importance != .level2
             || task.urgency != .level2
     }

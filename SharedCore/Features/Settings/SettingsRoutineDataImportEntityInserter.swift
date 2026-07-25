@@ -315,6 +315,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 trackingNudgesEnabled: task.trackingNudgesEnabled ?? true,
                 showsTaskDetailHeatmap: task.showsTaskDetailHeatmap ?? false,
                 showsTaskDetailHistory: task.showsTaskDetailHistory ?? false,
+                showsTaskDetailPriority: task.showsTaskDetailPriority ?? false,
                 comments: task.comments ?? []
             )
             if let linkItems = task.linkItems {
