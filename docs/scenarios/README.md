@@ -454,6 +454,10 @@ Given Task Details shows an existing task and a selected relationship type
 When the user chooses `Add Linked Task` to create a new task
 Then the Add Task form immediately shows the existing task as a linked task using the inverse relationship type
 
+Given Mac Task Details is open from an unfiltered task list
+When the user opens Add Task from the toolbar and returns to Tasks without saving
+Then the task list keeps its previous task-type mode and filters instead of restoring filters associated with the formerly selected task
+
 Given a weekly or month-day calendar routine is configured for today's weekday or day of month
 When Home derives `Today`
 Then that calendar routine appears in the existing today list without a separate scheduled-today group, while rolling interval routines stay in the normal due/status sections unless explicitly planned

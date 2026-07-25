@@ -47,6 +47,7 @@ struct HomeFeatureMacNavigationRouter {
         case .addTask:
             state.macSidebarSelection = nil
             dismissAddRoutineSheet(&state)
+            HomeSelectionEditor.clearTaskSelection(&state.selection)
         }
         persistTemporaryViewState(state)
         return .none

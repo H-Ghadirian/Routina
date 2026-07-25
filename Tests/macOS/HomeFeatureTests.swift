@@ -761,6 +761,48 @@ struct HomeFeatureTests {
     }
 
     @Test
+    func returningFromAddTaskDoesNotRestoreSelectedTaskTabFilters() async {
+        let context = makeInMemoryContext()
+        let routine = makeTask(
+            in: context,
+            name: "Sleep",
+            interval: 1,
+            lastDone: nil,
+            emoji: "😴"
+        )
+        let store = TestStore(
+            initialState: HomeFeature.State(
+                routineTasks: [routine],
+                selectedTaskID: routine.id,
+                taskDetailState: TaskDetailFeature.State(task: routine),
+                taskListMode: .all,
+                macSidebarMode: .routines,
+                macSidebarSelection: .task(routine.id)
+            )
+        ) {
+            HomeFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+        }
+
+        await store.send(.macSidebarModeChanged(.addTask)) {
+            $0.macSidebarMode = .addTask
+            $0.selectedTaskID = nil
+            $0.taskDetailState = nil
+            $0.selectedTaskReloadGuard = nil
+            $0.pendingSelectedChecklistReloadGuardTaskID = nil
+            $0.macSidebarSelection = nil
+        }
+
+        await store.send(.macSidebarModeChanged(.routines)) {
+            $0.macSidebarMode = .routines
+        }
+
+        #expect(store.state.taskListMode == .all)
+        #expect(store.state.taskFilters.createdDateFilter == .all)
+    }
+
+    @Test
     func onAppear_normalizesPersistedAddTaskSidebarModeToRoutines() async {
         let context = makeInMemoryContext()
         let persistedState = TemporaryViewState(
