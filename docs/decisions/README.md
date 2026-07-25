@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0427](0427-place-task-sidebar-location-below-detail-title.md) refines [0420](0420-show-task-sidebar-location-in-mac-details.md) for task identity hierarchy:** Mac task details place the live sidebar section/subsection breadcrumb directly below the task title and before status, completion, calendar, tags, and other metadata.
+
 - **[0426](0426-collapse-mac-task-form-tag-suggestions.md) refines [0058](0058-use-progressive-task-forms.md) for scalable tag entry:** Mac Add Task and Edit Task always show selected and related tags, but default the remaining saved-tag chips to the six most-used tags with a disclosure control for the complete list.
 
 - **[0425](0425-make-task-detail-history-optional.md) refines [0100](0100-reveal-task-form-details-by-section.md), [0366](0366-keep-mac-task-detail-add-more-inline.md), and [0393](0393-persist-task-detail-heatmap-per-task.md) for progressive history review:** iOS and macOS Task Details hide History by default, offer it through Add More Details, and persist the reveal choice per task through copying and backup/import.

@@ -989,12 +989,14 @@ struct TaskDetailTCAView: View {
             tags: [],
             headerAccessory: {
                 taskDetailActionCluster
+            },
+            titleSupplementaryContent: {
+                taskSidebarLocationButton
             }
         ) { tag in
             statusTagChip(tag)
         } additionalContent: {
             VStack(alignment: .leading, spacing: 8) {
-                taskSidebarLocationButton
                 todoHeaderControls
                 headerSupplementaryContent
             }
@@ -1024,12 +1026,14 @@ struct TaskDetailTCAView: View {
             tags: [],
             headerAccessory: {
                 taskDetailActionCluster
+            },
+            titleSupplementaryContent: {
+                taskSidebarLocationButton
             }
         ) { tag in
             statusTagChip(tag)
         } additionalContent: {
             VStack(alignment: .leading, spacing: 8) {
-                taskSidebarLocationButton
                 routineHeaderControls
                 headerSupplementaryContent(dueDate: dueDate)
             }

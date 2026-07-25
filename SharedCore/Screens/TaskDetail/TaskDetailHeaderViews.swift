@@ -13,15 +13,17 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
     let tagChip: (String) -> TagChipContent
     let additionalContent: () -> AdditionalContent
     let headerAccessory: () -> HeaderAccessory
+    let titleSupplementaryContent: AnyView
     @State private var headerMetrics: [TaskDetailHeaderSectionViewMetric: CGFloat] = [:]
 
-    init(
+    init<TitleSupplementaryContent: View>(
         title: String,
         titleDragPayload: String? = nil,
         statusContextMessage: String?,
         badgeRows: [[TaskDetailHeaderBadgeItem]],
         tags: [String],
         @ViewBuilder headerAccessory: @escaping () -> HeaderAccessory,
+        @ViewBuilder titleSupplementaryContent: () -> TitleSupplementaryContent,
         @ViewBuilder tagChip: @escaping (String) -> TagChipContent,
         @ViewBuilder additionalContent: @escaping () -> AdditionalContent
     ) {
@@ -33,6 +35,7 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
         self.tagChip = tagChip
         self.additionalContent = additionalContent
         self.headerAccessory = headerAccessory
+        self.titleSupplementaryContent = AnyView(titleSupplementaryContent())
     }
 
     var body: some View {
@@ -86,6 +89,8 @@ struct TaskDetailHeaderSectionView<TagChipContent: View, AdditionalContent: View
     private var titleBlock: some View {
         VStack(alignment: .leading, spacing: 6) {
             titleText
+
+            titleSupplementaryContent
 
             if let statusContextMessage {
                 Text(statusContextMessage)
@@ -193,6 +198,7 @@ extension TaskDetailHeaderSectionView where HeaderAccessory == EmptyView {
             badgeRows: badgeRows,
             tags: tags,
             headerAccessory: { EmptyView() },
+            titleSupplementaryContent: { EmptyView() },
             tagChip: tagChip,
             additionalContent: additionalContent
         )
@@ -215,6 +221,7 @@ extension TaskDetailHeaderSectionView where AdditionalContent == EmptyView, Head
             badgeRows: badgeRows,
             tags: tags,
             headerAccessory: { EmptyView() },
+            titleSupplementaryContent: { EmptyView() },
             tagChip: tagChip,
             additionalContent: { EmptyView() }
         )

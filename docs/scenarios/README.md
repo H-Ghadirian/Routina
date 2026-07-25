@@ -446,6 +446,10 @@ Given Mac task details show a task that is currently inside a sidebar section an
 When the user clicks the section breadcrumb in the detail header
 Then the left sidebar opens in task-list mode, expands both ancestors, selects the task, and scrolls its row into view
 
+Given Mac task details show a task that is currently inside a visible sidebar section
+When the detail header is rendered
+Then the section breadcrumb appears directly below the task title and above status, completion, and other metadata
+
 Given a weekly or month-day calendar routine is configured for today's weekday or day of month
 When Home derives `Today`
 Then that calendar routine appears in the existing today list without a separate scheduled-today group, while rolling interval routines stay in the normal due/status sections unless explicitly planned

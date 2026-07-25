@@ -171,6 +171,15 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(taskDetailSource.contains("private var taskSidebarLocationButton: some View"))
         XCTAssertTrue(taskDetailSource.contains("Button(action: onLocateInSidebar)"))
         XCTAssertTrue(taskDetailSource.contains("ForEach(Array(sidebarLocation.titles.enumerated())"))
+        XCTAssertTrue(
+            taskDetailSource.contains(
+                """
+                titleSupplementaryContent: {
+                                taskSidebarLocationButton
+                """
+            ),
+            "The live sidebar location should appear directly below the task title."
+        )
         XCTAssertTrue(taskListSource.contains("func macTaskSourceListSidebarLocation(_ taskID: UUID)"))
         XCTAssertTrue(taskListSource.contains("macTaskSourceListLocation(of: taskID, in: presentation)"))
         XCTAssertTrue(taskListSource.contains("location.groups.forEach(expandTaskListGroup)"))
