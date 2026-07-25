@@ -8,6 +8,18 @@ enum MacTaskDetailPresentation {
 }
 
 extension HomeTCAView {
+    // Temporary UI experiment. Set to `false` to restore the existing form-section
+    // navigator without removing any of its implementation.
+    private var temporarilyKeepsTaskListVisibleDuringTaskForms: Bool { true }
+
+    private var isTaskFormPresented: Bool {
+        isMacAddTaskMode || store.taskDetailState?.isEditSheetPresented == true
+    }
+
+    private var temporarilyShowsTaskListDuringTaskForm: Bool {
+        temporarilyKeepsTaskListVisibleDuringTaskForms && isTaskFormPresented
+    }
+
     var isMacTimelineMode: Bool { visibleMacSidebarMode == .timeline }
     var isMacStatsMode: Bool { visibleMacSidebarMode == .stats || visibleMacSidebarMode == .adventure }
     var isMacSettingsMode: Bool { visibleMacSidebarMode == .settings }
@@ -810,7 +822,7 @@ extension HomeTCAView {
         Group {
             if isPlacesEnabled && macHomeDetailMode == .places && isMacRoutinesMode {
                 macPlacesSidebarView
-            } else if isMacAddTaskMode || store.taskDetailState?.isEditSheetPresented == true {
+            } else if isTaskFormPresented && !temporarilyKeepsTaskListVisibleDuringTaskForms {
                 macFormSectionNav
             } else if isMacRoutinesMode && showsInitialTaskLoading && !shouldHideMacSidebarHeaderForDayPlanTimelineFilter {
                 VStack(spacing: 0) {
@@ -961,11 +973,15 @@ extension HomeTCAView {
     var macSidebarHeader: some View {
         HomeMacSidebarHeaderView(
             selectedTaskListMode: store.taskListMode,
-            isRoutinesMode: isMacRoutinesMode && !isMacSegmentedBoardMode,
+            isRoutinesMode: (isMacRoutinesMode && !isMacSegmentedBoardMode)
+                || temporarilyShowsTaskListDuringTaskForm,
             isBoardMode: isMacBoardSidebarPresented,
             isGoalsMode: isMacGoalsMode,
             isTimelineMode: isMacTimelineMode,
-            showsSearchPanelContent: isMacGoalsMode || macHasCustomFiltersApplied,
+            showsSearchPanelContent: isMacGoalsMode
+                || macHasCustomFiltersApplied
+                || (temporarilyShowsTaskListDuringTaskForm
+                    && macHasTaskListFiltersApplied),
             onSelectTaskListMode: { mode in
                 store.send(.taskListModeChanged(mode))
             }
