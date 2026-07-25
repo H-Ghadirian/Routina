@@ -67,7 +67,7 @@ struct HomeFeatureAddRoutinePresentationRouterTests {
     }
 
     @Test
-    func openLinkedTaskSheetPreselectsInverseRelationshipAndExcludesCurrentTask() {
+    func openLinkedTaskSheetPreselectsAndResolvesInverseRelationship() {
         let currentTask = RoutineTask(id: UUID(), name: "Current", emoji: "C")
         let otherTask = RoutineTask(id: UUID(), name: "Other", emoji: "O")
         var detailState = TaskDetailFeature.State(task: currentTask)
@@ -87,7 +87,10 @@ struct HomeFeatureAddRoutinePresentationRouterTests {
         #expect(state.presentation.addRoutineState?.organization.relationships == [
             RoutineTaskRelationship(targetTaskID: currentTask.id, kind: .blocks)
         ])
-        #expect(state.presentation.addRoutineState?.organization.availableRelationshipTasks.map(\.id) == [otherTask.id])
+        #expect(
+            state.presentation.addRoutineState?.organization.availableRelationshipTasks.map(\.id)
+                == [currentTask.id, otherTask.id]
+        )
     }
 
     @Test

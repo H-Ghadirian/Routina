@@ -65,3 +65,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0022 — Do not infer optional-section intent from legacy defaults](0022-do-not-infer-optional-section-intent-from-legacy-defaults.md)
 - [0023 — Derive Stats comparisons from range duration](0023-derive-stats-comparisons-from-range-duration.md)
 - [0024 — Fit chart annotations within chart bounds](0024-fit-chart-annotations-within-chart-bounds.md)
+- [0025 — Keep preselected relationships resolvable](0025-keep-preselected-relationships-resolvable.md)

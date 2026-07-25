@@ -89,6 +89,13 @@ struct HomeFeatureAddRoutinePresentationTests {
                     ],
                     availableRelationshipTasks: [
                         RoutineTaskRelationshipCandidate(
+                            id: currentTask.id,
+                            name: "Draft report",
+                            emoji: "📝",
+                            relationships: [],
+                            status: .onTrack
+                        ),
+                        RoutineTaskRelationshipCandidate(
                             id: task.id,
                             name: "Read",
                             emoji: "📚",

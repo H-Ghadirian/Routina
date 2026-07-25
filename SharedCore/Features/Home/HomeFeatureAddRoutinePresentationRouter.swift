@@ -67,8 +67,7 @@ struct HomeFeatureAddRoutinePresentationRouter<State: HomeFeatureAddRoutinePrese
             for: state,
             preselectedRelationships: [
                 RoutineTaskRelationship(targetTaskID: currentTaskID, kind: kind.inverse)
-            ],
-            excludingRelationshipTaskID: currentTaskID
+            ]
         )
         return true
     }
@@ -76,7 +75,6 @@ struct HomeFeatureAddRoutinePresentationRouter<State: HomeFeatureAddRoutinePrese
     private func makeAddRoutineState(
         for state: State,
         preselectedRelationships: [RoutineTaskRelationship] = [],
-        excludingRelationshipTaskID: UUID? = nil,
         seedName: String? = nil
     ) -> AddRoutineFeature.State {
         var addRoutineState = HomeAddRoutineSupport.makeAddRoutineState(
@@ -86,8 +84,7 @@ struct HomeFeatureAddRoutinePresentationRouter<State: HomeFeatureAddRoutinePrese
             doneStats: state.doneStats,
             tagCounterDisplayMode: tagCounterDisplayMode(),
             relatedTagRules: relatedTagRules(),
-            preselectedRelationships: preselectedRelationships,
-            excludingRelationshipTaskID: excludingRelationshipTaskID
+            preselectedRelationships: preselectedRelationships
         )
         if let seedName = seedName.flatMap(RoutineTask.trimmedName),
            !seedName.isEmpty {
@@ -98,7 +95,6 @@ struct HomeFeatureAddRoutinePresentationRouter<State: HomeFeatureAddRoutinePrese
             return addRoutineState
         }
         guard preselectedRelationships.isEmpty,
-              excludingRelationshipTaskID == nil,
               let draft = addRoutineDraft()
         else {
             return addRoutineState

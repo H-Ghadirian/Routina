@@ -10,8 +10,7 @@ enum HomeAddRoutineSupport {
         doneStats: HomeDoneStats,
         tagCounterDisplayMode: TagCounterDisplayMode,
         relatedTagRules: [RoutineRelatedTagRule],
-        preselectedRelationships: [RoutineTaskRelationship] = [],
-        excludingRelationshipTaskID: UUID? = nil
+        preselectedRelationships: [RoutineTaskRelationship] = []
     ) -> AddRoutineFeature.State {
         let learnedRules = RoutineTagRelations.learnedRules(from: tasks.map(\.tags))
         let tagSummaries = AddRoutineOrganizationEditor.sortedTagSummaries(
@@ -29,8 +28,7 @@ enum HomeAddRoutineSupport {
                 relatedTagRules: RoutineTagRelations.sanitized(relatedTagRules + learnedRules),
                 tagCounterDisplayMode: tagCounterDisplayMode,
                 availableRelationshipTasks: RoutineTaskRelationshipCandidate.from(
-                    tasks,
-                    excluding: excludingRelationshipTaskID
+                    tasks
                 ),
                 existingRoutineNames: HomeTaskSupport.existingRoutineNames(from: tasks),
                 availablePlaces: RoutinePlace.summaries(from: places, linkedTo: tasks)
