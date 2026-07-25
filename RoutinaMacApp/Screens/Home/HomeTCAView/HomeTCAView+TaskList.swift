@@ -17,8 +17,63 @@ private struct MacTaskSourceListTaskLocation {
     let groups: [HomeTaskListPresentationTaskGroup<HomeFeature.RoutineDisplay>]
 }
 
+@MainActor
 final class MacTaskSourceListScrollViewReference {
     weak var scrollView: NSScrollView?
+
+    private var boundsObserver: NSObjectProtocol?
+    private var preservedOrigin: NSPoint?
+    private var isRestoringPreservedOrigin = false
+
+    func startPreservingScrollPosition(in scrollView: NSScrollView) {
+        stopPreservingScrollPosition()
+
+        self.scrollView = scrollView
+        preservedOrigin = scrollView.contentView.bounds.origin
+
+        let clipView = scrollView.contentView
+        clipView.postsBoundsChangedNotifications = true
+        boundsObserver = NotificationCenter.default.addObserver(
+            forName: NSView.boundsDidChangeNotification,
+            object: clipView,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.restorePreservedScrollPosition()
+            }
+        }
+    }
+
+    func restorePreservedScrollPosition() {
+        guard
+            !isRestoringPreservedOrigin,
+            let scrollView,
+            let preservedOrigin
+        else { return }
+
+        let clipView = scrollView.contentView
+        let targetY = MacTaskSourceListScrollPreservation.verticalOrigin(
+            preserving: preservedOrigin.y,
+            documentHeight: scrollView.documentView?.bounds.height ?? 0,
+            viewportHeight: clipView.bounds.height
+        )
+        let targetOrigin = NSPoint(x: preservedOrigin.x, y: targetY)
+        guard clipView.bounds.origin != targetOrigin else { return }
+
+        isRestoringPreservedOrigin = true
+        clipView.scroll(to: targetOrigin)
+        scrollView.reflectScrolledClipView(clipView)
+        isRestoringPreservedOrigin = false
+    }
+
+    func stopPreservingScrollPosition() {
+        if let boundsObserver {
+            NotificationCenter.default.removeObserver(boundsObserver)
+        }
+        boundsObserver = nil
+        preservedOrigin = nil
+        isRestoringPreservedOrigin = false
+    }
 }
 
 private struct MacTaskSourceListScrollViewResolver: NSViewRepresentable {
@@ -1426,7 +1481,7 @@ extension HomeTCAView {
             return
         }
 
-        let requestedOrigin = scrollView.contentView.bounds.origin
+        macTaskSourceListScrollViewReference.startPreservingScrollPosition(in: scrollView)
         let animation: Animation? = MacTaskSourceListScrollPreservation
             .animatesUserDrivenDisclosureChanges
             ? .easeInOut(duration: 0.24)
@@ -1435,39 +1490,18 @@ extension HomeTCAView {
             update()
         }
 
-        restoreMacTaskSourceListScrollPosition(
-            requestedOrigin,
-            in: scrollView
-        )
-        DispatchQueue.main.async {
-            restoreMacTaskSourceListScrollPosition(
-                requestedOrigin,
-                in: scrollView
-            )
-            DispatchQueue.main.async {
-                restoreMacTaskSourceListScrollPosition(
-                    requestedOrigin,
-                    in: scrollView
-                )
-            }
-        }
-    }
-
-    private func restoreMacTaskSourceListScrollPosition(
-        _ requestedOrigin: NSPoint,
-        in scrollView: NSScrollView
-    ) {
         scrollView.layoutSubtreeIfNeeded()
         scrollView.documentView?.layoutSubtreeIfNeeded()
-
-        let clipView = scrollView.contentView
-        let targetY = MacTaskSourceListScrollPreservation.verticalOrigin(
-            preserving: requestedOrigin.y,
-            documentHeight: scrollView.documentView?.bounds.height ?? 0,
-            viewportHeight: clipView.bounds.height
-        )
-        clipView.scroll(to: NSPoint(x: requestedOrigin.x, y: targetY))
-        scrollView.reflectScrolledClipView(clipView)
+        macTaskSourceListScrollViewReference.restorePreservedScrollPosition()
+        DispatchQueue.main.async {
+            scrollView.layoutSubtreeIfNeeded()
+            scrollView.documentView?.layoutSubtreeIfNeeded()
+            macTaskSourceListScrollViewReference.restorePreservedScrollPosition()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                macTaskSourceListScrollViewReference.restorePreservedScrollPosition()
+                macTaskSourceListScrollViewReference.stopPreservingScrollPosition()
+            }
+        }
     }
 
     private func taskListGroupIsExpanded(
