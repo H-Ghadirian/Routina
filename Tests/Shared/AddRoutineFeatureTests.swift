@@ -1498,6 +1498,112 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func recurrenceChangesScheduleDraftAutosaveThroughTheFeature() async throws {
+        let scheduledWrites = LockIsolated<[CreationDraftScheduledWrite]>([])
+        var creationDraftClient = CreationDraftClient.noop
+        creationDraftClient.scheduleSave = { kind, makeWrite in
+            guard kind == .task else { return }
+            scheduledWrites.withValue { $0.append(makeWrite()) }
+        }
+        let store = TestStore(
+            initialState: makeState(
+                schedule: AddRoutineScheduleState(scheduleMode: .fixedInterval)
+            )
+        ) {
+            makeFeature()
+        } withDependencies: {
+            $0.creationDraftClient = creationDraftClient
+            setTestDateDependencies(&$0)
+        }
+        store.exhaustivity = .off
+
+        await store.send(
+            .recurrenceDraftChanged(
+                RoutineRecurrenceDraft(
+                    cadence: .scheduled,
+                    frequency: .weekly,
+                    weekdays: [2, 5]
+                )
+            )
+        )
+
+        let write = try #require(scheduledWrites.value.last)
+        guard case let .save(rawValue) = write else {
+            Issue.record("Expected the changed recurrence to schedule a saved task draft.")
+            return
+        }
+        let data = try #require(rawValue.data(using: .utf8))
+        let snapshot = try JSONDecoder().decode(AddRoutineDraftSnapshot.self, from: data)
+        #expect(snapshot.scheduleMode == .fixedInterval)
+        #expect(snapshot.recurrenceKind == .weekly)
+        #expect(snapshot.recurrenceWeekdays == [2, 5])
+    }
+
+    @Test
+    func cancelingAddTaskCancelsPendingDraftAutosave() async {
+        let canceledKinds = LockIsolated<[CreationDraftKind]>([])
+        var creationDraftClient = CreationDraftClient.noop
+        creationDraftClient.cancelScheduledSave = { kind in
+            canceledKinds.withValue { $0.append(kind) }
+        }
+        let store = TestStore(initialState: makeState()) {
+            makeFeature()
+        } withDependencies: {
+            $0.creationDraftClient = creationDraftClient
+        }
+
+        await store.send(.cancelTapped)
+
+        #expect(canceledKinds.value == [.task])
+    }
+
+    @Test
+    func addTaskInteractionWorkStaysOutOfTheSwiftUIRenderPath() throws {
+        let projectRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let addTaskViewPaths = [
+            "iOS/Screens/AddRoutine/AddRoutineTCAView.swift",
+            "RoutinaMacApp/Screens/AddRoutine/AddRoutineTCAView.swift"
+        ]
+
+        for path in addTaskViewPaths {
+            let source = try String(
+                contentsOf: projectRoot.appendingPathComponent(path),
+                encoding: .utf8
+            )
+            #expect(!source.contains("AddRoutineDraftSnapshot(state: store.state)"))
+        }
+
+        let segmentedControlSource = try String(
+            contentsOf: projectRoot.appendingPathComponent(
+                "SharedCore/Views/RoutinaLiquidGlass.swift"
+            ),
+            encoding: .utf8
+        )
+        #expect(
+            !segmentedControlSource.contains(
+                "withAnimation(.easeInOut(duration: 0.18)) {\n                onSelect(option)"
+            )
+        )
+        #expect(
+            segmentedControlSource.contains(
+                ".animation(.easeInOut(duration: 0.18), value: selection)"
+            )
+        )
+
+        let recurrenceEditorSource = try String(
+            contentsOf: projectRoot.appendingPathComponent(
+                "SharedCore/Views/AdvancedRecurrenceEditor.swift"
+            ),
+            encoding: .utf8
+        )
+        #expect(recurrenceEditorSource.contains("static let options: [Option]"))
+        #expect(recurrenceEditorSource.contains("List(options)"))
+    }
+
+    @Test
     func cancelTapped_sendsCancelDelegate() async {
         let store = TestStore(initialState: makeState()) {
             makeFeature(onCancel: { .send(.delegate(.didCancel)) })

@@ -5,7 +5,6 @@ import SwiftData
 
 struct AddRoutineTCAView: View {
     let store: StoreOf<AddRoutineFeature>
-    @Dependency(\.creationDraftClient) var creationDraftClient
     @FocusState var isRoutineNameFocused: Bool
     @State var isEmojiPickerPresented = false
     @State var selectedPhotoItem: PhotosPickerItem?
@@ -54,9 +53,6 @@ NavigationStack {
     }
     .onChange(of: availableEventCandidates) { _, _ in
         syncAvailableEvents()
-    }
-    .onChange(of: AddRoutineDraftSnapshot(state: store.state)) { _, snapshot in
-        snapshot.persist(client: creationDraftClient)
     }
 }
     }

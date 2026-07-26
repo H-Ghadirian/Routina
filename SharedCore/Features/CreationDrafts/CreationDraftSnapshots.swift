@@ -1,6 +1,13 @@
 import Foundation
 
 enum CreationDraftPersistence {
+    static func encodedRawValue<T: Encodable>(_ value: T) -> String? {
+        guard let data = try? JSONEncoder().encode(value) else {
+            return nil
+        }
+        return String(data: data, encoding: .utf8)
+    }
+
     static func load<T: Decodable>(
         _ type: T.Type,
         for kind: CreationDraftKind,
@@ -20,11 +27,7 @@ enum CreationDraftPersistence {
         for kind: CreationDraftKind,
         client: CreationDraftClient = .live
     ) {
-        guard let data = try? JSONEncoder().encode(value),
-              let rawValue = String(data: data, encoding: .utf8)
-        else {
-            return
-        }
+        guard let rawValue = encodedRawValue(value) else { return }
 
         client.save(kind, rawValue)
     }
@@ -37,7 +40,7 @@ enum CreationDraftPersistence {
     }
 }
 
-struct AddRoutineDraftSnapshot: Codable, Equatable {
+struct AddRoutineDraftSnapshot: Codable, Equatable, Sendable {
     var routineName = ""
     var routineEmoji = "✨"
     var routineNotes = ""

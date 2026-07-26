@@ -102,6 +102,7 @@ struct AddRoutineFeature: Reducer {
 
     @Dependency(\.date.now) var now
     @Dependency(\.calendar) var calendar
+    @Dependency(\.creationDraftClient) var creationDraftClient
 
     var onSave: (AddRoutineSaveRequest) -> Effect<Action>
     var onCancel: () -> Effect<Action>
@@ -152,6 +153,24 @@ struct AddRoutineFeature: Reducer {
     }
 
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
+        let effect = reduceCore(into: &state, action: action)
+
+        switch action {
+        case .cancelTapped, .delegate:
+            creationDraftClient.cancelScheduledSave(.task)
+        case .saveTapped where state.isSaving:
+            creationDraftClient.cancelScheduledSave(.task)
+        default:
+            scheduleCreationDraftAutosave(for: state)
+        }
+
+        return effect
+    }
+
+    private func reduceCore(
+        into state: inout State,
+        action: Action
+    ) -> Effect<Action> {
         switch action {
         case let .routineNameChanged(name):
             AddRoutineValidationEditor.setRoutineName(
@@ -681,6 +700,17 @@ struct AddRoutineFeature: Reducer {
             return onCancel()
         case .delegate(_):
             return .none
+        }
+    }
+
+    private func scheduleCreationDraftAutosave(for state: State) {
+        let snapshot = AddRoutineDraftSnapshot(state: state)
+        creationDraftClient.scheduleSave(.task) {
+            guard snapshot.isMeaningful else { return .clear }
+            guard let rawValue = CreationDraftPersistence.encodedRawValue(snapshot) else {
+                return .none
+            }
+            return .save(rawValue)
         }
     }
 

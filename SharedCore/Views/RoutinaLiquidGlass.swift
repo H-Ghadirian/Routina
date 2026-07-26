@@ -97,6 +97,7 @@ struct RoutinaGlassSegmentedControl<Option: Hashable, Label: View>: View {
         .padding(.vertical, 1)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(accessibilityLabel)
+        .animation(.easeInOut(duration: 0.18), value: selection)
     }
 
     @ViewBuilder
@@ -134,9 +135,7 @@ struct RoutinaGlassSegmentedControl<Option: Hashable, Label: View>: View {
         let isSelected = selection == option
 
         return Button {
-            withAnimation(.easeInOut(duration: 0.18)) {
-                onSelect(option)
-            }
+            onSelect(option)
         } label: {
             label(option)
                 .font(.system(size: 13, weight: isSelected ? .semibold : .medium))
