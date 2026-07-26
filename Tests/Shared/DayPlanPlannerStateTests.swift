@@ -2211,6 +2211,52 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func structuredTimeBlockRoutineUsesAvailabilityRangeOnOccurrenceDay() throws {
+        var calendar = gregorianCalendar
+        calendar.firstWeekday = 2
+        let context = makeInMemoryContext()
+        let occurrenceDay = try #require(date("2026-07-20T12:00:00Z"))
+        let dayKey = DayPlanStorage.dayKey(for: occurrenceDay, calendar: calendar)
+        let taskID = UUID()
+        let timeRange = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 18, minute: 0),
+            end: RoutineTimeOfDay(hour: 21, minute: 0)
+        )
+        let advanced = RoutineAdvancedRecurrenceRule(
+            frequency: .weekly,
+            interval: 2,
+            startDate: try #require(date("2026-07-20T09:00:00Z")),
+            weekdays: [2, 4],
+            timesOfDay: [RoutineTimeOfDay(hour: 9, minute: 0)],
+            timeZoneIdentifier: calendar.timeZone.identifier,
+            calendar: calendar
+        )
+        let task = RoutineTask(
+            id: taskID,
+            name: "Training",
+            emoji: "✨",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .advanced(advanced, timeRange: timeRange),
+            recurrenceTimeRangeRole: .scheduledBlock,
+            scheduleAnchor: advanced.startDate
+        )
+        context.insert(task)
+        try context.save()
+        let planner = DayPlanPlannerState(selectedDate: occurrenceDay)
+
+        planner.showExactTimedTasks(
+            from: [task],
+            calendar: calendar,
+            context: context
+        )
+
+        let block = try #require(planner.weekBlocksByDayKey[dayKey]?.first)
+        #expect(block.taskID == taskID)
+        #expect(block.startMinute == 18 * 60)
+        #expect(block.durationMinutes == 180)
+    }
+
+    @Test
     func timeWindowRoutineRemovesStaleScheduledPlannerBlock() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()

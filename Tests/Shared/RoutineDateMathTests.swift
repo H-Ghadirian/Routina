@@ -781,6 +781,173 @@ struct RoutineDateMathTests {
     }
 
     @Test
+    func structuredBiweeklyWindowControlsDueActionabilityAndMissedOccurrences() throws {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        calendar.firstWeekday = 2
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 18, minute: 0),
+            end: RoutineTimeOfDay(hour: 21, minute: 0)
+        )
+        let advanced = RoutineAdvancedRecurrenceRule(
+            frequency: .weekly,
+            interval: 2,
+            startDate: makeDate("2026-07-20T18:00:00Z"),
+            weekdays: [2, 4],
+            timesOfDay: [window.start],
+            timeZoneIdentifier: "UTC",
+            calendar: calendar
+        )
+        let task = RoutineTask(
+            recurrenceRule: .advanced(advanced, timeRange: window),
+            scheduleAnchor: advanced.startDate,
+            createdAt: advanced.startDate
+        )
+
+        #expect(RoutineDateMath.usesExactTimedOccurrenceTracking(for: task))
+        #expect(
+            RoutineDateMath.dueDate(
+                for: task,
+                referenceDate: makeDate("2026-07-20T17:00:00Z"),
+                calendar: calendar
+            ) == makeDate("2026-07-20T18:00:00Z")
+        )
+        #expect(
+            !RoutineDateMath.canMarkDone(
+                for: task,
+                referenceDate: makeDate("2026-07-20T17:59:00Z"),
+                calendar: calendar
+            )
+        )
+        #expect(
+            RoutineDateMath.canMarkDone(
+                for: task,
+                referenceDate: makeDate("2026-07-20T19:00:00Z"),
+                calendar: calendar
+            )
+        )
+        #expect(
+            !RoutineDateMath.canMarkDone(
+                for: task,
+                referenceDate: makeDate("2026-07-21T19:00:00Z"),
+                calendar: calendar
+            )
+        )
+
+        let afterWindow = makeDate("2026-07-20T21:00:00Z")
+        #expect(
+            RoutineDateMath.missedExactTimedOccurrenceDates(
+                for: task,
+                referenceDate: afterWindow,
+                calendar: calendar
+            ) == [makeDate("2026-07-20T18:00:00Z")]
+        )
+        #expect(
+            RoutineDateMath.upcomingDueDate(
+                for: task,
+                referenceDate: afterWindow,
+                calendar: calendar
+            ) == makeDate("2026-07-22T18:00:00Z")
+        )
+    }
+
+    @Test
+    func structuredWindowUsesAvailabilityStartInsteadOfInternalAnchorTime() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        calendar.firstWeekday = 2
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 7, minute: 0),
+            end: RoutineTimeOfDay(hour: 10, minute: 0)
+        )
+        let advanced = RoutineAdvancedRecurrenceRule(
+            frequency: .weekly,
+            interval: 2,
+            startDate: makeDate("2026-07-20T09:00:00Z"),
+            weekdays: [2],
+            timesOfDay: [RoutineTimeOfDay(hour: 9, minute: 0)],
+            timeZoneIdentifier: "UTC",
+            calendar: calendar
+        )
+        let task = RoutineTask(
+            recurrenceRule: .advanced(advanced, timeRange: window),
+            scheduleAnchor: advanced.startDate,
+            createdAt: advanced.startDate
+        )
+
+        #expect(
+            RoutineDateMath.dueDate(
+                for: task,
+                referenceDate: advanced.startDate,
+                calendar: calendar
+            ) == makeDate("2026-07-20T07:00:00Z")
+        )
+        #expect(
+            RoutineDateMath.scheduledOccurrence(
+                for: task,
+                on: advanced.startDate,
+                calendar: calendar
+            ) == makeDate("2026-07-20T07:00:00Z")
+        )
+        #expect(
+            RoutineDateMath.canMarkDone(
+                for: task,
+                referenceDate: advanced.startDate,
+                calendar: calendar
+            )
+        )
+    }
+
+    @Test
+    func structuredOvernightWindowRemainsActionableAfterMidnight() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        calendar.firstWeekday = 2
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 22, minute: 0),
+            end: RoutineTimeOfDay(hour: 2, minute: 0)
+        )
+        let occurrence = makeDate("2026-07-20T22:00:00Z")
+        let advanced = RoutineAdvancedRecurrenceRule(
+            frequency: .weekly,
+            startDate: occurrence,
+            weekdays: [2],
+            timesOfDay: [window.start],
+            timeZoneIdentifier: "UTC",
+            calendar: calendar
+        )
+        let task = RoutineTask(
+            recurrenceRule: .advanced(advanced, timeRange: window),
+            scheduleAnchor: occurrence,
+            createdAt: occurrence
+        )
+        let afterMidnight = makeDate("2026-07-21T01:00:00Z")
+
+        #expect(
+            RoutineDateMath.canMarkDone(
+                for: task,
+                referenceDate: afterMidnight,
+                calendar: calendar
+            )
+        )
+        #expect(
+            RoutineDateMath.completionTargetDate(
+                for: task,
+                selectedDay: afterMidnight,
+                referenceDate: afterMidnight,
+                calendar: calendar
+            ) == occurrence
+        )
+        #expect(
+            RoutineDateMath.completionDisplayDay(
+                for: task,
+                completionDate: afterMidnight,
+                calendar: calendar
+            ) == calendar.startOfDay(for: occurrence)
+        )
+    }
+
+    @Test
     func intervalRoutineWithoutTimeDueTomorrowDoesNotBecomeMissed() {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current

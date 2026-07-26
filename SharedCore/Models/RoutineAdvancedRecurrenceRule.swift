@@ -193,7 +193,10 @@ struct RoutineAdvancedRecurrenceRule: Codable, Equatable, Hashable, Sendable {
         )
     }
 
-    func summary(calendar: Calendar = .current) -> String {
+    func summary(
+        calendar: Calendar = .current,
+        availabilityWindow: RoutineTimeRange? = nil
+    ) -> String {
         let normalized = normalized(calendar: calendar)
         let cadence: String
         switch normalized.frequency {
@@ -202,7 +205,11 @@ struct RoutineAdvancedRecurrenceRule: Codable, Equatable, Hashable, Sendable {
                 ? "Every \(normalized.interval) \(normalized.frequency.unitName(for: normalized.interval)) continuously"
                 : "Every \(normalized.interval) \(normalized.frequency.unitName(for: normalized.interval)) from \(normalized.dailyWindowStart.formatted(calendar: calendar)) to \(normalized.dailyWindowEnd.formatted(calendar: calendar)) each day"
         case .daily:
-            cadence = "Every \(normalized.interval) \(normalized.frequency.unitName(for: normalized.interval)) at \(Self.timeList(normalized.timesOfDay, calendar: calendar))"
+            if availabilityWindow == nil {
+                cadence = "Every \(normalized.interval) \(normalized.frequency.unitName(for: normalized.interval)) at \(Self.timeList(normalized.timesOfDay, calendar: calendar))"
+            } else {
+                cadence = "Every \(normalized.interval) \(normalized.frequency.unitName(for: normalized.interval))"
+            }
         case .weekly:
             cadence = "Every \(normalized.interval) \(normalized.frequency.unitName(for: normalized.interval)) on \(Self.weekdayList(normalized.weekdays, calendar: calendar))"
         case .monthly:
@@ -225,7 +232,10 @@ struct RoutineAdvancedRecurrenceRule: Codable, Equatable, Hashable, Sendable {
         case .afterCount:
             endText = ", for \(normalized.occurrenceCount) occurrences"
         }
-        return "\(cadence), starting \(startText)\(endText)."
+        let availabilityText = availabilityWindow.map {
+            ", available from \($0.formatted(calendar: calendar))"
+        } ?? ""
+        return "\(cadence)\(availabilityText), starting \(startText)\(endText)."
     }
 
     private static func sanitizedWeekdays(_ weekdays: [Int]) -> [Int] {

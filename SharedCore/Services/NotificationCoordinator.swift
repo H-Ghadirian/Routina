@@ -567,20 +567,25 @@ enum NotificationCoordinator {
         referenceDate: Date,
         calendar: Calendar
     ) -> [Date] {
-        guard let advanced = task.recurrenceRule.advanced else { return [] }
+        guard task.recurrenceRule.advanced != nil else { return [] }
         var dates: [Date] = []
         if let dueDate, dueDate != .distantFuture {
             dates.append(dueDate)
         }
-        let futureDates = RoutineAdvancedRecurrenceGenerator.occurrences(
-            for: advanced,
-            after: referenceDate,
-            limit: advancedOccurrenceNotificationLimit,
-            calendar: calendar
-        )
-        for date in futureDates where !dates.contains(date) {
-            dates.append(date)
-            if dates.count == advancedOccurrenceNotificationLimit { break }
+        var occurrenceThreshold: Date? = referenceDate
+        for _ in 0..<advancedOccurrenceNotificationLimit {
+            guard let date = RoutineDateMath.nextAdvancedEffectiveOccurrence(
+                for: task,
+                after: occurrenceThreshold,
+                calendar: calendar
+            ) else {
+                break
+            }
+            if !dates.contains(date) {
+                dates.append(date)
+                if dates.count == advancedOccurrenceNotificationLimit { break }
+            }
+            occurrenceThreshold = date
         }
         return dates.sorted()
     }

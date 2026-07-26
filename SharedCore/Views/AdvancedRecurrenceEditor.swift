@@ -191,7 +191,7 @@ struct UnifiedRecurrenceEditor: View {
             DatePicker(
                 "Start",
                 selection: startDateBinding,
-                displayedComponents: [.date, .hourAndMinute]
+                displayedComponents: fixedStartComponents
             )
 
             Picker("Time zone", selection: timeZoneBinding) {
@@ -216,6 +216,10 @@ struct UnifiedRecurrenceEditor: View {
         case .weekly, .monthly, .yearly:
             occurrenceTimeControls(allowsAdding: false)
         }
+    }
+
+    private var fixedStartComponents: DatePickerComponents {
+        draft.availability.usesWindow ? .date : [.date, .hourAndMinute]
     }
 
     private var hourlyControls: some View {

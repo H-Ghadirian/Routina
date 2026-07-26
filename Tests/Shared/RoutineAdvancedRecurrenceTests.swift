@@ -189,6 +189,39 @@ struct RoutineAdvancedRecurrenceTests {
     }
 
     @Test
+    func advancedRuleRoundTripsAvailabilityWindowAndRoleThroughRoutineTaskStorage() {
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 18, minute: 0),
+            end: RoutineTimeOfDay(hour: 21, minute: 0)
+        )
+        let advanced = RoutineAdvancedRecurrenceRule(
+            frequency: .monthly,
+            interval: 2,
+            startDate: makeDate("2026-07-21T18:00:00Z"),
+            monthDays: [1, 15, 31],
+            timesOfDay: [window.start],
+            timeZoneIdentifier: "UTC",
+            calendar: calendar
+        )
+        let recurrenceRule = RoutineRecurrenceRule.advanced(
+            advanced,
+            timeRange: window
+        )
+        let task = RoutineTask(
+            scheduleMode: .fixedInterval,
+            recurrenceRule: recurrenceRule,
+            recurrenceTimeRangeRole: .scheduledBlock,
+            scheduleAnchor: advanced.startDate
+        )
+
+        #expect(task.recurrenceRule == recurrenceRule)
+        #expect(task.recurrenceRule.advanced == advanced)
+        #expect(task.recurrenceRule.timeRange == window)
+        #expect(task.recurrenceTimeRangeRole == .scheduledBlock)
+        #expect(!task.recurrenceRuleStorage.isEmpty)
+    }
+
+    @Test
     func hourlyRuleAllowsTwoScheduledCompletionsOnSameDay() {
         let advanced = RoutineAdvancedRecurrenceRule(
             frequency: .hourly,

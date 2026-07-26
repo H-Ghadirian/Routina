@@ -172,7 +172,10 @@ struct TaskDetailFeature: Reducer {
             }
 
             if editRecurrenceEditorMode == .advanced {
-                return .advanced(editAdvancedRecurrenceRule)
+                return .advanced(
+                    editAdvancedRecurrenceRule,
+                    timeRange: timeRange
+                )
             }
 
             switch editRecurrenceKind {
@@ -227,14 +230,6 @@ struct TaskDetailFeature: Reducer {
                 timeRangeRole: editRecurrenceTimeRangeRole,
                 calendar: calendar
             )
-            if recurrenceRule.usesAdvancedModel,
-               !editIsAllDay,
-               let timeRange = editRecurrenceTimeRange {
-                return draft.replacingAvailability(
-                    .window(timeRange),
-                    timeRangeRole: editRecurrenceTimeRangeRole
-                )
-            }
             return draft
         }
 

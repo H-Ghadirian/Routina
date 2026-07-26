@@ -2,9 +2,18 @@ import Foundation
 
 enum RoutineDateMath {
     static func usesExactTimedOccurrenceTracking(for task: RoutineTask) -> Bool {
-        task.usesEffectiveRoutineCadence
-            && !task.recurrenceRule.usesAdvancedModel
-            && task.recurrenceRule.usesTimeConstraint
+        let recurrenceRule = task.recurrenceRule
+        let supportsOccurrenceTracking: Bool
+        if let advanced = recurrenceRule.advanced {
+            supportsOccurrenceTracking = recurrenceRule.timeRange != nil
+                && advanced.frequency != .hourly
+                && !advanced.occursMoreThanOncePerDay
+        } else {
+            supportsOccurrenceTracking = true
+        }
+        return task.usesEffectiveRoutineCadence
+            && supportsOccurrenceTracking
+            && recurrenceRule.usesTimeConstraint
             && !task.isChecklistDriven
     }
 
@@ -59,9 +68,10 @@ enum RoutineDateMath {
         }
 
         if let advanced = task.recurrenceRule.advanced {
-            return RoutineAdvancedRecurrenceGenerator.nextOccurrence(
+            return nextAdvancedEffectiveOccurrence(
                 for: advanced,
                 after: task.lastDone,
+                timeRange: task.recurrenceRule.timeRange,
                 calendar: calendar
             ) ?? .distantFuture
         }
@@ -173,9 +183,6 @@ enum RoutineDateMath {
         guard task.usesEffectiveRoutineCadence else {
             return .distantFuture
         }
-        if task.recurrenceRule.usesAdvancedModel {
-            return dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
-        }
         if usesExactTimedOccurrenceTracking(for: task) {
             var candidate = dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
             for _ in 0..<10_000 {
@@ -192,6 +199,9 @@ enum RoutineDateMath {
                 candidate = nextCandidate
             }
             return candidate
+        }
+        if task.recurrenceRule.usesAdvancedModel {
+            return dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
         }
         return dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
     }
@@ -256,10 +266,21 @@ enum RoutineDateMath {
         }
 
         if task.recurrenceRule.usesAdvancedModel {
+            if usesExactTimedOccurrenceTracking(for: task),
+               task.recurrenceRule.timeRange != nil {
+                return activeScheduledWindowOccurrence(
+                    for: task,
+                    referenceDate: referenceDate,
+                    calendar: calendar
+                ) != nil
+            }
             let due = dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
             guard due != .distantFuture, due <= referenceDate else { return false }
             if let timeRange = task.recurrenceRule.timeRange {
-                return timeRange.contains(referenceDate, calendar: calendar)
+                return timeRange.contains(
+                    referenceDate,
+                    calendar: advancedCalendar(for: task.recurrenceRule.advanced, input: calendar)
+                )
             }
             return true
         }
@@ -523,6 +544,19 @@ enum RoutineDateMath {
         calendar: Calendar
     ) -> Date {
         let base = task.scheduleAnchor ?? task.createdAt ?? task.lastDone ?? referenceDate
+        if let advanced = task.recurrenceRule.advanced {
+            return nextAdvancedEffectiveOccurrence(
+                for: advanced,
+                after: historicalAdvancedSearchThreshold(
+                    from: base,
+                    advanced: advanced,
+                    timeRange: task.recurrenceRule.timeRange,
+                    calendar: calendar
+                ),
+                timeRange: task.recurrenceRule.timeRange,
+                calendar: calendar
+            ) ?? .distantFuture
+        }
         let timeOfDay = scheduledTimeOfDay(for: task.recurrenceRule) ?? RoutineTimeOfDay(hour: 0, minute: 0)
 
         switch task.recurrenceRule.kind {
@@ -624,7 +658,11 @@ enum RoutineDateMath {
         calendar: Calendar
     ) -> Bool {
         if let timeRange = task.recurrenceRule.timeRange {
-            let windowEnd = timeRange.endDate(on: occurrence, calendar: calendar)
+            let occurrenceCalendar = advancedCalendar(
+                for: task.recurrenceRule.advanced,
+                input: calendar
+            )
+            let windowEnd = timeRange.endDate(on: occurrence, calendar: occurrenceCalendar)
             return referenceDate >= windowEnd
         }
         return calendar.startOfDay(for: occurrence) < calendar.startOfDay(for: referenceDate)
@@ -635,6 +673,15 @@ enum RoutineDateMath {
         for task: RoutineTask,
         calendar: Calendar
     ) -> Date {
+        if let advanced = task.recurrenceRule.advanced {
+            return nextAdvancedEffectiveOccurrence(
+                for: advanced,
+                after: occurrence,
+                timeRange: task.recurrenceRule.timeRange,
+                calendar: calendar
+            ) ?? occurrence
+        }
+
         switch task.recurrenceRule.kind {
         case .dailyTime:
             return nextDailyOccurrence(
@@ -689,7 +736,13 @@ enum RoutineDateMath {
             ), calendar.isDate(occurrence, inSameDayAs: startOfDay) else {
                 return nil
             }
-            return occurrence
+            let effectiveOccurrence = availabilityAdjustedAdvancedOccurrence(
+                occurrence,
+                advanced: advanced,
+                timeRange: task.recurrenceRule.timeRange,
+                calendar: calendar
+            )
+            return effectiveOccurrence
         }
 
         guard usesExactTimedOccurrenceTracking(for: task) else { return nil }
@@ -729,6 +782,24 @@ enum RoutineDateMath {
         referenceDate: Date,
         calendar: Calendar = .current
     ) -> Date? {
+        if usesExactTimedOccurrenceTracking(for: task) {
+            let normalizedSelectedDay = calendar.startOfDay(for: selectedDay)
+            if calendar.isDate(normalizedSelectedDay, inSameDayAs: referenceDate) {
+                if let activeOccurrence = activeScheduledWindowOccurrence(
+                    for: task,
+                    referenceDate: referenceDate,
+                    calendar: calendar
+                ) {
+                    return activeOccurrence
+                }
+                let due = dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
+                guard calendar.isDate(due, inSameDayAs: referenceDate) else { return nil }
+                return due <= referenceDate ? due : nil
+            }
+
+            return scheduledOccurrence(for: task, on: normalizedSelectedDay, calendar: calendar)
+        }
+
         if task.recurrenceRule.usesAdvancedModel {
             let due = dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
             guard due != .distantFuture, due <= referenceDate else {
@@ -740,16 +811,7 @@ enum RoutineDateMath {
             return calendar.isDate(due, inSameDayAs: selectedDay) ? due : nil
         }
 
-        guard usesExactTimedOccurrenceTracking(for: task) else { return nil }
-
-        let normalizedSelectedDay = calendar.startOfDay(for: selectedDay)
-        if calendar.isDate(normalizedSelectedDay, inSameDayAs: referenceDate) {
-            let due = dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
-            guard calendar.isDate(due, inSameDayAs: referenceDate) else { return nil }
-            return due <= referenceDate ? due : nil
-        }
-
-        return scheduledOccurrence(for: task, on: normalizedSelectedDay, calendar: calendar)
+        return nil
     }
 
     static func completionDisplayDay(
@@ -762,7 +824,8 @@ enum RoutineDateMath {
             return completionDay
         }
 
-        if task.recurrenceRule.kind == .intervalDays {
+        if task.recurrenceRule.advanced == nil,
+           task.recurrenceRule.kind == .intervalDays {
             return intervalCompletionDisplayDay(
                 for: task,
                 completionDate: completionDate,
@@ -822,6 +885,133 @@ enum RoutineDateMath {
         return completionDay
     }
 
+    private static func activeScheduledWindowOccurrence(
+        for task: RoutineTask,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> Date? {
+        guard let timeRange = task.recurrenceRule.timeRange else { return nil }
+        let occurrenceCalendar = advancedCalendar(
+            for: task.recurrenceRule.advanced,
+            input: calendar
+        )
+        let referenceDay = occurrenceCalendar.startOfDay(for: referenceDate)
+        var candidateDays = [referenceDay]
+        if timeRange.isOvernight,
+           let previousDay = occurrenceCalendar.date(byAdding: .day, value: -1, to: referenceDay) {
+            candidateDays.append(previousDay)
+        }
+
+        for candidateDay in candidateDays {
+            guard let occurrence = scheduledOccurrence(
+                for: task,
+                on: candidateDay,
+                calendar: occurrenceCalendar
+            ) else {
+                continue
+            }
+            let windowEnd = timeRange.endDate(on: occurrence, calendar: occurrenceCalendar)
+            if referenceDate >= occurrence, referenceDate < windowEnd {
+                return occurrence
+            }
+        }
+        return nil
+    }
+
+    private static func nextAdvancedEffectiveOccurrence(
+        for advanced: RoutineAdvancedRecurrenceRule,
+        after threshold: Date?,
+        timeRange: RoutineTimeRange?,
+        calendar: Calendar
+    ) -> Date? {
+        let effectiveThreshold = threshold ?? historicalAdvancedSearchThreshold(
+            from: advanced.startDate,
+            advanced: advanced,
+            timeRange: timeRange,
+            calendar: calendar
+        )
+        var generatorThreshold = threshold
+
+        for _ in 0..<100_000 {
+            guard let generated = RoutineAdvancedRecurrenceGenerator.nextOccurrence(
+                for: advanced,
+                after: generatorThreshold,
+                calendar: calendar
+            ) else {
+                return nil
+            }
+            let effective = availabilityAdjustedAdvancedOccurrence(
+                generated,
+                advanced: advanced,
+                timeRange: timeRange,
+                calendar: calendar
+            )
+            if effective > effectiveThreshold {
+                return effective
+            }
+            generatorThreshold = generated
+        }
+        return nil
+    }
+
+    private static func availabilityAdjustedAdvancedOccurrence(
+        _ occurrence: Date,
+        advanced: RoutineAdvancedRecurrenceRule,
+        timeRange: RoutineTimeRange?,
+        calendar: Calendar
+    ) -> Date {
+        guard let timeRange else { return occurrence }
+        return timeRange.startDate(
+            on: occurrence,
+            calendar: advancedCalendar(for: advanced, input: calendar)
+        )
+    }
+
+    static func nextAdvancedEffectiveOccurrence(
+        for task: RoutineTask,
+        after threshold: Date?,
+        calendar: Calendar = .current
+    ) -> Date? {
+        guard let advanced = task.recurrenceRule.advanced else { return nil }
+        return nextAdvancedEffectiveOccurrence(
+            for: advanced,
+            after: threshold,
+            timeRange: task.recurrenceRule.timeRange,
+            calendar: calendar
+        )
+    }
+
+    private static func historicalAdvancedSearchThreshold(
+        from date: Date,
+        advanced: RoutineAdvancedRecurrenceRule,
+        timeRange: RoutineTimeRange?,
+        calendar: Calendar
+    ) -> Date {
+        guard let timeRange else {
+            return date.addingTimeInterval(-0.001)
+        }
+        let occurrenceCalendar = advancedCalendar(for: advanced, input: calendar)
+        if !timeRange.isOvernight,
+           date >= timeRange.endDate(on: date, calendar: occurrenceCalendar) {
+            return date
+        }
+        return occurrenceCalendar.startOfDay(for: date).addingTimeInterval(-0.001)
+    }
+
+    private static func advancedCalendar(
+        for advanced: RoutineAdvancedRecurrenceRule?,
+        input calendar: Calendar
+    ) -> Calendar {
+        guard let advanced,
+              let timeZone = TimeZone(identifier: advanced.timeZoneIdentifier)
+        else {
+            return calendar
+        }
+        var resolved = calendar
+        resolved.timeZone = timeZone
+        return resolved
+    }
+
     static func softIntervalThresholdDate(
         for task: RoutineTask,
         calendar: Calendar = .current
@@ -829,9 +1019,10 @@ enum RoutineDateMath {
         guard task.surfacesSoftIntervalNudges else { return nil }
         guard let lastDone = task.lastDone else { return nil }
         if let advanced = task.recurrenceRule.advanced {
-            return RoutineAdvancedRecurrenceGenerator.nextOccurrence(
+            return nextAdvancedEffectiveOccurrence(
                 for: advanced,
                 after: lastDone,
+                timeRange: task.recurrenceRule.timeRange,
                 calendar: calendar
             )
         }

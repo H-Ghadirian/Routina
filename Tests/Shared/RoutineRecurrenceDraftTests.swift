@@ -128,6 +128,34 @@ struct RoutineRecurrenceDraftTests {
     }
 
     @Test
+    func structuredWindowRoundTripsRecurrenceAvailabilityAndRole() throws {
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 18, minute: 0),
+            end: RoutineTimeOfDay(hour: 21, minute: 0)
+        )
+        let advanced = RoutineAdvancedRecurrenceRule(
+            frequency: .monthly,
+            interval: 2,
+            startDate: makeDate("2026-07-21T18:00:00Z"),
+            monthDays: [1, 15, 31],
+            timesOfDay: [window.start],
+            timeZoneIdentifier: "UTC",
+            calendar: calendar
+        )
+        let original = RoutineRecurrenceRule.advanced(advanced, timeRange: window)
+        let draft = RoutineRecurrenceDraft(
+            recurrenceRule: original,
+            timeRangeRole: .scheduledBlock,
+            calendar: calendar
+        )
+
+        #expect(draft.validationIssue == nil)
+        #expect(draft.availability == .window(window))
+        #expect(draft.timeRangeRole == .scheduledBlock)
+        #expect(try #require(draft.resolvedRecurrenceRule(calendar: calendar)) == original)
+    }
+
+    @Test
     func cadenceFreeAndItemRunoutDraftsKeepCompatibilityRulesExplicit() throws {
         let compatibilityRule = RoutineRecurrenceRule.interval(days: 21)
         let window = RoutineTimeRange(
@@ -159,7 +187,11 @@ struct RoutineRecurrenceDraftTests {
     }
 
     @Test
-    func unsupportedCombinationsAreRejectedInsteadOfLosingData() {
+    func fixedAvailabilityWindowResolvesWithoutLosingStructuredRecurrence() throws {
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 7, minute: 0),
+            end: RoutineTimeOfDay(hour: 10, minute: 0)
+        )
         var draft = RoutineRecurrenceDraft(
             cadence: .scheduled,
             frequency: .weekly,
@@ -172,15 +204,47 @@ struct RoutineRecurrenceDraftTests {
 
         draft.startDate = makeDate("2026-07-21T09:00:00Z")
         draft.timeZoneIdentifier = "UTC"
-        draft.availability = .window(
-            RoutineTimeRange(
-                start: RoutineTimeOfDay(hour: 7, minute: 0),
-                end: RoutineTimeOfDay(hour: 10, minute: 0)
-            )
+        draft.availability = .window(window)
+
+        let rule = try #require(draft.resolvedRecurrenceRule(calendar: calendar))
+        #expect(draft.validationIssue == nil)
+        #expect(rule.advanced?.frequency == .weekly)
+        #expect(rule.advanced?.interval == 2)
+        #expect(rule.advanced?.weekdays == [2, 4])
+        #expect(rule.timeRange == window)
+    }
+
+    @Test
+    func subdailyStructuredSchedulesRejectAmbiguousOuterWindow() {
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 7, minute: 0),
+            end: RoutineTimeOfDay(hour: 10, minute: 0)
+        )
+        let start = makeDate("2026-07-21T09:00:00Z")
+        let hourly = RoutineRecurrenceDraft(
+            cadence: .scheduled,
+            frequency: .hourly,
+            interval: 2,
+            availability: .window(window),
+            startDate: start,
+            timeZoneIdentifier: "UTC"
+        )
+        let multipleTimes = RoutineRecurrenceDraft(
+            cadence: .scheduled,
+            frequency: .daily,
+            availability: .window(window),
+            startDate: start,
+            occurrenceTimes: [
+                RoutineTimeOfDay(hour: 8, minute: 0),
+                RoutineTimeOfDay(hour: 20, minute: 0)
+            ],
+            timeZoneIdentifier: "UTC"
         )
 
-        #expect(draft.validationIssue == .structuredAvailabilityUnsupported)
-        #expect(draft.resolvedRecurrenceRule(calendar: calendar) == nil)
+        #expect(hourly.validationIssue == .hourlyAvailabilityWindowUnsupported)
+        #expect(hourly.resolvedRecurrenceRule(calendar: calendar) == nil)
+        #expect(multipleTimes.validationIssue == .multipleDailyTimesAvailabilityWindowUnsupported)
+        #expect(multipleTimes.resolvedRecurrenceRule(calendar: calendar) == nil)
     }
 
     @Test
@@ -290,7 +354,11 @@ struct RoutineRecurrenceDraftTests {
     }
 
     @Test
-    func formDraftSurfacesUnsupportedStructuredAvailabilityInsteadOfDroppingIt() {
+    func formDraftCombinesStructuredRecurrenceWithAvailabilityWindow() throws {
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 7, minute: 0),
+            end: RoutineTimeOfDay(hour: 10, minute: 0)
+        )
         let state = AddRoutineFeature.State(
             basics: AddRoutineBasicsState(
                 routineName: "Advanced training",
@@ -314,8 +382,14 @@ struct RoutineRecurrenceDraftTests {
             )
         )
 
-        #expect(state.candidateRecurrenceDraft.validationIssue == .structuredAvailabilityUnsupported)
-        #expect(state.candidateRecurrenceDraft.resolvedRecurrenceRule(calendar: calendar) == nil)
+        let draft = state.candidateRecurrenceDraft
+        let rule = try #require(draft.resolvedRecurrenceRule(calendar: calendar))
+        #expect(draft.validationIssue == nil)
+        #expect(rule.advanced?.frequency == .weekly)
+        #expect(rule.advanced?.interval == 2)
+        #expect(rule.advanced?.weekdays == [2, 4])
+        #expect(rule.advanced == state.schedule.advancedRecurrenceRule)
+        #expect(rule.timeRange == window)
     }
 
     @Test
@@ -377,7 +451,7 @@ struct RoutineRecurrenceDraftTests {
     }
 
     @Test
-    func composerKeepsWindowVisibleWhenEveryNCombinationIsUnsupported() {
+    func composerKeepsWindowWhenSwitchingToEveryNFixedSchedule() throws {
         let now = makeDate("2026-07-21T09:00:00Z")
         let window = RoutineTimeRange(
             start: RoutineTimeOfDay(hour: 7, minute: 0),
@@ -393,9 +467,13 @@ struct RoutineRecurrenceDraftTests {
         let updated = draft.settingInterval(2, now: now, calendar: calendar)
 
         #expect(updated.availability == .window(window))
-        #expect(updated.startDate == now)
-        #expect(updated.validationIssue == .structuredAvailabilityUnsupported)
-        #expect(updated.resolvedRecurrenceRule(calendar: calendar) == nil)
+        #expect(updated.startDate == makeDate("2026-07-21T07:00:00Z"))
+        #expect(updated.validationIssue == nil)
+        #expect(updated.occurrenceTimes == [window.start])
+        let rule = try #require(updated.resolvedRecurrenceRule(calendar: calendar))
+        #expect(rule.advanced?.interval == 2)
+        #expect(rule.advanced?.weekdays == [2, 4])
+        #expect(rule.timeRange == window)
     }
 
     @Test

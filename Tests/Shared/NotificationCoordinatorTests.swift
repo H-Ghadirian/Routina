@@ -239,6 +239,47 @@ struct NotificationCoordinatorTests {
     }
 
     @Test
+    func notificationPayload_usesAvailabilityStartForStructuredOccurrences() {
+        var calendar = makeTestCalendar()
+        calendar.firstWeekday = 2
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 18, minute: 0),
+            end: RoutineTimeOfDay(hour: 21, minute: 0)
+        )
+        let advanced = RoutineAdvancedRecurrenceRule(
+            frequency: .weekly,
+            interval: 2,
+            startDate: makeDate("2026-07-20T09:00:00Z"),
+            weekdays: [2, 4],
+            timesOfDay: [RoutineTimeOfDay(hour: 9, minute: 0)],
+            timeZoneIdentifier: calendar.timeZone.identifier,
+            calendar: calendar
+        )
+        let task = RoutineTask(
+            name: "Training",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .advanced(advanced, timeRange: window),
+            scheduleAnchor: advanced.startDate,
+            createdAt: advanced.startDate
+        )
+
+        let payload = NotificationCoordinator.notificationPayload(
+            for: task,
+            referenceDate: makeDate("2026-07-20T08:00:00Z"),
+            calendar: calendar
+        )
+
+        #expect(payload.triggerDate == makeDate("2026-07-20T18:00:00Z"))
+        #expect(payload.dueDate == makeDate("2026-07-20T18:00:00Z"))
+        #expect(payload.recurrenceOccurrenceDates.prefix(4) == [
+            makeDate("2026-07-20T18:00:00Z"),
+            makeDate("2026-07-22T18:00:00Z"),
+            makeDate("2026-08-03T18:00:00Z"),
+            makeDate("2026-08-05T18:00:00Z")
+        ])
+    }
+
+    @Test
     func notificationPayload_forMissedExactTimeRoutineUsesNextOccurrence() {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!

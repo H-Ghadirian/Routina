@@ -144,6 +144,30 @@ Given a yearly schedule uses several months and several dates
 When the user creates or edits it on iOS or macOS
 Then every stored month and date remains visibly selected and save preserves their cross-product
 
+### Fixed Recurrence Composes With Time Availability
+
+Area: Tasks
+Decision links: [0178](../decisions/0178-make-recurrence-availability-independent.md), [0375](../decisions/0375-split-time-blocks-from-available-windows.md), [0432](../decisions/0432-compose-fixed-recurrence-with-availability-windows.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/RoutineRecurrenceDraftTests.swift`
+- `Tests/Shared/RoutineDateMathTests.swift`
+- `Tests/Shared/NotificationCoordinatorTests.swift`
+- `Tests/Shared/DayPlanPlannerStateTests.swift`
+- `Tests/Shared/RoutineAdvancedRecurrenceTests.swift`
+- `Tests/Shared/CloudKitDirectPullRecurrenceTests.swift`
+
+Given a fixed date-based recurrence repeats every two weeks on Monday and Wednesday
+And its time availability is 18:00 through 21:00
+When an occurrence date arrives
+Then it becomes actionable at 18:00, closes and becomes missed at 21:00, and the next valid recurrence date keeps the same range
+And reminders and Planner time blocks use the same effective start and end
+And persistence keeps the complete structured recurrence, range, and range role
+
+Given an hourly or multiple-times-per-day recurrence has one outer availability range
+When the user tries to save it
+Then the form preserves both modules and explains the specific unsupported conflict instead of dropping data
+
 Given a cadence-free one-time task uses an exact time or time window
 When its unified recurrence draft is saved
 Then the one-day compatibility rule preserves that time availability

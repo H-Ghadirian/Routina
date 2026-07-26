@@ -198,7 +198,10 @@ struct AddRoutineFeatureState: Equatable {
         }
 
         if schedule.recurrenceEditorMode == .advanced {
-            return .advanced(schedule.advancedRecurrenceRule)
+            return .advanced(
+                schedule.advancedRecurrenceRule,
+                timeRange: timeRange
+            )
         }
 
         switch schedule.recurrenceKind {
@@ -253,14 +256,6 @@ struct AddRoutineFeatureState: Equatable {
             timeRangeRole: schedule.recurrenceTimeRangeRole,
             calendar: calendar
         )
-        if recurrenceRule.usesAdvancedModel,
-           !basics.isAllDay,
-           let timeRange = schedule.recurrenceTimeRange {
-            return draft.replacingAvailability(
-                .window(timeRange),
-                timeRangeRole: schedule.recurrenceTimeRangeRole
-            )
-        }
         return draft
     }
 

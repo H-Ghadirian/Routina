@@ -138,9 +138,17 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
     }
 
     static func advanced(_ advancedRule: RoutineAdvancedRecurrenceRule) -> RoutineRecurrenceRule {
+        advanced(advancedRule, timeRange: nil)
+    }
+
+    static func advanced(
+        _ advancedRule: RoutineAdvancedRecurrenceRule,
+        timeRange: RoutineTimeRange?
+    ) -> RoutineRecurrenceRule {
         let normalized = advancedRule.normalized()
-        let timeOfDay = normalized.timesOfDay.first
-            ?? RoutineTimeOfDay.from(normalized.startDate)
+        let timeOfDay = timeRange == nil
+            ? normalized.timesOfDay.first ?? RoutineTimeOfDay.from(normalized.startDate)
+            : nil
 
         switch normalized.frequency {
         case .hourly, .daily:
@@ -148,12 +156,14 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
                 kind: .intervalDays,
                 interval: max(normalized.approximateIntervalDays, 1),
                 timeOfDay: timeOfDay,
+                timeRange: timeRange,
                 advanced: normalized
             )
         case .weekly:
             return RoutineRecurrenceRule(
                 kind: .weekly,
                 timeOfDay: timeOfDay,
+                timeRange: timeRange,
                 weekdays: normalized.weekdays,
                 advanced: normalized
             )
@@ -161,6 +171,7 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
             return RoutineRecurrenceRule(
                 kind: .monthlyDay,
                 timeOfDay: timeOfDay,
+                timeRange: timeRange,
                 daysOfMonth: normalized.monthDays,
                 advanced: normalized
             )
@@ -288,7 +299,10 @@ struct RoutineRecurrenceRule: Codable, Equatable, Hashable, Sendable {
 
     func displayText(calendar: Calendar = .current) -> String {
         if let advanced {
-            return advanced.summary(calendar: calendar)
+            return advanced.summary(
+                calendar: calendar,
+                availabilityWindow: timeRange
+            )
         }
         switch kind {
         case .intervalDays:

@@ -18,7 +18,8 @@ struct RoutineRecurrenceDraft: Equatable, Sendable {
         case unsupportedAfterCompletionFrequency
         case fixedStartRequired
         case timeZoneRequired
-        case structuredAvailabilityUnsupported
+        case hourlyAvailabilityWindowUnsupported
+        case multipleDailyTimesAvailabilityWindowUnsupported
 
         var message: String {
             switch self {
@@ -28,8 +29,10 @@ struct RoutineRecurrenceDraft: Equatable, Sendable {
                 return "Choose a start date for this fixed recurrence."
             case .timeZoneRequired:
                 return "Choose a time zone for this fixed recurrence."
-            case .structuredAvailabilityUnsupported:
-                return "Fixed recurrence cannot currently be combined with a separate exact time or availability window."
+            case .hourlyAvailabilityWindowUnsupported:
+                return "Hourly recurrence already controls times within each day, so it cannot use a separate availability window."
+            case .multipleDailyTimesAvailabilityWindowUnsupported:
+                return "A single availability window cannot represent multiple occurrences on the same day."
             }
         }
     }
@@ -218,8 +221,13 @@ struct RoutineRecurrenceDraft: Equatable, Sendable {
             guard timeZoneIdentifier != nil else {
                 return .timeZoneRequired
             }
-            guard availability == .anyTime else {
-                return .structuredAvailabilityUnsupported
+            if case .window = availability {
+                if frequency == .hourly {
+                    return .hourlyAvailabilityWindowUnsupported
+                }
+                if occurrenceTimes.count > 1 {
+                    return .multipleDailyTimesAvailabilityWindowUnsupported
+                }
             }
             return nil
         }
@@ -255,6 +263,18 @@ struct RoutineRecurrenceDraft: Equatable, Sendable {
                   let timeZoneIdentifier
             else { return nil }
 
+            let resolvedOccurrenceTimes: [RoutineTimeOfDay]
+            switch availability {
+            case .anyTime:
+                resolvedOccurrenceTimes = occurrenceTimes
+            case let .at(timeOfDay):
+                resolvedOccurrenceTimes = [timeOfDay]
+            case let .window(timeRange):
+                resolvedOccurrenceTimes = occurrenceTimes.isEmpty
+                    ? [timeRange.start]
+                    : occurrenceTimes
+            }
+
             let advanced = RoutineAdvancedRecurrenceRule(
                 version: structuredVersion,
                 frequency: frequency,
@@ -266,7 +286,7 @@ struct RoutineRecurrenceDraft: Equatable, Sendable {
                 weekdayOrdinal: weekdayOrdinal,
                 ordinalWeekday: ordinalWeekday,
                 monthsOfYear: monthsOfYear,
-                timesOfDay: occurrenceTimes,
+                timesOfDay: resolvedOccurrenceTimes,
                 hourlyMode: hourlyMode,
                 dailyWindowStart: dailyWindowStart,
                 dailyWindowEnd: dailyWindowEnd,
@@ -276,18 +296,8 @@ struct RoutineRecurrenceDraft: Equatable, Sendable {
                 timeZoneIdentifier: timeZoneIdentifier,
                 calendar: calendar
             )
-            return .advanced(advanced)
+            return .advanced(advanced, timeRange: availability.timeRange)
         }
-    }
-
-    func replacingAvailability(
-        _ availability: Availability,
-        timeRangeRole: RoutineTimeRangeRole
-    ) -> Self {
-        var updated = self
-        updated.availability = availability
-        updated.timeRangeRole = availability.usesWindow ? timeRangeRole : .availability
-        return updated
     }
 
     func replacingCadence(_ cadence: Cadence) -> Self {
@@ -329,6 +339,9 @@ struct RoutineRecurrenceDraft: Equatable, Sendable {
 
         if case .anyTime = availability {
             return true
+        }
+        if case .window = availability {
+            return occurrenceTimes.count <= 1
         }
         return occurrenceTimes.isEmpty
     }
@@ -484,6 +497,10 @@ struct RoutineRecurrenceDraft: Equatable, Sendable {
         if case let .at(timeOfDay) = availability {
             occurrenceTimes = [timeOfDay]
             availability = .anyTime
+        } else if case let .window(timeRange) = availability,
+                  frequency != .hourly {
+            startDate = timeRange.start.date(on: resolvedStart, calendar: calendar)
+            occurrenceTimes = [timeRange.start]
         } else if frequency != .hourly, occurrenceTimes.isEmpty {
             occurrenceTimes = [RoutineTimeOfDay.from(resolvedStart, calendar: calendar)]
         }

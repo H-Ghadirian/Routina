@@ -106,6 +106,65 @@ struct CloudKitDirectPullRecurrenceTests {
     }
 
     @Test
+    func cloudKitMerge_preservesStructuredRecurrenceAvailabilityWindowAndRole() throws {
+        let context = makeInMemoryContext()
+        let taskID = UUID()
+        let calendar = makeTestCalendar()
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 18, minute: 0),
+            end: RoutineTimeOfDay(hour: 21, minute: 0)
+        )
+        let advanced = RoutineAdvancedRecurrenceRule(
+            frequency: .weekly,
+            interval: 2,
+            startDate: makeDate("2026-07-20T09:00:00Z"),
+            weekdays: [2, 4],
+            timesOfDay: [RoutineTimeOfDay(hour: 9, minute: 0)],
+            timeZoneIdentifier: "UTC",
+            calendar: calendar
+        )
+        let recurrenceRule = RoutineRecurrenceRule.advanced(
+            advanced,
+            timeRange: window
+        )
+        let remoteTask = CKRecord(
+            recordType: "RoutineTask",
+            recordID: CKRecord.ID(recordName: taskID.uuidString)
+        )
+        remoteTask["name"] = "Training" as CKRecordValue
+        remoteTask["interval"] = NSNumber(value: recurrenceRule.approximateIntervalDays)
+        remoteTask["scheduleModeRawValue"] = RoutineScheduleMode.fixedInterval.rawValue as CKRecordValue
+        remoteTask["recurrenceStorageVersion"] = NSNumber(value: 1)
+        remoteTask["recurrenceKindRawValue"] = recurrenceRule.kind.rawValue as CKRecordValue
+        remoteTask["recurrenceTimeRangeStartHour"] = NSNumber(value: window.start.hour)
+        remoteTask["recurrenceTimeRangeStartMinute"] = NSNumber(value: window.start.minute)
+        remoteTask["recurrenceTimeRangeEndHour"] = NSNumber(value: window.end.hour)
+        remoteTask["recurrenceTimeRangeEndMinute"] = NSNumber(value: window.end.minute)
+        remoteTask["recurrenceTimeRangeRoleRawValue"] = RoutineTimeRangeRole.scheduledBlock.rawValue as CKRecordValue
+        remoteTask["recurrenceRuleStorage"] = RoutineRecurrenceRuleStorage.serialize(recurrenceRule) as CKRecordValue
+
+        try CloudKitDirectPullService.mergeForTesting(
+            .init(changedRecords: [remoteTask], deletedRecordIDs: []),
+            into: context
+        )
+
+        let task = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate { task in
+                        task.id == taskID
+                    }
+                )
+            ).first
+        )
+        #expect(task.recurrenceRule == recurrenceRule)
+        #expect(task.recurrenceRule.advanced == advanced.normalized(calendar: calendar))
+        #expect(task.recurrenceRule.timeRange == window)
+        #expect(task.recurrenceTimeRangeRole == .scheduledBlock)
+        #expect(!task.recurrenceRuleStorage.isEmpty)
+    }
+
+    @Test
     func cloudKitMerge_prefersStructuredMonthlyOrdinalRecurrenceOverCompatibilityColumns() throws {
         let context = makeInMemoryContext()
         let taskID = UUID()

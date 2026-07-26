@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0432](0432-compose-fixed-recurrence-with-availability-windows.md) lifts the temporary structured-window restriction from [0430](0430-unify-recurrence-editing-behind-lossless-draft.md) and [0431](0431-present-one-progressive-recurrence-composer.md):** fixed date-based structured recurrence may compose with one availability window or time block; recurrence chooses occurrence dates, the range supplies effective start/end boundaries, and hourly or multiple-times-per-day combinations remain explicitly invalid until occurrence identity is finer than a calendar day.
+
 - **[0431](0431-present-one-progressive-recurrence-composer.md) completes the visible rollout from [0430](0430-unify-recurrence-editing-behind-lossless-draft.md) and refines [0412](0412-add-advanced-recurrence-beside-simple.md):** iOS and macOS Add/Edit forms use one progressive composer for No schedule, After done, On schedule, and eligible Item runout behavior; fixed start, time zone, occurrence, hourly-window, and end fields live under More schedule options, while compact and structured recurrence remain internal compatibility strategies.
 
 - **[0430](0430-unify-recurrence-editing-behind-lossless-draft.md) refines [0177](0177-separate-interval-and-calendar-repeat-controls.md), [0178](0178-make-recurrence-availability-independent.md), [0412](0412-add-advanced-recurrence-beside-simple.md), and [0421](0421-support-cadence-free-repeating-routines.md) for one progressive recurrence composer:** Recurrence form state converges on a lossless draft covering cadence-free, item-runout, after-completion, and fixed schedules while compact and Advanced persistence remain internal compatibility strategies; unsupported combinations validate instead of dropping fields. [0431](0431-present-one-progressive-recurrence-composer.md) removes the visible Simple / Advanced selector after editor parity.
@@ -344,6 +346,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0432](0432-compose-fixed-recurrence-with-availability-windows.md) | Compose Fixed Recurrence With Availability Windows | Accepted | 2026-07-26 |
 | [0431](0431-present-one-progressive-recurrence-composer.md) | Present One Progressive Recurrence Composer | Accepted | 2026-07-26 |
 | [0430](0430-unify-recurrence-editing-behind-lossless-draft.md) | Unify Recurrence Editing Behind a Lossless Draft | Accepted | 2026-07-26 |
 | [0429](0429-keep-task-list-visible-beside-mac-task-forms.md) | Keep Task List Visible Beside Mac Task Forms | Accepted | 2026-07-26 |
