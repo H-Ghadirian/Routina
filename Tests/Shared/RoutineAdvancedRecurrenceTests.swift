@@ -96,6 +96,32 @@ struct RoutineAdvancedRecurrenceTests {
     }
 
     @Test
+    func multipleMonthlyDatesStayDistinctAndAdaptiveFallbacksDoNotDuplicate() {
+        let rule = RoutineAdvancedRecurrenceRule(
+            frequency: .monthly,
+            startDate: makeDate("2026-01-29T09:00:00Z"),
+            monthDays: [29, 30, 31],
+            timeZoneIdentifier: "UTC",
+            calendar: calendar
+        )
+
+        let occurrences = RoutineAdvancedRecurrenceGenerator.occurrences(
+            for: rule,
+            after: nil,
+            limit: 5,
+            calendar: calendar
+        )
+
+        #expect(occurrences == [
+            makeDate("2026-01-29T09:00:00Z"),
+            makeDate("2026-01-30T09:00:00Z"),
+            makeDate("2026-01-31T09:00:00Z"),
+            makeDate("2026-02-28T09:00:00Z"),
+            makeDate("2026-03-29T09:00:00Z")
+        ])
+    }
+
+    @Test
     func everySixHoursInDailyWindowResetsEachDay() {
         let rule = RoutineAdvancedRecurrenceRule(
             frequency: .hourly,

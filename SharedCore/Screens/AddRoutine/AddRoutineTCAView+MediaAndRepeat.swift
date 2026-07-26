@@ -32,8 +32,6 @@ extension AddRoutineTCAView {
             frequency: frequencyBinding,
             frequencyValue: frequencyValueBinding,
             recurrenceTime: recurrenceTimeBinding,
-            recurrenceWeekday: recurrenceWeekdayBinding,
-            recurrenceDayOfMonth: recurrenceDayOfMonthBinding,
             recurrenceWeekdays: recurrenceWeekdaysBinding,
             recurrenceDaysOfMonth: recurrenceDaysOfMonthBinding,
             recurrencePatternDescription: formPresentation.recurrencePatternDescription(includesOptionalExactTimeDetail: false),

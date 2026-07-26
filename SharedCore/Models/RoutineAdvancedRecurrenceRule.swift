@@ -499,7 +499,7 @@ enum RoutineAdvancedRecurrenceGenerator {
 
         for periodIndex in 0..<maximumGeneratedOccurrences where results.count < limit {
             let year = startYear + periodIndex * rule.interval
-            let periodCandidates = rule.monthsOfYear.flatMap { month -> [Date] in
+            let periodCandidates = Array(Set(rule.monthsOfYear.flatMap { month -> [Date] in
                 rule.monthDays.compactMap { day -> Date? in
                     var components = DateComponents()
                     components.year = year
@@ -509,7 +509,7 @@ enum RoutineAdvancedRecurrenceGenerator {
                     components.minute = time.minute
                     return calendar.date(from: components)
                 }
-            }.sorted()
+            })).sorted()
             for candidate in periodCandidates where candidate >= rule.startDate {
                 if shouldStop(rule: rule, candidate: candidate, generatedIndex: generatedIndex, calendar: calendar) {
                     return results
@@ -599,13 +599,13 @@ enum RoutineAdvancedRecurrenceGenerator {
 
         let components = calendar.dateComponents([.year, .month], from: month)
         let count = calendar.range(of: .day, in: .month, for: month)?.count ?? 31
-        return rule.monthDays.compactMap { day -> Date? in
+        return Array(Set(rule.monthDays.compactMap { day -> Date? in
             var candidateComponents = components
             candidateComponents.day = min(day, count)
             candidateComponents.hour = time.hour
             candidateComponents.minute = time.minute
             return calendar.date(from: candidateComponents)
-        }.sorted()
+        })).sorted()
     }
 
     private static func ordinalWeekdayDate(

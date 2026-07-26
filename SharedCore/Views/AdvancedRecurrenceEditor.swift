@@ -128,12 +128,10 @@ struct AdvancedRecurrenceEditor: View {
             Text("On")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
-            LazyVGrid(columns: weekdayColumns, alignment: .leading, spacing: 8) {
-                ForEach(weekdayOptions, id: \.id) { option in
-                    Toggle(option.name, isOn: weekdayBinding(option.id))
-                        .toggleStyle(.button)
-                }
-            }
+            RecurrenceWeekdaySelectionControl(
+                selectedWeekdays: advancedWeekdaysBinding,
+                options: weekdayOptions
+            )
         }
     }
 
@@ -147,9 +145,7 @@ struct AdvancedRecurrenceEditor: View {
             .pickerStyle(.segmented)
 
             if rule.monthlyPattern == .dayOfMonth {
-                Stepper(value: primaryMonthDayBinding, in: 1...31) {
-                    Text("Day \(rule.monthDays.first ?? 1)")
-                }
+                RecurrenceMonthDaySelectionControl(selectedDays: advancedMonthDaysBinding)
             } else {
                 HStack(spacing: 12) {
                     Picker("Position", selection: valueBinding(\.weekdayOrdinal)) {
@@ -209,15 +205,43 @@ struct AdvancedRecurrenceEditor: View {
         rule.frequency == .hourly ? 1...168 : 1...365
     }
 
-    private var weekdayColumns: [GridItem] {
-        [GridItem(.adaptive(minimum: 84), spacing: 8)]
-    }
-
     private var primaryMonthDayBinding: Binding<Int> {
         Binding(
             get: { rule.monthDays.first ?? calendar.component(.day, from: rule.startDate) },
             set: { value in
                 rule.monthDays = [min(max(value, 1), 31)]
+            }
+        )
+    }
+
+    private var advancedWeekdaysBinding: Binding<[Int]> {
+        Binding(
+            get: {
+                let selectedWeekdays = Array(Set(rule.weekdays.filter((1...7).contains))).sorted()
+                return selectedWeekdays.isEmpty
+                    ? [calendar.component(.weekday, from: rule.startDate)]
+                    : selectedWeekdays
+            },
+            set: { weekdays in
+                updateRule { updatedRule in
+                    updatedRule.weekdays = weekdays
+                }
+            }
+        )
+    }
+
+    private var advancedMonthDaysBinding: Binding<[Int]> {
+        Binding(
+            get: {
+                let selectedDays = Array(Set(rule.monthDays.filter((1...31).contains))).sorted()
+                return selectedDays.isEmpty
+                    ? [calendar.component(.day, from: rule.startDate)]
+                    : selectedDays
+            },
+            set: { days in
+                updateRule { updatedRule in
+                    updatedRule.monthDays = days
+                }
             }
         )
     }
@@ -268,23 +292,6 @@ struct AdvancedRecurrenceEditor: View {
                 updateRule { updatedRule in
                     guard updatedRule.timesOfDay.indices.contains(index) else { return }
                     updatedRule.timesOfDay[index] = RoutineTimeOfDay.from(value, calendar: calendar)
-                }
-            }
-        )
-    }
-
-    private func weekdayBinding(_ weekday: Int) -> Binding<Bool> {
-        Binding(
-            get: { rule.weekdays.contains(weekday) },
-            set: { isSelected in
-                updateRule { updatedRule in
-                    var selected = Set(updatedRule.weekdays)
-                    if isSelected {
-                        selected.insert(weekday)
-                    } else if selected.count > 1 {
-                        selected.remove(weekday)
-                    }
-                    updatedRule.weekdays = selected.sorted()
                 }
             }
         )

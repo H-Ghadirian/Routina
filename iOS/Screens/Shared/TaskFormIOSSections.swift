@@ -450,24 +450,35 @@ struct TaskFormIOSRepeatPatternSections: View {
 
         case .weekly:
             Section(header: Text("Weekday")) {
-                Picker("Weekday", selection: model.recurrenceWeekday) {
-                    ForEach(presentation.weekdayOptions, id: \.id) { option in
-                        Text(option.name).tag(option.id)
-                    }
-                }
+                RecurrenceWeekdaySelectionControl(
+                    selectedWeekdays: recurrenceWeekdaysBinding,
+                    options: presentation.weekdayOptions
+                )
                 Text(presentation.weeklyRecurrenceSummary)
                     .font(.caption).foregroundStyle(.secondary)
             }
 
         case .monthlyDay:
             Section(header: Text("Day of Month")) {
-                Stepper(value: model.recurrenceDayOfMonth, in: 1...31) {
-                    Text(TaskFormPresentation.monthDayControlLabel(for: model.recurrenceDayOfMonth.wrappedValue))
-                }
+                RecurrenceMonthDaySelectionControl(selectedDays: recurrenceDaysOfMonthBinding)
                 Text(presentation.monthlyRecurrenceSummary)
                     .font(.caption).foregroundStyle(.secondary)
             }
         }
+    }
+
+    private var recurrenceWeekdaysBinding: Binding<[Int]> {
+        Binding(
+            get: { model.effectiveRecurrenceWeekdays },
+            set: { model.setRecurrenceWeekdays($0) }
+        )
+    }
+
+    private var recurrenceDaysOfMonthBinding: Binding<[Int]> {
+        Binding(
+            get: { model.effectiveRecurrenceDaysOfMonth },
+            set: { model.setRecurrenceDaysOfMonth($0) }
+        )
     }
 
     private var frequencyUnitPicker: some View {

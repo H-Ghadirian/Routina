@@ -420,11 +420,17 @@ Then Routina keeps June 18 and June 25 visible as unresolved missed days and sti
 ### Editing Calendar Routines Preserves All Selected Days
 
 Area: Tasks
-Decision links: [0009](../decisions/0009-support-routine-time-ranges.md), [0177](../decisions/0177-separate-interval-and-calendar-repeat-controls.md)
+Decision links: [0009](../decisions/0009-support-routine-time-ranges.md), [0177](../decisions/0177-separate-interval-and-calendar-repeat-controls.md), [0184](../decisions/0184-label-month-day-fallbacks.md), [0223](../decisions/0223-support-multi-day-calendar-repeats.md), [0412](../decisions/0412-add-advanced-recurrence-beside-simple.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
+- `Tests/Shared/RecurrenceSelectionPolicyTests.swift`
+- `Tests/Shared/RoutineAdvancedRecurrenceTests.swift`
 - `Tests/macOS/TaskDetailFeatureTests.swift`
 - `Tests/Shared/TaskDetailEditSaveTests.swift`
+
+Given the user creates or edits a Simple calendar routine on iOS or macOS
+When they select several weekdays or several monthly dates
+Then the shared selector keeps every selected value and prevents an empty selection
 
 Given a routine repeats on multiple weekdays such as Monday through Friday
 When the user reopens the edit form
@@ -438,6 +444,18 @@ Given a routine repeats on multiple monthly dates such as the 1st, 15th, and 31s
 When the user reopens the edit form and saves an unrelated change
 Then the form is not falsely dirty before that change
 And the complete monthly-date set remains on the persisted recurrence rule
+
+Given the user edits an Advanced monthly day-of-month rule
+When they select several monthly dates
+Then every selected date remains editable instead of only the first date
+
+Given the month-day selector shows dates 29, 30, and 31
+When the user reviews those choices
+Then those adaptive dates have a distinct indicator and nearby explanation that shorter months use their last valid day
+
+Given several selected adaptive dates resolve to the same last day in a shorter month
+When Advanced recurrence generates occurrences
+Then that timestamp appears once rather than producing duplicate occurrences
 
 ### Multi-Day Routine Lifecycle
 
