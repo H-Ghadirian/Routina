@@ -6,18 +6,19 @@ struct TaskRelationshipsEditor<SearchField: View>: View {
     let candidates: [RoutineTaskRelationshipCandidate]
     let addRelationship: (UUID, RoutineTaskRelationshipKind) -> Void
     let removeRelationship: (UUID) -> Void
-    let createLinkedTask: (() -> Void)?
+    let createLinkedTask: ((RoutineTaskRelationshipKind) -> Void)?
 
     private let searchField: (Binding<String>) -> SearchField
 
     @State private var isPickerPresented = false
+    @State private var selectedRelationshipKind: RoutineTaskRelationshipKind = .related
 
     init(
         relationships: [RoutineTaskRelationship],
         candidates: [RoutineTaskRelationshipCandidate],
         addRelationship: @escaping (UUID, RoutineTaskRelationshipKind) -> Void,
         removeRelationship: @escaping (UUID) -> Void,
-        createLinkedTask: (() -> Void)? = nil,
+        createLinkedTask: ((RoutineTaskRelationshipKind) -> Void)? = nil,
         @ViewBuilder searchField: @escaping (Binding<String>) -> SearchField
     ) {
         self.relationships = relationships
@@ -50,32 +51,6 @@ struct TaskRelationshipsEditor<SearchField: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                if let createLinkedTask {
-                    Button {
-                        createLinkedTask()
-                    } label: {
-                        Label(TaskRelationshipActionPresentation.createTaskTitle, systemImage: "plus.circle")
-                            .frame(maxWidth: .infinity)
-                            .contentShape(Rectangle())
-                    }
-                }
-
-                Button {
-                    isPickerPresented = true
-                } label: {
-                    Label(
-                        createLinkedTask == nil
-                            ? "Add linked task"
-                            : TaskRelationshipActionPresentation.linkTaskTitle,
-                        systemImage: "link"
-                    )
-                        .frame(maxWidth: .infinity)
-                        .contentShape(Rectangle())
-                }
-                .disabled(candidates.isEmpty)
-            }
-
             if candidates.isEmpty {
                 Text(
                     createLinkedTask == nil
@@ -127,17 +102,59 @@ struct TaskRelationshipsEditor<SearchField: View>: View {
                     .routinaGlassCard(cornerRadius: 10, tint: .secondary, tintOpacity: 0.08, interactive: true)
                 }
             }
+
+            relationshipActions
         }
         .sheet(isPresented: $isPickerPresented) {
             TaskRelationshipPickerSheet(
                 candidates: candidates,
                 linkedTaskIDs: Set(relationships.map(\.targetTaskID)),
+                initialKind: selectedRelationshipKind,
                 onSelect: { taskID, kind in
                     addRelationship(taskID, kind)
                     isPickerPresented = false
                 },
                 searchField: searchField
             )
+        }
+    }
+
+    @ViewBuilder
+    private var relationshipActions: some View {
+        if let createLinkedTask {
+            HStack(spacing: 12) {
+                Picker("", selection: $selectedRelationshipKind) {
+                    ForEach(RoutineTaskRelationshipKind.allCases, id: \.self) { kind in
+                        Label(kind.title, systemImage: kind.systemImage).tag(kind)
+                    }
+                }
+                .labelsHidden()
+                .fixedSize()
+
+                Button {
+                    createLinkedTask(selectedRelationshipKind)
+                } label: {
+                    Label(TaskRelationshipActionPresentation.createTaskTitle, systemImage: "plus.circle")
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.borderless)
+
+                Button {
+                    isPickerPresented = true
+                } label: {
+                    Label(TaskRelationshipActionPresentation.linkTaskTitle, systemImage: "link")
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.borderless)
+                .disabled(candidates.isEmpty)
+            }
+        } else {
+            Button {
+                isPickerPresented = true
+            } label: {
+                Label("Add linked task", systemImage: "plus.circle")
+            }
+            .disabled(candidates.isEmpty)
         }
     }
 }
@@ -156,6 +173,7 @@ private struct TaskRelationshipPickerSheet<SearchField: View>: View {
     init(
         candidates: [RoutineTaskRelationshipCandidate],
         linkedTaskIDs: Set<UUID>,
+        initialKind: RoutineTaskRelationshipKind,
         onSelect: @escaping (UUID, RoutineTaskRelationshipKind) -> Void,
         @ViewBuilder searchField: @escaping (Binding<String>) -> SearchField
     ) {
@@ -163,6 +181,7 @@ private struct TaskRelationshipPickerSheet<SearchField: View>: View {
         self.linkedTaskIDs = linkedTaskIDs
         self.onSelect = onSelect
         self.searchField = searchField
+        _selectedKind = State(initialValue: initialKind)
     }
 
     private var availableCandidates: [RoutineTaskRelationshipCandidate] {

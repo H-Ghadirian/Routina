@@ -39,8 +39,9 @@ Coverage:
 
 Given a task is open in Mac Task Details or Edit Task
 When the linked-task controls are shown
-Then `Create New Task` opens task creation with the inverse relationship preselected
-And `Link a Task` opens the existing-task relationship picker
+Then both surfaces show a compact relationship picker before `Create New Task` and `Link a Task`
+And `Create New Task` opens task creation with the chosen inverse relationship preselected
+And `Link a Task` opens the existing-task relationship picker initialized to the chosen relationship
 And the two different behaviors are not presented under the same ambiguous label
 
 ### Cadence-Free Repeating Tasks Stay Reusable

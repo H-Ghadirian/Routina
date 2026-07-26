@@ -72,3 +72,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0029 — Name linked-task actions by their destination](0029-name-linked-task-actions-by-destination.md)
 - [0030 — Gate all recurrence behavior behind effective cadence](0030-gate-all-recurrence-behavior-behind-effective-cadence.md)
 - [0031 — Preserve structured recurrence through edit state](0031-preserve-structured-recurrence-through-edit-state.md)
+- [0032 — Share relationship intent across linked-task entry points](0032-share-relationship-intent-across-linked-task-entry-points.md)

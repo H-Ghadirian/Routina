@@ -96,7 +96,7 @@ struct TaskFormModel {
     var availableRelationshipTasks: [RoutineTaskRelationshipCandidate]
     var onAddRelationship: (UUID, RoutineTaskRelationshipKind) -> Void
     var onRemoveRelationship: (UUID) -> Void
-    var onCreateLinkedTask: (() -> Void)? = nil
+    var onCreateLinkedTask: ((RoutineTaskRelationshipKind) -> Void)? = nil
 
     // MARK: Schedule
     var scheduleMode: Binding<RoutineScheduleMode>
