@@ -11,12 +11,25 @@ import Testing
 @MainActor
 struct RoutineAssumedCompletionTests {
     @Test
-    func eligibility_allowsDailyStandardAndChecklistCompletionTrackingWithOptIn() {
+    func eligibility_allowsDailyGentleStandardAndChecklistRoutinesWithOptIn() {
         let checklistItem = RoutineChecklistItem(title: "Breakfast", intervalDays: 1)
-        let routine = RoutineTask(
+        let dueRoutine = RoutineTask(
             name: "Brush teeth",
             scheduleMode: .fixedInterval,
             recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 21, minute: 0)),
+            autoAssumeDailyDone: true
+        )
+        let gentleRoutine = RoutineTask(
+            name: "Brush teeth",
+            scheduleMode: .softInterval,
+            recurrenceRule: .daily(at: RoutineTimeOfDay(hour: 21, minute: 0)),
+            autoAssumeDailyDone: true
+        )
+        let gentleChecklistRoutine = RoutineTask(
+            name: "Meals",
+            checklistItems: [checklistItem],
+            scheduleMode: .softIntervalChecklist,
+            recurrenceRule: .interval(days: 1),
             autoAssumeDailyDone: true
         )
         let standard = RoutineTask(
@@ -80,7 +93,9 @@ struct RoutineAssumedCompletionTests {
             autoAssumeDailyDone: true
         )
 
-        #expect(!RoutineAssumedCompletion.isEligible(routine))
+        #expect(!RoutineAssumedCompletion.isEligible(dueRoutine))
+        #expect(RoutineAssumedCompletion.isEligible(gentleRoutine))
+        #expect(RoutineAssumedCompletion.isEligible(gentleChecklistRoutine))
         #expect(RoutineAssumedCompletion.isEligible(standard))
         #expect(RoutineAssumedCompletion.isEligible(interval))
         #expect(RoutineAssumedCompletion.isEligible(checklist))

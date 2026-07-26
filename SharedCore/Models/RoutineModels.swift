@@ -542,7 +542,9 @@ final class RoutineTask {
         self.storyPoints = Self.sanitizedStoryPoints(storyPoints)
         self.focusModeEnabled = focusModeEnabled
         self.trackingCadenceEnabled = resolvedTrackingCadenceEnabled
-        self.trackingNudgesEnabled = resolvedScheduleMode.taskType == .record ? (resolvedTrackingCadenceEnabled && trackingNudgesEnabled) : true
+        self.trackingNudgesEnabled = resolvedScheduleMode.usesRoutineCadence
+            ? resolvedTrackingCadenceEnabled && trackingNudgesEnabled
+            : true
         self.showsTaskDetailHeatmap = showsTaskDetailHeatmap
         self.showsTaskDetailHistory = showsTaskDetailHistory
         self.showsTaskDetailPriority = showsTaskDetailPriority

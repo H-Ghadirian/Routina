@@ -64,6 +64,7 @@ This page summarizes active Planner, timeline activity, focus, Away, and Sleep b
 - [0392](../decisions/0392-show-focus-time-in-calendar-list-dones.md)
 - [0399](../decisions/0399-hide-visible-fulfilled-target-duplicates.md)
 - [0402](../decisions/0402-drag-planner-task-detail-title-to-schedule.md)
+- [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md)
 
 ## Current Contract
 

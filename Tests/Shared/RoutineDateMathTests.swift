@@ -160,9 +160,9 @@ struct RoutineDateMathTests {
     }
 
     @Test
-    func trackingWithNudgesDisabledDoesNotSurfaceSoftThreshold() {
+    func gentleRoutineWithNudgesDisabledDoesNotSurfaceSoftThreshold() {
         let task = RoutineTask(
-            scheduleMode: .record,
+            scheduleMode: .softInterval,
             recurrenceRule: .interval(days: 14),
             lastDone: makeDate("2026-01-01T10:00:00Z"),
             scheduleAnchor: makeDate("2026-01-01T10:00:00Z"),

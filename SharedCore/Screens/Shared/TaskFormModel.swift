@@ -189,16 +189,6 @@ extension TaskFormModel {
         )
     }
 
-    var tracksRepeatingTask: Binding<Bool> {
-        let taskType = taskType
-        return Binding(
-            get: { taskType.wrappedValue == .record },
-            set: { isTracking in
-                taskType.wrappedValue = isTracking ? .record : .routine
-            }
-        )
-    }
-
     var primaryKind: Binding<TaskFormPrimaryKind> {
         let taskType = taskType
         return Binding(
@@ -319,6 +309,11 @@ extension TaskFormModel {
         taskType.wrappedValue == .routine && usesEffectiveRoutineCadence
     }
 
+    var supportsGentleNudges: Bool {
+        usesEffectiveRoutineCadence
+            && scheduleMode.wrappedValue.scheduleBehavior == .soft
+    }
+
     var supportsRecurrenceAvailability: Bool {
         taskType.wrappedValue == .todo || usesEffectiveRoutineCadence
     }
@@ -421,9 +416,7 @@ extension TaskFormModel {
         RoutineAssumedCompletion.isEligible(
             scheduleMode: scheduleMode.wrappedValue,
             recurrenceRule: candidateRecurrenceRule,
-            trackingCadenceEnabled: scheduleMode.wrappedValue.taskType == .record
-                ? trackingCadenceEnabled.wrappedValue
-                : true,
+            trackingCadenceEnabled: trackingCadenceEnabled.wrappedValue,
             hasSequentialSteps: !routineSteps.isEmpty,
             hasChecklistItems: !routineChecklistItems.isEmpty
         )

@@ -779,6 +779,44 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
+    func saveTapped_gentleRoutinePersistsQuietCadenceAndAutoAssume() async {
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(
+                    routineName: "Morning check-in",
+                    trackingCadenceEnabled: true,
+                    trackingNudgesEnabled: false
+                ),
+                organization: AddRoutineOrganizationState(existingRoutineNames: []),
+                schedule: AddRoutineScheduleState(
+                    scheduleMode: .softInterval,
+                    frequency: .day,
+                    frequencyValue: 1,
+                    recurrenceKind: .intervalDays,
+                    autoAssumeDailyDone: true
+                )
+            )
+        ) {
+            makeDelegateEchoFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0)
+        }
+
+        await store.send(.saveTapped) { $0.isSaving = true }
+        await store.receive(.delegate(.didSave(makeSaveRequest(
+            name: "Morning check-in",
+            frequencyInDays: 1,
+            recurrenceRule: .interval(days: 1),
+            emoji: "✨",
+            scheduleMode: .softInterval,
+            autoAssumeDailyDone: true,
+            autoAssumeDoneTimeOfDay: RoutineAssumedCompletion.defaultDoneTimeOfDay,
+            trackingCadenceEnabled: true,
+            trackingNudgesEnabled: false
+        ))))
+    }
+
+    @Test
     func saveTapped_recordCanSkipRepeatCadence() async {
         let plannedDate = makeDate("2026-05-01T09:00:00Z")
         let exactTime = RoutineTimeOfDay(hour: 14, minute: 30)

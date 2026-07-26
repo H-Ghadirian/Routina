@@ -375,7 +375,7 @@ struct TaskFormIOSRepeatPatternSections: View {
                 rule: model.advancedRecurrenceRule,
                 weekdayOptions: presentation.weekdayOptions
             )
-            if model.taskType.wrappedValue == .record {
+            if model.supportsGentleNudges {
                 Toggle("Nudges", isOn: model.trackingNudgesEnabled)
             }
         }
@@ -395,7 +395,7 @@ struct TaskFormIOSRepeatPatternSections: View {
             if model.routineRepeatType.wrappedValue != .itemRunout && model.routineRepeatType.wrappedValue != .none {
                 Text(presentation.recurrencePatternDescription).font(.caption).foregroundStyle(.secondary)
             }
-            if model.taskType.wrappedValue == .record && model.routineRepeatType.wrappedValue != .none {
+            if model.supportsGentleNudges {
                 Toggle("Nudges", isOn: model.trackingNudgesEnabled)
             }
         }

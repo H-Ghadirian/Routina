@@ -198,6 +198,21 @@ struct SwiftDataModelTests {
     }
 
     @Test
+    func gentleRoutineCanKeepCadenceWithoutSurfacingNudges() {
+        let task = RoutineTask(
+            scheduleMode: .softInterval,
+            recurrenceRule: .interval(days: 14),
+            trackingNudgesEnabled: false
+        )
+
+        #expect(task.trackingCadenceEnabled)
+        #expect(!task.trackingNudgesEnabled)
+        #expect(task.isSoftIntervalRoutine)
+        #expect(!task.surfacesSoftIntervalNudges)
+        #expect(!task.detachedCopy().trackingNudgesEnabled)
+    }
+
+    @Test
     func routineTask_normalizesPlannedDateAndCopiesItDetached() {
         let plannedDate = makeDate("2026-06-10T15:45:00Z")
         let expectedDate = Calendar.current.startOfDay(for: plannedDate)

@@ -47,8 +47,28 @@ And every completion remains in its history
 And multiple completions on the same day remain separate history entries
 And the task is not classified as a cadence-derived daily routine
 And it has no due date, overdue state, cadence badge, or cadence-only form controls
-And switching between Routine and Tracking preserves `Repeat type: None`
+And changing other routine behavior preserves `Repeat type: None`
 And Task Detail shows no frequency and no cadence-derived notification is scheduled
+
+### Repeating Behavior Does Not Require A Tracking Purpose
+
+Area: Tasks
+Decision links: [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskFormPresentationTests.swift`
+- `Tests/Shared/RoutineAssumedCompletionTests.swift`
+- `Tests/Shared/RoutineDateMathTests.swift`
+- `Tests/Shared/AddRoutineFeatureTests.swift`
+- `Tests/Shared/TaskDetailEditSaveTests.swift`
+
+Given a user creates or edits a repeating task
+When the user selects Gentle behavior
+Then Nudges can be turned off independently without removing cadence or history
+And an eligible daily Gentle routine can opt into Auto-assume done
+And Due or `Repeat type: None` makes those Gentle-only behaviors unavailable
+And creating the behavior does not require or create a separate Tracking purpose
+And existing stored Tracking records remain compatible without automatic migration
 
 ### Simple And Advanced Recurrence Stay Independent
 
@@ -239,23 +259,23 @@ Given Task Details is editing a routine or task with checklist items
 When the user removes every checklist item and saves the edit
 Then the selected detail state and Home selected row drop the checklist immediately while persistence and reloads catch up
 
-### Daily Tracking Checklist Auto-Assume Uses Day-Level Completion
+### Daily Gentle Checklist Auto-Assume Uses Day-Level Completion
 
 Area: Tasks
-Decision links: [0259](../decisions/0259-allow-daily-checklist-auto-assumed-completion.md), [0398](../decisions/0398-move-auto-assume-done-to-tracking.md)
+Decision links: [0259](../decisions/0259-allow-daily-checklist-auto-assumed-completion.md), [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/RoutineAssumedCompletionTests.swift`
 - `Tests/Shared/HomeRoutineDisplayFactoryTests.swift`
 - `Tests/Shared/TaskDetailFeatureCompletionTests.swift`
 
-Given a daily checklist-completion Tracking entry has auto-assume done enabled
+Given a daily Gentle checklist-completion routine has auto-assume done enabled
 When today's availability starts and no checklist item progress exists
-Then Home and Task Detail present the Tracking entry as assumed done without pretending individual checklist items are checked
+Then Home and Task Detail present the routine as assumed done without pretending individual checklist items are checked
 And the Home task-row status badge says `Assumed`, even when the shared display also treats the assumed occurrence as done for list placement
 And on Mac the hover confirm and missed buttons overlay the trailing row content without reserving permanent horizontal space
 
-Given a daily Tracking entry is created today with auto-assume done enabled
+Given a daily Gentle routine is created today with auto-assume done enabled
 When today's availability has already started
 Then Home treats the current occurrence as assumed done while dates before creation remain unassumed
 

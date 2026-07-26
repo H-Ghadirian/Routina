@@ -664,7 +664,9 @@ extension TaskDetailFeature {
                 task.storyPoints = RoutineTask.sanitizedStoryPoints(storyPoints)
                 task.focusModeEnabled = focusModeEnabled
                 task.trackingCadenceEnabled = scheduleMode.taskType == .todo ? true : trackingCadenceEnabled
-                task.trackingNudgesEnabled = scheduleMode.taskType == .record ? (trackingCadenceEnabled && trackingNudgesEnabled) : true
+                task.trackingNudgesEnabled = scheduleMode.usesRoutineCadence
+                    ? trackingCadenceEnabled && trackingNudgesEnabled
+                    : true
                 if !scheduleMode.usesRoutineCadence || !task.trackingCadenceEnabled {
                     task.scheduleAnchor = task.lastDone
                     task.interval = 1

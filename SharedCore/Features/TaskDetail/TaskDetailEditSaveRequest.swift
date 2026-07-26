@@ -189,7 +189,7 @@ struct TaskDetailEditSaveRequestBuilder {
             storyPoints: state.editStoryPoints,
             focusModeEnabled: state.editFocusModeEnabled,
             trackingCadenceEnabled: trackingCadenceEnabled,
-            trackingNudgesEnabled: scheduleMode.taskType == .record
+            trackingNudgesEnabled: scheduleMode.usesRoutineCadence
                 ? trackingCadenceEnabled && state.editTrackingNudgesEnabled
                 : true
         )
@@ -384,7 +384,7 @@ extension TaskDetailFeature {
         updatedTask.trackingCadenceEnabled = request.scheduleMode.taskType == .todo
             ? true
             : request.trackingCadenceEnabled
-        updatedTask.trackingNudgesEnabled = request.scheduleMode.taskType == .record
+        updatedTask.trackingNudgesEnabled = request.scheduleMode.usesRoutineCadence
             ? request.trackingCadenceEnabled && request.trackingNudgesEnabled
             : true
 

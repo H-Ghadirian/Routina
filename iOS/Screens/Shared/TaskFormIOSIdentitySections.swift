@@ -52,10 +52,6 @@ struct TaskFormIOSTaskTypeSection: View {
         ) { kind in
             Text(kind.rawValue)
         }
-
-        if model.creationKind.wrappedValue == .repeating {
-            Toggle("Track this routine", isOn: model.tracksRepeatingTask)
-        }
     }
 
     @ViewBuilder

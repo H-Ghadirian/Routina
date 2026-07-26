@@ -24,7 +24,7 @@ struct TaskFormPresentationTests {
     }
 
     @Test @MainActor
-    func creationKindTreatsTrackingAsRepeatingAndPurposeTogglePreservesNoCadence() {
+    func creationKindCreatesRepeatingRoutinesWithoutASeparateTrackingPurpose() {
         var taskType = RoutineTaskType.todo
         var trackingCadenceEnabled = false
         let model = taskFormModel(
@@ -42,26 +42,16 @@ struct TaskFormPresentationTests {
 
         model.creationKind.wrappedValue = .repeating
         #expect(taskType == .routine)
-
-        model.tracksRepeatingTask.wrappedValue = true
-        #expect(taskType == .record)
         #expect(!trackingCadenceEnabled)
         #expect(!model.supportsAdvancedRecurrence)
         #expect(!model.supportsRoutineScheduleBehavior)
-        #expect(!model.supportsRecurrenceAvailability)
-        #expect(!model.supportsPlanning)
-
-        model.tracksRepeatingTask.wrappedValue = false
-        #expect(taskType == .routine)
-        #expect(!trackingCadenceEnabled)
-        #expect(!model.supportsAdvancedRecurrence)
-        #expect(!model.supportsRoutineScheduleBehavior)
+        #expect(!model.supportsGentleNudges)
         #expect(!model.supportsRecurrenceAvailability)
         #expect(model.supportsPlanning)
     }
 
     @Test @MainActor
-    func progressiveEditUsesSharedKindMappingWhileKeepingLegacyTrackingNoCadence() {
+    func progressiveEditMapsLegacyTrackingToRepeatingWithoutExposingPurposeState() {
         var taskType = RoutineTaskType.record
         var trackingCadenceEnabled = false
         let model = taskFormModel(
@@ -77,7 +67,6 @@ struct TaskFormPresentationTests {
         )
 
         #expect(model.creationKind.wrappedValue == .repeating)
-        #expect(model.tracksRepeatingTask.wrappedValue)
         #expect(model.routineRepeatTypeCases.contains(.none))
         #expect(model.routineRepeatType.wrappedValue == .none)
 
@@ -243,7 +232,7 @@ struct TaskFormPresentationTests {
     }
 
     @Test @MainActor
-    func autoAssumeEligibilityTracksLiveDailyTrackingBindings() {
+    func gentleNudgesAndAutoAssumeFollowRoutineBehaviorAndCadence() {
         var scheduleMode = RoutineScheduleMode.oneOff
         let model = taskFormModel(
             taskType: .record,
@@ -257,6 +246,7 @@ struct TaskFormPresentationTests {
 
         scheduleMode = .record
         #expect(model.canAutoAssumeDailyDone)
+        #expect(model.supportsGentleNudges)
 
         scheduleMode = .recordChecklist
         #expect(!model.canAutoAssumeDailyDone)
@@ -276,12 +266,27 @@ struct TaskFormPresentationTests {
             scheduleMode: .record,
             trackingCadenceEnabled: false
         )
-        let routineModel = taskFormModel(scheduleMode: .softInterval)
+        let gentleRoutineModel = taskFormModel(scheduleMode: .softInterval)
+        let dueRoutineModel = taskFormModel(scheduleMode: .fixedInterval)
+        let noCadenceGentleRoutineModel = taskFormModel(
+            scheduleMode: .softInterval,
+            trackingCadenceEnabled: false
+        )
+        let gentleChecklistModel = taskFormModel(
+            scheduleMode: .softIntervalChecklist,
+            checklistItems: [RoutineChecklistItem(title: "Breakfast", intervalDays: 1)]
+        )
 
         #expect(checklistModel.canAutoAssumeDailyDone)
         #expect(!runoutModel.canAutoAssumeDailyDone)
         #expect(!noCadenceModel.canAutoAssumeDailyDone)
-        #expect(!routineModel.canAutoAssumeDailyDone)
+        #expect(gentleRoutineModel.canAutoAssumeDailyDone)
+        #expect(gentleRoutineModel.supportsGentleNudges)
+        #expect(!dueRoutineModel.canAutoAssumeDailyDone)
+        #expect(!dueRoutineModel.supportsGentleNudges)
+        #expect(!noCadenceGentleRoutineModel.canAutoAssumeDailyDone)
+        #expect(!noCadenceGentleRoutineModel.supportsGentleNudges)
+        #expect(gentleChecklistModel.canAutoAssumeDailyDone)
     }
 
     @Test @MainActor

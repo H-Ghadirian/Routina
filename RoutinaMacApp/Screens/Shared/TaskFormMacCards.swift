@@ -174,11 +174,12 @@ struct TaskFormMacPlanningCard: View {
 private struct TaskFormMacScheduleBehaviorHint: View {
     let behavior: RoutineScheduleBehavior
     let description: String
+    var surfacesNudges = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                ForEach(behavior.rowPreviewBadges) { badge in
+                ForEach(previewBadges) { badge in
                     TaskFormMacScheduleBehaviorPreviewBadge(badge: badge)
                 }
             }
@@ -187,6 +188,10 @@ private struct TaskFormMacScheduleBehaviorHint: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private var previewBadges: [RoutineScheduleBehaviorPreviewBadge] {
+        behavior == .soft && !surfacesNudges ? [] : behavior.rowPreviewBadges
     }
 }
 
@@ -559,9 +564,10 @@ struct TaskFormMacBehaviorCard: View {
                 Divider()
                 recordCompletionControl
                 routineCadenceControls
-                if showsAssumedDoneControl {
-                    assumedDoneControl
-                }
+            }
+
+            if showsAssumedDoneControl {
+                assumedDoneControl
             }
         }
     }
@@ -602,20 +608,12 @@ struct TaskFormMacBehaviorCard: View {
     }
 
     private var creationTaskTypeControl: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Task type",
-                options: TaskFormCreationKind.allCases,
-                selection: model.creationKind
-            ) { kind in
-                Text(kind.rawValue)
-            }
-
-            if model.creationKind.wrappedValue == .repeating {
-                Toggle("Track this routine", isOn: model.tracksRepeatingTask)
-                    .toggleStyle(.switch)
-                    .contentShape(Rectangle())
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Task type",
+            options: TaskFormCreationKind.allCases,
+            selection: model.creationKind
+        ) { kind in
+            Text(kind.rawValue)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -746,7 +744,8 @@ struct TaskFormMacBehaviorCard: View {
 
             TaskFormMacScheduleBehaviorHint(
                 behavior: model.scheduleBehavior.wrappedValue,
-                description: model.scheduleBehavior.wrappedValue.rowPreviewDescription
+                description: schedulePreviewDescription,
+                surfacesNudges: model.trackingNudgesEnabled.wrappedValue
             )
         }
         .padding(14)
@@ -763,6 +762,14 @@ struct TaskFormMacBehaviorCard: View {
 
     private var schedulePreviewTint: Color {
         model.scheduleBehavior.wrappedValue == .soft ? .teal : .orange
+    }
+
+    private var schedulePreviewDescription: String {
+        if model.scheduleBehavior.wrappedValue == .soft,
+           !model.trackingNudgesEnabled.wrappedValue {
+            return "Rows stay available without cadence badges or overdue pressure."
+        }
+        return model.scheduleBehavior.wrappedValue.rowPreviewDescription
     }
 
     @ViewBuilder
@@ -787,7 +794,7 @@ struct TaskFormMacBehaviorCard: View {
                     weekdayOptions: presentation.weekdayOptions
                 )
             }
-            if model.taskType.wrappedValue == .record {
+            if model.supportsGentleNudges {
                 TaskFormMacControlBlock(title: "Nudges") {
                     Toggle("Nudges", isOn: model.trackingNudgesEnabled)
                         .toggleStyle(.switch)
@@ -811,7 +818,7 @@ struct TaskFormMacBehaviorCard: View {
                 calendarPatternControl
             }
 
-            if model.taskType.wrappedValue == .record && model.routineRepeatType.wrappedValue != .none {
+            if model.supportsGentleNudges {
                 TaskFormMacControlBlock(title: "Nudges") {
                     Toggle("Nudges", isOn: model.trackingNudgesEnabled)
                         .toggleStyle(.switch)

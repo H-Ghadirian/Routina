@@ -130,7 +130,7 @@ extension RoutineTask {
     }
 
     var surfacesSoftIntervalNudges: Bool {
-        isSoftIntervalRoutine && (!isRecordTask || (trackingCadenceEnabled && trackingNudgesEnabled))
+        isSoftIntervalRoutine && trackingNudgesEnabled
     }
 
     var usesEffectiveRoutineCadence: Bool {

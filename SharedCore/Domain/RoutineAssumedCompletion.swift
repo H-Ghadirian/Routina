@@ -21,7 +21,8 @@ enum RoutineAssumedCompletion {
         hasSequentialSteps: Bool,
         hasChecklistItems: Bool
     ) -> Bool {
-        guard scheduleMode.taskType == .record,
+        guard scheduleMode.usesRoutineCadence,
+              scheduleMode.scheduleBehavior == .soft,
               trackingCadenceEnabled,
               !hasSequentialSteps,
               recurrenceRule.isDaily

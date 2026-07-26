@@ -246,7 +246,9 @@ struct AddRoutineSaveRequest: Equatable {
             : nil
         self.storyPoints = storyPoints
         self.focusModeEnabled = focusModeEnabled
-        self.trackingNudgesEnabled = scheduleMode.taskType == .record ? (self.trackingCadenceEnabled && trackingNudgesEnabled) : true
+        self.trackingNudgesEnabled = scheduleMode.usesRoutineCadence
+            ? self.trackingCadenceEnabled && trackingNudgesEnabled
+            : true
     }
 
     init?(state: AddRoutineFeature.State, calendar: Calendar = .current) {
@@ -356,7 +358,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.storyPoints = RoutineTask.sanitizedStoryPoints(basics.storyPoints)
         self.focusModeEnabled = basics.focusModeEnabled
         self.trackingCadenceEnabled = trackingCadenceEnabled
-        self.trackingNudgesEnabled = schedule.scheduleMode.taskType == .record
+        self.trackingNudgesEnabled = schedule.scheduleMode.usesRoutineCadence
             ? trackingCadenceEnabled && basics.trackingNudgesEnabled
             : true
         self.autoAssumeDailyDone = schedule.autoAssumeDailyDone
