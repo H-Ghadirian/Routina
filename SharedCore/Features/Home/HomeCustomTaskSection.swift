@@ -3,7 +3,6 @@ import Foundation
 enum HomeCustomTaskSectionRule: String, CaseIterable, Identifiable, Hashable, Codable, Sendable {
     case plannedToday
     case plannedTomorrow
-    case tracking
 
     var id: Self { self }
 
@@ -13,8 +12,6 @@ enum HomeCustomTaskSectionRule: String, CaseIterable, Identifiable, Hashable, Co
             return "Planned today"
         case .plannedTomorrow:
             return "Planned tomorrow"
-        case .tracking:
-            return "Tracking entries"
         }
     }
 }

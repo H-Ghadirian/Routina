@@ -368,9 +368,6 @@ extension HomeTCAView {
     }
 
     private func defaultTaskSectionTitle(for task: HomeFeature.RoutineDisplay) -> String {
-        if task.scheduleMode.taskType == .record {
-            return "Tracking"
-        }
         if task.isDailyRoutine {
             return "Today"
         }

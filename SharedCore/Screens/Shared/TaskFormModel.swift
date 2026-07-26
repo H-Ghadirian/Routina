@@ -193,37 +193,6 @@ extension TaskFormModel {
         )
     }
 
-    var primaryKind: Binding<TaskFormPrimaryKind> {
-        let taskType = taskType
-        return Binding(
-            get: {
-                taskType.wrappedValue == .record ? .record : .task
-            },
-            set: { kind in
-                switch kind {
-                case .record:
-                    taskType.wrappedValue = .record
-                case .task:
-                    if taskType.wrappedValue == .record {
-                        taskType.wrappedValue = .todo
-                    }
-                }
-            }
-        )
-    }
-
-    var taskKind: Binding<TaskFormTaskKind> {
-        let taskType = taskType
-        return Binding(
-            get: {
-                taskType.wrappedValue == .routine ? .routine : .todo
-            },
-            set: { kind in
-                taskType.wrappedValue = kind.taskType
-            }
-        )
-    }
-
     var scheduleBehavior: Binding<RoutineScheduleBehavior> {
         let scheduleMode = scheduleMode
         return Binding(

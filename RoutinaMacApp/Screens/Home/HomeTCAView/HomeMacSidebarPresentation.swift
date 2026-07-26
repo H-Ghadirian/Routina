@@ -91,8 +91,6 @@ private extension HomeFeature.TaskListMode {
             return "Routines"
         case .todos:
             return "Todos"
-        case .records:
-            return "Tracking"
         }
     }
 
@@ -104,8 +102,6 @@ private extension HomeFeature.TaskListMode {
             return "Filter Routines"
         case .todos:
             return "Filter Todos"
-        case .records:
-            return "Filter Tracking"
         }
     }
 }

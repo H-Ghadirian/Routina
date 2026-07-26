@@ -66,6 +66,7 @@ This page summarizes active Planner, timeline activity, focus, Away, and Sleep b
 - [0402](../decisions/0402-drag-planner-task-detail-title-to-schedule.md)
 - [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md)
 - [0435](../decisions/0435-schedule-calendar-list-days-from-mac-task-detail.md)
+- [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md)
 
 ## Current Contract
 

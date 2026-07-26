@@ -171,12 +171,12 @@ struct HomeCustomTaskSectionStorageTests {
         let sectionID = UUID()
         let createdAt = Date(timeIntervalSince1970: 100)
         let sections = [
-            HomeCustomTaskSection(id: sectionID, title: "Tracking", createdAt: createdAt)
+            HomeCustomTaskSection(id: sectionID, title: "Tomorrow", createdAt: createdAt)
         ]
 
         let updatedSections = try #require(
             HomeCustomTaskSectionStorage.settingRule(
-                .tracking,
+                .plannedTomorrow,
                 isEnabled: true,
                 for: sectionID,
                 in: sections
@@ -184,9 +184,9 @@ struct HomeCustomTaskSectionStorageTests {
         )
 
         #expect(updatedSections.map(\.id) == [sectionID])
-        #expect(updatedSections.first?.title == "Tracking")
+        #expect(updatedSections.first?.title == "Tomorrow")
         #expect(updatedSections.first?.createdAt == createdAt)
-        #expect(updatedSections.first?.rules.contains(.tracking) == true)
+        #expect(updatedSections.first?.rules.contains(.plannedTomorrow) == true)
     }
 
     @Test
@@ -216,7 +216,7 @@ struct HomeCustomTaskSectionStorageTests {
                 title: "Today",
                 createdAt: nil,
                 rules: HomeCustomTaskSectionRules(
-                    enabledRules: [.tracking, .plannedToday],
+                    enabledRules: [.plannedTomorrow, .plannedToday],
                     tagNames: ["Work", "Focus"]
                 )
             )
@@ -226,8 +226,7 @@ struct HomeCustomTaskSectionStorageTests {
 
         #expect(decodedSection.id == sectionID)
         #expect(decodedSection.rules.contains(.plannedToday))
-        #expect(decodedSection.rules.contains(.tracking))
-        #expect(!decodedSection.rules.contains(.plannedTomorrow))
+        #expect(decodedSection.rules.contains(.plannedTomorrow))
         #expect(decodedSection.rules.tagNames == ["Work", "Focus"])
     }
 }

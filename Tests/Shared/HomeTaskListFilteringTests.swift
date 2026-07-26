@@ -188,7 +188,7 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
-    func sidebarPresentationShowsAssumedTrackingRowsByDefault() {
+    func sidebarPresentationShowsInternalRecordRowsAsRoutines() {
         let assumedID = UUID()
         let visibleID = UUID()
         let tasks = [
@@ -221,11 +221,11 @@ struct HomeTaskListFilteringTests {
 
         let sectionTitles = presentation.sections.map { $0.title }
         let todayTaskIDs = presentation.sections.first?.tasks.map { $0.taskID }
-        let trackingTaskIDs = presentation.sections.last?.tasks.map { $0.taskID }
+        let futureTaskIDs = presentation.sections.last?.tasks.map { $0.taskID }
 
-        #expect(sectionTitles == ["Today", "Tracking"])
+        #expect(sectionTitles == ["Today", "Future"])
         #expect(todayTaskIDs == [visibleID])
-        #expect(trackingTaskIDs == [assumedID])
+        #expect(futureTaskIDs == [assumedID])
     }
 
     @Test
@@ -1365,7 +1365,7 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
-    func sidebarPresentationPlansTrackingRowsBeforeTrackingSection() {
+    func sidebarPresentationPlansInternalRecordRowsBeforeFuture() {
         let referenceDate = makeDate("2026-06-22T10:00:00Z") // Monday
         let tomorrow = makeDate("2026-06-23T10:00:00Z")
         let plannedTodayID = UUID()
@@ -1425,14 +1425,12 @@ struct HomeTaskListFilteringTests {
 
         let todaySection = presentation.sections.first { $0.kind == .plannedToday }
         let tomorrowSection = presentation.sections.first { $0.kind == .plannedTomorrow }
-        let trackingSection = presentation.sections.first { $0.kind == .tracking }
         let futureSection = presentation.sections.last
-        #expect(presentation.sections.map(\.kind) == [.plannedToday, .plannedTomorrow, .tracking, .future])
-        #expect(presentation.sections.map(\.title) == ["Today", "Tomorrow", "Tracking", "Future"])
-        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 2, 4, 5])
+        #expect(presentation.sections.map(\.kind) == [.plannedToday, .plannedTomorrow, .future])
+        #expect(presentation.sections.map(\.title) == ["Today", "Tomorrow", "Future"])
+        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 2, 4])
         #expect(todaySection?.tasks.map(\.taskID) == [plannedTodayID, trackingTodayID])
         #expect(tomorrowSection?.tasks.map(\.taskID) == [trackingTomorrowID, dailyRunoutTrackingTomorrowID])
-        #expect(trackingSection?.tasks.map(\.taskID) == [trackingFutureID])
         #expect(todaySection?.taskGroups.first?.moveContext?.sectionKey == "plannedToday")
         #expect(todaySection?.taskGroups.first?.moveContext?.orderedTaskIDs == [plannedTodayID, trackingTodayID])
         #expect(tomorrowSection?.moveContext?.sectionKey == "plannedTomorrow")
@@ -1440,13 +1438,8 @@ struct HomeTaskListFilteringTests {
             trackingTomorrowID,
             dailyRunoutTrackingTomorrowID
         ])
-        #expect(trackingSection?.moveContext?.sectionKey == "tracking")
-        #expect(trackingSection?.moveContext?.orderedTaskIDs == [trackingFutureID])
-        #expect(trackingSection?.taskGroups.map(\.title) == [String?("On Track")])
-        #expect(trackingSection?.taskGroups.map(\.kind) == [.regular])
-        #expect(trackingSection?.taskGroups.map(\.isCollapsible) == [false])
         #expect(futureSection?.kind == .future)
-        #expect(futureSection?.tasks.map(\.taskID) == [regularID])
+        #expect(Set(futureSection?.tasks.map(\.taskID) ?? []) == [trackingFutureID, regularID])
     }
 
     @Test
@@ -1495,9 +1488,9 @@ struct HomeTaskListFilteringTests {
         )
 
         let customSection = presentation.sections.first { $0.kind == .custom }
-        #expect(presentation.sections.map(\.kind) == [.plannedToday, .custom, .tracking, .future])
-        #expect(presentation.sections.map(\.title) == ["Today", "Work", "Tracking", "Future"])
-        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 1, 3, 4])
+        #expect(presentation.sections.map(\.kind) == [.plannedToday, .custom, .future])
+        #expect(presentation.sections.map(\.title) == ["Today", "Work", "Future"])
+        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 1, 3])
         #expect(customSection?.identityKey == customSectionKey)
         #expect(customSection?.moveContext?.sectionKey == customSectionKey)
         #expect(customSection?.tasks.map(\.taskID) == [customEarlierID, customLaterID])
@@ -1557,10 +1550,9 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
-    func sidebarPresentationAppliesCustomSectionRulesWithoutRemovingBuiltIns() {
+    func sidebarPresentationAppliesPlanningRulesWithoutRemovingBuiltIns() {
         let referenceDate = makeDate("2026-06-22T10:00:00Z")
         let customTodaySectionID = UUID()
-        let customTrackingSectionID = UUID()
         let dailyID = UUID()
         let plannedTodayID = UUID()
         let trackingID = UUID()
@@ -1601,12 +1593,6 @@ struct HomeTaskListFilteringTests {
                     createdAt: nil,
                     rules: HomeCustomTaskSectionRules(enabledRules: [.plannedToday])
                 ),
-                HomeCustomTaskSection(
-                    id: customTrackingSectionID,
-                    title: "Custom Tracking",
-                    createdAt: nil,
-                    rules: HomeCustomTaskSectionRules(enabledRules: [.tracking])
-                )
             ],
             emptyState: HomeTaskListEmptyState(
                 title: "No matching tasks",
@@ -1615,12 +1601,11 @@ struct HomeTaskListFilteringTests {
             )
         )
 
-        #expect(presentation.sections.map(\.kind) == [.plannedToday, .custom, .custom, .future])
-        #expect(presentation.sections.map(\.title) == ["Today", "Custom Today", "Custom Tracking", "Future"])
+        #expect(presentation.sections.map(\.kind) == [.plannedToday, .custom, .future])
+        #expect(presentation.sections.map(\.title) == ["Today", "Custom Today", "Future"])
         #expect(presentation.sections[0].tasks.map(\.taskID) == [dailyID])
         #expect(presentation.sections[1].tasks.map(\.taskID) == [plannedTodayID])
-        #expect(presentation.sections[2].tasks.map(\.taskID) == [trackingID])
-        #expect(presentation.sections[3].tasks.map(\.taskID) == [futureID])
+        #expect(Set(presentation.sections[2].tasks.map(\.taskID)) == [trackingID, futureID])
     }
 
     @Test
@@ -1668,9 +1653,8 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
-    func sidebarPresentationKeepsManualCustomAssignmentAheadOfOtherSectionRules() {
+    func sidebarPresentationKeepsManualCustomAssignmentForInternalRecordRows() {
         let manualSectionID = UUID()
-        let trackingRuleSectionID = UUID()
         let trackingID = UUID()
 
         let presentation = HomeTaskListPresentation.sidebar(
@@ -1686,12 +1670,6 @@ struct HomeTaskListFilteringTests {
             awayRoutineDisplays: [],
             archivedRoutineDisplays: [],
             customSections: [
-                HomeCustomTaskSection(
-                    id: trackingRuleSectionID,
-                    title: "Rule Tracking",
-                    createdAt: nil,
-                    rules: HomeCustomTaskSectionRules(enabledRules: [.tracking])
-                ),
                 HomeCustomTaskSection(id: manualSectionID, title: "Manual", createdAt: nil)
             ],
             emptyState: HomeTaskListEmptyState(
@@ -1706,7 +1684,7 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
-    func sidebarPresentationGroupsTrackingRowsLikeFutureTagGroups() {
+    func sidebarPresentationGroupsInternalRecordRowsWithFutureRoutines() {
         let adminTrackingID = UUID()
         let focusTrackingID = UUID()
         let futureID = UUID()
@@ -1717,15 +1695,13 @@ struct HomeTaskListFilteringTests {
                     taskID: focusTrackingID,
                     name: "Review workouts",
                     tags: ["Focus"],
-                    scheduleMode: .record,
-                    manualSectionOrders: ["tracking": 1]
+                    scheduleMode: .record
                 ),
                 TestTaskDisplay(
                     taskID: adminTrackingID,
                     name: "Log errands",
                     tags: ["Admin"],
-                    scheduleMode: .recordChecklist,
-                    manualSectionOrders: ["tracking": 0]
+                    scheduleMode: .recordChecklist
                 ),
                 TestTaskDisplay(
                     taskID: futureID,
@@ -1743,19 +1719,15 @@ struct HomeTaskListFilteringTests {
             )
         )
 
-        let trackingSection = presentation.sections.first { $0.kind == HomeTaskListPresentationSectionKind.tracking }
         let futureSection = presentation.sections.first { $0.kind == HomeTaskListPresentationSectionKind.future }
 
         let sectionKinds: [HomeTaskListPresentationSectionKind] = presentation.sections.map(\.kind)
-        #expect(sectionKinds == [.tracking, .future])
-        #expect(trackingSection?.moveContext?.sectionKey == "tracking")
-        #expect(trackingSection?.moveContext?.orderedTaskIDs == [adminTrackingID, focusTrackingID])
-        #expect((trackingSection?.taskGroups.map(\.title) ?? []) == [String?("#Admin"), String?("#Focus")])
-        #expect((trackingSection?.taskGroups.map(\.kind) ?? []) == [.tag, .tag])
-        #expect((trackingSection?.taskGroups.map(\.isCollapsible) ?? []) == [true, true])
-        #expect((trackingSection?.taskGroups.map { $0.tasks.map(\.taskID) } ?? []) == [[adminTrackingID], [focusTrackingID]])
-        #expect((futureSection?.taskGroups.map(\.title) ?? []) == [String?("#Focus")])
-        #expect((futureSection?.taskGroups.map(\.kind) ?? []) == [.tag])
+        #expect(sectionKinds == [.future])
+        #expect((futureSection?.taskGroups.map(\.title) ?? []) == [String?("#Admin"), String?("#Focus")])
+        #expect((futureSection?.taskGroups.map(\.kind) ?? []) == [.tag, .tag])
+        #expect((futureSection?.taskGroups.map(\.isCollapsible) ?? []) == [true, true])
+        #expect((futureSection?.taskGroups.first?.tasks.map(\.taskID) ?? []) == [adminTrackingID])
+        #expect(Set(futureSection?.taskGroups.last?.tasks.map(\.taskID) ?? []) == [focusTrackingID, futureID])
     }
 
     @Test

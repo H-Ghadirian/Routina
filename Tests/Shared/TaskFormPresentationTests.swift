@@ -11,16 +11,12 @@ import Testing
 
 struct TaskFormPresentationTests {
     @Test
-    func trackingLabelsUseRecordStorageCompatibility() {
+    func userFacingTaskTypeSelectorsOmitInternalRecordCompatibility() {
         #expect(RoutineTaskType.record.rawValue == "Tracking")
-        #expect(RoutineTaskType.record.pluralTitle == "Tracking")
-        #expect(TaskFormPrimaryKind.record.rawValue == "Tracking")
-        #expect(HomeTaskListMode.records.title == "Tracking")
-        #expect(HomeTaskListMode.records.rawValue == "Records")
-        #expect(TimelineFilterType.records.title == "Tracking")
-        #expect(TimelineFilterType.records.rawValue == "Records")
-        #expect(StatsTaskTypeFilter.records.title == "Tracking")
-        #expect(StatsTaskTypeFilter.records.rawValue == "Records")
+        #expect(RoutineTaskType.record.pluralTitle == "Routines")
+        #expect(HomeTaskListMode.allCases == [.all, .routines, .todos])
+        #expect(!TimelineFilterType.allCases.map(\.rawValue).contains("Records"))
+        #expect(StatsTaskTypeFilter.allCases == [.all, .routines, .todos])
     }
 
     @Test @MainActor
@@ -67,6 +63,7 @@ struct TaskFormPresentationTests {
         )
 
         #expect(model.creationKind.wrappedValue == .repeating)
+        #expect(model.visibilityMode.usesProgressiveDisclosure)
         #expect(model.routineRepeatTypeCases.contains(.none))
         #expect(model.routineRepeatType.wrappedValue == .none)
 

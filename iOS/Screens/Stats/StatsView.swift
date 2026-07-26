@@ -162,9 +162,7 @@ struct StatsView: View {
     }
 
     private var showsTaskTypeFilter: Bool {
-        tasks.contains {
-            $0.isOneOffTask || $0.scheduleMode.taskType == .record
-        }
+        tasks.contains(where: \.isOneOffTask)
     }
 
     private var availableExcludeTags: [String] {

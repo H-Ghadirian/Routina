@@ -59,8 +59,6 @@ extension HomeTCAView {
             return "Tasks"
         case .todos:
             return "Todos"
-        case .records:
-            return "Tracking"
         }
     }
 
@@ -72,8 +70,6 @@ extension HomeTCAView {
             return "Filter Tasks"
         case .todos:
             return "Filter Todos"
-        case .records:
-            return "Filter Tracking"
         }
     }
 
@@ -1121,8 +1117,6 @@ extension HomeTCAView {
             return "No matching routines"
         case .todos:
             return "No matching todos"
-        case .records:
-            return "No matching tracking"
         }
     }
 
@@ -1139,8 +1133,6 @@ extension HomeTCAView {
             return isPlacesEnabled ? "Try a different place or switch back to all routines." : "Clear a few filters or switch back to all routines."
         case .todos:
             return isPlacesEnabled ? "Try a different place or switch back to all todos." : "Clear a few filters or switch back to all todos."
-        case .records:
-            return isPlacesEnabled ? "Try a different place or switch back to all tracking." : "Clear a few filters or switch back to all tracking."
         }
     }
 

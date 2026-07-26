@@ -30,7 +30,7 @@ struct StatsActiveItemsInfoPopover: View {
         VStack(alignment: .leading, spacing: 8) {
             StatsActiveItemsFormulaRow(
                 title: "Matching items",
-                formula: "\(breakdown.routineCount.formatted()) routines + \(breakdown.todoCount.formatted()) todos + \(breakdown.recordCount.formatted()) tracking",
+                formula: "\(breakdown.routineCount.formatted()) routines + \(breakdown.todoCount.formatted()) todos",
                 result: breakdown.matchingCount.formatted()
             )
 

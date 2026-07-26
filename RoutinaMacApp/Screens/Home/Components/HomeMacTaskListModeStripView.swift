@@ -22,7 +22,6 @@ struct HomeMacTaskListModeStripView: View {
     private static let displayModes: [HomeFeature.TaskListMode] = [
         .all,
         .todos,
-        .routines,
-        .records
+        .routines
     ]
 }

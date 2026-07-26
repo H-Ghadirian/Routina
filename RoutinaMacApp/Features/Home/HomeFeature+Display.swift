@@ -107,10 +107,9 @@ extension HomeFeature {
                     return true
                 case .routines:
                     return display.scheduleMode.taskType == .routine
+                        || display.scheduleMode.taskType == .record
                 case .todos:
                     return display.isOneOffTask
-                case .records:
-                    return display.scheduleMode.taskType == .record
                 }
             }
             .reduce(into: [UUID: Int]()) { partialResult, display in

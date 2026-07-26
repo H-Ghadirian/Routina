@@ -4,22 +4,10 @@ enum HomeTaskListMode: String, CaseIterable, Equatable, Identifiable {
     case all = "All"
     case routines = "Routines"
     case todos = "Todos"
-    case records = "Records"
 
     var id: Self { self }
 
-    var title: String {
-        switch self {
-        case .all:
-            return rawValue
-        case .routines:
-            return rawValue
-        case .todos:
-            return rawValue
-        case .records:
-            return "Tracking"
-        }
-    }
+    var title: String { rawValue }
 
     var systemImage: String {
         switch self {
@@ -33,8 +21,6 @@ enum HomeTaskListMode: String, CaseIterable, Equatable, Identifiable {
             return "repeat"
         case .todos:
             return "checklist"
-        case .records:
-            return "chart.bar.doc.horizontal"
         }
     }
 
@@ -46,8 +32,6 @@ enum HomeTaskListMode: String, CaseIterable, Equatable, Identifiable {
             return "Show routines"
         case .todos:
             return "Show todos"
-        case .records:
-            return "Show tracking"
         }
     }
 }
@@ -60,7 +44,7 @@ extension RoutineTask {
         case .todo:
             return .todos
         case .record:
-            return .records
+            return .routines
         }
     }
 }

@@ -137,14 +137,14 @@ struct StatsFilterPresentationTests {
 
         let filtered = StatsTaskTypeMatrixFilterSupport.filteredTasks(
             [routine, matchingRecord, lowRecord],
-            taskTypeFilter: .records,
+            taskTypeFilter: .routines,
             selectedImportanceUrgencyFilter: ImportanceUrgencyFilterCell(
                 importance: .level3,
                 urgency: .level3
             )
         )
 
-        #expect(filtered.map(\.name) == ["Research log"])
+        #expect(filtered.map(\.name) == ["Routine", "Research log"])
     }
 
     private func makePresentation(

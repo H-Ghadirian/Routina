@@ -26,11 +26,10 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - [0284](../decisions/0284-hide-filter-query-sections-behind-beta-toggle.md)
 - [0324](../decisions/0324-hide-mac-stats-dashboard-controls-behind-beta-toggle.md)
 - [0359](../decisions/0359-show-assumed-done-stats-summary.md)
-- [0388](../decisions/0388-show-tracking-summary-stats.md)
-- [0398](../decisions/0398-move-auto-assume-done-to-tracking.md)
 - [0390](../decisions/0390-hide-mac-toolbar-search-on-stats-and-add-task.md)
 - [0415](../decisions/0415-support-custom-stats-date-ranges.md)
 - [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md)
+- [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md)
 
 ## Current Contract
 
@@ -49,6 +48,6 @@ This page summarizes active Stats, reports, Achievements, Wins, Sleep, and Adven
 - Wins, Achievements, Sleep scope, Goals UI, and Adventure surfaces remain implemented but are hidden by default behind their related settings; Sleep-specific Stats and Adventure surfaces also stay hidden while `Show Away` is off.
 - Stats filter Query sections are hidden by default behind Support & About -> Beta Experiments -> `Show filter query sections`; existing advanced query state remains compatible and still appears in active filter summaries when nonempty.
 - Stats hero activity previews use range-appropriate buckets: day-level for week, roughly weekly for month, and trailing 12-month framing for year.
-- Stats summary cards show assumed-done daily Gentle-routine counts and summed estimated time for eligible auto-assumed days in the selected range and active task filters, including compatible legacy Tracking records. These assumed totals stay separate from recorded Done counts, charts, achievements, and completion history until the user confirms the assumed day.
-- Stats summary cards show Tracking entry counts and selected-range Tracking time when matching tracking data exists. Tracking counts show active and archived tracking entries; Tracking time sums completed tracking-log actual time plus entry-level actual time for tracking entries created in range when they do not already have an in-range completed tracking log. The Stats task-type filter appears when tracking entries exist, even if there are no todos.
+- Stats summary cards show assumed-done daily Gentle-routine counts and summed estimated time for eligible auto-assumed days in the selected range and active task filters. These assumed totals stay separate from recorded Done counts, charts, achievements, and completion history until the user confirms the assumed day.
+- Stats task-type filtering offers only `All`, `Routines`, and `Todos`. Stats has no Tracking count, Tracking time, or Tracking dashboard item; internal record-shaped data is counted and filtered with routines.
 - Adventure derives progression from existing activity history and shares the Mac Stats sidebar tab behind a `Stats / Adventure` segment when enabled.

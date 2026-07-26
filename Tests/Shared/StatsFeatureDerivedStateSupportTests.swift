@@ -242,7 +242,7 @@ struct StatsFeatureDerivedStateSupportTests {
             logs: logs,
             focusSessions: [],
             selectedRange: .week,
-            taskTypeFilter: .records,
+            taskTypeFilter: .routines,
             selectedImportanceUrgencyFilter: nil,
             advancedQuery: "",
             selectedTags: ["Health"],
@@ -575,7 +575,7 @@ struct StatsFeatureDerivedStateSupportTests {
     }
 
     @Test
-    func build_summarizesTrackingCountsAndTimeForFilteredTasks() {
+    func build_countsInternalRecordTasksAsRoutines() {
         let calendar = makeTestCalendar()
         let referenceDate = makeDate("2026-03-08T12:00:00Z")
         let entryTimeTracking = RoutineTask(
@@ -652,11 +652,10 @@ struct StatsFeatureDerivedStateSupportTests {
             calendar: calendar
         )
 
-        #expect(state.metrics.trackingEntryCount == 3)
-        #expect(state.metrics.activeTrackingEntryCount == 2)
-        #expect(state.metrics.archivedTrackingEntryCount == 1)
-        #expect(state.metrics.completedTrackingLogCount == 1)
-        #expect(state.metrics.totalTrackingActualMinutes == 80)
+        #expect(state.filteredTaskCount == 4)
+        #expect(state.metrics.routineCount == 4)
+        #expect(state.metrics.activeRoutineCount == 3)
+        #expect(state.metrics.archivedRoutineCount == 1)
     }
 
     @Test

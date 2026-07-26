@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0436](0436-remove-tracking-as-a-user-facing-task-type.md) supersedes the compatibility-surface decision in [0428](0428-compose-tracking-behaviors-on-gentle-routines.md), the visible Tracking label and section from [0383](0383-use-tracking-as-record-label.md) and [0384](0384-show-tracking-as-mac-sidebar-section.md), the Tracking summary reports from [0388](0388-show-tracking-summary-stats.md), and the Tracking Settings rule from [0411](0411-manage-custom-task-sections-in-settings.md):** Routina exposes only Routines and Todos as task types; any internal `record` rows are presented and counted as routines, while Tracking remains only in transitional storage names.
+
 - **[0435](0435-schedule-calendar-list-days-from-mac-task-detail.md) refines [0296](0296-present-mac-task-details-as-planner-inspector.md), [0369](0369-show-day-task-list-columns-in-planner-calendar.md), [0371](0371-drag-day-task-sidebar-rows-to-schedule.md), and [0375](0375-split-time-blocks-from-available-windows.md):** Mac Planner Calendar `List` keeps its columns read-only while a planned row’s task-detail companion pane can add, edit, or remove an explicit timed Planner block for exactly the clicked day.
 
 - **[0434](0434-select-subdaily-occurrences-in-task-detail.md) refines [0433](0433-identify-subdaily-history-by-scheduled-occurrence.md):** Task Detail keeps day-level calendar navigation but shows a shared same-day occurrence selector for atomic subdaily routines; selected timestamps drive independent status, completion, missed/canceled resolution, and undo behavior on iOS and macOS.
@@ -352,6 +354,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0436](0436-remove-tracking-as-a-user-facing-task-type.md) | Remove Tracking as a User-Facing Task Type | Accepted | 2026-07-26 |
 | [0434](0434-select-subdaily-occurrences-in-task-detail.md) | Select Subdaily Occurrences in Task Detail | Accepted | 2026-07-26 |
 | [0433](0433-identify-subdaily-history-by-scheduled-occurrence.md) | Identify Subdaily History by Scheduled Occurrence | Accepted | 2026-07-26 |
 | [0432](0432-compose-fixed-recurrence-with-availability-windows.md) | Compose Fixed Recurrence With Availability Windows | Accepted | 2026-07-26 |

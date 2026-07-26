@@ -12,7 +12,6 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
     case all = "All"
     case routines = "Routines"
     case todos = "Todos"
-    case records = "Records"
     case focus = "Focus"
     case events = "Events"
     case emotions = "Emotions"
@@ -25,20 +24,12 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
     case canceled = "Canceled"
     var id: Self { self }
 
-    var title: String {
-        switch self {
-        case .records:
-            return "Tracking"
-        default:
-            return rawValue
-        }
-    }
+    var title: String { rawValue }
 
     static let timelinePigmentCases: [TimelineFilterType] = [
         .all,
         .routines,
         .todos,
-        .records,
         .focus,
         .notes,
         .places,
@@ -55,7 +46,6 @@ enum TimelineFilterType: String, CaseIterable, Identifiable, Sendable, Equatable
         .all,
         .routines,
         .todos,
-        .records,
         .focus,
         .events,
         .emotions,
@@ -295,7 +285,7 @@ struct TimelineEntry: Identifiable, Equatable {
         case .todo:
             return "Todo"
         case .record:
-            return "Tracking"
+            return "Routine"
         case nil:
             return isOneOff ? "Todo" : "Routine"
         }
@@ -384,11 +374,9 @@ enum TimelineEntryKindPresentation {
         switch entry.kind {
         case .completed:
             switch entry.taskType {
-            case .record:
-                return .orange
             case .todo:
                 return .purple
-            case .routine:
+            case .routine, .record:
                 return .accent
             case nil:
                 return entry.isOneOff ? .purple : .accent
@@ -477,9 +465,8 @@ enum TimelineLogic {
 
             switch filterType {
             case .all: break
-            case .routines: if taskType != .routine { return nil }
+            case .routines: if taskType != .routine && taskType != .record { return nil }
             case .todos: if taskType != .todo { return nil }
-            case .records: if taskType != .record { return nil }
             case .events: return nil
             case .emotions: return nil
             case .notes: return nil

@@ -106,22 +106,15 @@ struct HomeFilterPresentationTests {
     }
 
     @Test
-    func staleAssumedDoneVisibilityDoesNotCountForTrackingOrRoutines() {
+    func staleAssumedDoneVisibilityDoesNotCountForRoutines() {
         let routines = HomeFilterPresentation(
             taskListKind: .routines,
-            hideAssumedDoneTasks: false
-        )
-        let tracking = HomeFilterPresentation(
-            taskListKind: .records,
             hideAssumedDoneTasks: false
         )
 
         #expect(!routines.showsAssumedDoneVisibilityFilter)
         #expect(routines.activeOptionalFilterCount == 0)
         #expect(routines.filterLabels == ["Routines"])
-        #expect(!tracking.showsAssumedDoneVisibilityFilter)
-        #expect(tracking.activeOptionalFilterCount == 0)
-        #expect(tracking.filterLabels == ["Tracking"])
     }
 
     @Test

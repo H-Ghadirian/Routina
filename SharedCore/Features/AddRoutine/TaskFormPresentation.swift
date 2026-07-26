@@ -16,29 +16,6 @@ enum TaskFormFrequencyUnit: String, Codable, CaseIterable, Equatable, Sendable {
     var singularLabel: String { rawValue.lowercased() }
 }
 
-enum TaskFormPrimaryKind: String, CaseIterable, Equatable, Identifiable, Sendable {
-    case record = "Tracking"
-    case task = "Task"
-
-    var id: String { rawValue }
-}
-
-enum TaskFormTaskKind: String, CaseIterable, Equatable, Identifiable, Sendable {
-    case todo = "Todo"
-    case routine = "Routine"
-
-    var id: String { rawValue }
-
-    var taskType: RoutineTaskType {
-        switch self {
-        case .todo:
-            return .todo
-        case .routine:
-            return .routine
-        }
-    }
-}
-
 enum TaskFormCreationKind: String, CaseIterable, Equatable, Identifiable, Sendable {
     case oneTime = "One-time"
     case repeating = "Repeating"
@@ -331,7 +308,7 @@ struct TaskFormPresentation {
         case .oneOff:
             return "Steps run in order. Leave this empty for a single-step todo."
         case .record:
-            return "Steps run in order. Leave this empty for one-step tracking."
+            return "Steps run in order. Leave this empty for a one-step routine."
         default:
             return "Steps run in order. Leave this empty for a one-step routine."
         }
@@ -350,11 +327,11 @@ struct TaskFormPresentation {
         case .oneOff:
             return "Use checklist items for parts you want to tick off before finishing the todo."
         case .recordChecklist:
-            return "Tracking is complete when every checklist item is completed."
+            return "The routine is complete when every checklist item is completed."
         case .recordDerivedFromChecklist:
-            return "Tracking items have their own timing, without making the tracking entry overdue."
+            return "Routine items have their own timing without making the routine overdue."
         case .record:
-            return "Tracking focuses on what happened and the time spent."
+            return "Use this gentle routine to record what happened and the time spent."
         }
     }
 

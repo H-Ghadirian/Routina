@@ -24,11 +24,7 @@ struct TaskFormIOSTaskTypeSection: View {
 
     var body: some View {
         Section(header: Text(model.visibilityMode == .progressiveCreate ? "Task Type" : "Kind")) {
-            if model.visibilityMode == .progressiveCreate {
-                creationControls
-            } else {
-                existingKindControls
-            }
+            creationControls
 
             if showsRoutineDurationControl {
                 Divider()
@@ -52,29 +48,6 @@ struct TaskFormIOSTaskTypeSection: View {
         ) { kind in
             Text(kind.rawValue)
         }
-    }
-
-    @ViewBuilder
-    private var existingKindControls: some View {
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Kind",
-                options: TaskFormPrimaryKind.allCases,
-                selection: model.primaryKind,
-                fillsAvailableWidth: true
-            ) { kind in
-                Text(kind.rawValue)
-            }
-
-            if model.primaryKind.wrappedValue == .task {
-                RoutinaGlassSegmentedControl(
-                    accessibilityLabel: "Task kind",
-                    options: TaskFormTaskKind.allCases,
-                    selection: model.taskKind,
-                    fillsAvailableWidth: true
-                ) { kind in
-                    Text(kind.rawValue)
-                }
-            }
     }
 
     private var showsAvailabilityControl: Bool {

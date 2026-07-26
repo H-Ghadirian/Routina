@@ -55,7 +55,7 @@ Coverage:
 - `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
 - `Tests/Shared/NotificationCoordinatorTests.swift`
 
-Given a routine or Tracking entry is reusable but has no known schedule
+Given a routine is reusable but has no known schedule
 When the user chooses `Repeating` and `No schedule`
 Then the task saves without an effective cadence and remains available immediately after every completion
 And every completion remains in its history
@@ -65,10 +65,10 @@ And it has no due date, overdue state, cadence badge, or cadence-only form contr
 And changing other routine behavior preserves `No schedule`
 And Task Detail shows no frequency and no cadence-derived notification is scheduled
 
-### Repeating Behavior Does Not Require A Tracking Purpose
+### Repeating Behavior Is Composable On Routines
 
 Area: Tasks
-Decision links: [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md)
+Decision links: [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md), [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskFormPresentationTests.swift`
@@ -82,8 +82,30 @@ When the user selects Gentle behavior
 Then Nudges can be turned off independently without removing cadence or history
 And an eligible daily Gentle routine can opt into Auto-assume done
 And Due or `No schedule` makes those Gentle-only behaviors unavailable
-And creating the behavior does not require or create a separate Tracking purpose
-And existing stored Tracking records remain compatible without automatic migration
+And creating the behavior does not require or create a separate task purpose
+
+### Retired Task Types Do Not Leak Into Product Surfaces
+
+Area: Tasks / Stats / Settings
+Decision links: [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md)
+Current behavior: [Tasks](../current-behavior/tasks.md), [Stats](../current-behavior/stats.md)
+Coverage:
+- `Tests/Shared/TaskFormPresentationTests.swift`
+- `Tests/Shared/HomeFilterPresentationTests.swift`
+- `Tests/Shared/HomeTaskListFilteringTests.swift`
+- `Tests/Shared/HomeCustomTaskSectionStorageTests.swift`
+- `Tests/Shared/StatsFilterPresentationTests.swift`
+- `Tests/Shared/TimelineLogicTests.swift`
+- `Tests/iOS/StatsDashboardItemAvailabilityTests.swift`
+
+Given the user opens task creation, Home or Timeline filters, Stats, or custom-section Settings
+When task-type choices and reports are presented
+Then only Routines and Todos are exposed as task types
+And no filter, section, rule, badge, query alias, count, time card, or dashboard item exposes the retired type
+
+Given an internal record-shaped development row is encountered
+When Home, Timeline, Planner, or Stats presents or filters it
+Then the row is handled as a routine instead of recreating a separate product category
 
 ### Compact And Structured Recurrence Stay Compatible
 
@@ -394,20 +416,20 @@ Then Home treats the current occurrence as assumed done while dates before creat
 
 Given the user starts checking checklist items for that daily occurrence
 When the app derives assumed completion state
-Then manual partial checklist progress suppresses assumed-done presentation until the Tracking entry is fully completed or progress is cleared
+Then manual partial checklist progress suppresses assumed-done presentation until the routine is fully completed or progress is cleared
 
-### Planner Can Show Assumed Done Tracking
+### Planner Can Show Assumed Done Routines
 
 Area: Planner
-Decision links: [0268](../decisions/0268-show-assumed-done-routines-in-planner.md), [0368](../decisions/0368-hide-assumed-done-calendar-layer-by-default.md), [0372](../decisions/0372-hide-completed-tasks-from-calendar-schedule.md), [0398](../decisions/0398-move-auto-assume-done-to-tracking.md)
+Decision links: [0268](../decisions/0268-show-assumed-done-routines-in-planner.md), [0368](../decisions/0368-hide-assumed-done-calendar-layer-by-default.md), [0372](../decisions/0372-hide-completed-tasks-from-calendar-schedule.md), [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md), [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md)
 Current behavior: [Planner](../current-behavior/planner.md)
 Coverage:
 - `Tests/Shared/DayPlanCalendarFilterStateTests.swift`
 - `Tests/Shared/DayPlanPlannerStateTests.swift`
 
-Given an eligible daily Tracking entry has auto-assume done enabled
+Given an eligible daily Gentle routine has auto-assume done enabled
 When Planner derives automatic activity for an assumed-done day
-Then the Tracking entry is available as synthetic completed planner activity without creating a completion log
+Then the routine is available as synthetic completed planner activity without creating a completion log
 
 Given Planner Calendar filters are at their defaults
 When Calendar filters automatic activity for display
@@ -566,7 +588,7 @@ Then the primary action, active range, completed span, and undo behavior stay co
 ### Today Routines Stay In Today Section
 
 Area: Tasks
-Decision links: [0202](../decisions/0202-nest-daily-routines-under-mac-plan-today.md), [0247](../decisions/0247-make-mac-daily-routine-grouping-optional.md), [0266](../decisions/0266-show-calendar-routines-in-plan-today.md), [0400](../decisions/0400-plan-tracking-rows-into-today.md), [0406](../decisions/0406-auto-plan-exact-date-todos.md)
+Decision links: [0202](../decisions/0202-nest-daily-routines-under-mac-plan-today.md), [0247](../decisions/0247-make-mac-daily-routine-grouping-optional.md), [0266](../decisions/0266-show-calendar-routines-in-plan-today.md), [0406](../decisions/0406-auto-plan-exact-date-todos.md), [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/macOS/HomeFeatureTaskListModeTests.swift`
@@ -585,9 +607,9 @@ Given a Todo has exact `At date` availability
 When the user creates or edits it
 Then `Plan to do` is active and set to the same date
 
-Given a Tracking row has an explicit plan date for today or tomorrow
+Given a non-daily routine has an explicit plan date for today or tomorrow
 When Mac Home derives the sidebar sections
-Then the row appears in `Today` or enabled `Tomorrow` before unplanned Tracking rows are claimed into `Tracking`
+Then the row appears in `Today` or enabled `Tomorrow`, while unplanned routines stay in normal routine placement
 
 Given Mac Home shows expanded `Future`
 When future task groups are visible
@@ -916,7 +938,7 @@ Coverage:
 - `Tests/macOS/TaskDetailFeatureTests.swift`
 - `Tests/Shared/SettingsRoutineDataPersistenceTests.swift`
 
-Given the user opens full Mac Task Details for a routine or tracking task that has not explicitly added Heatmap
+Given the user opens full Mac Task Details for a routine that has not explicitly added Heatmap
 When the user chooses `Heatmap` from `Add more details`
 Then that task stores the heatmap as visible in full Mac Task Details
 

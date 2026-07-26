@@ -12,7 +12,7 @@ enum RoutineTaskType: String, CaseIterable, Equatable, Hashable, Sendable {
         case .todo:
             return "\u{2705}"
         case .record:
-            return "\u{1F4CA}"
+            return "\u{1F501}"
         }
     }
 
@@ -23,7 +23,7 @@ enum RoutineTaskType: String, CaseIterable, Equatable, Hashable, Sendable {
         case .todo:
             return "Todos"
         case .record:
-            return "Tracking"
+            return "Routines"
         }
     }
 }

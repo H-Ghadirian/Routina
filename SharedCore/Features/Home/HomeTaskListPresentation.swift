@@ -42,7 +42,6 @@ enum HomeTaskListPresentationSectionKind: String, Equatable {
     case plannedToday
     case plannedTomorrow
     case custom
-    case tracking
     case daily
     case future
     case regular
@@ -56,7 +55,7 @@ enum HomeTaskListPresentationSectionKind: String, Equatable {
 extension HomeTaskListPresentationSectionKind {
     var isCollapsible: Bool {
         switch self {
-        case .plannedToday, .plannedTomorrow, .custom, .tracking, .daily, .future, .tag, .untagged, .archived:
+        case .plannedToday, .plannedTomorrow, .custom, .daily, .future, .tag, .untagged, .archived:
             return true
         case .pinned, .regular, .deadlineDate, .away:
             return false
@@ -504,10 +503,6 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         let activeDisplaysAfterTomorrowClaim = activeDisplaysAfterTodayClaim.filter {
             !claimedTaskIDs.contains($0.taskID)
         }
-        let trackingTasks = claimTasks(
-            filtering.filteredTrackingTasks(activeDisplaysAfterTomorrowClaim),
-            claimedTaskIDs: &claimedTaskIDs
-        )
         let unplannedActiveDisplays = activeDisplaysAfterTomorrowClaim.filter {
             !claimedTaskIDs.contains($0.taskID)
         }
@@ -617,16 +612,6 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                 )
             )
             offset += customTaskSection.tasks.count
-        }
-
-        if !trackingTasks.isEmpty {
-            if let trackingSection = sidebarTrackingSection(
-                from: trackingTasks,
-                filtering: filtering,
-                offset: &offset
-            ) {
-                presentationSections.append(trackingSection)
-            }
         }
 
         if filtering.usesTagSectioning {
@@ -823,50 +808,6 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         return groups
     }
 
-    private static func sidebarTrackingSection(
-        from trackingTasks: [Display],
-        filtering: HomeTaskListFiltering<Display>,
-        offset: inout Int
-    ) -> HomeTaskListPresentationSection<Display>? {
-        guard !trackingTasks.isEmpty else { return nil }
-
-        let showsGroupTitles = !filtering.usesUngroupedSectioning
-        let usesDeadlineDateSectioning = filtering.usesTagSectioning
-            ? filtering.separatesDeadlineStatusInTagSections
-            : filtering.usesDeadlineDateSectioning
-        let groupedSections = filtering.groupedSections(fromFilteredTasks: trackingTasks)
-        let taskGroups = groupedSections.map { section in
-            let kind = sidebarFutureGroupKind(
-                for: section,
-                showsGroupTitles: showsGroupTitles,
-                usesDeadlineDateSectioning: usesDeadlineDateSectioning
-            )
-            return HomeTaskListPresentationTaskGroup(
-                kind: kind,
-                identityKey: section.identityKey,
-                title: showsGroupTitles ? section.title : nil,
-                tasks: section.tasks,
-                moveContext: nil,
-                isCollapsible: kind == .tag || kind == .untagged || kind == .deadlineDate
-            )
-        }
-
-        defer { offset += trackingTasks.count }
-        return HomeTaskListPresentationSection(
-            kind: .tracking,
-            identityKey: "tracking",
-            title: "Tracking",
-            tasks: trackingTasks,
-            rowNumberOffset: offset,
-            includeMarkDone: true,
-            moveContext: HomeTaskListMoveContext(
-                sectionKey: HomeTaskListFiltering<Display>.trackingManualOrderSectionKey,
-                orderedTaskIDs: trackingTasks.map(\.taskID)
-            ),
-            taskGroups: taskGroups
-        )
-    }
-
     private static func sidebarFutureSection(
         from regularSections: [HomeTaskListSection<Display>],
         offset: inout Int,
@@ -943,9 +884,8 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         }
 
         let todos = section.tasks.filter(\.isOneOffTask)
-        let routines = section.tasks.filter { !$0.isOneOffTask && $0.scheduleMode.taskType == .routine }
-        let records = section.tasks.filter { $0.scheduleMode.taskType == .record }
-        let childGroupCount = [todos, routines, records].filter { !$0.isEmpty }.count
+        let routines = section.tasks.filter { !$0.isOneOffTask }
+        let childGroupCount = [todos, routines].filter { !$0.isEmpty }.count
         guard childGroupCount > 1 else { return [] }
 
         return [
@@ -962,14 +902,6 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
                 identityKey: "\(section.identityKey):routines",
                 title: "Routines",
                 tasks: routines,
-                moveContext: nil,
-                isCollapsible: true
-            ),
-            HomeTaskListPresentationTaskGroup(
-                kind: .regular,
-                identityKey: "\(section.identityKey):records",
-                title: "Tracking",
-                tasks: records,
                 moveContext: nil,
                 isCollapsible: true
             )
@@ -1035,8 +967,6 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             return "No matching routines"
         case .todos:
             return "No matching todos"
-        case .records:
-            return "No matching tracking"
         }
     }
 }

@@ -4,18 +4,10 @@ enum StatsTaskTypeFilter: String, CaseIterable, Identifiable, Sendable, Equatabl
     case all = "All"
     case routines = "Routines"
     case todos = "Todos"
-    case records = "Records"
 
     var id: Self { self }
 
-    var title: String {
-        switch self {
-        case .records:
-            return "Tracking"
-        default:
-            return rawValue
-        }
-    }
+    var title: String { rawValue }
 }
 
 typealias StatsIncludedTagMutation = HomeIncludedTagMutation

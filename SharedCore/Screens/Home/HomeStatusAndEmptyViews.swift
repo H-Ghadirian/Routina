@@ -70,17 +70,15 @@ struct HomeTaskTypeBadgeView: View {
     }
 
     private var title: String {
-        taskType.rawValue
+        taskType == .record ? "Routine" : taskType.rawValue
     }
 
     private var tint: Color {
         switch taskType {
-        case .routine:
+        case .routine, .record:
             return .green
         case .todo:
             return .blue
-        case .record:
-            return .purple
         }
     }
 

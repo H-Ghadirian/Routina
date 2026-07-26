@@ -60,7 +60,6 @@ struct TimelineLogicTests {
             .all,
             .routines,
             .todos,
-            .records,
             .focus,
             .notes,
             .places,
@@ -79,7 +78,6 @@ struct TimelineLogicTests {
             .all,
             .routines,
             .todos,
-            .records,
             .focus,
             .notes,
             .places,
@@ -90,7 +88,6 @@ struct TimelineLogicTests {
             .all,
             .routines,
             .todos,
-            .records,
             .focus,
             .notes,
             .places,
@@ -109,7 +106,6 @@ struct TimelineLogicTests {
             .all,
             .routines,
             .todos,
-            .records,
             .focus,
             .events,
             .emotions,
@@ -121,7 +117,6 @@ struct TimelineLogicTests {
             .all,
             .routines,
             .todos,
-            .records,
             .focus,
             .notes,
             .emotions,
@@ -138,7 +133,6 @@ struct TimelineLogicTests {
             .all,
             .routines,
             .todos,
-            .records,
             .focus,
             .events,
             .emotions,
@@ -150,7 +144,6 @@ struct TimelineLogicTests {
             .all,
             .routines,
             .todos,
-            .records,
             .focus,
             .notes,
             .places,
@@ -291,7 +284,7 @@ struct TimelineLogicTests {
     }
 
     @Test
-    func filteredEntries_recordTasksUseTrackingTimelineLabel() {
+    func filteredEntries_internalRecordTasksAppearAsRoutines() {
         let calendar = makeTestCalendar()
         let now = makeDate("2026-03-20T10:00:00Z")
         let tracking = makeRoutineTask(name: "Tracking", scheduleMode: .record)
@@ -303,17 +296,17 @@ struct TimelineLogicTests {
             logs: [trackingLog, routineLog],
             tasks: [tracking, routine],
             range: .all,
-            filterType: .records,
+            filterType: .routines,
             now: now,
             calendar: calendar
         )
 
-        #expect(entries.count == 1)
+        #expect(entries.count == 2)
         #expect(entries[0].taskName == "Tracking")
         #expect(entries[0].taskType == .record)
-        #expect(entries[0].taskKindLabel == "Tracking")
-        #expect(TimelineEntryKindPresentation.label(for: entries[0]) == "Tracking")
-        #expect(TimelineEntryKindPresentation.tint(for: entries[0]) == .orange)
+        #expect(entries[0].taskKindLabel == "Routine")
+        #expect(TimelineEntryKindPresentation.label(for: entries[0]) == "Routine")
+        #expect(TimelineEntryKindPresentation.tint(for: entries[0]) == .accent)
     }
 
     @Test

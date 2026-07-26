@@ -94,9 +94,7 @@ struct HomeTaskAdvancedQuery<Display: HomeTaskListDisplay> {
         }
         if ["routine", "routines", "recurring"].contains(value) {
             return task.scheduleMode.taskType == .routine
-        }
-        if ["tracking", "track", "record", "records", "log", "logs", "analysis"].contains(value) {
-            return task.scheduleMode.taskType == .record
+                || task.scheduleMode.taskType == .record
         }
         return false
     }
@@ -121,7 +119,7 @@ struct HomeTaskAdvancedQuery<Display: HomeTaskListDisplay> {
             return task.todoState == .ready
         case "blocked":
             return task.todoState == .blocked
-        case "todo", "routine", "tracking", "track", "record", "records", "log", "logs":
+        case "todo", "routine":
             return matchesTaskType(value, task: task)
         default:
             return task.todoState?.displayTitle.normalizedQueryText.contains(value) ?? false

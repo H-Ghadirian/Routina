@@ -658,8 +658,11 @@ struct TaskFormContent: View {
 
     private var previewTitle: String {
         let trimmed = model.name.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let taskTypeTitle = model.taskType.wrappedValue == .record
+            ? RoutineTaskType.routine.rawValue.lowercased()
+            : model.taskType.wrappedValue.rawValue.lowercased()
         return trimmed.isEmpty
-            ? "New \(model.taskType.wrappedValue.rawValue.lowercased())"
+            ? "New \(taskTypeTitle)"
             : trimmed
     }
 
@@ -680,9 +683,9 @@ struct TaskFormContent: View {
         case .derivedFromChecklist: return "A routine driven by the due dates of its checklist items."
         case .softDerivedFromChecklist: return "A gentle routine driven by checklist item timing."
         case .oneOff: return "A one-off task you can finish once."
-        case .record: return "Gentle tracking for what happened and how time was spent."
-        case .recordChecklist: return "Gentle tracking completed by finishing every checklist item."
-        case .recordDerivedFromChecklist: return "Gentle tracking driven by checklist item timing."
+        case .record: return "A gentle routine for recording what happened and how time was spent."
+        case .recordChecklist: return "A gentle routine completed by finishing every checklist item."
+        case .recordDerivedFromChecklist: return "A gentle routine driven by checklist item timing."
         }
     }
 

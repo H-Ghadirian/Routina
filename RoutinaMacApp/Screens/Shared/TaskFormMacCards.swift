@@ -600,11 +600,7 @@ struct TaskFormMacBehaviorCard: View {
 
     @ViewBuilder
     private var taskTypeControl: some View {
-        if model.visibilityMode.usesProgressiveDisclosure {
-            creationTaskTypeControl
-        } else {
-            existingTaskTypeControl
-        }
+        creationTaskTypeControl
     }
 
     private var creationTaskTypeControl: some View {
@@ -616,45 +612,6 @@ struct TaskFormMacBehaviorCard: View {
             Text(kind.rawValue)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var existingTaskTypeControl: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .center, spacing: 12) {
-                primaryKindControl
-                taskKindControl
-            }
-
-            VStack(alignment: .leading, spacing: 10) {
-                primaryKindControl
-                taskKindControl
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    @ViewBuilder
-    private var primaryKindControl: some View {
-        RoutinaGlassSegmentedControl(
-            accessibilityLabel: "Kind",
-            options: TaskFormPrimaryKind.allCases,
-            selection: model.primaryKind
-        ) { kind in
-            Text(kind.rawValue)
-        }
-    }
-
-    @ViewBuilder
-    private var taskKindControl: some View {
-        if model.primaryKind.wrappedValue == .task {
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Task kind",
-                options: TaskFormTaskKind.allCases,
-                selection: model.taskKind
-            ) { kind in
-                Text(kind.rawValue)
-            }
-        }
     }
 
     private var showsAvailabilityControl: Bool {

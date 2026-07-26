@@ -100,37 +100,8 @@ struct StatsDashboardItemAvailabilityTests {
     }
 
     @Test
-    func trackingReports_requireTrackingBackingMetrics() {
-        let emptyMetrics = StatsFeatureMetrics()
-        #expect(!StatsDashboardItem.trackingCount.isReportable(
-            metrics: emptyMetrics,
-            healthSummary: nil
-        ))
-        #expect(!StatsDashboardItem.trackingTime.isReportable(
-            metrics: emptyMetrics,
-            healthSummary: nil
-        ))
-
-        let countMetrics = StatsFeatureMetrics(trackingEntryCount: 2)
-        #expect(StatsDashboardItem.trackingCount.isReportable(
-            metrics: countMetrics,
-            healthSummary: nil
-        ))
-        #expect(!StatsDashboardItem.trackingTime.isReportable(
-            metrics: countMetrics,
-            healthSummary: nil
-        ))
-
-        let timeMetrics = StatsFeatureMetrics(totalTrackingActualMinutes: 45)
-        #expect(StatsDashboardItem.trackingTime.isReportable(
-            metrics: timeMetrics,
-            healthSummary: nil
-        ))
-    }
-
-    @Test
-    func trackingSummaryIdentifiers_mapToDashboardItems() {
-        #expect(StatsDashboardItem(summaryAccessibilityIdentifier: "stats.summary.trackingCount") == .trackingCount)
-        #expect(StatsDashboardItem(summaryAccessibilityIdentifier: "stats.summary.trackingTime") == .trackingTime)
+    func userFacingDashboardOmitsTrackingItems() {
+        #expect(!StatsDashboardItem.allCases.map(\.rawValue).contains("trackingCount"))
+        #expect(!StatsDashboardItem.allCases.map(\.rawValue).contains("trackingTime"))
     }
 }
