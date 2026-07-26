@@ -67,6 +67,7 @@ struct TaskDetailTCAView: View {
     @State var attachmentTempURL: URL?
     @State var fileToSave: AttachmentItem?
     @State private var isRelationshipGraphPresented = false
+    @State private var isExistingTaskLinkerPresented = false
     @State private var selectedLinkedEventPresentation: TaskDetailLinkedEventPresentation?
     @State private var isMatrixExpanded = false
     @State private var isCalendarExpanded = false
@@ -180,6 +181,9 @@ struct TaskDetailTCAView: View {
                     }
                 )
             }
+            .sheet(isPresented: $isExistingTaskLinkerPresented) {
+                existingTaskLinkerSheet
+            }
             .sheet(item: $selectedLinkedEventPresentation) { presentation in
                 linkedEventDetailSheet(eventID: presentation.id)
             }
@@ -224,6 +228,7 @@ struct TaskDetailTCAView: View {
                 referenceDate = Date()
                 activeBlockingTask = nil
                 isCommentComposerVisible = false
+                isExistingTaskLinkerPresented = false
                 resetRevealedOptionalControls()
                 syncAvailableEvents()
                 Task {
@@ -829,7 +834,21 @@ struct TaskDetailTCAView: View {
     }
 
     private func openExistingTaskLinker() {
-        revealInlineEditSection(.linkedTasks)
+        isExistingTaskLinkerPresented = true
+    }
+
+    private var existingTaskLinkerSheet: some View {
+        TaskRelationshipPickerSheet(
+            candidates: store.availableRelationshipTasks,
+            linkedTaskIDs: Set(store.resolvedRelationships.map(\.taskID)),
+            initialKind: store.addLinkedTaskRelationshipKind,
+            onSelect: { taskID, kind in
+                store.send(.detailLinkExistingTask(taskID, kind))
+            }
+        ) { searchText in
+            TextField("Search tasks", text: searchText)
+                .routinaTaskRelationshipSearchFieldPlatform()
+        }
     }
 
     private var shouldShowCommentsSection: Bool {

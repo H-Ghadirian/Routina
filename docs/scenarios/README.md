@@ -35,6 +35,8 @@ Area: Tasks
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
+- `Tests/Shared/TaskDetailEditSaveTests.swift`
+- `Tests/Shared/HomeFeatureTaskDetailActionRouterTests.swift`
 - `Tests/macOS/HomeFeatureAddRoutinePresentationTests.swift`
 
 Given a task is open in Mac Task Details or Edit Task
@@ -43,6 +45,12 @@ Then both surfaces show a compact relationship picker before `Create New Task` a
 And `Create New Task` opens task creation with the chosen inverse relationship preselected
 And `Link a Task` opens the existing-task relationship picker initialized to the chosen relationship
 And the two different behaviors are not presented under the same ambiguous label
+
+Given a task with existing relationships is open in Mac Task Details
+When the user clicks the visible section's `Link a Task` button once
+Then the existing-task picker opens directly
+And no second Linked Tasks editor or second `Link a Task` button is inserted below the section
+And choosing a task persists that relationship without requiring a second Save action
 
 ### Cadence-Free Repeating Tasks Stay Reusable
 

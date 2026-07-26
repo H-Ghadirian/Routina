@@ -159,7 +159,7 @@ struct TaskRelationshipsEditor<SearchField: View>: View {
     }
 }
 
-private struct TaskRelationshipPickerSheet<SearchField: View>: View {
+struct TaskRelationshipPickerSheet<SearchField: View>: View {
     let candidates: [RoutineTaskRelationshipCandidate]
     let linkedTaskIDs: Set<UUID>
     let onSelect: (UUID, RoutineTaskRelationshipKind) -> Void

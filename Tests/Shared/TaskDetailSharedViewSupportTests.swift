@@ -19,11 +19,41 @@ struct TaskDetailSharedViewSupportTests {
     }
 
     @Test
+    func macTaskDetailLinkActionOpensPickerWithoutRevealingDuplicateEditor() throws {
+        let source = try Self.sourceFile(
+            "RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift"
+        )
+        let actionStart = try #require(source.range(of: "private func openExistingTaskLinker()"))
+        let actionEnd = try #require(
+            source.range(
+                of: "private var existingTaskLinkerSheet",
+                range: actionStart.upperBound..<source.endIndex
+            )
+        )
+        let actionSource = String(source[actionStart.lowerBound..<actionEnd.lowerBound])
+
+        #expect(actionSource.contains("isExistingTaskLinkerPresented = true"))
+        #expect(!actionSource.contains("revealInlineEditSection"))
+        #expect(source.contains(".sheet(isPresented: $isExistingTaskLinkerPresented)"))
+        #expect(source.contains("store.send(.detailLinkExistingTask(taskID, kind))"))
+    }
+
+    @Test
     func durationTextFormatsMinutesHoursAndMixedDurations() {
         #expect(TaskDetailHeaderBadgePresentation.durationText(for: 1) == "1 minute")
         #expect(TaskDetailHeaderBadgePresentation.durationText(for: 25) == "25 minutes")
         #expect(TaskDetailHeaderBadgePresentation.durationText(for: 60) == "1 hour")
         #expect(TaskDetailHeaderBadgePresentation.durationText(for: 125) == "2 hours 5 minutes")
+    }
+
+    private static func sourceFile(_ relativePath: String) throws -> String {
+        let testsDirectory = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let sourceURL = testsDirectory
+            .deletingLastPathComponent()
+            .appendingPathComponent(relativePath)
+        return try String(contentsOf: sourceURL, encoding: .utf8)
     }
 
     @Test

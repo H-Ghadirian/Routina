@@ -129,6 +129,67 @@ struct TaskDetailEditSaveTests {
     }
 
     @Test
+    func detailLinkExistingTask_persistsWithoutOpeningAnInlineEditSection() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-03-10T09:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Clean kitchen sink basin",
+            interval: 7,
+            lastDone: nil,
+            emoji: "🧽"
+        )
+        let linkedTask = makeTask(
+            in: context,
+            name: "Clean bathroom sink basin",
+            interval: 7,
+            lastDone: nil,
+            emoji: "✨"
+        )
+        try context.save()
+        let candidate = try #require(
+            RoutineTaskRelationshipCandidate.from(
+                [linkedTask],
+                excluding: task.id,
+                referenceDate: now,
+                calendar: calendar
+            ).first
+        )
+        var initialState = TaskDetailFeature.State(task: task.detachedCopy())
+        initialState.availableRelationshipTasks = [candidate]
+
+        let store = TestStore(initialState: initialState) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.detailLinkExistingTask(linkedTask.id, .related))
+
+        #expect(store.state.task.relationships == [
+            RoutineTaskRelationship(targetTaskID: linkedTask.id, kind: .related)
+        ])
+        #expect(!store.state.isEditSheetPresented)
+
+        let taskID = task.id
+        let persistedTask = try #require(
+            try context.fetch(
+                FetchDescriptor<RoutineTask>(
+                    predicate: #Predicate<RoutineTask> { task in
+                        task.id == taskID
+                    }
+                )
+            ).first
+        )
+        #expect(persistedTask.relationships == [
+            RoutineTaskRelationship(targetTaskID: linkedTask.id, kind: .related)
+        ])
+    }
+
+    @Test
     func editSaveTapped_canonicalizesInverseLinkedTaskOntoEditedTask() async throws {
         let context = makeInMemoryContext()
         let calendar = makeTestCalendar()

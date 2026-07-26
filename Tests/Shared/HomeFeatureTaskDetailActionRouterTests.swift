@@ -53,6 +53,25 @@ struct HomeFeatureTaskDetailActionRouterTests {
         #expect(syncedLogCounts == [0])
     }
 
+    @Test
+    func detailLinkExistingTaskSyncsSelectedTaskImmediately() {
+        var state = TestTaskDetailRouterState()
+        var didSyncSelectedTask = false
+
+        let router = makeRouter(
+            syncSelectedTaskFromTaskDetail: { _ in
+                didSyncSelectedTask = true
+            }
+        )
+
+        _ = router.handle(
+            .detailLinkExistingTask(UUID(), .related),
+            state: &state
+        )
+
+        #expect(didSyncSelectedTask)
+    }
+
     private func makeRouter(
         syncSelectedTaskFromTaskDetail: @escaping (inout TestTaskDetailRouterState) -> Void = { _ in },
         syncSelectedTaskLogs: @escaping ([RoutineLog], inout TestTaskDetailRouterState) -> Void = { _, _ in }

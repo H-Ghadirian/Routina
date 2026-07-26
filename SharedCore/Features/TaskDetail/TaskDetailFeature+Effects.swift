@@ -491,6 +491,62 @@ extension TaskDetailFeature {
         }
     }
 
+    func handleDetailLinkExistingTask(
+        taskID: UUID,
+        targetTaskID: UUID,
+        kind: RoutineTaskRelationshipKind
+    ) -> Effect<Action> {
+        .run { @MainActor _ in
+            do {
+                let context = modelContext()
+                let allTasks = try context.fetch(FetchDescriptor<RoutineTask>())
+                guard let task = allTasks.first(where: { $0.id == taskID }),
+                      targetTaskID != taskID,
+                      allTasks.contains(where: { $0.id == targetTaskID }) else {
+                    return
+                }
+                let candidates = RoutineTaskRelationshipCandidate.from(
+                    allTasks,
+                    excluding: taskID,
+                    referenceDate: now,
+                    calendar: calendar
+                )
+                let previousRelationships = RoutineTask.editableRelationships(
+                    for: task,
+                    within: candidates
+                )
+                let updatedRelationships = RoutineTaskRelationship.sanitized(
+                    previousRelationships + [
+                        RoutineTaskRelationship(targetTaskID: targetTaskID, kind: kind)
+                    ],
+                    ownerID: taskID
+                )
+                guard updatedRelationships != previousRelationships else { return }
+
+                task.replaceRelationships(updatedRelationships)
+                RoutineTask.removeInverseRelationships(targeting: taskID, from: allTasks)
+                appendRelationshipChangeEntries(
+                    to: task,
+                    previousRelationships: previousRelationships,
+                    updatedRelationships: updatedRelationships
+                )
+                DeviceActivityRecorder.recordAction(
+                    .updated,
+                    entity: .task,
+                    entityID: taskID,
+                    entityTitle: RoutineTask.trimmedName(task.name) ?? "Untitled task",
+                    details: "Linked an existing task",
+                    in: context
+                )
+                try context.save()
+                WidgetStatsService.refreshAndReload(using: context)
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error linking existing task from Task Detail: \(error)")
+            }
+        }
+    }
+
     func handleDetailChecklistItemsChanged(
         taskID: UUID,
         checklistItems: [RoutineChecklistItem],

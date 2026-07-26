@@ -343,6 +343,7 @@ struct TaskDetailFeature: Reducer {
         case detailCommentEditCancelTapped
         case detailCommentEditSaveTapped(UUID)
         case detailCommentDeleteTapped(UUID)
+        case detailLinkExistingTask(UUID, RoutineTaskRelationshipKind)
         case editRoutineLinkChanged(String)
         case editDeadlineEnabledChanged(Bool)
         case editDeadlineDateChanged(Date)
@@ -1273,6 +1274,31 @@ struct TaskDetailFeature: Reducer {
             }
             refreshTaskView(&state)
             return handleDetailCommentsChanged(taskID: state.task.id, comments: comments)
+
+        case let .detailLinkExistingTask(targetTaskID, kind):
+            guard targetTaskID != state.task.id,
+                  state.availableRelationshipTasks.contains(where: { $0.id == targetTaskID }) else {
+                return .none
+            }
+            let previousRelationships = RoutineTask.editableRelationships(
+                for: state.task,
+                within: state.availableRelationshipTasks
+            )
+            let updatedRelationships = RoutineTaskRelationship.sanitized(
+                previousRelationships + [
+                    RoutineTaskRelationship(targetTaskID: targetTaskID, kind: kind)
+                ],
+                ownerID: state.task.id
+            )
+            guard updatedRelationships != previousRelationships else { return .none }
+            state.task.replaceRelationships(updatedRelationships)
+            state.addLinkedTaskRelationshipKind = kind
+            refreshTaskView(&state)
+            return handleDetailLinkExistingTask(
+                taskID: state.task.id,
+                targetTaskID: targetTaskID,
+                kind: kind
+            )
 
         case let .editRoutineLinkChanged(link):
             return basicEditActionHandler().editRoutineLinkChanged(link, state: &state)
