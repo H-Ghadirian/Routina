@@ -1764,7 +1764,7 @@ struct HomeFeature {
         }
 
         let task = state.routineTasks[index]
-        let plannedDate = sectionID == nil ? task.plannedDate : nil
+        let plannedDate = task.plannedDate
         var manualSectionOrders = task.manualSectionOrders
         if let sectionID {
             let sectionKey = HomeCustomTaskSectionStorage.manualOrderSectionKey(for: sectionID)

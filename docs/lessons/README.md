@@ -86,3 +86,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0042 — Separate early completion time from scheduled occurrence](0042-separate-early-completion-time-from-scheduled-occurrence.md)
 - [0043 — Pair optional actions with their render path](0043-pair-optional-actions-with-their-render-path.md)
 - [0044 — Keep progressive controls after their trigger](0044-keep-progressive-controls-after-their-trigger.md)
+- [0045 — Model planning as an additive projection](0045-model-planning-as-an-additive-projection.md)

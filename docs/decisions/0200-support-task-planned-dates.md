@@ -6,6 +6,8 @@ Date: 2026-06-10
 
 Refines: [0100 Reveal Task Form Details by Section](0100-reveal-task-form-details-by-section.md), [0197 Separate Todo Date and Time Availability](0197-separate-todo-date-and-time-availability.md), [0199 Support Multi-Day Routine Start Flow](0199-support-multiday-routine-start-flow.md)
 
+Refined by: [0440 Treat Day Planning Sections as Additive](0440-treat-day-planning-sections-as-additive.md)
+
 ## Context
 
 Users need a lightweight way to say "I plan to do this task on this date" without turning that choice into a deadline, reminder, todo availability bound, or routine recurrence rule.

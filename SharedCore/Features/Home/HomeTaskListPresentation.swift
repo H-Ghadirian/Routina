@@ -248,6 +248,13 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         return claimedTasks
     }
 
+    private static func uniqueTasks(_ tasks: [Display]) -> [Display] {
+        var seenTaskIDs: Set<UUID> = []
+        return tasks.filter { task in
+            seenTaskIDs.insert(task.taskID).inserted
+        }
+    }
+
     private static func claimSections(
         _ sections: [HomeTaskListSection<Display>],
         claimedTaskIDs: inout Set<UUID>
@@ -285,18 +292,14 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         let unpinnedRoutineDisplays = routineDisplays.filter {
             !$0.isPinned && !claimedTaskIDs.contains($0.taskID)
         }
-        let plannedTodayTasks = claimTasks(
-            filtering.filteredPlannedTodayTasks(unpinnedRoutineDisplays),
-            claimedTaskIDs: &claimedTaskIDs
+        let plannedTodayTasks = uniqueTasks(
+            filtering.filteredPlannedTodayTasks(routineDisplays)
         )
-        let unplannedRoutineDisplays = unpinnedRoutineDisplays.filter {
-            !claimedTaskIDs.contains($0.taskID)
-        }
         let dailyTasks = claimTasks(
-            filtering.filteredDailyRoutineTasks(unplannedRoutineDisplays),
+            filtering.filteredDailyRoutineTasks(unpinnedRoutineDisplays),
             claimedTaskIDs: &claimedTaskIDs
         )
-        let nonDailyUnplannedRoutineDisplays = unplannedRoutineDisplays.filter {
+        let nonDailyRoutineDisplays = unpinnedRoutineDisplays.filter {
             RoutineTaskPlanningSupport.supportsStoredPlanning(
                 scheduleMode: $0.scheduleMode,
                 trackingCadenceEnabled: $0.trackingCadenceEnabled,
@@ -304,7 +307,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             ) && !claimedTaskIDs.contains($0.taskID)
         }
         let regularSections = claimSections(
-            filtering.groupedRoutineSections(from: nonDailyUnplannedRoutineDisplays),
+            filtering.groupedRoutineSections(from: nonDailyRoutineDisplays),
             claimedTaskIDs: &claimedTaskIDs
         )
         let awayTasks = claimTasks(
@@ -466,6 +469,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         emptyState: HomeTaskListEmptyState
     ) -> Self {
         let visibleArchivedDisplays = showArchivedTasks ? archivedRoutineDisplays : []
+        let activeDisplays = routineDisplays + awayRoutineDisplays
         var claimedTaskIDs: Set<UUID> = []
         let pinnedTasks = claimTasks(
             filtering.filteredPinnedTasks(
@@ -475,7 +479,17 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             ),
             claimedTaskIDs: &claimedTaskIDs
         )
-        let unpinnedActiveDisplays = (routineDisplays + awayRoutineDisplays).filter {
+        let plannedTodayTasks = uniqueTasks(
+            filtering.filteredPlannedTodayTasks(activeDisplays)
+        )
+        let plannedTomorrowTasks = showTomorrowSection
+            ? uniqueTasks(filtering.filteredPlannedTomorrowTasks(activeDisplays))
+            : []
+        let dailyTasks = uniqueTasks(
+            filtering.filteredDailyRoutineTasks(activeDisplays)
+                .filter { filtering.matchesUncompletedTodayClaim($0) }
+        )
+        let unpinnedActiveDisplays = activeDisplays.filter {
             !$0.isPinned && !claimedTaskIDs.contains($0.taskID)
         }
         let customTaskSections = sidebarCustomTaskSections(
@@ -487,31 +501,11 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
         let activeDisplaysAfterCustomClaim = unpinnedActiveDisplays.filter {
             !claimedTaskIDs.contains($0.taskID)
         }
-        let plannedTodayTasks = claimTasks(
-            filtering.filteredPlannedTodayTasks(activeDisplaysAfterCustomClaim),
+        _ = claimTasks(
+            dailyTasks,
             claimedTaskIDs: &claimedTaskIDs
         )
-        let activeDisplaysAfterTodayClaim = activeDisplaysAfterCustomClaim.filter {
-            !claimedTaskIDs.contains($0.taskID)
-        }
-        let plannedTomorrowTasks = showTomorrowSection
-            ? claimTasks(
-                filtering.filteredPlannedTomorrowTasks(activeDisplaysAfterTodayClaim),
-                claimedTaskIDs: &claimedTaskIDs
-            )
-            : []
-        let activeDisplaysAfterTomorrowClaim = activeDisplaysAfterTodayClaim.filter {
-            !claimedTaskIDs.contains($0.taskID)
-        }
-        let unplannedActiveDisplays = activeDisplaysAfterTomorrowClaim.filter {
-            !claimedTaskIDs.contains($0.taskID)
-        }
-        let dailyTasks = claimTasks(
-            filtering.filteredDailyRoutineTasks(unplannedActiveDisplays)
-                .filter { filtering.matchesUncompletedTodayClaim($0) },
-            claimedTaskIDs: &claimedTaskIDs
-        )
-        let nonDailyUnplannedActiveDisplays = unplannedActiveDisplays.filter {
+        let nonDailyActiveDisplays = activeDisplaysAfterCustomClaim.filter {
             RoutineTaskPlanningSupport.supportsStoredPlanning(
                 scheduleMode: $0.scheduleMode,
                 trackingCadenceEnabled: $0.trackingCadenceEnabled,
@@ -519,7 +513,7 @@ struct HomeTaskListPresentation<Display: HomeTaskListDisplay> {
             ) && !claimedTaskIDs.contains($0.taskID)
         }
         let regularSections = claimSections(
-            filtering.groupedRoutineSections(from: nonDailyUnplannedActiveDisplays),
+            filtering.groupedRoutineSections(from: nonDailyActiveDisplays),
             claimedTaskIDs: &claimedTaskIDs
         )
         let archivedTasks = claimTasks(

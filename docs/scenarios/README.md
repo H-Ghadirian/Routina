@@ -654,7 +654,7 @@ Then the primary action, active range, completed span, and undo behavior stay co
 ### Today Routines Stay In Today Section
 
 Area: Tasks
-Decision links: [0202](../decisions/0202-nest-daily-routines-under-mac-plan-today.md), [0247](../decisions/0247-make-mac-daily-routine-grouping-optional.md), [0266](../decisions/0266-show-calendar-routines-in-plan-today.md), [0406](../decisions/0406-auto-plan-exact-date-todos.md), [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md)
+Decision links: [0202](../decisions/0202-nest-daily-routines-under-mac-plan-today.md), [0247](../decisions/0247-make-mac-daily-routine-grouping-optional.md), [0266](../decisions/0266-show-calendar-routines-in-plan-today.md), [0406](../decisions/0406-auto-plan-exact-date-todos.md), [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md), [0440](../decisions/0440-treat-day-planning-sections-as-additive.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/macOS/HomeFeatureTaskListModeTests.swift`
@@ -675,7 +675,11 @@ Then `Plan to do` is active and set to the same date
 
 Given a non-daily routine has an explicit plan date for today or tomorrow
 When Mac Home derives the sidebar sections
-Then the row appears in `Today` or enabled `Tomorrow`, while unplanned routines stay in normal routine placement
+Then the row appears in `Today` or enabled `Tomorrow` and also remains in its normal Pinned, custom, tag, deadline, or `Future` placement
+
+Given a task belongs to a custom section and also has a planned date
+When the user changes either its plan or its custom assignment
+Then both values persist and Home shows the task in the matching planning and custom sections
 
 Given Mac Home shows expanded `Future`
 When future task groups are visible
@@ -723,7 +727,7 @@ Then the direct `Tomorrow` shortcut is hidden
 
 Given the Mac `Show Tomorrow section` task-list setting is on
 When Home derives tasks planned for tomorrow or calendar routines scheduled tomorrow
-Then `Tomorrow` appears between `Today` and `Future`, uses the `plannedTomorrow` manual-order bucket, and removes those rows from `Future`
+Then `Tomorrow` appears between `Today` and `Future`, uses the `plannedTomorrow` manual-order bucket, and those rows retain their ordinary section placement
 
 Given the Mac `Show Tomorrow section` task-list setting is on
 When a Todo has exact `At date` availability for tomorrow
@@ -764,14 +768,18 @@ Then the `Future` wrapper stays open and each collapsible inner group collapses,
 ### Home Task Lists Keep Stable Row Identity
 
 Area: Tasks
-Decision links: [0252](../decisions/0252-stabilize-home-task-list-presentation-identity.md)
+Decision links: [0252](../decisions/0252-stabilize-home-task-list-presentation-identity.md), [0440](../decisions/0440-treat-day-planning-sections-as-additive.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/HomeTaskListFilteringTests.swift`
 
-Given task data briefly appears in overlapping active, away, archived, planned, daily, or status inputs during a refresh
+Given task data briefly appears in overlapping active, away, archived, daily, or status inputs during a refresh
 When Home task-list presentation is derived
-Then each task ID is claimed once, section and group IDs stay stable, and the UI updates existing rows instead of replacing them
+Then each task ID is claimed once in ordinary classification, section and group IDs stay stable, and the UI updates existing rows instead of replacing them
+
+Given one task qualifies for Today or Tomorrow and an ordinary section
+When Home task-list presentation is derived
+Then the planning section and ordinary section each contain one stable row for that task, without duplicates inside either section
 
 ### Planner Filter Button Uses a Companion Pane
 

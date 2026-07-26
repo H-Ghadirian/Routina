@@ -6,6 +6,8 @@ Date: 2026-07-20
 
 Refines: [0252 Stabilize Home Task List Presentation Identity](0252-stabilize-home-task-list-presentation-identity.md), [0384 Show Tracking as Mac Sidebar Section](0384-show-tracking-as-mac-sidebar-section.md), [0394 Add Custom Mac Sidebar Task Sections](0394-add-custom-mac-sidebar-task-sections.md), [0395 Delete Custom Mac Sidebar Task Sections](0395-delete-custom-mac-sidebar-task-sections.md), [0400 Plan Tracking Rows Into Today](0400-plan-tracking-rows-into-today.md), [0403 Rename Custom Mac Sidebar Task Sections](0403-rename-custom-mac-sidebar-task-sections.md), [0408 Allow Explicit Planning for Daily Tracking](0408-allow-explicit-planning-for-daily-tracking.md)
 
+Refined by: [0440 Treat Day Planning Sections as Additive](0440-treat-day-planning-sections-as-additive.md)
+
 ## Context
 
 Custom Mac sidebar task sections began as row-context organization buckets. Users now need a central settings surface to create, rename, delete, and configure sections, plus a first step toward user-defined section placement rules. A common rule is tag-based routing, where rows carrying configured tags should appear in a named custom section.

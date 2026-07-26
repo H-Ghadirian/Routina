@@ -379,7 +379,7 @@ struct HomeTaskLifecycleSupportTests {
     }
 
     @Test
-    func planTaskClearsCustomSectionAssignmentWhenDateIsSet() {
+    func planTaskPreservesCustomSectionAssignmentWhenDateIsSet() {
         let calendar = makeTestCalendar()
         let customSectionID = UUID()
         let task = RoutineTask(
@@ -401,10 +401,10 @@ struct HomeTaskLifecycleSupportTests {
         #expect(update == HomePlanTaskUpdate(
             taskID: task.id,
             plannedDate: normalizedDate,
-            customTaskSectionID: nil
+            customTaskSectionID: customSectionID
         ))
         #expect(tasks[0].plannedDate == normalizedDate)
-        #expect(tasks[0].customTaskSectionID == nil)
+        #expect(tasks[0].customTaskSectionID == customSectionID)
     }
 
     @Test

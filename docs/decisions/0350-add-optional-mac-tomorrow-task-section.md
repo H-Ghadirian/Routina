@@ -6,7 +6,7 @@ Status: Accepted
 
 Refines: [0200 Support Task Planned Dates](0200-support-task-planned-dates.md), [0202 Nest Daily Routines Under Mac Plan Today](0202-nest-daily-routines-under-mac-plan-today.md), [0281 Collapse Mac Future Tasks](0281-collapse-mac-future-tasks.md)
 
-Refined by: [0363 Gate Mac Plan Tomorrow Menu Item](0363-gate-mac-plan-tomorrow-menu-item.md)
+Refined by: [0363 Gate Mac Plan Tomorrow Menu Item](0363-gate-mac-plan-tomorrow-menu-item.md), [0440 Treat Day Planning Sections as Additive](0440-treat-day-planning-sections-as-additive.md)
 
 ## Context
 

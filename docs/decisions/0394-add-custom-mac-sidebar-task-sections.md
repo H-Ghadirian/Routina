@@ -6,6 +6,8 @@ Date: 2026-07-16
 
 Refines: [0252 Stabilize Home Task List Presentation Identity](0252-stabilize-home-task-list-presentation-identity.md), [0285 Clarify Mac Sidebar Section Surfaces](0285-clarify-mac-sidebar-section-surfaces.md), [0384 Show Tracking as Mac Sidebar Section](0384-show-tracking-as-mac-sidebar-section.md), [0386 Match Tracking Inner Groups to Future](0386-match-tracking-inner-groups-to-future.md)
 
+Refined by: [0440 Treat Day Planning Sections as Additive](0440-treat-day-planning-sections-as-additive.md)
+
 ## Context
 
 Mac Home has built-in top-level sidebar sections such as `Today`, `Tracking`, and `Future`. Those sections are useful defaults, but users also need named top-level places for their own work areas without turning those areas into tags, dates, or task types.

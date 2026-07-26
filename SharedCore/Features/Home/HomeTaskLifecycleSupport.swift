@@ -502,12 +502,10 @@ enum HomeTaskLifecycleSupport {
             availabilityEndDate: tasks[index].availabilityEndDate,
             calendar: calendar
         )
-        let customTaskSectionID = normalizedDate == nil ? tasks[index].customTaskSectionID : nil
-        guard tasks[index].plannedDate != normalizedDate
-            || tasks[index].customTaskSectionID != customTaskSectionID else { return nil }
+        let customTaskSectionID = tasks[index].customTaskSectionID
+        guard tasks[index].plannedDate != normalizedDate else { return nil }
 
         tasks[index].plannedDate = normalizedDate
-        tasks[index].customTaskSectionID = customTaskSectionID
         return HomePlanTaskUpdate(
             taskID: taskID,
             plannedDate: normalizedDate,

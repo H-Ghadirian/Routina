@@ -15,6 +15,10 @@ Accepted
 - [0240: Keep Checklist Runout Item Actions Item-Scoped](0240-keep-checklist-runout-item-actions-item-scoped.md)
 - [0247: Make Mac Daily Routine Grouping Optional](0247-make-mac-daily-routine-grouping-optional.md)
 
+## Refined by
+
+- [0440: Treat Day Planning Sections as Additive](0440-treat-day-planning-sections-as-additive.md)
+
 ## Context
 
 Task rows can move between pinned, planned, daily, regular, away, archived, and status sections as state changes. When each section independently filters tasks or when SwiftUI identity is based on visible titles, refreshes can briefly make one task look like two rows or make a section look replaced instead of updated.

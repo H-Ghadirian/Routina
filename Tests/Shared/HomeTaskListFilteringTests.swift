@@ -473,7 +473,7 @@ struct HomeTaskListFilteringTests {
 
         #expect(presentation.sections.map(\.kind) == [.plannedToday, .future])
         #expect(presentation.sections.first?.tasks.map(\.taskID) == [plannedID])
-        #expect(presentation.sections.last?.tasks.map(\.taskID) == [canceledID])
+        #expect(Set(presentation.sections.last?.tasks.map(\.taskID) ?? []) == [plannedID, canceledID])
         #expect(presentation.sections.last?.taskGroups.map(\.title) == [String?("#Health")])
     }
 
@@ -563,7 +563,7 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
-    func presentationShowsPlannedTodaySectionWithoutDuplicatingRows() {
+    func presentationShowsPlannedTodaySectionAndRetainsRegularMembership() {
         let referenceDate = Date(timeIntervalSince1970: 1_714_608_000)
         let plannedID = UUID()
         let regularID = UUID()
@@ -589,7 +589,32 @@ struct HomeTaskListFilteringTests {
         #expect(presentation.sections.map(\.kind) == [.plannedToday, .regular])
         #expect(presentation.sections.first?.title == "Today")
         #expect(presentation.sections.first?.tasks.map(\.taskID) == [plannedID])
-        #expect(presentation.sections.flatMap(\.tasks).filter { $0.taskID == plannedID }.count == 1)
+        #expect(Set(presentation.sections.last?.tasks.map(\.taskID) ?? []) == [plannedID, regularID])
+        #expect(presentation.sections.flatMap(\.tasks).filter { $0.taskID == plannedID }.count == 2)
+    }
+
+    @Test
+    func presentationShowsPinnedPlannedTaskInPinnedAndToday() {
+        let referenceDate = Date(timeIntervalSince1970: 1_714_608_000)
+        let taskID = UUID()
+        let presentation = HomeTaskListPresentation.iOS(
+            filtering: makeFiltering(routineListSectioningMode: .none),
+            routineDisplays: [
+                TestTaskDisplay(
+                    taskID: taskID,
+                    name: "Pinned plan",
+                    plannedDate: referenceDate,
+                    isPinned: true
+                )
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            hideUnavailableRoutines: false,
+            taskListKind: .all
+        )
+
+        #expect(presentation.sections.map(\.kind) == [.pinned, .plannedToday])
+        #expect(presentation.sections.map { $0.tasks.map(\.taskID) } == [[taskID], [taskID]])
     }
 
     @Test
@@ -1197,11 +1222,12 @@ struct HomeTaskListFilteringTests {
         #expect(planSection?.taskGroups.map(\.isCollapsible) == [false, false])
         #expect(planSection?.taskGroups.compactMap(\.moveContext?.sectionKey) == ["plannedToday", "daily"])
         #expect(planSection?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs) == [[scheduledID, plannedID], [dailyID]])
-        #expect(futureSection?.taskGroups.map(\.title) == [String?("On Track")])
-        #expect(futureSection?.taskGroups.compactMap(\.moveContext?.sectionKey) == ["onTrack"])
-        #expect(futureSection?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs.first) == [regularID])
-        #expect(futureSection?.taskGroups.map(\.kind) == [.regular])
-        #expect(futureSection?.taskGroups.map(\.isCollapsible) == [false])
+        #expect(futureSection?.taskGroups.map(\.title) == [String?("Due Soon"), String?("On Track")])
+        #expect(futureSection?.taskGroups.compactMap(\.moveContext?.sectionKey) == ["dueSoon", "onTrack"])
+        #expect(futureSection?.taskGroups.first?.tasks.map(\.taskID) == [scheduledID])
+        #expect(Set(futureSection?.taskGroups.last?.tasks.map(\.taskID) ?? []) == [plannedID, regularID])
+        #expect(futureSection?.taskGroups.map(\.kind) == [.regular, .regular])
+        #expect(futureSection?.taskGroups.map(\.isCollapsible) == [false, false])
     }
 
     @Test
@@ -1272,7 +1298,7 @@ struct HomeTaskListFilteringTests {
         #expect(planSection?.taskGroups.compactMap(\.moveContext?.sectionKey) == ["plannedToday", "daily"])
         #expect(planSection?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs) == [[plannedID], [dailyID]])
         #expect(futureSection?.taskGroups.compactMap(\.moveContext?.sectionKey) == ["onTrack"])
-        #expect(futureSection?.taskGroups.compactMap(\.moveContext?.orderedTaskIDs.first) == [regularID])
+        #expect(Set(futureSection?.tasks.map(\.taskID) ?? []) == [plannedID, regularID])
     }
 
     @Test
@@ -1361,7 +1387,13 @@ struct HomeTaskListFilteringTests {
             scheduledTomorrowID
         ])
         #expect(futureSection?.kind == .future)
-        #expect(futureSection?.tasks.map(\.taskID) == [regularID])
+        #expect(Set(futureSection?.tasks.map(\.taskID) ?? []) == [
+            plannedTodayID,
+            plannedTomorrowLaterID,
+            plannedTomorrowEarlierID,
+            scheduledTomorrowID,
+            regularID
+        ])
     }
 
     @Test
@@ -1439,7 +1471,14 @@ struct HomeTaskListFilteringTests {
             dailyRunoutTrackingTomorrowID
         ])
         #expect(futureSection?.kind == .future)
-        #expect(Set(futureSection?.tasks.map(\.taskID) ?? []) == [trackingFutureID, regularID])
+        #expect(Set(futureSection?.tasks.map(\.taskID) ?? []) == [
+            plannedTodayID,
+            trackingTodayID,
+            trackingTomorrowID,
+            dailyRunoutTrackingTomorrowID,
+            trackingFutureID,
+            regularID
+        ])
     }
 
     @Test
@@ -1490,7 +1529,12 @@ struct HomeTaskListFilteringTests {
         let customSection = presentation.sections.first { $0.kind == .custom }
         #expect(presentation.sections.map(\.kind) == [.plannedToday, .custom, .future])
         #expect(presentation.sections.map(\.title) == ["Today", "Work", "Future"])
-        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 1, 3])
+        #expect(presentation.sections.map(\.rowNumberOffset) == [0, 3, 5])
+        #expect(Set(presentation.sections[0].tasks.map(\.taskID)) == [
+            plannedTodayID,
+            customEarlierID,
+            customLaterID
+        ])
         #expect(customSection?.identityKey == customSectionKey)
         #expect(customSection?.moveContext?.sectionKey == customSectionKey)
         #expect(customSection?.tasks.map(\.taskID) == [customEarlierID, customLaterID])
@@ -1603,7 +1647,7 @@ struct HomeTaskListFilteringTests {
 
         #expect(presentation.sections.map(\.kind) == [.plannedToday, .custom, .future])
         #expect(presentation.sections.map(\.title) == ["Today", "Custom Today", "Future"])
-        #expect(presentation.sections[0].tasks.map(\.taskID) == [dailyID])
+        #expect(presentation.sections[0].tasks.map(\.taskID) == [plannedTodayID, dailyID])
         #expect(presentation.sections[1].tasks.map(\.taskID) == [plannedTodayID])
         #expect(Set(presentation.sections[2].tasks.map(\.taskID)) == [trackingID, futureID])
     }
@@ -1763,7 +1807,7 @@ struct HomeTaskListFilteringTests {
         #expect(presentation.sections.map(\.kind) == [.plannedToday, .future])
         #expect(presentation.sections.map(\.title) == ["Today", "Future"])
         #expect(presentation.sections.first?.tasks.map(\.taskID) == [plannedID])
-        #expect(presentation.sections.last?.tasks.map(\.taskID) == [tagID])
+        #expect(Set(presentation.sections.last?.tasks.map(\.taskID) ?? []) == [plannedID, tagID])
         #expect(presentation.sections.last?.taskGroups.map(\.title) == [String?("#HSE")])
         #expect(presentation.sections.last?.taskGroups.map(\.kind) == [.tag])
         #expect(presentation.sections.last?.taskGroups.map(\.isCollapsible) == [true])
@@ -1910,7 +1954,7 @@ struct HomeTaskListFilteringTests {
         #expect(presentation.sections.map(\.title) == ["Today", "Future"])
         #expect(presentation.sections.first?.taskGroups.compactMap(\.moveContext?.sectionKey) == ["plannedToday", "daily"])
         #expect(presentation.sections.first?.tasks.map(\.taskID) == [plannedID, dailyID])
-        #expect(presentation.sections.last?.tasks.map(\.taskID) == [tagID])
+        #expect(Set(presentation.sections.last?.tasks.map(\.taskID) ?? []) == [plannedID, tagID])
         #expect(presentation.sections.last?.taskGroups.map(\.title) == [String?("#HSE")])
         #expect(presentation.sections.last?.taskGroups.map(\.kind) == [.tag])
         #expect(presentation.sections.last?.taskGroups.map(\.isCollapsible) == [true])
@@ -1980,10 +2024,11 @@ struct HomeTaskListFilteringTests {
             )
         )
 
-        #expect(presentation.sections.map(\.title) == ["Today"])
+        #expect(presentation.sections.map(\.title) == ["Today", "Future"])
         #expect(presentation.sections.first?.tasks.map(\.taskID) == [secondID, firstID])
         #expect(presentation.sections.first?.taskGroups.first?.moveContext?.sectionKey == "plannedToday")
         #expect(presentation.sections.first?.taskGroups.first?.moveContext?.orderedTaskIDs == [secondID, firstID])
+        #expect(Set(presentation.sections.last?.tasks.map(\.taskID) ?? []) == [firstID, secondID])
     }
 
     @Test
