@@ -6,6 +6,7 @@ struct TaskRelationshipsEditor<SearchField: View>: View {
     let candidates: [RoutineTaskRelationshipCandidate]
     let addRelationship: (UUID, RoutineTaskRelationshipKind) -> Void
     let removeRelationship: (UUID) -> Void
+    let createLinkedTask: (() -> Void)?
 
     private let searchField: (Binding<String>) -> SearchField
 
@@ -16,12 +17,14 @@ struct TaskRelationshipsEditor<SearchField: View>: View {
         candidates: [RoutineTaskRelationshipCandidate],
         addRelationship: @escaping (UUID, RoutineTaskRelationshipKind) -> Void,
         removeRelationship: @escaping (UUID) -> Void,
+        createLinkedTask: (() -> Void)? = nil,
         @ViewBuilder searchField: @escaping (Binding<String>) -> SearchField
     ) {
         self.relationships = relationships
         self.candidates = candidates
         self.addRelationship = addRelationship
         self.removeRelationship = removeRelationship
+        self.createLinkedTask = createLinkedTask
         self.searchField = searchField
     }
 
@@ -47,15 +50,38 @@ struct TaskRelationshipsEditor<SearchField: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Button {
-                isPickerPresented = true
-            } label: {
-                Label("Add linked task", systemImage: "plus.circle")
+            HStack(spacing: 8) {
+                if let createLinkedTask {
+                    Button {
+                        createLinkedTask()
+                    } label: {
+                        Label(TaskRelationshipActionPresentation.createTaskTitle, systemImage: "plus.circle")
+                            .frame(maxWidth: .infinity)
+                            .contentShape(Rectangle())
+                    }
+                }
+
+                Button {
+                    isPickerPresented = true
+                } label: {
+                    Label(
+                        createLinkedTask == nil
+                            ? "Add linked task"
+                            : TaskRelationshipActionPresentation.linkTaskTitle,
+                        systemImage: "link"
+                    )
+                        .frame(maxWidth: .infinity)
+                        .contentShape(Rectangle())
+                }
+                .disabled(candidates.isEmpty)
             }
-            .disabled(candidates.isEmpty)
 
             if candidates.isEmpty {
-                Text("Create another task first to add a relationship.")
+                Text(
+                    createLinkedTask == nil
+                        ? "Create another task first to add a relationship."
+                        : "There are no other tasks available to link."
+                )
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else if resolvedRelationships.isEmpty {

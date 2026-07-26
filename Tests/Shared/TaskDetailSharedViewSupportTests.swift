@@ -13,6 +13,12 @@ import Testing
 @MainActor
 struct TaskDetailSharedViewSupportTests {
     @Test
+    func linkedTaskActionsNameCreationAndExistingTaskLinkingDistinctly() {
+        #expect(TaskRelationshipActionPresentation.createTaskTitle == "Create New Task")
+        #expect(TaskRelationshipActionPresentation.linkTaskTitle == "Link a Task")
+    }
+
+    @Test
     func durationTextFormatsMinutesHoursAndMixedDurations() {
         #expect(TaskDetailHeaderBadgePresentation.durationText(for: 1) == "1 minute")
         #expect(TaskDetailHeaderBadgePresentation.durationText(for: 25) == "25 minutes")

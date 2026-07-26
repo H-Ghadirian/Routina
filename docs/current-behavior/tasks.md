@@ -107,5 +107,6 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Selected checklist item mutations keep their post-action detail state through stale Home reloads, including final completion after item-progress IDs reset.
 - Optional checklists attached to ordinary tasks can block manual completion until all required items are checked.
 - Task links can fulfill routines. `Done when` / `Completes` links are automatic when the source task is completed. `Can complete` / `Can be completed by` links are manual: Task Detail asks whether the source completion should also fulfill eligible linked target routines, and selected targets record source-attributed fulfilled logs without increasing aggregate completed-activity stats.
+- Mac Task Details and Edit Task distinguish `Create New Task`, which opens a new task prelinked to the current task, from `Link a Task`, which opens the existing-task relationship picker.
 - Task place sections, linked-place badges, and place-based task filters are hidden while the Places beta setting is off.
 - Home task lists derive visible sections from one stable presentation model. Each task ID appears in at most one row per presentation, and section identity is based on durable keys rather than visible section titles.

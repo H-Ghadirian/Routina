@@ -128,6 +128,7 @@ struct TaskDetailEditRoutineContent: View {
             availableRelationshipTasks: store.editAvailableRelationshipTasks,
             onAddRelationship: { store.send(.editAddRelationship($0, $1)) },
             onRemoveRelationship: { store.send(.editRemoveRelationship($0)) },
+            onCreateLinkedTask: { store.send(.openAddLinkedTask) },
             scheduleMode: scheduleModeBinding,
             stepDraft: Binding(
                 get: { store.editStepDraft },

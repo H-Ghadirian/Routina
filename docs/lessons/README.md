@@ -69,5 +69,6 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0026 — Clear detail selection on transient navigation](0026-clear-detail-selection-on-transient-navigation.md)
 - [0027 — Preserve detail across transient Add Task](0027-preserve-detail-across-transient-add-task.md)
 - [0028 — Preserve task context across Stats navigation](0028-preserve-task-context-across-stats-navigation.md)
+- [0029 — Name linked-task actions by their destination](0029-name-linked-task-actions-by-destination.md)
 - [0030 — Gate all recurrence behavior behind effective cadence](0030-gate-all-recurrence-behavior-behind-effective-cadence.md)
 - [0031 — Preserve structured recurrence through edit state](0031-preserve-structured-recurrence-through-edit-state.md)

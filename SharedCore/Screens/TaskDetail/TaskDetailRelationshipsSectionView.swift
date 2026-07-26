@@ -1,5 +1,10 @@
 import SwiftUI
 
+enum TaskRelationshipActionPresentation {
+    static let createTaskTitle = "Create New Task"
+    static let linkTaskTitle = "Link a Task"
+}
+
 struct TaskDetailGoalsHeaderBoxView: View {
     let goals: [RoutineGoalSummary]
 
@@ -77,6 +82,7 @@ struct TaskDetailRelationshipsSectionView: View {
     let onVisualize: () -> Void
     let onOpenTask: (UUID) -> Void
     let onOpenAddLinkedTask: () -> Void
+    var onLinkExistingTask: (() -> Void)? = nil
 
     var body: some View {
         TaskDetailSectionCardView(background: background, stroke: stroke) {
@@ -197,13 +203,35 @@ struct TaskDetailRelationshipsSectionView: View {
             .labelsHidden()
             .fixedSize()
 
-            Button {
-                onOpenAddLinkedTask()
-            } label: {
-                Label("Add Linked Task", systemImage: "plus")
-                    .font(.subheadline)
+            if let onLinkExistingTask {
+                Button {
+                    onOpenAddLinkedTask()
+                } label: {
+                    Label(TaskRelationshipActionPresentation.createTaskTitle, systemImage: "plus.circle")
+                        .font(.subheadline)
+                        .frame(maxWidth: .infinity)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.borderless)
+
+                Button {
+                    onLinkExistingTask()
+                } label: {
+                    Label(TaskRelationshipActionPresentation.linkTaskTitle, systemImage: "link")
+                        .font(.subheadline)
+                        .frame(maxWidth: .infinity)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.borderless)
+            } else {
+                Button {
+                    onOpenAddLinkedTask()
+                } label: {
+                    Label("Add Linked Task", systemImage: "plus")
+                        .font(.subheadline)
+                }
+                .buttonStyle(.borderless)
             }
-            .buttonStyle(.borderless)
         }
     }
 }

@@ -792,6 +792,14 @@ struct TaskDetailTCAView: View {
         }
     }
 
+    private func openCreateLinkedTask() {
+        store.send(.openAddLinkedTask)
+    }
+
+    private func openExistingTaskLinker() {
+        revealInlineEditSection(.linkedTasks)
+    }
+
     private var shouldShowCommentsSection: Bool {
         isCommentComposerVisible
             || !store.task.comments.isEmpty
@@ -1422,7 +1430,8 @@ struct TaskDetailTCAView: View {
             stroke: TaskDetailPlatformStyle.sectionCardStroke,
             onVisualize: { isRelationshipGraphPresented = true },
             onOpenTask: { store.send(.openLinkedTask($0)) },
-            onOpenAddLinkedTask: { store.send(.openAddLinkedTask) }
+            onOpenAddLinkedTask: openCreateLinkedTask,
+            onLinkExistingTask: openExistingTaskLinker
         )
     }
 

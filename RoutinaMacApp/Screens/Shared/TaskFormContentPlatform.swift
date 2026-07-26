@@ -478,7 +478,8 @@ struct TaskFormContent: View {
                 relationships: model.relationships,
                 candidates: model.availableRelationshipTasks,
                 addRelationship: model.onAddRelationship,
-                removeRelationship: model.onRemoveRelationship
+                removeRelationship: model.onRemoveRelationship,
+                createLinkedTask: model.onCreateLinkedTask
             ) { searchText in
                 TextField("Search tasks", text: searchText)
                     .routinaTaskRelationshipSearchFieldPlatform()

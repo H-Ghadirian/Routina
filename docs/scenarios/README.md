@@ -29,6 +29,20 @@ If coverage does not exist yet, write `Coverage needed:` instead of `Coverage:` 
 
 ## Initial High-Value Scenarios
 
+### Mac Linked-Task Actions Stay Distinct
+
+Area: Tasks
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDetailSharedViewSupportTests.swift`
+- `Tests/macOS/HomeFeatureAddRoutinePresentationTests.swift`
+
+Given a task is open in Mac Task Details or Edit Task
+When the linked-task controls are shown
+Then `Create New Task` opens task creation with the inverse relationship preselected
+And `Link a Task` opens the existing-task relationship picker
+And the two different behaviors are not presented under the same ambiguous label
+
 ### Cadence-Free Repeating Tasks Stay Reusable
 
 Area: Tasks
