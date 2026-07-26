@@ -182,6 +182,45 @@ struct TaskDetailFeature: Reducer {
             }
         }
 
+        var candidateRecurrenceDraft: RoutineRecurrenceDraft {
+            let cadenceOverride: RoutineRecurrenceDraft.Cadence?
+            if !editScheduleMode.usesRoutineCadence {
+                cadenceOverride = RoutineRecurrenceDraft.Cadence.none
+            } else if editScheduleMode.taskType != .todo,
+                      !editTrackingCadenceEnabled {
+                cadenceOverride = RoutineRecurrenceDraft.Cadence.none
+            } else if editScheduleMode.isChecklistDrivenMode {
+                cadenceOverride = .itemRunout
+            } else {
+                cadenceOverride = nil
+            }
+
+            let recurrenceRule = candidateRecurrenceRule
+            let draft = RoutineRecurrenceDraft(
+                recurrenceRule: recurrenceRule,
+                cadence: cadenceOverride,
+                timeRangeRole: editRecurrenceTimeRangeRole
+            )
+            guard recurrenceRule.usesAdvancedModel else {
+                return draft
+            }
+
+            let availability: RoutineRecurrenceDraft.Availability
+            if editIsAllDay {
+                availability = .anyTime
+            } else if let timeRange = editRecurrenceTimeRange {
+                availability = .window(timeRange)
+            } else if editRecurrenceHasExplicitTime {
+                availability = .at(editRecurrenceTimeOfDay)
+            } else {
+                availability = .anyTime
+            }
+            return draft.replacingAvailability(
+                availability,
+                timeRangeRole: editRecurrenceTimeRangeRole
+            )
+        }
+
         var effectiveEditRecurrenceWeekdays: [Int] {
             let selectedWeekdays = Array(Set(editRecurrenceWeekdays.map { min(max($0, 1), 7) })).sorted()
             return selectedWeekdays.isEmpty ? [min(max(editRecurrenceWeekday, 1), 7)] : selectedWeekdays

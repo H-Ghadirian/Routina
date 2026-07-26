@@ -112,6 +112,30 @@ Given a CloudKit task record contains an Advanced structured recurrence and simp
 When direct pull merges the task on another device
 Then the structured Advanced rule remains authoritative instead of being downgraded to the compatibility cadence
 
+### Unified Recurrence Draft Preserves Existing Models
+
+Area: Tasks
+Decision links: [0178](../decisions/0178-make-recurrence-availability-independent.md), [0412](../decisions/0412-add-advanced-recurrence-beside-simple.md), [0430](../decisions/0430-unify-recurrence-editing-behind-lossless-draft.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/RoutineRecurrenceDraftTests.swift`
+
+Given an existing compact rolling, daily, weekly, or monthly recurrence uses any-time, exact-time, or time-window availability
+When the rule enters and exits the unified recurrence draft
+Then the recurrence rule and time-window role remain unchanged
+
+Given an existing structured recurrence uses any supported frequency, selector, occurrence time/window, fixed start, time zone, or end condition
+When the rule enters and exits the unified recurrence draft
+Then every structured field remains unchanged
+
+Given the draft describes a combination the current recurrence runtime cannot encode without losing information
+When the form requests a persistence rule
+Then the draft returns an explicit validation issue instead of a partial rule
+
+Given a one-time task has a Date window or a routine has multi-day duration
+When recurrence is edited through the unified draft
+Then those independent availability and duration values remain outside recurrence and unchanged
+
 ### Custom Buttons Use Full Visual Hit Areas
 
 Area: Other

@@ -206,6 +206,45 @@ struct AddRoutineFeatureState: Equatable {
         }
     }
 
+    var candidateRecurrenceDraft: RoutineRecurrenceDraft {
+        let cadenceOverride: RoutineRecurrenceDraft.Cadence?
+        if !schedule.scheduleMode.usesRoutineCadence {
+            cadenceOverride = RoutineRecurrenceDraft.Cadence.none
+        } else if schedule.scheduleMode.taskType != .todo,
+                  !basics.trackingCadenceEnabled {
+            cadenceOverride = RoutineRecurrenceDraft.Cadence.none
+        } else if schedule.scheduleMode.isChecklistDrivenMode {
+            cadenceOverride = .itemRunout
+        } else {
+            cadenceOverride = nil
+        }
+
+        let recurrenceRule = candidateRecurrenceRule
+        let draft = RoutineRecurrenceDraft(
+            recurrenceRule: recurrenceRule,
+            cadence: cadenceOverride,
+            timeRangeRole: schedule.recurrenceTimeRangeRole
+        )
+        guard recurrenceRule.usesAdvancedModel else {
+            return draft
+        }
+
+        let availability: RoutineRecurrenceDraft.Availability
+        if basics.isAllDay {
+            availability = .anyTime
+        } else if let timeRange = schedule.recurrenceTimeRange {
+            availability = .window(timeRange)
+        } else if schedule.recurrenceHasExplicitTime {
+            availability = .at(schedule.recurrenceTimeOfDay)
+        } else {
+            availability = .anyTime
+        }
+        return draft.replacingAvailability(
+            availability,
+            timeRangeRole: schedule.recurrenceTimeRangeRole
+        )
+    }
+
     var canAutoAssumeDailyDone: Bool {
         RoutineAssumedCompletion.isEligible(
             scheduleMode: schedule.scheduleMode,

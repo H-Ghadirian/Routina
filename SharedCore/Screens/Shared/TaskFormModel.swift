@@ -466,6 +466,51 @@ extension TaskFormModel {
         }
     }
 
+    var recurrenceDraft: RoutineRecurrenceDraft {
+        let currentScheduleMode = scheduleMode.wrappedValue
+        let cadenceOverride: RoutineRecurrenceDraft.Cadence?
+        if !currentScheduleMode.usesRoutineCadence {
+            cadenceOverride = RoutineRecurrenceDraft.Cadence.none
+        } else if currentScheduleMode.taskType != .todo,
+                  !trackingCadenceEnabled.wrappedValue {
+            cadenceOverride = RoutineRecurrenceDraft.Cadence.none
+        } else if currentScheduleMode.isChecklistDrivenMode {
+            cadenceOverride = .itemRunout
+        } else {
+            cadenceOverride = nil
+        }
+
+        let recurrenceRule = candidateRecurrenceRule
+        let draft = RoutineRecurrenceDraft(
+            recurrenceRule: recurrenceRule,
+            cadence: cadenceOverride,
+            timeRangeRole: recurrenceTimeRangeRole.wrappedValue
+        )
+        guard recurrenceRule.usesAdvancedModel else {
+            return draft
+        }
+
+        let availability: RoutineRecurrenceDraft.Availability
+        if isAllDay.wrappedValue {
+            availability = .anyTime
+        } else if recurrenceHasTimeRange.wrappedValue {
+            availability = .window(
+                RoutineTimeRange(
+                    start: RoutineTimeOfDay.from(recurrenceTimeRangeStart.wrappedValue),
+                    end: RoutineTimeOfDay.from(recurrenceTimeRangeEnd.wrappedValue)
+                )
+            )
+        } else if recurrenceHasExplicitTime.wrappedValue {
+            availability = .at(RoutineTimeOfDay.from(recurrenceTimeOfDay.wrappedValue))
+        } else {
+            availability = .anyTime
+        }
+        return draft.replacingAvailability(
+            availability,
+            timeRangeRole: recurrenceTimeRangeRole.wrappedValue
+        )
+    }
+
     private var effectiveIntervalDays: Int {
         TaskFormRecurrenceConstraints.effectiveIntervalDays(
             value: frequencyValue.wrappedValue,
