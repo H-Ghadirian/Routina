@@ -1194,6 +1194,7 @@ extension HomeTCAView {
             showsImportanceUrgencySection: false,
             showsTagSection: false,
             showsPlaceSection: isPlacesEnabled && hasPlaceAwareContent,
+            showsPlaceTaskRowField: isPlacesEnabled,
             onTaskRowFieldVisibilityChanged: { field, isVisible in
                 settingsStore.send(.taskRowFieldVisibilityChanged(field, isVisible))
             }

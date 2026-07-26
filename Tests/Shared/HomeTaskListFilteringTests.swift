@@ -2348,6 +2348,27 @@ struct HomeTaskListFilteringTests {
         #expect(hiddenColorBadge.shows(.rowColor))
         #expect(!hiddenColorBadge.shows(.colorBadge))
     }
+
+    @Test
+    func appearanceFieldsRespectFeatureAvailability() {
+        let defaultFields = HomeTaskRowField.availableAppearanceFields(
+            showsTaskTypeBadge: false,
+            showsGoals: false,
+            showsPlaces: false
+        )
+        #expect(!defaultFields.contains(.taskTypeBadge))
+        #expect(!defaultFields.contains(.goals))
+        #expect(!defaultFields.contains(.place))
+
+        let betaFields = HomeTaskRowField.availableAppearanceFields(
+            showsTaskTypeBadge: false,
+            showsGoals: true,
+            showsPlaces: true
+        )
+        #expect(!betaFields.contains(.taskTypeBadge))
+        #expect(betaFields.contains(.goals))
+        #expect(betaFields.contains(.place))
+    }
 }
 
 private func makeFiltering(

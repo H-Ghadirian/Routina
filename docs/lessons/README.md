@@ -80,3 +80,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0036 — Centralize occurrence resolution identity](0036-centralize-occurrence-resolution-identity.md)
 - [0037 — Persist the selected occurrence timestamp](0037-persist-the-selected-occurrence-timestamp.md)
 - [0038 — Keep Add Task autosave out of render paths](0038-keep-add-task-autosave-out-of-render-paths.md)
+- [0039 — Gate appearance controls with feature availability](0039-gate-appearance-controls-with-feature-availability.md)

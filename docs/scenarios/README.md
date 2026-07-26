@@ -1029,6 +1029,22 @@ Given the map is showing an unsaved location, an away saved place, or the curren
 When the action panel is derived
 Then Add Place and Check In appear only for the contexts where they make sense
 
+### Mac Task Row Appearance Respects The Places Beta Toggle
+
+Area: Tasks, Places
+Decision links: [0275](../decisions/0275-hide-places-behind-beta-toggle.md), [0254](../decisions/0254-move-mac-task-row-appearance-to-home-filter-detail.md)
+Current behavior: [Tasks](../current-behavior/tasks.md), [Places](../current-behavior/places.md)
+Coverage:
+- `Tests/Shared/HomeTaskListFilteringTests.swift`
+
+Given Support & About -> Beta Experiments -> `Show Places` is off
+When the user opens the Mac Home filter companion pane's `Task List` -> `Appearance` tab
+Then the Task Row card does not expose a `Places` option or count it in the shown-fields summary
+
+Given `Show Places` is on
+When the user opens the same Appearance tab
+Then the Task Row card includes the `Places` option even if no current task has place-aware content
+
 ### Mac Task Form Section Titles Stay Consistent
 
 Area: Tasks

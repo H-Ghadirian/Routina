@@ -99,6 +99,18 @@ enum HomeTaskRowField: String, CaseIterable, Identifiable, Sendable {
             .map(\.rawValue)
         return orderedValues.isEmpty ? nil : orderedValues.joined(separator: ",")
     }
+
+    static func availableAppearanceFields(
+        showsTaskTypeBadge: Bool,
+        showsGoals: Bool,
+        showsPlaces: Bool
+    ) -> [Self] {
+        allCases.filter { field in
+            (showsTaskTypeBadge || field != .taskTypeBadge)
+                && (showsGoals || field != .goals)
+                && (showsPlaces || field != .place)
+        }
+    }
 }
 
 struct HomeTaskRowVisibility: Equatable, Sendable {

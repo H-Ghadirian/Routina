@@ -31,6 +31,7 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     let showsImportanceUrgencySection: Bool
     let showsTagSection: Bool
     let showsPlaceSection: Bool
+    let showsPlaceTaskRowField: Bool
     let onTaskRowFieldVisibilityChanged: (HomeTaskRowField, Bool) -> Void
     @ViewBuilder let tagSectionContent: () -> TagContent
     @ViewBuilder let placeSectionContent: () -> PlaceContent
@@ -389,10 +390,11 @@ struct HomeMacRoutineFiltersDetailView<TagContent: View, PlaceContent: View>: Vi
     }
 
     private var macTaskRowFields: [HomeTaskRowField] {
-        HomeTaskRowField.allCases.filter { field in
-            field != .taskTypeBadge
-                && (showsGoalFilter || field != .goals)
-        }
+        HomeTaskRowField.availableAppearanceFields(
+            showsTaskTypeBadge: false,
+            showsGoals: showsGoalFilter,
+            showsPlaces: showsPlaceTaskRowField
+        )
     }
 
     private var macTaskRowSummaryText: String {
