@@ -1467,11 +1467,12 @@ final class DayPlanPlannerState: ObservableObject {
         }
         if let timeRange = task.recurrenceRule.timeRange {
             guard task.recurrenceTimeRangeRole == .scheduledBlock else { return nil }
+            let rangeStart = timeRange.startDate(on: occurrence, calendar: calendar)
             return ExactScheduledBlock(
-                startDate: occurrence,
+                startDate: rangeStart,
                 durationMinutes: availabilityWindowDuration(
-                    start: occurrence,
-                    end: timeRange.endDate(on: occurrence, calendar: calendar)
+                    start: rangeStart,
+                    end: timeRange.endDate(on: rangeStart, calendar: calendar)
                 )
             )
         }
@@ -1504,12 +1505,13 @@ final class DayPlanPlannerState: ObservableObject {
         guard let occurrence = RoutineDateMath.scheduledOccurrence(for: task, on: date, calendar: calendar) else {
             return nil
         }
+        let rangeStart = timeRange.startDate(on: occurrence, calendar: calendar)
         let windowDuration = availabilityWindowDuration(
-            start: occurrence,
-            end: timeRange.endDate(on: occurrence, calendar: calendar)
+            start: rangeStart,
+            end: timeRange.endDate(on: rangeStart, calendar: calendar)
         )
         return ExactScheduledBlock(
-            startDate: occurrence,
+            startDate: rangeStart,
             durationMinutes: nil,
             fallbackDurationMinutes: windowDuration
         )

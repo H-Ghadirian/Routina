@@ -80,7 +80,12 @@ struct HomeRoutineDisplayFactory {
             calendar: calendar
         )
         let hasMissedExactTimedOccurrence = missedExactTimedOccurrenceDates.contains {
-            !doneStats.hasResolvedMissedDate(taskID: task.id, missedDate: $0, calendar: calendar)
+            !doneStats.hasResolvedMissedDate(
+                taskID: task.id,
+                missedDate: $0,
+                task: task,
+                calendar: calendar
+            )
         }
 
         return HomeRoutineDisplayCore(

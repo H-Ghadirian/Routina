@@ -65,13 +65,21 @@ extension TaskDetailFeature.State {
         let calendar = Calendar.current
         let day = resolvedSelectedDate
         if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
-            guard let occurrence = selectedScheduledOccurrenceDate else { return false }
+            guard let occurrence = completionTargetDate ?? selectedScheduledOccurrenceDate else { return false }
             guard !hasPendingLocalRemoval(on: occurrence, calendar: calendar) else { return false }
             return logs.contains {
                 guard let timestamp = $0.timestamp else { return false }
-                return $0.kind.resolvesDoneDate && calendar.isDate(timestamp, inSameDayAs: occurrence)
+                return $0.kind.resolvesDoneDate
+                    && RoutineOccurrenceIdentity.matches(
+                        timestamp,
+                        occurrence,
+                        for: task,
+                        calendar: calendar
+                    )
             }
-            || task.lastDone.map { calendar.isDate($0, inSameDayAs: occurrence) } == true
+            || task.lastDone.map {
+                RoutineOccurrenceIdentity.matches($0, occurrence, for: task, calendar: calendar)
+            } == true
         }
         guard !hasPendingLocalRemoval(on: day, calendar: calendar) else { return false }
         return logs.contains {
@@ -85,12 +93,20 @@ extension TaskDetailFeature.State {
         let calendar = Calendar.current
         let day = resolvedSelectedDate
         if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
-            guard let occurrence = selectedScheduledOccurrenceDate else { return false }
+            guard let occurrence = completionTargetDate ?? selectedScheduledOccurrenceDate else { return false }
             return logs.contains {
                 guard let timestamp = $0.timestamp else { return false }
-                return $0.kind == .canceled && calendar.isDate(timestamp, inSameDayAs: occurrence)
+                return $0.kind == .canceled
+                    && RoutineOccurrenceIdentity.matches(
+                        timestamp,
+                        occurrence,
+                        for: task,
+                        calendar: calendar
+                    )
             }
-            || task.canceledAt.map { calendar.isDate($0, inSameDayAs: occurrence) } == true
+            || task.canceledAt.map {
+                RoutineOccurrenceIdentity.matches($0, occurrence, for: task, calendar: calendar)
+            } == true
         }
         return logs.contains {
             guard let timestamp = $0.timestamp else { return false }

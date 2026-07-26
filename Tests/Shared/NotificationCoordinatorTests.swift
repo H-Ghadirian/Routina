@@ -280,6 +280,47 @@ struct NotificationCoordinatorTests {
     }
 
     @Test
+    func notificationPayload_keepsMultipleDailyOccurrenceTimesInsideSharedWindow() {
+        let calendar = makeTestCalendar()
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 7, minute: 0),
+            end: RoutineTimeOfDay(hour: 22, minute: 0)
+        )
+        let advanced = RoutineAdvancedRecurrenceRule(
+            frequency: .daily,
+            interval: 1,
+            startDate: makeDate("2026-07-21T08:00:00Z"),
+            timesOfDay: [
+                RoutineTimeOfDay(hour: 8, minute: 0),
+                RoutineTimeOfDay(hour: 20, minute: 0)
+            ],
+            timeZoneIdentifier: calendar.timeZone.identifier,
+            calendar: calendar
+        )
+        let task = RoutineTask(
+            name: "Medicine",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .advanced(advanced, timeRange: window),
+            scheduleAnchor: advanced.startDate,
+            createdAt: advanced.startDate
+        )
+
+        let payload = NotificationCoordinator.notificationPayload(
+            for: task,
+            referenceDate: makeDate("2026-07-21T07:30:00Z"),
+            calendar: calendar
+        )
+
+        #expect(payload.triggerDate == makeDate("2026-07-21T08:00:00Z"))
+        #expect(payload.recurrenceOccurrenceDates.prefix(4) == [
+            makeDate("2026-07-21T08:00:00Z"),
+            makeDate("2026-07-21T20:00:00Z"),
+            makeDate("2026-07-22T08:00:00Z"),
+            makeDate("2026-07-22T20:00:00Z")
+        ])
+    }
+
+    @Test
     func notificationPayload_forMissedExactTimeRoutineUsesNextOccurrence() {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!

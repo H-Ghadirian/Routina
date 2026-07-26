@@ -77,3 +77,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0033 — Match recurrence control cardinality to storage](0033-match-recurrence-control-cardinality-to-storage.md)
 - [0034 — Drive recurrence editors from the lossless draft](0034-drive-recurrence-editors-from-the-lossless-draft.md)
 - [0035 — Apply composed recurrence semantics at every runtime boundary](0035-apply-composed-recurrence-semantics-at-every-runtime-boundary.md)
+- [0036 — Centralize occurrence resolution identity](0036-centralize-occurrence-resolution-identity.md)

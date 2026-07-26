@@ -17,18 +17,25 @@ struct HomeDoneStats: Equatable {
     func hasResolvedMissedDate(
         taskID: UUID,
         missedDate: Date,
+        task: RoutineTask? = nil,
         calendar: Calendar
     ) -> Bool {
         if let missedDates = missedDatesByTaskID[taskID],
-           missedDates.contains(where: { calendar.isDate($0, inSameDayAs: missedDate) }) {
+           missedDates.contains(where: {
+               resolutionDateMatches($0, missedDate, task: task, calendar: calendar)
+           }) {
             return true
         }
         if let canceledDates = canceledDatesByTaskID[taskID],
-           canceledDates.contains(where: { calendar.isDate($0, inSameDayAs: missedDate) }) {
+           canceledDates.contains(where: {
+               resolutionDateMatches($0, missedDate, task: task, calendar: calendar)
+           }) {
             return true
         }
         if let completedDates = completedDatesByTaskID[taskID],
-           completedDates.contains(where: { calendar.isDate($0, inSameDayAs: missedDate) }) {
+           completedDates.contains(where: {
+               resolutionDateMatches($0, missedDate, task: task, calendar: calendar)
+           }) {
             return true
         }
         return false
@@ -37,11 +44,24 @@ struct HomeDoneStats: Equatable {
     func hasCompletedDate(
         taskID: UUID,
         date: Date,
+        task: RoutineTask? = nil,
         calendar: Calendar
     ) -> Bool {
         completedDatesByTaskID[taskID]?.contains {
-            calendar.isDate($0, inSameDayAs: date)
+            resolutionDateMatches($0, date, task: task, calendar: calendar)
         } ?? false
+    }
+
+    private func resolutionDateMatches(
+        _ lhs: Date,
+        _ rhs: Date,
+        task: RoutineTask?,
+        calendar: Calendar
+    ) -> Bool {
+        guard let task else {
+            return calendar.isDate(lhs, inSameDayAs: rhs)
+        }
+        return RoutineOccurrenceIdentity.matches(lhs, rhs, for: task, calendar: calendar)
     }
 
     mutating func replaceLogs(for taskID: UUID, with logs: [RoutineLog]) {

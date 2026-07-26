@@ -162,6 +162,7 @@ let package = Package(
                 "SharedCore/Domain/RoutineListFilter.swift",
                 "SharedCore/Domain/RoutineListSectioningMode.swift",
                 "SharedCore/Domain/RoutineLogHistory.swift",
+                "SharedCore/Domain/RoutineOccurrenceIdentity.swift",
                 "SharedCore/Domain/RoutineVoiceNote.swift",
                 "SharedCore/Domain/RoutinaQuickAddParser.swift",
                 "SharedCore/Domain/RoutineTag.swift",

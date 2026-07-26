@@ -317,6 +317,114 @@ struct RoutineAdvancedRecurrenceTests {
     }
 
     @Test
+    func multipleDailyWindowOccurrencesKeepTheirScheduledTimestampIdentity() throws {
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 7, minute: 0),
+            end: RoutineTimeOfDay(hour: 22, minute: 0)
+        )
+        let advanced = RoutineAdvancedRecurrenceRule(
+            frequency: .daily,
+            interval: 1,
+            startDate: makeDate("2026-07-21T08:00:00Z"),
+            timesOfDay: [
+                RoutineTimeOfDay(hour: 8, minute: 0),
+                RoutineTimeOfDay(hour: 20, minute: 0)
+            ],
+            timeZoneIdentifier: "UTC",
+            calendar: calendar
+        )
+        let task = RoutineTask(
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .advanced(advanced, timeRange: window),
+            scheduleAnchor: advanced.startDate
+        )
+
+        #expect(RoutineDateMath.scheduledOccurrences(
+            for: task,
+            on: makeDate("2026-07-21T12:00:00Z"),
+            calendar: calendar
+        ) == [
+            makeDate("2026-07-21T08:00:00Z"),
+            makeDate("2026-07-21T20:00:00Z")
+        ])
+        #expect(RoutineDateMath.completionTargetDate(
+            for: task,
+            selectedDay: makeDate("2026-07-21T20:30:00Z"),
+            referenceDate: makeDate("2026-07-21T20:30:00Z"),
+            calendar: calendar
+        ) == makeDate("2026-07-21T08:00:00Z"))
+
+        task.lastDone = makeDate("2026-07-21T08:00:00Z")
+        #expect(RoutineDateMath.completionTargetDate(
+            for: task,
+            selectedDay: makeDate("2026-07-21T20:30:00Z"),
+            referenceDate: makeDate("2026-07-21T20:30:00Z"),
+            calendar: calendar
+        ) == makeDate("2026-07-21T20:00:00Z"))
+    }
+
+    @MainActor
+    @Test
+    func subdailyMissedAndCanceledLogsResolveOnlyTheirOwnOccurrence() throws {
+        let context = makeInMemoryContext()
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 7, minute: 0),
+            end: RoutineTimeOfDay(hour: 22, minute: 0)
+        )
+        let advanced = RoutineAdvancedRecurrenceRule(
+            frequency: .daily,
+            interval: 1,
+            startDate: makeDate("2026-07-21T08:00:00Z"),
+            timesOfDay: [
+                RoutineTimeOfDay(hour: 8, minute: 0),
+                RoutineTimeOfDay(hour: 20, minute: 0)
+            ],
+            timeZoneIdentifier: "UTC",
+            calendar: calendar
+        )
+        let task = makeTask(
+            in: context,
+            name: "Medicine",
+            interval: 1,
+            lastDone: nil,
+            emoji: nil,
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .advanced(advanced, timeRange: window),
+            scheduleAnchor: advanced.startDate
+        )
+
+        _ = try RoutineLogHistory.markExactTimedOccurrenceMissed(
+            taskID: task.id,
+            missedAt: makeDate("2026-07-21T08:00:00Z"),
+            context: context,
+            calendar: calendar
+        )
+        _ = try RoutineLogHistory.markExactTimedOccurrenceMissed(
+            taskID: task.id,
+            missedAt: makeDate("2026-07-21T20:00:00Z"),
+            context: context,
+            calendar: calendar
+        )
+        _ = try RoutineLogHistory.markExactTimedOccurrenceCanceled(
+            taskID: task.id,
+            canceledAt: makeDate("2026-07-21T20:00:00Z"),
+            context: context,
+            calendar: calendar
+        )
+
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+        #expect(logs.contains {
+            $0.kind == .missed && $0.timestamp == makeDate("2026-07-21T08:00:00Z")
+        })
+        #expect(!logs.contains {
+            $0.kind == .missed && $0.timestamp == makeDate("2026-07-21T20:00:00Z")
+        })
+        #expect(logs.contains {
+            $0.kind == .canceled && $0.timestamp == makeDate("2026-07-21T20:00:00Z")
+        })
+    }
+
+    @Test
     func hourlyTaskBecomesActionableAgainAtNextOccurrence() {
         let advanced = RoutineAdvancedRecurrenceRule(
             frequency: .hourly,

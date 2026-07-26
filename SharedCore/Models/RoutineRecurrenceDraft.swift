@@ -19,7 +19,6 @@ struct RoutineRecurrenceDraft: Equatable, Sendable {
         case fixedStartRequired
         case timeZoneRequired
         case hourlyAvailabilityWindowUnsupported
-        case multipleDailyTimesAvailabilityWindowUnsupported
 
         var message: String {
             switch self {
@@ -31,8 +30,6 @@ struct RoutineRecurrenceDraft: Equatable, Sendable {
                 return "Choose a time zone for this fixed recurrence."
             case .hourlyAvailabilityWindowUnsupported:
                 return "Hourly recurrence already controls times within each day, so it cannot use a separate availability window."
-            case .multipleDailyTimesAvailabilityWindowUnsupported:
-                return "A single availability window cannot represent multiple occurrences on the same day."
             }
         }
     }
@@ -224,9 +221,6 @@ struct RoutineRecurrenceDraft: Equatable, Sendable {
             if case .window = availability {
                 if frequency == .hourly {
                     return .hourlyAvailabilityWindowUnsupported
-                }
-                if occurrenceTimes.count > 1 {
-                    return .multipleDailyTimesAvailabilityWindowUnsupported
                 }
             }
             return nil

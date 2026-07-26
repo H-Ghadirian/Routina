@@ -294,33 +294,31 @@ extension TaskDetailFeature {
     }
 
     private func resolutionDatesMatch(_ lhs: Date, _ rhs: Date, for task: RoutineTask) -> Bool {
-        if !task.usesEffectiveRoutineCadence || task.recurrenceRule.occursMoreThanOncePerDay {
-            return abs(lhs.timeIntervalSince(rhs)) < 1
-        }
-        return calendar.isDate(lhs, inSameDayAs: rhs)
+        RoutineOccurrenceIdentity.matches(lhs, rhs, for: task, calendar: calendar)
     }
 
     private func pendingDateMatches(_ pendingDate: Date, target: Date, for task: RoutineTask) -> Bool {
-        guard !task.usesEffectiveRoutineCadence || task.recurrenceRule.occursMoreThanOncePerDay else {
+        if RoutineOccurrenceIdentity.isTimestampScoped(for: task),
+           pendingDate == calendar.startOfDay(for: pendingDate) {
             return calendar.isDate(pendingDate, inSameDayAs: target)
         }
-        if pendingDate == calendar.startOfDay(for: pendingDate) {
-            return calendar.isDate(pendingDate, inSameDayAs: target)
-        }
-        return abs(pendingDate.timeIntervalSince(target)) < 1
+        return RoutineOccurrenceIdentity.matches(
+            pendingDate,
+            target,
+            for: task,
+            calendar: calendar
+        )
     }
 }
 
 extension TaskDetailFeature.State {
     func hasPendingLocalRemoval(on date: Date, calendar: Calendar) -> Bool {
         pendingLocalRemovalDates.contains {
-            guard !task.usesEffectiveRoutineCadence || task.recurrenceRule.occursMoreThanOncePerDay else {
+            if RoutineOccurrenceIdentity.isTimestampScoped(for: task),
+               $0 == calendar.startOfDay(for: $0) {
                 return calendar.isDate($0, inSameDayAs: date)
             }
-            if $0 == calendar.startOfDay(for: $0) {
-                return calendar.isDate($0, inSameDayAs: date)
-            }
-            return abs($0.timeIntervalSince(date)) < 1
+            return RoutineOccurrenceIdentity.matches($0, date, for: task, calendar: calendar)
         }
     }
 }

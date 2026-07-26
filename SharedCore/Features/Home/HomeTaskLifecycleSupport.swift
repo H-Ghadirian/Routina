@@ -169,6 +169,7 @@ enum HomeTaskLifecycleSupport {
                     && !doneStats.hasResolvedMissedDate(
                         taskID: taskID,
                         missedDate: missedDate,
+                        task: task,
                         calendar: calendar
                     )
             }
@@ -257,10 +258,16 @@ enum HomeTaskLifecycleSupport {
         }
 
         let hadCanceledResolution = doneStats.canceledDatesByTaskID[taskID]?.contains {
-            calendar.isDate($0, inSameDayAs: missedDate)
+            RoutineOccurrenceIdentity.matches($0, missedDate, for: task, calendar: calendar)
         } ?? false
         doneStats.missedDatesByTaskID[taskID, default: []].insert(missedDate)
-        removeDate(missedDate, for: taskID, from: &doneStats.canceledDatesByTaskID, calendar: calendar)
+        removeDate(
+            missedDate,
+            for: task,
+            taskID: taskID,
+            from: &doneStats.canceledDatesByTaskID,
+            calendar: calendar
+        )
         if hadCanceledResolution {
             doneStats.canceledTotalCount = max(doneStats.canceledTotalCount - 1, 0)
             let updatedTaskCount = max(doneStats.canceledCountsByTaskID[taskID, default: 0] - 1, 0)
@@ -304,8 +311,20 @@ enum HomeTaskLifecycleSupport {
         doneStats.totalCount += 1
         doneStats.countsByTaskID[taskID, default: 0] += 1
         doneStats.completedDatesByTaskID[taskID, default: []].insert(completionDate)
-        removeDate(completionDate, for: taskID, from: &doneStats.missedDatesByTaskID, calendar: calendar)
-        removeDate(completionDate, for: taskID, from: &doneStats.canceledDatesByTaskID, calendar: calendar)
+        removeDate(
+            completionDate,
+            for: task,
+            taskID: taskID,
+            from: &doneStats.missedDatesByTaskID,
+            calendar: calendar
+        )
+        removeDate(
+            completionDate,
+            for: task,
+            taskID: taskID,
+            from: &doneStats.canceledDatesByTaskID,
+            calendar: calendar
+        )
         return HomeResolveAssumedTaskUpdate(
             taskID: taskID,
             resolutionDate: completionDate,
@@ -342,7 +361,13 @@ enum HomeTaskLifecycleSupport {
             calendar: calendar
         )
         doneStats.missedDatesByTaskID[taskID, default: []].insert(missedDate)
-        removeDate(missedDate, for: taskID, from: &doneStats.canceledDatesByTaskID, calendar: calendar)
+        removeDate(
+            missedDate,
+            for: task,
+            taskID: taskID,
+            from: &doneStats.canceledDatesByTaskID,
+            calendar: calendar
+        )
         return HomeResolveAssumedTaskUpdate(
             taskID: taskID,
             resolutionDate: missedDate,
@@ -373,14 +398,20 @@ enum HomeTaskLifecycleSupport {
         }
 
         let alreadyCanceled = doneStats.canceledDatesByTaskID[taskID]?.contains {
-            calendar.isDate($0, inSameDayAs: canceledDate)
+            RoutineOccurrenceIdentity.matches($0, canceledDate, for: task, calendar: calendar)
         } ?? false
         if !alreadyCanceled {
             doneStats.canceledTotalCount += 1
             doneStats.canceledCountsByTaskID[taskID, default: 0] += 1
         }
         doneStats.canceledDatesByTaskID[taskID, default: []].insert(canceledDate)
-        removeDate(canceledDate, for: taskID, from: &doneStats.missedDatesByTaskID, calendar: calendar)
+        removeDate(
+            canceledDate,
+            for: task,
+            taskID: taskID,
+            from: &doneStats.missedDatesByTaskID,
+            calendar: calendar
+        )
 
         return HomeMarkTaskCanceledUpdate(taskID: taskID, canceledDate: canceledDate, referenceDate: referenceDate)
     }
@@ -536,7 +567,12 @@ enum HomeTaskLifecycleSupport {
             referenceDate: referenceDate,
             calendar: calendar
         ) { missedDate in
-            doneStats.hasResolvedMissedDate(taskID: taskID, missedDate: missedDate, calendar: calendar)
+            doneStats.hasResolvedMissedDate(
+                taskID: taskID,
+                missedDate: missedDate,
+                task: task,
+                calendar: calendar
+            )
         }
 
         if let referenceDayDate = unresolvedDates.first(where: {
@@ -565,8 +601,13 @@ enum HomeTaskLifecycleSupport {
             referenceDate: referenceDate,
             calendar: calendar
         )
-        guard !doneStats.hasCompletedDate(taskID: taskID, date: day, calendar: calendar),
-              !doneStats.hasResolvedMissedDate(taskID: taskID, missedDate: day, calendar: calendar),
+        guard !doneStats.hasCompletedDate(taskID: taskID, date: day, task: task, calendar: calendar),
+              !doneStats.hasResolvedMissedDate(
+                  taskID: taskID,
+                  missedDate: day,
+                  task: task,
+                  calendar: calendar
+              ),
               RoutineAssumedCompletion.isAssumedDone(
                 for: task,
                 on: day,
@@ -581,12 +622,15 @@ enum HomeTaskLifecycleSupport {
 
     private static func removeDate(
         _ date: Date,
-        for taskID: UUID,
+        for task: RoutineTask,
+        taskID: UUID,
         from datesByTaskID: inout [UUID: Set<Date>],
         calendar: Calendar
     ) {
         guard var dates = datesByTaskID[taskID] else { return }
-        dates = dates.filter { !calendar.isDate($0, inSameDayAs: date) }
+        dates = dates.filter {
+            !RoutineOccurrenceIdentity.matches($0, date, for: task, calendar: calendar)
+        }
         if dates.isEmpty {
             datesByTaskID.removeValue(forKey: taskID)
         } else {
@@ -628,10 +672,12 @@ enum HomeTaskLifecycleSupport {
                 fulfillmentDate = completedAt
             }
             let alreadyResolved = doneStats.completedDatesByTaskID[targetTaskID]?.contains {
-                if tasks[index].recurrenceRule.occursMoreThanOncePerDay {
-                    return abs($0.timeIntervalSince(fulfillmentDate)) < 1
-                }
-                return calendar.isDate($0, inSameDayAs: fulfillmentDate)
+                RoutineOccurrenceIdentity.matches(
+                    $0,
+                    fulfillmentDate,
+                    for: tasks[index],
+                    calendar: calendar
+                )
             } ?? false
             guard !alreadyResolved else { continue }
             guard tasks[index].recordFulfillment(at: fulfillmentDate, calendar: calendar) else { continue }

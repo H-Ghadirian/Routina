@@ -27,6 +27,18 @@ struct TaskDetailCompletionLogActionHandler {
             return .none
         }
         let selectedDay = resolvedSelectedDay(state.selectedDate)
+        let latestResolvedOccurrenceTimestamp = state.logs
+            .filter { log in
+                guard let timestamp = log.timestamp else { return false }
+                guard log.kind.resolvesDoneDate || log.kind == .canceled else { return false }
+                return calendar.isDate(timestamp, inSameDayAs: selectedDay)
+            }
+            .compactMap(\.timestamp)
+            .max()
+        if RoutineOccurrenceIdentity.isTimestampScoped(for: state.task),
+           let occurrenceTimestamp = latestResolvedOccurrenceTimestamp {
+            return removeLogEntry(occurrenceTimestamp, state: &state)
+        }
         removePendingLocalCompletion(selectedDay, &state)
         trackPendingLocalRemoval(selectedDay, &state)
         removeCompletion(selectedDay, &state)

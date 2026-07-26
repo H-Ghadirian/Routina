@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0433](0433-identify-subdaily-history-by-scheduled-occurrence.md) refines [0412](0412-add-advanced-recurrence-beside-simple.md) and [0432](0432-compose-fixed-recurrence-with-availability-windows.md):** subdaily logs use their scheduled timestamp as shared completion/missed/canceled identity, single-occurrence schedules retain calendar-day compatibility, multiple explicit daily times may share one outer availability range, and hourly recurrence continues to reject a second window authority.
+
 - **[0432](0432-compose-fixed-recurrence-with-availability-windows.md) lifts the temporary structured-window restriction from [0430](0430-unify-recurrence-editing-behind-lossless-draft.md) and [0431](0431-present-one-progressive-recurrence-composer.md):** fixed date-based structured recurrence may compose with one availability window or time block; recurrence chooses occurrence dates, the range supplies effective start/end boundaries, and hourly or multiple-times-per-day combinations remain explicitly invalid until occurrence identity is finer than a calendar day.
 
 - **[0431](0431-present-one-progressive-recurrence-composer.md) completes the visible rollout from [0430](0430-unify-recurrence-editing-behind-lossless-draft.md) and refines [0412](0412-add-advanced-recurrence-beside-simple.md):** iOS and macOS Add/Edit forms use one progressive composer for No schedule, After done, On schedule, and eligible Item runout behavior; fixed start, time zone, occurrence, hourly-window, and end fields live under More schedule options, while compact and structured recurrence remain internal compatibility strategies.
@@ -346,6 +348,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0433](0433-identify-subdaily-history-by-scheduled-occurrence.md) | Identify Subdaily History by Scheduled Occurrence | Accepted | 2026-07-26 |
 | [0432](0432-compose-fixed-recurrence-with-availability-windows.md) | Compose Fixed Recurrence With Availability Windows | Accepted | 2026-07-26 |
 | [0431](0431-present-one-progressive-recurrence-composer.md) | Present One Progressive Recurrence Composer | Accepted | 2026-07-26 |
 | [0430](0430-unify-recurrence-editing-behind-lossless-draft.md) | Unify Recurrence Editing Behind a Lossless Draft | Accepted | 2026-07-26 |

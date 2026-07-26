@@ -215,7 +215,7 @@ struct RoutineRecurrenceDraftTests {
     }
 
     @Test
-    func subdailyStructuredSchedulesRejectAmbiguousOuterWindow() {
+    func multipleDailyOccurrencesComposeWithOuterWindowButHourlyKeepsOneWindowAuthority() throws {
         let window = RoutineTimeRange(
             start: RoutineTimeOfDay(hour: 7, minute: 0),
             end: RoutineTimeOfDay(hour: 10, minute: 0)
@@ -243,8 +243,13 @@ struct RoutineRecurrenceDraftTests {
 
         #expect(hourly.validationIssue == .hourlyAvailabilityWindowUnsupported)
         #expect(hourly.resolvedRecurrenceRule(calendar: calendar) == nil)
-        #expect(multipleTimes.validationIssue == .multipleDailyTimesAvailabilityWindowUnsupported)
-        #expect(multipleTimes.resolvedRecurrenceRule(calendar: calendar) == nil)
+        let multipleTimesRule = try #require(multipleTimes.resolvedRecurrenceRule(calendar: calendar))
+        #expect(multipleTimes.validationIssue == nil)
+        #expect(multipleTimesRule.timeRange == window)
+        #expect(multipleTimesRule.advanced?.timesOfDay == [
+            RoutineTimeOfDay(hour: 8, minute: 0),
+            RoutineTimeOfDay(hour: 20, minute: 0)
+        ])
     }
 
     @Test

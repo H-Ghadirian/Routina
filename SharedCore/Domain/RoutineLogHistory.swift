@@ -9,7 +9,7 @@ enum RoutineLogHistory {
     ) throws -> Bool {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let occurrenceLevelTaskIDs = Set(tasks.lazy.filter {
-            usesOccurrenceLevelResolution($0)
+            RoutineOccurrenceIdentity.isTimestampScoped(for: $0)
         }.map(\.id))
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
         var keptLogsByKey: [RoutineLogDeduplicationKey: RoutineLog] = [:]
@@ -155,10 +155,12 @@ enum RoutineLogHistory {
         let hasMatchingLog = existingLogs.contains { log in
             guard let timestamp = log.timestamp else { return false }
             guard log.kind.resolvesDoneDate else { return false }
-            if usesOccurrenceLevelResolution(task) {
-                return abs(timestamp.timeIntervalSince(resolvedCompletedAt)) < 1
-            }
-            return calendar.isDate(timestamp, inSameDayAs: resolvedCompletedAt)
+            return RoutineOccurrenceIdentity.matches(
+                timestamp,
+                resolvedCompletedAt,
+                for: task,
+                calendar: calendar
+            )
         }
         if hasMatchingLog {
             if BatteryRoutineService.dismissCompletedLowBatteryPrompt(for: task, at: resolvedCompletedAt) {
@@ -245,18 +247,25 @@ enum RoutineLogHistory {
         guard RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) else {
             return task
         }
-        guard let occurrence = RoutineDateMath.scheduledOccurrence(
+        let scheduledOccurrences = RoutineDateMath.scheduledOccurrences(
             for: task,
             on: missedAt,
             calendar: calendar
-        ) else {
+        )
+        let occurrence = RoutineOccurrenceIdentity.isTimestampScoped(for: task)
+            ? scheduledOccurrences.first(where: {
+                RoutineOccurrenceIdentity.matches($0, missedAt, for: task, calendar: calendar)
+            })
+            : scheduledOccurrences.first
+        guard let occurrence else {
             return task
         }
 
         let existingLogs = detailLogs(taskID: taskID, context: context)
         let hasCompletedLog = existingLogs.contains { log in
             guard let timestamp = log.timestamp else { return false }
-            return log.kind.resolvesDoneDate && calendar.isDate(timestamp, inSameDayAs: occurrence)
+            return log.kind.resolvesDoneDate
+                && RoutineOccurrenceIdentity.matches(timestamp, occurrence, for: task, calendar: calendar)
         }
         guard !hasCompletedLog else {
             return task
@@ -267,12 +276,14 @@ enum RoutineLogHistory {
             matchingKinds: [.canceled],
             from: existingLogs,
             context: context,
-            calendar: calendar
+            calendar: calendar,
+            matchesExactOccurrence: RoutineOccurrenceIdentity.isTimestampScoped(for: task)
         )
 
         if let existingMissedLog = existingLogs.first(where: { log in
             guard let timestamp = log.timestamp else { return false }
-            return log.kind == .missed && calendar.isDate(timestamp, inSameDayAs: occurrence)
+            return log.kind == .missed
+                && RoutineOccurrenceIdentity.matches(timestamp, occurrence, for: task, calendar: calendar)
         }) {
             if occurrence > (existingMissedLog.timestamp ?? .distantPast) {
                 existingMissedLog.timestamp = occurrence
@@ -314,18 +325,25 @@ enum RoutineLogHistory {
         guard RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) else {
             return task
         }
-        guard let occurrence = RoutineDateMath.scheduledOccurrence(
+        let scheduledOccurrences = RoutineDateMath.scheduledOccurrences(
             for: task,
             on: canceledAt,
             calendar: calendar
-        ) else {
+        )
+        let occurrence = RoutineOccurrenceIdentity.isTimestampScoped(for: task)
+            ? scheduledOccurrences.first(where: {
+                RoutineOccurrenceIdentity.matches($0, canceledAt, for: task, calendar: calendar)
+            })
+            : scheduledOccurrences.first
+        guard let occurrence else {
             return task
         }
 
         let existingLogs = detailLogs(taskID: taskID, context: context)
         let hasCompletedLog = existingLogs.contains { log in
             guard let timestamp = log.timestamp else { return false }
-            return log.kind.resolvesDoneDate && calendar.isDate(timestamp, inSameDayAs: occurrence)
+            return log.kind.resolvesDoneDate
+                && RoutineOccurrenceIdentity.matches(timestamp, occurrence, for: task, calendar: calendar)
         }
         guard !hasCompletedLog else {
             return task
@@ -336,12 +354,14 @@ enum RoutineLogHistory {
             matchingKinds: [.missed],
             from: existingLogs,
             context: context,
-            calendar: calendar
+            calendar: calendar,
+            matchesExactOccurrence: RoutineOccurrenceIdentity.isTimestampScoped(for: task)
         )
 
         if let existingCanceledLog = existingLogs.first(where: { log in
             guard let timestamp = log.timestamp else { return false }
-            return log.kind == .canceled && calendar.isDate(timestamp, inSameDayAs: occurrence)
+            return log.kind == .canceled
+                && RoutineOccurrenceIdentity.matches(timestamp, occurrence, for: task, calendar: calendar)
         }) {
             if occurrence > (existingCanceledLog.timestamp ?? .distantPast) {
                 existingCanceledLog.timestamp = occurrence
@@ -1101,14 +1121,7 @@ enum RoutineLogHistory {
         calendar: Calendar
     ) -> Bool {
         guard let lhs else { return false }
-        if usesOccurrenceLevelResolution(task) {
-            return abs(lhs.timeIntervalSince(rhs)) < 1
-        }
-        return calendar.isDate(lhs, inSameDayAs: rhs)
-    }
-
-    private static func usesOccurrenceLevelResolution(_ task: RoutineTask) -> Bool {
-        !task.usesEffectiveRoutineCadence || task.recurrenceRule.occursMoreThanOncePerDay
+        return RoutineOccurrenceIdentity.matches(lhs, rhs, for: task, calendar: calendar)
     }
 
     private static func taskTitle(_ task: RoutineTask) -> String {
@@ -1128,7 +1141,7 @@ enum RoutineLogHistory {
             from: logs,
             context: context,
             calendar: calendar,
-            matchesExactOccurrence: usesOccurrenceLevelResolution(task)
+            matchesExactOccurrence: RoutineOccurrenceIdentity.isTimestampScoped(for: task)
         )
     }
 
@@ -1142,9 +1155,12 @@ enum RoutineLogHistory {
     ) {
         for log in logs {
             guard matchingKinds.contains(log.kind), let timestamp = log.timestamp else { continue }
-            let matchesDate = matchesExactOccurrence
-                ? abs(timestamp.timeIntervalSince(date)) < 1
-                : calendar.isDate(timestamp, inSameDayAs: date)
+            let matchesDate = RoutineOccurrenceIdentity.matches(
+                timestamp,
+                date,
+                timestampScoped: matchesExactOccurrence,
+                calendar: calendar
+            )
             guard matchesDate else { continue }
             context.delete(log)
         }
