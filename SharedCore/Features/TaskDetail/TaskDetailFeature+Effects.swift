@@ -181,6 +181,86 @@ extension TaskDetailFeature {
         }
     }
 
+    func handleMarkOccurrenceMissed(
+        taskID: UUID,
+        missedAt: Date
+    ) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
+                guard let updatedTask = try RoutineLogHistory.markExactTimedOccurrenceMissed(
+                    taskID: taskID,
+                    missedAt: missedAt,
+                    context: context,
+                    calendar: calendar
+                ) else {
+                    return
+                }
+                let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+                send(.logsLoaded(updatedLogs))
+                await refreshNotificationAfterOccurrenceResolution(
+                    for: updatedTask,
+                    taskID: taskID
+                )
+                WidgetStatsService.refreshAndReload(using: context)
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error marking routine occurrence missed: \(error)")
+            }
+        }
+    }
+
+    func handleMarkOccurrenceCanceled(
+        taskID: UUID,
+        canceledAt: Date
+    ) -> Effect<Action> {
+        .run { @MainActor send in
+            do {
+                let context = RoutinaUndoSupport.undoableMutationContext(from: modelContext())
+                guard let updatedTask = try RoutineLogHistory.markExactTimedOccurrenceCanceled(
+                    taskID: taskID,
+                    canceledAt: canceledAt,
+                    context: context,
+                    calendar: calendar
+                ) else {
+                    return
+                }
+                let updatedLogs = RoutineLogHistory.detailLogs(taskID: taskID, context: context)
+                send(.logsLoaded(updatedLogs))
+                await refreshNotificationAfterOccurrenceResolution(
+                    for: updatedTask,
+                    taskID: taskID
+                )
+                WidgetStatsService.refreshAndReload(using: context)
+                NotificationCenter.default.postRoutineDidUpdate()
+            } catch {
+                print("Error canceling routine occurrence: \(error)")
+            }
+        }
+    }
+
+    @MainActor
+    private func refreshNotificationAfterOccurrenceResolution(
+        for task: RoutineTask,
+        taskID: UUID
+    ) async {
+        if !NotificationCoordinator.shouldScheduleNotification(
+            for: task,
+            referenceDate: now,
+            calendar: calendar
+        ) {
+            await notificationClient.cancel(taskID.uuidString)
+        } else {
+            await notificationClient.schedule(
+                NotificationCoordinator.notificationPayload(
+                    for: task,
+                    referenceDate: now,
+                    calendar: calendar
+                )
+            )
+        }
+    }
+
     func handleUndoCompletion(taskID: UUID, completedDay: Date) -> Effect<Action> {
         .run { @MainActor send in
             do {

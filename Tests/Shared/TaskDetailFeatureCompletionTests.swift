@@ -14,6 +14,132 @@ import Testing
 @MainActor
 struct TaskDetailFeatureCompletionTests {
     @Test
+    func occurrencePresentationKeepsSameDayStatusesAndSelectionIndependent() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let morning = makeDate("2026-07-21T08:00:00Z")
+        let evening = makeDate("2026-07-21T20:00:00Z")
+        let advanced = RoutineAdvancedRecurrenceRule(
+            frequency: .daily,
+            interval: 1,
+            startDate: morning,
+            timesOfDay: [
+                RoutineTimeOfDay(hour: 8, minute: 0),
+                RoutineTimeOfDay(hour: 20, minute: 0)
+            ],
+            timeZoneIdentifier: "UTC",
+            calendar: calendar
+        )
+        let task = RoutineTask(
+            name: "Medicine",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .advanced(
+                advanced,
+                timeRange: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 7, minute: 0),
+                    end: RoutineTimeOfDay(hour: 22, minute: 0)
+                )
+            ),
+            scheduleAnchor: morning,
+            createdAt: morning
+        )
+        let logs = [
+            RoutineLog(timestamp: morning, taskID: task.id, kind: .completed),
+            RoutineLog(timestamp: evening, taskID: task.id, kind: .canceled)
+        ]
+
+        let items = TaskDetailOccurrencePresentation.items(
+            for: task,
+            on: morning,
+            selectedOccurrence: evening,
+            referenceDate: makeDate("2026-07-21T21:00:00Z"),
+            logs: logs,
+            calendar: calendar
+        )
+
+        #expect(items.map(\.occurrence) == [morning, evening])
+        #expect(items.map(\.status) == [.done, .canceled])
+        #expect(items.map(\.isSelected) == [false, true])
+        #expect(items[0].canClearResolution)
+        #expect(items[1].canComplete)
+        #expect(items[1].canClearResolution)
+    }
+
+    @Test
+    func selectedOccurrenceOverridesDayLevelCompletionTarget() {
+        let calendar = Calendar.current
+        let selectedDay = calendar.date(
+            from: DateComponents(year: 2026, month: 7, day: 21)
+        ) ?? makeDate("2026-07-21T00:00:00Z")
+        let morning = RoutineTimeOfDay(hour: 8, minute: 0).date(
+            on: selectedDay,
+            calendar: calendar
+        )
+        let evening = RoutineTimeOfDay(hour: 20, minute: 0).date(
+            on: selectedDay,
+            calendar: calendar
+        )
+        let advanced = RoutineAdvancedRecurrenceRule(
+            frequency: .daily,
+            interval: 1,
+            startDate: morning,
+            timesOfDay: [
+                RoutineTimeOfDay(hour: 8, minute: 0),
+                RoutineTimeOfDay(hour: 20, minute: 0)
+            ],
+            timeZoneIdentifier: calendar.timeZone.identifier,
+            calendar: calendar
+        )
+        let task = RoutineTask(
+            name: "Medicine",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .advanced(
+                advanced,
+                timeRange: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 7, minute: 0),
+                    end: RoutineTimeOfDay(hour: 22, minute: 0)
+                )
+            ),
+            scheduleAnchor: morning,
+            createdAt: morning
+        )
+        let state = TaskDetailFeature.State(
+            task: task,
+            selectedDate: selectedDay,
+            selectedOccurrenceDate: evening
+        )
+
+        #expect(state.validSelectedOccurrenceDate == evening)
+        #expect(state.completionTargetDate == evening)
+    }
+
+    @Test
+    func selectedDateChangeClearsOccurrenceSelection() async {
+        let context = makeInMemoryContext()
+        let selectedDate = makeDate("2026-07-21T00:00:00Z")
+        let selectedOccurrence = makeDate("2026-07-21T20:00:00Z")
+        let nextDate = makeDate("2026-07-22T00:00:00Z")
+        let task = RoutineTask(name: "Medicine")
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(
+                task: task,
+                selectedDate: selectedDate,
+                selectedOccurrenceDate: selectedOccurrence
+            )
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.modelContext = { context }
+            $0.calendar = Calendar.current
+        }
+
+        await store.send(.selectedDateChanged(nextDate)) {
+            $0.selectedDate = Calendar.current.startOfDay(for: nextDate)
+            $0.selectedOccurrenceDate = nil
+        }
+    }
+
+    @Test
     func markAsDoneWithCanCompleteTargetPromptsBeforeCompleting() async throws {
         let context = makeInMemoryContext()
         var calendar = makeTestCalendar()

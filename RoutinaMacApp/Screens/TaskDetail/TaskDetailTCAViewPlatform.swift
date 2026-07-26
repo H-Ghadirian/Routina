@@ -56,29 +56,49 @@ extension TaskDetailTCAView {
     func platformDetailOverviewSection(
         pauseArchivePresentation: RoutinePauseArchivePresentation
     ) -> some View {
-        HStack(alignment: .top, spacing: 20) {
-            calendarSection
-                .frame(
-                    maxWidth: .infinity,
-                    alignment: .topLeading
-                )
-                .taskDetailScrollCardSurface(
-                    cornerRadius: 16,
-                    tint: .secondary,
-                    tintOpacity: 0.06,
-                    stroke: TaskDetailPlatformStyle.sectionCardStroke
-                )
-                .layoutPriority(1)
+        let occurrences = store.selectedDayOccurrences
+        return VStack(spacing: 16) {
+            HStack(alignment: .top, spacing: 20) {
+                calendarSection
+                    .frame(
+                        maxWidth: .infinity,
+                        alignment: .topLeading
+                    )
+                    .taskDetailScrollCardSurface(
+                        cornerRadius: 16,
+                        tint: .secondary,
+                        tintOpacity: 0.06,
+                        stroke: TaskDetailPlatformStyle.sectionCardStroke
+                    )
+                    .layoutPriority(1)
 
-            macStatusSection(pauseArchivePresentation: pauseArchivePresentation)
-                .frame(width: 320, alignment: .topLeading)
-                .taskDetailScrollCardSurface(
-                    cornerRadius: 16,
-                    tint: .secondary,
-                    tintOpacity: 0.06,
-                    stroke: TaskDetailPlatformStyle.sectionCardStroke
-                )
+                macStatusSection(pauseArchivePresentation: pauseArchivePresentation)
+                    .frame(width: 320, alignment: .topLeading)
+                    .taskDetailScrollCardSurface(
+                        cornerRadius: 16,
+                        tint: .secondary,
+                        tintOpacity: 0.06,
+                        stroke: TaskDetailPlatformStyle.sectionCardStroke
+                    )
+            }
+
+            if !occurrences.isEmpty {
+                occurrenceSection(occurrences)
+            }
         }
+    }
+
+    private func occurrenceSection(
+        _ occurrences: [TaskDetailOccurrencePresentation]
+    ) -> some View {
+        TaskDetailOccurrenceSectionView(
+            occurrences: occurrences,
+            onSelect: { store.send(.selectOccurrence($0)) },
+            onComplete: { store.send(.markOccurrenceDone($0)) },
+            onMarkMissed: { store.send(.markOccurrenceMissed($0)) },
+            onCancel: { store.send(.markOccurrenceCanceled($0)) },
+            onClearResolution: { store.send(.requestRemoveLogEntry($0)) }
+        )
     }
 }
 

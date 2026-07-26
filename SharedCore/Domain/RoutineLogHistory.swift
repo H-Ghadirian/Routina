@@ -137,15 +137,31 @@ enum RoutineLogHistory {
 
         let resolvedCompletedAt: Date
         if task.usesEffectiveRoutineCadence && task.recurrenceRule.usesAdvancedModel {
-            let due = RoutineDateMath.dueDate(
-                for: task,
-                referenceDate: completedAt,
-                calendar: calendar
-            )
-            guard due != .distantFuture, due <= completedAt else {
-                return (task, .ignoredAlreadyCompletedToday)
+            if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task),
+               RoutineDateMath.scheduledOccurrences(
+                   for: task,
+                   on: completedAt,
+                   calendar: calendar
+               ).contains(where: {
+                   RoutineOccurrenceIdentity.matches(
+                       $0,
+                       completedAt,
+                       for: task,
+                       calendar: calendar
+                   )
+               }) {
+                resolvedCompletedAt = completedAt
+            } else {
+                let due = RoutineDateMath.dueDate(
+                    for: task,
+                    referenceDate: completedAt,
+                    calendar: calendar
+                )
+                guard due != .distantFuture, due <= completedAt else {
+                    return (task, .ignoredAlreadyCompletedToday)
+                }
+                resolvedCompletedAt = due
             }
-            resolvedCompletedAt = due
         } else {
             resolvedCompletedAt = completedAt
         }

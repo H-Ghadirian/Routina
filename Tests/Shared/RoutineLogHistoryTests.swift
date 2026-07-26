@@ -12,6 +12,57 @@ import Testing
 @MainActor
 struct RoutineLogHistoryTests {
     @Test
+    func advanceTaskPersistsTheExplicitlySelectedSubdailyOccurrence() throws {
+        let context = makeInMemoryContext()
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        let morning = makeDate("2026-07-21T08:00:00Z")
+        let evening = makeDate("2026-07-21T20:00:00Z")
+        let advanced = RoutineAdvancedRecurrenceRule(
+            frequency: .daily,
+            interval: 1,
+            startDate: morning,
+            timesOfDay: [
+                RoutineTimeOfDay(hour: 8, minute: 0),
+                RoutineTimeOfDay(hour: 20, minute: 0)
+            ],
+            timeZoneIdentifier: "UTC",
+            calendar: calendar
+        )
+        let task = makeTask(
+            in: context,
+            name: "Medicine",
+            interval: 1,
+            lastDone: nil,
+            emoji: "💊",
+            recurrenceRule: .advanced(
+                advanced,
+                timeRange: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 7, minute: 0),
+                    end: RoutineTimeOfDay(hour: 22, minute: 0)
+                )
+            ),
+            scheduleAnchor: morning
+        )
+        try context.save()
+
+        let result = try #require(
+            try RoutineLogHistory.advanceTask(
+                taskID: task.id,
+                completedAt: evening,
+                referenceDate: evening,
+                context: context,
+                calendar: calendar
+            )
+        )
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+
+        #expect(result.result == .completedRoutine)
+        #expect(result.task.lastDone == evening)
+        #expect(logs.map(\.timestamp) == [evening])
+    }
+
+    @Test
     func backfillMissingLastDoneLogs_insertsOnlyMissingEntries() throws {
         let context = makeInMemoryContext()
         let insertedCompletion = makeDate("2026-03-15T09:00:00Z")

@@ -27,6 +27,23 @@ struct TaskDetailCompletionLogActionHandler {
             return .none
         }
         let selectedDay = resolvedSelectedDay(state.selectedDate)
+        let selectedResolvedOccurrenceTimestamp = state.validSelectedOccurrenceDate.flatMap {
+            selectedOccurrence in
+            state.logs.first(where: { log in
+                guard let timestamp = log.timestamp else { return false }
+                guard log.kind.resolvesDoneDate || log.kind == .canceled else { return false }
+                return RoutineOccurrenceIdentity.matches(
+                    timestamp,
+                    selectedOccurrence,
+                    for: state.task,
+                    calendar: calendar
+                )
+            })?.timestamp
+        }
+        if RoutineOccurrenceIdentity.isTimestampScoped(for: state.task),
+           let selectedResolvedOccurrenceTimestamp {
+            return removeLogEntry(selectedResolvedOccurrenceTimestamp, state: &state)
+        }
         let latestResolvedOccurrenceTimestamp = state.logs
             .filter { log in
                 guard let timestamp = log.timestamp else { return false }

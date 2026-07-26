@@ -78,3 +78,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0034 — Drive recurrence editors from the lossless draft](0034-drive-recurrence-editors-from-the-lossless-draft.md)
 - [0035 — Apply composed recurrence semantics at every runtime boundary](0035-apply-composed-recurrence-semantics-at-every-runtime-boundary.md)
 - [0036 — Centralize occurrence resolution identity](0036-centralize-occurrence-resolution-identity.md)
+- [0037 — Persist the selected occurrence timestamp](0037-persist-the-selected-occurrence-timestamp.md)

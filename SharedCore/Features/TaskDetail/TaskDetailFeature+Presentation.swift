@@ -1,5 +1,162 @@
 import Foundation
 
+struct TaskDetailOccurrencePresentation: Equatable, Identifiable {
+    enum Status: Equatable {
+        case done
+        case missed
+        case canceled
+        case due
+        case upcoming
+    }
+
+    var id: Date { occurrence }
+
+    let occurrence: Date
+    let status: Status
+    let isSelected: Bool
+    let resolutionTimestamp: Date?
+    let hasRecordedResolution: Bool
+    let canComplete: Bool
+    let canMarkMissed: Bool
+    let canCancel: Bool
+    let canClearResolution: Bool
+
+    static func items(
+        for task: RoutineTask,
+        on selectedDay: Date,
+        selectedOccurrence: Date?,
+        referenceDate: Date,
+        logs: [RoutineLog],
+        calendar: Calendar = .current
+    ) -> [Self] {
+        guard task.usesEffectiveRoutineCadence,
+              task.recurrenceRule.occursMoreThanOncePerDay,
+              !task.isChecklistDriven,
+              !task.hasSequentialSteps,
+              !task.isMultiDayRoutine else {
+            return []
+        }
+
+        let occurrences = RoutineDateMath.scheduledOccurrences(
+            for: task,
+            on: selectedDay,
+            calendar: calendar
+        )
+        guard occurrences.count > 1 else { return [] }
+
+        let defaultSelection = selectedOccurrence
+            ?? RoutineDateMath.completionTargetDate(
+                for: task,
+                selectedDay: selectedDay,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+            ?? occurrences.first
+        let due = RoutineDateMath.dueDate(
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+
+        return occurrences.map { occurrence in
+            let matchingLog = logs.first { log in
+                guard let timestamp = log.timestamp else { return false }
+                guard log.kind.resolvesDoneDate || log.kind == .missed || log.kind == .canceled else {
+                    return false
+                }
+                return RoutineOccurrenceIdentity.matches(
+                    timestamp,
+                    occurrence,
+                    for: task,
+                    calendar: calendar
+                )
+            }
+            let isDone = matchingLog?.kind.resolvesDoneDate == true
+                || task.lastDone.map {
+                    RoutineOccurrenceIdentity.matches(
+                        $0,
+                        occurrence,
+                        for: task,
+                        calendar: calendar
+                    )
+                } == true
+            let isCanceled = matchingLog?.kind == .canceled
+            let hasRecordedMiss = matchingLog?.kind == .missed
+            let isMissedByTime = RoutineDateMath.isScheduledOccurrenceMissed(
+                occurrence,
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+
+            let status: Status
+            if isDone {
+                status = .done
+            } else if isCanceled {
+                status = .canceled
+            } else if hasRecordedMiss || isMissedByTime {
+                status = .missed
+            } else if occurrence <= referenceDate {
+                status = .due
+            } else {
+                status = .upcoming
+            }
+
+            let canComplete: Bool
+            if isDone || task.isArchived(referenceDate: referenceDate, calendar: calendar) {
+                canComplete = false
+            } else if RoutineDateMath.usesExactTimedOccurrenceTracking(for: task) {
+                canComplete = occurrence <= referenceDate
+                    && (
+                        hasRecordedMiss
+                        || isCanceled
+                        || isMissedByTime
+                        || RoutineDateMath.canMarkDone(
+                            for: task,
+                            referenceDate: occurrence,
+                            calendar: calendar,
+                            ignoreArchiveAtReferenceDate: true
+                        )
+                    )
+            } else {
+                canComplete = occurrence <= referenceDate
+                    && RoutineOccurrenceIdentity.matches(
+                        due,
+                        occurrence,
+                        for: task,
+                        calendar: calendar
+                    )
+            }
+
+            let hasRecordedResolution = matchingLog != nil
+            return Self(
+                occurrence: occurrence,
+                status: status,
+                isSelected: defaultSelection.map {
+                    RoutineOccurrenceIdentity.matches(
+                        $0,
+                        occurrence,
+                        for: task,
+                        calendar: calendar
+                    )
+                } == true,
+                resolutionTimestamp: matchingLog?.timestamp,
+                hasRecordedResolution: hasRecordedResolution,
+                canComplete: canComplete,
+                canMarkMissed: !task.isArchived(referenceDate: referenceDate, calendar: calendar)
+                    && isMissedByTime
+                    && !hasRecordedResolution,
+                canCancel: RoutineDateMath.usesExactTimedOccurrenceTracking(for: task)
+                    && !task.isArchived(referenceDate: referenceDate, calendar: calendar)
+                    && occurrence <= referenceDate
+                    && !isDone
+                    && !isCanceled,
+                canClearResolution: hasRecordedResolution
+            )
+        }
+    }
+}
+
 // Derived, view-facing state computed from `TaskDetailFeature.State`.
 // Keep pure (no SwiftUI types) so these can be exercised from tests and used
 // by any platform view via `store.<property>` dynamic member lookup.
@@ -44,13 +201,66 @@ extension TaskDetailFeature.State {
         )
     }
 
+    var validSelectedOccurrenceDate: Date? {
+        guard let selectedOccurrenceDate,
+              isScheduledOccurrenceOnSelectedDay(selectedOccurrenceDate) else {
+            return nil
+        }
+        return selectedOccurrenceDate
+    }
+
+    func isScheduledOccurrenceOnSelectedDay(
+        _ occurrence: Date,
+        calendar: Calendar = .current
+    ) -> Bool {
+        RoutineDateMath.scheduledOccurrences(
+            for: task,
+            on: resolvedSelectedDate,
+            calendar: calendar
+        ).contains {
+            RoutineOccurrenceIdentity.matches(
+                $0,
+                occurrence,
+                for: task,
+                calendar: calendar
+            )
+        }
+    }
+
     var completionTargetDate: Date? {
-        RoutineDateMath.completionTargetDate(
+        if let validSelectedOccurrenceDate {
+            return validSelectedOccurrenceDate
+        }
+        return RoutineDateMath.completionTargetDate(
             for: task,
             selectedDay: resolvedSelectedDate,
             referenceDate: Date(),
             calendar: .current
         )
+    }
+
+    var selectedDayOccurrences: [TaskDetailOccurrencePresentation] {
+        TaskDetailOccurrencePresentation.items(
+            for: task,
+            on: resolvedSelectedDate,
+            selectedOccurrence: validSelectedOccurrenceDate,
+            referenceDate: Date(),
+            logs: logs,
+            calendar: .current
+        )
+    }
+
+    func occurrencePresentation(
+        for occurrence: Date
+    ) -> TaskDetailOccurrencePresentation? {
+        selectedDayOccurrences.first {
+            RoutineOccurrenceIdentity.matches(
+                $0.occurrence,
+                occurrence,
+                for: task,
+                calendar: .current
+            )
+        }
     }
 
     var missedExactTimedOccurrenceDate: Date? {

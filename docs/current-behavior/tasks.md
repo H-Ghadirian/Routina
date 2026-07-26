@@ -59,6 +59,8 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - [0421](../decisions/0421-support-cadence-free-repeating-routines.md)
 - [0428](../decisions/0428-compose-tracking-behaviors-on-gentle-routines.md)
 - [0432](../decisions/0432-compose-fixed-recurrence-with-availability-windows.md)
+- [0433](../decisions/0433-identify-subdaily-history-by-scheduled-occurrence.md)
+- [0434](../decisions/0434-select-subdaily-occurrences-in-task-detail.md)
 
 ## Current Contract
 
@@ -74,6 +76,7 @@ This page summarizes active task, todo, routine, checklist, and Home-list behavi
 - Deleting a task also removes persisted task-backed Planner blocks for that task so deleted work does not remain on the calendar.
 - Task Detail calendar overdue markers run only while an overdue task is unresolved. If a completion, cancellation, or missed log resolves the task, later days stop showing as overdue.
 - Task Details can backfill a selected past exact-time routine occurrence, such as a weekly routine with a time window, even when older missed exact-time occurrences remain unresolved. Resolving that selected later occurrence does not hide older unresolved missed dates in the detail calendar. Future dates and non-occurrence days still cannot be marked done.
+- Task Detail shows an occurrence selector on iOS and macOS when a selected day has several atomic routine occurrences. Each scheduled time has its own Done, Missed, Canceled, Ready, or Upcoming indicator; selecting one targets completion and undo at that exact timestamp, and supported exact-time occurrences can be confirmed missed or canceled independently. Changing calendar day clears the transient occurrence selection.
 - Task Details hides neutral Priority metadata and History by default. Full details offers both through Add More Details. Legacy Medium/Medium priority defaults stay hidden to match Edit Task; non-neutral priority metadata and explicitly revealed Priority remain visible. Priority and History disclosure choices persist per task through copying and backup/restore.
 - Home row actions that resolve missed exact-time or time-window occurrences prefer an unresolved occurrence on the current reference day. Choosing `I did it` after today's time window has ended records the just-finished occurrence before older unresolved missed history.
 - Daily non-Tracking routines already belong to the daily routine area and do not expose stored planned-date controls.

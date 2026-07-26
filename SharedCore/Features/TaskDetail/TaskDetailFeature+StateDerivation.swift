@@ -293,6 +293,20 @@ extension TaskDetailFeature {
         state.logs.insert(RoutineLog(timestamp: timestamp, taskID: state.task.id, kind: kind), at: 0)
     }
 
+    func replaceLocalOccurrenceResolution(
+        at timestamp: Date,
+        with kind: RoutineLogKind,
+        in state: inout State
+    ) {
+        let task = state.task
+        state.logs.removeAll { log in
+            guard let logTimestamp = log.timestamp else { return false }
+            guard log.kind == .missed || log.kind == .canceled else { return false }
+            return resolutionDatesMatch(logTimestamp, timestamp, for: task)
+        }
+        upsertLocalLog(at: timestamp, kind: kind, in: &state)
+    }
+
     private func resolutionDatesMatch(_ lhs: Date, _ rhs: Date, for task: RoutineTask) -> Bool {
         RoutineOccurrenceIdentity.matches(lhs, rhs, for: task, calendar: calendar)
     }

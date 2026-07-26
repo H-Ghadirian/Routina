@@ -11,6 +11,7 @@ struct TaskDetailDialogLifecycleActionHandler {
 
     func selectedDateChanged(_ date: Date, state: inout State) -> Effect<Action> {
         state.selectedDate = calendar.startOfDay(for: date)
+        state.selectedOccurrenceDate = nil
         return .none
     }
 

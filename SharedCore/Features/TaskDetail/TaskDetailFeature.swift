@@ -36,6 +36,7 @@ struct TaskDetailFeature: Reducer {
         var pendingLocalCompletionDates: [Date] = []
         var pendingLocalRemovalDates: [Date] = []
         var selectedDate: Date?
+        var selectedOccurrenceDate: Date?
         var daysSinceLastRoutine: Int = 0
         var overdueDays: Int = 0
         var isDoneToday: Bool = false
@@ -326,6 +327,10 @@ struct TaskDetailFeature: Reducer {
         case startOngoingTapped
         case finishOngoingTapped
         case selectedDateChanged(Date)
+        case selectOccurrence(Date)
+        case markOccurrenceDone(Date)
+        case markOccurrenceMissed(Date)
+        case markOccurrenceCanceled(Date)
         case setEditSheet(Bool)
         case prepareInlineEdit
         case editRoutineNameChanged(String)
@@ -710,6 +715,8 @@ struct TaskDetailFeature: Reducer {
             let completionDate: Date
             if let pendingManualCompletion {
                 completionDate = pendingManualCompletion.completedAt
+            } else if let selectedOccurrenceDate = state.validSelectedOccurrenceDate {
+                completionDate = selectedOccurrenceDate
             } else {
                 guard let resolvedCompletionDate = resolvedMarkAsDoneDate(
                     for: state.selectedDate,
@@ -1136,6 +1143,54 @@ struct TaskDetailFeature: Reducer {
 
         case let .selectedDateChanged(date):
             return dialogLifecycleActionHandler().selectedDateChanged(date, state: &state)
+
+        case let .selectOccurrence(occurrence):
+            guard state.isScheduledOccurrenceOnSelectedDay(occurrence) else {
+                return .none
+            }
+            state.selectedOccurrenceDate = occurrence
+            return .none
+
+        case let .markOccurrenceDone(occurrence):
+            guard state.isScheduledOccurrenceOnSelectedDay(occurrence) else {
+                return .none
+            }
+            state.selectedOccurrenceDate = occurrence
+            return reduce(into: &state, action: .markAsDone)
+
+        case let .markOccurrenceMissed(occurrence):
+            guard state.occurrencePresentation(for: occurrence)?.canMarkMissed == true else {
+                return .none
+            }
+            state.selectedOccurrenceDate = occurrence
+            replaceLocalOccurrenceResolution(
+                at: occurrence,
+                with: .missed,
+                in: &state
+            )
+            refreshTaskView(&state)
+            updateDerivedState(&state)
+            return handleMarkOccurrenceMissed(
+                taskID: state.task.id,
+                missedAt: occurrence
+            )
+
+        case let .markOccurrenceCanceled(occurrence):
+            guard state.occurrencePresentation(for: occurrence)?.canCancel == true else {
+                return .none
+            }
+            state.selectedOccurrenceDate = occurrence
+            replaceLocalOccurrenceResolution(
+                at: occurrence,
+                with: .canceled,
+                in: &state
+            )
+            refreshTaskView(&state)
+            updateDerivedState(&state)
+            return handleMarkOccurrenceCanceled(
+                taskID: state.task.id,
+                canceledAt: occurrence
+            )
 
         case let .setEditSheet(isPresented):
             return dialogLifecycleActionHandler().setEditSheet(isPresented, state: &state)

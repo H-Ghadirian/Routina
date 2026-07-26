@@ -339,6 +339,20 @@ enum RoutineDateMath {
         }
         let occurrence = completionDate
 
+        let hasReplaceableResolution = logs.contains { log in
+            guard let timestamp = log.timestamp else { return false }
+            guard log.kind == .missed || log.kind == .canceled else { return false }
+            return RoutineOccurrenceIdentity.matches(
+                timestamp,
+                occurrence,
+                for: task,
+                calendar: calendar
+            )
+        }
+        if hasReplaceableResolution {
+            return true
+        }
+
         let isSelectedMissedDate = unresolvedMissedExactTimedOccurrenceDates(
             for: task,
             referenceDate: referenceDate,
@@ -370,6 +384,31 @@ enum RoutineDateMath {
             calendar: calendar
         )
         .first
+    }
+
+    static func isScheduledOccurrenceMissed(
+        _ occurrence: Date,
+        for task: RoutineTask,
+        referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> Bool {
+        guard usesExactTimedOccurrenceTracking(for: task) else { return false }
+        guard scheduledOccurrences(for: task, on: occurrence, calendar: calendar).contains(where: {
+            RoutineOccurrenceIdentity.matches(
+                $0,
+                occurrence,
+                for: task,
+                calendar: calendar
+            )
+        }) else {
+            return false
+        }
+        return isExactTimedOccurrenceMissed(
+            occurrence,
+            for: task,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
     }
 
     static func missedExactTimedOccurrenceDates(

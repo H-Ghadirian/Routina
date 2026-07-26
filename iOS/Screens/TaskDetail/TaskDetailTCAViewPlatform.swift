@@ -72,10 +72,27 @@ extension TaskDetailTCAView {
     func platformDetailOverviewSection(
         pauseArchivePresentation: RoutinePauseArchivePresentation
     ) -> some View {
-        VStack(spacing: 16) {
+        let occurrences = store.selectedDayOccurrences
+        return VStack(spacing: 16) {
             calendarSection
+            if !occurrences.isEmpty {
+                occurrenceSection(occurrences)
+            }
             compactStatusSection(pauseArchivePresentation: pauseArchivePresentation)
         }
+    }
+
+    private func occurrenceSection(
+        _ occurrences: [TaskDetailOccurrencePresentation]
+    ) -> some View {
+        TaskDetailOccurrenceSectionView(
+            occurrences: occurrences,
+            onSelect: { store.send(.selectOccurrence($0)) },
+            onComplete: { store.send(.markOccurrenceDone($0)) },
+            onMarkMissed: { store.send(.markOccurrenceMissed($0)) },
+            onCancel: { store.send(.markOccurrenceCanceled($0)) },
+            onClearResolution: { store.send(.requestRemoveLogEntry($0)) }
+        )
     }
 
     func platformOpenAttachment(url: URL) {
