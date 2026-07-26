@@ -103,5 +103,6 @@ extension TaskDetailFeature {
             state.editFrequency = .day
             state.editFrequencyValue = 1
         }
+        state.synchronizeRecurrenceDraftFromLegacy()
     }
 }

@@ -94,32 +94,19 @@ struct TaskDetailEditSaveRequestBuilder {
             return nil
         }
 
-        state.isEditSheetPresented = false
-
         let trackingCadenceEnabled = scheduleMode.taskType == .todo
             ? true
             : state.editTrackingCadenceEnabled
-        let frequencyInterval: Int
-        if !scheduleMode.usesRoutineCadence || !trackingCadenceEnabled {
-            frequencyInterval = 1
-        } else if state.editRecurrenceEditorMode == .advanced {
-            frequencyInterval = state.editAdvancedRecurrenceRule.approximateIntervalDays
-        } else {
-            frequencyInterval = TaskFormRecurrenceConstraints.effectiveIntervalDays(
-                value: state.editFrequencyValue,
-                unit: state.editFrequency,
-                scheduleMode: scheduleMode,
-                routineDurationMode: state.editRoutineDurationMode,
-                recurrenceKind: state.editRecurrenceKind
-            )
+        let recurrenceDraft = contextualRecurrenceDraft(
+            state.recurrenceDraftForPersistence(calendar: calendar),
+            scheduleMode: scheduleMode,
+            trackingCadenceEnabled: trackingCadenceEnabled,
+            recurrenceKind: state.editRecurrenceKind
+        )
+        guard let recurrenceRule = recurrenceDraft.resolvedRecurrenceRule(calendar: calendar) else {
+            return nil
         }
-        let recurrenceRule = trackingCadenceEnabled
-            ? selectedRecurrenceRule(
-                for: state,
-                scheduleMode: scheduleMode,
-                fallbackInterval: frequencyInterval
-            )
-            : .interval(days: 1)
+        state.isEditSheetPresented = false
 
         let sanitizedLinks = RoutineTask.sanitizedLinkItems(fromEditorText: state.editRoutineLink)
 
@@ -178,7 +165,7 @@ struct TaskDetailEditSaveRequestBuilder {
             recurrenceRule: recurrenceRule,
             recurrenceTimeRangeRole: recurrenceRule.timeRange == nil
                 ? .availability
-                : state.editRecurrenceTimeRangeRole,
+                : recurrenceDraft.timeRangeRole,
             color: state.editColor,
             autoAssumeDailyDone: state.editAutoAssumeDailyDone,
             autoAssumeDoneTimeOfDay: state.editAutoAssumeDailyDone
@@ -195,61 +182,26 @@ struct TaskDetailEditSaveRequestBuilder {
         )
     }
 
-    private func selectedRecurrenceRule(
-        for state: TaskDetailFeature.State,
+    private func contextualRecurrenceDraft(
+        _ recurrenceDraft: RoutineRecurrenceDraft,
         scheduleMode: RoutineScheduleMode,
-        fallbackInterval: Int
-    ) -> RoutineRecurrenceRule {
-        let usesAvailabilityTiming = !state.editIsAllDay
-        let timeRange = usesAvailabilityTiming ? state.editRecurrenceTimeRange : nil
-
-        switch scheduleMode.taskType {
-        case .todo:
-            return .interval(
-                days: 1,
-                at: usesAvailabilityTiming && state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil,
-                timeRange: timeRange
-            )
-        case .routine, .record:
-            break
+        trackingCadenceEnabled: Bool,
+        recurrenceKind: RoutineRecurrenceRule.Kind
+    ) -> RoutineRecurrenceDraft {
+        let cadence: RoutineRecurrenceDraft.Cadence
+        if !scheduleMode.usesRoutineCadence || !trackingCadenceEnabled {
+            cadence = .none
+        } else if scheduleMode.isChecklistDrivenMode {
+            cadence = .itemRunout
+        } else if recurrenceDraft.cadence == .none
+                    || recurrenceDraft.cadence == .itemRunout {
+            cadence = recurrenceKind == .intervalDays
+                ? .afterCompletion
+                : .scheduled
+        } else {
+            cadence = recurrenceDraft.cadence
         }
-
-        guard !scheduleMode.isChecklistDrivenMode else {
-            return .interval(days: max(fallbackInterval, 1))
-        }
-
-        if state.editRecurrenceEditorMode == .advanced {
-            return .advanced(state.editAdvancedRecurrenceRule)
-        }
-
-        switch state.editRecurrenceKind {
-        case .intervalDays:
-            return .interval(
-                days: max(fallbackInterval, 1),
-                at: usesAvailabilityTiming && state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil,
-                timeRange: timeRange
-            )
-        case .dailyTime:
-            if let timeRange {
-                return .daily(in: timeRange)
-            }
-            return RoutineRecurrenceRule(
-                kind: .dailyTime,
-                timeOfDay: usesAvailabilityTiming && state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil
-            )
-        case .weekly:
-            return .weekly(
-                on: state.effectiveEditRecurrenceWeekdays,
-                at: usesAvailabilityTiming && state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil,
-                timeRange: timeRange
-            )
-        case .monthlyDay:
-            return .monthly(
-                on: state.effectiveEditRecurrenceDaysOfMonth,
-                at: usesAvailabilityTiming && state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil,
-                timeRange: timeRange
-            )
-        }
+        return recurrenceDraft.replacingCadence(cadence)
     }
 
     private func appendStep(

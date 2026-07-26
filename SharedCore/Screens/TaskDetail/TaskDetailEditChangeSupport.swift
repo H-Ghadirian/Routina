@@ -39,6 +39,7 @@ struct TaskDetailEditChangeRequest {
     let checklistItemDraftInterval: Int
     let frequency: TaskDetailFeature.EditFrequency
     let frequencyValue: Int
+    let recurrenceDraft: RoutineRecurrenceDraft
     let recurrenceEditorMode: RoutineRecurrenceEditorMode
     let advancedRecurrenceRule: RoutineAdvancedRecurrenceRule
     let recurrenceKind: RoutineRecurrenceRule.Kind
@@ -99,6 +100,7 @@ struct TaskDetailEditChangeRequest {
         self.checklistItemDraftInterval = state.editChecklistItemDraftInterval
         self.frequency = state.editFrequency
         self.frequencyValue = state.editFrequencyValue
+        self.recurrenceDraft = state.recurrenceDraftForPersistence()
         self.recurrenceEditorMode = state.editRecurrenceEditorMode
         self.advancedRecurrenceRule = state.editAdvancedRecurrenceRule
         self.recurrenceKind = state.editRecurrenceKind
@@ -164,6 +166,9 @@ enum TaskDetailEditChangeDetector {
             candidateChecklistItems,
             for: request.scheduleMode
         )
+        guard let candidateRecurrenceRule = recurrenceRule(for: request) else {
+            return false
+        }
 
         return trimmedName != currentName
             || request.emoji != currentEmoji
@@ -195,8 +200,11 @@ enum TaskDetailEditChangeDetector {
             || request.scheduleMode != task.scheduleMode
             || RoutineStep.sanitized(candidateSteps) != currentSteps
             || sanitizedCandidateChecklistItems != currentChecklistItems
-            || recurrenceRule(for: request) != task.recurrenceRule
-            || recurrenceTimeRangeRole(for: request) != recurrenceTimeRangeRole(for: task)
+            || candidateRecurrenceRule != task.recurrenceRule
+            || recurrenceTimeRangeRole(
+                for: candidateRecurrenceRule,
+                draft: request.recurrenceDraft
+            ) != recurrenceTimeRangeRole(for: task)
             || request.autoAssumeDailyDone != task.autoAssumeDailyDone
             || normalizedAutoAssumeDoneTimeOfDay(for: request) != normalizedAutoAssumeDoneTimeOfDay(for: task)
             || request.focusModeEnabled != task.focusModeEnabled
@@ -229,78 +237,42 @@ enum TaskDetailEditChangeDetector {
             : nil
     }
 
-    private static func recurrenceRule(for request: TaskDetailEditChangeRequest) -> RoutineRecurrenceRule {
-        let usesAvailabilityTiming = !request.isAllDay
-        let timeRange = usesAvailabilityTiming && request.recurrenceHasTimeRange
-            ? RoutineTimeRange(
-                start: request.recurrenceTimeRangeStart,
-                end: request.recurrenceTimeRangeEnd
-            )
-            : nil
-
-        if request.scheduleMode == .oneOff {
-            return .interval(
-                days: 1,
-                at: usesAvailabilityTiming && request.recurrenceHasExplicitTime ? request.recurrenceTimeOfDay : nil,
-                timeRange: timeRange
-            )
-        }
-
-        if request.scheduleMode.taskType != .todo, !request.trackingCadenceEnabled {
-            return .interval(days: 1)
-        }
-
-        if request.recurrenceEditorMode == .advanced {
-            return .advanced(request.advancedRecurrenceRule)
-        }
-
-        switch request.recurrenceKind {
-        case .intervalDays:
-            return .interval(
-                days: request.frequencyValue * request.frequency.daysMultiplier,
-                at: usesAvailabilityTiming && request.recurrenceHasExplicitTime ? request.recurrenceTimeOfDay : nil,
-                timeRange: timeRange
-            )
-        case .dailyTime:
-            if let timeRange {
-                return .daily(in: timeRange)
-            }
-            return RoutineRecurrenceRule(
-                kind: .dailyTime,
-                timeOfDay: usesAvailabilityTiming && request.recurrenceHasExplicitTime ? request.recurrenceTimeOfDay : nil
-            )
-        case .weekly:
-            return .weekly(
-                on: effectiveRecurrenceWeekdays(for: request),
-                at: usesAvailabilityTiming && request.recurrenceHasExplicitTime ? request.recurrenceTimeOfDay : nil,
-                timeRange: timeRange
-            )
-        case .monthlyDay:
-            return .monthly(
-                on: effectiveRecurrenceDaysOfMonth(for: request),
-                at: usesAvailabilityTiming && request.recurrenceHasExplicitTime ? request.recurrenceTimeOfDay : nil,
-                timeRange: timeRange
-            )
-        }
+    private static func recurrenceRule(
+        for request: TaskDetailEditChangeRequest
+    ) -> RoutineRecurrenceRule? {
+        contextualRecurrenceDraft(for: request).resolvedRecurrenceRule()
     }
 
-    private static func recurrenceTimeRangeRole(for request: TaskDetailEditChangeRequest) -> RoutineTimeRangeRole {
-        recurrenceRule(for: request).timeRange == nil ? .availability : request.recurrenceTimeRangeRole
+    private static func contextualRecurrenceDraft(
+        for request: TaskDetailEditChangeRequest
+    ) -> RoutineRecurrenceDraft {
+        let cadence: RoutineRecurrenceDraft.Cadence
+        if !request.scheduleMode.usesRoutineCadence || !request.trackingCadenceEnabled {
+            cadence = .none
+        } else if request.scheduleMode.isChecklistDrivenMode {
+            cadence = .itemRunout
+        } else if request.recurrenceDraft.cadence == .none
+                    || request.recurrenceDraft.cadence == .itemRunout {
+            cadence = request.recurrenceKind == .intervalDays
+                ? .afterCompletion
+                : .scheduled
+        } else {
+            cadence = request.recurrenceDraft.cadence
+        }
+        return request.recurrenceDraft.replacingCadence(cadence)
+    }
+
+    private static func recurrenceTimeRangeRole(
+        for recurrenceRule: RoutineRecurrenceRule,
+        draft: RoutineRecurrenceDraft
+    ) -> RoutineTimeRangeRole {
+        recurrenceRule.timeRange == nil ? .availability : draft.timeRangeRole
     }
 
     private static func recurrenceTimeRangeRole(for task: RoutineTask) -> RoutineTimeRangeRole {
         task.recurrenceRule.timeRange == nil ? .availability : task.recurrenceTimeRangeRole
     }
 
-    private static func effectiveRecurrenceWeekdays(for request: TaskDetailEditChangeRequest) -> [Int] {
-        let selectedWeekdays = Array(Set(request.recurrenceWeekdays.map { min(max($0, 1), 7) })).sorted()
-        return selectedWeekdays.isEmpty ? [min(max(request.recurrenceWeekday, 1), 7)] : selectedWeekdays
-    }
-
-    private static func effectiveRecurrenceDaysOfMonth(for request: TaskDetailEditChangeRequest) -> [Int] {
-        let selectedDays = Array(Set(request.recurrenceDaysOfMonth.map { min(max($0, 1), 31) })).sorted()
-        return selectedDays.isEmpty ? [min(max(request.recurrenceDayOfMonth, 1), 31)] : selectedDays
-    }
 }
 
 enum TaskFormReminderLeadTime: Int, CaseIterable, Identifiable {

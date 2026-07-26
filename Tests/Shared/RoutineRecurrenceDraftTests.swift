@@ -130,10 +130,19 @@ struct RoutineRecurrenceDraftTests {
     @Test
     func cadenceFreeAndItemRunoutDraftsKeepCompatibilityRulesExplicit() throws {
         let compatibilityRule = RoutineRecurrenceRule.interval(days: 21)
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 7, minute: 0),
+            end: RoutineTimeOfDay(hour: 10, minute: 0)
+        )
         let none = RoutineRecurrenceDraft(
             recurrenceRule: compatibilityRule,
             cadence: RoutineRecurrenceDraft.Cadence.none,
             calendar: calendar
+        )
+        let noneWithAvailability = RoutineRecurrenceDraft(
+            cadence: .none,
+            availability: .window(window),
+            timeRangeRole: .scheduledBlock
         )
         let runout = RoutineRecurrenceDraft(
             recurrenceRule: compatibilityRule,
@@ -142,6 +151,10 @@ struct RoutineRecurrenceDraftTests {
         )
 
         #expect(try #require(none.resolvedRecurrenceRule(calendar: calendar)) == .interval(days: 1))
+        #expect(
+            try #require(noneWithAvailability.resolvedRecurrenceRule(calendar: calendar))
+                == .interval(days: 1, timeRange: window)
+        )
         #expect(try #require(runout.resolvedRecurrenceRule(calendar: calendar)) == compatibilityRule)
     }
 
@@ -197,6 +210,83 @@ struct RoutineRecurrenceDraftTests {
             try #require(draft.resolvedRecurrenceRule(calendar: calendar))
                 == state.candidateRecurrenceRule
         )
+    }
+
+    @Test
+    func addDraftOwnsSaveUntilALegacyControlChanges() throws {
+        let exactTime = RoutineTimeOfDay(hour: 18, minute: 30)
+        let draft = RoutineRecurrenceDraft(
+            cadence: .afterCompletion,
+            frequency: .weekly,
+            interval: 2,
+            availability: .at(exactTime)
+        )
+        var state = AddRoutineFeature.State(
+            basics: AddRoutineBasicsState(routineName: "Training"),
+            schedule: AddRoutineScheduleState(scheduleMode: .fixedInterval)
+        )
+        let handler = AddRoutineScheduleMutationHandler(
+            now: { makeDate("2026-07-21T09:00:00Z") },
+            calendar: calendar
+        )
+
+        handler.setRecurrenceDraft(draft, state: &state)
+
+        #expect(state.schedule.recurrenceDraftIsAuthoritative)
+        #expect(
+            try #require(AddRoutineSaveRequest(state: state, calendar: calendar)).recurrenceRule
+                == .interval(days: 14, at: exactTime)
+        )
+
+        handler.setFrequencyValue(3, state: &state)
+
+        #expect(!state.schedule.recurrenceDraftIsAuthoritative)
+        #expect(
+            try #require(AddRoutineSaveRequest(state: state, calendar: calendar)).recurrenceRule
+                == .interval(days: 21, at: exactTime)
+        )
+    }
+
+    @Test @MainActor
+    func editDraftPersistsMultipleMonthlyDatesAndWindowRole() throws {
+        let window = RoutineTimeRange(
+            start: RoutineTimeOfDay(hour: 7, minute: 0),
+            end: RoutineTimeOfDay(hour: 10, minute: 0)
+        )
+        let draft = RoutineRecurrenceDraft(
+            cadence: .scheduled,
+            frequency: .monthly,
+            availability: .window(window),
+            timeRangeRole: .scheduledBlock,
+            monthDays: [1, 15, 31]
+        )
+        var state = TaskDetailFeature.State(
+            task: RoutineTask(
+                name: "Review finances",
+                scheduleMode: .fixedInterval,
+                recurrenceRule: .interval(days: 1)
+            ),
+            isEditSheetPresented: true,
+            editRoutineName: "Review finances",
+            editScheduleMode: .fixedInterval
+        )
+        let handler = TaskDetailRecurrenceEditActionHandler(
+            now: { makeDate("2026-07-21T09:00:00Z") },
+            calendar: calendar
+        )
+
+        _ = handler.editRecurrenceDraftChanged(draft, state: &state)
+        let request = try #require(
+            TaskDetailEditSaveRequestBuilder(
+                now: { makeDate("2026-07-21T09:00:00Z") },
+                calendar: calendar,
+                matrixPriority: { _, _ in .medium }
+            ).build(state: &state)
+        )
+
+        #expect(state.editRecurrenceDraftIsAuthoritative)
+        #expect(request.recurrenceRule == .monthly(on: [1, 15, 31], timeRange: window))
+        #expect(request.recurrenceTimeRangeRole == .scheduledBlock)
     }
 
     @Test

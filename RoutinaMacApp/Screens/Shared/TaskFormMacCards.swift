@@ -839,6 +839,14 @@ struct TaskFormMacBehaviorCard: View {
                 EmptyView()
             }
         }
+
+        if let validationMessage = model.recurrenceValidationMessage {
+            TaskFormMacControlBlock(title: "Recurrence") {
+                Label(validationMessage, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+        }
     }
 
     @ViewBuilder

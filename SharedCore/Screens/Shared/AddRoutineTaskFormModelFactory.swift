@@ -111,6 +111,10 @@ struct AddRoutineTaskFormModelFactory {
                 get: { store.basics.selectedPlaceIDs },
                 send: AddRoutineFeature.Action.selectedPlaceIDsChanged
             ),
+            recurrenceDraft: binding(
+                get: { store.candidateRecurrenceDraft },
+                send: AddRoutineFeature.Action.recurrenceDraftChanged
+            ),
             recurrenceEditorMode: binding(
                 get: { store.schedule.recurrenceEditorMode },
                 send: AddRoutineFeature.Action.recurrenceEditorModeChanged

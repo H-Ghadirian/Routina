@@ -63,6 +63,7 @@ struct AddRoutineFeature: Reducer {
         case frequencyValueChanged(Int)
         case recurrenceEditorModeChanged(RoutineRecurrenceEditorMode)
         case advancedRecurrenceRuleChanged(RoutineAdvancedRecurrenceRule)
+        case recurrenceDraftChanged(RoutineRecurrenceDraft)
         case recurrenceKindChanged(RoutineRecurrenceRule.Kind)
         case recurrenceHasExplicitTimeChanged(Bool)
         case recurrenceHasTimeRangeChanged(Bool)
@@ -209,6 +210,7 @@ struct AddRoutineFeature: Reducer {
                 state.schedule.recurrenceHasTimeRange = false
                 state.schedule.recurrenceTimeRangeRole = .availability
             }
+            state.synchronizeRecurrenceDraftFromLegacy()
             if !state.canAutoAssumeDailyDone {
                 state.schedule.autoAssumeDailyDone = false
             }
@@ -220,6 +222,7 @@ struct AddRoutineFeature: Reducer {
                 basics: &state.basics
             )
             enforceRecurrenceConstraints(state: &state)
+            state.synchronizeRecurrenceDraftFromLegacy()
             enforcePlanningRules(state: &state)
             return .none
 
@@ -517,6 +520,14 @@ struct AddRoutineFeature: Reducer {
             enforcePlanningRules(state: &state)
             return .none
 
+        case let .recurrenceDraftChanged(recurrenceDraft):
+            AddRoutineScheduleMutationHandler(
+                now: { now },
+                calendar: calendar
+            ).setRecurrenceDraft(recurrenceDraft, state: &state)
+            enforcePlanningRules(state: &state)
+            return .none
+
         case let .recurrenceKindChanged(kind):
             scheduleMutationHandler().setRecurrenceKind(kind, state: &state)
             enforcePlanningRules(state: &state)
@@ -637,6 +648,7 @@ struct AddRoutineFeature: Reducer {
             if !isEnabled {
                 state.basics.trackingNudgesEnabled = false
             }
+            state.synchronizeRecurrenceDraftFromLegacy()
             if !state.canAutoAssumeDailyDone {
                 state.schedule.autoAssumeDailyDone = false
             }

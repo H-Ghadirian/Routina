@@ -305,6 +305,7 @@ struct AddRoutineDraftSnapshot: Codable, Equatable {
         ) {
             state.basics.plannedDate = exactAvailabilityDate
         }
+        state.synchronizeRecurrenceDraftFromLegacy()
         AddRoutineValidationEditor.refreshNameValidation(state: &state)
     }
 

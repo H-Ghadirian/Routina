@@ -89,6 +89,8 @@ struct TaskDetailFeature: Reducer {
         var editSelectedPlaceIDs: [UUID] = []
         var editFrequency: EditFrequency = .day
         var editFrequencyValue: Int = 1
+        var editRecurrenceDraft: RoutineRecurrenceDraft = RoutineRecurrenceDraft(cadence: .none)
+        var editRecurrenceDraftIsAuthoritative: Bool = false
         var editRecurrenceEditorMode: RoutineRecurrenceEditorMode = .simple
         var editAdvancedRecurrenceRule: RoutineAdvancedRecurrenceRule = RoutineAdvancedRecurrenceRule()
         var editRecurrenceKind: RoutineRecurrenceRule.Kind = .intervalDays
@@ -124,6 +126,27 @@ struct TaskDetailFeature: Reducer {
         var systemNotificationsAuthorized: Bool = true
 
         var candidateRecurrenceRule: RoutineRecurrenceRule {
+            candidateRecurrenceDraft.resolvedRecurrenceRule()
+                ?? legacyCandidateRecurrenceRule
+        }
+
+        var candidateRecurrenceDraft: RoutineRecurrenceDraft {
+            recurrenceDraftForPersistence()
+        }
+
+        func recurrenceDraftForPersistence(
+            calendar: Calendar = .current
+        ) -> RoutineRecurrenceDraft {
+            editRecurrenceDraftIsAuthoritative
+                ? editRecurrenceDraft
+                : legacyRecurrenceDraft(calendar: calendar)
+        }
+
+        mutating func synchronizeRecurrenceDraftFromLegacy() {
+            editRecurrenceDraftIsAuthoritative = false
+        }
+
+        private var legacyCandidateRecurrenceRule: RoutineRecurrenceRule {
             let fallbackInterval = !editScheduleMode.usesRoutineCadence
                 ? 1
                 : TaskFormRecurrenceConstraints.effectiveIntervalDays(
@@ -182,7 +205,9 @@ struct TaskDetailFeature: Reducer {
             }
         }
 
-        var candidateRecurrenceDraft: RoutineRecurrenceDraft {
+        private func legacyRecurrenceDraft(
+            calendar: Calendar
+        ) -> RoutineRecurrenceDraft {
             let cadenceOverride: RoutineRecurrenceDraft.Cadence?
             if !editScheduleMode.usesRoutineCadence {
                 cadenceOverride = RoutineRecurrenceDraft.Cadence.none
@@ -195,30 +220,22 @@ struct TaskDetailFeature: Reducer {
                 cadenceOverride = nil
             }
 
-            let recurrenceRule = candidateRecurrenceRule
+            let recurrenceRule = legacyCandidateRecurrenceRule
             let draft = RoutineRecurrenceDraft(
                 recurrenceRule: recurrenceRule,
                 cadence: cadenceOverride,
-                timeRangeRole: editRecurrenceTimeRangeRole
+                timeRangeRole: editRecurrenceTimeRangeRole,
+                calendar: calendar
             )
-            guard recurrenceRule.usesAdvancedModel else {
-                return draft
+            if recurrenceRule.usesAdvancedModel,
+               !editIsAllDay,
+               let timeRange = editRecurrenceTimeRange {
+                return draft.replacingAvailability(
+                    .window(timeRange),
+                    timeRangeRole: editRecurrenceTimeRangeRole
+                )
             }
-
-            let availability: RoutineRecurrenceDraft.Availability
-            if editIsAllDay {
-                availability = .anyTime
-            } else if let timeRange = editRecurrenceTimeRange {
-                availability = .window(timeRange)
-            } else if editRecurrenceHasExplicitTime {
-                availability = .at(editRecurrenceTimeOfDay)
-            } else {
-                availability = .anyTime
-            }
-            return draft.replacingAvailability(
-                availability,
-                timeRangeRole: editRecurrenceTimeRangeRole
-            )
+            return draft
         }
 
         var effectiveEditRecurrenceWeekdays: [Int] {
@@ -240,7 +257,8 @@ struct TaskDetailFeature: Reducer {
         }
 
         var canAutoAssumeDailyDone: Bool {
-            RoutineAssumedCompletion.isEligible(
+            candidateRecurrenceDraft.validationIssue == nil
+                && RoutineAssumedCompletion.isEligible(
                 scheduleMode: editScheduleMode,
                 recurrenceRule: candidateRecurrenceRule,
                 trackingCadenceEnabled: editScheduleMode.taskType == .todo
@@ -248,7 +266,7 @@ struct TaskDetailFeature: Reducer {
                     : editTrackingCadenceEnabled,
                 hasSequentialSteps: !editRoutineSteps.isEmpty,
                 hasChecklistItems: !editRoutineChecklistItems.isEmpty
-            )
+                )
         }
 
         var canAddDetailComment: Bool {
@@ -388,6 +406,7 @@ struct TaskDetailFeature: Reducer {
         case editFrequencyValueChanged(Int)
         case editRecurrenceEditorModeChanged(RoutineRecurrenceEditorMode)
         case editAdvancedRecurrenceRuleChanged(RoutineAdvancedRecurrenceRule)
+        case editRecurrenceDraftChanged(RoutineRecurrenceDraft)
         case editRecurrenceKindChanged(RoutineRecurrenceRule.Kind)
         case editRecurrenceHasExplicitTimeChanged(Bool)
         case editRecurrenceHasTimeRangeChanged(Bool)
@@ -1423,6 +1442,7 @@ struct TaskDetailFeature: Reducer {
             if !isEnabled {
                 state.editTrackingNudgesEnabled = false
             }
+            state.synchronizeRecurrenceDraftFromLegacy()
             if !state.canAutoAssumeDailyDone {
                 state.editAutoAssumeDailyDone = false
             }
@@ -1443,6 +1463,12 @@ struct TaskDetailFeature: Reducer {
 
         case let .editAdvancedRecurrenceRuleChanged(rule):
             return recurrenceEditActionHandler().editAdvancedRecurrenceRuleChanged(rule, state: &state)
+
+        case let .editRecurrenceDraftChanged(recurrenceDraft):
+            return recurrenceEditActionHandler().editRecurrenceDraftChanged(
+                recurrenceDraft,
+                state: &state
+            )
 
         case let .editRecurrenceKindChanged(kind):
             return recurrenceEditActionHandler().editRecurrenceKindChanged(kind, state: &state)

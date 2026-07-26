@@ -128,6 +128,18 @@ Given an existing structured recurrence uses any supported frequency, selector, 
 When the rule enters and exits the unified recurrence draft
 Then every structured field remains unchanged
 
+Given Add Task or Edit Task changes recurrence through the unified draft
+When the task is saved
+Then persistence resolves the authoritative draft without reconstructing recurrence from narrower legacy fields
+
+Given the staged form changes a visible Simple or Advanced control after editing the unified draft
+When the task is saved
+Then the current legacy control values deliberately retake ownership and are translated losslessly into the persistence draft
+
+Given a cadence-free one-time task uses an exact time or time window
+When its unified recurrence draft is saved
+Then the one-day compatibility rule preserves that time availability
+
 Given the draft describes a combination the current recurrence runtime cannot encode without losing information
 When the form requests a persistence rule
 Then the draft returns an explicit validation issue instead of a partial rule

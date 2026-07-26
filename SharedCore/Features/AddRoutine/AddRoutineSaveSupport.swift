@@ -262,8 +262,16 @@ struct AddRoutineSaveRequest: Equatable {
         let trackingCadenceEnabled = schedule.scheduleMode.taskType == .todo
             ? true
             : basics.trackingCadenceEnabled
+        let recurrenceDraft = state.recurrenceDraftForPersistence(calendar: calendar)
+        guard let recurrenceRule = recurrenceDraft.resolvedRecurrenceRule(calendar: calendar) else {
+            return nil
+        }
         let frequencyInDays: Int
-        if !schedule.scheduleMode.usesRoutineCadence || !trackingCadenceEnabled {
+        if schedule.recurrenceDraftIsAuthoritative {
+            frequencyInDays = recurrenceDraft.cadence == .none
+                ? 1
+                : recurrenceRule.approximateIntervalDays
+        } else if !schedule.scheduleMode.usesRoutineCadence || !trackingCadenceEnabled {
             frequencyInDays = 1
         } else if schedule.recurrenceEditorMode == .advanced {
             frequencyInDays = schedule.advancedRecurrenceRule.approximateIntervalDays
@@ -279,13 +287,7 @@ struct AddRoutineSaveRequest: Equatable {
 
         self.name = state.trimmedRoutineName
         self.frequencyInDays = frequencyInDays
-        self.recurrenceRule = trackingCadenceEnabled
-            ? Self.selectedRecurrenceRule(
-                schedule: schedule,
-                fallbackInterval: frequencyInDays,
-                isAllDay: basics.isAllDay
-            )
-            : .interval(days: 1)
+        self.recurrenceRule = recurrenceRule
         self.emoji = basics.routineEmoji
         self.notes = RoutineTask.sanitizedNotes(basics.routineNotes)
         let sanitizedLinks = RoutineTask.sanitizedLinkItems(fromEditorText: basics.routineLink)
@@ -348,7 +350,7 @@ struct AddRoutineSaveRequest: Equatable {
         self.checklistItems = sanitizedChecklistItems
         self.recurrenceTimeRangeRole = self.recurrenceRule.timeRange == nil
             ? .availability
-            : schedule.recurrenceTimeRangeRole
+            : recurrenceDraft.timeRangeRole
         self.attachments = basics.attachments
         self.color = basics.routineColor
         self.estimatedDurationMinutes = RoutineTask.sanitizedEstimatedDurationMinutes(basics.estimatedDurationMinutes)
@@ -372,60 +374,4 @@ struct AddRoutineSaveRequest: Equatable {
         self.autoAssumeDoneTimeOfDay = autoAssumeDailyDone ? schedule.autoAssumeDoneTimeOfDay : nil
     }
 
-    private static func selectedRecurrenceRule(
-        schedule: AddRoutineScheduleState,
-        fallbackInterval: Int,
-        isAllDay: Bool
-    ) -> RoutineRecurrenceRule {
-        let usesAvailabilityTiming = !isAllDay
-        let timeRange = usesAvailabilityTiming ? schedule.recurrenceTimeRange : nil
-
-        switch schedule.scheduleMode.taskType {
-        case .todo:
-            return .interval(
-                days: 1,
-                at: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
-                timeRange: timeRange
-            )
-        case .routine, .record:
-            break
-        }
-
-        guard !schedule.scheduleMode.isChecklistDrivenMode else {
-            return .interval(days: max(fallbackInterval, 1))
-        }
-
-        if schedule.recurrenceEditorMode == .advanced {
-            return .advanced(schedule.advancedRecurrenceRule)
-        }
-
-        switch schedule.recurrenceKind {
-        case .intervalDays:
-            return .interval(
-                days: max(fallbackInterval, 1),
-                at: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
-                timeRange: timeRange
-            )
-        case .dailyTime:
-            if let timeRange {
-                return .daily(in: timeRange)
-            }
-            return RoutineRecurrenceRule(
-                kind: .dailyTime,
-                timeOfDay: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil
-            )
-        case .weekly:
-            return .weekly(
-                on: schedule.effectiveRecurrenceWeekdays,
-                at: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
-                timeRange: timeRange
-            )
-        case .monthlyDay:
-            return .monthly(
-                on: schedule.effectiveRecurrenceDaysOfMonth,
-                at: usesAvailabilityTiming && schedule.recurrenceHasExplicitTime ? schedule.recurrenceTimeOfDay : nil,
-                timeRange: timeRange
-            )
-        }
-    }
 }

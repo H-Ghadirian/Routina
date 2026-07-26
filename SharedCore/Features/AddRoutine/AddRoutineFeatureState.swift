@@ -54,6 +54,8 @@ struct AddRoutineScheduleState: Equatable {
     var scheduleMode: RoutineScheduleMode = .oneOff
     var frequency: AddRoutineFeature.Frequency = .day
     var frequencyValue: Int = 1
+    var recurrenceDraft: RoutineRecurrenceDraft = RoutineRecurrenceDraft(cadence: .none)
+    var recurrenceDraftIsAuthoritative: Bool = false
     var recurrenceEditorMode: RoutineRecurrenceEditorMode = .simple
     var advancedRecurrenceRule: RoutineAdvancedRecurrenceRule = RoutineAdvancedRecurrenceRule()
     var recurrenceKind: RoutineRecurrenceRule.Kind = .intervalDays
@@ -98,6 +100,7 @@ struct AddRoutineFeatureState: Equatable {
         self.organization = organization
         self.schedule = schedule
         self.checklist = checklist
+        synchronizeRecurrenceDraftFromLegacy()
     }
 
     var taskType: RoutineTaskType {
@@ -133,6 +136,7 @@ struct AddRoutineFeatureState: Equatable {
         isSaving
             || trimmedRoutineName.isEmpty
             || organization.nameValidationMessage != nil
+            || candidateRecurrenceDraft.validationIssue != nil
     }
 
     var requiresChecklistItems: Bool {
@@ -140,6 +144,27 @@ struct AddRoutineFeatureState: Equatable {
     }
 
     var candidateRecurrenceRule: RoutineRecurrenceRule {
+        candidateRecurrenceDraft.resolvedRecurrenceRule()
+            ?? legacyCandidateRecurrenceRule
+    }
+
+    var candidateRecurrenceDraft: RoutineRecurrenceDraft {
+        recurrenceDraftForPersistence()
+    }
+
+    func recurrenceDraftForPersistence(
+        calendar: Calendar = .current
+    ) -> RoutineRecurrenceDraft {
+        schedule.recurrenceDraftIsAuthoritative
+            ? schedule.recurrenceDraft
+            : legacyRecurrenceDraft(calendar: calendar)
+    }
+
+    mutating func synchronizeRecurrenceDraftFromLegacy() {
+        schedule.recurrenceDraftIsAuthoritative = false
+    }
+
+    private var legacyCandidateRecurrenceRule: RoutineRecurrenceRule {
         let trackingCadenceEnabled = schedule.scheduleMode.taskType == .todo
             ? true
             : basics.trackingCadenceEnabled
@@ -206,7 +231,9 @@ struct AddRoutineFeatureState: Equatable {
         }
     }
 
-    var candidateRecurrenceDraft: RoutineRecurrenceDraft {
+    private func legacyRecurrenceDraft(
+        calendar: Calendar
+    ) -> RoutineRecurrenceDraft {
         let cadenceOverride: RoutineRecurrenceDraft.Cadence?
         if !schedule.scheduleMode.usesRoutineCadence {
             cadenceOverride = RoutineRecurrenceDraft.Cadence.none
@@ -219,34 +246,27 @@ struct AddRoutineFeatureState: Equatable {
             cadenceOverride = nil
         }
 
-        let recurrenceRule = candidateRecurrenceRule
+        let recurrenceRule = legacyCandidateRecurrenceRule
         let draft = RoutineRecurrenceDraft(
             recurrenceRule: recurrenceRule,
             cadence: cadenceOverride,
-            timeRangeRole: schedule.recurrenceTimeRangeRole
+            timeRangeRole: schedule.recurrenceTimeRangeRole,
+            calendar: calendar
         )
-        guard recurrenceRule.usesAdvancedModel else {
-            return draft
+        if recurrenceRule.usesAdvancedModel,
+           !basics.isAllDay,
+           let timeRange = schedule.recurrenceTimeRange {
+            return draft.replacingAvailability(
+                .window(timeRange),
+                timeRangeRole: schedule.recurrenceTimeRangeRole
+            )
         }
-
-        let availability: RoutineRecurrenceDraft.Availability
-        if basics.isAllDay {
-            availability = .anyTime
-        } else if let timeRange = schedule.recurrenceTimeRange {
-            availability = .window(timeRange)
-        } else if schedule.recurrenceHasExplicitTime {
-            availability = .at(schedule.recurrenceTimeOfDay)
-        } else {
-            availability = .anyTime
-        }
-        return draft.replacingAvailability(
-            availability,
-            timeRangeRole: schedule.recurrenceTimeRangeRole
-        )
+        return draft
     }
 
     var canAutoAssumeDailyDone: Bool {
-        RoutineAssumedCompletion.isEligible(
+        candidateRecurrenceDraft.validationIssue == nil
+            && RoutineAssumedCompletion.isEligible(
             scheduleMode: schedule.scheduleMode,
             recurrenceRule: candidateRecurrenceRule,
             trackingCadenceEnabled: schedule.scheduleMode.taskType == .todo
@@ -254,7 +274,7 @@ struct AddRoutineFeatureState: Equatable {
                 : basics.trackingCadenceEnabled,
             hasSequentialSteps: !checklist.routineSteps.isEmpty,
             hasChecklistItems: !checklist.routineChecklistItems.isEmpty
-        )
+            )
     }
 }
 

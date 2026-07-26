@@ -149,6 +149,10 @@ struct TaskDetailEditRoutineContent: View {
                 get: { store.editSelectedPlaceIDs },
                 set: { store.send(.editSelectedPlaceIDsChanged($0)) }
             ),
+            recurrenceDraft: Binding(
+                get: { store.candidateRecurrenceDraft },
+                set: { store.send(.editRecurrenceDraftChanged($0)) }
+            ),
             recurrenceEditorMode: Binding(
                 get: { store.editRecurrenceEditorMode },
                 set: { store.send(.editRecurrenceEditorModeChanged($0)) }

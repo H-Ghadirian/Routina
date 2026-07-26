@@ -349,6 +349,13 @@ struct TaskFormIOSRepeatPatternSections: View {
                 repeatPatternSection
                 recurrenceSpecificSections
             }
+            if let validationMessage = model.recurrenceValidationMessage {
+                Section("Recurrence") {
+                    Label(validationMessage, systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+            }
         }
 
         if showsAssumedDoneSection {

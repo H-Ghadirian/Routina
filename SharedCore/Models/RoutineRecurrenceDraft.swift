@@ -19,6 +19,19 @@ struct RoutineRecurrenceDraft: Equatable, Sendable {
         case fixedStartRequired
         case timeZoneRequired
         case structuredAvailabilityUnsupported
+
+        var message: String {
+            switch self {
+            case .unsupportedAfterCompletionFrequency:
+                return "After-completion repeats currently support day, week, or month intervals."
+            case .fixedStartRequired:
+                return "Choose a start date for this fixed recurrence."
+            case .timeZoneRequired:
+                return "Choose a time zone for this fixed recurrence."
+            case .structuredAvailabilityUnsupported:
+                return "Fixed recurrence cannot currently be combined with a separate exact time or availability window."
+            }
+        }
     }
 
     var cadence: Cadence
@@ -217,7 +230,11 @@ struct RoutineRecurrenceDraft: Equatable, Sendable {
 
         switch cadence {
         case .none:
-            return .interval(days: 1)
+            return .interval(
+                days: 1,
+                at: availability.timeOfDay,
+                timeRange: availability.timeRange
+            )
 
         case .itemRunout:
             return .interval(days: rollingIntervalDays)
@@ -271,6 +288,38 @@ struct RoutineRecurrenceDraft: Equatable, Sendable {
         updated.availability = availability
         updated.timeRangeRole = availability.usesWindow ? timeRangeRole : .availability
         return updated
+    }
+
+    func replacingCadence(_ cadence: Cadence) -> Self {
+        var updated = self
+        updated.cadence = cadence
+        return updated
+    }
+
+    func normalized() -> Self {
+        Self(
+            cadence: cadence,
+            frequency: frequency,
+            interval: interval,
+            availability: availability,
+            timeRangeRole: timeRangeRole,
+            structuredVersion: structuredVersion,
+            startDate: startDate,
+            weekdays: weekdays,
+            monthDays: monthDays,
+            monthlyPattern: monthlyPattern,
+            weekdayOrdinal: weekdayOrdinal,
+            ordinalWeekday: ordinalWeekday,
+            monthsOfYear: monthsOfYear,
+            occurrenceTimes: occurrenceTimes,
+            hourlyMode: hourlyMode,
+            dailyWindowStart: dailyWindowStart,
+            dailyWindowEnd: dailyWindowEnd,
+            endMode: endMode,
+            endDate: endDate,
+            occurrenceCount: occurrenceCount,
+            timeZoneIdentifier: timeZoneIdentifier
+        )
     }
 
     private var canUseCompactScheduledRule: Bool {
@@ -354,7 +403,7 @@ struct RoutineRecurrenceDraft: Equatable, Sendable {
     }
 }
 
-private extension RoutineRecurrenceDraft.Availability {
+extension RoutineRecurrenceDraft.Availability {
     var usesWindow: Bool {
         if case .window = self {
             return true
