@@ -96,13 +96,21 @@ struct TaskFormContent: View {
                     .padding(.horizontal, 24)
                     .padding(.top, 22)
                     .padding(.bottom, 20)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(
+                        maxWidth: TaskFormMacLayoutMetrics.maximumFullFormWidth,
+                        alignment: .leading
+                    )
+                    .frame(maxWidth: .infinity, alignment: .center)
 
                 ScrollView {
                     scrollableFormSections
                         .padding(.horizontal, 24)
                         .padding(.bottom, 22)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .frame(
+                            maxWidth: TaskFormMacLayoutMetrics.maximumFullFormWidth,
+                            alignment: .leading
+                        )
+                        .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
             .onChange(of: formCoordinator.scrollTarget) { _, target in

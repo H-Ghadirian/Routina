@@ -9,6 +9,30 @@ struct FormSectionTests {
     }
 
     @Test
+    func wideTaskFormsKeepReadableContentBounds() {
+        #expect(TaskFormMacLayoutMetrics.maximumFullFormWidth == 1_280)
+        #expect(TaskFormMacLayoutMetrics.behaviorMainColumnWidth == 760)
+        #expect(TaskFormMacLayoutMetrics.behaviorSupportColumnWidth == 320)
+        #expect(
+            TaskFormMacLayoutMetrics.maximumBehaviorContentWidth
+                < TaskFormMacLayoutMetrics.maximumFullFormWidth
+        )
+        #expect(TaskFormMacLayoutMetrics.schedulePreviewWidth < TaskFormMacLayoutMetrics.behaviorMainColumnWidth)
+    }
+
+    @Test
+    func desktopRecurrenceControlsUseNaturalWidthWithoutForcedRows() {
+        #expect(!UnifiedRecurrenceEditorLayout.desktop.fillsSegmentedControlWidth)
+        #expect(UnifiedRecurrenceEditorLayout.desktop.cadenceMaximumSegmentsPerRow == nil)
+        #expect(UnifiedRecurrenceEditorLayout.desktop.frequencyMaximumSegmentsPerRow == nil)
+        #expect(UnifiedRecurrenceEditorLayout.desktop.fixedDetailsMaximumWidth == 520)
+
+        #expect(UnifiedRecurrenceEditorLayout.compact.fillsSegmentedControlWidth)
+        #expect(UnifiedRecurrenceEditorLayout.compact.cadenceMaximumSegmentsPerRow == 2)
+        #expect(UnifiedRecurrenceEditorLayout.compact.frequencyMaximumSegmentsPerRow == 3)
+    }
+
+    @Test
     func taskFormSectionsIncludeIdentityAndDangerZoneWhenRequested() {
         let sections = FormSection.taskFormSections(
             scheduleMode: .fixedInterval,

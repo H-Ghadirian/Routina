@@ -1,5 +1,17 @@
 import SwiftUI
 
+enum TaskFormMacLayoutMetrics {
+    static let maximumFullFormWidth: CGFloat = 1_280
+    static let behaviorMainColumnWidth: CGFloat = 760
+    static let behaviorSupportColumnWidth: CGFloat = 320
+    static let behaviorColumnSpacing: CGFloat = 24
+    static let schedulePreviewWidth: CGFloat = 420
+
+    static var maximumBehaviorContentWidth: CGFloat {
+        behaviorMainColumnWidth + behaviorColumnSpacing + behaviorSupportColumnWidth
+    }
+}
+
 struct TaskFormMacSectionCard<Content: View, HeaderAccessory: View>: View {
     let title: String
     var subtitle: String?
@@ -510,46 +522,55 @@ struct TaskFormMacBehaviorCard: View {
                 wideSchedulingLayout
                 compactSchedulingLayout
             }
-            .frame(minHeight: schedulingContentMinHeight, alignment: .topLeading)
+            .frame(
+                maxWidth: TaskFormMacLayoutMetrics.maximumBehaviorContentWidth,
+                alignment: .topLeading
+            )
         }
     }
 
-    private var schedulingContentMinHeight: CGFloat {
-        switch model.taskType.wrappedValue {
-        case .todo:
-            return 130
-        case .record:
-            return 300
-        case .routine:
-            if model.scheduleMode.wrappedValue.isChecklistDrivenMode {
-                return 240
-            }
-            if model.scheduleMode.wrappedValue.isSoftIntervalRoutine {
-                return 340
-            }
-            return 320
-        }
-    }
-
+    @ViewBuilder
     private var wideSchedulingLayout: some View {
-        HStack(alignment: .top, spacing: 28) {
-            schedulingMainColumn
-                .frame(maxWidth: 760, alignment: .topLeading)
-                .frame(maxWidth: .infinity, alignment: .topLeading)
+        if hasSchedulingSupportContent {
+            HStack(alignment: .top, spacing: TaskFormMacLayoutMetrics.behaviorColumnSpacing) {
+                schedulingMainColumn
+                    .frame(
+                        width: TaskFormMacLayoutMetrics.behaviorMainColumnWidth,
+                        alignment: .topLeading
+                    )
 
-            schedulingSupportColumn
-                .frame(width: 420, alignment: .topLeading)
+                schedulingSupportColumn
+                    .frame(
+                        width: TaskFormMacLayoutMetrics.behaviorSupportColumnWidth,
+                        alignment: .topLeading
+                    )
+            }
+            .frame(
+                width: TaskFormMacLayoutMetrics.maximumBehaviorContentWidth,
+                alignment: .leading
+            )
+        } else {
+            schedulingMainColumn
+                .frame(
+                    maxWidth: TaskFormMacLayoutMetrics.behaviorMainColumnWidth,
+                    alignment: .topLeading
+                )
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var compactSchedulingLayout: some View {
         VStack(alignment: .leading, spacing: 18) {
             schedulingMainColumn
-            Divider()
-            schedulingSupportColumn
+            if hasSchedulingSupportContent {
+                Divider()
+                schedulingSupportColumn
+            }
         }
         .frame(maxWidth: 820, alignment: .leading)
+    }
+
+    private var hasSchedulingSupportContent: Bool {
+        model.taskType.wrappedValue == .todo
     }
 
     private var schedulingMainColumn: some View {
@@ -559,6 +580,13 @@ struct TaskFormMacBehaviorCard: View {
             if model.taskType.wrappedValue == .routine {
                 Divider()
                 routineScheduleControls
+                if model.supportsRoutineScheduleBehavior {
+                    scheduleResultPreview
+                        .frame(
+                            maxWidth: TaskFormMacLayoutMetrics.schedulePreviewWidth,
+                            alignment: .leading
+                        )
+                }
                 routineCadenceControls
             } else if model.taskType.wrappedValue == .record {
                 Divider()
@@ -574,10 +602,6 @@ struct TaskFormMacBehaviorCard: View {
 
     private var schedulingSupportColumn: some View {
         VStack(alignment: .leading, spacing: 16) {
-            if model.supportsRoutineScheduleBehavior {
-                scheduleResultPreview
-            }
-
             if model.supportsExactDateReminder {
                 reminderControl
             }
@@ -634,7 +658,7 @@ struct TaskFormMacBehaviorCard: View {
                         scheduleBehaviorControl
                             .frame(width: 260, alignment: .leading)
                         routineFormatControl
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .frame(width: 260, alignment: .leading)
                     }
 
                     VStack(alignment: .leading, spacing: 18) {
@@ -695,7 +719,7 @@ struct TaskFormMacBehaviorCard: View {
 
     private var scheduleResultPreview: some View {
         VStack(alignment: .leading, spacing: 11) {
-            Text("Row badge preview")
+            Text("Task list preview")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
@@ -736,7 +760,8 @@ struct TaskFormMacBehaviorCard: View {
                 draft: model.recurrenceDraft,
                 supportsNoSchedule: model.taskType.wrappedValue != .todo,
                 supportsItemRunout: model.supportsItemRunoutRepeatType,
-                weekdayOptions: presentation.weekdayOptions
+                weekdayOptions: presentation.weekdayOptions,
+                layout: .desktop
             )
         }
 

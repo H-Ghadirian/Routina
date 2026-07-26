@@ -1,10 +1,40 @@
 import SwiftUI
 
+enum UnifiedRecurrenceEditorLayout: Equatable {
+    case compact
+    case desktop
+
+    var fillsSegmentedControlWidth: Bool {
+        self == .compact
+    }
+
+    var cadenceMaximumSegmentsPerRow: Int? {
+        self == .compact ? 2 : nil
+    }
+
+    var frequencyMaximumSegmentsPerRow: Int? {
+        self == .compact ? 3 : nil
+    }
+
+    var fixedDetailsMaximumWidth: CGFloat? {
+        self == .desktop ? 520 : nil
+    }
+
+    var weekdayMinimumCellWidth: CGFloat {
+        self == .desktop ? 96 : 88
+    }
+
+    var weekdayMaximumWidth: CGFloat {
+        self == .desktop ? 740 : 680
+    }
+}
+
 struct UnifiedRecurrenceEditor: View {
     @Binding var draft: RoutineRecurrenceDraft
     let supportsNoSchedule: Bool
     let supportsItemRunout: Bool
     let weekdayOptions: [(id: Int, name: String)]
+    var layout: UnifiedRecurrenceEditorLayout = .compact
 
     @State private var showsMoreOptions = false
     @State private var referenceDate = Date()
@@ -49,20 +79,17 @@ struct UnifiedRecurrenceEditor: View {
     }
 
     private var cadenceControl: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            fieldLabel("Repeat behavior")
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Repeat behavior",
-                options: cadenceOptions,
-                selection: draft.cadence,
-                onSelect: selectCadence,
-                minimumSegmentWidth: 110,
-                horizontalPadding: 10,
-                fillsAvailableWidth: true,
-                maximumSegmentsPerRow: 2
-            ) { cadence in
-                Text(cadenceTitle(cadence))
-            }
+        RoutinaGlassSegmentedControl(
+            accessibilityLabel: "Repeat behavior",
+            options: cadenceOptions,
+            selection: draft.cadence,
+            onSelect: selectCadence,
+            minimumSegmentWidth: 110,
+            horizontalPadding: 10,
+            fillsAvailableWidth: layout.fillsSegmentedControlWidth,
+            maximumSegmentsPerRow: layout.cadenceMaximumSegmentsPerRow
+        ) { cadence in
+            Text(cadenceTitle(cadence))
         }
     }
 
@@ -76,8 +103,8 @@ struct UnifiedRecurrenceEditor: View {
                 onSelect: selectFrequency,
                 minimumSegmentWidth: 80,
                 horizontalPadding: 9,
-                fillsAvailableWidth: true,
-                maximumSegmentsPerRow: 3
+                fillsAvailableWidth: layout.fillsSegmentedControlWidth,
+                maximumSegmentsPerRow: layout.frequencyMaximumSegmentsPerRow
             ) { frequency in
                 Text(frequencyTitle(frequency))
             }
@@ -113,7 +140,9 @@ struct UnifiedRecurrenceEditor: View {
                 fieldLabel("On")
                 RecurrenceWeekdaySelectionControl(
                     selectedWeekdays: weekdaysBinding,
-                    options: weekdayOptions
+                    options: weekdayOptions,
+                    minimumCellWidth: layout.weekdayMinimumCellWidth,
+                    maximumWidth: layout.weekdayMaximumWidth
                 )
             }
 
@@ -124,7 +153,7 @@ struct UnifiedRecurrenceEditor: View {
                     accessibilityLabel: "Monthly pattern",
                     options: RoutineAdvancedRecurrenceRule.MonthlyPattern.allCases,
                     selection: monthlyPatternBinding,
-                    fillsAvailableWidth: true
+                    fillsAvailableWidth: layout.fillsSegmentedControlWidth
                 ) { pattern in
                     Text(pattern.rawValue)
                 }
@@ -178,6 +207,7 @@ struct UnifiedRecurrenceEditor: View {
                 }
             }
             .padding(.top, 10)
+            .frame(maxWidth: layout.fixedDetailsMaximumWidth, alignment: .leading)
         } label: {
             Label("More schedule options", systemImage: "slider.horizontal.3")
                 .font(.subheadline.weight(.semibold))
@@ -225,7 +255,7 @@ struct UnifiedRecurrenceEditor: View {
                 selection: valueBinding(\.hourlyMode),
                 minimumSegmentWidth: 112,
                 horizontalPadding: 10,
-                fillsAvailableWidth: true
+                fillsAvailableWidth: layout.fillsSegmentedControlWidth
             ) { mode in
                 Text(mode.displayTitle)
             }

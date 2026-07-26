@@ -31,6 +31,8 @@ enum RecurrenceSelectionPolicy {
 struct RecurrenceWeekdaySelectionControl: View {
     @Binding var selectedWeekdays: [Int]
     let options: [(id: Int, name: String)]
+    var minimumCellWidth: CGFloat = 88
+    var maximumWidth: CGFloat = 680
 
     var body: some View {
         LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
@@ -68,11 +70,11 @@ struct RecurrenceWeekdaySelectionControl: View {
                 .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
-        .frame(maxWidth: 680, alignment: .leading)
+        .frame(maxWidth: maximumWidth, alignment: .leading)
     }
 
     private var columns: [GridItem] {
-        [GridItem(.adaptive(minimum: 88), spacing: 8)]
+        [GridItem(.adaptive(minimum: minimumCellWidth), spacing: 8)]
     }
 }
 

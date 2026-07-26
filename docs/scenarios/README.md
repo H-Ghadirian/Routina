@@ -166,6 +166,26 @@ Given a yearly schedule uses several months and several dates
 When the user creates or edits it on iOS or macOS
 Then every stored month and date remains visibly selected and save preserves their cross-product
 
+### Wide Mac Task Forms Keep Scheduling Controls Grouped
+
+Area: UI, Tasks
+Decision links: [0188](../decisions/0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0429](../decisions/0429-keep-task-list-visible-beside-mac-task-forms.md), [0431](../decisions/0431-present-one-progressive-recurrence-composer.md), [0437](../decisions/0437-compact-wide-mac-task-forms.md)
+Current behavior: [UI](../current-behavior/ui.md), [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/macOS/FormSectionTests.swift`
+
+Given Add Task or Edit Task is open in a wide Mac window
+When the full form and Behavior section are laid out
+Then the cards stay inside a readable maximum width and scheduling controls are not distributed across the complete desktop canvas
+
+Given a routine exposes Due/Gentle behavior
+When the Behavior section is displayed
+Then its task-list badge preview follows the schedule behavior and completion controls in the main configuration flow
+
+Given the unified recurrence composer is displayed on macOS
+When cadence or frequency choices fit horizontally
+Then their segments use natural label widths without forced partial rows, while the compact iOS layout may continue to wrap fill-width segments
+
 ### Fixed Recurrence Composes With Time Availability
 
 Area: Tasks
