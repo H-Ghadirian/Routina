@@ -166,6 +166,8 @@ struct TaskDetailEditRoutineContent: View {
             recurrenceTimeRangeEnd: recurrenceTimeRangeEndBinding,
             recurrenceWeekday: recurrenceWeekdayBinding,
             recurrenceDayOfMonth: recurrenceDayOfMonthBinding,
+            recurrenceWeekdays: recurrenceWeekdaysBinding,
+            recurrenceDaysOfMonth: recurrenceDaysOfMonthBinding,
             frequencyUnit: frequencyUnitBinding,
             frequencyValue: Binding(
                 get: { store.editFrequencyValue },
@@ -367,10 +369,24 @@ struct TaskDetailEditRoutineContent: View {
         )
     }
 
+    private var recurrenceWeekdaysBinding: Binding<[Int]> {
+        Binding(
+            get: { store.effectiveEditRecurrenceWeekdays },
+            set: { store.send(.editRecurrenceWeekdaysChanged($0)) }
+        )
+    }
+
     private var recurrenceDayOfMonthBinding: Binding<Int> {
         Binding(
             get: { store.editRecurrenceDayOfMonth },
             set: { store.send(.editRecurrenceDayOfMonthChanged($0)) }
+        )
+    }
+
+    private var recurrenceDaysOfMonthBinding: Binding<[Int]> {
+        Binding(
+            get: { store.effectiveEditRecurrenceDaysOfMonth },
+            set: { store.send(.editRecurrenceDaysOfMonthChanged($0)) }
         )
     }
 

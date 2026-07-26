@@ -397,7 +397,7 @@ Given a weekly time-window routine has unresolved missed occurrences on June 18 
 When the user selects the later July 2, 2026 occurrence and presses Done
 Then Routina keeps June 18 and June 25 visible as unresolved missed days and still lets either selected missed day be resolved directly
 
-### Editing Calendar Weekday Routines Preserves All Selected Days
+### Editing Calendar Routines Preserves All Selected Days
 
 Area: Tasks
 Decision links: [0009](../decisions/0009-support-routine-time-ranges.md), [0177](../decisions/0177-separate-interval-and-calendar-repeat-controls.md)
@@ -413,6 +413,11 @@ Then every saved weekday remains selected instead of only the first weekday
 Given the user saves that routine from Task Details
 When Routina persists the recurrence rule
 Then the full weekday set remains on the saved weekly calendar recurrence
+
+Given a routine repeats on multiple monthly dates such as the 1st, 15th, and 31st
+When the user reopens the edit form and saves an unrelated change
+Then the form is not falsely dirty before that change
+And the complete monthly-date set remains on the persisted recurrence rule
 
 ### Multi-Day Routine Lifecycle
 

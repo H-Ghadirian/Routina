@@ -66,7 +66,7 @@ extension TaskDetailFeature {
             )
         case .monthlyDay:
             return .monthly(
-                on: state.editRecurrenceDayOfMonth,
+                on: state.effectiveEditRecurrenceDaysOfMonth,
                 at: usesAvailabilityTiming && state.editRecurrenceHasExplicitTime ? state.editRecurrenceTimeOfDay : nil,
                 timeRange: timeRange
             )

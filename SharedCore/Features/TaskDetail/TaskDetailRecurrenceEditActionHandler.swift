@@ -296,7 +296,20 @@ struct TaskDetailRecurrenceEditActionHandler {
 
     func editRecurrenceDayOfMonthChanged(_ dayOfMonth: Int, state: inout State) -> Effect<Action> {
         rebaseEditReminderIfUsingLeadTime(&state) { state in
-            state.editRecurrenceDayOfMonth = min(max(dayOfMonth, 1), 31)
+            let selectedDay = min(max(dayOfMonth, 1), 31)
+            state.editRecurrenceDayOfMonth = selectedDay
+            state.editRecurrenceDaysOfMonth = [selectedDay]
+        }
+        return .none
+    }
+
+    func editRecurrenceDaysOfMonthChanged(_ daysOfMonth: [Int], state: inout State) -> Effect<Action> {
+        rebaseEditReminderIfUsingLeadTime(&state) { state in
+            let selectedDays = Array(Set(daysOfMonth.map { min(max($0, 1), 31) })).sorted()
+            state.editRecurrenceDaysOfMonth = selectedDays
+            if let firstDay = selectedDays.first {
+                state.editRecurrenceDayOfMonth = firstDay
+            }
         }
         return .none
     }

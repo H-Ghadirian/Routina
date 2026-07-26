@@ -101,6 +101,7 @@ struct TaskDetailFeature: Reducer {
         var editRecurrenceWeekday: Int = Calendar.current.component(.weekday, from: Date())
         var editRecurrenceWeekdays: [Int] = []
         var editRecurrenceDayOfMonth: Int = Calendar.current.component(.day, from: Date())
+        var editRecurrenceDaysOfMonth: [Int] = []
         var editAutoAssumeDailyDone: Bool = false
         var editAutoAssumeDoneTimeOfDay: RoutineTimeOfDay = RoutineAssumedCompletion.defaultDoneTimeOfDay
         var editEstimatedDurationMinutes: Int?
@@ -174,7 +175,7 @@ struct TaskDetailFeature: Reducer {
                 )
             case .monthlyDay:
                 return .monthly(
-                    on: editRecurrenceDayOfMonth,
+                    on: effectiveEditRecurrenceDaysOfMonth,
                     at: usesAvailabilityTiming && editRecurrenceHasExplicitTime ? editRecurrenceTimeOfDay : nil,
                     timeRange: timeRange
                 )
@@ -184,6 +185,11 @@ struct TaskDetailFeature: Reducer {
         var effectiveEditRecurrenceWeekdays: [Int] {
             let selectedWeekdays = Array(Set(editRecurrenceWeekdays.map { min(max($0, 1), 7) })).sorted()
             return selectedWeekdays.isEmpty ? [min(max(editRecurrenceWeekday, 1), 7)] : selectedWeekdays
+        }
+
+        var effectiveEditRecurrenceDaysOfMonth: [Int] {
+            let selectedDays = Array(Set(editRecurrenceDaysOfMonth.map { min(max($0, 1), 31) })).sorted()
+            return selectedDays.isEmpty ? [min(max(editRecurrenceDayOfMonth, 1), 31)] : selectedDays
         }
 
         var editRecurrenceTimeRange: RoutineTimeRange? {
@@ -353,6 +359,7 @@ struct TaskDetailFeature: Reducer {
         case editRecurrenceWeekdayChanged(Int)
         case editRecurrenceWeekdaysChanged([Int])
         case editRecurrenceDayOfMonthChanged(Int)
+        case editRecurrenceDaysOfMonthChanged([Int])
         case editAutoAssumeDailyDoneChanged(Bool)
         case editAutoAssumeDoneTimeOfDayChanged(RoutineTimeOfDay)
         case editSaveTapped
@@ -1452,6 +1459,12 @@ struct TaskDetailFeature: Reducer {
         case let .editRecurrenceDayOfMonthChanged(dayOfMonth):
             return recurrenceEditActionHandler().editRecurrenceDayOfMonthChanged(
                 dayOfMonth,
+                state: &state
+            )
+
+        case let .editRecurrenceDaysOfMonthChanged(daysOfMonth):
+            return recurrenceEditActionHandler().editRecurrenceDaysOfMonthChanged(
+                daysOfMonth,
                 state: &state
             )
 

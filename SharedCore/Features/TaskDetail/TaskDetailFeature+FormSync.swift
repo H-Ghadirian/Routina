@@ -70,7 +70,12 @@ extension TaskDetailFeature {
         state.editRecurrenceWeekdays = recurrenceRule.kind == .weekly
             ? recurrenceRule.resolvedWeekdays(calendar: Calendar.current)
             : []
-        state.editRecurrenceDayOfMonth = recurrenceRule.dayOfMonth ?? Calendar.current.component(.day, from: now)
+        state.editRecurrenceDaysOfMonth = recurrenceRule.kind == .monthlyDay
+            ? recurrenceRule.resolvedDaysOfMonth(calendar: Calendar.current)
+            : []
+        state.editRecurrenceDayOfMonth = state.editRecurrenceDaysOfMonth.first
+            ?? recurrenceRule.dayOfMonth
+            ?? Calendar.current.component(.day, from: now)
         state.editAutoAssumeDailyDone = state.task.autoAssumeDailyDone
         state.editAutoAssumeDoneTimeOfDay = state.task.autoAssumeDoneTimeOfDay
             ?? RoutineAssumedCompletion.defaultDoneTimeOfDay
