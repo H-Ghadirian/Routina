@@ -84,3 +84,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0040 — Retire product concepts across all presentation surfaces](0040-retire-product-concepts-across-all-presentation-surfaces.md)
 - [0041 — Do not repeat complete form values as summaries](0041-do-not-repeat-complete-form-values-as-summaries.md)
 - [0042 — Separate early completion time from scheduled occurrence](0042-separate-early-completion-time-from-scheduled-occurrence.md)
+- [0043 — Pair optional actions with their render path](0043-pair-optional-actions-with-their-render-path.md)

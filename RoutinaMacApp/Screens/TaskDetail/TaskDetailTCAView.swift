@@ -368,7 +368,7 @@ struct TaskDetailTCAView: View {
             if shouldShowPriorityControl {
                 priorityDisclosureBox
             }
-            if shouldShowEffortSection {
+            if shouldShowTimeSpentHeaderBox {
                 todoTimeSpentHeaderBox
             }
 
@@ -422,10 +422,12 @@ struct TaskDetailTCAView: View {
             )
     }
 
-    private var shouldShowEffortSection: Bool {
-        shouldShowTimeControl
-            || store.task.estimatedDurationMinutes != nil
-            || store.task.storyPoints != nil
+    private var shouldShowTimeSpentHeaderBox: Bool {
+        TaskDetailMacTimeControlPresentation.showsHeaderBox(
+            for: store.task.scheduleMode.taskType,
+            isTimeControlVisible: shouldShowTimeControl,
+            hasEffortMetadata: hasEffortMetadata
+        )
     }
 
     private var shouldShowTodoStateControl: Bool {
@@ -458,16 +460,21 @@ struct TaskDetailTCAView: View {
     }
 
     private var shouldShowTimeAddAction: Bool {
-        canShowTimeControl && !shouldShowEffortSection
+        TaskDetailMacTimeControlPresentation.showsAddAction(
+            for: store.task.scheduleMode.taskType,
+            isTimeControlVisible: shouldShowTimeControl,
+            hasEffortMetadata: hasEffortMetadata
+        )
     }
 
     private var canShowTimeControl: Bool {
-        switch store.task.scheduleMode.taskType {
-        case .todo, .record:
-            return true
-        case .routine:
-            return false
-        }
+        TaskDetailMacTimeControlPresentation.canShowTimeControl(
+            for: store.task.scheduleMode.taskType
+        )
+    }
+
+    private var hasEffortMetadata: Bool {
+        store.task.estimatedDurationMinutes != nil || store.task.storyPoints != nil
     }
 
     private var canShowTodoStateControl: Bool {
@@ -502,6 +509,9 @@ struct TaskDetailTCAView: View {
         VStack(alignment: .leading, spacing: 8) {
             if shouldShowPriorityControl {
                 priorityDisclosureBox
+            }
+            if shouldShowTimeSpentHeaderBox {
+                todoTimeSpentHeaderBox
             }
             if shouldShowPressureControl {
                 TaskDetailPressureSegmentedPicker(store: store)

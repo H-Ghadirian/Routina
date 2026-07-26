@@ -273,6 +273,21 @@ And planned and assumed-done rows do not show the completion card
 And Planner blocks, other completion occurrences, task recurrence, availability, reminders, estimates, and other days are unchanged
 And the Calendar `List` column itself remains read-only
 
+### Mac Internal Record Time Action Reveals Its Editor
+
+Area: Tasks
+Decision links: [0436](../decisions/0436-remove-tracking-as-a-user-facing-task-type.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDetailMacTimeControlPresentationTests.swift`
+
+Given an internal record-shaped row is presented as a routine in full Mac Task Details
+And its task-level time control is not already visible
+When the user clicks `Time` under `Add more details`
+Then the Time action disappears and the expanded Effort editor appears in the routine header
+And stored estimate or story-point metadata cannot make Time unreachable
+And normal routines do not acquire the record-only task-level time editor
+
 ### Custom Buttons Use Full Visual Hit Areas
 
 Area: Other
