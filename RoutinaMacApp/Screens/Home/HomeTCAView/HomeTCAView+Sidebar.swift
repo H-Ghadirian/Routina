@@ -571,6 +571,52 @@ extension HomeTCAView {
         openMacTaskDetails(taskID, presentation: .plannerPane)
     }
 
+    func openDayPlanCalendarListTaskDetails(
+        _ item: DayPlanDayTaskListItem,
+        on date: Date
+    ) {
+        let scheduleSelection = item.section == .planned
+            ? MacPlannerTaskDetailScheduleSelection(
+                taskID: item.taskID,
+                date: calendar.startOfDay(for: date),
+                sourcePlacement: item.placement
+            )
+            : nil
+        openMacTaskDetails(
+            item.taskID,
+            presentation: .plannerPane,
+            plannerScheduleSelection: scheduleSelection
+        )
+    }
+
+    func plannerProtectedIntervalConflict(
+        on date: Date,
+        startMinute: Int,
+        durationMinutes: Int
+    ) -> String? {
+        let sleepIntervals = DayPlanSleepBlocks.blockedIntervals(
+            on: date,
+            from: sleepSessions,
+            referenceDate: Date(),
+            calendar: calendar
+        )
+        let awayIntervals = DayPlanAwayBlocks.blockedIntervals(
+            on: date,
+            from: isAwayEnabled ? awaySessions : [],
+            tasks: store.routineTasks,
+            referenceDate: Date(),
+            calendar: calendar
+        )
+        return (sleepIntervals + awayIntervals)
+            .first { interval in
+                interval.overlaps(
+                    startMinute: startMinute,
+                    durationMinutes: durationMinutes
+                )
+            }?
+            .title
+    }
+
     func openBoardTaskDetails(_ taskID: UUID) {
         openMacTaskDetails(taskID)
     }
@@ -588,6 +634,7 @@ extension HomeTCAView {
     func closeTaskDetailPane() {
         withAnimation(.easeInOut(duration: 0.18)) {
             taskDetailPanePlacement = nil
+            plannerTaskDetailScheduleSelection = nil
         }
     }
 
@@ -596,6 +643,7 @@ extension HomeTCAView {
             fullscreenTaskDetailReturnMode = nil
             fullscreenTaskDetailReturnPlacement = nil
             taskDetailPanePlacement = nil
+            plannerTaskDetailScheduleSelection = nil
             macHomeDetailMode = .planner
         }
     }
@@ -662,8 +710,10 @@ extension HomeTCAView {
     func openMacTaskDetails(
         _ taskID: UUID,
         presentation: MacTaskDetailPresentation = .fullDetail,
-        scrollAnchor: MacSidebarTaskScrollRequest.Anchor? = .center
+        scrollAnchor: MacSidebarTaskScrollRequest.Anchor? = .center,
+        plannerScheduleSelection: MacPlannerTaskDetailScheduleSelection? = nil
     ) {
+        plannerTaskDetailScheduleSelection = plannerScheduleSelection
         isEventEditorPresented = false
         isEmotionLogEditorPresented = false
         isNoteEditorPresented = false
@@ -709,6 +759,7 @@ extension HomeTCAView {
     func normalizeTaskDetailPanePlacement() {
         guard store.selectedTaskID != nil else {
             taskDetailPanePlacement = nil
+            plannerTaskDetailScheduleSelection = nil
             fullscreenTaskDetailReturnMode = nil
             fullscreenTaskDetailReturnPlacement = nil
             return

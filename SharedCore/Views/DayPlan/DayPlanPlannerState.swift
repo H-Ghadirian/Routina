@@ -534,6 +534,50 @@ final class DayPlanPlannerState: ObservableObject {
         }
     }
 
+    func prepareTaskDetailSchedule(
+        for task: RoutineTask,
+        item: DayPlanDayTaskListItem,
+        on date: Date,
+        calendar: Calendar,
+        context: ModelContext
+    ) {
+        let scheduleDate = calendar.startOfDay(for: date)
+        let dayBlocks = blocks(on: scheduleDate, calendar: calendar, context: context)
+        if let blockID = item.blockID,
+           let block = dayBlocks.first(where: { $0.id == blockID && $0.taskID == task.id }) {
+            edit(block, on: scheduleDate, calendar: calendar, context: context)
+            return
+        }
+
+        let suggestedStartMinute: Int
+        let suggestedDurationMinutes: Int?
+        switch item.placement {
+        case .anyTime, .allDay:
+            suggestedStartMinute = calendar.isDate(selectedDate, inSameDayAs: scheduleDate)
+                ? startMinute
+                : 9 * 60
+            suggestedDurationMinutes = nil
+        case let .timed(startMinute, durationMinutes):
+            suggestedStartMinute = startMinute
+            suggestedDurationMinutes = durationMinutes
+        }
+
+        selectSlot(
+            on: scheduleDate,
+            startMinute: suggestedStartMinute,
+            calendar: calendar,
+            context: context
+        )
+        selectTask(task)
+        if let suggestedDurationMinutes {
+            durationMinutes = DayPlanBlock.clampedDuration(
+                suggestedDurationMinutes,
+                startMinute: self.startMinute,
+                minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+            )
+        }
+    }
+
     func focusUnplannedCompletedTasks(on date: Date, calendar: Calendar) {
         focusedSleep = nil
         focusedUnplannedCompletedDate = calendar.startOfDay(for: date)

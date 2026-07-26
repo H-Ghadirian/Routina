@@ -10,6 +10,13 @@ struct TaskDetailSidebarLocation: Equatable {
     }
 }
 
+struct TaskDetailPlannerScheduleContext {
+    let date: Date
+    let sourcePlacement: DayPlanDayTaskListItem.Placement
+    let planner: DayPlanPlannerState
+    let protectedIntervalConflict: (Date, Int, Int) -> String?
+}
+
 struct TaskDetailTCAView: View {
     enum Presentation {
         case fullDetail
@@ -37,6 +44,7 @@ struct TaskDetailTCAView: View {
     let onTagFilterSelected: ((String) -> Void)?
     let sidebarLocation: TaskDetailSidebarLocation?
     let onLocateInSidebar: (() -> Void)?
+    let plannerScheduleContext: TaskDetailPlannerScheduleContext?
     @Dependency(\.appSettingsClient) private var appSettingsClient
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -111,7 +119,8 @@ struct TaskDetailTCAView: View {
         onOpenEventDetails: ((UUID) -> Void)? = nil,
         onTagFilterSelected: ((String) -> Void)? = nil,
         sidebarLocation: TaskDetailSidebarLocation? = nil,
-        onLocateInSidebar: (() -> Void)? = nil
+        onLocateInSidebar: (() -> Void)? = nil,
+        plannerScheduleContext: TaskDetailPlannerScheduleContext? = nil
     ) {
         self.store = store
         self.showsPrincipalToolbarTitle = showsPrincipalToolbarTitle
@@ -126,6 +135,7 @@ struct TaskDetailTCAView: View {
         self.onTagFilterSelected = onTagFilterSelected
         self.sidebarLocation = sidebarLocation
         self.onLocateInSidebar = onLocateInSidebar
+        self.plannerScheduleContext = plannerScheduleContext
 
         let taskID = store.task.id
         _focusSessions = Query(
@@ -286,6 +296,7 @@ struct TaskDetailTCAView: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 14) {
                 todoHeaderSection
+                plannerScheduleSection
                 notificationDisabledWarningSection
                 if shouldShowCommentsSection {
                     commentsSection
@@ -506,6 +517,7 @@ struct TaskDetailTCAView: View {
         return ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
                 routineHeaderSection
+                plannerScheduleSection
                 notificationDisabledWarningSection
                 if shouldShowFocusSessionSection {
                     focusSessionSection
@@ -549,6 +561,19 @@ struct TaskDetailTCAView: View {
             onClose: presentation == .companionPane ? onCloseCompanion : onCloseFullscreen,
             isTaskSharingEnabled: presentation == .fullDetail && isTaskSharingEnabled
         )
+    }
+
+    @ViewBuilder
+    private var plannerScheduleSection: some View {
+        if let plannerScheduleContext {
+            TaskDetailPlannerScheduleSection(
+                task: store.task,
+                date: plannerScheduleContext.date,
+                sourcePlacement: plannerScheduleContext.sourcePlacement,
+                planner: plannerScheduleContext.planner,
+                protectedIntervalConflict: plannerScheduleContext.protectedIntervalConflict
+            )
+        }
     }
 
     private var focusSessionSection: some View {
@@ -1556,4 +1581,246 @@ struct TaskDetailTCAView: View {
         )
     }
 
+}
+
+private struct TaskDetailPlannerScheduleSection: View {
+    @Environment(\.calendar) private var calendar
+    @Environment(\.modelContext) private var modelContext
+    let task: RoutineTask
+    let date: Date
+    let sourcePlacement: DayPlanDayTaskListItem.Placement
+    @ObservedObject var planner: DayPlanPlannerState
+    let protectedIntervalConflict: (Date, Int, Int) -> String?
+    @State private var validationMessage: String?
+
+    private let durationPresets = [15, 30, 45, 60, 90, 120]
+
+    var body: some View {
+        TaskDetailSectionCardView(
+            background: TaskDetailPlatformStyle.summaryCardBackground,
+            stroke: TaskDetailPlatformStyle.sectionCardStroke
+        ) {
+            VStack(alignment: .leading, spacing: 12) {
+                header
+
+                Divider()
+
+                DatePicker(
+                    "When",
+                    selection: startDateBinding,
+                    displayedComponents: .hourAndMinute
+                )
+                .datePickerStyle(.compact)
+
+                Stepper(
+                    value: durationBinding,
+                    in: durationRange,
+                    step: 15
+                ) {
+                    LabeledContent("Duration") {
+                        Text(DayPlanFormatting.durationText(planner.durationMinutes))
+                            .fontWeight(.semibold)
+                            .monospacedDigit()
+                    }
+                }
+
+                durationPresetButtons
+
+                Text("Ends \(endTimeText)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+                if let conflictingBlock = planner.conflictingBlock {
+                    scheduleWarning(
+                        "Overlaps \(conflictingBlock.titleSnapshot)",
+                        systemImage: "exclamationmark.triangle.fill"
+                    )
+                }
+
+                if let validationMessage {
+                    scheduleWarning(
+                        validationMessage,
+                        systemImage: "exclamationmark.triangle.fill"
+                    )
+                }
+
+                actionRow
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .onChange(of: planner.startMinute) { _, _ in
+            validationMessage = nil
+        }
+        .onChange(of: planner.durationMinutes) { _, _ in
+            validationMessage = nil
+        }
+    }
+
+    private var header: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "calendar.badge.clock")
+                .font(.headline)
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 28, height: 28)
+                .background(Color.accentColor.opacity(0.10), in: RoundedRectangle(cornerRadius: 7))
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Schedule this day")
+                    .font(.headline)
+
+                Text(date.formatted(.dateTime.weekday(.wide).month(.abbreviated).day().year()))
+                    .font(.subheadline.weight(.semibold))
+
+                Text(scheduleContextText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 0)
+        }
+    }
+
+    private var durationPresetButtons: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 7) {
+                ForEach(durationPresets, id: \.self) { minutes in
+                    Button(DayPlanFormatting.durationText(minutes)) {
+                        planner.durationMinutes = DayPlanBlock.clampedDuration(
+                            minutes,
+                            startMinute: planner.startMinute
+                        )
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .tint(planner.durationMinutes == minutes ? Color.accentColor : Color.secondary)
+                }
+            }
+            .padding(.vertical, 1)
+        }
+    }
+
+    private var actionRow: some View {
+        HStack(spacing: 10) {
+            Button(existingBlock == nil ? "Add to Schedule" : "Save Schedule") {
+                saveSchedule()
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(planner.conflictingBlock != nil)
+
+            if let existingBlock {
+                Button("Remove", role: .destructive) {
+                    planner.deleteBlock(
+                        existingBlock.id,
+                        calendar: calendar,
+                        context: modelContext
+                    )
+                    planner.selectTask(task)
+                    validationMessage = nil
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+    }
+
+    private var existingBlock: DayPlanBlock? {
+        guard
+            let block = planner.selectedBlock,
+            block.taskID == task.id,
+            block.dayKey == DayPlanStorage.dayKey(for: date, calendar: calendar)
+        else {
+            return nil
+        }
+        return block
+    }
+
+    private var scheduleContextText: String {
+        if existingBlock != nil {
+            return "Edit this day’s placement without changing the task’s recurring schedule."
+        }
+
+        switch sourcePlacement {
+        case .anyTime:
+            return "Choose a time and duration for this day only."
+        case .allDay:
+            return "Add a timed placement for this day without changing other days."
+        case .timed:
+            return "Choose a time and duration for this day only."
+        }
+    }
+
+    private var durationRange: ClosedRange<Int> {
+        let lowerBound = min(
+            DayPlanBlock.minimumDurationMinutes,
+            max(DayPlanBlock.minimumStoredDurationMinutes, planner.durationMinutes)
+        )
+        return lowerBound...planner.maximumDurationForStart
+    }
+
+    private var endTimeText: String {
+        DayPlanFormatting.timeText(
+            for: planner.startMinute + planner.durationMinutes,
+            on: date,
+            calendar: calendar
+        )
+    }
+
+    private var durationBinding: Binding<Int> {
+        Binding(
+            get: { planner.durationMinutes },
+            set: { minutes in
+                planner.durationMinutes = DayPlanBlock.clampedDuration(
+                    minutes,
+                    startMinute: planner.startMinute,
+                    minimumDurationMinutes: durationRange.lowerBound
+                )
+            }
+        )
+    }
+
+    private var startDateBinding: Binding<Date> {
+        Binding(
+            get: {
+                let startOfDay = calendar.startOfDay(for: date)
+                return calendar.date(
+                    byAdding: .minute,
+                    value: planner.startMinute,
+                    to: startOfDay
+                ) ?? startOfDay
+            },
+            set: { newDate in
+                let components = calendar.dateComponents([.hour, .minute], from: newDate)
+                let minute = ((components.hour ?? 0) * 60) + (components.minute ?? 0)
+                planner.startMinute = DayPlanBlock.clampedStartMinute(minute)
+                planner.clampDurationForCurrentStart()
+            }
+        )
+    }
+
+    @ViewBuilder
+    private func scheduleWarning(_ text: String, systemImage: String) -> some View {
+        Label(text, systemImage: systemImage)
+            .font(.caption)
+            .foregroundStyle(.orange)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func saveSchedule() {
+        guard calendar.isDate(planner.selectedDate, inSameDayAs: date) else {
+            validationMessage = "Return to this date in Calendar before saving."
+            return
+        }
+        guard planner.conflictingBlock == nil else { return }
+        if let protectedTitle = protectedIntervalConflict(
+            date,
+            planner.startMinute,
+            planner.durationMinutes
+        ) {
+            validationMessage = "Overlaps \(protectedTitle)."
+            return
+        }
+
+        planner.selectedTaskID = task.id
+        planner.commitBlock(task: task, calendar: calendar, context: modelContext)
+        validationMessage = nil
+    }
 }

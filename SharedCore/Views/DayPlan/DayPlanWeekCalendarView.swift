@@ -90,7 +90,7 @@ struct DayPlanWeekCalendarView: View {
     var dayTaskListItems: (Date) -> [DayPlanDayTaskListItem] = { _ in [] }
     var dayTaskTint: (UUID) -> Color = { _ in .accentColor }
     var isDayTaskOpenable: (UUID) -> Bool = { _ in false }
-    var onOpenDayTaskDetails: (UUID) -> Void = { _ in }
+    var onOpenDayTaskDetails: (DayPlanDayTaskListItem, Date) -> Void = { _, _ in }
     var onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void = { _, _ in }
     var onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void = { _, _ in }
     var onSelectSlot: (Date, Int) -> Void
@@ -987,7 +987,7 @@ private struct DayPlanDayTaskColumnsView: View {
     var dayTaskListItems: (Date) -> [DayPlanDayTaskListItem]
     var taskTint: (UUID) -> Color
     var isTaskOpenable: (UUID) -> Bool
-    var onOpenTaskDetails: (UUID) -> Void
+    var onOpenTaskDetails: (DayPlanDayTaskListItem, Date) -> Void
     var onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
     var onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
 
@@ -1045,7 +1045,7 @@ private struct DayPlanDayTaskColumnView: View {
     var taskTint: (UUID) -> Color
     var calendar: Calendar
     var isTaskOpenable: (UUID) -> Bool
-    var onOpenTaskDetails: (UUID) -> Void
+    var onOpenTaskDetails: (DayPlanDayTaskListItem, Date) -> Void
     var onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
     var onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
 
@@ -1102,7 +1102,7 @@ struct DayPlanDayTaskListContentView: View {
     let date: Date
     let calendar: Calendar
     let isTaskOpenable: (UUID) -> Bool
-    let onOpenTaskDetails: (UUID) -> Void
+    let onOpenTaskDetails: (DayPlanDayTaskListItem, Date) -> Void
     let onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
     let onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
     var onDragProvider: ((DayPlanDayTaskListItem) -> NSItemProvider)? = nil
@@ -1146,7 +1146,7 @@ private struct DayPlanDayTaskListContentSectionView: View {
     let date: Date
     let calendar: Calendar
     let isTaskOpenable: (UUID) -> Bool
-    let onOpenTaskDetails: (UUID) -> Void
+    let onOpenTaskDetails: (DayPlanDayTaskListItem, Date) -> Void
     let onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
     let onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
     let onDragProvider: ((DayPlanDayTaskListItem) -> NSItemProvider)?
@@ -1198,7 +1198,7 @@ private struct DayPlanDayTaskListContentRow: View {
     let date: Date
     let calendar: Calendar
     let isOpenable: Bool
-    let onOpenTaskDetails: (UUID) -> Void
+    let onOpenTaskDetails: (DayPlanDayTaskListItem, Date) -> Void
     let onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
     let onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
     let onDragProvider: ((DayPlanDayTaskListItem) -> NSItemProvider)?
@@ -1210,7 +1210,7 @@ private struct DayPlanDayTaskListContentRow: View {
         Group {
             if isOpenable && item.section != .assumedDone {
                 Button {
-                    onOpenTaskDetails(item.taskID)
+                    onOpenTaskDetails(item, date)
                 } label: {
                     rowContent
                 }
@@ -1223,7 +1223,7 @@ private struct DayPlanDayTaskListContentRow: View {
                     .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     .onTapGesture {
                         if isOpenable {
-                            onOpenTaskDetails(item.taskID)
+                            onOpenTaskDetails(item, date)
                         }
                     }
                     .help(isOpenable ? "Open \(item.title)" : "")

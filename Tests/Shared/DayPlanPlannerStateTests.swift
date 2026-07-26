@@ -671,6 +671,110 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
+    func calendarListTaskDetailSchedulingUsesTheClickedDayAndBlock() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let initialDate = try #require(date("2026-05-03T12:00:00Z"))
+        let clickedDate = try #require(date("2026-05-07T12:00:00Z"))
+        let task = RoutineTask(
+            name: "Prepare notes",
+            scheduleMode: .oneOff,
+            estimatedDurationMinutes: 30
+        )
+        let block = DayPlanBlock(
+            taskID: task.id,
+            dayKey: DayPlanStorage.dayKey(for: clickedDate, calendar: calendar),
+            startMinute: 14 * 60 + 15,
+            durationMinutes: 75,
+            titleSnapshot: "Prepare notes",
+            createdAt: clickedDate,
+            updatedAt: clickedDate
+        )
+        DayPlanStorage.saveBlocks([block], forDayKey: block.dayKey, context: context)
+        let planner = DayPlanPlannerState(selectedDate: initialDate)
+        let item = DayPlanDayTaskListItem(
+            id: "timed-\(block.id.uuidString)",
+            taskID: task.id,
+            blockID: block.id,
+            title: "Prepare notes",
+            placement: .timed(
+                startMinute: block.startMinute,
+                durationMinutes: block.durationMinutes
+            )
+        )
+
+        planner.prepareTaskDetailSchedule(
+            for: task,
+            item: item,
+            on: clickedDate,
+            calendar: calendar,
+            context: context
+        )
+
+        #expect(planner.selectedDate == calendar.startOfDay(for: clickedDate))
+        #expect(planner.selectedTaskID == task.id)
+        #expect(planner.selectedBlockID == block.id)
+        #expect(planner.startMinute == 14 * 60 + 15)
+        #expect(planner.durationMinutes == 75)
+    }
+
+    @Test
+    func calendarListAnyTimeTaskPreparesAnOccurrenceDraftForTheClickedDay() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let initialDate = try #require(date("2026-05-03T12:00:00Z"))
+        let clickedDate = try #require(date("2026-05-07T12:00:00Z"))
+        let task = RoutineTask(
+            name: "Draft outline",
+            scheduleMode: .oneOff,
+            estimatedDurationMinutes: 45
+        )
+        let planner = DayPlanPlannerState(selectedDate: initialDate)
+        planner.startMinute = 16 * 60
+        planner.durationMinutes = 90
+        let item = DayPlanDayTaskListItem(
+            id: "planned-date-\(task.id.uuidString)",
+            taskID: task.id,
+            blockID: nil,
+            title: "Draft outline",
+            placement: .anyTime
+        )
+
+        planner.prepareTaskDetailSchedule(
+            for: task,
+            item: item,
+            on: clickedDate,
+            calendar: calendar,
+            context: context
+        )
+
+        #expect(planner.selectedDate == calendar.startOfDay(for: clickedDate))
+        #expect(planner.selectedTaskID == task.id)
+        #expect(planner.selectedBlockID == nil)
+        #expect(planner.startMinute == 9 * 60)
+        #expect(planner.durationMinutes == 45)
+    }
+
+    @Test
+    func macCalendarListTaskDetailContainsDaySpecificScheduleControls() throws {
+        let dayPlanSource = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
+        let calendarSource = try Self.sourceFile("SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift")
+        let taskDetailSource = try Self.sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift")
+        let containerSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
+
+        #expect(calendarSource.contains("onOpenTaskDetails(item, date)"))
+        #expect(dayPlanSource.contains("planner.prepareTaskDetailSchedule("))
+        #expect(dayPlanSource.contains("onOpenCalendarListTaskDetails(item, date)"))
+        #expect(containerSource.contains("plannerScheduleContext: plannerScheduleContext(for: detailStore.task.id)"))
+        #expect(taskDetailSource.contains("Text(\"Schedule this day\")"))
+        #expect(taskDetailSource.contains("\"When\""))
+        #expect(taskDetailSource.contains("\"Duration\""))
+        #expect(taskDetailSource.contains("\"Add to Schedule\""))
+        #expect(taskDetailSource.contains("\"Save Schedule\""))
+        #expect(taskDetailSource.contains("\"Remove\""))
+    }
+
+    @Test
     func plannerTaskDetailTitleUsesTaskUUIDDragPayload() throws {
         let headerSource = try Self.sourceFile("SharedCore/Screens/TaskDetail/TaskDetailHeaderViews.swift")
         let taskDetailSource = try Self.sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift")

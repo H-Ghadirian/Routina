@@ -186,6 +186,25 @@ Given a one-time task has a Date window or a routine has multi-day duration
 When recurrence is edited through the unified draft
 Then those independent availability and duration values remain outside recurrence and unchanged
 
+### Mac Calendar List Schedules The Clicked Day From Task Detail
+
+Area: Planner
+Decision links: [0435](../decisions/0435-schedule-calendar-list-days-from-mac-task-detail.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/DayPlanPlannerStateTests.swift`
+
+Given Mac Planner Calendar is showing `List`
+And a planned task row belongs to a particular day column
+When the user opens that row in the task-detail companion pane
+Then Task Detail shows the exact clicked date with `When` and `Duration` controls
+And an existing timed row edits its specific Planner block
+And an any-time or all-day row can add a timed block for that day
+And Add, Save, or Remove changes only that day's explicit Planner placement
+And overlapping Planner, Sleep, or Away time is rejected
+And task recurrence, availability, reminders, estimates, and other days are unchanged
+And the Calendar `List` column itself remains read-only
+
 ### Custom Buttons Use Full Visual Hit Areas
 
 Area: Other

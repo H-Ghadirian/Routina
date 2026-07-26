@@ -459,6 +459,7 @@ struct DayPlanDetailView: View {
     var timelineActivityDates: [Date] = []
     var onSelectUnplannedCompletedDate: ((Date) -> Void)? = nil
     var onOpenTaskDetails: ((UUID) -> Void)? = nil
+    var onOpenCalendarListTaskDetails: ((DayPlanDayTaskListItem, Date) -> Void)? = nil
     var onOpenEventDetails: ((UUID) -> Void)? = nil
     var onCalendarFilterButtonPressed: (() -> Void)? = nil
     var onPlannerSidebarPresentationRequested: (() -> Void)? = nil
@@ -493,6 +494,7 @@ struct DayPlanDetailView: View {
                     planner: planner,
                     onSelectUnplannedCompletedDate: onSelectUnplannedCompletedDate,
                     onOpenTaskDetails: onOpenTaskDetails,
+                    onOpenCalendarListTaskDetails: onOpenCalendarListTaskDetails,
                     onOpenEventDetails: onOpenEventDetails,
                     calendarFilters: calendarFilters,
                     calendarSearchText: calendarSearchText,
@@ -1261,6 +1263,7 @@ private struct DayPlanTimelinePanelView: View {
     @ObservedObject var planner: DayPlanPlannerState
     var onSelectUnplannedCompletedDate: ((Date) -> Void)? = nil
     var onOpenTaskDetails: ((UUID) -> Void)? = nil
+    var onOpenCalendarListTaskDetails: ((DayPlanDayTaskListItem, Date) -> Void)? = nil
     var onOpenEventDetails: ((UUID) -> Void)? = nil
     var calendarFilters: Binding<DayPlanCalendarFilterState> = .constant(DayPlanCalendarFilterState())
     var calendarSearchText = ""
@@ -1300,6 +1303,7 @@ private struct DayPlanTimelinePanelView: View {
             planner: planner,
             onSelectUnplannedCompletedDate: onSelectUnplannedCompletedDate,
             onOpenTaskDetails: onOpenTaskDetails,
+            onOpenCalendarListTaskDetails: onOpenCalendarListTaskDetails,
             onOpenEventDetails: onOpenEventDetails,
             dataSnapshotID: dataSnapshot.id,
             tasks: dataSnapshot.tasks,
@@ -2314,6 +2318,7 @@ private struct DayPlanTimelinePanelContentView: View {
     @ObservedObject var planner: DayPlanPlannerState
     var onSelectUnplannedCompletedDate: ((Date) -> Void)? = nil
     var onOpenTaskDetails: ((UUID) -> Void)? = nil
+    var onOpenCalendarListTaskDetails: ((DayPlanDayTaskListItem, Date) -> Void)? = nil
     var onOpenEventDetails: ((UUID) -> Void)? = nil
     var dataSnapshotID: UUID
     var tasks: [RoutineTask]
@@ -2640,8 +2645,21 @@ private struct DayPlanTimelinePanelContentView: View {
                 isDayTaskOpenable: { taskID in
                     onOpenTaskDetails != nil && currentTaskIDs.contains(taskID)
                 },
-                onOpenDayTaskDetails: { taskID in
-                    onOpenTaskDetails?(taskID)
+                onOpenDayTaskDetails: { item, date in
+                    if let task = currentTasks.first(where: { $0.id == item.taskID }) {
+                        planner.prepareTaskDetailSchedule(
+                            for: task,
+                            item: item,
+                            on: date,
+                            calendar: calendar,
+                            context: modelContext
+                        )
+                    }
+                    if let onOpenCalendarListTaskDetails {
+                        onOpenCalendarListTaskDetails(item, date)
+                    } else {
+                        onOpenTaskDetails?(item.taskID)
+                    }
                 },
                 onConfirmAssumedDayTask: { item, date in
                     confirmAssumedDayTask(item, on: date)
@@ -2864,9 +2882,9 @@ private struct DayPlanTimelinePanelContentView: View {
                             onMarkAssumedDayTaskMissed: { item, date in
                                 markAssumedDayTaskMissed(item, on: date)
                             },
-                            onOpenTaskDetails: { taskID in
+                            onOpenTaskDetails: { item, _ in
                                 dismiss()
-                                onOpenTaskDetails?(taskID)
+                                onOpenTaskDetails?(item.taskID)
                             },
                             onDismiss: dismiss
                         )
@@ -6049,7 +6067,7 @@ private struct DayPlanDayTaskListSidebar: View {
     let isTaskOpenable: (UUID) -> Bool
     let onConfirmAssumedDayTask: (DayPlanDayTaskListItem, Date) -> Void
     let onMarkAssumedDayTaskMissed: (DayPlanDayTaskListItem, Date) -> Void
-    let onOpenTaskDetails: (UUID) -> Void
+    let onOpenTaskDetails: (DayPlanDayTaskListItem, Date) -> Void
     let onDismiss: () -> Void
 
     var body: some View {
