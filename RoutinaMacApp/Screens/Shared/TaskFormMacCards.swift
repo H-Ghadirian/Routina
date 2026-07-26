@@ -774,69 +774,19 @@ struct TaskFormMacBehaviorCard: View {
 
     @ViewBuilder
     private var repeatPatternControls: some View {
-        if model.supportsAdvancedRecurrence {
-            TaskFormMacControlBlock(title: "Repeat model") {
-                RoutinaGlassSegmentedControl(
-                    accessibilityLabel: "Repeat model",
-                    options: RoutineRecurrenceEditorMode.allCases,
-                    selection: model.recurrenceEditorMode
-                ) { mode in
-                    Text(mode.rawValue)
-                }
-            }
+        TaskFormMacControlBlock(title: "Repeat") {
+            UnifiedRecurrenceEditor(
+                draft: model.recurrenceDraft,
+                supportsNoSchedule: model.taskType.wrappedValue != .todo,
+                supportsItemRunout: model.supportsItemRunoutRepeatType,
+                weekdayOptions: presentation.weekdayOptions
+            )
         }
 
-        if model.recurrenceEditorMode.wrappedValue == .advanced,
-           model.supportsAdvancedRecurrence {
-            TaskFormMacControlBlock(title: "Advanced recurrence") {
-                AdvancedRecurrenceEditor(
-                    rule: model.advancedRecurrenceRule,
-                    weekdayOptions: presentation.weekdayOptions
-                )
-            }
-            if model.supportsGentleNudges {
-                TaskFormMacControlBlock(title: "Nudges") {
-                    Toggle("Nudges", isOn: model.trackingNudgesEnabled)
-                        .toggleStyle(.switch)
-                }
-            }
-        } else {
-            TaskFormMacControlBlock(title: "Repeat type") {
-                HStack(spacing: 0) {
-                    RoutinaGlassSegmentedControl(
-                        accessibilityLabel: "Repeat type",
-                        options: model.routineRepeatTypeCases,
-                        selection: model.routineRepeatType
-                    ) { repeatType in
-                        Text(repeatType.rawValue)
-                    }
-                    Spacer(minLength: 0)
-                }
-            }
-
-            if model.routineRepeatType.wrappedValue == .calendar {
-                calendarPatternControl
-            }
-
-            if model.supportsGentleNudges {
-                TaskFormMacControlBlock(title: "Nudges") {
-                    Toggle("Nudges", isOn: model.trackingNudgesEnabled)
-                        .toggleStyle(.switch)
-                }
-            }
-
-            switch model.routineRepeatType.wrappedValue {
-            case .none:
-                EmptyView()
-
-            case .interval:
-                TaskFormMacControlBlock(title: "Repeat") {
-                    frequencyStepper(prefix: intervalFrequencyPrefix)
-                }
-            case .calendar:
-                calendarSpecificControls
-            case .itemRunout:
-                EmptyView()
+        if model.supportsGentleNudges {
+            TaskFormMacControlBlock(title: "Nudges") {
+                Toggle("Nudges", isOn: model.trackingNudgesEnabled)
+                    .toggleStyle(.switch)
             }
         }
 
@@ -846,65 +796,6 @@ struct TaskFormMacBehaviorCard: View {
                     .font(.caption)
                     .foregroundStyle(.orange)
             }
-        }
-    }
-
-    @ViewBuilder
-    private var calendarSpecificControls: some View {
-        switch model.recurrenceKind.wrappedValue {
-        case .intervalDays, .dailyTime:
-            EmptyView()
-        case .weekly:
-            weeklyControls
-        case .monthlyDay:
-            monthlyControls
-        }
-    }
-
-    private var intervalFrequencyPrefix: String {
-        model.scheduleBehavior.wrappedValue == .soft && model.trackingNudgesEnabled.wrappedValue
-            ? "Nudge every"
-            : "Every"
-    }
-
-    private var calendarPatternControl: some View {
-        TaskFormMacControlBlock(title: "Calendar pattern") {
-            HStack(spacing: 0) {
-                RoutinaGlassSegmentedControl(
-                    accessibilityLabel: "Calendar pattern",
-                    options: RoutineRecurrenceRule.Kind.calendarCases,
-                    selection: model.calendarRecurrenceKind
-                ) { kind in
-                    Text(kind.pickerTitle)
-                }
-                Spacer(minLength: 0)
-            }
-        }
-    }
-
-    private func frequencyStepper(prefix: String) -> some View {
-        HStack(spacing: 10) {
-            Text(prefix)
-                .foregroundStyle(.secondary)
-
-            Stepper(value: model.frequencyValue, in: 1...365) {
-                Text("\(model.frequencyValue.wrappedValue)")
-                    .font(.body.monospacedDigit())
-                    .frame(minWidth: 28, alignment: .trailing)
-            }
-            .fixedSize()
-
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Unit",
-                options: TaskFormFrequencyUnit.allCases,
-                selection: model.frequencyUnit,
-                fillsAvailableWidth: true
-            ) { unit in
-                Text(unit.rawValue)
-            }
-            .frame(width: 220)
-
-            Spacer(minLength: 0)
         }
     }
 
@@ -925,51 +816,6 @@ struct TaskFormMacBehaviorCard: View {
                 timeAvailabilityControls
             }
         }
-    }
-
-    private var weeklyControls: some View {
-        weeklyDayControl
-    }
-
-    private var weeklyDayControl: some View {
-        TaskFormMacControlBlock(title: "Weekday") {
-            RecurrenceWeekdaySelectionControl(
-                selectedWeekdays: recurrenceWeekdaysBinding,
-                options: presentation.weekdayOptions
-            )
-
-            Text(presentation.weeklyRecurrenceSummary)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private var monthlyControls: some View {
-        monthlyDayControl
-    }
-
-    private var monthlyDayControl: some View {
-        TaskFormMacControlBlock(title: "Month day") {
-            RecurrenceMonthDaySelectionControl(selectedDays: recurrenceDaysOfMonthBinding)
-
-            Text(presentation.monthlyRecurrenceSummary)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private var recurrenceWeekdaysBinding: Binding<[Int]> {
-        Binding(
-            get: { model.effectiveRecurrenceWeekdays },
-            set: { model.setRecurrenceWeekdays($0) }
-        )
-    }
-
-    private var recurrenceDaysOfMonthBinding: Binding<[Int]> {
-        Binding(
-            get: { model.effectiveRecurrenceDaysOfMonth },
-            set: { model.setRecurrenceDaysOfMonth($0) }
-        )
     }
 
     private var dateAvailabilityControls: some View {

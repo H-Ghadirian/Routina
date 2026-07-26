@@ -56,13 +56,13 @@ Coverage:
 - `Tests/Shared/NotificationCoordinatorTests.swift`
 
 Given a routine or Tracking entry is reusable but has no known schedule
-When the user chooses `Repeating` and `Repeat type: None`
+When the user chooses `Repeating` and `No schedule`
 Then the task saves without an effective cadence and remains available immediately after every completion
 And every completion remains in its history
 And multiple completions on the same day remain separate history entries
 And the task is not classified as a cadence-derived daily routine
 And it has no due date, overdue state, cadence badge, or cadence-only form controls
-And changing other routine behavior preserves `Repeat type: None`
+And changing other routine behavior preserves `No schedule`
 And Task Detail shows no frequency and no cadence-derived notification is scheduled
 
 ### Repeating Behavior Does Not Require A Tracking Purpose
@@ -81,14 +81,14 @@ Given a user creates or edits a repeating task
 When the user selects Gentle behavior
 Then Nudges can be turned off independently without removing cadence or history
 And an eligible daily Gentle routine can opt into Auto-assume done
-And Due or `Repeat type: None` makes those Gentle-only behaviors unavailable
+And Due or `No schedule` makes those Gentle-only behaviors unavailable
 And creating the behavior does not require or create a separate Tracking purpose
 And existing stored Tracking records remain compatible without automatic migration
 
-### Simple And Advanced Recurrence Stay Independent
+### Compact And Structured Recurrence Stay Compatible
 
 Area: Tasks
-Decision links: [0412](../decisions/0412-add-advanced-recurrence-beside-simple.md)
+Decision links: [0412](../decisions/0412-add-advanced-recurrence-beside-simple.md), [0430](../decisions/0430-unify-recurrence-editing-behind-lossless-draft.md), [0431](../decisions/0431-present-one-progressive-recurrence-composer.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/RoutineAdvancedRecurrenceTests.swift`
@@ -96,26 +96,26 @@ Coverage:
 - `Tests/Shared/NotificationCoordinatorTests.swift`
 - `Tests/Shared/CloudKitDirectPullRecurrenceTests.swift`
 
-Given a routine has Simple recurrence values and an independent Advanced recurrence draft
-When the user switches between Simple and Advanced
-Then each model keeps its own values and saving uses only the selected model
+Given a routine has compact compatibility values and a structured recurrence payload
+When the unified composer edits and saves that routine
+Then the lossless draft keeps the authoritative schedule while compatibility projection preserves older readers
 
-Given an Advanced hourly routine repeats every six hours during a daily window
+Given a structured hourly routine repeats every six hours during a daily window
 When two occurrences become due and are completed on the same day
 Then each completion is stored at its scheduled occurrence timestamp, log deduplication preserves both, and the routine becomes actionable again at the next due occurrence
 
-Given an existing routine has no Advanced recurrence payload
+Given an existing routine has no structured recurrence payload
 When it is decoded or edited
-Then it remains a Simple recurrence with its prior behavior
+Then it remains compact recurrence with its prior behavior
 
-Given a CloudKit task record contains an Advanced structured recurrence and simplified compatibility columns
+Given a CloudKit task record contains structured recurrence and simplified compatibility columns
 When direct pull merges the task on another device
 Then the structured Advanced rule remains authoritative instead of being downgraded to the compatibility cadence
 
 ### Unified Recurrence Draft Preserves Existing Models
 
 Area: Tasks
-Decision links: [0178](../decisions/0178-make-recurrence-availability-independent.md), [0412](../decisions/0412-add-advanced-recurrence-beside-simple.md), [0430](../decisions/0430-unify-recurrence-editing-behind-lossless-draft.md)
+Decision links: [0178](../decisions/0178-make-recurrence-availability-independent.md), [0412](../decisions/0412-add-advanced-recurrence-beside-simple.md), [0430](../decisions/0430-unify-recurrence-editing-behind-lossless-draft.md), [0431](../decisions/0431-present-one-progressive-recurrence-composer.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/RoutineRecurrenceDraftTests.swift`
@@ -132,9 +132,17 @@ Given Add Task or Edit Task changes recurrence through the unified draft
 When the task is saved
 Then persistence resolves the authoritative draft without reconstructing recurrence from narrower legacy fields
 
-Given the staged form changes a visible Simple or Advanced control after editing the unified draft
-When the task is saved
-Then the current legacy control values deliberately retake ownership and are translated losslessly into the persistence draft
+Given Add Task or Edit Task displays recurrence
+When the user describes an ordinary or fixed-anchor schedule
+Then one progressive composer writes the lossless draft without asking the user to choose Simple or Advanced
+
+Given a fixed schedule needs an anchor, time zone, occurrence times, hourly window, or ending condition
+When the user builds or reopens it
+Then `More schedule options` exposes every active structured field and expands automatically when required
+
+Given a yearly schedule uses several months and several dates
+When the user creates or edits it on iOS or macOS
+Then every stored month and date remains visibly selected and save preserves their cross-product
 
 Given a cadence-free one-time task uses an exact time or time window
 When its unified recurrence draft is saved
@@ -456,7 +464,7 @@ Then Routina keeps June 18 and June 25 visible as unresolved missed days and sti
 ### Editing Calendar Routines Preserves All Selected Days
 
 Area: Tasks
-Decision links: [0009](../decisions/0009-support-routine-time-ranges.md), [0177](../decisions/0177-separate-interval-and-calendar-repeat-controls.md), [0184](../decisions/0184-label-month-day-fallbacks.md), [0223](../decisions/0223-support-multi-day-calendar-repeats.md), [0412](../decisions/0412-add-advanced-recurrence-beside-simple.md)
+Decision links: [0009](../decisions/0009-support-routine-time-ranges.md), [0177](../decisions/0177-separate-interval-and-calendar-repeat-controls.md), [0184](../decisions/0184-label-month-day-fallbacks.md), [0223](../decisions/0223-support-multi-day-calendar-repeats.md), [0412](../decisions/0412-add-advanced-recurrence-beside-simple.md), [0431](../decisions/0431-present-one-progressive-recurrence-composer.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/RecurrenceSelectionPolicyTests.swift`
@@ -464,7 +472,7 @@ Coverage:
 - `Tests/macOS/TaskDetailFeatureTests.swift`
 - `Tests/Shared/TaskDetailEditSaveTests.swift`
 
-Given the user creates or edits a Simple calendar routine on iOS or macOS
+Given the user creates or edits an On schedule calendar routine on iOS or macOS
 When they select several weekdays or several monthly dates
 Then the shared selector keeps every selected value and prevents an empty selection
 
@@ -481,7 +489,7 @@ When the user reopens the edit form and saves an unrelated change
 Then the form is not falsely dirty before that change
 And the complete monthly-date set remains on the persisted recurrence rule
 
-Given the user edits an Advanced monthly day-of-month rule
+Given the user edits a fixed monthly day-of-month rule
 When they select several monthly dates
 Then every selected date remains editable instead of only the first date
 

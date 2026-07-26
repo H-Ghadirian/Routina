@@ -31,7 +31,9 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
-- **[0430](0430-unify-recurrence-editing-behind-lossless-draft.md) refines [0177](0177-separate-interval-and-calendar-repeat-controls.md), [0178](0178-make-recurrence-availability-independent.md), [0412](0412-add-advanced-recurrence-beside-simple.md), and [0421](0421-support-cadence-free-repeating-routines.md) for one progressive recurrence composer:** Recurrence form state converges on a lossless draft covering cadence-free, item-runout, after-completion, and fixed schedules while compact and Advanced persistence remain internal compatibility strategies; unsupported combinations validate instead of dropping fields, and the visible Simple / Advanced selector remains only until unified-editor parity is complete.
+- **[0431](0431-present-one-progressive-recurrence-composer.md) completes the visible rollout from [0430](0430-unify-recurrence-editing-behind-lossless-draft.md) and refines [0412](0412-add-advanced-recurrence-beside-simple.md):** iOS and macOS Add/Edit forms use one progressive composer for No schedule, After done, On schedule, and eligible Item runout behavior; fixed start, time zone, occurrence, hourly-window, and end fields live under More schedule options, while compact and structured recurrence remain internal compatibility strategies.
+
+- **[0430](0430-unify-recurrence-editing-behind-lossless-draft.md) refines [0177](0177-separate-interval-and-calendar-repeat-controls.md), [0178](0178-make-recurrence-availability-independent.md), [0412](0412-add-advanced-recurrence-beside-simple.md), and [0421](0421-support-cadence-free-repeating-routines.md) for one progressive recurrence composer:** Recurrence form state converges on a lossless draft covering cadence-free, item-runout, after-completion, and fixed schedules while compact and Advanced persistence remain internal compatibility strategies; unsupported combinations validate instead of dropping fields. [0431](0431-present-one-progressive-recurrence-composer.md) removes the visible Simple / Advanced selector after editor parity.
 
 - **[0429](0429-keep-task-list-visible-beside-mac-task-forms.md) refines [0100](0100-reveal-task-form-details-by-section.md) and [0311](0311-move-mac-home-mode-strip-to-toolbar.md) for persistent task context:** Mac Add Task and Edit Task keep the normal task-list sidebar visible, while progressive disclosure, section ordering, and section scrolling remain owned by the form.
 
@@ -342,6 +344,8 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0431](0431-present-one-progressive-recurrence-composer.md) | Present One Progressive Recurrence Composer | Accepted | 2026-07-26 |
+| [0430](0430-unify-recurrence-editing-behind-lossless-draft.md) | Unify Recurrence Editing Behind a Lossless Draft | Accepted | 2026-07-26 |
 | [0429](0429-keep-task-list-visible-beside-mac-task-forms.md) | Keep Task List Visible Beside Mac Task Forms | Accepted | 2026-07-26 |
 | [0428](0428-compose-tracking-behaviors-on-gentle-routines.md) | Compose Tracking Behaviors on Gentle Routines | Accepted | 2026-07-26 |
 | [0425](0425-make-task-detail-history-optional.md) | Make Task Detail History Optional | Accepted | 2026-07-24 |

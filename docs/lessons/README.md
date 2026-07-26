@@ -75,3 +75,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0032 — Use the structured-storage contract at sync boundaries](0032-use-the-structured-storage-contract-at-sync-boundaries.md)
 - [0032 — Share relationship intent across linked-task entry points](0032-share-relationship-intent-across-linked-task-entry-points.md)
 - [0033 — Match recurrence control cardinality to storage](0033-match-recurrence-control-cardinality-to-storage.md)
+- [0034 — Drive recurrence editors from the lossless draft](0034-drive-recurrence-editors-from-the-lossless-draft.md)

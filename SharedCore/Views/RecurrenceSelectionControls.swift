@@ -173,3 +173,69 @@ struct RecurrenceMonthDaySelectionControl: View {
         return isAdaptive ? Color.orange.opacity(0.65) : Color.secondary.opacity(0.2)
     }
 }
+
+struct RecurrenceMonthSelectionControl: View {
+    @Binding var selectedMonths: [Int]
+    var calendar: Calendar = .current
+
+    var body: some View {
+        LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
+            ForEach(1...12, id: \.self) { month in
+                let isSelected = selectedMonths.contains(month)
+                Button {
+                    selectedMonths = RecurrenceSelectionPolicy.updating(
+                        value: month,
+                        isSelected: !isSelected,
+                        selection: selectedMonths,
+                        validRange: 1...12
+                    )
+                } label: {
+                    Text(monthName(month))
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, minHeight: 36)
+                        .padding(.horizontal, 8)
+                        .foregroundStyle(isSelected ? Color.accentColor : Color.primary)
+                        .background(
+                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                .fill(
+                                    isSelected
+                                        ? Color.accentColor.opacity(0.18)
+                                        : Color.secondary.opacity(0.08)
+                                )
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                .stroke(
+                                    isSelected
+                                        ? Color.accentColor.opacity(0.8)
+                                        : Color.secondary.opacity(0.2),
+                                    lineWidth: 1
+                                )
+                        )
+                        .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(fullMonthName(month))
+                .accessibilityValue(isSelected ? "Selected" : "Not selected")
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
+            }
+        }
+        .frame(maxWidth: 520, alignment: .leading)
+    }
+
+    private var columns: [GridItem] {
+        [GridItem(.adaptive(minimum: 76), spacing: 8)]
+    }
+
+    private func monthName(_ month: Int) -> String {
+        let symbols = calendar.shortMonthSymbols
+        guard symbols.indices.contains(month - 1) else { return "\(month)" }
+        return symbols[month - 1]
+    }
+
+    private func fullMonthName(_ month: Int) -> String {
+        let symbols = calendar.monthSymbols
+        guard symbols.indices.contains(month - 1) else { return "Month \(month)" }
+        return symbols[month - 1]
+    }
+}

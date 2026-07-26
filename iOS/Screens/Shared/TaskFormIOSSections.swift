@@ -339,16 +339,19 @@ struct TaskFormIOSRepeatPatternSections: View {
 
     var body: some View {
         if presentation.showsRepeatControls {
-            if model.supportsAdvancedRecurrence {
-                recurrenceModelSection
+            Section(header: Text("Repeat")) {
+                UnifiedRecurrenceEditor(
+                    draft: model.recurrenceDraft,
+                    supportsNoSchedule: model.taskType.wrappedValue != .todo,
+                    supportsItemRunout: model.supportsItemRunoutRepeatType,
+                    weekdayOptions: presentation.weekdayOptions
+                )
+
+                if model.supportsGentleNudges {
+                    Toggle("Nudges", isOn: model.trackingNudgesEnabled)
+                }
             }
-            if model.recurrenceEditorMode.wrappedValue == .advanced,
-               model.supportsAdvancedRecurrence {
-                advancedRecurrenceSection
-            } else {
-                repeatPatternSection
-                recurrenceSpecificSections
-            }
+
             if let validationMessage = model.recurrenceValidationMessage {
                 Section("Recurrence") {
                     Label(validationMessage, systemImage: "exclamationmark.triangle.fill")
@@ -361,152 +364,6 @@ struct TaskFormIOSRepeatPatternSections: View {
         if showsAssumedDoneSection {
             assumedDoneSection
         }
-    }
-
-    private var recurrenceModelSection: some View {
-        Section(header: Text("Repeat Model")) {
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Repeat Model",
-                options: RoutineRecurrenceEditorMode.allCases,
-                selection: model.recurrenceEditorMode,
-                fillsAvailableWidth: true
-            ) { mode in
-                Text(mode.rawValue)
-            }
-        }
-    }
-
-    private var advancedRecurrenceSection: some View {
-        Section(header: Text("Advanced Recurrence")) {
-            AdvancedRecurrenceEditor(
-                rule: model.advancedRecurrenceRule,
-                weekdayOptions: presentation.weekdayOptions
-            )
-            if model.supportsGentleNudges {
-                Toggle("Nudges", isOn: model.trackingNudgesEnabled)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var repeatPatternSection: some View {
-        Section(header: Text("Repeat Type")) {
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Repeat Type",
-                options: model.routineRepeatTypeCases,
-                selection: model.routineRepeatType,
-                fillsAvailableWidth: true
-            ) { repeatType in
-                Text(repeatType.rawValue)
-            }
-            if model.routineRepeatType.wrappedValue != .itemRunout && model.routineRepeatType.wrappedValue != .none {
-                Text(presentation.recurrencePatternDescription).font(.caption).foregroundStyle(.secondary)
-            }
-            if model.supportsGentleNudges {
-                Toggle("Nudges", isOn: model.trackingNudgesEnabled)
-            }
-        }
-
-        if model.routineRepeatType.wrappedValue == .calendar {
-            calendarPatternSection
-        }
-    }
-
-    private var calendarPatternSection: some View {
-        Section(header: Text("Calendar Pattern")) {
-            RoutinaGlassSegmentedControl(
-                accessibilityLabel: "Calendar Pattern",
-                options: RoutineRecurrenceRule.Kind.calendarCases,
-                selection: model.calendarRecurrenceKind,
-                fillsAvailableWidth: true
-            ) { kind in
-                Text(kind.pickerTitle)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var recurrenceSpecificSections: some View {
-        switch model.routineRepeatType.wrappedValue {
-        case .none:
-            EmptyView()
-
-        case .interval:
-            Section(header: Text("Frequency")) {
-                frequencyUnitPicker
-            }
-            Section(header: Text("Repeat")) {
-                Stepper(value: model.frequencyValue, in: model.intervalFrequencyValueBounds) {
-                    Text(intervalRepeatLabel)
-                }
-            }
-
-        case .calendar:
-            calendarSpecificSections
-
-        case .itemRunout:
-            EmptyView()
-        }
-    }
-
-    @ViewBuilder
-    private var calendarSpecificSections: some View {
-        switch model.recurrenceKind.wrappedValue {
-        case .intervalDays, .dailyTime:
-            EmptyView()
-
-        case .weekly:
-            Section(header: Text("Weekday")) {
-                RecurrenceWeekdaySelectionControl(
-                    selectedWeekdays: recurrenceWeekdaysBinding,
-                    options: presentation.weekdayOptions
-                )
-                Text(presentation.weeklyRecurrenceSummary)
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-
-        case .monthlyDay:
-            Section(header: Text("Day of Month")) {
-                RecurrenceMonthDaySelectionControl(selectedDays: recurrenceDaysOfMonthBinding)
-                Text(presentation.monthlyRecurrenceSummary)
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    private var recurrenceWeekdaysBinding: Binding<[Int]> {
-        Binding(
-            get: { model.effectiveRecurrenceWeekdays },
-            set: { model.setRecurrenceWeekdays($0) }
-        )
-    }
-
-    private var recurrenceDaysOfMonthBinding: Binding<[Int]> {
-        Binding(
-            get: { model.effectiveRecurrenceDaysOfMonth },
-            set: { model.setRecurrenceDaysOfMonth($0) }
-        )
-    }
-
-    private var frequencyUnitPicker: some View {
-        RoutinaGlassSegmentedControl(
-            accessibilityLabel: "Frequency",
-            options: TaskFormFrequencyUnit.allCases,
-            selection: model.frequencyUnit,
-            fillsAvailableWidth: true
-        ) { unit in
-            Text(unit.rawValue)
-        }
-    }
-
-    private var intervalRepeatLabel: String {
-        let label = TaskFormPresentation.stepperLabel(
-            unit: model.frequencyUnit.wrappedValue,
-            value: model.frequencyValue.wrappedValue
-        )
-        return model.scheduleBehavior.wrappedValue == .soft && model.trackingNudgesEnabled.wrappedValue
-            ? "Nudge \(label.lowercased())"
-            : label
     }
 
     private var showsAssumedDoneSection: Bool {
