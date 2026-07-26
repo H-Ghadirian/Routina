@@ -8,16 +8,8 @@ enum MacTaskDetailPresentation {
 }
 
 extension HomeTCAView {
-    // Temporary UI experiment. Set to `false` to restore the existing form-section
-    // navigator without removing any of its implementation.
-    private var temporarilyKeepsTaskListVisibleDuringTaskForms: Bool { true }
-
     private var isTaskFormPresented: Bool {
         isMacAddTaskMode || store.taskDetailState?.isEditSheetPresented == true
-    }
-
-    private var temporarilyShowsTaskListDuringTaskForm: Bool {
-        temporarilyKeepsTaskListVisibleDuringTaskForms && isTaskFormPresented
     }
 
     var isMacTimelineMode: Bool { visibleMacSidebarMode == .timeline }
@@ -822,8 +814,6 @@ extension HomeTCAView {
         Group {
             if isPlacesEnabled && macHomeDetailMode == .places && isMacRoutinesMode {
                 macPlacesSidebarView
-            } else if isTaskFormPresented && !temporarilyKeepsTaskListVisibleDuringTaskForms {
-                macFormSectionNav
             } else if isMacRoutinesMode && showsInitialTaskLoading && !shouldHideMacSidebarHeaderForDayPlanTimelineFilter {
                 VStack(spacing: 0) {
                     macSidebarHeader
@@ -908,79 +898,17 @@ extension HomeTCAView {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
-    var macFormSectionNav: some View {
-        let isAdding = isMacAddTaskMode
-        let available = isAdding ? macAddFormSections : macEditFormSections
-        return HomeMacFormSectionNavView(
-            availableSections: available,
-            coordinator: addEditFormCoordinator,
-            draggedSection: $draggedSection
-        ) {
-            macSidebarHeader
-        }
-    }
-
-    var macAddFormSections: [FormSection] {
-        let addState = store.addRoutineState
-        let scheduleMode = addState?.schedule.scheduleMode ?? .fixedInterval
-        let populatedSections = addState?.populatedMacFormSections ?? []
-        let sections = FormSection.taskFormSections(
-            scheduleMode: scheduleMode,
-            includesIdentity: true,
-            includesDangerZone: false
-        ).filter { section in
-            (section != .planning || addState?.supportsPlanning != false)
-            && shouldDisplayFormSection(section)
-        }
-        return FormSection.visibleTaskFormSections(
-            from: sections,
-            mode: .progressiveCreate,
-            revealedSections: addEditFormCoordinator.revealedTaskFormSections,
-            populatedSections: populatedSections,
-            allowsOptionalChecklistReveal: addState?.taskType != .routine
-        )
-    }
-
-    var macEditFormSections: [FormSection] {
-        guard let detail = store.taskDetailState else { return [] }
-        let sections = FormSection.taskFormSections(
-            scheduleMode: detail.editScheduleMode,
-            includesIdentity: true,
-            includesDangerZone: true
-        ).filter { section in
-            (section != .planning || detail.supportsPlanning)
-            && shouldDisplayFormSection(section)
-        }
-        return FormSection.visibleTaskFormSections(
-            from: sections,
-            mode: .progressiveEdit,
-            revealedSections: addEditFormCoordinator.revealedTaskFormSections,
-            populatedSections: detail.populatedMacFormSections,
-            allowsOptionalChecklistReveal: detail.editScheduleMode.taskType != .routine
-        )
-    }
-
-    private func shouldDisplayFormSection(_ section: FormSection) -> Bool {
-        if section == .places {
-            return isPlacesEnabled
-        }
-        if section == .notes || section == .voiceNote {
-            return isNotesEnabled
-        }
-        return section != .goals || isGoalsTabEnabled
-    }
-
     var macSidebarHeader: some View {
         HomeMacSidebarHeaderView(
             selectedTaskListMode: store.taskListMode,
             isRoutinesMode: (isMacRoutinesMode && !isMacSegmentedBoardMode)
-                || temporarilyShowsTaskListDuringTaskForm,
+                || isTaskFormPresented,
             isBoardMode: isMacBoardSidebarPresented,
             isGoalsMode: isMacGoalsMode,
             isTimelineMode: isMacTimelineMode,
             showsSearchPanelContent: isMacGoalsMode
                 || macHasCustomFiltersApplied
-                || (temporarilyShowsTaskListDuringTaskForm
+                || (isTaskFormPresented
                     && macHasTaskListFiltersApplied),
             onSelectTaskListMode: { mode in
                 store.send(.taskListModeChanged(mode))

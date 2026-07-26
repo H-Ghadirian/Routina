@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0429](0429-keep-task-list-visible-beside-mac-task-forms.md) refines [0100](0100-reveal-task-form-details-by-section.md) and [0311](0311-move-mac-home-mode-strip-to-toolbar.md) for persistent task context:** Mac Add Task and Edit Task keep the normal task-list sidebar visible, while progressive disclosure, section ordering, and section scrolling remain owned by the form.
+
 - **[0428](0428-compose-tracking-behaviors-on-gentle-routines.md) refines [0382](0382-split-record-task-form-controls.md), [0396](0396-allow-quiet-tracking-cadence.md), [0398](0398-move-auto-assume-done-to-tracking.md), [0413](0413-nest-tracking-under-repeating-task-creation.md), [0414](0414-align-task-kind-controls-between-create-and-edit.md), and [0421](0421-support-cadence-free-repeating-routines.md) for modular routine behavior:** Full forms remove `Track this routine`; new repeating tasks are routines, Gentle cadence owns optional Nudges and eligible daily Auto-assume, and the internal `record` type remains only for compatibility with existing Tracking data and surfaces.
 
 - **[0427](0427-place-task-sidebar-location-below-detail-title.md) refines [0420](0420-show-task-sidebar-location-in-mac-details.md) for task identity hierarchy:** Mac task details place the live sidebar section/subsection breadcrumb directly below the task title and before status, completion, calendar, tags, and other metadata.
@@ -338,6 +340,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0429](0429-keep-task-list-visible-beside-mac-task-forms.md) | Keep Task List Visible Beside Mac Task Forms | Accepted | 2026-07-26 |
 | [0428](0428-compose-tracking-behaviors-on-gentle-routines.md) | Compose Tracking Behaviors on Gentle Routines | Accepted | 2026-07-26 |
 | [0425](0425-make-task-detail-history-optional.md) | Make Task Detail History Optional | Accepted | 2026-07-24 |
 | [0424](0424-make-task-detail-priority-optional.md) | Make Task Detail Priority Optional | Accepted | 2026-07-24 |

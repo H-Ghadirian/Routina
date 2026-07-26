@@ -282,7 +282,6 @@ struct HomeTCAView: View {
     @State var relatedTimelineTagSuggestionAnchor: String?
     @State var relatedStatsTagSuggestionAnchor: String?
     @State var macSharedFiltersPresentationCache: HomeMacSharedFiltersPresentationCache?
-    @State var draggedSection: FormSection?
     @State var macHomeDetailMode: MacHomeDetailMode = .defaultLandingMode
     @State var macHomeProgressMode: MacHomeProgressMode = .stats
     @State var macHomeSidebarColumnVisibility: NavigationSplitViewVisibility = .all

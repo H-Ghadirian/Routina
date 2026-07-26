@@ -14,7 +14,8 @@ Accepted
 
 ## Refined By
 
-[0366: Keep Mac Task Detail Add More Inline](0366-keep-mac-task-detail-add-more-inline.md) for Mac Task Detail metadata actions.
+- [0366: Keep Mac Task Detail Add More Inline](0366-keep-mac-task-detail-add-more-inline.md) for Mac Task Detail metadata actions.
+- [0429: Keep Task List Visible Beside Mac Task Forms](0429-keep-task-list-visible-beside-mac-task-forms.md) for Mac sidebar presentation.
 
 ## Context
 
@@ -32,5 +33,5 @@ Task detail Add More actions should likewise prefer field-specific buttons. Inli
 
 - The common task-capture flow stays compact without hiding advanced fields behind one all-or-nothing expansion.
 - Users can add one specific detail without being dropped into every optional field.
-- The macOS form navigator follows the same revealed-section state as the form content.
+- The form content owns revealed-section state and scrolling; [0429](0429-keep-task-list-visible-beside-mac-task-forms.md) later removes the separate macOS sidebar form navigator.
 - Future optional task fields should add a section-specific reveal action instead of relying on a generic More Details expansion.

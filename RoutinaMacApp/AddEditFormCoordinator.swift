@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Coordinates scroll-to-section between the sidebar nav and the add/edit form.
+/// Coordinates task-form focus, progressive disclosure, ordering, and section scrolling.
 @Observable
 final class AddEditFormCoordinator {
     var scrollTarget: FormSection?

@@ -20,6 +20,7 @@ Accepted
 - [0318: Remove Mac Home Timeline Toolbar Segment](0318-remove-mac-home-timeline-toolbar-segment.md)
 - [0332: Remove Settings From Mac Home Toolbar Strip](0332-remove-settings-from-mac-home-toolbar-strip.md)
 - [0333: Move Mac Focus Control to Planner Calendar Header](0333-move-mac-focus-control-to-planner-calendar-header.md)
+- [0429: Keep Task List Visible Beside Mac Task Forms](0429-keep-task-list-visible-beside-mac-task-forms.md)
 
 ## Context
 
@@ -31,7 +32,7 @@ The sidebar should stay focused on the active surface's list, filters, form sect
 
 Mac Home renders the primary Home mode strip as a compact toolbar control. The strip keeps the same visible mode gating for Goals and Adventure, the same selected-mode binding, and the same Add behavior: a single visible Add action opens directly, while multiple visible Add actions are presented as a menu. [0333](0333-move-mac-focus-control-to-planner-calendar-header.md) later moves the Focus branch out of the toolbar row and into the Planner Calendar header.
 
-The left sidebar no longer renders the primary mode strip. Sidebar headers may continue to render surface-local controls such as task-list mode filters, search/filter panels, form section navigation, Places controls, and status composition.
+The left sidebar no longer renders the primary mode strip. Sidebar headers may continue to render surface-local controls such as task-list mode filters, search/filter panels, Places controls, and status composition. [0429](0429-keep-task-list-visible-beside-mac-task-forms.md) later removes form section navigation from the sidebar and keeps the task list visible during Add Task and Edit Task.
 
 ## Consequences
 
