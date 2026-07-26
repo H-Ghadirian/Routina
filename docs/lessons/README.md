@@ -83,3 +83,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0039 — Gate appearance controls with feature availability](0039-gate-appearance-controls-with-feature-availability.md)
 - [0040 — Retire product concepts across all presentation surfaces](0040-retire-product-concepts-across-all-presentation-surfaces.md)
 - [0041 — Do not repeat complete form values as summaries](0041-do-not-repeat-complete-form-values-as-summaries.md)
+- [0042 — Separate early completion time from scheduled occurrence](0042-separate-early-completion-time-from-scheduled-occurrence.md)

@@ -295,6 +295,7 @@ enum SettingsRoutineDataImportEntityInserter {
                 recurrenceRule: task.recurrenceRule,
                 recurrenceTimeRangeRole: task.recurrenceTimeRangeRole ?? .availability,
                 lastDone: task.lastDone,
+                lastSatisfiedScheduledOccurrenceAt: task.lastSatisfiedScheduledOccurrenceAt,
                 canceledAt: task.canceledAt,
                 scheduleAnchor: task.scheduleAnchor,
                 pausedAt: task.pausedAt,
@@ -409,6 +410,7 @@ enum SettingsRoutineDataImportEntityInserter {
             let importedLog = RoutineLog(
                 id: log.id,
                 timestamp: log.timestamp,
+                scheduledOccurrenceAt: log.scheduledOccurrenceAt,
                 taskID: log.taskID,
                 kind: log.kind ?? .completed,
                 actualDurationMinutes: log.actualDurationMinutes,

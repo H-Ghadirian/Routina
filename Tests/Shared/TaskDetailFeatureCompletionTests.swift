@@ -907,6 +907,66 @@ struct TaskDetailFeatureCompletionTests {
     }
 
     @Test
+    func markAsDone_beforeUntimedMonthlyDueDate_recordsEarlyCompletionAndAdvancesSchedule() async throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let now = makeDate("2026-07-26T10:00:00Z")
+        let scheduledOccurrence = makeDate("2026-07-27T00:00:00Z")
+        let nextScheduledOccurrence = makeDate("2026-08-27T00:00:00Z")
+        let task = RoutineTask(
+            name: "Rent",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .monthly(on: [27]),
+            scheduleAnchor: makeDate("2026-07-26T09:00:00Z")
+        )
+        context.insert(task)
+        try context.save()
+
+        let store = TestStore(
+            initialState: TaskDetailFeature.State(task: task)
+        ) {
+            TaskDetailFeature()
+        } withDependencies: {
+            setTestDateDependencies(&$0, now: now, calendar: calendar)
+            $0.modelContext = { context }
+            $0.notificationClient.schedule = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.markAsDone)
+
+        #expect(store.state.task.lastDone == now)
+        #expect(store.state.task.lastSatisfiedScheduledOccurrenceAt == scheduledOccurrence)
+        #expect(store.state.isDoneToday)
+        #expect(
+            RoutineDateMath.dueDate(
+                for: store.state.task,
+                referenceDate: now,
+                calendar: calendar
+            ) == nextScheduledOccurrence
+        )
+
+        await store.receive {
+            if case .logsLoaded = $0 { return true }
+            return false
+        }
+
+        let persistedTask = try #require(context.fetch(FetchDescriptor<RoutineTask>()).first)
+        let persistedLog = try #require(context.fetch(FetchDescriptor<RoutineLog>()).first)
+        #expect(persistedTask.lastDone == now)
+        #expect(persistedTask.lastSatisfiedScheduledOccurrenceAt == scheduledOccurrence)
+        #expect(persistedLog.timestamp == now)
+        #expect(persistedLog.scheduledOccurrenceAt == scheduledOccurrence)
+        #expect(
+            RoutineDateMath.dueDate(
+                for: persistedTask,
+                referenceDate: now,
+                calendar: calendar
+            ) == nextScheduledOccurrence
+        )
+    }
+
+    @Test
     func markAsDone_forSelectedPastDateOnNeverCompletedIntervalRoutine_persistsLog() async throws {
         let context = makeInMemoryContext()
         let now = makeDate("2026-04-28T10:00:00Z")

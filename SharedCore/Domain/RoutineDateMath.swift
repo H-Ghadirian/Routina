@@ -69,7 +69,7 @@ enum RoutineDateMath {
         if let advanced = task.recurrenceRule.advanced {
             return nextAdvancedEffectiveOccurrence(
                 for: advanced,
-                after: task.lastDone,
+                after: task.lastSatisfiedScheduledOccurrenceAt ?? task.lastDone,
                 timeRange: task.recurrenceRule.timeRange,
                 calendar: calendar
             ) ?? .distantFuture
@@ -304,6 +304,36 @@ enum RoutineDateMath {
             return false
         }
         return dueDate(for: task, referenceDate: referenceDate, calendar: calendar) <= referenceDate
+    }
+
+    static func supportsEarlyScheduledCompletion(for task: RoutineTask) -> Bool {
+        task.usesEffectiveRoutineCadence
+            && task.recurrenceRule.isFixedCalendar
+            && !task.isChecklistDriven
+            && !task.isChecklistCompletionRoutine
+            && !task.isMultiDayRoutine
+            && !task.recurrenceRule.occursMoreThanOncePerDay
+            && !usesExactTimedOccurrenceTracking(for: task)
+    }
+
+    static func canCompleteScheduledOccurrenceEarly(
+        for task: RoutineTask,
+        completedAt: Date,
+        calendar: Calendar = .current
+    ) -> Bool {
+        guard supportsEarlyScheduledCompletion(for: task) else { return false }
+        let occurrence = dueDate(for: task, referenceDate: completedAt, calendar: calendar)
+        return occurrence != .distantFuture && occurrence > completedAt
+    }
+
+    static func scheduledOccurrenceSatisfiedByCompletion(
+        for task: RoutineTask,
+        completedAt: Date,
+        calendar: Calendar = .current
+    ) -> Date? {
+        guard supportsEarlyScheduledCompletion(for: task) else { return nil }
+        let occurrence = dueDate(for: task, referenceDate: completedAt, calendar: calendar)
+        return occurrence == .distantFuture ? nil : occurrence
     }
 
     static func isCompletedForCurrentPeriod(
@@ -1211,6 +1241,9 @@ enum RoutineDateMath {
         for task: RoutineTask,
         referenceDate: Date
     ) -> (base: Date, includeCurrentDate: Bool) {
+        if let satisfiedOccurrence = task.lastSatisfiedScheduledOccurrenceAt {
+            return (satisfiedOccurrence, false)
+        }
         if let scheduleAnchor = task.scheduleAnchor,
            let lastDone = task.lastDone {
             if scheduleAnchor > lastDone {

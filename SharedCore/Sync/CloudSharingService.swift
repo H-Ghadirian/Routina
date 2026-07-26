@@ -50,6 +50,7 @@ enum CloudSharingService {
         var recurrenceRule: RoutineRecurrenceRule?
         var recurrenceTimeRangeRole: RoutineTimeRangeRole?
         var lastDone: Date?
+        var lastSatisfiedScheduledOccurrenceAt: Date?
         var canceledAt: Date?
         var scheduleAnchor: Date?
         var pausedAt: Date?
@@ -312,6 +313,7 @@ extension CloudSharingService.SharedTaskPayload {
         self.recurrenceRule = task.recurrenceRule
         self.recurrenceTimeRangeRole = task.recurrenceRule.timeRange == nil ? nil : task.recurrenceTimeRangeRole
         self.lastDone = task.lastDone
+        self.lastSatisfiedScheduledOccurrenceAt = task.lastSatisfiedScheduledOccurrenceAt
         self.canceledAt = task.canceledAt
         self.scheduleAnchor = task.scheduleAnchor
         self.pausedAt = task.pausedAt
@@ -391,6 +393,7 @@ extension CloudSharingService.SharedTaskPayload {
             : (recurrenceTimeRangeRole ?? .availability)
         task.interval = Int16(clamping: scheduleMode.usesRoutineCadence ? max(Int(interval), 1) : 1)
         task.lastDone = lastDone
+        task.lastSatisfiedScheduledOccurrenceAt = lastSatisfiedScheduledOccurrenceAt
         task.canceledAt = scheduleMode == .oneOff ? canceledAt : nil
         task.scheduleAnchor = scheduleMode == .oneOff ? lastDone : (scheduleAnchor ?? lastDone)
         task.pausedAt = pausedAt
@@ -457,6 +460,7 @@ private extension RoutineTask {
             recurrenceRule: payload.recurrenceRule,
             recurrenceTimeRangeRole: payload.recurrenceTimeRangeRole ?? .availability,
             lastDone: payload.lastDone,
+            lastSatisfiedScheduledOccurrenceAt: payload.lastSatisfiedScheduledOccurrenceAt,
             canceledAt: payload.canceledAt,
             scheduleAnchor: payload.scheduleAnchor,
             pausedAt: payload.pausedAt,

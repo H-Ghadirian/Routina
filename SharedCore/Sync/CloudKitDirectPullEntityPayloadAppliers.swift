@@ -85,6 +85,7 @@ enum CloudKitDirectPullLogPayloadApplier {
         to log: RoutineLog
     ) {
         log.timestamp = payload.timestamp
+        log.scheduledOccurrenceAt = payload.scheduledOccurrenceAt
         log.taskID = payload.taskID
         log.kind = payload.kind
         log.actualDurationMinutes = payload.actualDurationMinutes
@@ -95,6 +96,7 @@ enum CloudKitDirectPullLogPayloadApplier {
         RoutineLog(
             id: payload.id,
             timestamp: payload.timestamp,
+            scheduledOccurrenceAt: payload.scheduledOccurrenceAt,
             taskID: payload.taskID,
             kind: payload.kind,
             actualDurationMinutes: payload.actualDurationMinutes,

@@ -67,6 +67,7 @@ enum CloudKitDirectPullTaskPayloadApplier {
             ? .availability
             : (payload.recurrenceTimeRangeRole ?? .availability)
         task.lastDone = payload.lastDone
+        task.lastSatisfiedScheduledOccurrenceAt = payload.lastSatisfiedScheduledOccurrenceAt
         task.canceledAt = payload.canceledAt
         task.scheduleAnchor = payload.scheduleAnchor ?? payload.lastDone ?? task.scheduleAnchor
         task.pausedAt = payload.pausedAt
@@ -146,6 +147,7 @@ enum CloudKitDirectPullTaskPayloadApplier {
             recurrenceRule: payload.recurrenceRule,
             recurrenceTimeRangeRole: payload.recurrenceTimeRangeRole ?? .availability,
             lastDone: payload.lastDone,
+            lastSatisfiedScheduledOccurrenceAt: payload.lastSatisfiedScheduledOccurrenceAt,
             canceledAt: payload.canceledAt,
             scheduleAnchor: payload.scheduleAnchor,
             pausedAt: payload.pausedAt,

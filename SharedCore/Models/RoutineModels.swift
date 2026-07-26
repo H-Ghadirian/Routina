@@ -52,6 +52,7 @@ final class RoutineTask {
     var recurrenceRuleStorage: String = ""
     var interval: Int16 = 1
     var lastDone: Date?
+    var lastSatisfiedScheduledOccurrenceAt: Date?
     var canceledAt: Date?
     var scheduleAnchor: Date?
     var pausedAt: Date?
@@ -423,6 +424,7 @@ final class RoutineTask {
         recurrenceRule: RoutineRecurrenceRule? = nil,
         recurrenceTimeRangeRole: RoutineTimeRangeRole = .availability,
         lastDone: Date? = nil,
+        lastSatisfiedScheduledOccurrenceAt: Date? = nil,
         canceledAt: Date? = nil,
         scheduleAnchor: Date? = nil,
         pausedAt: Date? = nil,
@@ -522,6 +524,7 @@ final class RoutineTask {
             : recurrenceTimeRangeRole
         self.interval = Int16(clamping: resolvedScheduleMode.usesRoutineCadence && resolvedTrackingCadenceEnabled ? resolvedRecurrenceRule.approximateIntervalDays : 1)
         self.lastDone = lastDone
+        self.lastSatisfiedScheduledOccurrenceAt = lastSatisfiedScheduledOccurrenceAt
         self.canceledAt = resolvedScheduleMode == .oneOff ? canceledAt : nil
         self.scheduleAnchor = resolvedScheduleMode == .oneOff || !resolvedTrackingCadenceEnabled ? lastDone : (scheduleAnchor ?? lastDone)
         self.pausedAt = pausedAt
@@ -849,6 +852,7 @@ final class RoutineTask {
             recurrenceRule: recurrenceRule,
             recurrenceTimeRangeRole: recurrenceTimeRangeRole,
             lastDone: lastDone,
+            lastSatisfiedScheduledOccurrenceAt: lastSatisfiedScheduledOccurrenceAt,
             canceledAt: canceledAt,
             scheduleAnchor: scheduleAnchor,
             pausedAt: pausedAt,

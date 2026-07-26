@@ -134,6 +134,29 @@ Given a CloudKit task record contains structured recurrence and simplified compa
 When direct pull merges the task on another device
 Then the structured Advanced rule remains authoritative instead of being downgraded to the compatibility cadence
 
+### Untimed Scheduled Routines Can Be Completed Early From Task Detail
+
+Area: Tasks
+Decision links: [0438](../decisions/0438-allow-early-completion-of-untimed-scheduled-routines.md)
+Current behavior: [Tasks](../current-behavior/tasks.md)
+Coverage:
+- `Tests/Shared/TaskDetailFeatureCompletionTests.swift`
+- `Tests/Shared/RoutineAdvancedRecurrenceTests.swift`
+
+Given an untimed monthly routine is scheduled for the 27th
+When the user opens Task Detail and marks it done on the 26th
+Then the completion is recorded on the 26th
+And the satisfied occurrence is recorded as the 27th
+And the next due date remains the 27th of the following month
+
+Given the same routine is completed from an entry point that has not opted into early completion
+When its scheduled occurrence is still in the future
+Then the action remains blocked
+
+Given a routine uses an exact time, a time window, multiple daily occurrences, checklist completion or runout, or a multi-day lifecycle
+When its next occurrence is still in the future
+Then Task Detail does not apply the untimed early-completion behavior
+
 ### Unified Recurrence Draft Preserves Existing Models
 
 Area: Tasks

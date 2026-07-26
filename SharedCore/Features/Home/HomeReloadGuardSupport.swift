@@ -6,6 +6,7 @@ struct HomeSelectedTaskReloadGuard: Equatable {
     var completedChecklistItemIDsStorage: String
     var completedChecklistProgressStartedAt: Date?
     var lastDone: Date?
+    var lastSatisfiedScheduledOccurrenceAt: Date?
     var scheduleAnchor: Date?
 }
 
@@ -22,6 +23,7 @@ enum HomeReloadGuardSupport {
             completedChecklistItemIDsStorage: task.completedChecklistItemIDsStorage,
             completedChecklistProgressStartedAt: task.completedChecklistProgressStartedAt,
             lastDone: task.lastDone,
+            lastSatisfiedScheduledOccurrenceAt: task.lastSatisfiedScheduledOccurrenceAt,
             scheduleAnchor: task.scheduleAnchor
         )
     }
@@ -136,6 +138,7 @@ enum HomeReloadGuardSupport {
             && task.completedChecklistItemIDsStorage == reloadGuard.completedChecklistItemIDsStorage
             && task.completedChecklistProgressStartedAt == reloadGuard.completedChecklistProgressStartedAt
             && task.lastDone == reloadGuard.lastDone
+            && task.lastSatisfiedScheduledOccurrenceAt == reloadGuard.lastSatisfiedScheduledOccurrenceAt
             && task.scheduleAnchor == reloadGuard.scheduleAnchor
     }
 

@@ -144,6 +144,16 @@ enum CloudKitDirectPullRecordParser {
             in: record,
             keys: ["timestamp", "TIMESTAMP", "ztimestamp", "ZTIMESTAMP", "cd_timestamp"]
         )
+        let scheduledOccurrenceAt = CloudKitDirectPullService.dateValue(
+            in: record,
+            keys: [
+                "scheduledOccurrenceAt",
+                "SCHEDULEDOCCURRENCEAT",
+                "zscheduledoccurrenceat",
+                "ZSCHEDULEDOCCURRENCEAT",
+                "cd_scheduledoccurrenceat"
+            ]
+        )
         let kindRawValue = CloudKitDirectPullService.stringValue(
             in: record,
             keys: ["kindRawValue", "kind", "KINDRAWVALUE", "zkindrawvalue", "ZKINDRAWVALUE", "cd_kindrawvalue"]
@@ -172,6 +182,7 @@ enum CloudKitDirectPullRecordParser {
         return LogPayload(
             id: id,
             timestamp: timestamp,
+            scheduledOccurrenceAt: scheduledOccurrenceAt,
             taskID: taskID,
             kind: kindRawValue.flatMap(RoutineLogKind.init(rawValue:)) ?? .completed,
             actualDurationMinutes: RoutineLog.sanitizedActualDurationMinutes(actualDurationMinutes),

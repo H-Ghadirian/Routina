@@ -33,9 +33,15 @@ enum RoutineLogHistory {
 
             let keptTimestamp = keptLog.timestamp ?? .distantPast
             if timestamp > keptTimestamp {
+                if log.scheduledOccurrenceAt == nil {
+                    log.scheduledOccurrenceAt = keptLog.scheduledOccurrenceAt
+                }
                 context.delete(keptLog)
                 keptLogsByKey[key] = log
             } else {
+                if keptLog.scheduledOccurrenceAt == nil {
+                    keptLog.scheduledOccurrenceAt = log.scheduledOccurrenceAt
+                }
                 context.delete(log)
             }
             didDeleteAny = true
@@ -61,7 +67,12 @@ enum RoutineLogHistory {
             }
 
             guard !hasMatchingLog else { continue }
-            context.insert(RoutineLog(timestamp: lastDone, taskID: task.id, kind: .completed))
+            context.insert(RoutineLog(
+                timestamp: lastDone,
+                scheduledOccurrenceAt: task.lastSatisfiedScheduledOccurrenceAt,
+                taskID: task.id,
+                kind: .completed
+            ))
             didInsertAny = true
         }
 
@@ -96,7 +107,12 @@ enum RoutineLogHistory {
         }
 
         guard !hasMatchingLog else { return false }
-        context.insert(RoutineLog(timestamp: lastDone, taskID: taskID, kind: .completed))
+        context.insert(RoutineLog(
+            timestamp: lastDone,
+            scheduledOccurrenceAt: task.lastSatisfiedScheduledOccurrenceAt,
+            taskID: taskID,
+            kind: .completed
+        ))
         try context.save()
         return true
     }
@@ -118,6 +134,7 @@ enum RoutineLogHistory {
         taskID: UUID,
         completedAt: Date,
         referenceDate: Date? = nil,
+        allowEarlyScheduledCompletion: Bool = false,
         context: ModelContext,
         calendar: Calendar = .current,
         sourceDevice: RoutinaDeviceActivitySource? = nil
@@ -133,6 +150,13 @@ enum RoutineLogHistory {
         }
         guard !task.blocksManualCompletionForIncompleteChecklist else {
             return nil
+        }
+        if RoutineDateMath.canCompleteScheduledOccurrenceEarly(
+            for: task,
+            completedAt: completedAt,
+            calendar: calendar
+        ), !allowEarlyScheduledCompletion {
+            return (task, .ignoredAlreadyCompletedToday)
         }
 
         let resolvedCompletedAt: Date
@@ -157,10 +181,17 @@ enum RoutineLogHistory {
                     referenceDate: completedAt,
                     calendar: calendar
                 )
-                guard due != .distantFuture, due <= completedAt else {
+                guard due != .distantFuture else {
                     return (task, .ignoredAlreadyCompletedToday)
                 }
-                resolvedCompletedAt = due
+                if due <= completedAt {
+                    resolvedCompletedAt = due
+                } else if allowEarlyScheduledCompletion,
+                          RoutineDateMath.supportsEarlyScheduledCompletion(for: task) {
+                    resolvedCompletedAt = completedAt
+                } else {
+                    return (task, .ignoredAlreadyCompletedToday)
+                }
             }
         } else {
             resolvedCompletedAt = completedAt
@@ -219,7 +250,12 @@ enum RoutineLogHistory {
                 context: context,
                 calendar: calendar
             )
-            context.insert(RoutineLog(timestamp: resolvedCompletedAt, taskID: taskID, kind: .completed))
+            context.insert(RoutineLog(
+                timestamp: resolvedCompletedAt,
+                scheduledOccurrenceAt: task.lastSatisfiedScheduledOccurrenceAt,
+                taskID: taskID,
+                kind: .completed
+            ))
             try fulfillLinkedTasks(
                 from: task,
                 completedAt: resolvedCompletedAt,
@@ -444,7 +480,12 @@ enum RoutineLogHistory {
             let result = task.advance(completedAt: completionDate, calendar: calendar)
             switch result {
             case .completedRoutine:
-                context.insert(RoutineLog(timestamp: completionDate, taskID: taskID, kind: .completed))
+                context.insert(RoutineLog(
+                    timestamp: completionDate,
+                    scheduledOccurrenceAt: task.lastSatisfiedScheduledOccurrenceAt,
+                    taskID: taskID,
+                    kind: .completed
+                ))
                 let allTasks = try context.fetch(FetchDescriptor<RoutineTask>())
                 try fulfillLinkedTasks(
                     from: task,
@@ -601,8 +642,14 @@ enum RoutineLogHistory {
                 if completedAt > currentTimestamp {
                     existingLog.timestamp = completedAt
                 }
+                existingLog.scheduledOccurrenceAt = task.lastSatisfiedScheduledOccurrenceAt
             } else {
-                context.insert(RoutineLog(timestamp: completedAt, taskID: taskID, kind: .completed))
+                context.insert(RoutineLog(
+                    timestamp: completedAt,
+                    scheduledOccurrenceAt: task.lastSatisfiedScheduledOccurrenceAt,
+                    taskID: taskID,
+                    kind: .completed
+                ))
             }
             let allTasks = try context.fetch(FetchDescriptor<RoutineTask>())
             try fulfillLinkedTasks(
@@ -766,8 +813,14 @@ enum RoutineLogHistory {
                 if doneAt > currentTimestamp {
                     existingLog.timestamp = doneAt
                 }
+                existingLog.scheduledOccurrenceAt = task.lastSatisfiedScheduledOccurrenceAt
             } else {
-                context.insert(RoutineLog(timestamp: doneAt, taskID: taskID, kind: .completed))
+                context.insert(RoutineLog(
+                    timestamp: doneAt,
+                    scheduledOccurrenceAt: task.lastSatisfiedScheduledOccurrenceAt,
+                    taskID: taskID,
+                    kind: .completed
+                ))
             }
             let allTasks = try context.fetch(FetchDescriptor<RoutineTask>())
             try fulfillLinkedTasks(
@@ -1015,16 +1068,17 @@ enum RoutineLogHistory {
             )
         }
 
-        let remainingLatestCompletion = existingLogs
+        let remainingLatestLog = existingLogs
             .filter { log in
                 !matchingLogs.contains(where: { $0.id == log.id })
             }
             .filter { $0.kind.resolvesDoneDate }
-            .compactMap(\.timestamp)
-            .max()
+            .max { ($0.timestamp ?? .distantPast) < ($1.timestamp ?? .distantPast) }
+        let remainingLatestCompletion = remainingLatestLog?.timestamp
 
         if didMatchLastDone {
             task.lastDone = remainingLatestCompletion
+            task.lastSatisfiedScheduledOccurrenceAt = remainingLatestLog?.scheduledOccurrenceAt
         }
 
         if didMatchCanceledAt {
@@ -1093,16 +1147,17 @@ enum RoutineLogHistory {
             )
         }
 
-        let remainingLatestCompletion = existingLogs
+        let remainingLatestLog = existingLogs
             .filter { log in
                 !matchingLogs.contains(where: { $0.id == log.id })
             }
             .filter { $0.kind.resolvesDoneDate }
-            .compactMap(\.timestamp)
-            .max()
+            .max { ($0.timestamp ?? .distantPast) < ($1.timestamp ?? .distantPast) }
+        let remainingLatestCompletion = remainingLatestLog?.timestamp
 
         if didMatchLastDone {
             task.lastDone = remainingLatestCompletion
+            task.lastSatisfiedScheduledOccurrenceAt = remainingLatestLog?.scheduledOccurrenceAt
             task.refreshScheduleAnchorAfterRemovingLatestCompletion(
                 remainingLatestCompletion: remainingLatestCompletion
             )
@@ -1338,6 +1393,7 @@ enum RoutineLogHistory {
             context.insert(
                 RoutineLog(
                     timestamp: fulfillmentDate,
+                    scheduledOccurrenceAt: target.lastSatisfiedScheduledOccurrenceAt,
                     taskID: target.id,
                     kind: .fulfilled,
                     sourceTaskID: sourceTask.id
@@ -1444,11 +1500,12 @@ enum RoutineLogHistory {
             } ?? false
             guard removedMatchesLastDone else { continue }
 
-            let remainingLatestCompletion = remainingLogsByTaskID[task.id, default: []]
+            let remainingLatestLog = remainingLogsByTaskID[task.id, default: []]
                 .filter { $0.kind.resolvesDoneDate }
-                .compactMap(\.timestamp)
-                .max()
+                .max { ($0.timestamp ?? .distantPast) < ($1.timestamp ?? .distantPast) }
+            let remainingLatestCompletion = remainingLatestLog?.timestamp
             task.lastDone = remainingLatestCompletion
+            task.lastSatisfiedScheduledOccurrenceAt = remainingLatestLog?.scheduledOccurrenceAt
             task.refreshScheduleAnchorAfterRemovingLatestCompletion(
                 remainingLatestCompletion: remainingLatestCompletion
             )

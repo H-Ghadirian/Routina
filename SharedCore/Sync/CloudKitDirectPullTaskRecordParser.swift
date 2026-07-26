@@ -135,6 +135,10 @@ enum CloudKitDirectPullTaskRecordParser {
         let voiceNoteDurationSecondsValue = doubleValue(in: record, keys: storageKeys("voiceNoteDurationSeconds"))
         let voiceNoteCreatedAtValue = dateValue(in: record, keys: storageKeys("voiceNoteCreatedAt"))
         let lastDoneValue = dateValue(in: record, keys: ["lastDone", "LASTDONE", "zlastdone", "ZLASTDONE", "cd_lastdone"])
+        let lastSatisfiedScheduledOccurrenceAtValue = dateValue(
+            in: record,
+            keys: storageKeys("lastSatisfiedScheduledOccurrenceAt")
+        )
         let canceledAtValue = dateValue(in: record, keys: ["canceledAt", "CANCELEDAT", "zcanceledat", "ZCANCELEDAT", "cd_canceledat"])
         let scheduleAnchorValue = dateValue(
             in: record,
@@ -273,6 +277,7 @@ enum CloudKitDirectPullTaskRecordParser {
                 || recurrenceRuleValue != nil
                 || recurrenceTimeRangeRoleValue != nil
                 || lastDoneValue != nil
+                || lastSatisfiedScheduledOccurrenceAtValue != nil
                 || canceledAtValue != nil
                 || scheduleAnchorValue != nil
                 || pausedAtValue != nil
@@ -342,6 +347,7 @@ enum CloudKitDirectPullTaskRecordParser {
             recurrenceRule: recurrenceRuleValue,
             recurrenceTimeRangeRole: recurrenceTimeRangeRoleValue,
             lastDone: lastDoneValue,
+            lastSatisfiedScheduledOccurrenceAt: lastSatisfiedScheduledOccurrenceAtValue,
             canceledAt: canceledAtValue,
             scheduleAnchor: scheduleAnchorValue,
             pausedAt: pausedAtValue,

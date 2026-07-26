@@ -5,6 +5,7 @@ import SwiftData
 final class RoutineLog {
     var id: UUID = UUID()
     var timestamp: Date?
+    var scheduledOccurrenceAt: Date?
     var taskID: UUID = UUID()
     var kindRawValue: String = RoutineLogKind.completed.rawValue
     var actualDurationMinutes: Int?
@@ -18,6 +19,7 @@ final class RoutineLog {
     init(
         id: UUID = UUID(),
         timestamp: Date? = nil,
+        scheduledOccurrenceAt: Date? = nil,
         taskID: UUID,
         kind: RoutineLogKind = .completed,
         actualDurationMinutes: Int? = nil,
@@ -25,6 +27,7 @@ final class RoutineLog {
     ) {
         self.id = id
         self.timestamp = timestamp
+        self.scheduledOccurrenceAt = scheduledOccurrenceAt
         self.taskID = taskID
         self.kindRawValue = kind.rawValue
         self.actualDurationMinutes = RoutineLog.sanitizedActualDurationMinutes(actualDurationMinutes)
@@ -35,6 +38,7 @@ final class RoutineLog {
         RoutineLog(
             id: id,
             timestamp: timestamp,
+            scheduledOccurrenceAt: scheduledOccurrenceAt,
             taskID: taskID,
             kind: kind,
             actualDurationMinutes: actualDurationMinutes,

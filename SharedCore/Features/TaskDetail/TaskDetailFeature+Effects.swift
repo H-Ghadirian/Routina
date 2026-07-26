@@ -101,6 +101,7 @@ extension TaskDetailFeature {
                     taskID: taskID,
                     completedAt: completedAt,
                     referenceDate: referenceDate,
+                    allowEarlyScheduledCompletion: true,
                     context: context,
                     calendar: calendar
                 ) else {
@@ -747,6 +748,9 @@ extension TaskDetailFeature {
                 task.trackingNudgesEnabled = scheduleMode.usesRoutineCadence
                     ? trackingCadenceEnabled && trackingNudgesEnabled
                     : true
+                if previousScheduleMode != scheduleMode || previousRecurrenceRule != recurrenceRule {
+                    task.lastSatisfiedScheduledOccurrenceAt = nil
+                }
                 if !scheduleMode.usesRoutineCadence || !task.trackingCadenceEnabled {
                     task.scheduleAnchor = task.lastDone
                     task.interval = 1

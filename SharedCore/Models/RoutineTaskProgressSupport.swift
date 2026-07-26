@@ -706,7 +706,13 @@ extension RoutineTask {
 
     private func recordCompletion(at completedAt: Date, calendar: Calendar = .current) {
         guard shouldUpdateLastDone(with: completedAt) else { return }
+        let satisfiedScheduledOccurrence = RoutineDateMath.scheduledOccurrenceSatisfiedByCompletion(
+            for: self,
+            completedAt: completedAt,
+            calendar: calendar
+        )
         lastDone = completedAt
+        lastSatisfiedScheduledOccurrenceAt = satisfiedScheduledOccurrence
         canceledAt = nil
         activityState = .idle
         ongoingSince = nil

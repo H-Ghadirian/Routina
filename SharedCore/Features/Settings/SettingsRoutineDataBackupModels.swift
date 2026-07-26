@@ -86,6 +86,7 @@ extension SettingsRoutineDataPersistence {
             var recurrenceRule: RoutineRecurrenceRule?
             var recurrenceTimeRangeRole: RoutineTimeRangeRole?
             var lastDone: Date?
+            var lastSatisfiedScheduledOccurrenceAt: Date?
             var canceledAt: Date?
             var scheduleAnchor: Date?
             var pausedAt: Date?
@@ -115,6 +116,7 @@ extension SettingsRoutineDataPersistence {
         struct Log: Codable {
             var id: UUID
             var timestamp: Date?
+            var scheduledOccurrenceAt: Date?
             var taskID: UUID
             var kind: RoutineLogKind?
             var actualDurationMinutes: Int?

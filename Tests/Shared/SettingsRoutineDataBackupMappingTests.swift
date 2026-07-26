@@ -146,6 +146,39 @@ struct SettingsRoutineDataBackupMappingTests {
     }
 
     @Test
+    func earlyScheduledCompletionMappingPreservesActualAndOccurrenceDates() {
+        let completedAt = makeDate("2026-07-26T10:00:00Z")
+        let scheduledOccurrence = makeDate("2026-07-27T00:00:00Z")
+        let task = RoutineTask(
+            name: "Rent",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .monthly(on: [27]),
+            lastDone: completedAt,
+            lastSatisfiedScheduledOccurrenceAt: scheduledOccurrence
+        )
+        let log = RoutineLog(
+            timestamp: completedAt,
+            scheduledOccurrenceAt: scheduledOccurrence,
+            taskID: task.id
+        )
+
+        let backupTask = SettingsRoutineDataBackupMapping.task(
+            task,
+            imageData: nil,
+            imageAttachmentID: nil,
+            voiceNoteData: nil,
+            voiceNoteAttachmentID: nil,
+            includesPressure: false
+        )
+        let backupLog = SettingsRoutineDataBackupMapping.log(log)
+
+        #expect(backupTask.lastDone == completedAt)
+        #expect(backupTask.lastSatisfiedScheduledOccurrenceAt == scheduledOccurrence)
+        #expect(backupLog.timestamp == completedAt)
+        #expect(backupLog.scheduledOccurrenceAt == scheduledOccurrence)
+    }
+
+    @Test
     func placeCheckInMappingChoosesInlineImageOrAttachmentReference() {
         let sessionID = UUID()
         let attachmentID = UUID()

@@ -260,6 +260,61 @@ struct RoutineAdvancedRecurrenceTests {
 
     @MainActor
     @Test
+    func earlyMonthlyCompletionRequiresExplicitDetailPermissionAndPreservesFixedSchedule() throws {
+        let context = makeInMemoryContext()
+        let advanced = RoutineAdvancedRecurrenceRule(
+            frequency: .monthly,
+            interval: 1,
+            startDate: makeDate("2026-07-27T09:00:00Z"),
+            monthDays: [27],
+            timeZoneIdentifier: "UTC",
+            calendar: calendar
+        )
+        let task = makeTask(
+            in: context,
+            name: "Rent",
+            interval: 30,
+            lastDone: nil,
+            emoji: nil,
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .advanced(advanced),
+            scheduleAnchor: advanced.startDate
+        )
+        let paidAt = makeDate("2026-07-26T10:00:00Z")
+        let scheduledOccurrence = makeDate("2026-07-27T09:00:00Z")
+
+        let blocked = try #require(try RoutineLogHistory.advanceTask(
+            taskID: task.id,
+            completedAt: paidAt,
+            context: context,
+            calendar: calendar
+        ))
+        #expect(blocked.result == .ignoredAlreadyCompletedToday)
+        #expect(task.lastDone == nil)
+
+        let completed = try #require(try RoutineLogHistory.advanceTask(
+            taskID: task.id,
+            completedAt: paidAt,
+            allowEarlyScheduledCompletion: true,
+            context: context,
+            calendar: calendar
+        ))
+        let log = try #require(context.fetch(FetchDescriptor<RoutineLog>()).first)
+
+        #expect(completed.result == .completedRoutine)
+        #expect(task.lastDone == paidAt)
+        #expect(task.lastSatisfiedScheduledOccurrenceAt == scheduledOccurrence)
+        #expect(log.timestamp == paidAt)
+        #expect(log.scheduledOccurrenceAt == scheduledOccurrence)
+        #expect(RoutineDateMath.dueDate(
+            for: task,
+            referenceDate: paidAt,
+            calendar: calendar
+        ) == makeDate("2026-08-27T09:00:00Z"))
+    }
+
+    @MainActor
+    @Test
     func hourlyCompletionsRemainSeparateAfterLogDeduplication() throws {
         let context = makeInMemoryContext()
         let advanced = RoutineAdvancedRecurrenceRule(

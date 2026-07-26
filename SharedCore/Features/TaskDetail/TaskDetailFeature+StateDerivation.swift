@@ -123,13 +123,14 @@ extension TaskDetailFeature {
             return calendar.isDate(timestamp, inSameDayAs: completedDay)
         }
 
-        let remainingLatestCompletion = state.logs
-            .filter { $0.kind.resolvesDoneDate }
-            .compactMap(\.timestamp)
-            .max()
+        let remainingLatestLog = state.logs
+            .filter { $0.kind.resolvesDoneDate && $0.timestamp != nil }
+            .max { ($0.timestamp ?? .distantPast) < ($1.timestamp ?? .distantPast) }
+        let remainingLatestCompletion = remainingLatestLog?.timestamp
 
         if removedLatestCompletion {
             state.task.lastDone = remainingLatestCompletion
+            state.task.lastSatisfiedScheduledOccurrenceAt = remainingLatestLog?.scheduledOccurrenceAt
         }
 
         if state.task.canceledAt.map({ calendar.isDate($0, inSameDayAs: completedDay) }) == true {
@@ -153,13 +154,14 @@ extension TaskDetailFeature {
 
         state.logs.removeAll { $0.timestamp == timestamp }
 
-        let remainingLatestCompletion = state.logs
-            .filter { $0.kind.resolvesDoneDate }
-            .compactMap(\.timestamp)
-            .max()
+        let remainingLatestLog = state.logs
+            .filter { $0.kind.resolvesDoneDate && $0.timestamp != nil }
+            .max { ($0.timestamp ?? .distantPast) < ($1.timestamp ?? .distantPast) }
+        let remainingLatestCompletion = remainingLatestLog?.timestamp
 
         if removedLatestCompletion {
             state.task.lastDone = remainingLatestCompletion
+            state.task.lastSatisfiedScheduledOccurrenceAt = remainingLatestLog?.scheduledOccurrenceAt
             state.task.refreshScheduleAnchorAfterRemovingLatestCompletion(
                 remainingLatestCompletion: remainingLatestCompletion
             )
@@ -219,15 +221,16 @@ extension TaskDetailFeature {
         }
 
         if !confirmedRemovalDates.isEmpty {
-            let remainingLatestCompletion = mergedLogs
-                .filter { $0.kind.resolvesDoneDate }
-                .compactMap(\.timestamp)
-                .max()
+            let remainingLatestLog = mergedLogs
+                .filter { $0.kind.resolvesDoneDate && $0.timestamp != nil }
+                .max { ($0.timestamp ?? .distantPast) < ($1.timestamp ?? .distantPast) }
+            let remainingLatestCompletion = remainingLatestLog?.timestamp
             for pendingDate in confirmedRemovalDates {
                 if state.task.lastDone.map({
                     pendingDateMatches(pendingDate, target: $0, for: state.task)
                 }) == true {
                     state.task.lastDone = remainingLatestCompletion
+                    state.task.lastSatisfiedScheduledOccurrenceAt = remainingLatestLog?.scheduledOccurrenceAt
                     state.task.refreshScheduleAnchorAfterRemovingLatestCompletion(
                         remainingLatestCompletion: remainingLatestCompletion
                     )
@@ -266,7 +269,12 @@ extension TaskDetailFeature {
             }) {
                 mergedLogs.append(optimisticLog.detachedCopy())
             } else {
-                mergedLogs.append(RoutineLog(timestamp: pendingDate, taskID: state.task.id, kind: .completed))
+                mergedLogs.append(RoutineLog(
+                    timestamp: pendingDate,
+                    scheduledOccurrenceAt: state.task.lastSatisfiedScheduledOccurrenceAt,
+                    taskID: state.task.id,
+                    kind: .completed
+                ))
             }
         }
 
@@ -284,13 +292,23 @@ extension TaskDetailFeature {
             if timestamp > (state.logs[existingIndex].timestamp ?? .distantPast) {
                 state.logs[existingIndex].timestamp = timestamp
             }
+            if kind.resolvesDoneDate {
+                state.logs[existingIndex].scheduledOccurrenceAt = state.task.lastSatisfiedScheduledOccurrenceAt
+            }
             state.logs.sort {
                 ($0.timestamp ?? .distantPast) > ($1.timestamp ?? .distantPast)
             }
             return
         }
 
-        state.logs.insert(RoutineLog(timestamp: timestamp, taskID: state.task.id, kind: kind), at: 0)
+        state.logs.insert(RoutineLog(
+            timestamp: timestamp,
+            scheduledOccurrenceAt: kind.resolvesDoneDate
+                ? state.task.lastSatisfiedScheduledOccurrenceAt
+                : nil,
+            taskID: state.task.id,
+            kind: kind
+        ), at: 0)
     }
 
     func replaceLocalOccurrenceResolution(

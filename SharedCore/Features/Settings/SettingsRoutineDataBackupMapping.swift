@@ -79,6 +79,7 @@ enum SettingsRoutineDataBackupMapping {
             recurrenceRule: task.recurrenceRule,
             recurrenceTimeRangeRole: task.recurrenceRule.timeRange == nil ? nil : task.recurrenceTimeRangeRole,
             lastDone: task.lastDone,
+            lastSatisfiedScheduledOccurrenceAt: task.lastSatisfiedScheduledOccurrenceAt,
             canceledAt: task.canceledAt,
             scheduleAnchor: task.scheduleAnchor,
             pausedAt: task.pausedAt,
@@ -110,6 +111,7 @@ enum SettingsRoutineDataBackupMapping {
         Backup.Log(
             id: log.id,
             timestamp: log.timestamp,
+            scheduledOccurrenceAt: log.scheduledOccurrenceAt,
             taskID: log.taskID,
             kind: log.kind,
             actualDurationMinutes: log.actualDurationMinutes,

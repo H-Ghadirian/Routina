@@ -188,6 +188,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var recurrenceDayOfMonth: Int?
         var interval: Int16
         var lastDone: Date?
+        var lastSatisfiedScheduledOccurrenceAt: Date?
         var canceledAt: Date?
         var scheduleAnchor: Date?
         var pausedAt: Date?
@@ -241,6 +242,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             recurrenceDayOfMonth = task.recurrenceDayOfMonth
             interval = task.interval
             lastDone = task.lastDone
+            lastSatisfiedScheduledOccurrenceAt = task.lastSatisfiedScheduledOccurrenceAt
             canceledAt = task.canceledAt
             scheduleAnchor = task.scheduleAnchor
             pausedAt = task.pausedAt
@@ -256,6 +258,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
     private struct LogPayload: Encodable {
         var id: UUID
         var timestamp: Date?
+        var scheduledOccurrenceAt: Date?
         var taskID: UUID
         var kindRawValue: String
         var actualDurationMinutes: Int?
@@ -264,6 +267,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         init(log: RoutineLog) {
             id = log.id
             timestamp = log.timestamp
+            scheduledOccurrenceAt = log.scheduledOccurrenceAt
             taskID = log.taskID
             kindRawValue = log.kindRawValue
             actualDurationMinutes = log.actualDurationMinutes

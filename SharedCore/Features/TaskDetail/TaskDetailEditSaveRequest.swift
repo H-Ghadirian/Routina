@@ -340,6 +340,10 @@ extension TaskDetailFeature {
             ? request.trackingCadenceEnabled && request.trackingNudgesEnabled
             : true
 
+        if previousScheduleMode != request.scheduleMode || previousRecurrenceRule != request.recurrenceRule {
+            updatedTask.lastSatisfiedScheduledOccurrenceAt = nil
+        }
+
         if !request.scheduleMode.usesRoutineCadence || !updatedTask.trackingCadenceEnabled {
             updatedTask.scheduleAnchor = updatedTask.lastDone
             updatedTask.interval = 1

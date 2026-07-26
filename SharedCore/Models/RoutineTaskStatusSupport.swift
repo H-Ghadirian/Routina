@@ -74,6 +74,7 @@ extension RoutineTask {
     func cancelOneOff(at canceledAt: Date) -> Bool {
         guard isOneOffTask, !isArchived(), !isCompletedOneOff, !isCanceledOneOff else { return false }
         lastDone = nil
+        lastSatisfiedScheduledOccurrenceAt = nil
         self.canceledAt = canceledAt
         scheduleAnchor = nil
         resetStepProgress()

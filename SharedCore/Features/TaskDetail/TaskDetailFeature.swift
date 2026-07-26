@@ -742,12 +742,18 @@ struct TaskDetailFeature: Reducer {
                     return .none
                 }
             } else {
-                guard RoutineDateMath.canMarkDone(
+                let canMarkDone = RoutineDateMath.canMarkDone(
                     for: state.task,
                     referenceDate: completionDate,
                     calendar: calendar,
                     ignoreArchiveAtReferenceDate: isHistoricalCompletion
-                ) else {
+                )
+                let canCompleteEarly = RoutineDateMath.canCompleteScheduledOccurrenceEarly(
+                    for: state.task,
+                    completedAt: completionDate,
+                    calendar: calendar
+                )
+                guard canMarkDone || canCompleteEarly else {
                     return .none
                 }
             }

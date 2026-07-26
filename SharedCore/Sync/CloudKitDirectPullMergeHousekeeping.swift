@@ -15,7 +15,12 @@ enum CloudKitDirectPullMergeHousekeeping {
                 timestamp: log.timestamp
             )
             if let keptLogID = keptLogIDsByKey[key], keptLogID != log.id {
-                context.delete(log)
+                if let keptLog = logs.first(where: { $0.id == keptLogID }) {
+                    if keptLog.scheduledOccurrenceAt == nil {
+                        keptLog.scheduledOccurrenceAt = log.scheduledOccurrenceAt
+                    }
+                    context.delete(log)
+                }
             } else {
                 keptLogIDsByKey[key] = log.id
             }
