@@ -94,6 +94,7 @@ Coverage:
 - `Tests/Shared/RoutineAdvancedRecurrenceTests.swift`
 - `Tests/Shared/RoutinaQuickAddParserTests.swift`
 - `Tests/Shared/NotificationCoordinatorTests.swift`
+- `Tests/Shared/CloudKitDirectPullRecurrenceTests.swift`
 
 Given a routine has Simple recurrence values and an independent Advanced recurrence draft
 When the user switches between Simple and Advanced
@@ -106,6 +107,10 @@ Then each completion is stored at its scheduled occurrence timestamp, log dedupl
 Given an existing routine has no Advanced recurrence payload
 When it is decoded or edited
 Then it remains a Simple recurrence with its prior behavior
+
+Given a CloudKit task record contains an Advanced structured recurrence and simplified compatibility columns
+When direct pull merges the task on another device
+Then the structured Advanced rule remains authoritative instead of being downgraded to the compatibility cadence
 
 ### Custom Buttons Use Full Visual Hit Areas
 
