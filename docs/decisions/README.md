@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0439](0439-keep-cadence-dependent-controls-after-repeat.md) refines [0058](0058-use-progressive-task-forms.md), [0186](0186-put-item-runout-in-repeat-type.md), [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0431](0431-present-one-progressive-recurrence-composer.md), and [0437](0437-compact-wide-mac-task-forms.md) for stable progressive disclosure:** Mac routine forms keep Completion and Repeat stationary, place cadence-dependent defaults in one collapsed Schedule details row after Repeat, and keep item-runout intervals beside their checklist-item input.
+
 - **[0438](0438-allow-early-completion-of-untimed-scheduled-routines.md) refines [0036](0036-treat-completion-times-as-planner-finish-times.md), [0412](0412-add-advanced-recurrence-beside-simple.md), and [0431](0431-present-one-progressive-recurrence-composer.md) for early fixed-schedule resolution:** Task Detail can complete eligible untimed, single-occurrence scheduled routines before their due date; history keeps the actual completion timestamp while a separate occurrence cursor advances the fixed schedule.
 
 - **[0437](0437-compact-wide-mac-task-forms.md) refines [0180](0180-clarify-schedule-behavior-summary.md), [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0429](0429-keep-task-list-visible-beside-mac-task-forms.md), and [0431](0431-present-one-progressive-recurrence-composer.md) for desktop form hierarchy:** Full Mac task forms use a bounded readable width; the Behavior card keeps routine badge preview beside its related controls; and recurrence segments use natural desktop widths while iOS retains compact fill-width wrapping.
@@ -358,6 +360,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0439](0439-keep-cadence-dependent-controls-after-repeat.md) | Keep Cadence-Dependent Controls After Repeat | Accepted | 2026-07-26 |
 | [0438](0438-allow-early-completion-of-untimed-scheduled-routines.md) | Allow Early Completion of Untimed Scheduled Routines | Accepted | 2026-07-26 |
 | [0437](0437-compact-wide-mac-task-forms.md) | Compact Wide Mac Task Forms | Accepted | 2026-07-26 |
 | [0436](0436-remove-tracking-as-a-user-facing-task-type.md) | Remove Tracking as a User-Facing Task Type | Accepted | 2026-07-26 |

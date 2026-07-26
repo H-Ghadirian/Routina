@@ -320,7 +320,7 @@ struct TaskFormPresentation {
             return "The routine is done when every checklist item is completed."
         case .derivedFromChecklist, .softDerivedFromChecklist:
             return includesDerivedChecklistDueDetail
-                ? "Each item gets its own due date. The routine becomes due when the earliest item is due."
+                ? "Set how often each item becomes due. The earliest due item makes the routine due."
                 : "The routine becomes due when the earliest checklist item is due."
         case .fixedInterval, .softInterval:
             return "Use checklist items for parts you want to tick off before finishing the routine."
@@ -548,7 +548,7 @@ struct TaskFormPresentation {
     }
 
     static func checklistIntervalLabel(for days: Int) -> String {
-        days == 1 ? "Runs out in 1 day" : "Runs out in \(days) days"
+        days == 1 ? "Every day" : "Every \(days) days"
     }
 
     private static func monthlyDueSentence(

@@ -38,6 +38,7 @@ This page summarizes app-wide UI interaction behavior. Decision records explain 
 - [0404](../decisions/0404-temporarily-expand-mac-sidebar-during-search.md)
 - [0407](../decisions/0407-locate-mac-task-detail-sidebar-row.md)
 - [0437](../decisions/0437-compact-wide-mac-task-forms.md)
+- [0439](../decisions/0439-keep-cadence-dependent-controls-after-repeat.md)
 
 ## Current Contract
 

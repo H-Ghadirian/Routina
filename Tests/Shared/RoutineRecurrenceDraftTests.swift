@@ -17,6 +17,13 @@ struct RoutineRecurrenceDraftTests {
     }
 
     @Test
+    func itemRunoutSummaryPointsToTheLocalChecklistTimingControls() {
+        let draft = RoutineRecurrenceDraft(cadence: .itemRunout)
+
+        #expect(draft.composerSummary(calendar: calendar) == "Checklist items set the repeat timing.")
+    }
+
+    @Test
     func compactRulesRoundTripThroughUnifiedDraft() throws {
         let exactTime = RoutineTimeOfDay(hour: 9, minute: 30)
         let window = RoutineTimeRange(

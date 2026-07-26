@@ -192,7 +192,7 @@ Then every stored month and date remains visibly selected and save preserves the
 ### Wide Mac Task Forms Keep Scheduling Controls Grouped
 
 Area: UI, Tasks
-Decision links: [0188](../decisions/0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0429](../decisions/0429-keep-task-list-visible-beside-mac-task-forms.md), [0431](../decisions/0431-present-one-progressive-recurrence-composer.md), [0437](../decisions/0437-compact-wide-mac-task-forms.md)
+Decision links: [0188](../decisions/0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0429](../decisions/0429-keep-task-list-visible-beside-mac-task-forms.md), [0431](../decisions/0431-present-one-progressive-recurrence-composer.md), [0437](../decisions/0437-compact-wide-mac-task-forms.md), [0439](../decisions/0439-keep-cadence-dependent-controls-after-repeat.md)
 Current behavior: [UI](../current-behavior/ui.md), [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/macOS/FormSectionTests.swift`
@@ -212,6 +212,11 @@ Then their segments use natural label widths without forced partial rows, while 
 Given `After done` is selected in the unified recurrence composer
 When the interval stepper already states the complete rolling rule
 Then the composer does not repeat the same rule in a summary line below it
+
+Given a checklist routine changes Repeat from `No schedule` to `Item runout`
+When cadence-dependent settings become relevant
+Then Completion and Repeat remain in place and one collapsed `Schedule details` row appears after Repeat
+And the Checklist composer places the item title, `Every N days` interval, and Add action together when space permits
 
 ### Fixed Recurrence Composes With Time Availability
 

@@ -85,3 +85,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0041 — Do not repeat complete form values as summaries](0041-do-not-repeat-complete-form-values-as-summaries.md)
 - [0042 — Separate early completion time from scheduled occurrence](0042-separate-early-completion-time-from-scheduled-occurrence.md)
 - [0043 — Pair optional actions with their render path](0043-pair-optional-actions-with-their-render-path.md)
+- [0044 — Keep progressive controls after their trigger](0044-keep-progressive-controls-after-their-trigger.md)

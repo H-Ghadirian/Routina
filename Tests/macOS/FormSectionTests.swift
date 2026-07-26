@@ -21,6 +21,21 @@ struct FormSectionTests {
     }
 
     @Test
+    func routineBehaviorKeepsCadenceDependenciesAfterTheRepeatControl() {
+        #expect(
+            TaskFormMacRoutineBehaviorModule.stableOrder
+                == [.completion, .repeatPattern, .scheduleDetails]
+        )
+        #expect(
+            TaskFormMacScheduleDetailsPresentation.summary(
+                duration: .multiDay,
+                timing: .none,
+                behavior: .fixed
+            ) == "Multi-day · Any time · Due"
+        )
+    }
+
+    @Test
     func desktopRecurrenceControlsUseNaturalWidthWithoutForcedRows() {
         #expect(!UnifiedRecurrenceEditorLayout.desktop.fillsSegmentedControlWidth)
         #expect(UnifiedRecurrenceEditorLayout.desktop.cadenceMaximumSegmentsPerRow == nil)

@@ -427,7 +427,7 @@ struct RoutineRecurrenceDraft: Equatable, Sendable {
         case .none:
             return "No automatic schedule. It becomes available again after completion."
         case .itemRunout:
-            return "The next checklist item controls when this routine repeats."
+            return "Checklist items set the repeat timing."
         case .afterCompletion:
             let unit = frequency.unitName(for: interval)
             return "Repeat \(interval) \(unit) after completion."

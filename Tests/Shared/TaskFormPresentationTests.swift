@@ -84,6 +84,10 @@ struct TaskFormPresentationTests {
         #expect(fixed.scheduleModeDescription == "One scheduled routine that finishes after every checklist item is done.")
         #expect(fixed.checklistSectionDescription(includesDerivedChecklistDueDetail: false) == "The routine is done when every checklist item is completed.")
         #expect(runout.showsRepeatControls)
+        #expect(
+            runout.checklistSectionDescription(includesDerivedChecklistDueDetail: true)
+                == "Set how often each item becomes due. The earliest due item makes the routine due."
+        )
         #expect(gentle.showsRepeatControls)
 
         #expect(oneOff.isStepBasedMode)
@@ -152,7 +156,8 @@ struct TaskFormPresentationTests {
         #expect(presentation(recurrenceKind: .monthlyDay).recurrencePatternDescription(includesOptionalExactTimeDetail: false) == "Repeat on the same calendar day each month.")
         #expect(TaskFormPresentation.stepperLabel(unit: .week, value: 1) == "Every week")
         #expect(TaskFormPresentation.stepperLabel(unit: .month, value: 3) == "Every 3 months")
-        #expect(TaskFormPresentation.checklistIntervalLabel(for: 2) == "Runs out in 2 days")
+        #expect(TaskFormPresentation.checklistIntervalLabel(for: 1) == "Every day")
+        #expect(TaskFormPresentation.checklistIntervalLabel(for: 2) == "Every 2 days")
         #expect(TaskFormPresentation.estimatedDurationLabel(for: 125) == "2 hours 5 minutes")
         #expect(TaskFormPresentation.storyPointsLabel(for: 1) == "1 story point")
         #expect(weekly.weeklyRecurrenceTimeHelpText() == "Optional. Leave this off to keep the routine due any time on \(weekdaySymbols[1]).")

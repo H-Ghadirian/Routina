@@ -12,6 +12,30 @@ enum TaskFormMacLayoutMetrics {
     }
 }
 
+enum TaskFormMacRoutineBehaviorModule: CaseIterable, Equatable {
+    case completion
+    case repeatPattern
+    case scheduleDetails
+
+    static var stableOrder: [Self] {
+        allCases
+    }
+}
+
+enum TaskFormMacScheduleDetailsPresentation {
+    static func summary(
+        duration: RoutineDurationMode,
+        timing: TaskFormTimingMode,
+        behavior: RoutineScheduleBehavior?
+    ) -> String {
+        var components = [duration.rawValue, timing.rawValue]
+        if let behavior {
+            components.append(behavior.rawValue)
+        }
+        return components.joined(separator: " · ")
+    }
+}
+
 struct TaskFormMacSectionCard<Content: View, HeaderAccessory: View>: View {
     let title: String
     var subtitle: String?
@@ -514,6 +538,7 @@ struct TaskFormMacBehaviorCard: View {
     let model: TaskFormModel
     let presentation: TaskFormPresentation
     let persianDeadlineText: String?
+    @State private var showsScheduleDetails = false
     @Environment(\.calendar) private var calendar
 
     var body: some View {
@@ -526,6 +551,11 @@ struct TaskFormMacBehaviorCard: View {
                 maxWidth: TaskFormMacLayoutMetrics.maximumBehaviorContentWidth,
                 alignment: .topLeading
             )
+        }
+        .onChange(of: model.usesEffectiveRoutineCadence) { _, isEnabled in
+            if !isEnabled {
+                showsScheduleDetails = false
+            }
         }
     }
 
@@ -575,27 +605,13 @@ struct TaskFormMacBehaviorCard: View {
 
     private var schedulingMainColumn: some View {
         VStack(alignment: .leading, spacing: 18) {
-            scheduleBasicsControls
+            taskTypeControl
 
-            if model.taskType.wrappedValue == .routine {
+            if model.taskType.wrappedValue == .todo {
+                availabilityControl
+            } else {
                 Divider()
-                routineScheduleControls
-                if model.supportsRoutineScheduleBehavior {
-                    scheduleResultPreview
-                        .frame(
-                            maxWidth: TaskFormMacLayoutMetrics.schedulePreviewWidth,
-                            alignment: .leading
-                        )
-                }
-                routineCadenceControls
-            } else if model.taskType.wrappedValue == .record {
-                Divider()
-                recordCompletionControl
-                routineCadenceControls
-            }
-
-            if showsAssumedDoneControl {
-                assumedDoneControl
+                routineBehaviorControls
             }
         }
     }
@@ -608,16 +624,6 @@ struct TaskFormMacBehaviorCard: View {
 
             if model.taskType.wrappedValue == .todo {
                 todoDeadlineControl
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var scheduleBasicsControls: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            taskTypeControl
-            if showsAvailabilityControl {
-                availabilityControl
             }
         }
     }
@@ -638,37 +644,98 @@ struct TaskFormMacBehaviorCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var showsAvailabilityControl: Bool {
-        switch model.taskType.wrappedValue {
-        case .todo:
-            return true
-        case .routine:
-            return presentation.showsRepeatControls && model.supportsRecurrenceAvailability
-        case .record:
-            return presentation.showsRepeatControls && model.supportsRecurrenceAvailability
+    @ViewBuilder
+    private var routineBehaviorControls: some View {
+        ForEach(TaskFormMacRoutineBehaviorModule.stableOrder, id: \.self) { module in
+            switch module {
+            case .completion:
+                routineCompletionControl
+
+            case .repeatPattern:
+                routineCadenceControls
+
+            case .scheduleDetails:
+                if model.usesEffectiveRoutineCadence {
+                    scheduleDetailsDisclosure
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+            }
+        }
+        .animation(.easeInOut(duration: 0.18), value: model.usesEffectiveRoutineCadence)
+    }
+
+    private var scheduleDetailsDisclosure: some View {
+        DisclosureGroup(isExpanded: $showsScheduleDetails) {
+            VStack(alignment: .leading, spacing: 18) {
+                availabilityControl
+
+                if model.supportsRoutineScheduleBehavior {
+                    scheduleBehaviorControl
+                    scheduleResultPreview
+                        .frame(
+                            maxWidth: TaskFormMacLayoutMetrics.schedulePreviewWidth,
+                            alignment: .leading
+                        )
+                }
+
+                if model.supportsGentleNudges {
+                    gentleNudgesControl
+                }
+
+                if showsAssumedDoneControl {
+                    assumedDoneControl
+                }
+            }
+            .padding(.top, 14)
+        } label: {
+            HStack(spacing: 12) {
+                Label("Schedule details", systemImage: "slider.horizontal.3")
+                    .font(.subheadline.weight(.semibold))
+
+                Spacer(minLength: 12)
+
+                Text(scheduleDetailsSummary)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.secondary.opacity(0.06))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+    }
+
+    private var scheduleDetailsSummary: String {
+        TaskFormMacScheduleDetailsPresentation.summary(
+            duration: model.routineDurationMode.wrappedValue,
+            timing: currentTimingMode,
+            behavior: model.supportsRoutineScheduleBehavior
+                ? model.scheduleBehavior.wrappedValue
+                : nil
+        )
+    }
+
+    private var gentleNudgesControl: some View {
+        TaskFormMacControlBlock(title: "Nudges") {
+            Toggle("Nudges", isOn: model.trackingNudgesEnabled)
+                .toggleStyle(.switch)
         }
     }
 
     @ViewBuilder
-    private var routineScheduleControls: some View {
+    private var routineCompletionControl: some View {
         if model.taskType.wrappedValue == .routine {
-            if model.supportsRoutineScheduleBehavior {
-                ViewThatFits(in: .horizontal) {
-                    HStack(alignment: .top, spacing: 22) {
-                        scheduleBehaviorControl
-                            .frame(width: 260, alignment: .leading)
-                        routineFormatControl
-                            .frame(width: 260, alignment: .leading)
-                    }
-
-                    VStack(alignment: .leading, spacing: 18) {
-                        scheduleBehaviorControl
-                        routineFormatControl
-                    }
-                }
-            } else {
-                routineFormatControl
-            }
+            routineFormatControl
+        } else {
+            recordCompletionControl
         }
     }
 
@@ -763,13 +830,6 @@ struct TaskFormMacBehaviorCard: View {
                 weekdayOptions: presentation.weekdayOptions,
                 layout: .desktop
             )
-        }
-
-        if model.supportsGentleNudges {
-            TaskFormMacControlBlock(title: "Nudges") {
-                Toggle("Nudges", isOn: model.trackingNudgesEnabled)
-                    .toggleStyle(.switch)
-            }
         }
 
         if let validationMessage = model.recurrenceValidationMessage {

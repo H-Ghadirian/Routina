@@ -4,21 +4,47 @@ struct TaskFormMacChecklistComposer: View {
     let model: TaskFormModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            TextField("Bread", text: model.checklistItemDraftTitle)
-                .textFieldStyle(.roundedBorder)
-                .onSubmit { model.onAddChecklistItem() }
+        if model.scheduleMode.wrappedValue.isChecklistDrivenMode {
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .center, spacing: 12) {
+                    titleField
+                    intervalControl
+                    addButton
+                }
 
-            if model.scheduleMode.wrappedValue.isChecklistDrivenMode {
-                Stepper(value: model.checklistItemDraftInterval, in: 1...365) {
-                    Text(TaskFormPresentation.checklistIntervalLabel(for: model.checklistItemDraftInterval.wrappedValue))
+                VStack(alignment: .leading, spacing: 10) {
+                    titleField
+                    HStack(spacing: 12) {
+                        intervalControl
+                        addButton
+                    }
                 }
             }
-
-            Button("Add Item") { model.onAddChecklistItem() }
-                .buttonStyle(.bordered)
-                .disabled(RoutineChecklistItem.normalizedTitle(model.checklistItemDraftTitle.wrappedValue) == nil)
+        } else {
+            HStack(alignment: .center, spacing: 12) {
+                titleField
+                addButton
+            }
         }
+    }
+
+    private var titleField: some View {
+        TextField("Bread", text: model.checklistItemDraftTitle)
+            .textFieldStyle(.roundedBorder)
+            .onSubmit { model.onAddChecklistItem() }
+    }
+
+    private var intervalControl: some View {
+        Stepper(value: model.checklistItemDraftInterval, in: 1...365) {
+            Text(TaskFormPresentation.checklistIntervalLabel(for: model.checklistItemDraftInterval.wrappedValue))
+        }
+        .fixedSize()
+    }
+
+    private var addButton: some View {
+        Button("Add Item") { model.onAddChecklistItem() }
+            .buttonStyle(.bordered)
+            .disabled(RoutineChecklistItem.normalizedTitle(model.checklistItemDraftTitle.wrappedValue) == nil)
     }
 }
 
