@@ -282,9 +282,9 @@ extension AddRoutineFeature.State {
             scheduleMode: schedule.scheduleMode,
             recurrenceRule: candidateRecurrenceRule,
             checklistItems: candidateChecklistItems,
-            trackingCadenceEnabled: schedule.scheduleMode.taskType == .record
-                ? basics.trackingCadenceEnabled
-                : true
+            trackingCadenceEnabled: schedule.scheduleMode.taskType == .todo
+                ? true
+                : basics.trackingCadenceEnabled
         )
     }
 }
@@ -367,9 +367,9 @@ extension TaskDetailFeature.State {
             scheduleMode: editScheduleMode,
             recurrenceRule: candidateRecurrenceRule,
             checklistItems: candidateChecklistItems,
-            trackingCadenceEnabled: editScheduleMode.taskType == .record
-                ? editTrackingCadenceEnabled
-                : true
+            trackingCadenceEnabled: editScheduleMode.taskType == .todo
+                ? true
+                : editTrackingCadenceEnabled
         )
     }
 

@@ -844,9 +844,18 @@ private struct StatsTaskQueryDisplay: HomeTaskListDisplay {
     let todoState: TodoState?
 
     init(task: RoutineTask, referenceDate: Date, calendar: Calendar) {
-        let dueDate: Date? = task.isOneOffTask
-            ? task.deadline
-            : RoutineDateMath.upcomingDueDate(for: task, referenceDate: referenceDate, calendar: calendar)
+        let dueDate: Date?
+        if task.isOneOffTask {
+            dueDate = task.deadline
+        } else if task.usesEffectiveRoutineCadence {
+            dueDate = RoutineDateMath.upcomingDueDate(
+                for: task,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+        } else {
+            dueDate = nil
+        }
 
         self.taskID = task.id
         self.name = task.name ?? "Untitled"

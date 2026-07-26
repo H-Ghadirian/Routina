@@ -14,9 +14,6 @@ struct AddRoutineScheduleMutationHandler {
             basics: &basics,
             schedule: &schedule
         )
-        if taskType != .todo {
-            basics.trackingCadenceEnabled = true
-        }
         state.basics = basics
         state.schedule = schedule
         enforceAutoAssumeEligibility(state: &state)

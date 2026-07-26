@@ -2308,6 +2308,27 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func cadenceFreeRowsHaveNoCadenceBadgeOrDailyClassification() {
+        let task = TestTaskDisplay(
+            name: "Visit the library",
+            interval: 1,
+            recurrenceRule: .interval(days: 1),
+            scheduleMode: .fixedInterval,
+            trackingCadenceEnabled: false,
+            isDoneToday: true
+        )
+        let presenter = HomeRoutineDisplayMetadataPresenter(
+            filtering: makeFiltering(),
+            showPersianDates: false,
+            badgeMode: .complete
+        )
+
+        #expect(!task.isDailyRoutine)
+        #expect(presenter.badgeStyle(for: task) == nil)
+        #expect(presenter.rowMetadataText(for: task)?.contains("No cadence") == true)
+    }
+
+    @Test
     func taskRowVisibilityRoundTripsHiddenFields() {
         let visibility = HomeTaskRowVisibility(hiddenFields: [.tags, .icon, .colorBadge, .pressure])
         let rawValue = visibility.storageRawValue
@@ -2403,6 +2424,7 @@ private struct TestTaskDisplay: HomeRoutineMetadataDisplay, Equatable {
     var interval: Int = 7
     var recurrenceRule: RoutineRecurrenceRule = .interval(days: 7)
     var scheduleMode: RoutineScheduleMode = .fixedInterval
+    var trackingCadenceEnabled: Bool = true
     var estimatedDurationMinutes: Int?
     var createdAt: Date?
     var lastDone: Date?

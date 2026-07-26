@@ -48,6 +48,10 @@ enum RoutineDateMath {
             return task.deadline ?? referenceDate
         }
 
+        guard task.usesEffectiveRoutineCadence else {
+            return .distantFuture
+        }
+
         if task.isChecklistDriven,
            let earliestChecklistDueDate = task.nextDueChecklistItem(referenceDate: referenceDate, calendar: calendar)
                 .map({ dueDate(for: $0, referenceDate: referenceDate, calendar: calendar) }) {
@@ -163,6 +167,12 @@ enum RoutineDateMath {
         referenceDate: Date,
         calendar: Calendar = .current
     ) -> Date {
+        if task.isOneOffTask {
+            return dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
+        }
+        guard task.usesEffectiveRoutineCadence else {
+            return .distantFuture
+        }
         if task.recurrenceRule.usesAdvancedModel {
             return dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
         }
@@ -204,6 +214,9 @@ enum RoutineDateMath {
             let dueStart = calendar.startOfDay(for: targetDate)
             return calendar.dateComponents([.day], from: todayStart, to: dueStart).day ?? 0
         }
+        guard task.usesEffectiveRoutineCadence else {
+            return Int.max
+        }
         let todayStart = calendar.startOfDay(for: referenceDate)
         let dueStart = calendar.startOfDay(for: upcomingDueDate(for: task, referenceDate: referenceDate, calendar: calendar))
         return calendar.dateComponents([.day], from: todayStart, to: dueStart).day ?? 0
@@ -232,6 +245,10 @@ enum RoutineDateMath {
 
         if task.isOneOffTask {
             return !task.isCompletedOneOff
+        }
+
+        if !task.usesEffectiveRoutineCadence {
+            return true
         }
 
         if task.isChecklistDriven {
@@ -276,6 +293,12 @@ enum RoutineDateMath {
         calendar: Calendar = .current
     ) -> Bool {
         guard hasCompletionOnCurrentDay else { return false }
+        if task.isOneOffTask {
+            return true
+        }
+        guard task.usesEffectiveRoutineCadence else {
+            return false
+        }
         guard task.recurrenceRule.occursMoreThanOncePerDay else { return true }
         return dueDate(for: task, referenceDate: referenceDate, calendar: calendar) > referenceDate
     }

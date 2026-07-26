@@ -296,6 +296,9 @@ enum DayPlanAllDayTasks {
         on day: Date,
         calendar: Calendar
     ) -> Bool {
+        guard task.usesEffectiveRoutineCadence else {
+            return false
+        }
         switch task.recurrenceRule.kind {
         case .dailyTime:
             return true

@@ -1099,15 +1099,24 @@ struct AddRoutineFeatureTests {
     }
 
     @Test
-    func taskTypeChanged_toTrackingEnablesRequiredCreationCadence() async {
-        let store = TestStore(initialState: makeState()) {
+    func taskTypeChanged_betweenRoutineAndTrackingPreservesNoCadence() async {
+        let store = TestStore(
+            initialState: makeState(
+                basics: AddRoutineBasicsState(trackingCadenceEnabled: false)
+            )
+        ) {
             makeFeature()
         }
 
         await store.send(.taskTypeChanged(.record)) {
             $0.schedule.scheduleMode = .record
-            $0.basics.trackingCadenceEnabled = true
         }
+
+        await store.send(.taskTypeChanged(.routine)) {
+            $0.schedule.scheduleMode = .fixedInterval
+        }
+
+        #expect(!store.state.basics.trackingCadenceEnabled)
     }
 
     @Test

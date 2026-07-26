@@ -24,7 +24,7 @@ struct TaskFormPresentationTests {
     }
 
     @Test @MainActor
-    func creationKindTreatsTrackingAsRepeatingAndToggleSwitchesRoutinePurpose() {
+    func creationKindTreatsTrackingAsRepeatingAndPurposeTogglePreservesNoCadence() {
         var taskType = RoutineTaskType.todo
         var trackingCadenceEnabled = false
         let model = taskFormModel(
@@ -45,10 +45,19 @@ struct TaskFormPresentationTests {
 
         model.tracksRepeatingTask.wrappedValue = true
         #expect(taskType == .record)
-        #expect(trackingCadenceEnabled)
+        #expect(!trackingCadenceEnabled)
+        #expect(!model.supportsAdvancedRecurrence)
+        #expect(!model.supportsRoutineScheduleBehavior)
+        #expect(!model.supportsRecurrenceAvailability)
+        #expect(!model.supportsPlanning)
 
         model.tracksRepeatingTask.wrappedValue = false
         #expect(taskType == .routine)
+        #expect(!trackingCadenceEnabled)
+        #expect(!model.supportsAdvancedRecurrence)
+        #expect(!model.supportsRoutineScheduleBehavior)
+        #expect(!model.supportsRecurrenceAvailability)
+        #expect(model.supportsPlanning)
     }
 
     @Test @MainActor

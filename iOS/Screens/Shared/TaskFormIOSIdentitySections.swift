@@ -86,9 +86,9 @@ struct TaskFormIOSTaskTypeSection: View {
         case .todo:
             return true
         case .routine:
-            return presentation.showsRepeatControls
+            return presentation.showsRepeatControls && model.supportsRecurrenceAvailability
         case .record:
-            return true
+            return model.supportsRecurrenceAvailability
         }
     }
 

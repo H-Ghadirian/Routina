@@ -38,6 +38,9 @@ struct HomeTaskListMetrics<Display: HomeTaskListDisplay> {
         if hasMissedExactTimedOccurrence(for: task) {
             return false
         }
+        if !task.trackingCadenceEnabled {
+            return false
+        }
         if task.isOneOffTask {
             return false
         }

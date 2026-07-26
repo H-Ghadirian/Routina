@@ -475,6 +475,7 @@ extension RoutineTask {
 
         if let lastDone,
            calendar.isDate(lastDone, inSameDayAs: completedAt),
+           usesEffectiveRoutineCadence,
            !recurrenceRule.occursMoreThanOncePerDay {
             resetChecklistProgress()
             return .ignoredAlreadyCompletedToday
@@ -537,6 +538,7 @@ extension RoutineTask {
         if !hasSequentialSteps {
             if let lastDone,
                calendar.isDate(lastDone, inSameDayAs: completedAt),
+               usesEffectiveRoutineCadence,
                !recurrenceRule.occursMoreThanOncePerDay {
                 return .ignoredAlreadyCompletedToday
             }
@@ -548,6 +550,7 @@ extension RoutineTask {
         if completedSteps == 0,
            let lastDone,
            calendar.isDate(lastDone, inSameDayAs: completedAt),
+           usesEffectiveRoutineCadence,
            !recurrenceRule.occursMoreThanOncePerDay {
             return .ignoredAlreadyCompletedToday
         }
@@ -573,7 +576,8 @@ extension RoutineTask {
         guard canBeFulfilledByLinkedTask(referenceDate: fulfilledAt, calendar: calendar) else {
             return false
         }
-        guard recurrenceRule.occursMoreThanOncePerDay
+        guard !usesEffectiveRoutineCadence
+            || recurrenceRule.occursMoreThanOncePerDay
             || (lastDone.map({ !calendar.isDate($0, inSameDayAs: fulfilledAt) }) ?? true) else {
             return false
         }

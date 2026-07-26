@@ -88,6 +88,53 @@ struct RoutineLogHistoryTests {
     }
 
     @Test
+    func cadenceFreeRoutineKeepsSeparateSameDayCompletions() throws {
+        let context = makeInMemoryContext()
+        let calendar = makeTestCalendar()
+        let firstCompletion = makeDate("2026-07-24T10:00:00Z")
+        let secondCompletion = makeDate("2026-07-24T11:00:00Z")
+        let task = makeTask(
+            in: context,
+            name: "Visit the library",
+            interval: 1,
+            lastDone: nil,
+            emoji: "📚",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .interval(days: 1),
+            trackingCadenceEnabled: false
+        )
+
+        let firstResult = try #require(
+            try RoutineLogHistory.advanceTask(
+                taskID: task.id,
+                completedAt: firstCompletion,
+                context: context,
+                calendar: calendar
+            )
+        )
+        let secondResult = try #require(
+            try RoutineLogHistory.advanceTask(
+                taskID: task.id,
+                completedAt: secondCompletion,
+                context: context,
+                calendar: calendar
+            )
+        )
+        let didDeduplicate = try RoutineLogHistory.deduplicateRedundantSameDayLogs(
+            in: context,
+            calendar: calendar
+        )
+        let logs = try context.fetch(FetchDescriptor<RoutineLog>())
+            .filter { $0.taskID == task.id && $0.kind == .completed }
+
+        #expect(firstResult.result == .completedRoutine)
+        #expect(secondResult.result == .completedRoutine)
+        #expect(task.lastDone == secondCompletion)
+        #expect(logs.map(\.timestamp).compactMap { $0 }.sorted() == [firstCompletion, secondCompletion])
+        #expect(!didDeduplicate)
+    }
+
+    @Test
     func deduplicateRedundantSameDayLogs_keepsFulfilledLogsFromDifferentSources() throws {
         let context = makeInMemoryContext()
         let target = makeTask(

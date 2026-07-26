@@ -127,7 +127,7 @@ struct TaskFormIOSScheduleTypeSection: View {
 
     @ViewBuilder
     var body: some View {
-        if model.scheduleMode.wrappedValue.taskType == .routine {
+        if model.supportsRoutineScheduleBehavior {
             Section(header: Text("Due Style")) {
                 RoutinaGlassSegmentedControl(
                     accessibilityLabel: "Due Style",

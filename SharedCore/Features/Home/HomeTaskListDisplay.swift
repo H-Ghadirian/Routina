@@ -98,7 +98,8 @@ extension HomeTaskListDisplay {
     }
 
     var isDailyRoutine: Bool {
-        RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
+        guard trackingCadenceEnabled else { return false }
+        return RoutineTaskDailyRoutineSupport.isDailyRoutineForTaskList(
             isOneOffTask: isOneOffTask,
             scheduleMode: scheduleMode,
             recurrenceRule: recurrenceRule,

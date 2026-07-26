@@ -1077,6 +1077,30 @@ struct RoutineDateMathTests {
         #expect(!task.surfacesSoftIntervalNudges)
         #expect(task.supportsStoredPlanning)
         #expect(
+            RoutineDateMath.dueDate(
+                for: task,
+                referenceDate: completion.addingTimeInterval(1)
+            ) == .distantFuture
+        )
+        #expect(
+            RoutineDateMath.upcomingDueDate(
+                for: task,
+                referenceDate: completion.addingTimeInterval(1)
+            ) == .distantFuture
+        )
+        #expect(
+            RoutineDateMath.daysUntilDue(
+                for: task,
+                referenceDate: completion.addingTimeInterval(1)
+            ) == Int.max
+        )
+        #expect(
+            RoutineDateMath.overdueDays(
+                for: task,
+                referenceDate: completion.addingTimeInterval(1)
+            ) == 0
+        )
+        #expect(
             RoutineDateMath.canMarkDone(
                 for: task,
                 referenceDate: completion.addingTimeInterval(1)

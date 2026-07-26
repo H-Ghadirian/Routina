@@ -294,14 +294,14 @@ extension TaskDetailFeature {
     }
 
     private func resolutionDatesMatch(_ lhs: Date, _ rhs: Date, for task: RoutineTask) -> Bool {
-        if task.recurrenceRule.occursMoreThanOncePerDay {
+        if !task.usesEffectiveRoutineCadence || task.recurrenceRule.occursMoreThanOncePerDay {
             return abs(lhs.timeIntervalSince(rhs)) < 1
         }
         return calendar.isDate(lhs, inSameDayAs: rhs)
     }
 
     private func pendingDateMatches(_ pendingDate: Date, target: Date, for task: RoutineTask) -> Bool {
-        guard task.recurrenceRule.occursMoreThanOncePerDay else {
+        guard !task.usesEffectiveRoutineCadence || task.recurrenceRule.occursMoreThanOncePerDay else {
             return calendar.isDate(pendingDate, inSameDayAs: target)
         }
         if pendingDate == calendar.startOfDay(for: pendingDate) {
@@ -314,7 +314,7 @@ extension TaskDetailFeature {
 extension TaskDetailFeature.State {
     func hasPendingLocalRemoval(on date: Date, calendar: Calendar) -> Bool {
         pendingLocalRemovalDates.contains {
-            guard task.recurrenceRule.occursMoreThanOncePerDay else {
+            guard !task.usesEffectiveRoutineCadence || task.recurrenceRule.occursMoreThanOncePerDay else {
                 return calendar.isDate($0, inSameDayAs: date)
             }
             if $0 == calendar.startOfDay(for: $0) {

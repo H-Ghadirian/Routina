@@ -9,7 +9,7 @@ enum RoutineLogHistory {
     ) throws -> Bool {
         let tasks = try context.fetch(FetchDescriptor<RoutineTask>())
         let occurrenceLevelTaskIDs = Set(tasks.lazy.filter {
-            $0.recurrenceRule.occursMoreThanOncePerDay
+            usesOccurrenceLevelResolution($0)
         }.map(\.id))
         let logs = try context.fetch(FetchDescriptor<RoutineLog>())
         var keptLogsByKey: [RoutineLogDeduplicationKey: RoutineLog] = [:]
@@ -136,7 +136,7 @@ enum RoutineLogHistory {
         }
 
         let resolvedCompletedAt: Date
-        if task.recurrenceRule.usesAdvancedModel {
+        if task.usesEffectiveRoutineCadence && task.recurrenceRule.usesAdvancedModel {
             let due = RoutineDateMath.dueDate(
                 for: task,
                 referenceDate: completedAt,
@@ -155,7 +155,7 @@ enum RoutineLogHistory {
         let hasMatchingLog = existingLogs.contains { log in
             guard let timestamp = log.timestamp else { return false }
             guard log.kind.resolvesDoneDate else { return false }
-            if task.recurrenceRule.occursMoreThanOncePerDay {
+            if usesOccurrenceLevelResolution(task) {
                 return abs(timestamp.timeIntervalSince(resolvedCompletedAt)) < 1
             }
             return calendar.isDate(timestamp, inSameDayAs: resolvedCompletedAt)
@@ -1101,10 +1101,14 @@ enum RoutineLogHistory {
         calendar: Calendar
     ) -> Bool {
         guard let lhs else { return false }
-        if task.recurrenceRule.occursMoreThanOncePerDay {
+        if usesOccurrenceLevelResolution(task) {
             return abs(lhs.timeIntervalSince(rhs)) < 1
         }
         return calendar.isDate(lhs, inSameDayAs: rhs)
+    }
+
+    private static func usesOccurrenceLevelResolution(_ task: RoutineTask) -> Bool {
+        !task.usesEffectiveRoutineCadence || task.recurrenceRule.occursMoreThanOncePerDay
     }
 
     private static func taskTitle(_ task: RoutineTask) -> String {
@@ -1124,7 +1128,7 @@ enum RoutineLogHistory {
             from: logs,
             context: context,
             calendar: calendar,
-            matchesExactOccurrence: task.recurrenceRule.occursMoreThanOncePerDay
+            matchesExactOccurrence: usesOccurrenceLevelResolution(task)
         )
     }
 

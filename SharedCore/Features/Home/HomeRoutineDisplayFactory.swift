@@ -238,6 +238,7 @@ struct HomeRoutineDisplayFactory {
             return task.deadline
         }
         guard !isArchived,
+              task.usesEffectiveRoutineCadence,
               !task.isChecklistDriven,
               task.recurrenceRule.isFixedCalendar || task.recurrenceRule.usesTimeConstraint else {
             return nil

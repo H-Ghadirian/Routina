@@ -568,7 +568,7 @@ struct TaskFormMacBehaviorCard: View {
 
     private var schedulingSupportColumn: some View {
         VStack(alignment: .leading, spacing: 16) {
-            if model.taskType.wrappedValue == .routine {
+            if model.supportsRoutineScheduleBehavior {
                 scheduleResultPreview
             }
 
@@ -664,27 +664,31 @@ struct TaskFormMacBehaviorCard: View {
         case .todo:
             return true
         case .routine:
-            return presentation.showsRepeatControls
+            return presentation.showsRepeatControls && model.supportsRecurrenceAvailability
         case .record:
-            return presentation.showsRepeatControls
+            return presentation.showsRepeatControls && model.supportsRecurrenceAvailability
         }
     }
 
     @ViewBuilder
     private var routineScheduleControls: some View {
         if model.taskType.wrappedValue == .routine {
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .top, spacing: 22) {
-                    scheduleBehaviorControl
-                        .frame(width: 260, alignment: .leading)
-                    routineFormatControl
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
+            if model.supportsRoutineScheduleBehavior {
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .top, spacing: 22) {
+                        scheduleBehaviorControl
+                            .frame(width: 260, alignment: .leading)
+                        routineFormatControl
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
 
-                VStack(alignment: .leading, spacing: 18) {
-                    scheduleBehaviorControl
-                    routineFormatControl
+                    VStack(alignment: .leading, spacing: 18) {
+                        scheduleBehaviorControl
+                        routineFormatControl
+                    }
                 }
+            } else {
+                routineFormatControl
             }
         }
     }

@@ -121,7 +121,7 @@ enum NotificationCoordinator {
             return deadline > referenceDate
         }
 
-        guard task.trackingCadenceEnabled else { return false }
+        guard task.usesEffectiveRoutineCadence else { return false }
 
         if task.recurrenceRule.usesAdvancedModel {
             guard !task.isSoftIntervalRoutine, !task.isOngoing else { return false }

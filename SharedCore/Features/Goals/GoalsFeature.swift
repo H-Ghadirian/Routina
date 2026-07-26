@@ -266,6 +266,8 @@ struct GoalsFeature {
                 self.dueDate = nil
             } else if task.isOneOffTask {
                 self.dueDate = task.deadline
+            } else if !task.usesEffectiveRoutineCadence {
+                self.dueDate = nil
             } else {
                 self.dueDate = RoutineDateMath.dueDate(
                     for: task,

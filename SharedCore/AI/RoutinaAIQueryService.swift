@@ -241,6 +241,9 @@ private extension RoutinaAIQueryService {
         if task.isOneOffTask {
             return task.deadline
         }
+        guard task.usesEffectiveRoutineCadence else {
+            return nil
+        }
         return RoutineDateMath.upcomingDueDate(for: task, referenceDate: now, calendar: calendar)
     }
 

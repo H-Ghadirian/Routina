@@ -191,11 +191,9 @@ extension TaskFormModel {
 
     var tracksRepeatingTask: Binding<Bool> {
         let taskType = taskType
-        let trackingCadenceEnabled = trackingCadenceEnabled
         return Binding(
             get: { taskType.wrappedValue == .record },
             set: { isTracking in
-                trackingCadenceEnabled.wrappedValue = true
                 taskType.wrappedValue = isTracking ? .record : .routine
             }
         )
@@ -307,9 +305,22 @@ extension TaskFormModel {
     }
 
     var supportsAdvancedRecurrence: Bool {
+        usesEffectiveRoutineCadence
+            && !scheduleMode.wrappedValue.isChecklistDrivenMode
+    }
+
+    var usesEffectiveRoutineCadence: Bool {
         (taskType.wrappedValue == .routine || taskType.wrappedValue == .record)
             && scheduleMode.wrappedValue.usesRoutineCadence
-            && !scheduleMode.wrappedValue.isChecklistDrivenMode
+            && trackingCadenceEnabled.wrappedValue
+    }
+
+    var supportsRoutineScheduleBehavior: Bool {
+        taskType.wrappedValue == .routine && usesEffectiveRoutineCadence
+    }
+
+    var supportsRecurrenceAvailability: Bool {
+        taskType.wrappedValue == .todo || usesEffectiveRoutineCadence
     }
 
     var routineRepeatTypeCases: [RoutineRepeatType] {
@@ -556,7 +567,7 @@ extension TaskFormModel {
 
     private var isDailyRoutineDraft: Bool {
         let currentScheduleMode = scheduleMode.wrappedValue
-        guard currentScheduleMode.usesRoutineCadence else { return false }
+        guard usesEffectiveRoutineCadence else { return false }
         if currentScheduleMode.isChecklistDrivenMode {
             return RoutineTaskDailyRoutineSupport.hasDailyRunoutChecklistItem(candidateChecklistItems)
         }

@@ -246,7 +246,15 @@ extension TaskDetailFeature.State {
     }
 
     var canUndoSelectedDate: Bool {
-        !isChecklistDrivenFromStoredItems && isSelectedDateTerminal
+        guard !isChecklistDrivenFromStoredItems, isSelectedDateTerminal else {
+            return false
+        }
+        if !task.isOneOffTask,
+           !task.usesEffectiveRoutineCadence,
+           Calendar.current.isDateInToday(resolvedSelectedDate) {
+            return false
+        }
+        return true
     }
 
     var completionButtonAction: TaskDetailFeature.Action {
@@ -329,6 +337,9 @@ extension TaskDetailFeature.State {
         }
         if task.isOneOffTask {
             return task.deadline
+        }
+        guard task.usesEffectiveRoutineCadence else {
+            return nil
         }
         let referenceDate = Date()
         if isChecklistDrivenFromStoredItems {
@@ -632,6 +643,7 @@ extension TaskDetailFeature.State {
     var daysUntilDueIfActive: Int? {
         guard !task.isArchived() else { return nil }
         guard !task.isSoftIntervalRoutine else { return nil }
+        guard task.isOneOffTask || task.usesEffectiveRoutineCadence else { return nil }
         return RoutineDateMath.daysUntilDue(for: task, referenceDate: Date())
     }
 

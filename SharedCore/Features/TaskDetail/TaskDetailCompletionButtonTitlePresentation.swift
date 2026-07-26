@@ -18,7 +18,11 @@ struct TaskDetailCompletionButtonTitlePresentation {
     var calendar: Calendar = .current
 
     var title: String {
-        if !isChecklistDriven && isSelectedDateTerminal {
+        if !isChecklistDriven,
+           isSelectedDateTerminal,
+           task.isOneOffTask
+            || task.usesEffectiveRoutineCadence
+            || !calendar.isDateInToday(selectedDate) {
             return "Undo"
         }
         if task.isCanceledOneOff {

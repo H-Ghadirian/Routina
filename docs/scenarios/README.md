@@ -44,7 +44,10 @@ Given a routine or Tracking entry is reusable but has no known schedule
 When the user chooses `Repeating` and `Repeat type: None`
 Then the task saves without an effective cadence and remains available immediately after every completion
 And every completion remains in its history
+And multiple completions on the same day remain separate history entries
 And the task is not classified as a cadence-derived daily routine
+And it has no due date, overdue state, cadence badge, or cadence-only form controls
+And switching between Routine and Tracking preserves `Repeat type: None`
 And Task Detail shows no frequency and no cadence-derived notification is scheduled
 
 ### Simple And Advanced Recurrence Stay Independent
