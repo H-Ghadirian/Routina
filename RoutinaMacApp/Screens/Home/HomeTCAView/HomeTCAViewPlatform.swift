@@ -353,7 +353,7 @@ extension HomeTCAView {
                         isPlanFocusStartDisabled: toolbarIsPlanFocusStartDisabled,
                         isBoardInspectorPresented: macBoardInspectorPresentedBinding,
                         taskDetailPanePlacement: $taskDetailPanePlacement,
-                        plannerTaskDetailScheduleSelection: plannerTaskDetailScheduleSelection,
+                        plannerTaskDetailDoneSelection: plannerTaskDetailDoneSelection,
                         placeCheckInSelectedPlaceID: $placeCheckInSelectedPlaceID,
                         placeCheckInSelectedHistoryMarkerID: $placeCheckInSelectedHistoryMarkerID,
                         selectedTaskID: store.selectedTaskID,
@@ -373,7 +373,6 @@ extension HomeTCAView {
                         onOpenDayPlanCalendarListTaskDetails: { item, date in
                             openDayPlanCalendarListTaskDetails(item, on: date)
                         },
-                        plannerProtectedIntervalConflict: plannerProtectedIntervalConflict,
                         onOpenEventDetails: openSavedEvent,
                         onToggleDayPlanCalendarFilters: toggleMacCalendarFilterDetailFromPlanner,
                         onTaskFocusDurationSelected: { duration in
@@ -607,7 +606,7 @@ extension HomeTCAView {
                 normalizeTaskDetailPanePlacement()
             } else {
                 taskDetailPanePlacement = nil
-                plannerTaskDetailScheduleSelection = nil
+                plannerTaskDetailDoneSelection = nil
             }
         }
         .onChange(of: store.macSidebarMode) { _, mode in

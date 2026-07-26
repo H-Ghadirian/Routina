@@ -469,6 +469,12 @@ enum DayPlanVisibleBlocks {
     }
 }
 
+struct DayPlanDoneTaskOccurrence: Equatable {
+    var source: DayPlanTimelineActivitySource
+    var completedAt: Date
+    var durationMinutes: Int
+}
+
 struct DayPlanDayTaskListItem: Identifiable, Equatable {
     enum Section: String, CaseIterable, Equatable {
         case planned
@@ -500,6 +506,7 @@ struct DayPlanDayTaskListItem: Identifiable, Equatable {
     var emoji: String?
     var section: Section = .planned
     var placement: Placement
+    var doneOccurrence: DayPlanDoneTaskOccurrence? = nil
 }
 
 struct DayPlanDayTaskCounts: Equatable {
@@ -571,7 +578,10 @@ enum DayPlanDayTaskListPresentation {
                     title: allDayBlock.title,
                     emoji: allDayBlock.emoji,
                     section: section,
-                    placement: .allDay
+                    placement: .allDay,
+                    doneOccurrence: section == .done
+                        ? completionContext.doneOccurrence(taskID, dayKey: dayKey)
+                        : nil
                 )
             }
             .sorted { lhs, rhs in
@@ -641,7 +651,10 @@ enum DayPlanDayTaskListPresentation {
                     placement: .timed(
                         startMinute: block.startMinute,
                         durationMinutes: block.durationMinutes
-                    )
+                    ),
+                    doneOccurrence: section == .done
+                        ? completionContext.doneOccurrence(block.taskID, dayKey: dayKey)
+                        : nil
                 )
             }
             .sorted { lhs, rhs in
@@ -672,7 +685,14 @@ enum DayPlanDayTaskListPresentation {
                     placement: .timed(
                         startMinute: block.startMinute,
                         durationMinutes: block.durationMinutes
-                    )
+                    ),
+                    doneOccurrence: activity.source.isSyntheticAssumedDone
+                        ? nil
+                        : DayPlanDoneTaskOccurrence(
+                            source: activity.source,
+                            completedAt: block.updatedAt,
+                            durationMinutes: block.durationMinutes
+                        )
                 )
             }
 
@@ -767,6 +787,7 @@ private struct DayPlanDayTaskListCompletionContext {
     private var completedDayKeysByTaskID: [UUID: Set<String>] = [:]
     private var directCompletedDayKeysByTaskID: [UUID: Set<String>] = [:]
     private var fulfillmentSourceTaskIDsByTaskIDAndDayKey: [UUID: [String: Set<UUID>]] = [:]
+    private var doneOccurrencesByTaskIDAndDayKey: [UUID: [String: DayPlanDoneTaskOccurrence]] = [:]
 
     init(
         tasks: [RoutineTask],
@@ -775,7 +796,21 @@ private struct DayPlanDayTaskListCompletionContext {
     ) {
         for task in tasks {
             tasksByID[task.id] = task
-            recordCompletion(task.lastDone, taskID: task.id, calendar: calendar)
+            if let lastDone = task.lastDone,
+               let dayKey = recordCompletion(lastDone, taskID: task.id, calendar: calendar) {
+                recordDoneOccurrence(
+                    DayPlanDoneTaskOccurrence(
+                        source: .taskLastDone,
+                        completedAt: lastDone,
+                        durationMinutes: effectiveDurationMinutes(
+                            actualDurationMinutes: task.actualDurationMinutes,
+                            task: task
+                        )
+                    ),
+                    taskID: task.id,
+                    dayKey: dayKey
+                )
+            }
         }
 
         for log in logs where log.kind.resolvesDoneDate {
@@ -785,6 +820,20 @@ private struct DayPlanDayTaskListCompletionContext {
             switch log.kind {
             case .completed:
                 directCompletedDayKeysByTaskID[log.taskID, default: []].insert(dayKey)
+                if let timestamp = log.timestamp {
+                    recordDoneOccurrence(
+                        DayPlanDoneTaskOccurrence(
+                            source: .log(log.id),
+                            completedAt: timestamp,
+                            durationMinutes: effectiveDurationMinutes(
+                                actualDurationMinutes: log.actualDurationMinutes,
+                                task: tasksByID[log.taskID]
+                            )
+                        ),
+                        taskID: log.taskID,
+                        dayKey: dayKey
+                    )
+                }
             case .fulfilled:
                 guard let sourceTaskID = log.sourceTaskID else { break }
                 fulfillmentSourceTaskIDsByTaskIDAndDayKey[log.taskID, default: [:]][dayKey, default: []]
@@ -845,6 +894,13 @@ private struct DayPlanDayTaskListCompletionContext {
         fulfillmentSourceTaskIDsByTaskIDAndDayKey[taskID]?[dayKey] ?? []
     }
 
+    func doneOccurrence(
+        _ taskID: UUID,
+        dayKey: String
+    ) -> DayPlanDoneTaskOccurrence? {
+        doneOccurrencesByTaskIDAndDayKey[taskID]?[dayKey]
+    }
+
     func sectionForPlannerBackedTask(
         _ taskID: UUID,
         dayKey: String
@@ -856,6 +912,27 @@ private struct DayPlanDayTaskListCompletionContext {
             return nil
         }
         return .planned
+    }
+
+    private mutating func recordDoneOccurrence(
+        _ occurrence: DayPlanDoneTaskOccurrence,
+        taskID: UUID,
+        dayKey: String
+    ) {
+        if let current = doneOccurrencesByTaskIDAndDayKey[taskID]?[dayKey],
+           occurrence.completedAt < current.completedAt {
+            return
+        }
+        doneOccurrencesByTaskIDAndDayKey[taskID, default: [:]][dayKey] = occurrence
+    }
+
+    private func effectiveDurationMinutes(
+        actualDurationMinutes: Int?,
+        task: RoutineTask?
+    ) -> Int {
+        actualDurationMinutes
+            ?? task?.estimatedDurationMinutes
+            ?? DayPlanBlock.minimumDurationMinutes * 2
     }
 }
 

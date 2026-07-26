@@ -2646,15 +2646,6 @@ private struct DayPlanTimelinePanelContentView: View {
                     onOpenTaskDetails != nil && currentTaskIDs.contains(taskID)
                 },
                 onOpenDayTaskDetails: { item, date in
-                    if let task = currentTasks.first(where: { $0.id == item.taskID }) {
-                        planner.prepareTaskDetailSchedule(
-                            for: task,
-                            item: item,
-                            on: date,
-                            calendar: calendar,
-                            context: modelContext
-                        )
-                    }
                     if let onOpenCalendarListTaskDetails {
                         onOpenCalendarListTaskDetails(item, date)
                     } else {

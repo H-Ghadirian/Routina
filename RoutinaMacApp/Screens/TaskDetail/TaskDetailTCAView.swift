@@ -10,11 +10,9 @@ struct TaskDetailSidebarLocation: Equatable {
     }
 }
 
-struct TaskDetailPlannerScheduleContext {
+struct TaskDetailDoneOccurrenceContext {
     let date: Date
-    let sourcePlacement: DayPlanDayTaskListItem.Placement
-    let planner: DayPlanPlannerState
-    let protectedIntervalConflict: (Date, Int, Int) -> String?
+    let occurrence: DayPlanDoneTaskOccurrence
 }
 
 struct TaskDetailTCAView: View {
@@ -44,7 +42,7 @@ struct TaskDetailTCAView: View {
     let onTagFilterSelected: ((String) -> Void)?
     let sidebarLocation: TaskDetailSidebarLocation?
     let onLocateInSidebar: (() -> Void)?
-    let plannerScheduleContext: TaskDetailPlannerScheduleContext?
+    let doneOccurrenceContext: TaskDetailDoneOccurrenceContext?
     @Dependency(\.appSettingsClient) private var appSettingsClient
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -120,7 +118,7 @@ struct TaskDetailTCAView: View {
         onTagFilterSelected: ((String) -> Void)? = nil,
         sidebarLocation: TaskDetailSidebarLocation? = nil,
         onLocateInSidebar: (() -> Void)? = nil,
-        plannerScheduleContext: TaskDetailPlannerScheduleContext? = nil
+        doneOccurrenceContext: TaskDetailDoneOccurrenceContext? = nil
     ) {
         self.store = store
         self.showsPrincipalToolbarTitle = showsPrincipalToolbarTitle
@@ -135,7 +133,7 @@ struct TaskDetailTCAView: View {
         self.onTagFilterSelected = onTagFilterSelected
         self.sidebarLocation = sidebarLocation
         self.onLocateInSidebar = onLocateInSidebar
-        self.plannerScheduleContext = plannerScheduleContext
+        self.doneOccurrenceContext = doneOccurrenceContext
 
         let taskID = store.task.id
         _focusSessions = Query(
@@ -296,7 +294,7 @@ struct TaskDetailTCAView: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 14) {
                 todoHeaderSection
-                plannerScheduleSection
+                doneOccurrenceSection
                 notificationDisabledWarningSection
                 if shouldShowCommentsSection {
                     commentsSection
@@ -517,7 +515,7 @@ struct TaskDetailTCAView: View {
         return ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
                 routineHeaderSection
-                plannerScheduleSection
+                doneOccurrenceSection
                 notificationDisabledWarningSection
                 if shouldShowFocusSessionSection {
                     focusSessionSection
@@ -564,15 +562,14 @@ struct TaskDetailTCAView: View {
     }
 
     @ViewBuilder
-    private var plannerScheduleSection: some View {
-        if let plannerScheduleContext {
-            TaskDetailPlannerScheduleSection(
+    private var doneOccurrenceSection: some View {
+        if let doneOccurrenceContext {
+            TaskDetailDoneOccurrenceSection(
                 task: store.task,
-                date: plannerScheduleContext.date,
-                sourcePlacement: plannerScheduleContext.sourcePlacement,
-                planner: plannerScheduleContext.planner,
-                protectedIntervalConflict: plannerScheduleContext.protectedIntervalConflict
+                date: doneOccurrenceContext.date,
+                occurrence: doneOccurrenceContext.occurrence
             )
+            .id(doneOccurrenceContext.occurrence.completedAt)
         }
     }
 
@@ -1583,17 +1580,53 @@ struct TaskDetailTCAView: View {
 
 }
 
-private struct TaskDetailPlannerScheduleSection: View {
+private struct TaskDetailDoneOccurrenceSection: View {
     @Environment(\.calendar) private var calendar
     @Environment(\.modelContext) private var modelContext
     let task: RoutineTask
     let date: Date
-    let sourcePlacement: DayPlanDayTaskListItem.Placement
-    @ObservedObject var planner: DayPlanPlannerState
-    let protectedIntervalConflict: (Date, Int, Int) -> String?
-    @State private var validationMessage: String?
+    let occurrence: DayPlanDoneTaskOccurrence
+    @State private var startMinute: Int
+    @State private var durationMinutes: Int
+    @State private var feedbackMessage: String?
+    @State private var didSave = false
 
     private let durationPresets = [15, 30, 45, 60, 90, 120]
+
+    init(
+        task: RoutineTask,
+        date: Date,
+        occurrence: DayPlanDoneTaskOccurrence
+    ) {
+        self.task = task
+        self.date = date
+        self.occurrence = occurrence
+
+        let calendar = Calendar.current
+        let completionComponents = calendar.dateComponents(
+            [.hour, .minute],
+            from: occurrence.completedAt
+        )
+        let completionMinute = ((completionComponents.hour ?? 0) * 60)
+            + (completionComponents.minute ?? 0)
+        let initialDuration = DayPlanBlock.clampedDuration(
+            occurrence.durationMinutes,
+            startMinute: 0,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
+        let initialStart = DayPlanBlock.clampedStartMinute(
+            max(0, completionMinute - initialDuration)
+        )
+
+        _startMinute = State(initialValue: initialStart)
+        _durationMinutes = State(
+            initialValue: DayPlanBlock.clampedDuration(
+                initialDuration,
+                startMinute: initialStart,
+                minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+            )
+        )
+    }
 
     var body: some View {
         TaskDetailSectionCardView(
@@ -1618,7 +1651,7 @@ private struct TaskDetailPlannerScheduleSection: View {
                     step: 15
                 ) {
                     LabeledContent("Duration") {
-                        Text(DayPlanFormatting.durationText(planner.durationMinutes))
+                        Text(DayPlanFormatting.durationText(durationMinutes))
                             .fontWeight(.semibold)
                             .monospacedDigit()
                     }
@@ -1626,52 +1659,51 @@ private struct TaskDetailPlannerScheduleSection: View {
 
                 durationPresetButtons
 
-                Text("Ends \(endTimeText)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                Text("Starts at \(startTimeText) · Ends \(endTimeText)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
-                if let conflictingBlock = planner.conflictingBlock {
-                    scheduleWarning(
-                        "Overlaps \(conflictingBlock.titleSnapshot)",
-                        systemImage: "exclamationmark.triangle.fill"
+                if let feedbackMessage {
+                    Label(
+                        feedbackMessage,
+                        systemImage: didSave ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
                     )
+                    .font(.caption)
+                    .foregroundStyle(didSave ? Color.green : Color.orange)
+                    .fixedSize(horizontal: false, vertical: true)
                 }
 
-                if let validationMessage {
-                    scheduleWarning(
-                        validationMessage,
-                        systemImage: "exclamationmark.triangle.fill"
-                    )
+                Button("Save Time & Duration") {
+                    saveCompletedTime()
                 }
-
-                actionRow
+                .buttonStyle(.borderedProminent)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .onChange(of: planner.startMinute) { _, _ in
-            validationMessage = nil
+        .onChange(of: startMinute) { _, _ in
+            clearFeedback()
         }
-        .onChange(of: planner.durationMinutes) { _, _ in
-            validationMessage = nil
+        .onChange(of: durationMinutes) { _, _ in
+            clearFeedback()
         }
     }
 
     private var header: some View {
         HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "calendar.badge.clock")
+            Image(systemName: "checkmark.circle.fill")
                 .font(.headline)
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(Color.green)
                 .frame(width: 28, height: 28)
-                .background(Color.accentColor.opacity(0.10), in: RoundedRectangle(cornerRadius: 7))
+                .background(Color.green.opacity(0.10), in: RoundedRectangle(cornerRadius: 7))
 
             VStack(alignment: .leading, spacing: 3) {
-                Text("Schedule this day")
+                Text("Done this day")
                     .font(.headline)
 
                 Text(date.formatted(.dateTime.weekday(.wide).month(.abbreviated).day().year()))
                     .font(.subheadline.weight(.semibold))
 
-                Text(scheduleContextText)
+                Text("Set when this completed work started and how long it took.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -1685,80 +1717,39 @@ private struct TaskDetailPlannerScheduleSection: View {
             HStack(spacing: 7) {
                 ForEach(durationPresets, id: \.self) { minutes in
                     Button(DayPlanFormatting.durationText(minutes)) {
-                        planner.durationMinutes = DayPlanBlock.clampedDuration(
+                        durationMinutes = DayPlanBlock.clampedDuration(
                             minutes,
-                            startMinute: planner.startMinute
+                            startMinute: startMinute,
+                            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
                         )
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
-                    .tint(planner.durationMinutes == minutes ? Color.accentColor : Color.secondary)
+                    .tint(durationMinutes == minutes ? Color.accentColor : Color.secondary)
                 }
             }
             .padding(.vertical, 1)
         }
     }
 
-    private var actionRow: some View {
-        HStack(spacing: 10) {
-            Button(existingBlock == nil ? "Add to Schedule" : "Save Schedule") {
-                saveSchedule()
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(planner.conflictingBlock != nil)
-
-            if let existingBlock {
-                Button("Remove", role: .destructive) {
-                    planner.deleteBlock(
-                        existingBlock.id,
-                        calendar: calendar,
-                        context: modelContext
-                    )
-                    planner.selectTask(task)
-                    validationMessage = nil
-                }
-                .buttonStyle(.bordered)
-            }
-        }
-    }
-
-    private var existingBlock: DayPlanBlock? {
-        guard
-            let block = planner.selectedBlock,
-            block.taskID == task.id,
-            block.dayKey == DayPlanStorage.dayKey(for: date, calendar: calendar)
-        else {
-            return nil
-        }
-        return block
-    }
-
-    private var scheduleContextText: String {
-        if existingBlock != nil {
-            return "Edit this day’s placement without changing the task’s recurring schedule."
-        }
-
-        switch sourcePlacement {
-        case .anyTime:
-            return "Choose a time and duration for this day only."
-        case .allDay:
-            return "Add a timed placement for this day without changing other days."
-        case .timed:
-            return "Choose a time and duration for this day only."
-        }
-    }
-
     private var durationRange: ClosedRange<Int> {
-        let lowerBound = min(
-            DayPlanBlock.minimumDurationMinutes,
-            max(DayPlanBlock.minimumStoredDurationMinutes, planner.durationMinutes)
+        DayPlanBlock.minimumStoredDurationMinutes...max(
+            DayPlanBlock.minimumStoredDurationMinutes,
+            DayPlanBlock.minutesPerDay - startMinute
         )
-        return lowerBound...planner.maximumDurationForStart
+    }
+
+    private var startTimeText: String {
+        DayPlanFormatting.timeText(
+            for: startMinute,
+            on: date,
+            calendar: calendar
+        )
     }
 
     private var endTimeText: String {
         DayPlanFormatting.timeText(
-            for: planner.startMinute + planner.durationMinutes,
+            for: startMinute + durationMinutes,
             on: date,
             calendar: calendar
         )
@@ -1766,12 +1757,12 @@ private struct TaskDetailPlannerScheduleSection: View {
 
     private var durationBinding: Binding<Int> {
         Binding(
-            get: { planner.durationMinutes },
+            get: { durationMinutes },
             set: { minutes in
-                planner.durationMinutes = DayPlanBlock.clampedDuration(
+                durationMinutes = DayPlanBlock.clampedDuration(
                     minutes,
-                    startMinute: planner.startMinute,
-                    minimumDurationMinutes: durationRange.lowerBound
+                    startMinute: startMinute,
+                    minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
                 )
             }
         )
@@ -1783,44 +1774,40 @@ private struct TaskDetailPlannerScheduleSection: View {
                 let startOfDay = calendar.startOfDay(for: date)
                 return calendar.date(
                     byAdding: .minute,
-                    value: planner.startMinute,
+                    value: startMinute,
                     to: startOfDay
                 ) ?? startOfDay
             },
             set: { newDate in
                 let components = calendar.dateComponents([.hour, .minute], from: newDate)
                 let minute = ((components.hour ?? 0) * 60) + (components.minute ?? 0)
-                planner.startMinute = DayPlanBlock.clampedStartMinute(minute)
-                planner.clampDurationForCurrentStart()
+                startMinute = DayPlanBlock.clampedStartMinute(minute)
+                durationMinutes = DayPlanBlock.clampedDuration(
+                    durationMinutes,
+                    startMinute: startMinute,
+                    minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+                )
             }
         )
     }
 
-    @ViewBuilder
-    private func scheduleWarning(_ text: String, systemImage: String) -> some View {
-        Label(text, systemImage: systemImage)
-            .font(.caption)
-            .foregroundStyle(.orange)
-            .fixedSize(horizontal: false, vertical: true)
+    private func clearFeedback() {
+        feedbackMessage = nil
+        didSave = false
     }
 
-    private func saveSchedule() {
-        guard calendar.isDate(planner.selectedDate, inSameDayAs: date) else {
-            validationMessage = "Return to this date in Calendar before saving."
-            return
-        }
-        guard planner.conflictingBlock == nil else { return }
-        if let protectedTitle = protectedIntervalConflict(
-            date,
-            planner.startMinute,
-            planner.durationMinutes
-        ) {
-            validationMessage = "Overlaps \(protectedTitle)."
-            return
-        }
-
-        planner.selectedTaskID = task.id
-        planner.commitBlock(task: task, calendar: calendar, context: modelContext)
-        validationMessage = nil
+    private func saveCompletedTime() {
+        didSave = DayPlanTimelineTasks.updateCompletedActivity(
+            occurrence,
+            taskID: task.id,
+            on: date,
+            startMinute: startMinute,
+            durationMinutes: durationMinutes,
+            context: modelContext,
+            calendar: calendar
+        )
+        feedbackMessage = didSave
+            ? "Updated this completion."
+            : "Couldn’t update this completion. Try again."
     }
 }

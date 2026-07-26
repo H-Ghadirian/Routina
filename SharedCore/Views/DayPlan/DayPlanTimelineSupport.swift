@@ -765,6 +765,113 @@ enum DayPlanTimelineTasks {
         }
     }
 
+    @MainActor
+    @discardableResult
+    static func updateCompletedActivity(
+        _ occurrence: DayPlanDoneTaskOccurrence,
+        taskID: UUID,
+        on date: Date,
+        startMinute: Int,
+        durationMinutes: Int,
+        context: ModelContext,
+        calendar: Calendar
+    ) -> Bool {
+        let clampedStartMinute = DayPlanBlock.clampedStartMinute(startMinute)
+        let clampedDurationMinutes = DayPlanBlock.clampedDuration(
+            durationMinutes,
+            startMinute: clampedStartMinute,
+            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+        )
+        let endMinute = clampedStartMinute + clampedDurationMinutes
+        var targetCompletedAt = timestamp(
+            on: date,
+            startMinute: min(endMinute, DayPlanBlock.minutesPerDay - 1),
+            calendar: calendar
+        )
+        if endMinute == DayPlanBlock.minutesPerDay,
+           let nextDay = calendar.date(
+               byAdding: .day,
+               value: 1,
+               to: calendar.startOfDay(for: date)
+           ) {
+            targetCompletedAt = nextDay.addingTimeInterval(-1)
+        }
+
+        do {
+            let requestedTaskID = taskID
+            var taskDescriptor = FetchDescriptor<RoutineTask>()
+            taskDescriptor.predicate = #Predicate<RoutineTask> { task in
+                task.id == requestedTaskID
+            }
+            guard let task = try context.fetch(taskDescriptor).first else {
+                return false
+            }
+
+            var logDescriptor = FetchDescriptor<RoutineLog>()
+            logDescriptor.predicate = #Predicate<RoutineLog> { log in
+                log.taskID == requestedTaskID
+            }
+            let taskLogs = try context.fetch(logDescriptor)
+            let completedLog: RoutineLog
+
+            switch occurrence.source {
+            case let .log(logID):
+                guard let log = taskLogs.first(where: {
+                    $0.id == logID && $0.kind == .completed
+                }) else {
+                    return false
+                }
+                completedLog = log
+
+            case .taskLastDone:
+                completedLog = upsertFallbackLog(
+                    taskID: task.id,
+                    kind: .completed,
+                    sourceTimestamp: occurrence.completedAt,
+                    targetTimestamp: targetCompletedAt,
+                    logs: taskLogs,
+                    context: context
+                )
+
+            case .assumedDone, .taskCanceledAt:
+                return false
+            }
+
+            let previousDurationMinutes = completedLog.actualDurationMinutes
+            completedLog.timestamp = targetCompletedAt
+            completedLog.actualDurationMinutes = clampedDurationMinutes
+            if task.isOneOffTask {
+                task.actualDurationMinutes = clampedDurationMinutes
+            }
+            if previousDurationMinutes != clampedDurationMinutes {
+                task.appendChangeLogEntry(
+                    completionTimeSpentChangeEntry(
+                        previousDurationMinutes: previousDurationMinutes,
+                        durationMinutes: clampedDurationMinutes
+                    )
+                )
+            }
+
+            synchronizeTaskActivityDates(
+                for: task,
+                movedKind: .completed,
+                sourceTimestamp: occurrence.completedAt,
+                targetTimestamp: targetCompletedAt,
+                movedLogID: completedLog.id,
+                logs: taskLogs,
+                calendar: calendar
+            )
+
+            try context.save()
+            WidgetStatsService.refreshAndReload(using: context)
+            NotificationCenter.default.postRoutineDidUpdate()
+            return true
+        } catch {
+            NSLog("Failed to update completed timeline activity: \(error.localizedDescription)")
+            return false
+        }
+    }
+
     private static func latestActivity(
         for task: RoutineTask,
         logs: [RoutineLog],
@@ -862,6 +969,18 @@ enum DayPlanTimelineTasks {
             value: DayPlanBlock.clampedStartMinute(startMinute),
             to: startOfDay
         ) ?? startOfDay
+    }
+
+    private static func completionTimeSpentChangeEntry(
+        previousDurationMinutes: Int?,
+        durationMinutes: Int
+    ) -> RoutineTaskChangeLogEntry {
+        RoutineTaskChangeLogEntry(
+            kind: previousDurationMinutes == nil ? .timeSpentAdded : .timeSpentChanged,
+            previousValue: previousDurationMinutes.map(String.init),
+            newValue: String(durationMinutes),
+            durationMinutes: durationMinutes
+        )
     }
 
     @MainActor

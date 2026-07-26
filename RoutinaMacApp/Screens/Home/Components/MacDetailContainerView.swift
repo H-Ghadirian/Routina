@@ -14,10 +14,10 @@ enum MacDetailContainerSizing {
     static let boardInspectorWidth: CGFloat = 400
 }
 
-struct MacPlannerTaskDetailScheduleSelection: Equatable {
+struct MacPlannerDoneTaskDetailSelection: Equatable {
     let taskID: UUID
     let date: Date
-    let sourcePlacement: DayPlanDayTaskListItem.Placement
+    let occurrence: DayPlanDoneTaskOccurrence
 }
 
 enum MacHomeDetailAnimation {
@@ -66,7 +66,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     let isPlanFocusStartDisabled: Bool
     @Binding var isBoardInspectorPresented: Bool
     @Binding var taskDetailPanePlacement: MacTaskDetailPanePlacement?
-    let plannerTaskDetailScheduleSelection: MacPlannerTaskDetailScheduleSelection?
+    let plannerTaskDetailDoneSelection: MacPlannerDoneTaskDetailSelection?
     @Binding var placeCheckInSelectedPlaceID: UUID?
     @Binding var placeCheckInSelectedHistoryMarkerID: PlaceCheckInHistoryMapMarker.ID?
     let selectedTaskID: UUID?
@@ -80,7 +80,6 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
     let onSelectDayPlanUnplannedCompletedDate: (Date) -> Void
     let onOpenDayPlanTaskDetails: (UUID) -> Void
     let onOpenDayPlanCalendarListTaskDetails: (DayPlanDayTaskListItem, Date) -> Void
-    let plannerProtectedIntervalConflict: (Date, Int, Int) -> String?
     let onOpenEventDetails: (UUID) -> Void
     let onToggleDayPlanCalendarFilters: () -> Void
     let onTaskFocusDurationSelected: (TimeInterval) -> Void
@@ -708,7 +707,7 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
                 onTagFilterSelected: applyTaskListTagFilter,
                 sidebarLocation: taskSidebarLocation(detailStore.task.id),
                 onLocateInSidebar: onLocateTaskInSidebar,
-                plannerScheduleContext: plannerScheduleContext(for: detailStore.task.id)
+                doneOccurrenceContext: doneOccurrenceContext(for: detailStore.task.id)
             )
         } else {
             ContentUnavailableView(
@@ -728,19 +727,17 @@ struct MacDetailContainerView<FilterView: View, PlannerListView: View, BoardView
         store.send(.taskDetailTagFilterTapped(tag))
     }
 
-    private func plannerScheduleContext(for taskID: UUID) -> TaskDetailPlannerScheduleContext? {
+    private func doneOccurrenceContext(for taskID: UUID) -> TaskDetailDoneOccurrenceContext? {
         guard
-            let selection = plannerTaskDetailScheduleSelection,
+            let selection = plannerTaskDetailDoneSelection,
             selection.taskID == taskID
         else {
             return nil
         }
 
-        return TaskDetailPlannerScheduleContext(
+        return TaskDetailDoneOccurrenceContext(
             date: selection.date,
-            sourcePlacement: selection.sourcePlacement,
-            planner: dayPlanPlanner,
-            protectedIntervalConflict: plannerProtectedIntervalConflict
+            occurrence: selection.occurrence
         )
     }
 }

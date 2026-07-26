@@ -671,107 +671,148 @@ struct DayPlanPlannerStateTests {
     }
 
     @Test
-    func calendarListTaskDetailSchedulingUsesTheClickedDayAndBlock() throws {
+    func calendarListDoneRowCarriesItsExactCompletionOccurrence() throws {
+        let calendar = gregorianCalendar
+        let clickedDate = try #require(date("2026-05-07T12:00:00Z"))
+        let completedAt = try #require(date("2026-05-07T14:30:00Z"))
+        let doneTask = RoutineTask(
+            name: "Prepare notes",
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 30
+        )
+        let plannedTask = RoutineTask(
+            name: "Draft outline",
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 45
+        )
+        let doneLog = RoutineLog(
+            timestamp: completedAt,
+            taskID: doneTask.id,
+            kind: .completed,
+            actualDurationMinutes: 45
+        )
+        let doneBlock = DayPlanBlock(
+            taskID: doneTask.id,
+            dayKey: DayPlanStorage.dayKey(for: clickedDate, calendar: calendar),
+            startMinute: 14 * 60 + 15,
+            durationMinutes: 75,
+            titleSnapshot: "Prepare notes"
+        )
+        let plannedBlock = DayPlanBlock(
+            taskID: plannedTask.id,
+            dayKey: doneBlock.dayKey,
+            startMinute: 16 * 60,
+            durationMinutes: 45,
+            titleSnapshot: "Draft outline"
+        )
+
+        let items = DayPlanDayTaskListPresentation.items(
+            on: clickedDate,
+            timedBlocks: [doneBlock, plannedBlock],
+            allDayBlocks: [],
+            tasks: [doneTask, plannedTask],
+            logs: [doneLog],
+            calendar: calendar,
+            visibilityCache: nil
+        )
+
+        let doneItem = try #require(items.first(where: { $0.taskID == doneTask.id }))
+        let occurrence = try #require(doneItem.doneOccurrence)
+        #expect(doneItem.section == .done)
+        #expect(occurrence.source == .log(doneLog.id))
+        #expect(occurrence.completedAt == completedAt)
+        #expect(occurrence.durationMinutes == 45)
+
+        let plannedItem = try #require(items.first(where: { $0.taskID == plannedTask.id }))
+        #expect(plannedItem.section == .planned)
+        #expect(plannedItem.doneOccurrence == nil)
+    }
+
+    @Test
+    func editingCalendarListDoneTimeUpdatesOnlyTheSelectedCompletion() throws {
         let calendar = gregorianCalendar
         let context = makeInMemoryContext()
-        let initialDate = try #require(date("2026-05-03T12:00:00Z"))
         let clickedDate = try #require(date("2026-05-07T12:00:00Z"))
+        let originalCompletedAt = try #require(date("2026-05-07T14:30:00Z"))
+        let laterCompletedAt = try #require(date("2026-05-09T17:00:00Z"))
+        let expectedCompletedAt = try #require(date("2026-05-07T10:05:00Z"))
         let task = RoutineTask(
             name: "Prepare notes",
-            scheduleMode: .oneOff,
-            estimatedDurationMinutes: 30
+            scheduleMode: .fixedInterval,
+            lastDone: laterCompletedAt,
+            estimatedDurationMinutes: 45
+        )
+        let selectedLog = RoutineLog(
+            timestamp: originalCompletedAt,
+            taskID: task.id,
+            kind: .completed,
+            actualDurationMinutes: 30
+        )
+        let laterLog = RoutineLog(
+            timestamp: laterCompletedAt,
+            taskID: task.id,
+            kind: .completed,
+            actualDurationMinutes: 20
         )
         let block = DayPlanBlock(
             taskID: task.id,
             dayKey: DayPlanStorage.dayKey(for: clickedDate, calendar: calendar),
-            startMinute: 14 * 60 + 15,
-            durationMinutes: 75,
-            titleSnapshot: "Prepare notes",
-            createdAt: clickedDate,
-            updatedAt: clickedDate
+            startMinute: 8 * 60,
+            durationMinutes: 30,
+            titleSnapshot: "Prepare notes"
         )
+        context.insert(task)
+        context.insert(selectedLog)
+        context.insert(laterLog)
         DayPlanStorage.saveBlocks([block], forDayKey: block.dayKey, context: context)
-        let planner = DayPlanPlannerState(selectedDate: initialDate)
-        let item = DayPlanDayTaskListItem(
-            id: "timed-\(block.id.uuidString)",
+        try context.save()
+
+        let didUpdate = DayPlanTimelineTasks.updateCompletedActivity(
+            DayPlanDoneTaskOccurrence(
+                source: .log(selectedLog.id),
+                completedAt: originalCompletedAt,
+                durationMinutes: 30
+            ),
             taskID: task.id,
-            blockID: block.id,
-            title: "Prepare notes",
-            placement: .timed(
-                startMinute: block.startMinute,
-                durationMinutes: block.durationMinutes
-            )
-        )
-
-        planner.prepareTaskDetailSchedule(
-            for: task,
-            item: item,
             on: clickedDate,
-            calendar: calendar,
-            context: context
+            startMinute: 9 * 60 + 15,
+            durationMinutes: 50,
+            context: context,
+            calendar: calendar
         )
 
-        #expect(planner.selectedDate == calendar.startOfDay(for: clickedDate))
-        #expect(planner.selectedTaskID == task.id)
-        #expect(planner.selectedBlockID == block.id)
-        #expect(planner.startMinute == 14 * 60 + 15)
-        #expect(planner.durationMinutes == 75)
+        #expect(didUpdate)
+        #expect(selectedLog.timestamp == expectedCompletedAt)
+        #expect(selectedLog.actualDurationMinutes == 50)
+        #expect(laterLog.timestamp == laterCompletedAt)
+        #expect(laterLog.actualDurationMinutes == 20)
+        #expect(task.lastDone == laterCompletedAt)
+        let storedBlock = try #require(
+            DayPlanStorage.loadBlocks(forDayKey: block.dayKey, context: context).first
+        )
+        #expect(storedBlock.startMinute == 8 * 60)
+        #expect(storedBlock.durationMinutes == 30)
     }
 
     @Test
-    func calendarListAnyTimeTaskPreparesAnOccurrenceDraftForTheClickedDay() throws {
-        let calendar = gregorianCalendar
-        let context = makeInMemoryContext()
-        let initialDate = try #require(date("2026-05-03T12:00:00Z"))
-        let clickedDate = try #require(date("2026-05-07T12:00:00Z"))
-        let task = RoutineTask(
-            name: "Draft outline",
-            scheduleMode: .oneOff,
-            estimatedDurationMinutes: 45
-        )
-        let planner = DayPlanPlannerState(selectedDate: initialDate)
-        planner.startMinute = 16 * 60
-        planner.durationMinutes = 90
-        let item = DayPlanDayTaskListItem(
-            id: "planned-date-\(task.id.uuidString)",
-            taskID: task.id,
-            blockID: nil,
-            title: "Draft outline",
-            placement: .anyTime
-        )
-
-        planner.prepareTaskDetailSchedule(
-            for: task,
-            item: item,
-            on: clickedDate,
-            calendar: calendar,
-            context: context
-        )
-
-        #expect(planner.selectedDate == calendar.startOfDay(for: clickedDate))
-        #expect(planner.selectedTaskID == task.id)
-        #expect(planner.selectedBlockID == nil)
-        #expect(planner.startMinute == 9 * 60)
-        #expect(planner.durationMinutes == 45)
-    }
-
-    @Test
-    func macCalendarListTaskDetailContainsDaySpecificScheduleControls() throws {
-        let dayPlanSource = try Self.sourceFile("SharedCore/Views/DayPlanView.swift")
+    func macCalendarListTaskDetailEditsDoneOccurrencesInsteadOfPlannedBlocks() throws {
         let calendarSource = try Self.sourceFile("SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift")
         let taskDetailSource = try Self.sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift")
         let containerSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
+        let sidebarSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Sidebar.swift")
 
         #expect(calendarSource.contains("onOpenTaskDetails(item, date)"))
-        #expect(dayPlanSource.contains("planner.prepareTaskDetailSchedule("))
-        #expect(dayPlanSource.contains("onOpenCalendarListTaskDetails(item, date)"))
-        #expect(containerSource.contains("plannerScheduleContext: plannerScheduleContext(for: detailStore.task.id)"))
-        #expect(taskDetailSource.contains("Text(\"Schedule this day\")"))
+        #expect(sidebarSource.contains("item.section == .done"))
+        #expect(sidebarSource.contains("item.doneOccurrence.map"))
+        #expect(!sidebarSource.contains("item.section == .planned"))
+        #expect(containerSource.contains("doneOccurrenceContext: doneOccurrenceContext(for: detailStore.task.id)"))
+        #expect(taskDetailSource.contains("Text(\"Done this day\")"))
         #expect(taskDetailSource.contains("\"When\""))
         #expect(taskDetailSource.contains("\"Duration\""))
-        #expect(taskDetailSource.contains("\"Add to Schedule\""))
-        #expect(taskDetailSource.contains("\"Save Schedule\""))
-        #expect(taskDetailSource.contains("\"Remove\""))
+        #expect(taskDetailSource.contains("\"Save Time & Duration\""))
+        #expect(taskDetailSource.contains("DayPlanTimelineTasks.updateCompletedActivity("))
+        #expect(!taskDetailSource.contains("Text(\"Schedule this day\")"))
+        #expect(!taskDetailSource.contains("\"Add to Schedule\""))
     }
 
     @Test
