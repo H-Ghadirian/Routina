@@ -1078,6 +1078,20 @@ Given Mac Home is fullscreen and Planner Calendar is in `List` task-view mode
 When the user exits fullscreen
 Then Planner Calendar remains in `List` task-view mode instead of resetting to `Schedule`
 
+### Calendar List Done Durations Accept Custom Minutes
+
+Area: Planner, Tasks
+Decision links: [0435](../decisions/0435-edit-calendar-list-done-times-from-mac-task-detail.md), [0441](../decisions/0441-enter-custom-calendar-list-done-durations.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/DayPlanPlannerStateTests.swift`
+
+Given a recorded Done row is selected in Mac Planner Calendar `List`
+When its right-side task-detail card is open
+Then the user can enter a custom duration through Hours and Minutes fields
+And the duration can use one-minute precision rather than only presets or 15-minute increments
+And Save updates only the selected completion occurrence while leaving its Planner block unchanged
+
 ### Protected Modes Do Not Overlap
 
 Area: Planner

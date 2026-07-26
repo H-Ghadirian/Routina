@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0441](0441-enter-custom-calendar-list-done-durations.md) refines [0435](0435-edit-calendar-list-done-times-from-mac-task-detail.md) for minute-precise corrections:** The Mac Planner Calendar `List` Done-row task-detail card accepts custom Hours and Minutes while keeping the completion within its selected day and preserving exact-occurrence update semantics.
+
 - **[0440](0440-treat-day-planning-sections-as-additive.md) refines [0200](0200-support-task-planned-dates.md), [0252](0252-stabilize-home-task-list-presentation-identity.md), [0350](0350-add-optional-mac-tomorrow-task-section.md), [0394](0394-add-custom-mac-sidebar-task-sections.md), [0400](0400-plan-tracking-rows-into-today.md), and [0411](0411-manage-custom-task-sections-in-settings.md) for parallel planning and organization:** Today and Tomorrow are additive planning projections; qualifying tasks also retain one ordinary Pinned, custom, or Future placement, and planning/custom-section mutations preserve one another while each section remains independently deduplicated and stably identified.
 
 - **[0439](0439-keep-cadence-dependent-controls-after-repeat.md) refines [0058](0058-use-progressive-task-forms.md), [0186](0186-put-item-runout-in-repeat-type.md), [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0431](0431-present-one-progressive-recurrence-composer.md), and [0437](0437-compact-wide-mac-task-forms.md) for stable progressive disclosure:** Mac routine forms keep Completion and Repeat stationary, place cadence-dependent defaults in one collapsed Schedule details row after Repeat, and keep item-runout intervals beside their checklist-item input.
@@ -41,7 +43,7 @@ These are ordered from newest resolver to oldest resolver.
 
 - **[0436](0436-remove-tracking-as-a-user-facing-task-type.md) supersedes the compatibility-surface decision in [0428](0428-compose-tracking-behaviors-on-gentle-routines.md), the visible Tracking label and section from [0383](0383-use-tracking-as-record-label.md) and [0384](0384-show-tracking-as-mac-sidebar-section.md), the Tracking summary reports from [0388](0388-show-tracking-summary-stats.md), and the Tracking Settings rule from [0411](0411-manage-custom-task-sections-in-settings.md):** Routina exposes only Routines and Todos as task types; any internal `record` rows are presented and counted as routines, while Tracking remains only in transitional storage names.
 
-- **[0435](0435-edit-calendar-list-done-times-from-mac-task-detail.md) refines [0036](0036-treat-completion-times-as-planner-finish-times.md), [0296](0296-present-mac-task-details-as-planner-inspector.md), [0367](0367-show-day-agenda-done-sections.md), and [0369](0369-show-day-task-list-columns-in-planner-calendar.md):** Mac Planner Calendar `List` keeps planned rows unchanged while a recorded Done row’s task-detail companion pane can edit that exact completion’s start time and actual duration.
+- **[0435](0435-edit-calendar-list-done-times-from-mac-task-detail.md) refines [0036](0036-treat-completion-times-as-planner-finish-times.md), [0296](0296-present-mac-task-details-as-planner-inspector.md), [0367](0367-show-day-agenda-done-sections.md), and [0369](0369-show-day-task-list-columns-in-planner-calendar.md), with custom minute entry refined by [0441](0441-enter-custom-calendar-list-done-durations.md):** Mac Planner Calendar `List` keeps planned rows unchanged while a recorded Done row’s task-detail companion pane can edit that exact completion’s start time and actual duration.
 
 - **[0434](0434-select-subdaily-occurrences-in-task-detail.md) refines [0433](0433-identify-subdaily-history-by-scheduled-occurrence.md):** Task Detail keeps day-level calendar navigation but shows a shared same-day occurrence selector for atomic subdaily routines; selected timestamps drive independent status, completion, missed/canceled resolution, and undo behavior on iOS and macOS.
 
@@ -362,6 +364,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0441](0441-enter-custom-calendar-list-done-durations.md) | Enter Custom Calendar List Done Durations | Accepted | 2026-07-27 |
 | [0440](0440-treat-day-planning-sections-as-additive.md) | Treat Day Planning Sections as Additive | Accepted | 2026-07-26 |
 | [0439](0439-keep-cadence-dependent-controls-after-repeat.md) | Keep Cadence-Dependent Controls After Repeat | Accepted | 2026-07-26 |
 | [0438](0438-allow-early-completion-of-untimed-scheduled-routines.md) | Allow Early Completion of Untimed Scheduled Routines | Accepted | 2026-07-26 |

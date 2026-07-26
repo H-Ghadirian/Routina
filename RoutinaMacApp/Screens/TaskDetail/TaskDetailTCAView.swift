@@ -1601,7 +1601,14 @@ private struct TaskDetailDoneOccurrenceSection: View {
     @State private var feedbackMessage: String?
     @State private var didSave = false
 
-    private let durationPresets = [15, 30, 45, 60, 90, 120]
+    private let durationPresets = [
+        TaskFormDurationPreset(minutes: 15, label: "15m"),
+        TaskFormDurationPreset(minutes: 30, label: "30m"),
+        TaskFormDurationPreset(minutes: 45, label: "45m"),
+        TaskFormDurationPreset(minutes: 60, label: "1h"),
+        TaskFormDurationPreset(minutes: 90, label: "1h 30m"),
+        TaskFormDurationPreset(minutes: 120, label: "2h")
+    ]
 
     init(
         task: RoutineTask,
@@ -1655,19 +1662,12 @@ private struct TaskDetailDoneOccurrenceSection: View {
                 )
                 .datePickerStyle(.compact)
 
-                Stepper(
-                    value: durationBinding,
-                    in: durationRange,
-                    step: 15
-                ) {
-                    LabeledContent("Duration") {
-                        Text(DayPlanFormatting.durationText(durationMinutes))
-                            .fontWeight(.semibold)
-                            .monospacedDigit()
-                    }
-                }
-
-                durationPresetButtons
+                TaskFormDurationEntry(
+                    title: "Duration",
+                    minutes: durationBinding,
+                    bounds: durationRange,
+                    presets: durationPresets
+                )
 
                 Text("Starts at \(startTimeText) · Ends \(endTimeText)")
                     .font(.caption)
@@ -1719,26 +1719,6 @@ private struct TaskDetailDoneOccurrenceSection: View {
             }
 
             Spacer(minLength: 0)
-        }
-    }
-
-    private var durationPresetButtons: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 7) {
-                ForEach(durationPresets, id: \.self) { minutes in
-                    Button(DayPlanFormatting.durationText(minutes)) {
-                        durationMinutes = DayPlanBlock.clampedDuration(
-                            minutes,
-                            startMinute: startMinute,
-                            minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
-                        )
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .tint(durationMinutes == minutes ? Color.accentColor : Color.secondary)
-                }
-            }
-            .padding(.vertical, 1)
         }
     }
 

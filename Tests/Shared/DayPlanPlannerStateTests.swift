@@ -735,7 +735,7 @@ struct DayPlanPlannerStateTests {
         let clickedDate = try #require(date("2026-05-07T12:00:00Z"))
         let originalCompletedAt = try #require(date("2026-05-07T14:30:00Z"))
         let laterCompletedAt = try #require(date("2026-05-09T17:00:00Z"))
-        let expectedCompletedAt = try #require(date("2026-05-07T10:05:00Z"))
+        let expectedCompletedAt = try #require(date("2026-05-07T10:02:00Z"))
         let task = RoutineTask(
             name: "Prepare notes",
             scheduleMode: .fixedInterval,
@@ -776,14 +776,14 @@ struct DayPlanPlannerStateTests {
             taskID: task.id,
             on: clickedDate,
             startMinute: 9 * 60 + 15,
-            durationMinutes: 50,
+            durationMinutes: 47,
             context: context,
             calendar: calendar
         )
 
         #expect(didUpdate)
         #expect(selectedLog.timestamp == expectedCompletedAt)
-        #expect(selectedLog.actualDurationMinutes == 50)
+        #expect(selectedLog.actualDurationMinutes == 47)
         #expect(laterLog.timestamp == laterCompletedAt)
         #expect(laterLog.actualDurationMinutes == 20)
         #expect(task.lastDone == laterCompletedAt)
@@ -798,6 +798,7 @@ struct DayPlanPlannerStateTests {
     func macCalendarListTaskDetailEditsDoneOccurrencesInsteadOfPlannedBlocks() throws {
         let calendarSource = try Self.sourceFile("SharedCore/Views/DayPlan/DayPlanWeekCalendarView.swift")
         let taskDetailSource = try Self.sourceFile("RoutinaMacApp/Screens/TaskDetail/TaskDetailTCAView.swift")
+        let durationEntrySource = try Self.sourceFile("SharedCore/Screens/Shared/TaskFormDurationEntry.swift")
         let containerSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/Components/MacDetailContainerView.swift")
         let sidebarSource = try Self.sourceFile("RoutinaMacApp/Screens/Home/HomeTCAView/HomeTCAView+Sidebar.swift")
 
@@ -809,6 +810,11 @@ struct DayPlanPlannerStateTests {
         #expect(taskDetailSource.contains("Text(\"Done this day\")"))
         #expect(taskDetailSource.contains("\"When\""))
         #expect(taskDetailSource.contains("\"Duration\""))
+        #expect(taskDetailSource.contains("TaskFormDurationEntry("))
+        #expect(taskDetailSource.contains("minutes: durationBinding"))
+        #expect(taskDetailSource.contains("bounds: durationRange"))
+        #expect(durationEntrySource.contains("durationNumberField(title: \"Hours\""))
+        #expect(durationEntrySource.contains("durationNumberField(title: \"Minutes\""))
         #expect(taskDetailSource.contains("\"Save Time & Duration\""))
         #expect(taskDetailSource.contains("DayPlanTimelineTasks.updateCompletedActivity("))
         #expect(!taskDetailSource.contains("Text(\"Schedule this day\")"))
