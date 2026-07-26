@@ -33,6 +33,14 @@ struct FormSectionTests {
     }
 
     @Test
+    func afterCompletionRecurrenceDoesNotRepeatItsEditableRuleAsASummary() {
+        #expect(!UnifiedRecurrenceSummaryPolicy.showsSummary(for: .afterCompletion))
+        #expect(UnifiedRecurrenceSummaryPolicy.showsSummary(for: .scheduled))
+        #expect(UnifiedRecurrenceSummaryPolicy.showsSummary(for: .none))
+        #expect(UnifiedRecurrenceSummaryPolicy.showsSummary(for: .itemRunout))
+    }
+
+    @Test
     func taskFormSectionsIncludeIdentityAndDangerZoneWhenRequested() {
         let sections = FormSection.taskFormSections(
             scheduleMode: .fixedInterval,

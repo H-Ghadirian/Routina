@@ -29,6 +29,12 @@ enum UnifiedRecurrenceEditorLayout: Equatable {
     }
 }
 
+enum UnifiedRecurrenceSummaryPolicy {
+    static func showsSummary(for cadence: RoutineRecurrenceDraft.Cadence) -> Bool {
+        cadence != .afterCompletion
+    }
+}
+
 struct UnifiedRecurrenceEditor: View {
     @Binding var draft: RoutineRecurrenceDraft
     let supportsNoSchedule: Bool
@@ -55,11 +61,13 @@ struct UnifiedRecurrenceEditor: View {
                 }
             }
 
-            Label(draft.composerSummary(calendar: calendar), systemImage: summarySystemImage)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityLabel("Recurrence summary")
+            if UnifiedRecurrenceSummaryPolicy.showsSummary(for: draft.cadence) {
+                Label(draft.composerSummary(calendar: calendar), systemImage: summarySystemImage)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityLabel("Recurrence summary")
+            }
         }
         .onAppear {
             if draft.requiresFixedScheduleDetails {

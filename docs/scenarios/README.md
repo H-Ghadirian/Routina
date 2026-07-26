@@ -186,6 +186,10 @@ Given the unified recurrence composer is displayed on macOS
 When cadence or frequency choices fit horizontally
 Then their segments use natural label widths without forced partial rows, while the compact iOS layout may continue to wrap fill-width segments
 
+Given `After done` is selected in the unified recurrence composer
+When the interval stepper already states the complete rolling rule
+Then the composer does not repeat the same rule in a summary line below it
+
 ### Fixed Recurrence Composes With Time Availability
 
 Area: Tasks
