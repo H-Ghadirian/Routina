@@ -226,6 +226,12 @@ When cadence-dependent settings become relevant
 Then Completion and Repeat remain in place and one collapsed `Schedule details` row appears after Repeat
 And the Checklist composer places the item title, `Every N days` interval, and Add action together when space permits
 
+Given a daily routine is eligible to switch from `One day` to `Multi-day`
+When Multi-day makes the routine non-daily and eligible for Planning
+Then Planning appears inside `Schedule details`
+And the `Add More Details` palette does not gain or lose a Planning action
+And no explanatory copy is added beside the Multi-day selector
+
 ### Fixed Recurrence Composes With Time Availability
 
 Area: Tasks

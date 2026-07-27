@@ -6,6 +6,8 @@ Date: 2026-07-26
 
 Refines: [0058 Use Progressive Task Forms](0058-use-progressive-task-forms.md), [0186 Put Item Runout in Repeat Type](0186-put-item-runout-in-repeat-type.md), [0188 Prefer Self-Explanatory UI Over Instructional Copy](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0431 Present One Progressive Recurrence Composer](0431-present-one-progressive-recurrence-composer.md), [0437 Compact Wide Mac Task Forms](0437-compact-wide-mac-task-forms.md)
 
+Refined by: [0442 Keep Routine Planning Inside Schedule Details](0442-keep-routine-planning-inside-schedule-details.md)
+
 ## Context
 
 Mac routine forms rendered Duration, Time availability, Due style, and the task

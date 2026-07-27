@@ -33,6 +33,42 @@ struct FormSectionTests {
                 behavior: .fixed
             ) == "Multi-day · Any time · Due"
         )
+        #expect(
+            TaskFormMacScheduleDetailsPresentation.summary(
+                duration: .oneDay,
+                timing: .none,
+                behavior: nil,
+                includesCadenceDetails: false
+            ) == "Planning"
+        )
+    }
+
+    @Test
+    func routinePlanningStaysOutOfTheOptionalSectionCatalog() {
+        #expect(
+            TaskFormMacPlanningPlacement.resolve(
+                taskType: .routine,
+                supportsPlanning: false
+            ) == .unavailable
+        )
+        #expect(
+            TaskFormMacPlanningPlacement.resolve(
+                taskType: .routine,
+                supportsPlanning: true
+            ) == .scheduleDetails
+        )
+        #expect(
+            TaskFormMacPlanningPlacement.resolve(
+                taskType: .record,
+                supportsPlanning: true
+            ) == .scheduleDetails
+        )
+        #expect(
+            TaskFormMacPlanningPlacement.resolve(
+                taskType: .todo,
+                supportsPlanning: true
+            ) == .standaloneSection
+        )
     }
 
     @Test

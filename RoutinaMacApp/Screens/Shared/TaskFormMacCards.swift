@@ -22,12 +22,28 @@ enum TaskFormMacRoutineBehaviorModule: CaseIterable, Equatable {
     }
 }
 
+enum TaskFormMacPlanningPlacement: Equatable {
+    case unavailable
+    case standaloneSection
+    case scheduleDetails
+
+    static func resolve(
+        taskType: RoutineTaskType,
+        supportsPlanning: Bool
+    ) -> Self {
+        guard supportsPlanning else { return .unavailable }
+        return taskType == .todo ? .standaloneSection : .scheduleDetails
+    }
+}
+
 enum TaskFormMacScheduleDetailsPresentation {
     static func summary(
         duration: RoutineDurationMode,
         timing: TaskFormTimingMode,
-        behavior: RoutineScheduleBehavior?
+        behavior: RoutineScheduleBehavior?,
+        includesCadenceDetails: Bool = true
     ) -> String {
+        guard includesCadenceDetails else { return "Planning" }
         var components = [duration.rawValue, timing.rawValue]
         if let behavior {
             components.append(behavior.rawValue)
@@ -176,15 +192,23 @@ struct TaskFormMacPlanningCard: View {
 
     var body: some View {
         TaskFormMacSectionCard(title: "Planning") {
-            TaskFormMacToggleBlock(title: "Plan to do", isOn: plannedDateEnabled) {
-                DatePicker(
-                    "Date",
-                    selection: plannedDate,
-                    displayedComponents: .date
-                )
-                .labelsHidden()
-                .datePickerStyle(.compact)
-            }
+            TaskFormMacPlanningControl(model: model)
+        }
+    }
+}
+
+struct TaskFormMacPlanningControl: View {
+    let model: TaskFormModel
+
+    var body: some View {
+        TaskFormMacToggleBlock(title: "Plan to do", isOn: plannedDateEnabled) {
+            DatePicker(
+                "Date",
+                selection: plannedDate,
+                displayedComponents: .date
+            )
+            .labelsHidden()
+            .datePickerStyle(.compact)
         }
     }
 
@@ -552,8 +576,8 @@ struct TaskFormMacBehaviorCard: View {
                 alignment: .topLeading
             )
         }
-        .onChange(of: model.usesEffectiveRoutineCadence) { _, isEnabled in
-            if !isEnabled {
+        .onChange(of: hasScheduleDetails) { _, hasDetails in
+            if !hasDetails {
                 showsScheduleDetails = false
             }
         }
@@ -655,35 +679,45 @@ struct TaskFormMacBehaviorCard: View {
                 routineCadenceControls
 
             case .scheduleDetails:
-                if model.usesEffectiveRoutineCadence {
+                if hasScheduleDetails {
                     scheduleDetailsDisclosure
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             }
         }
-        .animation(.easeInOut(duration: 0.18), value: model.usesEffectiveRoutineCadence)
+        .animation(.easeInOut(duration: 0.18), value: hasScheduleDetails)
+        .animation(.easeInOut(duration: 0.18), value: planningPlacement)
     }
 
     private var scheduleDetailsDisclosure: some View {
         DisclosureGroup(isExpanded: $showsScheduleDetails) {
             VStack(alignment: .leading, spacing: 18) {
-                availabilityControl
+                if model.usesEffectiveRoutineCadence {
+                    availabilityControl
 
-                if model.supportsRoutineScheduleBehavior {
-                    scheduleBehaviorControl
-                    scheduleResultPreview
-                        .frame(
-                            maxWidth: TaskFormMacLayoutMetrics.schedulePreviewWidth,
-                            alignment: .leading
-                        )
+                    if model.supportsRoutineScheduleBehavior {
+                        scheduleBehaviorControl
+                        scheduleResultPreview
+                            .frame(
+                                maxWidth: TaskFormMacLayoutMetrics.schedulePreviewWidth,
+                                alignment: .leading
+                            )
+                    }
+
+                    if model.supportsGentleNudges {
+                        gentleNudgesControl
+                    }
+
+                    if showsAssumedDoneControl {
+                        assumedDoneControl
+                    }
                 }
 
-                if model.supportsGentleNudges {
-                    gentleNudgesControl
-                }
-
-                if showsAssumedDoneControl {
-                    assumedDoneControl
+                if planningPlacement == .scheduleDetails {
+                    TaskFormMacControlBlock(title: "Planning") {
+                        TaskFormMacPlanningControl(model: model)
+                    }
+                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             }
             .padding(.top, 14)
@@ -713,13 +747,25 @@ struct TaskFormMacBehaviorCard: View {
         )
     }
 
+    private var planningPlacement: TaskFormMacPlanningPlacement {
+        TaskFormMacPlanningPlacement.resolve(
+            taskType: model.taskType.wrappedValue,
+            supportsPlanning: model.supportsPlanning
+        )
+    }
+
+    private var hasScheduleDetails: Bool {
+        model.usesEffectiveRoutineCadence || planningPlacement == .scheduleDetails
+    }
+
     private var scheduleDetailsSummary: String {
         TaskFormMacScheduleDetailsPresentation.summary(
             duration: model.routineDurationMode.wrappedValue,
             timing: currentTimingMode,
             behavior: model.supportsRoutineScheduleBehavior
                 ? model.scheduleBehavior.wrappedValue
-                : nil
+                : nil,
+            includesCadenceDetails: model.usesEffectiveRoutineCadence
         )
     }
 

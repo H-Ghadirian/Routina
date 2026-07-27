@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0442](0442-keep-routine-planning-inside-schedule-details.md) refines [0058](0058-use-progressive-task-forms.md), [0200](0200-support-task-planned-dates.md), and [0439](0439-keep-cadence-dependent-controls-after-repeat.md) for stable Mac planning placement:** Eligible routine Planning renders inside `Schedule details` and never enters the routine `Add More Details` palette; todo Planning remains a standalone optional section.
+
 - **[0441](0441-enter-custom-calendar-list-done-durations.md) refines [0435](0435-edit-calendar-list-done-times-from-mac-task-detail.md) for minute-precise corrections:** The Mac Planner Calendar `List` Done-row task-detail card accepts custom Hours and Minutes while keeping the completion within its selected day and preserving exact-occurrence update semantics.
 
 - **[0440](0440-treat-day-planning-sections-as-additive.md) refines [0200](0200-support-task-planned-dates.md), [0252](0252-stabilize-home-task-list-presentation-identity.md), [0350](0350-add-optional-mac-tomorrow-task-section.md), [0394](0394-add-custom-mac-sidebar-task-sections.md), [0400](0400-plan-tracking-rows-into-today.md), and [0411](0411-manage-custom-task-sections-in-settings.md) for parallel planning and organization:** Today and Tomorrow are additive planning projections; qualifying tasks also retain one ordinary Pinned, custom, or Future placement, and planning/custom-section mutations preserve one another while each section remains independently deduplicated and stably identified.
@@ -364,6 +366,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0442](0442-keep-routine-planning-inside-schedule-details.md) | Keep Routine Planning Inside Schedule Details | Accepted | 2026-07-27 |
 | [0441](0441-enter-custom-calendar-list-done-durations.md) | Enter Custom Calendar List Done Durations | Accepted | 2026-07-27 |
 | [0440](0440-treat-day-planning-sections-as-additive.md) | Treat Day Planning Sections as Additive | Accepted | 2026-07-26 |
 | [0439](0439-keep-cadence-dependent-controls-after-repeat.md) | Keep Cadence-Dependent Controls After Repeat | Accepted | 2026-07-26 |

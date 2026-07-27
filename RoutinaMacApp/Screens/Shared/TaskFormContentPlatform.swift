@@ -189,8 +189,18 @@ struct TaskFormContent: View {
             includesIdentity: false,
             includesDangerZone: model.onDelete != nil || model.pauseResumeAction != nil
         ).filter { section in
-            (section != .planning || model.supportsPlanning) && shouldDisplayFormSection(section)
+            if section == .planning {
+                return planningPlacement == .standaloneSection
+            }
+            return shouldDisplayFormSection(section)
         }
+    }
+
+    private var planningPlacement: TaskFormMacPlanningPlacement {
+        TaskFormMacPlanningPlacement.resolve(
+            taskType: model.taskType.wrappedValue,
+            supportsPlanning: model.supportsPlanning
+        )
     }
 
     private func shouldDisplayFormSection(_ section: FormSection) -> Bool {
@@ -500,7 +510,7 @@ struct TaskFormContent: View {
 
     @ViewBuilder
     private var planningCard: some View {
-        if model.supportsPlanning {
+        if planningPlacement == .standaloneSection {
             TaskFormMacPlanningCard(model: model)
                 .id(FormSection.planning)
         }

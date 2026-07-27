@@ -6,7 +6,7 @@ Date: 2026-06-10
 
 Refines: [0100 Reveal Task Form Details by Section](0100-reveal-task-form-details-by-section.md), [0197 Separate Todo Date and Time Availability](0197-separate-todo-date-and-time-availability.md), [0199 Support Multi-Day Routine Start Flow](0199-support-multiday-routine-start-flow.md)
 
-Refined by: [0440 Treat Day Planning Sections as Additive](0440-treat-day-planning-sections-as-additive.md)
+Refined by: [0440 Treat Day Planning Sections as Additive](0440-treat-day-planning-sections-as-additive.md), [0442 Keep Routine Planning Inside Schedule Details](0442-keep-routine-planning-inside-schedule-details.md)
 
 ## Context
 
