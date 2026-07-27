@@ -132,6 +132,27 @@ struct HomeRoutineDisplayFactoryTests {
     }
 
     @Test
+    func displayPreservesSatisfiedScheduledOccurrenceForPlanning() {
+        let satisfiedOccurrence = makeDate("2026-07-27T00:00:00Z")
+        let task = RoutineTask(
+            name: "Rent",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .monthly(on: 27),
+            lastDone: makeDate("2026-07-26T10:00:00Z"),
+            lastSatisfiedScheduledOccurrenceAt: satisfiedOccurrence
+        )
+
+        let display = makeDisplay(
+            task: task,
+            now: makeDate("2026-07-27T10:00:00Z"),
+            places: [],
+            coordinate: LocationCoordinate(latitude: 52.5200, longitude: 13.4050)
+        )
+
+        #expect(display.lastSatisfiedScheduledOccurrenceAt == satisfiedOccurrence)
+    }
+
+    @Test
     func missedExactTimedDisplaySkipsAcknowledgedEarlierMissedOccurrence() {
         let firstMissed = makeDate("2026-05-07T18:30:00Z")
         let task = RoutineTask(

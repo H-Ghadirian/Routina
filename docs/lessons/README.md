@@ -91,3 +91,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0047 — Localize dynamic controls to their owner](0047-localize-dynamic-controls-to-their-owner.md)
 - [0048 — Separate disclosure state from feature state](0048-separate-disclosure-state-from-feature-state.md)
 - [0049 — Separate completion identity from work timing](0049-separate-completion-identity-from-work-timing.md)
+- [0050 — Use occurrence resolution in day projections](0050-use-occurrence-resolution-in-day-projections.md)

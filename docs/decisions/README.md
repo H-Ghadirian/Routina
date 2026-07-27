@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0445](0445-keep-satisfied-occurrences-out-of-day-planning.md) refines [0266](0266-show-calendar-routines-in-plan-today.md), [0438](0438-allow-early-completion-of-untimed-scheduled-routines.md), and [0440](0440-treat-day-planning-sections-as-additive.md) for occurrence-aware planning eligibility:** Today and Tomorrow exclude a scheduled occurrence that was already satisfied, even when the actual completion happened on an earlier day, while the recurring task retains its additive ordinary placement and next due status.
+
 - **[0444](0444-log-completion-duration-without-a-specific-time.md) refines [0036](0036-treat-completion-times-as-planner-finish-times.md), [0435](0435-edit-calendar-list-done-times-from-mac-task-detail.md), and [0441](0441-enter-custom-calendar-list-done-durations.md) for split-session work:** The Mac Calendar `List` Done editor can save a day-total duration without a specific start/end interval while preserving the completion timestamp as occurrence identity; specific-time edits retain start-plus-duration semantics.
 
 - **[0443](0443-present-fixed-schedule-options-as-one-grouped-mode.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0431](0431-present-one-progressive-recurrence-composer.md), and [0437](0437-compact-wide-mac-task-forms.md) for advanced recurrence hierarchy:** `More schedule options` owns visibility, optional `Fixed schedule` uses a grouped switch, required details show a status, desktop controls stay leading-aligned with a collapsed summary, and single-time schedules expose one occurrence-time control while keeping the fixed threshold synchronized.
@@ -370,6 +372,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0445](0445-keep-satisfied-occurrences-out-of-day-planning.md) | Keep Satisfied Occurrences Out of Day Planning | Accepted | 2026-07-27 |
 | [0444](0444-log-completion-duration-without-a-specific-time.md) | Log Completion Duration Without a Specific Time | Accepted | 2026-07-27 |
 | [0443](0443-present-fixed-schedule-options-as-one-grouped-mode.md) | Present Fixed Schedule Options as One Grouped Mode | Accepted | 2026-07-27 |
 | [0442](0442-keep-routine-planning-inside-schedule-details.md) | Keep Routine Planning Inside Schedule Details | Accepted | 2026-07-27 |

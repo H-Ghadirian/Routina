@@ -276,7 +276,7 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
             trackingCadenceEnabled: task.trackingCadenceEnabled,
             isDailyRoutine: task.isDailyRoutine
         ),
-              matchesUncompletedTodayClaim(task),
+              matchesUncompletedTodayClaim(task, on: day),
               let plannedDate = task.plannedDate else {
             return false
         }
@@ -299,7 +299,7 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
                         trackingCadenceEnabled: task.trackingCadenceEnabled,
                         isDailyRoutine: task.isDailyRoutine
                     ),
-                      matchesUncompletedTodayClaim(task),
+                      matchesUncompletedTodayClaim(task, on: day),
                       predicate.matchesVisibleTask(task) else { return false }
                 guard !isReferenceDay || !task.isCanceledToday else { return false }
                 if let plannedDate = task.plannedDate {
@@ -316,8 +316,13 @@ struct HomeTaskListFiltering<Display: HomeTaskListDisplay> {
             .sorted(by: sort)
     }
 
-    func matchesUncompletedTodayClaim(_ task: Display) -> Bool {
-        !task.isDoneToday && !task.isCompletedOneOff
+    func matchesUncompletedTodayClaim(_ task: Display, on day: Date? = nil) -> Bool {
+        guard !task.isDoneToday, !task.isCompletedOneOff else { return false }
+        guard let day else { return true }
+        return !task.hasSatisfiedScheduledOccurrence(
+            on: day,
+            calendar: metrics.configuration.calendar
+        )
     }
 
     func deadlineBasedSections(from tasks: [Display]) -> [HomeTaskListSection<Display>] {

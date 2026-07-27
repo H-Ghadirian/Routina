@@ -20,6 +20,7 @@ protocol HomeTaskListDisplay {
     var estimatedDurationMinutes: Int? { get }
     var createdAt: Date? { get }
     var lastDone: Date? { get }
+    var lastSatisfiedScheduledOccurrenceAt: Date? { get }
     var dueDate: Date? { get }
     var plannedDate: Date? { get }
     var customTaskSectionID: UUID? { get }
@@ -66,6 +67,10 @@ extension HomeTaskListDisplay {
     }
 
     var estimatedDurationMinutes: Int? {
+        nil
+    }
+
+    var lastSatisfiedScheduledOccurrenceAt: Date? {
         nil
     }
 
@@ -141,6 +146,11 @@ extension HomeTaskListDisplay {
         case .intervalDays, .dailyTime:
             return false
         }
+    }
+
+    func hasSatisfiedScheduledOccurrence(on day: Date, calendar: Calendar) -> Bool {
+        guard let lastSatisfiedScheduledOccurrenceAt else { return false }
+        return calendar.isDate(lastSatisfiedScheduledOccurrenceAt, inSameDayAs: day)
     }
 }
 

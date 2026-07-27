@@ -145,17 +145,24 @@ Then the structured Advanced rule remains authoritative instead of being downgra
 ### Untimed Scheduled Routines Can Be Completed Early From Task Detail
 
 Area: Tasks
-Decision links: [0438](../decisions/0438-allow-early-completion-of-untimed-scheduled-routines.md)
+Decision links: [0438](../decisions/0438-allow-early-completion-of-untimed-scheduled-routines.md), [0445](../decisions/0445-keep-satisfied-occurrences-out-of-day-planning.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskDetailFeatureCompletionTests.swift`
 - `Tests/Shared/RoutineAdvancedRecurrenceTests.swift`
+- `Tests/Shared/HomeRoutineDisplayFactoryTests.swift`
+- `Tests/Shared/HomeTaskListFilteringTests.swift`
 
 Given an untimed monthly routine is scheduled for the 27th
 When the user opens Task Detail and marks it done on the 26th
 Then the completion is recorded on the 26th
 And the satisfied occurrence is recorded as the 27th
 And the next due date remains the 27th of the following month
+
+Given that early-completed monthly occurrence reaches the 27th
+When Home builds its planning and ordinary task sections
+Then the task does not appear in `Today`
+And it remains in its ordinary section with the following month's due status
 
 Given the same routine is completed from an entry point that has not opted into early completion
 When its scheduled occurrence is still in the future

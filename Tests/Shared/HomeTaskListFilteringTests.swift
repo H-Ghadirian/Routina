@@ -324,6 +324,26 @@ struct HomeTaskListFilteringTests {
     }
 
     @Test
+    func filteredPlannedTodayTasksExcludesCalendarOccurrenceSatisfiedEarly() {
+        let referenceDate = makeDate("2026-07-27T10:00:00Z")
+        let tasks = [
+            TestTaskDisplay(
+                name: "Rent",
+                recurrenceRule: .monthly(on: 27),
+                lastDone: makeDate("2026-07-26T10:00:00Z"),
+                lastSatisfiedScheduledOccurrenceAt: makeDate("2026-07-27T00:00:00Z"),
+                dueDate: makeDate("2026-08-27T00:00:00Z"),
+                daysUntilDue: 31
+            )
+        ]
+
+        let result = makeFiltering(referenceDate: referenceDate)
+            .filteredPlannedTodayTasks(tasks)
+
+        #expect(result.isEmpty)
+    }
+
+    @Test
     func filteredPlannedTodayTasksExcludesCanceledCalendarOccurrenceToday() {
         let referenceDate = makeDate("2026-06-22T10:00:00Z") // Monday
         let tasks = [
@@ -1228,6 +1248,36 @@ struct HomeTaskListFilteringTests {
         #expect(Set(futureSection?.taskGroups.last?.tasks.map(\.taskID) ?? []) == [plannedID, regularID])
         #expect(futureSection?.taskGroups.map(\.kind) == [.regular, .regular])
         #expect(futureSection?.taskGroups.map(\.isCollapsible) == [false, false])
+    }
+
+    @Test
+    func sidebarPresentationKeepsEarlySatisfiedCalendarOccurrenceOnlyInFuture() {
+        let referenceDate = makeDate("2026-07-27T10:00:00Z")
+        let rentID = UUID()
+        let presentation = HomeTaskListPresentation.sidebar(
+            filtering: makeFiltering(referenceDate: referenceDate),
+            routineDisplays: [
+                TestTaskDisplay(
+                    taskID: rentID,
+                    name: "Rent",
+                    recurrenceRule: .monthly(on: 27),
+                    lastDone: makeDate("2026-07-26T10:00:00Z"),
+                    lastSatisfiedScheduledOccurrenceAt: makeDate("2026-07-27T00:00:00Z"),
+                    dueDate: makeDate("2026-08-27T00:00:00Z"),
+                    daysUntilDue: 31
+                )
+            ],
+            awayRoutineDisplays: [],
+            archivedRoutineDisplays: [],
+            emptyState: HomeTaskListEmptyState(
+                title: "No matching tasks",
+                message: "Try a different place or clear a few filters.",
+                systemImage: "magnifyingglass"
+            )
+        )
+
+        #expect(presentation.sections.map(\.kind) == [.future])
+        #expect(presentation.sections.first?.tasks.map(\.taskID) == [rentID])
     }
 
     @Test
@@ -2466,6 +2516,7 @@ private struct TestTaskDisplay: HomeRoutineMetadataDisplay, Equatable {
     var estimatedDurationMinutes: Int?
     var createdAt: Date?
     var lastDone: Date?
+    var lastSatisfiedScheduledOccurrenceAt: Date?
     var canceledAt: Date?
     var dueDate: Date?
     var plannedDate: Date?

@@ -25,6 +25,7 @@ struct HomeRoutineDisplayCore: Equatable {
     var isSoftIntervalRoutine: Bool
     var surfacesSoftIntervalNudges: Bool
     var lastDone: Date?
+    var lastSatisfiedScheduledOccurrenceAt: Date?
     var canceledAt: Date?
     var dueDate: Date?
     var plannedDate: Date? = nil

@@ -151,6 +151,7 @@ private extension HomeFeature.RoutineDisplay {
             isSoftIntervalRoutine: core.isSoftIntervalRoutine,
             surfacesSoftIntervalNudges: core.surfacesSoftIntervalNudges,
             lastDone: core.lastDone,
+            lastSatisfiedScheduledOccurrenceAt: core.lastSatisfiedScheduledOccurrenceAt,
             canceledAt: core.canceledAt,
             dueDate: core.dueDate,
             plannedDate: core.plannedDate,

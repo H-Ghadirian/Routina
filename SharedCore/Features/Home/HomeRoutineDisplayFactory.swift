@@ -113,6 +113,7 @@ struct HomeRoutineDisplayFactory {
             isSoftIntervalRoutine: task.isSoftIntervalRoutine,
             surfacesSoftIntervalNudges: task.surfacesSoftIntervalNudges,
             lastDone: task.lastDone,
+            lastSatisfiedScheduledOccurrenceAt: task.lastSatisfiedScheduledOccurrenceAt,
             canceledAt: task.canceledAt,
             dueDate: dueDate(for: task, isArchived: isArchived),
             plannedDate: RoutineTask.effectivePlannedDate(
