@@ -89,6 +89,7 @@ enum CloudKitDirectPullLogPayloadApplier {
         log.taskID = payload.taskID
         log.kind = payload.kind
         log.actualDurationMinutes = payload.actualDurationMinutes
+        log.hasSpecificWorkTime = payload.hasSpecificWorkTime
         log.sourceTaskID = payload.sourceTaskID
     }
 
@@ -100,6 +101,7 @@ enum CloudKitDirectPullLogPayloadApplier {
             taskID: payload.taskID,
             kind: payload.kind,
             actualDurationMinutes: payload.actualDurationMinutes,
+            hasSpecificWorkTime: payload.hasSpecificWorkTime,
             sourceTaskID: payload.sourceTaskID
         )
     }

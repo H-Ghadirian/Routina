@@ -159,7 +159,8 @@ struct SettingsRoutineDataBackupMappingTests {
         let log = RoutineLog(
             timestamp: completedAt,
             scheduledOccurrenceAt: scheduledOccurrence,
-            taskID: task.id
+            taskID: task.id,
+            hasSpecificWorkTime: false
         )
 
         let backupTask = SettingsRoutineDataBackupMapping.task(
@@ -176,6 +177,7 @@ struct SettingsRoutineDataBackupMappingTests {
         #expect(backupTask.lastSatisfiedScheduledOccurrenceAt == scheduledOccurrence)
         #expect(backupLog.timestamp == completedAt)
         #expect(backupLog.scheduledOccurrenceAt == scheduledOccurrence)
+        #expect(backupLog.hasSpecificWorkTime == false)
     }
 
     @Test

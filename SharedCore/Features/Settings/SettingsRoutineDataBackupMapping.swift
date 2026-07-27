@@ -115,6 +115,7 @@ enum SettingsRoutineDataBackupMapping {
             taskID: log.taskID,
             kind: log.kind,
             actualDurationMinutes: log.actualDurationMinutes,
+            hasSpecificWorkTime: log.hasSpecificWorkTime,
             sourceTaskID: log.sourceTaskID
         )
     }

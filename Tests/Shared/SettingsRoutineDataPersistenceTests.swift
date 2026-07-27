@@ -77,6 +77,43 @@ struct SettingsRoutineDataPersistenceTests {
     }
 
     @Test
+    func backupPackageAndRestore_preservesCompletionWithoutSpecificWorkTime() async throws {
+        let context = makeInMemoryContext()
+        let completedAt = Date(timeIntervalSince1970: 1_790_000_000)
+        let task = RoutineTask(name: "Practice throughout the day")
+        let log = RoutineLog(
+            timestamp: completedAt,
+            taskID: task.id,
+            kind: .completed,
+            actualDurationMinutes: 35,
+            hasSpecificWorkTime: false
+        )
+        context.insert(task)
+        context.insert(log)
+        try context.save()
+
+        let package = try SettingsRoutineDataPersistence.buildBackupPackage(
+            from: context,
+            exportedAt: completedAt
+        )
+        let restoreContext = makeInMemoryContext()
+        let summary = try SettingsRoutineDataPersistence.replaceAllRoutineData(
+            with: package.manifestData,
+            in: restoreContext,
+            importDate: completedAt
+        )
+        let restoredLog = try #require(
+            restoreContext.fetch(FetchDescriptor<RoutineLog>()).first
+        )
+
+        #expect(summary.tasks == 1)
+        #expect(summary.logs == 1)
+        #expect(restoredLog.timestamp == completedAt)
+        #expect(restoredLog.actualDurationMinutes == 35)
+        #expect(restoredLog.hasSpecificWorkTime == false)
+    }
+
+    @Test
     func backupPackageAndRestore_preservesUserPreferences() async throws {
         let context = makeInMemoryContext()
         let defaults = SharedDefaults.app

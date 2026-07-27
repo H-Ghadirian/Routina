@@ -6,6 +6,7 @@ struct DayPlanTimelineActivityBlock: Identifiable, Equatable {
     var block: DayPlanBlock
     var kind: RoutineLogKind
     var source: DayPlanTimelineActivitySource
+    var hasSpecificTime: Bool = true
 
     var id: String {
         switch source {
@@ -454,7 +455,8 @@ enum DayPlanTimelineTasks {
                     timestamp: timestamp,
                     kind: kind,
                     actualDurationMinutes: log.actualDurationMinutes,
-                    source: .log(log.id)
+                    source: .log(log.id),
+                    hasSpecificTime: log.hasSpecificWorkTime ?? true
                 ),
                 taskID: log.taskID
             )
@@ -541,7 +543,8 @@ enum DayPlanTimelineTasks {
             let activityBlock = DayPlanTimelineActivityBlock(
                 block: block,
                 kind: activity.kind,
-                source: activity.source
+                source: activity.source,
+                hasSpecificTime: activity.hasSpecificTime
             )
             guard !hiddenActivityIDs.contains(activityBlock.dismissalID) else { return nil }
             return activityBlock
@@ -745,6 +748,10 @@ enum DayPlanTimelineTasks {
             )
         }
 
+        if activity.kind == .completed {
+            movedLog?.hasSpecificWorkTime = true
+        }
+
         synchronizeTaskActivityDates(
             for: task,
             movedKind: activity.kind,
@@ -773,28 +780,32 @@ enum DayPlanTimelineTasks {
         on date: Date,
         startMinute: Int,
         durationMinutes: Int,
+        hasSpecificTime: Bool = true,
         context: ModelContext,
         calendar: Calendar
     ) -> Bool {
         let clampedStartMinute = DayPlanBlock.clampedStartMinute(startMinute)
         let clampedDurationMinutes = DayPlanBlock.clampedDuration(
             durationMinutes,
-            startMinute: clampedStartMinute,
+            startMinute: hasSpecificTime ? clampedStartMinute : 0,
             minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
         )
-        let endMinute = clampedStartMinute + clampedDurationMinutes
-        var targetCompletedAt = timestamp(
-            on: date,
-            startMinute: min(endMinute, DayPlanBlock.minutesPerDay - 1),
-            calendar: calendar
-        )
-        if endMinute == DayPlanBlock.minutesPerDay,
-           let nextDay = calendar.date(
-               byAdding: .day,
-               value: 1,
-               to: calendar.startOfDay(for: date)
-           ) {
-            targetCompletedAt = nextDay.addingTimeInterval(-1)
+        var targetCompletedAt = occurrence.completedAt
+        if hasSpecificTime {
+            let endMinute = clampedStartMinute + clampedDurationMinutes
+            targetCompletedAt = timestamp(
+                on: date,
+                startMinute: min(endMinute, DayPlanBlock.minutesPerDay - 1),
+                calendar: calendar
+            )
+            if endMinute == DayPlanBlock.minutesPerDay,
+               let nextDay = calendar.date(
+                   byAdding: .day,
+                   value: 1,
+                   to: calendar.startOfDay(for: date)
+               ) {
+                targetCompletedAt = nextDay.addingTimeInterval(-1)
+            }
         }
 
         do {
@@ -840,6 +851,7 @@ enum DayPlanTimelineTasks {
             let previousDurationMinutes = completedLog.actualDurationMinutes
             completedLog.timestamp = targetCompletedAt
             completedLog.actualDurationMinutes = clampedDurationMinutes
+            completedLog.hasSpecificWorkTime = hasSpecificTime
             if task.isOneOffTask {
                 task.actualDurationMinutes = clampedDurationMinutes
             }
@@ -888,7 +900,8 @@ enum DayPlanTimelineTasks {
                 timestamp: timestamp,
                 kind: log.kind,
                 actualDurationMinutes: log.actualDurationMinutes,
-                source: .log(log.id)
+                source: .log(log.id),
+                hasSpecificTime: log.hasSpecificWorkTime ?? true
             )
         }
 
@@ -1105,7 +1118,8 @@ private extension DayPlanTimelineActivityBlock {
             return DayPlanTimelineActivityBlock(
                 block: adjustedBlock,
                 kind: kind,
-                source: source
+                source: source,
+                hasSpecificTime: hasSpecificTime
             )
         }
 
@@ -1118,6 +1132,7 @@ private struct DayPlanTimelineActivity: Equatable {
     var kind: RoutineLogKind
     var actualDurationMinutes: Int?
     var source: DayPlanTimelineActivitySource
+    var hasSpecificTime: Bool = true
 }
 
 private struct DayPlanTimelineDateInfo {

@@ -262,6 +262,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
         var taskID: UUID
         var kindRawValue: String
         var actualDurationMinutes: Int?
+        var hasSpecificWorkTime: Bool?
         var sourceTaskID: UUID?
 
         init(log: RoutineLog) {
@@ -271,6 +272,7 @@ struct CloudUsageEstimate: Equatable, Sendable {
             taskID = log.taskID
             kindRawValue = log.kindRawValue
             actualDurationMinutes = log.actualDurationMinutes
+            hasSpecificWorkTime = log.hasSpecificWorkTime
             sourceTaskID = log.sourceTaskID
         }
     }

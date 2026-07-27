@@ -168,6 +168,16 @@ enum CloudKitDirectPullRecordParser {
                 "cd_actualdurationminutes"
             ]
         )
+        let hasSpecificWorkTime = CloudKitDirectPullService.boolValue(
+            in: record,
+            keys: [
+                "hasSpecificWorkTime",
+                "HASSPECIFICWORKTIME",
+                "zhasspecificworktime",
+                "ZHASSPECIFICWORKTIME",
+                "cd_hasspecificworktime"
+            ]
+        )
         let sourceTaskID = CloudKitDirectPullService.uuidValue(
             in: record,
             keys: [
@@ -186,6 +196,7 @@ enum CloudKitDirectPullRecordParser {
             taskID: taskID,
             kind: kindRawValue.flatMap(RoutineLogKind.init(rawValue:)) ?? .completed,
             actualDurationMinutes: RoutineLog.sanitizedActualDurationMinutes(actualDurationMinutes),
+            hasSpecificWorkTime: hasSpecificWorkTime,
             sourceTaskID: sourceTaskID
         )
     }

@@ -88,6 +88,7 @@ extension CloudKitDirectPullService {
         var taskID: UUID
         var kind: RoutineLogKind
         var actualDurationMinutes: Int?
+        var hasSpecificWorkTime: Bool?
         var sourceTaskID: UUID?
     }
 

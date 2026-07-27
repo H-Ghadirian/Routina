@@ -1334,6 +1334,8 @@ private struct DayPlanDayTaskListContentRow: View {
             return "Any time"
         case .allDay:
             return "All day"
+        case let .durationOnly(durationMinutes):
+            return "No specific time · \(DayPlanFormatting.durationText(durationMinutes))"
         case let .timed(startMinute, durationMinutes):
             let endMinute = startMinute + durationMinutes
             let startText = DayPlanFormatting.timeText(for: startMinute, on: date, calendar: calendar)
@@ -1348,6 +1350,8 @@ private struct DayPlanDayTaskListContentRow: View {
             return "clock.badge.questionmark"
         case .allDay:
             return "sun.max"
+        case .durationOnly:
+            return "clock.badge.questionmark"
         case .timed:
             return "clock"
         }

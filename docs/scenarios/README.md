@@ -1123,6 +1123,25 @@ Then the user can enter a custom duration through Hours and Minutes fields
 And the duration can use one-minute precision rather than only presets or 15-minute increments
 And Save updates only the selected completion occurrence while leaving its Planner block unchanged
 
+### Calendar List Done Duration Can Omit A Specific Time
+
+Area: Planner, Tasks
+Decision links: [0444](../decisions/0444-log-completion-duration-without-a-specific-time.md)
+Current behavior: [Planner](../current-behavior/planner.md)
+Coverage:
+- `Tests/Shared/DayPlanPlannerStateTests.swift`
+- `Tests/Shared/SettingsRoutineDataBackupMappingTests.swift`
+- `Tests/Shared/SettingsRoutineDataPersistenceTests.swift`
+
+Given a recorded Done row represents work completed in multiple sessions across one day
+When the Mac task-detail card selects `No specific time` and saves a total duration
+Then the exact completion keeps its existing timestamp as occurrence identity
+And its actual duration is updated without inventing one start/end interval
+And reopening the completion keeps `No specific time` selected
+And an unplanned Calendar List Done row shows `No specific time` with the total duration
+And backup/import and CloudKit direct pull preserve the timing choice
+And Planner blocks, other completion occurrences, recurrence, availability, reminders, estimates, and other days are unchanged
+
 ### Protected Modes Do Not Overlap
 
 Area: Planner

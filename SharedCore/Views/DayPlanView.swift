@@ -1691,6 +1691,7 @@ private struct DayPlanTimelineDataSnapshotSignature: Equatable {
         var taskID: UUID
         var kindRawValue: String
         var actualDurationMinutes: Int?
+        var hasSpecificWorkTime: Bool?
         var sourceTaskID: UUID?
 
         init(log: RoutineLog) {
@@ -1700,6 +1701,7 @@ private struct DayPlanTimelineDataSnapshotSignature: Equatable {
             taskID = log.taskID
             kindRawValue = log.kindRawValue
             actualDurationMinutes = log.actualDurationMinutes
+            hasSpecificWorkTime = log.hasSpecificWorkTime
             sourceTaskID = log.sourceTaskID
         }
     }
@@ -4233,6 +4235,7 @@ private struct DayPlanVisibleBlockContextCacheKey: Equatable {
         var taskID: UUID
         var taskIDSortKey: String
         var kindRawValue: String
+        var hasSpecificWorkTime: Bool?
         var sourceTaskID: UUID?
 
         init(log: RoutineLog) {
@@ -4242,6 +4245,7 @@ private struct DayPlanVisibleBlockContextCacheKey: Equatable {
             taskID = log.taskID
             taskIDSortKey = log.taskID.uuidString
             kindRawValue = log.kindRawValue
+            hasSpecificWorkTime = log.hasSpecificWorkTime
             sourceTaskID = log.sourceTaskID
         }
     }
@@ -5003,6 +5007,7 @@ private struct DayPlanAllDayBlocksCacheKey: Equatable {
         var timestamp: Date?
         var taskID: UUID
         var kindRawValue: String
+        var hasSpecificWorkTime: Bool?
         var sourceTaskID: UUID?
 
         init(log: RoutineLog) {
@@ -5010,6 +5015,7 @@ private struct DayPlanAllDayBlocksCacheKey: Equatable {
             timestamp = log.timestamp
             taskID = log.taskID
             kindRawValue = log.kindRawValue
+            hasSpecificWorkTime = log.hasSpecificWorkTime
             sourceTaskID = log.sourceTaskID
         }
     }
@@ -5397,6 +5403,7 @@ private struct DayPlanTimelinePlacementCacheKey: Equatable {
         var taskID: UUID
         var kindRawValue: String
         var actualDurationMinutes: Int?
+        var hasSpecificWorkTime: Bool?
         var sourceTaskID: UUID?
 
         init(log: RoutineLog) {
@@ -5405,6 +5412,7 @@ private struct DayPlanTimelinePlacementCacheKey: Equatable {
             taskID = log.taskID
             kindRawValue = log.kindRawValue
             actualDurationMinutes = log.actualDurationMinutes
+            hasSpecificWorkTime = log.hasSpecificWorkTime
             sourceTaskID = log.sourceTaskID
         }
     }

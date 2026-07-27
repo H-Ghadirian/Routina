@@ -1617,6 +1617,7 @@ private struct TaskDetailDoneOccurrenceSection: View {
     let occurrence: DayPlanDoneTaskOccurrence
     @State private var startMinute: Int
     @State private var durationMinutes: Int
+    @State private var hasSpecificTime: Bool
     @State private var feedbackMessage: String?
     @State private var didSave = false
 
@@ -1658,10 +1659,11 @@ private struct TaskDetailDoneOccurrenceSection: View {
         _durationMinutes = State(
             initialValue: DayPlanBlock.clampedDuration(
                 initialDuration,
-                startMinute: initialStart,
+                startMinute: occurrence.hasSpecificTime ? initialStart : 0,
                 minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
             )
         )
+        _hasSpecificTime = State(initialValue: occurrence.hasSpecificTime)
     }
 
     var body: some View {
@@ -1674,12 +1676,25 @@ private struct TaskDetailDoneOccurrenceSection: View {
 
                 Divider()
 
-                DatePicker(
-                    "When",
-                    selection: startDateBinding,
-                    displayedComponents: .hourAndMinute
-                )
-                .datePickerStyle(.compact)
+                Picker("When", selection: $hasSpecificTime) {
+                    Text("Specific time").tag(true)
+                    Text("No specific time").tag(false)
+                }
+                .pickerStyle(.segmented)
+
+                if hasSpecificTime {
+                    DatePicker(
+                        "Starts",
+                        selection: startDateBinding,
+                        displayedComponents: .hourAndMinute
+                    )
+                    .datePickerStyle(.compact)
+                } else {
+                    Text("Use the duration as the day’s total when the work happened in multiple sessions.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
 
                 TaskFormDurationEntry(
                     title: "Duration",
@@ -1688,9 +1703,15 @@ private struct TaskDetailDoneOccurrenceSection: View {
                     presets: durationPresets
                 )
 
-                Text("Starts at \(startTimeText) · Ends \(endTimeText)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if hasSpecificTime {
+                    Text("Starts at \(startTimeText) · Ends \(endTimeText)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("No specific time · \(DayPlanFormatting.durationText(durationMinutes)) total")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
 
                 if let feedbackMessage {
                     Label(
@@ -1702,7 +1723,7 @@ private struct TaskDetailDoneOccurrenceSection: View {
                     .fixedSize(horizontal: false, vertical: true)
                 }
 
-                Button("Save Time & Duration") {
+                Button(hasSpecificTime ? "Save Time & Duration" : "Save Duration") {
                     saveCompletedTime()
                 }
                 .buttonStyle(.borderedProminent)
@@ -1713,6 +1734,16 @@ private struct TaskDetailDoneOccurrenceSection: View {
             clearFeedback()
         }
         .onChange(of: durationMinutes) { _, _ in
+            clearFeedback()
+        }
+        .onChange(of: hasSpecificTime) { _, newValue in
+            if newValue {
+                durationMinutes = DayPlanBlock.clampedDuration(
+                    durationMinutes,
+                    startMinute: startMinute,
+                    minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
+                )
+            }
             clearFeedback()
         }
     }
@@ -1732,7 +1763,7 @@ private struct TaskDetailDoneOccurrenceSection: View {
                 Text(date.formatted(.dateTime.weekday(.wide).month(.abbreviated).day().year()))
                     .font(.subheadline.weight(.semibold))
 
-                Text("Set when this completed work started and how long it took.")
+                Text("Set the total time spent, with an optional specific start time.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -1744,7 +1775,7 @@ private struct TaskDetailDoneOccurrenceSection: View {
     private var durationRange: ClosedRange<Int> {
         DayPlanBlock.minimumStoredDurationMinutes...max(
             DayPlanBlock.minimumStoredDurationMinutes,
-            DayPlanBlock.minutesPerDay - startMinute
+            DayPlanBlock.minutesPerDay - (hasSpecificTime ? startMinute : 0)
         )
     }
 
@@ -1770,7 +1801,7 @@ private struct TaskDetailDoneOccurrenceSection: View {
             set: { minutes in
                 durationMinutes = DayPlanBlock.clampedDuration(
                     minutes,
-                    startMinute: startMinute,
+                    startMinute: hasSpecificTime ? startMinute : 0,
                     minimumDurationMinutes: DayPlanBlock.minimumStoredDurationMinutes
                 )
             }
@@ -1812,6 +1843,7 @@ private struct TaskDetailDoneOccurrenceSection: View {
             on: date,
             startMinute: startMinute,
             durationMinutes: durationMinutes,
+            hasSpecificTime: hasSpecificTime,
             context: modelContext,
             calendar: calendar
         )

@@ -9,6 +9,7 @@ final class RoutineLog {
     var taskID: UUID = UUID()
     var kindRawValue: String = RoutineLogKind.completed.rawValue
     var actualDurationMinutes: Int?
+    var hasSpecificWorkTime: Bool?
     var sourceTaskID: UUID?
 
     var kind: RoutineLogKind {
@@ -23,6 +24,7 @@ final class RoutineLog {
         taskID: UUID,
         kind: RoutineLogKind = .completed,
         actualDurationMinutes: Int? = nil,
+        hasSpecificWorkTime: Bool? = nil,
         sourceTaskID: UUID? = nil
     ) {
         self.id = id
@@ -31,6 +33,7 @@ final class RoutineLog {
         self.taskID = taskID
         self.kindRawValue = kind.rawValue
         self.actualDurationMinutes = RoutineLog.sanitizedActualDurationMinutes(actualDurationMinutes)
+        self.hasSpecificWorkTime = hasSpecificWorkTime
         self.sourceTaskID = sourceTaskID
     }
 
@@ -42,6 +45,7 @@ final class RoutineLog {
             taskID: taskID,
             kind: kind,
             actualDurationMinutes: actualDurationMinutes,
+            hasSpecificWorkTime: hasSpecificWorkTime,
             sourceTaskID: sourceTaskID
         )
     }

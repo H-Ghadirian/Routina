@@ -722,10 +722,58 @@ struct DayPlanPlannerStateTests {
         #expect(occurrence.source == .log(doneLog.id))
         #expect(occurrence.completedAt == completedAt)
         #expect(occurrence.durationMinutes == 45)
+        #expect(occurrence.hasSpecificTime)
 
         let plannedItem = try #require(items.first(where: { $0.taskID == plannedTask.id }))
         #expect(plannedItem.section == .planned)
         #expect(plannedItem.doneOccurrence == nil)
+    }
+
+    @Test
+    func calendarListDoneRowCanRepresentDurationWithoutASpecificTime() throws {
+        let calendar = gregorianCalendar
+        let clickedDate = try #require(date("2026-05-07T12:00:00Z"))
+        let completedAt = try #require(date("2026-05-07T14:30:00Z"))
+        let task = RoutineTask(
+            name: "Practice throughout the day",
+            scheduleMode: .fixedInterval,
+            estimatedDurationMinutes: 30
+        )
+        let log = RoutineLog(
+            timestamp: completedAt,
+            taskID: task.id,
+            kind: .completed,
+            actualDurationMinutes: 35,
+            hasSpecificWorkTime: false
+        )
+
+        let activityBlocks = DayPlanTimelineTasks.activityBlocks(
+            on: clickedDate,
+            from: [task],
+            logs: [log],
+            plannedBlocks: [],
+            calendar: calendar
+        )
+        let activityBlock = try #require(activityBlocks.first)
+        #expect(!activityBlock.hasSpecificTime)
+
+        let items = DayPlanDayTaskListPresentation.items(
+            on: clickedDate,
+            timedBlocks: [],
+            allDayBlocks: [],
+            timelineActivityBlocks: activityBlocks,
+            tasks: [task],
+            logs: [log],
+            calendar: calendar
+        )
+        let doneItem = try #require(items.first)
+        let occurrence = try #require(doneItem.doneOccurrence)
+
+        #expect(doneItem.section == .done)
+        #expect(doneItem.placement == .durationOnly(durationMinutes: 35))
+        #expect(occurrence.completedAt == completedAt)
+        #expect(occurrence.durationMinutes == 35)
+        #expect(!occurrence.hasSpecificTime)
     }
 
     @Test
@@ -784,8 +832,77 @@ struct DayPlanPlannerStateTests {
         #expect(didUpdate)
         #expect(selectedLog.timestamp == expectedCompletedAt)
         #expect(selectedLog.actualDurationMinutes == 47)
+        #expect(selectedLog.hasSpecificWorkTime == true)
         #expect(laterLog.timestamp == laterCompletedAt)
         #expect(laterLog.actualDurationMinutes == 20)
+        #expect(task.lastDone == laterCompletedAt)
+        let storedBlock = try #require(
+            DayPlanStorage.loadBlocks(forDayKey: block.dayKey, context: context).first
+        )
+        #expect(storedBlock.startMinute == 8 * 60)
+        #expect(storedBlock.durationMinutes == 30)
+    }
+
+    @Test
+    func editingCalendarListDoneDurationWithoutSpecificTimePreservesCompletionTimestamp() throws {
+        let calendar = gregorianCalendar
+        let context = makeInMemoryContext()
+        let clickedDate = try #require(date("2026-05-07T12:00:00Z"))
+        let originalCompletedAt = try #require(date("2026-05-07T14:30:00Z"))
+        let laterCompletedAt = try #require(date("2026-05-09T17:00:00Z"))
+        let task = RoutineTask(
+            name: "Practice throughout the day",
+            scheduleMode: .fixedInterval,
+            lastDone: laterCompletedAt,
+            estimatedDurationMinutes: 30
+        )
+        let selectedLog = RoutineLog(
+            timestamp: originalCompletedAt,
+            taskID: task.id,
+            kind: .completed,
+            actualDurationMinutes: 30
+        )
+        let laterLog = RoutineLog(
+            timestamp: laterCompletedAt,
+            taskID: task.id,
+            kind: .completed,
+            actualDurationMinutes: 20
+        )
+        let block = DayPlanBlock(
+            taskID: task.id,
+            dayKey: DayPlanStorage.dayKey(for: clickedDate, calendar: calendar),
+            startMinute: 8 * 60,
+            durationMinutes: 30,
+            titleSnapshot: "Practice throughout the day"
+        )
+        context.insert(task)
+        context.insert(selectedLog)
+        context.insert(laterLog)
+        DayPlanStorage.saveBlocks([block], forDayKey: block.dayKey, context: context)
+        try context.save()
+
+        let didUpdate = DayPlanTimelineTasks.updateCompletedActivity(
+            DayPlanDoneTaskOccurrence(
+                source: .log(selectedLog.id),
+                completedAt: originalCompletedAt,
+                durationMinutes: 30
+            ),
+            taskID: task.id,
+            on: clickedDate,
+            startMinute: 9 * 60 + 15,
+            durationMinutes: 35,
+            hasSpecificTime: false,
+            context: context,
+            calendar: calendar
+        )
+
+        #expect(didUpdate)
+        #expect(selectedLog.timestamp == originalCompletedAt)
+        #expect(selectedLog.actualDurationMinutes == 35)
+        #expect(selectedLog.hasSpecificWorkTime == false)
+        #expect(laterLog.timestamp == laterCompletedAt)
+        #expect(laterLog.actualDurationMinutes == 20)
+        #expect(laterLog.hasSpecificWorkTime == nil)
         #expect(task.lastDone == laterCompletedAt)
         let storedBlock = try #require(
             DayPlanStorage.loadBlocks(forDayKey: block.dayKey, context: context).first
@@ -809,13 +926,17 @@ struct DayPlanPlannerStateTests {
         #expect(containerSource.contains("doneOccurrenceContext: doneOccurrenceContext(for: detailStore.task.id)"))
         #expect(taskDetailSource.contains("Text(\"Done this day\")"))
         #expect(taskDetailSource.contains("\"When\""))
+        #expect(taskDetailSource.contains("Text(\"No specific time\")"))
+        #expect(taskDetailSource.contains("if hasSpecificTime"))
         #expect(taskDetailSource.contains("\"Duration\""))
         #expect(taskDetailSource.contains("TaskFormDurationEntry("))
         #expect(taskDetailSource.contains("minutes: durationBinding"))
         #expect(taskDetailSource.contains("bounds: durationRange"))
+        #expect(taskDetailSource.contains("startMinute: hasSpecificTime ? startMinute : 0"))
         #expect(durationEntrySource.contains("durationNumberField(title: \"Hours\""))
         #expect(durationEntrySource.contains("durationNumberField(title: \"Minutes\""))
         #expect(taskDetailSource.contains("\"Save Time & Duration\""))
+        #expect(taskDetailSource.contains("\"Save Duration\""))
         #expect(taskDetailSource.contains("DayPlanTimelineTasks.updateCompletedActivity("))
         #expect(!taskDetailSource.contains("Text(\"Schedule this day\")"))
         #expect(!taskDetailSource.contains("\"Add to Schedule\""))

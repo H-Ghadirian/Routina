@@ -473,6 +473,7 @@ struct DayPlanDoneTaskOccurrence: Equatable {
     var source: DayPlanTimelineActivitySource
     var completedAt: Date
     var durationMinutes: Int
+    var hasSpecificTime: Bool = true
 }
 
 struct DayPlanDayTaskListItem: Identifiable, Equatable {
@@ -496,6 +497,7 @@ struct DayPlanDayTaskListItem: Identifiable, Equatable {
     enum Placement: Equatable {
         case anyTime
         case allDay
+        case durationOnly(durationMinutes: Int)
         case timed(startMinute: Int, durationMinutes: Int)
     }
 
@@ -682,16 +684,19 @@ enum DayPlanDayTaskListPresentation {
                     title: block.titleSnapshot,
                     emoji: block.emojiSnapshot,
                     section: activity.source.isSyntheticAssumedDone ? .assumedDone : .done,
-                    placement: .timed(
-                        startMinute: block.startMinute,
-                        durationMinutes: block.durationMinutes
-                    ),
+                    placement: activity.hasSpecificTime
+                        ? .timed(
+                            startMinute: block.startMinute,
+                            durationMinutes: block.durationMinutes
+                        )
+                        : .durationOnly(durationMinutes: block.durationMinutes),
                     doneOccurrence: activity.source.isSyntheticAssumedDone
                         ? nil
                         : DayPlanDoneTaskOccurrence(
                             source: activity.source,
                             completedAt: block.updatedAt,
-                            durationMinutes: block.durationMinutes
+                            durationMinutes: block.durationMinutes,
+                            hasSpecificTime: activity.hasSpecificTime
                         )
                 )
             }
@@ -805,7 +810,8 @@ private struct DayPlanDayTaskListCompletionContext {
                         durationMinutes: effectiveDurationMinutes(
                             actualDurationMinutes: task.actualDurationMinutes,
                             task: task
-                        )
+                        ),
+                        hasSpecificTime: true
                     ),
                     taskID: task.id,
                     dayKey: dayKey
@@ -828,7 +834,8 @@ private struct DayPlanDayTaskListCompletionContext {
                             durationMinutes: effectiveDurationMinutes(
                                 actualDurationMinutes: log.actualDurationMinutes,
                                 task: tasksByID[log.taskID]
-                            )
+                            ),
+                            hasSpecificTime: log.hasSpecificWorkTime ?? true
                         ),
                         taskID: log.taskID,
                         dayKey: dayKey
