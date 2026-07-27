@@ -1,7 +1,6 @@
 import SwiftUI
 import ComposableArchitecture
 import PhotosUI
-import SwiftData
 
 struct AddRoutineTCAView: View {
     let store: StoreOf<AddRoutineFeature>
@@ -14,7 +13,6 @@ struct AddRoutineTCAView: View {
     @State var tagManagerStore = Store(initialState: SettingsFeature.State()) {
         SettingsFeature()
     }
-    @Query(sort: \RoutineEvent.startedAt, order: .reverse) private var events: [RoutineEvent]
     @AppStorage(
         UserDefaultBoolValueKey.appSettingPlacesEnabled.rawValue,
         store: SharedDefaults.app
@@ -46,11 +44,14 @@ NavigationStack {
         guard let newItem else { return }
         loadPickedImage(from: newItem)
     }
-    .onAppear {
-        syncAvailableEvents()
-    }
-    .onChange(of: availableEventCandidates) { _, _ in
-        syncAvailableEvents()
+    .background {
+        AddRoutineEventCatalogSyncView(
+            ownerID: ObjectIdentifier(store),
+            onCandidatesChanged: { candidates in
+                store.send(.availableEventsChanged(candidates))
+            }
+        )
+        .equatable()
     }
 }
     }
@@ -58,14 +59,6 @@ NavigationStack {
     @ViewBuilder
     var addRoutineContent: some View {
         platformAddRoutineContent
-    }
-
-    private var availableEventCandidates: [RoutineEventLinkCandidate] {
-        RoutineEventLinkCandidate.candidates(from: events)
-    }
-
-    private func syncAvailableEvents() {
-        store.send(.availableEventsChanged(availableEventCandidates))
     }
 
 }

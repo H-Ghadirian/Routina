@@ -1,5 +1,36 @@
 import ComposableArchitecture
+import SwiftData
 import SwiftUI
+
+@MainActor
+struct AddRoutineEventCatalogSyncView: View, Equatable {
+    let ownerID: ObjectIdentifier
+    let onCandidatesChanged: ([RoutineEventLinkCandidate]) -> Void
+
+    @Query(sort: \RoutineEvent.startedAt, order: .reverse)
+    private var events: [RoutineEvent]
+
+    nonisolated static func == (
+        lhs: AddRoutineEventCatalogSyncView,
+        rhs: AddRoutineEventCatalogSyncView
+    ) -> Bool {
+        lhs.ownerID == rhs.ownerID
+    }
+
+    var body: some View {
+        let candidates = RoutineEventLinkCandidate.candidates(from: events)
+
+        Color.clear
+            .frame(width: 0, height: 0)
+            .accessibilityHidden(true)
+            .onAppear {
+                onCandidatesChanged(candidates)
+            }
+            .onChange(of: candidates) { _, updatedCandidates in
+                onCandidatesChanged(updatedCandidates)
+            }
+    }
+}
 
 @MainActor
 struct AddRoutineTaskFormModelFactory {

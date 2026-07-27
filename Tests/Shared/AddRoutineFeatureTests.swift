@@ -1574,7 +1574,28 @@ struct AddRoutineFeatureTests {
                 encoding: .utf8
             )
             #expect(!source.contains("AddRoutineDraftSnapshot(state: store.state)"))
+            #expect(!source.contains("@Query(sort: \\RoutineEvent.startedAt"))
+            #expect(!source.contains("availableEventCandidates"))
+            #expect(source.contains("AddRoutineEventCatalogSyncView("))
+            #expect(source.contains(".equatable()"))
         }
+
+        let addTaskModelFactorySource = try String(
+            contentsOf: projectRoot.appendingPathComponent(
+                "SharedCore/Screens/Shared/AddRoutineTaskFormModelFactory.swift"
+            ),
+            encoding: .utf8
+        )
+        #expect(
+            addTaskModelFactorySource.contains(
+                "struct AddRoutineEventCatalogSyncView: View, Equatable"
+            )
+        )
+        #expect(
+            addTaskModelFactorySource.contains(
+                "let candidates = RoutineEventLinkCandidate.candidates(from: events)"
+            )
+        )
 
         let segmentedControlSource = try String(
             contentsOf: projectRoot.appendingPathComponent(
