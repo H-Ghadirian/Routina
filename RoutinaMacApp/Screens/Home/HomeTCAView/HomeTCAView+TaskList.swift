@@ -5,6 +5,7 @@ import SwiftUI
 private enum MacTaskSourceListScrollAnchor: Hashable {
     case top
     case section(String)
+    case group(sectionID: String, groupID: String)
 }
 
 private enum MacTaskSourceListScrollContainerIdentity: Hashable {
@@ -680,17 +681,60 @@ extension HomeTCAView {
         let taskGroups = section.taskGroups
         LazyVStack(alignment: .leading, spacing: taskListGroupStackSpacing(for: section)) {
             ForEach(taskGroups) { group in
-                if taskListGroupUsesSectionSurface(group) {
-                    VStack(alignment: .leading, spacing: 0) {
+                Group {
+                    if taskListGroupUsesSectionSurface(group) {
+                        VStack(alignment: .leading, spacing: 0) {
+                            if let groupTitle = group.title {
+                                let isExpanded = taskListGroupIsExpanded(group, collapsedTagIDs: collapsedTagIDs)
+                                taskListInnerGroupHeader(
+                                    groupTitle,
+                                    count: group.tasks.count,
+                                    group: group,
+                                    collapsedTagIDs: collapsedTagIDs
+                                )
+                                .padding(.bottom, isExpanded ? 6 : 0)
+                            }
+
+                            if taskListGroupIsExpanded(group, collapsedTagIDs: collapsedTagIDs) {
+                                taskListGroupContent(
+                                    group,
+                                    section: section,
+                                    in: presentation,
+                                    collapsedTagIDs: collapsedTagIDs,
+                                    rowNumbersByTaskID: rowNumbersByTaskID,
+                                    metadataPresenter: metadataPresenter,
+                                    rowVisibility: rowVisibility,
+                                    allowsPlannerDrag: allowsPlannerDrag
+                                )
+                                .padding(.horizontal, 8)
+                                .padding(.bottom, 8)
+                                .transition(taskListSearchRestoreTransition)
+                            }
+                        }
+                        .routinaGlassCard(
+                            cornerRadius: 8,
+                            tint: taskListGroupHeaderTint(for: group),
+                            tintOpacity: taskListGroupHeaderTintOpacity(for: group),
+                            interactive: true
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .stroke(
+                                    taskListGroupHeaderTint(for: group).opacity(
+                                        taskListGroupHeaderStrokeOpacity(for: group)
+                                    ),
+                                    lineWidth: 0.75
+                                )
+                        )
+                        .clipped()
+                    } else {
                         if let groupTitle = group.title {
-                            let isExpanded = taskListGroupIsExpanded(group, collapsedTagIDs: collapsedTagIDs)
                             taskListInnerGroupHeader(
                                 groupTitle,
                                 count: group.tasks.count,
                                 group: group,
                                 collapsedTagIDs: collapsedTagIDs
                             )
-                            .padding(.bottom, isExpanded ? 6 : 0)
                         }
 
                         if taskListGroupIsExpanded(group, collapsedTagIDs: collapsedTagIDs) {
@@ -704,50 +748,15 @@ extension HomeTCAView {
                                 rowVisibility: rowVisibility,
                                 allowsPlannerDrag: allowsPlannerDrag
                             )
-                            .padding(.horizontal, 8)
-                            .padding(.bottom, 8)
-                            .transition(taskListSearchRestoreTransition)
                         }
                     }
-                    .routinaGlassCard(
-                        cornerRadius: 8,
-                        tint: taskListGroupHeaderTint(for: group),
-                        tintOpacity: taskListGroupHeaderTintOpacity(for: group),
-                        interactive: true
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .stroke(
-                                taskListGroupHeaderTint(for: group).opacity(
-                                    taskListGroupHeaderStrokeOpacity(for: group)
-                                ),
-                                lineWidth: 0.75
-                            )
-                    )
-                    .clipped()
-                } else {
-                    if let groupTitle = group.title {
-                        taskListInnerGroupHeader(
-                            groupTitle,
-                            count: group.tasks.count,
-                            group: group,
-                            collapsedTagIDs: collapsedTagIDs
-                        )
-                    }
-
-                    if taskListGroupIsExpanded(group, collapsedTagIDs: collapsedTagIDs) {
-                        taskListGroupContent(
-                            group,
-                            section: section,
-                            in: presentation,
-                            collapsedTagIDs: collapsedTagIDs,
-                            rowNumbersByTaskID: rowNumbersByTaskID,
-                            metadataPresenter: metadataPresenter,
-                            rowVisibility: rowVisibility,
-                            allowsPlannerDrag: allowsPlannerDrag
-                        )
-                    }
                 }
+                .id(
+                    MacTaskSourceListScrollAnchor.group(
+                        sectionID: section.id,
+                        groupID: group.id
+                    )
+                )
             }
         }
     }
@@ -834,6 +843,12 @@ extension HomeTCAView {
                         .transition(taskListSearchRestoreTransition)
                     }
                 }
+                .id(
+                    MacTaskSourceListScrollAnchor.group(
+                        sectionID: section.id,
+                        groupID: childGroup.id
+                    )
+                )
             }
         }
     }
@@ -1619,7 +1634,7 @@ extension HomeTCAView {
         )
     }
 
-    func revealMacTaskSourceListTask(_ taskID: UUID) -> String? {
+    func revealMacTaskSourceListTask(_ taskID: UUID) -> MacSidebarTaskScrollDestination? {
         let presentation = macTaskListPresentation(
             routineDisplays: store.routineDisplays,
             awayRoutineDisplays: store.awayRoutineDisplays,
@@ -1631,7 +1646,10 @@ extension HomeTCAView {
         }
 
         expandMacTaskSourceListLocation(location)
-        return location.section.id
+        return MacSidebarTaskScrollDestination(
+            sectionID: location.section.id,
+            groupIDs: location.groups.map(\.id)
+        )
     }
 
     func macTaskSourceListSidebarLocation(_ taskID: UUID) -> TaskDetailSidebarLocation? {
@@ -1681,7 +1699,7 @@ extension HomeTCAView {
     private func expandMacTaskSourceListLocation(_ location: MacTaskSourceListTaskLocation) {
         guard !isMacSearchSidebarRevealActive else { return }
 
-        withAnimation(.easeInOut(duration: 0.24)) {
+        withTransaction(Transaction(animation: nil)) {
             expandTaskListSection(location.section)
             location.groups.forEach(expandTaskListGroup)
         }
@@ -2057,12 +2075,13 @@ extension HomeTCAView {
             visibleTaskIDs: visibleTaskIDs
         ) else { return }
 
+        guard let request = macSidebarTaskScrollRequest else { return }
+
         if scrollMacTaskSourceList(
             to: taskID,
             with: proxy,
             visibleTaskIDs: visibleTaskIDs,
-            containingSectionID: macSidebarTaskScrollRequest?.containingSectionID,
-            anchor: macSidebarTaskScrollRequest?.unitPointAnchor
+            request: request
         ) {
             macSidebarTaskScrollRequest = nil
         }
@@ -2073,32 +2092,63 @@ extension HomeTCAView {
         to taskID: UUID,
         with proxy: ScrollViewProxy,
         visibleTaskIDs: [UUID],
-        containingSectionID: String?,
-        anchor: UnitPoint?
+        request: MacSidebarTaskScrollRequest
     ) -> Bool {
         guard visibleTaskIDs.contains(taskID) else { return false }
 
+        let steps = MacTaskSourceListScrollPolicy.stagedScrollSteps(for: request)
         DispatchQueue.main.async {
-            if let containingSectionID {
-                withTransaction(Transaction(animation: .easeInOut(duration: 0.16))) {
-                    proxy.scrollTo(
-                        MacTaskSourceListScrollAnchor.section(containingSectionID),
-                        anchor: .top
-                    )
-                }
-            }
-
-            DispatchQueue.main.async {
-                proxy.scrollTo(taskID, anchor: anchor)
-
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        proxy.scrollTo(taskID, anchor: anchor)
-                    }
-                }
-            }
+            performMacTaskSourceListScroll(
+                steps[...],
+                with: proxy,
+                rowAnchor: request.unitPointAnchor
+            )
         }
         return true
+    }
+
+    private func performMacTaskSourceListScroll(
+        _ steps: ArraySlice<MacTaskSourceListScrollStep>,
+        with proxy: ScrollViewProxy,
+        rowAnchor: UnitPoint?
+    ) {
+        guard let step = steps.first else { return }
+
+        switch step {
+        case let .section(sectionID):
+            withTransaction(Transaction(animation: nil)) {
+                proxy.scrollTo(
+                    MacTaskSourceListScrollAnchor.section(sectionID),
+                    anchor: .top
+                )
+            }
+        case let .group(sectionID, groupID):
+            withTransaction(Transaction(animation: nil)) {
+                proxy.scrollTo(
+                    MacTaskSourceListScrollAnchor.group(
+                        sectionID: sectionID,
+                        groupID: groupID
+                    ),
+                    anchor: .top
+                )
+            }
+        case let .task(taskID):
+            proxy.scrollTo(taskID, anchor: rowAnchor)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    proxy.scrollTo(taskID, anchor: rowAnchor)
+                }
+            }
+            return
+        }
+
+        DispatchQueue.main.async {
+            performMacTaskSourceListScroll(
+                steps.dropFirst(),
+                with: proxy,
+                rowAnchor: rowAnchor
+            )
+        }
     }
 
     private func restoreMacTaskSourceListTopPosition(with proxy: ScrollViewProxy) {

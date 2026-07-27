@@ -735,6 +735,10 @@ Given Mac task details show a task that is currently inside a sidebar section an
 When the user clicks the section breadcrumb in the detail header
 Then the left sidebar opens in task-list mode, expands both ancestors, selects the task, and scrolls its row into view
 
+Given that task belongs to a `Future` tag or task-kind subgroup below the currently materialized lazy sidebar content
+When the breadcrumb locate action runs
+Then scrolling stages through the `Future` section and every containing group before targeting the task row, so the final viewport shows the selected row rather than stopping at the `Future` header
+
 Given Mac task details show a task that is currently inside a visible sidebar section
 When the detail header is rendered
 Then the section breadcrumb appears directly below the task title and above status, completion, and other metadata

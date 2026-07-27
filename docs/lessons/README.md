@@ -93,3 +93,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0049 — Separate completion identity from work timing](0049-separate-completion-identity-from-work-timing.md)
 - [0050 — Use occurrence resolution in day projections](0050-use-occurrence-resolution-in-day-projections.md)
 - [0051 — Isolate Add Task event catalog refresh](0051-isolate-add-task-event-catalog-refresh.md)
+- [0052 — Stage locate scrolling through lazy ancestors](0052-stage-locate-scrolling-through-lazy-ancestors.md)

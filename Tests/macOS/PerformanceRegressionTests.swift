@@ -183,6 +183,17 @@ final class PerformanceRegressionTests: XCTestCase {
         XCTAssertTrue(taskListSource.contains("func macTaskSourceListSidebarLocation(_ taskID: UUID)"))
         XCTAssertTrue(taskListSource.contains("macTaskSourceListLocation(of: taskID, in: presentation)"))
         XCTAssertTrue(taskListSource.contains("location.groups.forEach(expandTaskListGroup)"))
+        XCTAssertEqual(
+            taskListSource.components(
+                separatedBy: "MacTaskSourceListScrollAnchor.group("
+            ).count - 1,
+            3,
+            "The locate path must install anchors on parent groups and child groups before using the same anchor during staged scrolling."
+        )
+        XCTAssertTrue(
+            taskListSource.contains("MacTaskSourceListScrollPolicy.stagedScrollSteps(for: request)"),
+            "A task nested in an off-screen lazy group must scroll through its section and group ancestors before targeting its row."
+        )
         XCTAssertTrue(sidebarSource.contains("scrollSelectedTaskInMacSidebar()"))
         XCTAssertTrue(sidebarSource.contains("revealMacTaskSourceListTask(taskID)"))
     }

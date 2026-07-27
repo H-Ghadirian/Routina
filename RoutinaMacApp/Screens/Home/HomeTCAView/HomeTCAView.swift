@@ -101,18 +101,23 @@ struct MacSidebarTaskScrollRequest: Equatable {
 
     let taskID: UUID
     let anchor: Anchor
-    let containingSectionID: String?
+    let destination: MacSidebarTaskScrollDestination?
     private let token = UUID()
 
     init(
         taskID: UUID,
         anchor: Anchor = .center,
-        containingSectionID: String? = nil
+        destination: MacSidebarTaskScrollDestination? = nil
     ) {
         self.taskID = taskID
         self.anchor = anchor
-        self.containingSectionID = containingSectionID
+        self.destination = destination
     }
+}
+
+struct MacSidebarTaskScrollDestination: Equatable {
+    let sectionID: String
+    let groupIDs: [String]
 }
 
 struct MacTimelineSidebarScrollRequest: Equatable {

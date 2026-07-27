@@ -499,7 +499,7 @@ extension HomeTCAView {
             return
         }
 
-        guard let containingSectionID = revealMacTaskSourceListTask(taskID) else {
+        guard let scrollDestination = revealMacTaskSourceListTask(taskID) else {
             showTaskRowUnavailableToast()
             return
         }
@@ -525,7 +525,7 @@ extension HomeTCAView {
         macSidebarTaskScrollRequest = MacSidebarTaskScrollRequest(
             taskID: taskID,
             anchor: .center,
-            containingSectionID: containingSectionID
+            destination: scrollDestination
         )
         macHomeNoticeToast = nil
     }

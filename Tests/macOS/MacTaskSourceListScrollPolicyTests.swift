@@ -60,6 +60,39 @@ struct MacTaskSourceListScrollPolicyTests {
 
         #expect(firstRequest != secondRequest)
     }
+
+    @Test
+    func locatedTaskScrollStagesEveryLazyAncestorBeforeTheRow() {
+        let taskID = UUID()
+        let request = MacSidebarTaskScrollRequest(
+            taskID: taskID,
+            destination: MacSidebarTaskScrollDestination(
+                sectionID: "future:future",
+                groupIDs: ["tag:travel", "tag:travel:routines"]
+            )
+        )
+
+        #expect(
+            MacTaskSourceListScrollPolicy.stagedScrollSteps(for: request) == [
+                .section("future:future"),
+                .group(sectionID: "future:future", groupID: "tag:travel"),
+                .group(sectionID: "future:future", groupID: "tag:travel:routines"),
+                .task(taskID)
+            ]
+        )
+    }
+
+    @Test
+    func ordinaryScrollRequestTargetsTheRowDirectly() {
+        let taskID = UUID()
+        let request = MacSidebarTaskScrollRequest(taskID: taskID)
+
+        #expect(
+            MacTaskSourceListScrollPolicy.stagedScrollSteps(for: request) == [
+                .task(taskID)
+            ]
+        )
+    }
 }
 
 struct MacTaskSourceListScrollPreservationTests {

@@ -7,6 +7,12 @@ enum MacTaskSourceListScrollEvent: Equatable {
     case scrollRequestChanged
 }
 
+enum MacTaskSourceListScrollStep: Equatable {
+    case section(String)
+    case group(sectionID: String, groupID: String)
+    case task(UUID)
+}
+
 enum MacTaskSourceListScrollPolicy {
     static func scrollTarget(
         for event: MacTaskSourceListScrollEvent,
@@ -26,6 +32,22 @@ enum MacTaskSourceListScrollPolicy {
             }
             return taskID
         }
+    }
+
+    static func stagedScrollSteps(
+        for request: MacSidebarTaskScrollRequest
+    ) -> [MacTaskSourceListScrollStep] {
+        var steps: [MacTaskSourceListScrollStep] = []
+        if let destination = request.destination {
+            steps.append(.section(destination.sectionID))
+            steps.append(
+                contentsOf: destination.groupIDs.map {
+                    .group(sectionID: destination.sectionID, groupID: $0)
+                }
+            )
+        }
+        steps.append(.task(request.taskID))
+        return steps
     }
 }
 
