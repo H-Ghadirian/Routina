@@ -6,6 +6,8 @@ Date: 2026-07-26
 
 Refines: [0180 Clarify Schedule Behavior Badge Preview](0180-clarify-schedule-behavior-summary.md), [0188 Prefer Self-Explanatory UI Over Instructional Copy](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0429 Keep Task List Visible Beside Mac Task Forms](0429-keep-task-list-visible-beside-mac-task-forms.md), [0431 Present One Progressive Recurrence Composer](0431-present-one-progressive-recurrence-composer.md)
 
+Refined by: [0443 Present Fixed Schedule Options as One Grouped Mode](0443-present-fixed-schedule-options-as-one-grouped-mode.md)
+
 ## Context
 
 Mac Add Task and Edit Task kept the task-list sidebar visible and presented one

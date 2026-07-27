@@ -204,6 +204,8 @@ Decision links: [0188](../decisions/0188-prefer-self-explanatory-ui-over-instruc
 Current behavior: [UI](../current-behavior/ui.md), [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/macOS/FormSectionTests.swift`
+- `Tests/Shared/TaskFormPresentationTests.swift`
+- `Tests/Shared/RoutineRecurrenceDraftTests.swift`
 
 Given Add Task or Edit Task is open in a wide Mac window
 When the full form and Behavior section are laid out
@@ -231,6 +233,21 @@ When Multi-day makes the routine non-daily and eligible for Planning
 Then Planning appears inside `Schedule details`
 And the `Add More Details` palette does not gain or lose a Planning action
 And no explanatory copy is added beside the Multi-day selector
+
+Given a Mac user expands `More schedule options` for an optional fixed schedule
+When fixed scheduling is off or on
+Then one leading-aligned inset panel presents `Fixed schedule` with a mini switch
+And the collapsed disclosure summarizes the default or active fixed schedule
+
+Given a recurrence requires fixed schedule details
+When `More schedule options` opens automatically
+Then the mode row shows `Required` instead of a disabled switch
+And only the domain-specific reason for that requirement is explained
+
+Given a desktop weekly, monthly, or yearly schedule has one occurrence time
+When its fixed schedule details are shown
+Then Start date and At time appear once on the same row
+And changing either keeps the hidden fixed-start threshold aligned to that occurrence
 
 ### Fixed Recurrence Composes With Time Availability
 

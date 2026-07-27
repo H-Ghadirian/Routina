@@ -76,6 +76,87 @@ enum TaskFormDateAvailabilityMode: String, CaseIterable, Equatable, Identifiable
     var id: String { rawValue }
 }
 
+enum TaskFormFixedSchedulePresentation {
+    static func startIncludesTime(
+        frequency: RoutineAdvancedRecurrenceRule.Frequency,
+        availabilityUsesWindow: Bool
+    ) -> Bool {
+        frequency == .hourly && !availabilityUsesWindow
+    }
+
+    static func inlinesSingleOccurrenceTime(
+        isDesktop: Bool,
+        frequency: RoutineAdvancedRecurrenceRule.Frequency,
+        occurrenceTimeCount: Int
+    ) -> Bool {
+        guard isDesktop, occurrenceTimeCount == 1 else { return false }
+        switch frequency {
+        case .weekly, .monthly, .yearly:
+            return true
+        case .hourly, .daily:
+            return false
+        }
+    }
+
+    static func summary(
+        for draft: RoutineRecurrenceDraft,
+        calendar: Calendar = .current
+    ) -> String {
+        guard draft.usesFixedScheduleDetails else { return "Default" }
+        guard let startDate = draft.startDate else {
+            return draft.requiresFixedScheduleDetails ? "Required" : "Fixed schedule"
+        }
+
+        let includesTime = startIncludesTime(
+            frequency: draft.frequency,
+            availabilityUsesWindow: draft.availability.usesWindow
+        )
+        let startText = formatted(
+            startDate,
+            includesTime: includesTime,
+            timeZoneIdentifier: draft.timeZoneIdentifier,
+            calendar: calendar
+        )
+        return "Starts \(startText) · \(endSummary(for: draft, calendar: calendar))"
+    }
+
+    private static func endSummary(
+        for draft: RoutineRecurrenceDraft,
+        calendar: Calendar
+    ) -> String {
+        switch draft.endMode {
+        case .never:
+            return "Never ends"
+        case .onDate:
+            let endDateText = formatted(
+                draft.endDate,
+                includesTime: false,
+                timeZoneIdentifier: draft.timeZoneIdentifier,
+                calendar: calendar
+            )
+            return "Ends \(endDateText)"
+        case .afterCount:
+            return "\(draft.occurrenceCount) occurrences"
+        }
+    }
+
+    private static func formatted(
+        _ date: Date,
+        includesTime: Bool,
+        timeZoneIdentifier: String?,
+        calendar: Calendar
+    ) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.locale = .current
+        formatter.timeZone = TimeZone(identifier: timeZoneIdentifier ?? "")
+            ?? calendar.timeZone
+        formatter.dateStyle = .medium
+        formatter.timeStyle = includesTime ? .short : .none
+        return formatter.string(from: date)
+    }
+}
+
 enum RoutineRepeatType: String, CaseIterable, Equatable, Hashable, Identifiable, Sendable {
     case none = "None"
     case interval = "Interval"

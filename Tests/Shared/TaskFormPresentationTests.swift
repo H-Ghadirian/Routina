@@ -171,6 +171,68 @@ struct TaskFormPresentationTests {
     }
 
     @Test
+    func moreScheduleOptionsUseOneResponsiveFixedSchedulePresentation() {
+        #expect(
+            TaskFormFixedSchedulePresentation.startIncludesTime(
+                frequency: .hourly,
+                availabilityUsesWindow: false
+            )
+        )
+        #expect(
+            !TaskFormFixedSchedulePresentation.startIncludesTime(
+                frequency: .weekly,
+                availabilityUsesWindow: false
+            )
+        )
+        #expect(
+            TaskFormFixedSchedulePresentation.inlinesSingleOccurrenceTime(
+                isDesktop: true,
+                frequency: .weekly,
+                occurrenceTimeCount: 1
+            )
+        )
+        #expect(
+            !TaskFormFixedSchedulePresentation.inlinesSingleOccurrenceTime(
+                isDesktop: false,
+                frequency: .weekly,
+                occurrenceTimeCount: 1
+            )
+        )
+        #expect(
+            !TaskFormFixedSchedulePresentation.inlinesSingleOccurrenceTime(
+                isDesktop: true,
+                frequency: .daily,
+                occurrenceTimeCount: 1
+            )
+        )
+
+        let compactDraft = RoutineRecurrenceDraft(
+            cadence: .scheduled,
+            frequency: .weekly,
+            weekdays: [2]
+        )
+        #expect(
+            TaskFormFixedSchedulePresentation.summary(for: compactDraft)
+                == "Default"
+        )
+
+        let fixedDraft = RoutineRecurrenceDraft(
+            cadence: .scheduled,
+            frequency: .weekly,
+            startDate: Date(timeIntervalSince1970: 0),
+            weekdays: [2],
+            occurrenceTimes: [RoutineTimeOfDay(hour: 9, minute: 0)],
+            endMode: .never,
+            timeZoneIdentifier: "UTC"
+        )
+        let summary = TaskFormFixedSchedulePresentation.summary(
+            for: fixedDraft
+        )
+        #expect(summary.hasPrefix("Starts "))
+        #expect(summary.hasSuffix(" · Never ends"))
+    }
+
+    @Test
     func availabilityModesMatchPersistedTaskTypeSupport() {
         #expect(TaskFormTimingMode.cases(for: .todo) == [.none, .allDay, .exact, .timeBlock, .availableWindow])
         #expect(TaskFormTimingMode.cases(for: .routine) == [.none, .allDay, .exact, .timeBlock, .availableWindow])

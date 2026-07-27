@@ -463,6 +463,47 @@ struct RoutineRecurrenceDraftTests {
     }
 
     @Test
+    func fixedStartAlignmentUsesTheSingleVisibleOccurrenceTime() {
+        let start = makeDate("2026-07-27T12:26:00Z")
+        let weekly = RoutineRecurrenceDraft(
+            cadence: .scheduled,
+            frequency: .weekly,
+            startDate: start,
+            weekdays: [2],
+            occurrenceTimes: [RoutineTimeOfDay(hour: 9, minute: 15)],
+            timeZoneIdentifier: "UTC"
+        )
+
+        let aligned = weekly.aligningFixedStartToFirstOccurrenceTime(
+            calendar: calendar
+        )
+
+        #expect(aligned.startDate == makeDate("2026-07-27T09:15:00Z"))
+
+        var reordered = weekly
+        reordered.occurrenceTimes = [
+            RoutineTimeOfDay(hour: 18, minute: 0),
+            RoutineTimeOfDay(hour: 7, minute: 30)
+        ]
+        #expect(
+            reordered.aligningFixedStartToFirstOccurrenceTime(calendar: calendar)
+                .startDate == makeDate("2026-07-27T07:30:00Z")
+        )
+
+        let hourly = RoutineRecurrenceDraft(
+            cadence: .scheduled,
+            frequency: .hourly,
+            startDate: start,
+            occurrenceTimes: [RoutineTimeOfDay(hour: 9, minute: 15)],
+            timeZoneIdentifier: "UTC"
+        )
+        #expect(
+            hourly.aligningFixedStartToFirstOccurrenceTime(calendar: calendar)
+                .startDate == start
+        )
+    }
+
+    @Test
     func composerKeepsWindowWhenSwitchingToEveryNFixedSchedule() throws {
         let now = makeDate("2026-07-21T09:00:00Z")
         let window = RoutineTimeRange(

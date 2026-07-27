@@ -31,6 +31,8 @@ Priority rules:
 
 These are ordered from newest resolver to oldest resolver.
 
+- **[0443](0443-present-fixed-schedule-options-as-one-grouped-mode.md) refines [0188](0188-prefer-self-explanatory-ui-over-instructional-copy.md), [0431](0431-present-one-progressive-recurrence-composer.md), and [0437](0437-compact-wide-mac-task-forms.md) for advanced recurrence hierarchy:** `More schedule options` owns visibility, optional `Fixed schedule` uses a grouped switch, required details show a status, desktop controls stay leading-aligned with a collapsed summary, and single-time schedules expose one occurrence-time control while keeping the fixed threshold synchronized.
+
 - **[0442](0442-keep-routine-planning-inside-schedule-details.md) refines [0058](0058-use-progressive-task-forms.md), [0200](0200-support-task-planned-dates.md), and [0439](0439-keep-cadence-dependent-controls-after-repeat.md) for stable Mac planning placement:** Eligible routine Planning renders inside `Schedule details` and never enters the routine `Add More Details` palette; todo Planning remains a standalone optional section.
 
 - **[0441](0441-enter-custom-calendar-list-done-durations.md) refines [0435](0435-edit-calendar-list-done-times-from-mac-task-detail.md) for minute-precise corrections:** The Mac Planner Calendar `List` Done-row task-detail card accepts custom Hours and Minutes while keeping the completion within its selected day and preserving exact-occurrence update semantics.
@@ -366,6 +368,7 @@ These are ordered from newest resolver to oldest resolver.
 
 | ID | Title | Status | Date |
 | --- | --- | --- | --- |
+| [0443](0443-present-fixed-schedule-options-as-one-grouped-mode.md) | Present Fixed Schedule Options as One Grouped Mode | Accepted | 2026-07-27 |
 | [0442](0442-keep-routine-planning-inside-schedule-details.md) | Keep Routine Planning Inside Schedule Details | Accepted | 2026-07-27 |
 | [0441](0441-enter-custom-calendar-list-done-durations.md) | Enter Custom Calendar List Done Durations | Accepted | 2026-07-27 |
 | [0440](0440-treat-day-planning-sections-as-additive.md) | Treat Day Planning Sections as Additive | Accepted | 2026-07-26 |

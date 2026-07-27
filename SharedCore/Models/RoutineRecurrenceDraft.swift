@@ -422,6 +422,25 @@ struct RoutineRecurrenceDraft: Equatable, Sendable {
         return updated.normalized()
     }
 
+    func aligningFixedStartToFirstOccurrenceTime(
+        calendar: Calendar = .current
+    ) -> Self {
+        guard cadence == .scheduled,
+              frequency != .hourly,
+              let startDate,
+              let firstOccurrenceTime = occurrenceTimes.min(by: {
+                  $0.minutesFromStartOfDay < $1.minutesFromStartOfDay
+              })
+        else { return self }
+
+        var updated = self
+        updated.startDate = firstOccurrenceTime.date(
+            on: startDate,
+            calendar: calendar
+        )
+        return updated.normalized()
+    }
+
     func composerSummary(calendar: Calendar = .current) -> String {
         switch cadence {
         case .none:

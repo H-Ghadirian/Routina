@@ -200,8 +200,7 @@ struct UnifiedRecurrenceEditor: View {
     private var moreOptions: some View {
         DisclosureGroup(isExpanded: $showsMoreOptions) {
             VStack(alignment: .leading, spacing: 14) {
-                Toggle("Use fixed schedule details", isOn: fixedDetailsBinding)
-                    .disabled(draft.requiresFixedScheduleDetails)
+                fixedScheduleModeRow
 
                 if draft.requiresFixedScheduleDetails {
                     Text(requiredDetailsExplanation)
@@ -211,32 +210,122 @@ struct UnifiedRecurrenceEditor: View {
                 }
 
                 if draft.usesFixedScheduleDetails {
+                    Divider()
                     fixedScheduleControls
                 }
             }
-            .padding(.top, 10)
+            .padding(14)
             .frame(maxWidth: layout.fixedDetailsMaximumWidth, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.secondary.opacity(0.055))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+            )
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 10)
         } label: {
-            Label("More schedule options", systemImage: "slider.horizontal.3")
-                .font(.subheadline.weight(.semibold))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
+            HStack(spacing: 12) {
+                Label("More schedule options", systemImage: "slider.horizontal.3")
+                    .font(.subheadline.weight(.semibold))
+
+                if layout == .desktop {
+                    Spacer(minLength: 12)
+
+                    Text(
+                        TaskFormFixedSchedulePresentation.summary(
+                            for: draft,
+                            calendar: calendar
+                        )
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
     }
 
+    @ViewBuilder
+    private var fixedScheduleModeRow: some View {
+        if draft.requiresFixedScheduleDetails {
+            HStack(spacing: 12) {
+                Text("Fixed schedule")
+                    .font(.body)
+
+                Spacer(minLength: 12)
+
+                Text("Required")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule()
+                            .fill(Color.secondary.opacity(0.10))
+                    )
+            }
+            .frame(maxWidth: .infinity, minHeight: 24, alignment: .leading)
+        } else {
+            Toggle(isOn: fixedDetailsBinding) {
+                Text("Fixed schedule")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .toggleStyle(.switch)
+            .controlSize(layout == .desktop ? .mini : .regular)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    @ViewBuilder
     private var fixedScheduleControls: some View {
         VStack(alignment: .leading, spacing: 14) {
-            DatePicker(
-                "Start",
-                selection: startDateBinding,
-                displayedComponents: fixedStartComponents
-            )
+            if inlinesSingleOccurrenceTime {
+                HStack(spacing: 18) {
+                    fixedStartControl
+                    singleOccurrenceTimeControl
+                }
+                .fixedSize(horizontal: true, vertical: false)
+            } else {
+                fixedStartControl
+            }
 
             RecurrenceTimeZoneField(selection: timeZoneBinding)
 
-            fixedFrequencyControls
+            if !inlinesSingleOccurrenceTime {
+                fixedFrequencyControls
+            }
             endControls
         }
+    }
+
+    private var fixedStartControl: some View {
+        DatePicker(
+            "Starts",
+            selection: startDateBinding,
+            displayedComponents: fixedStartComponents
+        )
+    }
+
+    private var singleOccurrenceTimeControl: some View {
+        DatePicker(
+            "At",
+            selection: indexedTimeBinding(0),
+            displayedComponents: .hourAndMinute
+        )
+    }
+
+    private var inlinesSingleOccurrenceTime: Bool {
+        TaskFormFixedSchedulePresentation.inlinesSingleOccurrenceTime(
+            isDesktop: layout == .desktop,
+            frequency: draft.frequency,
+            occurrenceTimeCount: draft.occurrenceTimes.count
+        )
     }
 
     @ViewBuilder
@@ -252,7 +341,12 @@ struct UnifiedRecurrenceEditor: View {
     }
 
     private var fixedStartComponents: DatePickerComponents {
-        draft.availability.usesWindow ? .date : [.date, .hourAndMinute]
+        TaskFormFixedSchedulePresentation.startIncludesTime(
+            frequency: draft.frequency,
+            availabilityUsesWindow: draft.availability.usesWindow
+        )
+            ? [.date, .hourAndMinute]
+            : .date
     }
 
     private var hourlyControls: some View {
@@ -412,7 +506,10 @@ struct UnifiedRecurrenceEditor: View {
         Binding(
             get: { draft.startDate ?? referenceDate },
             set: { value in
-                updateDraft { $0.startDate = value }
+                updateDraft(
+                    { $0.startDate = value },
+                    alignsFixedStartToFirstOccurrenceTime: !fixedStartComponents.contains(.hourAndMinute)
+                )
             }
         )
     }
@@ -524,10 +621,16 @@ struct UnifiedRecurrenceEditor: View {
                 )
             },
             set: { value in
-                updateDraft { updated in
-                    guard updated.occurrenceTimes.indices.contains(index) else { return }
-                    updated.occurrenceTimes[index] = RoutineTimeOfDay.from(value, calendar: calendar)
-                }
+                updateDraft(
+                    { updated in
+                        guard updated.occurrenceTimes.indices.contains(index) else { return }
+                        updated.occurrenceTimes[index] = RoutineTimeOfDay.from(
+                            value,
+                            calendar: calendar
+                        )
+                    },
+                    alignsFixedStartToFirstOccurrenceTime: true
+                )
             }
         )
     }
@@ -549,29 +652,43 @@ struct UnifiedRecurrenceEditor: View {
     }
 
     private func addTime() {
-        updateDraft { updated in
-            let last = updated.occurrenceTimes.last
-                ?? RoutineTimeOfDay.from(updated.startDate ?? referenceDate, calendar: calendar)
-            updated.occurrenceTimes.append(last.addingMinutes(60))
-        }
+        updateDraft(
+            { updated in
+                let last = updated.occurrenceTimes.last
+                    ?? RoutineTimeOfDay.from(updated.startDate ?? referenceDate, calendar: calendar)
+                updated.occurrenceTimes.append(last.addingMinutes(60))
+            },
+            alignsFixedStartToFirstOccurrenceTime: true
+        )
     }
 
     private func removeTime(at index: Int) {
-        updateDraft { updated in
-            guard updated.occurrenceTimes.count > 1,
-                  updated.occurrenceTimes.indices.contains(index)
-            else { return }
-            updated.occurrenceTimes.remove(at: index)
-        }
+        updateDraft(
+            { updated in
+                guard updated.occurrenceTimes.count > 1,
+                      updated.occurrenceTimes.indices.contains(index)
+                else { return }
+                updated.occurrenceTimes.remove(at: index)
+            },
+            alignsFixedStartToFirstOccurrenceTime: true
+        )
     }
 
-    private func updateDraft(_ update: (inout RoutineRecurrenceDraft) -> Void) {
+    private func updateDraft(
+        _ update: (inout RoutineRecurrenceDraft) -> Void,
+        alignsFixedStartToFirstOccurrenceTime: Bool = false
+    ) {
         var updated = draft
         update(&updated)
         if updated.requiresFixedScheduleDetails {
             updated = updated.settingFixedScheduleDetailsEnabled(
                 true,
                 now: referenceDate,
+                calendar: calendar
+            )
+        }
+        if alignsFixedStartToFirstOccurrenceTime {
+            updated = updated.aligningFixedStartToFirstOccurrenceTime(
                 calendar: calendar
             )
         }

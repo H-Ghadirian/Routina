@@ -6,6 +6,8 @@ Date: 2026-07-26
 
 Refines: [0430 Unify Recurrence Editing Behind a Lossless Draft](0430-unify-recurrence-editing-behind-lossless-draft.md), [0412 Add Advanced Recurrence Beside Simple](0412-add-advanced-recurrence-beside-simple.md), [0178 Make Recurrence Availability Independent](0178-make-recurrence-availability-independent.md), [0186 Put Item Runout in Repeat Type](0186-put-item-runout-in-repeat-type.md)
 
+Refined by: [0443 Present Fixed Schedule Options as One Grouped Mode](0443-present-fixed-schedule-options-as-one-grouped-mode.md)
+
 ## Context
 
 The Simple / Advanced selector required users to choose a storage model before describing the behavior they wanted. Related controls were split across separate branches, ordinary schedules and fixed-anchor schedules looked mutually exclusive, and some structured collections such as several yearly months were stored without a matching editor.
