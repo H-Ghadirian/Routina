@@ -739,6 +739,45 @@ struct RoutineDateMathTests {
     }
 
     @Test
+    func completionTargetDate_keepsEndedCurrentDayWindowActionable() {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let occurrence = makeDate("2026-07-28T10:00:00Z")
+        let referenceDate = makeDate("2026-07-28T13:00:00Z")
+        let task = RoutineTask(
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .weekly(
+                on: 3,
+                timeRange: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 10, minute: 0),
+                    end: RoutineTimeOfDay(hour: 10, minute: 15)
+                )
+            ),
+            scheduleAnchor: makeDate("2026-07-27T10:00:00Z"),
+            createdAt: makeDate("2026-07-01T10:00:00Z")
+        )
+
+        #expect(
+            RoutineDateMath.completionTargetDate(
+                for: task,
+                selectedDay: referenceDate,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) == occurrence
+        )
+        #expect(
+            RoutineDateMath.canMarkSelectedExactTimedOccurrenceDone(
+                for: task,
+                completionDate: occurrence,
+                referenceDate: referenceDate,
+                logs: [],
+                calendar: calendar
+            )
+        )
+    }
+
+    @Test
     func exactTimedOccurrenceBecomesMissedAfterScheduledDayPasses() {
         var calendar = makeTestCalendar()
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current

@@ -1,6 +1,42 @@
 import SwiftUI
 import ComposableArchitecture
 
+struct TaskDetailSelectedCalendarDayActions: View {
+    let occurrence: TaskDetailOccurrencePresentation
+    let onMarkMissed: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text("Selected occurrence")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Spacer(minLength: 12)
+
+            if occurrence.canMarkMissed {
+                Button(action: onMarkMissed) {
+                    Label("Missed", systemImage: "xmark")
+                        .frame(minHeight: 24)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.bordered)
+                .tint(.red)
+            }
+
+            if occurrence.canCancel {
+                Button(action: onCancel) {
+                    Label("Canceled", systemImage: "slash.circle")
+                        .frame(minHeight: 24)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.bordered)
+                .tint(.secondary)
+            }
+        }
+    }
+}
+
 struct TaskDetailPrimaryActionButton: View {
     let store: StoreOf<TaskDetailFeature>
     var useLargePrimaryControl = true

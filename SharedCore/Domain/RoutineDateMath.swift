@@ -943,9 +943,12 @@ enum RoutineDateMath {
                 ) {
                     return activeOccurrence
                 }
-                let due = dueDate(for: task, referenceDate: referenceDate, calendar: calendar)
-                guard calendar.isDate(due, inSameDayAs: referenceDate) else { return nil }
-                return due <= referenceDate ? due : nil
+                return scheduledOccurrences(
+                    for: task,
+                    on: normalizedSelectedDay,
+                    calendar: calendar
+                )
+                .last(where: { $0 <= referenceDate })
             }
 
             return scheduledOccurrence(for: task, on: normalizedSelectedDay, calendar: calendar)

@@ -994,28 +994,47 @@ struct TaskDetailTCAView: View {
     }
 
     func calendarSection(dueDate: Date?) -> some View {
-        TaskDetailCalendarCardContent(
-            displayedMonthStart: displayedMonthStart,
-            onPreviousMonth: {
-                displayedMonthStart = TaskDetailCalendarNavigation.previousMonth(from: displayedMonthStart)
-            },
-            onNextMonth: {
-                displayedMonthStart = TaskDetailCalendarNavigation.nextMonth(from: displayedMonthStart)
-            },
-            logs: store.logs,
-            task: store.task,
-            dueDate: dueDate,
-            softDueDate: store.resolvedSoftDueDate,
-            isOrangeUrgencyToday: calendarIsOrangeUrgencyToday,
-            selectedDate: store.resolvedSelectedDate,
-            onSelectDate: { store.send(.selectedDateChanged($0)) },
-            onToday: {
-                let calendar = Calendar.current
-                let today = calendar.startOfDay(for: Date())
-                displayedMonthStart = calendar.startOfMonth(for: today)
-                store.send(.selectedDateChanged(today))
+        VStack(alignment: .leading, spacing: 0) {
+            TaskDetailCalendarCardContent(
+                displayedMonthStart: displayedMonthStart,
+                onPreviousMonth: {
+                    displayedMonthStart = TaskDetailCalendarNavigation.previousMonth(from: displayedMonthStart)
+                },
+                onNextMonth: {
+                    displayedMonthStart = TaskDetailCalendarNavigation.nextMonth(from: displayedMonthStart)
+                },
+                logs: store.logs,
+                task: store.task,
+                dueDate: dueDate,
+                softDueDate: store.resolvedSoftDueDate,
+                isOrangeUrgencyToday: calendarIsOrangeUrgencyToday,
+                selectedDate: store.resolvedSelectedDate,
+                onSelectDate: { store.send(.selectedDateChanged($0)) },
+                onToday: {
+                    let calendar = Calendar.current
+                    let today = calendar.startOfDay(for: Date())
+                    displayedMonthStart = calendar.startOfMonth(for: today)
+                    store.send(.selectedDateChanged(today))
+                }
+            )
+
+            if let occurrence = store.selectedCalendarOccurrence,
+               occurrence.canMarkMissed || occurrence.canCancel {
+                Divider()
+                    .padding(.horizontal, 12)
+
+                TaskDetailSelectedCalendarDayActions(
+                    occurrence: occurrence,
+                    onMarkMissed: {
+                        store.send(.markOccurrenceMissed(occurrence.occurrence))
+                    },
+                    onCancel: {
+                        store.send(.markOccurrenceCanceled(occurrence.occurrence))
+                    }
+                )
+                .padding(12)
             }
-        )
+        }
         .routinaPlatformCalendarCardStyle()
     }
 

@@ -96,3 +96,4 @@ Tests, scenarios, assertions, tooling, or review checks that protect against rec
 - [0052 — Stage locate scrolling through lazy ancestors](0052-stage-locate-scrolling-through-lazy-ancestors.md)
 - [0053 — Match day projections against the authoritative recurrence](0053-match-day-projections-against-authoritative-recurrence.md)
 - [0054 — Resolve Planner assumptions before snapshot refresh](0054-resolve-planner-assumptions-before-snapshot-refresh.md)
+- [0055 — Resolve today before advancing recurrence](0055-resolve-today-before-advancing-recurrence.md)

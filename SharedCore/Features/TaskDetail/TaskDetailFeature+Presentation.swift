@@ -29,8 +29,26 @@ struct TaskDetailOccurrencePresentation: Equatable, Identifiable {
         logs: [RoutineLog],
         calendar: Calendar = .current
     ) -> [Self] {
+        let items = allItems(
+            for: task,
+            on: selectedDay,
+            selectedOccurrence: selectedOccurrence,
+            referenceDate: referenceDate,
+            logs: logs,
+            calendar: calendar
+        )
+        return items.count > 1 ? items : []
+    }
+
+    static func allItems(
+        for task: RoutineTask,
+        on selectedDay: Date,
+        selectedOccurrence: Date?,
+        referenceDate: Date,
+        logs: [RoutineLog],
+        calendar: Calendar = .current
+    ) -> [Self] {
         guard task.usesEffectiveRoutineCadence,
-              task.recurrenceRule.occursMoreThanOncePerDay,
               !task.isChecklistDriven,
               !task.hasSequentialSteps,
               !task.isMultiDayRoutine else {
@@ -42,7 +60,7 @@ struct TaskDetailOccurrencePresentation: Equatable, Identifiable {
             on: selectedDay,
             calendar: calendar
         )
-        guard occurrences.count > 1 else { return [] }
+        guard !occurrences.isEmpty else { return [] }
 
         let defaultSelection = selectedOccurrence
             ?? RoutineDateMath.completionTargetDate(
@@ -250,10 +268,30 @@ extension TaskDetailFeature.State {
         )
     }
 
+    var selectedCalendarOccurrence: TaskDetailOccurrencePresentation? {
+        let occurrences = TaskDetailOccurrencePresentation.allItems(
+            for: task,
+            on: resolvedSelectedDate,
+            selectedOccurrence: validSelectedOccurrenceDate,
+            referenceDate: Date(),
+            logs: logs,
+            calendar: .current
+        )
+        guard occurrences.count == 1 else { return nil }
+        return occurrences.first
+    }
+
     func occurrencePresentation(
         for occurrence: Date
     ) -> TaskDetailOccurrencePresentation? {
-        selectedDayOccurrences.first {
+        TaskDetailOccurrencePresentation.allItems(
+            for: task,
+            on: resolvedSelectedDate,
+            selectedOccurrence: validSelectedOccurrenceDate,
+            referenceDate: Date(),
+            logs: logs,
+            calendar: .current
+        ).first {
             RoutineOccurrenceIdentity.matches(
                 $0.occurrence,
                 occurrence,

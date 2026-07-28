@@ -66,6 +66,55 @@ struct TaskDetailFeatureCompletionTests {
     }
 
     @Test
+    func singleEndedOccurrenceExposesCalendarMissedAndCanceledActions() throws {
+        var calendar = makeTestCalendar()
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+        let occurrence = makeDate("2026-07-28T10:00:00Z")
+        let referenceDate = makeDate("2026-07-28T13:00:00Z")
+        let task = RoutineTask(
+            name: "Daily",
+            scheduleMode: .fixedInterval,
+            recurrenceRule: .weekly(
+                on: 3,
+                timeRange: RoutineTimeRange(
+                    start: RoutineTimeOfDay(hour: 10, minute: 0),
+                    end: RoutineTimeOfDay(hour: 10, minute: 15)
+                )
+            ),
+            scheduleAnchor: makeDate("2026-07-27T10:00:00Z"),
+            createdAt: makeDate("2026-07-01T10:00:00Z")
+        )
+
+        let items = TaskDetailOccurrencePresentation.allItems(
+            for: task,
+            on: referenceDate,
+            selectedOccurrence: nil,
+            referenceDate: referenceDate,
+            logs: [],
+            calendar: calendar
+        )
+        let item = try #require(items.first)
+
+        #expect(items.count == 1)
+        #expect(item.occurrence == occurrence)
+        #expect(item.status == .missed)
+        #expect(item.canComplete)
+        #expect(item.canMarkMissed)
+        #expect(item.canCancel)
+        #expect(
+            TaskDetailOccurrencePresentation.items(
+                for: task,
+                on: referenceDate,
+                selectedOccurrence: nil,
+                referenceDate: referenceDate,
+                logs: [],
+                calendar: calendar
+            ).isEmpty
+        )
+    }
+
+    @Test
     func selectedOccurrenceOverridesDayLevelCompletionTarget() {
         let calendar = Calendar.current
         let selectedDay = calendar.date(

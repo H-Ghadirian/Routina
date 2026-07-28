@@ -623,10 +623,11 @@ Then June 25 can remain overdue, June 26 shows done, and June 27 through June 29
 ### Selected Timed Occurrence Can Be Resolved After Prior Occurrence
 
 Area: Tasks
-Decision links: [0003](../decisions/0003-resolve-exact-time-missed-assumptions.md), [0009](../decisions/0009-support-routine-time-ranges.md)
+Decision links: [0003](../decisions/0003-resolve-exact-time-missed-assumptions.md), [0009](../decisions/0009-support-routine-time-ranges.md), [0447](../decisions/0447-resolve-selected-timed-occurrences-in-task-detail.md)
 Current behavior: [Tasks](../current-behavior/tasks.md)
 Coverage:
 - `Tests/Shared/TaskDetailFeatureCompletionTests.swift`
+- `Tests/Shared/RoutineDateMathTests.swift`
 
 Given a weekly time-window routine has an earlier occurrence already resolved as canceled
 When the user selects a later missed occurrence in Task Detail and presses Done
@@ -635,6 +636,11 @@ Then Routina records a completed log for the selected occurrence without treatin
 Given a weekly time-window routine has unresolved missed occurrences on June 18 and June 25, 2026
 When the user selects the later July 2, 2026 occurrence and presses Done
 Then Routina keeps June 18 and June 25 visible as unresolved missed days and still lets either selected missed day be resolved directly
+
+Given today's single scheduled time window has ended without a recorded outcome
+When the user selects today in Mac Task Detail
+Then the top primary action remains an enabled Done action for today's scheduled occurrence
+And the calendar card shows eligible Missed and Canceled actions for that same occurrence
 
 ### Editing Calendar Routines Preserves All Selected Days
 
